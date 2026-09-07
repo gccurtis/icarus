@@ -4,6 +4,7 @@ import { landOn } from "$model/client/workspace-state/methods/shared/land-on";
 import { landing } from "$model/client/workspace-state/methods/shared/landing";
 import { mintView } from "$model/client/workspace-state/methods/shared/mint-view";
 import { perform } from "$model/client/workspace-state/methods/shared/perform";
+import { offersContext } from "$model/client/workspace-state/methods/shared/rails";
 import { targetKey } from "$model/client/workspace-state/methods/shared/target-key";
 import type { Tab } from "$model/client/workspace-state/types";
 
@@ -22,6 +23,15 @@ export const open = (state: WorkspaceStateData, target: Target): Tab => {
     } else if (target.focus !== undefined) {
       const was = landing(state.views.of(existing.id));
       perform(state, { op: "land", tab: existing.id, was, now: { ...was, focus: target.focus } });
+    }
+
+    const held = state.views.of(existing.id);
+    if (
+      target.context !== undefined &&
+      offersContext(existing.category, target.context) &&
+      held.contextId !== target.context
+    ) {
+      perform(state, { op: "context", tab: existing.id, was: held.contextId, now: target.context });
     }
 
     return state.compose(existing.id);

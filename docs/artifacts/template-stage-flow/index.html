@@ -1,0 +1,393 @@
+<title>Template Stage Flow</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+  :root {
+    --ground: #eef0f3;
+    --panel: #fafbfc;
+    --sunk: #e2e5ea;
+    --ink: #171c24;
+    --ink-2: #3c4552;
+    --ink-3: #6e7886;
+    --rule: #cfd5dd;
+    --rule-soft: #dfe3e9;
+    --template: #3646b8;
+    --template-soft: #e4e7fa;
+    --stage: #0d7d6e;
+    --stage-soft: #dcf1ed;
+    --person: #7a4ca6;
+    --person-soft: #eee6f6;
+    --open: #a86300;
+    --open-soft: #fbefd9;
+    --sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+    --measure: 70ch;
+    --u: 4px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #121519; --panel: #1a1f26; --sunk: #0d1013; --ink: #e6e9ee; --ink-2: #b4bcc8; --ink-3: #8993a1;
+      --rule: #2f3740; --rule-soft: #272e36; --template: #98a4ff; --template-soft: #1e2447; --stage: #4fd0bd;
+      --stage-soft: #0f2f2a; --person: #c9a6ee; --person-soft: #2a1f3a; --open: #e6a53a; --open-soft: #33260f;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #121519; --panel: #1a1f26; --sunk: #0d1013; --ink: #e6e9ee; --ink-2: #b4bcc8; --ink-3: #8993a1;
+    --rule: #2f3740; --rule-soft: #272e36; --template: #98a4ff; --template-soft: #1e2447; --stage: #4fd0bd;
+    --stage-soft: #0f2f2a; --person: #c9a6ee; --person-soft: #2a1f3a; --open: #e6a53a; --open-soft: #33260f;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--ground); color: var(--ink); font-family: var(--sans); font-size: 15px; line-height: 1.55; -webkit-font-smoothing: antialiased; }
+  a { color: var(--template); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  a:focus-visible { outline: 2px solid var(--template); outline-offset: 2px; }
+  code { font-family: var(--mono); font-size: 0.9em; padding: 0 0.3em; border-radius: 3px; background: var(--sunk); }
+  .shell { display: grid; grid-template-columns: 15rem minmax(0, 1fr); min-height: 100vh; }
+  .rail { position: sticky; top: 0; align-self: start; height: 100vh; overflow-y: auto; padding: calc(var(--u) * 6) calc(var(--u) * 5); border-right: 1px solid var(--rule); background: var(--panel); }
+  .rail-mark { margin: 0 0 calc(var(--u) * 3); font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-3); }
+  .rail nav a { display: flex; gap: calc(var(--u) * 2); padding: calc(var(--u) * 1.5) 0; color: var(--ink-2); font-size: 13px; line-height: 1.35; }
+  .rail nav a b { min-width: 2ch; font-family: var(--mono); font-weight: 500; color: var(--ink-3); }
+  .legend { margin-top: calc(var(--u) * 8); display: grid; gap: calc(var(--u) * 1.5); font-size: 12.5px; color: var(--ink-2); }
+  .legend span { display: flex; align-items: center; gap: calc(var(--u) * 2); }
+  .legend i { width: 12px; height: 12px; border-radius: 3px; border: 1px solid; }
+  .legend .t { background: var(--template-soft); border-color: var(--template); }
+  .legend .s { background: var(--stage-soft); border-color: var(--stage); }
+  .legend .p { background: var(--person-soft); border-color: var(--person); }
+  .legend .o { background: var(--open-soft); border-color: var(--open); }
+  main { padding: calc(var(--u) * 10) calc(var(--u) * 12) calc(var(--u) * 24); max-width: 1240px; min-width: 0; }
+  .eyebrow { margin: 0 0 calc(var(--u) * 2); font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); }
+  h1 { margin: 0 0 calc(var(--u) * 3); font-size: 34px; line-height: 1.15; letter-spacing: -0.01em; text-wrap: balance; }
+  .lede { max-width: var(--measure); margin: 0 0 calc(var(--u) * 6); font-size: 17px; line-height: 1.5; color: var(--ink-2); }
+  .meta { display: flex; flex-wrap: wrap; gap: calc(var(--u) * 2) calc(var(--u) * 6); padding: calc(var(--u) * 3) 0; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); margin-bottom: calc(var(--u) * 10); font-size: 13px; color: var(--ink-3); }
+  .meta b { color: var(--ink); font-weight: 500; font-family: var(--mono); font-size: 12.5px; }
+  section { margin-bottom: calc(var(--u) * 14); }
+  .head { display: flex; align-items: baseline; gap: calc(var(--u) * 3); margin-bottom: calc(var(--u) * 4); padding-bottom: calc(var(--u) * 2); border-bottom: 1px solid var(--rule); }
+  .head .n { font-family: var(--mono); font-size: 12px; color: var(--template); }
+  h2 { margin: 0; font-size: 22px; line-height: 1.25; }
+  h3 { margin: calc(var(--u) * 7) 0 calc(var(--u) * 2); font-size: 16px; }
+  p, ul, ol { max-width: var(--measure); }
+  p { margin: 0 0 calc(var(--u) * 3); }
+  ul, ol { margin: 0 0 calc(var(--u) * 3); padding-left: calc(var(--u) * 5); }
+  li { margin-bottom: calc(var(--u) * 1.5); }
+  strong { font-weight: 600; }
+
+  .verbs { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: calc(var(--u) * 3); margin: calc(var(--u) * 4) 0; }
+  .verb { padding: calc(var(--u) * 4); border: 1px solid var(--rule); border-radius: 8px; background: var(--panel); font-size: 13.5px; }
+  .verb .k { display: block; font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: calc(var(--u) * 2); }
+  .verb h3 { margin: 0 0 calc(var(--u) * 2); font-size: 16px; }
+  .verb p { margin-bottom: calc(var(--u) * 2); color: var(--ink-2); }
+  .verb p:last-child { margin-bottom: 0; }
+  .verb.make { border-color: var(--template); }
+  .verb.make .k { color: var(--template); }
+  .verb.use { border-color: var(--person); }
+  .verb.use .k { color: var(--person); }
+  .verb.edit { border-color: var(--stage); }
+  .verb.edit .k { color: var(--stage); }
+  .verb .rows { margin-top: calc(var(--u) * 3); display: grid; gap: calc(var(--u) * 1); }
+  .verb .row { font-family: var(--mono); font-size: 11.5px; padding: calc(var(--u) * 1.5) calc(var(--u) * 2); border-radius: 4px; background: var(--sunk); color: var(--ink-2); }
+  .verb.make .row { background: var(--template-soft); }
+  .verb.edit .row { background: var(--stage-soft); }
+  .verb.use .row { background: var(--person-soft); }
+
+  .lanes { display: grid; grid-template-columns: 2.5rem 1.3fr 1.3fr 1.4fr 1.2fr; gap: 1px; background: var(--rule); border: 1px solid var(--rule); border-radius: 8px; overflow: hidden; margin: calc(var(--u) * 4) 0; font-size: 13px; }
+  .lanes > div { background: var(--panel); padding: calc(var(--u) * 2.5) calc(var(--u) * 3); min-width: 0; }
+  .lanes .lane { font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); background: var(--sunk); }
+  .lanes .lane.p { color: var(--person); }
+  .lanes .lane.s { color: var(--stage); }
+  .lanes .lane.t { color: var(--template); }
+  .lanes .step { font-family: var(--mono); font-size: 12px; color: var(--ink-3); background: var(--sunk); }
+  .lanes .step b { display: block; color: var(--ink); font-family: var(--sans); font-size: 12px; margin-top: calc(var(--u) * 1); line-height: 1.3; }
+  .lanes .none { color: var(--ink-3); font-style: italic; }
+  .lanes .t-cell { background: var(--template-soft); }
+  .lanes .s-cell { background: var(--stage-soft); }
+  .lanes code { background: transparent; padding: 0; font-size: 11.5px; }
+  .lanes em { font-style: normal; color: var(--ink-3); font-size: 12px; }
+  .scroll { overflow-x: auto; margin: calc(var(--u) * 4) 0; }
+  .lanes-wrap { min-width: 860px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th, td { padding: calc(var(--u) * 2) calc(var(--u) * 2.5); border-bottom: 1px solid var(--rule-soft); vertical-align: top; text-align: left; }
+  th { font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); font-weight: 500; }
+  td:first-child { color: var(--ink); font-weight: 500; }
+  .tag { display: inline-block; padding: 1px 7px; border-radius: 999px; font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; }
+  .tag.t { background: var(--template-soft); color: var(--template); }
+  .tag.s { background: var(--stage-soft); color: var(--stage); }
+  .tag.p { background: var(--person-soft); color: var(--person); }
+
+  .note { max-width: none; padding: calc(var(--u) * 3.5) calc(var(--u) * 4); margin: calc(var(--u) * 5) 0; border-left: 3px solid var(--rule); border-radius: 0 6px 6px 0; background: var(--panel); font-size: 14px; }
+  .note.stage { border-color: var(--stage); background: var(--stage-soft); }
+  .note h4 { margin: 0 0 calc(var(--u) * 1.5); font-size: 14px; }
+  .note p:last-child { margin-bottom: 0; }
+
+  ol.questions { max-width: none; padding-left: 0; list-style: none; counter-reset: q; display: grid; gap: calc(var(--u) * 3); margin: calc(var(--u) * 4) 0; }
+  ol.questions li { counter-increment: q; display: grid; grid-template-columns: 3rem minmax(0, 1fr); gap: calc(var(--u) * 3); padding: calc(var(--u) * 4); border: 1px solid var(--open); border-radius: 8px; background: var(--panel); margin: 0; }
+  ol.questions li::before { content: "Q" counter(q); font-family: var(--mono); font-size: 13px; color: var(--open); padding-top: 2px; }
+  ol.questions b { display: block; margin-bottom: calc(var(--u) * 1.5); font-size: 14.5px; }
+  ol.questions p { margin-bottom: calc(var(--u) * 2); font-size: 13.5px; color: var(--ink-2); max-width: none; }
+  ol.questions p:last-child { margin-bottom: 0; }
+  ol.questions .rec { color: var(--ink); }
+  ol.questions .rec::before { content: "Recommendation · "; font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--open); }
+  footer { margin-top: calc(var(--u) * 16); padding-top: calc(var(--u) * 4); border-top: 1px solid var(--rule); font-size: 12.5px; color: var(--ink-3); max-width: var(--measure); }
+  @media (max-width: 900px) {
+    .shell { grid-template-columns: 1fr; }
+    .rail { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--rule); }
+    main { padding: calc(var(--u) * 6) calc(var(--u) * 5); }
+  }
+</style>
+
+<div class="shell">
+  <aside class="rail">
+    <p class="rail-mark">On this page</p>
+    <nav>
+      <a href="#verbs"><b>1</b><span>Three verbs</span></a>
+      <a href="#flow"><b>2</b><span>The full flow</span></a>
+      <a href="#reads"><b>3</b><span>What reads and writes what</span></a>
+      <a href="#people"><b>4</b><span>Several people</span></a>
+      <a href="#never"><b>5</b><span>What never happens</span></a>
+      <a href="#questions"><b>6</b><span>What you settled</span></a>
+      <a href="#where"><b>7</b><span>Where each step lives</span></a>
+    </nav>
+    <div class="legend">
+      <span><i class="t"></i>The template</span>
+      <span><i class="s"></i>Its copy, and the editor</span>
+      <span><i class="p"></i>A person, a resource</span>
+      <span><i class="o"></i>A decision</span>
+    </div>
+  </aside>
+
+  <main>
+    <p class="eyebrow">Icarus · work/template-features · after the third review</p>
+    <h1>Template Stage Flow</h1>
+    <p class="lede">
+      A template is a copy machine's original, kept by the project, except that the copy it keeps is a
+      function rather than a value: what pointed at a particular thing in the project is stripped, and
+      the variables fill the holes. Three things happen to it: someone keeps a copy of what they have,
+      someone asks for a copy of it here, and someone changes the original by editing a copy of it and
+      saving it back. This page draws all three, says what each one reads and writes, and records what
+      the reviews settled.
+    </p>
+    <div class="meta">
+      <span>Original <b>templates</b> · <b>templateVersions</b> · one project</span>
+      <span>Copy under edit <b>templateStages</b> + one <b>documents</b> / <b>slideDecks</b> row</span>
+      <span>One stage per template, shared</span>
+    </div>
+
+    <section id="verbs">
+      <div class="head"><span class="n">1</span><h2>Three verbs, and nothing else</h2></div>
+      <div class="verbs">
+        <div class="verb make">
+          <span class="k">Keep a copy of this</span>
+          <h3>Make a template</h3>
+          <p>Name the open document, deck, or current slide and press Save. The body is copied, made portable, and stored as a template of this project at revision 1. The new template opens for editing at once.</p>
+          <p>The document you saved from is untouched and never learns a template was made from it.</p>
+          <div class="rows"><div class="row">createTemplateFromResource · createTemplate</div><div class="row">templates + templateVersions</div></div>
+        </div>
+        <div class="verb use">
+          <span class="k">Give me a copy of that, here</span>
+          <h3>Insert, or Use</h3>
+          <p>Both ask what each variable should select, its default first, in one modal. Insert then copies the template's saved body into the open resource with fresh ids; Use makes a whole new resource from it.</p>
+          <p>What lands is yours and carries no reference to the template: later changes to it never reach the copy. Placing a template is a pure function of the template and your answers.</p>
+          <div class="rows"><div class="row">insertionOf · instantiateTemplate</div><div class="row">the open resource's ops · a new resource row</div></div>
+        </div>
+        <div class="verb edit">
+          <span class="k">This is the copy; let me change it</span>
+          <h3>Edit through a stage</h3>
+          <p>Open makes, once, a scratch document or deck holding the template's body. The ordinary editor works on it. Save to template writes that body back as the next revision; Discard throws the scratch away.</p>
+          <p>The stage is the only thing that writes a template's body.</p>
+          <div class="rows"><div class="row">openTemplateStage · commitTemplateStage · discardTemplateStage</div><div class="row">templateStages + the scratch row</div></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="flow">
+      <div class="head"><span class="n">2</span><h2>The full flow</h2></div>
+      <p>
+        Each row is one thing a person does; each column is where the consequence lands. The capability
+        column is the server; the editor column is the client's runtime and the Templates panel; the
+        rows column is what is on disk afterwards.
+      </p>
+      <div class="scroll"><div class="lanes-wrap">
+      <div class="lanes">
+        <div class="lane"></div>
+        <div class="lane p">Person</div>
+        <div class="lane s">Editor and panel</div>
+        <div class="lane t">Capability</div>
+        <div class="lane">Rows afterwards</div>
+
+        <div class="step">1<b>Make</b></div>
+        <div>Names the open document, deck or current slide and presses Save</div>
+        <div class="s-cell">Sends the resource id and name; on acceptance opens a new tab straight onto the copy's Templates panel</div>
+        <div class="t-cell"><code>createTemplateFromResource</code> reads the leader snapshot, makes the body portable, stamps the project, declares nothing, says what it dropped; then <code>openTemplateStage</code></div>
+        <div>templates at 1 · templateVersions 1 · templateStages staged at 1 · a scratch row titled <em>Template · name</em></div>
+
+        <div class="step">2<b>Open</b></div>
+        <div>Double-clicks a template in the library, presses Edit in the inspector or on a panel row</div>
+        <div class="s-cell">The editor tab opens on the scratch resource; the panel shows <em>Editing template</em>, the variables, Save to template and Discard</div>
+        <div class="t-cell"><code>openTemplateStage</code>: if the template already has a stage, returns it; otherwise writes the body at revision N into a new scratch row and records the stage</div>
+        <div>Unchanged when resumed; otherwise a stage row and a scratch row at N</div>
+
+        <div class="step">3<b>Edit</b></div>
+        <div>Types, moves blocks, changes layouts, in one or several sessions at once</div>
+        <div class="s-cell">Runtime ops against the scratch resource, flushed and rebased by the editor as for any document; every session on the stage sees the others' edits through that same sync</div>
+        <div class="none">Nothing template-shaped; the resource capabilities as usual</div>
+        <div>Snapshots and change sets on the scratch row move; the template does not</div>
+
+        <div class="step">4<b>Declare</b></div>
+        <div>Adds a variable by label, writes its description, sets its default through the modal: everything, kinds, or a named set</div>
+        <div class="s-cell">Writes the whole variable list at the revision the panel read; the body is untouched</div>
+        <div class="t-cell"><code>updateTemplate</code> makes revision N+1 with the new variables and carries the stage to N+1, so a variable declared here never makes the next save stale</div>
+        <div>templates at N+1 · templateVersions N+1 · templateStages staged at N+1</div>
+
+        <div class="step">5<b>Save</b></div>
+        <div>Presses Save to template</div>
+        <div class="s-cell"><code>await runtime.flush()</code>; refuses while anything is pending or failed, because the server reads the leader snapshot; sends the template's current revision as its base</div>
+        <div class="t-cell"><code>commitTemplateStage</code>: anyone in the project; refuses <em>stale</em> only if another session's save landed first; makes the scratch body portable, validates, writes N+1, moves the stage to N+1, says what was dropped</div>
+        <div>templates at N+1 · templateVersions N+1 · stage staged at N+1 · the scratch row stays open</div>
+
+        <div class="step">6<b>Insert, Use</b></div>
+        <div>Presses Insert on a panel row or Use in the inspector, answers each variable in the modal or leaves the default, confirms</div>
+        <div class="s-cell">Insert builds ops from the template's <strong>saved</strong> body with fresh ids and the prompt scopes filled from the answers, then the defaults, and applies them to the open resource, undoable like any edit; Use sends the answers to the server</div>
+        <div class="t-cell">Nothing for Insert; the body was already read. <code>instantiateTemplate</code> makes the new resource for Use from the same answers and records the template's <code>lastUsedAt</code></div>
+        <div>Ops on the open resource, or a new resource with no reference back; the template's last use moves; its stage is untouched</div>
+
+        <div class="step">7<b>Discard</b></div>
+        <div>Presses Discard and confirms</div>
+        <div class="s-cell">Flushes, asks, then closes the tab only after the server has answered, so a late sync reads nothing rather than resurrecting the row</div>
+        <div class="t-cell"><code>discardTemplateStage</code>: anyone in the project; removes the stage row and the scratch row with its snapshots and change sets</div>
+        <div>The template keeps its last saved revision; no stage</div>
+      </div>
+      </div></div>
+    </section>
+
+    <section id="reads">
+      <div class="head"><span class="n">3</span><h2>What reads and writes what</h2></div>
+      <p>
+        The template's body has one writer and many readers. The stage's body has the editor as its
+        writer and only Save to template as a reader that matters. Nothing reads across the two except
+        Open and Save, which are copies.
+      </p>
+      <div class="scroll">
+        <table>
+          <thead><tr><th>Verb</th><th>Reads</th><th>Writes</th><th>Who</th></tr></thead>
+          <tbody>
+            <tr><td>Make</td><td>The open resource's leader body</td><td><span class="tag t">template</span> revision 1, then a stage</td><td>Anyone in the project</td></tr>
+            <tr><td>Open</td><td>The template's saved body at N</td><td><span class="tag s">stage</span> once; nothing on a resume</td><td>Anyone in the project</td></tr>
+            <tr><td>Edit</td><td>The scratch resource</td><td><span class="tag s">stage</span> snapshots, change sets</td><td>Anyone the editor admits</td></tr>
+            <tr><td>Declare, rename, tag</td><td>The template</td><td><span class="tag t">template</span> revision N+1, same body; the stage's record follows</td><td>Anyone in the project</td></tr>
+            <tr><td>Save to template</td><td>The scratch leader body</td><td><span class="tag t">template</span> revision N+1; the stage's record follows</td><td>Anyone in the project, at the current revision</td></tr>
+            <tr><td>Insert</td><td>The template's saved body, the answers</td><td><span class="tag p">the open resource</span></td><td>Anyone in the project</td></tr>
+            <tr><td>Use</td><td>The template's saved body, the answers</td><td><span class="tag p">a new resource</span> with no reference back; the <span class="tag t">template</span>'s last use</td><td>Anyone in the project</td></tr>
+            <tr><td>Discard</td><td>The stage</td><td>Removes the <span class="tag s">stage</span> and everything on it</td><td>Anyone in the project</td></tr>
+            <tr><td>Delete template</td><td>The template, its stage</td><td>Removes <span class="tag t">template</span>, versions and stage; touches no resource</td><td>Anyone in the project</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="people">
+      <div class="head"><span class="n">4</span><h2>Several people, one copy</h2></div>
+      <div class="note stage">
+        <h4>Why editing a template together is the editor's problem, not the template's</h4>
+        <p>
+          The stage is keyed by template, not by person, so everyone who opens the template lands on the
+          same scratch resource, and the document and deck editors already reconcile concurrent sessions
+          on one resource: a leader snapshot, pending ops per session, rebase on conflict. Nothing about a
+          template's copy is tracked per person, and nothing needs to be. Two people pressing Save to
+          template at the same moment is the one race: the second save is refused as stale, its panel
+          re-reads the revision, and the next press saves the copy they both see.
+        </p>
+      </div>
+      <p>
+        A copy being edited is not what Insert or Use read. They read the template's last saved body,
+        so a half-finished edit never lands in another resource, and a person who wants their edit used
+        presses Save to template first. That is the whole of the sync: there is no second channel.
+      </p>
+    </section>
+
+    <section id="never">
+      <div class="head"><span class="n">5</span><h2>What never happens</h2></div>
+      <ul>
+        <li><strong>A resource made from a template does not change when the template does.</strong> Inserting and Use are copies; no resource carries a reference to a template, and the template records its own last use so the library can say "used 3 days ago".</li>
+        <li><strong>A template's body is never written except from its own stage.</strong> There is no other path, so there is nothing to pull back into the copy and no drift to reconcile. The note that a template "moved" is gone with the reason for it.</li>
+        <li><strong>Comments never travel with a template, and none can be made on its copy.</strong> Making a template copies a body, not the comments on the resource; a copy made from a template starts without any; the comments capability refuses a thread on a working copy and the deck's comment panels say so; anything that reaches one goes with the stage.</li>
+        <li><strong>A template is portable, inside its project too.</strong> A template turns a value into a function: the id a formula was bound to, a prompt's generated output, links to people and resources, stored images and scope terms naming a set or a resource are stripped when a body becomes a template, and each is said back. A formula keeps its expression and is drawn as unbound until a formula is made for it again.</li>
+        <li><strong>Nothing crosses projects.</strong> A template is its project's; another project's library, stages and inserts cannot reach it.</li>
+      </ul>
+    </section>
+
+    <section id="questions">
+      <div class="head"><span class="n">6</span><h2>What you settled, and what it became</h2></div>
+      <p>
+        The six questions the previous version of this page asked, each with your answer and the change
+        it made. Nothing here is still open.
+      </p>
+      <ol class="questions">
+        <li>
+          <div>
+            <b>Does a copy kept inside its own project still drop links, images and set scopes?</b>
+            <p>Yes. A template turns a value into a function, so the facts about its behaviour do not change with where it lives: formula ids, generated outputs, links to people and resources, stored images and scope terms naming a set or a resource are stripped, and the variables fill the scopes. Stored images are the one item likely to change later, by storing them with the template.</p>
+            <p class="rec">Unchanged in code; the docs and this page now say why. A formula's project-neutral form, its expression with no <code>formulaId</code>, is drawn with a dashed outline in the document editor.</p>
+          </div>
+        </li>
+        <li>
+          <div>
+            <b>Does Use ask for the variables the way Insert does?</b>
+            <p>Yes: instantiating on its own or inside something else is still instantiating.</p>
+            <p class="rec">Built. The inspector's Use opens the same one-modal ask and sends the answers to <code>instantiateTemplate</code>.</p>
+          </div>
+        </li>
+        <li>
+          <div>
+            <b>One modal for all variables, or one per variable?</b>
+            <p>One modal.</p>
+            <p class="rec">As built.</p>
+          </div>
+        </li>
+        <li>
+          <div>
+            <b>When a template is inserted into a template being edited, does it ask?</b>
+            <p>No: it brings its holes with it and the variables join.</p>
+            <p class="rec">As built.</p>
+          </div>
+        </li>
+        <li>
+          <div>
+            <b>Are comments allowed on a working copy?</b>
+            <p>No: if the rest is stripped, comments are stripped too, and a comment that mentions someone on a copy would be a problem.</p>
+            <p class="rec">Built. The comments capability refuses to start a thread on a stage resource, and the deck's comment panels replace their composer with the sentence that says so.</p>
+          </div>
+        </li>
+        <li>
+          <div>
+            <b>Does a resource keep a reference to a template?</b>
+            <p>No. Saving a resource as a template is a copy, and a resource made from a template is a copy; neither side should know about the other.</p>
+            <p class="rec">Built. Main's <code>templateId</code> on documents, decks and spreadsheets is gone, along with the delete rule that read it; the template records its own <code>lastUsedAt</code> so the library's recency still works.</p>
+          </div>
+        </li>
+      </ol>
+    </section>
+
+    <section id="where">
+      <div class="head"><span class="n">7</span><h2>Where each step lives</h2></div>
+      <div class="scroll">
+        <table>
+          <thead><tr><th>Step</th><th>Client</th><th>Server</th></tr></thead>
+          <tbody>
+            <tr><td>Make</td><td><code>document-editor/context/templates.svelte</code> · <code>slide-deck-editor/context/templates.svelte</code> · <code>procedures/templating.ts</code> in each</td><td><code>capabilities/templates/api/create-template-from-resource/</code></td></tr>
+            <tr><td>Open</td><td><code>templates/procedures/library.svelte.ts</code> (editTemplate) · <code>model/client/workspace-state/methods/open.ts</code> (Target.context)</td><td><code>capabilities/templates/api/open-template-stage/</code> · <code>api/shared/stages.ts</code></td></tr>
+            <tr><td>Edit</td><td>The editors, unchanged</td><td>The resource capabilities, unchanged</td></tr>
+            <tr><td>Declare</td><td>The two panels' variable bands · <code>templates/inspector/template.svelte</code> (Default modal)</td><td><code>capabilities/templates/api/update-template/</code></td></tr>
+            <tr><td>Save</td><td>The two panels (flush, then commit)</td><td><code>capabilities/templates/api/commit-template-stage/</code> · <code>representation/data/behavior/templates/portable.ts</code></td></tr>
+            <tr><td>Insert, Use</td><td>The Insert modal in both panels, the Use modal in the inspector · <code>procedures/templating.ts</code> and <code>procedures/library.svelte.ts</code> (answerOptions, answersFrom, insertionOf) · <code>representation/data/behavior/templates/fresh-ids.ts</code>, <code>scopes.ts</code></td><td><code>capabilities/templates/api/instantiate-template/</code></td></tr>
+            <tr><td>Discard</td><td>The two panels</td><td><code>capabilities/templates/api/discard-template-stage/</code></td></tr>
+            <tr><td>No comments on a copy</td><td><code>slide-deck-editor/context/comments.svelte</code> · <code>inspector/threads.svelte</code></td><td><code>capabilities/comments/api/start-thread/</code></td></tr>
+            <tr><td>Keep stages out of lists</td><td></td><td><code>capabilities/project-resources/api/read-project-resource-index/</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <footer>Companions: <em>Template Dictionary</em> for the words, <em>Stages, Sets and Variables</em> for what changed, <em>Template Features Change Set</em> for every diff, and the reference suite under <code>docs/reference/template-features/</code>.</footer>
+  </main>
+</div>

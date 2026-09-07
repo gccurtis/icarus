@@ -2,8 +2,14 @@ import type {
   TemplateBody,
   TemplateVariable
 } from "$representation/data/types/templates/template";
+import type { ResourceSet, SetTerm } from "$representation/data/types/core/resource-set";
+import { normalizeSlideDeckBody } from "$representation/data/behavior/slide-decks/normalize";
 
-import type { TemplateTarget } from "$capabilities/templates/types/templates";
+import type {
+  TemplateAnswers,
+  TemplateStageTarget,
+  TemplateTarget
+} from "$capabilities/templates/types/templates";
 import {
   MAX_TEMPLATE_CELLS,
   MAX_TEMPLATE_COLUMNS,
@@ -32,7 +38,6 @@ export const requiredId = (value: unknown, subject: string, field: string): stri
   return value;
 };
 
-/** A template id is one Store path segment, never another path in disguise. */
 export const templateIdOf = (value: unknown, subject: string): string => {
   const id = requiredId(value, subject, "templateId");
   if (!/^templates:[^.:\s]+$/.test(id)) {
@@ -55,6 +60,39 @@ export const revisionOf = (value: unknown, subject: string): number => {
 export const targetOf = (value: unknown, subject: string): TemplateTarget => {
   if (value !== "document" && value !== "slides" && value !== "spreadsheet") {
     throw new Error(`templates/${subject}: target is document, slides, or spreadsheet`);
+  }
+  return value;
+};
+
+export const stageTargetOf = (value: unknown, subject: string): TemplateStageTarget => {
+  if (value !== "document" && value !== "slides") {
+    throw new Error(`templates/${subject}: target is document or slides`);
+  }
+  return value;
+};
+
+const rowIdOf = (value: unknown, subject: string, table: string, field: string): string => {
+  const id = requiredId(value, subject, field);
+  if (!new RegExp(`^${table}:[^.:\\s]+$`).test(id)) {
+    throw new Error(`templates/${subject}: ${field} is one canonical ${table} row id`);
+  }
+  return id;
+};
+
+export const stageIdOf = (value: unknown, subject: string): string =>
+  rowIdOf(value, subject, "templateStages", "stageId");
+
+export const resourceIdOf = (value: unknown, subject: string): string => {
+  const id = requiredId(value, subject, "resourceId");
+  if (!/^(documents|slideDecks):[^.:\s]+$/.test(id)) {
+    throw new Error(`templates/${subject}: resourceId is one canonical documents or slideDecks row id`);
+  }
+  return id;
+};
+
+export const slideIdOf = (value: unknown, subject: string): string => {
+  if (typeof value !== "string" || value !== value.trim() || value.length === 0 || value.length > 500) {
+    throw new Error(`templates/${subject}: slideId is an identifier`);
   }
   return value;
 };
@@ -512,7 +550,11 @@ const validActor = (value: unknown): boolean => {
 const validMarkLink = (value: unknown): boolean => {
   if (!isRecord(value) || !isText(value.kind)) return false;
   if (value.kind === "url") {
-    return hasOnlyKeys(value, ["kind", "url"]) && validText(value.url, 10_000);
+    return (
+      hasOnlyKeys(value, ["kind", "url", "note"]) &&
+      validText(value.url, 10_000) &&
+      (value.note === undefined || validText(value.note, 10_000))
+    );
   }
   if (value.kind === "actor") {
     return hasOnlyKeys(value, ["kind", "actor"]) && validActor(value.actor);
@@ -1514,7 +1556,6 @@ const validSpreadsheet = (body: Fields): boolean => {
   return validStyles(body.styles);
 };
 
-/** A template body must not smuggle live project/store identities into a new resource. */
 const assertPortableBody = (value: unknown, subject: string): void => {
   const boundField = (step: Fields): string | undefined => {
     if (step.to === "resource" && "ref" in step) return "resource reference";
@@ -1555,15 +1596,82 @@ export const bodyOf = (value: unknown, subject: string): TemplateBody => {
   assertPortableBody(value, subject);
   const raw = fieldsOf(value, subject);
   const target = targetOf(raw.resource, subject);
-  const body = raw;
+  const normalized =
+    target === "slides" ? { ...normalizeSlideDeckBody(raw), resource: target } : value;
+  const body = fieldsOf(normalized, subject);
   const valid =
     target === "document"
       ? validDocument(body)
       : target === "slides"
         ? validSlides(body)
         : validSpreadsheet(body);
-  if (!valid) throw new Error(`templates/${subject}: body is not a valid ${target} template body`);
-  return value as TemplateBody;
+  if (!valid) {
+    throw new Error(`templates/${subject}: body is not a valid ${target} template body`);
+  }
+  return normalized as TemplateBody;
+};
+
+const validSetTerm = (value: unknown): boolean => {
+  if (!isRecord(value)) return false;
+  if (value.select === "project") return Object.keys(value).length === 1;
+  if (value.select === "kinds") return validTerm(value);
+  if (value.select === "set") {
+    return (
+      hasOnlyKeys(value, ["select", "setId"]) &&
+      typeof value.setId === "string" &&
+      /^resourceSets:[^.:\s]+$/.test(value.setId)
+    );
+  }
+  return (
+    value.select === "resources" &&
+    hasOnlyKeys(value, ["select", "refs"]) &&
+    Array.isArray(value.refs) &&
+    value.refs.length <= 1_000 &&
+    value.refs.every(
+      (ref) =>
+        isRecord(ref) &&
+        hasOnlyKeys(ref, ["kind", "id"]) &&
+        validCanonicalText(ref.kind, MAX_RESOURCE_KIND_LENGTH) &&
+        validIdentifier(ref.id)
+    )
+  );
+};
+
+export const resourceSetOf = (value: unknown, subject: string): ResourceSet => {
+  if (
+    !isRecord(value) ||
+    !hasOnlyKeys(value, ["include", "exclude"]) ||
+    !Array.isArray(value.include) ||
+    !Array.isArray(value.exclude) ||
+    value.include.length > MAX_TEMPLATE_TERMS_PER_SIDE ||
+    value.exclude.length > MAX_TEMPLATE_TERMS_PER_SIDE ||
+    !value.include.every(validSetTerm) ||
+    !value.exclude.every(validSetTerm)
+  ) {
+    throw new Error(`templates/${subject}: a resource set is an include list and an exclude list`);
+  }
+  return {
+    include: (value.include as SetTerm[]).map((term) => structuredClone(term)),
+    exclude: (value.exclude as SetTerm[]).map((term) => structuredClone(term))
+  };
+};
+
+export const answersOf = (value: unknown, subject: string): TemplateAnswers => {
+  if (!isRecord(value)) {
+    throw new Error(`templates/${subject}: answers map variable names to resource sets`);
+  }
+  const entries = Object.entries(value);
+  if (entries.length > MAX_TEMPLATE_VARIABLES) {
+    throw new Error(`templates/${subject}: at most ${MAX_TEMPLATE_VARIABLES} variables are answered`);
+  }
+  const answers: Record<string, ResourceSet> = {};
+  for (const [name, answer] of entries) {
+    if (!validCanonicalText(name, MAX_VARIABLE_NAME_LENGTH)) {
+      throw new Error(`templates/${subject}: every answered variable has a name`);
+    }
+    answers[name] = resourceSetOf(answer, subject);
+  }
+  return answers;
 };
 
 const MAX_TEMPLATE_VARIABLES = 100;
@@ -1584,6 +1692,14 @@ const validTerm = (value: unknown): boolean => {
       hasOnlyKeys(value, ["select", "name"]) &&
       Object.keys(value).length === 2 &&
       validCanonicalText(value.name, MAX_VARIABLE_NAME_LENGTH)
+    );
+  }
+  if (value.select === "set") {
+    return (
+      hasOnlyKeys(value, ["select", "setId"]) &&
+      Object.keys(value).length === 2 &&
+      typeof value.setId === "string" &&
+      /^resourceSets:[^.:\s]+$/.test(value.setId)
     );
   }
   if (

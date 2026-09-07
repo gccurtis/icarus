@@ -25,6 +25,7 @@
   import { Button } from "$vendored-components/button";
   import * as DropdownMenu from "$vendored-components/dropdown-menu";
   import {
+    editTemplate,
     inspectTemplate,
     recentTemplatesIn,
     templateLibrary,
@@ -37,6 +38,8 @@
 
   const view = workspaceState();
   const library = templateLibrary();
+  let opening = $state<string | undefined>(undefined);
+  let openError = $state<string | undefined>(undefined);
   let now = $state(Date.now());
   onMount(() => {
     const timer = setInterval(() => (now = Date.now()), 60_000);
@@ -69,7 +72,6 @@
     Spreadsheet: "1 / 1"
   };
 
-  /** One sorted union: the menu never invents a tag that no template carries. */
   const TAGS = $derived(
     [...new Set(templates.flatMap((row) => row.tags))].sort((a, b) => a.localeCompare(b))
   );
@@ -112,7 +114,6 @@
     selectedTags = [];
   };
 
-  /** A removed/retagged last template must not leave an invisible stale filter behind. */
   $effect(() => {
     if (tagMode !== "some") return;
     const next = selectedTags.filter((tag) => TAGS.includes(tag));
@@ -183,7 +184,6 @@
     inspectTemplate(view, row.id);
   };
 
-  /** A launcher can land the singleton on one template without opening the obsolete mock editor. */
   $effect(() => {
     const focus = view.active.focus;
     if (!library.ready || focus === undefined) return;
@@ -193,10 +193,23 @@
     if (row !== undefined) inspect(row);
   });
 
-  /** Authoring stays inside the singleton Template category; Use is a separate explicit action. */
-  const edit = (row: LibraryTemplate) => {
+  const edit = async (row: LibraryTemplate) => {
+    if (opening !== undefined) return;
     inspect(row);
-    view.showContent("templates.editor", row.id);
+    if (row.makes === "Spreadsheet") {
+      openError = "Spreadsheet templates open for editing once the spreadsheet editor lands.";
+      return;
+    }
+    opening = row.id;
+    openError = undefined;
+    try {
+      const result = await editTemplate(view, row);
+      if (!result.accepted) openError = result.detail;
+    } catch (error) {
+      openError = error instanceof Error ? error.message : String(error);
+    } finally {
+      opening = undefined;
+    }
   };
 </script>
 
@@ -236,6 +249,7 @@
       {#snippet actions()}
         <p class="text-caption text-ink-muted m-0 max-w-xs text-end">
           Reusable starting points for documents, slide decks, and spreadsheets.
+          Double-click one to edit it in its editor.
         </p>
       {/snippet}
     </ScreenHeader>
@@ -254,6 +268,9 @@
         Reading the scoped library from the representation store.
       </ScreenEmpty>
     {:else}
+      {#if openError !== undefined}
+        <ScreenNote tone="gap">{openError}</ScreenNote>
+      {/if}
       {#if unavailable.length > 0}
         <ScreenNote tone="gap">
           {unavailable.length} stored {unavailable.length === 1 ? "template is" : "templates are"}
@@ -497,11 +514,6 @@
     outline-offset: 1px;
   }
 
-  /**
-   * The preview keeps the target's shape inside a shorter, consistent card
-   * band. Cards remain recognisable without making recent history dominate the
-   * library beneath it.
-   */
   .shape {
     display: flex;
     height: calc(var(--token-spacing-unit) * 16);

@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>04 · Panels and flows</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="reference.css">
+</head>
+<body>
+<div class="shell">
+  <aside class="rail">
+    <p class="rail-mark">Reference</p>
+    <nav>
+      <a href="index.html"><b>00</b><span>Start here</span></a>
+      <a href="01-system.html"><b>01</b><span>How templates work now</span></a>
+      <a href="02-model.html"><b>02</b><span>The model</span></a>
+      <a href="03-capabilities.html"><b>03</b><span>The capabilities</span></a>
+      <a href="04-panels.html" class="is-here"><b>04</b><span>Panels and flows</span></a>
+      <a href="05-changes.html"><b>05</b><span>What changed, verification, forks</span></a>
+    </nav>
+  </aside>
+
+  <main>
+    <p class="eyebrow">04 · what a person sees</p>
+    <h1>Panels and flows</h1>
+    <p class="lede">
+      Three context panels were built and two views changed. None of them draws anything the panel
+      vocabulary and the overlay vocabulary do not already ship, none imports another view, and each
+      computes through a procedure module that is tested without a browser.
+    </p>
+    <div class="meta">
+      <span>Document <b>document-editor/context/templates.svelte</b> · <b>procedures/templating.ts</b></span>
+      <span>Deck <b>slide-deck-editor/context/templates.svelte</b> · <b>procedures/templating.ts</b></span>
+      <span>Overview <b>project-overview/context/contexts.svelte</b> · <b>procedures/contexts.ts</b></span>
+    </div>
+
+    <section id="wiring">
+      <div class="head"><span class="n">1</span><h2>How a panel is wired</h2></div>
+      <p>
+        The context surface loads the file whose path is the active key, so
+        <code>document-editor.templates</code> is <code>categories/document-editor/context/templates.svelte</code>
+        and the file replaced the eight-line placeholder that held the key. Every panel opens the same way
+        as its neighbours:
+      </p>
+      <pre><code>const view = workspaceState();
+const documentId = $derived(view.active.resourceId);
+let runtime = $state&lt;DocumentRuntime | undefined&gt;(undefined);
+$effect(() =&gt; { runtime = documentId === undefined ? undefined : view.documentRuntime(documentId); });
+const body = $derived(runtime?.body);
+
+const library = templateLibrary();
+const sets = resourceSets();
+const resourceQuery = $derived(resourceTemplate(documentId));
+const stage = $derived(stageIn(resourceQuery?.current));
+const template = $derived(detailIn(templateDetail(stage?.templateId)?.current));</code></pre>
+      <p>
+        Four queries decide what the panel is: the library (what can be inserted or edited), the
+        project's sets (what a default or an answer may name), the resource's template record (is this a
+        stage, what was it made from), and, for a stage, the template's detail (its variables). Writes go
+        through <code>runtime.apply(ops)</code> for the body and through the procedure module's remote
+        wrappers for everything else; each wrapper runs under <code>view.singleFlight</code> keyed on
+        what it does, so a double click cannot send two saves. The panel is gated on the resource id
+        rather than on the body, so a runtime attaching to a new tab does not unmount the bands for a
+        frame.
+      </p>
+    </section>
+
+    <section id="document">
+      <div class="head"><span class="n">2</span><h2>The document editor's Templates panel</h2></div>
+      <p><strong>An ordinary document.</strong> A name field and Save. Save is disabled until there is a name; pressing it copies the document into a new template, made portable, and opens that template for editing in a new tab, landed on its Templates panel, where the save says what it dropped.</p>
+      <p><strong>A staged copy.</strong> Save to template and Discard in the header, both disabled while the runtime has unsaved work. An <em>Editing template</em> band names the template and its revision.</p>
+      <p id="variables"><strong>Variables</strong> (stage only): a field and Add declare a variable from a label, the name minted as <code>lower_snake</code> and made unique. Each variable is a collapsed section holding its description first, then its default as a sentence on a button. The button opens a modal, built from the overlay vocabulary, with one switch for everything in the project, one per kind, and one per named set the project holds; confirming writes the whole variable list through <code>updateTemplate</code> at the revision the panel read. Remove sits last. A refusal, a stale revision or a variable the body still names, comes back as a banner.</p>
+      <p><strong>The templates.</strong> Below either state, every document template behind one search field. A row wraps its name, says its variable count and revision, and carries Insert and Edit. No kinds, no icons: in a document editor every one of them is a document.</p>
+    </section>
+
+    <section id="insert">
+      <div class="head"><span class="n">3</span><h2>Insert</h2></div>
+      <p>
+        Pressing Insert on a template with variables opens one modal, <em>Insert “name”</em>, with a row
+        per variable: its label, its description, and a select whose first option is
+        <em>Default · </em>the default read as a sentence, followed by everything in the project, one
+        option per kind, and one per named set. Confirming turns the choices into answers, one resource
+        set per variable that was not left at its default, and inserts. A template with no variables
+        inserts at once. This is the ask the review described: each variable, its default shown, one
+        modal for all of them.
+      </p>
+      <p>
+        <code>insertionOf(body, template, afterRowId, mode, answers)</code> in the document procedures
+        builds the ops: one <code>insert</code> of rows after the row holding the caret (or at the end),
+        with every id minted afresh, preceded by an <code>insert</code> of each named style the document
+        lacks. In <code>resolve</code> mode the template's prompt scopes are resolved through the answers,
+        then the defaults. In <code>keep</code> mode, when the open document is itself a stage, nothing is
+        asked: scopes are left as variable terms and the inserted template's variables are merged into
+        the stage's template, because a template inserted into a template should bring its holes with it.
+      </p>
+      <p>
+        The deck's <code>insertionOf</code> does the same for slides: layouts whose key the deck lacks are
+        inserted, styles the deck lacks are set, and the slides are inserted after the current one, with
+        the deck's own version of a shared layout key winning (fork 2). The first inserted row or slide is
+        shown. What lands is a copy: later changes to the template do not reach it, and it can be undone
+        like any edit.
+      </p>
+    </section>
+
+    <section id="deck">
+      <div class="head"><span class="n">4</span><h2>The slide-deck editor's Templates panel</h2></div>
+      <p>
+        The same panel with one difference: under the name field sit Save deck and Save slide. Save deck
+        copies the whole deck; Save slide copies the current slide, the one the tab is focused on, into a
+        deck template holding that slide alone. Both open the new template for editing in a new tab. The
+        list holds every deck template, one-slide ones included, because there is no second kind.
+      </p>
+    </section>
+
+    <section id="lifecycle">
+      <div class="head"><span class="n">5</span><h2>The stage lifecycle, from the panel's side</h2></div>
+      <div class="flow">
+        <div class="step"><b>Open</b><span class="m">Save · library dblclick · inspector Edit · panel Edit</span><code>openTemplateStage</code> then <code>view.open({ category, resourceId, context })</code>; the editor tab opens on the copy, titled Template · name, showing its Templates panel</div>
+        <div class="step"><b>Work</b><span class="m">the editor, unchanged</span>Typing, layout, styles, comments, slides, all against the scratch resource</div>
+        <div class="step"><b>Save</b><span class="m">Save to template</span><code>await runtime.flush()</code>; refuse if anything is pending or failed; <code>commitTemplateStage</code> at the template's current revision; say what was dropped</div>
+        <div class="step"><b>Discard</b><span class="m">Discard, after a confirm</span>flush, <code>discardTemplateStage</code>, then close the tab</div>
+      </div>
+      <p>
+        Save uses the template's <em>current</em> revision, read from the template detail the panel
+        already holds, as its base. Edits that leave the body alone, a rename in the inspector or a
+        variable declared in this panel, carry the stage's revision forward with them, and the stage is the
+        only thing that writes the body, so the base is stale only when a second session's save landed
+        first; that session's panel re-reads and saves again. Saving keeps the stage open, so saving twice
+        is ordinary.
+      </p>
+      <p>
+        Discard closes the tab only after the capability has removed the resource, so a runtime sync that
+        lands afterwards reads nothing and draws an empty body rather than resurrecting the row. Comments
+        cannot be made on the copy: the deck's comment panels say so where the composer would be, and
+        the capability refuses one that arrives anyway.
+      </p>
+    </section>
+
+    <section id="library">
+      <div class="head"><span class="n">6</span><h2>The library, the editor door, and the inspector</h2></div>
+      <p>
+        <strong>Library.</strong> Double-clicking a row or a recent card opens the template's copy in its
+        editor, landed on the Templates panel, through <code>editTemplate</code> in the procedures; a
+        spreadsheet says why it cannot. Every template is the project's, so every row says
+        <em>Project</em> and nobody is marked as editing.
+      </p>
+      <p>
+        <strong>The editor door.</strong> <code>templates.editor</code> stays a content view because stored
+        workspaces name it. It now opens the focused template's copy and lands the singleton back on the
+        library; if the open is refused it says why under the return bar.
+      </p>
+      <p>
+        <strong>Inspector.</strong> Four actions in one row: Use, Edit, Duplicate, Delete. Each
+        variable's disclosure shows its description, then a Default row whose button reads the rule as a
+        sentence and opens the same modal the editors use, named sets included. Declaring and removing
+        variables stay in the editor's panel, beside the body that names them. Use asks the same way
+        Insert does: one modal listing each variable with its default first, then Create; instantiating a
+        template on its own is still instantiating it.
+      </p>
+    </section>
+
+    <section id="contexts">
+      <div class="head"><span class="n">7</span><h2>Project Overview's Contexts panel</h2></div>
+      <p>
+        The rail already offered <code>project-overview.contexts</code>; the file is new. <em>New set</em>
+        in the actions row opens a name field (blank makes "New set N") and the rule toggles, the whole
+        project, five kinds to include, five to exclude, with the rule read back as a sentence while it
+        is built. The list is filterable; each set is a collapsed section titled with its name and its
+        live count ("3 resources", or "matches nothing" with a gap note), holding an editable name and
+        description, the rule as a sentence, the count, the creator, the toggles, and Delete. Every write
+        is compare-and-swap at the revision the panel read; a refusal is a banner, including the refusal
+        to delete a set a template default still names.
+      </p>
+    </section>
+
+    <section id="rules">
+      <div class="head"><span class="n">8</span><h2>Rules the panels keep</h2></div>
+      <ul>
+        <li><strong>No panel imports another view or a surface.</strong> Each reaches its own category's procedures, the two capability indexes, the panel and overlay vocabularies, and workspace state. The modals are the overlay vocabulary's <code>OverlayModal</code>, repeated in the views that need them, because a view may not be shared across categories.</li>
+        <li><strong>No panel attaches a runtime.</strong> <code>view.documentRuntime(id)</code> and <code>view.slideDeckRuntime(id)</code> are the one attachment, so the panel and the canvas share one edit buffer.</li>
+        <li><strong>Every disabled control says why</strong> in its title; every write that can be refused draws the refusal.</li>
+        <li><strong>The two editor panels are copies</strong>, not a shared component, which is the rule for a view two categories both need. Their procedure modules differ where the editors differ: the document inserts rows after the caret's row; the deck inserts slides after the focused slide and merges layouts.</li>
+      </ul>
+    </section>
+
+    <section id="tests">
+      <div class="head"><span class="n">9</span><h2>Tests on this page</h2></div>
+      <p>
+        Three procedure test files: the document's caret-to-row resolution, insertion with resolution,
+        style merging and inverse ops, insertion into a stage keeping terms, a variable without a default
+        resolving to the whole project, variable declaration and merging, the default rule read as prose
+        with named sets and built from the modal's choices, and the Insert modal's options, default first,
+        turned into answers and resolved on insert; the deck's insertion of a deck template after a slide
+        with layouts and styles brought across, a one-slide template into a stage, the anchor fallback,
+        and the list holding only deck templates; the overview's rule sentences, toggle round trips and
+        naming. One workspace-state test covers opening a tab onto a named context view. Browser evidence
+        is on <a href="05-changes.html#verified">page 05</a>.
+      </p>
+    </section>
+
+    <footer>Next: <a href="05-changes.html">05 · What changed, verification, forks</a>.</footer>
+  </main>
+</div>
+</body>
+</html>

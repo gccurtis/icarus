@@ -62,7 +62,7 @@ The registered context keys are the complete rail vocabulary for this editor.
 | `slide-deck-editor.theme` | Edit slide aspect/background, save or remove layouts, and open deck named styles. |
 | `slide-deck-editor.find` | Find or replace text in slide objects, table cells, and speaker notes. |
 | `slide-deck-editor.comments` | Create and browse deck-, slide-, or element-scoped threads. |
-| `slide-deck-editor.templates` | Deferred placeholder; template browsing is not implemented here. |
+| `slide-deck-editor.templates` | Save the deck or one slide as a template, edit a template through this deck, and insert a deck template after the current slide. |
 | `slide-deck-editor.variables` | Deferred placeholder; deck variable management is not implemented here. |
 | `slide-deck-editor.prompts` | List Prompt Blocks across the deck, navigate to their slide, and open their inspector. |
 
@@ -120,6 +120,26 @@ A Prompt Block begins as a standalone text box. `Prompt` appears beside
 `Comment` in the text-box inspector and converts that element in place. The
 outer element ID, frame, paint, order, text, marks, style, and format survive.
 Only its content kind changes from `text` to `prompt`.
+
+### Templates
+
+An ordinary deck opens on a name field with Save deck and Save slide under it.
+Both require a name, both drop what a template may not carry, and both open the
+new template's working copy in its own tab. A slide saved this way is a deck
+template holding one slide, and nothing marks it afterwards.
+
+A working copy shows Save and Discard in the panel's header instead of the name
+field, because the tab title already says which template is open. Its Variables
+band is read-only about which variables exist: they are the names the slides'
+prompt scopes use. Each is a card carrying that name, its label, its
+description, and one button that opens the default-scope modal.
+
+A collapsible List section holds every deck template, searchable, each row
+inserting after the current slide or opening the template for editing.
+Inserting brings fresh identifiers and any layouts and named styles the deck
+lacks. A template with variables first asks, in one modal, what each selects
+here, showing the default as the first choice; inserting into a working copy
+asks nothing, keeps the variable terms, and merges the two variable lists.
 
 ## Inspectors
 

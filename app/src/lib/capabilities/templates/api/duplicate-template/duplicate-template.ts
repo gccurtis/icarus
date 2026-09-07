@@ -49,6 +49,7 @@ export const duplicateTemplate = async (input: unknown): Promise<DuplicateTempla
   const at = Date.now();
   const actor = { kind: "user" as const, userId: asId<"users">(scope.userId) };
   const fields: RowFields<"templates"> = {
+    projectId: asId<"projects">(scope.projectId),
     userId: actor.userId,
     name: asked.name ?? copyName(source.name),
     ...(source.description === undefined ? {} : { description: source.description }),

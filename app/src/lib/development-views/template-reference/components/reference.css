@@ -1,0 +1,305 @@
+.tref {
+  --ground: var(--token-surface-canvas);
+  --panel: var(--token-surface-panel);
+  --raised: var(--token-surface-elevated);
+  --work: var(--token-surface-work);
+  --ink: var(--token-ink-primary);
+  --ink-2: var(--token-ink-secondary);
+  --ink-3: var(--token-ink-muted);
+  --rule: var(--token-border-subtle);
+  --rule-strong: var(--token-border-strong);
+  --active: var(--token-color-active-text);
+  --active-soft: var(--token-color-active-surface);
+  --interactive: var(--token-color-interactive-text);
+  --interactive-soft: var(--token-color-interactive-surface);
+  --accent: var(--token-color-accent-1-text);
+  --accent-soft: var(--token-color-accent-1-surface);
+  --accent-2: var(--token-color-accent-2-text);
+  --accent-2-soft: var(--token-color-accent-2-surface);
+  --success: var(--token-color-success-text);
+  --success-soft: var(--token-color-success-surface);
+  --attention: var(--token-color-attention-text);
+  --attention-soft: var(--token-color-attention-surface);
+  --danger: var(--token-color-danger-text);
+  --danger-soft: var(--token-color-danger-surface);
+  min-height: 100vh;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.tref-page {
+  width: min(100%, 88rem);
+  margin: 0 auto;
+  padding: 3.5rem 3.5rem 7rem;
+}
+
+.tref code,
+.tref .mono {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+}
+
+.tref code {
+  padding: 0 .25em;
+  border-radius: 3px;
+  background: var(--work);
+  font-size: .88em;
+}
+
+.tref-kicker {
+  display: block;
+  margin: 0 0 .7rem;
+  color: var(--accent);
+  font-size: 9px;
+  font-weight: 750;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+
+.tref-mast {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(16rem, .65fr);
+  gap: 3rem;
+  align-items: end;
+}
+
+.tref-mast h1 {
+  margin: 0 0 .8rem;
+  font-size: clamp(2.4rem, 5vw, 4rem);
+  line-height: .98;
+  letter-spacing: -.045em;
+}
+
+.tref-lede {
+  max-width: 60ch;
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 16px;
+}
+
+.tref-facts {
+  display: grid;
+  gap: .55rem;
+  padding: 1.1rem 1.25rem;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  background: var(--panel);
+}
+
+.tref-facts div { display: flex; justify-content: space-between; gap: 1rem; }
+.tref-facts dt { color: var(--ink-3); font-size: 10.5px; letter-spacing: .04em; text-transform: uppercase; }
+.tref-facts dd { margin: 0; font-size: 12px; font-weight: 650; text-align: right; }
+.tref-facts dl { display: contents; margin: 0; }
+
+.tref-jumps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .4rem;
+  margin-top: 2.5rem;
+  padding-top: 1.2rem;
+  border-top: 1px solid var(--rule);
+}
+
+.tref-jumps a {
+  padding: .3rem .7rem;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  color: var(--ink-2);
+  font-size: 11px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.tref-jumps a:hover { border-color: var(--rule-strong); color: var(--ink); }
+
+.tref-section { margin-top: 5rem; scroll-margin-top: 5rem; }
+
+.tref-section-head {
+  display: grid;
+  grid-template-columns: minmax(16rem, .8fr) minmax(20rem, 1fr);
+  gap: 2.5rem;
+  align-items: end;
+  padding-bottom: .9rem;
+  border-bottom: 2px solid var(--ink);
+}
+
+.tref-section-head h2 {
+  margin: 0;
+  font-size: clamp(1.7rem, 3vw, 2.6rem);
+  line-height: 1;
+  letter-spacing: -.04em;
+}
+
+.tref-section-head p {
+  max-width: 62ch;
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 13px;
+}
+
+.tref-prose {
+  max-width: 68ch;
+  margin: 1.6rem 0 0;
+  color: var(--ink-2);
+  font-size: 14px;
+}
+
+.tref-prose strong { color: var(--ink); }
+
+.tref-figure {
+  margin: 2rem 0 0;
+  padding: 1.6rem 1.6rem 1.1rem;
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  background: var(--panel);
+}
+
+.tref-figure figcaption {
+  margin-top: 1rem;
+  padding-top: .8rem;
+  border-top: 1px solid var(--rule);
+  color: var(--ink-3);
+  font-size: 11.5px;
+}
+
+.tref-figure figcaption b { color: var(--ink-2); font-weight: 650; }
+
+.tref-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr));
+  gap: 1px;
+  margin-top: 2rem;
+  border: 1px solid var(--rule);
+  background: var(--rule);
+}
+
+.tref-card {
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+  padding: 1.2rem 1.3rem;
+  background: var(--panel);
+}
+
+.tref-card h3 { margin: 0; font-size: 15px; letter-spacing: -.01em; }
+.tref-card h3 span { color: var(--ink-3); font-size: 11px; font-weight: 500; }
+.tref-card p { margin: 0; color: var(--ink-2); font-size: 13px; }
+.tref-card .tref-meta { margin-top: auto; padding-top: .5rem; color: var(--ink-3); font-size: 10.5px; word-break: break-word; }
+.tref-card .tref-not { color: var(--attention); font-size: 12px; }
+.tref-card .tref-not::before { content: "Not "; font-size: 9px; font-weight: 750; letter-spacing: .1em; text-transform: uppercase; }
+
+.tref-scroll { overflow-x: auto; margin-top: 2rem; }
+
+.tref-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.tref-table th,
+.tref-table td { padding: .7rem .9rem; border-bottom: 1px solid var(--rule); vertical-align: top; text-align: left; }
+.tref-table th { color: var(--ink-3); font-size: 9.5px; font-weight: 750; letter-spacing: .12em; text-transform: uppercase; }
+.tref-table td:first-child { color: var(--ink); font-weight: 600; }
+.tref-table td.muted { color: var(--ink-2); font-weight: 400; }
+.tref-table tbody tr:hover { background: var(--panel); }
+.tref-table .num { font-family: "IBM Plex Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; text-align: right; }
+
+.tref-lanes {
+  display: grid;
+  grid-template-columns: 3.2rem repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  margin-top: 2rem;
+  border: 1px solid var(--rule);
+  background: var(--rule);
+  font-size: 12.5px;
+}
+
+.tref-lanes > div { padding: .75rem .9rem; background: var(--panel); }
+.tref-lanes .head { background: var(--work); color: var(--ink-3); font-size: 9.5px; font-weight: 750; letter-spacing: .12em; text-transform: uppercase; }
+.tref-lanes .step { background: var(--work); }
+.tref-lanes .step span { display: block; color: var(--ink-3); font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 10px; }
+.tref-lanes .step b { font-size: 12px; }
+.tref-lanes .rows { color: var(--ink-3); font-size: 11.5px; }
+.tref-lanes .none { color: var(--ink-3); font-style: italic; }
+
+.tref-change {
+  display: grid;
+  grid-template-columns: 2.6rem minmax(14rem, .9fr) minmax(14rem, 1fr) minmax(14rem, 1fr);
+  gap: 1.4rem;
+  padding: 1.5rem 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.tref-change:first-of-type { border-top: 1px solid var(--rule); }
+.tref-change > span { color: var(--accent); font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 12px; }
+.tref-change h3 { margin: 0 0 .35rem; font-size: 15px; letter-spacing: -.01em; }
+.tref-change p { margin: 0; color: var(--ink-2); font-size: 13px; }
+.tref-change .state { padding: .7rem .9rem; border-radius: 6px; }
+.tref-change .state span { display: block; margin-bottom: .3rem; font-size: 9px; font-weight: 750; letter-spacing: .12em; text-transform: uppercase; }
+.tref-change .before { background: var(--work); }
+.tref-change .before span { color: var(--ink-3); }
+.tref-change .after { background: var(--success-soft); }
+.tref-change .after span { color: var(--success); }
+
+.tref-note {
+  margin-top: 2rem;
+  padding: 1.1rem 1.3rem;
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+  background: var(--panel);
+}
+
+.tref-note h4 { margin: 0 0 .4rem; font-size: 13px; }
+.tref-note p { max-width: 70ch; margin: 0 0 .5rem; color: var(--ink-2); font-size: 13px; overflow-wrap: anywhere; }
+.tref-note p:last-child { margin-bottom: 0; }
+.tref-note.attention { border-color: var(--attention); }
+.tref-note.success { border-color: var(--success); }
+
+.tref-badge {
+  display: inline-block;
+  padding: .1rem .45rem;
+  border-radius: 4px;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.tref-badge.new { background: var(--success-soft); color: var(--success); }
+.tref-badge.changed { background: var(--attention-soft); color: var(--attention); }
+.tref-badge.clean { background: var(--success-soft); color: var(--success); }
+.tref-badge.known { background: var(--attention-soft); color: var(--attention); }
+
+.tref-bar { display: flex; align-items: center; gap: .3rem; }
+.tref-bar i { display: block; height: 6px; border-radius: 2px; }
+.tref-bar .add { background: var(--success); }
+.tref-bar .del { background: var(--danger); }
+
+.tref-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: .8rem 2rem;
+  width: min(100%, 88rem);
+  margin: 0 auto;
+  padding: 1.25rem 3.5rem 3rem;
+  border-top: 1px solid var(--rule);
+  color: var(--ink-3);
+  font-size: 10px;
+}
+
+.tref-footer div { display: flex; flex-wrap: wrap; gap: 1rem; }
+.tref-footer a { color: var(--interactive); font-weight: 650; text-decoration: none; }
+.tref-footer a:hover { text-decoration: underline; }
+
+@media (max-width: 68rem) {
+  .tref-mast { grid-template-columns: 1fr; gap: 1.5rem; }
+  .tref-section-head { grid-template-columns: 1fr; gap: .8rem; }
+  .tref-change { grid-template-columns: 2rem 1fr; }
+  .tref-lanes { grid-template-columns: 3rem 1fr; }
+  .tref-lanes .head { display: none; }
+}
+
+@media (max-width: 44rem) {
+  .tref-page { padding: 2.5rem 1rem 5rem; }
+  .tref-section { margin-top: 3.5rem; }
+  .tref-footer { flex-direction: column; padding-right: 1rem; padding-left: 1rem; }
+}

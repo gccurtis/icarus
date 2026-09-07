@@ -6,7 +6,8 @@ import {
   only,
   revisionOf,
   tagsOf,
-  templateIdOf
+  templateIdOf,
+  variablesOf
 } from "$capabilities/templates/api/shared/validation";
 import type {
   UpdateTemplateInput,
@@ -17,7 +18,7 @@ export const validateUpdateTemplate = (input: unknown): UpdateTemplateInput => {
   const fields = fieldsOf(input, "update-template");
   only(fields, ["templateId", "baseRevision", "patch"], "update-template");
   const incoming = fieldsOf(fields.patch, "update-template");
-  only(incoming, ["name", "description", "tags", "variableDescription"], "update-template");
+  only(incoming, ["name", "description", "tags", "variableDescription", "variables"], "update-template");
   if (Object.keys(incoming).length === 0) {
     throw new Error("templates/update-template: patch changes at least one field");
   }
@@ -40,6 +41,9 @@ export const validateUpdateTemplate = (input: unknown): UpdateTemplateInput => {
         }
       : {}),
     ...(has(incoming, "tags") ? { tags: tagsOf(incoming.tags, "update-template") } : {}),
+    ...(has(incoming, "variables")
+      ? { variables: variablesOf(incoming.variables, "update-template") }
+      : {}),
     ...(variableDescription === undefined
       ? {}
       : {

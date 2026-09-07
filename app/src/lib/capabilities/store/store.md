@@ -28,8 +28,7 @@ that row belongs to the active project.
   hidden until the representation has an explicit ownership rule for it.
 - Template tables, snapshot/change-set tables, and every other table or field
   outside the allowlist fail closed and must be read through a subject
-  capability. Template provenance (`templateId`) is deliberately not part of
-  the document/deck/spreadsheet projection.
+  capability.
 - Loaded members must first be records with bounded path-safe ids and finite
   creation times. Ambiguous duplicate ids and rows with missing or malformed
   required projected fields are omitted. Composite values are copied through a

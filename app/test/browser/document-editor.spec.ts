@@ -726,7 +726,7 @@ test("document context panels are operational and compact", async ({ page }) => 
   await expect(context.getByText(/from edge/i)).toHaveCount(0);
   await expect(context.getByRole("button", { name: /Increase|Decrease/ })).toHaveCount(0);
 
-  for (const name of ["Variables", "Templates"] as const) {
+  for (const name of ["Variables"] as const) {
     await context.getByRole("button", { name, exact: true }).click();
     await expect(context.getByText(`document-editor.${name.toLowerCase()}`, { exact: true })).toBeVisible();
   }
@@ -737,6 +737,13 @@ test("document context panels are operational and compact", async ({ page }) => 
   await expect(context.getByRole("button", { name: "Create and generate" })).toHaveCount(0);
   await expect(context.getByText("No Prompt Blocks yet.", { exact: true })).toBeVisible();
   await expect(context.getByText(/To create one/)).toHaveCount(0);
+
+  await context.getByRole("button", { name: "Templates", exact: true }).click();
+  await expect(context.getByRole("heading", { name: "Templates" })).toBeVisible();
+  await expect(context.getByRole("textbox", { name: "Template name" })).toBeVisible();
+  await expect(context.getByRole("button", { name: "Save", exact: true })).toBeDisabled();
+  await expect(context.getByPlaceholder("Search templates…")).toBeVisible();
+  await expect(context.getByText("Operational readiness brief", { exact: true })).toBeVisible();
 });
 
 test("document named styles mirror the text formatting inspector without metadata clutter", async ({ page }) => {

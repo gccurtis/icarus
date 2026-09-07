@@ -4,36 +4,57 @@
   import ChevronDown from "@lucide/svelte/icons/chevron-down";
   import Copy from "@lucide/svelte/icons/copy";
   import ExternalLink from "@lucide/svelte/icons/external-link";
+  import FilePenLine from "@lucide/svelte/icons/file-pen-line";
   import Plus from "@lucide/svelte/icons/plus";
   import Trash2 from "@lucide/svelte/icons/trash-2";
   import X from "@lucide/svelte/icons/x";
 
+  import { OverlayModal } from "$authored-components/overlay";
   import {
     Panel,
     PanelBanner,
     PanelChip,
     PanelEmpty,
-    PanelSkeleton
+    PanelSelect,
+    PanelSkeleton,
+    PanelToggle
   } from "$authored-components/panel";
   import { Button } from "$vendored-components/button";
   import { Input } from "$vendored-components/input";
   import { Textarea } from "$vendored-components/textarea";
   import {
+    DEFAULT_ANSWER,
+    EDITOR_CATEGORY,
+    KINDS,
+    answerOptions,
+    answersFrom,
+    defaultChoices,
     detailIn,
     duplicateTemplate,
+    editTemplate,
     emptyTemplateInspectorTitle,
     inspectTemplate,
     instantiateTemplate,
+    isWholeProject,
+    kindsOf,
+    namesOf,
     removeTemplate,
+    resourceSets,
+    ruleFrom,
+    ruleOf,
     selectedTemplateIdIn,
+    setIdsOf,
+    setsIn,
     templateDetail,
     templateLibrary,
     unavailableTemplateIn,
     updateTemplateDescription,
     updateTemplateName,
     updateTemplateTags,
+    updateTemplateVariableDefault,
     updateTemplateVariableDescription,
     type LibraryTemplateDetail,
+    type TemplateAnswers,
     type TemplateVariable
   } from "$app-views/categories/templates/procedures/library.svelte";
   import { workspaceState } from "$model/client/workspace-state";
@@ -43,6 +64,9 @@
     view.selection?.kind === "template" ? view.selection.id : undefined
   );
   const library = templateLibrary();
+  const sets = resourceSets();
+  const setItems = $derived(setsIn(sets.ready ? sets.current : undefined));
+  const setNames = $derived(namesOf(setItems));
   const availableTemplateIds = $derived(
     library.ready ? library.current.templates.map((row) => row.id) : []
   );
@@ -63,6 +87,18 @@
   });
   const template = $derived(detailIn(detailAnswer, now));
   const unavailable = $derived(unavailableTemplateIn(detailAnswer));
+  let defaultFor = $state<TemplateVariable | undefined>(undefined);
+  let defaultOpen = $state(false);
+  let draftWhole = $state(true);
+  let draftKinds = $state<string[]>([]);
+  let draftSets = $state<string[]>([]);
+  let useOpen = $state(false);
+  let useChoices = $state<Record<string, string>>({});
+  const defaultBlocked = $derived(
+    !draftWhole && draftKinds.length === 0 && draftSets.length === 0
+      ? "Pick everything, or at least one kind or set."
+      : undefined
+  );
 
   let editingDescription = $state(false);
   let descriptionDraft = $state("");
@@ -82,7 +118,7 @@
   let tagDraft = $state("");
   let activeTemplateId = $state<string>();
   let pending = $state<
-    "name" | "description" | "variable" | "tag" | "duplicate" | "delete" | "use"
+    "name" | "description" | "variable" | "tag" | "duplicate" | "delete" | "use" | "edit" | "default"
   >();
   let actionError = $state<string>();
   let live = true;
@@ -450,35 +486,42 @@
     }
   };
 
-  const use = async () => {
+  const use = () => {
+    if (template === undefined || pending !== undefined) return;
+    if (template.makes === "Spreadsheet") {
+      actionError = SPREADSHEET_HANDOFF;
+      return;
+    }
+    if (template.variables.length === 0) {
+      void instantiate({});
+      return;
+    }
+    useChoices = defaultChoices(template.variables);
+    useOpen = true;
+  };
+
+  const confirmUse = () => void instantiate(answersFrom(useChoices));
+
+  const instantiate = async (answers: TemplateAnswers) => {
     if (template === undefined || pending !== undefined) return;
     const subject = template;
     const originTabId = view.activeId;
 
-    if (subject.makes === "Spreadsheet") {
-      actionError = SPREADSHEET_HANDOFF;
-      return;
-    }
-
     pending = "use";
     actionError = undefined;
     try {
-      const result = await instantiateTemplate(view, subject);
+      const result = await instantiateTemplate(view, subject, answers);
       if (!stillInspecting(originTabId, subject.id)) return;
       if (!result.accepted) {
         actionError = result.detail;
         return;
       }
 
-      const category = {
-        document: "document-editor",
-        slides: "slide-deck-editor"
-      } as const;
       if (result.target === "spreadsheet") {
         actionError = SPREADSHEET_HANDOFF;
         return;
       }
-      view.open({ category: category[result.target], resourceId: result.resourceId });
+      view.open({ category: EDITOR_CATEGORY[result.target], resourceId: result.resourceId });
     } catch (error) {
       fail(error, originTabId, subject.id);
     } finally {
@@ -486,9 +529,67 @@
     }
   };
 
-  /** Placeholder for the variable settings modal; defaults stay unchanged until that contract exists. */
-  const showVariableSettings = (variable: TemplateVariable) => {
-    alert(`Variable settings for “${variable.label}” will open here.`);
+  const edit = async () => {
+    if (template === undefined || pending !== undefined) return;
+    const subject = template;
+    const originTabId = view.activeId;
+    if (subject.makes === "Spreadsheet") {
+      actionError = "Spreadsheet templates open for editing once the spreadsheet editor lands.";
+      return;
+    }
+
+    pending = "edit";
+    actionError = undefined;
+    try {
+      const result = await editTemplate(view, subject);
+      if (!live) return;
+      if (!result.accepted) actionError = result.detail;
+    } catch (error) {
+      fail(error, originTabId, subject.id);
+    } finally {
+      pending = undefined;
+    }
+  };
+
+  const openDefault = (variable: TemplateVariable) => {
+    if (template === undefined || !template.canEdit || pending !== undefined) return;
+    defaultFor = variable;
+    draftWhole = isWholeProject(variable.default);
+    draftKinds = [...kindsOf(variable.default)];
+    draftSets = [...setIdsOf(variable.default)];
+    defaultOpen = true;
+  };
+
+  const toggleKind = (kind: string, on: boolean) => {
+    draftKinds = on
+      ? [...draftKinds.filter((held) => held !== kind), kind]
+      : draftKinds.filter((held) => held !== kind);
+  };
+
+  const toggleSet = (setId: string, on: boolean) => {
+    draftSets = on
+      ? [...draftSets.filter((held) => held !== setId), setId]
+      : draftSets.filter((held) => held !== setId);
+  };
+
+  const setDefault = async () => {
+    const variable = defaultFor;
+    if (template === undefined || variable === undefined || pending !== undefined) return;
+    const subject = template;
+    const originTabId = view.activeId;
+    const rule = ruleFrom(draftWhole, draftKinds, draftSets);
+
+    pending = "default";
+    actionError = undefined;
+    try {
+      const result = await updateTemplateVariableDefault(view, subject, variable.name, rule);
+      if (!stillInspecting(originTabId, subject.id)) return;
+      if (!result.accepted) actionError = result.detail;
+    } catch (error) {
+      fail(error, originTabId, subject.id);
+    } finally {
+      pending = undefined;
+    }
   };
 </script>
 
@@ -604,6 +705,17 @@
           variant="ghost"
           size="icon-sm"
           class="template-action"
+          aria-label={pending === "edit" ? "Opening template" : "Edit template"}
+          disabled={pending !== undefined || template.makes === "Spreadsheet"}
+          title={template.makes === "Spreadsheet"
+            ? "Spreadsheet templates open for editing once the spreadsheet editor lands"
+            : "Edit template — open a copy in its editor"}
+          onclick={edit}
+        ><FilePenLine aria-hidden="true" /></Button>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          class="template-action"
           aria-label={pending === "duplicate" ? "Duplicating template" : "Duplicate template"}
           title="Duplicate template"
           disabled={pending !== undefined}
@@ -641,20 +753,10 @@
             {#each template.variables as variable (variable.id)}
               <details class="variable">
                 <summary>
-                  <button
-                    type="button"
-                    class="variable-name"
-                    title="Open variable settings"
-                    aria-label={`Open settings for ${variable.label}`}
-                    onclick={(event) => {
-                      event.preventDefault();
-                      event.stopPropagation();
-                      showVariableSettings(variable);
-                    }}
-                  >
+                  <span class="variable-name">
                     <Braces size={13} aria-hidden="true" />
                     {variable.label}
-                  </button>
+                  </span>
                   <ChevronDown class="disclosure-icon" size={13} aria-hidden="true" />
                 </summary>
                 <div class="variable-body">
@@ -684,6 +786,19 @@
                   {:else}
                     <p>{variable.description ?? "No description supplied."}</p>
                   {/if}
+                  <div class="variable-default">
+                    {#if template.canEdit}
+                      <Button
+                        variant="outline"
+                        size="xs"
+                        title={`${ruleOf(variable.default, setNames)} — change what ${variable.label} selects by default`}
+                        disabled={pending !== undefined}
+                        onclick={() => openDefault(variable)}
+                      >Default scope</Button>
+                    {:else}
+                      <span>{ruleOf(variable.default, setNames)}</span>
+                    {/if}
+                  </div>
                 </div>
               </details>
             {/each}
@@ -759,7 +874,117 @@
   {/if}
 </Panel>
 
+<OverlayModal
+  bind:open={useOpen}
+  title={`Use “${template?.name ?? "the template"}”`}
+  description="What each variable selects in the new resource. The default is what the template suggests."
+  confirm="Create"
+  width="narrow"
+  onconfirm={confirmUse}
+>
+  <div class="answers">
+    {#each template?.variables ?? [] as variable (variable.id)}
+      <div class="answer">
+        <span class="answer-label">{variable.label}</span>
+        {#if variable.description}
+          <span class="answer-help">{variable.description}</span>
+        {/if}
+        <PanelSelect
+          label={`Answer for ${variable.label}`}
+          value={useChoices[variable.name] ?? DEFAULT_ANSWER}
+          options={answerOptions(variable, setItems)}
+          onchange={(next) => (useChoices = { ...useChoices, [variable.name]: next })}
+        />
+      </div>
+    {/each}
+  </div>
+</OverlayModal>
+
+<OverlayModal
+  bind:open={defaultOpen}
+  title={`Default scope for ${defaultFor?.label ?? "the variable"}`}
+  description="What the variable selects until whoever inserts the template says otherwise."
+  confirm="Set the default scope"
+  width="narrow"
+  blocked={defaultBlocked}
+  onconfirm={() => void setDefault()}
+>
+  <div class="choices">
+    <label class="choice">
+      <PanelToggle label="Everything in the project" checked={draftWhole} onchange={(on) => (draftWhole = on)} />
+      <span>Everything in the project</span>
+    </label>
+    <p class="or">Or only these kinds</p>
+    {#each KINDS as entry (entry.kind)}
+      <label class="choice">
+        <PanelToggle label={entry.label} checked={draftKinds.includes(entry.kind)} disabled={draftWhole} onchange={(on) => toggleKind(entry.kind, on)} />
+        <span class:muted={draftWhole}>{entry.label}</span>
+      </label>
+    {/each}
+    {#if setItems.length > 0}
+      <p class="or">Or these sets</p>
+      {#each setItems as set (set.id)}
+        <label class="choice">
+          <PanelToggle label={set.name} checked={draftSets.includes(set.id)} disabled={draftWhole} onchange={(on) => toggleSet(set.id, on)} />
+          <span class:muted={draftWhole}>{set.name}</span>
+        </label>
+      {/each}
+    {/if}
+  </div>
+</OverlayModal>
+
 <style>
+  .choices,
+  .answers {
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--token-spacing-unit) * 1.5);
+    padding: 0 calc(var(--token-spacing-unit) * 3);
+  }
+
+  .answers {
+    gap: calc(var(--token-spacing-unit) * 3);
+  }
+
+  .answer {
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--token-spacing-unit) * 1);
+  }
+
+  .answer-label {
+    color: var(--token-ink-primary);
+    font-size: var(--token-text-body-sm);
+    line-height: var(--token-text-body-sm-leading);
+    font-weight: 600;
+  }
+
+  .answer-help {
+    color: var(--token-ink-muted);
+    font-size: var(--token-text-caption);
+    line-height: var(--token-text-caption-leading);
+  }
+
+  .choice {
+    display: flex;
+    align-items: center;
+    gap: calc(var(--token-spacing-unit) * 2);
+    color: var(--token-ink-primary);
+    font-size: var(--token-text-body-sm);
+    line-height: var(--token-text-body-sm-leading);
+  }
+
+  .muted {
+    color: var(--token-ink-muted);
+  }
+
+  .or {
+    margin: calc(var(--token-spacing-unit) * 1) 0 0;
+    color: var(--token-ink-muted);
+    font-size: var(--token-text-caption);
+    line-height: var(--token-text-caption-leading);
+  }
+
   .inspector-stack {
     display: flex;
     flex-direction: column;
@@ -906,7 +1131,7 @@
 
   .template-actions {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     align-self: stretch;
     overflow: hidden;
     width: 100%;
@@ -1034,30 +1259,22 @@
     min-width: 0;
     align-items: center;
     gap: calc(var(--token-spacing-unit) * 1.5);
-    padding: 0;
-    border: 0;
-    background: transparent;
     color: inherit;
-    cursor: pointer;
     font: inherit;
     font-weight: 600;
     text-align: left;
   }
 
-  .variable-name:hover {
-    text-decoration: underline;
-    text-underline-offset: 2px;
-  }
-
-  .variable-name:focus-visible {
-    border-radius: var(--token-radius-control);
-    outline: 2px solid var(--token-color-interactive-border);
-    outline-offset: 2px;
-  }
-
   .variable-name :global(svg) {
     flex: none;
     color: var(--token-ink-muted);
+  }
+
+  .variable-default {
+    display: flex;
+    align-items: center;
+    margin-top: calc(var(--token-spacing-unit) * 1.5);
+    color: var(--token-ink-secondary);
   }
 
   :global(.disclosure-icon) {

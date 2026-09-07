@@ -2,6 +2,7 @@
   {
     "_id": "templates:1",
     "_creationTime": 1777636800000,
+    "projectId": "default",
     "userId": "default-user",
     "name": "Incident write-up",
     "description": "A calm, evidence-led retrospective for cause, impact, response, and corrective action.",
@@ -102,11 +103,13 @@
     ],
     "createdBy": { "kind": "user", "userId": "default-user" },
     "revision": 6,
-    "updatedAt": 1788351300000
+    "updatedAt": 1788351300000,
+    "lastUsedAt": 1788264900000
   },
   {
     "_id": "templates:2",
     "_creationTime": 1778238000000,
+    "projectId": "default",
     "userId": "default-user",
     "name": "Operational readiness brief",
     "description": "A decision-ready brief for expected conditions, exposure, mitigations, and remaining operating gaps.",
@@ -213,11 +216,13 @@
     ],
     "createdBy": { "kind": "user", "userId": "default-user" },
     "revision": 8,
-    "updatedAt": 1788111000000
+    "updatedAt": 1788111000000,
+    "lastUsedAt": 1788024600000
   },
   {
     "_id": "templates:3",
     "_creationTime": 1779361200000,
+    "projectId": "default",
     "userId": "default-user",
     "name": "Technical glossary",
     "description": "A maintained glossary for project terminology, acronyms, definitions, and source notes.",
@@ -317,11 +322,13 @@
     ],
     "createdBy": { "kind": "user", "userId": "default-user" },
     "revision": 3,
-    "updatedAt": 1787244300000
+    "updatedAt": 1787244300000,
+    "lastUsedAt": 1787157900000
   },
   {
     "_id": "templates:4",
     "_creationTime": 1780578000000,
+    "projectId": "default",
     "userId": "default-user",
     "name": "Decision memo",
     "description": "A concise decision record that compares alternatives, evidence, trade-offs, and the recommended path.",
@@ -445,11 +452,13 @@
     ],
     "createdBy": { "kind": "user", "userId": "default-user" },
     "revision": 4,
-    "updatedAt": 1788448800000
+    "updatedAt": 1788448800000,
+    "lastUsedAt": 1788362400000
   },
   {
     "_id": "templates:5",
     "_creationTime": 1780876800000,
+    "projectId": "default",
     "userId": "default-user",
     "name": "Board review",
     "description": "A disciplined board narrative for performance, risk, decisions, and the next horizon.",
@@ -561,11 +570,13 @@
     ],
     "createdBy": { "kind": "user", "userId": "default-user" },
     "revision": 5,
-    "updatedAt": 1787839200000
+    "updatedAt": 1787839200000,
+    "lastUsedAt": 1787752800000
   },
   {
     "_id": "templates:6",
     "_creationTime": 1780704000000,
+    "projectId": "default",
     "userId": "default-user",
     "name": "Field team briefing",
     "description": "A shift-ready briefing for objectives, hazards, controls, and handoffs.",
@@ -667,11 +678,13 @@
     ],
     "createdBy": { "kind": "user", "userId": "default-user" },
     "revision": 3,
-    "updatedAt": 1786541400000
+    "updatedAt": 1786541400000,
+    "lastUsedAt": 1786455000000
   },
   {
     "_id": "templates:7",
     "_creationTime": 1787234400000,
+    "projectId": "default",
     "userId": "default-user",
     "name": "Executive update",
     "description": "A concise portfolio update that leads with trajectory, exceptions, and asks.",
@@ -773,11 +786,13 @@
     ],
     "createdBy": { "kind": "user", "userId": "default-user" },
     "revision": 2,
-    "updatedAt": 1788528000000
+    "updatedAt": 1788528000000,
+    "lastUsedAt": 1788441600000
   },
   {
     "_id": "templates:8",
     "_creationTime": 1784505600000,
+    "projectId": "default",
     "userId": "default-user",
     "name": "Options assessment",
     "description": "A decision-oriented comparison of viable paths, economics, tradeoffs, and reversibility.",
@@ -903,11 +918,13 @@
     ],
     "createdBy": { "kind": "user", "userId": "default-user" },
     "revision": 4,
-    "updatedAt": 1785585600000
+    "updatedAt": 1785585600000,
+    "lastUsedAt": 1785499200000
   },
   {
     "_id": "templates:9",
     "_creationTime": 1780358400000,
+    "projectId": "default",
     "userId": "default-user",
     "name": "Outage analysis workbook",
     "description": "A ready-to-calculate reliability workbook for outage duration, customers affected, and customer-minutes interrupted.",
@@ -958,11 +975,13 @@
     "variables": [],
     "createdBy": { "kind": "user", "userId": "default-user" },
     "revision": 3,
-    "updatedAt": 1784385000000
+    "updatedAt": 1784385000000,
+    "lastUsedAt": 1784298600000
   },
   {
     "_id": "templates:10",
     "_creationTime": 1779840000000,
+    "projectId": "default",
     "userId": "default-user",
     "name": "Hardening cost model",
     "description": "A transparent option model for unit cost, contingency, total investment, and annualized benefit.",
@@ -1016,6 +1035,95 @@
     "variables": [],
     "createdBy": { "kind": "user", "userId": "default-user" },
     "revision": 5,
-    "updatedAt": 1782306000000
+    "updatedAt": 1782306000000,
+    "lastUsedAt": 1782219600000
+  },
+  {
+    "_id": "templates:11",
+    "_creationTime": 1788000000000,
+    "projectId": "default",
+    "userId": "default-user",
+    "name": "Section divider",
+    "description": "One slide that opens a section: a large title over a one-line lead.",
+    "tags": ["Presentation", "Brand"],
+    "body": {
+      "resource": "slides",
+      "aspectRatio": "16:9",
+      "theme": {
+        "background": { "kind": "color", "color": "--token-surface-primary" },
+        "colors": { "text": "--token-ink-primary", "accent": "--token-color-accent-1-fill", "muted": "--token-ink-muted" },
+        "fontFamily": "IBM Plex Sans"
+      },
+      "styles": {
+        "defaultKey": "body",
+        "styles": {
+          "title": { "name": "Title", "fontSize": 40, "fontWeight": 650, "color": "--token-ink-primary", "lineHeight": 1.05 },
+          "body": { "name": "Body", "fontSize": 20, "color": "--token-ink-secondary", "lineHeight": 1.35 }
+        }
+      },
+      "layouts": [
+        {
+          "id": "#tdiv-layout",
+          "key": "section-divider",
+          "name": "Section divider",
+          "locked": [],
+          "placeholders": [
+            { "role": "title", "frame": { "x": 0.08, "y": 0.34, "width": 0.84, "height": 0.2 }, "styleKey": "title" },
+            { "role": "lead", "frame": { "x": 0.08, "y": 0.56, "width": 0.84, "height": 0.12 }, "styleKey": "body" }
+          ]
+        }
+      ],
+      "slides": [
+        {
+          "id": "#tdiv-slide",
+          "layoutKey": "section-divider",
+          "elements": [
+            {
+              "id": "#tdiv-title-element",
+              "frame": { "x": 0.08, "y": 0.34, "width": 0.84, "height": 0.2 },
+              "overflow": "shrink",
+              "fromPlaceholder": "title",
+              "content": {
+                "type": "text",
+                "block": {
+                  "id": "#tdiv-title",
+                  "type": "text",
+                  "variant": "heading",
+                  "level": 1,
+                  "style": "title",
+                  "atoms": [{ "id": "#tdiv-title-a", "kind": "literal", "text": "Section title" }],
+                  "display": "Section title",
+                  "marks": []
+                }
+              }
+            },
+            {
+              "id": "#tdiv-lead-element",
+              "frame": { "x": 0.08, "y": 0.56, "width": 0.84, "height": 0.12 },
+              "overflow": "shrink",
+              "fromPlaceholder": "lead",
+              "content": {
+                "type": "text",
+                "block": {
+                  "id": "#tdiv-lead",
+                  "type": "text",
+                  "variant": "paragraph",
+                  "style": "body",
+                  "atoms": [{ "id": "#tdiv-lead-a", "kind": "literal", "text": "One line on what this section settles." }],
+                  "display": "One line on what this section settles.",
+                  "marks": []
+                }
+              }
+            }
+          ],
+          "notes": []
+        }
+      ],
+      "sections": []
+    },
+    "variables": [],
+    "createdBy": { "kind": "user", "userId": "default-user" },
+    "revision": 1,
+    "updatedAt": 1788000000000
   }
 ]

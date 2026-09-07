@@ -11,5 +11,9 @@ settles a thread or reopens it.
 the scope, so a caller cannot file a remark as someone else or into a project it
 cannot open. A thread in another project is not found rather than refused.
 
+**A template's working copy takes no comments.** `startThread` refuses a target
+that a `templateStages` row names, because a comment is one of the things that
+does not travel with a template; the panels say so where the composer would be.
+
 **Reading is not here.** Threads and comments are rows, and a panel reads them
 through `store` like any other table; this capability only adds to them.

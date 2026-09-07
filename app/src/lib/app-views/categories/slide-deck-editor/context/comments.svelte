@@ -1,5 +1,6 @@
 <script lang="ts">
   import { startThread } from "$capabilities/comments/index.remote";
+  import { readResourceTemplate } from "$capabilities/templates/index.remote";
   import { Panel, PanelButton, PanelChoice, PanelEmpty, PanelNote, PanelQuote, PanelSection } from "$authored-components/panel";
   import { Textarea } from "$vendored-components/textarea";
   import {
@@ -30,6 +31,8 @@
   const threadRows = tableQuery("commentThreads");
   const commentRows = tableQuery("comments");
   const userRows = tableQuery("users");
+  const templateQuery = $derived(deckId === undefined ? undefined : readResourceTemplate({ resourceId: deckId }));
+  const workingCopy = $derived(templateQuery?.ready === true && templateQuery.current.stage !== null);
 
   const threads = $derived(
     rowsOf(threadRows, "commentThreads").filter(
@@ -113,7 +116,9 @@
     <PanelChoice label="Show" value={chip} options={chips} flush fill onchange={(value) => (wanted = value)} />
   {/snippet}
 
-  {#if body}
+  {#if body && workingCopy}
+    <PanelNote tone="gap">A template's working copy takes no comments; they never travel with a template.</PanelNote>
+  {:else if body}
     <div class="flex flex-col gap-2 px-3 pb-2">
       <Textarea
         placeholder="Write a comment on {subject}…"

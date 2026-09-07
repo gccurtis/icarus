@@ -124,15 +124,17 @@ const timeOf = (value: unknown): number => {
   return value;
 };
 
-/**
- * The one cache key shared by template instantiation and Project Overview.
- * It intentionally exposes metadata only from the five listable resource
- * tables, and only for the project resolved from the request route.
- */
 export const readProjectResourceIndex = async (): Promise<ProjectResourceIndex> => {
   const scope = await requireScope();
   const resources: ProjectResourceIndexItem[] = [];
   const unavailable: ProjectResourceUnavailable[] = [];
+
+  const staged = new Set(
+    rowsIn("templateStages")
+      .map(recordOf)
+      .filter((row) => row?.projectId === scope.projectId && typeof row.resourceId === "string")
+      .map((row) => row?.resourceId as string)
+  );
 
   const collect = (
     table: TableName,
@@ -143,9 +145,6 @@ export const readProjectResourceIndex = async (): Promise<ProjectResourceIndex> 
     const rows = rowsIn(table);
     const idCounts = new Map<string, number>();
 
-    // Count canonical ids across the whole table before projecting scoped
-    // metadata. Store mutations resolve a row by table + id, so even a
-    // foreign or otherwise malformed claimant makes that path ambiguous.
     for (const value of rows) {
       const row = recordOf(value);
       if (row === undefined) continue;
@@ -153,13 +152,14 @@ export const readProjectResourceIndex = async (): Promise<ProjectResourceIndex> 
         const id = idOf(row._id, table);
         idCounts.set(id, (idCounts.get(id) ?? 0) + 1);
       } catch {
-        // Noncanonical ids cannot alias a canonical Store mutation path.
+        continue;
       }
     }
 
     for (const value of rows) {
       const row = recordOf(value);
       if (row === undefined || row.projectId !== scope.projectId) continue;
+      if (typeof row._id === "string" && staged.has(row._id)) continue;
 
       try {
         const id = idOf(row._id, table);

@@ -373,6 +373,7 @@ export type AgentTaskFields = {
 export type AgentTask = Row<"agentTasks"> & AgentTaskFields;
 
 export type TemplateFields = {
+  projectId: Id<"projects">;
   userId: Id<"users">;
   name: string;
   description?: string;
@@ -382,6 +383,7 @@ export type TemplateFields = {
   createdBy: Actor;
   revision: number;
   updatedAt: number;
+  lastUsedAt?: number;
 };
 export type Template = Row<"templates"> & TemplateFields;
 
@@ -396,6 +398,17 @@ export type TemplateVersionFields = {
   at: number;
 };
 export type TemplateVersion = Row<"templateVersions"> & TemplateVersionFields;
+
+export type TemplateStageFields = {
+  projectId: Id<"projects">;
+  templateId: Id<"templates">;
+  templateRevision: number;
+  target: Exclude<TemplateBody["resource"], "spreadsheet">;
+  resourceId: string;
+  createdBy: Actor;
+  updatedAt: number;
+};
+export type TemplateStage = Row<"templateStages"> & TemplateStageFields;
 
 export type NamedResourceSetFields = {
   projectId: Id<"projects">;
@@ -615,6 +628,7 @@ export const TABLE_NAMES = [
   "spreadsheets",
   "spreadsheetSnapshots",
   "templates",
+  "templateStages",
   "templateVersions",
   "threadParts",
   "threads",
@@ -668,6 +682,7 @@ export type TableFields = {
   spreadsheets: SpreadsheetFields;
   spreadsheetSnapshots: SpreadsheetSnapshotFields;
   templates: TemplateFields;
+  templateStages: TemplateStageFields;
   templateVersions: TemplateVersionFields;
   threadParts: ThreadPartFields;
   threads: ThreadFields;

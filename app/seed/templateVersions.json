@@ -2195,5 +2195,91 @@
     },
     "variables": [],
     "at": 1782306000000
+  },
+  {
+    "_id": "templateVersions:11",
+    "_creationTime": 1788000000000,
+    "templateId": "templates:11",
+    "revision": 1,
+    "name": "Section divider",
+    "description": "One slide that opens a section: a large title over a one-line lead.",
+    "tags": ["Presentation", "Brand"],
+    "body": {
+      "resource": "slides",
+      "aspectRatio": "16:9",
+      "theme": {
+        "background": { "kind": "color", "color": "--token-surface-primary" },
+        "colors": { "text": "--token-ink-primary", "accent": "--token-color-accent-1-fill", "muted": "--token-ink-muted" },
+        "fontFamily": "IBM Plex Sans"
+      },
+      "styles": {
+        "defaultKey": "body",
+        "styles": {
+          "title": { "name": "Title", "fontSize": 40, "fontWeight": 650, "color": "--token-ink-primary", "lineHeight": 1.05 },
+          "body": { "name": "Body", "fontSize": 20, "color": "--token-ink-secondary", "lineHeight": 1.35 }
+        }
+      },
+      "layouts": [
+        {
+          "id": "#tdiv-layout",
+          "key": "section-divider",
+          "name": "Section divider",
+          "locked": [],
+          "placeholders": [
+            { "role": "title", "frame": { "x": 0.08, "y": 0.34, "width": 0.84, "height": 0.2 }, "styleKey": "title" },
+            { "role": "lead", "frame": { "x": 0.08, "y": 0.56, "width": 0.84, "height": 0.12 }, "styleKey": "body" }
+          ]
+        }
+      ],
+      "slides": [
+        {
+          "id": "#tdiv-slide",
+          "layoutKey": "section-divider",
+          "elements": [
+            {
+              "id": "#tdiv-title-element",
+              "frame": { "x": 0.08, "y": 0.34, "width": 0.84, "height": 0.2 },
+              "overflow": "shrink",
+              "fromPlaceholder": "title",
+              "content": {
+                "type": "text",
+                "block": {
+                  "id": "#tdiv-title",
+                  "type": "text",
+                  "variant": "heading",
+                  "level": 1,
+                  "style": "title",
+                  "atoms": [{ "id": "#tdiv-title-a", "kind": "literal", "text": "Section title" }],
+                  "display": "Section title",
+                  "marks": []
+                }
+              }
+            },
+            {
+              "id": "#tdiv-lead-element",
+              "frame": { "x": 0.08, "y": 0.56, "width": 0.84, "height": 0.12 },
+              "overflow": "shrink",
+              "fromPlaceholder": "lead",
+              "content": {
+                "type": "text",
+                "block": {
+                  "id": "#tdiv-lead",
+                  "type": "text",
+                  "variant": "paragraph",
+                  "style": "body",
+                  "atoms": [{ "id": "#tdiv-lead-a", "kind": "literal", "text": "One line on what this section settles." }],
+                  "display": "One line on what this section settles.",
+                  "marks": []
+                }
+              }
+            }
+          ],
+          "notes": []
+        }
+      ],
+      "sections": []
+    },
+    "variables": [],
+    "at": 1788000000000
   }
 ]

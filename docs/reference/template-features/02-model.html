@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>02 · The model</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="reference.css">
+</head>
+<body>
+<div class="shell">
+  <aside class="rail">
+    <p class="rail-mark">Reference</p>
+    <nav>
+      <a href="index.html"><b>00</b><span>Start here</span></a>
+      <a href="01-system.html"><b>01</b><span>How templates work now</span></a>
+      <a href="02-model.html" class="is-here"><b>02</b><span>The model</span></a>
+      <a href="03-capabilities.html"><b>03</b><span>The capabilities</span></a>
+      <a href="04-panels.html"><b>04</b><span>Panels and flows</span></a>
+      <a href="05-changes.html"><b>05</b><span>What changed, verification, forks</span></a>
+    </nav>
+  </aside>
+
+  <main>
+    <p class="eyebrow">02 · representation</p>
+    <h1>The model</h1>
+    <p class="lede">
+      One new table, one new field, one new term and five pure functions. No new type, no new body kind:
+      a slide saved on its own is a deck template that happens to hold one slide, and a variable carries
+      one default and nothing else. Everything here compiles to a declaration or runs the same on either
+      side of the boundary, which is the whole standard for this tree.
+    </p>
+    <div class="meta">
+      <span>Types <b>representation/data/types/templates/template.ts</b> · unchanged</span>
+      <span>Terms <b>representation/data/types/core/resource-set.ts</b> · one term</span>
+      <span>Tables <b>representation/store/tables.ts</b> · one field, one row type</span>
+      <span>Behavior <b>representation/data/behavior/templates/</b> · <b>behavior/core/resource-set.ts</b></span>
+    </div>
+
+    <section id="slide">
+      <div class="head"><span class="n">1</span><h2>A slide is a deck template</h2></div>
+      <pre><code>export type TemplateBody =
+  | ({ resource: "document" } &amp; DocumentBody)
+  | ({ resource: "slides" } &amp; SlideDeckBody)
+  | ({ resource: "spreadsheet" } &amp; SpreadsheetTemplate);</code></pre>
+      <p>
+        Exactly as on main. Saving one slide asks the capability for a deck template with a
+        <code>slideId</code>; <code>deckOfSlide(deck, slideId)</code> is the one function that makes the
+        body: the named slide, the layout its <code>layoutKey</code> names, the theme and the styles, and
+        no sections, because a section is a place in a deck and a lone slide is not in one. After that
+        nothing distinguishes it from a deck template someone built with one slide, which is the point:
+        everything that draws, validates, stages and inserts a deck already works on it, and a template
+        of three slides needs nothing new either.
+      </p>
+    </section>
+
+    <section id="defaults">
+      <div class="head"><span class="n">2</span><h2>A variable and its default</h2></div>
+      <pre><code>export type TemplateVariable = {
+  name: string;
+  label: string;
+  description?: string;
+  default?: TemplatedResourceSet;
+};
+
+export type TemplatedTerm =
+  | ProjectTerm
+  | KindsTerm
+  | NamedSetTerm
+  | { select: "variable"; name: string };</code></pre>
+      <p>
+        The variable is exactly as on main. The <code>default</code> is a <em>templated</em> resource set,
+        and its term vocabulary gained one member: a <code>set</code> term naming one of the project's
+        sets, which is sound now that a template belongs to a project and can never land in another. A
+        default may therefore say the whole project, particular kinds, one of the project's sets, or
+        another variable. Two readings changed with it: an absent default means the whole project, so
+        every variable always resolves to something; and answers are what the Insert modal collects, one
+        resource set per variable, which win over the default for that one use and are stored nowhere.
+      </p>
+      <p>
+        A named set a default points at cannot be deleted while the template names it; the
+        <code>resource-sets</code> capability refuses with <code>in-use</code> and says which template.
+      </p>
+    </section>
+
+    <section id="stages">
+      <div class="head"><span class="n">3</span><h2>Templates and stages</h2></div>
+      <pre><code>export type TemplateFields = {
+  projectId: Id&lt;"projects"&gt;;
+  userId: Id&lt;"users"&gt;;
+  …
+  lastUsedAt?: number;
+};
+
+export type TemplateStageFields = {
+  projectId: Id&lt;"projects"&gt;;
+  templateId: Id&lt;"templates"&gt;;
+  templateRevision: number;
+  target: Exclude&lt;TemplateBody["resource"], "spreadsheet"&gt;;
+  resourceId: string;
+  createdBy: Actor;
+  updatedAt: number;
+};</code></pre>
+      <p>
+        <code>projectId</code> and <code>lastUsedAt</code> are the two fields this work adds to a table
+        main already had: a template belongs to the project it was made in, records its own last use,
+        and <code>userId</code> stays as a record of who made it, granting nothing. One field it removes:
+        main's <code>templateId</code> on documents, decks and spreadsheets, because a resource made from
+        a template is a copy and knows nothing of where it came from. <code>templateStages</code> is the
+        one table it adds. The scratch resource is an
+        ordinary <code>documents</code> or <code>slideDecks</code> row with a revision-zero leader
+        snapshot; the stage row is what makes it a stage. There is one per template and it belongs to
+        nobody in particular: two people editing a template edit the same copy through the editor's own
+        collaboration, so no row says who is editing. <code>templateRevision</code> is the revision the copy
+        corresponds to: the one it was taken from, saved to, or carried to by an edit that left the body
+        alone. Since the stage is the only thing that writes the template's body, it equals the template's
+        revision at every rest. A spreadsheet cannot be staged until its editor lands, and the type says
+        so.
+      </p>
+    </section>
+
+    <section id="scopes">
+      <div class="head"><span class="n">4</span><h2><code>resolveTemplateScopes</code></h2></div>
+      <p>
+        Moved out of the capability's <code>bodies.ts</code>, because the editors need it at insert time
+        and a view may not reach inside a capability. It walks a body and, for every prompt's scope,
+        replaces each variable term:
+      </p>
+      <ul>
+        <li>a caller's answer for the name splices its include terms in (an answer that excludes is refused, for the same reason a default that excludes always was: a difference does not flatten into two lists);</li>
+        <li>else the variable's default is expanded recursively with a memo and a cycle guard, its excludes crossing to the opposite side; a <code>set</code> term passes through as itself;</li>
+        <li>else, for a declared variable with no default or one that reaches itself, the whole project;</li>
+        <li>a name the template does not declare keeps its term and is reported in <code>undeclared</code>, and instantiation refuses on it rather than guessing.</li>
+      </ul>
+      <p>
+        A 10,000-term guard survives from the original. <code>variableNamesIn(body)</code> lists the names
+        a body refers to; it is what stops a variable being removed while the body still names it, and
+        what declares names a saved body uses.
+      </p>
+    </section>
+
+    <section id="portable">
+      <div class="head"><span class="n">5</span><h2><code>portableBodyOf</code></h2></div>
+      <p>
+        A live body, stripped of what a template body may not carry, with each removal said back as a
+        sentence. The list mirrors <code>assertPortableBody</code> in the capability, which refuses the same
+        things: formula ids on atoms, blocks and function values; derived-output ids on prompts; actor,
+        persona and resource links on marks; file and storage image sources; image backgrounds; ranges
+        into other spreadsheets; references to resources; and <code>set</code> or <code>resources</code>
+        terms in prompt scopes. What survives is exactly what admission accepts, which is what lets a
+        save or a commit succeed rather than refuse.
+      </p>
+      <p>
+        The sentences, such as "Dropped 2 links to things in the project.", are returned by the
+        capability and shown in the panel, so a person never saves less than they had without being told.
+        The list holds inside one project as much as across two, because a template turns a value into a
+        function. A formula atom keeps its expression and loses its <code>formulaId</code>; that is its
+        project-neutral form, and the document editor draws it with a dashed outline until a formula is
+        made for it again. Images stored in the project are the one item likely to change: a later
+        change may store them with the template so they travel.
+      </p>
+    </section>
+
+    <section id="fresh">
+      <div class="head"><span class="n">6</span><h2><code>withFreshIds</code></h2></div>
+      <p>
+        A fragment with every identified thing renamed, so it can be inserted beside content that may
+        already hold the originals. Ids are found by where they sit: <code>rows</code>, <code>blocks</code>,
+        <code>atoms</code>, <code>marks</code>, <code>slides</code>, <code>elements</code>,
+        <code>children</code>, <code>layouts</code>, <code>sections</code>, <code>cells</code>, a
+        <code>caption</code> or a <code>block</code>. The caller supplies the minting function, keyed by
+        that hint, because each editor spells its ids its own way (<code>#b…</code> in a document,
+        <code>el-…</code> in a deck) and behavior may not read randomness. Mark ends and section anchors
+        follow the ids they name; a reference to an id the fragment does not carry is left alone.
+      </p>
+    </section>
+
+    <section id="resolve">
+      <div class="head"><span class="n">7</span><h2><code>resolveResourceSet</code></h2></div>
+      <p>
+        Which of a project's resources a set selects right now, given a catalogue of references and a map
+        of named sets for following <code>set</code> terms. Kinds match by segment through the existing
+        <code>kindMatches</code>, so <code>externalFile</code> names every subkind under it. A set that
+        reaches itself contributes nothing on the second visit. The capability builds the catalogue from
+        five tables and leaves stage resources out; this function knows nothing about tables.
+      </p>
+    </section>
+
+    <section id="tests">
+      <div class="head"><span class="n">8</span><h2>Tests on this page</h2></div>
+      <p>
+        Five unit files under <code>behavior/templates/test/unit</code> and
+        <code>behavior/core/test/unit</code>: resolution through a default, a caller's answer, a
+        variable without a default, a name the template does not declare, refusal of a difference, and a
+        self-reaching variable; name listing; stripping every bound field from a document and an image
+        background from a deck theme; renaming a document fragment and a deck body; the deck of one
+        slide; resolving a set with kinds, resources, a followed set and a cycle. The lint rule that
+        behavior reads no clock and no randomness caught two things during the work and both were moved
+        to the caller.
+      </p>
+    </section>
+
+    <footer>Next: <a href="03-capabilities.html">03 · The capabilities</a>.</footer>
+  </main>
+</div>
+</body>
+</html>

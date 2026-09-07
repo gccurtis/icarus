@@ -1,12 +1,36 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  answerOptions,
+  answersFrom,
+  defaultChoices,
   emptyTemplateInspectorTitle,
+  ruleOf,
   selectedTemplateIdIn,
   templateDetail
 } from "$app-views/categories/templates/procedures/library.svelte";
 
 describe("template library view procedures", () => {
+  it("asks for each variable with its default first and turns the choices into answers", () => {
+    const variable = {
+      name: "evidence",
+      label: "Evidence",
+      default: { include: [{ select: "set" as const, setId: "resourceSets:1" as never }], exclude: [] }
+    };
+    const sets = [
+      { id: "resourceSets:1", name: "Winter filings", set: { include: [], exclude: [] }, createdByName: "Uma", revision: 1, updatedAt: 1, resolves: 2 }
+    ];
+    const options = answerOptions(variable, sets);
+    expect(options[0]).toEqual({ value: "default", label: "Default · Winter filings" });
+    expect(options.at(-1)).toEqual({ value: "set:resourceSets:1", label: "Winter filings" });
+    expect(ruleOf(variable.default)).toBe("A set that no longer exists");
+    expect(defaultChoices([variable])).toEqual({ evidence: "default" });
+    expect(answersFrom({ evidence: "default" })).toEqual({});
+    expect(answersFrom({ evidence: "kind:finding" })).toEqual({
+      evidence: { include: [{ select: "kinds", kinds: ["finding"] }], exclude: [] }
+    });
+  });
+
   it("does not issue a detail read when no template is selected", () => {
     expect(templateDetail(undefined)).toBeUndefined();
   });

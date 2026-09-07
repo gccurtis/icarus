@@ -84,24 +84,28 @@ since the record stores an actor as a display name —
 
 ### contexts
 
-The project's saved scopes, and what each of them resolves to *now*. A Context is
-a live rule rather than a stored list, which is why the count beside each name is
-the whole point of the row: it is the only thing that says whether the rule still
-means what it meant when it was written. One band, Saved Contexts, under a search
-field.
+The project's saved resource sets, and what each of them resolves to *now*. A
+set is a live rule rather than a stored list, which is why the count beside each
+name is the whole point of the row: it is the only thing that says whether the
+rule still means what it meant when it was written. One list under a search
+field; each row opens into its name, description, the rule read as a sentence,
+the count, and the toggles that make the rule — whole project, kinds included,
+kinds excluded.
 
-A Context that resolves to nothing is drawn as a warning, and the note at the
-foot says why: a rule with no members widens retrieval to the whole project
-instead of restricting it to nothing, which is the opposite of what its author
-asked for. Those Contexts are blocked from dispatch. The warning stands in for a
-distinction the data cannot yet make — there is no way to record that an author
-*meant* an empty scope, so an empty result and a deliberate emptiness look the
-same and both get the warning.
+A set that resolves to nothing says "matches nothing" and carries a note saying
+why that matters: a rule with no members widens a prompt to the whole project
+instead of narrowing it, which is the opposite of what its author asked for.
+There is no way yet to record that an author *meant* an empty scope, so an empty
+result and a deliberate emptiness look the same.
 
-What it deliberately does not do: it does not edit a rule. That happens on the
-Context category, and the header control is the way there.
+New set is the one control in the header. It opens a name field and the same
+toggles, and creates on Enter. Deleting is refused while another set in this
+project still names the set, and the refusal is said back in the panel.
 
-Routes to `context-editor.context`.
+These sets are what a prompt's scope names, so this panel is where a project's
+scopes are kept.
+
+Routes nowhere: the row is the editor.
 
 ### contexts-library
 

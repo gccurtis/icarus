@@ -288,6 +288,29 @@ test("opening an already-open permanent tab onto a centre moves it, keeps the ra
   assert.equal(model.selection, undefined);
 });
 
+test("a target may say which context view the tab opens on, if its rail offers it", () => {
+  const model = workspaceState();
+
+  const tab = model.open({
+    category: "document-editor",
+    resourceId: "k57",
+    context: "document-editor.templates"
+  });
+  assert.equal(tab.contextId, "document-editor.templates");
+  assert.equal(model.context, "document-editor.templates");
+
+  model.selectContext("document-editor.styles");
+  model.open({ category: "document-editor", resourceId: "k57", context: "document-editor.templates" });
+  assert.equal(model.context, "document-editor.templates");
+
+  const other = model.open({
+    category: "slide-deck-editor",
+    resourceId: "d1",
+    context: "document-editor.templates"
+  });
+  assert.equal(other.contextId, defaultContext("slide-deck-editor"));
+});
+
 test("a target with a focus and no centre says what the tab is about without moving it", () => {
   // The narrower half of the same call, and the one a thread needs: the category
   // has one centre, so arriving at a question inside it is a change of subject and

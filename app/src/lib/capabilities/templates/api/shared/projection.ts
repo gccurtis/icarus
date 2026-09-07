@@ -74,10 +74,10 @@ const actorOf = (value: unknown, subject: string): Actor => {
   throw new Error(`templates/${subject}: createdBy is a represented actor`);
 };
 
-/** Admit an existing row before any projection or mutation trusts its typed claim. */
 export const admitStoredTemplate = (template: Template): Template => {
   const subject = `stored-${template._id}`;
   templateIdOf(template._id, subject);
+  requiredId(template.projectId, subject, "project id");
   requiredId(template.userId, subject, "owner id");
   if (!Number.isFinite(template._creationTime) || template._creationTime < 0) {
     throw new Error(`templates/${subject}: creation time is finite`);
@@ -87,6 +87,12 @@ export const admitStoredTemplate = (template: Template): Template => {
   }
   if (!Number.isFinite(template.updatedAt) || template.updatedAt < 0) {
     throw new Error(`templates/${subject}: updated time is finite`);
+  }
+  if (
+    template.lastUsedAt !== undefined &&
+    (!Number.isFinite(template.lastUsedAt) || template.lastUsedAt < 0)
+  ) {
+    throw new Error(`templates/${subject}: last use time is finite`);
   }
 
   const name = nameOf(template.name, subject);
@@ -116,7 +122,7 @@ export const visibleTemplate = (
   templateId: string
 ): TemplateLookup => {
   const matching = recordsIn(store, "templates").filter((row) => row._id === templateId);
-  const visible = matching.filter((row) => row.userId === scope.userId);
+  const visible = matching.filter((row) => row.projectId === scope.projectId);
   if (visible.length === 0) return { kind: "missing" };
   if (matching.length !== 1 || visible.length !== 1) {
     return {
@@ -168,30 +174,6 @@ const actorName = (store: StoreModel, scope: Scope, actor: Actor): string => {
   return title === undefined ? "An agent" : `Agent · ${title}`;
 };
 
-const usesByTemplate = (store: StoreModel, projectId: string): ReadonlyMap<string, number> => {
-  const uses = new Map<string, number>();
-  const collect = (rows: readonly Record<string, unknown>[]) => {
-    for (const row of rows) {
-      if (
-        row.projectId !== projectId ||
-        typeof row.templateId !== "string" ||
-        !/^templates:[^.\s:]+$/.test(row.templateId) ||
-        typeof row._creationTime !== "number" ||
-        !Number.isFinite(row._creationTime) ||
-        row._creationTime < 0
-      ) {
-        continue;
-      }
-      uses.set(row.templateId, Math.max(uses.get(row.templateId) ?? 0, row._creationTime));
-    }
-  };
-
-  collect(recordsIn(store, "documents"));
-  collect(recordsIn(store, "slideDecks"));
-  collect(recordsIn(store, "spreadsheets"));
-  return uses;
-};
-
 export const projectLibrary = (
   store: StoreModel,
   scope: Scope
@@ -199,7 +181,6 @@ export const projectLibrary = (
   readonly templates: readonly TemplateLibraryItem[];
   readonly unavailable: readonly TemplateUnavailable[];
 } => {
-  const uses = usesByTemplate(store, scope.projectId);
   const templates: TemplateLibraryItem[] = [];
   const unavailable: TemplateUnavailable[] = [];
   const rows = recordsIn(store, "templates");
@@ -208,7 +189,7 @@ export const projectLibrary = (
     const id = canonicalRowId(row._id, "templates");
     if (id !== undefined) idCounts.set(id, (idCounts.get(id) ?? 0) + 1);
   }
-  const visible = rows.filter((row) => row.userId === scope.userId);
+  const visible = rows.filter((row) => row.projectId === scope.projectId);
   for (const [index, row] of visible.entries()) {
     const id = canonicalRowId(row._id, "templates");
     const reportId =
@@ -227,7 +208,7 @@ export const projectLibrary = (
     try {
       const stored = row as unknown as Template;
       const template = admitStoredTemplate(stored);
-      templates.push(itemOf(store, scope, template, uses.get(template._id) ?? null));
+      templates.push(itemOf(store, scope, template));
     } catch (error) {
       unavailable.push({
         unavailable: true,
@@ -243,24 +224,19 @@ export const projectLibrary = (
   return { templates, unavailable };
 };
 
-const itemOf = (
-  store: StoreModel,
-  scope: Scope,
-  template: Template,
-  lastUsedAt: number | null = null
-): TemplateLibraryItem => {
+const itemOf = (store: StoreModel, scope: Scope, template: Template): TemplateLibraryItem => {
   return {
     id: template._id,
     name: template.name,
     ...(template.description === undefined ? {} : { description: template.description }),
     target: template.body.resource,
-    availability: "personal",
+    availability: "project",
     tags: template.tags,
     variableCount: template.variables.length,
     createdByName: actorName(store, scope, template.createdBy),
     revision: template.revision,
     updatedAt: template.updatedAt,
-    lastUsedAt,
+    lastUsedAt: template.lastUsedAt ?? null,
     canEdit: true,
     canDelete: true
   };
@@ -272,12 +248,10 @@ export const detailOf = (
   template: Template
 ): TemplateDetail => {
   const admitted = admitStoredTemplate(template);
-  const lastUsedAt = usesByTemplate(store, scope.projectId).get(template._id) ?? null;
-  const { variableCount: _variableCount, ...item } = itemOf(
-    store,
-    scope,
-    admitted,
-    lastUsedAt
-  );
-  return { ...item, body: admitted.body, variables: admitted.variables };
+  const { variableCount: _variableCount, ...item } = itemOf(store, scope, admitted);
+  return {
+    ...item,
+    body: admitted.body,
+    variables: admitted.variables
+  };
 };

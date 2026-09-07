@@ -1,23 +1,49 @@
 <script lang="ts">
+  import { onDestroy } from "svelte";
   import ArrowLeft from "@lucide/svelte/icons/arrow-left";
   import FilePenLine from "@lucide/svelte/icons/file-pen-line";
 
   import { ScreenEmpty, ScreenNote, ScreenSurface } from "$authored-components/screen";
   import { Button } from "$vendored-components/button";
+  import {
+    editTemplate,
+    templateLibrary,
+    templatesIn
+  } from "$app-views/categories/templates/procedures/library.svelte";
   import { workspaceState } from "$model/client/workspace-state";
 
-  /**
-   * Compatibility landing for workspace snapshots that still name `templates.editor`.
-   *
-   * Template authoring is not a fourth editor. The intended implementation stages a
-   * represented body into the ordinary document/deck editor, flushes that runtime,
-   * commits the resulting body with a template-revision check, then removes the stage.
-   * That lifecycle needs a durable session record before it is safe across reload,
-   * workspace undo, and reopened tabs, so this route states the boundary instead of
-   * preserving the former 700-line session-local editor mock.
-   */
   const view = workspaceState();
+  const library = templateLibrary();
+  let live = true;
+  onDestroy(() => {
+    live = false;
+  });
+
+  let opening = $state<string | undefined>(undefined);
+  let refused = $state<string | undefined>(undefined);
+
   const back = () => view.showContent("templates.library", view.active.focus);
+
+  $effect(() => {
+    const focus = view.active.focus;
+    if (!library.ready || focus === undefined || opening !== undefined || refused !== undefined) return;
+    const row = templatesIn(library.current, Date.now()).find((candidate) => candidate.id === focus);
+    if (row === undefined) return;
+    opening = row.id;
+    void editTemplate(view, row).then(
+      (result) => {
+        if (!live) return;
+        if (result.accepted) view.showContent("templates.library", focus);
+        else refused = result.detail;
+        opening = undefined;
+      },
+      (error: unknown) => {
+        if (!live) return;
+        refused = error instanceof Error ? error.message : String(error);
+        opening = undefined;
+      }
+    );
+  });
 </script>
 
 <ScreenSurface>
@@ -28,15 +54,20 @@
     </Button>
   </header>
 
-  <ScreenEmpty title="The editor shell is intentionally deferred" icon={FilePenLine}>
-    This remains inside the Template category. A later pass can mount the ordinary document or
-    slide-deck runtime beneath this quiet return bar without creating another workspace tab.
-  </ScreenEmpty>
+  {#if refused !== undefined}
+    <ScreenEmpty title="This template cannot be opened for editing" icon={FilePenLine}>
+      {refused}
+    </ScreenEmpty>
+  {:else}
+    <ScreenEmpty title="Opening the template in its editor" icon={FilePenLine}>
+      A template is edited as a staged copy in the ordinary document or slide-deck editor. The
+      editor's Templates panel saves the copy back or discards it.
+    </ScreenEmpty>
+  {/if}
 
   <ScreenNote tone="gap">
-    Name, description, variable help text, and tags autosave in the Inspector today. Body authoring
-    still needs a collaborative edit-session identity, Template blocks for variable-bearing Prompt
-    positions, and deterministic scratch cleanup after the editor flushes.
+    Spreadsheet templates wait for the spreadsheet editor; their name, description, variables and
+    tags still change in the Inspector.
   </ScreenNote>
 </ScreenSurface>
 

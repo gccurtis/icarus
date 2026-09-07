@@ -24,6 +24,7 @@ export const writeTemplateVersion = (
 };
 
 export const fieldsOfTemplate = (template: Template): TemplateFields => ({
+  projectId: template.projectId,
   userId: template.userId,
   name: template.name,
   ...(template.description === undefined ? {} : { description: template.description }),

@@ -888,6 +888,11 @@
     color: var(--token-color-danger-text);
   }
 
+  .editor :global(.document-formula-unbound) {
+    outline: 1px dashed var(--token-border-strong);
+    outline-offset: 1px;
+  }
+
   .editor :global(.document-underline) {
     text-decoration: underline;
     text-underline-offset: 0.12em;

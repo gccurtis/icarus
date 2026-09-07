@@ -8,41 +8,21 @@ import type { PrintScale } from "$representation/data/types/spreadsheets/body";
 import type { PageSetup } from "$representation/data/types/spreadsheets/page-setup";
 import type { StyleSet } from "$representation/data/types/spreadsheets/style-set";
 
-/**
- * One question a template asks when it is instantiated.
- *
- * `name` is what a `{ select: "variable" }` term names. Nothing lists which
- * blocks the answer reaches — instantiation walks the body and fills every term
- * naming this variable, so there is no id list that can point at a block the
- * body no longer has.
- *
- * A default may only use templated terms, so it means something in whatever
- * project the template lands in.
- */
 export type TemplateVariable = {
   name: string;
-  /** What the person filling it in is asked. */
   label: string;
   description?: string;
   default?: TemplatedResourceSet;
 };
 
-/**
- * One cell as a template holds it. An expression rather than a formula id: a
- * formula is a row scoped to one project, and the text an author wrote is the
- * portable form.
- */
 export type TemplateCell = {
   value?: VariableValue;
-  /** The expression as authored, when the cell computes. */
   expression?: string;
   marks?: Mark[];
   format?: BlockFormat;
-  /** `"D4"` — the far corner of a merge. */
   merge?: string;
 };
 
-/** Addressed rather than identified, like everything else in a spreadsheet template. */
 export type TemplateFormatRule = {
   from: string;
   to: string;
@@ -60,17 +40,8 @@ export type TemplatePrint = {
   headings?: boolean;
 };
 
-/**
- * A spreadsheet as a template holds it: **addressed, never identified.**
- *
- * A live grid names its rows and columns by ids that exist only in that
- * resource. A template has no resource to point at, so everything here is keyed
- * by the address a person reads — `"B7"`, `"A"`, `"3"` — and nothing in it can
- * dangle. It is the one template body that is a projection rather than a copy.
- */
 export type SpreadsheetTemplate = {
   cells: Record<string, TemplateCell>;
-  /** Keyed by the ruler label — `"A"`, `"3"`. */
   columnWidths?: Record<string, number>;
   rowHeights?: Record<string, number>;
   formatRules: TemplateFormatRule[];

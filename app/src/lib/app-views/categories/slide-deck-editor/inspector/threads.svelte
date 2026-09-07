@@ -1,6 +1,7 @@
 <script lang="ts">
   import { startThread } from "$capabilities/comments/index.remote";
-  import { Panel, PanelButton, PanelCrumbs, PanelEmpty, PanelQuote, PanelSection } from "$authored-components/panel";
+  import { readResourceTemplate } from "$capabilities/templates/index.remote";
+  import { Panel, PanelButton, PanelCrumbs, PanelEmpty, PanelNote, PanelQuote, PanelSection } from "$authored-components/panel";
   import { Textarea } from "$vendored-components/textarea";
   import {
     ago,
@@ -46,6 +47,8 @@
 
   const inThread = (thread: CommentThread) => remarksOf(comments, thread._id);
   const subject = $derived(element ? labelOf(element) : `Slide ${position}`);
+  const templateQuery = $derived(deckId === undefined ? undefined : readResourceTemplate({ resourceId: deckId }));
+  const workingCopy = $derived(templateQuery?.ready === true && templateQuery.current.stage !== null);
 
   let composing = $state("");
   let posting = $state(false);
@@ -82,6 +85,9 @@
       }}
     />
   {/snippet}
+  {#if workingCopy}
+    <PanelNote tone="gap">A template's working copy takes no comments; they never travel with a template.</PanelNote>
+  {:else}
   <div class="flex flex-col gap-1.5 px-3 pb-2">
     <Textarea
       bind:ref={box}
@@ -99,6 +105,7 @@
       <PanelButton label={posting ? "Posting…" : "Comment"} tone="primary" disabled={posting || composing.trim() === ""} title="Start a thread on {subject}" onclick={() => void post()} />
     </div>
   </div>
+  {/if}
 
   <section aria-labelledby="slide-thread-open" class="flex flex-col">
     <div class="text-ink-secondary flex items-center gap-1.5 px-3 py-1.5 text-start">

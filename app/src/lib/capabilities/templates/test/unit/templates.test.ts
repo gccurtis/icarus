@@ -173,6 +173,7 @@ const template = (
   extra: Record<string, unknown> = {}
 ): Row =>
   row("templates", id, {
+    projectId: "p",
     userId: owner,
     name: `Template ${id}`,
     tags: ["Useful"],
@@ -232,12 +233,12 @@ describe("the project library", () => {
     assert.equal(answer.templates[0].createdByName, "Someone");
   });
 
-  test("quarantines duplicate ids across owners and tolerates malformed resource rows", async () => {
+  test("quarantines duplicate ids across projects and tolerates malformed resource rows", async () => {
     model.tables.templates.push(
       template("1", "u", documentBody, {
         createdBy: { kind: "user", userId: "x" }
       }),
-      template("1", "v", slidesBody)
+      template("1", "v", slidesBody, { projectId: "other" })
     );
     model.tables.documents.push(null as unknown as Row);
 
@@ -267,50 +268,34 @@ describe("the project library", () => {
     assert.equal("projectId" in answer, false);
   });
 
-  test("projects only owner-visible templates with project-local recency", async () => {
+  test("projects only this project's templates with project-local recency", async () => {
     model.tables.templates.push(
-      template("1", "u", documentBody, { name: "Mine", updatedAt: 30 }),
-      template("2", "v", slidesBody, { name: "Shared", updatedAt: 40 }),
-      template("3", "x", documentBody, { name: "Hidden", updatedAt: 50 })
-    );
-    model.tables.documents.push(
-      row("documents", "1", {
-        projectId: "p",
-        templateId: "templates:1",
-        updatedAt: 800,
-        _creationTime: 80
-      }),
-      row("documents", "2", {
-        projectId: "other",
-        templateId: "templates:1",
-        updatedAt: 999,
-        _creationTime: 999
-      })
-    );
-    model.tables.slideDecks.push(
-      row("slideDecks", "1", {
-        projectId: "p",
-        templateId: "templates:2",
-        updatedAt: 900,
-        _creationTime: 90
-      })
+      template("1", "u", documentBody, { name: "Mine", updatedAt: 30, lastUsedAt: 80 }),
+      template("2", "v", slidesBody, { name: "Shared", updatedAt: 40, lastUsedAt: 90 }),
+      template("3", "x", documentBody, { name: "Hidden", updatedAt: 50, projectId: "other" })
     );
 
     const answer = await readTemplateLibrary();
 
     assert.equal(model.calls[0], "scope");
-    assert.deepEqual(answer.templates.map((item) => item.id), ["templates:1"]);
+    assert.deepEqual(answer.templates.map((item) => item.id), ["templates:2", "templates:1"]);
     assert.deepEqual(
       answer.templates.map((item) => [item.availability, item.createdByName, item.lastUsedAt]),
-      [["personal", "Uma", 80]]
+      [
+        ["project", "Victor", 90],
+        ["project", "Uma", 80]
+      ]
     );
     assert.equal(answer.templates[0].canEdit, true);
     assert.equal(answer.templates[0].canDelete, true);
     assert.deepEqual(answer.unavailable, []);
   });
 
-  test("reads an owned full body and does not disclose another user's template", async () => {
-    model.tables.templates.push(template("1", "u", slidesBody), template("2", "v"));
+  test("reads a full body and does not disclose another project's template", async () => {
+    model.tables.templates.push(
+      template("1", "u", slidesBody),
+      template("2", "v", documentBody, { projectId: "other" })
+    );
 
     const answer = await readTemplate({ templateId: "templates:1" });
     assert.ok(answer !== null && !("unavailable" in answer));
@@ -374,8 +359,11 @@ describe("template mutations", () => {
     assert.deepEqual(model.tables.templateVersions.map((version) => version.revision), [1, 1, 1]);
   });
 
-  test("updates only an owner's current revision and snapshots the accepted result", async () => {
-    model.tables.templates.push(template("1", "u"), template("2", "v"));
+  test("updates only this project's current revision and snapshots the accepted result", async () => {
+    model.tables.templates.push(
+      template("1", "u"),
+      template("2", "v", documentBody, { projectId: "other" })
+    );
 
     assert.deepEqual(
       await updateTemplate({ templateId: "templates:1", baseRevision: 1, patch: { name: "Stale" } }),
@@ -450,6 +438,7 @@ describe("template mutations", () => {
     assert.equal(answer.accepted, true);
     const copy = model.tables.templates.find((candidate) => candidate._id === "templates:2");
     assert.equal(copy?.userId, "u");
+    assert.equal(copy?.projectId, "p");
     assert.equal(copy?.name, "My copy");
     assert.deepEqual(copy?.createdBy, { kind: "user", userId: "u" });
     assert.notEqual(copy?.body, model.tables.templates[0].body);
@@ -513,28 +502,16 @@ describe("template mutations", () => {
     assert.equal(typeof copy?.name === "string" && copy.name.endsWith(" copy"), true);
   });
 
-  test("refuses cross-project dangling provenance, then deletes after clearing local provenance", async () => {
+  test("deletes a template with its versions and leaves the resources made from it alone", async () => {
     model.tables.templates.push(template("1", "u"));
     model.tables.templateVersions.push(
       row("templateVersions", "1", { templateId: "templates:1", revision: 1 }),
       row("templateVersions", "2", { templateId: "templates:1", revision: 2 })
     );
     model.tables.documents.push(
-      row("documents", "1", { projectId: "p", templateId: "templates:1", updatedAt: 1 }),
-      row("documents", "2", { projectId: "other", templateId: "templates:1", updatedAt: 1 })
+      row("documents", "1", { projectId: "p", title: "Made from it", updatedAt: 1 })
     );
 
-    assert.deepEqual(await removeTemplate({ templateId: "templates:1", baseRevision: 2 }), {
-      accepted: false,
-      templateId: "templates:1",
-      reason: "in-use-elsewhere",
-      revision: 2,
-      detail: "this template is referenced outside the current project and cannot be deleted here"
-    });
-    assert.equal(model.tables.templates.length, 1);
-    assert.equal(model.tables.templateVersions.length, 2);
-
-    delete model.tables.documents[1].templateId;
     assert.deepEqual(await removeTemplate({ templateId: "templates:1", baseRevision: 2 }), {
       accepted: true,
       templateId: "templates:1",
@@ -542,15 +519,12 @@ describe("template mutations", () => {
     });
     assert.equal(model.tables.templates.length, 0);
     assert.equal(model.tables.templateVersions.length, 0);
-    assert.equal("templateId" in model.tables.documents[0], false);
-    assert.equal("templateId" in model.tables.documents[1], false);
+    assert.equal(model.tables.documents.length, 1);
+    assert.equal(model.tables.documents[0].title, "Made from it");
   });
 
-  test("preflights corrupt version ids before detaching local provenance", async () => {
+  test("preflights corrupt version ids before removing anything", async () => {
     model.tables.templates.push(template("1", "u"));
-    model.tables.documents.push(
-      row("documents", "1", { projectId: "p", templateId: "templates:1", updatedAt: 1 })
-    );
     model.tables.templateVersions.push({
       _id: "templateVersions:bad.path",
       _creationTime: 1,
@@ -563,29 +537,7 @@ describe("template mutations", () => {
     assert.equal(answer.accepted, false);
     assert.equal(answer.accepted ? "" : answer.reason, "unsupported-body");
     assert.equal(model.tables.templates.length, 1);
-    assert.equal(model.tables.documents[0].templateId, "templates:1");
     assert.equal(model.tables.templateVersions.length, 1);
-    assert.equal(model.calls.some((call) => call.startsWith("remove")), false);
-  });
-
-  test("refuses ambiguous ancillary ids before a batch can touch another claimant", async () => {
-    model.tables.templates.push(template("1", "u"));
-    model.tables.documents.push(
-      row("documents", "1", { projectId: "p", templateId: "templates:1", updatedAt: 1 }),
-      row("documents", "1", { projectId: "other", templateId: "templates:other", updatedAt: 1 })
-    );
-    model.tables.templateVersions.push(
-      row("templateVersions", "1", { templateId: "templates:1", revision: 2 })
-    );
-
-    const answer = await removeTemplate({ templateId: "templates:1", baseRevision: 2 });
-
-    assert.equal(answer.accepted, false);
-    assert.equal(answer.accepted ? "" : answer.reason, "unsupported-body");
-    assert.match(answer.accepted ? "" : answer.detail, /provenance id is ambiguous/);
-    assert.equal(model.tables.templates.length, 1);
-    assert.equal(model.tables.documents[0].templateId, "templates:1");
-    assert.equal(model.tables.documents[1].templateId, "templates:other");
     assert.equal(model.calls.some((call) => call.startsWith("remove")), false);
   });
 
@@ -643,7 +595,7 @@ describe("instantiation", () => {
     assert.equal(model.tables.documentSnapshots.length, 0);
   });
 
-  test("creates ordinary document and slide-deck rows with leader snapshots and provenance", async () => {
+  test("creates ordinary document and slide-deck rows with leader snapshots and no provenance", async () => {
     model.tables.templates.push(template("1", "u"), template("2", "u", slidesBody));
 
     const document = await instantiateTemplate({ templateId: "templates:1", name: "Brief" });
@@ -651,13 +603,15 @@ describe("instantiation", () => {
 
     assert.equal(document.accepted && document.target, "document");
     assert.equal(slides.accepted && slides.target, "slides");
-    assert.equal(model.tables.documents[0].templateId, "templates:1");
+    assert.equal("templateId" in model.tables.documents[0], false);
     assert.equal(model.tables.documentSnapshots[0].role, "leader");
-    assert.equal(model.tables.slideDecks[0].templateId, "templates:2");
+    assert.equal("templateId" in model.tables.slideDecks[0], false);
     assert.equal(model.tables.slideDeckSnapshots[0].revision, 0);
     const readyDeck = model.tables.slideDeckSnapshots[0].body as { slides: { id: string }[] };
     assert.equal(readyDeck.slides.length, 1);
     assert.match(readyDeck.slides[0].id, /^slide-/);
+    assert.equal(model.tables.templates[0].lastUsedAt, 500);
+    assert.equal(model.tables.templates[0].revision, 2);
     assert.notEqual(model.tables.documents[0].createdBy, model.tables.documents[0].updatedBy);
     assert.notEqual(model.tables.slideDecks[0].createdBy, model.tables.slideDecks[0].updatedBy);
   });
@@ -728,15 +682,14 @@ describe("instantiation", () => {
 
     const answer = await instantiateTemplate({ templateId: "templates:1" });
 
-    assert.deepEqual(answer, {
-      accepted: false,
-      templateId: "templates:1",
-      reason: "variables-required",
-      revision: 2,
-      detail: "one or more template variables need answers and have no usable default",
-      variables: ["region"]
+    assert.equal(answer.accepted, true);
+    const made = model.tables.documentSnapshots[0].body as {
+      rows: { blocks: { scope: unknown }[] }[];
+    };
+    assert.deepEqual(made.rows[0].blocks[0].scope, {
+      include: [{ select: "project" }],
+      exclude: []
     });
-    assert.equal(model.tables.documents.length, 0);
   });
 
   test("uses represented defaults without asking for an invented value shape", async () => {
@@ -1009,9 +962,14 @@ describe("stored template validation", () => {
           include: [{ select: "kinds", kinds: ["finding", "document"] }],
           exclude: [{ select: "project" }]
         }
+      },
+      {
+        name: "evidence",
+        label: "Evidence",
+        default: { include: [{ select: "set", setId: "resourceSets:1" }], exclude: [] }
       }
     ];
-    assert.equal(variablesOf(valid, "test").length, 1);
+    assert.equal(variablesOf(valid, "test").length, 2);
 
     const invalid = [
       [{ ...valid[0], invented: true }],
@@ -1050,6 +1008,15 @@ describe("stored template validation", () => {
           ...valid[0],
           default: {
             include: [{ select: "variable", name: "Region" }],
+            exclude: []
+          }
+        }
+      ],
+      [
+        {
+          ...valid[0],
+          default: {
+            include: [{ select: "set", setId: "sets:1" }],
             exclude: []
           }
         }
@@ -1471,7 +1438,7 @@ describe("stored template validation", () => {
     const answer = await instantiateTemplate({ templateId: "templates:1" });
 
     assert.equal(answer.accepted, false);
-    assert.equal(answer.accepted ? "" : answer.reason, "variables-required");
-    assert.deepEqual(answer.accepted ? [] : answer.variables, ["Region"]);
+    assert.equal(answer.accepted ? "" : answer.reason, "unsupported-body");
+    assert.match(answer.accepted ? "" : answer.detail, /does not declare: Region/);
   });
 });

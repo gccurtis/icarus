@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Template Features — Reference</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="reference.css">
+</head>
+<body>
+<div class="shell">
+  <aside class="rail">
+    <p class="rail-mark">Reference</p>
+    <nav>
+      <a href="index.html" class="is-here"><b>00</b><span>Start here</span></a>
+      <a href="01-system.html"><b>01</b><span>How templates work now</span></a>
+      <a href="02-model.html"><b>02</b><span>The model</span></a>
+      <a href="03-capabilities.html"><b>03</b><span>The capabilities</span></a>
+      <a href="04-panels.html"><b>04</b><span>Panels and flows</span></a>
+      <a href="05-changes.html"><b>05</b><span>What changed, verification, forks</span></a>
+    </nav>
+  </aside>
+
+  <main>
+    <p class="eyebrow">Icarus · templates · work/template-features</p>
+    <h1>Template Features — Reference</h1>
+    <p class="lede">
+      A template belongs to its project. It can be edited in the ordinary document and slide-deck
+      editors through a copy, made from a live document, a live deck, or one slide of a deck, and
+      inserted into whatever is open, which asks what each of its variables should select. Resource
+      sets exist as a subject, and a variable's default can name one. This suite says what was built,
+      how it fits the tree, and every difference from main, file by file.
+    </p>
+    <div class="meta">
+      <span>Worktree <b>.claude/worktrees/template-features</b></span>
+      <span>Branch <b>work/template-features</b> cut from <b>main 7739f04</b></span>
+      <span>Uncommitted, by request</span>
+      <span>Revised <b>2026-09-06</b> after three reviews</span>
+    </div>
+
+    <section>
+      <div class="head"><span class="n">00</span><h2>How to read this</h2></div>
+      <p>
+        Page 01 describes the template system as it runs today, end to end, without reference to what it
+        was. Page 02 is the vocabulary: the one table, one field, one term and five pure functions under
+        <code>representation/</code>, and the type that did not change. Page 03 is the crossing: both
+        capabilities, procedure by procedure, with what each one refuses. Page 04 is what a person sees:
+        the three context panels, the changed library and inspector, and the lifecycles they drive. Page
+        05 is the audit: the change set grouped into ten systematic changes with every diff behind a
+        dropdown, followed by what was verified, what the three reviews settled, and the two forks left
+        open, each with a recommendation.
+      </p>
+      <p>
+        The diffs are generated. <code>build-diffs.mjs</code> beside this page measures the worktree
+        against the commit this branch was cut from and fills every dropdown; run it again after any change and the pages
+        are current. The prose was checked against the code and the running app.
+      </p>
+    </section>
+
+    <section>
+      <div class="head"><span class="n">1</span><h2>What was asked, and what was built</h2></div>
+      <div class="scroll">
+        <table>
+          <thead><tr><th>Asked</th><th>Built</th><th>Where</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>Open a template and edit it in the resource's own editor through a temporary copy</td>
+              <td>A <em>stage</em>: a scratch document or deck holding the template body plus a row naming the template, one per template and shared by everyone in the project. The library's double-click, its Edit action, and the old <code>templates.editor</code> door all open it. Save writes the copy back as the next revision; Discard removes it.</td>
+              <td><a href="03-capabilities.html#stages">03 § stages</a>, <a href="04-panels.html#lifecycle">04 § lifecycle</a></td>
+            </tr>
+            <tr>
+              <td>Resource sets, so template variables can be set up</td>
+              <td>A <code>resource-sets</code> capability over the existing table, resolving each set's live count, and a Contexts panel in Project Overview to make, change and delete them.</td>
+              <td><a href="03-capabilities.html#resource-sets">03 § resource-sets</a>, <a href="04-panels.html#contexts">04 § Contexts</a></td>
+            </tr>
+            <tr>
+              <td>A Templates context panel in both editors: turn the open thing into a template, declare variables, give each a resource set, save</td>
+              <td>Built in both. A name and Save copy the open resource into a new template and open it for editing in a new tab. Variables are declared by label; each carries a description and a default set through a modal: everything in the project, particular kinds, or one of the project's named sets.</td>
+              <td><a href="02-model.html#defaults">02 § defaults</a>, <a href="04-panels.html#variables">04 § variables</a></td>
+            </tr>
+            <tr>
+              <td>See every template of the editor's kind and pull one's content into the open resource</td>
+              <td>The panel lists them behind a search. Insert first asks, in one modal, what each variable should select, its default offered first; then it appends after the current row or slide with fresh ids and brings missing styles and layouts.</td>
+              <td><a href="04-panels.html#insert">04 § insert</a></td>
+            </tr>
+            <tr>
+              <td>A template of one slide, not the whole deck</td>
+              <td>Save slide copies the current slide into a deck template holding that slide alone. No fourth kind: it is a deck template afterwards, inserted, staged and listed like any other.</td>
+              <td><a href="02-model.html#slide">02 § slide</a></td>
+            </tr>
+            <tr>
+              <td>Templates bound to the project</td>
+              <td><code>projectId</code> on every template. The library is the project's, anyone in it may edit, save into and delete a template, a default may name one of the project's sets, and a stage is one per template.</td>
+              <td><a href="03-capabilities.html#visibility">03 § visibility</a></td>
+            </tr>
+            <tr>
+              <td>A copy that knows nothing of its original</td>
+              <td>Main's <code>templateId</code> on documents, decks and spreadsheets is gone. Making a template from a resource and making a resource from a template are both copies; the template records its own last use, and a working copy takes no comments.</td>
+              <td><a href="03-capabilities.html#stages">03 § stages</a></td>
+            </tr>
+            <tr>
+              <td>Reference pages explaining everything and the complete difference from main</td>
+              <td>This suite.</td>
+              <td><a href="05-changes.html">05</a></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section>
+      <div class="head"><span class="n">2</span><h2>Where things sit in the tree</h2></div>
+      <p>
+        The repository's rule is that a path says what a file does, and this work keeps to it. Nothing new
+        is a fourth kind of thing.
+      </p>
+      <div class="scroll">
+        <table>
+          <thead><tr><th>Tree</th><th>Added or changed</th><th>Why there</th></tr></thead>
+          <tbody>
+            <tr><td><code>representation/data/types/templates</code></td><td>Nothing, in the end</td><td>The body kinds and the variable shape on main were enough</td></tr>
+            <tr><td><code>representation/data/types/core/resource-set.ts</code></td><td>A <code>set</code> term on <code>TemplatedTerm</code></td><td>A default may name one of the project's sets, because a template now belongs to a project</td></tr>
+            <tr><td><code>representation/store/tables.ts</code></td><td><code>templates.projectId</code> · <code>templateStages</code></td><td>A template belongs to a project; what a stage is on disk</td></tr>
+            <tr><td><code>representation/data/types/workspace/tab.ts</code></td><td><code>Target.context</code></td><td>A tab can be opened straight onto a named context view</td></tr>
+            <tr><td><code>representation/data/behavior/templates</code></td><td><code>scopes</code>, <code>portable</code>, <code>fresh-ids</code>, <code>deck-of-slide</code></td><td>Pure functions both processes need: the capability resolves and validates with them, the editors insert with them</td></tr>
+            <tr><td><code>representation/data/behavior/core</code></td><td><code>resource-set</code></td><td>Resolving a set is a fact about the vocabulary, not about a process</td></tr>
+            <tr><td><code>capabilities/templates</code></td><td>Five procedures, three shared steps, project scoping</td><td>The subject is a template; a stage is a fact about one</td></tr>
+            <tr><td><code>capabilities/resource-sets</code></td><td>New capability, four procedures</td><td>A set is its own subject with its own invariants</td></tr>
+            <tr><td><code>capabilities/project-resources</code></td><td>One exclusion</td><td>The index must not list a scratch copy</td></tr>
+            <tr><td><code>app-views/categories/*/context/templates.svelte</code></td><td>Two panels, one per editor</td><td>A context is what surrounds the open resource; the key already existed on both rails</td></tr>
+            <tr><td><code>app-views/categories/project-overview/context/contexts.svelte</code></td><td>One panel</td><td>The rail already named it; the vocabulary already keyed it</td></tr>
+            <tr><td><code>app-views/categories/*/procedures/templating.ts</code>, <code>contexts.ts</code></td><td>Three procedure modules</td><td>What a panel computes and which door it calls, testable without a browser</td></tr>
+            <tr><td><code>app-views/categories/templates</code></td><td>Library, editor door, inspector, procedures</td><td>The Edit action, the default modal</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        No model object was added: a stage is durable server state, so it is a row, and the client's
+        runtimes already work on any resource row. No component was added: every panel is built from the
+        panel and overlay vocabularies as shipped. No surface changed.
+      </p>
+    </section>
+
+    <section>
+      <div class="head"><span class="n">3</span><h2>The one-paragraph version</h2></div>
+      <p>
+        A template is the project's copy of something: a portable body and a list of variables, each
+        with a default that means the whole project unless the template says otherwise. To edit a
+        template you open it: the capability writes its body into a scratch document or deck and records
+        the stage; the ordinary editor opens on the copy; the editor's Templates panel saves the copy back
+        or discards it, and the copy is the only thing that ever writes the template's body. To make a
+        template you name and save the open document, deck, or current slide, and it opens for editing
+        at once. To use one, on its own or inside what you have open, you use or insert it: a modal asks
+        what each variable should select, offering its default, and the copy lands with its prompts'
+        scopes already filled. A resource made from a template is its own afterwards and carries no
+        reference back; later changes to the template do not reach it, and a working copy takes no
+        comments.
+      </p>
+    </section>
+
+    <footer>Next: <a href="01-system.html">01 · How templates work now</a>.</footer>
+  </main>
+</div>
+</body>
+</html>

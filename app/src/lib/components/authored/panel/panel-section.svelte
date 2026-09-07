@@ -70,6 +70,18 @@
   // svelte-ignore state_referenced_locally
   let requested = $state(open);
 
+  /**
+   * The disclosure's body waits for the root to exist before it mounts. A
+   * section that starts open otherwise mounts its content in the tick that
+   * mounts the trigger, and the primitive's measurement watch then reads a
+   * derived belonging to that same tick's effect once the panel is torn down.
+   */
+  let settled = $state(false);
+
+  $effect(() => {
+    settled = true;
+  });
+
   $effect(() => {
     const next = open;
     if (next && !requested) expanded = true;
@@ -101,7 +113,7 @@
     {/if}
   </Collapsible.Trigger>
 
-  {#if expanded}
+  {#if expanded && settled}
     <!--
       Do not mount a closed presence layer just to have the primitive remove it
       in the same tick. Besides doing needless work for every inspector, that

@@ -49,6 +49,7 @@ export type Landing = Pick<
 export type Target = {
   readonly category: Category;
   readonly content?: ContentView;
+  readonly context?: ContextView;
   readonly resourceId?: string;
   readonly focus?: string;
 };

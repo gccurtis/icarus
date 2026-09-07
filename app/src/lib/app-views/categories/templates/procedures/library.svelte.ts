@@ -2,33 +2,44 @@ import {
   createTemplate as createTemplateRemote,
   duplicateTemplate as duplicateTemplateRemote,
   instantiateTemplate as instantiateTemplateRemote,
+  openTemplateStage as openTemplateStageRemote,
   readTemplate,
   readTemplateLibrary,
   removeTemplate as removeTemplateRemote,
   updateTemplate as updateTemplateRemote,
   type ReadTemplateLibraryResult,
   type ReadTemplateResult,
+  type TemplateAnswers,
   type TemplateDetail,
   type TemplateLibraryItem,
   type TemplateUnavailable,
   type TemplateTarget as StoredTemplateTarget
 } from "$capabilities/templates/index.remote";
 import { readProjectResourceIndex } from "$capabilities/project-resources/index.remote";
-import type { WorkspaceStateModel } from "$model/client/workspace-state";
+import {
+  readResourceSets,
+  type ReadResourceSetsResult,
+  type ResourceSetItem
+} from "$capabilities/resource-sets/index.remote";
+import { asId } from "$representation/data/behavior/core/id";
+import type {
+  ResourceSet,
+  TemplatedResourceSet,
+  TemplatedTerm
+} from "$representation/data/types/core/resource-set";
+import type { TemplateVariable as StoredTemplateVariable } from "$representation/data/types/templates/template";
+import type { Category, WorkspaceStateModel } from "$model/client/workspace-state";
 
-/** The target and availability words used by the library UI. */
+export type { ResourceSetItem } from "$capabilities/resource-sets/index.remote";
+export type { TemplateAnswers } from "$capabilities/templates/index.remote";
+
 export type TemplateTarget = "Document" | "Slide deck" | "Spreadsheet";
 export type TemplateScope = "Project" | "Personal";
 
 export type TemplateVariable = TemplateDetail["variables"][number] & {
-  /** Stable inside one template; represented variables are named rather than identified. */
   readonly id: string;
 };
 
-/**
- * The compact read model shared by the content, context, and inspector surfaces.
- * It is a projection of the Templates capability answer, never a second source of data.
- */
 export type LibraryTemplate = {
   readonly id: string;
   readonly name: string;
@@ -72,6 +83,16 @@ const TARGET_VALUE: Record<TemplateTarget, StoredTemplateTarget> = {
   Spreadsheet: "spreadsheet"
 };
 
+export const EDITOR_CATEGORY: Record<Exclude<StoredTemplateTarget, "spreadsheet">, Category> = {
+  document: "document-editor",
+  slides: "slide-deck-editor"
+};
+
+const EDITOR_TEMPLATES_PANEL = {
+  document: "document-editor.templates",
+  slides: "slide-deck-editor.templates"
+} as const;
+
 const SCOPE_LABEL = {
   project: "Project",
   personal: "Personal"
@@ -81,7 +102,6 @@ const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
 const DAY = 24 * HOUR;
 
-/** One timestamp, said the same way in the shelf, table, and inspector. */
 export const relativeTime = (at: number, now: number): string => {
   const gap = Math.max(0, now - at);
   if (gap < MINUTE) return "just now";
@@ -120,31 +140,25 @@ const project = (row: TemplateLibraryItem, now: number): LibraryTemplate => ({
   canDelete: row.canDelete
 });
 
-/** Start the scoped, metadata-only library read. */
 export const templateLibrary = () => readTemplateLibrary();
 
-/** Start the body-bearing read only when a real template is selected. */
 export const templateDetail = (templateId: string | undefined) =>
   templateId === undefined ? undefined : readTemplate({ templateId });
 
-/** Keep restored legacy or deleted selections away from the strict server read boundary. */
 export const selectedTemplateIdIn = (
   templateId: string | undefined,
   availableIds: readonly string[]
 ): string | undefined =>
   templateId !== undefined && availableIds.includes(templateId) ? templateId : undefined;
 
-/** Explain an empty inspector without pretending that an absent selection is a row id. */
 export const emptyTemplateInspectorTitle = (templateCount: number | undefined): string =>
   templateCount === 0 ? "No templates exist." : "Select a template to inspect it.";
 
-/** Every template visible to the current scoped capability call. */
 export const templatesIn = (
   answer: ReadTemplateLibraryResult | undefined,
   now: number
 ): readonly LibraryTemplate[] => answer?.templates.map((row) => project(row, now)) ?? [];
 
-/** The full selected template, projected into the same display vocabulary as the table. */
 export const detailIn = (
   answer: ReadTemplateResult | undefined,
   now: number
@@ -161,13 +175,11 @@ export const detailIn = (
   };
 };
 
-/** A selected legacy row can be unavailable without taking down the library. */
 export const unavailableTemplateIn = (
   answer: ReadTemplateResult | undefined
 ): TemplateUnavailable | undefined =>
   answer !== null && answer !== undefined && "unavailable" in answer ? answer : undefined;
 
-/** The bounded usage shelf, newest use first. */
 export const recentTemplatesIn = (
   rows: readonly LibraryTemplate[],
   limit = 10
@@ -184,7 +196,6 @@ export const recentTemplatesIn = (
     .toSorted((a, b) => b.lastUsedAt - a.lastUsedAt)
     .slice(0, Math.max(0, limit));
 
-/** Counts used by the compact library overview. */
 export const templateLibrarySummaryIn = (
   rows: readonly LibraryTemplate[]
 ): TemplateLibrarySummary => {
@@ -208,7 +219,6 @@ const defaultName = (target: TemplateTarget): string =>
     Spreadsheet: "Untitled spreadsheet template"
   })[target];
 
-/** Give a no-name creation control a required, visibly editable unique name. */
 export const nextTemplateName = (
   target: TemplateTarget,
   rows: readonly LibraryTemplate[]
@@ -220,13 +230,118 @@ export const nextTemplateName = (
   return `${base} ${suffix}`;
 };
 
-/** Keep a singleton Template tab's durable focus and transient inspector selection aligned. */
+export const KINDS = [
+  { kind: "document", label: "Documents" },
+  { kind: "slides", label: "Slide decks" },
+  { kind: "spreadsheet", label: "Spreadsheets" },
+  { kind: "finding", label: "Findings" },
+  { kind: "research", label: "Research threads" }
+] as const;
+
+const KIND_LABEL: Record<string, string> = Object.fromEntries(
+  KINDS.map((entry) => [entry.kind, entry.label])
+);
+
+export const resourceSets = () => readResourceSets();
+
+export const setsIn = (answer: ReadResourceSetsResult | undefined): readonly ResourceSetItem[] =>
+  answer?.sets ?? [];
+
+export const namesOf = (sets: readonly ResourceSetItem[]): ReadonlyMap<string, string> =>
+  new Map(sets.map((set) => [set.id, set.name]));
+
+export const kindsOf = (rule: TemplatedResourceSet | undefined): readonly string[] =>
+  (rule?.include ?? []).flatMap((term) => (term.select === "kinds" ? term.kinds : []));
+
+export const setIdsOf = (rule: TemplatedResourceSet | undefined): readonly string[] =>
+  (rule?.include ?? []).flatMap((term) => (term.select === "set" ? [term.setId] : []));
+
+export const isWholeProject = (rule: TemplatedResourceSet | undefined): boolean =>
+  rule === undefined || rule.include.some((term) => term.select === "project");
+
+const termWords = (
+  terms: readonly TemplatedTerm[],
+  names: ReadonlyMap<string, string>
+): readonly string[] =>
+  terms.map((term) =>
+    term.select === "project"
+      ? "everything in the project"
+      : term.select === "kinds"
+        ? term.kinds.map((kind) => KIND_LABEL[kind] ?? kind).join(", ")
+        : term.select === "set"
+          ? (names.get(term.setId) ?? "a set that no longer exists")
+          : `whatever ${term.name} holds`
+  );
+
+export const ruleOf = (
+  rule: TemplatedResourceSet | undefined,
+  names: ReadonlyMap<string, string> = new Map()
+): string => {
+  if (rule === undefined) return "Everything in the project";
+  if (rule.include.length === 0) return "Nothing";
+  const words = termWords(rule.include, names).join(" and ");
+  const included = isWholeProject(rule)
+    ? "Everything in the project"
+    : words.charAt(0).toUpperCase() + words.slice(1);
+  const excluded = termWords(rule.exclude, names);
+  return excluded.length === 0 ? included : `${included}, minus ${excluded.join(", ")}`;
+};
+
+export const ruleFrom = (
+  whole: boolean,
+  kinds: readonly string[],
+  setIds: readonly string[] = []
+): TemplatedResourceSet => {
+  if (whole) return { include: [{ select: "project" }], exclude: [] };
+  const include: TemplatedTerm[] = [];
+  if (kinds.length > 0) include.push({ select: "kinds", kinds: [...kinds] as never[] });
+  for (const setId of setIds) include.push({ select: "set", setId: asId<"resourceSets">(setId) });
+  return { include, exclude: [] };
+};
+
+export const DEFAULT_ANSWER = "default";
+
+export type AnswerOption = { readonly value: string; readonly label: string };
+
+export const answerOptions = (
+  variable: StoredTemplateVariable,
+  sets: readonly ResourceSetItem[]
+): readonly AnswerOption[] => [
+  { value: DEFAULT_ANSWER, label: `Default · ${ruleOf(variable.default, namesOf(sets))}` },
+  { value: "project", label: "Everything in the project" },
+  ...KINDS.map((entry) => ({ value: `kind:${entry.kind}`, label: `Only ${entry.label.toLocaleLowerCase()}` })),
+  ...sets.map((set) => ({ value: `set:${set.id}`, label: set.name }))
+];
+
+export const answerFrom = (choice: string): ResourceSet | undefined => {
+  if (choice === "project") return { include: [{ select: "project" }], exclude: [] };
+  if (choice.startsWith("kind:")) {
+    return { include: [{ select: "kinds", kinds: [choice.slice("kind:".length)] as never[] }], exclude: [] };
+  }
+  if (choice.startsWith("set:")) {
+    return { include: [{ select: "set", setId: asId<"resourceSets">(choice.slice("set:".length)) }], exclude: [] };
+  }
+  return undefined;
+};
+
+export const answersFrom = (choices: Readonly<Record<string, string>>): TemplateAnswers =>
+  Object.fromEntries(
+    Object.entries(choices).flatMap(([name, choice]) => {
+      const answer = answerFrom(choice);
+      return answer === undefined ? [] : [[name, answer] as const];
+    })
+  );
+
+export const defaultChoices = (
+  variables: readonly StoredTemplateVariable[]
+): Record<string, string> =>
+  Object.fromEntries(variables.map((variable) => [variable.name, DEFAULT_ANSWER]));
+
 export const inspectTemplate = (view: WorkspaceStateModel, templateId: string): void => {
   view.open({ category: "templates", focus: templateId });
   view.inspect("templates.template", { kind: "template", id: templateId });
 };
 
-/** Create a represented template, then refresh every mounted library query. */
 export const createTemplate = (
   view: WorkspaceStateModel,
   target: TemplateTarget,
@@ -241,7 +356,6 @@ export const createTemplate = (
   );
 };
 
-/** Persist one name edit with the revision the inspector actually read. */
 export const updateTemplateName = (
   view: WorkspaceStateModel,
   row: LibraryTemplateDetail,
@@ -259,7 +373,6 @@ export const updateTemplateName = (
   );
 };
 
-/** Persist one description edit with the revision the inspector actually read. */
 export const updateTemplateDescription = (
   view: WorkspaceStateModel,
   row: LibraryTemplateDetail,
@@ -285,7 +398,6 @@ export const updateTemplateDescription = (
   );
 };
 
-/** Update variable help text while preserving its stable key, label, and default selection. */
 export const updateTemplateVariableDescription = (
   view: WorkspaceStateModel,
   row: LibraryTemplateDetail,
@@ -315,7 +427,6 @@ export const updateTemplateVariableDescription = (
   );
 };
 
-/** Persist the complete flat tag set; the server normalizes and versions it. */
 export const updateTemplateTags = (
   view: WorkspaceStateModel,
   row: LibraryTemplateDetail,
@@ -331,13 +442,31 @@ export const updateTemplateTags = (
       }).updates(readTemplateLibrary, readTemplate({ templateId: row.id }))
   );
 
-/** Copy any visible template into the current viewer's ownership. */
+export const updateTemplateVariableDefault = (
+  view: WorkspaceStateModel,
+  row: LibraryTemplateDetail,
+  variableName: string,
+  rule: TemplatedResourceSet
+) => {
+  const variables = row.variables.map(({ id: _id, ...variable }) =>
+    variable.name === variableName ? { ...variable, default: rule } : variable
+  );
+  return view.singleFlight(
+    ["template", view.project, row.id, "update", row.revision, "variable-default", variableName, JSON.stringify(rule)],
+    () =>
+      updateTemplateRemote({
+        templateId: row.id,
+        baseRevision: row.revision,
+        patch: { variables }
+      }).updates(readTemplateLibrary, readTemplate({ templateId: row.id }))
+  );
+};
+
 export const duplicateTemplate = (view: WorkspaceStateModel, row: LibraryTemplateDetail) =>
   view.singleFlight(["template", view.project, row.id, "duplicate"], () =>
     duplicateTemplateRemote({ templateId: row.id }).updates(readTemplateLibrary)
   );
 
-/** Remove an owned template at the revision currently shown. */
 export const removeTemplate = (view: WorkspaceStateModel, row: LibraryTemplateDetail) =>
   view.singleFlight(["template", view.project, row.id, "remove", row.revision], () =>
     removeTemplateRemote({ templateId: row.id, baseRevision: row.revision }).updates(
@@ -346,11 +475,34 @@ export const removeTemplate = (view: WorkspaceStateModel, row: LibraryTemplateDe
     )
   );
 
-/** Materialize an independent project resource and refresh recency provenance. */
-export const instantiateTemplate = (view: WorkspaceStateModel, row: LibraryTemplate) =>
-  view.singleFlight(["template", view.project, row.id, "instantiate"], () =>
-    instantiateTemplateRemote({ templateId: row.id }).updates(
+export const instantiateTemplate = (
+  view: WorkspaceStateModel,
+  row: LibraryTemplate,
+  answers: TemplateAnswers = {}
+) =>
+  view.singleFlight(
+    ["template", view.project, row.id, "instantiate", JSON.stringify(answers)],
+    () =>
+      instantiateTemplateRemote({
+        templateId: row.id,
+        ...(Object.keys(answers).length === 0 ? {} : { answers })
+      }).updates(readTemplateLibrary, readProjectResourceIndex)
+  );
+
+export const editTemplate = async (view: WorkspaceStateModel, row: LibraryTemplate) => {
+  const result = await view.singleFlight(["template", view.project, row.id, "stage"], () =>
+    openTemplateStageRemote({ templateId: row.id }).updates(
       readTemplateLibrary,
-      readProjectResourceIndex
+      readTemplate({ templateId: row.id }),
+      view.readStore(row.makes === "Document" ? "documents" : "slideDecks")
     )
   );
+  if (result.accepted) {
+    view.open({
+      category: EDITOR_CATEGORY[result.target],
+      resourceId: result.resourceId,
+      context: EDITOR_TEMPLATES_PANEL[result.target]
+    });
+  }
+  return result;
+};

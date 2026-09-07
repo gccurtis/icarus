@@ -125,11 +125,11 @@
     },
     {
       href: "/demo/templates",
-      title: "Template library",
-      sub: "The live future state and every boundary behind it",
+      title: "Template reference",
+      sub: "How templates work, and everything that changed",
       icon: Library,
       about:
-        "A live owner-only library in a project-scoped call, beside its data flow, code inventory, access decisions and clearly deferred authoring-session proposal."
+        "Two pages: the model, the three verbs, the working copy and the panels; then the ten systematic changes, the decisions three reviews settled, every file and every check."
     }
   ];
 </script>

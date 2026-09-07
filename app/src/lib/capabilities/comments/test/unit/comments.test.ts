@@ -41,6 +41,18 @@ beforeEach(() => {
 });
 
 describe("startThread", () => {
+  it("refuses a thread on a template's working copy", async () => {
+    model.tables.set("templateStages", [
+      { _id: "templateStages:1", projectId: "p", templateId: "templates:1", resourceId: "slideDecks:1" }
+    ]);
+
+    await assert.rejects(
+      () => startThread({ target: { kind: "slides", id: "slideDecks:1" }, text: "Not here" }),
+      /working copy takes no comments/
+    );
+    assert.equal(model.tables.get("commentThreads"), undefined);
+  });
+
   it("files a thread and its first comment under the asking user and project", async () => {
     const made = await startThread({
       target: { kind: "slides", id: "slideDecks:1" },

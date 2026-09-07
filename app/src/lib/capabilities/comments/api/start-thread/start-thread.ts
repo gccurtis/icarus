@@ -11,6 +11,14 @@ export const startThread = async (input: unknown): Promise<StartThreadResult> =>
   const asked = validateStartThread(input);
 
   const store = serverModel().store;
+  const stages = store.read("templateStages");
+  if (
+    stages?.table === "templateStages" &&
+    stages.kind === "table" &&
+    stages.rows.some((row) => row.projectId === scope.projectId && row.resourceId === asked.target.id)
+  ) {
+    throw new Error("comments/start-thread: a template's working copy takes no comments");
+  }
   const projectId = asId<"projects">(scope.projectId);
   const author = { kind: "user" as const, userId: asId<"users">(scope.userId) };
   const at = Date.now();

@@ -16,6 +16,7 @@ export const createTemplate = async (input: unknown): Promise<CreateTemplateResu
   const at = Date.now();
   const actor = { kind: "user" as const, userId: asId<"users">(scope.userId) };
   const fields: RowFields<"templates"> = {
+    projectId: asId<"projects">(scope.projectId),
     userId: actor.userId,
     name: asked.name,
     ...(asked.description === undefined ? {} : { description: asked.description }),

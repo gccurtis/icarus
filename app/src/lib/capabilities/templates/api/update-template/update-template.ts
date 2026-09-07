@@ -1,11 +1,13 @@
 import { requireScope } from "$runtime/server/scope.server";
 import { serverModel } from "$runtime/server/start.server";
+import { variableNamesIn } from "$representation/data/behavior/templates/scopes";
 
 import {
   admitStoredTemplate,
   reportableRevision,
   visibleTemplate
 } from "$capabilities/templates/api/shared/projection";
+import { stagesIn } from "$capabilities/templates/api/shared/stages";
 import type { RowFields } from "$capabilities/templates/api/shared/store";
 import { writeTemplateVersion } from "$capabilities/templates/api/shared/template-rows";
 import { validateUpdateTemplate } from "$capabilities/templates/api/update-template/validate-update-template";
@@ -27,15 +29,6 @@ export const updateTemplate = async (input: unknown): Promise<UpdateTemplateResu
     };
   }
   const stored = found.template;
-  if (stored.userId !== scope.userId) {
-    return {
-      accepted: false,
-      templateId: asked.templateId,
-      reason: "forbidden",
-      revision: reportableRevision(stored.revision),
-      detail: "only the template owner can change it"
-    };
-  }
   if (stored.revision !== asked.baseRevision) {
     return {
       accepted: false,
@@ -71,7 +64,20 @@ export const updateTemplate = async (input: unknown): Promise<UpdateTemplateResu
     asked.patch.description === null
       ? undefined
       : (asked.patch.description ?? template.description);
-  let variables = [...template.variables];
+  let variables = [...(asked.patch.variables ?? template.variables)];
+  if (asked.patch.variables !== undefined) {
+    const declared = new Set(variables.map((variable) => variable.name));
+    const orphaned = variableNamesIn(template.body).filter((name) => !declared.has(name));
+    if (orphaned.length > 0) {
+      return {
+        accepted: false,
+        templateId: asked.templateId,
+        reason: "variable-in-use",
+        revision: template.revision,
+        detail: `the body still names ${orphaned.join(", ")}`
+      };
+    }
+  }
   if (asked.patch.variableDescription !== undefined) {
     const variable = asked.patch.variableDescription;
     if (!variables.some((candidate) => candidate.name === variable.name)) {
@@ -96,6 +102,7 @@ export const updateTemplate = async (input: unknown): Promise<UpdateTemplateResu
   }
   const at = Date.now();
   const fields: RowFields<"templates"> = {
+    projectId: template.projectId,
     userId: template.userId,
     name: asked.patch.name ?? template.name,
     ...(description === undefined ? {} : { description }),
@@ -108,6 +115,10 @@ export const updateTemplate = async (input: unknown): Promise<UpdateTemplateResu
   };
   store.update(`templates.${template._id}`, fields);
   writeTemplateVersion(store, template._id, fields, at);
+  for (const stage of stagesIn(store)) {
+    if (stage.templateId !== template._id) continue;
+    store.update(`templateStages.${stage._id}.templateRevision`, fields.revision);
+  }
 
   return { accepted: true, templateId: template._id, revision: fields.revision };
 };

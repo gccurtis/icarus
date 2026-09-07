@@ -51,6 +51,9 @@ const textBlockSpec: NodeSpec = {
   ]
 };
 
+const unboundFormula = (name: string, block: unknown): boolean =>
+  name === "formula" && ((block ?? {}) as Record<string, unknown>).formulaId === undefined;
+
 const atomBlockSpec = (name: string): NodeSpec => ({
   group: "block",
   atom: true,
@@ -60,7 +63,7 @@ const atomBlockSpec = (name: string): NodeSpec => ({
   toDOM: (node) => [
     "div",
     {
-      class: `document-block document-${name}`,
+      class: `document-block document-${name}${unboundFormula(name, node.attrs.block) ? " document-formula-unbound" : ""}`,
       "data-block": node.attrs.blockId,
       style: `flex-basis: ${node.attrs.share * 100}%`
     },
@@ -163,9 +166,14 @@ export const schema = new Schema({
       toDOM: (node) => [
         "span",
         {
-          class: `document-formula document-formula-${node.attrs.state}`,
+          class: `document-formula document-formula-${node.attrs.state}${
+            node.attrs.formulaId === null ? " document-formula-unbound" : ""
+          }`,
           "data-atom": node.attrs.atomId,
-          title: node.attrs.expression
+          title:
+            node.attrs.formulaId === null
+              ? `${node.attrs.expression} · not bound to a formula yet`
+              : node.attrs.expression
         },
         node.attrs.resolved
       ]

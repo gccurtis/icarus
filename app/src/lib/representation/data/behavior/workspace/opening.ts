@@ -145,6 +145,7 @@ export const STARTING_ZOOM: number | null = null;
 
 export type Overrides = {
   readonly content?: ContentView;
+  readonly context?: ContextView;
   readonly focus?: string;
 };
 
@@ -155,7 +156,10 @@ export const openingView = (category: Category, overrides: Overrides = {}): TabV
   return {
     content,
     focus: overrides.focus ?? null,
-    contextId: defaultContext(category),
+    contextId:
+      overrides.context !== undefined && offersContext(category, overrides.context)
+        ? overrides.context
+        : defaultContext(category),
     inspected: "empty",
     selection: null,
     frame: { ...STARTING_FRAME },

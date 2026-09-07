@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>01 · How templates work now</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="reference.css">
+</head>
+<body>
+<div class="shell">
+  <aside class="rail">
+    <p class="rail-mark">Reference</p>
+    <nav>
+      <a href="index.html"><b>00</b><span>Start here</span></a>
+      <a href="01-system.html" class="is-here"><b>01</b><span>How templates work now</span></a>
+      <a href="02-model.html"><b>02</b><span>The model</span></a>
+      <a href="03-capabilities.html"><b>03</b><span>The capabilities</span></a>
+      <a href="04-panels.html"><b>04</b><span>Panels and flows</span></a>
+      <a href="05-changes.html"><b>05</b><span>What changed, verification, forks</span></a>
+    </nav>
+  </aside>
+
+  <main>
+    <p class="eyebrow">01 · the system</p>
+    <h1>How templates work now</h1>
+    <p class="lede">
+      One vocabulary, two capabilities, and four places a person touches templates: the library, the
+      document editor, the deck editor, and Project Overview. This page follows a template through its
+      life and names the file responsible at each step.
+    </p>
+    <div class="meta">
+      <span>Vocabulary <b>representation/data/types/templates/template.ts</b></span>
+      <span>Crossing <b>capabilities/templates/index.remote.ts</b> · <b>capabilities/resource-sets/index.remote.ts</b></span>
+      <span>Panels <b>app-views/categories/*/context/*.svelte</b></span>
+    </div>
+
+    <section id="shape">
+      <div class="head"><span class="n">1</span><h2>What a template is</h2></div>
+      <p>
+        A <code>templates</code> row in one project: a name, tags, a <strong>portable body</strong>, and
+        a list of <strong>variables</strong>. Portable means the body names nothing that only exists as a
+        live resource: no formula ids, no derived-output ids, no links to people or resources, no stored
+        images, no scope terms naming a set or a resource. That was already the contract; what is new is
+        that a body can be made portable from a live one rather than only admitted or refused. The
+        contract holds inside one project as much as across two, because a template turns a value into
+        a function: a formula keeps its expression and loses its instance, and a prompt's scope is what
+        the variables fill.
+      </p>
+      <p>
+        A body is a document, a deck, or a spreadsheet, exactly as before. A template saved from one
+        slide is a deck template holding that slide, the layout it uses, and the theme and styles it is
+        drawn with, and no sections, because a section is a place in a deck and a lone slide is not in
+        one. Nothing marks it afterwards; it is a deck like any other.
+      </p>
+      <p>
+        A variable is a hole a prompt's scope can name: <code>{ select: "variable", name }</code>. It
+        carries a label, a description, and a <strong>default</strong>: the whole project, particular
+        kinds, or one of the project's named sets. A variable declared without a default means the whole
+        project, so a template always resolves. When a template is inserted, the person is asked what
+        each variable should select here, with the default offered first; an answer wins over the default
+        for that one use and is stored nowhere.
+      </p>
+    </section>
+
+    <section id="life">
+      <div class="head"><span class="n">2</span><h2>A template's life</h2></div>
+      <div class="flow">
+        <div class="step"><b>Made</b><span class="m">createTemplate · createTemplateFromResource</span>Empty of a kind, or from a live document, a live deck, or one slide, body made portable, in the project the person is in</div>
+        <div class="step"><b>Opened</b><span class="m">openTemplateStage</span>A scratch resource holds the body; a stage row names the template and the revision it was taken from; the editor tab opens on its Templates panel</div>
+        <div class="step"><b>Edited</b><span class="m">document-editor · slide-deck-editor</span>The ordinary editor, runtime and change sets work on the scratch resource unchanged; variables and their defaults are set in the panel</div>
+        <div class="step"><b>Saved</b><span class="m">commitTemplateStage</span>The scratch leader body, made portable and validated, becomes the template's next revision</div>
+        <div class="step"><b>Used</b><span class="m">instantiateTemplate · insert</span>A new resource, or rows and slides inserted into an open one, each variable answered in a modal or left to its default</div>
+        <div class="step"><b>Discarded</b><span class="m">discardTemplateStage</span>The stage row and scratch resource go, with the resource's snapshots, change sets and comments</div>
+      </div>
+      <p>
+        Three facts hold the shape together. A template belongs to one project, so its library, its
+        stage and everyone who may edit it are that project's. A stage is <em>one per template</em>,
+        shared by everyone in the project, so opening again resumes the same copy, two people editing a
+        template collaborate through the editor as they would on any document, and the copy is the only
+        thing that ever writes the template's body: a copy and its template cannot drift apart. And no
+        resource refers back to a template: a copy made by Use or Insert is its own from the first
+        moment, later changes to the template never reach it, and the template records its own last use.
+        A stage resource is not made <em>from</em> a template either; it <em>is</em> the template while it
+        is open, so editing is never a use.
+      </p>
+    </section>
+
+    <section id="crossing">
+      <div class="head"><span class="n">3</span><h2>Where the browser meets the server</h2></div>
+      <p>
+        Every read and write about a template goes through
+        <code>capabilities/templates/index.remote.ts</code>, and every one about a set through
+        <code>capabilities/resource-sets/index.remote.ts</code>. Each procedure opens with
+        <code>requireScope()</code>, validates its input before reading the store, answers refusals as
+        ordinary <code>accepted: false</code> values, and re-admits every stored row before trusting it.
+        The remote wrappers refresh the queries a command changes, the library, the template's detail,
+        the resource's stage record, so a panel that named those queries in <code>.updates()</code> sees
+        the new state without a second round trip.
+      </p>
+      <p>
+        Nothing template-shaped crosses through the generic store capability; that is the rule its own
+        document states. The editors do read a resource's title through the workspace's scoped table read,
+        so opening or discarding a stage refreshes that read as well, and the editor tab is named the
+        moment it opens rather than after a second fetch.
+      </p>
+    </section>
+
+    <section id="editor">
+      <div class="head"><span class="n">4</span><h2>How the editors take part without changing</h2></div>
+      <p>
+        The content surfaces, <code>document.svelte</code> and <code>deck.svelte</code>, are untouched.
+        They read <code>view.active.resourceId</code>, attach the runtime for it through workspace state,
+        and draw whatever body the runtime holds. A stage resource is an ordinary <code>documents</code> or
+        <code>slideDecks</code> row with an ordinary leader snapshot, so the editor cannot tell the
+        difference and does not need to. The tab is named from the row's title, which the stage sets to
+        <code>Template · &lt;name&gt;</code>, so the strip says what is open.
+      </p>
+      <p>
+        What knows the difference is the Templates context panel. It asks
+        <code>readResourceTemplate({ resourceId })</code> and gets back the stage it is (if any) and the
+        template it was made from (if any). A stage changes the panel's verbs and adds two bands; an
+        ordinary resource gets the save form instead. Both share the template list.
+      </p>
+      <p>
+        Inserting a template into what is open is an edit like any other: the panel builds ops with a
+        procedure and calls <code>runtime.apply(ops)</code>, so undo, flush, rebase and the change-set
+        ledger all apply. Saving a stage flushes the runtime first and refuses while anything is still
+        pending or failed, because the capability reads the leader snapshot and a buffered keystroke would
+        otherwise be left out of the template.
+      </p>
+      <p>
+        A working copy takes no comments. The comments capability refuses to start a thread on a stage
+        resource, and the deck's comment panels say so in place of the composer, because a comment is
+        one more thing that does not travel with a template.
+      </p>
+      <p>
+        A tab can now be opened straight onto a named context view: <code>Target.context</code>, honoured
+        when the category's rail offers it. Saving a resource as a template uses it to land on the new
+        template's Templates panel, so Save to template and Discard are where the person's hand already is.
+      </p>
+    </section>
+
+    <section id="sets">
+      <div class="head"><span class="n">5</span><h2>Resource sets</h2></div>
+      <p>
+        A set is <code>include</code> minus <code>exclude</code>, each a list of terms: the whole project, a
+        list of kinds matched by segment, named resources, or another set by id. The
+        <code>resourceSets</code> table existed and was seeded; the capability over it is new. Reading the
+        project's sets resolves each one against the documents, decks, spreadsheets, findings and research
+        threads the project holds and reports the count, never stored, so the number beside a set's name
+        cannot go stale. A stage resource is left out of that catalogue.
+      </p>
+      <p>
+        In Project Overview the Contexts panel makes, renames, describes, changes and deletes sets, and
+        says when one matches nothing. A prompt's scope can name a set, and so can a template variable's
+        default, because the template is the project's; deleting a set is refused while another set or a
+        template default still names it.
+      </p>
+    </section>
+
+    <section id="prompts">
+      <div class="head"><span class="n">6</span><h2>What the prompt block will pick from</h2></div>
+      <p>
+        Prompt blocks choosing a variable are a later feature. The model is ready for it: a prompt's scope
+        already holds <code>{ select: "variable", name }</code> terms; the variable's default says what the
+        template means by it; the Insert modal is where a person overrides it; and
+        <code>resolveTemplateScopes</code> turns all of that into a plain resource set at instantiation or
+        insertion. The panel's variable list is the picker's source.
+      </p>
+      <div class="note">
+        <h4>Read the code in this order</h4>
+        <p>
+          <code>representation/data/behavior/templates/scopes.ts</code> for resolution ·
+          <code>capabilities/templates/api/open-template-stage/open-template-stage.ts</code> and
+          <code>commit-template-stage.ts</code> for the stage lifecycle ·
+          <code>app-views/categories/document-editor/context/templates.svelte</code> for what a person
+          does with it.
+        </p>
+      </div>
+    </section>
+
+    <footer>Next: <a href="02-model.html">02 · The model</a>.</footer>
+  </main>
+</div>
+</body>
+</html>

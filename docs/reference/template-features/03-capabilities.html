@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>03 · The capabilities</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="reference.css">
+</head>
+<body>
+<div class="shell">
+  <aside class="rail">
+    <p class="rail-mark">Reference</p>
+    <nav>
+      <a href="index.html"><b>00</b><span>Start here</span></a>
+      <a href="01-system.html"><b>01</b><span>How templates work now</span></a>
+      <a href="02-model.html"><b>02</b><span>The model</span></a>
+      <a href="03-capabilities.html" class="is-here"><b>03</b><span>The capabilities</span></a>
+      <a href="04-panels.html"><b>04</b><span>Panels and flows</span></a>
+      <a href="05-changes.html"><b>05</b><span>What changed, verification, forks</span></a>
+    </nav>
+  </aside>
+
+  <main>
+    <p class="eyebrow">03 · the crossing</p>
+    <h1>The capabilities</h1>
+    <p class="lede">
+      Twelve procedures on <code>templates</code>, four on the new <code>resource-sets</code>, and one
+      exclusion in <code>project-resources</code>. Each one opens with the scope gate, validates before it
+      reads, and answers a refusal as a value. This page says what every one does and what it refuses.
+    </p>
+    <div class="meta">
+      <span>Index <b>capabilities/templates/index.remote.ts</b></span>
+      <span>Index <b>capabilities/resource-sets/index.remote.ts</b></span>
+      <span>Checks <b>scripts/lint/capabilities/</b> · all eleven clean</span>
+    </div>
+
+    <section id="shape">
+      <div class="head"><span class="n">1</span><h2>The shape every procedure keeps</h2></div>
+      <pre><code>export const commitTemplateStage = async (input: unknown) =&gt; {
+  const scope = await requireScope();
+  const asked = validateCommitTemplateStage(input);
+  const store = serverModel().store;
+  …
+};</code></pre>
+      <p>
+        The gate first, the input second, the one server object at its index, then reads, refusals as
+        values, then writes. Validators live beside their procedure and are named for it; shared checks
+        live in <code>api/shared/validation.ts</code>. Refusals are
+        <code>{ accepted: false, reason, detail }</code> with a closed <code>reason</code> union per
+        procedure, so a panel switches on the reason and shows the detail. Stored rows are re-admitted
+        before projection or mutation; a malformed row is quarantined rather than crashing the list.
+      </p>
+      <p>
+        The remote index wraps commands so that the queries a command changes are refreshed in the same
+        request: the library after anything that changes it, the template detail after anything that
+        changes one template, the resource's stage record and the workspace's table read after a stage
+        opens or closes. A panel names those same queries in <code>.updates()</code>, which is how the new
+        state lands in the client cache along with the command's result.
+      </p>
+    </section>
+
+    <section id="visibility">
+      <div class="head"><span class="n">2</span><h2>Visibility: a template is the project's</h2></div>
+      <p>
+        <code>visibleTemplate</code> and the library filter by <code>projectId === scope.projectId</code>
+        where main filtered by owner. Everything follows from that: the library is the project's, a
+        template in another project answers <code>not-found</code> everywhere, and anyone the scope
+        admits to the project may edit, save into, duplicate and delete a template, so the owner-only
+        <code>forbidden</code> refusal is gone from update, remove and save. <code>userId</code> and
+        <code>createdBy</code> record who made a template and grant nothing; every item reports
+        <code>availability: "project"</code>. Creation, duplication and a save from a resource stamp the
+        scope's project on the row, and admission refuses a stored row without one.
+      </p>
+    </section>
+
+    <section id="templates">
+      <div class="head"><span class="n">3</span><h2><code>templates</code>: the reads</h2></div>
+      <div class="scroll">
+        <table>
+          <thead><tr><th>Procedure</th><th>Answers</th><th>What changed</th></tr></thead>
+          <tbody>
+            <tr><td><code>readTemplateLibrary</code></td><td>Every template in the project as library metadata</td><td>Scoped by project rather than owner. The first pass added an "is staged" mark; it is gone, because who is editing is not tracked.</td></tr>
+            <tr><td><code>readTemplate</code></td><td>One template's body, variables, and metadata</td><td>Scoped by project</td></tr>
+            <tr><td><code>readResourceTemplate</code></td><td>For a document or deck id: the stage it is, if any</td><td>New. The stage carries the template's name, the revision staged from, and the current revision; nothing says what a resource was made from, because nothing records it</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="stages">
+      <div class="head"><span class="n">4</span><h2><code>templates</code>: the stage lifecycle</h2></div>
+      <h3><code>openTemplateStage({ templateId })</code></h3>
+      <p>
+        Finds the template's stage and returns it with <code>reused: true</code>;
+        otherwise creates a scratch <code>documents</code> or <code>slideDecks</code> row titled
+        <code>Template · &lt;name&gt;</code>, a revision-zero leader snapshot holding the template body with
+        its <code>resource</code> tag removed, and the stage row. Refuses <code>not-found</code> for an
+        invisible template and <code>unsupported-body</code> for a corrupt one or a spreadsheet.
+      </p>
+      <h3><code>commitTemplateStage({ stageId, baseRevision })</code></h3>
+      <p>
+        The stage must be in this project (<code>not-found</code> otherwise); the template must still be
+        in it (<code>not-found</code>); the template's revision must equal <code>baseRevision</code>
+        (<code>stale</code>), which, since the stage is the only writer of the body, means only that
+        another session's save landed first. The scratch resource's leader body is read, made
+        portable, tagged with the stage's target, and admitted with <code>bodyOf</code>. Variables the body
+        names that the template does not declare are declared with the name as their label. The
+        template's body, variables and revision are written, a version row follows, and the stage's
+        <code>templateRevision</code> moves to the new revision. The answer carries what portability
+        dropped.
+      </p>
+      <h3><code>discardTemplateStage({ stageId })</code></h3>
+      <p>
+        Removes, in order, the comments on threads targeting the scratch resource, those threads, the
+        resource's change sets, its snapshots, the resource row, and last the stage row, so a failure
+        midway leaves a stage that still names what remains rather than rows nothing can find. Anyone in
+        the project may discard, because the stage is the project's.
+      </p>
+      <h3>What <code>updateTemplate</code> and <code>removeTemplate</code> now do</h3>
+      <p>
+        An update never touches the body, so it carries the template's stage to the revision it makes:
+        a rename in the inspector or a variable declared in the editor does not make the next save a
+        conflict. Delete discards the template's stage and version rows along with it and touches no
+        resource, because none refers back to it; main's detach-and-refuse over provenance is gone with
+        the provenance.
+      </p>
+      <p>
+        A thread cannot be started on a stage resource. <code>startThread</code> in the comments
+        capability reads the stage table, as a subject capability reads a table it does not own, and
+        refuses with "a template's working copy takes no comments"; the deck's comment panels replace
+        their composer with the same sentence.
+      </p>
+    </section>
+
+    <section id="making">
+      <div class="head"><span class="n">5</span><h2><code>templates</code>: making and using</h2></div>
+      <h3><code>createTemplateFromResource({ target, resourceId, name, description?, tags?, slideId? })</code></h3>
+      <p>
+        Reads the resource's leader body in this project; with a <code>slideId</code>, takes the deck of
+        that one slide with <code>deckOfSlide</code>; makes it portable; admits it; declares the variable
+        names the body uses; writes the template at revision one with a version row. The source resource
+        is not touched and never learns a template was made from it. The validator refuses a document
+        id for a deck target and vice versa, and a <code>slideId</code> on a document.
+      </p>
+      <h3><code>updateTemplate</code> with <code>patch.variables</code></h3>
+      <p>
+        The patch may now replace the whole variable list, validated by the same <code>variablesOf</code>
+        that admits stored rows (unique names, labels, defaults naming declared variables). If the body
+        still names a variable the new list drops, the update refuses with <code>variable-in-use</code>
+        and the names. The one-description patch survives unchanged.
+      </p>
+      <h3><code>instantiateTemplate</code> with <code>answers?</code></h3>
+      <p>
+        Answers are the caller's, a resource set per variable name, or nothing; the Insert modal is what
+        collects them. A named set an answer points at is checked to exist here before anything is
+        written; scopes are resolved through the answers, then each variable's default, which may itself
+        name a set, then the whole project. A body naming a variable the
+        template does not declare refuses with <code>unsupported-body</code> and the names, rather than
+        guessing. The resource it makes carries no reference to the template; the template's
+        <code>lastUsedAt</code> is set instead, and that is what the library's recency reads. The
+        inspector's Use collects answers through the same modal Insert shows.
+      </p>
+    </section>
+
+    <section id="resource-sets">
+      <div class="head"><span class="n">6</span><h2><code>resource-sets</code></h2></div>
+      <div class="scroll">
+        <table>
+          <thead><tr><th>Procedure</th><th>Answers</th><th>Refuses</th></tr></thead>
+          <tbody>
+            <tr><td><code>readResourceSets</code></td><td>This project's sets sorted by name, each with creator name, revision, and <code>resolves</code>: how many catalogue resources it selects now</td><td>Quarantines malformed and duplicate-id rows as <code>unavailable</code></td></tr>
+            <tr><td><code>createResourceSet</code></td><td>A set from a name, optional description, and an include and exclude list</td><td>Throws on a bad payload before the store is read</td></tr>
+            <tr><td><code>updateResourceSet</code></td><td>Compare-and-swap name, description, or set</td><td><code>not-found</code>, <code>stale</code>, <code>corrupt</code>; a set that would include itself</td></tr>
+            <tr><td><code>removeResourceSet</code></td><td>Compare-and-swap delete</td><td><code>in-use</code> while another set or a template variable's default in this project names it, saying which</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        The catalogue a count is resolved over is documents, decks, spreadsheets, findings and research
+        threads in the project, minus any resource a stage occupies. Kinds are the same five words Project
+        Overview draws. A set's own validation mirrors the templates capability's term rules with the
+        two project-bound terms added, and shares nothing with it, because a capability is entered at its
+        index and nothing else.
+      </p>
+    </section>
+
+    <section id="project-resources">
+      <div class="head"><span class="n">7</span><h2><code>project-resources</code></h2></div>
+      <p>
+        <code>readProjectResourceIndex</code> reads the stage rows for the project first and skips any
+        resource whose id one occupies, so a scratch copy never appears in Project Overview's table, in
+        New Tab's recents, or in a comment's resource picker. Nothing else about the index changed.
+      </p>
+    </section>
+
+    <section id="boundaries">
+      <div class="head"><span class="n">8</span><h2>Boundaries kept, and one not yet</h2></div>
+      <ul>
+        <li><strong>Nothing reaches inside a capability.</strong> The panels import both indexes and nothing below them; the templates capability reaches <code>resource-sets</code> nowhere. It reads the <code>resourceSets</code> table through the store when an answer names a set, which is what a subject capability does with a table it does not own.</li>
+        <li><strong>Nothing under <code>capabilities/</code> holds state or imports a view.</strong> The eleven capability checks and the four across-tree checks are clean.</li>
+        <li><strong>Every stored row is re-admitted.</strong> A stage row that names a resource in the wrong table and a set whose rule is not two lists are invisible rather than fatal.</li>
+        <li><strong>Not a transaction across tables.</strong> Opening a stage writes three tables; discarding one writes up to six. The store is failure-safe per table, and each write order is chosen so a partial failure leaves rows that are still reachable, but a represented transaction remains the same known gap the capability document already names.</li>
+      </ul>
+    </section>
+
+    <section id="tests">
+      <div class="head"><span class="n">9</span><h2>Tests on this page</h2></div>
+      <p>
+        <code>stages.test.ts</code>: a stage is made once and reused, is the project's rather than the
+        viewer's and another member saves into it, a deck template stages as a deck, a spreadsheet is
+        refused, a resource's stage and provenance are read back, an edit carries the stage to the new
+        revision, a save writes the next revision with portability applied and a variable declared, a
+        stale save is refused, a deck stage saves back however many slides it holds, a stage is out of
+        reach from another project, a discard removes the resource's comments and change sets, and
+        deletion cascades the stage. <code>answers.test.ts</code>: resolution through the caller's answer
+        then the default, a default naming one of the project's sets, a variable without a default
+        meaning the whole project, refusing an unknown set and an undeclared name, replacing the variable
+        list with and without a name in use, a template from a document with a dropped output id and a
+        kept link note, and a deck template from a whole deck and from one slide.
+        <code>resource-sets.test.ts</code>: scoped listing with live counts, quarantine, creation, stale
+        and self-including updates, removal refused for a set and for a template default and then
+        accepted, and project isolation. The existing template tests pass with their visibility cases
+        rewritten by project: another project's template is not read, updated or counted, and a set
+        term is a valid default.
+      </p>
+    </section>
+
+    <footer>Next: <a href="04-panels.html">04 · Panels and flows</a>.</footer>
+  </main>
+</div>
+</body>
+</html>

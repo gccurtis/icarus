@@ -1,5 +1,7 @@
 import {
+  answersOf,
   fieldsOf,
+  has,
   only,
   optionalNameOf,
   templateIdOf
@@ -8,10 +10,11 @@ import type { InstantiateTemplateInput } from "$capabilities/templates/types/tem
 
 export const validateInstantiateTemplate = (input: unknown): InstantiateTemplateInput => {
   const fields = fieldsOf(input, "instantiate-template");
-  only(fields, ["templateId", "name"], "instantiate-template");
+  only(fields, ["templateId", "name", "answers"], "instantiate-template");
   const name = optionalNameOf(fields.name, "instantiate-template");
   return {
     templateId: templateIdOf(fields.templateId, "instantiate-template"),
-    ...(name === undefined ? {} : { name })
+    ...(name === undefined ? {} : { name }),
+    ...(has(fields, "answers") ? { answers: answersOf(fields.answers, "instantiate-template") } : {})
   };
 };

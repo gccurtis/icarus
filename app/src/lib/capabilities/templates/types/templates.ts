@@ -1,3 +1,4 @@
+import type { ResourceSet } from "$representation/data/types/core/resource-set";
 import type {
   TemplateBody,
   TemplateVariable
@@ -5,12 +6,11 @@ import type {
 
 export type TemplateTarget = TemplateBody["resource"];
 
-/**
- * `project` is reserved for a represented project-owned template set. Until
- * that ownership model exists, the capability returns only `personal` (the
- * viewer owns it). There is no generic Shared state in the current contract.
- */
+export type TemplateStageTarget = Exclude<TemplateTarget, "spreadsheet">;
+
 export type TemplateAvailability = "project" | "personal";
+
+export type TemplateAnswers = Readonly<Record<string, ResourceSet>>;
 
 export type TemplateLibraryItem = {
   readonly id: string;
@@ -62,16 +62,39 @@ export type CreateTemplateResult = {
   readonly revision: 1;
 };
 
+export type CreateTemplateFromResourceInput = {
+  readonly target: TemplateStageTarget;
+  readonly resourceId: string;
+  readonly name: string;
+  readonly description?: string;
+  readonly tags?: readonly string[];
+  readonly slideId?: string;
+};
+
+export type CreateTemplateFromResourceResult =
+  | {
+      readonly accepted: true;
+      readonly templateId: string;
+      readonly target: TemplateStageTarget;
+      readonly revision: 1;
+      readonly dropped: readonly string[];
+    }
+  | {
+      readonly accepted: false;
+      readonly resourceId: string;
+      readonly reason: "not-found" | "unsupported-body";
+      readonly detail: string;
+    };
+
 export type UpdateTemplatePatch = {
   readonly name?: string;
-  /** `null` removes an existing description. */
   readonly description?: string | null;
   readonly tags?: readonly string[];
-  /** Changes one variable's prose without making its stable key client-editable. */
   readonly variableDescription?: {
     readonly name: string;
     readonly description: string | null;
   };
+  readonly variables?: readonly TemplateVariable[];
 };
 
 export type UpdateTemplateInput = {
@@ -85,7 +108,7 @@ export type UpdateTemplateResult =
   | {
       readonly accepted: false;
       readonly templateId: string;
-      readonly reason: "not-found" | "forbidden" | "stale" | "unsupported-body";
+      readonly reason: "not-found" | "stale" | "unsupported-body" | "variable-in-use";
       readonly revision: number | null;
       readonly detail: string;
     };
@@ -121,20 +144,15 @@ export type RemoveTemplateResult =
   | {
       readonly accepted: false;
       readonly templateId: string;
-      readonly reason:
-        | "not-found"
-        | "forbidden"
-        | "stale"
-        | "in-use-elsewhere"
-        | "unsupported-body";
+      readonly reason: "not-found" | "stale" | "unsupported-body";
       readonly revision: number | null;
       readonly detail: string;
     };
 
 export type InstantiateTemplateInput = {
   readonly templateId: string;
-  /** Defaults to the template name. */
   readonly name?: string;
+  readonly answers?: TemplateAnswers;
 };
 
 export type InstantiateTemplateResult =
@@ -149,8 +167,82 @@ export type InstantiateTemplateResult =
   | {
       readonly accepted: false;
       readonly templateId: string;
-      readonly reason: "not-found" | "variables-required" | "unsupported-body";
+      readonly reason: "not-found" | "unsupported-body";
       readonly revision: number | null;
       readonly detail: string;
-      readonly variables?: readonly string[];
+    };
+
+export type OpenTemplateStageInput = { readonly templateId: string };
+
+export type OpenTemplateStageResult =
+  | {
+      readonly accepted: true;
+      readonly stageId: string;
+      readonly templateId: string;
+      readonly templateRevision: number;
+      readonly target: TemplateStageTarget;
+      readonly resourceId: string;
+      readonly reused: boolean;
+    }
+  | {
+      readonly accepted: false;
+      readonly templateId: string;
+      readonly reason: "not-found" | "unsupported-body";
+      readonly revision: number | null;
+      readonly detail: string;
+    };
+
+export type ReadResourceTemplateInput = { readonly resourceId: string };
+
+export type ResourceTemplateStage = {
+  readonly stageId: string;
+  readonly templateId: string;
+  readonly templateName: string;
+  readonly target: TemplateStageTarget;
+  readonly stagedRevision: number;
+  readonly currentRevision: number | null;
+};
+
+export type ReadResourceTemplateResult = {
+  readonly resourceId: string;
+  readonly stage: ResourceTemplateStage | null;
+};
+
+export type CommitTemplateStageInput = {
+  readonly stageId: string;
+  readonly baseRevision: number;
+};
+
+export type CommitTemplateStageResult =
+  | {
+      readonly accepted: true;
+      readonly stageId: string;
+      readonly templateId: string;
+      readonly revision: number;
+      readonly dropped: readonly string[];
+    }
+  | {
+      readonly accepted: false;
+      readonly stageId: string;
+      readonly templateId: string | null;
+      readonly reason: "not-found" | "stale" | "unsupported-body";
+      readonly revision: number | null;
+      readonly detail: string;
+    };
+
+export type DiscardTemplateStageInput = { readonly stageId: string };
+
+export type DiscardTemplateStageResult =
+  | {
+      readonly accepted: true;
+      readonly stageId: string;
+      readonly templateId: string;
+      readonly target: TemplateStageTarget;
+      readonly resourceId: string;
+    }
+  | {
+      readonly accepted: false;
+      readonly stageId: string;
+      readonly reason: "not-found";
+      readonly detail: string;
     };
