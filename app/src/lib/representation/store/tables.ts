@@ -7,9 +7,7 @@ import type {
   Resolution,
   StoredAnchorWithin
 } from "$representation/data/types/collaboration/anchor";
-import type { BlockFormat } from "$representation/data/types/content/block-format";
-import type { ContentBlock, Mark, MarkLink } from "$representation/data/types/content/content-block";
-import type { CellRef } from "$representation/data/types/content/formula-value";
+import type { ContentBlock, MarkLink } from "$representation/data/types/content/content-block";
 import type { VariableValue } from "$representation/data/types/content/variable-value";
 import type { MembershipRole } from "$representation/data/types/core/access";
 import type { Actor } from "$representation/data/types/core/actor";
@@ -54,6 +52,7 @@ import type {
   SlideDeckSnapshotRole
 } from "$representation/data/types/slide-decks/snapshot";
 import type { SpreadsheetBody } from "$representation/data/types/spreadsheets/body";
+import type { SheetCell as SheetCellData } from "$representation/data/types/spreadsheets/cell";
 import type { SpreadsheetOp } from "$representation/data/types/spreadsheets/op";
 import type {
   SpreadsheetChangeTier,
@@ -196,19 +195,10 @@ export type SpreadsheetFields = {
 };
 export type Spreadsheet = Row<"spreadsheets"> & SpreadsheetFields;
 
-export type SheetCellFields = {
+export type SheetCellFields = SheetCellData & {
   projectId: Id<"projects">;
   resourceId: Id<"spreadsheets">;
-  rowId: string;
-  columnId: string;
   rowOrder: number;
-  value: VariableValue;
-  expression?: string;
-  formulaId?: Id<"formulas">;
-  marks?: Mark[];
-  format?: BlockFormat;
-  mergedTo?: CellRef;
-  spillTo?: CellRef;
 };
 export type SheetCell = Row<"sheetCells"> & SheetCellFields;
 
@@ -343,7 +333,6 @@ export type TemplateFields = {
   userId: Id<"users">;
   name: string;
   description?: string;
-  /** Flat library labels. An empty array means the template is untagged. */
   tags: string[];
   body: TemplateBody;
   variables: TemplateVariable[];

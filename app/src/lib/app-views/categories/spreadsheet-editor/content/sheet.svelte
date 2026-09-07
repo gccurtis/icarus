@@ -1,766 +1,624 @@
 <script lang="ts">
-  import ChartColumn from "@lucide/svelte/icons/chart-column";
-  import Lock from "@lucide/svelte/icons/lock";
+  import Minus from "@lucide/svelte/icons/minus";
+  import Plus from "@lucide/svelte/icons/plus";
+  import Redo2 from "@lucide/svelte/icons/redo-2";
+  import Undo2 from "@lucide/svelte/icons/undo-2";
 
-  import { ScreenNote, ScreenSurface } from "$authored-components/screen";
-  import { workspaceState } from "$model/client/workspace-state";
+  import { read } from "$capabilities/store/index.remote";
+  import {
+    SheetSurface,
+    type SurfaceApi,
+    type SurfaceEdit,
+    type SurfaceFill,
+    type SurfaceHighlight,
+    type SurfaceHit,
+    type SurfacePaste,
+    type SurfaceSelection
+  } from "$authored-components/sheet-surface";
+  import { Button } from "$vendored-components/button";
+  import * as ContextMenu from "$vendored-components/context-menu";
+  import {
+    columnLabel,
+    gridOf,
+    indexOf,
+    keyOf,
+    labelOf,
+    parseRef,
+    rectLabelOf,
+    refAt,
+    refsIn,
+    sameRect,
+    type Rect
+  } from "$app-views/categories/spreadsheet-editor/procedures/addresses";
+  import { cleared, typed, type Edit } from "$app-views/categories/spreadsheet-editor/procedures/cells";
+  import { pasted } from "$app-views/categories/spreadsheet-editor/procedures/clipboard";
+  import { anchorOf, pinsOf, threadsOf } from "$app-views/categories/spreadsheet-editor/procedures/comments";
+  import { filled } from "$app-views/categories/spreadsheet-editor/procedures/fill";
+  import { armed, pick } from "$app-views/categories/spreadsheet-editor/procedures/picking";
+  import { withRecalculation } from "$app-views/categories/spreadsheet-editor/procedures/evaluate";
+  import { dependentsOf, referencesIn } from "$app-views/categories/spreadsheet-editor/procedures/references";
+  import { sceneOf } from "$app-views/categories/spreadsheet-editor/procedures/scene";
+  import {
+    cellSignal,
+    columnSignal,
+    highlightedRefs,
+    rangeSignal,
+    rowSignal,
+    sameSelection,
+    selectedColumnIds,
+    selectedRects,
+    selectedRef,
+    selectedRowIds,
+    surfaceSelectionOf,
+    type Signal
+  } from "$app-views/categories/spreadsheet-editor/procedures/selecting";
+  import { merged, mergeOf, mergeSpans, spillChildOf, spillOf, unmerged } from "$app-views/categories/spreadsheet-editor/procedures/spans";
+  import { usedRect } from "$app-views/categories/spreadsheet-editor/procedures/stats";
+  import { rowsOf, tableQuery } from "$app-views/categories/spreadsheet-editor/procedures/store";
+  import {
+    APPEND_COLUMNS,
+    APPEND_ROWS,
+    frozenColumnsSet,
+    insertedColumns,
+    insertedRows,
+    movedColumn,
+    movedRow,
+    removedColumns,
+    removedRows,
+    resizedColumn
+  } from "$app-views/categories/spreadsheet-editor/procedures/structure";
+  import { workspaceState, type SpreadsheetRuntime, type SyncState } from "$model/client/workspace-state";
+
+  const SYNC_LABEL: Record<SyncState, string> = {
+    loading: "Loading",
+    saved: "Saved",
+    saving: "Saving",
+    rebasing: "Rebasing",
+    "needs-review": "Needs review",
+    offline: "Offline",
+    error: "Not saved"
+  };
+
+  const WHEEL_NOTCH = 120;
+  const PERCENT_PER_NOTCH = 2;
+  const ZOOM_STEP = 10;
+  const ZOOM_MIN = 50;
+  const ZOOM_MAX = 200;
 
   const view = workspaceState();
 
-  type Cell = {
-    readonly address: string;
-    readonly column: string;
-    readonly row: number;
-    readonly content: string;
-    readonly shows: string;
-    readonly type: "number" | "text" | "logic" | "date";
-    readonly formula?: string;
-    readonly styleId?: string;
-    readonly alignment: "left" | "center" | "right";
-    readonly valueFormat?: string;
-    readonly spillOrigin?: string;
-    readonly error?: "#REF!" | "#NAME?" | "#DIV/0!" | "#VALUE!";
-  };
+  const sheetId = $derived(view.active.resourceId);
 
-  type CellProblem = {
-    readonly address: string;
-    readonly error: "#REF!" | "#NAME?" | "#DIV/0!" | "#VALUE!";
-    readonly formula: string;
-    readonly explanation: string;
-  };
-
-  type SheetObject = {
-    readonly index: number;
-    readonly kind: "Column" | "Bar" | "Line" | "Pie";
-    readonly title: string;
-    readonly sourceRange: string;
-    readonly anchor: string;
-    readonly size: string;
-    readonly overlapped: boolean;
-  };
-
-  type NamedCellStyle = {
-    readonly id: string;
-    readonly name: string;
-    readonly weight: number;
-    readonly alignment: "left" | "center" | "right";
-    readonly valueFormat?: string;
-    readonly border?: string;
-    readonly shorthand: string;
-    readonly usedByCells: number;
-  };
-
-  type SpreadsheetRecord = {
-    readonly id: string;
-    readonly title: string;
-    readonly usedRange: string;
-    readonly populatedCells: number;
-    readonly saved: string;
-    readonly updated: string;
-  };
-
-  type Read<T> = {
-    readonly current: T;
-    readonly error: undefined;
-    readonly loading: false;
-    refresh: () => Promise<void>;
-  };
-
-  const read = <T,>(current: T): Read<T> => ({
-    current,
-    error: undefined,
-    loading: false,
-    refresh: async () => {}
+  const title = $derived.by(() => {
+    if (sheetId === undefined) return undefined;
+    const answer = read({ path: `spreadsheets.${sheetId}.title` });
+    if (!answer.ready) return undefined;
+    const found = answer.current;
+    return found?.kind === "field" && typeof found.value === "string" ? found.value : undefined;
   });
 
-  type CellInput = Omit<Cell, "address" | "column" | "row" | "shows"> & {
-    readonly shows?: string;
-  };
+  let runtime = $state<SpreadsheetRuntime | undefined>(undefined);
 
-  const cellAt = (address: string, input: CellInput): Cell => ({
-    ...input,
-    address,
-    column: address.replace(/[0-9]/g, ""),
-    row: Number(address.replace(/[A-Z]/g, "")),
-    shows: input.shows ?? input.content
+  $effect(() => {
+    runtime = sheetId === undefined ? undefined : view.spreadsheetRuntime(sheetId);
   });
 
-  const head = (address: string, content: string): Cell =>
-    cellAt(address, { content, type: "text", alignment: "center", styleId: "cs-header" });
+  const sheet = $derived(runtime?.sheet);
+  const grid = $derived(gridOf(sheet?.body));
 
-  const CELLS: readonly Cell[] = [
-    head("A1", "Substation"),
-    head("B1", "Feeder"),
-    head("C1", "Customer-minutes lost"),
-    head("D1", "Storm events"),
-    head("E1", "Avoided minutes (modelled)"),
-    head("F1", "Hardening spend ($M)"),
-    head("G1", "Cost per avoided minute"),
-
-    cellAt("A2", { content: "Millbrook", type: "text", alignment: "left" }),
-    cellAt("B2", { content: "F-12", type: "text", alignment: "left" }),
-    cellAt("C2", {
-      content: "1842000",
-      shows: "1,842,000",
-      type: "number",
-      alignment: "right",
-      styleId: "cs-minutes",
-      valueFormat: "#,##0"
-    }),
-    cellAt("D2", { content: "2", type: "number", alignment: "right" }),
-    cellAt("E2", {
-      content: "=avoidedMinutes(costModel)",
-      formula: "=avoidedMinutes(costModel)",
-      shows: "268,110",
-      type: "number",
-      alignment: "right",
-      styleId: "cs-minutes",
-      valueFormat: "#,##0",
-      spillOrigin: "E2"
-    }),
-    cellAt("F2", {
-      content: "11.4",
-      shows: "11.40",
-      type: "number",
-      alignment: "right",
-      styleId: "cs-currency",
-      valueFormat: "#,##0.00"
-    }),
-    cellAt("G2", {
-      content: '=IF(E2=0,"",F2*1000000/E2)',
-      formula: '=IF(E2=0,"",F2*1000000/E2)',
-      shows: "42.52",
-      type: "number",
-      alignment: "right",
-      styleId: "cs-currency",
-      valueFormat: "#,##0.00"
-    }),
-
-    cellAt("A3", { content: "Ward 3", type: "text", alignment: "left" }),
-    cellAt("B3", { content: "F-04", type: "text", alignment: "left" }),
-    cellAt("C3", {
-      content: "318400",
-      shows: "318,400",
-      type: "number",
-      alignment: "right",
-      styleId: "cs-minutes",
-      valueFormat: "#,##0"
-    }),
-    cellAt("D3", { content: "3", type: "number", alignment: "right" }),
-    cellAt("E3", {
-      content: "194224",
-      shows: "194,224",
-      type: "number",
-      alignment: "right",
-      styleId: "cs-minutes",
-      valueFormat: "#,##0",
-      spillOrigin: "E2"
-    }),
-    cellAt("F3", {
-      content: "8.1",
-      shows: "8.10",
-      type: "number",
-      alignment: "right",
-      styleId: "cs-currency",
-      valueFormat: "#,##0.00"
-    }),
-    cellAt("G3", {
-      content: '=IF(E3=0,"",F3*1000000/E3)',
-      formula: '=IF(E3=0,"",F3*1000000/E3)',
-      shows: "41.70",
-      type: "number",
-      alignment: "right",
-      styleId: "cs-currency",
-      valueFormat: "#,##0.00"
-    }),
-
-    cellAt("A4", { content: "Harbor Point", type: "text", alignment: "left" }),
-    cellAt("B4", { content: "F-07", type: "text", alignment: "left" }),
-    cellAt("C4", {
-      content: "286150",
-      shows: "286,150",
-      type: "number",
-      alignment: "right",
-      styleId: "cs-minutes",
-      valueFormat: "#,##0"
-    }),
-    cellAt("D4", { content: "2", type: "number", alignment: "right" }),
-    cellAt("E4", {
-      content: "171690",
-      shows: "171,690",
-      type: "number",
-      alignment: "right",
-      styleId: "cs-minutes",
-      valueFormat: "#,##0",
-      spillOrigin: "E2"
-    }),
-    cellAt("F4", {
-      content: "7.25",
-      shows: "7.25",
-      type: "number",
-      alignment: "right",
-      styleId: "cs-currency",
-      valueFormat: "#,##0.00"
-    }),
-    cellAt("G4", {
-      content: '=IF(E4=0,"",F4*1000000/E4)',
-      formula: '=IF(E4=0,"",F4*1000000/E4)',
-      shows: "42.23",
-      type: "number",
-      alignment: "right",
-      styleId: "cs-currency",
-      valueFormat: "#,##0.00"
-    }),
-
-    cellAt("A5", { content: "Cedar Line", type: "text", alignment: "left" }),
-    cellAt("B5", { content: "F-19", type: "text", alignment: "left" }),
-    cellAt("C5", {
-      content: "158720",
-      shows: "158,720",
-      type: "number",
-      alignment: "right",
-      styleId: "cs-minutes",
-      valueFormat: "#,##0"
-    }),
-    cellAt("D5", { content: "1", type: "number", alignment: "right" }),
-    cellAt("E5", {
-      content: "92057",
-      shows: "92,057",
-      type: "number",
-      alignment: "right",
-      styleId: "cs-minutes",
-      valueFormat: "#,##0",
-      spillOrigin: "E2"
-    }),
-    cellAt("F5", {
-      content: "4.6",
-      shows: "4.60",
-      type: "number",
-      alignment: "right",
-      styleId: "cs-currency",
-      valueFormat: "#,##0.00"
-    }),
-    cellAt("G5", {
-      content: '=IF(E5=0,"",F5*1000000/E5)',
-      formula: '=IF(E5=0,"",F5*1000000/E5)',
-      shows: "49.97",
-      type: "number",
-      alignment: "right",
-      styleId: "cs-currency",
-      valueFormat: "#,##0.00"
-    }),
-
-    cellAt("A6", { content: "Total", type: "text", alignment: "left", styleId: "cs-total" }),
-    cellAt("B6", { content: "4 feeders", type: "text", alignment: "left", styleId: "cs-total" }),
-    cellAt("C6", {
-      content: "=SUM(C2:C5)",
-      formula: "=SUM(C2:C5)",
-      shows: "2,605,270",
-      type: "number",
-      alignment: "right",
-      styleId: "cs-total",
-      valueFormat: "#,##0"
-    }),
-    cellAt("D6", {
-      content: "=SUM(D2:D5)",
-      formula: "=SUM(D2:D5)",
-      shows: "8",
-      type: "number",
-      alignment: "right",
-      styleId: "cs-total"
-    }),
-    cellAt("E6", {
-      content: "=SUM(E2:E5)",
-      formula: "=SUM(E2:E5)",
-      shows: "726,081",
-      type: "number",
-      alignment: "right",
-      styleId: "cs-total",
-      valueFormat: "#,##0"
-    }),
-    cellAt("F6", {
-      content: "=SUM(F2:F5)",
-      formula: "=SUM(F2:F5)",
-      shows: "31.35",
-      type: "number",
-      alignment: "right",
-      styleId: "cs-total",
-      valueFormat: "#,##0.00"
-    }),
-    cellAt("G6", {
-      content: "=AVERAGE(G2:G5)",
-      formula: "=AVERAGE(G2:G5)",
-      shows: "44.11",
-      type: "number",
-      alignment: "right",
-      styleId: "cs-total",
-      valueFormat: "#,##0.00"
-    }),
-
-    cellAt("A8", { content: "Scratch — repair before filing", type: "text", alignment: "left" }),
-    cellAt("D8", {
-      content: "=SUM(#REF!)",
-      formula: "=SUM(#REF!)",
-      shows: "#REF!",
-      type: "number",
-      alignment: "right",
-      error: "#REF!"
-    }),
-    cellAt("F8", {
-      content: "=F6/eventCount",
-      formula: "=F6/eventCount",
-      shows: "#NAME?",
-      type: "number",
-      alignment: "right",
-      error: "#NAME?"
-    })
-  ];
-
-  const OBJECTS: readonly SheetObject[] = [
-    {
-      index: 0,
-      kind: "Column",
-      title: "Customer-minutes by substation",
-      sourceRange: "A1:C5",
-      anchor: "E9",
-      size: "360 × 220 px",
-      overlapped: false
-    },
-    {
-      index: 1,
-      kind: "Line",
-      title: "Avoided minutes by event",
-      sourceRange: "A1:E5",
-      anchor: "A14",
-      size: "420 × 240 px",
-      overlapped: true
-    },
-    {
-      index: 2,
-      kind: "Bar",
-      title: "Hardening spend by feeder",
-      sourceRange: "B1:B5,F1:F5",
-      anchor: "A26",
-      size: "360 × 200 px",
-      overlapped: false
-    }
-  ];
-
-  const SHEET_STYLES: readonly NamedCellStyle[] = [
-    {
-      id: "cs-header",
-      name: "Header",
-      weight: 600,
-      alignment: "center",
-      shorthand: "600 · centered",
-      usedByCells: 7
-    },
-    {
-      id: "cs-currency",
-      name: "Currency",
-      weight: 400,
-      alignment: "right",
-      valueFormat: "$#,##0.00",
-      shorthand: "$#,##0.00",
-      usedByCells: 8
-    },
-    {
-      id: "cs-minutes",
-      name: "Minutes",
-      weight: 400,
-      alignment: "right",
-      valueFormat: "#,##0",
-      shorthand: "#,##0",
-      usedByCells: 8
-    },
-    {
-      id: "cs-total",
-      name: "Total",
-      weight: 600,
-      alignment: "right",
-      border: "Top rule",
-      shorthand: "600 · top border",
-      usedByCells: 7
-    }
-  ];
-
-  const spreadsheetRecord = (spreadsheetId: string): Read<SpreadsheetRecord> =>
-    read({
-      id: spreadsheetId,
-      title: "Outage cost model",
-      usedRange: "A1:G8",
-      populatedCells: CELLS.length,
-      saved: "All changes saved",
-      updated: "2 hours ago"
-    });
-
-  const cellsIn = (spreadsheetId: string): Read<readonly Cell[]> => {
-    void spreadsheetId;
-    return read(CELLS);
-  };
-
-  const objectsIn = (spreadsheetId: string): Read<readonly SheetObject[]> => {
-    void spreadsheetId;
-    return read(OBJECTS);
-  };
-
-  const problemsIn = (spreadsheetId: string): Read<readonly CellProblem[]> => {
-    void spreadsheetId;
-    return read([
-      {
-        address: "D8",
-        error: "#REF!",
-        formula: "=SUM(#REF!)",
-        explanation: "This formula refers to a range that no longer exists."
-      },
-      {
-        address: "F8",
-        error: "#NAME?",
-        formula: "=F6/eventCount",
-        explanation: "No name in this spreadsheet or this project is called eventCount."
-      }
-    ]);
-  };
-
-  const sheetStyles = (spreadsheetId: string): Read<readonly NamedCellStyle[]> => {
-    void spreadsheetId;
-    return read(SHEET_STYLES);
-  };
-
-  /**
-   * Spreadsheet editor — the only state this category has.
-   *
-   * `docs/screen-panel-views/screens/spreadsheet-editor/workspace.md` is the
-   * specification. **One region, `editor`, and one track** — a grid edge to edge,
-   * with no sheet tabs, no formula bar and no name box taking rows off it. A tab
-   * is a spreadsheet, not a workbook of sheets, so there is nothing above the
-   * grid to switch between and nothing below it to switch with.
-   *
-   * **Univer is not installed.** The grid surface — headings, scrolling,
-   * selection, in-cell editing, merges and the rendering of a sparse sheet —
-   * would be its. What is drawn here is the part that is ours: a sparse grid
-   * where an empty coordinate really is empty, a spill that names its origin and
-   * whose children are read-only, errors that read as repair jobs, and charts
-   * anchored to a cell and left read-only because they have no stable id.
-   *
-   * **Every value on this grid came out of Icarus's formula engine.** Univer's is
-   * bypassed rather than configured: two engines would mean two answers, and only
-   * one of them can be the one a document's inline formula reads.
-   *
-   * **Nothing offers a row or a column lens.** A cell's identity is its A1
-   * address; rows and columns are not identified model objects, which is why the
-   * headings here are labels rather than controls.
-   */
-  let { spreadsheetId = "r-cost" }: { spreadsheetId?: string } = $props();
-
-  const record = $derived(spreadsheetRecord(spreadsheetId).current);
-  const cells = $derived(cellsIn(spreadsheetId).current);
-  const charts = $derived(objectsIn(spreadsheetId).current);
-  const problems = $derived(problemsIn(spreadsheetId).current);
-  const styles = $derived(sheetStyles(spreadsheetId).current);
-
-  /**
-   * Wider and deeper than the used range on purpose. A grid that stopped at the
-   * last populated cell would be a table pretending to be a spreadsheet — the
-   * empty coordinates are the point, and the charts anchor into them.
-   */
-  const COLUMNS = Array.from({ length: 12 }, (_, index) => String.fromCharCode(65 + index));
-  const ROWS = Array.from({ length: 36 }, (_, index) => index + 1);
-
-  const at = $derived(new Map<string, Cell>(cells.map((cell) => [cell.address, cell])));
-  const styleOf = $derived(
-    new Map<string, NamedCellStyle>(styles.map((style) => [style.id, style]))
+  const threadRows = tableQuery("commentThreads");
+  const allThreads = $derived(rowsOf(threadRows, "commentThreads"));
+  const threads = $derived(sheetId === undefined ? [] : threadsOf(allThreads, sheetId));
+  const currentThread = $derived(view.inspected === "general.comment" ? view.selection?.id : undefined);
+  const pins = $derived(
+    sheet === undefined
+      ? new Map()
+      : pinsOf(threads, sheet, grid, currentThread, view.selection?.kind === "cell" ? view.selection.id : undefined)
   );
 
-  const columnIndex = (address: string) => address.replace(/[0-9]/g, "").charCodeAt(0) - 65;
-  const rowIndex = (address: string) => Number(address.replace(/[A-Z]/g, ""));
+  const scene = $derived(sheet === undefined ? undefined : sceneOf(sheet, grid, pins));
+  const selection = $derived.by((): SurfaceSelection | undefined => {
+    const held = view.selection;
+    if (held?.kind !== "comment") return surfaceSelectionOf(grid, held);
+    const thread = allThreads.find((candidate) => candidate._id === held.id);
+    const anchor = thread === undefined ? undefined : anchorOf(thread);
+    return anchor === undefined ? undefined : surfaceSelectionOf(grid, { kind: "cell", id: keyOf(anchor) });
+  });
+  const zoom = $derived(view.zoom ?? 100);
 
-  /** "360 × 220 px" as it is stored; the object record is the only place a size lives. */
-  const sized = (size: string) => size.split("×").map((part) => Number.parseFloat(part.trim()));
+  const highlights = $derived.by((): SurfaceHighlight[] => {
+    if (sheet === undefined) return [];
+    const found: SurfaceHighlight[] = [];
+    for (const hit of highlightedRefs(view.selection)) {
+      const at = indexOf(grid, hit);
+      if (at !== undefined) found.push({ rect: { row: at.row, column: at.column, rows: 1, columns: 1 }, tone: "hit" });
+    }
+    const ref = selectedRef(view.selection);
+    if (ref === undefined) return found;
+    const held = sheet.cells[`${ref.rowId}/${ref.columnId}`];
+    if (held?.expression !== undefined) {
+      for (const reference of referencesIn(grid, held.expression)) {
+        if (reference.rect !== undefined) found.push({ rect: reference.rect, tone: "reads" });
+      }
+    }
+    for (const feed of dependentsOf(sheet, grid, ref)) {
+      const at = indexOf(grid, feed.ref);
+      if (at !== undefined) found.push({ rect: { row: at.row, column: at.column, rows: 1, columns: 1 }, tone: "feeds" });
+    }
+    const spill = spillOf(sheet, grid, ref) ?? spillChildOf(sheet, grid, ref);
+    if (spill !== undefined) found.push({ rect: spill.rect, tone: "spill" });
+    return found;
+  });
 
-  const ALIGN: Record<Cell["alignment"], string> = {
-    left: "text-start",
-    center: "text-center",
-    right: "text-end"
+  let api = $state<SurfaceApi | undefined>(undefined);
+  let wrapper = $state<HTMLDivElement>();
+  let notice = $state<string | undefined>(undefined);
+  let noticeTimer: ReturnType<typeof setTimeout> | undefined;
+  let scrollTarget = $state<{ row: number; column: number; token: number } | undefined>(undefined);
+  let scrolls = 0;
+  let hit = $state<SurfaceHit | undefined>(undefined);
+
+  const say = (text: string) => {
+    notice = text;
+    if (noticeTimer !== undefined) clearTimeout(noticeTimer);
+    noticeTimer = setTimeout(() => (notice = undefined), 6000);
   };
 
-  let selected = $state<string>("C2");
-
-  /**
-   * Which lens a cell opens is decided by what the cell *is*, not by a menu. An
-   * error is a repair job, a spill child is read-only and names its origin, and a
-   * formula brings what it reads and what it feeds with it.
-   */
-  const lensFor = (cell: Cell | undefined) => {
-    if (cell === undefined) return "spreadsheet-editor.cell";
-    if (cell.error !== undefined) return "spreadsheet-editor.error-cell";
-    if (cell.spillOrigin !== undefined && cell.spillOrigin !== cell.address) return "spreadsheet-editor.spill";
-    if (cell.formula !== undefined) return "spreadsheet-editor.cell-with-formula";
-    return "spreadsheet-editor.cell";
+  const apply = (ops: Edit["ops"]) => {
+    if (ops.length === 0 || sheet === undefined) return;
+    runtime?.apply(withRecalculation(sheet, ops));
   };
 
-  const choose = (address: string) => {
-    selected = address;
-    view.inspect(lensFor(at.get(address)), { kind: "cell", id: address });
+  const perform = (edit: Edit): boolean => {
+    if (edit.refused !== undefined) {
+      say(edit.refused);
+      return false;
+    }
+    apply(edit.ops);
+    if (edit.skipped !== undefined && edit.skipped > 0) {
+      say(`${edit.skipped} ${edit.skipped === 1 ? "cell under a spill or a merge was" : "cells under a spill or a merge were"} left alone.`);
+    }
+    return true;
   };
 
-  /** Zoom, by the same pinch mechanism as the document and the deck. */
-  let zoom = $state(1);
+  const WHOLE = "spreadsheet-editor.spreadsheet";
+
+  const show = (signal: Signal | undefined) => {
+    if (signal === undefined) {
+      if (view.selection !== undefined || view.inspected !== WHOLE) view.inspect(WHOLE);
+      return;
+    }
+    if (sameSelection(view.selection, signal.selection) && view.inspected === signal.key) return;
+    view.inspect(signal.key, signal.selection);
+  };
+
+  $effect(() => {
+    if (sheet !== undefined && view.inspected === "empty" && view.selection === undefined) view.inspect(WHOLE);
+  });
+
+  const everything = (): Signal | undefined => {
+    if (sheet === undefined || grid.rows.length === 0 || grid.columns.length === 0) return undefined;
+    const rect = usedRect(sheet, grid) ?? { row: 0, column: 0, rows: 1, columns: 1 };
+    if (rect.rows === 1 && rect.columns === 1) {
+      const ref = refAt(grid, rect.row, rect.column);
+      return ref === undefined ? undefined : cellSignal(sheet, grid, ref);
+    }
+    return rangeSignal(grid, [rect]);
+  };
+
+  const wholeGrid = (rect: Rect): boolean =>
+    rect.row === 0 && rect.column === 0 && rect.rows >= grid.rows.length && rect.columns >= grid.columns.length;
+
+  const signalOf = (next: SurfaceSelection): Signal | undefined => {
+    if (sheet === undefined) return undefined;
+    if (next.rows.length > 1 && next.rows.length >= grid.rows.length) return everything();
+    if (next.rows.length > 0) return rowSignal(grid, next.rows);
+    if (next.columns.length > 0) return columnSignal(grid, next.columns);
+    const [only] = next.ranges;
+    if (only !== undefined && next.ranges.length === 1) {
+      if (wholeGrid(only)) return everything();
+      const span = mergeSpans(sheet, grid).find((held) => sameRect(held.rect, only));
+      if (span !== undefined) return cellSignal(sheet, grid, span.anchor);
+      if (only.rows === 1 && only.columns === 1) {
+        const ref = refAt(grid, only.row, only.column);
+        return ref === undefined ? undefined : cellSignal(sheet, grid, ref);
+      }
+    }
+    return next.ranges.length > 0 ? rangeSignal(grid, next.ranges, next.cell) : undefined;
+  };
+
+  const picked = (next: SurfaceSelection): boolean => {
+    if (!armed()) return false;
+    const at = next.cell;
+    const [rect] = next.ranges;
+    if (at === undefined || rect === undefined || next.ranges.length > 1) return false;
+    const ref = refAt(grid, at[1], at[0]);
+    if (ref === undefined) return false;
+    return pick(rect.rows === 1 && rect.columns === 1 ? labelOf(grid, ref) : rectLabelOf(grid, rect), keyOf(ref));
+  };
+
+  const select = (next: SurfaceSelection) => {
+    if (picked(next)) return;
+    show(signalOf(next));
+  };
+
+  const edited = (edits: readonly SurfaceEdit[]) => {
+    if (sheet === undefined) return;
+    for (const edit of edits) {
+      const ref = refAt(grid, edit.row, edit.column);
+      if (ref !== undefined) perform(typed(sheet, grid, ref, edit.text));
+    }
+  };
+
+  const rectsOf = (held: SurfaceSelection): Rect[] => [
+    ...held.ranges,
+    ...held.rows.map((row) => ({ row, column: 0, rows: 1, columns: grid.columns.length })),
+    ...held.columns.map((column) => ({ row: 0, column, rows: grid.rows.length, columns: 1 }))
+  ];
+
+  const deleted = (held: SurfaceSelection) => {
+    if (sheet === undefined) return;
+    const refs = rectsOf(held).flatMap((rect) => refsIn(grid, rect));
+    perform(cleared(sheet, grid, refs));
+  };
+
+  const fill = (wanted: SurfaceFill) => {
+    if (sheet === undefined) return;
+    const edit = filled(sheet, grid, wanted.source, wanted.target);
+    if (perform(edit) && edit.summary !== undefined) say(edit.summary);
+  };
+
+  const paste = (wanted: SurfacePaste) => {
+    if (sheet === undefined) return;
+    const [rect] = selectedRects(grid, view.selection);
+    const edit = pasted(sheet, grid, wanted, wanted.values, rect);
+    if (perform(edit) && edit.summary !== undefined) say(edit.summary);
+  };
+
+  const resize = (column: number, size: number) => {
+    const id = grid.columns[column]?.id;
+    if (id === undefined) return;
+    const op = resizedColumn(grid, id, size);
+    if (op !== undefined) apply([op]);
+  };
+
+  const moveColumn = (from: number, to: number) => {
+    const op = movedColumn(grid, from, to);
+    if (op !== undefined) apply([op]);
+  };
+
+  const moveRow = (from: number, to: number) => {
+    const op = movedRow(grid, from, to);
+    if (op !== undefined) apply([op]);
+  };
+
+  const append = () => {
+    apply(insertedRows(grid.rows.at(-1)?.id ?? null, APPEND_ROWS).ops);
+  };
+
+  const appendColumn = () => {
+    apply(insertedColumns(grid.columns.at(-1)?.id ?? null, APPEND_COLUMNS).ops);
+  };
+
+  const pointed = (next: SurfaceHit) => {
+    hit = next;
+    if (sheet === undefined) return;
+    if (next.kind === "cell") {
+      const inside = selectedRects(grid, view.selection).some(
+        (rect) => next.row >= rect.row && next.row < rect.row + rect.rows && next.column >= rect.column && next.column < rect.column + rect.columns
+      );
+      const ref = refAt(grid, next.row, next.column);
+      if (!inside && ref !== undefined) show(cellSignal(sheet, grid, ref));
+    } else if (next.kind === "row" && !selectedRowIds(view.selection).includes(grid.rows[next.row]?.id ?? "")) {
+      show(rowSignal(grid, [next.row]));
+    } else if (next.kind === "column" && !selectedColumnIds(view.selection).includes(grid.columns[next.column]?.id ?? "")) {
+      show(columnSignal(grid, [next.column]));
+    }
+  };
+
+  const hitRows = $derived.by((): number[] => {
+    const held = hit;
+    if (held === undefined || held.kind === "corner" || held.kind === "column") return [];
+    const chosen = selectedRowIds(view.selection).flatMap((id) => {
+      const index = grid.rowAt.get(id);
+      return index === undefined ? [] : [index];
+    });
+    return chosen.includes(held.row) ? chosen : [held.row];
+  });
+
+  const hitColumns = $derived.by((): number[] => {
+    const held = hit;
+    if (held === undefined || held.kind === "corner" || held.kind === "row") return [];
+    const chosen = selectedColumnIds(view.selection).flatMap((id) => {
+      const index = grid.columnAt.get(id);
+      return index === undefined ? [] : [index];
+    });
+    return chosen.includes(held.column) ? chosen : [held.column];
+  });
+
+  const hitRect = $derived.by((): Rect | undefined => {
+    const rects = selectedRects(grid, view.selection);
+    return rects.length === 1 && view.selection?.kind === "range" ? rects[0] : undefined;
+  });
+
+  const hitAnchor = $derived.by(() => {
+    const held = hit;
+    if (sheet === undefined || held === undefined || held.kind !== "cell") return undefined;
+    const ref = refAt(grid, held.row, held.column);
+    return ref === undefined ? undefined : mergeOf(sheet, grid, ref);
+  });
+
+  const rowWord = (indices: readonly number[]): string =>
+    indices.length === 1 ? `row ${indices[0] + 1}` : `${indices.length} rows`;
+
+  const columnWord = (indices: readonly number[]): string =>
+    indices.length === 1 ? `column ${columnLabel(indices[0])}` : `${indices.length} columns`;
+
+  const insertRows = (where: "above" | "below") => {
+    const rows = hitRows;
+    if (rows.length === 0) return;
+    const sorted = [...rows].sort((a, b) => a - b);
+    const after = where === "above" ? (sorted[0] === 0 ? null : grid.rows[sorted[0] - 1].id) : grid.rows[sorted[sorted.length - 1]].id;
+    apply(insertedRows(after, sorted.length).ops);
+  };
+
+  const insertColumns = (where: "left" | "right") => {
+    const columns = hitColumns;
+    if (columns.length === 0) return;
+    const sorted = [...columns].sort((a, b) => a - b);
+    const after = where === "left" ? (sorted[0] === 0 ? null : grid.columns[sorted[0] - 1].id) : grid.columns[sorted[sorted.length - 1]].id;
+    apply(insertedColumns(after, sorted.length).ops);
+  };
+
+  const removeRows = () => {
+    if (sheet === undefined || hitRows.length === 0) return;
+    if (hitRows.length >= grid.rows.length) {
+      say("A sheet keeps at least one row.");
+      return;
+    }
+    apply(removedRows(sheet, grid, hitRows.map((index) => grid.rows[index].id)));
+    view.clear();
+  };
+
+  const removeColumns = () => {
+    if (sheet === undefined || hitColumns.length === 0) return;
+    if (hitColumns.length >= grid.columns.length) {
+      say("A sheet keeps at least one column.");
+      return;
+    }
+    apply(removedColumns(sheet, grid, hitColumns.map((index) => grid.columns[index].id)));
+    view.clear();
+  };
+
+  const clearSelection = () => {
+    if (selection !== undefined) deleted(selection);
+  };
+
+  const merge = () => {
+    if (sheet === undefined || hitRect === undefined) return;
+    const edit = merged(sheet, grid, hitRect);
+    if (perform(edit) && edit.cleared !== undefined && edit.cleared > 0) {
+      say(`${edit.cleared} ${edit.cleared === 1 ? "cell was" : "cells were"} cleared; ${rectLabelOf(grid, { ...hitRect, rows: 1, columns: 1 })} keeps its value.`);
+    }
+  };
+
+  const unmerge = () => {
+    if (sheet === undefined || hitAnchor === undefined) return;
+    perform(unmerged(sheet, hitAnchor.anchor));
+  };
+
+  const freezeUpTo = () => {
+    if (sheet === undefined || hitColumns.length === 0) return;
+    const index = Math.max(...hitColumns) + 1;
+    const frozen = sheet.body.frozenColumns ?? 0;
+    const op = frozenColumnsSet(sheet.body, frozen === index ? 0 : index);
+    if (op !== undefined) apply([op]);
+  };
+
+  const selectAll = () => show(everything());
+
+  const openLens = (signal: Signal | undefined) => {
+    if (signal !== undefined) view.inspect(signal.key, signal.selection);
+  };
+
+  const clampZoom = (value: number): number => Math.round(Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, value)));
 
   const pinch = (event: WheelEvent) => {
-    if (!event.ctrlKey) return;
+    if (!event.ctrlKey && !event.metaKey) return;
     event.preventDefault();
-    zoom = Math.min(2, Math.max(0.5, zoom - event.deltaY / 400));
+    view.setZoom(clampZoom(zoom - (event.deltaY / WHEEL_NOTCH) * PERCENT_PER_NOTCH));
   };
+
+  const keydown = (event: KeyboardEvent) => {
+    const element = wrapper;
+    if (element === undefined || !(event.target instanceof Node) || !element.contains(event.target)) return;
+    if (!(event.metaKey || event.ctrlKey)) return;
+    const key = event.key.toLowerCase();
+    if (key === "z" && !event.shiftKey) {
+      event.preventDefault();
+      runtime?.undo();
+    } else if ((key === "z" && event.shiftKey) || key === "y") {
+      event.preventDefault();
+      runtime?.redo();
+    }
+  };
+
+  $effect(() => {
+    const target = runtime?.scrollTo;
+    if (target === undefined || runtime === undefined) return;
+    const at = indexOf(grid, target);
+    if (at !== undefined) {
+      scrolls += 1;
+      scrollTarget = { row: at.row, column: at.column, token: scrolls };
+    }
+    runtime.scrollTo = undefined;
+  });
+
+  let landed = $state<string | undefined>(undefined);
+
+  $effect(() => {
+    const focus = view.active.focus;
+    const held = runtime;
+    if (sheet === undefined || held === undefined || focus === undefined || focus === landed) return;
+    const ref = parseRef(grid, focus);
+    if (ref === undefined) return;
+    landed = focus;
+    held.scrollTo = ref;
+    show(cellSignal(sheet, grid, ref));
+  });
+
 </script>
 
-<ScreenSurface wide class="gap-0 overflow-y-hidden p-0">
-  <div class="board">
-    <div class="area-editor">
-      <!--
-        Edge to edge. Nothing sits between the zone and the grid: the cell you are
-        on is named in the inspector, and its formula lives there too.
-      -->
-      <div class="canvas bg-surface-canvas" onwheel={pinch}>
-        <div class="scaled" style="--zoom: {zoom}">
-          <div class="sheet bg-surface-panel">
-            <!--
-              Headings are labels, not controls. Nothing here offers a row or a
-              column lens, because neither is an identified thing to open.
-            -->
-            <div class="head corner bg-surface-elevated border-border-subtle"></div>
-            {#each COLUMNS as column (column)}
-              <div class="head bg-surface-elevated border-border-subtle text-caption text-ink-muted">
-                {column}
-              </div>
-            {/each}
+<svelte:window onkeydown={keydown} />
 
-            {#each ROWS as row (row)}
-              <div
-                class="head stub bg-surface-elevated border-border-subtle text-caption text-ink-muted tabular-nums"
-              >
-                {row}
-              </div>
-              {#each COLUMNS as column (column)}
-                {@const address = `${column}${row}`}
-                {@const cell = at.get(address)}
-                {@const style = cell?.styleId === undefined ? undefined : styleOf.get(cell.styleId)}
-                <button
-                  type="button"
-                  class="cell border-border-subtle text-body-sm {ALIGN[cell?.alignment ?? 'left']}"
-                  class:is-selected={selected === address}
-                  class:is-spill={cell?.spillOrigin !== undefined}
-                  class:is-total={style?.border === "Top rule"}
-                  class:text-danger-text={cell?.error !== undefined}
-                  class:text-ink-primary={cell !== undefined && cell.error === undefined}
-                  style={style === undefined ? undefined : `font-weight: ${style.weight}`}
-                  title={cell?.formula ?? cell?.content ?? address}
-                  aria-label={address}
-                  onclick={() => choose(address)}
-                >
-                  {cell?.shows ?? ""}
-                </button>
-              {/each}
-            {/each}
+<div class="sheet-editor" bind:this={wrapper}>
+  <header class="area-title bg-surface-panel border-border-subtle border-b">
+    <h1 class="text-body-sm text-ink-primary m-0 truncate font-medium">{title ?? "Loading spreadsheet..."}</h1>
+  </header>
 
-            <!--
-              Charts float over the grid, anchored to a cell. They are read-only:
-              `SheetChart` has no stable id, which is enough for a list and not
-              enough for selection, granular update, reconciliation or comments.
-            -->
-            {#each charts as chart (chart.index)}
-              {@const measure = sized(chart.size)}
-              <div
-                class="chart bg-surface-panel border-border-subtle rounded-panel border"
-                style="left: calc(var(--sheet-stub) + {columnIndex(
-                  chart.anchor
-                )} * var(--sheet-col)); top: calc({rowIndex(
-                  chart.anchor
-                )} * var(--sheet-row)); width: {measure[0]}px; height: {measure[1]}px"
-              >
-                <button
-                  type="button"
-                  class="chart-body"
-                  onclick={() =>
-                    view.inspect("spreadsheet-editor.chart", {
-                      kind: "chart",
-                      id: String(chart.index)
-                    })}
-                >
-                  <span class="text-caption text-ink-secondary flex items-center gap-1.5">
-                    <ChartColumn size={14} aria-hidden="true" />
-                    <span class="truncate">{chart.title}</span>
-                    <Lock size={12} aria-hidden="true" class="text-ink-muted ms-auto shrink-0" />
-                  </span>
-                  <span class="plot" aria-hidden="true">
-                    {#each [58, 84, 41, 72, 63] as height, index (index)}
-                      <span class="bar bg-border-strong" style="height: {height}%"></span>
-                    {/each}
-                  </span>
-                  <span class="text-caption text-ink-muted font-mono truncate">
-                    {chart.sourceRange}{chart.overlapped ? " · overlapped" : ""}
-                  </span>
-                </button>
-              </div>
-            {/each}
-          </div>
+  <ContextMenu.Root>
+    <ContextMenu.Trigger>
+      {#snippet child({ props })}
+        <div {...props} class="area-grid" onwheel={pinch}>
+          {#if scene}
+            <SheetSurface
+              {scene}
+              {selection}
+              {highlights}
+              {zoom}
+              {scrollTarget}
+              bind:api
+              onselect={select}
+              onedit={edited}
+              ondelete={deleted}
+              onfill={fill}
+              onpaste={paste}
+              onresize={resize}
+              onmovecolumn={moveColumn}
+              onmoverow={moveRow}
+              appendHint={`+ ${APPEND_ROWS} rows`}
+              appendColumnHint={`+ ${APPEND_COLUMNS} columns`}
+              onappend={append}
+              onappendcolumn={appendColumn}
+              oncontext={pointed}
+            />
+          {:else}
+            <p class="loading text-caption text-ink-muted">
+              {runtime?.sync === "error" ? "This spreadsheet could not be read." : "Reading this spreadsheet..."}
+            </p>
+          {/if}
         </div>
-      </div>
+      {/snippet}
+    </ContextMenu.Trigger>
 
-      <div class="under bg-surface-panel border-border-subtle flex flex-col gap-1 border-t px-4 py-2">
-        <ScreenNote tone="gap" meta="Pinch to zoom · {Math.round(zoom * 100)}%">
-          Univer is not installed. The grid surface — headings, scrolling, in-cell editing, merges
-          and the rendering of a sparse sheet — is its; the calculation behind every figure here is
-          Icarus's engine, which is the only calculation authority and is not one of Univer's
-          options. Nothing on this grid types.
-        </ScreenNote>
-        <ScreenNote
-          meta="{record.usedRange} · {record.populatedCells} populated · {problems.length} broken"
-        >
-          The grid is sparse: an empty coordinate has no persisted cell, which is why formatting an
-          empty range has nowhere to be stored. A spill child is tinted, read-only and names its
-          origin; a write into the range it occupies fails visibly rather than quietly breaking it.
-          There is no formula bar and no name box, and there are no sheet tabs — a tab is one
-          spreadsheet.
-        </ScreenNote>
-      </div>
-    </div>
+    <ContextMenu.Content class="w-60">
+      {#if hit?.kind === "corner"}
+        <ContextMenu.Item onSelect={selectAll}>Select the used range</ContextMenu.Item>
+      {:else if hit?.kind === "cell"}
+        <ContextMenu.Item onSelect={() => api?.cut()}>Cut</ContextMenu.Item>
+        <ContextMenu.Item onSelect={() => api?.copy()}>Copy</ContextMenu.Item>
+        <ContextMenu.Item onSelect={() => api?.paste()}>Paste</ContextMenu.Item>
+        <ContextMenu.Separator />
+        <ContextMenu.Item onSelect={clearSelection}>Clear contents</ContextMenu.Item>
+        {#if hitAnchor}
+          <ContextMenu.Item onSelect={unmerge}>Unmerge {rectLabelOf(grid, hitAnchor.rect)}</ContextMenu.Item>
+        {:else if hitRect && hitRect.rows * hitRect.columns > 1}
+          <ContextMenu.Item onSelect={merge}>Merge {rectLabelOf(grid, hitRect)}</ContextMenu.Item>
+        {/if}
+        <ContextMenu.Separator />
+        <ContextMenu.Item onSelect={() => insertRows("above")}>Insert {rowWord(hitRows)} above</ContextMenu.Item>
+        <ContextMenu.Item onSelect={() => insertRows("below")}>Insert {rowWord(hitRows)} below</ContextMenu.Item>
+        <ContextMenu.Item onSelect={() => insertColumns("left")}>Insert {columnWord(hitColumns)} left</ContextMenu.Item>
+        <ContextMenu.Item onSelect={() => insertColumns("right")}>Insert {columnWord(hitColumns)} right</ContextMenu.Item>
+        <ContextMenu.Separator />
+        <ContextMenu.Item variant="destructive" onSelect={removeRows}>Remove {rowWord(hitRows)}</ContextMenu.Item>
+        <ContextMenu.Item variant="destructive" onSelect={removeColumns}>Remove {columnWord(hitColumns)}</ContextMenu.Item>
+      {:else if hit?.kind === "row"}
+        <ContextMenu.Label class="text-caption text-ink-muted px-1.5 py-1 font-normal">
+          {rowWord(hitRows).replace(/^\w/, (letter) => letter.toUpperCase())}
+        </ContextMenu.Label>
+        <ContextMenu.Item onSelect={() => insertRows("above")}>Insert {rowWord(hitRows)} above</ContextMenu.Item>
+        <ContextMenu.Item onSelect={() => insertRows("below")}>Insert {rowWord(hitRows)} below</ContextMenu.Item>
+        <ContextMenu.Item onSelect={() => openLens(rowSignal(grid, hitRows))}>Height and more…</ContextMenu.Item>
+        <ContextMenu.Separator />
+        <ContextMenu.Item onSelect={clearSelection}>Clear contents</ContextMenu.Item>
+        <ContextMenu.Item variant="destructive" onSelect={removeRows}>Remove {rowWord(hitRows)}</ContextMenu.Item>
+      {:else if hit?.kind === "column"}
+        <ContextMenu.Label class="text-caption text-ink-muted px-1.5 py-1 font-normal">
+          {columnWord(hitColumns).replace(/^\w/, (letter) => letter.toUpperCase())}
+        </ContextMenu.Label>
+        <ContextMenu.Item onSelect={() => insertColumns("left")}>Insert {columnWord(hitColumns)} left</ContextMenu.Item>
+        <ContextMenu.Item onSelect={() => insertColumns("right")}>Insert {columnWord(hitColumns)} right</ContextMenu.Item>
+        <ContextMenu.Item onSelect={() => openLens(columnSignal(grid, hitColumns))}>Width and more…</ContextMenu.Item>
+        <ContextMenu.Item onSelect={freezeUpTo}>
+          {(sheet?.body.frozenColumns ?? 0) === Math.max(...hitColumns) + 1 ? "Unfreeze columns" : `Freeze columns up to ${columnLabel(Math.max(...hitColumns))}`}
+        </ContextMenu.Item>
+        <ContextMenu.Separator />
+        <ContextMenu.Item onSelect={clearSelection}>Clear contents</ContextMenu.Item>
+        <ContextMenu.Item variant="destructive" onSelect={removeColumns}>Remove {columnWord(hitColumns)}</ContextMenu.Item>
+      {/if}
+    </ContextMenu.Content>
+  </ContextMenu.Root>
+
+  <div class="area-strip bg-surface-panel border-border-subtle flex items-center gap-2 border-t">
+    {#if notice}
+      <span class="text-caption text-attention-text min-w-0 truncate">{notice}</span>
+    {/if}
+    <span class="ms-auto flex shrink-0 items-center gap-1">
+      <Button variant="ghost" size="icon-xs" aria-label="Undo" title="Undo" disabled={!runtime?.canUndo} onclick={() => runtime?.undo()}>
+        <Undo2 aria-hidden="true" />
+      </Button>
+      <Button variant="ghost" size="icon-xs" aria-label="Redo" title="Redo" disabled={!runtime?.canRedo} onclick={() => runtime?.redo()}>
+        <Redo2 aria-hidden="true" />
+      </Button>
+      <span class="border-border-subtle mx-1 h-4 border-l" aria-hidden="true"></span>
+      <Button variant="ghost" size="icon-xs" aria-label="Zoom out" onclick={() => view.setZoom(clampZoom(zoom - ZOOM_STEP))}>
+        <Minus aria-hidden="true" />
+      </Button>
+      <button
+        type="button"
+        class="text-caption text-ink-secondary hover:text-ink-primary rounded-control w-12 tabular-nums"
+        title="Back to 100%"
+        onclick={() => view.setZoom(100)}
+      >
+        {zoom}%
+      </button>
+      <Button variant="ghost" size="icon-xs" aria-label="Zoom in" onclick={() => view.setZoom(clampZoom(zoom + ZOOM_STEP))}>
+        <Plus aria-hidden="true" />
+      </Button>
+      <span class="text-caption text-ink-muted ms-2">· {SYNC_LABEL[runtime?.sync ?? "loading"]}</span>
+    </span>
   </div>
-</ScreenSurface>
+</div>
 
 <style>
-  /**
-   * The layout table from the specification: one `1fr` track, one `editor` band.
-   * A narrow fallback has nothing to reorder — a single column is already what it
-   * would produce — so the grid scrolls sideways instead of reflowing, which is
-   * the only honest thing a grid can do.
-   */
-  .board {
+  .sheet-editor {
     display: grid;
-    flex: 1;
-    min-height: calc(var(--token-spacing-unit) * 120);
-    grid-template-columns: 1fr;
-    grid-template-areas: "editor";
+    height: 100%;
+    min-height: 0;
+    grid-template-rows: auto 1fr auto;
+    grid-template-columns: minmax(0, 1fr);
   }
 
-  .area-editor {
-    grid-area: editor;
-    display: flex;
+  .area-title {
+    padding: calc(var(--token-spacing-unit) * 2) calc(var(--token-spacing-unit) * 4);
+  }
+
+  .area-grid {
+    position: relative;
     min-height: 0;
     min-width: 0;
-    flex-direction: column;
-  }
-
-  .canvas {
-    flex: 1;
-    min-height: 0;
-    overflow: auto;
-  }
-
-  .scaled {
-    width: max-content;
-    transform: scale(var(--zoom));
-    transform-origin: top left;
-  }
-
-  .sheet {
-    position: relative;
-    display: grid;
-    width: max-content;
-    /* The stub column carries a row number; the rest are one width, as a grid is. */
-    --sheet-stub: calc(var(--token-spacing-unit) * 11);
-    --sheet-col: calc(var(--token-spacing-unit) * 28);
-    --sheet-row: calc(var(--token-spacing-unit) * 6);
-    grid-template-columns: var(--sheet-stub) repeat(12, var(--sheet-col));
-    grid-auto-rows: var(--sheet-row);
-  }
-
-  .head {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-inline-end-width: 1px;
-    border-bottom-width: 1px;
-    border-style: solid;
-    position: sticky;
-    top: 0;
-    z-index: 2;
-  }
-
-  .stub {
-    position: sticky;
-    top: auto;
-    left: 0;
-    z-index: 1;
-  }
-
-  .corner {
-    left: 0;
-    z-index: 3;
-  }
-
-  .cell {
-    display: flex;
-    align-items: center;
-    padding-inline: calc(var(--token-spacing-unit) * 2);
-    border-inline-end-width: 1px;
-    border-bottom-width: 1px;
-    border-style: solid;
     overflow: hidden;
-    white-space: nowrap;
+    background: var(--token-surface-elevated);
   }
 
-  .cell.is-total {
-    border-top-width: 1px;
-    border-top-style: solid;
-    border-top-color: var(--token-border-strong);
+  .loading {
+    margin: 0;
+    padding: calc(var(--token-spacing-unit) * 4);
   }
 
-  /* A spill is one answer occupying cells it did not start in. */
-  .cell.is-spill {
-    background: var(--token-color-intelligence-surface);
-  }
-
-  .cell:hover {
-    background: var(--token-surface-panel-hover);
-  }
-
-  .cell.is-selected {
-    outline: 2px solid var(--token-color-active-border);
-    outline-offset: -1px;
-  }
-
-  .chart {
-    position: absolute;
-    z-index: 1;
-    overflow: hidden;
-    box-shadow: var(--token-shadow-panel);
-  }
-
-  .chart-body {
-    display: flex;
-    height: 100%;
-    width: 100%;
-    flex-direction: column;
-    gap: calc(var(--token-spacing-unit) * 2);
-    padding: calc(var(--token-spacing-unit) * 2);
-    text-align: start;
-  }
-
-  .plot {
-    display: flex;
-    flex: 1;
-    align-items: flex-end;
-    gap: calc(var(--token-spacing-unit) * 2);
-    min-height: 0;
-  }
-
-  .bar {
-    flex: 1;
-    border-radius: var(--token-radius-control) var(--token-radius-control) 0 0;
-  }
-
-  .under {
-    flex-shrink: 0;
+  .area-strip {
+    min-width: 0;
+    padding: calc(var(--token-spacing-unit) * 1.5) calc(var(--token-spacing-unit) * 3);
   }
 </style>

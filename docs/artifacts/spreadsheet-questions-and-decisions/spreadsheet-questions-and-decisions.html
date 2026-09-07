@@ -1,0 +1,1401 @@
+<title>Spreadsheet Questions and Decisions</title>
+<meta name="page" content="spreadsheet-questions-and-decisions">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+
+<style>
+  :root {
+    --ground: #f2efe9;
+    --panel: #fbf9f5;
+    --sunk: #e9e5dc;
+    --ink: #1d2329;
+    --ink-2: #3a424d;
+    --ink-3: #6b7580;
+    --rule: #d8d3c4;
+    --rule-soft: #e4dfd2;
+    --client: #bc386f;
+    --client-soft: #fdeff5;
+    --server: #187d74;
+    --server-soft: #e6f4f2;
+    --surface: #3a5fa8;
+    --surface-soft: #e8eef9;
+    --warn: #9a6a12;
+    --warn-soft: #f8efd9;
+    --danger: #b4453f;
+    --danger-soft: #fbe9e7;
+    --spill: #6b4fbb;
+    --spill-soft: #efe9fb;
+    --reads: #2f7fb8;
+    --reads-soft: #e3f0fa;
+    --feeds: #c26b1e;
+    --feeds-soft: #fbeadb;
+    --select: #2f6fdb;
+    --select-soft: rgba(47, 111, 219, 0.13);
+    --pin: #c58a1c;
+    --ok: #2e7d4f;
+
+    --sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+    --measure: 70ch;
+    --gap: 1.15rem;
+    --gutter: 232px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #14181c;
+      --panel: #1c2127;
+      --sunk: #101418;
+      --ink: #e7e3da;
+      --ink-2: #b6bcc6;
+      --ink-3: #8d97a3;
+      --rule: #2e353d;
+      --rule-soft: #262c33;
+      --client: #ee7fae;
+      --client-soft: #351924;
+      --server: #3fcfc0;
+      --server-soft: #102b28;
+      --surface: #7ea2e8;
+      --surface-soft: #1a2538;
+      --warn: #d9a441;
+      --warn-soft: #2e2510;
+      --danger: #e5766f;
+      --danger-soft: #3a1c1a;
+      --spill: #b39ce8;
+      --spill-soft: #261c3a;
+      --reads: #6fb3e6;
+      --reads-soft: #142a3a;
+      --feeds: #e6975a;
+      --feeds-soft: #3a2513;
+      --select: #6f9cf0;
+      --select-soft: rgba(111, 156, 240, 0.2);
+      --pin: #e0aa45;
+      --ok: #5cc088;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground: #14181c;
+    --panel: #1c2127;
+    --sunk: #101418;
+    --ink: #e7e3da;
+    --ink-2: #b6bcc6;
+    --ink-3: #8d97a3;
+    --rule: #2e353d;
+    --rule-soft: #262c33;
+    --client: #ee7fae;
+    --client-soft: #351924;
+    --server: #3fcfc0;
+    --server-soft: #102b28;
+    --surface: #7ea2e8;
+    --surface-soft: #1a2538;
+    --warn: #d9a441;
+    --warn-soft: #2e2510;
+    --danger: #e5766f;
+    --danger-soft: #3a1c1a;
+    --spill: #b39ce8;
+    --spill-soft: #261c3a;
+    --reads: #6fb3e6;
+    --reads-soft: #142a3a;
+    --feeds: #e6975a;
+    --feeds-soft: #3a2513;
+    --select: #6f9cf0;
+    --select-soft: rgba(111, 156, 240, 0.2);
+    --pin: #e0aa45;
+    --ok: #5cc088;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a { color: inherit; }
+
+  .topnav {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: color-mix(in srgb, var(--ground) 92%, transparent);
+    backdrop-filter: blur(6px);
+    border-bottom: 1px solid var(--rule-soft);
+  }
+
+  .topnav .inner {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 0.55rem 1.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem 1.4rem;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+  }
+
+  .topnav .pages { display: flex; flex-wrap: wrap; gap: 0.2rem 1rem; }
+  .topnav .pages a { text-decoration: none; color: var(--ink-3); padding: 0.15rem 0; border-bottom: 2px solid transparent; }
+  .topnav .pages a:hover { color: var(--ink); }
+  .topnav .pages a.here { color: var(--ink); border-bottom-color: var(--client); }
+  .topnav .anchors { display: flex; flex-wrap: wrap; gap: 0.2rem 0.9rem; margin-left: auto; }
+  .topnav .anchors a { text-decoration: none; color: var(--ink-3); }
+  .topnav .anchors a:hover { color: var(--ink); }
+
+  .notebar {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 0.35rem 1.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.3rem 1rem;
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--ink-3);
+  }
+  .notebar .state.bad { color: var(--danger); }
+  .notebar .state.ok { color: var(--ok); }
+
+  .page {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 2.4rem 1.5rem 6rem;
+    display: flex;
+    flex-direction: column;
+    gap: 3.25rem;
+  }
+
+  .row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) var(--gutter);
+    gap: 0 2rem;
+    align-items: start;
+  }
+  .row > .main { min-width: 0; display: flex; flex-direction: column; gap: var(--gap); }
+
+  @media (max-width: 900px) {
+    .row { grid-template-columns: minmax(0, 1fr); }
+    .row > .notes { display: none; }
+  }
+
+  .notes { position: relative; display: flex; flex-direction: column; gap: 0.5rem; padding-top: 0.15rem; }
+  .notes .box {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    border: 1px dashed var(--rule);
+    border-radius: 4px;
+    padding: 0.45rem 0.55rem;
+    background: color-mix(in srgb, var(--panel) 60%, transparent);
+  }
+  .notes .box .who { font-family: var(--mono); font-size: 0.64rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); }
+  .notes textarea {
+    width: 100%;
+    resize: none;
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    background: var(--panel);
+    color: var(--ink);
+    font: inherit;
+    font-size: 0.84rem;
+    line-height: 1.4;
+    padding: 0.35rem 0.45rem;
+    min-height: 2.1rem;
+  }
+  .notes textarea:focus-visible { outline: 2px solid var(--select); outline-offset: 1px; }
+  .notes .saved { display: flex; flex-direction: column; gap: 0.35rem; }
+  .notes .saved .n {
+    font-size: 0.82rem;
+    line-height: 1.45;
+    color: var(--ink-2);
+    border-left: 3px solid var(--warn);
+    padding: 0.1rem 0 0.1rem 0.6rem;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+  .notes .saved .n time { display: block; font-family: var(--mono); font-size: 0.62rem; color: var(--ink-3); margin-top: 0.15rem; }
+  .notes .hint { font-family: var(--mono); font-size: 0.64rem; color: var(--ink-3); }
+
+  .col { max-width: var(--measure); }
+
+  h1, h2, h3, h4 { text-wrap: balance; margin: 0; }
+
+  h1 { font-size: clamp(2rem, 4.6vw, 2.9rem); font-weight: 600; letter-spacing: -0.028em; line-height: 1.08; }
+  h2 { font-size: 1.4rem; font-weight: 600; letter-spacing: -0.018em; padding-bottom: 0.5rem; border-bottom: 2px solid var(--ink); }
+  h3 { font-size: 1.02rem; font-weight: 600; letter-spacing: -0.008em; }
+  h4 { font-size: 0.92rem; font-weight: 600; }
+
+  p { margin: 0; }
+  .col > p + p, .main > p + p { margin-top: 0.85rem; }
+
+  .eyebrow { font-family: var(--mono); font-size: 0.7rem; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-3); }
+  .lede { font-size: 1.08rem; color: var(--ink-2); }
+
+  code, .m { font-family: var(--mono); font-size: 0.86em; }
+  code { background: var(--sunk); border-radius: 3px; padding: 0.1em 0.34em; }
+  pre { margin: 0; }
+
+  section { display: flex; flex-direction: column; gap: var(--gap); }
+  .stack { display: flex; flex-direction: column; gap: var(--gap); }
+
+  .hero { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 2rem; align-items: start; }
+  .hero .readout {
+    border: 1px solid var(--rule-soft);
+    background: var(--panel);
+    border-radius: 4px;
+    padding: 1rem 1.1rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.9rem 1rem;
+    font-family: var(--mono);
+  }
+  .hero .readout .k { font-size: 0.64rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); }
+  .hero .readout .v { font-size: 1.35rem; font-weight: 600; line-height: 1.1; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .hero .readout .v small { font-size: 0.72rem; font-weight: 400; color: var(--ink-3); margin-left: 0.25rem; }
+  @media (max-width: 900px) { .hero { grid-template-columns: minmax(0, 1fr); } }
+
+  .sheet { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+  th, td { text-align: left; padding: 0.55rem 0.9rem 0.55rem 0; border-bottom: 1px solid var(--rule-soft); vertical-align: top; }
+  th { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); border-bottom: 1px solid var(--rule); white-space: nowrap; }
+  td.p { font-family: var(--mono); font-size: 0.8rem; white-space: nowrap; }
+  td.pw { font-family: var(--mono); font-size: 0.8rem; }
+  td.n { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  td.k { font-family: var(--mono); font-size: 0.8rem; white-space: nowrap; }
+  tr.dim td { color: var(--ink-3); }
+
+  .tree {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    line-height: 1.85;
+    background: var(--panel);
+    border: 1px solid var(--rule-soft);
+    border-radius: 4px;
+    padding: 1.1rem 1.25rem;
+    overflow-x: auto;
+    white-space: pre;
+  }
+  .tree .note { color: var(--ink-3); }
+  .cli { color: var(--client); font-weight: 500; }
+  .srv { color: var(--server); font-weight: 500; }
+  .sfc { color: var(--surface); font-weight: 500; }
+  .new { color: var(--warn); font-weight: 500; }
+
+  figure { margin: 0; display: flex; flex-direction: column; gap: 0.7rem; }
+  figure svg { width: 100%; height: auto; display: block; background: var(--panel); border: 1px solid var(--rule-soft); border-radius: 4px; }
+  figcaption { font-size: 0.85rem; color: var(--ink-3); max-width: var(--measure); }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 1.1rem; font-size: 0.78rem; color: var(--ink-2); font-family: var(--mono); }
+  .key { display: inline-flex; align-items: center; gap: 0.4rem; }
+  .swatch { width: 0.75rem; height: 0.75rem; border-radius: 2px; display: inline-block; }
+
+  ol.steps { list-style: none; counter-reset: s; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.9rem; }
+  ol.steps li { counter-increment: s; display: grid; grid-template-columns: 1.9rem 1fr; gap: 0.85rem; align-items: start; }
+  ol.steps li::before { content: counter(s, decimal-leading-zero); font-family: var(--mono); font-size: 0.75rem; font-weight: 600; color: var(--client); padding-top: 0.22rem; font-variant-numeric: tabular-nums; }
+  ol.steps li p { font-size: 0.94rem; }
+  ol.steps li strong { font-weight: 600; }
+
+  ol.q { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 1.4rem; counter-reset: q; }
+  ol.q > li { counter-increment: q; display: grid; grid-template-columns: 2.4rem 1fr; gap: 0.9rem; align-items: start; }
+  ol.q > li::before { content: counter(q); font-family: var(--mono); font-size: 1.1rem; font-weight: 600; color: var(--client); padding-top: 0.05rem; font-variant-numeric: tabular-nums; }
+  ol.q .q-body { display: flex; flex-direction: column; gap: 0.55rem; min-width: 0; }
+  ol.q .q-body h3 { font-size: 1rem; }
+  ol.q .q-body p { font-size: 0.94rem; }
+  .rec { border-left: 3px solid var(--client); padding: 0.1rem 0 0.1rem 0.9rem; font-size: 0.94rem; color: var(--ink-2); }
+  .rec strong { color: var(--ink); }
+  .tagline { display: inline-flex; gap: 0.4rem; flex-wrap: wrap; }
+
+  .note-block { border-left: 3px solid var(--warn); padding: 0.1rem 0 0.1rem 1rem; font-size: 0.94rem; color: var(--ink-2); max-width: var(--measure); }
+  .rule-block { border-left-color: var(--client); }
+  .store-block { border-left-color: var(--server); }
+  .surface-block { border-left-color: var(--surface); }
+
+  ul.plain { margin: 0; padding-left: 1.1rem; display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.94rem; }
+  .gone { color: var(--ink-3); }
+
+  .meta { display: flex; flex-wrap: wrap; gap: 0 2rem; font-family: var(--mono); font-size: 0.76rem; color: var(--ink-3); padding-top: 1rem; border-top: 1px solid var(--rule-soft); }
+
+  .pill { display: inline-block; font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.08em; text-transform: uppercase; border: 1px solid var(--rule); border-radius: 999px; padding: 0.1rem 0.5rem; color: var(--ink-2); white-space: nowrap; vertical-align: middle; }
+  .pill.new { border-color: var(--warn); color: var(--warn); }
+  .pill.model { border-color: var(--server); color: var(--server); }
+  .pill.live { border-color: var(--client); color: var(--client); }
+  .pill.sfc { border-color: var(--surface); color: var(--surface); }
+  .pill.gap { border-color: var(--danger); color: var(--danger); }
+  .pill.ok { border-color: var(--ok); color: var(--ok); }
+
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; }
+  .card { border: 1px solid var(--rule-soft); background: var(--panel); border-radius: 4px; padding: 0.9rem 1rem; display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.9rem; }
+  .card .hd { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); display: flex; justify-content: space-between; gap: 0.5rem; align-items: center; }
+  .card h4 { font-size: 0.98rem; }
+  .card p { color: var(--ink-2); font-size: 0.9rem; }
+
+  .strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.6rem; }
+  .strip .s { border-top: 2px solid var(--rule); padding-top: 0.5rem; display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.86rem; }
+  .strip .s b { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); font-weight: 500; }
+  .strip .s.live { border-top-color: var(--client); }
+  .strip .s.store { border-top-color: var(--server); }
+  .strip .s.sfc { border-top-color: var(--surface); }
+
+  /* ---- grid mocks ---- */
+  .mock { display: flex; flex-direction: column; gap: 0.7rem; }
+  .mock .stage { overflow-x: auto; background: var(--panel); border: 1px solid var(--rule-soft); border-radius: 4px; padding: 1rem; }
+  .mock .stage.bare { padding: 0; border: 0; background: transparent; }
+  .mock .cap { font-size: 0.85rem; color: var(--ink-3); max-width: var(--measure); }
+  .mock .keys { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 0.35rem 1.6rem; font-size: 0.86rem; margin: 0; }
+  .mock .keys div { display: grid; grid-template-columns: 1.4rem 1fr; gap: 0.5rem; align-items: start; }
+  .mock .keys dt { margin: 0; }
+  .mock .keys dd { margin: 0; color: var(--ink-2); }
+  .mock .keys dd b { color: var(--ink); font-weight: 600; }
+  .ck { display: inline-flex; align-items: center; justify-content: center; width: 1.25rem; height: 1.25rem; border-radius: 999px; background: var(--client); color: #fff; font-family: var(--mono); font-size: 0.66rem; font-weight: 600; line-height: 1; }
+
+  .sh { position: relative; font-family: var(--sans); font-size: 12px; line-height: 1; color: var(--ink); width: max-content; }
+  .sh .editorbar { display: flex; align-items: center; gap: 12px; padding: 6px 10px; border: 1px solid var(--rule-soft); border-bottom: 0; background: var(--sunk); font-size: 11.5px; }
+  .sh .editorbar .t { font-weight: 500; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sh .editorbar .sync { font-family: var(--mono); font-size: 10px; color: var(--ink-3); }
+  .sh .grid { position: relative; overflow: hidden; border: 1px solid var(--rule-soft); background: var(--panel); }
+  .sh .hd { position: absolute; display: flex; align-items: center; justify-content: center; background: var(--sunk); color: var(--ink-3); font-family: var(--mono); font-size: 10px; border-right: 1px solid var(--rule); border-bottom: 1px solid var(--rule); user-select: none; }
+  .sh .hd.on { background: var(--select-soft); color: var(--select); font-weight: 600; }
+  .sh .hd.corner { z-index: 3; }
+  .sh .cell { position: absolute; display: flex; align-items: center; padding: 0 6px; border-right: 1px solid var(--rule-soft); border-bottom: 1px solid var(--rule-soft); overflow: hidden; white-space: nowrap; background: var(--panel); }
+  .sh .cell.end { justify-content: flex-end; font-variant-numeric: tabular-nums; }
+  .sh .cell.center { justify-content: center; }
+  .sh .cell.bold { font-weight: 600; }
+  .sh .cell.muted { color: var(--ink-3); }
+  .sh .cell.mono { font-family: var(--mono); font-size: 11px; }
+  .sh .cell.danger { color: var(--danger); font-family: var(--mono); font-size: 11px; }
+  .sh .cell.spill { background: var(--spill-soft); color: var(--spill); }
+  .sh .cell.spill.origin { color: var(--ink); }
+  .sh .cell.hit { background: var(--warn-soft); }
+  .sh .cell.reads { box-shadow: inset 0 0 0 2px var(--reads); background: var(--reads-soft); }
+  .sh .cell.feeds { box-shadow: inset 0 0 0 2px var(--feeds); background: var(--feeds-soft); }
+  .sh .cell.top { border-top: 1px solid var(--ink-2); }
+  .sh .cell.merged { z-index: 1; }
+  .sh .cell .mark-b { font-weight: 600; }
+  .sh .cell .mark-link { color: var(--select); text-decoration: underline; text-underline-offset: 2px; }
+  .sh .cell .mark-code { font-family: var(--mono); font-size: 11px; background: var(--sunk); padding: 0 3px; border-radius: 2px; }
+  .sh .sel { position: absolute; border: 1.5px solid var(--select); background: var(--select-soft); pointer-events: none; }
+  .sh .sel.primary { z-index: 2; }
+  .sh .sel.secondary { border-style: dashed; }
+  .sh .sel .anchor { position: absolute; inset: 0; background: transparent; }
+  .sh .handle { position: absolute; width: 7px; height: 7px; background: var(--select); border: 1px solid var(--panel); z-index: 3; }
+  .sh .fill { position: absolute; border: 1.5px dashed var(--select); pointer-events: none; z-index: 2; }
+  .sh .fill .tip { position: absolute; right: -4px; bottom: -22px; font-family: var(--mono); font-size: 10px; background: var(--ink); color: var(--ground); padding: 2px 6px; border-radius: 3px; white-space: nowrap; }
+  .sh .paste { position: absolute; border: 1.5px dashed var(--server); pointer-events: none; z-index: 2; }
+  .sh .frz-h { position: absolute; left: 0; right: 0; height: 2px; background: var(--ink-3); z-index: 4; }
+  .sh .frz-v { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--ink-3); z-index: 4; }
+  .sh .editing { position: absolute; display: flex; align-items: center; padding: 0 6px; background: var(--panel); outline: 2px solid var(--select); outline-offset: -1px; z-index: 5; font-family: var(--mono); font-size: 11.5px; white-space: nowrap; overflow: visible; }
+  .sh .editing .caret { display: inline-block; width: 1px; height: 14px; background: var(--ink); margin-left: 1px; }
+  .sh .pin { position: absolute; width: 0; height: 0; border-top: 7px solid var(--pin); border-left: 7px solid transparent; z-index: 3; }
+  .sh .pin.current { border-top-color: var(--client); }
+  .sh .pin.detached { border-top-color: var(--ink-3); }
+  .sh .pincount { position: absolute; font-family: var(--mono); font-size: 9px; background: var(--pin); color: #fff; border-radius: 999px; padding: 1px 4px; z-index: 6; }
+  .sh .obj { position: absolute; z-index: 6; background: var(--panel); border: 1px solid var(--rule); border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.12); display: flex; flex-direction: column; padding: 6px 8px; gap: 4px; }
+  .sh .obj .ot { font-size: 10.5px; font-weight: 500; display: flex; justify-content: space-between; gap: 6px; }
+  .sh .obj .ot .gated { font-family: var(--mono); font-size: 9px; color: var(--warn); border: 1px solid var(--warn); border-radius: 999px; padding: 0 5px; }
+  .sh .obj .bars { flex: 1; display: flex; align-items: flex-end; gap: 4px; min-height: 40px; }
+  .sh .obj .bars i { flex: 1; background: var(--rule); border-radius: 2px 2px 0 0; display: block; }
+  .sh .obj .src { font-family: var(--mono); font-size: 9.5px; color: var(--ink-3); }
+  .sh .guide { position: absolute; top: 0; bottom: 0; width: 0; border-left: 1.5px dashed var(--select); z-index: 6; }
+  .sh .guide .tip, .sh .ghost .tip { position: absolute; top: 4px; left: 6px; font-family: var(--mono); font-size: 10px; background: var(--ink); color: var(--ground); padding: 2px 6px; border-radius: 3px; white-space: nowrap; }
+  .sh .ghost { position: absolute; top: 0; bottom: 0; background: var(--select-soft); border: 1.5px dashed var(--select); z-index: 6; }
+  .sh .drop { position: absolute; top: 0; bottom: 0; width: 0; border-left: 3px solid var(--select); z-index: 7; }
+  .sh .menu { position: absolute; z-index: 8; background: var(--panel); border: 1px solid var(--rule); border-radius: 4px; box-shadow: 0 6px 20px rgba(0,0,0,0.14); padding: 4px; min-width: 190px; font-size: 11.5px; }
+  .sh .menu .mi { padding: 4px 8px; border-radius: 3px; display: flex; justify-content: space-between; gap: 12px; }
+  .sh .menu .mi .kb { font-family: var(--mono); font-size: 9.5px; color: var(--ink-3); }
+  .sh .menu .mi.hi { background: var(--select-soft); }
+  .sh .menu .mi.dim { color: var(--ink-3); }
+  .sh .menu .mh { font-family: var(--mono); font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); padding: 4px 8px 2px; }
+  .sh .menu .sep { height: 1px; background: var(--rule-soft); margin: 3px 4px; }
+  .sh .toast { position: absolute; z-index: 9; background: var(--ink); color: var(--ground); font-size: 11px; padding: 6px 10px; border-radius: 4px; max-width: 320px; line-height: 1.35; }
+  .sh .toast b { color: var(--pin); font-weight: 600; }
+  .sh .statusbar { display: flex; align-items: center; gap: 14px; padding: 4px 10px; border: 1px solid var(--rule-soft); border-top: 0; background: var(--sunk); font-family: var(--mono); font-size: 10px; color: var(--ink-3); }
+  .sh .statusbar .sel-summary { color: var(--ink); }
+  .sh .co { position: absolute; z-index: 10; width: 18px; height: 18px; border-radius: 999px; background: var(--client); color: #fff; font-family: var(--mono); font-size: 10px; font-weight: 600; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 2px var(--panel); }
+  .sh .hover { position: absolute; z-index: 5; font-family: var(--mono); font-size: 10px; background: var(--ink); color: var(--ground); padding: 3px 6px; border-radius: 3px; white-space: nowrap; }
+
+  /* ---- shell mock ---- */
+  .shell { display: grid; grid-template-columns: 44px 180px minmax(0, 1fr) 224px; grid-template-rows: 30px 28px minmax(0, 1fr) 22px; border: 1px solid var(--rule); border-radius: 4px; background: var(--panel); overflow: hidden; font-size: 11px; font-family: var(--sans); }
+  .shell .top { grid-column: 1 / -1; background: var(--sunk); border-bottom: 1px solid var(--rule-soft); display: flex; align-items: center; padding: 0 10px; gap: 10px; font-weight: 600; font-size: 11px; }
+  .shell .top .th { color: var(--ink-3); font-weight: 400; font-family: var(--mono); font-size: 10px; margin-left: auto; }
+  .shell .tabs { grid-column: 1 / -1; background: var(--sunk); border-bottom: 1px solid var(--rule-soft); display: flex; align-items: stretch; font-size: 10.5px; }
+  .shell .tabs .tab { padding: 0 12px; display: flex; align-items: center; color: var(--ink-3); border-right: 1px solid var(--rule-soft); gap: 6px; }
+  .shell .tabs .tab.on { background: var(--panel); color: var(--ink); }
+  .shell .rail { background: var(--sunk); border-right: 1px solid var(--rule-soft); display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 0; }
+  .shell .rail i { width: 22px; height: 22px; border-radius: 4px; border: 1px solid var(--rule); display: block; }
+  .shell .rail i.on { background: var(--select-soft); border-color: var(--select); }
+  .shell .ctx { border-right: 1px solid var(--rule-soft); padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; }
+  .shell .ctx .pt { font-weight: 600; font-size: 11px; }
+  .shell .ctx .sec { font-family: var(--mono); font-size: 8.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); margin-top: 4px; }
+  .shell .ctx .ln { display: flex; justify-content: space-between; color: var(--ink-2); font-size: 10.5px; }
+  .shell .ctx .ln span:last-child { font-family: var(--mono); color: var(--ink-3); font-size: 9.5px; }
+  .shell .centre { min-width: 0; display: flex; flex-direction: column; }
+  .shell .centre .sh { width: 100%; font-size: 11px; }
+  .shell .centre .sh .grid { border-left: 0; border-right: 0; border-top: 0; }
+  .shell .centre .sh .editorbar { border: 0; border-bottom: 1px solid var(--rule-soft); }
+  .shell .centre .sh .statusbar { border: 0; border-top: 1px solid var(--rule-soft); }
+  .shell .ins { border-left: 1px solid var(--rule-soft); padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; }
+  .shell .ins .crumb { font-family: var(--mono); font-size: 9px; color: var(--ink-3); }
+  .shell .ins .pt { font-weight: 600; font-size: 11px; }
+  .shell .ins .fl { display: grid; grid-template-columns: 52px 1fr; gap: 2px 6px; font-size: 10.5px; }
+  .shell .ins .fl span:nth-child(odd) { color: var(--ink-3); }
+  .shell .ins .fl span:nth-child(even) { font-family: var(--mono); font-size: 10px; }
+  .shell .ins .code { font-family: var(--mono); font-size: 10px; background: var(--sunk); border: 1px solid var(--rule-soft); border-radius: 3px; padding: 4px 6px; white-space: pre-wrap; }
+  .shell .status { grid-column: 1 / -1; background: var(--sunk); border-top: 1px solid var(--rule-soft); display: flex; align-items: center; gap: 14px; padding: 0 10px; font-family: var(--mono); font-size: 9.5px; color: var(--ink-3); }
+  .shell .status b { color: var(--ink); font-weight: 500; }
+
+  /* ---- panel mocks ---- */
+  .pnls { display: flex; flex-wrap: wrap; gap: 1.2rem; align-items: flex-start; }
+  .pnl { width: 272px; flex: 0 0 auto; background: var(--panel); border: 1px solid var(--rule); border-radius: 4px; font-size: 12px; line-height: 1.35; color: var(--ink); display: flex; flex-direction: column; padding-bottom: 10px; }
+  .pnl.wide { width: 320px; }
+  .pnl .crumbs { font-family: var(--mono); font-size: 9.5px; color: var(--ink-3); padding: 8px 12px 0; display: flex; gap: 6px; flex-wrap: wrap; }
+  .pnl .crumbs b { color: var(--ink-2); font-weight: 500; }
+  .pnl .ttl { font-size: 12.5px; font-weight: 600; color: var(--ink-2); padding: 10px 12px 6px; }
+  .pnl .acts { display: flex; flex-wrap: wrap; gap: 4px; padding: 0 12px 8px; }
+  .btn { display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 8px; border: 1px solid var(--rule); border-radius: 4px; background: var(--panel); font-size: 11px; color: var(--ink-2); white-space: nowrap; }
+  .btn.pri { background: var(--ink); color: var(--ground); border-color: var(--ink); }
+  .btn.dis { opacity: 0.5; }
+  .btn.danger { color: var(--danger); border-color: var(--danger); }
+  .btn.ghost { border-color: transparent; }
+  .pnl .sec { display: flex; align-items: center; gap: 6px; padding: 6px 12px; font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-2); font-weight: 600; }
+  .pnl .sec .cnt { margin-left: auto; color: var(--ink-3); font-weight: 400; font-variant-numeric: tabular-nums; }
+  .pnl .sec .chev { color: var(--ink-3); font-size: 9px; }
+  .pnl .sec .chev.end { margin-left: auto; }
+  .pnl .sec .cnt + .chev.end { margin-left: 0; }
+  .pnl .body { display: flex; flex-direction: column; gap: 6px; padding: 0 12px 6px; }
+  .pnl .body.flush { padding: 0; }
+  .pnl .flds { display: grid; grid-template-columns: 5rem 1fr; gap: 4px 8px; align-items: baseline; }
+  .pnl .flds .l { font-size: 10.5px; color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pnl .flds .v { font-size: 12px; color: var(--ink); min-width: 0; }
+  .pnl .flds .v.mono { font-family: var(--mono); font-size: 11px; font-variant-numeric: tabular-nums; }
+  .pnl .flds .st { grid-column: 1 / -1; font-size: 10.5px; color: var(--ink-3); }
+  .pnl .flds .sv { grid-column: 1 / -1; margin-top: -2px; }
+  .inp { display: flex; align-items: center; height: 24px; border: 1px solid var(--rule); border-radius: 4px; padding: 0 7px; background: var(--panel); font-size: 11.5px; color: var(--ink); gap: 6px; }
+  .inp.mono { font-family: var(--mono); font-size: 11px; }
+  .inp .ph { color: var(--ink-3); }
+  .inp .u { margin-left: auto; color: var(--ink-3); font-size: 10px; }
+  .inp .dd { margin-left: auto; color: var(--ink-3); font-size: 9px; }
+  .inp.mixed { color: var(--ink-3); font-style: italic; }
+  .inp.edit { outline: 2px solid var(--select); outline-offset: -1px; }
+  .pnl .code { font-family: var(--mono); font-size: 11px; background: var(--sunk); border: 1px solid var(--rule-soft); border-radius: 4px; padding: 6px 8px; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--ink); line-height: 1.45; }
+  .pnl .code .tok-f { color: var(--surface); }
+  .pnl .code .tok-r { color: var(--reads); }
+  .pnl .code .tok-n { color: var(--client); }
+  .pnl .code .tok-bad { color: var(--danger); text-decoration: underline wavy; }
+  .pnl .note { font-size: 11px; color: var(--ink-3); line-height: 1.4; }
+  .pnl .note.gap { color: var(--danger); }
+  .pnl .note.warn { color: var(--warn); }
+  .pnl .quote { border-left: 2px solid var(--rule); padding: 2px 0 2px 8px; font-size: 11.5px; color: var(--ink-2); display: flex; flex-direction: column; gap: 2px; }
+  .pnl .quote .src { font-family: var(--mono); font-size: 9.5px; color: var(--ink-3); }
+  .pnl .chips { display: flex; flex-wrap: wrap; gap: 4px; }
+  .chip { display: inline-flex; align-items: center; height: 20px; padding: 0 7px; border: 1px solid var(--rule); border-radius: 4px; font-size: 10.5px; color: var(--ink-2); background: var(--panel); }
+  .chip.on { border-color: var(--select); background: var(--select-soft); color: var(--select); }
+  .chip.mixed { border-style: dashed; opacity: 0.75; }
+  .chip.danger { border-color: var(--danger); color: var(--danger); background: var(--danger-soft); }
+  .chip.spill { border-color: var(--spill); color: var(--spill); background: var(--spill-soft); }
+  .chip.ok { border-color: var(--ok); color: var(--ok); }
+  .chip.warn { border-color: var(--warn); color: var(--warn); }
+  .chip.stretch { flex: 1; justify-content: center; }
+  .pnl .rw { display: flex; align-items: flex-start; gap: 8px; padding: 5px 12px; }
+  .pnl .rw.on { background: var(--select-soft); }
+  .pnl .rw .ic { width: 14px; height: 14px; border-radius: 3px; border: 1px solid var(--rule); flex: 0 0 auto; margin-top: 1px; }
+  .pnl .rw .ic.d { border-color: var(--danger); background: var(--danger-soft); }
+  .pnl .rw .ic.s { border-color: var(--spill); background: var(--spill-soft); }
+  .pnl .rw .ic.f { border-color: var(--surface); background: var(--surface-soft); }
+  .pnl .rw .tx { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+  .pnl .rw .t { font-size: 11.5px; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pnl .rw .t.mono { font-family: var(--mono); font-size: 11px; }
+  .pnl .rw .t.danger { color: var(--danger); }
+  .pnl .rw .s { font-size: 10.5px; color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pnl .rw .mt { font-family: var(--mono); font-size: 10px; color: var(--ink-3); flex: 0 0 auto; }
+  .pnl .search { margin: 0 12px; border: 1px solid var(--rule); border-radius: 4px; display: flex; flex-direction: column; }
+  .pnl .search .sf { display: flex; align-items: center; gap: 6px; padding: 5px 8px; border-bottom: 1px solid var(--rule-soft); font-size: 11.5px; }
+  .pnl .search .sf .ph { color: var(--ink-3); }
+  .pnl .search .sf .cnt { margin-left: auto; font-family: var(--mono); font-size: 9.5px; color: var(--ink-3); }
+  .pnl .search .rw { padding: 5px 8px; }
+  .sw { display: inline-block; width: 16px; height: 16px; border-radius: 999px; border: 1px solid var(--rule); }
+  .sw.on { box-shadow: 0 0 0 2px var(--panel), 0 0 0 3.5px var(--select); }
+  .pnl .swrow { display: flex; align-items: center; gap: 6px; }
+  .pnl .swrow .l { font-size: 10px; color: var(--ink-3); width: 20px; font-weight: 500; }
+  .tg { display: inline-flex; align-items: center; width: 26px; height: 14px; border-radius: 999px; background: var(--rule); position: relative; flex: 0 0 auto; }
+  .tg::after { content: ""; position: absolute; left: 2px; top: 2px; width: 10px; height: 10px; border-radius: 999px; background: var(--panel); }
+  .tg.on { background: var(--select); }
+  .tg.on::after { left: 14px; }
+  .pnl .tgrow { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 11.5px; }
+  .pnl .hr { height: 1px; background: var(--rule-soft); margin: 6px 12px; }
+  .pnl .stats { display: flex; gap: 14px; padding: 0 12px 6px; }
+  .pnl .stats .st { display: flex; flex-direction: column; }
+  .pnl .stats .st b { font-family: var(--mono); font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .pnl .stats .st span { font-size: 9.5px; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.06em; }
+  .pnl .empty { margin: 0 12px; border: 1px dashed var(--rule); border-radius: 4px; padding: 10px; display: flex; flex-direction: column; gap: 3px; }
+  .pnl .empty b { font-size: 11.5px; font-weight: 500; }
+  .pnl .empty span { font-size: 10.5px; color: var(--ink-3); }
+  .pnl .ph-panel { margin: 0 12px; border: 1px dashed var(--warn); border-radius: 4px; padding: 10px; font-size: 11px; color: var(--warn); }
+  .pnl .cellhead { display: flex; align-items: baseline; gap: 10px; padding: 0 12px 6px; }
+  .pnl .cellhead .addr { font-family: var(--mono); font-size: 18px; font-weight: 600; }
+  .pnl .cellhead .shows { font-family: var(--mono); font-size: 13px; font-variant-numeric: tabular-nums; margin-left: auto; }
+  .pnl .cellhead .shows.danger { color: var(--danger); }
+
+  .railmock { display: flex; gap: 1.5rem; align-items: flex-start; flex-wrap: wrap; }
+  .railmock .rl { display: flex; flex-direction: column; gap: 4px; padding: 8px 0; width: 44px; background: var(--sunk); border: 1px solid var(--rule); border-radius: 4px; align-items: center; }
+  .railmock .rl i { width: 28px; height: 28px; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: var(--ink-3); }
+  .railmock .rl i.on { background: var(--select-soft); color: var(--select); }
+  .railmock .rl i svg { width: 15px; height: 15px; }
+  .railmock ol { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: 1fr; gap: 0.35rem; font-size: 0.9rem; }
+  .railmock ol li { display: grid; grid-template-columns: 4.4rem 9rem 1fr; gap: 0.7rem; align-items: baseline; }
+  .railmock ol li .k { font-family: var(--mono); font-size: 0.72rem; color: var(--ink-3); }
+  .railmock ol li .lab { font-weight: 500; }
+  .railmock ol li .why { color: var(--ink-2); font-size: 0.86rem; }
+
+  .compare { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 1rem; }
+  .compare .opt { border: 1px solid var(--rule-soft); border-radius: 4px; background: var(--panel); padding: 0.9rem 1rem; display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.88rem; }
+  .compare .opt.rec { border-color: var(--client); box-shadow: inset 3px 0 0 var(--client); }
+  .compare .opt h4 { display: flex; justify-content: space-between; gap: 0.5rem; align-items: center; }
+  .compare .opt ul { margin: 0; padding-left: 1rem; display: flex; flex-direction: column; gap: 0.3rem; color: var(--ink-2); }
+  .compare .opt .cost { color: var(--danger); }
+  .compare .opt .win { color: var(--ok); }
+
+  kbd { font-family: var(--mono); font-size: 0.74rem; border: 1px solid var(--rule); border-bottom-width: 2px; border-radius: 3px; padding: 0 0.35rem; background: var(--panel); white-space: nowrap; }
+
+  .two { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.2rem; align-items: start; }
+
+  :is(a, button, textarea, [tabindex]):focus-visible { outline: 2px solid var(--select); outline-offset: 2px; }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+
+</style>
+
+<nav class="topnav" aria-label="Pages and sections">
+  <div class="inner">
+    <div class="pages"><a href="https://claude.ai/code/artifact/cd369b72-679d-4f57-8e0f-395132413c69">End to end</a><a href="https://claude.ai/code/artifact/5264fb38-f90e-4c77-bed3-b5f8a0b2aa93">The grid</a><a href="https://claude.ai/code/artifact/e23e685f-0fce-4e52-9816-6600d8fb8ae9">Context panels</a><a href="https://claude.ai/code/artifact/32cfe90f-b85d-4762-9d2b-b737e04df16b">Inspector lenses</a><a href="https://claude.ai/code/artifact/5fdbb96c-918e-4266-9a64-9ee832fc4ed5" class="here">Questions and decisions</a></div>
+    <div class="anchors"><a href="#key">Key decisions</a><a href="#model">Model</a><a href="#behaviour">Behaviour</a><a href="#runtime">Runtime and store</a><a href="#settled">Settled</a><a href="#defaults">Defaults</a><a href="#asks">What it asks of the model</a></div>
+  </div>
+  <div class="notebar">
+    <span class="state">Notes load when the page database answers.</span>
+    <span class="count">0 notes</span>
+  </div>
+</nav>
+
+<div class="page">
+<header class="row" data-note="hero" data-label="Title">
+    <div class="main">
+      <div class="hero">
+        <div class="stack">
+          <p class="eyebrow">Icarus &middot; spreadsheet-editor &middot; open forks &middot; 2026-09-05</p>
+          <h1>Questions and decisions</h1>
+          <p class="lede col">
+            Twenty-six forks, numbered so they can be answered by number. Each carries a
+            recommendation and the reason for it; none is marked settled, because none has
+            been answered. Five have to be answered before phase A can start. Below them,
+            what the code and the worktrees already settle, and the routine calls made
+            along the way that a "no" would undo cheaply.
+          </p>
+        </div>
+        <div class="readout" aria-label="Readout">
+          <div><div class="k">Forks</div><div class="v">26</div></div>
+          <div><div class="k">Key, before phase A</div><div class="v">5</div></div>
+          <div><div class="k">Model changes asked</div><div class="v">7</div></div>
+          <div><div class="k">Settled by the tree</div><div class="v">9</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="notes"></div>
+  </header>
+
+  <section id="key">
+    <div class="row" data-note="key" data-label="Key decisions 1 to 5">
+      <div class="main">
+        <div class="stack col">
+          <p class="eyebrow">Key decisions</p>
+          <h2>Five that gate the build</h2>
+        </div>
+        <ol class="q">
+          <li><div class="q-body">
+            <h3>What draws the grid inside <code>sheet-surface</code></h3>
+            <p>A library or our own Svelte. The candidates, as of September 2026: RevoGrid (MIT, Svelte 5 adapter, virtualised, range selection, clipboard, basic autofill, pinned rows and columns; cell merging and series autofill are Pro), Univer (Apache 2, a complete spreadsheet whose view layer is React 18 with its own model, commands, undo and formula plugin), Handsontable ($899 per developer per year commercially), Jspreadsheet CE (MIT, DOM table, merges and frozen columns, lazy loading rather than virtualisation).</p>
+            <div class="rec"><strong>Recommendation: build it, as an authored component.</strong> The slide editor already made this move when it dropped Konva for <code>slide-surface</code>. The sheet's model is the model, so every library brings a second one to translate from; the only MIT, Svelte-compatible candidate gates merges, which are in our body; the complete one brings React. The sheet needs no engine from a library, which removes the main reason to take one. Cost: virtualisation, selection, clipboard, fill, resize and IME are ours, about the size of <code>slide-surface</code>. If it slips, RevoGrid inside the same component is the fallback and nothing outside it changes.</div>
+          </div></li>
+          <li><div class="q-body">
+            <h3>A <code>sheet</code> op target for everything above the cells</h3>
+            <p><code>SpreadsheetOp</code> can set a cell, a rule or a mark and can insert, remove and move rows, columns and rules. It cannot set <code>frozenRows</code>, a row's height, a column's width, anything under <code>print</code>, or a style. Every panel control on the rail and half the lens controls need one of those.</p>
+            <div class="rec"><strong>Recommendation: add <code>set</code>, <code>insert</code> and <code>remove</code> on target <code>"sheet"</code></strong> with plain field paths, exactly as the document gained its <code>document</code> target: <code>frozenRows</code>, <code>rows/r6/height</code>, <code>columns/c3/width</code>, <code>print/page/orientation</code>, <code>styles/defaultKey</code>, <code>styles/styles/currency/fontWeight</code>; insert and remove on <code>styles</code> by key. This is a representation change and is not made until it has a yes.</div>
+          </div></li>
+          <li><div class="q-body">
+            <h3>The runtime's live copy is <code>sheet: { body, cells }</code></h3>
+            <p><code>SpreadsheetRuntime.body</code> is typed as the grid body alone. A sheet's content is rows in <code>sheetCells</code>, so a body alone cannot be projected, applied to or read back. Either the runtime grows a second member for cells, updated in step, or its live copy is one value holding both.</p>
+            <div class="rec"><strong>Recommendation: one value, <code>sheet: LiveSheet</code>,</strong> with <code>LiveSheet = { body, cells: Record&lt;"rowId/columnId", SheetCellFields&gt; }</code> declared in <code>representation/data/types/spreadsheets/live.ts</code>, so one applier moves one thing and a scene projects from one consistent copy. The other two runtimes keep <code>body</code>; the sheet is the resource whose content is not in its body, so its live copy has a name of its own. A model change in <code>model/client</code>, not the representation.</div>
+          </div></li>
+          <li><div class="q-body">
+            <h3>The rail: order, landing, and what leaves it</h3>
+            <p>Today: Overview, Variables, Named ranges, Find, Dependencies, Objects, Insert, Styles, Print, Comments, Context, landing on Overview. The document since dropped Overview, Insert and Context and added Templates and Prompts; the deck's rail is Slides, Insert, Layers, Style, Find, Comments, Templates, Variables, Prompts.</p>
+            <div class="rec"><strong>Recommendation: Grid · Find · Dependencies · Styles · Print · Objects · Comments · Variables · Templates · Prompts, landing on Grid.</strong> Grid is new: the sheet's shape, and the home frozen panes never had. Overview's facts move to the title bar, the spreadsheet lens and Grid; Insert's jobs move to the lenses and the context menu; Context was called premature by the record itself; Named ranges become a band of Grid once the body has names. The four keys stay in the vocabulary, off the rail, as the document's do.</div>
+          </div></li>
+          <li><div class="q-body">
+            <h3>Row and column lenses, as new keys</h3>
+            <p>The design record says "no row lens and no column lens" because a cell's identity was its A1 address and rows and columns were not identified. In the body they are: <code>GridRow</code> and <code>GridColumn</code> carry ids, orders and sizes, and the ops name them.</p>
+            <div class="rec"><strong>Recommendation: add <code>spreadsheet-editor.row</code> and <code>spreadsheet-editor.column</code>.</strong> A heading click opens a lens with what a row or a column actually has, height or width, insert, remove and freeze up to here, and the most dangerous commands on the screen land where the thing they act on is already selected. A third key, <code>text-selection</code>, is question 25.</div>
+          </div></li>
+        </ol>
+      </div>
+      <div class="notes"></div>
+    </div>
+  </section>
+
+  <section id="model">
+    <div class="row" data-note="model" data-label="Model questions 6 to 12">
+      <div class="main">
+        <div class="stack col">
+          <p class="eyebrow">Model</p>
+          <h2>Seven more that touch the representation</h2>
+          <p>None of these is assumed. Each is written as the change it would be, with the recommendation beside it, and the pages elsewhere mark every place that depends on one with <span class="pill new">asked</span>.</p>
+        </div>
+        <ol class="q" style="counter-reset: q 5">
+          <li><div class="q-body">
+            <h3>How a coordinate empties</h3>
+            <p>Only <code>set</code> names <code>cell</code>; there is no <code>remove cell</code>. Clearing a cell has to be expressible and invertible.</p>
+            <div class="rec"><strong>Recommendation: a whole-cell <code>set</code> to <code>null</code> clears,</strong> with <code>was</code> carrying the fields, matching how the document applier treats a null field as absence. No new op shape.</div>
+          </div></li>
+          <li><div class="q-body">
+            <h3>Format rules carry ids</h3>
+            <p><code>FormatRule</code> has corners, a style and a format, and no id. An op on a rule has to name it by position, which two people inserting rules would break.</p>
+            <div class="rec"><strong>Recommendation: <code>FormatRule.id</code>,</strong> minted like every other identified thing, so <code>set formatRule formatRules/f9/format/valueFormat</code> names a rule and not a slot. The template's <code>TemplateFormatRule</code> stays addressed and unidentified, as its document says.</div>
+          </div></li>
+          <li><div class="q-body">
+            <h3>Marks inside a cell can be inserted and removed</h3>
+            <p><code>set</code> on <code>mark</code> exists; <code>insert</code> and <code>remove</code> do not. A bold that did not exist cannot be written.</p>
+            <div class="rec"><strong>Recommendation: extend <code>insert</code> and <code>remove</code> to target <code>mark</code></strong> with path <code>r3/c2/marks</code>, ids and values, as the document's mark ops are shaped. Cheap in the applier; the lens that uses it is question 25.</div>
+          </div></li>
+          <li><div class="q-body">
+            <h3>Expression text after a row is inserted</h3>
+            <p>Cells hold ids, so inserting a row moves nothing. The one string that names cells by A1 is the expression a person authored, <code>=SUM(C2:C5)</code>, and after an insert above row 3 it is wrong while the cells it meant are right.</p>
+            <div class="rec"><strong>Recommendation, for the engine: hold references by id and render A1 on display,</strong> so nothing is rewritten on insert and the text a person sees is always current. Until the engine exists the grid leaves the text as authored and the lens says so. This decides the shape of <code>formulas.representation</code> and belongs to the engine's design, not this round's build.</div>
+          </div></li>
+          <li><div class="q-body">
+            <h3>Named ranges in the body</h3>
+            <p>The body has no field for names; the archived tables document says "a field this body gains later". Three panels and one lens on the old design depend on it.</p>
+            <div class="rec"><strong>Recommendation: <code>names: { id, name, range: CellRange }[]</code> on the body,</strong> written through the <code>sheet</code> target, listed in the Grid panel's Names band, edited in the named-range lens. Not this round; the band and the lens are drawn as what they will be and gated with the reason.</div>
+          </div></li>
+          <li><div class="q-body">
+            <h3>Objects in the body</h3>
+            <p>There is no <code>SheetChart</code> or any object on <code>SpreadsheetBody</code>. The Objects panel and the chart lens have nothing to read.</p>
+            <div class="rec"><strong>Recommendation: <code>objects: { id, kind, anchor: CellRef, dx, dy, width, height, source: CellRange, title }[]</code>,</strong> with ids from the start so selection, update, reconciliation and comments all work. Not this round; the panel stays a placeholder and the grid page draws one gated object so the anchoring is agreed before it is built.</div>
+          </div></li>
+          <li><div class="q-body">
+            <h3>Comments on a range, a row or a column</h3>
+            <p><code>AnchorWithin</code> has a cell and text inside a cell. A column of numbers, the most natural thing to remark on in a sheet, cannot be commented on.</p>
+            <div class="rec"><strong>Recommendation: a <code>range</code> variant with two <code>CellRef</code> corners,</strong> which also covers a whole row or column as a range. Not this round; cell anchors only, and the Comments panel says so.</div>
+          </div></li>
+        </ol>
+      </div>
+      <div class="notes"></div>
+    </div>
+  </section>
+
+  <section id="behaviour">
+    <div class="row" data-note="behaviour" data-label="Behaviour questions 13 to 22">
+      <div class="main">
+        <div class="stack col">
+          <p class="eyebrow">Behaviour</p>
+          <h2>Ten about what the editor does</h2>
+        </div>
+        <ol class="q" style="counter-reset: q 12">
+          <li><div class="q-body">
+            <h3>What a formula cell shows before the engine exists</h3>
+            <p>A seeded formula cell has a stored value; a formula typed now has none. Something has to be drawn.</p>
+            <div class="rec"><strong>Recommendation: the stored value when there is one; otherwise the expression itself, in mono, muted,</strong> and the lens chip reads "waits for the engine". Nothing is shown that is not true.</div>
+          </div></li>
+          <li><div class="q-body">
+            <h3>A permanent mark on formula cells</h3>
+            <p>Excel draws nothing; some sheets draw a corner tick so formulas can be audited at a glance.</p>
+            <div class="rec"><strong>Recommendation: nothing at rest.</strong> The lens tells you, Find has a formulas layer, and selecting a formula outlines its reads. A mark on every formula in a dense model is noise.</div>
+          </div></li>
+          <li><div class="q-body">
+            <h3>Filling a formula down</h3>
+            <p>Fill of a formula means shifting its references, which needs the engine's parser. Until then: copy the expression verbatim, refuse, or disable the handle on formula cells.</p>
+            <div class="rec"><strong>Recommendation: refuse with a sentence in the preview; values and series fill.</strong> Copying verbatim produces formulas that are silently wrong, which is worse than a handle that says no.</div>
+          </div></li>
+          <li><div class="q-body">
+            <h3>Merging over cells that have content</h3>
+            <p>The anchor keeps its value; the others would be cleared.</p>
+            <div class="rec"><strong>Recommendation: ask first, saying how many cells will be cleared and which one stays,</strong> the same staged confirmation the deck uses for a change of aspect ratio and the range lens uses for Clear.</div>
+          </div></li>
+          <li><div class="q-body">
+            <h3>Formatting an empty range</h3>
+            <p>The record left this open: formatting is stored on cells, and an empty coordinate has none. The representation has since made formatting regional.</p>
+            <div class="rec"><strong>Recommendation: a range writes a rule; a single populated cell writes its own format; a single empty coordinate writes a 1 × 1 rule.</strong> Nothing materialises for the sake of a colour. This closes the open point rather than adding to it.</div>
+          </div></li>
+          <li><div class="q-body">
+            <h3>Reads and feeds before the engine</h3>
+            <p>Dependencies, the formula lens's two bands and the outlines on selection need references out of expression text.</p>
+            <div class="rec"><strong>Recommendation: a small reference scanner now,</strong> <code>procedures/references.ts</code>, finding A1 cells, A1 ranges and names in an expression, replaced by the engine's parse when it arrives. It is display only, so a miss costs a missing outline and nothing else.</div>
+          </div></li>
+          <li><div class="q-body">
+            <h3>Aggregates in the status bar</h3>
+            <p>The record already had sum, average and count in the status bar and questioned whether the range lens's Aggregate band adds anything.</p>
+            <div class="rec"><strong>Recommendation: the status bar carries Sum · Average · Count for a range; the lens's Aggregate band stays, shut, with Min and Max added.</strong> The status-bar surface reads the runtime through workspace state, which a surface may do.</div>
+          </div></li>
+          <li><div class="q-body">
+            <h3>Find and replace</h3>
+            <p>The document has Replace. The record kept it out of the sheet because replacing inside a formula and inside text are different operations.</p>
+            <div class="rec"><strong>Recommendation: not this round.</strong> When it comes, Replace applies to the Values layer only and never rewrites an expression.</div>
+          </div></li>
+          <li><div class="q-body">
+            <h3>Print, or Layout</h3>
+            <p>The document's paper panel is called Layout; the sheet's key and label are Print. The same icon rule says the same job in two editors is one mark.</p>
+            <div class="rec"><strong>Recommendation: keep Print.</strong> The document's Layout changes what is drawn on screen; a sheet's page setup changes only the paper. Different job, different word.</div>
+          </div></li>
+          <li><div class="q-body">
+            <h3>Default row height and column width, and their unit</h3>
+            <p><code>GridRow.height</code> and <code>GridColumn.width</code> are optional numbers with no unit and no default anywhere in the body.</p>
+            <div class="rec"><strong>Recommendation: pixels at 100% zoom, 24 and 112 as surface constants, with the Grid panel showing them.</strong> Storing defaults in the body is a model change the sheet does not need yet; if a later sheet wants its own defaults, they join the <code>sheet</code> target.</div>
+          </div></li>
+        </ol>
+      </div>
+      <div class="notes"></div>
+    </div>
+  </section>
+
+  <section id="runtime">
+    <div class="row" data-note="runtime" data-label="Runtime and store questions 23 to 26">
+      <div class="main">
+        <div class="stack col">
+          <p class="eyebrow">Runtime and store</p>
+          <h2>Four about the round trip</h2>
+        </div>
+        <ol class="q" style="counter-reset: q 22">
+          <li><div class="q-body">
+            <h3>Read the whole sheet, or a window</h3>
+            <p>The <code>sheetCells</code> index is built for a viewport read, one range per visible column. The first editor can read every cell of a sheet on attach.</p>
+            <div class="rec"><strong>Recommendation: the whole sheet this round,</strong> behind a <code>readSpreadsheet</code> door whose shape does not change when the window read arrives. The seeded sheets are small; the optimisation waits for a sheet that needs it.</div>
+          </div></li>
+          <li><div class="q-body">
+            <h3>The change set's tier</h3>
+            <p>The archived record says a sheet's change sets are <code>historical</code> on write because there is nothing to consolidate; the document writes <code>recent</code>.</p>
+            <div class="rec"><strong>Recommendation: <code>recent</code>, as the document does,</strong> so the three resources' procedures stay alike. Nothing reads the tier for a sheet either way.</div>
+          </div></li>
+          <li><div class="q-body">
+            <h3>Rich text inside a cell this round</h3>
+            <p>Cells can carry marks. Applying them needs the text-selection lens, the mark ops of question 8, and the surface reporting a caret range while editing.</p>
+            <div class="rec"><strong>Recommendation: the applier learns the mark ops now, the lens and the key <code>spreadsheet-editor.text-selection</code> land in phase D, and the in-cell editor stays a single input.</strong> Marks in cells are rare; building the lens costs little once the ops exist.</div>
+          </div></li>
+          <li><div class="q-body">
+            <h3>A <code>scrollTo</code> channel on the runtime</h3>
+            <p>Find and Comments need to bring a cell into view without importing the grid. The document runtime carries <code>scrollTo: string | undefined</code> for a block.</p>
+            <div class="rec"><strong>Recommendation: <code>scrollTo: CellRef | undefined</code> on <code>SpreadsheetRuntime</code>,</strong> read by the view in an <code>$effect</code> and cleared after use, as the document does. A model change in <code>model/client</code>.</div>
+          </div></li>
+        </ol>
+      </div>
+      <div class="notes"></div>
+    </div>
+  </section>
+
+  <section id="settled">
+    <div class="row" data-note="settled" data-label="Settled by the code and the worktrees">
+      <div class="main">
+        <div class="stack col">
+          <p class="eyebrow">Settled</p>
+          <h2>Nine things the tree already decides</h2>
+          <p>Not questions. Each names where it is settled, so a reader can check it rather than take it from here.</p>
+        </div>
+        <div class="sheet">
+          <table>
+            <thead><tr><th>Decision</th><th>Settled by</th></tr></thead>
+            <tbody>
+              <tr><td>No formula bar, no name box, no sheet tabs, no toolbar. A tab is one spreadsheet.</td><td class="pw">spreadsheet-editor.md · the design record, and the user's brief</td></tr>
+              <tr><td>The client runtime's live copy is the source of truth; the editor is a projection and an input device; every change is ops applied to the live copy first.</td><td class="pw">work/document-editor · document.svelte · document-runtimes/methods/apply.ts</td></tr>
+              <tr><td>Typing is the one exception, and for a sheet it is smaller: the text lives in the in-cell editor until commit, then one set.</td><td class="pw">the same, narrowed by what a cell is</td></tr>
+              <tr><td>Cells are addressed by row and column ids; A1 is a label derived from order.</td><td class="pw">representation/data/types/content/formula-value.ts · store/tables.ts · collaboration/anchor.ts</td></tr>
+              <tr><td>Formatting is regional: rules over corners in the body; a cell carries only its own override; a style is typography.</td><td class="pw">spreadsheets/body.ts · style-set.ts · store/tables.ts SheetCellFields</td></tr>
+              <tr><td>A merge is <code>mergedTo</code> on the anchor; a spill is <code>spillTo</code> on the origin; both are far corners.</td><td class="pw">store/tables.ts</td></tr>
+              <tr><td>The editor surface is an authored component taking a scene and emitting intents; the view translates.</td><td class="pw">work/slide-deck-editor · components/authored/slide-surface · deck.svelte (Konva gone)</td></tr>
+              <tr><td>The rail carries Templates and Prompts as placeholders; Overview and Context leave it; the same job is one icon across editors.</td><td class="pw">work/document-editor opening.ts · work/slide-deck-editor rail-entries.ts</td></tr>
+              <tr><td>Undo is the runtime's op stack, inverted; one gesture is one group; coalescing never touches history.</td><td class="pw">spreadsheet-runtimes/methods/history · flush/coalesce.ts</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="notes"></div>
+    </div>
+  </section>
+
+  <section id="defaults">
+    <div class="row" data-note="defaults" data-label="Routine calls made along the way">
+      <div class="main">
+        <div class="stack col">
+          <p class="eyebrow">Defaults</p>
+          <h2>Routine calls made along the way</h2>
+          <p>Each is cheap to reverse and none was worth a question. Say so if one is wrong.</p>
+        </div>
+        <ul class="plain">
+          <li><kbd>Enter</kbd> commits and moves down, <kbd>Tab</kbd> right, <kbd>Shift</kbd> reverses; <kbd>Escape</kbd> cancels; <kbd>F2</kbd> and double-click open the stored content; typing replaces it.</li>
+          <li><kbd>Ctrl</kbd>-drag adds a range, as in the document; <kbd>Shift</kbd>-click extends; the corner selects everything; <kbd>Ctrl</kbd>+<kbd>A</kbd> selects the populated block, then everything.</li>
+          <li>Clipboard is tab-separated text, values as displayed and expressions as authored; paste past the edge materialises rows and columns.</li>
+          <li>A comment pin is a corner triangle on the cell: amber open, client colour current, grey dashed detached; a count on hover.</li>
+          <li>Spill children are tinted with the violet the app already uses for computed content; errors are set in danger tone and mono.</li>
+          <li>Reads outline blue, feeds outline orange, find hits and one-off fills tint amber; the selection is the active blue.</li>
+          <li>Frozen edges are a heavier rule; there is no other affordance on the grid, and the Grid panel says it in words.</li>
+          <li>The context menu on a heading carries the same items as the row or column lens, and the menu on a cell carries the range lens's actions; nothing is only in a menu.</li>
+          <li>The seed sheet is the outage cost model already in <code>sheet.svelte</code>, as body rows and cell rows.</li>
+          <li>Zoom is per tab, ⌘-wheel, 50 to 200 per cent, read in the status bar, as the other two editors do it.</li>
+        </ul>
+      </div>
+      <div class="notes"></div>
+    </div>
+  </section>
+
+  <section id="asks">
+    <div class="row" data-note="asks" data-label="What this asks of the model">
+      <div class="main">
+        <div class="stack col">
+          <p class="eyebrow">Asks</p>
+          <h2>What this asks of the model, in one table</h2>
+        </div>
+        <div class="sheet">
+          <table>
+            <thead><tr><th>#</th><th>Change</th><th>Where</th><th>Needed by</th><th>Round</th></tr></thead>
+            <tbody>
+              <tr><td class="n">2</td><td><code>sheet</code> target: set, insert, remove</td><td class="pw">representation/data/types/spreadsheets/op.ts</td><td>Grid · Print · row · column · named-style · header drag</td><td>this one</td></tr>
+              <tr><td class="n">3</td><td><code>LiveSheet</code>; <code>runtime.sheet</code></td><td class="pw">types/spreadsheets/live.ts · model/client/spreadsheet-runtimes</td><td>everything that reads or applies</td><td>this one</td></tr>
+              <tr><td class="n">5</td><td>keys <code>row</code>, <code>column</code>; also <code>grid</code>, <code>templates</code>, <code>prompts</code></td><td class="pw">types/workspace/views.ts · behavior/workspace/views.ts · opening.ts · rail-entries.ts</td><td>the rail and two lenses</td><td>this one</td></tr>
+              <tr><td class="n">6</td><td>whole-cell <code>set</code> to null clears</td><td class="pw">behavior/spreadsheets/apply-ops.ts</td><td>clear · delete · cut</td><td>this one</td></tr>
+              <tr><td class="n">7</td><td><code>FormatRule.id</code></td><td class="pw">types/spreadsheets/body.ts</td><td>every rule op</td><td>this one</td></tr>
+              <tr><td class="n">8</td><td>insert and remove on <code>mark</code></td><td class="pw">types/spreadsheets/op.ts</td><td>text-selection lens</td><td>this one, applier only</td></tr>
+              <tr><td class="n">25</td><td>key <code>text-selection</code></td><td class="pw">types/workspace/views.ts</td><td>marks inside a cell</td><td>this one, phase D</td></tr>
+              <tr><td class="n">26</td><td><code>scrollTo</code> on the runtime</td><td class="pw">model/client/spreadsheet-runtimes/types.ts</td><td>Find · Comments</td><td>this one</td></tr>
+              <tr class="dim"><td class="n">9</td><td>references by id in the engine</td><td class="pw">formulas.representation</td><td>insert above a formula's range</td><td>the engine's</td></tr>
+              <tr class="dim"><td class="n">10</td><td><code>names</code> on the body</td><td class="pw">types/spreadsheets/body.ts</td><td>Grid's Names band · named-range lens</td><td>later</td></tr>
+              <tr class="dim"><td class="n">11</td><td><code>objects</code> on the body, with ids</td><td class="pw">types/spreadsheets/body.ts</td><td>Objects panel · chart lens</td><td>later</td></tr>
+              <tr class="dim"><td class="n">12</td><td><code>AnchorWithin</code> range variant</td><td class="pw">types/collaboration/anchor.ts</td><td>comments on a column</td><td>later</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="note-block rule-block">
+          Already there and merely unused: <code>frozenRows</code> and <code>frozenColumns</code>,
+          <code>print</code> in full, <code>styles</code>, <code>mergedTo</code> and <code>spillTo</code>,
+          <code>marks</code> and <code>format</code> on a cell, the cell anchor for comments, the
+          runtime's undo stack, coalescer and inverter, and the keys for eleven context views
+          and nine lenses.
+        </div>
+      </div>
+      <div class="notes"></div>
+    </div>
+  </section>
+
+  <div class="meta">
+    <span>answer by number; a fork with no answer stays a question</span>
+    <span>the other pages mark every dependent place with "asked"</span>
+  </div>
+</div>
+
+<script>
+const SHEET = (() => {
+  const colIndex = (letters) => letters.split("").reduce((n, ch) => n * 26 + (ch.charCodeAt(0) - 64), 0) - 1;
+  const letter = (index) => {
+    let s = "";
+    let i = index + 1;
+    while (i > 0) {
+      const m = (i - 1) % 26;
+      s = String.fromCharCode(65 + m) + s;
+      i = Math.floor((i - 1) / 26);
+    }
+    return s;
+  };
+  const parse = (a1) => {
+    const m = /^([A-Z]+)(\d+)$/.exec(a1);
+    return { c: colIndex(m[1]), r: Number(m[2]) - 1 };
+  };
+  const range = (text) => {
+    const [from, to] = text.split(":");
+    return { from, to: to ?? from };
+  };
+  const el = (tag, cls, html) => {
+    const node = document.createElement(tag);
+    if (cls) node.className = cls;
+    if (html !== undefined) node.innerHTML = html;
+    return node;
+  };
+  const px = (n) => n + "px";
+
+  const DEFAULT_COLS = [92, 60, 118, 76, 130, 112, 122, 70];
+
+  const HEAD = (t) => ({ t, a: "center", cls: "bold" });
+  const NUM = (t, cls) => ({ t, a: "end", cls: cls || "" });
+  const TXT = (t, cls) => ({ t, a: "start", cls: cls || "" });
+
+  const model = (overrides) => {
+    const cells = {
+      A1: HEAD("Substation"), B1: HEAD("Feeder"), C1: HEAD("Customer-minutes lost"), D1: HEAD("Storm events"),
+      E1: HEAD("Avoided minutes"), F1: HEAD("Hardening spend ($M)"), G1: HEAD("Cost per avoided min"),
+      A2: TXT("Millbrook"), B2: TXT("F-12"), C2: NUM("1,842,000"), D2: NUM("2"), E2: NUM("268,110"), F2: NUM("11.40"), G2: NUM("42.52"),
+      A3: TXT("Ward 3"), B3: TXT("F-04"), C3: NUM("318,400"), D3: NUM("3"), E3: NUM("194,224"), F3: NUM("8.10"), G3: NUM("41.70"),
+      A4: TXT("Harbor Point"), B4: TXT("F-07"), C4: NUM("286,150"), D4: NUM("2"), E4: NUM("171,690"), F4: NUM("7.25"), G4: NUM("42.23"),
+      A5: TXT("Cedar Line"), B5: TXT("F-19"), C5: NUM("158,720"), D5: NUM("1"), E5: NUM("92,057"), F5: NUM("4.60"), G5: NUM("49.97"),
+      A6: TXT("Total", "bold top"), B6: TXT("4 feeders", "bold top"), C6: NUM("2,605,270", "bold top"), D6: NUM("8", "bold top"),
+      E6: NUM("726,081", "bold top"), F6: NUM("31.35", "bold top"), G6: NUM("44.11", "bold top"), H6: TXT("", "top"),
+      A8: TXT("Scratch: repair before filing", "muted"), D8: NUM("#REF!", "danger"), F8: NUM("#NAME?", "danger")
+    };
+    return Object.assign(cells, overrides || {});
+  };
+
+  const render = (spec) => {
+    const colW = Array.isArray(spec.cols) ? spec.cols : DEFAULT_COLS.slice(0, spec.cols ?? 8);
+    const rowCount = spec.rows ?? 9;
+    const rowH = Array.from({ length: rowCount }, (_, i) => (spec.rowHeights && spec.rowHeights[i]) || spec.rowH || 24);
+    const headW = spec.headW ?? 34;
+    const headH = spec.headH ?? 20;
+    const xs = [headW];
+    for (const w of colW) xs.push(xs[xs.length - 1] + w);
+    const ys = [headH];
+    for (const h of rowH) ys.push(ys[ys.length - 1] + h);
+    const W = xs[xs.length - 1];
+    const H = ys[ys.length - 1];
+
+    const rect = (from, to) => {
+      const f = parse(from);
+      const t = parse(to ?? from);
+      const c0 = Math.min(f.c, t.c), c1 = Math.max(f.c, t.c), r0 = Math.min(f.r, t.r), r1 = Math.max(f.r, t.r);
+      return { x: xs[c0], y: ys[r0], w: xs[c1 + 1] - xs[c0], h: ys[r1 + 1] - ys[r0], c0, c1, r0, r1 };
+    };
+    const place = (node, r) => {
+      node.style.left = px(r.x);
+      node.style.top = px(r.y);
+      node.style.width = px(r.w);
+      node.style.height = px(r.h);
+      return node;
+    };
+    const inRange = (list, c, r) =>
+      (list || []).some((item) => {
+        const rg = range(item);
+        const rr = rect(rg.from, rg.to);
+        return c >= rr.c0 && c <= rr.c1 && r >= rr.r0 && r <= rr.r1;
+      });
+
+    const root = el("div", "sh");
+    root.style.width = px(W + 2);
+    if (spec.zoom && spec.zoom !== 1) {
+      root.style.zoom = String(spec.zoom);
+    }
+
+    if (spec.title) {
+      const bar = el("div", "editorbar");
+      bar.appendChild(el("span", "t", spec.title.name));
+      bar.appendChild(el("span", "sync", spec.title.sync || "Saved"));
+      root.appendChild(bar);
+    }
+
+    const grid = el("div", "grid");
+    grid.style.width = px(W);
+    grid.style.height = px(H);
+    root.appendChild(grid);
+
+    const selCols = new Set((spec.selCols || []).map((l) => colIndex(l)));
+    const selRows = new Set((spec.selRows || []).map((n) => n - 1));
+
+    const corner = el("div", "hd corner" + (spec.selAll ? " on" : ""));
+    place(corner, { x: 0, y: 0, w: headW, h: headH });
+    grid.appendChild(corner);
+    colW.forEach((w, c) => {
+      const hd = el("div", "hd" + (selCols.has(c) || spec.selAll ? " on" : ""), letter(c));
+      place(hd, { x: xs[c], y: 0, w, h: headH });
+      grid.appendChild(hd);
+    });
+    rowH.forEach((h, r) => {
+      const hd = el("div", "hd" + (selRows.has(r) || spec.selAll ? " on" : ""), String(r + 1));
+      place(hd, { x: 0, y: ys[r], w: headW, h });
+      grid.appendChild(hd);
+    });
+
+    const cells = spec.cells || {};
+    const hidden = new Set();
+    const spans = new Map();
+    for (const m of spec.merges || []) {
+      const rg = range(m);
+      const rr = rect(rg.from, rg.to);
+      spans.set(rg.from, rr);
+      for (let r = rr.r0; r <= rr.r1; r += 1) {
+        for (let c = rr.c0; c <= rr.c1; c += 1) {
+          const a1 = letter(c) + (r + 1);
+          if (a1 !== rg.from) hidden.add(a1);
+        }
+      }
+    }
+    const spillCells = new Set();
+    const spillOrigins = new Set();
+    for (const s of spec.spills || []) {
+      const rg = range(s);
+      spillOrigins.add(rg.from);
+      const rr = rect(rg.from, rg.to);
+      for (let r = rr.r0; r <= rr.r1; r += 1) for (let c = rr.c0; c <= rr.c1; c += 1) spillCells.add(letter(c) + (r + 1));
+    }
+
+    for (let r = 0; r < rowCount; r += 1) {
+      for (let c = 0; c < colW.length; c += 1) {
+        const a1 = letter(c) + (r + 1);
+        if (hidden.has(a1)) continue;
+        const cell = cells[a1];
+        const classes = ["cell"];
+        if (cell && cell.a) classes.push(cell.a);
+        if (cell && cell.cls) classes.push(cell.cls);
+        if (spillCells.has(a1)) classes.push("spill");
+        if (spillOrigins.has(a1)) classes.push("origin");
+        if (inRange(spec.reads, c, r)) classes.push("reads");
+        if (inRange(spec.feeds, c, r)) classes.push("feeds");
+        if (inRange(spec.hits, c, r)) classes.push("hit");
+        const node = el("div", classes.join(" "));
+        if (cell) {
+          if (cell.html !== undefined) node.innerHTML = cell.html;
+          else node.textContent = cell.t ?? "";
+        }
+        const span = spans.get(a1);
+        if (span) {
+          node.classList.add("merged");
+          place(node, span);
+        } else {
+          place(node, { x: xs[c], y: ys[r], w: colW[c], h: rowH[r] });
+        }
+        node.setAttribute("data-a1", a1);
+        grid.appendChild(node);
+      }
+    }
+
+    if (spec.frozen) {
+      if (spec.frozen.rows) {
+        const line = el("div", "frz-h");
+        line.style.top = px(ys[spec.frozen.rows] - 1);
+        grid.appendChild(line);
+      }
+      if (spec.frozen.cols) {
+        const line = el("div", "frz-v");
+        line.style.left = px(xs[spec.frozen.cols] - 1);
+        grid.appendChild(line);
+      }
+    }
+
+    for (const sel of spec.sel || []) {
+      const rr = rect(sel.from, sel.to);
+      const node = el("div", "sel " + (sel.primary === false ? "secondary" : "primary"));
+      place(node, rr);
+      grid.appendChild(node);
+      if (sel.handle) {
+        const handle = el("div", "handle");
+        handle.style.left = px(rr.x + rr.w - 4);
+        handle.style.top = px(rr.y + rr.h - 4);
+        grid.appendChild(handle);
+      }
+    }
+    if (spec.selCols && spec.selCols.length) {
+      for (const l of spec.selCols) {
+        const c = colIndex(l);
+        const node = el("div", "sel primary");
+        place(node, { x: xs[c], y: headH, w: colW[c], h: H - headH });
+        grid.appendChild(node);
+      }
+    }
+    if (spec.selRows && spec.selRows.length) {
+      for (const n of spec.selRows) {
+        const r = n - 1;
+        const node = el("div", "sel primary");
+        place(node, { x: headW, y: ys[r], w: W - headW, h: rowH[r] });
+        grid.appendChild(node);
+      }
+    }
+    if (spec.selAll) {
+      const node = el("div", "sel primary");
+      place(node, { x: headW, y: headH, w: W - headW, h: H - headH });
+      grid.appendChild(node);
+    }
+
+    if (spec.fill) {
+      const rr = rect(spec.fill.from, spec.fill.target);
+      const node = el("div", "fill");
+      place(node, rr);
+      if (spec.fill.tip) node.appendChild(el("span", "tip", spec.fill.tip));
+      grid.appendChild(node);
+    }
+    if (spec.paste) {
+      const rr = rect(spec.paste.from, spec.paste.to);
+      const node = el("div", "paste");
+      place(node, rr);
+      grid.appendChild(node);
+    }
+
+    if (spec.editing) {
+      const rr = rect(spec.editing.at);
+      const node = el("div", "editing");
+      node.style.left = px(rr.x);
+      node.style.top = px(rr.y);
+      node.style.minWidth = px(rr.w);
+      node.style.height = px(rr.h);
+      if (spec.editing.a === "end") node.style.justifyContent = "flex-end";
+      node.appendChild(document.createTextNode(spec.editing.text));
+      if (spec.editing.caret !== false) node.appendChild(el("span", "caret"));
+      grid.appendChild(node);
+    }
+
+    for (const pin of spec.pins || []) {
+      const rr = rect(pin.at);
+      const node = el("div", "pin " + (pin.state || "open"));
+      node.style.left = px(rr.x + rr.w - 8);
+      node.style.top = px(rr.y + 1);
+      grid.appendChild(node);
+      if (pin.count && pin.count > 1) {
+        const badge = el("div", "pincount", String(pin.count));
+        badge.style.left = px(rr.x + rr.w - 12);
+        badge.style.top = px(rr.y - 6);
+        grid.appendChild(badge);
+      }
+    }
+
+    for (const obj of spec.objects || []) {
+      const rr = rect(obj.at);
+      const node = el("div", "obj");
+      node.style.left = px(rr.x + (obj.dx || 0));
+      node.style.top = px(rr.y + (obj.dy || 0));
+      node.style.width = px(obj.w);
+      node.style.height = px(obj.h);
+      const head = el("div", "ot");
+      head.appendChild(el("span", "", obj.title));
+      if (obj.gated) head.appendChild(el("span", "gated", obj.gated));
+      node.appendChild(head);
+      const bars = el("div", "bars");
+      for (const hgt of obj.bars || [58, 84, 41, 72]) {
+        const bar = el("i");
+        bar.style.height = hgt + "%";
+        bars.appendChild(bar);
+      }
+      node.appendChild(bars);
+      if (obj.src) node.appendChild(el("div", "src", obj.src));
+      grid.appendChild(node);
+    }
+
+    if (spec.guide) {
+      const c = colIndex(spec.guide.col);
+      const node = el("div", "guide");
+      node.style.left = px(xs[c] + spec.guide.w);
+      node.appendChild(el("span", "tip", spec.guide.tip || spec.guide.w + " px"));
+      grid.appendChild(node);
+    }
+    if (spec.ghost) {
+      const c = colIndex(spec.ghost.col);
+      const node = el("div", "ghost");
+      node.style.left = px(xs[c]);
+      node.style.width = px(colW[c]);
+      if (spec.ghost.tip) node.appendChild(el("span", "tip", spec.ghost.tip));
+      grid.appendChild(node);
+      const drop = el("div", "drop");
+      drop.style.left = px(xs[colIndex(spec.ghost.to)] - 1);
+      grid.appendChild(drop);
+    }
+
+    if (spec.menu) {
+      const rr = rect(spec.menu.at);
+      const node = el("div", "menu");
+      node.style.left = px(rr.x + Math.round(rr.w * 0.6));
+      node.style.top = px(rr.y + Math.round(rr.h * 0.7));
+      for (const item of spec.menu.items) {
+        if (item.sep) { node.appendChild(el("div", "sep")); continue; }
+        if (item.h) { node.appendChild(el("div", "mh", item.h)); continue; }
+        const mi = el("div", "mi" + (item.hi ? " hi" : "") + (item.dim ? " dim" : ""));
+        mi.appendChild(el("span", "", item.t));
+        if (item.kb) mi.appendChild(el("span", "kb", item.kb));
+        node.appendChild(mi);
+      }
+      grid.appendChild(node);
+    }
+    if (spec.toast) {
+      const node = el("div", "toast", spec.toast.html);
+      node.style.left = px(spec.toast.x);
+      node.style.top = px(spec.toast.y);
+      grid.appendChild(node);
+    }
+    if (spec.hover) {
+      const rr = rect(spec.hover.at);
+      const node = el("div", "hover", spec.hover.text);
+      node.style.left = px(rr.x + 4);
+      node.style.top = px(rr.y + rr.h + 3);
+      grid.appendChild(node);
+    }
+
+    for (const co of spec.callouts || []) {
+      const node = el("div", "co", co.k);
+      if (co.at) {
+        const rr = rect(co.at);
+        node.style.left = px(rr.x + (co.dx ?? -9));
+        node.style.top = px(rr.y + (co.dy ?? -9));
+      } else {
+        node.style.left = px(co.x);
+        node.style.top = px(co.y);
+      }
+      grid.appendChild(node);
+    }
+
+    if (spec.status) {
+      const bar = el("div", "statusbar");
+      if (spec.status.sel) bar.appendChild(el("span", "sel-summary", spec.status.sel));
+      if (spec.status.text) bar.appendChild(el("span", "", spec.status.text));
+      const right = el("span", "", spec.status.right || "100%");
+      right.style.marginLeft = "auto";
+      bar.appendChild(right);
+      root.appendChild(bar);
+    }
+
+    return root;
+  };
+
+  const mount = (selector, spec) => {
+    const target = typeof selector === "string" ? document.querySelector(selector) : selector;
+    if (!target) return null;
+    const node = render(spec);
+    target.appendChild(node);
+    return node;
+  };
+
+  return { render, mount, model, letter, parse, DEFAULT_COLS };
+})();
+
+</script>
+<script>
+
+</script>
+<script>
+(function () {
+  const pageMeta = document.querySelector('meta[name="page"]');
+  const PAGE = (pageMeta && pageMeta.getAttribute("content")) || "page";
+  const stateEl = document.querySelector(".notebar .state");
+  const countEl = document.querySelector(".notebar .count");
+  const rows = Array.from(document.querySelectorAll(".row[data-note]"));
+
+  const escape = (s) => String(s).replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[ch]);
+
+  const setState = (cls, text) => {
+    if (!stateEl) return;
+    stateEl.className = "state " + cls;
+    stateEl.textContent = text;
+  };
+
+  const setCount = (n) => {
+    if (countEl) countEl.textContent = n + (n === 1 ? " note" : " notes");
+  };
+
+  const boxes = new Map();
+
+  for (const row of rows) {
+    const notes = row.querySelector(".notes");
+    if (!notes) continue;
+    const id = row.getAttribute("data-note");
+    const label = row.getAttribute("data-label") || id;
+    notes.innerHTML =
+      '<div class="box"><span class="who">' + escape(label) + '</span>' +
+      '<textarea rows="1" placeholder="Note on this row. Enter saves." aria-label="Note on ' + escape(label) + '"></textarea>' +
+      '<div class="saved"></div></div>';
+    const ta = notes.querySelector("textarea");
+    const saved = notes.querySelector(".saved");
+    boxes.set(id, { label, ta, saved });
+    ta.addEventListener("input", () => {
+      ta.style.height = "auto";
+      ta.style.height = Math.min(ta.scrollHeight, 240) + "px";
+    });
+    ta.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" || event.shiftKey) return;
+      event.preventDefault();
+      void save(id, label, ta);
+    });
+  }
+
+  let db = null;
+  let total = 0;
+
+  const collection = () => db.collection("pages/" + PAGE + "/notes");
+
+  const renderNote = (saved, note) => {
+    const n = document.createElement("div");
+    n.className = "n";
+    n.textContent = note.text;
+    const t = document.createElement("time");
+    t.textContent = new Date(note.at).toLocaleString();
+    n.appendChild(t);
+    saved.appendChild(n);
+  };
+
+  const load = async () => {
+    const snap = await collection().orderBy("at").get();
+    for (const box of boxes.values()) box.saved.innerHTML = "";
+    total = 0;
+    for (const doc of snap.docs) {
+      const note = doc.data();
+      if (!note || typeof note.text !== "string") continue;
+      total += 1;
+      const box = boxes.get(note.id);
+      if (box) renderNote(box.saved, note);
+    }
+    setCount(total);
+  };
+
+  const save = async (id, label, ta) => {
+    const text = ta.value.trim();
+    if (text.length === 0) return;
+    if (!db) {
+      setState("bad", "This note was not saved. The page database is unavailable in this view.");
+      return;
+    }
+    ta.disabled = true;
+    try {
+      const note = { page: PAGE, id, label, text, at: new Date().toISOString() };
+      await collection().add(note);
+      const box = boxes.get(id);
+      if (box) renderNote(box.saved, note);
+      total += 1;
+      setCount(total);
+      ta.value = "";
+      ta.style.height = "auto";
+    } catch (error) {
+      setState("bad", "Saving failed: " + (error && error.message ? error.message : "unknown error"));
+    } finally {
+      ta.disabled = false;
+      ta.focus();
+    }
+  };
+
+  if (!window.claude || typeof window.claude.use !== "function") {
+    setState("bad", "Notes need the artifact viewer. Open the published page to leave them.");
+  } else {
+    window.claude.use("db").then(
+      (found) => {
+        db = found;
+        if (!db) {
+          setState("bad", "Notes cannot save in this view. The page database is unavailable.");
+          return;
+        }
+        setState("ok", "Notes save to pages/" + PAGE + "/notes in this page's database. Enter saves; Shift+Enter is a new line.");
+        void load().catch((error) => setState("bad", "Could not load notes: " + (error && error.message ? error.message : "unknown error")));
+      },
+      () => setState("bad", "Notes cannot save in this view.")
+    );
+  }
+
+  const links = document.querySelectorAll(".topnav .anchors a");
+  const targets = Array.from(links).map((a) => document.querySelector(a.getAttribute("href"))).filter(Boolean);
+  if (targets.length > 0 && "IntersectionObserver" in window) {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          for (const a of links) a.classList.toggle("here", a.getAttribute("href") === "#" + entry.target.id);
+        }
+      },
+      { rootMargin: "-40% 0px -55% 0px" }
+    );
+    for (const t of targets) observer.observe(t);
+  }
+})();
+
+</script>

@@ -1,0 +1,1560 @@
+<title>The Spreadsheet Rail</title>
+<meta name="page" content="spreadsheet-rail">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+
+<style>
+  :root {
+    --ground: #f2efe9;
+    --panel: #fbf9f5;
+    --sunk: #e9e5dc;
+    --ink: #1d2329;
+    --ink-2: #3a424d;
+    --ink-3: #6b7580;
+    --rule: #d8d3c4;
+    --rule-soft: #e4dfd2;
+    --client: #bc386f;
+    --client-soft: #fdeff5;
+    --server: #187d74;
+    --server-soft: #e6f4f2;
+    --surface: #3a5fa8;
+    --surface-soft: #e8eef9;
+    --warn: #9a6a12;
+    --warn-soft: #f8efd9;
+    --danger: #b4453f;
+    --danger-soft: #fbe9e7;
+    --spill: #6b4fbb;
+    --spill-soft: #efe9fb;
+    --reads: #2f7fb8;
+    --reads-soft: #e3f0fa;
+    --feeds: #c26b1e;
+    --feeds-soft: #fbeadb;
+    --select: #2f6fdb;
+    --select-soft: rgba(47, 111, 219, 0.13);
+    --pin: #c58a1c;
+    --ok: #2e7d4f;
+
+    --sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+    --measure: 70ch;
+    --gap: 1.15rem;
+    --gutter: 232px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #14181c;
+      --panel: #1c2127;
+      --sunk: #101418;
+      --ink: #e7e3da;
+      --ink-2: #b6bcc6;
+      --ink-3: #8d97a3;
+      --rule: #2e353d;
+      --rule-soft: #262c33;
+      --client: #ee7fae;
+      --client-soft: #351924;
+      --server: #3fcfc0;
+      --server-soft: #102b28;
+      --surface: #7ea2e8;
+      --surface-soft: #1a2538;
+      --warn: #d9a441;
+      --warn-soft: #2e2510;
+      --danger: #e5766f;
+      --danger-soft: #3a1c1a;
+      --spill: #b39ce8;
+      --spill-soft: #261c3a;
+      --reads: #6fb3e6;
+      --reads-soft: #142a3a;
+      --feeds: #e6975a;
+      --feeds-soft: #3a2513;
+      --select: #6f9cf0;
+      --select-soft: rgba(111, 156, 240, 0.2);
+      --pin: #e0aa45;
+      --ok: #5cc088;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground: #14181c;
+    --panel: #1c2127;
+    --sunk: #101418;
+    --ink: #e7e3da;
+    --ink-2: #b6bcc6;
+    --ink-3: #8d97a3;
+    --rule: #2e353d;
+    --rule-soft: #262c33;
+    --client: #ee7fae;
+    --client-soft: #351924;
+    --server: #3fcfc0;
+    --server-soft: #102b28;
+    --surface: #7ea2e8;
+    --surface-soft: #1a2538;
+    --warn: #d9a441;
+    --warn-soft: #2e2510;
+    --danger: #e5766f;
+    --danger-soft: #3a1c1a;
+    --spill: #b39ce8;
+    --spill-soft: #261c3a;
+    --reads: #6fb3e6;
+    --reads-soft: #142a3a;
+    --feeds: #e6975a;
+    --feeds-soft: #3a2513;
+    --select: #6f9cf0;
+    --select-soft: rgba(111, 156, 240, 0.2);
+    --pin: #e0aa45;
+    --ok: #5cc088;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a { color: inherit; }
+
+  .topnav {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: color-mix(in srgb, var(--ground) 92%, transparent);
+    backdrop-filter: blur(6px);
+    border-bottom: 1px solid var(--rule-soft);
+  }
+
+  .topnav .inner {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 0.55rem 1.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem 1.4rem;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+  }
+
+  .topnav .pages { display: flex; flex-wrap: wrap; gap: 0.2rem 1rem; }
+  .topnav .pages a { text-decoration: none; color: var(--ink-3); padding: 0.15rem 0; border-bottom: 2px solid transparent; }
+  .topnav .pages a:hover { color: var(--ink); }
+  .topnav .pages a.here { color: var(--ink); border-bottom-color: var(--client); }
+  .topnav .anchors { display: flex; flex-wrap: wrap; gap: 0.2rem 0.9rem; margin-left: auto; }
+  .topnav .anchors a { text-decoration: none; color: var(--ink-3); }
+  .topnav .anchors a:hover { color: var(--ink); }
+
+  .notebar {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 0.35rem 1.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.3rem 1rem;
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--ink-3);
+  }
+  .notebar .state.bad { color: var(--danger); }
+  .notebar .state.ok { color: var(--ok); }
+
+  .page {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 2.4rem 1.5rem 6rem;
+    display: flex;
+    flex-direction: column;
+    gap: 3.25rem;
+  }
+
+  .row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) var(--gutter);
+    gap: 0 2rem;
+    align-items: start;
+  }
+  .row > .main { min-width: 0; display: flex; flex-direction: column; gap: var(--gap); }
+
+  @media (max-width: 900px) {
+    .row { grid-template-columns: minmax(0, 1fr); }
+    .row > .notes { display: none; }
+  }
+
+  .notes { position: relative; display: flex; flex-direction: column; gap: 0.5rem; padding-top: 0.15rem; }
+  .notes .box {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    border: 1px dashed var(--rule);
+    border-radius: 4px;
+    padding: 0.45rem 0.55rem;
+    background: color-mix(in srgb, var(--panel) 60%, transparent);
+  }
+  .notes .box .who { font-family: var(--mono); font-size: 0.64rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); }
+  .notes textarea {
+    width: 100%;
+    resize: none;
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    background: var(--panel);
+    color: var(--ink);
+    font: inherit;
+    font-size: 0.84rem;
+    line-height: 1.4;
+    padding: 0.35rem 0.45rem;
+    min-height: 2.1rem;
+  }
+  .notes textarea:focus-visible { outline: 2px solid var(--select); outline-offset: 1px; }
+  .notes .saved { display: flex; flex-direction: column; gap: 0.35rem; }
+  .notes .saved .n {
+    font-size: 0.82rem;
+    line-height: 1.45;
+    color: var(--ink-2);
+    border-left: 3px solid var(--warn);
+    padding: 0.1rem 0 0.1rem 0.6rem;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+  .notes .saved .n time { display: block; font-family: var(--mono); font-size: 0.62rem; color: var(--ink-3); margin-top: 0.15rem; }
+  .notes .hint { font-family: var(--mono); font-size: 0.64rem; color: var(--ink-3); }
+
+  .col { max-width: var(--measure); }
+
+  h1, h2, h3, h4 { text-wrap: balance; margin: 0; }
+
+  h1 { font-size: clamp(2rem, 4.6vw, 2.9rem); font-weight: 600; letter-spacing: -0.028em; line-height: 1.08; }
+  h2 { font-size: 1.4rem; font-weight: 600; letter-spacing: -0.018em; padding-bottom: 0.5rem; border-bottom: 2px solid var(--ink); }
+  h3 { font-size: 1.02rem; font-weight: 600; letter-spacing: -0.008em; }
+  h4 { font-size: 0.92rem; font-weight: 600; }
+
+  p { margin: 0; }
+  .col > p + p, .main > p + p { margin-top: 0.85rem; }
+
+  .eyebrow { font-family: var(--mono); font-size: 0.7rem; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-3); }
+  .lede { font-size: 1.08rem; color: var(--ink-2); }
+
+  code, .m { font-family: var(--mono); font-size: 0.86em; }
+  code { background: var(--sunk); border-radius: 3px; padding: 0.1em 0.34em; }
+  pre { margin: 0; }
+
+  section { display: flex; flex-direction: column; gap: var(--gap); }
+  .stack { display: flex; flex-direction: column; gap: var(--gap); }
+
+  .hero { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 2rem; align-items: start; }
+  .hero .readout {
+    border: 1px solid var(--rule-soft);
+    background: var(--panel);
+    border-radius: 4px;
+    padding: 1rem 1.1rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.9rem 1rem;
+    font-family: var(--mono);
+  }
+  .hero .readout .k { font-size: 0.64rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); }
+  .hero .readout .v { font-size: 1.35rem; font-weight: 600; line-height: 1.1; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .hero .readout .v small { font-size: 0.72rem; font-weight: 400; color: var(--ink-3); margin-left: 0.25rem; }
+  @media (max-width: 900px) { .hero { grid-template-columns: minmax(0, 1fr); } }
+
+  .sheet { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+  th, td { text-align: left; padding: 0.55rem 0.9rem 0.55rem 0; border-bottom: 1px solid var(--rule-soft); vertical-align: top; }
+  th { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); border-bottom: 1px solid var(--rule); white-space: nowrap; }
+  td.p { font-family: var(--mono); font-size: 0.8rem; white-space: nowrap; }
+  td.pw { font-family: var(--mono); font-size: 0.8rem; }
+  td.n { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  td.k { font-family: var(--mono); font-size: 0.8rem; white-space: nowrap; }
+  tr.dim td { color: var(--ink-3); }
+
+  .tree {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    line-height: 1.85;
+    background: var(--panel);
+    border: 1px solid var(--rule-soft);
+    border-radius: 4px;
+    padding: 1.1rem 1.25rem;
+    overflow-x: auto;
+    white-space: pre;
+  }
+  .tree .note { color: var(--ink-3); }
+  .cli { color: var(--client); font-weight: 500; }
+  .srv { color: var(--server); font-weight: 500; }
+  .sfc { color: var(--surface); font-weight: 500; }
+  .new { color: var(--warn); font-weight: 500; }
+
+  figure { margin: 0; display: flex; flex-direction: column; gap: 0.7rem; }
+  figure svg { width: 100%; height: auto; display: block; background: var(--panel); border: 1px solid var(--rule-soft); border-radius: 4px; }
+  figcaption { font-size: 0.85rem; color: var(--ink-3); max-width: var(--measure); }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 1.1rem; font-size: 0.78rem; color: var(--ink-2); font-family: var(--mono); }
+  .key { display: inline-flex; align-items: center; gap: 0.4rem; }
+  .swatch { width: 0.75rem; height: 0.75rem; border-radius: 2px; display: inline-block; }
+
+  ol.steps { list-style: none; counter-reset: s; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.9rem; }
+  ol.steps li { counter-increment: s; display: grid; grid-template-columns: 1.9rem 1fr; gap: 0.85rem; align-items: start; }
+  ol.steps li::before { content: counter(s, decimal-leading-zero); font-family: var(--mono); font-size: 0.75rem; font-weight: 600; color: var(--client); padding-top: 0.22rem; font-variant-numeric: tabular-nums; }
+  ol.steps li p { font-size: 0.94rem; }
+  ol.steps li strong { font-weight: 600; }
+
+  ol.q { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 1.4rem; counter-reset: q; }
+  ol.q > li { counter-increment: q; display: grid; grid-template-columns: 2.4rem 1fr; gap: 0.9rem; align-items: start; }
+  ol.q > li::before { content: counter(q); font-family: var(--mono); font-size: 1.1rem; font-weight: 600; color: var(--client); padding-top: 0.05rem; font-variant-numeric: tabular-nums; }
+  ol.q .q-body { display: flex; flex-direction: column; gap: 0.55rem; min-width: 0; }
+  ol.q .q-body h3 { font-size: 1rem; }
+  ol.q .q-body p { font-size: 0.94rem; }
+  .rec { border-left: 3px solid var(--client); padding: 0.1rem 0 0.1rem 0.9rem; font-size: 0.94rem; color: var(--ink-2); }
+  .rec strong { color: var(--ink); }
+  .tagline { display: inline-flex; gap: 0.4rem; flex-wrap: wrap; }
+
+  .note-block { border-left: 3px solid var(--warn); padding: 0.1rem 0 0.1rem 1rem; font-size: 0.94rem; color: var(--ink-2); max-width: var(--measure); }
+  .rule-block { border-left-color: var(--client); }
+  .store-block { border-left-color: var(--server); }
+  .surface-block { border-left-color: var(--surface); }
+
+  ul.plain { margin: 0; padding-left: 1.1rem; display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.94rem; }
+  .gone { color: var(--ink-3); }
+
+  .meta { display: flex; flex-wrap: wrap; gap: 0 2rem; font-family: var(--mono); font-size: 0.76rem; color: var(--ink-3); padding-top: 1rem; border-top: 1px solid var(--rule-soft); }
+
+  .pill { display: inline-block; font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.08em; text-transform: uppercase; border: 1px solid var(--rule); border-radius: 999px; padding: 0.1rem 0.5rem; color: var(--ink-2); white-space: nowrap; vertical-align: middle; }
+  .pill.new { border-color: var(--warn); color: var(--warn); }
+  .pill.model { border-color: var(--server); color: var(--server); }
+  .pill.live { border-color: var(--client); color: var(--client); }
+  .pill.sfc { border-color: var(--surface); color: var(--surface); }
+  .pill.gap { border-color: var(--danger); color: var(--danger); }
+  .pill.ok { border-color: var(--ok); color: var(--ok); }
+
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; }
+  .card { border: 1px solid var(--rule-soft); background: var(--panel); border-radius: 4px; padding: 0.9rem 1rem; display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.9rem; }
+  .card .hd { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); display: flex; justify-content: space-between; gap: 0.5rem; align-items: center; }
+  .card h4 { font-size: 0.98rem; }
+  .card p { color: var(--ink-2); font-size: 0.9rem; }
+
+  .strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.6rem; }
+  .strip .s { border-top: 2px solid var(--rule); padding-top: 0.5rem; display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.86rem; }
+  .strip .s b { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); font-weight: 500; }
+  .strip .s.live { border-top-color: var(--client); }
+  .strip .s.store { border-top-color: var(--server); }
+  .strip .s.sfc { border-top-color: var(--surface); }
+
+  /* ---- grid mocks ---- */
+  .mock { display: flex; flex-direction: column; gap: 0.7rem; }
+  .mock .stage { overflow-x: auto; background: var(--panel); border: 1px solid var(--rule-soft); border-radius: 4px; padding: 1rem; }
+  .mock .stage.bare { padding: 0; border: 0; background: transparent; }
+  .mock .cap { font-size: 0.85rem; color: var(--ink-3); max-width: var(--measure); }
+  .mock .keys { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 0.35rem 1.6rem; font-size: 0.86rem; margin: 0; }
+  .mock .keys div { display: grid; grid-template-columns: 1.4rem 1fr; gap: 0.5rem; align-items: start; }
+  .mock .keys dt { margin: 0; }
+  .mock .keys dd { margin: 0; color: var(--ink-2); }
+  .mock .keys dd b { color: var(--ink); font-weight: 600; }
+  .ck { display: inline-flex; align-items: center; justify-content: center; width: 1.25rem; height: 1.25rem; border-radius: 999px; background: var(--client); color: #fff; font-family: var(--mono); font-size: 0.66rem; font-weight: 600; line-height: 1; }
+
+  .sh { position: relative; font-family: var(--sans); font-size: 12px; line-height: 1; color: var(--ink); width: max-content; }
+  .sh .editorbar { display: flex; align-items: center; gap: 12px; padding: 6px 10px; border: 1px solid var(--rule-soft); border-bottom: 0; background: var(--sunk); font-size: 11.5px; }
+  .sh .editorbar .t { font-weight: 500; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sh .editorbar .sync { font-family: var(--mono); font-size: 10px; color: var(--ink-3); }
+  .sh .grid { position: relative; overflow: hidden; border: 1px solid var(--rule-soft); background: var(--panel); }
+  .sh .hd { position: absolute; display: flex; align-items: center; justify-content: center; background: var(--sunk); color: var(--ink-3); font-family: var(--mono); font-size: 10px; border-right: 1px solid var(--rule); border-bottom: 1px solid var(--rule); user-select: none; }
+  .sh .hd.on { background: var(--select-soft); color: var(--select); font-weight: 600; }
+  .sh .hd.corner { z-index: 3; }
+  .sh .cell { position: absolute; display: flex; align-items: center; padding: 0 6px; border-right: 1px solid var(--rule-soft); border-bottom: 1px solid var(--rule-soft); overflow: hidden; white-space: nowrap; background: var(--panel); }
+  .sh .cell.end { justify-content: flex-end; font-variant-numeric: tabular-nums; }
+  .sh .cell.center { justify-content: center; }
+  .sh .cell.bold { font-weight: 600; }
+  .sh .cell.muted { color: var(--ink-3); }
+  .sh .cell.mono { font-family: var(--mono); font-size: 11px; }
+  .sh .cell.danger { color: var(--danger); font-family: var(--mono); font-size: 11px; }
+  .sh .cell.spill { background: var(--spill-soft); color: var(--spill); }
+  .sh .cell.spill.origin { color: var(--ink); }
+  .sh .cell.hit { background: var(--warn-soft); }
+  .sh .cell.reads { box-shadow: inset 0 0 0 2px var(--reads); background: var(--reads-soft); }
+  .sh .cell.feeds { box-shadow: inset 0 0 0 2px var(--feeds); background: var(--feeds-soft); }
+  .sh .cell.top { border-top: 1px solid var(--ink-2); }
+  .sh .cell.merged { z-index: 1; }
+  .sh .cell .mark-b { font-weight: 600; }
+  .sh .cell .mark-link { color: var(--select); text-decoration: underline; text-underline-offset: 2px; }
+  .sh .cell .mark-code { font-family: var(--mono); font-size: 11px; background: var(--sunk); padding: 0 3px; border-radius: 2px; }
+  .sh .sel { position: absolute; border: 1.5px solid var(--select); background: var(--select-soft); pointer-events: none; }
+  .sh .sel.primary { z-index: 2; }
+  .sh .sel.secondary { border-style: dashed; }
+  .sh .sel .anchor { position: absolute; inset: 0; background: transparent; }
+  .sh .handle { position: absolute; width: 7px; height: 7px; background: var(--select); border: 1px solid var(--panel); z-index: 3; }
+  .sh .fill { position: absolute; border: 1.5px dashed var(--select); pointer-events: none; z-index: 2; }
+  .sh .fill .tip { position: absolute; right: -4px; bottom: -22px; font-family: var(--mono); font-size: 10px; background: var(--ink); color: var(--ground); padding: 2px 6px; border-radius: 3px; white-space: nowrap; }
+  .sh .paste { position: absolute; border: 1.5px dashed var(--server); pointer-events: none; z-index: 2; }
+  .sh .frz-h { position: absolute; left: 0; right: 0; height: 2px; background: var(--ink-3); z-index: 4; }
+  .sh .frz-v { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--ink-3); z-index: 4; }
+  .sh .editing { position: absolute; display: flex; align-items: center; padding: 0 6px; background: var(--panel); outline: 2px solid var(--select); outline-offset: -1px; z-index: 5; font-family: var(--mono); font-size: 11.5px; white-space: nowrap; overflow: visible; }
+  .sh .editing .caret { display: inline-block; width: 1px; height: 14px; background: var(--ink); margin-left: 1px; }
+  .sh .pin { position: absolute; width: 0; height: 0; border-top: 7px solid var(--pin); border-left: 7px solid transparent; z-index: 3; }
+  .sh .pin.current { border-top-color: var(--client); }
+  .sh .pin.detached { border-top-color: var(--ink-3); }
+  .sh .pincount { position: absolute; font-family: var(--mono); font-size: 9px; background: var(--pin); color: #fff; border-radius: 999px; padding: 1px 4px; z-index: 6; }
+  .sh .obj { position: absolute; z-index: 6; background: var(--panel); border: 1px solid var(--rule); border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.12); display: flex; flex-direction: column; padding: 6px 8px; gap: 4px; }
+  .sh .obj .ot { font-size: 10.5px; font-weight: 500; display: flex; justify-content: space-between; gap: 6px; }
+  .sh .obj .ot .gated { font-family: var(--mono); font-size: 9px; color: var(--warn); border: 1px solid var(--warn); border-radius: 999px; padding: 0 5px; }
+  .sh .obj .bars { flex: 1; display: flex; align-items: flex-end; gap: 4px; min-height: 40px; }
+  .sh .obj .bars i { flex: 1; background: var(--rule); border-radius: 2px 2px 0 0; display: block; }
+  .sh .obj .src { font-family: var(--mono); font-size: 9.5px; color: var(--ink-3); }
+  .sh .guide { position: absolute; top: 0; bottom: 0; width: 0; border-left: 1.5px dashed var(--select); z-index: 6; }
+  .sh .guide .tip, .sh .ghost .tip { position: absolute; top: 4px; left: 6px; font-family: var(--mono); font-size: 10px; background: var(--ink); color: var(--ground); padding: 2px 6px; border-radius: 3px; white-space: nowrap; }
+  .sh .ghost { position: absolute; top: 0; bottom: 0; background: var(--select-soft); border: 1.5px dashed var(--select); z-index: 6; }
+  .sh .drop { position: absolute; top: 0; bottom: 0; width: 0; border-left: 3px solid var(--select); z-index: 7; }
+  .sh .menu { position: absolute; z-index: 8; background: var(--panel); border: 1px solid var(--rule); border-radius: 4px; box-shadow: 0 6px 20px rgba(0,0,0,0.14); padding: 4px; min-width: 190px; font-size: 11.5px; }
+  .sh .menu .mi { padding: 4px 8px; border-radius: 3px; display: flex; justify-content: space-between; gap: 12px; }
+  .sh .menu .mi .kb { font-family: var(--mono); font-size: 9.5px; color: var(--ink-3); }
+  .sh .menu .mi.hi { background: var(--select-soft); }
+  .sh .menu .mi.dim { color: var(--ink-3); }
+  .sh .menu .mh { font-family: var(--mono); font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); padding: 4px 8px 2px; }
+  .sh .menu .sep { height: 1px; background: var(--rule-soft); margin: 3px 4px; }
+  .sh .toast { position: absolute; z-index: 9; background: var(--ink); color: var(--ground); font-size: 11px; padding: 6px 10px; border-radius: 4px; max-width: 320px; line-height: 1.35; }
+  .sh .toast b { color: var(--pin); font-weight: 600; }
+  .sh .statusbar { display: flex; align-items: center; gap: 14px; padding: 4px 10px; border: 1px solid var(--rule-soft); border-top: 0; background: var(--sunk); font-family: var(--mono); font-size: 10px; color: var(--ink-3); }
+  .sh .statusbar .sel-summary { color: var(--ink); }
+  .sh .co { position: absolute; z-index: 10; width: 18px; height: 18px; border-radius: 999px; background: var(--client); color: #fff; font-family: var(--mono); font-size: 10px; font-weight: 600; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 2px var(--panel); }
+  .sh .hover { position: absolute; z-index: 5; font-family: var(--mono); font-size: 10px; background: var(--ink); color: var(--ground); padding: 3px 6px; border-radius: 3px; white-space: nowrap; }
+
+  /* ---- shell mock ---- */
+  .shell { display: grid; grid-template-columns: 44px 180px minmax(0, 1fr) 224px; grid-template-rows: 30px 28px minmax(0, 1fr) 22px; border: 1px solid var(--rule); border-radius: 4px; background: var(--panel); overflow: hidden; font-size: 11px; font-family: var(--sans); }
+  .shell .top { grid-column: 1 / -1; background: var(--sunk); border-bottom: 1px solid var(--rule-soft); display: flex; align-items: center; padding: 0 10px; gap: 10px; font-weight: 600; font-size: 11px; }
+  .shell .top .th { color: var(--ink-3); font-weight: 400; font-family: var(--mono); font-size: 10px; margin-left: auto; }
+  .shell .tabs { grid-column: 1 / -1; background: var(--sunk); border-bottom: 1px solid var(--rule-soft); display: flex; align-items: stretch; font-size: 10.5px; }
+  .shell .tabs .tab { padding: 0 12px; display: flex; align-items: center; color: var(--ink-3); border-right: 1px solid var(--rule-soft); gap: 6px; }
+  .shell .tabs .tab.on { background: var(--panel); color: var(--ink); }
+  .shell .rail { background: var(--sunk); border-right: 1px solid var(--rule-soft); display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 0; }
+  .shell .rail i { width: 22px; height: 22px; border-radius: 4px; border: 1px solid var(--rule); display: block; }
+  .shell .rail i.on { background: var(--select-soft); border-color: var(--select); }
+  .shell .ctx { border-right: 1px solid var(--rule-soft); padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; }
+  .shell .ctx .pt { font-weight: 600; font-size: 11px; }
+  .shell .ctx .sec { font-family: var(--mono); font-size: 8.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); margin-top: 4px; }
+  .shell .ctx .ln { display: flex; justify-content: space-between; color: var(--ink-2); font-size: 10.5px; }
+  .shell .ctx .ln span:last-child { font-family: var(--mono); color: var(--ink-3); font-size: 9.5px; }
+  .shell .centre { min-width: 0; display: flex; flex-direction: column; }
+  .shell .centre .sh { width: 100%; font-size: 11px; }
+  .shell .centre .sh .grid { border-left: 0; border-right: 0; border-top: 0; }
+  .shell .centre .sh .editorbar { border: 0; border-bottom: 1px solid var(--rule-soft); }
+  .shell .centre .sh .statusbar { border: 0; border-top: 1px solid var(--rule-soft); }
+  .shell .ins { border-left: 1px solid var(--rule-soft); padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; }
+  .shell .ins .crumb { font-family: var(--mono); font-size: 9px; color: var(--ink-3); }
+  .shell .ins .pt { font-weight: 600; font-size: 11px; }
+  .shell .ins .fl { display: grid; grid-template-columns: 52px 1fr; gap: 2px 6px; font-size: 10.5px; }
+  .shell .ins .fl span:nth-child(odd) { color: var(--ink-3); }
+  .shell .ins .fl span:nth-child(even) { font-family: var(--mono); font-size: 10px; }
+  .shell .ins .code { font-family: var(--mono); font-size: 10px; background: var(--sunk); border: 1px solid var(--rule-soft); border-radius: 3px; padding: 4px 6px; white-space: pre-wrap; }
+  .shell .status { grid-column: 1 / -1; background: var(--sunk); border-top: 1px solid var(--rule-soft); display: flex; align-items: center; gap: 14px; padding: 0 10px; font-family: var(--mono); font-size: 9.5px; color: var(--ink-3); }
+  .shell .status b { color: var(--ink); font-weight: 500; }
+
+  /* ---- panel mocks ---- */
+  .pnls { display: flex; flex-wrap: wrap; gap: 1.2rem; align-items: flex-start; }
+  .pnl { width: 272px; flex: 0 0 auto; background: var(--panel); border: 1px solid var(--rule); border-radius: 4px; font-size: 12px; line-height: 1.35; color: var(--ink); display: flex; flex-direction: column; padding-bottom: 10px; }
+  .pnl.wide { width: 320px; }
+  .pnl .crumbs { font-family: var(--mono); font-size: 9.5px; color: var(--ink-3); padding: 8px 12px 0; display: flex; gap: 6px; flex-wrap: wrap; }
+  .pnl .crumbs b { color: var(--ink-2); font-weight: 500; }
+  .pnl .ttl { font-size: 12.5px; font-weight: 600; color: var(--ink-2); padding: 10px 12px 6px; }
+  .pnl .acts { display: flex; flex-wrap: wrap; gap: 4px; padding: 0 12px 8px; }
+  .btn { display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 8px; border: 1px solid var(--rule); border-radius: 4px; background: var(--panel); font-size: 11px; color: var(--ink-2); white-space: nowrap; }
+  .btn.pri { background: var(--ink); color: var(--ground); border-color: var(--ink); }
+  .btn.dis { opacity: 0.5; }
+  .btn.danger { color: var(--danger); border-color: var(--danger); }
+  .btn.ghost { border-color: transparent; }
+  .pnl .sec { display: flex; align-items: center; gap: 6px; padding: 6px 12px; font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-2); font-weight: 600; }
+  .pnl .sec .cnt { margin-left: auto; color: var(--ink-3); font-weight: 400; font-variant-numeric: tabular-nums; }
+  .pnl .sec .chev { color: var(--ink-3); font-size: 9px; }
+  .pnl .sec .chev.end { margin-left: auto; }
+  .pnl .sec .cnt + .chev.end { margin-left: 0; }
+  .pnl .body { display: flex; flex-direction: column; gap: 6px; padding: 0 12px 6px; }
+  .pnl .body.flush { padding: 0; }
+  .pnl .flds { display: grid; grid-template-columns: 5rem 1fr; gap: 4px 8px; align-items: baseline; }
+  .pnl .flds .l { font-size: 10.5px; color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pnl .flds .v { font-size: 12px; color: var(--ink); min-width: 0; }
+  .pnl .flds .v.mono { font-family: var(--mono); font-size: 11px; font-variant-numeric: tabular-nums; }
+  .pnl .flds .st { grid-column: 1 / -1; font-size: 10.5px; color: var(--ink-3); }
+  .pnl .flds .sv { grid-column: 1 / -1; margin-top: -2px; }
+  .inp { display: flex; align-items: center; height: 24px; border: 1px solid var(--rule); border-radius: 4px; padding: 0 7px; background: var(--panel); font-size: 11.5px; color: var(--ink); gap: 6px; }
+  .inp.mono { font-family: var(--mono); font-size: 11px; }
+  .inp .ph { color: var(--ink-3); }
+  .inp .u { margin-left: auto; color: var(--ink-3); font-size: 10px; }
+  .inp .dd { margin-left: auto; color: var(--ink-3); font-size: 9px; }
+  .inp.mixed { color: var(--ink-3); font-style: italic; }
+  .inp.edit { outline: 2px solid var(--select); outline-offset: -1px; }
+  .pnl .code { font-family: var(--mono); font-size: 11px; background: var(--sunk); border: 1px solid var(--rule-soft); border-radius: 4px; padding: 6px 8px; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--ink); line-height: 1.45; }
+  .pnl .code .tok-f { color: var(--surface); }
+  .pnl .code .tok-r { color: var(--reads); }
+  .pnl .code .tok-n { color: var(--client); }
+  .pnl .code .tok-bad { color: var(--danger); text-decoration: underline wavy; }
+  .pnl .note { font-size: 11px; color: var(--ink-3); line-height: 1.4; }
+  .pnl .note.gap { color: var(--danger); }
+  .pnl .note.warn { color: var(--warn); }
+  .pnl .quote { border-left: 2px solid var(--rule); padding: 2px 0 2px 8px; font-size: 11.5px; color: var(--ink-2); display: flex; flex-direction: column; gap: 2px; }
+  .pnl .quote .src { font-family: var(--mono); font-size: 9.5px; color: var(--ink-3); }
+  .pnl .chips { display: flex; flex-wrap: wrap; gap: 4px; }
+  .chip { display: inline-flex; align-items: center; height: 20px; padding: 0 7px; border: 1px solid var(--rule); border-radius: 4px; font-size: 10.5px; color: var(--ink-2); background: var(--panel); }
+  .chip.on { border-color: var(--select); background: var(--select-soft); color: var(--select); }
+  .chip.mixed { border-style: dashed; opacity: 0.75; }
+  .chip.danger { border-color: var(--danger); color: var(--danger); background: var(--danger-soft); }
+  .chip.spill { border-color: var(--spill); color: var(--spill); background: var(--spill-soft); }
+  .chip.ok { border-color: var(--ok); color: var(--ok); }
+  .chip.warn { border-color: var(--warn); color: var(--warn); }
+  .chip.stretch { flex: 1; justify-content: center; }
+  .pnl .rw { display: flex; align-items: flex-start; gap: 8px; padding: 5px 12px; }
+  .pnl .rw.on { background: var(--select-soft); }
+  .pnl .rw .ic { width: 14px; height: 14px; border-radius: 3px; border: 1px solid var(--rule); flex: 0 0 auto; margin-top: 1px; }
+  .pnl .rw .ic.d { border-color: var(--danger); background: var(--danger-soft); }
+  .pnl .rw .ic.s { border-color: var(--spill); background: var(--spill-soft); }
+  .pnl .rw .ic.f { border-color: var(--surface); background: var(--surface-soft); }
+  .pnl .rw .tx { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+  .pnl .rw .t { font-size: 11.5px; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pnl .rw .t.mono { font-family: var(--mono); font-size: 11px; }
+  .pnl .rw .t.danger { color: var(--danger); }
+  .pnl .rw .s { font-size: 10.5px; color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pnl .rw .mt { font-family: var(--mono); font-size: 10px; color: var(--ink-3); flex: 0 0 auto; }
+  .pnl .search { margin: 0 12px; border: 1px solid var(--rule); border-radius: 4px; display: flex; flex-direction: column; }
+  .pnl .search .sf { display: flex; align-items: center; gap: 6px; padding: 5px 8px; border-bottom: 1px solid var(--rule-soft); font-size: 11.5px; }
+  .pnl .search .sf .ph { color: var(--ink-3); }
+  .pnl .search .sf .cnt { margin-left: auto; font-family: var(--mono); font-size: 9.5px; color: var(--ink-3); }
+  .pnl .search .rw { padding: 5px 8px; }
+  .sw { display: inline-block; width: 16px; height: 16px; border-radius: 999px; border: 1px solid var(--rule); }
+  .sw.on { box-shadow: 0 0 0 2px var(--panel), 0 0 0 3.5px var(--select); }
+  .pnl .swrow { display: flex; align-items: center; gap: 6px; }
+  .pnl .swrow .l { font-size: 10px; color: var(--ink-3); width: 20px; font-weight: 500; }
+  .tg { display: inline-flex; align-items: center; width: 26px; height: 14px; border-radius: 999px; background: var(--rule); position: relative; flex: 0 0 auto; }
+  .tg::after { content: ""; position: absolute; left: 2px; top: 2px; width: 10px; height: 10px; border-radius: 999px; background: var(--panel); }
+  .tg.on { background: var(--select); }
+  .tg.on::after { left: 14px; }
+  .pnl .tgrow { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 11.5px; }
+  .pnl .hr { height: 1px; background: var(--rule-soft); margin: 6px 12px; }
+  .pnl .stats { display: flex; gap: 14px; padding: 0 12px 6px; }
+  .pnl .stats .st { display: flex; flex-direction: column; }
+  .pnl .stats .st b { font-family: var(--mono); font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .pnl .stats .st span { font-size: 9.5px; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.06em; }
+  .pnl .empty { margin: 0 12px; border: 1px dashed var(--rule); border-radius: 4px; padding: 10px; display: flex; flex-direction: column; gap: 3px; }
+  .pnl .empty b { font-size: 11.5px; font-weight: 500; }
+  .pnl .empty span { font-size: 10.5px; color: var(--ink-3); }
+  .pnl .ph-panel { margin: 0 12px; border: 1px dashed var(--warn); border-radius: 4px; padding: 10px; font-size: 11px; color: var(--warn); }
+  .pnl .cellhead { display: flex; align-items: baseline; gap: 10px; padding: 0 12px 6px; }
+  .pnl .cellhead .addr { font-family: var(--mono); font-size: 18px; font-weight: 600; }
+  .pnl .cellhead .shows { font-family: var(--mono); font-size: 13px; font-variant-numeric: tabular-nums; margin-left: auto; }
+  .pnl .cellhead .shows.danger { color: var(--danger); }
+
+  .railmock { display: flex; gap: 1.5rem; align-items: flex-start; flex-wrap: wrap; }
+  .railmock .rl { display: flex; flex-direction: column; gap: 4px; padding: 8px 0; width: 44px; background: var(--sunk); border: 1px solid var(--rule); border-radius: 4px; align-items: center; }
+  .railmock .rl i { width: 28px; height: 28px; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: var(--ink-3); }
+  .railmock .rl i.on { background: var(--select-soft); color: var(--select); }
+  .railmock .rl i svg { width: 15px; height: 15px; }
+  .railmock ol { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: 1fr; gap: 0.35rem; font-size: 0.9rem; }
+  .railmock ol li { display: grid; grid-template-columns: 4.4rem 9rem 1fr; gap: 0.7rem; align-items: baseline; }
+  .railmock ol li .k { font-family: var(--mono); font-size: 0.72rem; color: var(--ink-3); }
+  .railmock ol li .lab { font-weight: 500; }
+  .railmock ol li .why { color: var(--ink-2); font-size: 0.86rem; }
+
+  .compare { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 1rem; }
+  .compare .opt { border: 1px solid var(--rule-soft); border-radius: 4px; background: var(--panel); padding: 0.9rem 1rem; display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.88rem; }
+  .compare .opt.rec { border-color: var(--client); box-shadow: inset 3px 0 0 var(--client); }
+  .compare .opt h4 { display: flex; justify-content: space-between; gap: 0.5rem; align-items: center; }
+  .compare .opt ul { margin: 0; padding-left: 1rem; display: flex; flex-direction: column; gap: 0.3rem; color: var(--ink-2); }
+  .compare .opt .cost { color: var(--danger); }
+  .compare .opt .win { color: var(--ok); }
+
+  kbd { font-family: var(--mono); font-size: 0.74rem; border: 1px solid var(--rule); border-bottom-width: 2px; border-radius: 3px; padding: 0 0.35rem; background: var(--panel); white-space: nowrap; }
+
+  .two { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.2rem; align-items: start; }
+
+  :is(a, button, textarea, [tabindex]):focus-visible { outline: 2px solid var(--select); outline-offset: 2px; }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+
+</style>
+
+<nav class="topnav" aria-label="Pages and sections">
+  <div class="inner">
+    <div class="pages"><a href="https://claude.ai/code/artifact/cd369b72-679d-4f57-8e0f-395132413c69">End to end</a><a href="https://claude.ai/code/artifact/5264fb38-f90e-4c77-bed3-b5f8a0b2aa93">The grid</a><a href="https://claude.ai/code/artifact/e23e685f-0fce-4e52-9816-6600d8fb8ae9" class="here">Context panels</a><a href="https://claude.ai/code/artifact/32cfe90f-b85d-4762-9d2b-b737e04df16b">Inspector lenses</a><a href="https://claude.ai/code/artifact/5fdbb96c-918e-4266-9a64-9ee832fc4ed5">Questions and decisions</a></div>
+    <div class="anchors"><a href="#rail">The rail</a><a href="#grid">Grid</a><a href="#find">Find</a><a href="#dependencies">Dependencies</a><a href="#styles">Styles</a><a href="#print">Print</a><a href="#comments">Comments</a><a href="#placeholders">Placeholders</a><a href="#vocabulary">Vocabulary</a></div>
+  </div>
+  <div class="notebar">
+    <span class="state">Notes load when the page database answers.</span>
+    <span class="count">0 notes</span>
+  </div>
+</nav>
+
+<div class="page">
+<header class="row" data-note="hero" data-label="Title">
+    <div class="main">
+      <div class="hero">
+        <div class="stack">
+          <p class="eyebrow">Icarus &middot; spreadsheet-editor &middot; context panels &middot; design, 2026-09-05</p>
+          <h1>The spreadsheet rail</h1>
+          <p class="lede col">
+            The map: where am I in this sheet, and what else is here. Ten entries, in the
+            order a person reaches for them, landing on the grid's own shape. Six are
+            built this round and every control on them is an op on the live sheet; four
+            stay placeholders with their reasons on the row, as the document and the deck
+            already do.
+          </p>
+        </div>
+        <div class="readout" aria-label="Readout">
+          <div><div class="k">Rail entries</div><div class="v">10</div></div>
+          <div><div class="k">Built this round</div><div class="v">6</div></div>
+          <div><div class="k">Leave the rail</div><div class="v">4<small>overview · insert · context · named ranges</small></div></div>
+          <div><div class="k">New keys</div><div class="v">3<small>grid · templates · prompts</small></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="notes"></div>
+  </header>
+
+  <section id="rail">
+    <div class="row" data-note="rail" data-label="The rail order and landing">
+      <div class="main">
+        <div class="stack col">
+          <p class="eyebrow">01 &middot; The rail</p>
+          <h2>Ten entries, landing on Grid</h2>
+          <p>
+            The document lands on Sections and the deck on Slides because each has a
+            structure the centre cannot show at once. A sheet shows itself, so its first
+            entry is the grid's own shape: what is used, what is frozen, what is named,
+            what is broken. The rest follows the conventions the other two editors
+            settled: Find, then the sheet's own vocabularies, then Comments, then the
+            three shared placeholders at the end.
+          </p>
+        </div>
+        <div class="railmock">
+          <div class="rl" aria-label="The rail">
+            <i class="on" title="Grid"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"></rect><path d="M3 9h18M3 15h18M9 3v18M15 3v18"></path></svg></i>
+            <i title="Find"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><path d="M21 21l-4.3-4.3"></path></svg></i>
+            <i title="Dependencies"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"></path></svg></i>
+            <i title="Styles"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7V4h16v3M9 20h6M12 4v16"></path></svg></i>
+            <i title="Print"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg></i>
+            <i title="Objects"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="13" height="13" rx="1"></rect><rect x="8" y="8" width="13" height="13" rx="1"></rect></svg></i>
+            <i title="Comments"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg></i>
+            <i title="Variables"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 9h16M4 15h16M10 3L8 21M16 3l-2 18"></path></svg></i>
+            <i title="Templates"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="7" rx="1"></rect><rect x="3" y="14" width="9" height="7" rx="1"></rect><rect x="16" y="14" width="5" height="7" rx="1"></rect></svg></i>
+            <i title="Prompts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l1.9 5.8 5.8 1.9-5.8 1.9L12 18.5l-1.9-5.9L4.3 10.7l5.8-1.9z"></path></svg></i>
+          </div>
+          <ol>
+            <li><span class="k">1 · lands</span><span class="lab">Grid <span class="pill new">new key</span></span><span class="why">The grid's shape: used range, cells, problems, frozen panes, default sizes, and the names band once the body holds names.</span></li>
+            <li><span class="k">2</span><span class="lab">Find</span><span class="why">Values, formulas or both; every hit leads with its address and says which layer it came from.</span></li>
+            <li><span class="k">3</span><span class="lab">Dependencies</span><span class="why">What the selected cell reads and feeds, and what is broken anywhere. Every row moves the panel.</span></li>
+            <li><span class="k">4</span><span class="lab">Styles</span><span class="why">The named cell styles; Apply writes a rule over the selection; New style opens the lens.</span></li>
+            <li><span class="k">5</span><span class="lab">Print</span><span class="why">Paper, orientation, margins, area, repeats, scale, gridlines and headings. A grid has no natural page.</span></li>
+            <li><span class="k">6</span><span class="lab">Objects</span><span class="why">Charts and overlays over the grid. A placeholder until objects have a field in the body.</span></li>
+            <li><span class="k">7</span><span class="lab">Comments</span><span class="why">Open threads leading with the address they anchor to; Resolved as a second band, shut.</span></li>
+            <li><span class="k">8</span><span class="lab">Variables</span><span class="why">The project's name manager, as in the document and the deck. Placeholder, as agreed there.</span></li>
+            <li><span class="k">9</span><span class="lab">Templates <span class="pill new">new key</span></span><span class="why">Placeholder, matching the other two editors' rails.</span></li>
+            <li><span class="k">10</span><span class="lab">Prompts <span class="pill new">new key</span></span><span class="why">Placeholder, matching the other two editors' rails.</span></li>
+          </ol>
+        </div>
+        <div class="sheet">
+          <table>
+            <thead><tr><th>Leaves the rail</th><th>Why</th><th>Where its job went</th></tr></thead>
+            <tbody>
+              <tr><td class="k">spreadsheet-editor.overview</td><td>The document dropped Overview: the title bar carries the name and the sync word.</td><td>the title bar; the spreadsheet lens when nothing is selected; the Grid panel for the used range and cell count</td></tr>
+              <tr><td class="k">spreadsheet-editor.insert</td><td>Content is typed; structure acts on a selection; a chart needs objects in the body. Nothing was left for a panel to insert.</td><td>the row, column and range lenses and the heading's context menu; the Objects panel's New chart, gated</td></tr>
+              <tr><td class="k">spreadsheet-editor.context</td><td>A grid has no prompt blocks to use a scope, which the design record itself called premature. The document dropped it too.</td><td>nowhere, this round</td></tr>
+              <tr><td class="k">spreadsheet-editor.named-ranges</td><td>Names are not in the body yet, and when they are they are a band of the grid's shape rather than a panel of their own.</td><td>the Grid panel's Names band; the named-range lens</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="note-block rule-block">
+          The keys that leave the rail stay in the vocabulary, as the document's did: a
+          key with no rail entry is designed and not offered, and the placeholder the
+          shell draws for a key with no file is how an unbuilt view is proved to route.
+          Whether the order and the landing are right is question 4.
+        </div>
+      </div>
+      <div class="notes"></div>
+    </div>
+  </section>
+
+  <section id="grid">
+    <div class="row" data-note="grid" data-label="The Grid panel">
+      <div class="main">
+        <div class="stack col">
+          <p class="eyebrow">02 &middot; Grid</p>
+          <h2>Grid</h2>
+          <p>
+            The sheet's own shape, and the one place frozen panes explain themselves. Three
+            bands open, one shut. Everything editable here is a <code>sheet</code> op on
+            the body; nothing here touches a cell.
+          </p>
+        </div>
+        <div class="pnls">
+          <div class="pnl" aria-label="Grid panel">
+            <div class="ttl">Grid</div>
+            <div class="sec">This grid <span class="chev end">▾</span></div>
+            <div class="body">
+              <div class="flds">
+                <span class="l">Used range</span><span class="v mono">A1:G8</span>
+                <span class="l">Cells</span><span class="v mono">46</span>
+                <span class="l">Rows · columns</span><span class="v mono">36 · 12 drawn</span>
+                <span class="l">Problems</span><span class="v mono" style="color: var(--danger)">2</span>
+              </div>
+              <div class="note">Problems are broken formulas; the Dependencies panel lists them and each opens its repair.</div>
+            </div>
+            <div class="sec">Frozen <span class="chev end">▾</span></div>
+            <div class="body">
+              <div class="flds">
+                <span class="l">Rows</span><span class="v"><div class="inp mono" style="width: 80px">1</div></span>
+                <span class="l">Columns</span><span class="v"><div class="inp mono" style="width: 80px">0</div></span>
+              </div>
+              <div class="note">The heavier rule on the grid is the frozen edge. Rows above it stay while the rest scrolls. A row's or column's lens offers "Freeze up to here" too.</div>
+            </div>
+            <div class="sec">Sizes <span class="chev end">▾</span></div>
+            <div class="body">
+              <div class="flds">
+                <span class="l">Row height</span><span class="v"><div class="inp mono" style="width: 80px">24 <span class="u">px</span></div></span>
+                <span class="l">Column width</span><span class="v"><div class="inp mono" style="width: 80px">112 <span class="u">px</span></div></span>
+              </div>
+              <div class="note">Defaults, applied where a row or column has no size of its own. A row or a column that differs carries its size on its lens.</div>
+            </div>
+            <div class="sec">Names <span class="cnt">not yet</span><span class="chev end">▸</span></div>
+            <div class="body">
+              <div class="acts"><span class="btn dis" title="Names need a field on the body">Name this range</span></div>
+              <div class="note warn">Named ranges are not in the body. The band is where they will list, with the range each covers and how many formulas use it; "unused" is a word, not a zero.</div>
+            </div>
+          </div>
+          <div class="stack" style="max-width: 46ch">
+            <h3>What it writes</h3>
+            <div class="sheet"><table>
+              <thead><tr><th>Control</th><th>Op</th></tr></thead>
+              <tbody>
+                <tr><td>Frozen rows · columns</td><td class="pw">set sheet frozenRows · frozenColumns <span class="pill new">asked</span></td></tr>
+                <tr><td>Default sizes</td><td class="pw">nowhere today; question 22</td></tr>
+                <tr><td>Name this range</td><td class="pw">gated on names in the body; question 10</td></tr>
+                <tr><td>Problems</td><td class="pw">routes to spreadsheet-editor.error-cell</td></tr>
+              </tbody>
+            </table></div>
+            <div class="note">Routes to <code>spreadsheet-editor.error-cell</code> from Problems and, later, to <code>spreadsheet-editor.named-range</code> from Names. Nothing else here opens a lens.</div>
+          </div>
+        </div>
+      </div>
+      <div class="notes"></div>
+    </div>
+  </section>
+
+  <section id="find">
+    <div class="row" data-note="find" data-label="The Find panel">
+      <div class="main">
+        <div class="stack col">
+          <p class="eyebrow">03 &middot; Find</p>
+          <h2>Find</h2>
+          <p>
+            A grid holds two layers of text, the formulas that are stored and the values
+            they show, and searching both at once is usually the wrong answer. So the
+            layer is a chip, the field contains its hits, every hit leads with its
+            address and says which layer it came out of. Selecting a hit selects the cell,
+            brings it into view and opens the lens for what it is. No replace this round.
+          </p>
+        </div>
+        <div class="pnls">
+          <div class="pnl" aria-label="Find panel">
+            <div class="ttl">Find</div>
+            <div class="body">
+              <div class="chips"><span class="chip">Everything</span><span class="chip on">Values</span><span class="chip">Formulas</span></div>
+              <div class="tgrow"><span>Match case</span><span class="tg"></span></div>
+            </div>
+            <div class="search">
+              <div class="sf"><span>F-1</span><span class="cnt">2 of 46 cells</span></div>
+              <div class="rw on"><div class="tx"><span class="t mono">B2 · F-12</span><span class="s">value · Feeder</span></div><span class="mt">row 2</span></div>
+              <div class="rw"><div class="tx"><span class="t mono">B5 · F-19</span><span class="s">value · Feeder</span></div><span class="mt">row 5</span></div>
+            </div>
+            <div class="body"><div class="note">Hits are tinted on the grid. Enter moves to the next hit; Shift+Enter to the previous.</div></div>
+          </div>
+          <div class="stack" style="max-width: 46ch">
+            <h3>What it does</h3>
+            <div class="sheet"><table>
+              <thead><tr><th>Control</th><th>Does</th></tr></thead>
+              <tbody>
+                <tr><td>Layer chips</td><td>Everything · Values · Formulas. A formula hit matches its expression text; a value hit matches the display.</td></tr>
+                <tr><td>Selecting a hit</td><td class="pw">runtime.scrollTo = cell · view.inspect(lens for the cell, { kind: "cell", id })</td></tr>
+                <tr><td>Replace</td><td>Absent rather than half-drawn. Replacing inside a formula and inside text are different operations; question 20.</td></tr>
+              </tbody>
+            </table></div>
+          </div>
+        </div>
+      </div>
+      <div class="notes"></div>
+    </div>
+  </section>
+
+  <section id="dependencies">
+    <div class="row" data-note="dependencies" data-label="The Dependencies panel">
+      <div class="main">
+        <div class="stack col">
+          <p class="eyebrow">04 &middot; Dependencies</p>
+          <h2>Dependencies</h2>
+          <p>
+            What the current cell reads, what it feeds, and what is broken anywhere in
+            the sheet. The first two bands are headed by the address itself so the panel
+            names the cell it describes. Every row moves the panel: selecting a
+            dependency selects that cell and the headings change with it, which is the
+            only way to walk a chain without losing your place. Problems lists the whole
+            sheet, because finding a broken cell is why anyone opens this.
+          </p>
+        </div>
+        <div class="pnls">
+          <div class="pnl" aria-label="Dependencies panel">
+            <div class="ttl">Dependencies</div>
+            <div class="sec">G3 reads <span class="cnt">2</span><span class="chev end">▾</span></div>
+            <div class="rw"><span class="ic s"></span><div class="tx"><span class="t mono">E3 · 194,224</span><span class="s">spill child of E2</span></div></div>
+            <div class="rw"><span class="ic"></span><div class="tx"><span class="t mono">F3 · 8.10</span><span class="s">value · Hardening spend</span></div></div>
+            <div class="sec">G3 feeds <span class="cnt">1</span><span class="chev end">▾</span></div>
+            <div class="rw"><span class="ic f"></span><div class="tx"><span class="t mono">G6 · 44.11</span><span class="s">=AVERAGE(G2:G5)</span></div></div>
+            <div class="sec">Problems <span class="cnt">2</span><span class="chev end">▾</span></div>
+            <div class="rw"><span class="ic d"></span><div class="tx"><span class="t mono danger">D8 · #REF!</span><span class="s">=SUM(#REF!) · a range that no longer exists</span></div></div>
+            <div class="rw"><span class="ic d"></span><div class="tx"><span class="t mono danger">F8 · #NAME?</span><span class="s">=F6/eventCount · no such name</span></div></div>
+            <div class="body"><div class="note">Nothing here is stored. Reads are scanned out of G3's expression; feeds are a scan over every other expression. The engine's parse will replace the scanner.</div></div>
+          </div>
+          <div class="stack" style="max-width: 46ch">
+            <h3>Routes</h3>
+            <div class="sheet"><table>
+              <thead><tr><th>Row</th><th>Opens</th></tr></thead>
+              <tbody>
+                <tr><td>A value</td><td class="k">spreadsheet-editor.cell</td></tr>
+                <tr><td>A formula</td><td class="k">spreadsheet-editor.cell-with-formula</td></tr>
+                <tr><td>A spill child</td><td class="k">spreadsheet-editor.spill</td></tr>
+                <tr><td>A problem</td><td class="k">spreadsheet-editor.error-cell</td></tr>
+                <tr><td>A name</td><td class="k">spreadsheet-editor.named-range, later; a project variable routes to analysis.variable</td></tr>
+                <tr><td>A broken reference</td><td>nothing; there is no cell at <code>#REF!</code>, so the row states the fault and is not a target</td></tr>
+              </tbody>
+            </table></div>
+            <div class="note">With nothing selected the first two bands say so in a sentence each: "Select a cell to see what it reads." Problems stays.</div>
+          </div>
+        </div>
+      </div>
+      <div class="notes"></div>
+    </div>
+  </section>
+
+  <section id="styles">
+    <div class="row" data-note="styles" data-label="The Styles panel">
+      <div class="main">
+        <div class="stack col">
+          <p class="eyebrow">05 &middot; Styles</p>
+          <h2>Styles</h2>
+          <p>
+            The named cell styles the sheet uses. Formatting lives on a style a rule
+            carries rather than on cells, so changing one reaches everything that shares
+            it. A row is a name, the one property that tells it from its neighbours, and
+            how many cells wear it through how many rules. Apply writes a rule over the
+            selection; New style creates one and opens its lens, where every property
+            lives; selecting a row opens the lens.
+          </p>
+        </div>
+        <div class="pnls">
+          <div class="pnl" aria-label="Styles panel">
+            <div class="ttl">Styles</div>
+            <div class="acts"><span class="btn pri">New style</span></div>
+            <div class="search">
+              <div class="sf"><span class="ph">Filter styles…</span><span class="cnt">4</span></div>
+              <div class="rw"><div class="tx"><span class="t">Header</span><span class="s">600 · centred · 8 cells · 1 rule</span></div><span class="btn ghost">Apply</span></div>
+              <div class="rw on"><div class="tx"><span class="t">Minutes</span><span class="s">#,##0 · 5 cells · 1 rule</span></div><span class="btn ghost">Apply</span></div>
+              <div class="rw"><div class="tx"><span class="t">Currency</span><span class="s">#,##0.00 · 10 cells · 1 rule</span></div><span class="btn ghost">Apply</span></div>
+              <div class="rw"><div class="tx"><span class="t">Total</span><span class="s">600 · top border · 8 cells · 1 rule</span></div><span class="btn ghost">Apply</span></div>
+            </div>
+            <div class="body"><div class="note">Apply writes one rule over the selected range. Two cells that want the same font and different decimals share a style and differ on their rule's value format.</div></div>
+          </div>
+          <div class="stack" style="max-width: 46ch">
+            <h3>What it writes</h3>
+            <div class="sheet"><table>
+              <thead><tr><th>Control</th><th>Op</th></tr></thead>
+              <tbody>
+                <tr><td>Apply on a selection</td><td class="pw">insert formatRule formatRules ids ["f9"] values [{ from, to, style: "minutes" }]</td></tr>
+                <tr><td>New style</td><td class="pw">insert sheet styles ids ["style-7"] values [{ name: "Untitled" }] <span class="pill new">asked</span> · then view.inspect("spreadsheet-editor.named-style")</td></tr>
+                <tr><td>Selecting a row</td><td class="pw">view.inspect("spreadsheet-editor.named-style", { kind: "named-style", id: key })</td></tr>
+              </tbody>
+            </table></div>
+            <div class="note">The style set is typography: family, size, weight, italic, colour, background, alignment. A value format and a border are on a rule's format, which is why the shorthand shows what the rule adds.</div>
+          </div>
+        </div>
+      </div>
+      <div class="notes"></div>
+    </div>
+  </section>
+
+  <section id="print">
+    <div class="row" data-note="print" data-label="The Print panel">
+      <div class="main">
+        <div class="stack col">
+          <p class="eyebrow">06 &middot; Print</p>
+          <h2>Print</h2>
+          <p>
+            Getting a grid onto paper. A grid has no natural page, so every setting here is
+            a decision, which is why print is a view you can sit with rather than a dialog
+            sprung at the moment of printing. Three bands answer "what goes on the paper";
+            one, shut, answers "what it looks like". Every control is a <code>sheet</code>
+            op on <code>print</code>; nothing here is drawn on the grid.
+          </p>
+        </div>
+        <div class="pnls">
+          <div class="pnl" aria-label="Print panel">
+            <div class="ttl">Print</div>
+            <div class="sec">Page setup <span class="chev end">▾</span></div>
+            <div class="body">
+              <div class="flds">
+                <span class="l">Paper</span><span class="v"><div class="inp">Letter <span class="dd">▾</span></div></span>
+                <span class="st">Orientation</span><span class="sv"><div class="chips"><span class="chip stretch">Portrait</span><span class="chip on stretch">Landscape</span></div></span>
+                <span class="l">Margins</span><span class="v"><div style="display:flex; gap:4px"><div class="inp mono" style="width:44px">0.5</div><div class="inp mono" style="width:44px">0.5</div><div class="inp mono" style="width:44px">0.5</div><div class="inp mono" style="width:44px">0.5</div></div></span>
+              </div>
+              <div class="note">Top, right, bottom, left, in inches, as the document's are.</div>
+            </div>
+            <div class="sec">Area and repeats <span class="chev end">▾</span></div>
+            <div class="body">
+              <div class="flds">
+                <span class="l">Print area</span><span class="v"><div class="inp mono"><span class="ph">Used range · A1:G8</span></div></span>
+                <span class="l">Repeat rows</span><span class="v"><div class="inp mono">1</div></span>
+                <span class="l">Repeat columns</span><span class="v"><div class="inp mono"><span class="ph">None</span></div></span>
+              </div>
+              <div class="note">Typed as addresses, stored as ids, so an inserted row does not move the area off the table.</div>
+            </div>
+            <div class="sec">Scale <span class="chev end">▾</span></div>
+            <div class="body"><div class="chips"><span class="chip on stretch">100%</span><span class="chip stretch">Fit width</span><span class="chip stretch">Fit page</span></div></div>
+            <div class="sec">Show <span class="chev end">▸</span></div>
+            <div class="body">
+              <div class="tgrow"><span>Gridlines</span><span class="tg on"></span></div>
+              <div class="tgrow"><span>Row and column headings</span><span class="tg"></span></div>
+            </div>
+          </div>
+          <div class="stack" style="max-width: 46ch">
+            <h3>What it writes</h3>
+            <div class="sheet"><table>
+              <thead><tr><th>Control</th><th>Op</th></tr></thead>
+              <tbody>
+                <tr><td>Paper · orientation · margins</td><td class="pw">set sheet print/page/paper · print/page/orientation · print/page/margins/top …</td></tr>
+                <tr><td>Print area</td><td class="pw">set sheet print/area { from: CellRef, to: CellRef }</td></tr>
+                <tr><td>Repeat rows · columns</td><td class="pw">set sheet print/repeatRows ["r1"] · print/repeatColumns</td></tr>
+                <tr><td>Scale</td><td class="pw">set sheet print/scale 1 | "fit-width" | "fit-page"</td></tr>
+                <tr><td>Gridlines · headings</td><td class="pw">set sheet print/gridlines · print/headings</td></tr>
+              </tbody>
+            </table></div>
+            <div class="note">All of these are the <code>sheet</code> target, which is asked for on the last page. Whether this panel is called Print or Layout, to match the document's, is question 21.</div>
+          </div>
+        </div>
+      </div>
+      <div class="notes"></div>
+    </div>
+  </section>
+
+  <section id="comments">
+    <div class="row" data-note="comments" data-label="The Comments panel">
+      <div class="main">
+        <div class="stack col">
+          <p class="eyebrow">07 &middot; Comments</p>
+          <h2>Comments</h2>
+          <p>
+            The conversation on this sheet, narrowed by chips from broad to specific. Every
+            row leads with the address the thread anchors to, because a remark about C3 is
+            otherwise found only by hunting the grid for a mark. Open threads first;
+            Resolved as a second band, shut on arrival. Selecting a row brings the cell
+            into view and opens the thread.
+          </p>
+        </div>
+        <div class="pnls">
+          <div class="pnl" aria-label="Comments panel">
+            <div class="ttl">Comments</div>
+            <div class="body"><div class="chips"><span class="chip on">Everywhere</span><span class="chip">This cell</span></div></div>
+            <div class="sec">Open <span class="cnt">3</span><span class="chev end">▾</span></div>
+            <div class="body">
+              <div class="quote"><span>Is the 318,400 figure before or after the December restoration?</span><span class="src">C3 · Priya Natarajan · 2 h ago</span></div>
+              <div class="quote"><span>Reads correct against the outage log.</span><span class="src">C3 · Tom Adeyemi · 1 h ago</span></div>
+              <div class="quote"><span>Two events or three? The log lists a third on 14 Jan.</span><span class="src">D2 · Priya Natarajan · yesterday</span></div>
+            </div>
+            <div class="sec">Resolved <span class="cnt">1</span><span class="chev end">▸</span></div>
+            <div class="body"><div class="note">A thread anchors to a cell or to the whole sheet. A range, a row or a column cannot be commented on yet; question 12.</div></div>
+          </div>
+          <div class="stack" style="max-width: 46ch">
+            <h3>Routes</h3>
+            <div class="sheet"><table>
+              <thead><tr><th>Row</th><th>Does</th></tr></thead>
+              <tbody>
+                <tr><td>A thread</td><td class="pw">runtime.scrollTo = cell · view.inspect("general.comment", { kind: "comment", id })</td></tr>
+                <tr><td>This cell</td><td>narrows to threads anchored on the selected cell; the count reads matched of total</td></tr>
+                <tr><td>A thread on the sheet</td><td>has no address to lead with, and says so in words</td></tr>
+                <tr><td>A detached thread</td><td>its cell was cleared; the row keeps the quote and says the cell is gone</td></tr>
+              </tbody>
+            </table></div>
+            <div class="note">Threads and remarks are store rows, read and written through the generic store, exactly as the document does. Nothing about a comment is in the sheet.</div>
+          </div>
+        </div>
+      </div>
+      <div class="notes"></div>
+    </div>
+  </section>
+
+  <section id="placeholders">
+    <div class="row" data-note="placeholders" data-label="The placeholders">
+      <div class="main">
+        <div class="stack col">
+          <p class="eyebrow">08 &middot; Placeholders</p>
+          <h2>Four that stay placeholders, and what each will be</h2>
+          <p>
+            The shell draws a placeholder for a key the rail offers and the tree has no
+            file for. That is how an unbuilt view is reached, and each of these carries
+            its reason.
+          </p>
+        </div>
+        <div class="pnls">
+          <div class="pnl" aria-label="Objects placeholder"><div class="ttl">Objects</div><div class="ph-panel">Charts and overlays floating over the grid: the row leads with the type, the anchor tells two apart, overlap is a word. Needs objects with ids in the body. Question 11.</div></div>
+          <div class="pnl" aria-label="Variables placeholder"><div class="ttl">Variables</div><div class="ph-panel">The project's name manager: every named table, value and function, and the only place they are created. A placeholder in all three editors, as agreed for the document.</div></div>
+          <div class="pnl" aria-label="Templates placeholder"><div class="ttl">Templates</div><div class="ph-panel">Placeholder, as on the document's and the deck's rails. A spreadsheet template is addressed by A1 and instantiated into ids; that translation is a later round.</div></div>
+          <div class="pnl" aria-label="Prompts placeholder"><div class="ttl">Prompts</div><div class="ph-panel">Placeholder, as on the other two rails. A grid has no prompt blocks; what a generated value means inside a cell is not decided.</div></div>
+        </div>
+      </div>
+      <div class="notes"></div>
+    </div>
+  </section>
+
+  <section id="vocabulary">
+    <div class="row" data-note="vocabulary" data-label="The vocabulary">
+      <div class="main">
+        <div class="stack col">
+          <p class="eyebrow">09 &middot; Vocabulary</p>
+          <h2>What this asks of the vocabulary</h2>
+          <p>
+            Context keys in <code>representation/data/types/workspace/views.ts</code> and
+            <code>behavior/workspace/views.ts</code>, the rail in <code>opening.ts</code>,
+            labels and icons in <code>surfaces/context/procedures/rail-entries.ts</code>.
+            The table is total, so each new key needs a label and an icon before it
+            compiles.
+          </p>
+        </div>
+        <div class="sheet">
+          <table>
+            <thead><tr><th>Key</th><th>Label</th><th>Icon</th><th>State</th></tr></thead>
+            <tbody>
+              <tr><td class="k">spreadsheet-editor.grid</td><td>Grid</td><td>grid-3x3</td><td><span class="pill new">new</span> on the rail, first, the landing</td></tr>
+              <tr><td class="k">spreadsheet-editor.find</td><td>Find</td><td>search</td><td>on the rail, built</td></tr>
+              <tr><td class="k">spreadsheet-editor.dependencies</td><td>Dependencies</td><td>network</td><td>on the rail, built</td></tr>
+              <tr><td class="k">spreadsheet-editor.styles</td><td>Styles</td><td>type</td><td>on the rail, built</td></tr>
+              <tr><td class="k">spreadsheet-editor.print</td><td>Print</td><td>printer</td><td>on the rail, built</td></tr>
+              <tr><td class="k">spreadsheet-editor.objects</td><td>Objects</td><td>group</td><td>on the rail, placeholder</td></tr>
+              <tr><td class="k">spreadsheet-editor.comments</td><td>Comments</td><td>message-square</td><td>on the rail, built</td></tr>
+              <tr><td class="k">spreadsheet-editor.variables</td><td>Variables</td><td>hash</td><td>on the rail, placeholder</td></tr>
+              <tr><td class="k">spreadsheet-editor.templates</td><td>Templates</td><td>layout-template</td><td><span class="pill new">new</span> on the rail, placeholder</td></tr>
+              <tr><td class="k">spreadsheet-editor.prompts</td><td>Prompts</td><td>sparkles</td><td><span class="pill new">new</span> on the rail, placeholder</td></tr>
+              <tr class="dim"><td class="k">spreadsheet-editor.overview · insert · context · named-ranges</td><td>—</td><td>—</td><td>kept in the vocabulary, off the rail</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="notes"></div>
+    </div>
+  </section>
+
+  <div class="meta">
+    <span>the rail order and landing are question 4 on the last page</span>
+    <span>every panel reads the live sheet through view.spreadsheetRuntime(id) and writes ops to it</span>
+  </div>
+</div>
+
+<script>
+const SHEET = (() => {
+  const colIndex = (letters) => letters.split("").reduce((n, ch) => n * 26 + (ch.charCodeAt(0) - 64), 0) - 1;
+  const letter = (index) => {
+    let s = "";
+    let i = index + 1;
+    while (i > 0) {
+      const m = (i - 1) % 26;
+      s = String.fromCharCode(65 + m) + s;
+      i = Math.floor((i - 1) / 26);
+    }
+    return s;
+  };
+  const parse = (a1) => {
+    const m = /^([A-Z]+)(\d+)$/.exec(a1);
+    return { c: colIndex(m[1]), r: Number(m[2]) - 1 };
+  };
+  const range = (text) => {
+    const [from, to] = text.split(":");
+    return { from, to: to ?? from };
+  };
+  const el = (tag, cls, html) => {
+    const node = document.createElement(tag);
+    if (cls) node.className = cls;
+    if (html !== undefined) node.innerHTML = html;
+    return node;
+  };
+  const px = (n) => n + "px";
+
+  const DEFAULT_COLS = [92, 60, 118, 76, 130, 112, 122, 70];
+
+  const HEAD = (t) => ({ t, a: "center", cls: "bold" });
+  const NUM = (t, cls) => ({ t, a: "end", cls: cls || "" });
+  const TXT = (t, cls) => ({ t, a: "start", cls: cls || "" });
+
+  const model = (overrides) => {
+    const cells = {
+      A1: HEAD("Substation"), B1: HEAD("Feeder"), C1: HEAD("Customer-minutes lost"), D1: HEAD("Storm events"),
+      E1: HEAD("Avoided minutes"), F1: HEAD("Hardening spend ($M)"), G1: HEAD("Cost per avoided min"),
+      A2: TXT("Millbrook"), B2: TXT("F-12"), C2: NUM("1,842,000"), D2: NUM("2"), E2: NUM("268,110"), F2: NUM("11.40"), G2: NUM("42.52"),
+      A3: TXT("Ward 3"), B3: TXT("F-04"), C3: NUM("318,400"), D3: NUM("3"), E3: NUM("194,224"), F3: NUM("8.10"), G3: NUM("41.70"),
+      A4: TXT("Harbor Point"), B4: TXT("F-07"), C4: NUM("286,150"), D4: NUM("2"), E4: NUM("171,690"), F4: NUM("7.25"), G4: NUM("42.23"),
+      A5: TXT("Cedar Line"), B5: TXT("F-19"), C5: NUM("158,720"), D5: NUM("1"), E5: NUM("92,057"), F5: NUM("4.60"), G5: NUM("49.97"),
+      A6: TXT("Total", "bold top"), B6: TXT("4 feeders", "bold top"), C6: NUM("2,605,270", "bold top"), D6: NUM("8", "bold top"),
+      E6: NUM("726,081", "bold top"), F6: NUM("31.35", "bold top"), G6: NUM("44.11", "bold top"), H6: TXT("", "top"),
+      A8: TXT("Scratch: repair before filing", "muted"), D8: NUM("#REF!", "danger"), F8: NUM("#NAME?", "danger")
+    };
+    return Object.assign(cells, overrides || {});
+  };
+
+  const render = (spec) => {
+    const colW = Array.isArray(spec.cols) ? spec.cols : DEFAULT_COLS.slice(0, spec.cols ?? 8);
+    const rowCount = spec.rows ?? 9;
+    const rowH = Array.from({ length: rowCount }, (_, i) => (spec.rowHeights && spec.rowHeights[i]) || spec.rowH || 24);
+    const headW = spec.headW ?? 34;
+    const headH = spec.headH ?? 20;
+    const xs = [headW];
+    for (const w of colW) xs.push(xs[xs.length - 1] + w);
+    const ys = [headH];
+    for (const h of rowH) ys.push(ys[ys.length - 1] + h);
+    const W = xs[xs.length - 1];
+    const H = ys[ys.length - 1];
+
+    const rect = (from, to) => {
+      const f = parse(from);
+      const t = parse(to ?? from);
+      const c0 = Math.min(f.c, t.c), c1 = Math.max(f.c, t.c), r0 = Math.min(f.r, t.r), r1 = Math.max(f.r, t.r);
+      return { x: xs[c0], y: ys[r0], w: xs[c1 + 1] - xs[c0], h: ys[r1 + 1] - ys[r0], c0, c1, r0, r1 };
+    };
+    const place = (node, r) => {
+      node.style.left = px(r.x);
+      node.style.top = px(r.y);
+      node.style.width = px(r.w);
+      node.style.height = px(r.h);
+      return node;
+    };
+    const inRange = (list, c, r) =>
+      (list || []).some((item) => {
+        const rg = range(item);
+        const rr = rect(rg.from, rg.to);
+        return c >= rr.c0 && c <= rr.c1 && r >= rr.r0 && r <= rr.r1;
+      });
+
+    const root = el("div", "sh");
+    root.style.width = px(W + 2);
+    if (spec.zoom && spec.zoom !== 1) {
+      root.style.zoom = String(spec.zoom);
+    }
+
+    if (spec.title) {
+      const bar = el("div", "editorbar");
+      bar.appendChild(el("span", "t", spec.title.name));
+      bar.appendChild(el("span", "sync", spec.title.sync || "Saved"));
+      root.appendChild(bar);
+    }
+
+    const grid = el("div", "grid");
+    grid.style.width = px(W);
+    grid.style.height = px(H);
+    root.appendChild(grid);
+
+    const selCols = new Set((spec.selCols || []).map((l) => colIndex(l)));
+    const selRows = new Set((spec.selRows || []).map((n) => n - 1));
+
+    const corner = el("div", "hd corner" + (spec.selAll ? " on" : ""));
+    place(corner, { x: 0, y: 0, w: headW, h: headH });
+    grid.appendChild(corner);
+    colW.forEach((w, c) => {
+      const hd = el("div", "hd" + (selCols.has(c) || spec.selAll ? " on" : ""), letter(c));
+      place(hd, { x: xs[c], y: 0, w, h: headH });
+      grid.appendChild(hd);
+    });
+    rowH.forEach((h, r) => {
+      const hd = el("div", "hd" + (selRows.has(r) || spec.selAll ? " on" : ""), String(r + 1));
+      place(hd, { x: 0, y: ys[r], w: headW, h });
+      grid.appendChild(hd);
+    });
+
+    const cells = spec.cells || {};
+    const hidden = new Set();
+    const spans = new Map();
+    for (const m of spec.merges || []) {
+      const rg = range(m);
+      const rr = rect(rg.from, rg.to);
+      spans.set(rg.from, rr);
+      for (let r = rr.r0; r <= rr.r1; r += 1) {
+        for (let c = rr.c0; c <= rr.c1; c += 1) {
+          const a1 = letter(c) + (r + 1);
+          if (a1 !== rg.from) hidden.add(a1);
+        }
+      }
+    }
+    const spillCells = new Set();
+    const spillOrigins = new Set();
+    for (const s of spec.spills || []) {
+      const rg = range(s);
+      spillOrigins.add(rg.from);
+      const rr = rect(rg.from, rg.to);
+      for (let r = rr.r0; r <= rr.r1; r += 1) for (let c = rr.c0; c <= rr.c1; c += 1) spillCells.add(letter(c) + (r + 1));
+    }
+
+    for (let r = 0; r < rowCount; r += 1) {
+      for (let c = 0; c < colW.length; c += 1) {
+        const a1 = letter(c) + (r + 1);
+        if (hidden.has(a1)) continue;
+        const cell = cells[a1];
+        const classes = ["cell"];
+        if (cell && cell.a) classes.push(cell.a);
+        if (cell && cell.cls) classes.push(cell.cls);
+        if (spillCells.has(a1)) classes.push("spill");
+        if (spillOrigins.has(a1)) classes.push("origin");
+        if (inRange(spec.reads, c, r)) classes.push("reads");
+        if (inRange(spec.feeds, c, r)) classes.push("feeds");
+        if (inRange(spec.hits, c, r)) classes.push("hit");
+        const node = el("div", classes.join(" "));
+        if (cell) {
+          if (cell.html !== undefined) node.innerHTML = cell.html;
+          else node.textContent = cell.t ?? "";
+        }
+        const span = spans.get(a1);
+        if (span) {
+          node.classList.add("merged");
+          place(node, span);
+        } else {
+          place(node, { x: xs[c], y: ys[r], w: colW[c], h: rowH[r] });
+        }
+        node.setAttribute("data-a1", a1);
+        grid.appendChild(node);
+      }
+    }
+
+    if (spec.frozen) {
+      if (spec.frozen.rows) {
+        const line = el("div", "frz-h");
+        line.style.top = px(ys[spec.frozen.rows] - 1);
+        grid.appendChild(line);
+      }
+      if (spec.frozen.cols) {
+        const line = el("div", "frz-v");
+        line.style.left = px(xs[spec.frozen.cols] - 1);
+        grid.appendChild(line);
+      }
+    }
+
+    for (const sel of spec.sel || []) {
+      const rr = rect(sel.from, sel.to);
+      const node = el("div", "sel " + (sel.primary === false ? "secondary" : "primary"));
+      place(node, rr);
+      grid.appendChild(node);
+      if (sel.handle) {
+        const handle = el("div", "handle");
+        handle.style.left = px(rr.x + rr.w - 4);
+        handle.style.top = px(rr.y + rr.h - 4);
+        grid.appendChild(handle);
+      }
+    }
+    if (spec.selCols && spec.selCols.length) {
+      for (const l of spec.selCols) {
+        const c = colIndex(l);
+        const node = el("div", "sel primary");
+        place(node, { x: xs[c], y: headH, w: colW[c], h: H - headH });
+        grid.appendChild(node);
+      }
+    }
+    if (spec.selRows && spec.selRows.length) {
+      for (const n of spec.selRows) {
+        const r = n - 1;
+        const node = el("div", "sel primary");
+        place(node, { x: headW, y: ys[r], w: W - headW, h: rowH[r] });
+        grid.appendChild(node);
+      }
+    }
+    if (spec.selAll) {
+      const node = el("div", "sel primary");
+      place(node, { x: headW, y: headH, w: W - headW, h: H - headH });
+      grid.appendChild(node);
+    }
+
+    if (spec.fill) {
+      const rr = rect(spec.fill.from, spec.fill.target);
+      const node = el("div", "fill");
+      place(node, rr);
+      if (spec.fill.tip) node.appendChild(el("span", "tip", spec.fill.tip));
+      grid.appendChild(node);
+    }
+    if (spec.paste) {
+      const rr = rect(spec.paste.from, spec.paste.to);
+      const node = el("div", "paste");
+      place(node, rr);
+      grid.appendChild(node);
+    }
+
+    if (spec.editing) {
+      const rr = rect(spec.editing.at);
+      const node = el("div", "editing");
+      node.style.left = px(rr.x);
+      node.style.top = px(rr.y);
+      node.style.minWidth = px(rr.w);
+      node.style.height = px(rr.h);
+      if (spec.editing.a === "end") node.style.justifyContent = "flex-end";
+      node.appendChild(document.createTextNode(spec.editing.text));
+      if (spec.editing.caret !== false) node.appendChild(el("span", "caret"));
+      grid.appendChild(node);
+    }
+
+    for (const pin of spec.pins || []) {
+      const rr = rect(pin.at);
+      const node = el("div", "pin " + (pin.state || "open"));
+      node.style.left = px(rr.x + rr.w - 8);
+      node.style.top = px(rr.y + 1);
+      grid.appendChild(node);
+      if (pin.count && pin.count > 1) {
+        const badge = el("div", "pincount", String(pin.count));
+        badge.style.left = px(rr.x + rr.w - 12);
+        badge.style.top = px(rr.y - 6);
+        grid.appendChild(badge);
+      }
+    }
+
+    for (const obj of spec.objects || []) {
+      const rr = rect(obj.at);
+      const node = el("div", "obj");
+      node.style.left = px(rr.x + (obj.dx || 0));
+      node.style.top = px(rr.y + (obj.dy || 0));
+      node.style.width = px(obj.w);
+      node.style.height = px(obj.h);
+      const head = el("div", "ot");
+      head.appendChild(el("span", "", obj.title));
+      if (obj.gated) head.appendChild(el("span", "gated", obj.gated));
+      node.appendChild(head);
+      const bars = el("div", "bars");
+      for (const hgt of obj.bars || [58, 84, 41, 72]) {
+        const bar = el("i");
+        bar.style.height = hgt + "%";
+        bars.appendChild(bar);
+      }
+      node.appendChild(bars);
+      if (obj.src) node.appendChild(el("div", "src", obj.src));
+      grid.appendChild(node);
+    }
+
+    if (spec.guide) {
+      const c = colIndex(spec.guide.col);
+      const node = el("div", "guide");
+      node.style.left = px(xs[c] + spec.guide.w);
+      node.appendChild(el("span", "tip", spec.guide.tip || spec.guide.w + " px"));
+      grid.appendChild(node);
+    }
+    if (spec.ghost) {
+      const c = colIndex(spec.ghost.col);
+      const node = el("div", "ghost");
+      node.style.left = px(xs[c]);
+      node.style.width = px(colW[c]);
+      if (spec.ghost.tip) node.appendChild(el("span", "tip", spec.ghost.tip));
+      grid.appendChild(node);
+      const drop = el("div", "drop");
+      drop.style.left = px(xs[colIndex(spec.ghost.to)] - 1);
+      grid.appendChild(drop);
+    }
+
+    if (spec.menu) {
+      const rr = rect(spec.menu.at);
+      const node = el("div", "menu");
+      node.style.left = px(rr.x + Math.round(rr.w * 0.6));
+      node.style.top = px(rr.y + Math.round(rr.h * 0.7));
+      for (const item of spec.menu.items) {
+        if (item.sep) { node.appendChild(el("div", "sep")); continue; }
+        if (item.h) { node.appendChild(el("div", "mh", item.h)); continue; }
+        const mi = el("div", "mi" + (item.hi ? " hi" : "") + (item.dim ? " dim" : ""));
+        mi.appendChild(el("span", "", item.t));
+        if (item.kb) mi.appendChild(el("span", "kb", item.kb));
+        node.appendChild(mi);
+      }
+      grid.appendChild(node);
+    }
+    if (spec.toast) {
+      const node = el("div", "toast", spec.toast.html);
+      node.style.left = px(spec.toast.x);
+      node.style.top = px(spec.toast.y);
+      grid.appendChild(node);
+    }
+    if (spec.hover) {
+      const rr = rect(spec.hover.at);
+      const node = el("div", "hover", spec.hover.text);
+      node.style.left = px(rr.x + 4);
+      node.style.top = px(rr.y + rr.h + 3);
+      grid.appendChild(node);
+    }
+
+    for (const co of spec.callouts || []) {
+      const node = el("div", "co", co.k);
+      if (co.at) {
+        const rr = rect(co.at);
+        node.style.left = px(rr.x + (co.dx ?? -9));
+        node.style.top = px(rr.y + (co.dy ?? -9));
+      } else {
+        node.style.left = px(co.x);
+        node.style.top = px(co.y);
+      }
+      grid.appendChild(node);
+    }
+
+    if (spec.status) {
+      const bar = el("div", "statusbar");
+      if (spec.status.sel) bar.appendChild(el("span", "sel-summary", spec.status.sel));
+      if (spec.status.text) bar.appendChild(el("span", "", spec.status.text));
+      const right = el("span", "", spec.status.right || "100%");
+      right.style.marginLeft = "auto";
+      bar.appendChild(right);
+      root.appendChild(bar);
+    }
+
+    return root;
+  };
+
+  const mount = (selector, spec) => {
+    const target = typeof selector === "string" ? document.querySelector(selector) : selector;
+    if (!target) return null;
+    const node = render(spec);
+    target.appendChild(node);
+    return node;
+  };
+
+  return { render, mount, model, letter, parse, DEFAULT_COLS };
+})();
+
+</script>
+<script>
+
+</script>
+<script>
+(function () {
+  const pageMeta = document.querySelector('meta[name="page"]');
+  const PAGE = (pageMeta && pageMeta.getAttribute("content")) || "page";
+  const stateEl = document.querySelector(".notebar .state");
+  const countEl = document.querySelector(".notebar .count");
+  const rows = Array.from(document.querySelectorAll(".row[data-note]"));
+
+  const escape = (s) => String(s).replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[ch]);
+
+  const setState = (cls, text) => {
+    if (!stateEl) return;
+    stateEl.className = "state " + cls;
+    stateEl.textContent = text;
+  };
+
+  const setCount = (n) => {
+    if (countEl) countEl.textContent = n + (n === 1 ? " note" : " notes");
+  };
+
+  const boxes = new Map();
+
+  for (const row of rows) {
+    const notes = row.querySelector(".notes");
+    if (!notes) continue;
+    const id = row.getAttribute("data-note");
+    const label = row.getAttribute("data-label") || id;
+    notes.innerHTML =
+      '<div class="box"><span class="who">' + escape(label) + '</span>' +
+      '<textarea rows="1" placeholder="Note on this row. Enter saves." aria-label="Note on ' + escape(label) + '"></textarea>' +
+      '<div class="saved"></div></div>';
+    const ta = notes.querySelector("textarea");
+    const saved = notes.querySelector(".saved");
+    boxes.set(id, { label, ta, saved });
+    ta.addEventListener("input", () => {
+      ta.style.height = "auto";
+      ta.style.height = Math.min(ta.scrollHeight, 240) + "px";
+    });
+    ta.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" || event.shiftKey) return;
+      event.preventDefault();
+      void save(id, label, ta);
+    });
+  }
+
+  let db = null;
+  let total = 0;
+
+  const collection = () => db.collection("pages/" + PAGE + "/notes");
+
+  const renderNote = (saved, note) => {
+    const n = document.createElement("div");
+    n.className = "n";
+    n.textContent = note.text;
+    const t = document.createElement("time");
+    t.textContent = new Date(note.at).toLocaleString();
+    n.appendChild(t);
+    saved.appendChild(n);
+  };
+
+  const load = async () => {
+    const snap = await collection().orderBy("at").get();
+    for (const box of boxes.values()) box.saved.innerHTML = "";
+    total = 0;
+    for (const doc of snap.docs) {
+      const note = doc.data();
+      if (!note || typeof note.text !== "string") continue;
+      total += 1;
+      const box = boxes.get(note.id);
+      if (box) renderNote(box.saved, note);
+    }
+    setCount(total);
+  };
+
+  const save = async (id, label, ta) => {
+    const text = ta.value.trim();
+    if (text.length === 0) return;
+    if (!db) {
+      setState("bad", "This note was not saved. The page database is unavailable in this view.");
+      return;
+    }
+    ta.disabled = true;
+    try {
+      const note = { page: PAGE, id, label, text, at: new Date().toISOString() };
+      await collection().add(note);
+      const box = boxes.get(id);
+      if (box) renderNote(box.saved, note);
+      total += 1;
+      setCount(total);
+      ta.value = "";
+      ta.style.height = "auto";
+    } catch (error) {
+      setState("bad", "Saving failed: " + (error && error.message ? error.message : "unknown error"));
+    } finally {
+      ta.disabled = false;
+      ta.focus();
+    }
+  };
+
+  if (!window.claude || typeof window.claude.use !== "function") {
+    setState("bad", "Notes need the artifact viewer. Open the published page to leave them.");
+  } else {
+    window.claude.use("db").then(
+      (found) => {
+        db = found;
+        if (!db) {
+          setState("bad", "Notes cannot save in this view. The page database is unavailable.");
+          return;
+        }
+        setState("ok", "Notes save to pages/" + PAGE + "/notes in this page's database. Enter saves; Shift+Enter is a new line.");
+        void load().catch((error) => setState("bad", "Could not load notes: " + (error && error.message ? error.message : "unknown error")));
+      },
+      () => setState("bad", "Notes cannot save in this view.")
+    );
+  }
+
+  const links = document.querySelectorAll(".topnav .anchors a");
+  const targets = Array.from(links).map((a) => document.querySelector(a.getAttribute("href"))).filter(Boolean);
+  if (targets.length > 0 && "IntersectionObserver" in window) {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          for (const a of links) a.classList.toggle("here", a.getAttribute("href") === "#" + entry.target.id);
+        }
+      },
+      { rootMargin: "-40% 0px -55% 0px" }
+    );
+    for (const t of targets) observer.observe(t);
+  }
+})();
+
+</script>

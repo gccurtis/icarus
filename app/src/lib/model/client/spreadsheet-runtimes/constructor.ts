@@ -5,11 +5,13 @@ import type { SpreadsheetRuntimesModel } from "$model/client/spreadsheet-runtime
 
 const FLUSH_AFTER_OPS = "revisions.changeSets.flushAfterOps";
 const FLUSH_AFTER_MS = "revisions.changeSets.flushAfterMs";
+const SYNC_EVERY_MS = "revisions.sync.everyMs";
 
 export const createSpreadsheetRuntimes = (
   configuration: ConfigurationModel
 ): SpreadsheetRuntimesModel =>
   new SpreadsheetRuntimes({
     afterOps: requiredNumber(configuration, FLUSH_AFTER_OPS),
-    afterMs: requiredNumber(configuration, FLUSH_AFTER_MS)
+    afterMs: requiredNumber(configuration, FLUSH_AFTER_MS),
+    syncEveryMs: requiredNumber(configuration, SYNC_EVERY_MS)
   });

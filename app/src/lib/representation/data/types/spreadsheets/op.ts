@@ -1,8 +1,12 @@
+export type SpreadsheetSetTarget = "cell" | "mark" | "formatRule" | "sheet";
+
+export type SpreadsheetListTarget = "gridRow" | "gridColumn" | "formatRule" | "mark" | "sheet";
+
 export type SpreadsheetOp =
-  | { op: "set"; target: "cell" | "formatRule" | "mark"; path: string; value: unknown; was: unknown }
+  | { op: "set"; target: SpreadsheetSetTarget; path: string; value: unknown; was: unknown }
   | {
       op: "insert";
-      target: "gridRow" | "gridColumn" | "formatRule";
+      target: SpreadsheetListTarget;
       path: string;
       ids: string[];
       after: string | null;
@@ -10,7 +14,7 @@ export type SpreadsheetOp =
     }
   | {
       op: "remove";
-      target: "gridRow" | "gridColumn" | "formatRule";
+      target: SpreadsheetListTarget;
       path: string;
       ids: string[];
       after: string | null;

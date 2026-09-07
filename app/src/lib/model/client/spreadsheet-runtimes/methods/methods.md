@@ -10,10 +10,11 @@ function taking one of them.
 
 | Method | Shape | Location | Effect | Description |
 | ------ | ----- | -------- | ------ | ----------- |
-| `attach` | file | [`attach.ts`](attach.ts) | mutator | Open a sheet, or hand back the one already open |
+| `attach` | file | [`attach.ts`](attach.ts) | mutator | Open a sheet, or hand back the one already open, and read it |
+| `sync` | file | [`sync.ts`](sync.ts) | mutator | Re-read the leader, and only while nothing of this runtime's own is outstanding |
 | `release` | file | [`release.ts`](release.ts) | mutator | Detach one sheet and return it to be submitted |
 | `releaseAll` | file | [`release-all.ts`](release-all.ts) | mutator | Detach every open sheet |
-| `apply` | file | [`apply.ts`](apply.ts) | mutator | Buffer a gesture and record it; `buffer` does the first without the second |
+| `apply` | file | [`apply.ts`](apply.ts) | mutator | Apply a gesture to the live sheet, buffer it and record it; `buffer` does the first two without the third |
 | `flush` | directory | [`flush/`](flush/flush.md) | mutator | Submit the buffer as one change set |
 | `history` | directory | [`history/`](history/history.md) | mutator | The undo and redo stacks |
 
@@ -28,7 +29,7 @@ files while one file tells the truth about them.
 | Takes | Methods | Holds |
 | --- | --- | --- |
 | `SpreadsheetRuntimesState` | `attach`, `release`, `releaseAll` | The two maps, and the thresholds |
-| `Runtime` | `apply`, `flush`, `history` | One sheet's body, buffer, revision and stacks |
+| `Runtime` | `sync`, `apply`, `flush`, `history` | One sheet, its buffer, revision and stacks |
 
 Both are declared in [`definition.svelte.ts`](../definition.svelte.ts) and
 imported here as **types only**, which is what keeps the definition's import of
@@ -54,21 +55,28 @@ One, preserving an invariant that spans its callers — see
 
 ## Common Shape
 
-Every method here is synchronous except `flush`, and the rule underneath is one
-sentence: **nothing a user gesture triggers is awaited, and nothing awaited is
-triggered by a user gesture.**
+Every method here is synchronous except `flush` and `sync`, and the rule
+underneath is one sentence: **nothing a user gesture triggers is awaited, and
+nothing awaited is triggered by a user gesture.** `attach` fires a read and hands
+back the runtime without waiting for it, which is what keeps opening a tab
+synchronous while the sheet it shows still catches up.
 
 ```text
 1. Read what is there — a map entry, or a stack's last entry
-2. Compute the next value, without resolving a path or reading a body
+2. Compute the next value — through the shared applier when it is the sheet
 3. Assign it, and return what the caller needs to compose the next step
 ```
 
-## No method calls another
+## Composition is the definition's
 
-Composition is the definition's. `Runtime.apply` calls `apply` and then
-schedules; `Runtime.undo` calls `history` and then buffers;
-`SpreadsheetRuntimes.release` calls `release` and then settles what it got back.
+`Runtime.apply` calls `apply` and then schedules; `Runtime.undo` calls `history`
+and then buffers; `SpreadsheetRuntimes.release` calls `release` and then settles
+what it got back. `history` returns ops rather than buffering them and `release`
+returns a runtime rather than flushing it, because undo buffers *without
+recording* and only the composition point knows that.
+
+`sync` is the one sibling other methods import. `attach` reads on open and
+`flush` reads after a landing, and both are the same read.
 
 ## Concurrency
 
@@ -80,3 +88,6 @@ call.
 
 **A failed submit puts its ops back at the front**, ahead of whatever was typed
 meanwhile. They happened first.
+
+**A read never lands on work in progress.** `sync` checks the buffer before it
+asks and again after the answer arrives.

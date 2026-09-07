@@ -1,11 +1,23 @@
 import assert from "node:assert/strict";
-import { test } from "vitest";
+import { test, vi } from "vitest";
 import { createConfiguration } from "$model/client/configuration";
 import { createSpreadsheetRuntimes } from "$model/client/spreadsheet-runtimes";
 
+vi.mock("$capabilities/spreadsheet/index.remote", () => ({
+  readSpreadsheet: () =>
+    Object.assign(new Promise(() => {}), { refresh: () => Promise.resolve(), ready: false }),
+  submitSpreadsheetChanges: ({ changeSet }: { changeSet: { baseRevision: number } }) =>
+    Promise.resolve({ accepted: true, revision: changeSet.baseRevision + 1 })
+}));
+
 const register = (afterOps = 50, afterMs = 2000) =>
   createSpreadsheetRuntimes(
-    createConfiguration({ revisions: { changeSets: { flushAfterOps: afterOps, flushAfterMs: afterMs } } })
+    createConfiguration({
+      revisions: {
+        changeSets: { flushAfterOps: afterOps, flushAfterMs: afterMs },
+        sync: { everyMs: 0 }
+      }
+    })
   );
 
 test("attach opens a sheet", () => {
@@ -14,7 +26,7 @@ test("attach opens a sheet", () => {
 
   assert.deepEqual(runtimes.open, ["x9"]);
   assert.equal(runtime.sync, "loading");
-  assert.equal(runtime.body, undefined);
+  assert.equal(runtime.sheet, undefined);
 });
 
 test("attach is idempotent, so a second tab on one sheet is free", () => {
@@ -60,7 +72,15 @@ test("releasing something that is not open is a no-op", () => {
 test("reattaching before a release settles revives the runtime rather than duplicating it", () => {
   const runtimes = register();
   const first = runtimes.attach("x9");
-  first.apply([{ op: "set", target: "cell", path: "cells/#A1", value: 2, was: 1 }]);
+  first.apply([
+    {
+      op: "set",
+      target: "cell",
+      path: "r1/c1/value",
+      value: { kind: "number", value: 2 },
+      was: { kind: "number", value: 1 }
+    }
+  ]);
 
   runtimes.release("x9");
   const second = runtimes.attach("x9");
@@ -100,5 +120,15 @@ test("the register refuses to build without its thresholds", () => {
   assert.throws(
     () => createSpreadsheetRuntimes(createConfiguration({})),
     /revisions\.changeSets\.flushAfterOps/
+  );
+});
+
+test("the register refuses to build without a sync interval", () => {
+  assert.throws(
+    () =>
+      createSpreadsheetRuntimes(
+        createConfiguration({ revisions: { changeSets: { flushAfterOps: 1, flushAfterMs: 1 } } })
+      ),
+    /revisions\.sync\.everyMs/
   );
 });

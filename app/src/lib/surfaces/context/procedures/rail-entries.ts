@@ -11,6 +11,7 @@ import Clock from "@lucide/svelte/icons/clock";
 import ClockArrowLeft from "@lucide/svelte/icons/clock-arrow-left";
 import FileText from "@lucide/svelte/icons/file-text";
 import Footprints from "@lucide/svelte/icons/footprints";
+import Grid3x3 from "@lucide/svelte/icons/grid-3x3";
 import Group from "@lucide/svelte/icons/group";
 import Hash from "@lucide/svelte/icons/hash";
 import HeartPulse from "@lucide/svelte/icons/heart-pulse";
@@ -111,6 +112,10 @@ export const RAIL_ENTRIES: Record<ContextView, RailEntry> = {
   "document-editor.context": { label: "Context", icon: Target },
   "spreadsheet-editor.context": { label: "Context", icon: Target },
   "spreadsheet-editor.dependencies": { label: "Dependencies", icon: Network },
+  "spreadsheet-editor.grid": { label: "Grid", icon: Grid3x3 },
+  "spreadsheet-editor.formulas": { label: "Formulas", icon: SquareFunction },
+  "spreadsheet-editor.templates": { label: "Templates", icon: LayoutTemplate },
+  "spreadsheet-editor.prompts": { label: "Prompts", icon: Sparkles },
   "slide-deck-editor.find": { label: "Find", icon: Search },
   "document-editor.find": { label: "Find", icon: Search },
   "spreadsheet-editor.find": { label: "Find", icon: Search },
@@ -120,7 +125,7 @@ export const RAIL_ENTRIES: Record<ContextView, RailEntry> = {
   "slide-deck-editor.layers": { label: "Layers", icon: Layers },
   "spreadsheet-editor.named-ranges": { label: "Named ranges", icon: Tag },
   "document-editor.navigator": { label: "Sections", icon: LayoutPanelTop },
-  "spreadsheet-editor.objects": { label: "Objects", icon: Group },
+  "spreadsheet-editor.charts": { label: "Charts", icon: ChartColumn },
   "document-editor.layout": { label: "Layout", icon: FileText },
   "document-editor.prompts": { label: "Prompts", icon: Sparkles },
   "document-editor.templates": { label: "Templates", icon: LayoutTemplate },

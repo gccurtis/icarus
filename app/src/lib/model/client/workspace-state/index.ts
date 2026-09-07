@@ -5,6 +5,7 @@ import { read } from "$capabilities/store/index.remote";
 import { createConfiguration } from "$model/client/configuration";
 import { createDocumentRuntimes } from "$model/client/document-runtimes";
 import { createSlideDeckRuntimes } from "$model/client/slide-deck-runtimes";
+import { createSpreadsheetRuntimes } from "$model/client/spreadsheet-runtimes";
 import { createTabList } from "$model/client/tab-list";
 import { createTabViews } from "$model/client/tab-views";
 import { createWorkspaceState } from "$model/client/workspace-state/constructor";
@@ -15,6 +16,7 @@ export { createWorkspaceState } from "$model/client/workspace-state/constructor"
 
 export type { DocumentRuntime, PendingMarks, SyncState } from "$model/client/document-runtimes";
 export type { SlideDeckRuntime } from "$model/client/slide-deck-runtimes";
+export type { SpreadsheetRuntime } from "$model/client/spreadsheet-runtimes";
 
 export type { Category, ContentView } from "$representation/data/types/workspace/categories";
 export {
@@ -89,6 +91,7 @@ const forDevelopment = (): WorkspaceStateModel => {
     configuration,
     createDocumentRuntimes(configuration),
     createSlideDeckRuntimes(configuration),
+    createSpreadsheetRuntimes(configuration),
     read,
     username
   );

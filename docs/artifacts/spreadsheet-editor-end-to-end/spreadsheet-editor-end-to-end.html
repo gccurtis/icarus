@@ -1,0 +1,1833 @@
+<title>The Spreadsheet Editor, End to End</title>
+<meta name="page" content="spreadsheet-editor-end-to-end">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+
+<style>
+  :root {
+    --ground: #f2efe9;
+    --panel: #fbf9f5;
+    --sunk: #e9e5dc;
+    --ink: #1d2329;
+    --ink-2: #3a424d;
+    --ink-3: #6b7580;
+    --rule: #d8d3c4;
+    --rule-soft: #e4dfd2;
+    --client: #bc386f;
+    --client-soft: #fdeff5;
+    --server: #187d74;
+    --server-soft: #e6f4f2;
+    --surface: #3a5fa8;
+    --surface-soft: #e8eef9;
+    --warn: #9a6a12;
+    --warn-soft: #f8efd9;
+    --danger: #b4453f;
+    --danger-soft: #fbe9e7;
+    --spill: #6b4fbb;
+    --spill-soft: #efe9fb;
+    --reads: #2f7fb8;
+    --reads-soft: #e3f0fa;
+    --feeds: #c26b1e;
+    --feeds-soft: #fbeadb;
+    --select: #2f6fdb;
+    --select-soft: rgba(47, 111, 219, 0.13);
+    --pin: #c58a1c;
+    --ok: #2e7d4f;
+
+    --sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+    --measure: 70ch;
+    --gap: 1.15rem;
+    --gutter: 232px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #14181c;
+      --panel: #1c2127;
+      --sunk: #101418;
+      --ink: #e7e3da;
+      --ink-2: #b6bcc6;
+      --ink-3: #8d97a3;
+      --rule: #2e353d;
+      --rule-soft: #262c33;
+      --client: #ee7fae;
+      --client-soft: #351924;
+      --server: #3fcfc0;
+      --server-soft: #102b28;
+      --surface: #7ea2e8;
+      --surface-soft: #1a2538;
+      --warn: #d9a441;
+      --warn-soft: #2e2510;
+      --danger: #e5766f;
+      --danger-soft: #3a1c1a;
+      --spill: #b39ce8;
+      --spill-soft: #261c3a;
+      --reads: #6fb3e6;
+      --reads-soft: #142a3a;
+      --feeds: #e6975a;
+      --feeds-soft: #3a2513;
+      --select: #6f9cf0;
+      --select-soft: rgba(111, 156, 240, 0.2);
+      --pin: #e0aa45;
+      --ok: #5cc088;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground: #14181c;
+    --panel: #1c2127;
+    --sunk: #101418;
+    --ink: #e7e3da;
+    --ink-2: #b6bcc6;
+    --ink-3: #8d97a3;
+    --rule: #2e353d;
+    --rule-soft: #262c33;
+    --client: #ee7fae;
+    --client-soft: #351924;
+    --server: #3fcfc0;
+    --server-soft: #102b28;
+    --surface: #7ea2e8;
+    --surface-soft: #1a2538;
+    --warn: #d9a441;
+    --warn-soft: #2e2510;
+    --danger: #e5766f;
+    --danger-soft: #3a1c1a;
+    --spill: #b39ce8;
+    --spill-soft: #261c3a;
+    --reads: #6fb3e6;
+    --reads-soft: #142a3a;
+    --feeds: #e6975a;
+    --feeds-soft: #3a2513;
+    --select: #6f9cf0;
+    --select-soft: rgba(111, 156, 240, 0.2);
+    --pin: #e0aa45;
+    --ok: #5cc088;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a { color: inherit; }
+
+  .topnav {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: color-mix(in srgb, var(--ground) 92%, transparent);
+    backdrop-filter: blur(6px);
+    border-bottom: 1px solid var(--rule-soft);
+  }
+
+  .topnav .inner {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 0.55rem 1.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem 1.4rem;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+  }
+
+  .topnav .pages { display: flex; flex-wrap: wrap; gap: 0.2rem 1rem; }
+  .topnav .pages a { text-decoration: none; color: var(--ink-3); padding: 0.15rem 0; border-bottom: 2px solid transparent; }
+  .topnav .pages a:hover { color: var(--ink); }
+  .topnav .pages a.here { color: var(--ink); border-bottom-color: var(--client); }
+  .topnav .anchors { display: flex; flex-wrap: wrap; gap: 0.2rem 0.9rem; margin-left: auto; }
+  .topnav .anchors a { text-decoration: none; color: var(--ink-3); }
+  .topnav .anchors a:hover { color: var(--ink); }
+
+  .notebar {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 0.35rem 1.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.3rem 1rem;
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--ink-3);
+  }
+  .notebar .state.bad { color: var(--danger); }
+  .notebar .state.ok { color: var(--ok); }
+
+  .page {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 2.4rem 1.5rem 6rem;
+    display: flex;
+    flex-direction: column;
+    gap: 3.25rem;
+  }
+
+  .row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) var(--gutter);
+    gap: 0 2rem;
+    align-items: start;
+  }
+  .row > .main { min-width: 0; display: flex; flex-direction: column; gap: var(--gap); }
+
+  @media (max-width: 900px) {
+    .row { grid-template-columns: minmax(0, 1fr); }
+    .row > .notes { display: none; }
+  }
+
+  .notes { position: relative; display: flex; flex-direction: column; gap: 0.5rem; padding-top: 0.15rem; }
+  .notes .box {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    border: 1px dashed var(--rule);
+    border-radius: 4px;
+    padding: 0.45rem 0.55rem;
+    background: color-mix(in srgb, var(--panel) 60%, transparent);
+  }
+  .notes .box .who { font-family: var(--mono); font-size: 0.64rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); }
+  .notes textarea {
+    width: 100%;
+    resize: none;
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    background: var(--panel);
+    color: var(--ink);
+    font: inherit;
+    font-size: 0.84rem;
+    line-height: 1.4;
+    padding: 0.35rem 0.45rem;
+    min-height: 2.1rem;
+  }
+  .notes textarea:focus-visible { outline: 2px solid var(--select); outline-offset: 1px; }
+  .notes .saved { display: flex; flex-direction: column; gap: 0.35rem; }
+  .notes .saved .n {
+    font-size: 0.82rem;
+    line-height: 1.45;
+    color: var(--ink-2);
+    border-left: 3px solid var(--warn);
+    padding: 0.1rem 0 0.1rem 0.6rem;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+  .notes .saved .n time { display: block; font-family: var(--mono); font-size: 0.62rem; color: var(--ink-3); margin-top: 0.15rem; }
+  .notes .hint { font-family: var(--mono); font-size: 0.64rem; color: var(--ink-3); }
+
+  .col { max-width: var(--measure); }
+
+  h1, h2, h3, h4 { text-wrap: balance; margin: 0; }
+
+  h1 { font-size: clamp(2rem, 4.6vw, 2.9rem); font-weight: 600; letter-spacing: -0.028em; line-height: 1.08; }
+  h2 { font-size: 1.4rem; font-weight: 600; letter-spacing: -0.018em; padding-bottom: 0.5rem; border-bottom: 2px solid var(--ink); }
+  h3 { font-size: 1.02rem; font-weight: 600; letter-spacing: -0.008em; }
+  h4 { font-size: 0.92rem; font-weight: 600; }
+
+  p { margin: 0; }
+  .col > p + p, .main > p + p { margin-top: 0.85rem; }
+
+  .eyebrow { font-family: var(--mono); font-size: 0.7rem; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-3); }
+  .lede { font-size: 1.08rem; color: var(--ink-2); }
+
+  code, .m { font-family: var(--mono); font-size: 0.86em; }
+  code { background: var(--sunk); border-radius: 3px; padding: 0.1em 0.34em; }
+  pre { margin: 0; }
+
+  section { display: flex; flex-direction: column; gap: var(--gap); }
+  .stack { display: flex; flex-direction: column; gap: var(--gap); }
+
+  .hero { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 2rem; align-items: start; }
+  .hero .readout {
+    border: 1px solid var(--rule-soft);
+    background: var(--panel);
+    border-radius: 4px;
+    padding: 1rem 1.1rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.9rem 1rem;
+    font-family: var(--mono);
+  }
+  .hero .readout .k { font-size: 0.64rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); }
+  .hero .readout .v { font-size: 1.35rem; font-weight: 600; line-height: 1.1; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .hero .readout .v small { font-size: 0.72rem; font-weight: 400; color: var(--ink-3); margin-left: 0.25rem; }
+  @media (max-width: 900px) { .hero { grid-template-columns: minmax(0, 1fr); } }
+
+  .sheet { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+  th, td { text-align: left; padding: 0.55rem 0.9rem 0.55rem 0; border-bottom: 1px solid var(--rule-soft); vertical-align: top; }
+  th { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); border-bottom: 1px solid var(--rule); white-space: nowrap; }
+  td.p { font-family: var(--mono); font-size: 0.8rem; white-space: nowrap; }
+  td.pw { font-family: var(--mono); font-size: 0.8rem; }
+  td.n { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  td.k { font-family: var(--mono); font-size: 0.8rem; white-space: nowrap; }
+  tr.dim td { color: var(--ink-3); }
+
+  .tree {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    line-height: 1.85;
+    background: var(--panel);
+    border: 1px solid var(--rule-soft);
+    border-radius: 4px;
+    padding: 1.1rem 1.25rem;
+    overflow-x: auto;
+    white-space: pre;
+  }
+  .tree .note { color: var(--ink-3); }
+  .cli { color: var(--client); font-weight: 500; }
+  .srv { color: var(--server); font-weight: 500; }
+  .sfc { color: var(--surface); font-weight: 500; }
+  .new { color: var(--warn); font-weight: 500; }
+
+  figure { margin: 0; display: flex; flex-direction: column; gap: 0.7rem; }
+  figure svg { width: 100%; height: auto; display: block; background: var(--panel); border: 1px solid var(--rule-soft); border-radius: 4px; }
+  figcaption { font-size: 0.85rem; color: var(--ink-3); max-width: var(--measure); }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 1.1rem; font-size: 0.78rem; color: var(--ink-2); font-family: var(--mono); }
+  .key { display: inline-flex; align-items: center; gap: 0.4rem; }
+  .swatch { width: 0.75rem; height: 0.75rem; border-radius: 2px; display: inline-block; }
+
+  ol.steps { list-style: none; counter-reset: s; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.9rem; }
+  ol.steps li { counter-increment: s; display: grid; grid-template-columns: 1.9rem 1fr; gap: 0.85rem; align-items: start; }
+  ol.steps li::before { content: counter(s, decimal-leading-zero); font-family: var(--mono); font-size: 0.75rem; font-weight: 600; color: var(--client); padding-top: 0.22rem; font-variant-numeric: tabular-nums; }
+  ol.steps li p { font-size: 0.94rem; }
+  ol.steps li strong { font-weight: 600; }
+
+  ol.q { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 1.4rem; counter-reset: q; }
+  ol.q > li { counter-increment: q; display: grid; grid-template-columns: 2.4rem 1fr; gap: 0.9rem; align-items: start; }
+  ol.q > li::before { content: counter(q); font-family: var(--mono); font-size: 1.1rem; font-weight: 600; color: var(--client); padding-top: 0.05rem; font-variant-numeric: tabular-nums; }
+  ol.q .q-body { display: flex; flex-direction: column; gap: 0.55rem; min-width: 0; }
+  ol.q .q-body h3 { font-size: 1rem; }
+  ol.q .q-body p { font-size: 0.94rem; }
+  .rec { border-left: 3px solid var(--client); padding: 0.1rem 0 0.1rem 0.9rem; font-size: 0.94rem; color: var(--ink-2); }
+  .rec strong { color: var(--ink); }
+  .tagline { display: inline-flex; gap: 0.4rem; flex-wrap: wrap; }
+
+  .note-block { border-left: 3px solid var(--warn); padding: 0.1rem 0 0.1rem 1rem; font-size: 0.94rem; color: var(--ink-2); max-width: var(--measure); }
+  .rule-block { border-left-color: var(--client); }
+  .store-block { border-left-color: var(--server); }
+  .surface-block { border-left-color: var(--surface); }
+
+  ul.plain { margin: 0; padding-left: 1.1rem; display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.94rem; }
+  .gone { color: var(--ink-3); }
+
+  .meta { display: flex; flex-wrap: wrap; gap: 0 2rem; font-family: var(--mono); font-size: 0.76rem; color: var(--ink-3); padding-top: 1rem; border-top: 1px solid var(--rule-soft); }
+
+  .pill { display: inline-block; font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.08em; text-transform: uppercase; border: 1px solid var(--rule); border-radius: 999px; padding: 0.1rem 0.5rem; color: var(--ink-2); white-space: nowrap; vertical-align: middle; }
+  .pill.new { border-color: var(--warn); color: var(--warn); }
+  .pill.model { border-color: var(--server); color: var(--server); }
+  .pill.live { border-color: var(--client); color: var(--client); }
+  .pill.sfc { border-color: var(--surface); color: var(--surface); }
+  .pill.gap { border-color: var(--danger); color: var(--danger); }
+  .pill.ok { border-color: var(--ok); color: var(--ok); }
+
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; }
+  .card { border: 1px solid var(--rule-soft); background: var(--panel); border-radius: 4px; padding: 0.9rem 1rem; display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.9rem; }
+  .card .hd { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); display: flex; justify-content: space-between; gap: 0.5rem; align-items: center; }
+  .card h4 { font-size: 0.98rem; }
+  .card p { color: var(--ink-2); font-size: 0.9rem; }
+
+  .strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.6rem; }
+  .strip .s { border-top: 2px solid var(--rule); padding-top: 0.5rem; display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.86rem; }
+  .strip .s b { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); font-weight: 500; }
+  .strip .s.live { border-top-color: var(--client); }
+  .strip .s.store { border-top-color: var(--server); }
+  .strip .s.sfc { border-top-color: var(--surface); }
+
+  /* ---- grid mocks ---- */
+  .mock { display: flex; flex-direction: column; gap: 0.7rem; }
+  .mock .stage { overflow-x: auto; background: var(--panel); border: 1px solid var(--rule-soft); border-radius: 4px; padding: 1rem; }
+  .mock .stage.bare { padding: 0; border: 0; background: transparent; }
+  .mock .cap { font-size: 0.85rem; color: var(--ink-3); max-width: var(--measure); }
+  .mock .keys { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 0.35rem 1.6rem; font-size: 0.86rem; margin: 0; }
+  .mock .keys div { display: grid; grid-template-columns: 1.4rem 1fr; gap: 0.5rem; align-items: start; }
+  .mock .keys dt { margin: 0; }
+  .mock .keys dd { margin: 0; color: var(--ink-2); }
+  .mock .keys dd b { color: var(--ink); font-weight: 600; }
+  .ck { display: inline-flex; align-items: center; justify-content: center; width: 1.25rem; height: 1.25rem; border-radius: 999px; background: var(--client); color: #fff; font-family: var(--mono); font-size: 0.66rem; font-weight: 600; line-height: 1; }
+
+  .sh { position: relative; font-family: var(--sans); font-size: 12px; line-height: 1; color: var(--ink); width: max-content; }
+  .sh .editorbar { display: flex; align-items: center; gap: 12px; padding: 6px 10px; border: 1px solid var(--rule-soft); border-bottom: 0; background: var(--sunk); font-size: 11.5px; }
+  .sh .editorbar .t { font-weight: 500; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sh .editorbar .sync { font-family: var(--mono); font-size: 10px; color: var(--ink-3); }
+  .sh .grid { position: relative; overflow: hidden; border: 1px solid var(--rule-soft); background: var(--panel); }
+  .sh .hd { position: absolute; display: flex; align-items: center; justify-content: center; background: var(--sunk); color: var(--ink-3); font-family: var(--mono); font-size: 10px; border-right: 1px solid var(--rule); border-bottom: 1px solid var(--rule); user-select: none; }
+  .sh .hd.on { background: var(--select-soft); color: var(--select); font-weight: 600; }
+  .sh .hd.corner { z-index: 3; }
+  .sh .cell { position: absolute; display: flex; align-items: center; padding: 0 6px; border-right: 1px solid var(--rule-soft); border-bottom: 1px solid var(--rule-soft); overflow: hidden; white-space: nowrap; background: var(--panel); }
+  .sh .cell.end { justify-content: flex-end; font-variant-numeric: tabular-nums; }
+  .sh .cell.center { justify-content: center; }
+  .sh .cell.bold { font-weight: 600; }
+  .sh .cell.muted { color: var(--ink-3); }
+  .sh .cell.mono { font-family: var(--mono); font-size: 11px; }
+  .sh .cell.danger { color: var(--danger); font-family: var(--mono); font-size: 11px; }
+  .sh .cell.spill { background: var(--spill-soft); color: var(--spill); }
+  .sh .cell.spill.origin { color: var(--ink); }
+  .sh .cell.hit { background: var(--warn-soft); }
+  .sh .cell.reads { box-shadow: inset 0 0 0 2px var(--reads); background: var(--reads-soft); }
+  .sh .cell.feeds { box-shadow: inset 0 0 0 2px var(--feeds); background: var(--feeds-soft); }
+  .sh .cell.top { border-top: 1px solid var(--ink-2); }
+  .sh .cell.merged { z-index: 1; }
+  .sh .cell .mark-b { font-weight: 600; }
+  .sh .cell .mark-link { color: var(--select); text-decoration: underline; text-underline-offset: 2px; }
+  .sh .cell .mark-code { font-family: var(--mono); font-size: 11px; background: var(--sunk); padding: 0 3px; border-radius: 2px; }
+  .sh .sel { position: absolute; border: 1.5px solid var(--select); background: var(--select-soft); pointer-events: none; }
+  .sh .sel.primary { z-index: 2; }
+  .sh .sel.secondary { border-style: dashed; }
+  .sh .sel .anchor { position: absolute; inset: 0; background: transparent; }
+  .sh .handle { position: absolute; width: 7px; height: 7px; background: var(--select); border: 1px solid var(--panel); z-index: 3; }
+  .sh .fill { position: absolute; border: 1.5px dashed var(--select); pointer-events: none; z-index: 2; }
+  .sh .fill .tip { position: absolute; right: -4px; bottom: -22px; font-family: var(--mono); font-size: 10px; background: var(--ink); color: var(--ground); padding: 2px 6px; border-radius: 3px; white-space: nowrap; }
+  .sh .paste { position: absolute; border: 1.5px dashed var(--server); pointer-events: none; z-index: 2; }
+  .sh .frz-h { position: absolute; left: 0; right: 0; height: 2px; background: var(--ink-3); z-index: 4; }
+  .sh .frz-v { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--ink-3); z-index: 4; }
+  .sh .editing { position: absolute; display: flex; align-items: center; padding: 0 6px; background: var(--panel); outline: 2px solid var(--select); outline-offset: -1px; z-index: 5; font-family: var(--mono); font-size: 11.5px; white-space: nowrap; overflow: visible; }
+  .sh .editing .caret { display: inline-block; width: 1px; height: 14px; background: var(--ink); margin-left: 1px; }
+  .sh .pin { position: absolute; width: 0; height: 0; border-top: 7px solid var(--pin); border-left: 7px solid transparent; z-index: 3; }
+  .sh .pin.current { border-top-color: var(--client); }
+  .sh .pin.detached { border-top-color: var(--ink-3); }
+  .sh .pincount { position: absolute; font-family: var(--mono); font-size: 9px; background: var(--pin); color: #fff; border-radius: 999px; padding: 1px 4px; z-index: 6; }
+  .sh .obj { position: absolute; z-index: 6; background: var(--panel); border: 1px solid var(--rule); border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.12); display: flex; flex-direction: column; padding: 6px 8px; gap: 4px; }
+  .sh .obj .ot { font-size: 10.5px; font-weight: 500; display: flex; justify-content: space-between; gap: 6px; }
+  .sh .obj .ot .gated { font-family: var(--mono); font-size: 9px; color: var(--warn); border: 1px solid var(--warn); border-radius: 999px; padding: 0 5px; }
+  .sh .obj .bars { flex: 1; display: flex; align-items: flex-end; gap: 4px; min-height: 40px; }
+  .sh .obj .bars i { flex: 1; background: var(--rule); border-radius: 2px 2px 0 0; display: block; }
+  .sh .obj .src { font-family: var(--mono); font-size: 9.5px; color: var(--ink-3); }
+  .sh .guide { position: absolute; top: 0; bottom: 0; width: 0; border-left: 1.5px dashed var(--select); z-index: 6; }
+  .sh .guide .tip, .sh .ghost .tip { position: absolute; top: 4px; left: 6px; font-family: var(--mono); font-size: 10px; background: var(--ink); color: var(--ground); padding: 2px 6px; border-radius: 3px; white-space: nowrap; }
+  .sh .ghost { position: absolute; top: 0; bottom: 0; background: var(--select-soft); border: 1.5px dashed var(--select); z-index: 6; }
+  .sh .drop { position: absolute; top: 0; bottom: 0; width: 0; border-left: 3px solid var(--select); z-index: 7; }
+  .sh .menu { position: absolute; z-index: 8; background: var(--panel); border: 1px solid var(--rule); border-radius: 4px; box-shadow: 0 6px 20px rgba(0,0,0,0.14); padding: 4px; min-width: 190px; font-size: 11.5px; }
+  .sh .menu .mi { padding: 4px 8px; border-radius: 3px; display: flex; justify-content: space-between; gap: 12px; }
+  .sh .menu .mi .kb { font-family: var(--mono); font-size: 9.5px; color: var(--ink-3); }
+  .sh .menu .mi.hi { background: var(--select-soft); }
+  .sh .menu .mi.dim { color: var(--ink-3); }
+  .sh .menu .mh { font-family: var(--mono); font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); padding: 4px 8px 2px; }
+  .sh .menu .sep { height: 1px; background: var(--rule-soft); margin: 3px 4px; }
+  .sh .toast { position: absolute; z-index: 9; background: var(--ink); color: var(--ground); font-size: 11px; padding: 6px 10px; border-radius: 4px; max-width: 320px; line-height: 1.35; }
+  .sh .toast b { color: var(--pin); font-weight: 600; }
+  .sh .statusbar { display: flex; align-items: center; gap: 14px; padding: 4px 10px; border: 1px solid var(--rule-soft); border-top: 0; background: var(--sunk); font-family: var(--mono); font-size: 10px; color: var(--ink-3); }
+  .sh .statusbar .sel-summary { color: var(--ink); }
+  .sh .co { position: absolute; z-index: 10; width: 18px; height: 18px; border-radius: 999px; background: var(--client); color: #fff; font-family: var(--mono); font-size: 10px; font-weight: 600; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 2px var(--panel); }
+  .sh .hover { position: absolute; z-index: 5; font-family: var(--mono); font-size: 10px; background: var(--ink); color: var(--ground); padding: 3px 6px; border-radius: 3px; white-space: nowrap; }
+
+  /* ---- shell mock ---- */
+  .shell { display: grid; grid-template-columns: 44px 180px minmax(0, 1fr) 224px; grid-template-rows: 30px 28px minmax(0, 1fr) 22px; border: 1px solid var(--rule); border-radius: 4px; background: var(--panel); overflow: hidden; font-size: 11px; font-family: var(--sans); }
+  .shell .top { grid-column: 1 / -1; background: var(--sunk); border-bottom: 1px solid var(--rule-soft); display: flex; align-items: center; padding: 0 10px; gap: 10px; font-weight: 600; font-size: 11px; }
+  .shell .top .th { color: var(--ink-3); font-weight: 400; font-family: var(--mono); font-size: 10px; margin-left: auto; }
+  .shell .tabs { grid-column: 1 / -1; background: var(--sunk); border-bottom: 1px solid var(--rule-soft); display: flex; align-items: stretch; font-size: 10.5px; }
+  .shell .tabs .tab { padding: 0 12px; display: flex; align-items: center; color: var(--ink-3); border-right: 1px solid var(--rule-soft); gap: 6px; }
+  .shell .tabs .tab.on { background: var(--panel); color: var(--ink); }
+  .shell .rail { background: var(--sunk); border-right: 1px solid var(--rule-soft); display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 0; }
+  .shell .rail i { width: 22px; height: 22px; border-radius: 4px; border: 1px solid var(--rule); display: block; }
+  .shell .rail i.on { background: var(--select-soft); border-color: var(--select); }
+  .shell .ctx { border-right: 1px solid var(--rule-soft); padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; }
+  .shell .ctx .pt { font-weight: 600; font-size: 11px; }
+  .shell .ctx .sec { font-family: var(--mono); font-size: 8.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); margin-top: 4px; }
+  .shell .ctx .ln { display: flex; justify-content: space-between; color: var(--ink-2); font-size: 10.5px; }
+  .shell .ctx .ln span:last-child { font-family: var(--mono); color: var(--ink-3); font-size: 9.5px; }
+  .shell .centre { min-width: 0; display: flex; flex-direction: column; }
+  .shell .centre .sh { width: 100%; font-size: 11px; }
+  .shell .centre .sh .grid { border-left: 0; border-right: 0; border-top: 0; }
+  .shell .centre .sh .editorbar { border: 0; border-bottom: 1px solid var(--rule-soft); }
+  .shell .centre .sh .statusbar { border: 0; border-top: 1px solid var(--rule-soft); }
+  .shell .ins { border-left: 1px solid var(--rule-soft); padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; }
+  .shell .ins .crumb { font-family: var(--mono); font-size: 9px; color: var(--ink-3); }
+  .shell .ins .pt { font-weight: 600; font-size: 11px; }
+  .shell .ins .fl { display: grid; grid-template-columns: 52px 1fr; gap: 2px 6px; font-size: 10.5px; }
+  .shell .ins .fl span:nth-child(odd) { color: var(--ink-3); }
+  .shell .ins .fl span:nth-child(even) { font-family: var(--mono); font-size: 10px; }
+  .shell .ins .code { font-family: var(--mono); font-size: 10px; background: var(--sunk); border: 1px solid var(--rule-soft); border-radius: 3px; padding: 4px 6px; white-space: pre-wrap; }
+  .shell .status { grid-column: 1 / -1; background: var(--sunk); border-top: 1px solid var(--rule-soft); display: flex; align-items: center; gap: 14px; padding: 0 10px; font-family: var(--mono); font-size: 9.5px; color: var(--ink-3); }
+  .shell .status b { color: var(--ink); font-weight: 500; }
+
+  /* ---- panel mocks ---- */
+  .pnls { display: flex; flex-wrap: wrap; gap: 1.2rem; align-items: flex-start; }
+  .pnl { width: 272px; flex: 0 0 auto; background: var(--panel); border: 1px solid var(--rule); border-radius: 4px; font-size: 12px; line-height: 1.35; color: var(--ink); display: flex; flex-direction: column; padding-bottom: 10px; }
+  .pnl.wide { width: 320px; }
+  .pnl .crumbs { font-family: var(--mono); font-size: 9.5px; color: var(--ink-3); padding: 8px 12px 0; display: flex; gap: 6px; flex-wrap: wrap; }
+  .pnl .crumbs b { color: var(--ink-2); font-weight: 500; }
+  .pnl .ttl { font-size: 12.5px; font-weight: 600; color: var(--ink-2); padding: 10px 12px 6px; }
+  .pnl .acts { display: flex; flex-wrap: wrap; gap: 4px; padding: 0 12px 8px; }
+  .btn { display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 8px; border: 1px solid var(--rule); border-radius: 4px; background: var(--panel); font-size: 11px; color: var(--ink-2); white-space: nowrap; }
+  .btn.pri { background: var(--ink); color: var(--ground); border-color: var(--ink); }
+  .btn.dis { opacity: 0.5; }
+  .btn.danger { color: var(--danger); border-color: var(--danger); }
+  .btn.ghost { border-color: transparent; }
+  .pnl .sec { display: flex; align-items: center; gap: 6px; padding: 6px 12px; font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-2); font-weight: 600; }
+  .pnl .sec .cnt { margin-left: auto; color: var(--ink-3); font-weight: 400; font-variant-numeric: tabular-nums; }
+  .pnl .sec .chev { color: var(--ink-3); font-size: 9px; }
+  .pnl .sec .chev.end { margin-left: auto; }
+  .pnl .sec .cnt + .chev.end { margin-left: 0; }
+  .pnl .body { display: flex; flex-direction: column; gap: 6px; padding: 0 12px 6px; }
+  .pnl .body.flush { padding: 0; }
+  .pnl .flds { display: grid; grid-template-columns: 5rem 1fr; gap: 4px 8px; align-items: baseline; }
+  .pnl .flds .l { font-size: 10.5px; color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pnl .flds .v { font-size: 12px; color: var(--ink); min-width: 0; }
+  .pnl .flds .v.mono { font-family: var(--mono); font-size: 11px; font-variant-numeric: tabular-nums; }
+  .pnl .flds .st { grid-column: 1 / -1; font-size: 10.5px; color: var(--ink-3); }
+  .pnl .flds .sv { grid-column: 1 / -1; margin-top: -2px; }
+  .inp { display: flex; align-items: center; height: 24px; border: 1px solid var(--rule); border-radius: 4px; padding: 0 7px; background: var(--panel); font-size: 11.5px; color: var(--ink); gap: 6px; }
+  .inp.mono { font-family: var(--mono); font-size: 11px; }
+  .inp .ph { color: var(--ink-3); }
+  .inp .u { margin-left: auto; color: var(--ink-3); font-size: 10px; }
+  .inp .dd { margin-left: auto; color: var(--ink-3); font-size: 9px; }
+  .inp.mixed { color: var(--ink-3); font-style: italic; }
+  .inp.edit { outline: 2px solid var(--select); outline-offset: -1px; }
+  .pnl .code { font-family: var(--mono); font-size: 11px; background: var(--sunk); border: 1px solid var(--rule-soft); border-radius: 4px; padding: 6px 8px; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--ink); line-height: 1.45; }
+  .pnl .code .tok-f { color: var(--surface); }
+  .pnl .code .tok-r { color: var(--reads); }
+  .pnl .code .tok-n { color: var(--client); }
+  .pnl .code .tok-bad { color: var(--danger); text-decoration: underline wavy; }
+  .pnl .note { font-size: 11px; color: var(--ink-3); line-height: 1.4; }
+  .pnl .note.gap { color: var(--danger); }
+  .pnl .note.warn { color: var(--warn); }
+  .pnl .quote { border-left: 2px solid var(--rule); padding: 2px 0 2px 8px; font-size: 11.5px; color: var(--ink-2); display: flex; flex-direction: column; gap: 2px; }
+  .pnl .quote .src { font-family: var(--mono); font-size: 9.5px; color: var(--ink-3); }
+  .pnl .chips { display: flex; flex-wrap: wrap; gap: 4px; }
+  .chip { display: inline-flex; align-items: center; height: 20px; padding: 0 7px; border: 1px solid var(--rule); border-radius: 4px; font-size: 10.5px; color: var(--ink-2); background: var(--panel); }
+  .chip.on { border-color: var(--select); background: var(--select-soft); color: var(--select); }
+  .chip.mixed { border-style: dashed; opacity: 0.75; }
+  .chip.danger { border-color: var(--danger); color: var(--danger); background: var(--danger-soft); }
+  .chip.spill { border-color: var(--spill); color: var(--spill); background: var(--spill-soft); }
+  .chip.ok { border-color: var(--ok); color: var(--ok); }
+  .chip.warn { border-color: var(--warn); color: var(--warn); }
+  .chip.stretch { flex: 1; justify-content: center; }
+  .pnl .rw { display: flex; align-items: flex-start; gap: 8px; padding: 5px 12px; }
+  .pnl .rw.on { background: var(--select-soft); }
+  .pnl .rw .ic { width: 14px; height: 14px; border-radius: 3px; border: 1px solid var(--rule); flex: 0 0 auto; margin-top: 1px; }
+  .pnl .rw .ic.d { border-color: var(--danger); background: var(--danger-soft); }
+  .pnl .rw .ic.s { border-color: var(--spill); background: var(--spill-soft); }
+  .pnl .rw .ic.f { border-color: var(--surface); background: var(--surface-soft); }
+  .pnl .rw .tx { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+  .pnl .rw .t { font-size: 11.5px; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pnl .rw .t.mono { font-family: var(--mono); font-size: 11px; }
+  .pnl .rw .t.danger { color: var(--danger); }
+  .pnl .rw .s { font-size: 10.5px; color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pnl .rw .mt { font-family: var(--mono); font-size: 10px; color: var(--ink-3); flex: 0 0 auto; }
+  .pnl .search { margin: 0 12px; border: 1px solid var(--rule); border-radius: 4px; display: flex; flex-direction: column; }
+  .pnl .search .sf { display: flex; align-items: center; gap: 6px; padding: 5px 8px; border-bottom: 1px solid var(--rule-soft); font-size: 11.5px; }
+  .pnl .search .sf .ph { color: var(--ink-3); }
+  .pnl .search .sf .cnt { margin-left: auto; font-family: var(--mono); font-size: 9.5px; color: var(--ink-3); }
+  .pnl .search .rw { padding: 5px 8px; }
+  .sw { display: inline-block; width: 16px; height: 16px; border-radius: 999px; border: 1px solid var(--rule); }
+  .sw.on { box-shadow: 0 0 0 2px var(--panel), 0 0 0 3.5px var(--select); }
+  .pnl .swrow { display: flex; align-items: center; gap: 6px; }
+  .pnl .swrow .l { font-size: 10px; color: var(--ink-3); width: 20px; font-weight: 500; }
+  .tg { display: inline-flex; align-items: center; width: 26px; height: 14px; border-radius: 999px; background: var(--rule); position: relative; flex: 0 0 auto; }
+  .tg::after { content: ""; position: absolute; left: 2px; top: 2px; width: 10px; height: 10px; border-radius: 999px; background: var(--panel); }
+  .tg.on { background: var(--select); }
+  .tg.on::after { left: 14px; }
+  .pnl .tgrow { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 11.5px; }
+  .pnl .hr { height: 1px; background: var(--rule-soft); margin: 6px 12px; }
+  .pnl .stats { display: flex; gap: 14px; padding: 0 12px 6px; }
+  .pnl .stats .st { display: flex; flex-direction: column; }
+  .pnl .stats .st b { font-family: var(--mono); font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .pnl .stats .st span { font-size: 9.5px; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.06em; }
+  .pnl .empty { margin: 0 12px; border: 1px dashed var(--rule); border-radius: 4px; padding: 10px; display: flex; flex-direction: column; gap: 3px; }
+  .pnl .empty b { font-size: 11.5px; font-weight: 500; }
+  .pnl .empty span { font-size: 10.5px; color: var(--ink-3); }
+  .pnl .ph-panel { margin: 0 12px; border: 1px dashed var(--warn); border-radius: 4px; padding: 10px; font-size: 11px; color: var(--warn); }
+  .pnl .cellhead { display: flex; align-items: baseline; gap: 10px; padding: 0 12px 6px; }
+  .pnl .cellhead .addr { font-family: var(--mono); font-size: 18px; font-weight: 600; }
+  .pnl .cellhead .shows { font-family: var(--mono); font-size: 13px; font-variant-numeric: tabular-nums; margin-left: auto; }
+  .pnl .cellhead .shows.danger { color: var(--danger); }
+
+  .railmock { display: flex; gap: 1.5rem; align-items: flex-start; flex-wrap: wrap; }
+  .railmock .rl { display: flex; flex-direction: column; gap: 4px; padding: 8px 0; width: 44px; background: var(--sunk); border: 1px solid var(--rule); border-radius: 4px; align-items: center; }
+  .railmock .rl i { width: 28px; height: 28px; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: var(--ink-3); }
+  .railmock .rl i.on { background: var(--select-soft); color: var(--select); }
+  .railmock .rl i svg { width: 15px; height: 15px; }
+  .railmock ol { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: 1fr; gap: 0.35rem; font-size: 0.9rem; }
+  .railmock ol li { display: grid; grid-template-columns: 4.4rem 9rem 1fr; gap: 0.7rem; align-items: baseline; }
+  .railmock ol li .k { font-family: var(--mono); font-size: 0.72rem; color: var(--ink-3); }
+  .railmock ol li .lab { font-weight: 500; }
+  .railmock ol li .why { color: var(--ink-2); font-size: 0.86rem; }
+
+  .compare { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 1rem; }
+  .compare .opt { border: 1px solid var(--rule-soft); border-radius: 4px; background: var(--panel); padding: 0.9rem 1rem; display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.88rem; }
+  .compare .opt.rec { border-color: var(--client); box-shadow: inset 3px 0 0 var(--client); }
+  .compare .opt h4 { display: flex; justify-content: space-between; gap: 0.5rem; align-items: center; }
+  .compare .opt ul { margin: 0; padding-left: 1rem; display: flex; flex-direction: column; gap: 0.3rem; color: var(--ink-2); }
+  .compare .opt .cost { color: var(--danger); }
+  .compare .opt .win { color: var(--ok); }
+
+  kbd { font-family: var(--mono); font-size: 0.74rem; border: 1px solid var(--rule); border-bottom-width: 2px; border-radius: 3px; padding: 0 0.35rem; background: var(--panel); white-space: nowrap; }
+
+  .two { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.2rem; align-items: start; }
+
+  :is(a, button, textarea, [tabindex]):focus-visible { outline: 2px solid var(--select); outline-offset: 2px; }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+
+</style>
+
+<nav class="topnav" aria-label="Pages and sections">
+  <div class="inner">
+    <div class="pages"><a href="https://claude.ai/code/artifact/cd369b72-679d-4f57-8e0f-395132413c69" class="here">End to end</a><a href="https://claude.ai/code/artifact/5264fb38-f90e-4c77-bed3-b5f8a0b2aa93">The grid</a><a href="https://claude.ai/code/artifact/e23e685f-0fce-4e52-9816-6600d8fb8ae9">Context panels</a><a href="https://claude.ai/code/artifact/32cfe90f-b85d-4762-9d2b-b737e04df16b">Inspector lenses</a><a href="https://claude.ai/code/artifact/5fdbb96c-918e-4266-9a64-9ee832fc4ed5">Questions and decisions</a></div>
+    <div class="anchors"><a href="#copies">Copies</a><a href="#surface">Surface</a><a href="#shape">Shape</a><a href="#ops">Ops</a><a href="#runtime">Runtime</a><a href="#store">Store</a><a href="#formulas">Formulas</a><a href="#traced">Traced</a><a href="#tree">Tree</a><a href="#order">Build order</a><a href="#not">Not here</a></div>
+  </div>
+  <div class="notebar">
+    <span class="state">Notes load when the page database answers.</span>
+    <span class="count">0 notes</span>
+  </div>
+</nav>
+
+<div class="page">
+<header class="row" data-note="hero" data-label="Title and thesis">
+    <div class="main">
+      <div class="hero">
+        <div class="stack">
+          <p class="eyebrow">Icarus &middot; app/src/lib &middot; spreadsheet-editor &middot; design, 2026-09-05</p>
+          <h1>The spreadsheet editor, end to end</h1>
+          <p class="lede col">
+            One sheet, three copies, two tables. The store holds the canonical grid and
+            its cells. The client holds a live copy and every change is an operation on
+            it. The grid on screen is a picture of the live copy and a way to ask for
+            changes &mdash; nothing more. This is how the whole thing works when it is
+            finished, and what has to exist for it to work.
+          </p>
+          <div class="legend">
+            <span class="key"><span class="swatch" style="background: var(--server)"></span> store &middot; canonical</span>
+            <span class="key"><span class="swatch" style="background: var(--client)"></span> runtime &middot; live</span>
+            <span class="key"><span class="swatch" style="background: var(--surface)"></span> surface and panels &middot; projection</span>
+            <span class="key"><span class="swatch" style="background: var(--warn)"></span> proposed &middot; needs a yes</span>
+          </div>
+        </div>
+        <div class="readout" aria-label="Readout">
+          <div><div class="k">Copies</div><div class="v">3<small>one canonical</small></div></div>
+          <div><div class="k">Tables it lives in</div><div class="v">2<small>+ change sets</small></div></div>
+          <div><div class="k">Op targets</div><div class="v">6<small>5 today, 1 asked for</small></div></div>
+          <div><div class="k">Rail panels</div><div class="v">10<small>6 built this round</small></div></div>
+          <div><div class="k">Lenses</div><div class="v">13<small>3 new keys</small></div></div>
+          <div><div class="k">Open forks</div><div class="v">26<small>5 are key</small></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="notes"></div>
+  </header>
+
+  <section id="copies">
+    <div class="row" data-note="copies" data-label="Three copies, two tables">
+      <div class="main">
+        <div class="stack col">
+          <p class="eyebrow">01 &middot; Copies</p>
+          <h2>Three copies of one sheet, in two tables</h2>
+          <p>
+            The document and the deck each keep their whole body in one leader
+            snapshot. The spreadsheet is the one resource whose content is not in its
+            body: the body holds the <em>shape</em> of the grid &mdash; which rows and
+            columns exist, in what order, how wide, what is formatted where, how it
+            prints &mdash; and every populated cell is a row of its own in
+            <code>sheetCells</code>. An empty coordinate is the absence of a row.
+          </p>
+          <p>
+            The client runtime holds a live copy of both halves together, and every
+            change &mdash; from the grid, from a lens, from undo, from another
+            person's accepted change &mdash; is a list of ops applied to that copy
+            first and sent to the store afterwards. The grid draws whatever the live
+            copy currently is.
+          </p>
+        </div>
+
+        <figure>
+          <svg viewBox="0 0 960 300" role="img" aria-label="The store holds the leader body and the sheetCells rows; the runtime holds a live sheet of body plus cells; the surface draws a scene projected from the live sheet and emits intents that become ops applied to the runtime; lenses and panels read the live sheet and apply ops; the runtime flushes change sets to the store and reads body and cells back.">
+            <defs>
+              <marker id="ar1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"></path></marker>
+            </defs>
+            <text x="24" y="34" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="10.5" letter-spacing="0.1em" fill="var(--server)">STORE · CANONICAL</text>
+            <text x="372" y="34" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="10.5" letter-spacing="0.1em" fill="var(--client)">RUNTIME · LIVE</text>
+            <text x="656" y="34" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="10.5" letter-spacing="0.1em" fill="var(--surface)">SURFACE + PANELS · PROJECTION</text>
+
+            <rect x="24" y="56" width="280" height="64" rx="4" fill="var(--server-soft)" stroke="var(--server)" stroke-width="1.4"></rect>
+            <text x="164" y="82" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="12" font-weight="600" fill="currentColor">spreadsheetSnapshots · leader</text>
+            <text x="164" y="102" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="10" fill="var(--ink-3)">body: rows · columns · rules · print · styles</text>
+
+            <rect x="24" y="150" width="280" height="64" rx="4" fill="var(--server-soft)" stroke="var(--server)" stroke-width="1.4"></rect>
+            <text x="164" y="176" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="12" font-weight="600" fill="currentColor">sheetCells</text>
+            <text x="164" y="196" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="10" fill="var(--ink-3)">one row per populated cell · rowId · columnId</text>
+
+            <rect x="372" y="90" width="216" height="90" rx="4" fill="var(--client-soft)" stroke="var(--client)" stroke-width="1.6"></rect>
+            <text x="480" y="122" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="12.5" font-weight="600" fill="currentColor">live sheet</text>
+            <text x="480" y="142" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="10" fill="var(--ink-3)">{ body, cells } · $state</text>
+            <text x="480" y="160" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="10" fill="var(--ink-3)">apply · undo · buffer · flush</text>
+
+            <rect x="656" y="56" width="280" height="64" rx="4" fill="var(--surface-soft)" stroke="var(--surface)" stroke-width="1.4"></rect>
+            <text x="796" y="82" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="12" font-weight="600" fill="currentColor">sheet-surface</text>
+            <text x="796" y="102" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="10" fill="var(--ink-3)">scene in · intents out · owns nothing</text>
+
+            <rect x="656" y="150" width="280" height="64" rx="4" fill="none" stroke="var(--surface)" stroke-width="1.4"></rect>
+            <text x="796" y="176" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="12" font-weight="600" fill="currentColor">lenses · panels</text>
+            <text x="796" y="196" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="10" fill="var(--ink-3)">read the live sheet · state their ops</text>
+
+            <line x1="304" y1="88" x2="370" y2="112" stroke="currentColor" stroke-width="1.3" marker-end="url(#ar1)"></line>
+            <line x1="304" y1="182" x2="370" y2="158" stroke="currentColor" stroke-width="1.3" marker-end="url(#ar1)"></line>
+            <text x="337" y="82" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="9.5" fill="var(--ink-3)">body</text>
+            <text x="337" y="200" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="9.5" fill="var(--ink-3)">cells</text>
+
+            <line x1="372" y1="136" x2="306" y2="136" stroke="currentColor" stroke-width="1.3" marker-end="url(#ar1)"></line>
+            <text x="338" y="130" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="9.5" fill="currentColor">change set</text>
+            <text x="338" y="150" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="9" fill="var(--ink-3)">ops · baseRevision · touched</text>
+
+            <line x1="588" y1="100" x2="654" y2="88" stroke="currentColor" stroke-width="1.3" marker-end="url(#ar1)"></line>
+            <text x="621" y="82" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="9.5" fill="currentColor">scene</text>
+            <line x1="654" y1="112" x2="590" y2="124" stroke="currentColor" stroke-width="1.3" stroke-dasharray="5 4" marker-end="url(#ar1)"></line>
+            <text x="622" y="136" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="9.5" fill="currentColor">intents → ops</text>
+
+            <line x1="654" y1="176" x2="590" y2="160" stroke="currentColor" stroke-width="1.3" marker-end="url(#ar1)"></line>
+            <text x="622" y="188" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="9.5" fill="currentColor">apply(ops)</text>
+
+            <line x1="796" y1="120" x2="796" y2="148" stroke="currentColor" stroke-width="1.3" stroke-dasharray="5 4" marker-end="url(#ar1)"></line>
+            <text x="806" y="138" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="9.5" fill="var(--ink-3)">selection, as ids</text>
+
+            <text x="480" y="258" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="10.5" fill="var(--ink-3)">the dashed arrows are the only places the grid speaks first: a gesture becomes an intent, the view turns it into ops, the runtime moves, the grid is redrawn</text>
+            <text x="480" y="278" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="10.5" fill="var(--ink-3)">the store never sends ops; it sends a body and cells at a revision</text>
+          </svg>
+          <figcaption>
+            The document's three copies, plus the table that holds a spreadsheet's
+            content. The runtime's live copy is the only thing the grid and the panels
+            read, and <code>apply(ops)</code> is the only way anything changes it.
+          </figcaption>
+        </figure>
+
+        <div class="note-block rule-block">
+          <strong>The grid is a channel, not a place the sheet lives.</strong> A lens that
+          formats a range writes a format rule to the live body; the runtime moves; the
+          grid is redrawn and the cells are bold because the rule says so. Undo is the same
+          path with the ops inverted. Sync is the same path with the store's copy in place
+          of the live one. Typing into a cell is the one exception, and a smaller one than
+          the document's: the characters live in the in-cell editor until commit, and then
+          they are one <code>set</code>.
+        </div>
+      </div>
+      <div class="notes"></div>
+    </div>
+  </section>
+
+  <section id="surface">
+    <div class="row" data-note="surface-component" data-label="The surface is a component">
+      <div class="main">
+        <div class="stack col">
+          <p class="eyebrow">02 &middot; Surface</p>
+          <h2>The surface is a component, and the library lives inside it</h2>
+          <p>
+            The slide editor no longer imports Konva. The canvas became
+            <code>components/authored/slide-surface/</code>: a component that takes a
+            <code>SurfaceScene</code> projected from the live deck and emits moves, edits
+            and selections back. The deck view translates those into ops. That is the
+            shape the spreadsheet takes too &mdash; <code>sheet-surface</code> takes a
+            <code>SheetScene</code> and emits intents &mdash; and it is what makes the
+            grid library a decision that can be revisited without touching a lens, a
+            panel, a procedure or the model.
+          </p>
+        </div>
+
+        <div class="strip">
+          <div class="s sfc"><b>sheet-surface takes</b><span>a scene: the viewport's rows and columns with sizes and labels, each visible cell's text, alignment and paint, merges, spills, frozen counts, pins, objects, highlights, the selection, the cell being edited, zoom</span></div>
+          <div class="s sfc"><b>sheet-surface emits</b><span>select, edit (enter · commit · cancel), fill, copy · cut · paste, delete, resize, move, scroll, context, pin, object &mdash; each with ids, never with A1 text</span></div>
+          <div class="s live"><b>the view owns</b><span>projection (<code>sceneOf</code>), translation (intent → ops), signalling (selection → lens key), zoom, the title bar, and the editor's own keyboard map</span></div>
+          <div class="s live"><b>the surface never</b><span>reads the runtime, names an op, resolves a formula, decides what a lens shows, or holds a value after commit</span></div>
+        </div>
+      </div>
+      <div class="notes"></div>
+    </div>
+
+    <div class="row" data-note="library" data-label="The grid library decision">
+      <div class="main">
+        <div class="stack col">
+          <h3>What draws the grid inside the component</h3>
+          <p>
+            Four candidates were checked against the current state of each, in September
+            2026. The whole comparison and the recommendation sit as the first question on
+            <em>Questions and decisions</em>; this is the summary.
+          </p>
+        </div>
+        <div class="compare">
+          <div class="opt rec">
+            <h4>Build it in Svelte <span class="pill live">recommended</span></h4>
+            <ul>
+              <li class="win">The same move the slide editor already made when it dropped Konva; the sheet's model is the model, so there is no second one to translate from.</li>
+              <li class="win">Merges, spills, format rules, comment pins, id-addressed cells and the in-cell editor are all ours to draw exactly as the model says.</li>
+              <li class="win">Every behaviour is a named, tested procedure in the tree.</li>
+              <li class="cost">Virtualisation, selection, clipboard, fill, resize and IME are ours to get right. About the size of <code>slide-surface</code>.</li>
+            </ul>
+          </div>
+          <div class="opt">
+            <h4>RevoGrid <span class="pill">MIT</span></h4>
+            <ul>
+              <li class="win">Svelte 5 adapter, virtual scroll to a million rows, range selection, clipboard, basic autofill, pinned rows and columns, cancelable before-hooks.</li>
+              <li class="cost">Cell merging and series autofill are RevoGrid Pro; merges are in our model.</li>
+              <li class="cost">Cells render through Stencil templates, not Svelte. A data-grid column model wearing a spreadsheet.</li>
+            </ul>
+          </div>
+          <div class="opt">
+            <h4>Univer <span class="pill">Apache 2</span></h4>
+            <ul>
+              <li class="win">A complete spreadsheet: canvas render, merges, frozen panes, rich text, styles, clipboard.</li>
+              <li class="cost">Its view layer is React 18. Its own model, command system, undo, selection, styles, and a formula plugin to keep out.</li>
+              <li class="cost">Everything we want to be ours would be a bypass of something it already does.</li>
+            </ul>
+          </div>
+          <div class="opt">
+            <h4>Handsontable &middot; Jspreadsheet CE</h4>
+            <ul>
+              <li class="cost">Handsontable: $899 per developer per year for commercial use; free only for non-commercial work.</li>
+              <li class="cost">Jspreadsheet CE: MIT, merges and frozen columns, but a DOM table with lazy loading rather than a virtualised grid.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="note-block">
+          Whichever way the first question is answered, everything else on these pages
+          holds: the scene, the intents, the ops, the lenses and the panels are the same.
+          Only what sits inside <code>sheet-surface.svelte</code> changes.
+        </div>
+      </div>
+      <div class="notes"></div>
+    </div>
+
+    <div class="row" data-note="boundaries" data-label="Import boundaries">
+      <div class="main">
+        <figure>
+          <svg viewBox="0 0 940 260" role="img" aria-label="Import boundaries: sheet.svelte may reach its own category's procedures, the sheet-surface component, workspace-state and capabilities; it may not reach the spreadsheet-runtimes register or representation directly.">
+            <defs>
+              <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"></path></marker>
+              <marker id="arNo2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="var(--danger)"></path></marker>
+            </defs>
+            <rect x="24" y="94" width="176" height="66" rx="4" fill="var(--client-soft)" stroke="var(--client)" stroke-width="1.5"></rect>
+            <text x="112" y="120" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="12.5" font-weight="600" fill="currentColor">sheet.svelte</text>
+            <text x="112" y="140" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="11" fill="var(--ink-3)">the content view</text>
+
+            <rect x="300" y="14" width="196" height="50" rx="4" fill="var(--surface-soft)" stroke="var(--surface)" stroke-width="1.2"></rect>
+            <text x="398" y="35" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="11.5" fill="currentColor">$authored-components/sheet-surface</text>
+            <text x="398" y="52" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="10.5" fill="var(--ink-3)">props in, callbacks out</text>
+
+            <rect x="300" y="80" width="196" height="50" rx="4" fill="none" stroke="currentColor" stroke-width="1.2"></rect>
+            <text x="398" y="101" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="11.5" fill="currentColor">procedures/ (own category)</text>
+            <text x="398" y="118" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="10.5" fill="var(--ink-3)">may import representation</text>
+
+            <rect x="300" y="146" width="196" height="50" rx="4" fill="none" stroke="currentColor" stroke-width="1.2"></rect>
+            <text x="398" y="167" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="11.5" fill="currentColor">$model/client/workspace-state</text>
+            <text x="398" y="184" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="10.5" fill="var(--ink-3)">view.spreadsheetRuntime(id)</text>
+
+            <rect x="300" y="212" width="196" height="40" rx="4" fill="none" stroke="currentColor" stroke-width="1.2"></rect>
+            <text x="398" y="237" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="11.5" fill="currentColor">$capabilities/*</text>
+
+            <rect x="640" y="60" width="196" height="58" rx="4" fill="none" stroke="var(--danger)" stroke-width="1.2" stroke-dasharray="5 4"></rect>
+            <text x="738" y="85" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="11.5" fill="var(--danger)">spreadsheet-runtimes</text>
+            <text x="738" y="102" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="10.5" fill="var(--danger)">the register itself</text>
+
+            <rect x="640" y="140" width="196" height="58" rx="4" fill="none" stroke="var(--danger)" stroke-width="1.2" stroke-dasharray="5 4"></rect>
+            <text x="738" y="165" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="11.5" fill="var(--danger)">$representation/*</text>
+            <text x="738" y="182" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="10.5" fill="var(--danger)">types and behaviour</text>
+
+            <line x1="200" y1="108" x2="298" y2="42" stroke="currentColor" stroke-width="1.3" marker-end="url(#ar2)"></line>
+            <line x1="200" y1="120" x2="298" y2="105" stroke="currentColor" stroke-width="1.3" marker-end="url(#ar2)"></line>
+            <line x1="200" y1="134" x2="298" y2="168" stroke="currentColor" stroke-width="1.3" marker-end="url(#ar2)"></line>
+            <line x1="200" y1="146" x2="298" y2="230" stroke="currentColor" stroke-width="1.3" marker-end="url(#ar2)"></line>
+
+            <line x1="496" y1="160" x2="638" y2="94" stroke="var(--danger)" stroke-width="1.3" stroke-dasharray="5 4" marker-end="url(#arNo2)"></line>
+            <line x1="496" y1="104" x2="638" y2="166" stroke="currentColor" stroke-width="1.3" marker-end="url(#ar2)"></line>
+            <text x="560" y="112" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="10.5" fill="var(--danger)">refused</text>
+            <text x="596" y="150" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="10.5" fill="currentColor">allowed</text>
+          </svg>
+          <figcaption>
+            The same four lines the deck and the document obey. Every representation type
+            the view needs is re-exported through <code>procedures/</code>; the runtime is
+            reached only as <code>view.spreadsheetRuntime(id)</code>, an accessor workspace
+            state does not have yet. <code>runtime-through-workspace-state</code> refuses the
+            word <code>attach(</code> anywhere in a view file.
+          </figcaption>
+        </figure>
+      </div>
+      <div class="notes"></div>
+    </div>
+  </section>
+
+  <section id="shape">
+    <div class="row" data-note="shape" data-label="The shape of a sheet">
+      <div class="main">
+        <div class="stack col">
+          <p class="eyebrow">03 &middot; Shape</p>
+          <h2>The shape of a sheet</h2>
+          <p>
+            Everything below is what the representation already declares. Nothing in it is
+            addressed by position: a row is an id with a sort key, a column is an id with a
+            sort key, and a cell names both. <code>C4</code> is a label the grid draws from
+            two ordinals, and it is what a person types; it is never what is stored.
+          </p>
+        </div>
+
+        <div class="tree"><span class="srv">SpreadsheetBody</span>                                   <span class="note">spreadsheetSnapshots · leader · part 0</span>
+├─ rows[]          GridRow    { id "r7", order 7, height? }      <span class="note">dense: the Nth entry is the Nth row</span>
+├─ columns[]       GridColumn { id "c3", order 3, width? }
+├─ rowPartCounts[]                                              <span class="note">a million rows is ~36 parts; part 0 carries the directory</span>
+├─ formatRules[]   FormatRule { from: CellRef, to: CellRef, style?: key, format?: BlockFormat }
+│                                                              <span class="note">formatting is regional; two corners, like a merge and like a range</span>
+├─ frozenRows? · frozenColumns?
+├─ print           SheetPrint { page: PageSetup, area?, repeatRows?, repeatColumns?, scale?, gridlines?, headings? }
+└─ styles          StyleSet   { styles: Record&lt;key, TextStyle&gt;, defaultKey }
+
+<span class="srv">SheetCell</span> · one row of <span class="srv">sheetCells</span> per populated coordinate
+├─ rowId · columnId                                            <span class="note">CellRef, never "C4"</span>
+├─ rowOrder                                                    <span class="note">the row's sort key, copied here so a viewport is one range read per column</span>
+├─ value           VariableValue   empty · number · text · logic · date · list · record · table · range · function · reference
+├─ expression?     "=IF(E2=0,\"\",F2*1000000/E2)"              <span class="note">as authored; formulaId? names the row that evaluates it</span>
+├─ marks?          Mark[]                                       <span class="note">styling inside one cell's text · rare</span>
+├─ format?         BlockFormat                                  <span class="note">this cell's own override: alignment · background · border · padding · valueFormat</span>
+├─ mergedTo?       CellRef                                      <span class="note">the far corner; the anchor holds it, the covered cells hold nothing</span>
+└─ spillTo?        CellRef                                      <span class="note">the far corner a table-valued result occupies</span>
+
+<span class="note">also read here</span>
+formulas          { representation, usedBy: FormulaUse[] }        <span class="note">the engine's rows; not this round</span>
+commentThreads    within: { kind: "cell", rowId, columnId }       <span class="note">a comment anchors to a cell, to the sheet, or to text in a cell</span>
+variables         project names a formula can read                 <span class="note">the Variables panel; not this sheet's</span></div>
+
+        <div class="sheet">
+          <table>
+            <thead><tr><th>What a person points at</th><th>What is stored</th><th>How it is written in a selection or an op path</th></tr></thead>
+            <tbody>
+              <tr><td>One cell, <code>C4</code></td><td class="pw">{ rowId: "r4", columnId: "c3" }</td><td class="pw">r4/c3</td></tr>
+              <tr><td>A range, <code>C2:C5</code></td><td class="pw">{ from: { r2, c3 }, to: { r5, c3 } }</td><td class="pw">id r2/c3 · at r5/c3</td></tr>
+              <tr><td>Several ranges</td><td>the first as the primary, the rest as <code>ranges</code></td><td class="pw">ranges: [{ id, at }, …]</td></tr>
+              <tr><td>A whole row or column</td><td>the id; the extent is whatever the grid currently has</td><td class="pw">kind row · id r6 &middot; kind column · id c3</td></tr>
+              <tr><td>Text inside a cell</td><td>the cell, and offsets into its display</td><td class="pw">r3/c1@0 · at r3/c1@6</td></tr>
+              <tr><td>A cell's field</td><td>the cell and the field</td><td class="pw">r4/c3/value · r4/c3/format/background</td></tr>
+              <tr><td>The grid's own scalars</td><td>the body</td><td class="pw">frozenRows · columns/c3/width · print/page/orientation · styles/styles/total/fontWeight</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="note-block store-block">
+          <strong>Why ids and not A1.</strong> Inserting a row above <code>C4</code> makes
+          it <code>C5</code>. Every formula, comment, merge, spill, rule, print area and
+          selection that names the cell by id is untouched; the label is recomputed from
+          the order. The old design spent three panels naming the "structural rebase
+          contract" that A1 keys would need. With ids there is no such contract to
+          write &mdash; except for one string, the expression text a person authored,
+          which is §07.
+        </div>
+      </div>
+      <div class="notes"></div>
+    </div>
+  </section>
+
+  <section id="ops">
+    <div class="row" data-note="ops" data-label="Every change is an op">
+      <div class="main">
+        <div class="stack col">
+          <p class="eyebrow">04 &middot; Ops</p>
+          <h2>Every change is an op</h2>
+          <p>
+            <code>SpreadsheetOp</code> already has five targets. One more is asked for, the
+            way the document gained its <code>document</code> target: everything above the
+            cells has to be addressable, or a lens cannot freeze a pane, widen a column or
+            change the paper. Rows marked <span class="pill new">asked</span> are proposed
+            on <em>Questions and decisions</em>, not settled.
+          </p>
+        </div>
+        <div class="sheet">
+          <table>
+            <thead><tr><th>Target &middot; op</th><th>Path</th><th>Means</th><th>Written by</th></tr></thead>
+            <tbody>
+              <tr><td class="k">cell &middot; set</td><td class="pw">r4/c3 &middot; r4/c3/value &middot; r4/c3/expression &middot; r4/c3/format/background &middot; r4/c3/mergedTo</td><td>One field of one cell, or the whole cell when the path stops at the coordinate. A whole-cell <code>set</code> with <code>value: null</code> clears the coordinate and <code>was</code> carries what it held, so the inverse restores it. <span class="pill new">asked: null clears</span></td><td>commit · clear · paste · fill · lens fields · merge · unmerge</td></tr>
+              <tr><td class="k">mark &middot; set</td><td class="pw">r3/c1/marks/m1/style</td><td>One field of a mark inside a cell's text.</td><td>text-selection lens</td></tr>
+              <tr><td class="k">mark &middot; insert · remove <span class="pill new">asked</span></td><td class="pw">r3/c1/marks</td><td>A whole mark by id. Today only <code>set</code> names <code>mark</code>; a bold that did not exist cannot be written.</td><td>text-selection lens</td></tr>
+              <tr><td class="k">formatRule &middot; set · insert · remove</td><td class="pw">formatRules &middot; formatRules/f2/style</td><td>Regional formatting: a rule over two corners carrying a style key and a format. <span class="pill new">asked: rules carry ids</span> so a path names a rule rather than a position.</td><td>range lens · Styles panel · cell lens on an empty coordinate</td></tr>
+              <tr><td class="k">gridRow &middot; insert · remove</td><td class="pw">rows</td><td>Whole rows by id, after another row. A new row takes the midpoint of its neighbours' <code>order</code> and touches no cell. A remove carries the row's cells in <code>values</code>, so undo brings them back.</td><td>row lens · range lens · context menu</td></tr>
+              <tr><td class="k">gridColumn &middot; insert · remove</td><td class="pw">columns</td><td>The same for columns.</td><td>column lens · range lens · context menu</td></tr>
+              <tr><td class="k">gridRow &middot; gridColumn &middot; move</td><td class="pw">rows &middot; columns</td><td>One row or column to after another; carries <code>wasAfter</code>. The applier recomputes <code>order</code> and, for a row, rewrites <code>rowOrder</code> on that row's cells.</td><td>header drag</td></tr>
+              <tr><td class="k">sheet &middot; set <span class="pill new">asked</span></td><td class="pw">frozenRows &middot; frozenColumns &middot; rows/r6/height &middot; columns/c3/width &middot; print/page/orientation &middot; print/area &middot; print/repeatRows &middot; styles/defaultKey &middot; styles/styles/total/fontWeight</td><td>Anything above the cells. Mirrors the document's <code>document</code> target.</td><td>Grid panel · Print panel · row and column lenses · named-style lens · header edge drag</td></tr>
+              <tr><td class="k">sheet &middot; insert · remove <span class="pill new">asked</span></td><td class="pw">styles</td><td>A named style by key; <code>after</code> ignored, as in the document.</td><td>Styles panel · named-style lens</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="note-block rule-block">
+          <strong>Every op carries enough to be inverted without a lookup</strong>, so
+          <code>invert</code> in the runtime stays a payload swap: <code>was</code> for a
+          set, <code>values</code> and <code>after</code> for a remove, <code>wasAfter</code>
+          for a move. Coalescing folds repeated <code>set</code>s on one path into the
+          earliest, keeping the last <code>value</code> and the first <code>was</code>; a
+          sheet has no <code>text</code> op to argue about because a cell is set whole.
+          Field paths are slash-separated so the coalescer's relatedness test needs to
+          resolve nothing.
+        </div>
+      </div>
+      <div class="notes"></div>
+    </div>
+  </section>
+
+  <section id="runtime">
+    <div class="row" data-note="runtime" data-label="The live sheet">
+      <div class="main">
+        <div class="stack col">
+          <p class="eyebrow">05 &middot; Runtime</p>
+          <h2>The live sheet</h2>
+          <p>
+            <code>model/client/spreadsheet-runtimes/</code> exists already, copied from the
+            deck: a register keyed by sheet, a runtime with a buffer, an undo stack, a
+            coalescer and a flush that takes the accepted branch locally because nothing
+            serves a sheet yet. Two things change. The runtime's live copy becomes
+            <code>sheet: { body, cells }</code> rather than a body alone, and
+            <code>apply</code> moves that copy <em>before</em> buffering &mdash; exactly the
+            change the document runtime made in its phase B.
+          </p>
+        </div>
+        <div class="sheet">
+          <table>
+            <thead><tr><th>Member</th><th>Type</th><th>Meaning</th></tr></thead>
+            <tbody>
+              <tr><td class="k">sheet <span class="pill new">asked</span></td><td class="k">LiveSheet | undefined</td><td><code>{ body: SpreadsheetBody, cells: Record&lt;"rowId/columnId", SheetCellFields&gt; }</code>. One <code>$state</code> value replaced whole on every apply, so a scene re-projects from one consistent copy. <code>undefined</code> until the first read lands.</td></tr>
+              <tr><td class="k">revision</td><td class="k">number</td><td>What the buffered ops are stated against.</td></tr>
+              <tr><td class="k">sync</td><td class="k">SyncState</td><td>loading · saved · saving · rebasing · needs-review · offline · error. The title bar's word.</td></tr>
+              <tr><td class="k">pending</td><td class="k">number</td><td>Ops in the buffer, unsent.</td></tr>
+              <tr><td class="k">apply(ops)</td><td class="k">void</td><td>Run the applier over the live sheet, then push to undo, then buffer, then schedule. Refusal applies nothing and buffers nothing.</td></tr>
+              <tr><td class="k">flush()</td><td class="k">Promise</td><td>Coalesce the buffer into one change set and submit it. Accepted: revision advances, catch-up ops are applied to the live sheet. Stale: rebase once. Unresolved: re-read, <code>needs-review</code>.</td></tr>
+              <tr><td class="k">undo() · redo()</td><td class="k">void</td><td>The last group, inverted, applied through the same path. One gesture is one group: a commit, a paste, a fill, a row insert with its cells.</td></tr>
+              <tr><td class="k">scrollTo <span class="pill new">asked</span></td><td class="k">CellRef | undefined</td><td>A channel a panel uses to bring a cell into view without importing the grid, as the document's <code>scrollTo</code> does for a block.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="two">
+          <div class="note-block">
+            <strong>The applier is one function</strong> in
+            <code>representation/data/behavior/spreadsheets/apply-ops.ts</code>, run by the
+            client on the live sheet and by <code>submit-spreadsheet-changes</code> on the
+            server. It takes <code>{ body, cells }</code> and ops and returns a new
+            <code>{ body, cells }</code>. There is no second interpretation of what an op
+            means.
+          </div>
+          <div class="note-block">
+            <strong>Whole sheet first, viewport later.</strong> The store's index is built
+            for reading a window of cells per visible column. This round reads every cell
+            of a sheet on attach and materialises rows as they are scrolled to; the window
+            read is a later optimisation behind the same <code>readSpreadsheet</code> door.
+          </div>
+        </div>
+      </div>
+      <div class="notes"></div>
+    </div>
+  </section>
+
+  <section id="store">
+    <div class="row" data-note="store" data-label="The server side">
+      <div class="main">
+        <div class="stack col">
+          <p class="eyebrow">06 &middot; Store</p>
+          <h2>What the server does with a change set</h2>
+          <p>
+            There is no <code>capabilities/spreadsheet/</code> yet. It follows the
+            document's two procedures exactly, with one twist at the end: after the
+            applier has produced the next <code>{ body, cells }</code>, the body goes to the
+            leader snapshot and the cells go to <code>sheetCells</code> rows &mdash; created,
+            updated or removed for exactly the coordinates the ops named.
+          </p>
+        </div>
+        <ol class="steps col">
+          <li><p><strong><code>readSpreadsheet</code></strong> answers the leader body at its revision and every <code>sheetCells</code> row of the sheet, scope-checked. Nothing, for a sheet never written to; the runtime then opens on an empty grid of default size.</p></li>
+          <li><p><strong><code>submitSpreadsheetChanges</code></strong> validates the change set, finds the leader, and decides catch-up the way the document does: the ops that landed since <code>baseRevision</code> come back when their <code>touched</code> paths are unrelated to this set's. Two people in two cells are unrelated; two people in one cell are <code>stale</code>.</p></li>
+          <li><p><strong>The applier runs</strong> over <code>{ leader.body, cells of the sheet }</code>. An op naming a row that is gone, a rule that is not there, or a coordinate under a spill is refused with <code>unresolved</code>, and nothing is written.</p></li>
+          <li><p><strong>Three writes land together:</strong> a <code>spreadsheetChangeSets</code> row for the journal, the leader advanced by one revision, and each touched cell written back to <code>sheetCells</code> &mdash; a new row for a coordinate that came into being, an update for one that changed, a remove for one cleared.</p></li>
+          <li><p><strong>The resource row</strong> takes <code>updatedAt</code> and <code>updatedBy</code>, as documents do.</p></li>
+        </ol>
+        <div class="note-block store-block">
+          <strong>Change sets are a journal here, never the read path.</strong> A document
+          rebuilds its body from the leader plus recent sets; a sheet's cells are the
+          current state the moment they are written, so there is nothing to replay and
+          nothing to consolidate. The rows still carry <code>touched</code> because catch-up
+          reads it, and <code>ops</code> because undo and history read them.
+        </div>
+      </div>
+      <div class="notes"></div>
+    </div>
+  </section>
+
+  <section id="formulas">
+    <div class="row" data-note="formulas" data-label="The formula boundary">
+      <div class="main">
+        <div class="stack col">
+          <p class="eyebrow">07 &middot; Formulas</p>
+          <h2>The formula boundary</h2>
+          <p>
+            Icarus's engine will be the only calculation authority, and it is not in this
+            round. The editor is built so that nothing in it has to change when the
+            engine arrives: a cell stores its <code>expression</code> as authored and its
+            last <code>value</code>; the grid draws the value; the lens shows both and says
+            which state the pair is in. No grid library's engine is involved, which is the
+            reason the library needs none.
+          </p>
+        </div>
+        <div class="sheet">
+          <table>
+            <thead><tr><th>Until the engine exists</th><th>The grid draws</th><th>The lens says</th></tr></thead>
+            <tbody>
+              <tr><td>A seeded formula cell with a stored value</td><td>the stored value, formatted</td><td>Expression as stored; <span class="pill">stored</span> &middot; "not recalculated since it was written"</td></tr>
+              <tr><td>A formula typed now, with no value</td><td>the expression, in mono, muted</td><td>Expression; <span class="pill warn">waits for the engine</span></td></tr>
+              <tr><td>A cell whose stored error is <code>#REF!</code> or <code>#NAME?</code></td><td>the error, in danger tone</td><td>The error-cell lens, with the expression exactly as stored and the repair</td></tr>
+              <tr><td>A spill origin with <code>spillTo</code> and a table value</td><td>the table laid across the range; children tinted and read-only</td><td>The spill lens on a child; the origin's lens on the origin</td></tr>
+              <tr><td>Reads and feeds</td><td>outlined when a formula cell is selected</td><td>Two bands on the lens, and the Dependencies panel &mdash; from a reference scanner over expression text until the engine's parse replaces it</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="two">
+          <div class="note-block">
+            <strong>Expression text is A1 text.</strong> A person writes
+            <code>=SUM(C2:C5)</code>. Inserting a row above row 3 leaves that string as
+            authored while the cells it meant are now <code>C2:C6</code>. Only a parser can
+            rewrite it. The recommendation, as a question: the engine holds references by
+            id and renders A1 on display, so nothing is rewritten on insert. Until then the
+            grid leaves the text alone and the lens says so.
+          </div>
+          <div class="note-block">
+            <strong>Filling a formula down</strong> means shifting its references, which is
+            the same parser. Until it exists, the fill handle fills values and series and
+            refuses formula cells with a sentence, rather than copying an expression that
+            would then be silently wrong.
+          </div>
+        </div>
+      </div>
+      <div class="notes"></div>
+    </div>
+  </section>
+
+  <section id="traced">
+    <div class="row" data-note="traced" data-label="Four changes traced">
+      <div class="main">
+        <div class="stack col">
+          <p class="eyebrow">08 &middot; Traced</p>
+          <h2>Four changes, traced</h2>
+        </div>
+
+        <div class="legend">
+          <span class="key"><span class="swatch" style="background: var(--surface)"></span> surface</span>
+          <span class="key"><span class="swatch" style="background: var(--client)"></span> view and runtime</span>
+          <span class="key"><span class="swatch" style="background: var(--server)"></span> server</span>
+          <span class="key">&mdash; &mdash; network boundary</span>
+        </div>
+
+        <figure>
+          <svg viewBox="0 0 960 400" role="img" aria-label="Typing 42 into D3: the in-cell editor commits, the view builds one set op on r3/c4/value, the runtime applies it to the live sheet and buffers it, the scene is re-projected; later the change set crosses to the server, the applier runs, a sheetCells row is written with the change set and the leader advances; the accepted revision comes back.">
+            <defs>
+              <marker id="ar3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"></path></marker>
+            </defs>
+            <line x1="640" y1="16" x2="640" y2="384" stroke="var(--ink-3)" stroke-width="1.2" stroke-dasharray="6 5"></line>
+            <text x="24" y="34" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="10.5" letter-spacing="0.1em" fill="var(--client)">TYPE 42 INTO D3, PRESS ENTER</text>
+
+            <rect x="24" y="52" width="140" height="54" rx="4" fill="var(--surface-soft)" stroke="var(--surface)" stroke-width="1.4"></rect>
+            <text x="94" y="74" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="11.5" font-weight="600" fill="currentColor">in-cell editor</text>
+            <text x="94" y="92" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="10" fill="var(--ink-3)">holds "42" until Enter</text>
+
+            <rect x="196" y="52" width="140" height="54" rx="4" fill="var(--surface-soft)" stroke="var(--surface)" stroke-width="1.4"></rect>
+            <text x="266" y="74" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="11.5" font-weight="600" fill="currentColor">oncommit</text>
+            <text x="266" y="92" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="10" fill="var(--ink-3)">{ r3/c4, "42", move: down }</text>
+
+            <rect x="368" y="52" width="120" height="54" rx="4" fill="var(--client-soft)" stroke="var(--client)" stroke-width="1.4"></rect>
+            <text x="428" y="74" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="11.5" font-weight="600" fill="currentColor">cells.ts</text>
+            <text x="428" y="92" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="10" fill="var(--ink-3)">one set op</text>
+
+            <rect x="520" y="52" width="100" height="54" rx="4" fill="var(--client-soft)" stroke="var(--client)" stroke-width="1.4"></rect>
+            <text x="570" y="74" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="11.5" font-weight="600" fill="currentColor">apply</text>
+            <text x="570" y="92" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="10" fill="var(--ink-3)">sheet moves · buffer</text>
+
+            <rect x="660" y="52" width="130" height="54" rx="4" fill="var(--server-soft)" stroke="var(--server)" stroke-width="1.4"></rect>
+            <text x="725" y="74" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="11.5" font-weight="600" fill="currentColor">validate</text>
+            <text x="725" y="92" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="10" fill="var(--ink-3)">baseRevision · touched</text>
+
+            <rect x="812" y="52" width="124" height="54" rx="4" fill="var(--server-soft)" stroke="var(--server)" stroke-width="1.4"></rect>
+            <text x="874" y="74" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="11.5" font-weight="600" fill="currentColor">applyOps</text>
+            <text x="874" y="92" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="10" fill="var(--ink-3)">same function</text>
+
+            <line x1="164" y1="79" x2="194" y2="79" stroke="currentColor" stroke-width="1.3" marker-end="url(#ar3)"></line>
+            <line x1="336" y1="79" x2="366" y2="79" stroke="currentColor" stroke-width="1.3" marker-end="url(#ar3)"></line>
+            <line x1="488" y1="79" x2="518" y2="79" stroke="currentColor" stroke-width="1.3" marker-end="url(#ar3)"></line>
+            <line x1="620" y1="79" x2="658" y2="79" stroke="currentColor" stroke-width="1.3" marker-end="url(#ar3)"></line>
+            <line x1="790" y1="79" x2="810" y2="79" stroke="currentColor" stroke-width="1.3" marker-end="url(#ar3)"></line>
+
+            <text x="330" y="130" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="10" fill="var(--ink-3)">{ op: "set", target: "cell", path: "r3/c4/value", value: { kind: "number", value: 42 }, was: null }</text>
+            <text x="330" y="148" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="10" fill="var(--ink-3)">the grid redraws D3 from the live sheet, the selection lands on D4, the lens reads r3/c4 · 2 s later, or at 50 ops, the buffer flushes</text>
+            <text x="800" y="130" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="10" fill="var(--ink-3)">{ resourceId, baseRevision: 12, ops, touched: ["r3/c4"] }</text>
+
+            <text x="24" y="196" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="10.5" letter-spacing="0.1em" fill="var(--server)">WHAT LANDS, AND WHAT COMES BACK</text>
+
+            <rect x="660" y="214" width="276" height="54" rx="4" fill="var(--server-soft)" stroke="var(--server)" stroke-width="1.4"></rect>
+            <text x="798" y="236" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="11.5" font-weight="600" fill="currentColor">three writes, together</text>
+            <text x="798" y="254" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="10" fill="var(--ink-3)">sheetCells r3/c4 created · change set · leader rev 13</text>
+
+            <rect x="440" y="214" width="180" height="54" rx="4" fill="var(--client-soft)" stroke="var(--client)" stroke-width="1.4"></rect>
+            <text x="530" y="236" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="11.5" font-weight="600" fill="currentColor">accepted · rev 13</text>
+            <text x="530" y="254" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="10" fill="var(--ink-3)">catch-up ops applied, if any</text>
+
+            <rect x="236" y="214" width="180" height="54" rx="4" fill="var(--client-soft)" stroke="var(--client)" stroke-width="1.4"></rect>
+            <text x="326" y="236" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="11.5" font-weight="600" fill="currentColor">sync: saved</text>
+            <text x="326" y="254" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="10" fill="var(--ink-3)">the title bar's word changes; nothing redraws</text>
+
+            <rect x="24" y="214" width="188" height="54" rx="4" fill="var(--surface-soft)" stroke="var(--surface)" stroke-width="1.4"></rect>
+            <text x="118" y="236" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="11.5" font-weight="600" fill="currentColor">scene unchanged</text>
+            <text x="118" y="254" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="10" fill="var(--ink-3)">the sheet already showed 42</text>
+
+            <line x1="658" y1="241" x2="622" y2="241" stroke="currentColor" stroke-width="1.3" marker-end="url(#ar3)"></line>
+            <line x1="438" y1="241" x2="418" y2="241" stroke="currentColor" stroke-width="1.3" marker-end="url(#ar3)"></line>
+            <line x1="234" y1="241" x2="214" y2="241" stroke="currentColor" stroke-width="1.3" marker-end="url(#ar3)"></line>
+
+            <text x="480" y="318" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="10.5" fill="var(--ink-3)">stale: the leader moved and someone touched r3/c4 → rebase once, then needs-review · unresolved: the op names something the sheet no longer has → re-read the leader, buffer kept</text>
+            <text x="480" y="340" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="10.5" fill="var(--ink-3)">the outbound path never sends a cell; the server rebuilds it from the op it can verify</text>
+          </svg>
+          <figcaption>
+            A value typed into an empty coordinate. The coordinate becomes a cell on the
+            server because the op said <code>set</code> on a path that had nothing, and the
+            applier is the same function that already moved the live sheet in the browser.
+          </figcaption>
+        </figure>
+
+        <div class="sheet">
+          <table>
+            <thead><tr><th>Change</th><th>Surface</th><th>Ops on the runtime</th><th>What redraws</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Fill C2:C3 down to C5</strong></td><td>drag the handle; the dashed preview says <em>Series</em> and the values it will write</td><td class="pw">set cell r4/c3/value · set cell r5/c3/value · one undo group</td><td>the scene; C4 and C5 now hold numbers; the range lens opens on C2:C5</td></tr>
+              <tr><td><strong>Insert a row above row 3</strong></td><td>context menu on the row header, or the row lens</td><td class="pw">insert gridRow rows ids ["r41"] after "r2" values [{ id: "r41", order: 2.5 }]</td><td>every label from 3 down shifts by one; no cell moves; expression text stays as authored (§07)</td></tr>
+              <tr><td><strong>Widen column C to 140</strong></td><td>drag the header edge; a guide reads the width</td><td class="pw">set sheet columns/c3/width 140 was 118 &mdash; on release, one op</td><td>the scene's column tracks; nothing else</td></tr>
+              <tr><td><strong>Merge A1:B1</strong></td><td>range lens → Merge</td><td class="pw">set cell r1/c1/mergedTo { r1, c2 } · set cell r1/c2 null (if it held anything, after asking)</td><td>one cell drawn across two tracks; the cell lens opens on the anchor</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="notes"></div>
+    </div>
+  </section>
+
+  <section id="tree">
+    <div class="row" data-note="tree" data-label="The tree to build">
+      <div class="main">
+        <div class="stack col">
+          <p class="eyebrow">09 &middot; Tree</p>
+          <h2>The tree to build</h2>
+          <p>
+            Where each piece lives, by the tree's own laws. <span class="new">Amber</span> is
+            new; everything else exists and changes. The path is the key: a lens named
+            <code>spreadsheet-editor.range</code> is the file <code>inspector/range.svelte</code>.
+          </p>
+        </div>
+        <div class="tree"><span class="cli">app-views/</span>categories/spreadsheet-editor/
+├── spreadsheet-editor.md                 <span class="note">rewritten: the rail, the lenses, what each writes</span>
+├── content/sheet.svelte                  <span class="note">rewritten: projects the scene, translates intents, signals the lens</span>
+├── context/
+│   ├── <span class="new">grid.svelte</span>                       <span class="note">the grid's shape: used range · frozen panes · sizes · names</span>
+│   ├── <span class="new">find.svelte</span>  <span class="new">dependencies.svelte</span>  <span class="new">styles.svelte</span>  <span class="new">print.svelte</span>  <span class="new">comments.svelte</span>
+│   └── <span class="note">objects · variables · templates · prompts stay placeholders, drawn by the shell</span>
+├── inspector/
+│   ├── <span class="new">spreadsheet.svelte</span>  <span class="new">cell.svelte</span>  <span class="new">cell-with-formula.svelte</span>  <span class="new">error-cell.svelte</span>  <span class="new">spill.svelte</span>
+│   ├── <span class="new">range.svelte</span>  <span class="new">row.svelte</span>  <span class="new">column.svelte</span>  <span class="new">text-selection.svelte</span>  <span class="new">named-style.svelte</span>
+│   └── <span class="note">chart · named-range stay placeholders until the body holds objects and names</span>
+└── procedures/
+    ├── <span class="new">addresses.ts</span>      <span class="note">ids ↔ A1 labels · parse what a person typed</span>
+    ├── <span class="new">scene.ts</span>          <span class="note">live sheet + viewport + selection → SheetScene</span>
+    ├── <span class="new">formatting.ts</span>     <span class="note">resolve a cell's paint: style set → rules in order → the cell's format</span>
+    ├── <span class="new">cells.ts</span>          <span class="note">set · clear · paste · fill as ops</span>
+    ├── <span class="new">structure.ts</span>      <span class="note">insert · remove · move rows and columns, cells carried</span>
+    ├── <span class="new">merging.ts</span>  <span class="new">spills.ts</span>  <span class="new">fill.ts</span>  <span class="new">clipboard.ts</span>
+    ├── <span class="new">selecting.ts</span>      <span class="note">a selection → which lens, as the deck's does</span>
+    ├── <span class="new">references.ts</span>     <span class="note">A1 refs and names scanned out of expression text; reads and feeds</span>
+    ├── <span class="new">find.ts</span>  <span class="new">printing.ts</span>  <span class="new">styles.ts</span>  <span class="new">ids.ts</span>
+    └── test/unit/*.test.ts
+
+<span class="sfc">components/authored/</span><span class="new">sheet-surface/</span>
+├── index.ts
+├── sheet-surface.svelte                  <span class="note">viewport · headers · cells · selection · handle · editor host · pins · objects</span>
+├── sheet-surface-cell.svelte             <span class="note">one cell's text, runs and paint</span>
+├── sheet-surface-editor.svelte           <span class="note">the in-cell editor: one input, commit and cancel keys</span>
+└── sheet-surface-types.ts                <span class="note">SheetScene · SceneCell · SceneRange · the intent types</span>
+
+<span class="cli">model/client/</span>spreadsheet-runtimes/
+├── types.ts · definition.svelte.ts       <span class="note">sheet: LiveSheet · scrollTo</span>
+├── methods/apply.ts                      <span class="note">the live sheet moves first</span>
+├── methods/attach.ts                     <span class="note">readSpreadsheet on open</span>
+└── methods/flush/flush.ts                <span class="note">submitSpreadsheetChanges · catch-up applied</span>
+<span class="cli">model/client/</span>workspace-state/                  <span class="note">spreadsheetRuntime(id) accessor; start.ts hands the register in</span>
+
+<span class="srv">capabilities/</span><span class="new">spreadsheet/</span>
+├── spreadsheet.md · index.remote.ts
+├── api/read-spreadsheet/
+├── api/submit-spreadsheet-changes/       <span class="note">validate · applier · three writes</span>
+├── api/shared/leader.ts
+└── types/
+
+<span class="note">representation/</span>data/
+├── types/spreadsheets/op.ts              <span class="note">sheet target · mark insert/remove · null clears · rule ids  (asked)</span>
+├── <span class="new">types/spreadsheets/live.ts</span>            <span class="note">LiveSheet</span>
+├── <span class="new">behavior/spreadsheets/apply-ops.ts</span>    <span class="note">the one applier · invert</span>
+├── types/workspace/views.ts              <span class="note">grid · templates · prompts · row · column · text-selection keys</span>
+└── behavior/workspace/opening.ts         <span class="note">the rail, landing on Grid</span>
+
+<span class="note">surfaces/</span>context/procedures/rail-entries.ts      <span class="note">labels and icons for the new keys</span>
+<span class="note">app/seed/</span><span class="new">spreadsheetSnapshots.json</span> · <span class="new">sheetCells.json</span>   <span class="note">the outage cost model, as rows</span></div>
+      </div>
+      <div class="notes"></div>
+    </div>
+  </section>
+
+  <section id="order">
+    <div class="row" data-note="order" data-label="Build order">
+      <div class="main">
+        <div class="stack col">
+          <p class="eyebrow">10 &middot; Build order</p>
+          <h2>Build order</h2>
+          <p>
+            Each phase leaves the editor working. A waits on the answers to the model
+            questions; B depends on A; C depends on B and on the first question; D and E
+            depend on C and on nothing else.
+          </p>
+        </div>
+        <div class="cards">
+          <div class="card"><div class="hd"><span>A</span><span class="pill model">representation</span></div><h4>Model and applier</h4><p>The op additions that are agreed. <code>LiveSheet</code>. <code>apply-ops.ts</code> with every target, and its inverse. Unit tests: every op applies and its inverse restores. Seed rows for one sheet.</p></div>
+          <div class="card"><div class="hd"><span>B</span><span class="pill live">runtime · capability</span></div><h4>The round trip</h4><p><code>capabilities/spreadsheet</code>: read and submit, catch-up, three writes. The runtime reads on attach, applies before buffering, flushes for real. <code>view.spreadsheetRuntime(id)</code>.</p></div>
+          <div class="card"><div class="hd"><span>C</span><span class="pill sfc">surface</span></div><h4>The grid</h4><p><code>sheet-surface</code> and the rewritten <code>sheet.svelte</code>: scene, selection, keyboard, in-cell editor, clipboard, fill, resize, freeze, merges, spills, pins, zoom, title bar, context menu. Every gesture an op.</p></div>
+          <div class="card"><div class="hd"><span>D</span><span class="pill live">lenses</span></div><h4>What a selection opens</h4><p>spreadsheet · cell · cell-with-formula · error-cell · spill · range · row · column · named-style · text-selection. Comments through <code>general.comment</code>.</p></div>
+          <div class="card"><div class="hd"><span>E</span><span class="pill live">panels</span></div><h4>The rail</h4><p>Grid · Find · Dependencies · Styles · Print · Comments. The rail order and landing in <code>opening.ts</code>; labels and icons in <code>rail-entries.ts</code>. Objects, Variables, Templates, Prompts stay placeholders.</p></div>
+          <div class="card"><div class="hd"><span>F</span><span class="pill">later rounds</span></div><h4>What waits on other work</h4><p>The engine and everything it unlocks: recalculation, reference shifting, fill of formulas, real reads and feeds. Names and objects in the body. Range comments. The viewport read. Template instantiation from A1 to ids.</p></div>
+        </div>
+      </div>
+      <div class="notes"></div>
+    </div>
+  </section>
+
+  <section id="not">
+    <div class="row" data-note="not" data-label="Not in this round">
+      <div class="main">
+        <div class="stack col">
+          <p class="eyebrow">11 &middot; Not here</p>
+          <h2>Deliberately not in this round</h2>
+          <ul class="plain">
+            <li><strong>No engine.</strong> Formula cells show stored values or their expression; nothing recalculates. The Calculation band on the spreadsheet lens says exactly that.</li>
+            <li><strong>No names and no objects</strong> until the body holds them. The Grid panel's Names band and the Objects panel are drawn as what they will be, gated with the reason on the row.</li>
+            <li><strong>No formula bar, no name box, no sheet tabs, no toolbar.</strong> Settled by the design record and kept: the address is the lens's title, the expression is a stacked band that wraps, and a tab is one spreadsheet.</li>
+            <li><strong>No comments on a range, a row or a column.</strong> The anchor vocabulary has a cell and text inside one; adding a range is a model question, listed.</li>
+            <li><strong>No conditional formatting, filters, sorts, data validation, hidden rows or columns.</strong> None is in the model; none is implied on screen.</li>
+            <li><strong>No presence on cells</strong>, no rich text editing inside a cell beyond what the text-selection lens applies, no import of files, no print preview on the grid.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="notes"></div>
+    </div>
+  </section>
+
+  <div class="meta">
+    <span>read against main at 98d9cd0 · work/document-editor at 55a7b22 · work/slide-deck-editor uncommitted</span>
+    <span>svelte 5 · sveltekit</span>
+    <span>the other pages: the grid · context panels · inspector lenses · questions and decisions</span>
+  </div>
+</div>
+
+<script>
+const SHEET = (() => {
+  const colIndex = (letters) => letters.split("").reduce((n, ch) => n * 26 + (ch.charCodeAt(0) - 64), 0) - 1;
+  const letter = (index) => {
+    let s = "";
+    let i = index + 1;
+    while (i > 0) {
+      const m = (i - 1) % 26;
+      s = String.fromCharCode(65 + m) + s;
+      i = Math.floor((i - 1) / 26);
+    }
+    return s;
+  };
+  const parse = (a1) => {
+    const m = /^([A-Z]+)(\d+)$/.exec(a1);
+    return { c: colIndex(m[1]), r: Number(m[2]) - 1 };
+  };
+  const range = (text) => {
+    const [from, to] = text.split(":");
+    return { from, to: to ?? from };
+  };
+  const el = (tag, cls, html) => {
+    const node = document.createElement(tag);
+    if (cls) node.className = cls;
+    if (html !== undefined) node.innerHTML = html;
+    return node;
+  };
+  const px = (n) => n + "px";
+
+  const DEFAULT_COLS = [92, 60, 118, 76, 130, 112, 122, 70];
+
+  const HEAD = (t) => ({ t, a: "center", cls: "bold" });
+  const NUM = (t, cls) => ({ t, a: "end", cls: cls || "" });
+  const TXT = (t, cls) => ({ t, a: "start", cls: cls || "" });
+
+  const model = (overrides) => {
+    const cells = {
+      A1: HEAD("Substation"), B1: HEAD("Feeder"), C1: HEAD("Customer-minutes lost"), D1: HEAD("Storm events"),
+      E1: HEAD("Avoided minutes"), F1: HEAD("Hardening spend ($M)"), G1: HEAD("Cost per avoided min"),
+      A2: TXT("Millbrook"), B2: TXT("F-12"), C2: NUM("1,842,000"), D2: NUM("2"), E2: NUM("268,110"), F2: NUM("11.40"), G2: NUM("42.52"),
+      A3: TXT("Ward 3"), B3: TXT("F-04"), C3: NUM("318,400"), D3: NUM("3"), E3: NUM("194,224"), F3: NUM("8.10"), G3: NUM("41.70"),
+      A4: TXT("Harbor Point"), B4: TXT("F-07"), C4: NUM("286,150"), D4: NUM("2"), E4: NUM("171,690"), F4: NUM("7.25"), G4: NUM("42.23"),
+      A5: TXT("Cedar Line"), B5: TXT("F-19"), C5: NUM("158,720"), D5: NUM("1"), E5: NUM("92,057"), F5: NUM("4.60"), G5: NUM("49.97"),
+      A6: TXT("Total", "bold top"), B6: TXT("4 feeders", "bold top"), C6: NUM("2,605,270", "bold top"), D6: NUM("8", "bold top"),
+      E6: NUM("726,081", "bold top"), F6: NUM("31.35", "bold top"), G6: NUM("44.11", "bold top"), H6: TXT("", "top"),
+      A8: TXT("Scratch: repair before filing", "muted"), D8: NUM("#REF!", "danger"), F8: NUM("#NAME?", "danger")
+    };
+    return Object.assign(cells, overrides || {});
+  };
+
+  const render = (spec) => {
+    const colW = Array.isArray(spec.cols) ? spec.cols : DEFAULT_COLS.slice(0, spec.cols ?? 8);
+    const rowCount = spec.rows ?? 9;
+    const rowH = Array.from({ length: rowCount }, (_, i) => (spec.rowHeights && spec.rowHeights[i]) || spec.rowH || 24);
+    const headW = spec.headW ?? 34;
+    const headH = spec.headH ?? 20;
+    const xs = [headW];
+    for (const w of colW) xs.push(xs[xs.length - 1] + w);
+    const ys = [headH];
+    for (const h of rowH) ys.push(ys[ys.length - 1] + h);
+    const W = xs[xs.length - 1];
+    const H = ys[ys.length - 1];
+
+    const rect = (from, to) => {
+      const f = parse(from);
+      const t = parse(to ?? from);
+      const c0 = Math.min(f.c, t.c), c1 = Math.max(f.c, t.c), r0 = Math.min(f.r, t.r), r1 = Math.max(f.r, t.r);
+      return { x: xs[c0], y: ys[r0], w: xs[c1 + 1] - xs[c0], h: ys[r1 + 1] - ys[r0], c0, c1, r0, r1 };
+    };
+    const place = (node, r) => {
+      node.style.left = px(r.x);
+      node.style.top = px(r.y);
+      node.style.width = px(r.w);
+      node.style.height = px(r.h);
+      return node;
+    };
+    const inRange = (list, c, r) =>
+      (list || []).some((item) => {
+        const rg = range(item);
+        const rr = rect(rg.from, rg.to);
+        return c >= rr.c0 && c <= rr.c1 && r >= rr.r0 && r <= rr.r1;
+      });
+
+    const root = el("div", "sh");
+    root.style.width = px(W + 2);
+    if (spec.zoom && spec.zoom !== 1) {
+      root.style.zoom = String(spec.zoom);
+    }
+
+    if (spec.title) {
+      const bar = el("div", "editorbar");
+      bar.appendChild(el("span", "t", spec.title.name));
+      bar.appendChild(el("span", "sync", spec.title.sync || "Saved"));
+      root.appendChild(bar);
+    }
+
+    const grid = el("div", "grid");
+    grid.style.width = px(W);
+    grid.style.height = px(H);
+    root.appendChild(grid);
+
+    const selCols = new Set((spec.selCols || []).map((l) => colIndex(l)));
+    const selRows = new Set((spec.selRows || []).map((n) => n - 1));
+
+    const corner = el("div", "hd corner" + (spec.selAll ? " on" : ""));
+    place(corner, { x: 0, y: 0, w: headW, h: headH });
+    grid.appendChild(corner);
+    colW.forEach((w, c) => {
+      const hd = el("div", "hd" + (selCols.has(c) || spec.selAll ? " on" : ""), letter(c));
+      place(hd, { x: xs[c], y: 0, w, h: headH });
+      grid.appendChild(hd);
+    });
+    rowH.forEach((h, r) => {
+      const hd = el("div", "hd" + (selRows.has(r) || spec.selAll ? " on" : ""), String(r + 1));
+      place(hd, { x: 0, y: ys[r], w: headW, h });
+      grid.appendChild(hd);
+    });
+
+    const cells = spec.cells || {};
+    const hidden = new Set();
+    const spans = new Map();
+    for (const m of spec.merges || []) {
+      const rg = range(m);
+      const rr = rect(rg.from, rg.to);
+      spans.set(rg.from, rr);
+      for (let r = rr.r0; r <= rr.r1; r += 1) {
+        for (let c = rr.c0; c <= rr.c1; c += 1) {
+          const a1 = letter(c) + (r + 1);
+          if (a1 !== rg.from) hidden.add(a1);
+        }
+      }
+    }
+    const spillCells = new Set();
+    const spillOrigins = new Set();
+    for (const s of spec.spills || []) {
+      const rg = range(s);
+      spillOrigins.add(rg.from);
+      const rr = rect(rg.from, rg.to);
+      for (let r = rr.r0; r <= rr.r1; r += 1) for (let c = rr.c0; c <= rr.c1; c += 1) spillCells.add(letter(c) + (r + 1));
+    }
+
+    for (let r = 0; r < rowCount; r += 1) {
+      for (let c = 0; c < colW.length; c += 1) {
+        const a1 = letter(c) + (r + 1);
+        if (hidden.has(a1)) continue;
+        const cell = cells[a1];
+        const classes = ["cell"];
+        if (cell && cell.a) classes.push(cell.a);
+        if (cell && cell.cls) classes.push(cell.cls);
+        if (spillCells.has(a1)) classes.push("spill");
+        if (spillOrigins.has(a1)) classes.push("origin");
+        if (inRange(spec.reads, c, r)) classes.push("reads");
+        if (inRange(spec.feeds, c, r)) classes.push("feeds");
+        if (inRange(spec.hits, c, r)) classes.push("hit");
+        const node = el("div", classes.join(" "));
+        if (cell) {
+          if (cell.html !== undefined) node.innerHTML = cell.html;
+          else node.textContent = cell.t ?? "";
+        }
+        const span = spans.get(a1);
+        if (span) {
+          node.classList.add("merged");
+          place(node, span);
+        } else {
+          place(node, { x: xs[c], y: ys[r], w: colW[c], h: rowH[r] });
+        }
+        node.setAttribute("data-a1", a1);
+        grid.appendChild(node);
+      }
+    }
+
+    if (spec.frozen) {
+      if (spec.frozen.rows) {
+        const line = el("div", "frz-h");
+        line.style.top = px(ys[spec.frozen.rows] - 1);
+        grid.appendChild(line);
+      }
+      if (spec.frozen.cols) {
+        const line = el("div", "frz-v");
+        line.style.left = px(xs[spec.frozen.cols] - 1);
+        grid.appendChild(line);
+      }
+    }
+
+    for (const sel of spec.sel || []) {
+      const rr = rect(sel.from, sel.to);
+      const node = el("div", "sel " + (sel.primary === false ? "secondary" : "primary"));
+      place(node, rr);
+      grid.appendChild(node);
+      if (sel.handle) {
+        const handle = el("div", "handle");
+        handle.style.left = px(rr.x + rr.w - 4);
+        handle.style.top = px(rr.y + rr.h - 4);
+        grid.appendChild(handle);
+      }
+    }
+    if (spec.selCols && spec.selCols.length) {
+      for (const l of spec.selCols) {
+        const c = colIndex(l);
+        const node = el("div", "sel primary");
+        place(node, { x: xs[c], y: headH, w: colW[c], h: H - headH });
+        grid.appendChild(node);
+      }
+    }
+    if (spec.selRows && spec.selRows.length) {
+      for (const n of spec.selRows) {
+        const r = n - 1;
+        const node = el("div", "sel primary");
+        place(node, { x: headW, y: ys[r], w: W - headW, h: rowH[r] });
+        grid.appendChild(node);
+      }
+    }
+    if (spec.selAll) {
+      const node = el("div", "sel primary");
+      place(node, { x: headW, y: headH, w: W - headW, h: H - headH });
+      grid.appendChild(node);
+    }
+
+    if (spec.fill) {
+      const rr = rect(spec.fill.from, spec.fill.target);
+      const node = el("div", "fill");
+      place(node, rr);
+      if (spec.fill.tip) node.appendChild(el("span", "tip", spec.fill.tip));
+      grid.appendChild(node);
+    }
+    if (spec.paste) {
+      const rr = rect(spec.paste.from, spec.paste.to);
+      const node = el("div", "paste");
+      place(node, rr);
+      grid.appendChild(node);
+    }
+
+    if (spec.editing) {
+      const rr = rect(spec.editing.at);
+      const node = el("div", "editing");
+      node.style.left = px(rr.x);
+      node.style.top = px(rr.y);
+      node.style.minWidth = px(rr.w);
+      node.style.height = px(rr.h);
+      if (spec.editing.a === "end") node.style.justifyContent = "flex-end";
+      node.appendChild(document.createTextNode(spec.editing.text));
+      if (spec.editing.caret !== false) node.appendChild(el("span", "caret"));
+      grid.appendChild(node);
+    }
+
+    for (const pin of spec.pins || []) {
+      const rr = rect(pin.at);
+      const node = el("div", "pin " + (pin.state || "open"));
+      node.style.left = px(rr.x + rr.w - 8);
+      node.style.top = px(rr.y + 1);
+      grid.appendChild(node);
+      if (pin.count && pin.count > 1) {
+        const badge = el("div", "pincount", String(pin.count));
+        badge.style.left = px(rr.x + rr.w - 12);
+        badge.style.top = px(rr.y - 6);
+        grid.appendChild(badge);
+      }
+    }
+
+    for (const obj of spec.objects || []) {
+      const rr = rect(obj.at);
+      const node = el("div", "obj");
+      node.style.left = px(rr.x + (obj.dx || 0));
+      node.style.top = px(rr.y + (obj.dy || 0));
+      node.style.width = px(obj.w);
+      node.style.height = px(obj.h);
+      const head = el("div", "ot");
+      head.appendChild(el("span", "", obj.title));
+      if (obj.gated) head.appendChild(el("span", "gated", obj.gated));
+      node.appendChild(head);
+      const bars = el("div", "bars");
+      for (const hgt of obj.bars || [58, 84, 41, 72]) {
+        const bar = el("i");
+        bar.style.height = hgt + "%";
+        bars.appendChild(bar);
+      }
+      node.appendChild(bars);
+      if (obj.src) node.appendChild(el("div", "src", obj.src));
+      grid.appendChild(node);
+    }
+
+    if (spec.guide) {
+      const c = colIndex(spec.guide.col);
+      const node = el("div", "guide");
+      node.style.left = px(xs[c] + spec.guide.w);
+      node.appendChild(el("span", "tip", spec.guide.tip || spec.guide.w + " px"));
+      grid.appendChild(node);
+    }
+    if (spec.ghost) {
+      const c = colIndex(spec.ghost.col);
+      const node = el("div", "ghost");
+      node.style.left = px(xs[c]);
+      node.style.width = px(colW[c]);
+      if (spec.ghost.tip) node.appendChild(el("span", "tip", spec.ghost.tip));
+      grid.appendChild(node);
+      const drop = el("div", "drop");
+      drop.style.left = px(xs[colIndex(spec.ghost.to)] - 1);
+      grid.appendChild(drop);
+    }
+
+    if (spec.menu) {
+      const rr = rect(spec.menu.at);
+      const node = el("div", "menu");
+      node.style.left = px(rr.x + Math.round(rr.w * 0.6));
+      node.style.top = px(rr.y + Math.round(rr.h * 0.7));
+      for (const item of spec.menu.items) {
+        if (item.sep) { node.appendChild(el("div", "sep")); continue; }
+        if (item.h) { node.appendChild(el("div", "mh", item.h)); continue; }
+        const mi = el("div", "mi" + (item.hi ? " hi" : "") + (item.dim ? " dim" : ""));
+        mi.appendChild(el("span", "", item.t));
+        if (item.kb) mi.appendChild(el("span", "kb", item.kb));
+        node.appendChild(mi);
+      }
+      grid.appendChild(node);
+    }
+    if (spec.toast) {
+      const node = el("div", "toast", spec.toast.html);
+      node.style.left = px(spec.toast.x);
+      node.style.top = px(spec.toast.y);
+      grid.appendChild(node);
+    }
+    if (spec.hover) {
+      const rr = rect(spec.hover.at);
+      const node = el("div", "hover", spec.hover.text);
+      node.style.left = px(rr.x + 4);
+      node.style.top = px(rr.y + rr.h + 3);
+      grid.appendChild(node);
+    }
+
+    for (const co of spec.callouts || []) {
+      const node = el("div", "co", co.k);
+      if (co.at) {
+        const rr = rect(co.at);
+        node.style.left = px(rr.x + (co.dx ?? -9));
+        node.style.top = px(rr.y + (co.dy ?? -9));
+      } else {
+        node.style.left = px(co.x);
+        node.style.top = px(co.y);
+      }
+      grid.appendChild(node);
+    }
+
+    if (spec.status) {
+      const bar = el("div", "statusbar");
+      if (spec.status.sel) bar.appendChild(el("span", "sel-summary", spec.status.sel));
+      if (spec.status.text) bar.appendChild(el("span", "", spec.status.text));
+      const right = el("span", "", spec.status.right || "100%");
+      right.style.marginLeft = "auto";
+      bar.appendChild(right);
+      root.appendChild(bar);
+    }
+
+    return root;
+  };
+
+  const mount = (selector, spec) => {
+    const target = typeof selector === "string" ? document.querySelector(selector) : selector;
+    if (!target) return null;
+    const node = render(spec);
+    target.appendChild(node);
+    return node;
+  };
+
+  return { render, mount, model, letter, parse, DEFAULT_COLS };
+})();
+
+</script>
+<script>
+
+</script>
+<script>
+(function () {
+  const pageMeta = document.querySelector('meta[name="page"]');
+  const PAGE = (pageMeta && pageMeta.getAttribute("content")) || "page";
+  const stateEl = document.querySelector(".notebar .state");
+  const countEl = document.querySelector(".notebar .count");
+  const rows = Array.from(document.querySelectorAll(".row[data-note]"));
+
+  const escape = (s) => String(s).replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[ch]);
+
+  const setState = (cls, text) => {
+    if (!stateEl) return;
+    stateEl.className = "state " + cls;
+    stateEl.textContent = text;
+  };
+
+  const setCount = (n) => {
+    if (countEl) countEl.textContent = n + (n === 1 ? " note" : " notes");
+  };
+
+  const boxes = new Map();
+
+  for (const row of rows) {
+    const notes = row.querySelector(".notes");
+    if (!notes) continue;
+    const id = row.getAttribute("data-note");
+    const label = row.getAttribute("data-label") || id;
+    notes.innerHTML =
+      '<div class="box"><span class="who">' + escape(label) + '</span>' +
+      '<textarea rows="1" placeholder="Note on this row. Enter saves." aria-label="Note on ' + escape(label) + '"></textarea>' +
+      '<div class="saved"></div></div>';
+    const ta = notes.querySelector("textarea");
+    const saved = notes.querySelector(".saved");
+    boxes.set(id, { label, ta, saved });
+    ta.addEventListener("input", () => {
+      ta.style.height = "auto";
+      ta.style.height = Math.min(ta.scrollHeight, 240) + "px";
+    });
+    ta.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" || event.shiftKey) return;
+      event.preventDefault();
+      void save(id, label, ta);
+    });
+  }
+
+  let db = null;
+  let total = 0;
+
+  const collection = () => db.collection("pages/" + PAGE + "/notes");
+
+  const renderNote = (saved, note) => {
+    const n = document.createElement("div");
+    n.className = "n";
+    n.textContent = note.text;
+    const t = document.createElement("time");
+    t.textContent = new Date(note.at).toLocaleString();
+    n.appendChild(t);
+    saved.appendChild(n);
+  };
+
+  const load = async () => {
+    const snap = await collection().orderBy("at").get();
+    for (const box of boxes.values()) box.saved.innerHTML = "";
+    total = 0;
+    for (const doc of snap.docs) {
+      const note = doc.data();
+      if (!note || typeof note.text !== "string") continue;
+      total += 1;
+      const box = boxes.get(note.id);
+      if (box) renderNote(box.saved, note);
+    }
+    setCount(total);
+  };
+
+  const save = async (id, label, ta) => {
+    const text = ta.value.trim();
+    if (text.length === 0) return;
+    if (!db) {
+      setState("bad", "This note was not saved. The page database is unavailable in this view.");
+      return;
+    }
+    ta.disabled = true;
+    try {
+      const note = { page: PAGE, id, label, text, at: new Date().toISOString() };
+      await collection().add(note);
+      const box = boxes.get(id);
+      if (box) renderNote(box.saved, note);
+      total += 1;
+      setCount(total);
+      ta.value = "";
+      ta.style.height = "auto";
+    } catch (error) {
+      setState("bad", "Saving failed: " + (error && error.message ? error.message : "unknown error"));
+    } finally {
+      ta.disabled = false;
+      ta.focus();
+    }
+  };
+
+  if (!window.claude || typeof window.claude.use !== "function") {
+    setState("bad", "Notes need the artifact viewer. Open the published page to leave them.");
+  } else {
+    window.claude.use("db").then(
+      (found) => {
+        db = found;
+        if (!db) {
+          setState("bad", "Notes cannot save in this view. The page database is unavailable.");
+          return;
+        }
+        setState("ok", "Notes save to pages/" + PAGE + "/notes in this page's database. Enter saves; Shift+Enter is a new line.");
+        void load().catch((error) => setState("bad", "Could not load notes: " + (error && error.message ? error.message : "unknown error")));
+      },
+      () => setState("bad", "Notes cannot save in this view.")
+    );
+  }
+
+  const links = document.querySelectorAll(".topnav .anchors a");
+  const targets = Array.from(links).map((a) => document.querySelector(a.getAttribute("href"))).filter(Boolean);
+  if (targets.length > 0 && "IntersectionObserver" in window) {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          for (const a of links) a.classList.toggle("here", a.getAttribute("href") === "#" + entry.target.id);
+        }
+      },
+      { rootMargin: "-40% 0px -55% 0px" }
+    );
+    for (const t of targets) observer.observe(t);
+  }
+})();
+
+</script>

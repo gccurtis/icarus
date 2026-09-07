@@ -1,4 +1,5 @@
-import type { SpreadsheetBody } from "$representation/data/types/spreadsheets/body";
+import type { CellRef } from "$representation/data/types/content/formula-value";
+import type { LiveSheet } from "$representation/data/types/spreadsheets/live";
 import type { SpreadsheetOp } from "$representation/data/types/spreadsheets/op";
 
 export type SyncState =
@@ -11,10 +12,12 @@ export type SyncState =
   | "error";
 
 export interface SpreadsheetRuntime {
-  readonly body: SpreadsheetBody | undefined;
+  readonly sheet: LiveSheet | undefined;
   readonly revision: number;
   readonly sync: SyncState;
   readonly pending: number;
+
+  scrollTo: CellRef | undefined;
 
   apply(ops: readonly SpreadsheetOp[]): void;
   flush(): Promise<void>;
@@ -34,9 +37,10 @@ export interface SpreadsheetRuntimesModel {
   releaseAll(): void;
 }
 
-export type FlushThresholds = {
+export type Thresholds = {
   readonly afterOps: number;
   readonly afterMs: number;
+  readonly syncEveryMs: number;
 };
 
 export type HistoryEntry = readonly SpreadsheetOp[];

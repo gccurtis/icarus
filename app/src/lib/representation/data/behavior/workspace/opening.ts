@@ -104,19 +104,17 @@ export const OPENING: Record<Category, Opening> = {
 
   "spreadsheet-editor": {
     content: "spreadsheet-editor.sheet",
-    context: "spreadsheet-editor.overview",
+    context: "spreadsheet-editor.grid",
     rail: [
-      "spreadsheet-editor.overview",
-      "spreadsheet-editor.variables",
-      "spreadsheet-editor.named-ranges",
+      "spreadsheet-editor.grid",
       "spreadsheet-editor.find",
-      "spreadsheet-editor.dependencies",
-      "spreadsheet-editor.objects",
-      "spreadsheet-editor.insert",
+      "spreadsheet-editor.formulas",
       "spreadsheet-editor.styles",
-      "spreadsheet-editor.print",
+      "spreadsheet-editor.charts",
       "spreadsheet-editor.comments",
-      "spreadsheet-editor.context"
+      "spreadsheet-editor.variables",
+      "spreadsheet-editor.templates",
+      "spreadsheet-editor.prompts"
     ]
   },
 

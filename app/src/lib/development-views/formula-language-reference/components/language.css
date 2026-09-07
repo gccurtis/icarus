@@ -1,0 +1,362 @@
+.language-reference {
+  --panel: var(--token-surface-panel);
+  --raised: var(--token-surface-elevated);
+  --ink: var(--token-ink-primary);
+  --ink-2: var(--token-ink-secondary);
+  --ink-3: var(--token-ink-muted);
+  --rule: var(--token-border-subtle);
+  --rule-strong: var(--token-border-strong);
+  --accent: var(--token-color-intelligence-text);
+  --accent-soft: var(--token-color-intelligence-surface);
+  --works: var(--token-color-success-text);
+  --works-soft: var(--token-color-success-surface);
+  --proposed: var(--token-color-interactive-text);
+  --proposed-soft: var(--token-color-interactive-surface);
+  --gap: var(--token-color-attention-text);
+  --gap-soft: var(--token-color-attention-surface);
+  --gone: var(--token-color-danger-text);
+  --gone-soft: var(--token-color-danger-surface);
+  min-height: calc(100vh - 3.25rem);
+  color: var(--ink);
+  font-family: var(--token-font-sans);
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.language-reference .page {
+  width: min(100%, 76rem);
+  margin: 0 auto;
+  padding: 2.75rem 3rem 6rem;
+}
+
+.language-reference code,
+.language-reference .mono {
+  font-family: var(--token-font-mono);
+  font-size: 0.87em;
+}
+
+.language-reference h1 {
+  margin: 0 0 0.7rem;
+  font-size: clamp(1.9rem, 3.6vw, 2.7rem);
+  letter-spacing: var(--token-tracking-display);
+  line-height: 1.06;
+}
+
+.language-reference h2 {
+  margin: 0;
+  font-size: 1.3rem;
+  letter-spacing: var(--token-tracking-heading);
+}
+
+.language-reference h3 {
+  margin: 0 0 0.3rem;
+  font-size: 0.95rem;
+}
+
+.language-reference p {
+  margin: 0;
+  max-width: 66ch;
+  color: var(--ink-2);
+}
+
+.language-reference .kicker {
+  display: block;
+  margin: 0 0 0.65rem;
+  color: var(--accent);
+  font-family: var(--token-font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.language-reference .mast {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(15rem, 0.8fr);
+  gap: 2.5rem;
+  align-items: start;
+  padding-bottom: 2.25rem;
+  border-bottom: 1px solid var(--rule);
+}
+
+.language-reference .mast .lede {
+  font-size: 1.02rem;
+  max-width: 68ch;
+}
+
+.language-reference .aside {
+  border: 1px solid var(--rule);
+  border-radius: var(--token-radius-panel);
+  background: var(--panel);
+  padding: 1rem 1.15rem;
+}
+
+.language-reference .aside p {
+  font-size: 13px;
+}
+
+.language-reference .aside ul {
+  margin: 0.6rem 0 0;
+  padding-left: 1.1rem;
+  color: var(--ink-2);
+  font-size: 13px;
+}
+
+.language-reference .aside li {
+  margin-bottom: 0.35rem;
+}
+
+.language-reference section {
+  margin-top: 3.5rem;
+}
+
+.language-reference .section-head {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.3fr);
+  gap: 2rem;
+  align-items: baseline;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--rule);
+  margin-bottom: 1.5rem;
+}
+
+.language-reference .frame {
+  border: 1px solid var(--rule);
+  border-radius: var(--token-radius-panel);
+  background: var(--raised);
+  overflow: hidden;
+}
+
+.language-reference table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+
+.language-reference thead th {
+  padding: 0.5rem 0.8rem;
+  border-bottom: 1px solid var(--rule-strong);
+  color: var(--ink-3);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.language-reference tbody td {
+  padding: 0.6rem 0.8rem;
+  border-bottom: 1px solid var(--rule);
+  vertical-align: top;
+}
+
+.language-reference tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.language-reference .examples {
+  display: grid;
+  gap: 1px;
+  border: 1px solid var(--rule);
+  border-radius: var(--token-radius-panel);
+  background: var(--rule);
+  overflow: hidden;
+}
+
+.language-reference .example {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: 1.25rem;
+  padding: 0.85rem 1.1rem;
+  background: var(--raised);
+}
+
+.language-reference .example .expression {
+  font-family: var(--token-font-mono);
+  font-size: 13px;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.language-reference .example .answers {
+  font-family: var(--token-font-mono);
+  font-size: 13px;
+  color: var(--works);
+  overflow-wrap: anywhere;
+}
+
+.language-reference .example .kind {
+  display: block;
+  margin-top: 0.15rem;
+  color: var(--ink-3);
+  font-family: var(--token-font-sans);
+  font-size: 11.5px;
+}
+
+.language-reference .example .note {
+  grid-column: 1 / -1;
+  color: var(--ink-3);
+  font-size: 12.5px;
+  max-width: none;
+}
+
+.language-reference .cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+  gap: 1rem;
+}
+
+.language-reference .card {
+  border: 1px solid var(--rule);
+  border-radius: var(--token-radius-panel);
+  background: var(--raised);
+  padding: 1rem 1.1rem;
+}
+
+.language-reference .card p {
+  font-size: 13.5px;
+}
+
+.language-reference .tag {
+  display: inline-block;
+  margin-left: 0.35rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  font-family: var(--token-font-mono);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  vertical-align: 1px;
+}
+
+.language-reference .tag.works { background: var(--works-soft); color: var(--works); }
+.language-reference .tag.proposed { background: var(--proposed-soft); color: var(--proposed); }
+.language-reference .tag.gap { background: var(--gap-soft); color: var(--gap); }
+.language-reference .tag.gone { background: var(--gone-soft); color: var(--gone); }
+.language-reference .tag.ruled { background: var(--token-color-active-surface); color: var(--token-color-active-text); }
+
+.language-reference .card.ruled {
+  border-color: var(--token-color-active-border);
+  background: var(--token-color-active-surface);
+}
+
+.language-reference .shapes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: 1.25rem;
+}
+
+.language-reference .shape {
+  border: 1px solid var(--rule);
+  border-radius: var(--token-radius-panel);
+  background: var(--raised);
+  padding: 1rem 1.1rem;
+}
+
+.language-reference .shape .cells {
+  display: grid;
+  gap: 2px;
+  margin: 0.75rem 0;
+  background: var(--rule);
+  border: 1px solid var(--rule);
+  width: fit-content;
+}
+
+.language-reference .shape .cells span {
+  display: grid;
+  min-width: 3.4rem;
+  min-height: 1.6rem;
+  place-items: center;
+  background: var(--panel);
+  font-family: var(--token-font-mono);
+  font-size: 11px;
+  color: var(--ink-2);
+}
+
+.language-reference .shape .cells span.head {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.language-reference .grammar {
+  display: grid;
+  gap: 1px;
+  border: 1px solid var(--rule);
+  border-radius: var(--token-radius-panel);
+  background: var(--rule);
+  overflow: hidden;
+  font-family: var(--token-font-mono);
+  font-size: 12.5px;
+}
+
+.language-reference .grammar div {
+  display: grid;
+  grid-template-columns: minmax(8rem, 0.5fr) minmax(0, 1fr);
+  gap: 1rem;
+  padding: 0.6rem 1rem;
+  background: var(--raised);
+}
+
+.language-reference .grammar b {
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.language-reference .grammar span {
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
+}
+
+.language-reference .steps {
+  display: grid;
+  gap: 1px;
+  border: 1px solid var(--rule);
+  border-radius: var(--token-radius-panel);
+  background: var(--rule);
+  overflow: hidden;
+}
+
+.language-reference .step {
+  display: grid;
+  grid-template-columns: 2.8rem minmax(0, 1fr) minmax(0, 1.35fr);
+  gap: 1.2rem;
+  padding: 1rem 1.15rem;
+  background: var(--raised);
+}
+
+.language-reference .step b {
+  color: var(--ink-3);
+  font-family: var(--token-font-mono);
+  font-size: 11px;
+}
+
+.language-reference .step .source {
+  display: block;
+  margin-top: 0.3rem;
+  color: var(--ink-3);
+  font-family: var(--token-font-mono);
+  font-size: 11px;
+}
+
+.language-reference .open {
+  margin-top: 1rem;
+  font-size: 13px;
+}
+
+.language-reference .open a {
+  color: var(--proposed);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.language-reference .open a:hover { text-decoration: underline; }
+
+@media (max-width: 62rem) {
+  .language-reference .page { padding: 2rem 1.15rem 4rem; }
+  .language-reference .mast,
+  .language-reference .section-head,
+  .language-reference .example { grid-template-columns: minmax(0, 1fr); }
+  .language-reference .step { grid-template-columns: 2.4rem minmax(0, 1fr); }
+  .language-reference .step > :last-child { grid-column: 2; }
+}

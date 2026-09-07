@@ -8,6 +8,7 @@ export type TextStyle = {
   bold?: boolean;
   italic?: boolean;
   underline?: boolean;
+  strikethrough?: boolean;
   color?: string;
   background?: string;
   lineHeight?: number;

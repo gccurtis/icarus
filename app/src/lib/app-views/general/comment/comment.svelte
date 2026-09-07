@@ -135,7 +135,12 @@
     thread !== undefined &&
       (blockIdOf(thread) !== undefined ||
         (thread.target.kind === "slides" &&
-          (thread.within?.kind === "slide" || thread.within?.kind === "element")))
+          (thread.within?.kind === "slide" || thread.within?.kind === "element")) ||
+        (thread.target.kind === "spreadsheet" && thread.within?.kind === "cell"))
+  );
+
+  const locateLabel = $derived(
+    thread?.target.kind === "slides" ? "Show in deck" : thread?.target.kind === "spreadsheet" ? "Show in sheet" : "Show in document"
   );
 
   const locate = () => {
@@ -148,6 +153,15 @@
 
       if (!inDocument) view.open({ category: "document-editor", resourceId: held.target.id });
       view.documentRuntime(held.target.id).scrollTo = blockId;
+      return;
+    }
+
+    if (held.target.kind === "spreadsheet") {
+      const within = held.within;
+      if (within?.kind !== "cell") return;
+      view.open({ category: "spreadsheet-editor", resourceId: held.target.id });
+      view.spreadsheetRuntime(held.target.id).scrollTo = { rowId: within.rowId, columnId: within.columnId };
+      view.inspect("spreadsheet-editor.cell", { kind: "cell", id: `${within.rowId}/${within.columnId}` });
       return;
     }
 
@@ -176,6 +190,11 @@
   {#snippet crumbs()}
     {#if thread?.target.kind === "slides"}
       <PanelCrumbs trail={[{ label: "Deck" }, { label: "Comment" }]} onnavigate={navigate} />
+    {:else if thread?.target.kind === "spreadsheet"}
+      <PanelCrumbs
+        trail={[{ label: "Spreadsheet", key: "spreadsheet-editor.spreadsheet" }, { label: "Comment" }]}
+        onnavigate={navigate}
+      />
     {:else}
       <PanelCrumbs
         trail={[{ label: "Document", key: "document-editor.document" }, { label: "Comment" }]}
@@ -187,7 +206,7 @@
   {#snippet actions()}
     {#if canLocate}
       <PanelButton
-        label={thread?.target.kind === "slides" ? "Show in deck" : "Show in document"}
+        label={locateLabel}
         icon={Locate}
         tone="ghost"
         onclick={locate}

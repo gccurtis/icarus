@@ -25,12 +25,17 @@ whatever happened to share a path.
 
 A sheet has no `text` op. A cell holds a value and an expression rather than
 atoms, so editing one is a `set`, and a `set` inverts by exchanging `value` and
-`was` like any other.
+`was` like any other. Clearing a cell is a `set` to `null` whose `was` is the
+whole cell, so the inverse puts the whole cell back.
 
-A cell is also in neither `insert` nor `remove`: where it sits is which row and
-column it names, so there is nowhere to insert one and clearing one writes an
-empty value. That is what keeps `insert` and `remove` exact mirrors over the same
-three targets, which is what makes those two cases a rename.
+A cell is in neither `insert` nor `remove`: where it sits is which row and
+column it names, so there is nowhere to insert one. Rows, columns, rules, marks
+and styles are what those two ops move, and they are exact mirrors over the same
+targets, which is what makes those two cases a rename.
+
+The inversion lives in the representation, beside the applier, so the client
+and any server that walks history back invert one way. `invert.ts` here
+re-exports it.
 
 ## Why entries are stored as applied, never as inverted
 

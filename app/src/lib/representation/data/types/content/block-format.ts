@@ -7,6 +7,10 @@ export type BlockFormat = {
   verticalAlignment?: VerticalAlignment;
   fontFamily?: string;
   fontSize?: number;
+  bold?: boolean;
+  italic?: boolean;
+  underline?: boolean;
+  strikethrough?: boolean;
   color?: string;
   lineHeight?: number;
   spaceBefore?: number;

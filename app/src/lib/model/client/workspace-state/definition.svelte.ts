@@ -11,6 +11,7 @@ import type {
 } from "$representation/data/types/workspace/tab";
 import type { DocumentRuntime, DocumentRuntimesModel } from "$model/client/document-runtimes";
 import type { SlideDeckRuntime, SlideDeckRuntimesModel } from "$model/client/slide-deck-runtimes";
+import type { SpreadsheetRuntime, SpreadsheetRuntimesModel } from "$model/client/spreadsheet-runtimes";
 import type { TabListModel } from "$model/client/tab-list";
 import type { TabViewsModel } from "$model/client/tab-views";
 import { activate } from "$model/client/workspace-state/methods/activate";
@@ -18,6 +19,7 @@ import { clear } from "$model/client/workspace-state/methods/clear";
 import { close } from "$model/client/workspace-state/methods/close";
 import { documentRuntime } from "$model/client/workspace-state/methods/document-runtime";
 import { slideDeckRuntime } from "$model/client/workspace-state/methods/slide-deck-runtime";
+import { spreadsheetRuntime } from "$model/client/workspace-state/methods/spreadsheet-runtime";
 import { flush } from "$model/client/workspace-state/methods/flush";
 import { inspect } from "$model/client/workspace-state/methods/inspect";
 import { open } from "$model/client/workspace-state/methods/open";
@@ -101,7 +103,8 @@ export class WorkspaceStateData {
     readonly views: TabViewsModel,
     readonly thresholds: Thresholds,
     readonly documents: DocumentRuntimesModel | undefined,
-    readonly decks: SlideDeckRuntimesModel | undefined
+    readonly decks: SlideDeckRuntimesModel | undefined,
+    readonly sheets: SpreadsheetRuntimesModel | undefined
   ) {
     const starting = startingWorkspace();
     for (const record of starting.tabs) {
@@ -150,11 +153,12 @@ export class WorkspaceState implements WorkspaceStateModel {
     thresholds: Thresholds,
     documents?: DocumentRuntimesModel,
     decks?: SlideDeckRuntimesModel,
+    sheets?: SpreadsheetRuntimesModel,
     storeReader?: StoreReader,
     usernameReader?: UsernameReader
   ) {
     this.#queries = new WorkspaceQueries(storeReader, usernameReader);
-    this.#state = new WorkspaceStateData(project, tabs, views, thresholds, documents, decks);
+    this.#state = new WorkspaceStateData(project, tabs, views, thresholds, documents, decks, sheets);
   }
 
   get project(): string {
@@ -278,6 +282,10 @@ export class WorkspaceState implements WorkspaceStateModel {
 
   slideDeckRuntime(resourceId: string): SlideDeckRuntime {
     return slideDeckRuntime(this.#state, resourceId);
+  }
+
+  spreadsheetRuntime(resourceId: string): SpreadsheetRuntime {
+    return spreadsheetRuntime(this.#state, resourceId);
   }
 
   readStore(table: TableName): StoreQuery {

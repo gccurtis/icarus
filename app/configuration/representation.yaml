@@ -24,6 +24,6 @@ representation:
     investigation: [core]
     semantic: [core]
     slide-decks: [content, core]
-    spreadsheets: [content]
+    spreadsheets: [content, core]
     templates: [content, core, documents, slide-decks, spreadsheets]
     workspace: []

@@ -2,6 +2,7 @@ import type { read } from "$capabilities/store/index.remote";
 import type { username } from "$capabilities/development/index.remote";
 import type { DocumentRuntime } from "$model/client/document-runtimes";
 import type { SlideDeckRuntime } from "$model/client/slide-deck-runtimes";
+import type { SpreadsheetRuntime } from "$model/client/spreadsheet-runtimes";
 import type { ContextView } from "$representation/data/types/workspace/views";
 import type { Category, ContentView } from "$representation/data/types/workspace/categories";
 import type { TableName } from "$representation/store/tables";
@@ -25,7 +26,6 @@ export type Tab = {
   frame: Frame;
 };
 
-/** The shared shell language, in the subset a workspace can reach. */
 export type WorkspaceSync =
   | "loading"
   | "saved"
@@ -67,7 +67,6 @@ export interface WorkspaceStateModel {
 
   resize(patch: Partial<Frame>): void;
 
-  /** What the active tab's centre is drawn at, per cent, or `null` for undecided. */
   readonly zoom: number | null;
   setZoom(zoom: number): void;
 
@@ -81,6 +80,7 @@ export interface WorkspaceStateModel {
 
   documentRuntime(resourceId: string): DocumentRuntime;
   slideDeckRuntime(resourceId: string): SlideDeckRuntime;
+  spreadsheetRuntime(resourceId: string): SpreadsheetRuntime;
 
   /** A table read whose remote resource is owned by this client workspace. */
   readStore(table: TableName): StoreQuery;

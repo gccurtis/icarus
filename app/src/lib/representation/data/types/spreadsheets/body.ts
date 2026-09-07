@@ -6,6 +6,7 @@ import type { StyleSet } from "$representation/data/types/spreadsheets/style-set
 export type PrintScale = number | "fit-width" | "fit-page";
 
 export type FormatRule = CellRange & {
+  id: string;
   style?: string;
   format?: BlockFormat;
 };

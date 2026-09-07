@@ -48,41 +48,6 @@
     live = false;
   });
 
-  /**
-   * Project Overview — the grounding zone. Reset, re-align, launch.
-   *
-   * Three bands: who and what this project is, then the two things you came for
-   * side by side — what to make, and what is waiting on you — then everything the
-   * project contains.
-   *
-   * **Nothing on this board scrolls; two of its bands do.** The board is a grid
-   * of bounded rows rather than content-height ones, so a long activity feed or a
-   * forty-row project cannot push the table off the bottom. Where a region holds
-   * more than it has height for, the region gives in — the feed scrolls inside
-   * its own frame and so does the table — because a screen you have to scroll is
-   * a screen you cannot take in at a glance, which is the only thing this one is
-   * for. A band that scrolls is a promise that everything is reachable; a table
-   * silently cut to five rows is a project that looks smaller than it is.
-   *
-   * **A row is a thing, not a health report.** There is no Status column on the
-   * Resources table, and no connector band above it: what cannot proceed belongs
-   * in the status bar rather than in the place a person comes to re-orient.
-   *
-   * **The header carries no Settings.** Settings is a property of the project
-   * rather than of this category, so it lives in the top bar.
-   */
-  /**
-   * One project, one viewer, one clock.
-   *
-   * `now` is read once per render rather than per row: a table that asked the
-   * clock ten times would draw ten rows against ten different moments, and the
-   * two that straddled a minute boundary would disagree about how long ago the
-   * same edit was.
-   *
-   * The project is not `view.project` — that is the token from the route, and
-   * what scopes a row is the id it resolves to. Both come from `scope`, which
-   * says there why it has to work them out.
-   */
   let now = $state(Date.now());
   onMount(() => {
     const timer = setInterval(() => (now = Date.now()), 60_000);
@@ -101,7 +66,6 @@
     resourcesIn(resourceIndex.ready ? resourceIndex.current : undefined, now)
   );
 
-  /** The feed holds either mentions or activity; the toggle switches between them. */
   let feed = $state<"mentions" | "activity">("mentions");
 
   let search = $state("");
@@ -116,13 +80,6 @@
     { value: "kind", label: "Kind" }
   ] as const;
 
-  /**
-   * What a kind is called in the table, and in the filter that narrows to it.
-   *
-   * Total rather than partial, both of them: a kind added to the vocabulary
-   * without a name here is a build error rather than a blank cell and an option
-   * nobody can read.
-   */
   const KIND_LABEL: Record<ResourceKind, string> = {
     document: "Document",
     slides: "Slide deck",
@@ -145,27 +102,6 @@
 
   const WITHOUT_FILES = "all-but-file";
 
-  /**
-   * What you can make, one hue each.
-   *
-   * The palette assigns exactly five hues to no meaning at all — blue, cyan,
-   * violet, pink and teal — and those are the five here. Green, red, amber and
-   * grey are excluded on purpose: a row is an offer, and an offer wearing the
-   * success or danger role reads as a verdict on something.
-   *
-   * Cyan is taken through its `secondary` name rather than its `active` one. The
-   * two are the same hue, but `active` means "currently engaged" everywhere else
-   * on the plane, and a permanently cyan row would look selected.
-   *
-   * Document keeps `interactive` because it is the commonest thing anyone makes
-   * here, and blue is the hue the rest of the application already spends on the
-   * thing it wants you to press.
-   *
-   * **Each hue is named twice: a resting edge and a hovered one.** The stack has
-   * no gaps, so the seam between two rows is the only thing telling them apart —
-   * and a seam that strengthens under the pointer is how a row says it is the
-   * one being aimed at without moving, growing or changing colour family.
-   */
   const CREATE = [
     {
       key: "document",
@@ -189,7 +125,6 @@
         "border-accent-2-border bg-accent-2-surface text-accent-2-text hover:border-accent-2-fill hover:bg-accent-2-surface-hover"
     },
     {
-      /** The flask, because that is what a research tab wears — and that is what this opens. */
       key: "research",
       label: "Research chat",
       icon: FlaskConical,
@@ -197,7 +132,6 @@
         "border-intelligence-border bg-intelligence-surface text-intelligence-text hover:border-intelligence-fill hover:bg-intelligence-surface-hover"
     },
     {
-      /** Bars, because that is what an analysis tab wears and what this opens onto. */
       key: "analysis",
       label: "Analysis graph",
       icon: ChartColumn,
@@ -206,11 +140,6 @@
     }
   ] as const;
 
-  /**
-   * A default title belongs to represented project state, not this cached view.
-   * Omitting it asks Project Resources to allocate the first free suffix on the
-   * server immediately before the row is created.
-   */
   let creating = $state<"document" | "slides">();
   let creationError = $state<string>();
 
@@ -243,10 +172,6 @@
     }
 
     if (key === "spreadsheet") {
-      // ── FORWARD DECLARATION ──────────────────────────────────────────────
-      // Project Resources can mint a safe row once Spreadsheet consumes a
-      // resource id. Opening one today would display its canned model and imply
-      // the represented resource had loaded, so this stays honestly unavailable.
       alert("Creating a spreadsheet is not wired up yet.");
       return;
     }
@@ -259,14 +184,6 @@
     alert("Creating a represented analysis graph is not wired up yet.");
   };
 
-  /**
-   * What a row opens, by what it is.
-   *
-   * Documents and decks have ordinary editors that consume represented ids.
-   * Other represented kinds remain inspectable here until their current
-   * surfaces accept those ids; opening a mock-backed surface would imply data
-   * loaded when it did not.
-   */
   const launch = (row: Resource) => {
     const target = openingFor(row);
     if (target) {
@@ -274,7 +191,7 @@
       return;
     }
 
-    if (["spreadsheet", "research", "analysis"].includes(row.kind)) {
+    if (["research", "analysis"].includes(row.kind)) {
       alert(`Opening "${row.name}" is not wired up yet.`);
       return;
     }
@@ -282,11 +199,6 @@
     view.inspect(key, selection);
   };
 
-  /**
-   * The cell reads the prose and the sort reads the number, and the procedure
-   * hands over both. Ordering by the prose meant parsing "4 minutes ago" back
-   * into a duration, which is what this board did before it had a store to ask.
-   */
   const compare = (a: Resource, b: Resource): number => {
     if (sortBy === "name") return a.name.localeCompare(b.name);
     if (sortBy === "kind")
@@ -296,12 +208,6 @@
     return b.updatedAt - a.updatedAt;
   };
 
-  /**
-   * What the arrow means depends on what is being ordered. "Ascending" over a
-   * relative age is the opposite way round from "ascending" over a name, and a
-   * control labelled only `asc` would leave the reader working that out from the
-   * result.
-   */
   const DIRECTION: Record<string, { asc: string; desc: string }> = {
     updated: { asc: "Newest first", desc: "Oldest first" },
     name: { asc: "A to Z", desc: "Z to A" },
@@ -322,26 +228,10 @@
     [...matched].sort((a, b) => (direction === "asc" ? 1 : -1) * compare(a, b))
   );
 
-  /**
-   * Each row with the lens that answers for it, resolved once rather than at
-   * every click and again at every render.
-   *
-   * The selection a row would set is also how the row knows it is the selected
-   * one: a finding row sends `f-saidi` and a thread row sends `th-feeder`, so
-   * comparing the selection against the row's own id would light nothing up.
-   */
   const listed = $derived(
     ordered.map((row) => ({ row, ...inspectionFor(row) }))
   );
 
-  /**
-   * Both filters offer what the work contains rather than what the vocabulary
-   * allows, for the same reason. The kind list and the actor list are derived from
-   * the rows already in the project, so they stay in step with what is on the
-   * board and never widen past the table they are narrowing. The visible task label
-   * uses the driving persona name and task id (for example, Generalist (e344csd))
-   * rather than a generic agent label.
-   */
   const kinds = $derived(
     [...new Set(work.map((row) => row.kind))].sort((a, b) =>
       KIND_PLURAL[a].localeCompare(KIND_PLURAL[b])
@@ -352,13 +242,6 @@
     [...new Set(work.map((row) => row.updatedBy))].sort((a, b) => a.localeCompare(b))
   );
 
-  /**
-   * Everyone in the project, those who are here now first.
-   *
-   * The faces are a strip with a chip on the end, and the chip is what the rest
-   * are behind — so an ordering that could put a present person there would hide
-   * the one fact the strip exists to show. Within each half nothing is ranked.
-   */
   const faces = $derived(
     [...everyone]
       .sort((a, b) => Number(b.at !== undefined) - Number(a.at !== undefined))
@@ -379,7 +262,6 @@
 
 <ScreenSurface wide>
   <div class="board">
-    <!-- Identity across the top: what this project is, and who is in it. -->
     <div class="area-header">
       <ScreenHeader title={it.name} about={it.description}>
         {#snippet actions()}
@@ -390,12 +272,6 @@
             onselect={(id) => view.inspect("general.person", { kind: "person", id })}
           >
             {#snippet overflow()}
-              <!--
-                The rest of the roster, under the chip that hid them. A menu
-                rather than a lens: "who else is in this project" is a list of
-                names, and sending someone to a panel to read four of them is a
-                journey for an answer that fits where the question was asked.
-              -->
               <DropdownMenu.Group>
                 <DropdownMenu.GroupHeading>In this project</DropdownMenu.GroupHeading>
                 {#each faces as face (face.id)}
@@ -417,11 +293,6 @@
       </ScreenHeader>
     </div>
 
-    <!--
-      Create. Five pills, stacked, each in its own hue — the colour is the thing
-      you aim at, so the labels can stay plain nouns rather than "New document"
-      five times.
-    -->
     <div class="area-create">
       <ScreenGroup label="Create">
         {#if resourceIndex.error}
@@ -453,31 +324,9 @@
       </ScreenGroup>
     </div>
 
-    <!--
-      Review. The band is named like Create's, and the switch between its two
-      faces rides at the far end of the label row rather than over the list —
-      which puts every control on this board in the same place relative to what
-      it acts on.
-
-      The frame is exactly three entries tall in both states, so switching feeds
-      never moves the table underneath. A fourth entry scrolls inside the frame
-      rather than growing it — the band has a height and the list gives in to it.
-    -->
     <div class="area-review">
       <ScreenGroup label="Review">
         {#snippet actions()}
-          <!--
-            A single-choice group, because the two are alternatives: one is
-            showing and the other is not, and two independent buttons could be
-            pressed into a state the feed below has no way to draw.
-          -->
-          <!--
-            Bound rather than set, because a single-choice group clears itself
-            when the pressed item is the one already chosen. Reading back through
-            the binding puts it straight again: there is no state in which
-            neither half is showing, so there must be none in which neither
-            reads as pressed.
-          -->
           <ToggleGroup
             type="single"
             bind:value={
@@ -509,12 +358,6 @@
                   onselect={() =>
                     view.inspect("general.comment", { kind: "comment", id: mention.id })}
                 >
-                  <!--
-                    Two lines and no third. `excerpt` is not used here: it clamps to
-                    two lines of its own, which makes an entry three lines tall the
-                    moment somebody writes a long comment, and the whole point of
-                    this band is that every entry is the same height.
-                  -->
                   <span class="block truncate" title={mention.resource}>
                     <strong>{actorName(mention.author)}</strong>
                     mentioned you on
@@ -542,7 +385,6 @@
                     <strong>{event.actor}</strong>
                     {event.verb}
                   </span>
-                  <!-- The name gets its own line, because the name is what truncates. -->
                   <span class="text-caption text-ink-secondary block truncate" title={event.subject}>
                     {event.subject}
                   </span>
@@ -554,19 +396,8 @@
       </ScreenGroup>
     </div>
 
-    <!--
-      Everything the project contains, as one table — every kind, because "what is
-      in this project" is one question. The band takes whatever height the two
-      above leave and the rows scroll inside it, so the count over the table is
-      the whole answer rather than the part that fitted.
-    -->
     <div class="area-resources">
       <ScreenGroup label="Resources" fill>
-        <!--
-          The count is matched-of-total, so a filtered view never looks like the
-          whole project. The direction rides in `order`, which draws it inside the
-          order's own frame: which way a sort runs is half of one decision.
-        -->
         <ScreenFilters
           placeholder="Search this project"
           matched={matched.length}
@@ -644,14 +475,6 @@
         {:else}
           <ScreenTable scroll columns={["Name", "Kind", "Updated", "Updated by"]}>
             {#each listed as entry (entry.row.id)}
-              <!--
-                Double-click opens the row; a single click selects and inspects.
-                Two acts, and conflating them would mean you could not look at
-                anything without leaving the board you came to.
-
-                The row opens from any non-control cell. The name is a control
-                for keyboard selection, so it also handles its own double click.
-              -->
               <ScreenRow
                 selected={view.selection?.id === entry.selection.id}
                 onselect={() => view.inspect(entry.key, entry.selection)}
@@ -692,42 +515,11 @@
     gap: calc(var(--token-spacing-unit) * 2);
   }
 
-  /**
-   * Two tracks in the middle band, 2fr and 3fr, and full width above and below.
-   *
-   * The halves are not equal because what they hold is not: Create is five pills
-   * of one word each and Review is prose, so the width goes to the side that has
-   * sentences to break.
-   *
-   * **Every row is bounded, and the last one takes what is left.** The brief's
-   * one hard requirement is that this screen never scrolls, and content-height
-   * rows cannot promise that — a project with forty resources or a busy week of
-   * activity would each grow a row until the table left the viewport. So the
-   * middle band is capped at what its taller half needs and Resources is given
-   * the remainder, which is also what makes the table inside it scrollable: a
-   * band with no height of its own has nothing for a table to give in to.
-   *
-   * **The middle row is one measurement, taken once.** Create and Review are two
-   * halves of one row and have to end level, so rather than each being sized and
-   * the pair checked, the band is defined as *four Review entries tall* and
-   * everything else is derived from it: the feed takes it, Create divides it by
-   * five, and the row is it plus the label above.
-   *
-   * An entry is what an entry is made of — a title line, a caption line and its
-   * own padding — rather than a measured pixel count, which would drift the day
-   * the type scale moves. There is no term for a gap between the two lines,
-   * because both feeds hand them to `ScreenItem` as one block.
-   *
-   * At 1440x900 less the 44px top bar, the 36px tab strip and the 32px status
-   * bar, the plane is 788px and the surface's padding takes 48 of it. Header and
-   * the middle row come to roughly 370, and Resources is the other 370.
-   */
   .board {
     --entry: calc(
       var(--token-text-body-sm-leading) + var(--token-text-caption-leading) +
         var(--token-spacing-unit) * 5
     );
-    /* Four entries, the three seams between them, and the frame's two edges. */
     --band: calc(var(--entry) * 4 + 5px);
 
     display: grid;
@@ -737,7 +529,6 @@
     grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
     grid-template-rows:
       auto
-      /* the band, plus `ScreenGroup`'s 28px label row and its 8px gap */
       minmax(0, calc(var(--token-spacing-unit) * 9 + var(--band)))
       minmax(0, 1fr);
     grid-template-areas:
@@ -759,15 +550,6 @@
     grid-area: resources;
   }
 
-  /**
-   * Each band is a column its own contents can shrink inside.
-   *
-   * A grid item is as tall as its row, but a block child of one is as tall as
-   * *its* contents and spills — so a bounded row alone does not bound what is in
-   * it. These three make the band a flex column with no floor under it, which is
-   * what lets the feed and the table give in to the height they were given
-   * instead of deciding it.
-   */
   .area-create,
   .area-review,
   .area-resources {
@@ -776,28 +558,12 @@
     flex-direction: column;
   }
 
-  /**
-   * Four entries exactly, and the same four whichever feed is showing: the two
-   * are alternatives, so a frame that resized as you switched would move the
-   * table below it every time.
-   *
-   * Grid rather than flex, so the list stretches to the band on both axes
-   * without this file reaching into another component's classes to do it.
-   */
   .feed {
     display: grid;
     min-height: 0;
     height: var(--band);
   }
 
-  /**
-   * The same height, cut five ways.
-   *
-   * Five pills where the feed beside it spends the height on four entries, so
-   * each is a little shorter than an entry and the two bands end exactly level.
-   * The rows are `1fr` rather than a fixed height, so the four gaps come out of
-   * the band rather than being added to it.
-   */
   .create {
     display: grid;
     min-height: 0;
@@ -806,22 +572,8 @@
     grid-template-rows: repeat(5, minmax(0, 1fr));
   }
 
-  /*
-    One column below the width where two tracks stop being tracks worth having,
-    and Review goes above Create: stacked, the top band is the one you see first,
-    and what is waiting on you outranks what you might start.
-
-    Stacked, the promise changes and says so. Four bands cannot all keep their
-    height in one column, so every row goes back to its content and the surface
-    takes the scrolling — a table squeezed into whatever three other bands left
-    over is a table showing two rows, which is worse than a page that scrolls.
-  */
   @media (max-width: 60rem) {
     .board {
-      /* Content height, so the bands keep theirs and the surface does the
-         scrolling. Left as a flexed, bounded box the rows would be squeezed
-         evenly instead, which shortens every band to make room for the one
-         that could not fit. */
       flex: none;
       min-height: auto;
       grid-template-columns: minmax(0, 1fr);
@@ -835,12 +587,6 @@
     }
   }
 
-  /*
-    Too short for three bands, and the elastic one is the only one that can give
-    — so below this the board stops being a fixed plane rather than shrinking
-    Resources to a heading and two rows. The cap is what Header, Create and
-    Review need plus enough of the table to be worth calling a table.
-  */
   @media (max-height: 46rem) {
     .board {
       flex: none;

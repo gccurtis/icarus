@@ -54,7 +54,6 @@
       const picked = await new Picker().open();
       choose(picked.sRGBHex);
     } catch {
-      // Cancelling the operating-system picker is not an editor failure.
     }
   };
 </script>

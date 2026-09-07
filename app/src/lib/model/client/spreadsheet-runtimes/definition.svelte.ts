@@ -1,5 +1,6 @@
 import { SvelteMap } from "svelte/reactivity";
-import type { SpreadsheetBody } from "$representation/data/types/spreadsheets/body";
+import type { CellRef } from "$representation/data/types/content/formula-value";
+import type { LiveSheet } from "$representation/data/types/spreadsheets/live";
 import type { SpreadsheetOp } from "$representation/data/types/spreadsheets/op";
 import { apply, buffer } from "$model/client/spreadsheet-runtimes/methods/apply";
 import { attach } from "$model/client/spreadsheet-runtimes/methods/attach";
@@ -8,17 +9,17 @@ import { redo, undo } from "$model/client/spreadsheet-runtimes/methods/history/h
 import { release } from "$model/client/spreadsheet-runtimes/methods/release";
 import { releaseAll } from "$model/client/spreadsheet-runtimes/methods/release-all";
 import type {
-  FlushThresholds,
   HistoryEntry,
   SpreadsheetRuntime,
   SpreadsheetRuntimesModel,
-  SyncState
+  SyncState,
+  Thresholds
 } from "$model/client/spreadsheet-runtimes/types";
 
 export class Runtime implements SpreadsheetRuntime {
   readonly id: string;
 
-  body = $state<SpreadsheetBody | undefined>(undefined);
+  sheet = $state<LiveSheet | undefined>(undefined);
   revision = $state(0);
   sync = $state<SyncState>("loading");
 
@@ -26,15 +27,17 @@ export class Runtime implements SpreadsheetRuntime {
   undoStack = $state.raw<readonly HistoryEntry[]>([]);
   redoStack = $state.raw<readonly HistoryEntry[]>([]);
 
+  scrollTo = $state<CellRef | undefined>(undefined);
+
   inFlight = $state(false);
 
   timer: ReturnType<typeof setTimeout> | undefined;
   unsubscribe: (() => void) | undefined;
   pendingFlush: Promise<void> | undefined;
 
-  readonly thresholds: FlushThresholds;
+  readonly thresholds: Thresholds;
 
-  constructor(id: string, thresholds: FlushThresholds) {
+  constructor(id: string, thresholds: Thresholds) {
     this.id = id;
     this.thresholds = thresholds;
   }
@@ -107,9 +110,9 @@ export class SpreadsheetRuntimesState {
   readonly open = new SvelteMap<string, Runtime>();
   readonly settling = new SvelteMap<string, Runtime>();
 
-  readonly thresholds: FlushThresholds;
+  readonly thresholds: Thresholds;
 
-  constructor(thresholds: FlushThresholds) {
+  constructor(thresholds: Thresholds) {
     this.thresholds = thresholds;
   }
 
@@ -121,7 +124,7 @@ export class SpreadsheetRuntimesState {
 export class SpreadsheetRuntimes implements SpreadsheetRuntimesModel {
   readonly #state: SpreadsheetRuntimesState;
 
-  constructor(thresholds: FlushThresholds) {
+  constructor(thresholds: Thresholds) {
     this.#state = new SpreadsheetRuntimesState(thresholds);
   }
 

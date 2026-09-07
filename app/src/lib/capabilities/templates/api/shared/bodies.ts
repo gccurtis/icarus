@@ -415,12 +415,13 @@ export const materializeSpreadsheet = (template: SpreadsheetTemplate): Materiali
     ];
   });
 
-  const formatRules = template.formatRules.flatMap((rule) => {
+  const formatRules = template.formatRules.flatMap((rule, index) => {
     const from = refOf(rule.from);
     const to = refOf(rule.to);
     if (from === undefined || to === undefined) return [];
     return [
       {
+        id: `rule-${index + 1}`,
         from,
         to,
         ...(rule.style === undefined ? {} : { style: rule.style }),

@@ -2,6 +2,7 @@ import type { ConfigurationModel } from "$model/client/configuration";
 import { requiredNumber } from "$model/client/configuration";
 import type { DocumentRuntimesModel } from "$model/client/document-runtimes";
 import type { SlideDeckRuntimesModel } from "$model/client/slide-deck-runtimes";
+import type { SpreadsheetRuntimesModel } from "$model/client/spreadsheet-runtimes";
 import type { TabListModel } from "$model/client/tab-list";
 import type { TabViewsModel } from "$model/client/tab-views";
 import { WorkspaceState } from "$model/client/workspace-state/definition.svelte";
@@ -21,6 +22,7 @@ export const createWorkspaceState = (
   configuration: ConfigurationModel,
   documents?: DocumentRuntimesModel,
   decks?: SlideDeckRuntimesModel,
+  sheets?: SpreadsheetRuntimesModel,
   storeReader?: StoreReader,
   usernameReader?: UsernameReader
 ): WorkspaceStateModel =>
@@ -34,6 +36,7 @@ export const createWorkspaceState = (
     },
     documents,
     decks,
+    sheets,
     storeReader,
     usernameReader
   );

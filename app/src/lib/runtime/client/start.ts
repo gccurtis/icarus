@@ -54,6 +54,7 @@ const buildClientModel = ({
     settings,
     documentRuntimes,
     slideDeckRuntimes,
+    spreadsheetRuntimes,
     read,
     username
   );
