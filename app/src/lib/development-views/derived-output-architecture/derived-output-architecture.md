@@ -13,8 +13,8 @@ Three purpose-built pages communicate and exercise the system from different ang
 The document editor is also an executable surface now. An empty line converts
 to Prompt through the normal Block selector; the inspector creates and links
 the Derived Output, and the generated response becomes ordinary editable block
-text with a right-edge settings marker. The Prompts rail only indexes blocks in
-the current document.
+text with a settings star in the same pasteboard gutter as comment pins. The
+Prompts rail only indexes blocks in the current document.
 
 The procedure page is now an implementation map: green marks inherited code,
 orange marks code landed on this branch, blue marks an extended boundary, and

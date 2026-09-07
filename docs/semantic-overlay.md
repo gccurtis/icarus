@@ -228,11 +228,13 @@ Documents now expose that lifecycle through a simple Prompt Block. An empty line
 converts through the ordinary Block selector, then the Prompt inspector creates
 and links the Derived Output, processes up to 50 pending semantic-sync jobs, and
 refreshes it in the same user request. The published answer is synchronized into
-the block's normal atoms/display/marks, so it remains selectable, formattable,
-and editable; a small right-edge star reopens settings. An inline edit becomes
-ungrounded continuity on the next refresh. The Prompts rail is only an index of
-blocks in the current document. Queued Derived Output execution and non-document
-placement adapters remain separate scale-up work.
+the block's normal editable text, so it remains selectable, formattable, and
+editable; the document editor preserves its own absolute mark ranges and the
+Derived Output remains text-only. A small star in the pasteboard gutter reopens
+settings. An inline edit becomes exact ungrounded continuity on the next refresh.
+The Prompts rail is only an index of blocks in the current document. Queued
+Derived Output execution and non-document placement adapters remain separate
+scale-up work.
 
 ## Resource publication
 

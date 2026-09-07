@@ -1,11 +1,8 @@
 <script lang="ts">
   import Sparkles from "@lucide/svelte/icons/sparkles";
 
-  import { Panel, PanelEmpty, PanelNote } from "$authored-components/panel";
-  import {
-    promptBlocksIn,
-    type PromptState
-  } from "$app-views/categories/document-editor/procedures/prompt-blocks";
+  import { Panel, PanelEmpty } from "$authored-components/panel";
+  import { promptBlocksIn } from "$app-views/categories/document-editor/procedures/prompt-blocks";
   import { workspaceState } from "$model/client/workspace-state";
   import type { DocumentRuntime } from "$model/client/workspace-state";
 
@@ -18,14 +15,6 @@
   });
 
   const blocks = $derived(promptBlocksIn(runtime?.body));
-
-  const STATE: Record<PromptState, string> = {
-    idle: "Not generated",
-    generating: "Generating",
-    fresh: "Current",
-    stale: "Needs refresh",
-    error: "Needs attention"
-  };
 
   const inspect = (blockId: string) => {
     const current = runtime;
@@ -48,17 +37,12 @@
               <strong>Prompt {index + 1}</strong>
               <small>{block.display || "Unconfigured Prompt Block"}</small>
             </span>
-            <em>{STATE[block.state]}</em>
           </button>
         {/each}
       </div>
     {/if}
   </section>
 
-  <PanelNote>
-    To create one, place the caret on an empty line and change its Block type to Prompt. Prompt
-    setup then opens in the inspector.
-  </PanelNote>
 </Panel>
 
 <style>
@@ -88,7 +72,7 @@
   .prompt-list button {
     display: grid;
     min-width: 0;
-    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-columns: auto minmax(0, 1fr);
     gap: calc(var(--token-spacing-unit) * 2);
     align-items: start;
     padding: calc(var(--token-spacing-unit) * 2);
@@ -116,8 +100,7 @@
   }
 
   .prompt-list strong,
-  .prompt-list small,
-  .prompt-list em {
+  .prompt-list small {
     font-size: var(--token-text-caption);
     line-height: var(--token-text-caption-leading);
   }
@@ -134,9 +117,4 @@
     white-space: nowrap;
   }
 
-  .prompt-list em {
-    color: var(--token-ink-muted);
-    font-style: normal;
-    white-space: nowrap;
-  }
 </style>

@@ -6,11 +6,8 @@
     PanelActions,
     PanelBanner,
     PanelCrumbs,
-    PanelField,
-    PanelFields,
     PanelNote,
-    PanelProgress,
-    PanelSection
+    PanelProgress
   } from "$authored-components/panel";
   import { Button } from "$vendored-components/button";
   import { Textarea } from "$vendored-components/textarea";
@@ -21,7 +18,7 @@
   } from "$capabilities/derived-output/index.remote";
   import { processSemanticSyncQueue } from "$capabilities/semantic-overlay/index.remote";
   import PromptSettings from "$app-views/categories/document-editor/components/prompt-settings.svelte";
-  import { blockIn, placementOf } from "$app-views/categories/document-editor/procedures/blocks";
+  import { blockIn } from "$app-views/categories/document-editor/procedures/blocks";
   import {
     linkPromptBlockOps,
     syncPromptBlockOps,
@@ -30,10 +27,6 @@
     type PromptBlock
   } from "$app-views/categories/document-editor/procedures/prompt-blocks";
   import { announcePromptOutput } from "$app-views/categories/document-editor/procedures/prompt-output-events";
-  import {
-    DEFAULT_PAGE_SETUP,
-    layoutMetrics
-  } from "$app-views/categories/document-editor/procedures/page-setup";
   import { isInspectorView, workspaceState } from "$model/client/workspace-state";
   import type { DocumentRuntime } from "$model/client/workspace-state";
   type Phase = "creating" | "saving" | "indexing" | "generating";
@@ -43,7 +36,6 @@
 
   let runtime = $state<DocumentRuntime>();
   let promptDraft = $state("");
-  let exampleDraft = $state("");
   let draftedFor = $state("");
   let phase = $state<Phase>();
   let actionError = $state<string>();
@@ -59,10 +51,6 @@
   const linked = $derived(
     prompt?.derivedOutputId === undefined ? undefined : (prompt as LinkedPromptBlock)
   );
-  const metrics = $derived(layoutMetrics(body?.pageSetup ?? DEFAULT_PAGE_SETUP));
-  const placement = $derived(
-    body === undefined || prompt === undefined ? undefined : placementOf(body, prompt.id, metrics)
-  );
 
   const PHASE: Record<Phase, string> = {
     creating: "Creating Derived Output",
@@ -76,7 +64,6 @@
     if (current === undefined || current.id === draftedFor) return;
     draftedFor = current.id;
     promptDraft = "";
-    exampleDraft = current.display;
     actionError = undefined;
   });
 
@@ -93,8 +80,8 @@
   const create = async () => {
     const currentRuntime = runtime;
     const promptText = promptDraft.trim();
-    const example = exampleDraft.replace(/\s+/g, " ").trim();
     if (currentRuntime === undefined || promptText.length === 0 || phase !== undefined) return;
+    const previous = currentPrompt().display;
 
     phase = "creating";
     actionError = undefined;
@@ -104,12 +91,12 @@
       const created = await createDerivedOutput({ prompt: promptText });
       derivedOutputId = created._id;
       const seeded =
-        example.length === 0
+        previous.length === 0
           ? created
           : await updateDerivedOutput({
               derivedOutputId: created._id,
               prompt: promptText,
-              lastResponse: example
+              lastResponse: previous
             });
       if (seeded === null) throw new Error("The Derived Output disappeared during creation");
 
@@ -192,25 +179,11 @@
           disabled={phase !== undefined}
         />
 
-        <label for={`new-example-${prompt.id}`}>Previous / example response <span>optional</span></label>
-        <Textarea
-          id={`new-example-${prompt.id}`}
-          bind:value={exampleDraft}
-          rows={3}
-          maxlength={8000}
-          placeholder="A response whose wording or shape should be preserved"
-          disabled={phase !== undefined}
-        />
-
         <div class="scope">
           <span>Resource Set</span>
           <strong>Whole project</strong>
         </div>
       </div>
-
-      <PanelNote>
-        The example guides wording and organization only. It is never accepted as factual evidence.
-      </PanelNote>
 
       <PanelActions>
         <Button
@@ -228,14 +201,6 @@
       {/key}
     {/if}
 
-    {#if placement !== undefined}
-      <PanelSection title="Placement" chevron="end">
-        <PanelFields>
-          <PanelField label="Page" mono stacked>{placement.page}</PanelField>
-          <PanelField label="In row" mono stacked>{placement.index} of {placement.of}</PanelField>
-        </PanelFields>
-      </PanelSection>
-    {/if}
   {/if}
 </Panel>
 
@@ -253,10 +218,6 @@
     font-size: var(--token-text-caption);
     line-height: var(--token-text-caption-leading);
     font-weight: 600;
-  }
-
-  .setup label span {
-    font-weight: 400;
   }
 
   .setup :global(textarea) {

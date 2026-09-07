@@ -22,6 +22,18 @@ const watchDiagnostics = (page: Page) => {
   });
 };
 
+const restoreDocumentFixture = async (page: Page) => {
+  const tabs = page.getByRole("toolbar", { name: "Open tabs" });
+  await tabs.getByRole("button", { name: "Overview", exact: true }).click();
+  const resources = page.locator(".area-resources");
+  await resources.getByPlaceholder("Search this project").fill("Winter readiness brief");
+  await resources
+    .getByRole("button", { name: "Winter readiness brief", exact: true })
+    .dblclick();
+  await expect(page.locator(".title-bar h1")).toHaveText("Winter readiness brief");
+  await page.waitForTimeout(1_000);
+};
+
 test.beforeEach(async ({ page }) => {
   unexpected.length = 0;
   watchDiagnostics(page);
@@ -142,6 +154,7 @@ test("a document Prompt Block resolves a Derived Output from another resource", 
     .getByRole("button", { name: "Document", exact: true })
     .click();
   await expect(page.locator(".title-bar h1")).toHaveText(/^Untitled document \d+$/);
+  const sourceTitle = (await page.locator(".title-bar h1").textContent()) ?? "";
   await expect(page.locator(".ProseMirror")).toBeVisible();
   await page.locator(".ProseMirror").click();
   await page.keyboard.type("The Atlas beacon's calibration frequency is 27 kHz.");
@@ -180,7 +193,9 @@ test("a document Prompt Block resolves a Derived Output from another resource", 
 
   const block = page.locator('.document-block[data-kind="prompt"]').last();
   await expect(block).toContainText("27", { timeout: 300_000 });
-  await expect(block.locator(".document-prompt-marker")).toBeVisible();
+  const marker = page.locator('.lane .prompt-pin[data-prompt-block]').last();
+  await expect(marker).toBeVisible();
+  await expect(block.locator(".prompt-pin")).toHaveCount(0);
 
   // Generated output remains ordinary editor text: select it and use the shared mark controls.
   await block.dblclick({ position: { x: 35, y: 8 } });
@@ -192,11 +207,28 @@ test("a document Prompt Block resolves a Derived Output from another resource", 
   if ((await bold.getAttribute("data-state")) !== "on") await bold.click();
   await expect(block.locator("strong").first()).toBeVisible();
 
-  await block.locator(".document-prompt-marker").click();
-  await expect(inspector).toContainText("Derived Output ID");
+  await marker.click();
   await expect(inspector).toContainText("calibration frequency is 27 kHz");
-  await expect(inspector.getByRole("button", { name: "Refresh" })).toBeDisabled();
+  await expect(inspector.getByText("Current", { exact: true })).toHaveCount(0);
+  await expect(inspector.getByRole("heading", { name: "Details" })).toHaveCount(0);
+  await expect(inspector.getByRole("heading", { name: "Placement" })).toHaveCount(0);
+  await expect(inspector).not.toContainText("evidence-1");
+  await expect(inspector).not.toContainText("derivedOutputs:");
+  await expect(inspector.getByRole("button", { name: sourceTitle, exact: true })).toBeVisible();
+
+  const refresh = inspector.getByRole("button", { name: "Refresh" });
+  await expect(refresh).toBeEnabled();
+  await refresh.click();
+  await expect(refresh).toBeDisabled();
+  await expect(inspector).toBeVisible();
+  await expect(inspector).toHaveAttribute("data-inspected", "document-editor.prompt-block");
+  await expect(refresh).toBeEnabled({ timeout: 300_000 });
+  await expect(block.locator("strong").first()).toBeVisible();
   await page.screenshot({ path: "/tmp/derived-output-document-prompt.png", fullPage: true });
+
+  await inspector.getByRole("button", { name: sourceTitle, exact: true }).click();
+  await expect(page.locator(".title-bar h1")).toHaveText(sourceTitle);
+  await restoreDocumentFixture(page);
 });
 
 test("architecture surfaces follow Helios and Selene", async ({ page }) => {

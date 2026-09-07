@@ -736,8 +736,7 @@ test("document context panels are operational and compact", async ({ page }) => 
   await expect(context.getByLabel("Ask project sources")).toHaveCount(0);
   await expect(context.getByRole("button", { name: "Create and generate" })).toHaveCount(0);
   await expect(context.getByText("No Prompt Blocks yet.", { exact: true })).toBeVisible();
-  await expect(context).toContainText("empty line");
-  await expect(context).toContainText("Block type to Prompt");
+  await expect(context.getByText(/To create one/)).toHaveCount(0);
 });
 
 test("document named styles mirror the text formatting inspector without metadata clutter", async ({ page }) => {
@@ -830,4 +829,50 @@ test("shared editor controls keep one behavior across the width matrix", async (
     .getByRole("radio", { name: "None" });
   await expect(none).toBeVisible();
   await expect(none.locator("svg")).toHaveCount(1);
+});
+
+test("a Prompt Block affordance lives in the gutter and keeps its inspector open", async ({ page }) => {
+  await page.goto("/app/dev-project", { waitUntil: "networkidle" });
+  const tabs = page.getByRole("toolbar", { name: "Open tabs" });
+  await tabs.locator('button.tab.icon[aria-label="New tab"]').click();
+  await page
+    .locator(".area-editors")
+    .getByRole("button", { name: "Document", exact: true })
+    .click();
+
+  const editor = page.locator(".ProseMirror");
+  await expect(editor).toBeVisible();
+  await editor.locator('.document-block[data-kind="text"]').first().click();
+  const emptyInspector = page.locator(
+    'aside[aria-label="Inspector"][data-inspected="document-editor.empty-line"]'
+  );
+  await emptyInspector.getByRole("button", { name: "Block", exact: true }).click();
+  await page.getByRole("option", { name: "Prompt", exact: true }).click();
+
+  const block = page.locator('.document-block[data-kind="prompt"]').last();
+  const pageSurface = block.locator("xpath=ancestor::article[contains(@class, 'document-page')]");
+  const marker = page.locator('.lane .prompt-pin[data-prompt-block]').last();
+  await expect(marker).toBeVisible();
+  const [pageBox, markerBox] = await Promise.all([pageSurface.boundingBox(), marker.boundingBox()]);
+  expect(markerBox?.x ?? 0).toBeGreaterThanOrEqual((pageBox?.x ?? 0) + (pageBox?.width ?? 0));
+
+  const inspector = page.locator(
+    'aside[aria-label="Inspector"][data-inspected="document-editor.prompt-block"]'
+  );
+  await expect(inspector).toBeVisible();
+  await inspector.getByLabel("Prompt").fill("Summarize the project sources.");
+  await expect(inspector.getByLabel("Prompt")).toHaveValue("Summarize the project sources.");
+
+  await marker.click();
+  await expect(inspector).toBeVisible();
+  await expect(inspector.getByLabel("Prompt")).toHaveValue("Summarize the project sources.");
+  await page.screenshot({ path: "/tmp/derived-output-prompt-gutter.png", fullPage: true });
+
+  await page
+    .locator('aside[aria-label="Context"]')
+    .getByRole("button", { name: "Prompts", exact: true })
+    .click();
+  const context = page.locator('aside[aria-label="Context"]');
+  await expect(context.getByText(/To create one/)).toHaveCount(0);
+  await expect(context.getByText("Current", { exact: true })).toHaveCount(0);
 });

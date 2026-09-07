@@ -45,13 +45,12 @@ const presentationOf = (
   text: string
 ): Pick<PromptBlock, "atoms" | "display" | "marks"> => {
   const atomId = block.atoms.find((atom) => atom.kind === "literal")?.id ?? mint("atom");
-  const oldLength = block.display.length;
   const nextLength = text.length;
   const marks = block.marks.flatMap((mark) => {
     const from = linearOf(block.atoms, mark.from);
     const to = linearOf(block.atoms, mark.to);
-    const nextFrom = from === oldLength ? nextLength : Math.min(from, nextLength);
-    const nextTo = to === oldLength ? nextLength : Math.min(to, nextLength);
+    const nextFrom = Math.min(from, nextLength);
+    const nextTo = Math.min(to, nextLength);
     return nextFrom >= nextTo
       ? []
       : [{ ...mark, from: { atom: atomId, offset: nextFrom }, to: { atom: atomId, offset: nextTo } }];

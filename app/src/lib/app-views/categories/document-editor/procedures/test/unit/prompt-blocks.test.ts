@@ -93,7 +93,34 @@ test("publishing a response replaces editable text and preserves author formatti
   assert.equal(synced?.type === "prompt" && synced.refreshedAt, 12);
   assert.deepEqual(synced?.type === "prompt" && synced.marks[0].to, {
     atom: "#prompt-atom",
-    offset: 23
+    offset: 10
+  });
+});
+
+test("publishing a shorter response clips mark ranges without teaching Derived Output about marks", () => {
+  const block = prompt();
+  const shorter = output();
+  const changed = applyOps(
+    { rows: [{ id: "#row", kind: "blocks", blocks: [block] }] },
+    syncPromptBlockOps(block, {
+      ...shorter,
+      lastResponse: {
+        id: "#answer",
+        type: "text",
+        variant: "paragraph",
+        atoms: [{ id: "#answer-atom", kind: "literal", text: "Short" }],
+        display: "Short",
+        marks: []
+      }
+    })
+  );
+  const synced = changed.rows[0].kind === "blocks" ? changed.rows[0].blocks[0] : undefined;
+
+  assert.deepEqual(synced?.type === "prompt" && synced.marks[0], {
+    id: "#mark",
+    from: { atom: "#prompt-atom", offset: 0 },
+    to: { atom: "#prompt-atom", offset: 5 },
+    style: ["bold"]
   });
 });
 

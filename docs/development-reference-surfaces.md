@@ -139,16 +139,37 @@ Prompt creation belongs to the document, not the context rail:
 3. configure the prompt in the Prompt inspector;
 4. create and link the Derived Output;
 5. process pending semantic work and refresh;
-6. copy the published response into the block's editable atoms, display, and
-   marks;
-7. use the right-edge star to reopen Prompt settings.
+6. replace the block's editable text while preserving its editor-owned mark
+   ranges;
+7. use the star in the pasteboard gutter to reopen Prompt settings.
 
 The block looks like ordinary text. Its generated response is selectable,
-formattable, and editable. The small star is an out-of-content editor decoration,
-like a comment affordance; it is not part of the document text. An inline edit
-marks the block stale and becomes ungrounded previous-response continuity at the
-next refresh. Evidence remains canonical on the Derived Output, never on the
-edited document prose.
+formattable, and editable. The small star is an out-of-content control in the
+same pasteboard gutter as comment pins; it is neither a ProseMirror decoration
+nor part of the document text. An inline edit marks the block stale and becomes
+the exact ungrounded previous-response continuity at the next refresh. Formatting
+never crosses the Derived Output boundary: the editor reapplies the same absolute
+mark ranges, clipping only endpoints beyond a shorter replacement. Evidence
+remains canonical on the Derived Output, never on the edited document prose.
+
+The first implementation put the star in a widget at the right edge of the text
+block. That used the page margin's coordinate system, not the pasteboard gutter
+the design intended. It also made the editor own a non-text control. The final
+implementation measures each visible Prompt Block from `document.svelte`, draws
+its star as a sibling of comment pins, and treats the gutter as an interactive
+part of the editor surface. Without that last event boundary, the pasteboard's
+outside-page handler cleared and remounted the inspector before the star's click
+opened it again; that was the apparent jump to **Next letter** and the lost field
+state. Clicking the already-open block is also a no-op, avoiding redundant
+workspace operations.
+
+Linked settings intentionally contain only the prompt, Resource Set, Refresh,
+errors/progress when relevant, and evidence. Refresh remains available even when
+the stored answer has not been edited. There is no `Current`, placement, or
+internal details presentation. Each citation shows the retrieved span followed
+by the authoritative resource title; that title opens the resource in an app
+tab. Evidence IDs, source kinds, offsets, generations, and Derived Output IDs
+remain stored implementation data rather than routine inspector chrome.
 
 The Prompts context panel is an index of Prompt Blocks already in the current
 document. It can navigate and inspect; it does not create.
@@ -233,8 +254,9 @@ because the product can accept that content at runtime.
 
 The live editor scenario is separate and equally important: type a fact in one
 ordinary document, create a Prompt Block in another, generate, see the answer as
-normal text, reopen settings with the star, and inspect exact evidence. This
-tests product composition, not only capability composition.
+normal text, reopen settings from the gutter, refresh again, and follow the
+evidence title back to its resource. This tests product composition, not only
+capability composition.
 
 ## Failure found by the proof
 
@@ -308,12 +330,13 @@ evidence—not just its outer background.
 | Prompt Block inspector | `app/src/lib/app-views/categories/document-editor/inspector/prompt-block.svelte` |
 | Linked Prompt settings | `app/src/lib/app-views/categories/document-editor/components/prompt-settings.svelte` |
 | Prompt list context | `app/src/lib/app-views/categories/document-editor/context/prompts.svelte` |
-| Inline Prompt marker | `app/src/lib/app-views/categories/document-editor/procedures/prompt-markers.ts` |
+| Prompt and comment gutter | `app/src/lib/app-views/categories/document-editor/content/document.svelte` |
 | Editable response synchronization | `app/src/lib/app-views/categories/document-editor/procedures/prompt-blocks.ts` |
 | Durable blank-resource entry | `app/src/lib/app-views/categories/new-tab/procedures/creating.ts` |
 | Represented first document block | `app/src/lib/capabilities/project-resources/api/create-project-resource/create-project-resource.ts` |
 | DAG-safe store serialization | `app/src/lib/representation/store/path.ts` |
-| Architecture browser proof | `app/test/browser/derived-output-architecture.spec.ts` |
+| Architecture and live-provider proof | `app/test/browser/derived-output-architecture.spec.ts` |
+| Gutter and inspector-stability proof | `app/test/browser/document-editor.spec.ts` |
 
 Routes are served under:
 

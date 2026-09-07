@@ -63,7 +63,7 @@
     type DocumentBody,
     type Metrics
   } from "$app-views/categories/document-editor/procedures/projection";
-  import { promptMarkers } from "$app-views/categories/document-editor/procedures/prompt-markers";
+  import { promptBlocksIn } from "$app-views/categories/document-editor/procedures/prompt-blocks";
   import { schema } from "$app-views/categories/document-editor/procedures/schema";
   import { translate } from "$app-views/categories/document-editor/procedures/translate";
   import { rowsOf, tableQuery } from "$app-views/categories/document-editor/procedures/store";
@@ -106,6 +106,7 @@
   let pageFrame = $state<HTMLDivElement>();
   let available = $state(0);
   let pins = $state<Pin[]>([]);
+  let promptPins = $state<{ readonly id: string; readonly top: number }[]>([]);
   let appliedThreadKey = "";
 
   const threadsQuery = tableQuery("commentThreads");
@@ -123,7 +124,9 @@
     anchored: runtime?.body === undefined ? [] : anchoredOf(threads, runtime.body),
     current
   });
-  const hasCommentLane = $derived(annotations.anchored.length > 0);
+  const hasGutterLane = $derived(
+    annotations.anchored.length > 0 || promptBlocksIn(runtime?.body).length > 0
+  );
 
   let editor: EditorView | undefined;
   let sent: DocumentBody | undefined;
@@ -147,7 +150,6 @@
     editorPointerGestures(),
     pageNumbersPlugin(() => pageNumbersOf(runtime?.body)),
     annotationsPlugin(() => untrack(() => annotations)),
-    promptMarkers((id) => view.inspect("document-editor.prompt-block", { kind: "prompt", id })),
     keymap({ Enter: splitRow, Backspace: mergeRow }),
     keymap({ "Mod-z": undo, "Shift-Mod-z": redo, "Mod-y": redo }),
     keymap(baseKeymap)
@@ -203,18 +205,23 @@
     if (editor === undefined || frame === undefined) return;
 
     const held = ANNOTATIONS.getState(editor.state);
-    if (held === undefined) {
-      pins = [];
-      return;
-    }
-
     const origin = frame.getBoundingClientRect();
-    const placed = spansOf(editor.state.doc, held).map((span) => {
-      const state: PinState = span.current ? "current" : "open";
-      return { id: span.id, top: editor!.coordsAtPos(span.from).top - origin.top, state };
-    });
+    const placed = held === undefined
+      ? []
+      : spansOf(editor.state.doc, held).map((span) => {
+          const state: PinState = span.current ? "current" : "open";
+          return { id: span.id, top: editor!.coordsAtPos(span.from).top - origin.top, state };
+        });
 
     pins = stacked(placed);
+    const promptIds = new Set(promptBlocksIn(runtime?.body).map((block) => block.id));
+    promptPins = Array.from(
+      frame.querySelectorAll<HTMLElement>('.document-block[data-kind="prompt"][data-block]')
+    ).flatMap((element) => {
+      const id = element.dataset.block;
+      if (id === undefined || !promptIds.has(id)) return [];
+      return [{ id, top: element.getBoundingClientRect().top - origin.top }];
+    });
   };
 
   const dispatch = (transaction: Transaction): void => {
@@ -328,7 +335,7 @@
     void view.zoom;
     void available;
     void runtime?.body;
-    void hasCommentLane;
+    void hasGutterLane;
     const frame = requestAnimationFrame(place);
     return () => cancelAnimationFrame(frame);
   });
@@ -420,11 +427,11 @@
   const fit = $derived(
     available === 0
       ? undefined
-      : fitZoom(available, layoutMetrics(setup).pageWidth, hasCommentLane)
+      : fitZoom(available, layoutMetrics(setup).pageWidth, hasGutterLane)
   );
 
   const layout = $derived(layoutMetrics(setup, view.zoom ?? fit));
-  const gutters = $derived(guttersOf(available, layout.drawn.width, hasCommentLane));
+  const gutters = $derived(guttersOf(available, layout.drawn.width, hasGutterLane));
 
   $effect(() => {
     const element = surface;
@@ -433,6 +440,7 @@
     const beside = (event: MouseEvent) => {
       const target = event.target;
       if (host !== undefined && target instanceof Node && host.contains(target)) return;
+      if (target instanceof Element && target.closest(".lane") !== null) return;
 
       view.clear();
     };
@@ -459,6 +467,15 @@
       ? pin.ids[(pin.ids.indexOf(current ?? "") + 1) % pin.ids.length]
       : pin.ids[0];
     view.inspect("document-editor.comment", { kind: "comment", id });
+  };
+
+  const openPrompt = (id: string) => {
+    if (
+      view.inspected === "document-editor.prompt-block" &&
+      view.selection?.kind === "prompt" &&
+      view.selection.id === id
+    ) return;
+    view.inspect("document-editor.prompt-block", { kind: "prompt", id });
   };
 
   const pinTitle = (pin: Pin): string =>
@@ -498,8 +515,21 @@
       >
         <div bind:this={pageFrame} class="page-frame" style="--page-drawn: {layout.drawn.width}rem">
           <div bind:this={host} class="editor" aria-label="Document editor" style={pageStyle}></div>
-          {#if pins.length > 0}
-            <div class="lane" aria-label="Comment threads">
+          {#if pins.length > 0 || promptPins.length > 0}
+            <div class="lane" aria-label="Document gutter">
+              {#each promptPins as prompt (prompt.id)}
+                <button
+                  type="button"
+                  class:current={view.inspected === "document-editor.prompt-block" && view.selection?.id === prompt.id}
+                  class="prompt-pin"
+                  data-prompt-block={prompt.id}
+                  style="top: {prompt.top}px"
+                  title="Edit Prompt Block"
+                  aria-label="Edit Prompt Block"
+                  onmousedown={(event) => event.stopPropagation()}
+                  onclick={() => openPrompt(prompt.id)}
+                >✦</button>
+              {/each}
               {#each pins as pin, index (`${pin.ids.join("|")}@${pin.top}:${index}`)}
                 <button
                   type="button"
@@ -638,7 +668,8 @@
     pointer-events: none;
   }
 
-  .pin {
+  .pin,
+  .prompt-pin {
     position: absolute;
     left: 0;
     display: flex;
@@ -660,10 +691,24 @@
     border-color: var(--token-border-strong);
   }
 
-  .pin.current {
+  .pin.current,
+  .prompt-pin.current {
     border-color: var(--token-color-active-border);
     background: var(--token-color-active-surface);
     color: var(--token-color-active-text);
+  }
+
+  .prompt-pin {
+    color: var(--token-color-intelligence-text);
+    font-size: 0.75rem;
+    line-height: 1;
+  }
+
+  .prompt-pin:hover,
+  .prompt-pin:focus-visible {
+    border-color: var(--token-color-intelligence-border);
+    background: var(--token-color-intelligence-surface);
+    outline: none;
   }
 
   .pin.stack {
@@ -798,35 +843,6 @@
     border-radius: var(--token-radius-control);
     color: var(--token-ink-muted);
     font-size: var(--token-text-caption);
-  }
-
-  .editor :global(.document-block[data-kind="prompt"]) {
-    position: relative;
-  }
-
-  .editor :global(.document-prompt-marker) {
-    position: absolute;
-    top: 0.05rem;
-    left: calc(100% + 0.4rem);
-    display: grid;
-    width: 1.35rem;
-    height: 1.35rem;
-    padding: 0;
-    place-items: center;
-    border: 1px solid var(--token-border-subtle);
-    border-radius: 999px;
-    background: var(--token-surface-elevated);
-    color: var(--token-color-intelligence-text);
-    font-size: 0.75rem;
-    line-height: 1;
-    cursor: pointer;
-  }
-
-  .editor :global(.document-prompt-marker:hover),
-  .editor :global(.document-prompt-marker:focus-visible) {
-    border-color: var(--token-color-intelligence-border);
-    background: var(--token-color-intelligence-surface);
-    outline: none;
   }
 
   .editor :global(.document-divider) {

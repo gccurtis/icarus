@@ -51,10 +51,13 @@ selector converts an empty line to Prompt and opens its inspector. The inspector
 creates and links an idle Derived Output, flushes the document revision,
 processes up to 50 pending semantic-sync jobs, and calls
 `refreshDerivedOutput`. The published response is copied into normal editable
-atoms/display/marks and carries only a small right-edge settings decoration.
-Editing that text marks it stale and supplies ungrounded continuity on the next
-refresh; canonical revision and evidence remain on the Derived Output. The
-Prompts context rail only lists existing blocks.
+document text. The document adapter keeps formatting locally by reapplying the
+same absolute mark ranges, clipped only when replacement text is shorter; the
+Derived Output neither accepts nor returns marks. A small star in the document's
+pasteboard gutter opens settings. Editing the text marks it stale and supplies
+exact ungrounded continuity on the next refresh; canonical revision and evidence
+remain on the Derived Output. The Prompts context rail only lists existing
+blocks.
 
 This first product path is deliberately request-bound so its behavior can be
 tested end to end. A durable Derived Output refresh queue, selected-text focus,

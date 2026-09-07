@@ -262,8 +262,8 @@
       owner: "document editor",
       status: "new",
       input: "PromptBlock + published DerivedOutput",
-      output: "editable atoms/display/marks + freshness mirror",
-      note: "Copies the published value into ordinary document text while retaining author marks. Later inline edits become ungrounded continuity on refresh."
+      output: "editable text + freshness mirror; mark ranges retained",
+      note: "Copies only text from the Derived Output. The document adapter reapplies its own absolute mark ranges, clipped to a shorter response."
     }
   ];
 
@@ -297,12 +297,12 @@
     },
     {
       order: "04",
-      name: "promptMarkers",
+      name: "place (Prompt gutter projection)",
       owner: "document editor",
       status: "new",
-      input: "projected text_block(kind: prompt)",
-      output: "right-edge settings star",
-      note: "An out-of-content decoration opens Prompt settings without giving generated prose a visually alien card treatment."
+      input: "laid-out Prompt Blocks + pasteboard origin",
+      output: "pasteboard-gutter settings star",
+      note: "A sibling of the comment pins opens settings. It is outside ProseMirror and outside the document's margin coordinate system."
     },
     {
       order: "05",
@@ -405,8 +405,8 @@
       DO->>R: publish response + evidence + revision atomically
       DO-->>UI: fresh response projection
       UI->>DR: syncPromptBlockOps(block, output)
-      DR->>R: flush atoms + display + marks + state
-      Note over UI,DR: Normal selectable text + right-edge settings star
+      DR->>R: flush text + state, preserve editor-owned mark ranges
+      Note over UI,DR: Normal selectable text + settings star in the pasteboard gutter
     else cited source changed
       DO->>A: retry with a fresh evidence registry
     end`;
@@ -421,7 +421,7 @@
     generating --> stale: definition superseded
     fresh --> stale: cited source revision changes
     fresh --> stale: no evidence + overlay advances
-    fresh --> stale: prompt, scope, or presentation edit
+    fresh --> stale: prompt, scope, or response text edit
     fresh --> fresh: unrelated source advances overlay
     error --> error: last good response remains readable`;
 
@@ -460,14 +460,14 @@ readDerivedOutputValue({ derivedOutputId })
     {
       table: "document / deck snapshot",
       key: "resourceId + leader revision",
-      owns: "PromptBlock placement, editable atoms/display/marks, state mirror, and derivedOutputId",
+      owns: "PromptBlock placement, editable text and marks, state mirror, and derivedOutputId",
       never: "the canonical generated definition or evidence record"
     }
   ];
 
   const FOOTPRINT = [
     {
-      count: "07",
+      count: "06",
       label: "Resource entry + write triggers",
       path: "new-tab · project-resources · document · slide-deck",
       change: "Creation persists an editable first block; accepted leader revisions enqueue coalesced semantic work."
@@ -485,7 +485,7 @@ readDerivedOutputValue({ derivedOutputId })
       change: "Named variables, strict evidence, freshness, and presentation reads land here."
     },
     {
-      count: "16",
+      count: "14",
       label: "Representation + store",
       path: "contracts · tables · deterministic behavior",
       change: "Durable job, locator, template, and variable shapes remain model-independent."
@@ -497,9 +497,9 @@ readDerivedOutputValue({ derivedOutputId })
       change: "Three purpose-built views explain, inspect, and execute the architecture."
     },
     {
-      count: "17",
+      count: "16",
       label: "Document Prompt Block",
-      path: "block menu · inspector · marker · projection",
+      path: "block menu · inspector · gutter · projection",
       change: "One ID-backed styled block creates, edits, formats, refreshes, and inspects the canonical output."
     },
     {
@@ -729,7 +729,7 @@ readDerivedOutputValue({ derivedOutputId })
         <article>
           <span>WRITE B / PLACEMENT</span>
           <strong>PromptBlock in its resource</strong>
-          <p>Block identity, editable atoms/display/marks, format, freshness mirror, and <code>derivedOutputId</code>. Its surface owns presentation and placement.</p>
+          <p>Block identity, editable text, mark ranges, format, freshness mirror, and <code>derivedOutputId</code>. Its surface alone owns marks, presentation, and placement.</p>
         </article>
         <article class="recommended">
           <span>ATOMICITY REQUIREMENT</span>
@@ -785,15 +785,15 @@ readDerivedOutputValue({ derivedOutputId })
       <header class="section-heading compact-heading">
         <div><span class="section-number">05</span><h2>The actual change<br />surface.</h2></div>
         <p>
-          The resource-to-output implementation slice touches 101 files. The complete stacked
-          branch—including the semantic foundation and these visual reviews—differs from its
-          merge-base anchor in 155 files.
+          From the final semantic-architecture anchor, the resource-to-output implementation
+          slice touches 97 files. The complete stacked branch—including the semantic foundation
+          and these visual reviews—differs from current main in 152 files.
         </p>
       </header>
 
       <div class="footprint-summary" aria-label="Implementation change totals">
-        <div><span>THIS IMPLEMENTATION SLICE</span><strong>101</strong><small>files</small></div>
-        <div><span>FULL STACK FROM MERGE BASE</span><strong>155</strong><small>files</small></div>
+        <div><span>THIS IMPLEMENTATION SLICE</span><strong>97</strong><small>files</small></div>
+        <div><span>FULL STACK FROM CURRENT MAIN</span><strong>152</strong><small>files</small></div>
         <p>Counts are grouped by architectural ownership below; generated build and local provider data are excluded.</p>
       </div>
 

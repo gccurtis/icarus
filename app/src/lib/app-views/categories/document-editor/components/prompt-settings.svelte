@@ -4,9 +4,6 @@
   import {
     PanelActions,
     PanelBanner,
-    PanelField,
-    PanelFields,
-    PanelNote,
     PanelProgress,
     PanelSection
   } from "$authored-components/panel";
@@ -29,8 +26,8 @@
     type LinkedPromptBlock,
     type PromptBlock
   } from "$app-views/categories/document-editor/procedures/prompt-blocks";
+  import { rowsOf, tableQuery } from "$app-views/categories/document-editor/procedures/store";
   import { workspaceState, type DocumentRuntime } from "$model/client/workspace-state";
-  import type { DerivedState } from "$representation/data/types/semantic/derived-output";
   import { onMount } from "svelte";
 
   let {
@@ -59,6 +56,8 @@
   // One settings instance belongs to one immutable Derived Output identity.
   // svelte-ignore state_referenced_locally
   const detailQuery = readDerivedOutput({ derivedOutputId: outputId });
+  const documentsQuery = tableQuery("documents");
+  const slideDecksQuery = tableQuery("slideDecks");
 
   let running = $state(false);
   let actionError = $state<string>();
@@ -71,31 +70,23 @@
   const storedResponse = $derived(
     output?.lastResponse?.type === "text" ? output.lastResponse.display : ""
   );
-  const normalizedBlock = $derived(block?.display.replace(/\s+/g, " ").trim() ?? "");
+  const currentResponse = $derived(block?.display ?? "");
   const definitionChanged = $derived(output !== undefined && promptDraft.trim() !== output.prompt);
-  const responseChanged = $derived(output !== undefined && normalizedBlock !== storedResponse);
-  const status = $derived<DerivedState>(
-    running
-      ? "generating"
-      : definitionChanged || responseChanged || block?.state === "stale"
-        ? "stale"
-        : (detail?.effectiveState ?? output?.state ?? block?.state ?? "idle")
-  );
-  const needsRefresh = $derived(
-    output !== undefined && (definitionChanged || responseChanged || status !== "fresh")
-  );
+  const responseChanged = $derived(output !== undefined && currentResponse !== storedResponse);
   const queryError = $derived(
     detailQuery.error === undefined ? undefined : String(detailQuery.error)
   );
   const shownError = $derived(actionError ?? output?.error ?? queryError);
-
-  const LABEL: Record<DerivedState, string> = {
-    idle: "Not generated",
-    generating: "Generating",
-    fresh: "Current",
-    stale: "Needs refresh",
-    error: "Needs attention"
-  };
+  const sourceTitles = $derived.by(() => {
+    const titles = new Map<string, string>();
+    for (const document of rowsOf(documentsQuery, "documents")) {
+      titles.set(`document:${document._id}`, document.title);
+    }
+    for (const deck of rowsOf(slideDecksQuery, "slideDecks")) {
+      titles.set(`slides:${deck._id}`, deck.title);
+    }
+    return titles;
+  });
 
   $effect(() => {
     if (output === undefined || hydrated) return;
@@ -153,8 +144,7 @@
       output === undefined ||
       block === undefined ||
       currentRuntime === undefined ||
-      prompt.length === 0 ||
-      !needsRefresh
+      prompt.length === 0
     ) return;
 
     running = true;
@@ -165,7 +155,7 @@
           derivedOutputId: outputId,
           prompt,
           ...(responseChanged
-            ? { lastResponse: normalizedBlock.length === 0 ? null : normalizedBlock }
+            ? { lastResponse: currentResponse.length === 0 ? null : currentResponse }
             : {})
         }).updates(detailQuery);
         if (changed === null) throw new Error("The Derived Output no longer exists");
@@ -196,9 +186,12 @@
     }
   };
 
-  const sourceLabel = (index: number): string => {
-    const source = output?.evidence[index]?.source;
-    return source === undefined ? "Source" : `${source.ref.kind} · ${source.ref.id}`;
+  const sourceTitle = (kind: string, id: string): string =>
+    sourceTitles.get(`${kind}:${id}`) ?? "Open source";
+
+  const openSource = (kind: string, id: string) => {
+    if (kind === "document") view.open({ category: "document-editor", resourceId: id });
+    else if (kind === "slides") view.open({ category: "slide-deck-editor", resourceId: id });
   };
 </script>
 
@@ -229,16 +222,7 @@
       <small>Saved Resource Set selection is a later control.</small>
     </div>
 
-    <div class="status-line" data-state={status}>
-      <span>{LABEL[status]}</span>
-      {#if output.lastRevision !== undefined}<code>revision {output.lastRevision}</code>{/if}
-    </div>
   </div>
-
-  <PanelNote>
-    The text in the document is the current response. Edit and format it there; text edits become
-    the previous response supplied for continuity on the next refresh.
-  </PanelNote>
 
   {#if shownError !== undefined}
     <PanelBanner title="This Prompt Block needs attention" tone="attention">
@@ -250,8 +234,8 @@
     <Button
       variant="outline"
       size="xs"
-      disabled={running || promptDraft.trim().length === 0 || !needsRefresh}
-      title={!needsRefresh ? "The response is current" : "Refresh from project sources"}
+      disabled={running || promptDraft.trim().length === 0}
+      title="Refresh from project sources"
       onclick={generate}
     >
       <RefreshCw class={running ? "spin" : undefined} aria-hidden="true" />
@@ -264,27 +248,21 @@
   {/if}
 
   {#if output.evidence.length > 0}
-    <PanelSection title="Evidence" count={output.evidence.length} open chevron="end">
+    <PanelSection title="Evidence" open chevron="end">
       <div class="evidence">
-        {#each output.evidence as citation, index (`${citation.source.ref.kind}:${citation.source.ref.id}:${citation.span.from}`)}
+        {#each output.evidence as citation (`${citation.source.ref.kind}:${citation.source.ref.id}:${citation.span.from}`)}
           <article>
-            <code>{sourceLabel(index)}</code>
             <q>{citation.span.text}</q>
-            <small>{citation.span.from}–{citation.span.to} · {citation.selections.map((selection) => selection.evidenceId).join(", ")}</small>
+            <button
+              type="button"
+              class="source-link"
+              onclick={() => openSource(citation.source.ref.kind, citation.source.ref.id)}
+            >{sourceTitle(citation.source.ref.kind, citation.source.ref.id)}</button>
           </article>
         {/each}
       </div>
     </PanelSection>
   {/if}
-
-  <PanelSection title="Details" chevron="end">
-    <PanelFields>
-      <PanelField label="Derived Output ID" mono stacked>{derivedOutputId}</PanelField>
-      {#if output.lastGeneration !== undefined}
-        <PanelField label="Overlay generation" mono stacked>{output.lastGeneration}</PanelField>
-      {/if}
-    </PanelFields>
-  </PanelSection>
 {/if}
 
 <style>
@@ -332,35 +310,6 @@
     font-size: 0.6875rem;
   }
 
-  .status-line {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: calc(var(--token-spacing-unit) * 2);
-    color: var(--token-ink-muted);
-    font-size: var(--token-text-caption);
-  }
-
-  .status-line > span {
-    color: var(--token-color-intelligence-text);
-    font-weight: 600;
-  }
-
-  .status-line[data-state="error"] > span {
-    color: var(--token-color-danger-text);
-  }
-
-  .status-line[data-state="stale"] > span {
-    color: var(--token-color-attention-text);
-  }
-
-  .status-line code,
-  .evidence code,
-  .evidence small {
-    font-family: var(--token-font-mono);
-    font-size: 0.65625rem;
-  }
-
   .evidence {
     display: flex;
     flex-direction: column;
@@ -377,18 +326,23 @@
     padding-left: calc(var(--token-spacing-unit) * 2);
   }
 
-  .evidence code,
-  .evidence small {
-    overflow: hidden;
-    color: var(--token-ink-muted);
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
   .evidence q {
     color: var(--token-ink-secondary);
     font-size: var(--token-text-caption);
     line-height: var(--token-text-caption-leading);
+  }
+
+  .source-link {
+    width: fit-content;
+    border: 0;
+    background: transparent;
+    color: var(--token-color-active-text);
+    font-size: var(--token-text-caption);
+    line-height: var(--token-text-caption-leading);
+    text-align: left;
+    text-decoration: underline;
+    text-underline-offset: 0.14em;
+    cursor: pointer;
   }
 
   :global(.spin) {
