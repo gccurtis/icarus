@@ -281,6 +281,20 @@ first row, block, and literal atom. A client-only painted paragraph gives the
 caret an ID that the authoritative body cannot resolve, so it looks editable
 while every change fails. New documents now persist that first editable block.
 
+Persisted Prompt Blocks from the earlier prototype exposed the complementary
+migration case: they could legitimately be linked to a fresh Derived Output
+while still carrying `atoms: []`. The ProseMirror-to-representation projection
+used to mint a fallback atom ID each time it read such an empty block. Selection
+signaling therefore produced a different caret address on every pass. The
+workspace wrote that address back to ProseMirror, ProseMirror signaled another
+new address, and Svelte eventually stopped the recursive inspector updates with
+`effect_update_depth_exceeded`. Projection reads now derive a stable fallback ID
+from the block ID and literal-run index. The fallback becomes represented data
+on the next real document edit, while repeated reads are pure and selection
+synchronization settles. A unit regression uses the exact legacy empty-Prompt
+shape, and the persisted two-Prompt review document is exercised separately in
+Chromium.
+
 Finally, persistent review data and resettable fixture data answer different
 questions. The server accepts an opt-in `ICARUS_STORE_DIRECTORY` override so a
 browser regression can use a disposable copy of `app/seed` without deleting or

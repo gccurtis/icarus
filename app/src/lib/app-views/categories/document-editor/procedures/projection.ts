@@ -407,6 +407,9 @@ type Walked = {
   readonly display: string;
 };
 
+const projectedAtomId = (node: ProseMirrorNode, index: number): string =>
+  `#a-${encodeURIComponent(String(node.attrs.blockId ?? "block"))}-${index}`;
+
 const atomsOf = (node: ProseMirrorNode): Walked => {
   const ids = node.attrs.atomIds as string[];
   const atoms: Atom[] = [];
@@ -414,7 +417,11 @@ const atomsOf = (node: ProseMirrorNode): Walked => {
   let index = 0;
 
   const flush = () => {
-    atoms.push({ id: ids[index] ?? mint("atom"), kind: "literal", text: run });
+    // Reading a projection must be stable. Legacy Prompt Blocks can have no
+    // represented atoms, and a newly typed run can outnumber its saved IDs.
+    // A random fallback here made the same caret look different on every read,
+    // feeding workspace selection back into ProseMirror until Svelte aborted.
+    atoms.push({ id: ids[index] ?? projectedAtomId(node, index), kind: "literal", text: run });
     index += 1;
     run = "";
   };

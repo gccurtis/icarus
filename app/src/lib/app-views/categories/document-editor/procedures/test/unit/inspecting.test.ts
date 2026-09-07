@@ -91,6 +91,36 @@ test("selecting Prompt Block text uses the ordinary text-selection inspector", (
   });
 });
 
+test("a legacy empty Prompt Block has one stable caret identity", () => {
+  const held = body([
+    blocks("#r1", [
+      {
+        id: "#legacy-prompt",
+        type: "prompt",
+        derivedOutputId: "derivedOutputs:7" as Id<"derivedOutputs">,
+        atoms: [],
+        display: "",
+        marks: [],
+        state: "idle"
+      }
+    ])
+  ]);
+  const state = stateOver(held, ["#legacy-prompt", 0]);
+  const first = signalOf(state);
+  const second = signalOf(state);
+  if (first === undefined) throw new Error("no signal");
+
+  assert.deepEqual(second, first);
+  assert.deepEqual(first, {
+    key: "document-editor.empty-line",
+    selection: {
+      kind: "empty-line",
+      id: "#legacy-prompt/atoms/#a-%23legacy-prompt-0@0"
+    }
+  });
+  assert.equal(worthSending(first, first.key, first.selection), false);
+});
+
 test("a selection inside one block names the atom at each end", () => {
   assert.deepEqual(signalOf(stateOver(ONE, ["#b1", 6], ["#b1", 18])), {
     key: "document-editor.text-selection",
