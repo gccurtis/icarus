@@ -2,6 +2,7 @@
   import Blocks from "@lucide/svelte/icons/layout-template";
   import BookOpen from "@lucide/svelte/icons/book-open";
   import ChartColumn from "@lucide/svelte/icons/chart-column";
+  import ClipboardCheck from "@lucide/svelte/icons/clipboard-check";
   import Library from "@lucide/svelte/icons/library";
   import MessagesSquare from "@lucide/svelte/icons/messages-square";
   import Shapes from "@lucide/svelte/icons/shapes";
@@ -21,6 +22,14 @@
    * argument about a data model, one is a conversation.
    */
   const PAGES = [
+    {
+      href: "/demo/editor-audit",
+      title: "Editor audit",
+      sub: "Document + slide deck findings, causes, and fixes",
+      icon: ClipboardCheck,
+      about:
+        "The complete reported-issue ledger, source-traced root causes, target inspector layouts, creation repairs, priorities, acceptance tests, and evidence limits."
+    },
     {
       href: "/demo/document-editor-reference",
       title: "Document editor reference",

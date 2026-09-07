@@ -18,6 +18,7 @@
   const GROUPS = [
     [
       { href: "/demo", label: "Design system" },
+      { href: "/demo/editor-audit", label: "Editor audit" },
       { href: "/demo/vocabulary", label: "Composition" },
       { href: "/demo/templates", label: "Templates" }
     ],
