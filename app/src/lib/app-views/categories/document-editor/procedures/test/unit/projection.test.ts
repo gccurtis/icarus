@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
 import type { ContentBlock, TextBlock } from "$representation/data/types/content/content-block";
+import type { Id } from "$representation/data/types/core/id";
 import type { DocumentBody, DocumentRow } from "$representation/data/types/documents/body";
 import {
   bodyOf,
@@ -109,6 +110,26 @@ test("a non-text block is drawn as an atom beside its text, and comes back whole
 
   assert.equal(row.childCount, 2);
   assert.equal(row.child(1).type.name, "image_block");
+  assert.deepEqual(bodyOf(doc, before), before);
+});
+
+test("a Prompt Block is a selectable atom whose Derived Output link round-trips", () => {
+  const prompt: ContentBlock = {
+    id: "#prompt",
+    type: "prompt",
+    derivedOutputId: "derivedOutputs:7" as Id<"derivedOutputs">,
+    atoms: [],
+    display: "",
+    marks: [],
+    state: "idle"
+  };
+  const before = body([blocks("#r1", [text("#b1", "One"), prompt], [3, 2])]);
+
+  const doc = docOf(before, METRICS);
+  const row = rowNodesOf(doc)[0];
+
+  assert.equal(row.child(1).type.name, "prompt_block");
+  assert.equal(row.child(1).attrs.block.derivedOutputId, "derivedOutputs:7");
   assert.deepEqual(bodyOf(doc, before), before);
 });
 

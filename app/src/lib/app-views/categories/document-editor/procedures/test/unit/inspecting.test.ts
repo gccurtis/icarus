@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
 import type { Node as ProseMirrorNode } from "prosemirror-model";
-import { EditorState, TextSelection } from "prosemirror-state";
+import { EditorState, NodeSelection, TextSelection } from "prosemirror-state";
 import type { ContentBlock, TextBlock } from "$representation/data/types/content/content-block";
+import type { Id } from "$representation/data/types/core/id";
 import type { DocumentBody, DocumentRow } from "$representation/data/types/documents/body";
 import {
   addressOf,
@@ -63,6 +64,36 @@ const TWO = body([
 ]);
 
 const EMPTY = body([blocks("#r1", [text("#b1", "")])]);
+
+test("selecting a Prompt Block opens its dedicated inspector", () => {
+  const held = body([
+    blocks("#r1", [
+      text("#b1", "Source"),
+      {
+        id: "#prompt",
+        type: "prompt",
+        derivedOutputId: "derivedOutputs:7" as Id<"derivedOutputs">,
+        atoms: [],
+        display: "",
+        marks: [],
+        state: "idle"
+      }
+    ])
+  ]);
+  const doc = docOf(held, METRICS);
+  let at: number | undefined;
+  doc.descendants((node, position) => {
+    if (node.type.name === "prompt_block") at = position;
+  });
+  if (at === undefined) throw new Error("No Prompt Block in projected document");
+
+  const state = EditorState.create({ doc, selection: NodeSelection.create(doc, at) });
+
+  assert.deepEqual(signalOf(state), {
+    key: "document-editor.prompt-block",
+    selection: { kind: "prompt", id: "#prompt" }
+  });
+});
 
 test("a selection inside one block names the atom at each end", () => {
   assert.deepEqual(signalOf(stateOver(ONE, ["#b1", 6], ["#b1", 18])), {

@@ -224,6 +224,14 @@ provider returns a structured array of variable values and evidence selections;
 the application validates exact names and grounding, stores the resolutions,
 and renders the final text itself.
 
+Documents now expose that lifecycle through a simple Prompt Block. The Prompts
+rail creates a Derived Output, persists only its ID and placement in the document,
+processes up to 50 pending semantic-sync jobs, then refreshes it in the same user
+request. The inline card and inspector call the canonical ID-based reads, so the
+answer, state, revision, and citations update without rewriting the document.
+Queued Derived Output execution and non-document placement adapters remain
+separate scale-up work.
+
 ## Resource publication
 
 Document and slide-deck leader snapshots now project through one canonical

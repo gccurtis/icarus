@@ -217,20 +217,23 @@ const inlineOf = (block: Styled): ProseMirrorNode[] => {
 const literalIds = (block: Styled): string[] =>
   block.atoms.filter((atom) => atom.kind === "literal").map((atom) => atom.id);
 
-const textBlockNode = (block: Styled, share: number, styles: StyleSet): ProseMirrorNode => {
+const textBlockNode = (
+  block: Extract<ContentBlock, { type: "text" }>,
+  share: number,
+  styles: StyleSet
+): ProseMirrorNode => {
   const style = resolve(styles, block.style, block.format);
-  const text = block.type === "text" ? block : undefined;
 
   return schema.node(
     "text_block",
     {
       blockId: block.id,
-      kind: block.type,
-      variant: text?.variant ?? "paragraph",
-      level: text?.level ?? null,
-      listStyle: text?.listStyle ?? null,
-      checked: text?.checked ?? null,
-      language: text?.language ?? null,
+      kind: "text",
+      variant: block.variant,
+      level: block.level ?? null,
+      listStyle: block.listStyle ?? null,
+      checked: block.checked ?? null,
+      language: block.language ?? null,
       styleKey: block.style ?? null,
       format: block.format ?? null,
       atomIds: literalIds(block),
@@ -251,10 +254,13 @@ const ATOM_NODE: Record<"image" | "table" | "formula", string> = {
   formula: "formula_block"
 };
 
-const blockNode = (block: ContentBlock, share: number, styles: StyleSet): ProseMirrorNode =>
-  isStyled(block)
-    ? textBlockNode(block, share, styles)
-    : schema.node(ATOM_NODE[block.type], { blockId: block.id, share, block });
+const blockNode = (block: ContentBlock, share: number, styles: StyleSet): ProseMirrorNode => {
+  if (block.type === "text") return textBlockNode(block, share, styles);
+  if (block.type === "prompt") {
+    return schema.node("prompt_block", { blockId: block.id, share, block });
+  }
+  return schema.node(ATOM_NODE[block.type], { blockId: block.id, share, block });
+};
 
 const rowNode = (row: DocumentRow, styles: StyleSet): ProseMirrorNode => {
   if (row.kind === "divider") {

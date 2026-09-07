@@ -726,10 +726,16 @@ test("document context panels are operational and compact", async ({ page }) => 
   await expect(context.getByText(/from edge/i)).toHaveCount(0);
   await expect(context.getByRole("button", { name: /Increase|Decrease/ })).toHaveCount(0);
 
-  for (const name of ["Variables", "Templates", "Prompts"] as const) {
+  for (const name of ["Variables", "Templates"] as const) {
     await context.getByRole("button", { name, exact: true }).click();
     await expect(context.getByText(`document-editor.${name.toLowerCase()}`, { exact: true })).toBeVisible();
   }
+
+  await context.getByRole("button", { name: "Prompts", exact: true }).click();
+  await expect(context.getByRole("heading", { name: "Prompts" })).toBeVisible();
+  await expect(context.getByLabel("Ask project sources")).toBeVisible();
+  await expect(context.getByRole("button", { name: "Create and generate" })).toBeDisabled();
+  await expect(context.getByText("No Prompt Blocks yet.", { exact: true })).toBeVisible();
 });
 
 test("document named styles mirror the text formatting inspector without metadata clutter", async ({ page }) => {

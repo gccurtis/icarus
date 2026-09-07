@@ -42,7 +42,7 @@ test("the procedure page renders all three diagrams and switches its callable sp
   const generation = page.getByRole("tab", { name: /Prompt → response/ });
   await generation.click();
   await expect(generation).toHaveAttribute("aria-selected", "true");
-  await expect(page.locator(".function-list")).toContainText("createPromptBlock");
+  await expect(page.locator(".function-list")).toContainText("appendPromptBlock");
   await expect(page.locator(".function-list")).toContainText("querySemanticOverlay");
 
   const reading = page.getByRole("tab", { name: /ID → rendered value/ });
@@ -118,6 +118,44 @@ test("the live proof resolves named variables against configured providers", asy
   await expect(page.locator(".resolved")).toContainText("37");
   await expect(page.locator(".evidence")).toContainText("Atlas beacon emits at 37");
   await expect(page.locator(".evidence")).toContainText("documentBlock");
+});
+
+test("a document Prompt Block resolves a Derived Output from another resource", async ({ page }) => {
+  test.skip(
+    process.env.ICARUS_LIVE_DERIVED_OUTPUT !== "1",
+    "Set ICARUS_LIVE_DERIVED_OUTPUT=1 to spend real embedding and intelligence calls"
+  );
+  test.setTimeout(420_000);
+
+  // Establish a deterministic source resource through the development entry point.
+  await page.goto("/demo/semantic-overlay/derived-output-live", { waitUntil: "networkidle" });
+  await page.getByRole("button", { name: /Run grounded generation/ }).click();
+  await expect(page.locator(".result-card blockquote")).toContainText("37", { timeout: 240_000 });
+
+  // Create a second, ordinary document and use the production Prompt Block entry point.
+  await page.goto("/app/dev-project", { waitUntil: "networkidle" });
+  await page.getByRole("button", { name: "Document", exact: true }).click();
+  await expect(page.locator(".ProseMirror")).toBeVisible();
+
+  const context = page.locator('aside[aria-label="Context"]');
+  await context.getByRole("button", { name: "Prompts", exact: true }).click();
+  await context
+    .getByLabel("Ask project sources")
+    .fill("According to project sources, what frequency does the fictional Atlas beacon emit at?");
+  await context.getByRole("button", { name: "Create and generate" }).click();
+
+  const block = page.locator(".document-prompt").last();
+  await expect(block).toContainText("37", { timeout: 300_000 });
+  await expect(block.locator('[data-state="fresh"]')).toBeVisible();
+  await expect(block).toContainText(/evidence source/);
+
+  await block.locator(".kind").click();
+  const inspector = page.locator(
+    'aside[aria-label="Inspector"][data-inspected="document-editor.prompt-block"]'
+  );
+  await expect(inspector).toContainText("Derived Output ID");
+  await expect(inspector).toContainText("Atlas beacon emits at 37");
+  await page.screenshot({ path: "/tmp/derived-output-document-prompt.png", fullPage: true });
 });
 
 test("both pages contain page-level overflow at narrow width only inside intentional diagrams", async ({ page }) => {

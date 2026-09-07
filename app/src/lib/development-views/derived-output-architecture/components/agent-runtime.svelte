@@ -178,7 +178,7 @@ Task: At what frequency does the fictional Atlas beacon emit?
 Previous response for stylistic continuity only
 (never factual evidence): …
 
-NEXT WITH PROMPT BLOCK
+NEXT WITH SELECTED FOCUS
 {
   "focus": [{ "evidenceId": "focus-1", "source": { ref, revision },
     "locator": { blockId, from, to }, "text": "selected text…" }],
@@ -361,7 +361,7 @@ type TemplatedDerivedDecision = {
         <div><span>01 / CONTEXT ASSEMBLY</span><h2>Stable law.<br />Variable case file.</h2></div>
         <p>
           The current implementation keeps behavioral rules stable and sends task plus prior response
-          per run. Selected focus joins that task envelope when Prompt Block integration lands.
+          per run. Selected focus joins that task envelope when selection capture lands.
         </p>
       </header>
 

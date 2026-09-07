@@ -150,12 +150,12 @@
   const GENERATION: FunctionStep[] = [
     {
       order: "01",
-      name: "createPromptBlock",
-      owner: "shared prompt component",
-      status: "deferred",
-      input: "target + placement + prompt + scope + focus",
-      output: "PromptBlock with derivedOutputId",
-      note: "The product entry point. The document and deck adapters only translate placement into their own edit operations."
+      name: "appendPromptBlock",
+      owner: "document editor",
+      status: "new",
+      input: "DocumentBody + derivedOutputId",
+      output: "insert_rows edit + PromptBlock",
+      note: "The document adapter persists only placement and the Derived Output ID. A deck placement adapter remains a separate slice."
     },
     {
       order: "02",
@@ -164,7 +164,7 @@
       status: "existing",
       input: "prompt + scope?",
       output: "idle DerivedOutput row",
-      note: "The row is the durable definition and canonical generated value; the future block holds its ID and focus locator."
+      note: "The row is the durable definition and canonical generated value; the document block holds only its ID."
     },
     {
       order: "03",
@@ -182,7 +182,7 @@
       status: "deferred",
       input: "derivedOutputId + definition revision",
       output: "idempotent refresh job",
-      note: "Creation returns after persistence. Generation happens outside the editor request and may be retried safely."
+      note: "Target scale-up seam. The current document path calls refresh in the creation request after draining one bounded semantic batch."
     },
     {
       order: "05",
@@ -191,7 +191,7 @@
       status: "existing",
       input: "derivedOutputId",
       output: "published / failed / superseded",
-      note: "Claims the output, snapshots its definition, bounds retries, and preserves the last good response on failure."
+      note: "Claims the output, snapshots its definition, bounds retries, and preserves the last good response on failure. The document rail invokes it directly today."
     },
     {
       order: "06",
@@ -279,21 +279,21 @@
     },
     {
       order: "03",
-      name: "resolvePromptBlock",
-      owner: "shared prompt component",
-      status: "deferred",
+      name: "PromptOutput",
+      owner: "document editor",
+      status: "new",
       input: "PromptBlock.derivedOutputId",
-      output: "canonical response + local presentation state",
-      note: "One resolver serves both editor surfaces. Missing output, generating, stale, and error stay explicit."
+      output: "live card + local presentation state",
+      note: "The document node view and inspector share the same ID-based reader. Missing output, generating, stale, and error stay explicit."
     },
     {
       order: "04",
-      name: "syncPromptOutput",
-      owner: "document / deck adapter",
+      name: "resolvePresentationSnapshot",
+      owner: "export / deck adapter",
       status: "deferred",
-      input: "resolved value + surface target",
-      output: "one ordinary content edit",
-      note: "Copy the canonical block into the editable presentation only when its revision changes."
+      input: "DerivedOutputValue + target format",
+      output: "frozen presentation value",
+      note: "The live document intentionally does not copy generated prose into its snapshot. Freeze only for exports or surfaces that require it."
     }
   ];
 
@@ -354,41 +354,39 @@
 
   const DERIVED_SEQUENCE = `sequenceDiagram
     autonumber
-    participant UI as PromptBlock component
-    participant PC as Prompt content capability
+    participant UI as Document Prompts rail
+    participant DR as Document runtime
     participant DO as Derived Output capability
-    participant Q as Job runner
-    participant A as Agent runtime
     participant SO as Semantic Overlay
+    participant A as Agent runtime
     participant R as Representation
 
-    UI->>PC: createPromptBlock(target, prompt, scope, focus)
-    PC->>DO: createDerivedOutput(definition)
+    UI->>DO: createDerivedOutput(prompt, optional scope)
     DO->>R: create derivedOutputs row
     R-->>DO: derivedOutputId
-    PC->>R: persist PromptBlock(derivedOutputId)
-    PC->>Q: enqueueDerivedRefresh(id, definitionRevision)
-    PC-->>UI: block + id + generating projection
-    Note over UI,Q: Editor request ends before provider work begins
+    DO-->>UI: idle output + ID
+    UI->>DR: appendPromptBlock(body, derivedOutputId)
+    DR->>R: flush accepted document revision
+    Note over DR,R: Stored block contains placement + ID, never generated prose
 
-    Q->>DO: refreshDerivedOutput(id)
+    UI->>SO: processSemanticSyncQueue(limit: 50)
+    SO->>R: publish pending authoritative resource projections
+    UI->>DO: refreshDerivedOutput(id)
     DO->>R: claim state + snapshot definition
     DO->>A: synthesize(run context, tools, schema)
     loop bounded tool rounds
       A->>SO: retrieve(query, scope, topK)
       SO-->>A: spans + attempt-local evidence IDs
-      opt broader or structural context
-        A->>PC: read(ref, locator, view)
-        PC-->>A: bounded chunks + evidence IDs
-      end
     end
     A-->>DO: response + selected evidence IDs
     DO->>DO: resolve IDs + recheck cited revisions
     alt evidence remains current
       DO->>R: publish response + evidence + revision atomically
-      R-->>UI: reactive read invalidates
+      DO-->>UI: fresh response projection
+      UI->>DO: readDerivedOutputValue(id)
+      DO-->>UI: value + state + revision + evidence
     else cited source changed
-      DO->>Q: retry with a fresh evidence registry
+      DO->>A: retry with a fresh evidence registry
     end`;
 
   const STATE_DIAGRAM = `stateDiagram-v2
@@ -477,7 +475,13 @@ readDerivedOutputValue({ derivedOutputId })
       change: "Three purpose-built views explain, inspect, and execute the architecture."
     },
     {
-      count: "04",
+      count: "14",
+      label: "Document Prompt Block",
+      path: "rail · node view · inspector · projection",
+      change: "One ID-backed document atom creates, renders, selects, refreshes, and inspects the canonical output."
+    },
+    {
+      count: "05",
       label: "Cross-cutting proof + docs",
       path: "browser · vertical integration · working notes",
       change: "The resource-to-value path is tested as one system, not only as isolated units."
@@ -493,7 +497,7 @@ readDerivedOutputValue({ derivedOutputId })
     {
       number: "02",
       title: "One queue now, one next",
-      body: "Semantic synchronization now has a persisted, revision-coalesced queue. Derived refresh is still an explicit command; its durable queue is deferred with Prompt Block integration."
+      body: "Semantic synchronization has a persisted, revision-coalesced queue. The document Prompt Block now invokes refresh explicitly; a durable derived-refresh queue remains the independent scale-up seam."
     },
     {
       number: "03",
@@ -543,8 +547,8 @@ readDerivedOutputValue({ derivedOutputId })
         <h1>One text path in.<br /><em>One grounded block out.</em></h1>
         <p>
           This is the complete lifecycle: where normal authoring and seeded development enter,
-          which functions own every hand-off, what is executable now, what remains for Prompt
-          Block integration, and how any surface resolves the response by ID.
+          which functions own every hand-off, how the document Prompt Block runs now, what remains
+          for queued generation and other editors, and how any surface resolves the response by ID.
         </p>
         <div class="hero-actions">
           <a href="#ingestion">Trace the first call <ArrowDown size={14} aria-hidden="true" /></a>
@@ -670,10 +674,10 @@ readDerivedOutputValue({ derivedOutputId })
 
     <section id="generation" class="section sequence-section">
       <header class="section-heading">
-        <div><span class="section-number">03</span><h2>The core works now.<br />The block is the next adapter.</h2></div>
+        <div><span class="section-number">03</span><h2>The document block<br />works end to end.</h2></div>
         <p>
-          The executable page creates and refreshes a Derived Output directly. The diagram below is
-          the intended Prompt Block handoff; it remains intentionally separate from this runtime slice.
+          The Prompts rail creates the Derived Output, inserts its ID-backed block, drains one bounded
+          semantic batch, generates the response, and renders the canonical value without copying it.
         </p>
       </header>
 
@@ -687,8 +691,8 @@ readDerivedOutputValue({ derivedOutputId })
         <div class="diagram-label"><span>SEQUENCE / DO-CREATE-01</span><small>create → generate → publish</small></div>
         <MermaidDiagram
           source={DERIVED_SEQUENCE}
-          label="Target Prompt Block creation and asynchronous Derived Output generation sequence"
-          caption="Target adapter flow: Prompt Block placement and the durable derived-refresh queue are deferred. The evidence registry and guarded publication shown here are implemented."
+          label="Implemented document Prompt Block creation and Derived Output generation sequence"
+          caption="Implemented first pass: document creation waits for generation. A durable derived-refresh queue and deck placement adapter remain explicit follow-up seams."
           minHeight="46rem"
         />
       </div>
@@ -758,14 +762,14 @@ readDerivedOutputValue({ derivedOutputId })
       <header class="section-heading compact-heading">
         <div><span class="section-number">05</span><h2>The actual change<br />surface.</h2></div>
         <p>
-          The implementation slice touches 69 files. The complete stacked branch—including the
-          semantic foundation and these visual reviews—differs from its main anchor in 127 files.
+          The implementation slice touches 84 files. The complete stacked branch—including the
+          semantic foundation and these visual reviews—differs from its main anchor in 142 files.
         </p>
       </header>
 
       <div class="footprint-summary" aria-label="Implementation change totals">
-        <div><span>THIS IMPLEMENTATION SLICE</span><strong>69</strong><small>files</small></div>
-        <div><span>FULL STACK FROM MAIN</span><strong>127</strong><small>files</small></div>
+        <div><span>THIS IMPLEMENTATION SLICE</span><strong>84</strong><small>files</small></div>
+        <div><span>FULL STACK FROM MAIN</span><strong>142</strong><small>files</small></div>
         <p>Counts are grouped by architectural ownership below; generated build and local provider data are excluded.</p>
       </div>
 
@@ -829,7 +833,7 @@ readDerivedOutputValue({ derivedOutputId })
           <ArrowDown class="read-arrow" size={18} aria-hidden="true" />
           <div><span>3</span><strong>effective freshness</strong><code>changedSemanticSources</code></div>
           <ArrowDown class="read-arrow" size={18} aria-hidden="true" />
-          <div><span>4</span><strong>surface resolver</strong><code>render or sync ContentBlock</code></div>
+          <div><span>4</span><strong>PromptOutput</strong><code>render canonical value live</code></div>
         </div>
       </div>
 
@@ -838,7 +842,7 @@ readDerivedOutputValue({ derivedOutputId })
         <MermaidDiagram
           source={STATE_DIAGRAM}
           label="Derived Output lifecycle and freshness state transitions"
-          caption="Queued is job state, not a sixth DerivedOutput state. The stored row remains idle or stale until a worker claims it as generating."
+          caption="The document first pass calls refresh directly. When a durable queue lands, queued will be job state—not a sixth DerivedOutput state."
           minHeight="28rem"
         />
       </div>
@@ -868,7 +872,7 @@ readDerivedOutputValue({ derivedOutputId })
 
   <footer class="page-footer">
     <span>DERIVED OUTPUT / PROCEDURE FLOW</span>
-    <span>implemented core · explicit prompt-content seams</span>
+    <span>implemented core · document Prompt Block live · explicit scale-up seams</span>
   </footer>
 </div>
 

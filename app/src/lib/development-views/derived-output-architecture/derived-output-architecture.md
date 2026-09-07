@@ -10,8 +10,14 @@ Three purpose-built pages communicate and exercise the system from different ang
   job, runs direct-prompt or named-variable synthesis, and displays the value
   API plus copied evidence.
 
+The document editor is also an executable surface now. Its Prompts rail creates
+and generates an ID-backed Prompt Block; the inline node view and inspector read
+the canonical response and evidence live from the Derived Output capability.
+The block stored in the document contains no generated answer cache.
+
 The procedure page is now an implementation map: green marks inherited code,
 orange marks code landed on this branch, blue marks an extended boundary, and
-gray marks the explicit Prompt Block/read-tool follow-up. The agent page keeps
-target `find_resources` and `read` contracts visible while labeling the current
-single `retrieve` tool accurately.
+gray marks explicit follow-ups such as the deck adapter, durable generation
+queue, selected-text focus, and read tools. The agent page keeps target
+`find_resources` and `read` contracts visible while labeling the current single
+`retrieve` tool accurately.

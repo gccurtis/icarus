@@ -63,6 +63,7 @@
     type DocumentBody,
     type Metrics
   } from "$app-views/categories/document-editor/procedures/projection";
+  import { promptNodeView } from "$app-views/categories/document-editor/procedures/prompt-node-view";
   import { schema } from "$app-views/categories/document-editor/procedures/schema";
   import { translate } from "$app-views/categories/document-editor/procedures/translate";
   import { rowsOf, tableQuery } from "$app-views/categories/document-editor/procedures/store";
@@ -242,7 +243,11 @@
     sent = bodyOf(state.doc, body);
 
     if (editor === undefined) {
-      editor = new EditorView(host, { state, dispatchTransaction: dispatch });
+      editor = new EditorView(host, {
+        state,
+        dispatchTransaction: dispatch,
+        nodeViews: { prompt_block: promptNodeView }
+      });
       appliedThreadKey = threadKey;
       return;
     }
@@ -798,6 +803,21 @@
     font-size: var(--token-text-caption);
   }
 
+  .editor :global(.document-prompt) {
+    display: block;
+    margin: 0 0 calc(var(--token-spacing-unit) * 4);
+    border-radius: var(--token-radius-panel);
+  }
+
+  .editor :global(.document-prompt-unlinked) {
+    display: block;
+    padding: calc(var(--token-spacing-unit) * 3);
+    border: 1px dashed var(--token-border-strong);
+    border-radius: var(--token-radius-control);
+    color: var(--token-ink-muted);
+    font-size: var(--token-text-caption);
+  }
+
   .editor :global(.document-divider) {
     width: 100%;
     margin: calc(var(--token-spacing-unit) * 4) 0;
@@ -864,8 +884,10 @@
 
   .editor :global(.document-image.ProseMirror-selectednode),
   .editor :global(.document-table.ProseMirror-selectednode),
-  .editor :global(.document-formula-block.ProseMirror-selectednode) {
+  .editor :global(.document-formula-block.ProseMirror-selectednode),
+  .editor :global(.document-prompt.ProseMirror-selectednode) {
     outline: 2px solid var(--token-color-active-border);
+    outline-offset: 2px;
   }
 
   .editor :global(.held-selection),
