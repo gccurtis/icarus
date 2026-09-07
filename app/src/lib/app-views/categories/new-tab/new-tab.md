@@ -60,19 +60,15 @@ Routes to `new-tab.new-document`, `new-tab.new-deck` and
 
 ### recent
 
-Headed *Recent*. What you had open lately and what changed lately, grouped by
-day: today, yesterday, earlier. Every kind appears, research threads included,
-because "what was I doing" does not respect the difference between a resource
-and a thread.
+Headed *Recent*. The eight represented project resources changed most recently,
+ordered by their stored update time. Each card says who made the change. Open
+history is not represented yet, so this view does not claim that a resource was
+opened merely because it was edited.
 
-This is two lists merged — what you opened, which is local tab history, and what
-changed. A document you have never opened can therefore appear, so every row
-says which of the two put it there and, when it is the second, who changed it.
-
-The search field searches the whole project rather than only these rows, so a
-query adds one more band under *earlier* for what it found outside them. The
-three days are the resting state; the fourth band exists only while you are
-searching.
+The search field uses the same Project Resources index rather than only the
+eight cards. Documents, slide decks, spreadsheets, research threads and
+findings therefore retain their canonical store ids from result to destination;
+a displayed title is never used as tab identity.
 
 Routes to `new-tab.recent-item` from any row, including one found elsewhere in
 the project.

@@ -73,21 +73,6 @@ export type ThreadRow = {
   readonly findings: number;
 };
 
-/**
- * One row of the merged Recent list. `why` is on the row because the list is two
- * lists — what you opened and what changed — and without it a document you have
- * never opened appears under Recent with nothing to explain why.
- */
-export type RecentRow = {
-  readonly id: string;
-  readonly name: string;
-  readonly kind: ResourceKind;
-  readonly day: "Today" | "Yesterday" | "Earlier";
-  readonly age: string;
-  readonly why: "You opened it" | "Someone edited it";
-  readonly updatedBy: string;
-};
-
 export const analyses = (): Read<readonly AnalysisRow[]> =>
   read([
     { id: "an-minutes", name: "Outage minutes by substation", chart: "Bar", ran: "2 minutes ago" },
@@ -276,82 +261,6 @@ export const threads = (): Read<readonly ThreadRow[]> =>
       findings: 3
     }
   ], "library.threads");
-
-export const recents = (): Read<readonly RecentRow[]> =>
-  read([
-    {
-      id: "r-memo",
-      name: "Q3 Resilience Memo",
-      kind: "document",
-      day: "Today",
-      age: "4 minutes ago",
-      why: "You opened it",
-      updatedBy: "Ana Reyes"
-    },
-    {
-      id: "r-cost",
-      name: "Outage Cost Model",
-      kind: "spreadsheet",
-      day: "Today",
-      age: "26 minutes ago",
-      why: "Someone edited it",
-      updatedBy: "Mira Jain"
-    },
-    {
-      id: "r-feeder",
-      name: "Why did Feeder 12 fail twice?",
-      kind: "research",
-      day: "Yesterday",
-      age: "Yesterday",
-      why: "You opened it",
-      updatedBy: "Ana Reyes"
-    },
-    {
-      id: "r-review",
-      name: "Interconnect Failure Review",
-      kind: "document",
-      day: "Yesterday",
-      age: "Yesterday",
-      why: "Someone edited it",
-      updatedBy: "Mira Jain"
-    },
-    {
-      id: "r-board",
-      name: "Board Update — October",
-      kind: "slides",
-      day: "Earlier",
-      age: "2 days ago",
-      why: "You opened it",
-      updatedBy: "Tomas Kaur"
-    },
-    {
-      id: "r-minutes",
-      name: "Outage minutes by substation",
-      kind: "analysis",
-      day: "Earlier",
-      age: "3 days ago",
-      why: "You opened it",
-      updatedBy: "Mira Jain"
-    },
-    {
-      id: "r-nerc",
-      name: "NERC-2025-winter-review.pdf",
-      kind: "file",
-      day: "Earlier",
-      age: "4 days ago",
-      why: "Someone edited it",
-      updatedBy: "SharePoint — Ops Reports"
-    },
-    {
-      id: "r-inventory",
-      name: "Substation Inventory",
-      kind: "spreadsheet",
-      day: "Earlier",
-      age: "5 days ago",
-      why: "Someone edited it",
-      updatedBy: "SharePoint — Ops Reports"
-    }
-  ], "library.recents");
 
 /* ------------------------------------------------------------------ */
 /* Templates                                                           */

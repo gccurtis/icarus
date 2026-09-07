@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { onMount } from "svelte";
+
   import ChartColumn from "@lucide/svelte/icons/chart-column";
   import File from "@lucide/svelte/icons/file";
   import FileText from "@lucide/svelte/icons/file-text";
@@ -27,15 +29,18 @@
   import {
     editorKinds,
     kindLabel,
-    recents,
     templates,
-    threads,
     type EditorKind,
     type LibraryTemplate
   } from "$app-views/categories/new-tab/procedures/library";
   import { createProjectResource } from "$app-views/categories/new-tab/procedures/creating";
   import { openingFor } from "$app-views/categories/new-tab/procedures/opening";
-  import { project, resources } from "$app-views/categories/new-tab/procedures/project";
+  import { project } from "$app-views/categories/new-tab/procedures/project";
+  import {
+    recentsOf,
+    resourcesOf
+  } from "$app-views/categories/new-tab/procedures/resources";
+  import { readProjectResourceIndex } from "$capabilities/project-resources/index.remote";
   import { workspaceState } from "$model/client/workspace-state";
 
   const view = workspaceState();
@@ -60,19 +65,25 @@
    * whose whole job is one question, and a mode change nobody asked for is worse
    * than a list that pushes the shelves down.
    *
-   * **Every entry here opens something.** This is a launcher, and a launcher
-   * whose rows only moved the inspector would ask its one question and then
-   * stop: a pill opens a blank editor, and a recent row or a search hit opens
-   * whatever it names. Templates are the exception, because taking one asks for
-   * values before it can make anything.
+   * Represented resources keep the capability's canonical id all the way into
+   * the destination. A launcher must never turn display copy into identity: a
+   * title-shaped id produces a tab that no store row can answer.
    */
   const kinds = $derived(editorKinds().current);
-  const recent = $derived(recents().current);
-  const everything = $derived(resources().current);
   const all = $derived(templates().current);
-  const everyThread = $derived(threads().current);
   /** The name is data, so it comes from the project door rather than from view state. */
   const projectName = $derived(project().current.name);
+
+  let now = $state(Date.now());
+  onMount(() => {
+    const timer = setInterval(() => (now = Date.now()), 60_000);
+    return () => clearInterval(timer);
+  });
+
+  const resourceIndex = readProjectResourceIndex();
+  const indexed = $derived(resourceIndex.ready ? resourceIndex.current : undefined);
+  const recent = $derived(recentsOf(indexed, now));
+  const everything = $derived(resourcesOf(indexed, now));
 
   /** Which template last handed the inspector its variables. */
   let chosen = $state<string | undefined>(undefined);
@@ -191,9 +202,9 @@
    * where a click that appears to do nothing is not.
    */
   const launch = (row: Entry) => {
-    const target = openingFor(row.kind, row.id, row.name);
+    const target = openingFor(row.kind, row.id);
     if (target) view.open(target);
-    else console.log(`No category opens a ${kindLabel(row.kind).toLowerCase()}`);
+    else alert(`Opening "${row.name}" is not wired up yet.`);
   };
 
   const start = (id: string) => {
@@ -234,8 +245,7 @@
       -->
       {#if needle !== "" && results.length === 0}
         <ScreenEmpty kind="no-matches" title="Nothing in the project matches" onclear={() => (query = "")}>
-          The search reaches every kind — documents, decks, grids, threads, findings and connector
-          files alike.
+          Search includes documents, decks, spreadsheets, research threads, and findings.
         </ScreenEmpty>
       {:else if needle !== ""}
         <div class="border-border-subtle rounded-panel flex flex-col overflow-hidden border">
@@ -285,8 +295,9 @@
     <!--
       A shelf rather than a grid: a grid of twelve cards pushes the search field
       off the top of the screen, and this is a row you browse rather than search.
-      Every row says which of the two lists put it here — what you opened, and
-      what changed — because a document you have never opened can appear in it.
+      This bounded shelf shows the represented resources changed most recently.
+      Open history does not have a represented source yet, so the UI says who
+      edited each row rather than claiming that the viewer opened it.
     -->
     <div class="area-recent">
       <ScreenGroup label="Recent" count={String(recent.length)}>
@@ -296,7 +307,7 @@
             <ScreenShelfItem>
               <ScreenCard
                 title={row.name}
-                sub="{kindLabel(row.kind)} · {row.age}"
+                sub="{kindLabel(row.kind)} · {row.updated}"
                 icon={Icon}
                 onselect={() => launch(row)}
               >
@@ -304,7 +315,7 @@
                   <ScreenThumb ratio={KIND_RATIO[row.kind]} lines={4} />
                 {/snippet}
                 <span class="text-caption text-ink-muted truncate">
-                  {row.why === "You opened it" ? row.why : `${row.why} — ${row.updatedBy}`}
+                  Updated by {row.updatedBy}
                 </span>
               </ScreenCard>
             </ScreenShelfItem>

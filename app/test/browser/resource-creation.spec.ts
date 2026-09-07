@@ -37,6 +37,42 @@ test.afterEach(async ({}, testInfo: TestInfo) => {
   expect(unexpected, `unexpected browser diagnostics in ${testInfo.title}`).toEqual([]);
 });
 
+test("New Tab Recent and search open represented resources instead of dead tabs", async ({ page }) => {
+  await page.goto("/app/dev-project", { waitUntil: "networkidle" });
+  const tabs = page.getByRole("toolbar", { name: "Open tabs" });
+
+  await tabs.locator('button.tab.icon[aria-label="New tab"]').click();
+  const recent = page.locator(".area-recent");
+  await expect(recent).toContainText("Winter readiness brief");
+  await expect(recent).toContainText("Board review — Q1 exposure");
+
+  await recent.getByRole("button").filter({ hasText: "Winter readiness brief" }).click();
+  await expect(page.locator(".title-bar h1")).toHaveText("Winter readiness brief");
+  await expect(page.locator(".ProseMirror")).toBeVisible();
+  await expect(tabs.getByText("Disconnected", { exact: true })).toHaveCount(0);
+
+  await tabs.locator('button.tab.icon[aria-label="New tab"]').click();
+  await page
+    .locator(".area-recent")
+    .getByRole("button")
+    .filter({ hasText: "Board review — Q1 exposure" })
+    .click();
+  await expect(page.locator(".area-title h1")).toHaveText("Board review — Q1 exposure");
+  await expect(page.locator(".area-canvas").getByRole("application", { name: "Slide" })).toBeVisible();
+  await expect(tabs.getByText("Disconnected", { exact: true })).toHaveCount(0);
+
+  await tabs.locator('button.tab.icon[aria-label="New tab"]').click();
+  await page.getByRole("searchbox", { name: "Search this project" }).fill("Field team briefing");
+  await page
+    .locator(".area-search")
+    .getByRole("button")
+    .filter({ hasText: "Field team briefing" })
+    .click();
+  await expect(page.locator(".area-title h1")).toHaveText("Field team briefing");
+  await expect(page.locator(".area-canvas").getByRole("application", { name: "Slide" })).toBeVisible();
+  await expect(tabs.getByText("Disconnected", { exact: true })).toHaveCount(0);
+});
+
 test("Project Overview creates a durable document and a usable one-slide deck", async ({ page }) => {
   let create = await openOverview(page);
   await create.getByRole("button", { name: "Document", exact: true }).click();

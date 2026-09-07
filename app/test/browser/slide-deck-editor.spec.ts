@@ -44,6 +44,8 @@ const openDeck = async (page: Page) => {
 
   await expect(surface).toBeVisible();
   await expect(title).toContainText(DECK_TITLE);
+  const previous = page.getByRole("button", { name: "Previous", exact: true });
+  while (await previous.isEnabled()) await previous.click();
   await expect(surface.locator('[data-item="el-1"]')).toBeVisible();
   return surface;
 };

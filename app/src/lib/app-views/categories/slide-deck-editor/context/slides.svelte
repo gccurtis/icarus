@@ -39,11 +39,11 @@
     runtime === undefined || body === undefined ? { width: 1280, height: 720 } : slideUnits(body.aspectRatio, runtime.stage)
   );
 
-  let reel = $state<HTMLDivElement>();
+  let reel = $state<HTMLDivElement | null>(null);
   let reelWidth = $state(0);
   $effect(() => {
     const element = reel;
-    if (element === undefined) return;
+    if (element === null) return;
     const measure = () => {
       const style = getComputedStyle(element);
       reelWidth = element.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
@@ -128,7 +128,7 @@
 
   $effect(() => {
     const element = reel;
-    if (element === undefined) return;
+    if (element === null) return;
     element.addEventListener("keydown", nudge);
     return () => element.removeEventListener("keydown", nudge);
   });

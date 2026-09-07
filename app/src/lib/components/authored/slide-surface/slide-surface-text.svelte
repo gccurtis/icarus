@@ -19,7 +19,7 @@
     onexit?: () => void;
   } = $props();
 
-  let host = $state<HTMLDivElement>();
+  let host = $state<HTMLDivElement | null>(null);
   let pendingCaret: number | undefined;
   let shrink = $state(1);
 
@@ -39,7 +39,7 @@
   };
 
   const offsetOf = (node: Node, offset: number): number => {
-    if (host === undefined) return 0;
+    if (host === null) return 0;
     let total = 0;
     const walk = (current: Node): boolean => {
       if (current === node) {
@@ -61,7 +61,7 @@
   };
 
   const positionAt = (wanted: number): { node: Node; offset: number } => {
-    if (host === undefined) throw new Error("no host");
+    if (host === null) throw new Error("no host");
     let remaining = wanted;
     let last: { node: Node; offset: number } = { node: host, offset: 0 };
     const walk = (current: Node): { node: Node; offset: number } | undefined => {
@@ -90,14 +90,14 @@
 
   const range = (): { from: number; to: number } | undefined => {
     const selection = window.getSelection();
-    if (host === undefined || selection === null || selection.rangeCount === 0) return undefined;
+    if (host === null || selection === null || selection.rangeCount === 0) return undefined;
     const held = selection.getRangeAt(0);
     if (!host.contains(held.startContainer) || !host.contains(held.endContainer)) return undefined;
     return { from: offsetOf(held.startContainer, held.startOffset), to: offsetOf(held.endContainer, held.endOffset) };
   };
 
   const placeCaret = (at: number) => {
-    if (host === undefined) return;
+    if (host === null) return;
     const selection = window.getSelection();
     if (selection === null) return;
     const position = positionAt(Math.max(0, Math.min(at, text.display.length)));
@@ -173,7 +173,7 @@
   };
 
   const reconcile = () => {
-    if (!editing || host === undefined) return;
+    if (!editing || host === null) return;
     const typed = host.innerText.replace(/\n$/, "");
     if (typed === text.display) return;
     const shortest = Math.min(typed.length, text.display.length);
@@ -230,7 +230,7 @@
   };
 
   const caretFromPoint = (): boolean => {
-    if (host === undefined || lastPoint === undefined || performance.now() - lastPoint.at > POINT_LIFETIME) return false;
+    if (host === null || lastPoint === undefined || performance.now() - lastPoint.at > POINT_LIFETIME) return false;
     const found = document.caretRangeFromPoint?.(lastPoint.x, lastPoint.y);
     if (!found || !host.contains(found.startContainer)) return false;
     const selection = window.getSelection();
@@ -241,7 +241,7 @@
   };
 
   $effect(() => {
-    if (!editing || host === undefined) return;
+    if (!editing || host === null) return;
     const element = host;
     void tick().then(() => {
       element.focus({ preventScroll: true });
@@ -254,7 +254,7 @@
   $effect(() => {
     void text.display;
     void text.size;
-    if (!fit || host === undefined) {
+    if (!fit || host === null) {
       shrink = 1;
       return;
     }

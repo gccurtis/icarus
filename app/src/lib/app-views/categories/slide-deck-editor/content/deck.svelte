@@ -145,13 +145,13 @@
   );
   const scene = $derived(body === undefined ? undefined : sceneOf(body, slide, units));
 
-  let surface = $state<HTMLDivElement>();
-  let board = $state<HTMLDivElement>();
+  let surface = $state<HTMLDivElement | null>(null);
+  let board = $state<HTMLDivElement | null>(null);
   let available = $state({ width: 0, height: 0 });
 
   $effect(() => {
     const element = surface;
-    if (element === undefined) return;
+    if (element === null) return;
     const measure = () => {
       available = { width: element.clientWidth, height: element.clientHeight };
     };
@@ -477,7 +477,7 @@
       return { x: held.x + held.width / 2, y: held.y + held.height / 2 };
     }
     const element = surface;
-    if (element === undefined || size.width === 0) return { x: 0.5, y: 0.5 };
+    if (element === null || size.width === 0) return { x: 0.5, y: 0.5 };
     const x = (element.scrollLeft + element.clientWidth / 2 - GUTTER) / size.width;
     const y = (element.scrollTop + element.clientHeight / 2 - GUTTER) / size.height;
     return { x: Math.min(Math.max(x, 0), 1), y: Math.min(Math.max(y, 0), 1) };
@@ -489,7 +489,7 @@
     view.setZoom(clampZoom(wanted, geometry));
     void tick().then(() => {
       const element = surface;
-      if (element === undefined) return;
+      if (element === null) return;
       element.scrollTo({
         left: Math.max(0, GUTTER + focus.x * size.width - element.clientWidth / 2),
         top: Math.max(0, GUTTER + focus.y * size.height - element.clientHeight / 2)

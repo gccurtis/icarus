@@ -129,14 +129,14 @@
 
   const textFor = (blockId: string) => editing === blockId;
 
-  let prose = $state<HTMLDivElement>();
+  let prose = $state<HTMLDivElement | null>(null);
 
   $effect(() => {
     const grow = ongrow;
     const host = prose;
     const height = box.height;
     void textInset;
-    if (grow === undefined || busy || host === undefined) return;
+    if (grow === undefined || busy || host === null) return;
     if (item.overflow !== "grow" || item.text === undefined || item.type === "table") return;
     const child = host.firstElementChild;
     if (!(child instanceof HTMLElement)) return;

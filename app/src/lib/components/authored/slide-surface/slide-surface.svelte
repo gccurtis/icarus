@@ -62,7 +62,7 @@
     badges?: readonly SurfaceBadge[];
     interactive?: boolean;
     placing?: boolean;
-    board?: HTMLElement;
+    board?: HTMLElement | null;
     onselect?: (ids: string[], additive: boolean) => void;
     onselectcells?: (tableId: string, cellIds: string[]) => void;
     onclear?: () => void;
@@ -84,7 +84,7 @@
   const PRESS_SLOP = 3;
   const MIN_SIZE = 0.01;
 
-  let stage = $state<HTMLDivElement>();
+  let stage = $state<HTMLDivElement | null>(null);
   let gesture = $state<Gesture>({ kind: "idle" });
   let drafts = $state<Map<string, SurfaceFrame>>(new Map());
   let draftRotation = $state<{ id: string; rotation: number } | undefined>(undefined);
@@ -195,9 +195,9 @@
 
   $effect(() => {
     const element = board;
-    if (element === undefined || !interactive) return;
+    if (element == null || !interactive) return;
     const down = (event: PointerEvent) => {
-      if (event.button !== 0 || placing || stage === undefined) return;
+      if (event.button !== 0 || placing || stage === null) return;
       if (event.target instanceof Node && stage.contains(event.target)) return;
       if (editing !== undefined) onexit?.();
       startMarquee(event);

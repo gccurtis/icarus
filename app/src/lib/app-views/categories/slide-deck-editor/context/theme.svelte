@@ -47,11 +47,11 @@
     runtime?.apply(withoutLayout(body, layoutId).ops);
   };
 
-  let shelf = $state<HTMLDivElement>();
+  let shelf = $state<HTMLDivElement | null>(null);
   let shelfWidth = $state(0);
   $effect(() => {
     const element = shelf;
-    if (element === undefined) return;
+    if (element === null) return;
     const measure = () => {
       shelfWidth = element.clientWidth;
     };

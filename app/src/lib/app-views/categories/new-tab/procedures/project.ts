@@ -7,7 +7,7 @@
  * the project — which is the rule Project Overview keeps, and is why these are
  * doors rather than a single blob.
  */
-import { PEOPLE, PROJECT, RESOURCES, type Person, type Resource } from "$app-views/categories/new-tab/procedures/cast";
+import { PEOPLE, PROJECT, RESOURCES, type Person } from "$app-views/categories/new-tab/procedures/cast";
 import { read, type Read } from "$app-views/categories/new-tab/procedures/read";
 
 export type ProjectRecord = {
@@ -95,8 +95,6 @@ export const project = (): Read<ProjectRecord> =>
     archived: false,
     counts: { resources: RESOURCES.length, people: PEOPLE.length }
   }, "project.project");
-
-export const resources = (): Read<readonly Resource[]> => read(RESOURCES, "project.resources");
 
 export const people = (): Read<readonly Person[]> => read(PEOPLE, "project.people");
 
