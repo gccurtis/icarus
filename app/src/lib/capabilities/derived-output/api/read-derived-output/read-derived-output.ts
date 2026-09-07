@@ -11,6 +11,7 @@ import {
   currentGeneration,
   outputOf
 } from "$capabilities/derived-output/api/shared/rows";
+import { derivedOutputRefreshJobFor } from "$capabilities/derived-output/api/shared/refresh-queue";
 
 /**
  * read-derived-output.
@@ -27,6 +28,11 @@ export const readDerivedOutput = async (input: unknown): Promise<ReadDerivedOutp
   const projectId = scope.projectId as Id<"projects">;
   const output = outputOf(model.store, projectId, asked.derivedOutputId);
   if (output === undefined) return null;
+  const refreshJob = derivedOutputRefreshJobFor(
+    model,
+    projectId,
+    asked.derivedOutputId
+  );
 
   const changedSources = changedSemanticSources(
     output.evidence,
@@ -41,12 +47,23 @@ export const readDerivedOutput = async (input: unknown): Promise<ReadDerivedOutp
     output.evidence.length === 0 &&
     output.lastGeneration !== undefined &&
     output.lastGeneration !== currentGeneration(model.store, projectId);
+  const storedValueState = String(output.state) === "generating"
+    ? (output.lastResponse === undefined ? "idle" : "stale")
+    : output.state;
   return {
     output,
     effectiveState:
-      output.state === "fresh" && (changedSources.length > 0 || changedMaterials.length > 0 || negativeResultChanged)
+      storedValueState === "fresh" && (changedSources.length > 0 || changedMaterials.length > 0 || negativeResultChanged)
         ? "stale"
-        : output.state,
+        : storedValueState,
+    refresh: refreshJob === undefined
+      ? { state: "idle" }
+      : {
+          state: refreshJob.state,
+          queuedAt: refreshJob.queuedAt,
+          ...(refreshJob.startedAt === undefined ? {} : { startedAt: refreshJob.startedAt }),
+          ...(refreshJob.error === undefined ? {} : { error: refreshJob.error })
+        },
     changedSources,
     changedMaterials
   };

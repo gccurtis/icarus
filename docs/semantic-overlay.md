@@ -259,8 +259,13 @@ semantic or Derived Output capability.
 
 The JSON store has durable source/object/index/history rows, separate exact and
 material job tables, and a coalesced `derivedOutputRefreshJobs` table keyed by
-Derived Output. Concurrent browsers join one server flight; a mid-flight signal
-advances the durable request version and causes one follow-up pull. It does not
+Derived Output. Concurrent browsers join one server flight. Repeating the same
+request is a pure join; only a changed definition revision or selection advances
+the durable request version. The worker also compares semantic-input watermarks
+around synthesis and retries when authoritative revisions, pending semantic
+work, material revisions, or the overlay generation actually move. Refresh job
+state is projected separately from value freshness, so the last published value
+stays readable while replacement work runs. It does not
 provide a cross-table transaction between an accepted leader and its outbox
 enqueue, and this repository has no always-on worker host. The current writes
 are adjacent, workers are explicitly callable,

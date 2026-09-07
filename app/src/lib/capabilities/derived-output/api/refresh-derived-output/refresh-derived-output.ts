@@ -20,6 +20,7 @@ import {
   currentGeneration,
   outputOf,
   responseBlock,
+  rowsOf,
   writeOutput
 } from "$capabilities/derived-output/api/shared/rows";
 import { synthesize } from "$capabilities/derived-output/api/shared/synthesis";
@@ -77,12 +78,17 @@ const addAttemptUsage = (
   embeddings: [...total.embeddings, ...attempt.embeddingUsage]
 });
 
-const sameDefinition = (left: DerivedOutput, right: DerivedOutput): boolean =>
-  left.updatedAt === right.updatedAt &&
-  left.prompt === right.prompt &&
-  JSON.stringify(left.template) === JSON.stringify(right.template) &&
-  JSON.stringify(left.scope) === JSON.stringify(right.scope) &&
-  JSON.stringify(left.origin) === JSON.stringify(right.origin);
+const definitionKeyOf = (output: DerivedOutput): string => JSON.stringify({
+  definitionRevision: output.definitionRevision ?? 0,
+  prompt: output.prompt,
+  template: output.template ?? null,
+  scope: output.scope ?? null,
+  origin: output.origin ?? null,
+  // Compatibility for rows created before definitionRevision existed.
+  legacyContinuity: output.definitionRevision === undefined
+    ? (output.lastResponse ?? null)
+    : null
+});
 
 const safeFailure = (error: unknown): string =>
   (error instanceof Error ? error.message : "Derived output refresh failed")
@@ -109,6 +115,58 @@ const prepareSemanticOverlay = async (
   throw new Error("The Semantic Overlay queue did not settle before refresh");
 };
 
+/**
+ * Snapshot every server-side input which can change what retrieval sees.
+ *
+ * This is deliberately independent of refresh clicks and job timestamps. A
+ * collaborator can save a resource while synthesis is in flight; the next
+ * comparison then detects either the authoritative revision, the new overlay
+ * generation, or its still-pending semantic job and performs one bounded retry.
+ */
+const semanticInputWatermark = (
+  model: ServerModel,
+  projectId: Id<"projects">
+): string => {
+  const byKey = <T extends { key: string }>(left: T, right: T): number =>
+    left.key.localeCompare(right.key);
+  const sources = activeSources(model.store, projectId)
+    .map((source) => ({
+      key: `${source.ref.kind}\u0000${source.ref.id}`,
+      revision: source.revision,
+      contentHash: source.contentHash ?? null
+    }))
+    .sort(byKey);
+  const materials = activeMaterials(model.store, projectId)
+    .map((material) => ({
+      key: material.materialId,
+      revisionKey: material.revisionKey,
+      profileHash: material.profileHash,
+      contextHash: material.contextHash
+    }))
+    .sort(byKey);
+  const pendingText = rowsOf(model.store, "semanticSyncJobs")
+    .filter((job) => job.projectId === projectId && job.state !== "failed")
+    .map((job) => ({
+      key: `${job.ref.kind}\u0000${job.ref.id}`,
+      revision: job.requestedRevision
+    }))
+    .sort(byKey);
+  const pendingMaterials = rowsOf(model.store, "semanticMaterialJobs")
+    .filter((job) => job.projectId === projectId && job.state !== "failed")
+    .map((job) => ({
+      key: `${job.ref.kind}\u0000${job.ref.id}`,
+      revision: job.requestedRevision
+    }))
+    .sort(byKey);
+  return JSON.stringify({
+    generation: currentGeneration(model.store, projectId),
+    sources,
+    materials,
+    pendingText,
+    pendingMaterials
+  });
+};
+
 type RefreshRequest = ReturnType<typeof validateRefreshDerivedOutput>;
 
 const performDerivedOutputRefresh = async (
@@ -120,10 +178,10 @@ const performDerivedOutputRefresh = async (
 
   let original = outputOf(model.store, projectId, asked.derivedOutputId);
   if (original === undefined) return null;
-  if (original.state === "generating") {
-    // A live worker is joined by processDerivedOutputRefreshFor before this
-    // function is entered. A persisted generating row here is therefore an
-    // interrupted older worker and is safe for the new durable job to reclaim.
+  if (String(original.state) === "generating") {
+    // Compatibility recovery for rows stranded by the earlier design. The
+    // durable refresh job now owns operation state, so the value row stays
+    // readable while work runs.
     original = writeOutput(model.store, original, {
       state: original.lastResponse === undefined ? "idle" : "stale",
       error: undefined,
@@ -167,19 +225,30 @@ const performDerivedOutputRefresh = async (
     min: 1,
     max: 20
   });
-  const locked = writeOutput(model.store, original, {
-    state: "generating",
-    error: undefined,
-    updatedAt: Date.now()
-  });
   let usage = emptyUsage();
   let attempts = 0;
   let toolCalls = 0;
+  const requestedDefinitionKey = definitionKeyOf(original);
+  let attemptedDefinitionKey = requestedDefinitionKey;
 
   try {
     for (attempts = 1; attempts <= maxRetries + 1; attempts += 1) {
+      if (attempts > 1) await prepareSemanticOverlay(model, projectId);
+      const currentDefinition = outputOf(model.store, projectId, original._id);
+      if (currentDefinition === undefined) return null;
+      if (definitionKeyOf(currentDefinition) !== requestedDefinitionKey) {
+        return {
+          outcome: "superseded",
+          output: currentDefinition,
+          attempts: attempts - 1,
+          toolCalls,
+          usage
+        };
+      }
+      attemptedDefinitionKey = definitionKeyOf(currentDefinition);
+      const inputWatermark = semanticInputWatermark(model, projectId);
       const attempt = await synthesize({
-        output: original,
+        output: currentDefinition,
         intelligence: model.intelligence,
         defaultTopK,
         query: async (query) => await querySemanticOverlay(query),
@@ -194,7 +263,7 @@ const performDerivedOutputRefresh = async (
 
       const current = outputOf(model.store, projectId, original._id);
       if (current === undefined) return null;
-      if (current.state !== "generating" || !sameDefinition(locked, current)) {
+      if (definitionKeyOf(current) !== attemptedDefinitionKey) {
         model.observability.logger.info("derivedOutput.refreshSuperseded", {
           projectId,
           derivedOutputId: original._id,
@@ -212,15 +281,22 @@ const performDerivedOutputRefresh = async (
         activeMaterials(model.store, projectId)
       );
       const generation = currentGeneration(model.store, projectId);
+      const semanticInputsChanged =
+        inputWatermark !== semanticInputWatermark(model, projectId);
       const unstableNegativeResult =
         attempt.evidence.length === 0 &&
         (attempt.overlayGenerations.length === 0 ||
           attempt.overlayGenerations.some((observed) => observed !== generation));
-      if (changed.length > 0 || changedMaterials.length > 0 || unstableNegativeResult) {
+      if (
+        changed.length > 0 ||
+        changedMaterials.length > 0 ||
+        unstableNegativeResult ||
+        semanticInputsChanged
+      ) {
         if (attempts <= maxRetries) continue;
         const failed = writeOutput(model.store, current, {
           state: "error",
-          error: unstableNegativeResult
+          error: unstableNegativeResult || semanticInputsChanged
             ? "The Semantic Overlay kept changing while the response was being generated"
             : "Cited sources kept changing while the response was being generated",
           updatedAt: Date.now()
@@ -229,18 +305,18 @@ const performDerivedOutputRefresh = async (
           projectId,
           derivedOutputId: original._id,
           attempts,
-          reason: unstableNegativeResult ? "overlay-churn" : "source-churn"
+          reason: unstableNegativeResult || semanticInputsChanged ? "overlay-churn" : "source-churn"
         });
         return { outcome: "failed", output: failed, attempts, toolCalls, usage };
       }
 
-      const revision = (original.lastRevision ?? 0) + 1;
+      const revision = (current.lastRevision ?? 0) + 1;
       const at = Date.now();
       const published = writeOutput(model.store, current, {
         queries: attempt.queries,
         evidence: attempt.evidence,
         lastVariables: attempt.variables,
-        lastResponse: responseBlock(original, revision, attempt.text, at),
+        lastResponse: responseBlock(current, revision, attempt.text, at),
         lastRevision: revision,
         lastGeneration: generation,
         state: "fresh",
@@ -262,7 +338,7 @@ const performDerivedOutputRefresh = async (
   } catch (error) {
     const current = outputOf(model.store, projectId, original._id);
     if (current === undefined) return null;
-    if (current.state !== "generating" || !sameDefinition(locked, current)) {
+    if (definitionKeyOf(current) !== attemptedDefinitionKey) {
       model.observability.logger.info("derivedOutput.refreshSuperseded", {
         projectId,
         derivedOutputId: original._id,

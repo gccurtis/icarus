@@ -23,6 +23,7 @@ export const createDerivedOutput = async (input: unknown): Promise<CreateDerived
   const id = model.store.create("derivedOutputs", {
     projectId,
     prompt: createDerivedOutputInput.prompt,
+    definitionRevision: 1,
     ...(createDerivedOutputInput.origin === undefined
       ? {}
       : { origin: createDerivedOutputInput.origin }),

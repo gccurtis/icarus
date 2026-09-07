@@ -67,7 +67,8 @@ export type DerivedOutputSelection = {
   to: number;
 };
 
-export type DerivedState = "idle" | "generating" | "fresh" | "stale" | "error";
+/** State of the last readable value; refresh operation state belongs to its job. */
+export type DerivedState = "idle" | "fresh" | "stale" | "error";
 
 export type DerivedOutputRefreshJobState = "queued" | "running" | "failed";
 
@@ -94,6 +95,8 @@ export type DerivedVariableResolution = {
 export type DerivedOutputFields = {
   projectId: Id<"projects">;
   prompt: string;
+  /** Advances only when a user-controlled generation input changes. */
+  definitionRevision?: number;
   /** Resource containing the Prompt Block. Navigation context, never evidence. */
   origin?: ResourceRef;
   template?: DerivedTemplateDefinition;
@@ -116,15 +119,16 @@ export type DerivedOutput = Row<"derivedOutputs"> & DerivedOutputFields;
 /**
  * One durable, coalesced refresh intent per Derived Output.
  *
- * `requestedVersion` advances when another browser signals refresh while a
- * worker is running. The worker performs one cheap follow-up pull after its
- * current attempt, so a source edit which landed mid-generation is not lost.
+ * `requestedVersion` advances only when the requested definition or selection
+ * changes while a worker is running. Repeated signals for the same input join
+ * the existing work without manufacturing a follow-up pass.
  */
 export type DerivedOutputRefreshJobFields = {
   projectId: Id<"projects">;
   derivedOutputId: Id<"derivedOutputs">;
   selection?: DerivedOutputSelection;
   state: DerivedOutputRefreshJobState;
+  requestKey: string;
   requestedVersion: number;
   attempts: number;
   error?: string;

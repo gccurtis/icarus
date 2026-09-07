@@ -108,24 +108,25 @@
       id: "publication",
       number: "03",
       label: "Publish guard",
-      title: "Validate the sources used—not the whole generation.",
+      title: "One shared job, with stable inputs at publication.",
       summary:
-        "Refresh first acquires the row's generating state. After synthesis, it re-reads the definition and active sources. A cited revision change discards the attempt and starts over; only a stable attempt replaces response, evidence, queries, and revision in one row write.",
+        "Refresh claims the server job while leaving the last value readable. After synthesis, it re-reads the versioned definition, active evidence, and semantic-input watermark. Only a stable attempt replaces response, evidence, queries, and revision in one row write.",
       equations: [
-        { expression: "lock: state ≠ generating → generating", meaning: "A synchronous full-row write precedes the first provider await." },
+        { expression: "same request + active job → join", meaning: "Repeated browser signals do not create provider work." },
+        { expression: "requestVersion′ > requestVersion ⇔ definition/selection changed", meaning: "Only a causal request change schedules a follow-up pass." },
         { expression: "valid(E,S) = ∀e∈E, ∃s∈S: ref(s)=ref(e) ∧ rev(s)=rev(e) ∧ enc(s)=enc(e)", meaning: "Every cited snapshot must still be active." },
         { expression: "attempts ≤ 1 + maxSourceRetries", meaning: "Revision churn cannot create an unbounded loop." },
         { expression: "lastRevision′ = (lastRevision ?? 0) + 1", meaning: "A publication or explicit user response edit advances output revision." }
       ],
       steps: [
-        "Resolve project authority and validate configuration before acquiring the row lock.",
-        "Snapshot the prompt, scope, previous response, and lock timestamp; previous text is continuity context, never evidence.",
+        "Resolve project authority, validate configuration, and join or claim the one durable refresh job.",
+        "Snapshot definitionRevision, prompt inputs, selection, previous response, and the project semantic watermark; previous text is continuity context, never evidence.",
         "Run one isolated retrieve/select attempt and aggregate provider plus embedding accounting.",
-        "Re-read the row. If its definition or state changed, return superseded without writing over the newer value.",
-        "Compare captured citations with active semantic sources. Retry from a fresh registry if any used source changed or disappeared.",
+        "Re-read the row. If its definition changed, return superseded without writing over the newer value; a changed queued request gets one follow-up pass.",
+        "Compare captured citations and the full semantic watermark. Drain and retry from a fresh registry if authoritative inputs moved.",
         "Publish queries, coalesced citations, a one-paragraph TextBlock, output revision, current overlay generation, fresh state, and refresh time atomically."
       ],
-      invariants: ["config before lock", "single-process exclusion", "definition wins", "bounded source retry", "old response survives failure", "one publication write"],
+      invariants: ["server-owned job", "duplicate requests join", "definition wins", "bounded source retry", "old response stays readable", "one publication write"],
       complexity: "Per attempt: synthesis + retrieval, then O(E + S) source validation with the current JSON table scan. Publication itself is one synchronous row replacement."
     },
     {
@@ -138,19 +139,19 @@
       equations: [
         { expression: "stale(D) ⇔ ∃e∈D.evidence: current(ref(e)) ≠ (revision(e), encoding(e))", meaning: "Only evidence actually used can stale the response." },
         { expression: "generation ∉ stale(D)", meaning: "A project-wide generation bump is not itself invalidation." },
-        { expression: "read(D) → { output, effectiveState, changedSources }", meaning: "The check is observable and does not mutate stored state." },
+        { expression: "read(D) → { output, effectiveState, refresh }", meaning: "Value freshness and shared operation state are independent projections." },
         { expression: "edit(lastResponse): evidence → ∅; fresh → stale", meaning: "User prose becomes continuity context, not falsely grounded output." }
       ],
       steps: [
         "Load one project-owned Derived Output or return null without disclosing another project.",
         "Build the current source snapshot map by resource kind and ID.",
         "Mark a cited snapshot changed if its source is absent, its revision differs, or its encoding differs.",
-        "Return stored state unchanged unless stored fresh has changed citations; then report effective stale.",
+        "Return value state unchanged unless stored fresh has changed citations; separately project the durable job as idle, queued, running, or failed.",
         "A user response edit advances its revision, clears grounding metadata, and is supplied to the next refresh as continuity-only context.",
         "Do not scan or rewrite derivedOutputs during source additions, updates, deletions, or unrelated generation changes.",
         "A caller explicitly refreshes a stale output, entering the independent publication lifecycle."
       ],
-      invariants: ["pull-based", "generation-independent", "project-scoped", "no fan-out writes", "editable continuity", "changed refs visible"],
+      invariants: ["pull-based", "value remains readable", "project-scoped", "no fan-out writes", "editable continuity", "shared refresh visible"],
       complexity: "Current JSON storage makes a read O(S + E). A keyed source lookup later reduces it to O(E) without changing this contract."
     }
   ];
@@ -164,7 +165,7 @@
       result: "fresh · response/evidence/queries replaced together",
       tone: "success",
       steps: [
-        { label: "Acquire", detail: "idle or stale → generating", state: "done" },
+        { label: "Acquire", detail: "refresh job queued → running; value row remains readable", state: "done" },
         { label: "Retrieve", detail: "query returns text + evidence-1 at generation 11", state: "done" },
         { label: "Select", detail: "structured answer selects evidence-1 and explains its use", state: "done" },
         { label: "Validate", detail: "active source is still revision 7", state: "done" },
@@ -189,15 +190,15 @@
     {
       id: "unrelated",
       label: "Unrelated generation",
-      headline: "The answer remains valid across a global generation bump.",
-      note: "Another source can advance the overlay from generation 11 to 12 without changing what this answer used.",
+      headline: "A later unrelated generation does not stale the answer.",
+      note: "After publication, another source can advance the overlay from generation 11 to 12 without changing what this answer used. A change during synthesis is conservatively retried once.",
       result: "fresh · no retry · cited source revision is the authority",
       tone: "success",
       steps: [
         { label: "Read", detail: "citation records source A revision 7 at generation 11", state: "done" },
         { label: "Other update", detail: "source B changes; overlay becomes generation 12", state: "kept" },
-        { label: "Preflight", detail: "source A remains revision 7", state: "done" },
-        { label: "Publish", detail: "answer is valid; lastGeneration records current 12", state: "done" },
+        { label: "Publication", detail: "answer was grounded while source A remained revision 7", state: "done" },
+        { label: "Pull check", detail: "source A still matches despite project generation 12", state: "done" },
         { label: "Later read", detail: "effective state remains fresh", state: "done" }
       ]
     },
@@ -239,7 +240,7 @@
       result: "error · prior lastResponse/lastRevision/evidence preserved",
       tone: "warning",
       steps: [
-        { label: "Acquire", detail: "existing stale response remains stored", state: "done" },
+        { label: "Acquire", detail: "job runs while existing stale response remains readable", state: "done" },
         { label: "Fail", detail: "provider error or retry budget exhausted", state: "retry" },
         { label: "Sanitize", detail: "credentials/provider bodies are not exposed", state: "kept" },
         { label: "Record", detail: "state = error with bounded message", state: "done" },
@@ -257,23 +258,23 @@
     { group: "model", action: "add", path: "…/intelligence/methods/run-agent/run-agent.ts", lines: "L1–139", symbols: "wire messages · parseTurn · parseUsage · safeError · serialize", change: "Defines exact OpenAI-compatible messages/calls, defensive provider parsing, usage accumulation inputs, and bounded tool-error redaction.", reason: "Malformed or secret-bearing provider/tool failures cannot leak through loosely typed JSON." },
     { group: "model", action: "add", path: "…/intelligence/methods/run-agent/run-agent.ts", lines: "L141–204", symbols: "invoke", change: "Posts bearer-authenticated JSON with forced/automatic tool choice, serial tool policy, strict response_format JSON Schema, reasoning settings, and abort timeout.", reason: "There is one auditable OpenRouter edge; response bodies are intentionally absent from surfaced HTTP errors." },
     { group: "model", action: "add", path: "…/intelligence/methods/run-agent/run-agent.ts", lines: "L207–307", symbols: "parsedInput · runAgent<Value>", change: "Executes the bounded tool loop, parses final JSON through the caller's validator, and returns a trusted generic value plus call trace, rounds, and usage.", reason: "Derived Output gets structured evidence selection without a persisted planner or provider-shaped values." },
-    { group: "representation", action: "change", path: "…/types/semantic/derived-output.ts", lines: "L1–41", symbols: "SemanticEvidenceSelection · SemanticCitation · DerivedOutputFields", change: "Stores each selected attempt-local evidence ID and its use annotation beside citation-by-value and the singular lastResponse.", reason: "The durable answer explains which retrieved evidence supported it without persisting generation-local semantic object IDs." },
+    { group: "representation", action: "change", path: "…/types/semantic/derived-output.ts", lines: "L1–140", symbols: "SemanticCitation · DerivedOutputFields · DerivedOutputRefreshJobFields", change: "Stores citation-by-value, the singular lastResponse, a user-input definition revision, and the coalesced refresh-job contract.", reason: "Canonical value and shared operation state have explicit, independent owners." },
     { group: "representation", action: "add", path: "…/behavior/semantic/citation.ts", lines: "L1–134", symbols: "assertCitation · mergedSelections · coalesceSemanticCitations", change: "Validates coordinate/text and selected-evidence fields, unions overlapping selected spans, and preserves every ID/use annotation within one source snapshot and generation.", reason: "Several selected hits become minimal trustworthy evidence without losing the model's declared use of each item." },
     { group: "representation", action: "add", path: "…/behavior/semantic/citation.ts", lines: "L138–165", symbols: "changedSemanticSources", change: "Joins selected citation refs to active snapshots and reports missing, revised, or re-encoded sources.", reason: "The same pure predicate drives pre-publication validation and pull-time freshness." },
     { group: "representation", action: "change", path: "app/src/lib/representation/store/tables.ts", lines: "L37–40 · L275–276", symbols: "SemanticDerivedOutput aliases", change: "Reuses semantic-domain fields/row types instead of maintaining a second Derived Output schema in the storage catalog.", reason: "One stored contract eliminates schema drift and keeps table identity intact." },
     { group: "capability", action: "add", path: "app/src/lib/capabilities/derived-output/index.remote.ts", lines: "L1–21", symbols: "create · read · update · refresh", change: "Exposes three mutating commands and one read query through the only client/server crossing.", reason: "Remote semantics now match mutation semantics; no project ID is accepted from the client." },
     { group: "capability", action: "add", path: "app/src/lib/capabilities/derived-output/derived-output.md", lines: "L1–29", symbols: "capability contract", change: "Documents direct retrieval evidence, strict selection, user-edited continuity, source preflight, and failure preservation.", reason: "The capability contract stays aligned to executable behavior instead of the retired handle/read design." },
-    { group: "capability", action: "add", path: "…/derived-output/types/{create,read,update,refresh}-derived-output.ts", lines: "create L1–9 · read L1–15 · update L1–13 · refresh L1–25", symbols: "public input/result contracts", change: "Defines prompt/scope creation, ID-based read/update/refresh, optional lastResponse edit, effective freshness, outcomes, and provider accounting.", reason: "Callers can supply an explicit continuity edit without reaching into stored rows." },
+    { group: "capability", action: "add", path: "…/derived-output/types/{create,read,update,refresh}-derived-output.ts", lines: "public contracts", symbols: "value state · refresh status · outcomes", change: "Defines prompt/scope creation, ID-based reads and updates, effective freshness, shared queued/running/failed status, outcomes, and provider accounting.", reason: "Callers observe one server-owned operation without reaching into stored rows." },
     { group: "capability", action: "add", path: "…/derived-output/api/shared/input.ts + four validate-* files", lines: "shared L1–57 · create L1–14 · read L1–10 · update L1–24 · refresh L1–10", symbols: "resourceSet · derivedOutputId · procedure validators", change: "Checks unknown remote values, every ResourceSet term/ref, prompts/IDs, and normalizes an optional nonblank response edit to one paragraph.", reason: "Remote values are reconstructed before mutation; the stored TextBlock invariant excludes newlines." },
     { group: "capability", action: "add", path: "…/derived-output/api/shared/rows.ts", lines: "L1–82", symbols: "rowsOf · outputOf · writeOutput · responseBlock · activeSources · currentGeneration", change: "Adds project-filtered access, undefined-free row replacement, shared TextBlock construction, source snapshots, and current generation lookup.", reason: "Refresh and user editing construct the same valid response block while all storage remains project-scoped." },
     { group: "capability", action: "add", path: "…/derived-output/api/shared/synthesis.ts", lines: "L15–143", symbols: "SynthesisAttempt · SynthesisDecision parser/schema · prompts", change: "Defines answered/insufficient attempt output, strict final schema, evidence-selection validation, hit identity, continuity context, and fixed insufficiency prose.", reason: "Prior output can stabilize style but only selected retrieved text can ground facts." },
     { group: "capability", action: "add", path: "…/derived-output/api/shared/synthesis.ts", lines: "L145–180", symbols: "synthesize.retrieve", change: "Calls scoped Semantic Overlay query, assigns/reuses attempt-local evidence IDs, and returns each ID with exact source/span text, score, generation, and diagnostics.", reason: "The model receives the similar text immediately without a redundant read call." },
     { group: "capability", action: "add", path: "…/derived-output/api/shared/synthesis.ts", lines: "L183–242", symbols: "structured agent call · selected citation resolution", change: "Forces the sole retrieve tool first, requires strict final JSON, rejects duplicate/unissued selections, coalesces selected citations, and suppresses unsupported prose.", reason: "The application—not the model—resolves citation provenance while the model declares which issued evidence it used." },
     { group: "capability", action: "add", path: "…/api/create-derived-output/create-derived-output.ts", lines: "L1–38", symbols: "createDerivedOutput", change: "Creates a project-owned idle row with empty queries/evidence and the scoped user actor.", reason: "Definition and lifecycle begin in representation without synthesizing eagerly." },
-    { group: "capability", action: "add", path: "…/api/read-derived-output/read-derived-output.ts", lines: "L1–39", symbols: "readDerivedOutput", change: "Returns one owned row, effective state, and exact changed source snapshots using a read-only freshness check.", reason: "Source updates never fan out writes through all Derived Outputs." },
-    { group: "capability", action: "add", path: "…/api/update-derived-output/update-derived-output.ts", lines: "L1–65", symbols: "updateDerivedOutput", change: "Updates prompt/scope or versions a user-edited response; an edit clears queries/evidence/generation/refresh time, becomes stale continuity, and cannot run during generation.", reason: "User-authored prose must guide the next refresh without inheriting citations that may not support it." },
-    { group: "capability", action: "add", path: "…/api/refresh-derived-output/refresh-derived-output.ts", lines: "L29–109", symbols: "configuration guard · usage fold · definition comparison · lock", change: "Validates limits, sanitizes failures, rejects concurrent generation, and acquires a timestamped full-row lock before network awaits.", reason: "Invalid config cannot strand a row and the JSON store's single-process exclusion is explicit." },
-    { group: "capability", action: "add", path: "…/api/refresh-derived-output/refresh-derived-output.ts", lines: "L110–175", symbols: "attempt loop · selected-source preflight · atomic publication", change: "Retries changed selected citations, respects superseding definitions, versions stable response/evidence together, records current generation, and emits metadata-only logs.", reason: "No response can publish against a selected source revision that changed during synthesis." },
+    { group: "capability", action: "add", path: "…/api/read-derived-output/read-derived-output.ts", lines: "read projection", symbols: "readDerivedOutput", change: "Returns one owned row, effective value state, shared refresh status, and exact changed source snapshots.", reason: "Collaborators see the same work state while source updates still avoid fan-out writes." },
+    { group: "capability", action: "add", path: "…/api/update-derived-output/update-derived-output.ts", lines: "definition update", symbols: "updateDerivedOutput", change: "Updates prompt/scope or a user-edited response, advances definitionRevision, clears invalid grounding, and may supersede in-flight work.", reason: "A real collaborative input change is distinguishable from a repeated refresh click." },
+    { group: "capability", action: "add", path: "…/api/shared/refresh-queue.ts", lines: "coordinator", symbols: "enqueueDerivedOutputRefreshFor · processDerivedOutputRefreshFor", change: "Coalesces one durable job by output ID, joins identical request keys, and schedules one follow-up only for changed definition/selection inputs.", reason: "Several browsers cannot multiply provider work or hide operation state in local UI." },
+    { group: "capability", action: "add", path: "…/api/refresh-derived-output/refresh-derived-output.ts", lines: "server worker", symbols: "semanticInputWatermark · attempt loop · atomic publication", change: "Drains semantic work, retries changed authoritative inputs, respects superseding definitions, and versions stable response/evidence together.", reason: "No response publishes from a mixed semantic snapshot, while the previous value remains readable." },
     { group: "capability", action: "add", path: "…/api/refresh-derived-output/refresh-derived-output.ts", lines: "L176–202", symbols: "failure/superseded path", change: "Converges provider/tool/schema errors on sanitized error state while leaving the previous response revision and evidence untouched.", reason: "A failed refresh does not destroy the last usable answer or continuity draft." },
     { group: "runtime", action: "change", path: "app/src/lib/runtime/server/{types,start.server}.ts", lines: "types L1,L24 · start L6,L48,L56", symbols: "ServerModel.intelligence · createIntelligence", change: "Constructs the OpenRouter model immediately after configuration and returns it in the process graph.", reason: "One immutable provider object exists before requests; capabilities borrow it from the runtime." },
     { group: "runtime", action: "change", path: "…/runtime/server/test/{construction,lifetime}.test.ts", lines: "construction L34–37,L70 · lifetime L40–43,L88", symbols: "intelligence runtime fake/assertions", change: "Extends composition and process-lifetime proofs to include the new model object.", reason: "Adding infrastructure changes the graph contract and its tests together." },
@@ -551,8 +552,8 @@ final assistant JSON
         </article>
         <article>
           <header><Sparkles size={16} aria-hidden="true" /><span>DERIVED OUTPUT LIFECYCLE</span></header>
-          <div class="mini-flow"><span>idle / stale / error</span><ArrowRight size={14} /><span>explicit refresh</span><ArrowRight size={14} /><span>generating</span><ArrowRight size={14} /><span>fresh or error</span></div>
-          <p>A normal read computes effective staleness from citation snapshots without mutating the row.</p>
+          <div class="mini-flow"><span>value stays readable</span><ArrowRight size={14} /><span>job queued / running</span><ArrowRight size={14} /><span>fresh or error</span></div>
+          <p>A normal read computes effective staleness and projects the shared refresh job without combining those two lifecycles.</p>
         </article>
       </div>
     </section>
@@ -603,8 +604,8 @@ final assistant JSON
         <p>The default suite is deterministic and free of provider spend. The opt-in combined proof crosses both configured APIs and exercises the actual recursive query plus tool agent.</p>
       </div>
       <div class="proof-stats">
-        <article><Check size={17} aria-hidden="true" /><div><strong>634</strong><span>default tests passed</span><p>61 files · 2 opt-in files skipped</p></div></article>
-        <article><Check size={17} aria-hidden="true" /><div><strong>39 / 39</strong><span>scoped architecture checks</span><p>four owners · across boundaries</p></div></article>
+        <article><Check size={17} aria-hidden="true" /><div><strong>934</strong><span>default tests passed</span><p>101 files · 2 opt-in files skipped</p></div></article>
+        <article><Check size={17} aria-hidden="true" /><div><strong>56 / 56</strong><span>architecture checks</span><p>all ownership groups · no findings</p></div></article>
         <article><Check size={17} aria-hidden="true" /><div><strong>1 / 1</strong><span>combined live pipeline</span><p>real Jina + OpenRouter · 5.71s</p></div></article>
         <article><Check size={17} aria-hidden="true" /><div><strong>0</strong><span>credential values tracked</span><p>local.yaml remains ignored</p></div></article>
       </div>
@@ -629,7 +630,7 @@ final assistant JSON
             <li><Check size={13} /> retrieve returns text + issued IDs; structured selection cites</li>
             <li><Check size={13} /> unknown IDs suppress prose; user edits become ungrounded continuity</li>
             <li><Check size={13} /> cited revision retry and bounded churn failure</li>
-            <li><Check size={13} /> concurrent lock, superseding definition, old-response preservation</li>
+            <li><Check size={13} /> duplicate-request join, causal follow-up, superseding definition</li>
           </ul>
         </article>
         <article>
@@ -645,15 +646,12 @@ final assistant JSON
       </div>
 
       <div class="command-evidence">
-        <code>pnpm test</code><span>61 files passed · 2 skipped · 634 tests passed · 2 skipped</span>
-        <code>pnpm lint:capabilities</code><span>10 / 10 checks · no findings</span>
-        <code>pnpm lint:model</code><span>9 / 9 checks · no findings</span>
-        <code>pnpm lint:representation</code><span>6 / 6 checks · no findings</span>
-        <code>pnpm lint:runtime</code><span>8 / 8 checks · no findings</span>
-        <code>pnpm lint:across</code><span>6 / 6 checks · no findings</span>
-        <code>pnpm typecheck</code><span>0 branch-owned diagnostics · 32 inherited prototype-view errors</span>
+        <code>pnpm test</code><span>101 files passed · 2 skipped · 934 tests passed · 2 skipped</span>
+        <code>pnpm lint</code><span>56 / 56 checks · no findings</span>
+        <code>pnpm typecheck</code><span>0 errors · 0 warnings</span>
+        <code>pnpm build</code><span>3,293 SSR modules · 4,818 client modules · production output complete</span>
         <code>ICARUS_LIVE_DERIVED_OUTPUT=1 …live-derived-output.test.ts</code><span>1 / 1 passed · 5.71s</span>
-        <code>playwright test …review.spec.js</code><span>desktop interaction + two mobile overflow checks · 4 / 4 passed</span>
+        <code>playwright test …derived-output-architecture.spec.ts</code><span>updated procedure diagrams · Chromium · 1 / 1 passed</span>
       </div>
     </section>
 
@@ -663,12 +661,12 @@ final assistant JSON
         <span class="kicker">SCALING + CONSISTENCY BOUNDARY</span>
         <h2 id="boundary-title">Correct for one JSON process. Explicitly not a distributed lock.</h2>
         <p>
-          The current store keeps whole tables in memory and synchronously rewrites one JSON file per mutation. That makes the generating-state write an effective same-process exclusion and makes validation-to-publication non-interleavable inside this process. It does not provide compare-and-swap across several server processes. Likewise, source freshness currently scans the in-memory source table.
+          The current store keeps whole tables in memory and synchronously rewrites one JSON file per mutation. A process-wide flight registry plus one durable refresh-job row provides same-process exclusion and joined results. It does not provide an atomic lease or claim across several server processes. Likewise, source freshness currently scans the in-memory source table.
         </p>
       </div>
       <div class="caveat-grid">
-        <article><span>PROVEN NOW</span><strong>single-process atomic row replacement</strong><p>bounded retries · definition guard · cited revision preflight</p></article>
-        <article><span>WHEN STORAGE CHANGES</span><strong>transaction / compare-and-swap</strong><p>persist a lock token or expected row version in the database mutation</p></article>
+        <article><span>PROVEN NOW</span><strong>one shared in-process flight</strong><p>duplicate joins · bounded retries · definition and watermark guards</p></article>
+        <article><span>WHEN STORAGE CHANGES</span><strong>transactional lease / claim</strong><p>atomically claim the same refresh-job row with expiry and expected version</p></article>
         <article><span>MILLION-SOURCE FOLLOW-UP</span><strong>keyed source lookup</strong><p>replace O(S) hydration with ref-key reads; no lifecycle contract changes</p></article>
       </div>
     </section>
@@ -683,7 +681,7 @@ final assistant JSON
     </section>
   </main>
 
-  <footer class="page-footer"><span>SEMANTIC OVERLAY / DERIVED OUTPUT / REVIEW 04</span><span>work/semantic-overlay-derived-output · stacked · not merged</span></footer>
+  <footer class="page-footer"><span>SEMANTIC OVERLAY / DERIVED OUTPUT / REVIEW 04</span><span>work/derived-output-architecture · executable reference</span></footer>
 </div>
 
 <style>

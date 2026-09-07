@@ -380,10 +380,10 @@ type EmbeddingSpace = {
       detail: [
         "Drop the planner for the first pass. Give one synthesis agent a retrieve tool that returns exact text plus attempt-local evidence IDs.",
         "The strict final response selects issued IDs and explains their use; citations copy source revision, encoding, span text, and observed generation.",
-        "Before publishing, recheck only cited source revisions; a newer unrelated overlay generation does not invalidate the answer."
+        "Around synthesis, recheck cited revisions plus a semantic-input watermark; after publication, an unrelated overlay generation does not stale the answer."
       ],
       procedure: [
-        { number: "1", title: "Pull", contract: "derivedOutputId → stored definition" },
+        { number: "1", title: "Join", contract: "derivedOutputId + request key → one server job" },
         { number: "2", title: "Synthesize", contract: "agent + direct evidence retrieval" },
         { number: "3", title: "Capture", contract: "SemanticHit → SemanticCitation value" },
         { number: "4", title: "Validate", contract: "citation revisions ↔ current sources" },
@@ -397,19 +397,20 @@ type EmbeddingSpace = {
           code: `type DerivedOutputFields = {
   projectId: Id<"projects">;
   prompt: string;
+  definitionRevision?: number;
   scope?: ResourceSet;
   queries: string[];
   evidence: SemanticCitation[];
   lastResponse?: ContentBlock;
   lastRevision?: number;
   lastGeneration?: number;
-  state: DerivedState;
+  state: "idle" | "fresh" | "stale" | "error";
   error?: string;
   refreshedAt?: number;
   createdBy: Actor;
   updatedAt: number;
 };`,
-          note: "There is no semantic-object ID list. lastRevision counts successful output publications; lastGeneration records the overlay observed by the latest one."
+          note: "There is no semantic-object ID list. definitionRevision changes only with user inputs; the separate refresh job owns queued/running/failed operation state."
         },
         {
           label: "value · semantic citation",

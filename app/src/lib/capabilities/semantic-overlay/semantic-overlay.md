@@ -23,7 +23,9 @@ lanes: exact text and interpreted semantic material.
   external files and joins the same queue/worker paths used by normal authoring.
 - A Derived Output refresh is itself a server pull boundary: its coalesced
   worker drains these queues before checking whether the current answer can be
-  returned without provider work.
+  returned without provider work. It also compares a semantic-input watermark
+  around synthesis, so a collaborator's accepted revision cannot be missed
+  merely because its overlay job landed mid-run.
 
 - `rebuildSemanticIndex` and `stageSemanticIndex` deterministically cluster each
   lane independently, write a replacement tree, publish its roots, and only

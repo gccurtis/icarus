@@ -224,6 +224,9 @@ const { createDerivedOutput } = await import(
 const { readDerivedOutput } = await import(
   "$capabilities/derived-output/api/read-derived-output/read-derived-output"
 );
+const { readDerivedOutputValue } = await import(
+  "$capabilities/derived-output/api/read-derived-output-value/read-derived-output-value"
+);
 const { updateDerivedOutput } = await import(
   "$capabilities/derived-output/api/update-derived-output/update-derived-output"
 );
@@ -270,6 +273,7 @@ const seedOutput = (overrides: Record<string, unknown> = {}): string =>
   state.store.create("derivedOutputs", {
     projectId: "projects:1",
     prompt: "Summarize the launch schedule",
+    definitionRevision: 1,
     scope: {
       include: [{ select: "resources", refs: [{ kind: "document", id: "launch-brief" }] }],
       exclude: []
@@ -311,6 +315,7 @@ describe("Derived Output lifecycle", () => {
     assert.deepEqual(created.queries, []);
     assert.deepEqual(created.evidence, []);
     assert.equal(created.state, "idle");
+    assert.equal(created.definitionRevision, 1);
     assert.deepEqual(created.createdBy, { kind: "user", userId: "users:1" });
     await assert.rejects(() => createDerivedOutput({ prompt: " " }), /must not be blank/);
   });
@@ -449,10 +454,13 @@ describe("Derived Output lifecycle", () => {
     });
 
     state.rows("derivedOutputs")[0].state = "generating";
-    await assert.rejects(
-      () => updateDerivedOutput({ derivedOutputId: id, prompt: "Another edit" }),
-      /cannot be edited/
-    );
+    const concurrentEdit = await updateDerivedOutput({
+      derivedOutputId: id,
+      prompt: "Another edit"
+    });
+    assert.equal(concurrentEdit?.prompt, "Another edit");
+    assert.equal(concurrentEdit?.definitionRevision, 3);
+    assert.equal(concurrentEdit?.state, "stale");
   });
 
   it("stores a user-edited response as ungrounded continuity for the next refresh", async () => {
@@ -731,31 +739,100 @@ describe("Derived Output lifecycle", () => {
     assert.equal(result?.output.lastRevision, 4);
     assert.doesNotMatch(result?.output.error ?? "", /private-value/);
     assert.match(result?.output.error ?? "", /redacted/);
+    const read = await readDerivedOutput({ derivedOutputId: id });
+    assert.equal(read?.effectiveState, "error");
+    assert.equal(read?.refresh.state, "failed");
+    if (read?.refresh.state === "failed") {
+      assert.match(read.refresh.error ?? "", /redacted/);
+    }
   });
 
   it("coalesces concurrent browser signals onto one server refresh flight", async () => {
     state.controls.mode = "gate";
     const id = seedOutput();
     const first = refreshDerivedOutput({ derivedOutputId: id });
-    await vi.waitFor(() => expect(state.rows("derivedOutputs")[0].state).toBe("generating"));
+    await vi.waitFor(() =>
+      expect(state.rows("derivedOutputRefreshJobs")[0]?.state).toBe("running")
+    );
+
+    const inFlight = await readDerivedOutput({ derivedOutputId: id });
+    assert.equal(inFlight?.output.state, "idle");
+    assert.equal(inFlight?.effectiveState, "idle");
+    assert.equal(inFlight?.refresh.state, "running");
+    const valueInFlight = await readDerivedOutputValue({ derivedOutputId: id });
+    assert.equal(valueInFlight?.value, null);
+    assert.equal(valueInFlight?.state, "idle");
+    assert.equal(valueInFlight?.refresh.state, "running");
 
     const second = refreshDerivedOutput({ derivedOutputId: id });
     state.controls.mode = "normal";
     state.controls.release?.();
     const [firstResult, secondResult] = await Promise.all([first, second]);
 
-    assert.equal(firstResult?.outcome, "current");
+    assert.equal(firstResult?.outcome, "published");
     assert.deepEqual(secondResult, firstResult);
     assert.equal(firstResult?.output.lastRevision, 1);
     assert.equal(state.controls.intelligenceCalls, 1);
     assert.equal(state.rows("derivedOutputRefreshJobs").length, 0);
+    assert.equal(
+      (await readDerivedOutput({ derivedOutputId: id }))?.refresh.state,
+      "idle"
+    );
+  });
+
+  it("runs one follow-up when the definition changes during shared work", async () => {
+    state.controls.mode = "gate";
+    const id = seedOutput();
+    const first = refreshDerivedOutput({ derivedOutputId: id });
+    await vi.waitFor(() => expect(state.controls.release).toBeTypeOf("function"));
+
+    const edited = await updateDerivedOutput({
+      derivedOutputId: id,
+      prompt: "Use the revised launch question"
+    });
+    assert.equal(edited?.definitionRevision, 2);
+    const second = refreshDerivedOutput({ derivedOutputId: id });
+    state.controls.mode = "normal";
+    state.controls.release?.();
+
+    const [firstResult, secondResult] = await Promise.all([first, second]);
+    assert.deepEqual(secondResult, firstResult);
+    assert.equal(firstResult?.outcome, "published");
+    assert.equal(firstResult?.output.prompt, "Use the revised launch question");
+    assert.equal(state.controls.intelligenceCalls, 2);
+    assert.equal(state.rows("derivedOutputRefreshJobs").length, 0);
+  });
+
+  it("retries once when a collaborator changes semantic inputs during synthesis", async () => {
+    seed("semanticSources", {
+      _id: "semanticSources:2",
+      _creationTime: 2,
+      projectId: "projects:1",
+      ref: { kind: "document", id: "neighboring-brief" },
+      revision: 1,
+      encoding: "utf-16",
+      updatedAt: 1
+    });
+    state.controls.mode = "gate";
+    const id = seedOutput();
+    const refresh = refreshDerivedOutput({ derivedOutputId: id });
+    await vi.waitFor(() => expect(state.controls.release).toBeTypeOf("function"));
+
+    state.rows("semanticSources")[1].revision = 2;
+    state.controls.mode = "normal";
+    state.controls.release?.();
+    const result = await refresh;
+
+    assert.equal(result?.outcome, "published");
+    assert.equal(result?.attempts, 2);
+    assert.equal(state.controls.intelligenceCalls, 2);
   });
 
   it("does not publish over a definition superseded while synthesis is in flight", async () => {
     state.controls.mode = "gate";
     const id = seedOutput();
     const refresh = refreshDerivedOutput({ derivedOutputId: id });
-    await vi.waitFor(() => expect(state.rows("derivedOutputs")[0].state).toBe("generating"));
+    await vi.waitFor(() => expect(state.controls.release).toBeTypeOf("function"));
     const row = state.rows("derivedOutputs")[0];
     row.prompt = "A newer definition";
     row.updatedAt = 11;
@@ -768,7 +845,7 @@ describe("Derived Output lifecycle", () => {
     assert.equal(result?.output.lastResponse, undefined);
   });
 
-  it("validates refresh configuration before acquiring the generating lock", async () => {
+  it("validates refresh configuration before starting provider work", async () => {
     state.controls.defaultTopK = 0;
     const id = seedOutput();
 

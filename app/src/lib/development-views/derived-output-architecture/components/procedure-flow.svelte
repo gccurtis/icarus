@@ -209,7 +209,7 @@
       status: "existing",
       input: "prompt + scope?",
       output: "idle DerivedOutput row",
-      note: "The row is the durable definition, evidence record, and canonical generated value. The simple document inspector creates the direct-prompt variant today."
+      note: "The row is the durable definition, evidence record, and canonical generated value. definitionRevision advances only for real user-controlled input changes."
     },
     {
       order: "03",
@@ -227,7 +227,7 @@
       status: "new",
       input: "derivedOutputId + optional selection",
       output: "one versioned job per output",
-      note: "Every browser signal coalesces here. A signal received during generation advances requestedVersion so the worker performs one follow-up pull."
+      note: "Every browser signal coalesces here. An identical request joins unchanged; only a new definition revision or selection advances requestedVersion."
     },
     {
       order: "05",
@@ -236,7 +236,7 @@
       status: "existing",
       input: "derivedOutputId",
       output: "published / failed / superseded",
-      note: "Joins the server flight, drains pending exact/material work, checks freshness, bounds retries, and preserves the last good response on failure."
+      note: "Joins the server flight, drains pending exact/material work, checks semantic-input watermarks around synthesis, bounds retries, and preserves the last good response on failure."
     },
     {
       order: "06",
@@ -446,8 +446,8 @@
     DO->>R: coalesce derivedOutputRefreshJobs by ID
     DO->>SO: processSemanticSyncQueueFor until settled
     SO->>R: publish pending authoritative resource projections
-    Note over UI,DO: Concurrent browsers join the same server flight
-    DO->>R: claim state + snapshot definition
+    Note over UI,DO: Identical requests join, only changed inputs advance the job
+    DO->>R: claim job state + snapshot definition and semantic watermark
     DO->>A: synthesize(run context, tools, schema)
     loop bounded tool rounds
       A->>SO: retrieve or retrieve_materials(query, scope, topK)
@@ -456,43 +456,52 @@
       R-->>A: context without IDs or native values with evidence IDs
     end
     A-->>DO: response + selected evidence IDs
-    DO->>DO: resolve IDs + recheck cited revisions
+    DO->>DO: resolve IDs + recheck citations and semantic watermark
     alt evidence remains current
       DO->>R: publish response + evidence + revision atomically
-      DO-->>UI: fresh response projection
+      DO-->>UI: fresh response + idle refresh projection
       UI->>DR: syncPromptBlockOps(block, output)
       DR->>R: flush text + state, preserve editor-owned mark ranges
       Note over UI,DR: Normal selectable text + settings star in the pasteboard gutter
-    else cited source changed
-      DO->>A: retry with a fresh evidence registry
+    else authoritative input changed
+      DO->>SO: drain again, then retry with a fresh evidence registry
     end`;
 
   const STATE_DIAGRAM = `stateDiagram-v2
-    [*] --> idle: definition exists
-    idle --> generating: refresh job claims
-    stale --> generating: refresh requested
-    error --> generating: retry requested
-    generating --> fresh: stable evidence publishes
-    generating --> error: bounded failure
-    generating --> stale: definition superseded
-    fresh --> stale: cited source revision changes
-    fresh --> stale: no evidence + overlay advances
-    fresh --> stale: prompt, scope, or response text edit
-    fresh --> fresh: unrelated source advances overlay
-    error --> error: last good response remains readable`;
+    state "Value lifecycle" as Value {
+      [*] --> idle: definition exists
+      idle --> fresh: stable evidence publishes
+      stale --> fresh: stable evidence publishes
+      fresh --> stale: cited revision or definition changes
+      fresh --> stale: no evidence + overlay advances
+      error --> fresh: retry publishes
+      stale --> error: bounded failure
+      error --> error: last response remains readable
+    }
+    state "Refresh operation" as Operation {
+      [*] --> job_idle
+      job_idle --> queued: refresh signal
+      queued --> running: server claims
+      running --> running: identical signal joins
+      running --> queued: actual request input advances
+      running --> job_idle: current or published
+      running --> failed: bounded failure
+      failed --> queued: explicit retry
+    }`;
 
-  const READ_CONTRACT = `type DerivedOutputValue = {
-  derivedOutputId: Id<"derivedOutputs">;
-  value: string | null;
-  block: ContentBlock | null;
-  state: "idle" | "generating" | "fresh" | "stale" | "error";
-  revision: number | null;
-  variables: DerivedVariableResolution[];
-  evidence: SemanticCitation[];
+  const READ_CONTRACT = `type ReadDerivedOutputResult = {
+  output: DerivedOutput;
+  effectiveState: "idle" | "fresh" | "stale" | "error";
+  refresh:
+    | { state: "idle" }
+    | { state: "queued" | "running" | "failed";
+        queuedAt: number; startedAt?: number; error?: string };
+  changedSources: SemanticSourceSnapshot[];
+  changedMaterials: SemanticMaterialSnapshot[];
 };
 
-readDerivedOutputValue({ derivedOutputId })
-  → DerivedOutputValue | null;`;
+readDerivedOutput({ derivedOutputId })
+  → ReadDerivedOutputResult | null;`;
 
   const STORAGE = [
     {
@@ -522,13 +531,13 @@ readDerivedOutputValue({ derivedOutputId })
     {
       table: "derivedOutputRefreshJobs",
       key: "project + derivedOutputId",
-      owns: "coalesced request version, worker state, attempts, and recovery error",
+      owns: "request key/version, queued/running/failed operation state, attempts, and recovery error",
       never: "response prose, evidence, editor marks, or browser-local loading state"
     },
     {
       table: "derivedOutputs",
       key: "derivedOutputId",
-      owns: "prompt/template, scope, state, response, named values, and locator-bearing citations",
+      owns: "versioned definition, value state, response, named values, and locator-bearing citations",
       never: "model-authored provenance or generation-local object IDs"
     },
     {
@@ -593,7 +602,7 @@ readDerivedOutputValue({ derivedOutputId })
     {
       number: "02",
       title: "Signals converge on the server",
-      body: "Semantic synchronization and Derived Output refresh each have persisted, coalesced jobs. The browser submits intent; the Derived Output worker owns semantic draining, freshness, retries, and generation by ID."
+      body: "Semantic synchronization and Derived Output refresh each have persisted, coalesced jobs. The browser submits intent and polls shared status; identical requests join while only changed inputs schedule follow-up work."
     },
     {
       number: "03",
@@ -778,7 +787,7 @@ readDerivedOutputValue({ derivedOutputId })
         <p>
           An empty line becomes Prompt through the ordinary Block menu. Its inspector creates and
           links the Derived Output and submits one refresh signal. The server drains pending semantic
-          work, publishes the response, then the adapter
+          work, exposes the shared job state, publishes the response, then the adapter
           copies that response into normal editable document text.
         </p>
       </header>
@@ -794,7 +803,7 @@ readDerivedOutputValue({ derivedOutputId })
         <MermaidDiagram
           source={DERIVED_SEQUENCE}
           label="Implemented document Prompt Block creation and Derived Output generation sequence"
-          caption="Implemented server path: concurrent browser signals coalesce by Derived Output ID; the worker prepares the overlay and publishes one canonical result. Deck placement remains a separate adapter."
+          caption="Implemented server path: identical browser signals join one job by Derived Output ID; only causal input changes retry, and the last canonical value remains readable throughout."
           minHeight="46rem"
         />
       </div>
@@ -803,7 +812,7 @@ readDerivedOutputValue({ derivedOutputId })
         <article>
           <span>WRITE A / DEFINITION</span>
           <strong>DerivedOutput row</strong>
-          <p>Prompt, scope, focus locator, lifecycle state, current canonical response, evidence and response revision.</p>
+          <p>Versioned prompt inputs, value state, current canonical response, evidence and response revision. Refresh operation state stays on its job.</p>
         </article>
         <article>
           <span>WRITE B / PLACEMENT</span>

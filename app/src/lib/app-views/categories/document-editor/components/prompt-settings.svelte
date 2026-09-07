@@ -71,7 +71,7 @@
   let running = $state(false);
   let actionError = $state<string>();
   let promptDraft = $state("");
-  let hydrated = $state(false);
+  let hydratedPrompt = $state<string>();
   let migrated = $state(false);
 
   const detail = $derived(detailQuery.ready ? detailQuery.current : undefined);
@@ -80,12 +80,22 @@
     output?.lastResponse?.type === "text" ? output.lastResponse.display : ""
   );
   const currentResponse = $derived(block?.display ?? "");
+  const refreshState = $derived(detail?.refresh.state ?? "idle");
+  const serverRefreshing = $derived(
+    refreshState === "queued" || refreshState === "running"
+  );
+  const busy = $derived(running || serverRefreshing);
   const definitionChanged = $derived(output !== undefined && promptDraft.trim() !== output.prompt);
   const responseChanged = $derived(output !== undefined && currentResponse !== storedResponse);
   const queryError = $derived(
     detailQuery.error === undefined ? undefined : String(detailQuery.error)
   );
-  const shownError = $derived(running ? undefined : actionError ?? output?.error ?? queryError);
+  const refreshError = $derived(
+    detail?.refresh.state === "failed" ? detail.refresh.error : undefined
+  );
+  const shownError = $derived(
+    busy ? undefined : actionError ?? refreshError ?? output?.error ?? queryError
+  );
   const sourceTitles = $derived.by(() => {
     const titles = new Map<string, string>();
     for (const document of rowsOf(documentsQuery, "documents")) {
@@ -101,9 +111,14 @@
   });
 
   $effect(() => {
-    if (output === undefined || hydrated) return;
-    promptDraft = output.prompt;
-    hydrated = true;
+    const nextPrompt = output?.prompt;
+    if (nextPrompt === undefined || nextPrompt === hydratedPrompt) return;
+    // Accept a collaborator's server revision while this browser has no local
+    // draft. Preserve an intentional local edit for the user's next refresh.
+    if (hydratedPrompt === undefined || promptDraft === hydratedPrompt) {
+      promptDraft = nextPrompt;
+    }
+    hydratedPrompt = nextPrompt;
   });
 
   // Blocks created by the earlier live-card prototype migrate when inspected.
@@ -132,11 +147,35 @@
     void currentRuntime.flush();
   });
 
-  onMount(() =>
-    observePromptOutput(outputId, () => {
+  onMount(() => {
+    const stopObserving = observePromptOutput(outputId, () => {
       void detailQuery.refresh();
-    })
-  );
+    });
+    let stopped = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const schedule = () => {
+      if (stopped) return;
+      // Polling is the current collaboration transport. It discovers work
+      // started by another browser and then tightens while that work is live.
+      const delay = serverRefreshing ? 600 : 1_500;
+      timer = setTimeout(async () => {
+        try {
+          await detailQuery.refresh();
+        } catch {
+          // The query object owns and exposes its error. Polling must continue
+          // so a transient transport failure does not strand shared status.
+        } finally {
+          schedule();
+        }
+      }, delay);
+    };
+    schedule();
+    return () => {
+      stopped = true;
+      if (timer !== undefined) clearTimeout(timer);
+      stopObserving();
+    };
+  });
 
   const currentBlock = (): PromptBlock => {
     const currentRuntime = runtime;
@@ -152,7 +191,7 @@
     const prompt = promptDraft.trim();
     const currentRuntime = runtime;
     if (
-      running ||
+      busy ||
       output === undefined ||
       block === undefined ||
       currentRuntime === undefined ||
@@ -186,6 +225,7 @@
         throw new Error(refreshed.output.error ?? "The response could not be generated");
       }
       promptDraft = refreshed.output.prompt;
+      hydratedPrompt = refreshed.output.prompt;
     } catch (error) {
       actionError = error instanceof Error ? error.message : String(error);
     } finally {
@@ -275,17 +315,20 @@
     <Button
       variant="outline"
       size="xs"
-      disabled={running || promptDraft.trim().length === 0}
+      disabled={busy || promptDraft.trim().length === 0}
       title="Refresh from project sources"
       onclick={generate}
     >
-      <RefreshCw class={running ? "spin" : undefined} aria-hidden="true" />
+      <RefreshCw class={busy ? "spin" : undefined} aria-hidden="true" />
       Refresh
     </Button>
   </PanelActions>
 
-  {#if running}
-    <PanelProgress label="Reading project sources and generating" tone="intelligence" />
+  {#if busy}
+    <PanelProgress
+      label={refreshState === "queued" ? "Refresh queued" : "Reading project sources and generating"}
+      tone="intelligence"
+    />
   {/if}
 
   {#if output.evidence.length > 0}

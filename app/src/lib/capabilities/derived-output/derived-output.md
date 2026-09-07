@@ -12,19 +12,23 @@ ungrounded, and performs substitution with `renderDerivedTemplate`.
 `stale` without erasing it. It may also replace `lastResponse` with a user edit:
 the edit advances the response revision, clears citations that can no longer be
 claimed for the edited prose, and becomes continuity context for the next
-refresh. `readDerivedOutput` compares citation snapshots to active source
-revisions and reports effective staleness without writing every output when one
-source changes.
+refresh. Each real edit advances `definitionRevision`; refresh bookkeeping and
+publication never do. `readDerivedOutput` compares citation snapshots to active
+source revisions and reports effective staleness without writing every output
+when one source changes.
 
 `refreshDerivedOutput` is the only synthesis path and is wholly server-owned.
 Every browser signal coalesces into one durable `derivedOutputRefreshJobs` row
 keyed by project and Derived Output ID. Concurrent callers join the same server
-flight instead of racing the `generating` lock. A signal received while work is
-running advances the job version, causing one cheap follow-up pull after the
-current pass. The worker drains pending exact-text and material semantic jobs
-before it asks the freshness gate whether provider work is necessary, then
-acquires the output's `generating` state before its first asynchronous provider
-call. It gives one bounded agent a single `retrieve` tool. Retrieval returns
+flight. The job—not the value row—owns `queued`, `running`, and `failed`
+operation state. An identical signal changes nothing and simply awaits that
+flight. Only a different definition revision or selection advances the request
+version and causes one follow-up pass. The worker drains pending exact-text and
+material semantic jobs before it asks the freshness gate whether provider work
+is necessary. It snapshots project semantic inputs around synthesis; a source
+revision, material revision, pending semantic job, or overlay-generation change
+causes one bounded retry after another drain. It gives one bounded agent a
+single `retrieve` tool. Retrieval returns
 exact source spans and overlapping document/slide locator spans plus
 application-issued, attempt-local evidence IDs. Each query consolidates
 overlapping or exactly adjacent spans
@@ -52,9 +56,13 @@ does not stale a response whose cited sources are unchanged. A negative,
 insufficient-evidence result is the exception: because it has no cited source,
 it becomes stale when the overlay advances beyond the generation it searched.
 
+`readDerivedOutput` returns value state (`idle`, `fresh`, `stale`, or `error`)
+separately from shared refresh status (`idle`, `queued`, `running`, or `failed`).
+The last published value therefore remains readable while its replacement runs.
 `readDerivedOutputValue` is the presentation-facing API. It returns the current
-text value and content block, effective state, response revision, named variable
-resolutions, and stored citations without exposing consumers to row layout.
+text value and content block, both state projections, response revision, named
+variable resolutions, and stored citations without exposing consumers to row
+layout.
 
 The document editor now has the first Prompt Block adapter. The ordinary Block
 selector converts an empty line to Prompt and opens its inspector. The inspector
@@ -70,6 +78,11 @@ remain on the Derived Output. The Prompts context rail only lists existing
 blocks.
 
 The durable job is also the recovery record if a request or browser disappears.
+The document inspector polls this server projection (more frequently while a
+job is active), disables duplicate refresh interaction, and uses its local flag
+only to bridge the initiating request before the first poll. A later push or
+subscription transport can replace polling without changing the capability
+contract.
 The current JSON-backed runtime serializes workers inside one server process;
 the same table is the lease/atomic-claim seam a multi-process database adapter
 must implement. An always-on worker host, selected-text focus, and placement

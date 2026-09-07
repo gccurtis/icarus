@@ -17,6 +17,7 @@ export const createTemplatedDerivedOutput = async (
   const id = model.store.create("derivedOutputs", {
     projectId,
     prompt: asked.template.output,
+    definitionRevision: 1,
     template: asked.template,
     ...(asked.origin === undefined ? {} : { origin: asked.origin }),
     ...(asked.scope === undefined ? {} : { scope: asked.scope }),

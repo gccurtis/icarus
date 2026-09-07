@@ -28,10 +28,6 @@ export const updateDerivedOutput = async (input: unknown): Promise<UpdateDerived
   if (output.template !== undefined) {
     throw new Error("A templated derived output cannot be edited through the prompt update path");
   }
-  if (output.state === "generating") {
-    throw new Error("A generating derived output cannot be edited");
-  }
-
   const nextScope = asked.scope ?? output.scope;
   const sameDefinition =
     output.prompt === asked.prompt &&
@@ -52,6 +48,7 @@ export const updateDerivedOutput = async (input: unknown): Promise<UpdateDerived
 
   return writeOutput(model.store, output, {
     prompt: asked.prompt,
+    definitionRevision: (output.definitionRevision ?? 0) + 1,
     scope: nextScope,
     ...(!responseChanged
       ? {}

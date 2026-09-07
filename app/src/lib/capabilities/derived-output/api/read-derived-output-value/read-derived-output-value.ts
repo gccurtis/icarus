@@ -20,6 +20,7 @@ export const readDerivedOutputValue = async (
     value: block !== null && "display" in block ? block.display : null,
     block,
     state: read.effectiveState,
+    refresh: read.refresh,
     revision: read.output.lastRevision ?? null,
     variables: read.output.lastVariables ?? [],
     evidence: read.output.evidence

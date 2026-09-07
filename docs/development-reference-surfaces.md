@@ -176,7 +176,13 @@ Refresh remains available whenever the prompt is non-empty; clicking it drains
 pending semantic work on the server before asking the pull-based freshness gate
 to regenerate or return the current value. Every browser signal coalesces into
 one durable job keyed by Derived Output ID, and concurrent callers join the same
-server flight rather than racing a client-owned loading flag. There is no
+server flight rather than racing a client-owned loading flag. Repeated signals
+for the same definition and selection are pure joins. Only an actual input
+change advances the job request version, while a server-side semantic watermark
+catches authoritative resource changes that land during synthesis. The read API
+projects value freshness separately from queued/running/failed refresh state;
+the inspector polls that shared state, shows one progress treatment, and keeps
+the last response readable. There is no
 `Current`, placement, response-status, or internal-details presentation. Each citation shows only retrieved authored
 content followed by the authoritative resource title; historical title locators
 are removed from the visible quote, and clock suffixes use minute precision. The
@@ -425,8 +431,9 @@ query could remount the inspector between those calls, reset its local running
 flag, and allow repeated clicks to collide with the output's generating state.
 The failed block then retained its earlier SSR error because no successful
 publication replaced it. Refresh is now one coalesced server operation keyed by
-Derived Output ID. Inspector remounts and concurrent users can only join or
-advance that backend job; they cannot create competing provider runs.
+Derived Output ID. Inspector remounts and concurrent users join that backend
+job; only a changed definition or selection advances it, and they cannot create
+competing provider runs.
 
 Finally, persistent review data and resettable fixture data answer different
 questions. The server accepts an opt-in `ICARUS_STORE_DIRECTORY` override so a
