@@ -277,10 +277,12 @@ can disable generated descriptors while deterministic facets remain live.
 
 A descriptor is reused only when its input hash, prompt version, and configured
 model match. Enabling descriptor generation or changing model, prompt, or input
-automatically invalidates the prior policy state. A stable bounded/native-read
-failure is not retried on every ordinary sync; a force request or changed input
-retries it. The coverage label refers to the bounded profile/envelope, not an
-unbounded claim that every underlying byte was given to the model.
+automatically invalidates the prior policy state. Disabling it republishes the
+material without its old descriptor or generated facet. A stable
+bounded/native-read failure is not retried on every ordinary sync; a force
+request or changed input retries it. The coverage label refers to the bounded
+profile/envelope, not an unbounded claim that every underlying byte was given
+to the model.
 
 ## Searchable facets
 
@@ -297,6 +299,11 @@ Each material may publish up to five independent objects:
 Every facet has its own `inputHash`. Material search overfetches up to five
 facets per requested result, groups by `materialId`, reports all matched facets,
 then returns `topK` distinct materials.
+
+Facet vectors are reused independently by facet kind and input hash. Changing
+placement context can therefore re-embed only the changed authored/generated
+text while retaining identical identity/profile vectors and the content-hashed
+native image vector. A forced synchronization deliberately bypasses reuse.
 
 `scopeRefs` is facet provenance, not another caller-controlled filter. The
 application computes it during normalization, hashes it with aggregate context,

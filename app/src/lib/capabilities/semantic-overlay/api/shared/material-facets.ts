@@ -13,6 +13,10 @@ import type { ProviderUsage } from "$representation/data/types/semantic/translat
 import { materialHash } from "$capabilities/semantic-overlay/api/shared/material-hash";
 
 export type EmbeddedMaterialFacet = SemanticMaterialFacet & { vector: number[] };
+type ReusableMaterialFacet = Pick<EmbeddedMaterialFacet, "facet" | "inputHash" | "vector">;
+
+const facetKey = (facet: Pick<EmbeddedMaterialFacet, "facet" | "inputHash">): string =>
+  `${facet.facet}\u0000${facet.inputHash}`;
 
 const profileFacts = (profile: MaterialProfile): string[] => {
   if (profile.kind === "csv" || profile.kind === "table") return [
@@ -102,23 +106,50 @@ export const embedMaterialFacets = async (
   model: ServerModel,
   seed: MaterialSeed,
   descriptor?: GeneratedMaterialDescriptor,
-  contextRefs: readonly ResourceRef[] = []
+  contextRefs: readonly ResourceRef[] = [],
+  reusable: readonly ReusableMaterialFacet[] = []
 ): Promise<{ facets: EmbeddedMaterialFacet[]; usage: ProviderUsage[]; visualError?: string }> => {
   const values = textFacets(seed, descriptor, contextRefs);
-  const embedded = await model.embedding.passages(values.map((value) => value.text));
-  const facets: EmbeddedMaterialFacet[] = values.map((value, index) => ({
+  const drafts = values.map((value) => ({
     ...value,
-    inputHash: materialHash([value.facet, value.text]),
-    vector: embedded.value[index]
+    inputHash: materialHash([value.facet, value.text])
   }));
-  const usage = [embedded.usage];
-  if (seed.kind === "image" && seed.nativeImage !== undefined) {
+  const prior = new Map(reusable.map((facet) => [facetKey(facet), facet.vector]));
+  const missing = drafts.filter((facet) => !prior.has(facetKey(facet)));
+  const usage: ProviderUsage[] = [];
+  const newlyEmbedded = new Map<string, number[]>();
+  if (missing.length > 0) {
+    const embedded = await model.embedding.passages(missing.map((value) => value.text));
+    for (const [index, facet] of missing.entries()) {
+      newlyEmbedded.set(facetKey(facet), embedded.value[index]);
+    }
+    usage.push(embedded.usage);
+  }
+  const facets: EmbeddedMaterialFacet[] = drafts.map((facet) => ({
+    ...facet,
+    vector: prior.get(facetKey(facet)) ?? newlyEmbedded.get(facetKey(facet))!
+  }));
+  const visualInputHash = materialHash([
+    "nativeVisual",
+    seed.profile.kind === "image" ? seed.profile.assetHash : seed.identityKey
+  ]);
+  const priorVisual = reusable.find(
+    (facet) => facet.facet === "nativeVisual" && facet.inputHash === visualInputHash
+  );
+  if (seed.kind === "image" && priorVisual !== undefined) {
+    facets.push({
+      facet: "nativeVisual",
+      trust: "native",
+      inputHash: visualInputHash,
+      vector: priorVisual.vector
+    });
+  } else if (seed.kind === "image" && seed.nativeImage !== undefined) {
     try {
       const visual = await model.embedding.image(seed.nativeImage);
       facets.push({
         facet: "nativeVisual",
         trust: "native",
-        inputHash: materialHash(["nativeVisual", seed.profile.kind === "image" ? seed.profile.assetHash : seed.identityKey]),
+        inputHash: visualInputHash,
         vector: visual.value
       });
       usage.push(visual.usage);

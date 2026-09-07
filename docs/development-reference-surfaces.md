@@ -310,6 +310,12 @@ require every contributor in the active Resource Set. This distinction emerged
 from implementation review; without it, deduplicating one image used in two
 resources could leak neighboring text from the excluded resource.
 
+The same review tightened the performance claim: material vectors are reused
+per facet kind and input hash, not only per whole record. A new placement can
+change aggregate context without recomputing the immutable image vector or
+unchanged identity/profile vectors. Descriptor enablement, disablement, model,
+prompt, and input changes each have an explicit migration path.
+
 The complete material identity, profiling, description, facet, two-lane index,
 freshness, tool, evidence-distance, and migration design lives in
 `docs/semantic-material-layer.md`. The development surface is

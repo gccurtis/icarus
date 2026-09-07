@@ -151,6 +151,7 @@ const fixture = (
     get nativeReads() { return nativeReads; },
     get descriptorCalls() { return descriptorCalls; },
     enableDescriptors() { descriptorsEnabled = true; },
+    disableDescriptors() { descriptorsEnabled = false; },
     setDescriptorModel(value: string) { descriptorModel = value; }
   };
 };
@@ -248,6 +249,8 @@ describe("semantic material synchronization", () => {
   it("deduplicates a shared asset across resources while scoping aggregate context", async () => {
     const held = fixture(false, "available");
     await syncSemanticMaterialsFor(held.model, projectId, held.ref);
+    const imageEmbeddingCalls = held.imageEmbeddingCalls;
+    const nativeReads = held.nativeReads;
     const secondId = held.store.create("documents", {
       projectId,
       title: "Campaign plan",
@@ -269,6 +272,8 @@ describe("semantic material synchronization", () => {
     const result = await syncSemanticMaterialsFor(held.model, projectId, secondRef);
 
     assert.equal(result.outcome, "published");
+    assert.equal(held.imageEmbeddingCalls, imageEmbeddingCalls);
+    assert.equal(held.nativeReads, nativeReads);
     const materials = (held.store.read("semanticMaterials") as unknown as { rows: unknown[] }).rows;
     const placements = (held.store.read("semanticMaterialPlacements") as unknown as { rows: unknown[] }).rows;
     assert.equal(materials.length, 1);
@@ -317,6 +322,22 @@ describe("semantic material synchronization", () => {
         rows: Array<{ descriptor?: { model: string } }>;
       }).rows[0].descriptor?.model,
       "descriptor-v2"
+    );
+
+    held.disableDescriptors();
+    const disabled = await syncSemanticMaterialsFor(held.model, projectId, held.ref);
+    assert.equal(disabled.outcome, "published");
+    assert.equal(held.descriptorCalls, 2);
+    assert.equal(
+      (held.store.read("semanticMaterials") as unknown as {
+        rows: Array<{ descriptor?: { model: string } }>;
+      }).rows[0].descriptor,
+      undefined
+    );
+    assert.equal(
+      (held.store.read("semanticObjects") as unknown as { rows: Array<{ facet: string }> }).rows
+        .some((row) => row.facet === "generated"),
+      false
     );
   });
 

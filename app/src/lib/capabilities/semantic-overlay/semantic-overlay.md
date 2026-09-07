@@ -32,7 +32,11 @@ lanes: exact text and interpreted semantic material.
   objects are eligible, but older rows remain resolvable until tree replacement.
 - `querySemanticMaterials` searches only current material facets, applies the
   same Resource Set policy, overfetches facets, groups by material, and returns
-  distinct interpreted hits with attempt-local native-read handles.
+  distinct interpreted hits with attempt-local native-read handles. Shared
+  asset identity/profile/native-visual facets remain eligible through any
+  in-set source or placement; aggregate authored/generated facets persist every
+  contributor in `scopeRefs` and require all contributors in-set. Context
+  changes reuse unchanged facet vectors independently by input hash.
 
 Derived Output's `read_*` tools do not query either lane. They resolve current
 authoritative resource content and issue typed exact, structured, code, or

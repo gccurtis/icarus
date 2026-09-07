@@ -190,7 +190,7 @@
       name: "embedMaterialFacets",
       status: "live",
       icon: Binary,
-      text: "Text facets use the existing passage embedding; image assets can add a native visual vector in the same Jina space."
+      text: "Text facets use passage embeddings; unchanged facet hashes reuse vectors, including native image vectors in the same Jina space."
     },
     {
       number: "06",
@@ -608,7 +608,7 @@ capabilities/semantic-overlay/api/
 
       <div class="pipeline-rails">
         <article><RefreshCw size={18} aria-hidden="true" /><div><span>FRESHNESS KEY</span><strong>resource revision or immutable content hash</strong><small>late work is discarded before publication</small></div></article>
-        <article><Fingerprint size={18} aria-hidden="true" /><div><span>REUSE KEY</span><strong>content hash + profiler + prompt version</strong><small>the same asset is described once, then placed many times</small></div></article>
+        <article><Fingerprint size={18} aria-hidden="true" /><div><span>REUSE KEY</span><strong>facet kind + input hash · descriptor policy identity</strong><small>unchanged text/native vectors survive placement-context updates</small></div></article>
         <article><ChartNoAxesColumn size={18} aria-hidden="true" /><div><span>COST POLICY</span><strong>inventory all · profile all · describe selectively</strong><small>no per-row, per-cell, or automatic per-slide summaries</small></div></article>
       </div>
     </section>

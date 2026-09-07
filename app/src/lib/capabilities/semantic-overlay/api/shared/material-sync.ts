@@ -83,7 +83,9 @@ const descriptorPolicyIsCurrent = (
   material: TableRow<"semanticMaterials">,
   seed: MaterialSeed
 ): boolean => {
-  if (model.configuration.get("semanticOverlay.materials.generateDescriptors") !== true) return true;
+  if (model.configuration.get("semanticOverlay.materials.generateDescriptors") !== true) {
+    return material.descriptor === undefined;
+  }
   const descriptor = material.descriptor;
   if (descriptor !== undefined) return (
     descriptor.inputHash === materialDescriptorInputHash(seed) &&
@@ -389,12 +391,18 @@ export const syncSemanticMaterialsFor = async (
     const contextHash = materialContextHash(seed, contextRefs);
     const revisionKey = materialRevisionKey(seed);
     const prior = previous.get(seed.identityKey);
-    let descriptor = prior?.descriptor;
-    let error: string | undefined;
-    const descriptorInputHash = materialDescriptorInputHash(seed);
+    const priorFacets = prior === undefined
+      ? []
+      : previousObjects.filter((object) => object.semanticMaterialId === prior._id);
+    const priorVisual = priorFacets.find((object) => object.facet === "nativeVisual");
     const descriptionsEnabled = model.configuration.get(
       "semanticOverlay.materials.generateDescriptors"
     ) === true;
+    const priorDescriptor = prior?.descriptor;
+    let descriptor = descriptionsEnabled ? priorDescriptor : undefined;
+    let error: string | undefined;
+    const descriptorInputHash = materialDescriptorInputHash(seed);
+    const descriptorRemoved = !descriptionsEnabled && priorDescriptor !== undefined;
     const descriptorIsStale = descriptor !== undefined && (
       descriptor.inputHash !== descriptorInputHash ||
       descriptor.promptVersion !== MATERIAL_DESCRIPTOR_PROMPT_VERSION ||
@@ -402,6 +410,7 @@ export const syncSemanticMaterialsFor = async (
     );
     const descriptorNeedsRefreshBeforeNative =
       force ||
+      descriptorRemoved ||
       descriptorIsStale ||
       (descriptor === undefined && descriptionsEnabled && canDescribeMaterial(seed));
     const reusable =
@@ -426,7 +435,14 @@ export const syncSemanticMaterialsFor = async (
       continue;
     }
 
-    const native = await withNativeImage(seed);
+    const descriptorNeedsNativeInput = descriptionsEnabled && (
+      force ||
+      descriptorIsStale ||
+      (descriptor === undefined && canDescribeMaterial(seed))
+    );
+    const native = seed.kind === "image" && priorVisual !== undefined && !force && !descriptorNeedsNativeInput
+      ? { seed }
+      : await withNativeImage(seed);
     const preparedSeed = native.seed;
     error = native.error;
     const descriptorNeedsRefresh =
@@ -441,12 +457,13 @@ export const syncSemanticMaterialsFor = async (
         error = joinedFailure(error, safeFailure(failure));
       }
     }
-    const embedded = await embedMaterialFacets(model, preparedSeed, descriptor, contextRefs);
-    const priorVisual = prior === undefined
-      ? undefined
-      : previousObjects.find(
-          (object) => object.semanticMaterialId === prior._id && object.facet === "nativeVisual"
-        );
+    const embedded = await embedMaterialFacets(
+      model,
+      preparedSeed,
+      descriptor,
+      contextRefs,
+      force ? [] : priorFacets
+    );
     if (
       !embedded.facets.some((facet) => facet.facet === "nativeVisual") &&
       priorVisual !== undefined &&
