@@ -18,11 +18,11 @@ export const DOCUMENT_FINDINGS: readonly Finding[] = [
     area: "Document editor",
     severity: "P1",
     status: "Fixed in this audit",
-    title: "Control multi-select was tied to drag timing",
-    symptom: "Control-double-click extended one native interval instead of adding a distinct word range; Shift and Control effectively behaved alike.",
-    cause: "The held selection was cleared on the first mouseup, before the browser finalized a multi-click gesture, and native range extension then won.",
-    fix: "Own modifier double-click finalization, build a custom MultiSelection from inline endpoints, and reserve Shift for contiguous extension.",
-    acceptance: "Control/Command adds distinct word ranges, Shift spans the interval, and no ProseMirror endpoint warning occurs.",
+    title: "Control multi-select trusted browser-native range anchors",
+    symptom: "Firefox Control-drag extended from the first range and highlighted everything between; modified double-click could also lose the held range.",
+    cause: "The plugin preserved the first range but treated the browser's interim contenteditable selection as the second. Firefox anchors that modified drag at the existing selection, unlike the Chromium path the regression suite exercised.",
+    fix: "Capture each modified drag's own pointer-down and pointer-up positions, build its range independently of the native DOM selection, own modifier double-click finalization, and reserve Shift for contiguous extension.",
+    acceptance: "Control/Command drag and double-click add distinct ranges in Firefox and Chromium, Shift spans the interval, and no ProseMirror endpoint warning occurs.",
     evidence: ["document-editor/procedures/multi-selection.ts", "document-editor.spec.ts"]
   },
   {

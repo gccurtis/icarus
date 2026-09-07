@@ -239,7 +239,8 @@
       <article><strong>56 / 56</strong><span>Architecture checks</span></article>
       <article><strong>101 / 101</strong><span>Script and generator tests</span></article>
       <article><strong>819 / 819</strong><span>Unit tests</span></article>
-      <article><strong>31 / 31 × 2</strong><span>Full browser scenarios across clean-seed runs</span></article>
+      <article><strong>32 / 32 × 2</strong><span>Full Chromium scenarios across clean-seed runs</span></article>
+      <article><strong>Firefox</strong><span>Control-drag regression verified in its native engine</span></article>
       <article><strong>1 + 1</strong><span>Created deck canvas + thumbnail</span></article>
       <article><strong>0</strong><span>Unexpected console, page, or HTTP diagnostics</span></article>
     </div>

@@ -157,6 +157,14 @@ const wordSpanAt = (view: EditorView, event: MouseEvent): Span | undefined => {
 
 export const multiSelection = (): Plugin<Held> => {
   let cleanup: ReturnType<typeof setTimeout> | undefined;
+  let drag:
+    | {
+        readonly held: readonly Span[];
+        readonly start: number;
+        readonly x: number;
+        readonly y: number;
+      }
+    | undefined;
 
   const cancelCleanup = () => {
     if (cleanup !== undefined) clearTimeout(cleanup);
@@ -165,8 +173,32 @@ export const multiSelection = (): Plugin<Held> => {
 
   const clearHeld = (view: EditorView) => {
     cancelCleanup();
+    drag = undefined;
     if (MULTI.getState(view.state)?.held === null) return;
     view.dispatch(view.state.tr.setMeta(MULTI, NONE).setMeta("addToHistory", false));
+  };
+
+  const pointerSelection = (
+    view: EditorView,
+    pointer: NonNullable<typeof drag>,
+    x: number,
+    y: number
+  ): Selection | undefined => {
+    const end = view.posAtCoords({ left: x, top: y });
+    if (end === null) return undefined;
+
+    const added = TextSelection.between(
+      view.state.doc.resolve(pointer.start),
+      view.state.doc.resolve(end.pos)
+    );
+    if (added.empty) return undefined;
+
+    return MultiSelection.create(
+      view.state.doc,
+      [...pointer.held, [added.from, added.to]],
+      added.anchor,
+      added.head
+    );
   };
 
   return new Plugin<Held>({
@@ -198,6 +230,7 @@ export const multiSelection = (): Plugin<Held> => {
           const adding = event.metaKey || event.ctrlKey;
           const current = MULTI.getState(view.state)?.held ?? null;
           if (!adding) {
+            drag = undefined;
             cancelCleanup();
             if (current !== null) {
               view.dispatch(view.state.tr.setMeta(MULTI, NONE).setMeta("addToHistory", false));
@@ -218,12 +251,67 @@ export const multiSelection = (): Plugin<Held> => {
             return false;
           }
 
+          const start = view.posAtCoords({ left: event.clientX, top: event.clientY });
+          drag = start === null
+            ? undefined
+            : { held, start: start.pos, x: event.clientX, y: event.clientY };
           view.dispatch(view.state.tr.setMeta(MULTI, { held }).setMeta("addToHistory", false));
           return false;
         },
+        mousemove: (view, event) => {
+          const pointer = drag;
+          if (
+            pointer === undefined ||
+            (event.buttons & 1) === 0 ||
+            (Math.abs(event.clientX - pointer.x) <= 4 && Math.abs(event.clientY - pointer.y) <= 4)
+          ) {
+            return false;
+          }
+
+          const selection = pointerSelection(view, pointer, event.clientX, event.clientY);
+          if (selection === undefined) return false;
+
+          // Once this is recognizably a drag, stop the browser from repainting
+          // its own modifier-dependent DOM interval. Paint the independent
+          // ProseMirror ranges at pointer cadence so Chromium does not wait
+          // until mouseup and Firefox cannot reconnect them.
+          event.preventDefault();
+          if (!selection.eq(view.state.selection)) {
+            view.dispatch(
+              view.state.tr.setSelection(selection).setMeta("addToHistory", false)
+            );
+          }
+          return true;
+        },
         mouseup: (view, event) => {
+          const pointer = drag;
+          drag = undefined;
           if (MULTI.getState(view.state)?.held === null) return false;
           if (event.detail > 1) return false;
+
+          // Browsers disagree about the anchor of a modified contenteditable
+          // drag. Some extend from the old selection, which produces the exact
+          // all-the-text-between result this plugin exists to avoid. Rebuild
+          // the added range from this gesture's own pointer endpoints instead
+          // of trusting the browser's interim DOM selection.
+          if (
+            pointer !== undefined &&
+            (Math.abs(event.clientX - pointer.x) > 4 || Math.abs(event.clientY - pointer.y) > 4)
+          ) {
+            const selection = pointerSelection(view, pointer, event.clientX, event.clientY);
+            if (selection !== undefined) {
+              event.preventDefault();
+              cancelCleanup();
+              view.dispatch(
+                view.state.tr
+                  .setSelection(selection)
+                  .setMeta(MULTI, NONE)
+                  .setMeta("addToHistory", false)
+              );
+              view.focus();
+              return true;
+            }
+          }
 
           // A drag has already produced the final MultiSelection. A first
           // click may still become a double-click, so retain its base briefly;
@@ -234,6 +322,7 @@ export const multiSelection = (): Plugin<Held> => {
         },
         dblclick: (view, event) => {
           if (!event.metaKey && !event.ctrlKey) return false;
+          drag = undefined;
           const held = MULTI.getState(view.state)?.held;
           if (held === null || held === undefined || held.length === 0) return false;
           const word = wordSpanAt(view, event);

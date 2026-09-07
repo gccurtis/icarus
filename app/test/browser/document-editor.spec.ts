@@ -81,6 +81,51 @@ const pointOnText = async (target: Locator, text: string) => {
   return point;
 };
 
+const dragAcrossText = async (
+  page: Page,
+  target: Locator,
+  text: string,
+  options: { control?: boolean; whilePressed?: () => Promise<void> } = {}
+) => {
+  await target.scrollIntoViewIfNeeded();
+  const points = await target.evaluate((node, needle) => {
+    const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
+    let current = walker.nextNode();
+    while (current !== null) {
+      const value = current.textContent ?? "";
+      const from = value.indexOf(needle);
+      if (from !== -1) {
+        const textNode = current;
+        const edge = (offset: number) => {
+          const range = document.createRange();
+          range.setStart(textNode, offset);
+          range.setEnd(textNode, offset + 1);
+          return range.getClientRects()[0];
+        };
+        const first = edge(from);
+        const last = edge(from + needle.length - 1);
+        if (first !== undefined && last !== undefined) {
+          return {
+            start: { x: first.left + 1, y: first.top + first.height / 2 },
+            end: { x: last.right - 1, y: last.top + last.height / 2 }
+          };
+        }
+      }
+      current = walker.nextNode();
+    }
+    return undefined;
+  }, text);
+  if (points === undefined) throw new Error(`The text ${text} was not laid out.`);
+
+  if (options.control) await page.keyboard.down("Control");
+  await page.mouse.move(points.start.x, points.start.y);
+  await page.mouse.down();
+  await page.mouse.move(points.end.x, points.end.y, { steps: 10 });
+  await options.whilePressed?.();
+  await page.mouse.up();
+  if (options.control) await page.keyboard.up("Control");
+};
+
 const openDocumentNamed = async (page: Page, title: string) => {
   await page.goto("/app/dev-project", { waitUntil: "networkidle" });
   const toolbarTab = page
@@ -353,7 +398,7 @@ test("Control-double-click adds a distinct range but comments require one contig
   await page.mouse.dblclick(second.x, second.y);
   await page.keyboard.up("Control");
 
-  await expect(inspector.locator("figure")).toContainText("2 selections");
+  await expect(inspector.locator("figure").first()).toContainText("2 selections");
   await expect(inspector.locator("figure")).toContainText("Substation");
   await expect(inspector.locator("figure")).toContainText("Nothing");
   await expect(page.locator(".multi-range")).toHaveCount(1);
@@ -388,6 +433,29 @@ test("Control-double-click adds a distinct range but comments require one contig
   await expect(caretInspector).toBeVisible();
   await page.keyboard.type("!");
   await expect(caretInspector).toBeVisible();
+});
+
+test("Control-drag adds a distinct text range", async ({ page }) => {
+  await page.setViewportSize(viewports.default);
+  await openFixture(page);
+
+  await dragAcrossText(page, page.locator('[data-block="#bbody1"]'), "Substation");
+  const inspector = page.locator(
+    'aside[aria-label="Inspector"][data-inspected="document-editor.text-selection"]'
+  );
+  await expect(inspector).toBeVisible();
+
+  await dragAcrossText(page, page.locator('[data-block="#bbody2"]'), "Nothing", {
+    control: true,
+    whilePressed: async () => {
+      await expect(inspector.locator("figure").first()).toContainText("2 selections", {
+        timeout: 1_000
+      });
+    }
+  });
+
+  await expect(inspector.locator("figure").first()).toContainText("2 selections");
+  await expect(page.locator(".multi-range")).toHaveCount(1);
 });
 
 test("quote Enter creates a normal body paragraph without ornamental quote chrome", async ({ page }) => {

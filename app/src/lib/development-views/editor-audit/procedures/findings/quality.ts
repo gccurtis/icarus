@@ -31,9 +31,9 @@ export const QUALITY_FINDINGS: readonly Finding[] = [
     severity: "P2",
     status: "Fixed in this audit",
     title: "The browser suite missed reported interaction boundaries",
-    symptom: "The old green suite omitted modifier double-click, multi-range comments, repeated distribution, responsive labels, and create/reload durability.",
-    cause: "Coverage concentrated on happy-path drag selection and one-pass geometry.",
-    fix: "Add unit cases at pure boundaries and diagnostic-aware Chromium scenarios for every reported integrated behavior.",
+    symptom: "The old green suite omitted Firefox modifier-drag, modifier double-click, multi-range comments, repeated distribution, responsive labels, and create/reload durability.",
+    cause: "Coverage concentrated on Chromium happy paths and one-pass geometry.",
+    fix: "Add unit cases at pure boundaries, diagnostic-aware Chromium scenarios for every reported integrated behavior, and an engine-specific Firefox modifier-drag regression.",
     acceptance: "Each confirmed regression has a failing-before/passing-after proof and every browser test rejects console/page/HTTP errors.",
     evidence: ["document-editor.spec.ts", "slide-deck-editor.spec.ts", "resource-creation.spec.ts"]
   },
