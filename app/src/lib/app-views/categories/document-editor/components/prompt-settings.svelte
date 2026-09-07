@@ -30,7 +30,6 @@
   import { workspaceState, type DocumentRuntime } from "$model/client/workspace-state";
   import type { ResourceRef } from "$representation/data/types/core/resource";
   import type { SemanticCitation } from "$representation/data/types/semantic/derived-output";
-  import { fileSubkindFor } from "$representation/data/behavior/external/file";
   import { onMount } from "svelte";
 
   let {
@@ -62,7 +61,6 @@
   const documentsQuery = tableQuery("documents");
   const slideDecksQuery = tableQuery("slideDecks");
   const spreadsheetsQuery = tableQuery("spreadsheets");
-  const externalFilesQuery = tableQuery("externalFiles");
 
   let running = $state(false);
   let actionError = $state<string>();
@@ -97,12 +95,6 @@
     }
     for (const sheet of rowsOf(spreadsheetsQuery, "spreadsheets")) {
       titles.set(`spreadsheet:${sheet._id}`, sheet.title);
-    }
-    for (const file of rowsOf(externalFilesQuery, "externalFiles")) {
-      titles.set(
-        `externalFile::${file.subkind ?? fileSubkindFor(file.mediaType, file.name)}:${file._id}`,
-        file.name
-      );
     }
     return titles;
   });
@@ -207,8 +199,9 @@
     }
   };
 
-  const sourceTitle = (kind: string, id: string): string =>
-    sourceTitles.get(`${kind}:${id}`) ?? "Open source";
+  const sourceTitle = (citation: SemanticCitation, ref: ResourceRef): string =>
+    sourceTitles.get(`${ref.kind}:${ref.id}`) ??
+    ("material" in citation ? citation.material.name : "Open source");
 
   const citationRef = (citation: SemanticCitation): ResourceRef =>
     "span" in citation
@@ -315,7 +308,7 @@
               type="button"
               class="source-link"
               onclick={() => openSource(ref.kind, ref.id)}
-            >{sourceTitle(ref.kind, ref.id)}</button>
+            >{sourceTitle(citation, ref)}</button>
           </article>
         {/each}
       </div>
