@@ -36,10 +36,10 @@ export const contextReference: AreaReference = {
       why: "Navigation labels must be stable projections, never raw floating-point layout residue."
     },
     {
-      title: "Header and footer editing moves onto the page",
-      before: "Layout opened a flattened mini-editor inside the context panel and exposed From edge controls.",
-      now: "Edit header/footer targets the canonical furniture block on the page; alignment and indent use normal text tools. Compatibility distance remains in data but is not exposed.",
-      why: "Furniture is rich document content and should be edited where it is rendered."
+      title: "Partial header and footer authoring is withdrawn",
+      before: "Layout exposed controls for a feature whose editable first page and flattened repeated pages could not maintain visual parity.",
+      now: "Layout exposes paper, margins, page numbers, and dimensions only. Header/footer representation remains backward-compatible but has no editor UI.",
+      why: "A missing feature is more truthful than a known-buggy implementation that presents one logical value in two visual forms."
     },
     {
       title: "Comments distinguish open, resolved, and detached",
@@ -96,15 +96,15 @@ export const contextReference: AreaReference = {
     },
     {
       id: "edit-layout",
-      title: "Change layout or edit furniture",
-      trigger: "The user changes page setup, numbering, header, or footer controls.",
+      title: "Change page layout",
+      trigger: "The user changes paper, orientation, margins, or page-number controls.",
       steps: [
         { actor: "Layout view", action: "Reads page setup and derived page metrics from the live document.", artifact: "pageSetupOf + layoutOf" },
         { actor: "Layout control", action: "Builds a set operation at the document-level path.", artifact: "native DocumentOp" },
-        { actor: "Document runtime", action: "Applies page setup changes or publishes a furniture focus target.", artifact: "apply / scrollTo" },
-        { actor: "Content surface", action: "Repaginates, or activates the one canonical on-page furniture editor.", artifact: "furniture plugin" }
+        { actor: "Document runtime", action: "Applies page setup or page-number operations.", artifact: "runtime.apply" },
+        { actor: "Content surface", action: "Repaginates body rows and refreshes the independent page-number projection.", artifact: "paginate + page-numbers plugin" }
       ],
-      outcome: "Page geometry remains derived while stored page settings and furniture content remain collaborative.",
+      outcome: "Page geometry remains derived and numbering remains collaborative without exposing header/footer authoring.",
       failure: "Invalid numeric input is rejected at the control boundary; the prior valid value remains visible."
     },
     {
@@ -192,11 +192,11 @@ export const contextReference: AreaReference = {
       sources: ["src/lib/app-views/categories/document-editor/context/styles.svelte", "src/lib/app-views/categories/document-editor/procedures/styles.ts"]
     },
     {
-      name: "layout operations / focusOfFurniture",
-      role: "Edit page setup and turn header/footer actions into structural on-page focus intent.",
-      reads: "Page setup, page metrics, furniture roots.",
-      writes: "Page settings through runtime.apply; selection and scroll intent through view/runtime state.",
-      failure: "Absent furniture roots are created through model operations before focus.",
+      name: "layout operations",
+      role: "Edit page setup and page-number settings without exposing represented header/footer content.",
+      reads: "Page setup, page metrics, and page-number compatibility host.",
+      writes: "Page settings through runtime.apply.",
+      failure: "Invalid layout input is rejected; a page-number compatibility host is created only when numbering requires it.",
       sources: ["src/lib/app-views/categories/document-editor/context/layout.svelte", "src/lib/app-views/categories/document-editor/procedures/layout.ts"]
     },
     {

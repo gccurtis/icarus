@@ -24,11 +24,11 @@
   } from "$app-views/categories/document-editor/procedures/comments";
   import { mergeRow, splitRow } from "$app-views/categories/document-editor/procedures/editing";
   import {
-    FURNITURE,
-    furnitureOf,
-    furniturePlugin,
-    sameFurniture
-  } from "$app-views/categories/document-editor/procedures/furniture";
+    PAGE_NUMBERS,
+    pageNumbersOf,
+    pageNumbersPlugin,
+    samePageNumbers
+  } from "$app-views/categories/document-editor/procedures/page-numbers";
   import { heldSelection } from "$app-views/categories/document-editor/procedures/highlight";
   import { mint } from "$app-views/categories/document-editor/procedures/ids";
   import { editorPointerGestures } from "$app-views/categories/document-editor/procedures/links";
@@ -144,7 +144,7 @@
     heldSelection(),
     multiSelection(),
     editorPointerGestures(),
-    furniturePlugin(() => furnitureOf(runtime?.body)),
+    pageNumbersPlugin(() => pageNumbersOf(runtime?.body)),
     annotationsPlugin(() => untrack(() => annotations)),
     keymap({ Enter: splitRow, Backspace: mergeRow }),
     keymap({ "Mod-z": undo, "Shift-Mod-z": redo, "Mod-y": redo }),
@@ -295,12 +295,12 @@
   });
 
   $effect(() => {
-    const spec = furnitureOf(runtime?.body);
+    const spec = pageNumbersOf(runtime?.body);
     if (editor === undefined) return;
-    if (sameFurniture(FURNITURE.getState(editor.state), spec)) return;
+    if (samePageNumbers(PAGE_NUMBERS.getState(editor.state), spec)) return;
 
     editor.dispatch(
-      editor.state.tr.setMeta(FURNITURE, spec).setMeta("addToHistory", false).setMeta(LAYOUT, true)
+      editor.state.tr.setMeta(PAGE_NUMBERS, spec).setMeta("addToHistory", false).setMeta(LAYOUT, true)
     );
   });
 
@@ -447,8 +447,10 @@
     view.setZoom(clampZoom(layout.zoom - by));
   };
 
-  const furnitureEdge = (distance: number | undefined): string =>
+  const pageNumberEdge = (distance: number | undefined): string =>
     `${((distance ?? 0.4) / layout.paper.width) * 100}%`;
+
+  const pageNumbers = $derived(pageNumbersOf(runtime?.body));
 
   const openThread = (pin: Pin) => {
     const id = pin.ids.includes(current ?? "") && pin.ids.length > 1
@@ -462,8 +464,7 @@
 
   const pageStyle = $derived(
     `zoom: ${layout.zoom / 100}; ` +
-      `--furniture-top: ${furnitureEdge(runtime?.body?.header?.distanceFromEdge)}; ` +
-      `--furniture-bottom: ${furnitureEdge(runtime?.body?.footer?.distanceFromEdge)}; ` +
+      `--page-number-edge: ${pageNumberEdge(pageNumbers.placement?.distanceFromEdge)}; ` +
       `--page-width: ${layout.pageWidth}rem; --page-height: ${layout.pageHeight}rem; ` +
       `--margin-top: ${layout.marginPercent.top}%; --margin-right: ${layout.marginPercent.right}%; ` +
       `--margin-bottom: ${layout.marginPercent.bottom}%; --margin-left: ${layout.marginPercent.left}%`
@@ -693,69 +694,25 @@
     vertical-align: text-bottom;
   }
 
-  .editor :global(.document-furniture) {
+  .editor :global(.document-page-number-band) {
     position: absolute;
     right: var(--margin-right);
     left: var(--margin-left);
     display: flex;
     align-items: baseline;
-    gap: calc(var(--token-spacing-unit) * 3);
     color: var(--token-ink-muted);
     font-size: 12px;
     line-height: 16px;
-    white-space: pre-wrap;
     pointer-events: none;
     user-select: none;
   }
 
-  .editor :global(.document-furniture-editable) {
-    z-index: 2;
-    min-height: 1.25rem;
-    pointer-events: auto;
-    user-select: text;
+  .editor :global(.document-page-number-band[data-edge="top"]) {
+    top: var(--page-number-edge);
   }
 
-  .editor :global(.document-furniture-editable:focus-within) {
-    box-shadow: 0 1px 0 var(--token-color-active-border);
-  }
-
-  .editor :global(.document-furniture-editable .document-row) {
-    min-width: 0;
-    flex: 1;
-  }
-
-  .editor :global(.document-furniture-editable .document-block) {
-    min-height: 1rem;
-    flex: 1;
-  }
-
-  .editor :global(.document-header.document-furniture-editable .document-block:has(> br.ProseMirror-trailingBreak)::before),
-  .editor :global(.document-header.document-furniture-editable .document-block:empty::before) {
-    content: "Header";
-  }
-
-  .editor :global(.document-footer.document-furniture-editable .document-block:has(> br.ProseMirror-trailingBreak)::before),
-  .editor :global(.document-footer.document-furniture-editable .document-block:empty::before) {
-    content: "Footer";
-  }
-
-  .editor :global(.document-furniture-editable .document-block::before) {
-    color: var(--token-ink-muted);
-    font-style: italic;
-    pointer-events: none;
-  }
-
-  .editor :global(.document-header) {
-    top: var(--furniture-top);
-  }
-
-  .editor :global(.document-footer) {
-    bottom: var(--furniture-bottom);
-  }
-
-  .editor :global(.document-furniture-text) {
-    min-width: 0;
-    flex: 1;
+  .editor :global(.document-page-number-band[data-edge="bottom"]) {
+    bottom: var(--page-number-edge);
   }
 
   .editor :global(.document-page-number) {

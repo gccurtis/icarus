@@ -30,12 +30,7 @@ export const STYLES: readonly { value: MarkStyle; label: string }[] = [
 
 export const blocksOf = (body: DocumentBody): Styled[] => {
   const held: Styled[] = [];
-  const rows = [
-    ...(body.header?.rows ?? []),
-    ...body.rows,
-    ...(body.footer?.rows ?? [])
-  ];
-  for (const row of rows) {
+  for (const row of body.rows) {
     if (row.kind !== "blocks") continue;
     for (const block of row.blocks) if (isStyled(block)) held.push(block);
   }
@@ -46,14 +41,7 @@ export const blockOf = (body: DocumentBody, blockId: string): Styled | undefined
   blocksOf(body).find((block) => block.id === blockId);
 
 export const anyBlockOf = (body: DocumentBody, blockId: string): ContentBlock | undefined => {
-  const rows = [
-    ...(body.header?.rows ?? []),
-    ...(body.header?.firstPageRows ?? []),
-    ...body.rows,
-    ...(body.footer?.rows ?? []),
-    ...(body.footer?.firstPageRows ?? [])
-  ];
-  for (const row of rows) {
+  for (const row of body.rows) {
     if (row.kind !== "blocks") continue;
     const found = row.blocks.find((block) => block.id === blockId);
     if (found !== undefined) return found;

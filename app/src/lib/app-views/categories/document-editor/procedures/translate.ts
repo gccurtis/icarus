@@ -218,13 +218,6 @@ const styledBlocks = (rows: readonly DocumentRow[]): Map<string, Styled> => {
   return held;
 };
 
-type RowRoot = "rows" | "header/rows" | "footer/rows";
-
-const rowsAt = (body: DocumentBody, root: RowRoot): readonly DocumentRow[] => {
-  if (root === "rows") return body.rows;
-  return root === "header/rows" ? (body.header?.rows ?? []) : (body.footer?.rows ?? []);
-};
-
 const shiftedBy = (was: DocumentBody, edits: readonly DocumentOp[]): DocumentBody => {
   if (edits.length === 0) return was;
   try {
@@ -234,13 +227,9 @@ const shiftedBy = (was: DocumentBody, edits: readonly DocumentOp[]): DocumentBod
   }
 };
 
-const translateRows = (
-  was: DocumentBody,
-  now: DocumentBody,
-  root: RowRoot
-): readonly DocumentOp[] => {
-  const wasRows = rowsAt(was, root);
-  const nowRows = rowsAt(now, root);
+const translateRows = (was: DocumentBody, now: DocumentBody): readonly DocumentOp[] => {
+  const wasRows = was.rows;
+  const nowRows = now.rows;
   const held = new Map(wasRows.map((row) => [row.id, row]));
   const kept = new Set(nowRows.map((row) => row.id));
 
@@ -264,7 +253,7 @@ const translateRows = (
       insertions.push({
         op: "insert",
         target: "row",
-        path: root,
+        path: "rows",
         ids: [row.id],
         after: before(nowRows, index),
         values: [row]
@@ -276,7 +265,7 @@ const translateRows = (
       removals.push({
         op: "remove",
         target: "row",
-        path: root,
+        path: "rows",
         ids: [row.id],
         after: before(wasRows, wasRows.indexOf(earlier)),
         values: [earlier]
@@ -284,7 +273,7 @@ const translateRows = (
       insertions.push({
         op: "insert",
         target: "row",
-        path: root,
+        path: "rows",
         ids: [row.id],
         after: before(nowRows, index),
         values: [row]
@@ -304,7 +293,7 @@ const translateRows = (
     removals.push({
       op: "remove",
       target: "row",
-      path: root,
+      path: "rows",
       ids: [row.id],
       after: before(wasRows, index),
       values: [row]
@@ -317,10 +306,10 @@ const translateRows = (
     if (anchor === wasAnchor) continue;
     if (held.get(row.id)?.kind !== row.kind) continue;
 
-    moves.push({ op: "move", target: "row", path: root, id: row.id, after: anchor, wasAfter: wasAnchor });
+    moves.push({ op: "move", target: "row", path: "rows", id: row.id, after: anchor, wasAfter: wasAnchor });
   }
 
-  const shifted = styledBlocks(rowsAt(shiftedBy(was, edits), root));
+  const shifted = styledBlocks(shiftedBy(was, edits).rows);
   const marks: DocumentOp[] = [];
   for (const [id, block] of styledBlocks(nowRows)) {
     const earlier = shifted.get(id);
@@ -331,36 +320,5 @@ const translateRows = (
   return [...edits, ...marks, ...removals, ...insertions, ...moves];
 };
 
-const furniturePresenceOp = (
-  was: DocumentBody,
-  now: DocumentBody,
-  which: "header" | "footer"
-): DocumentOp | undefined => {
-  const earlier = was[which];
-  const later = now[which];
-  if ((earlier === undefined) === (later === undefined)) return undefined;
-  return {
-    op: "set",
-    target: "document",
-    path: which,
-    value: later ?? null,
-    was: earlier ?? null
-  };
-};
-
-export const translate = (was: DocumentBody, now: DocumentBody): readonly DocumentOp[] => {
-  const ops: DocumentOp[] = [...translateRows(was, now, "rows")];
-
-  for (const which of ["header", "footer"] as const) {
-    const presence = furniturePresenceOp(was, now, which);
-    if (presence !== undefined) {
-      ops.push(presence);
-      continue;
-    }
-    if (was[which] !== undefined && now[which] !== undefined) {
-      ops.push(...translateRows(was, now, `${which}/rows`));
-    }
-  }
-
-  return ops;
-};
+export const translate = (was: DocumentBody, now: DocumentBody): readonly DocumentOp[] =>
+  translateRows(was, now);

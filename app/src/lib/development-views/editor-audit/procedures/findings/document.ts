@@ -114,12 +114,12 @@ export const DOCUMENT_FINDINGS: readonly Finding[] = [
     area: "Document editor",
     severity: "P2",
     status: "Fixed in this audit",
-    title: "Header/footer controls implied a per-page model that did not exist",
-    symptom: "A long toggle plus Edit action made repeated page projections look independently editable.",
-    cause: "DocumentBody owns one global header and footer; each page projects the same furniture and only the canonical instance is editable.",
-    fix: "Use compact Add/Remove actions beneath explicit Header and Footer labels, with editable on-page placeholders.",
-    acceptance: "Control wording, canvas behavior, and persistence all promise the same document-wide scope.",
-    evidence: ["document-editor/context/layout.svelte", "document-editor/procedures/furniture.ts"]
+    title: "Header/footer authoring shipped two visibly different renderers",
+    symptom: "The editable first-page content retained rich blocks while later pages flattened it into generic text.",
+    cause: "One partial feature combined canonical ProseMirror nodes with a separate lossy decoration renderer.",
+    fix: "Withdraw header/footer controls, schema nodes, projections, selection lookup, and editor translation. Retain the representation for compatibility and isolate page numbers in their own read-only projection.",
+    acceptance: "No header/footer content or controls appear in the editor, no editor operation targets those roots, and existing page numbers remain visible.",
+    evidence: ["document-editor/context/layout.svelte", "document-editor/procedures/page-numbers.ts", "document-editor/procedures/translate.ts"]
   },
   {
     id: "DOC-11",

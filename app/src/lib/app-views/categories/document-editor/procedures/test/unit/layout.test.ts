@@ -4,7 +4,6 @@ import type { DocumentBody } from "$representation/data/types/documents/body";
 import { applyOps, invertAll } from "$representation/data/behavior/documents/apply-ops";
 import {
   customPaperOps,
-  furnitureOps,
   marginOps,
   orientationOps,
   pageNumberOf,
@@ -43,16 +42,7 @@ test("orientation and margins are single field writes", () => {
   assert.deepEqual(marginOps(wide, "left", 1.25), []);
 });
 
-test("turning a footer on makes an empty line to type into, and off removes it", () => {
-  const on = applyOps(BARE, furnitureOps(BARE, "footer", true));
-  assert.equal(on.footer?.rows.length, 1);
-  assert.deepEqual(furnitureOps(on, "footer", true), []);
-
-  const off = applyOps(on, furnitureOps(on, "footer", false));
-  assert.equal(off.footer, undefined);
-});
-
-test("page numbers live in the footer, and asking for them makes the footer", () => {
+test("page numbers use a compatibility footer host when the representation needs one", () => {
   const numbered = applyOps(BARE, pageNumberOps(BARE, "center"));
   assert.equal(numbered.footer?.pageNumber?.position, "center");
   assert.equal(pageNumberOf(numbered)?.position, "center");
@@ -60,4 +50,26 @@ test("page numbers live in the footer, and asking for them makes the footer", ()
   const none = applyOps(numbered, pageNumberOps(numbered, "none"));
   assert.equal(pageNumberOf(none), undefined);
   assert.equal(none.footer?.rows.length, 1, "the footer stays");
+});
+
+test("turning numbering off clears every legacy compatibility host", () => {
+  const before: DocumentBody = {
+    rows: [],
+    header: {
+      rows: [],
+      distanceFromEdge: 0.4,
+      pageNumber: { position: "start" }
+    },
+    footer: {
+      rows: [],
+      distanceFromEdge: 0.4,
+      pageNumber: { position: "end" }
+    }
+  };
+
+  const after = applyOps(before, pageNumberOps(before, "none"));
+  assert.equal(after.header?.pageNumber, undefined);
+  assert.equal(after.footer?.pageNumber, undefined);
+  assert.deepEqual(after.header?.rows, []);
+  assert.deepEqual(after.footer?.rows, []);
 });

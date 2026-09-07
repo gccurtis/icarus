@@ -241,34 +241,3 @@ test("a split reaching across a page boundary keeps both rows", () => {
 
   assert.deepEqual(displays(after), [["One"], ["Two"], ["X"]]);
 });
-
-test("Enter in canonical header content creates another header row", () => {
-  const before: DocumentBody = {
-    rows: [blocks("#r1", [text("#b1", "Body")])],
-    header: {
-      rows: [blocks("#hr1", [text("#hb1", "HeadTail")])],
-      distanceFromEdge: 0.4
-    }
-  };
-  const after = bodyOf(run(splitRow, stateAt(before, "#hb1", 4)).doc, before);
-
-  assert.deepEqual(after.rows, before.rows);
-  assert.deepEqual(
-    after.header?.rows.map((row) =>
-      row.kind === "blocks" ? row.blocks.map((block) => ("display" in block ? block.display : "")) : []
-    ),
-    [["Head"], ["Tail"]]
-  );
-});
-
-test("Backspace cannot merge the first body row into canonical header content", () => {
-  const before: DocumentBody = {
-    rows: [blocks("#r1", [text("#b1", "Body")])],
-    header: {
-      rows: [blocks("#hr1", [text("#hb1", "Header")])],
-      distanceFromEdge: 0.4
-    }
-  };
-
-  assert.equal(run(mergeRow, stateAt(before, "#b1", 0)).handled, false);
-});

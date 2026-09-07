@@ -89,13 +89,15 @@ test("a mark survives an untouched round trip byte for byte", () => {
   assert.deepEqual(after, before);
 });
 
-test("page setup, styles and furniture are carried, never rebuilt", () => {
+test("unimplemented header data is preserved without entering the editor projection", () => {
   const before = body([blocks("#r1", [text("#b1", "One")])], {
     pageSetup: { paper: "a4", orientation: "landscape", margins: { top: 1, right: 1, bottom: 1, left: 1 } },
     header: { rows: [blocks("#h1", [text("#hb1", "Head")])], distanceFromEdge: 36 }
   });
+  const projected = docOf(before, METRICS);
 
-  assert.deepEqual(bodyOf(docOf(before, METRICS), before), before);
+  assert.equal(projected.textContent.includes("Head"), false);
+  assert.deepEqual(bodyOf(projected, before), before);
 });
 
 test("a non-text block is drawn as an atom beside its text, and comes back whole", () => {

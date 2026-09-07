@@ -205,7 +205,7 @@ test("the reported incident and decision documents use sane non-overlapping lead
   }
 });
 
-test("the review fixture exposes page furniture and every comment state", async ({ page }) => {
+test("the review fixture exposes page numbers and every visible comment state", async ({ page }) => {
   await page.setViewportSize(viewports.default);
   await openFixture(page);
 
@@ -215,11 +215,11 @@ test("the review fixture exposes page furniture and every comment state", async 
   await expect(pages.nth(1).locator(".document-page-number")).toHaveText("1");
 
   await expect(page.locator('.comment-anchor[data-thread="commentThreads:4"]')).toHaveCount(2);
-  await expect(page.locator('.comment-anchor[data-thread="commentThreads:5"]')).toHaveCount(1);
+  await expect(page.locator('.comment-anchor[data-thread="commentThreads:5"]')).toHaveCount(0);
   await expect(page.locator('.comment-anchor[data-thread="commentThreads:6"]')).toHaveCount(0);
   await expect(page.locator('.comment-anchor[data-thread="commentThreads:7"]')).toHaveCount(0);
   await expect(page.locator('button.pin[data-threads~="commentThreads:4"]')).not.toHaveCount(0);
-  await expect(page.locator('button.pin[data-threads~="commentThreads:5"]')).toHaveCount(1);
+  await expect(page.locator('button.pin[data-threads~="commentThreads:5"]')).toHaveCount(0);
   await expect(page.locator('button.pin[data-threads~="commentThreads:6"]')).toHaveCount(0);
 
   await page.locator('button.pin[data-threads~="commentThreads:4"]').first().click();
@@ -262,7 +262,7 @@ test("the review fixture exposes page furniture and every comment state", async 
   const context = page.locator('aside[aria-label="Context"]');
   await context.getByRole("button", { name: "Comments", exact: true }).click();
   await expect(context.getByRole("heading", { name: "Comments" })).toBeVisible();
-  await expect(context.getByText("The text this was on is gone.", { exact: true })).toBeVisible();
+  await expect(context.getByText("The text this was on is gone.", { exact: true })).toHaveCount(2);
   const resolved = context.getByRole("button", { name: /Resolved\s+1/ });
   await expect(resolved).toBeVisible();
   await resolved.click();
@@ -486,26 +486,6 @@ test("quote Enter creates a normal body paragraph without ornamental quote chrom
   await expect(inspector.getByRole("button", { name: "Style", exact: true })).toContainText("Body");
 });
 
-test("a header comment remains anchored while text is inserted before it", async ({ page }) => {
-  await page.setViewportSize(viewports.default);
-  await openFixture(page);
-
-  const anchor = page.locator('.comment-anchor[data-thread="commentThreads:5"]');
-  await expect(anchor).toHaveText("Winter readiness");
-
-  const context = page.locator('aside[aria-label="Context"]');
-  await context.getByRole("button", { name: "Layout", exact: true }).click();
-  await page.locator('[data-furniture="header"] .document-block').first().click();
-  await page.keyboard.type("FY26 · ");
-  await expect(anchor).toHaveText("Winter readiness");
-  await expect(page.locator(".title-bar")).toContainText("Saved", { timeout: 10_000 });
-
-  await page.reload({ waitUntil: "networkidle" });
-  await expect(page.locator('.comment-anchor[data-thread="commentThreads:5"]')).toHaveText(
-    "Winter readiness"
-  );
-});
-
 test("the fixture can be reached with the keyboard", async ({ page }) => {
   await page.setViewportSize(viewports.default);
   await page.goto("/app/dev-project", { waitUntil: "networkidle" });
@@ -712,52 +692,19 @@ test("document named styles mirror the text formatting inspector without metadat
   }
 });
 
-test("headers and footers edit on the page through the shared editor", async ({ page }) => {
+test("layout omits header and footer authoring while page numbers remain", async ({ page }) => {
   await page.setViewportSize(viewports.default);
   await openFixture(page);
 
   const context = page.locator('aside[aria-label="Context"]');
   await context.getByRole("button", { name: "Layout", exact: true }).click();
-  await expect(context.getByText(/Applies to all pages|Edit the visible placeholder/)).toHaveCount(0);
-  const removeHeader = context.getByRole("button", { name: "Remove header" });
-  if (await removeHeader.isVisible()) {
-    await expect(removeHeader).toHaveText("Remove");
-    await removeHeader.click();
-    await expect(page.locator('[data-furniture="header"]')).toHaveCount(0);
-  }
-  const addHeader = context.getByRole("button", { name: "Add header" });
-  await expect(addHeader).toHaveText("Add");
-  await addHeader.click();
-  await expect(context.getByRole("button", { name: /^(Add|Remove) footer$/ })).toHaveText(
-    /^\s*(Add|Remove)\s*$/
-  );
-
-  const canonical = page.locator('[data-furniture="header"]');
-  await expect(canonical).toBeVisible();
-  await expect(page.locator(".ProseMirror")).toHaveCount(1);
-  expect(
-    await canonical.locator(".document-block").first().evaluate((node) =>
-      getComputedStyle(node, "::before").content.replaceAll('"', "")
-    )
-  ).toBe("Header");
-  await canonical.locator(".document-block").first().click();
-  await page.keyboard.type("Operations brief");
-  await expect(canonical).toContainText("Operations brief");
-
-  await canonical.locator(".document-block").first().dblclick({ position: { x: 35, y: 8 } });
-  const inspector = page.locator(
-    'aside[aria-label="Inspector"][data-inspected="document-editor.text-selection"]'
-  );
-  await expect(inspector).toBeVisible();
-  const bold = inspector.getByTitle("Bold");
-  if ((await bold.getAttribute("data-state")) !== "on") await bold.click();
-  await expect(canonical.locator("strong").first()).toBeVisible();
-
-  const pages = await page.locator(".document-page").count();
-  await expect(page.locator(".document-furniture-projection.document-header")).toHaveCount(
-    Math.max(0, pages - 1)
-  );
-  await expect(page.locator(".furniture-editor")).toHaveCount(0);
+  await expect(context.getByText("Header and footer", { exact: true })).toHaveCount(0);
+  await expect(context.getByRole("button", { name: /(?:Add|Remove) (?:header|footer)/i })).toHaveCount(0);
+  await expect(page.locator('[data-furniture], .document-furniture')).toHaveCount(0);
+  await expect(page.locator(".ProseMirror")).not.toContainText("Operations / Winter readiness");
+  await expect(page.locator(".ProseMirror")).not.toContainText("Internal readiness review");
+  await expect(page.locator(".document-page-number-band")).toHaveCount(1);
+  await expect(page.locator(".document-page-number")).toHaveText("1");
 });
 
 test("shared editor controls keep one behavior across the width matrix", async ({ page }) => {

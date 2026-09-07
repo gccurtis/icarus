@@ -4,11 +4,12 @@ import type { Margins, Orientation, PageSetup } from "$representation/data/types
 import { mint } from "$app-views/categories/document-editor/procedures/ids";
 import { DEFAULT_PAGE_SETUP, paperDimensions, type NamedPaper } from "$app-views/categories/document-editor/procedures/page-setup";
 
-export type { PageFurniture, PageNumbering } from "$representation/data/types/documents/body";
+export type { PageNumbering } from "$representation/data/types/documents/body";
 
-export type Furniture = "header" | "footer";
+type PageNumberHost = "header" | "footer";
 
-export const FURNITURE_DISTANCE = 0.4;
+const PAGE_NUMBER_DISTANCE = 0.4;
+const PAGE_NUMBER_HOSTS: readonly PageNumberHost[] = ["header", "footer"];
 
 export const PAGE_NUMBER_POSITIONS: readonly { value: string; label: string }[] = [
   { value: "none", label: "None" },
@@ -72,7 +73,7 @@ export const marginOps = (body: DocumentBody, side: keyof Margins, inches: numbe
   return [...ensurePageSetupOps(body), set(`pageSetup/margins/${side}`, next, held.margins[side])];
 };
 
-export const emptyFurniture = (): PageFurniture => ({
+const emptyPageNumberHost = (): PageFurniture => ({
   rows: [
     {
       id: mint("row"),
@@ -89,26 +90,15 @@ export const emptyFurniture = (): PageFurniture => ({
       ]
     }
   ],
-  distanceFromEdge: FURNITURE_DISTANCE
+  distanceFromEdge: PAGE_NUMBER_DISTANCE
 });
 
-export const furnitureOps = (body: DocumentBody, which: Furniture, on: boolean): DocumentOp[] => {
-  const held = body[which];
-  if (on === (held !== undefined)) return [];
-  return [set(which, on ? emptyFurniture() : null, held)];
-};
-
-export const furnitureDistanceOps = (
-  body: DocumentBody,
-  which: Furniture,
-  inches: number
-): DocumentOp[] => {
-  const held = body[which];
-  if (held === undefined) return [];
-  const next = Math.max(0, Math.round(inches * 100) / 100);
-  if (held.distanceFromEdge === next) return [];
-  return [set(`${which}/distanceFromEdge`, next, held.distanceFromEdge)];
-};
+const pageNumberHostOf = (body: DocumentBody): PageNumberHost | undefined =>
+  body.footer?.pageNumber !== undefined
+    ? "footer"
+    : body.header?.pageNumber !== undefined
+      ? "header"
+      : undefined;
 
 export const pageNumberOf = (body: DocumentBody | undefined): PageNumbering | undefined =>
   body?.footer?.pageNumber ?? body?.header?.pageNumber;
@@ -116,14 +106,16 @@ export const pageNumberOf = (body: DocumentBody | undefined): PageNumbering | un
 export const pageNumberOps = (body: DocumentBody, position: string): DocumentOp[] => {
   const ops: DocumentOp[] = [];
   const held = pageNumberOf(body);
-  const at: Furniture = body.header?.pageNumber !== undefined ? "header" : "footer";
+  const at = pageNumberHostOf(body) ?? "footer";
 
   if (position === "none") {
-    if (held === undefined) return [];
-    return [set(`${at}/pageNumber`, null, held)];
+    return PAGE_NUMBER_HOSTS.flatMap((host) => {
+      const numbering = body[host]?.pageNumber;
+      return numbering === undefined ? [] : [set(`${host}/pageNumber`, null, numbering)];
+    });
   }
 
-  if (body.footer === undefined && at === "footer") ops.push(...furnitureOps(body, "footer", true));
+  if (body[at] === undefined) ops.push(set(at, emptyPageNumberHost(), null));
 
   const next: PageNumbering = { ...(held ?? {}), position: position as PageNumbering["position"] };
   if (JSON.stringify(next) === JSON.stringify(held)) return ops;
@@ -138,7 +130,8 @@ export const pageNumberFieldOps = (
 ): DocumentOp[] => {
   const held = pageNumberOf(body);
   if (held === undefined) return [];
-  const at: Furniture = body.header?.pageNumber !== undefined ? "header" : "footer";
+  const at = pageNumberHostOf(body);
+  if (at === undefined) return [];
   const next = { ...held, ...patch };
   if (JSON.stringify(next) === JSON.stringify(held)) return [];
   return [set(`${at}/pageNumber`, next, held)];

@@ -1,7 +1,6 @@
 <script lang="ts">
   import {
     Panel,
-    PanelButton,
     PanelChoice,
     PanelControlGroup,
     PanelControlRow,
@@ -16,7 +15,6 @@
   import {
     PAGE_NUMBER_POSITIONS,
     customPaperOps,
-    furnitureOps,
     marginOps,
     orientationOps,
     pageNumberFieldOps,
@@ -25,7 +23,6 @@
     paperOps,
     setupOf
   } from "$app-views/categories/document-editor/procedures/layout";
-  import { focusOfFurniture } from "$app-views/categories/document-editor/procedures/furniture";
   import {
     figures,
     layoutMetrics,
@@ -66,22 +63,6 @@
     if (body !== undefined) commit(make(body));
   };
 
-  const toggleFurniture = (which: "header" | "footer") => {
-    const held = body;
-    if (held === undefined) return;
-
-    const adding = held[which] === undefined;
-    commit(furnitureOps(held, which, adding));
-    if (!adding) return;
-
-    const furniture = runtime?.body?.[which];
-    const target = furniture === undefined ? undefined : focusOfFurniture(furniture);
-    if (target === undefined) return;
-
-    runtime!.scrollTo = target.blockId;
-    view.inspect("document-editor.empty-line", { kind: "empty-line", id: target.address });
-  };
-
 </script>
 
 <Panel title="Layout">
@@ -120,29 +101,6 @@
         </PanelControlRow>
         <PanelControlRow label="Left">
           <PanelNumber label="Left margin" value={setup.margins.left} unit="in" min={0} max={5} step={0.05} flush onchange={(next) => withBody((held) => marginOps(held, "left", next))} />
-        </PanelControlRow>
-      </PanelControlGroup>
-    </PanelSection>
-
-    <PanelSection title="Header and footer">
-      <PanelControlGroup flush>
-        <PanelControlRow label="Header">
-          <PanelButton
-            label={body.header === undefined ? "Add" : "Remove"}
-            ariaLabel={body.header === undefined ? "Add header" : "Remove header"}
-            tone={body.header === undefined ? "primary" : "danger"}
-            title={body.header?.pageNumber === undefined ? undefined : "Removing the header also removes its page numbers"}
-            onclick={() => toggleFurniture("header")}
-          />
-        </PanelControlRow>
-        <PanelControlRow label="Footer">
-          <PanelButton
-            label={body.footer === undefined ? "Add" : "Remove"}
-            ariaLabel={body.footer === undefined ? "Add footer" : "Remove footer"}
-            tone={body.footer === undefined ? "primary" : "danger"}
-            title={body.footer?.pageNumber === undefined ? undefined : "Removing the footer also removes its page numbers"}
-            onclick={() => toggleFurniture("footer")}
-          />
         </PanelControlRow>
       </PanelControlGroup>
     </PanelSection>

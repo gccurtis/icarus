@@ -5,19 +5,19 @@ export const DECISIONS: readonly DecisionBrief[] = [
     id: "DEC-01",
     kind: "Product decision",
     question: "What scope should a document header or footer have?",
-    stakes: "This choice changes the represented document model and what the Header and Footer Add actions promise. It is the one layout decision I should not hide inside a visual cleanup.",
+    stakes: "This choice changes what the editor promises today without requiring destructive changes to represented document data.",
     context: [
-      "The current body stores one header and one footer, then projects the same content onto every page. Pagination is derived: editing text can move content from one page to another, so an override attached to physical page 3 can silently move to the wrong material after reflow.",
-      "The existing first-page rows hint at a safe variant model, but there is no represented section ownership or arbitrary page override today. I can make the current global behavior clear immediately; richer variants need deliberate schema, operation, migration, and pagination work."
+      "The document representation can store global and first-page header/footer rows. The withdrawn editor implementation rendered the first page as rich editable blocks but flattened later pages into generic text, so one logical header had visibly different results.",
+      "The representation remains useful compatibility surface and deleting it would risk stored data. The editor now leaves those roots untouched and unrendered. Page numbering remains available through a small independent projection because its current storage happens to live on the same represented objects."
     ],
     recommendation: {
-      optionId: "document-wide",
-      rationale: "Ship compact Add/Remove controls beneath explicit Header and Footer labels, use the repeated on-page furniture to communicate their document-wide scope, and treat first-page, odd/even, or section variants as a later represented feature. It matches persisted truth, survives reflow, and leaves a clean extension path."
+      optionId: "defer-authoring",
+      rationale: "Withdraw authoring until one structured renderer can make editable and repeated occurrences visually identical. Keep stored fields backward-compatible and keep page numbering isolated, so the future feature can return without preserving a known-buggy UI."
     },
     decision: {
-      optionId: "document-wide",
-      direction: "Approved. Headers and footers remain document-wide for now.",
-      recordedAt: "2026-09-06"
+      optionId: "defer-authoring",
+      direction: "Supersedes the 2026-09-06 direction. Header/footer authoring is withdrawn from the editor; represented data is retained untouched, and page numbering remains available independently.",
+      recordedAt: "2026-09-07"
     },
     criteria: [
       { id: "reflow", label: "Reflow stability", explanation: "Whether the right furniture remains attached when pagination changes." },
@@ -27,6 +27,12 @@ export const DECISIONS: readonly DecisionBrief[] = [
       { id: "reversible", label: "Reversibility", explanation: "How safely we can extend or change the choice later." }
     ],
     options: [
+      {
+        id: "defer-authoring",
+        label: "Defer authoring",
+        summary: "Hide header/footer content and controls until one parity-safe implementation is ready; preserve represented data.",
+        tradeoffs: { reflow: "Strong — no partial renderer", clarity: "Strong — no misleading capability", power: "Deferred", architecture: "Lower editor complexity; representation remains", reversible: "Strongest" }
+      },
       {
         id: "document-wide",
         label: "Document-wide now",

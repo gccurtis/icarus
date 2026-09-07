@@ -24,18 +24,13 @@ const spanOf = (doc: ProseMirrorNode, at: number): readonly [number, number] => 
 
 const previousRowAt = (doc: ProseMirrorNode, rowStart: number): number | undefined => {
   const $rowStart = doc.resolve(rowStart);
-  const container = $rowStart.parent;
-  const furniture = container.type.name.startsWith("furniture_") ? container : undefined;
   let previous: number | undefined;
 
   doc.descendants((node, at, parent) => {
     if (at >= rowStart) return false;
     if (node.type.spec.group?.split(" ").includes("row") !== true) return;
 
-    const sameScope = furniture === undefined
-      ? parent?.type.name === "page"
-      : parent === furniture;
-    if (sameScope) previous = at;
+    if (parent?.type.name === "page") previous = at;
   });
 
   return previous;

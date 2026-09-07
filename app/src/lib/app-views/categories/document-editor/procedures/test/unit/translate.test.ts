@@ -29,6 +29,25 @@ test("an unchanged body emits nothing", () => {
   assert.deepEqual(translate(before, before), []);
 });
 
+test("the editor translator ignores represented header and footer roots", () => {
+  const before: DocumentBody = {
+    ...body([blocks("#r1", [text("#b1", "One")])]),
+    header: {
+      rows: [blocks("#hr1", [text("#hb1", "Legacy header")])],
+      distanceFromEdge: 0.4
+    }
+  };
+  const after: DocumentBody = {
+    ...before,
+    header: {
+      ...before.header!,
+      rows: [blocks("#hr1", [text("#hb1", "Changed elsewhere")])]
+    }
+  };
+
+  assert.deepEqual(translate(before, after), []);
+});
+
 test("typing at the end is one text op", () => {
   const ops = translate(
     body([blocks("#r1", [text("#b1", "One")])]),

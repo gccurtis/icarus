@@ -26,7 +26,7 @@ export const REQUEST_LEDGER = [
   ["Section panel prioritizes H-level, title, and page", "DOC-06", "Fixed + verified"],
   ["Remove Usage, Placement, Key, Reads as; edit style name", "DOC-07, DOC-09", "Fixed + verified"],
   ["Named Style mirrors text formatting controls", "DOC-07, DOC-08, DECK-06", "Fixed + verified"],
-  ["Header/footer reads as add/remove and explains scope", "DOC-10", "Fixed + verified"],
+  ["Partial header/footer authoring is withdrawn; page numbers remain", "DOC-10", "Fixed + verified"],
   ["Repair wonky incident and decision documents", "DOC-01", "Fixed + verified"],
   ["Comment creation must not stick or throw console errors", "DOC-03, CRT-01", "Fixed + verified"],
   ["Disjoint text selections cannot start a comment", "DOC-03", "Decision applied + verified"],

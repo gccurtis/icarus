@@ -9,11 +9,11 @@ export const contentReference: AreaReference = {
   summary:
     "The center surface is a projection and interaction adapter. It renders one live document body as paginated rich content, translates editor transactions into native operations, and keeps structural selection synchronized with the workspace.",
   contract:
-    "ProseMirror may represent pixels, browser selection, and immediate editing intent, but its JSON is never stored. The document runtime remains the client truth; pagination, zoom, and repeated furniture remain derived views.",
+    "ProseMirror may represent pixels, browser selection, and immediate editing intent, but its JSON is never stored. The document runtime remains the client truth; pagination, zoom, and page numbering remain derived views.",
   owns: [
     "One EditorView, its plugins, DOM event policy, and projection lifecycle",
-    "Bidirectional translation between structural DocumentBody and ProseMirror state",
-    "Pagination, zoom-to-fit, held selections, comment decorations, and furniture projection",
+    "Bidirectional translation between visible body rows and ProseMirror state",
+    "Pagination, zoom-to-fit, held selections, comment decorations, and page-number projection",
     "Publishing semantic inspection and structural selection back to the workspace"
   ],
   doesNotOwn: [
@@ -48,10 +48,10 @@ export const contentReference: AreaReference = {
       why: "Navigation, word selection, and block selection are separate gestures and must not compete."
     },
     {
-      title: "Furniture is canonical and in place",
-      before: "Header/footer editing occurred in a flattened side-panel mini-editor and repeated copies lost rich styling.",
-      now: "The first occurrence hosts the single editable rich root; later pages show read-only projections of that same root, including marks and block styles.",
-      why: "Repeated page furniture should have one data owner and one editing location."
+      title: "Partial header and footer rendering is removed",
+      before: "The first page hosted rich editable blocks while repeated pages flattened the same content and lost styling.",
+      now: "Header/footer content stays in the backward-compatible representation but does not enter the editor schema, selection map, or translator. Page numbers use a dedicated read-only projection.",
+      why: "The editor should not ship a document feature until every occurrence can preserve visual and behavioral parity."
     },
     {
       title: "Comments use structural multi-span decoration",
@@ -73,7 +73,7 @@ export const contentReference: AreaReference = {
       trigger: "A document tab opens or the surface receives a new resource ID.",
       steps: [
         { actor: "Content component", action: "Attaches the workspace-owned document runtime and subscribes to its live body.", artifact: "view.documentRuntime(id)" },
-        { actor: "Projection", action: "Converts rows, atoms, styles, marks, furniture, and page metadata into a ProseMirror document.", artifact: "docOf" },
+        { actor: "Projection", action: "Converts visible body rows, atoms, styles, marks, and page metadata into a ProseMirror document.", artifact: "docOf" },
         { actor: "Editor host", action: "Constructs one EditorState and EditorView with the document plugin set.", artifact: "paint" },
         { actor: "Layout pass", action: "Stamps stable DOM IDs, measures blocks, and derives page placement without history.", artifact: "lay + paginate" }
       ],
@@ -101,7 +101,7 @@ export const contentReference: AreaReference = {
         { actor: "Selection bridge", action: "Captures a full structural bookmark from current EditorState.", artifact: "selection-bookmark" },
         { actor: "Projection", action: "Rebuilds the editor document from the new runtime body.", artifact: "docOf" },
         { actor: "Selection bridge", action: "Resolves and restores primary/secondary ranges, direction, type, and held state.", artifact: "restore bookmark" },
-        { actor: "Decoration plugins", action: "Refresh held selection, annotations, furniture, and layout metadata.", artifact: "plugin meta" }
+        { actor: "Decoration plugins", action: "Refresh held selection, annotations, page numbers, and layout metadata.", artifact: "plugin meta" }
       ],
       outcome: "Pixels, live data, inspector subject, and visible selection agree after every update origin.",
       failure: "Deleted endpoints fall back to the nearest legal structural position without fabricating deleted content."
@@ -117,7 +117,7 @@ export const contentReference: AreaReference = {
         { actor: "Workspace view", action: "Stores structural selection and inspection only when meaningfully changed.", artifact: "signal" }
       ],
       outcome: "Context and Inspector can act on semantic identity without reading or retaining DOM positions.",
-      failure: "Transient layout selections and internal furniture projections are filtered before workspace publication."
+      failure: "Transient layout selections and read-only page-number projections are filtered before workspace publication."
     },
     {
       id: "layout",
@@ -125,7 +125,7 @@ export const contentReference: AreaReference = {
       trigger: "Content, page setup, viewport size, or zoom intent changes.",
       steps: [
         { actor: "Layout observer", action: "Measures projected block geometry and available viewport width.", artifact: "ResizeObserver + metrics" },
-        { actor: "Paginator", action: "Groups derived block heights into page placements and furniture slots.", artifact: "paginate" },
+        { actor: "Paginator", action: "Groups derived block heights into page placements.", artifact: "paginate" },
         { actor: "Editor transaction", action: "Applies layout metadata with addToHistory=false.", artifact: "layout plugin meta" },
         { actor: "Surface", action: "Applies explicit zoom or a bounded fit-to-width scale.", artifact: "zoom state" }
       ],
@@ -175,13 +175,13 @@ export const contentReference: AreaReference = {
       sources: ["src/lib/app-views/categories/document-editor/procedures/paginate.ts", "src/lib/app-views/categories/document-editor/procedures/layout.ts"]
     },
     {
-      name: "Page furniture projection",
-      owner: "Document body + content furniture plugin",
-      shape: "header/footer canonical rows plus first-page variants and repeated read-only renderings",
-      states: ["absent", "editable canonical occurrence", "repeated projection", "first-page variant"],
-      transitions: ["layout action → create/focus", "page count change → repeat projection", "Escape/move to body → normal selection"],
-      invariants: ["Exactly one occurrence is editable", "Every repeated occurrence renders the same rich content", "Distance metadata is retained for compatibility but not separately edited"],
-      sources: ["src/lib/app-views/categories/document-editor/procedures/furniture.ts", "src/lib/app-views/categories/document-editor/content/document.svelte"]
+      name: "Page-number projection",
+      owner: "Document body + page-number plugin",
+      shape: "numbering settings + top/bottom compatibility edge + repeated read-only labels",
+      states: ["absent", "visible on every page", "hidden on first page"],
+      transitions: ["layout action → configure", "page count change → repeat projection", "disable → remove projections"],
+      invariants: ["Page numbers are never editable canvas content", "Header/footer rows are not projected", "Legacy top-edge numbering remains readable"],
+      sources: ["src/lib/app-views/categories/document-editor/procedures/page-numbers.ts", "src/lib/app-views/categories/document-editor/content/document.svelte"]
     },
     {
       name: "Annotation projection",
@@ -220,7 +220,7 @@ export const contentReference: AreaReference = {
     },
     {
       name: "lay / paginate",
-      role: "Measure stable block DOM nodes and derive page placement and furniture repetition.",
+      role: "Measure stable block DOM nodes and derive page placement.",
       reads: "DOM geometry, page setup, block identities.",
       writes: "Layout plugin metadata with history disabled.",
       failure: "Defers until measurement is complete; creates no document operations.",
@@ -235,12 +235,12 @@ export const contentReference: AreaReference = {
       sources: ["src/lib/app-views/categories/document-editor/procedures/selection-bookmark.ts", "src/lib/app-views/categories/document-editor/procedures/multi-selection.ts", "src/lib/app-views/categories/document-editor/procedures/highlight.ts"]
     },
     {
-      name: "furniture projection",
-      role: "Mount one editable furniture root and repeat rich read-only projections across pages.",
-      reads: "Header/footer rows, first-page settings, page placements.",
-      writes: "Editor focus/selection and derived furniture plugin metadata.",
-      failure: "Absent roots are requested through model operations before editing begins.",
-      sources: ["src/lib/app-views/categories/document-editor/procedures/furniture.ts"]
+      name: "page-number projection",
+      role: "Repeat page-number labels without projecting or editing their compatibility host content.",
+      reads: "Page-number settings, compatibility edge/distance, and derived pages.",
+      writes: "Derived page-number plugin metadata only.",
+      failure: "Missing numbering produces no decoration; represented header/footer rows remain untouched.",
+      sources: ["src/lib/app-views/categories/document-editor/procedures/page-numbers.ts"]
     },
     {
       name: "annotation decoration",
@@ -261,16 +261,16 @@ export const contentReference: AreaReference = {
   ],
   structure: [
     { path: "src/lib/app-views/categories/document-editor/content/document.svelte", role: "Composition coordinator", note: "Attaches runtime, owns EditorView lifecycle/effects, hosts page chrome, and is the principal current hotspot." },
-    { path: "src/lib/app-views/categories/document-editor/procedures/projection.ts", role: "Model → editor projection", note: "Builds rich ProseMirror nodes and mapping metadata for body and furniture roots." },
+    { path: "src/lib/app-views/categories/document-editor/procedures/projection.ts", role: "Model → editor projection", note: "Builds rich ProseMirror nodes and mapping metadata for visible body rows." },
     { path: "src/lib/app-views/categories/document-editor/procedures/translate.ts", role: "Editor → model translation", note: "Diffs the projected result back into native operations relative to an explicit body." },
     { path: "src/lib/app-views/categories/document-editor/procedures/schema.ts", role: "Editor schema", note: "Declares the rendering vocabulary; not a persistence schema." },
-    { path: "src/lib/app-views/categories/document-editor/procedures/*", role: "Focused editor procedures", note: "Selection, pagination, annotations, furniture, editing, marks, links, styles, and layout." }
+    { path: "src/lib/app-views/categories/document-editor/procedures/*", role: "Focused editor procedures", note: "Selection, pagination, annotations, page numbers, editing, marks, links, styles, and layout." }
   ],
   review: [
     { tone: "settled", title: "Persistence boundary is clean", detail: "No ProseMirror JSON or page geometry is persisted; all durable changes are native document operations." },
     { tone: "watch", title: "document.svelte is the largest composition hotspot", detail: "Its responsibilities are related but broad. Extracting an editor bridge/controller and presentation styles is the clearest next seam without changing ownership." },
     { tone: "watch", title: "Projection and mark algebra are substantial", detail: "projection.ts and marks.ts are cohesive but large. Split by structural root/block family and range algebra only when tests can preserve bidirectional contracts." },
-    { tone: "settled", title: "Gesture behavior is covered in two engines", detail: "The convergence suite exercises selection persistence, repeated colors, links, comments, furniture, continuation, and console/network cleanliness in Chromium and Firefox." }
+    { tone: "settled", title: "Gesture behavior is covered in Chromium", detail: "The convergence suite exercises selection persistence, repeated colors, links, comments, continuation, and console/network cleanliness in the desktop target engine." }
   ],
   related: ["context", "inspector", "runtime", "backend"]
 };

@@ -26,11 +26,11 @@
     ["01", "One live body", "Context, Inspector, and Content share one per-resource runtime body."],
     ["02", "Projection is not storage", "ProseMirror JSON, page geometry, and zoom never become persisted document data."],
     ["03", "One operation language", "Optimistic client apply and canonical server acceptance use the same immutable applier."],
-    ["04", "Structural identity", "Selections, marks, links, comments, and furniture refer to stable IDs and offsets."],
+    ["04", "Structural identity", "Selections, marks, links, and comments refer to stable IDs and offsets."],
     ["05", "Gesture history", "Undo follows user intent; wire coalescing is only a transport concern."],
     ["06", "Visible failure", "Refused or offline work remains present with retry and explicit discard paths."],
     ["07", "Shared instruments", "Inspector lenses compose responsive controls instead of owning private variants."],
-    ["08", "Derived layout", "Pagination, repeated furniture, annotation pins, and fit zoom are recalculable projections."]
+    ["08", "Derived layout", "Pagination, page numbers, annotation pins, and fit zoom are recalculable projections."]
   ] as const;
 
   const systemFlow = [
