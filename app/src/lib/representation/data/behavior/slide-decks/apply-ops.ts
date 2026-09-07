@@ -1,6 +1,7 @@
 import type {
   Atom,
   MarkEnd,
+  PromptBlock,
   TextBlock
 } from "$representation/data/types/content/content-block";
 import type { SlideDeckBody } from "$representation/data/types/slide-decks/body";
@@ -8,6 +9,7 @@ import type { SlideDeckOp } from "$representation/data/types/slide-decks/op";
 
 type Identified = { id: string };
 type Tree = Record<string, unknown>;
+type EditableTextBlock = TextBlock | PromptBlock;
 
 const ROOT_FIELDS = new Set(["aspectRatio", "theme", "styles", "slides", "sections", "layouts"]);
 
@@ -177,8 +179,8 @@ const applyInsert = (body: SlideDeckBody, op: Extract<SlideDeckOp, { op: "insert
   const [id, field] = op.path.split("/");
   if (op.target === "atom" && field === "atoms") {
     return mapNode(body, id, (node) => {
-      const block = node as unknown as TextBlock;
-      if (block.type !== "text" || !Array.isArray(block.atoms)) {
+      const block = node as unknown as EditableTextBlock;
+      if ((block.type !== "text" && block.type !== "prompt") || !Array.isArray(block.atoms)) {
         throw new Error(`Block ${id} holds no atoms.`);
       }
       const atoms = insertAfter(block.atoms, op.after, op.values as Atom[]);
@@ -193,8 +195,8 @@ const applyRemove = (body: SlideDeckBody, op: Extract<SlideDeckOp, { op: "remove
   const [id, field] = op.path.split("/");
   if (op.target === "atom" && field === "atoms") {
     return mapNode(body, id, (node) => {
-      const block = node as unknown as TextBlock;
-      if (block.type !== "text" || !Array.isArray(block.atoms)) {
+      const block = node as unknown as EditableTextBlock;
+      if ((block.type !== "text" && block.type !== "prompt") || !Array.isArray(block.atoms)) {
         throw new Error(`Block ${id} holds no atoms.`);
       }
       const atoms = withoutIds(block.atoms, op.ids);
@@ -259,11 +261,11 @@ const shiftedTo = (
   return { ...end, offset: at };
 };
 
-const emptyMark = (mark: TextBlock["marks"][number]): boolean =>
+const emptyMark = (mark: EditableTextBlock["marks"][number]): boolean =>
   mark.from.atom === mark.to.atom && mark.from.offset >= mark.to.offset;
 
 const shiftedMarks = (
-  block: TextBlock,
+  block: EditableTextBlock,
   atom: string,
   at: number,
   removed: number,
@@ -282,8 +284,8 @@ const applyText = (body: SlideDeckBody, op: Extract<SlideDeckOp, { op: "text" }>
   if (field !== "atoms" || atomId === undefined) return refuse(op, "a text op names <block>/atoms/<atom>");
 
   return mapNode(body, blockId, (node) => {
-    const block = node as unknown as TextBlock;
-    if (block.type !== "text" || !Array.isArray(block.atoms)) {
+    const block = node as unknown as EditableTextBlock;
+    if ((block.type !== "text" && block.type !== "prompt") || !Array.isArray(block.atoms)) {
       throw new Error(`Block ${blockId} holds no atoms a text op can reach.`);
     }
     const atomIndex = block.atoms.findIndex((atom) => atom.id === atomId);

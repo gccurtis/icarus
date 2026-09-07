@@ -1,5 +1,6 @@
 <script lang="ts">
   import MessageSquare from "@lucide/svelte/icons/message-square";
+  import Sparkles from "@lucide/svelte/icons/sparkles";
 
   import SlideSurfaceItem from "$authored-components/slide-surface/slide-surface-item.svelte";
   import type {
@@ -10,6 +11,7 @@
     SurfaceItem,
     SurfaceMove,
     SurfacePoint,
+    SurfacePrompt,
     SurfaceScene,
     SurfaceTextEdit
   } from "$authored-components/slide-surface/slide-surface-types";
@@ -34,6 +36,7 @@
     cells = [],
     editing,
     badges = [],
+    prompts = [],
     interactive = true,
     board,
     onselect,
@@ -48,6 +51,7 @@
     onedit,
     oncaret,
     onbadge,
+    onprompt,
     oncontext,
     snap
   }: {
@@ -58,6 +62,7 @@
     cells?: readonly string[];
     editing?: string;
     badges?: readonly SurfaceBadge[];
+    prompts?: readonly SurfacePrompt[];
     interactive?: boolean;
     board?: HTMLElement | null;
     onselect?: (ids: string[], additive: boolean) => void;
@@ -72,6 +77,7 @@
     onedit?: (edit: SurfaceTextEdit) => void;
     oncaret?: (blockId: string, from: number, to: number) => void;
     onbadge?: (id: string) => void;
+    onprompt?: (id: string) => void;
     oncontext?: (at: SurfacePoint, id: string | undefined) => void;
     snap?: (frame: SurfaceFrame, id: string, alt: boolean) => { frame: SurfaceFrame; guides: SurfaceGuide[] };
   } = $props();
@@ -158,7 +164,7 @@
     }
 
     if (hit === undefined) {
-      if (event.target instanceof Element && event.target.closest("[data-handle], [data-badge], [data-rotate], [data-endpoint]")) return;
+      if (event.target instanceof Element && event.target.closest("[data-handle], [data-badge], [data-prompt], [data-rotate], [data-endpoint]")) return;
       startMarquee(event);
       return;
     }
@@ -456,6 +462,7 @@
     ({ nw: "nwse-resize", se: "nwse-resize", ne: "nesw-resize", sw: "nesw-resize", n: "ns-resize", s: "ns-resize", e: "ew-resize", w: "ew-resize" })[handle];
 
   const badgeOf = (id: string) => badges.find((badge) => badge.id === id);
+  const promptOf = (id: string) => prompts.some((prompt) => prompt.id === id);
   const slideBadge = $derived(badges.find((badge) => badge.id === ""));
   const single = $derived(selected.length === 1 ? byId.get(selected[0]) : undefined);
   const handleSize = $derived(9 / scale);
@@ -564,6 +571,7 @@
 
     {#each scene.items as item (item.id)}
       {@const badge = badgeOf(item.id)}
+      {@const prompt = promptOf(item.id)}
       {#if badge && badge.count > 0}
         {@const box = outlineFor(item)}
         <button
@@ -577,6 +585,21 @@
           onclick={(event) => { event.stopPropagation(); onbadge?.(item.id); }}
         >
           <MessageSquare size={12} aria-hidden="true" />
+        </button>
+      {/if}
+      {#if prompt}
+        {@const box = outlineFor(item)}
+        <button
+          type="button"
+          class="badge prompt-badge"
+          data-prompt={item.id}
+          aria-label="Edit Prompt Block"
+          title="Edit Prompt Block"
+          style="left: {box.left + box.width}px; top: {box.top + (badge && badge.count > 0 ? 26 / scale : 0)}px; transform: translate(-50%, -50%) scale({1 / scale}); transform-origin: 50% 50%;"
+          onpointerdown={(event) => event.stopPropagation()}
+          onclick={(event) => { event.stopPropagation(); onprompt?.(item.id); }}
+        >
+          <Sparkles size={12} aria-hidden="true" />
         </button>
       {/if}
     {/each}
@@ -741,5 +764,17 @@
     right: -10px;
     top: -10px;
     transform: none;
+  }
+
+  .prompt-badge {
+    border-color: var(--token-surface-elevated);
+    background: var(--token-color-intelligence-surface);
+    color: var(--token-color-intelligence-text);
+  }
+
+  .prompt-badge:hover,
+  .prompt-badge:focus-visible {
+    box-shadow: 0 0 0 2px var(--token-color-intelligence-border), var(--token-shadow-panel);
+    outline: none;
   }
 </style>

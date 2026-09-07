@@ -24,6 +24,7 @@
     type SurfaceGuide,
     type SurfaceMove,
     type SurfacePoint,
+    type SurfacePrompt,
     type SurfaceTextEdit
   } from "$authored-components/slide-surface";
   import { Button } from "$vendored-components/button";
@@ -168,7 +169,10 @@
       ? undefined
       : placedOn(slide).find(({ element }) => {
           const content = element.content;
-          if ((content.type === "text" || content.type === "shape") && content.block?.id === blockId) return true;
+          if (
+            (content.type === "text" || content.type === "prompt" || content.type === "shape") &&
+            content.block?.id === blockId
+          ) return true;
           return content.type === "table" && content.block.rows.some((row) => row.cells.some((cell) => cell.blocks.some((held) => held.id === blockId)));
         })?.element.id;
 
@@ -207,6 +211,14 @@
     }
     return [...counts].map(([id, count]) => ({ id, count }));
   });
+
+  const promptMarkers = $derived.by((): SurfacePrompt[] =>
+    slide === undefined
+      ? []
+      : placedOn(slide).flatMap(({ element }) =>
+          element.content.type === "prompt" ? [{ id: element.id }] : []
+        )
+  );
 
   const apply = (ops: readonly Parameters<SlideDeckRuntime["apply"]>[0][number][]) => {
     if (ops.length > 0) runtime?.apply(ops);
@@ -337,6 +349,13 @@
     view.inspect(signal.key, signal.selection);
   };
 
+  const prompt = (id: string) => {
+    if (body === undefined) return;
+    const element = elementIn(body, id);
+    if (element?.content.type !== "prompt") return;
+    select([id]);
+  };
+
   let pointed: SurfacePoint | undefined;
   let onSlide = false;
   let insertAt = $state<SurfacePoint | undefined>(undefined);
@@ -444,7 +463,12 @@
     if (mod || event.altKey || selected.length !== 1 || cells.length > 0) return;
 
     const element = elementIn(body, selected[0]);
-    if (element === undefined || (element.content.type !== "text" && element.content.type !== "shape")) return;
+    if (
+      element === undefined ||
+      (element.content.type !== "text" &&
+        element.content.type !== "prompt" &&
+        element.content.type !== "shape")
+    ) return;
     if (event.key === "Enter") {
       event.preventDefault();
       const block = textOf(element);
@@ -550,6 +574,7 @@
                 {cells}
                 {editing}
                 {badges}
+                prompts={promptMarkers}
                 {board}
                 onselect={(ids) => select(ids)}
                 onselectcells={pickCells}
@@ -563,6 +588,7 @@
                 onedit={edited}
                 oncaret={caret}
                 onbadge={badge}
+                onprompt={prompt}
                 oncontext={pointedAt}
                 {snap}
               />

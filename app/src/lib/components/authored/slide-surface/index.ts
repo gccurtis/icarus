@@ -8,6 +8,7 @@ export type {
   SurfaceItem,
   SurfaceMove,
   SurfacePoint,
+  SurfacePrompt,
   SurfaceRun,
   SurfaceScene,
   SurfaceText,

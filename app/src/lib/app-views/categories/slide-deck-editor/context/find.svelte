@@ -1,6 +1,13 @@
 <script lang="ts">
   import { Panel, PanelButton, PanelChoice, PanelEmpty, PanelInput, PanelRow, PanelSearch } from "$authored-components/panel";
-  import { notesBlock, placedOn, textOf, type SlideDeckBody, type TextBlock } from "$app-views/categories/slide-deck-editor/procedures/deck";
+  import {
+    notesBlock,
+    placedOn,
+    textOf,
+    type EditableTextBlock,
+    type SlideDeckBody,
+    type TextBlock
+  } from "$app-views/categories/slide-deck-editor/procedures/deck";
   import { elementsSignal, textSignal } from "$app-views/categories/slide-deck-editor/procedures/selecting";
   import { replaced } from "$app-views/categories/slide-deck-editor/procedures/typing";
   import { workspaceState, type SlideDeckRuntime } from "$model/client/workspace-state";
@@ -22,7 +29,7 @@
     readonly position: number;
     readonly source: "Text" | "Shape" | "Table" | "Notes";
     readonly elementId?: string;
-    readonly block: TextBlock;
+    readonly block: EditableTextBlock;
     readonly at: number;
   };
 

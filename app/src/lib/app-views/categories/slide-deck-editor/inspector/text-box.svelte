@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Panel, PanelCrumbs, PanelEmpty, PanelSection, PanelSelect } from "$authored-components/panel";
   import CommentAction from "$app-views/categories/slide-deck-editor/components/comment-action.svelte";
+  import PromptAction from "$app-views/categories/slide-deck-editor/components/prompt-action.svelte";
   import ElementEffects from "$app-views/categories/slide-deck-editor/components/element-effects.svelte";
   import ElementGeometry from "$app-views/categories/slide-deck-editor/components/element-geometry.svelte";
   import ElementOrder from "$app-views/categories/slide-deck-editor/components/element-order.svelte";
@@ -38,6 +39,7 @@
   {/snippet}
   {#snippet actions()}
     {#if element}
+      <PromptAction elementId={element.id} />
       <CommentAction elementId={element.id} />
     {/if}
   {/snippet}

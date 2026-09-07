@@ -1,12 +1,20 @@
-import type { Atom, Mark, MarkStyle, TextBlock } from "$representation/data/types/content/content-block";
+import type {
+  Atom,
+  Mark,
+  MarkStyle,
+  PromptBlock,
+  TextBlock
+} from "$representation/data/types/content/content-block";
 import { endAt, rangeOf } from "$representation/data/behavior/content/positions";
 import type { SlideDeckOp } from "$representation/data/types/slide-decks/op";
 import { mint } from "$app-views/categories/slide-deck-editor/procedures/ids";
 
+type EditableTextBlock = TextBlock | PromptBlock;
+
 const lengthOf = (atom: Atom): number =>
   atom.kind === "literal" ? atom.text.length : atom.lastResolvedDisplay.length;
 
-export const replaced = (block: TextBlock, from: number, to: number, insert: string): SlideDeckOp[] => {
+export const replaced = (block: EditableTextBlock, from: number, to: number, insert: string): SlideDeckOp[] => {
   const start = Math.min(from, to);
   const end = Math.max(from, to);
 
@@ -62,7 +70,7 @@ export const replaced = (block: TextBlock, from: number, to: number, insert: str
   return ops;
 };
 
-export const diffed = (block: TextBlock, next: string): SlideDeckOp[] => {
+export const diffed = (block: EditableTextBlock, next: string): SlideDeckOp[] => {
   const was = block.display;
   if (was === next) return [];
   const shortest = Math.min(was.length, next.length);
@@ -73,7 +81,7 @@ export const diffed = (block: TextBlock, next: string): SlideDeckOp[] => {
   return replaced(block, head, was.length - tail, next.slice(head, next.length - tail));
 };
 
-const covering = (block: TextBlock, style: MarkStyle, from: number, to: number): boolean => {
+const covering = (block: EditableTextBlock, style: MarkStyle, from: number, to: number): boolean => {
   const spans = block.marks
     .filter((mark) => mark.style?.includes(style))
     .map((mark) => {
@@ -90,7 +98,7 @@ const covering = (block: TextBlock, style: MarkStyle, from: number, to: number):
   return cursor >= to;
 };
 
-export const stylesAt = (block: TextBlock, from: number, to: number): MarkStyle[] => {
+export const stylesAt = (block: EditableTextBlock, from: number, to: number): MarkStyle[] => {
   const styles: MarkStyle[] = ["bold", "italic", "underline", "strikethrough", "code"];
   if (from === to) {
     return styles.filter((style) =>
@@ -103,13 +111,13 @@ export const stylesAt = (block: TextBlock, from: number, to: number): MarkStyle[
   return styles.filter((style) => covering(block, style, Math.min(from, to), Math.max(from, to)));
 };
 
-export const colorAt = (block: TextBlock, from: number, to: number): string | undefined =>
+export const colorAt = (block: EditableTextBlock, from: number, to: number): string | undefined =>
   block.marks.find((mark) => {
     const range = rangeOf(block.atoms, mark);
     return mark.color !== undefined && range.from <= Math.min(from, to) && range.to >= Math.max(from, to);
   })?.color;
 
-const pieces = (block: TextBlock, mark: Mark, from: number, to: number): Mark[] => {
+const pieces = (block: EditableTextBlock, mark: Mark, from: number, to: number): Mark[] => {
   const range = rangeOf(block.atoms, mark);
   const kept: Mark[] = [];
   if (range.from < from) {
@@ -121,7 +129,7 @@ const pieces = (block: TextBlock, mark: Mark, from: number, to: number): Mark[] 
   return kept;
 };
 
-export const toggledMark = (block: TextBlock, from: number, to: number, style: MarkStyle): SlideDeckOp[] => {
+export const toggledMark = (block: EditableTextBlock, from: number, to: number, style: MarkStyle): SlideDeckOp[] => {
   const start = Math.min(from, to);
   const end = Math.max(from, to);
   if (start === end) return [];
@@ -162,7 +170,7 @@ export const toggledMark = (block: TextBlock, from: number, to: number, style: M
   return ops;
 };
 
-export const colouredMark = (block: TextBlock, from: number, to: number, color: string | undefined): SlideDeckOp[] => {
+export const colouredMark = (block: EditableTextBlock, from: number, to: number, color: string | undefined): SlideDeckOp[] => {
   const start = Math.min(from, to);
   const end = Math.max(from, to);
   if (start === end) return [];

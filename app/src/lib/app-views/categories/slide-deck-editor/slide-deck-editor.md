@@ -28,8 +28,8 @@ work and is covered at the procedure or browser boundary.
 ## Canvas
 
 The canvas renders the selected slide, its editable elements, guides, comment
-badges, zoom controls, slide navigation, speaker-notes entry, and the current
-sync state.
+badges, editor-only Prompt Block stars, zoom controls, slide navigation,
+speaker-notes entry, and the current sync state.
 
 ### Selection and editing
 
@@ -43,6 +43,9 @@ sync state.
 - Double-clicking editable text enters text mode. Text selection opens the text
   inspector; a caret opens Next Letter. Escape returns to the containing
   element selection.
+- Prompt Blocks use the same text renderer, text-mode entry, marks, geometry,
+  paint, and ordering as ordinary text boxes. Their star opens Prompt settings
+  without becoming authored or exported slide content.
 - Insert mode is armed in the Insert panel or from the slide context menu. The
   next slide click places the object and selects it; Escape cancels.
 - Open comment badges route to the deck-owned comment or thread inspector.
@@ -61,7 +64,7 @@ The registered context keys are the complete rail vocabulary for this editor.
 | `slide-deck-editor.comments` | Create and browse deck-, slide-, or element-scoped threads. |
 | `slide-deck-editor.templates` | Deferred placeholder; template browsing is not implemented here. |
 | `slide-deck-editor.variables` | Deferred placeholder; deck variable management is not implemented here. |
-| `slide-deck-editor.prompts` | Deferred placeholder; prompt management is not implemented here. |
+| `slide-deck-editor.prompts` | List Prompt Blocks across the deck, navigate to their slide, and open their inspector. |
 
 ### Slides
 
@@ -107,6 +110,17 @@ uses the element's resolved label, not an ambiguous initial. New threads persist
 their exact scope. Open and resolved threads remain separate, and every row
 states its anchor before routing to `slide-deck-editor.comment`.
 
+### Prompts
+
+The panel is an index, not a creation surface. Each row shows its slide number
+and current editable response. Choosing a row focuses the containing slide,
+selects its element, and opens `slide-deck-editor.prompt-block`.
+
+A Prompt Block begins as a standalone text box. `Prompt` appears beside
+`Comment` in the text-box inspector and converts that element in place. The
+outer element ID, frame, paint, order, text, marks, style, and format survive.
+Only its content kind changes from `text` to `prompt`.
+
 ## Inspectors
 
 The registered inspector keys below are all implemented and editor-owned.
@@ -116,6 +130,7 @@ The registered inspector keys below are all implemented and editor-owned.
 | `slide-deck-editor.slide` | One slide; its background and hidden state. |
 | `slide-deck-editor.shape` | One shape; kind and text excerpt in the heading, then geometry and appearance. |
 | `slide-deck-editor.text-box` | One text box; text style, geometry, paint, effects, order, and comments. |
+| `slide-deck-editor.prompt-block` | One Prompt Block; prompt/scope, server-owned refresh state, evidence, then the same text and element controls as a text box. |
 | `slide-deck-editor.line` | One line; endpoints, stroke, effects, order, and comments. |
 | `slide-deck-editor.image` | One image element and its frame/appearance controls. |
 | `slide-deck-editor.table` | One table and its table-level controls. |
@@ -203,6 +218,25 @@ Resolve/Reopen and Reply, divider, then prior replies. Reply is not duplicated i
 the panel header. The document editor deliberately keeps a separate copy with
 inline-range locate behavior.
 
+## Prompt Block contract
+
+The deck stores an editable `PromptBlock` inside the unchanged `SlideElement`.
+The block stores its presentation text and marks, a small freshness mirror, and
+the `derivedOutputId` that links it to the server-owned definition and evidence.
+Generated response text returns through native deck atom/mark operations.
+Existing absolute mark ranges are retained and clipped only when a shorter
+response no longer covers them. Direct user edits use the ordinary deck text
+operation and become ungrounded previous-response continuity on the next
+refresh.
+
+Refresh is a signal to the server by Derived Output ID. Browsers do not own the
+lock or provider work: concurrent signals join the same persisted refresh job,
+and the inspector reads/polls shared queued, running, or failed state. Generated
+Prompt Block text is excluded from Semantic Overlay projection so it cannot
+become recursive evidence. The full procedure and implementation map is served
+at `/demo/semantic-overlay/slide-prompt-blocks` and recorded in
+[`../../../development-views/slide-prompt-blocks/slide-prompt-blocks.md`](../../../development-views/slide-prompt-blocks/slide-prompt-blocks.md).
+
 ## Responsive and accessibility rules
 
 - Compact controls may hide visible text only when the icon or compact label
@@ -215,11 +249,14 @@ inline-range locate behavior.
 
 ## Explicitly deferred boundaries
 
-Templates, Variables, and Prompts remain registered placeholder context panels.
-They must not mutate deck data or claim success until their represented model and
-editor workflows exist. Layout authoring beyond saving/removing whole-slide
-layouts is likewise not a hidden editor mode: no undocumented layout rail or
-inspector key is part of the current contract.
+Templates and Variables remain registered placeholder context panels. They must
+not mutate deck data or claim success until their represented model and editor
+workflows exist. Prompt conversion is intentionally limited to standalone text
+boxes; shape text, table cells, notes, groups, automatic refresh policy, saved
+Resource Sets, transactional first-link creation, unlinking, and export-time
+resolution are explicit follow-ups. Layout authoring beyond saving/removing
+whole-slide layouts is likewise not a hidden editor mode: no undocumented layout
+rail or inspector key is part of the current contract.
 
 When one of these boundaries is implemented, update this file, the registered
 workspace view vocabulary, and an interaction test in the same change.

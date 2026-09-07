@@ -25,7 +25,7 @@
   import Wrench from "@lucide/svelte/icons/wrench";
 
   import { DERIVED_OUTPUT_SYSTEM_PROMPT } from "$capabilities/derived-output/index";
-  import MermaidDiagram from "$development-views/derived-output-architecture/components/mermaid-diagram.svelte";
+  import MermaidDiagram from "$development-components/mermaid-diagram.svelte";
 
   type ToolId = "selection" | "find" | "retrieve";
 

@@ -1,6 +1,7 @@
 import type {
   ContentBlock,
   ImageBlock,
+  PromptBlock,
   TableBlock,
   TextBlock
 } from "$representation/data/types/content/content-block";
@@ -36,8 +37,10 @@ export type {
   SlideLayout
 } from "$representation/data/types/slide-decks/body";
 export type { TextStyle } from "$representation/data/types/slide-decks/style-set";
-export type { Atom, ContentBlock, Mark, MarkStyle, TextBlock } from "$representation/data/types/content/content-block";
+export type { Atom, ContentBlock, Mark, MarkStyle, PromptBlock, TextBlock } from "$representation/data/types/content/content-block";
 export type { SlideDeckOp } from "$representation/data/types/slide-decks/op";
+
+export type EditableTextBlock = TextBlock | PromptBlock;
 
 export type Edit = { readonly body: SlideDeckBody; readonly ops: readonly SlideDeckOp[] };
 
@@ -55,12 +58,12 @@ const edit = (body: SlideDeckBody, ops: readonly SlideDeckOp[]): Edit =>
 
 export const typeOf = (element: SlideElement) => element.content.type;
 
-export const textOf = (element: SlideElement): TextBlock | undefined =>
-  element.content.type === "text" || element.content.type === "shape"
+export const textOf = (element: SlideElement): EditableTextBlock | undefined =>
+  element.content.type === "text" || element.content.type === "prompt" || element.content.type === "shape"
     ? element.content.block
     : undefined;
 
-export const styleOf = (body: SlideDeckBody, block: TextBlock) =>
+export const styleOf = (body: SlideDeckBody, block: EditableTextBlock) =>
   body.styles.styles[block.style ?? body.styles.defaultKey];
 
 export const slideAt = (body: SlideDeckBody, index: number): Slide | undefined => body.slides[index];
@@ -121,9 +124,13 @@ export const boundsOf = (frames: readonly Frame[]): Frame => {
   return { x: left, y: top, width: right - left, height: bottom - top };
 };
 
-export const blockIn = (body: SlideDeckBody, blockId: string): TextBlock | undefined => {
+export const blockIn = (body: SlideDeckBody, blockId: string): EditableTextBlock | undefined => {
   const node = nodeIn(body, blockId);
-  return node !== undefined && node.type === "text" && Array.isArray(node.atoms) ? (node as unknown as TextBlock) : undefined;
+  return node !== undefined &&
+    (node.type === "text" || node.type === "prompt") &&
+    Array.isArray(node.atoms)
+    ? (node as unknown as EditableTextBlock)
+    : undefined;
 };
 
 export const elementIn = (body: SlideDeckBody, elementId: string): SlideElement | undefined => {
@@ -133,7 +140,10 @@ export const elementIn = (body: SlideDeckBody, elementId: string): SlideElement 
 
 const holds = (element: SlideElement, blockId: string): boolean => {
   const content = element.content;
-  if ((content.type === "text" || content.type === "shape") && content.block?.id === blockId) return true;
+  if (
+    (content.type === "text" || content.type === "prompt" || content.type === "shape") &&
+    content.block?.id === blockId
+  ) return true;
   return content.type === "table" && content.block.rows.some((row) => row.cells.some((cell) => cell.blocks.some((held) => held.id === blockId)));
 };
 

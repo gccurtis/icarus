@@ -76,6 +76,21 @@ describe("semantic resource text projection", () => {
               id: "upper",
               frame: { x: 0, y: 0, width: 100, height: 20 },
               content: { type: "shape", shape: "rectangle", block: text("upper-block", "First") }
+            },
+            {
+              id: "generated",
+              frame: { x: 0, y: 50, width: 100, height: 20 },
+              content: {
+                type: "prompt",
+                block: {
+                  id: "generated-block",
+                  type: "prompt",
+                  atoms: [{ id: "generated-atom", kind: "literal", text: "Do not re-ingest me" }],
+                  display: "Do not re-ingest me",
+                  marks: [],
+                  state: "fresh"
+                }
+              }
             }
           ],
           notes: [text("note", "Remember the age source")]
@@ -104,6 +119,7 @@ describe("semantic resource text projection", () => {
     });
 
     expect(projection.text).toBe("First\n\nSecond\n\nRemember the age source");
+    expect(projection.text).not.toContain("Do not re-ingest me");
     expect(projection.locators.map((span) => span.locator.kind)).toEqual([
       "slideElement",
       "slideElement",

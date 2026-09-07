@@ -1,4 +1,8 @@
-import type { ContentBlock, TextBlock } from "$representation/data/types/content/content-block";
+import type {
+  ContentBlock,
+  PromptBlock,
+  TextBlock
+} from "$representation/data/types/content/content-block";
 import type { SlideDeckBody } from "$representation/data/types/slide-decks/body";
 import type { TextStyle } from "$representation/data/types/slide-decks/style-set";
 import {
@@ -93,10 +97,10 @@ export const duplicateStyleEdit = (
   return { key: made, edit: withSet(body, `styles/styles/${made}`, { ...style, name }) };
 };
 
-const textBlocksIn = (body: SlideDeckBody): readonly TextBlock[] => {
-  const found = new Map<string, TextBlock>();
+const textBlocksIn = (body: SlideDeckBody): readonly (TextBlock | PromptBlock)[] => {
+  const found = new Map<string, TextBlock | PromptBlock>();
   const visit = (block: ContentBlock): void => {
-    if (block.type === "text") found.set(block.id, block);
+    if (block.type === "text" || block.type === "prompt") found.set(block.id, block);
     else if (block.type === "image" && block.caption !== undefined) visit(block.caption);
     else if (block.type === "table") {
       for (const row of block.rows) for (const cell of row.cells) for (const child of cell.blocks) visit(child);
@@ -107,7 +111,10 @@ const textBlocksIn = (body: SlideDeckBody): readonly TextBlock[] => {
     for (const block of slide.notes) visit(block);
     for (const { element } of placedOn(slide)) {
       const content = element.content;
-      if ((content.type === "text" || content.type === "shape") && content.block !== undefined) visit(content.block);
+      if (
+        (content.type === "text" || content.type === "prompt" || content.type === "shape") &&
+        content.block !== undefined
+      ) visit(content.block);
       else if (content.type === "image" || content.type === "table") visit(content.block);
     }
   }

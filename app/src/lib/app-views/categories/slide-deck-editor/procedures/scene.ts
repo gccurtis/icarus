@@ -248,7 +248,14 @@ const itemOf = (body: SlideDeckBody, element: SlideElement, frame: Frame, depth:
     case "formula":
       return { ...base, text: textSceneOf(element.content.block, undefined, body.theme) };
     case "prompt":
-      return { ...base, text: textSceneOf(element.content.block, undefined, body.theme) };
+      return {
+        ...base,
+        text: textSceneOf(
+          element.content.block,
+          styleOf(body, element.content.block),
+          body.theme
+        )
+      };
     case "shape":
       return {
         ...base,

@@ -15,7 +15,8 @@ mocked plus live verification. All review pages point at the stacked,
 unmerged integration branch.
 
 The newer Derived Output architecture pages live beside these at
-`/demo/semantic-overlay/derived-output-flow`, `/agent-runtime`, and
+`/demo/semantic-overlay/derived-output-flow`, `/agent-runtime`,
+`/resource-reading`, `/material-layer`, `/slide-prompt-blocks`, and
 `/derived-output-live`. They supersede the earlier “source publication is not
 wired” assumption with the executable projection, queue, publication, template,
-and value-read slice.
+value-read, and document/slide Prompt Block slices.

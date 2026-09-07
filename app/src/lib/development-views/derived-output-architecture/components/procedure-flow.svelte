@@ -21,7 +21,7 @@
   import Sparkles from "@lucide/svelte/icons/sparkles";
   import Workflow from "@lucide/svelte/icons/workflow";
 
-  import MermaidDiagram from "$development-views/derived-output-architecture/components/mermaid-diagram.svelte";
+  import MermaidDiagram from "$development-components/mermaid-diagram.svelte";
 
   type FunctionStatus = "existing" | "extend" | "new" | "deferred";
   type FunctionGroup = "ingestion" | "generation" | "reading";
@@ -195,12 +195,12 @@
   const GENERATION: FunctionStep[] = [
     {
       order: "01",
-      name: "blockTypeOps → emptyPrompt",
-      owner: "document editor",
+      name: "blockTypeOps → emptyPrompt / withPromptElement",
+      owner: "document + slide editors",
       status: "new",
-      input: "empty line + kind: prompt",
+      input: "empty document line or selected slide text box",
       output: "editable unlinked PromptBlock",
-      note: "The ordinary Block selector performs the conversion and opens the Prompt inspector. The context rail only indexes blocks already in the document."
+      note: "Documents use the ordinary Block selector; slides use Prompt beside Comment. Each editor converts in place and its context rail only indexes existing blocks."
     },
     {
       order: "02",
@@ -214,11 +214,11 @@
     {
       order: "03",
       name: "linkPromptBlockOps",
-      owner: "document editor",
+      owner: "resource editor adapter",
       status: "new",
       input: "PromptBlock + derivedOutputId",
-      output: "document set op + accepted revision",
-      note: "Links the surface block before provider work. Optional example text is stored as ungrounded continuity, never evidence."
+      output: "document/deck op + accepted revision",
+      note: "Links the surface block before provider work. Optional existing text is stored as ungrounded continuity, never evidence."
     },
     {
       order: "04",
@@ -313,11 +313,11 @@
     {
       order: "14",
       name: "syncPromptBlockOps",
-      owner: "document editor",
+      owner: "document + slide adapters",
       status: "new",
       input: "PromptBlock + published DerivedOutput",
       output: "editable text + freshness mirror; mark ranges retained",
-      note: "Copies only text from the Derived Output. The document adapter reapplies its own absolute mark ranges, clipped to a shorter response."
+      note: "Copies only text from the Derived Output. Each resource adapter reapplies its own absolute mark ranges, clipped to a shorter response."
     }
   ];
 
@@ -343,29 +343,29 @@
     {
       order: "03",
       name: "syncPromptBlockOps",
-      owner: "document editor",
+      owner: "document + slide adapters",
       status: "new",
       input: "PromptBlock + DerivedOutput",
       output: "ordinary editable text ops",
-      note: "Generated prose is copied into the Prompt Block's atoms/display and remains selectable, markable, and editable like normal document text."
+      note: "Generated prose is copied into the Prompt Block's atoms/display and remains selectable, markable, and editable like normal resource text."
     },
     {
       order: "04",
-      name: "place (Prompt gutter projection)",
-      owner: "document editor",
+      name: "Prompt marker projection",
+      owner: "document + slide surfaces",
       status: "new",
-      input: "laid-out Prompt Blocks + pasteboard origin",
-      output: "pasteboard-gutter settings star",
-      note: "A sibling of the comment pins opens settings. It is outside ProseMirror and outside the document's margin coordinate system."
+      input: "laid-out Prompt Blocks + editor surface",
+      output: "editor-only settings star",
+      note: "A sibling of comment pins opens settings: in the document pasteboard gutter or on the interactive slide surface. It is never authored or exported content."
     },
     {
       order: "05",
       name: "resolvePresentationSnapshot",
-      owner: "export / deck adapter",
+      owner: "export adapter",
       status: "deferred",
       input: "DerivedOutputValue + target format",
       output: "frozen presentation value",
-      note: "Exports and decks can resolve the canonical value by ID or deliberately freeze the current editable presentation, according to their own contract."
+      note: "Exports can resolve the canonical value by ID or deliberately freeze the current editable resource presentation, according to their contract."
     }
   ];
 
@@ -424,14 +424,18 @@
 
   const DERIVED_SEQUENCE = `sequenceDiagram
     autonumber
-    participant UI as Block menu + Prompt inspector
-    participant DR as Document runtime
+    participant UI as Resource editor + Prompt inspector
+    participant DR as Document / deck runtime
     participant DO as Derived Output capability
     participant SO as Semantic Overlay
     participant A as Agent runtime
     participant R as Representation
 
-    UI->>DR: blockTypeOps(empty line, prompt)
+    alt document empty line
+      UI->>DR: blockTypeOps(empty line, prompt)
+    else selected slide text box
+      UI->>DR: withPromptElement(body, elementId)
+    end
     DR->>R: flush editable PromptBlock
     Note over UI,R: Context rail lists prompts—it does not create them
     UI->>DO: createDerivedOutput(prompt, optional scope)
@@ -439,7 +443,7 @@
     R-->>DO: derivedOutputId
     DO-->>UI: idle output + ID
     UI->>DR: linkPromptBlockOps(block, derivedOutputId)
-    DR->>R: flush accepted document revision
+    DR->>R: flush accepted resource revision
     Note over DR,R: Block owns editable presentation + ID, output owns canonical evidence
 
     UI->>DO: refreshDerivedOutput(id) — signal only
@@ -462,7 +466,7 @@
       DO-->>UI: fresh response + idle refresh projection
       UI->>DR: syncPromptBlockOps(block, output)
       DR->>R: flush text + state, preserve editor-owned mark ranges
-      Note over UI,DR: Normal selectable text + settings star in the pasteboard gutter
+      Note over UI,DR: Normal selectable text + an editor-only settings star
     else authoritative input changed
       DO->>SO: drain again, then retry with a fresh evidence registry
     end`;
@@ -581,9 +585,9 @@ readDerivedOutput({ derivedOutputId })
     },
     {
       count: "16",
-      label: "Document Prompt Block",
-      path: "block menu · inspector · gutter · projection",
-      change: "One ID-backed styled block creates, edits, formats, refreshes, and inspects the canonical output."
+      label: "Document + slide Prompt Blocks",
+      path: "editor actions · inspectors · markers · projection",
+      change: "ID-backed ordinary text creates, edits, formats, refreshes, and inspects the canonical output in both editors."
     },
     {
       count: "06",
@@ -641,6 +645,7 @@ readDerivedOutput({ derivedOutputId })
       <a href="#footprint">footprint</a>
       <a href="#read">read API</a>
       <a href="/demo/semantic-overlay/derived-output-live">live proof</a>
+      <a href="/demo/semantic-overlay/slide-prompt-blocks">slide blocks</a>
       <a class="runtime-link" href="/demo/semantic-overlay/agent-runtime">agent runtime <ArrowRight size={13} aria-hidden="true" /></a>
     </nav>
   </header>
@@ -652,8 +657,8 @@ readDerivedOutput({ derivedOutputId })
         <h1>One text path in.<br /><em>One grounded block out.</em></h1>
         <p>
           This is the complete lifecycle: where normal authoring and seeded development enter,
-          which functions own every hand-off, how the document Prompt Block runs now, what remains
-          for queued generation and other editors, and how any surface resolves the response by ID.
+          which functions own every hand-off, how document and slide Prompt Blocks run now, what
+          remains for other resource adapters, and how any surface resolves the response by ID.
         </p>
         <div class="hero-actions">
           <a href="#ingestion">Trace the first call <ArrowDown size={14} aria-hidden="true" /></a>
@@ -783,26 +788,26 @@ readDerivedOutput({ derivedOutputId })
 
     <section id="generation" class="section sequence-section">
       <header class="section-heading">
-        <div><span class="section-number">03</span><h2>The document block<br />works end to end.</h2></div>
+        <div><span class="section-number">03</span><h2>Both editor blocks<br />work end to end.</h2></div>
         <p>
-          An empty line becomes Prompt through the ordinary Block menu. Its inspector creates and
-          links the Derived Output and submits one refresh signal. The server drains pending semantic
-          work, exposes the shared job state, publishes the response, then the adapter
-          copies that response into normal editable document text.
+          A document empty line or selected slide text box becomes Prompt through its editor-native
+          action. Its inspector creates and links the Derived Output and submits one refresh signal.
+          The server drains pending semantic work, exposes shared job state, and publishes the
+          response; the resource adapter copies it into ordinary editable text.
         </p>
       </header>
 
       <div class="callout-band">
         <div><Boxes size={19} aria-hidden="true" /><span>EXECUTABLE NOW</span></div>
         <code>{`Prompt block → create + link → refresh → sync editable text`}</code>
-        <p><a href="/demo/semantic-overlay/derived-output-live">Run direct prompt or named-variable generation ↗</a></p>
+        <p><a href="/demo/semantic-overlay/slide-prompt-blocks">Inspect the slide-specific contract ↗</a></p>
       </div>
 
       <div class="diagram-frame paper-frame sequence-frame">
         <div class="diagram-label"><span>SEQUENCE / DO-CREATE-01</span><small>create → generate → publish</small></div>
         <MermaidDiagram
           source={DERIVED_SEQUENCE}
-          label="Implemented document Prompt Block creation and Derived Output generation sequence"
+          label="Implemented document and slide Prompt Block creation and Derived Output generation sequence"
           caption="Implemented server path: identical browser signals join one job by Derived Output ID; only causal input changes retry, and the last canonical value remains readable throughout."
           minHeight="46rem"
         />
@@ -954,7 +959,7 @@ readDerivedOutput({ derivedOutputId })
         <MermaidDiagram
           source={STATE_DIAGRAM}
           label="Derived Output lifecycle and freshness state transitions"
-          caption="The document first pass calls refresh directly. When a durable queue lands, queued will be job state—not a sixth DerivedOutput state."
+          caption="Queued and running are operation states on the persisted refresh job—not additional DerivedOutput value states."
           minHeight="28rem"
         />
       </div>
@@ -984,7 +989,7 @@ readDerivedOutput({ derivedOutputId })
 
   <footer class="page-footer">
     <span>DERIVED OUTPUT / PROCEDURE FLOW</span>
-    <span>implemented core · document Prompt Block live · explicit scale-up seams</span>
+    <span>implemented core · document + slide Prompt Blocks live · explicit scale-up seams</span>
   </footer>
 </div>
 

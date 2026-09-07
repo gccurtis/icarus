@@ -90,6 +90,9 @@ export type SurfaceMove = { readonly id: string; readonly frame: SurfaceFrame };
 
 export type SurfaceBadge = { readonly id: string; readonly count: number };
 
+/** An editor-only affordance for text backed by a Derived Output. */
+export type SurfacePrompt = { readonly id: string };
+
 export type SurfaceTextEdit = {
   readonly blockId: string;
   readonly from: number;

@@ -144,6 +144,28 @@ test("the semantic material page separates discovery summaries from native autho
   await page.screenshot({ path: "/tmp/semantic-material-layer.png", fullPage: true });
 });
 
+test("the slide Prompt Block reference exposes the implemented editor and server boundary", async ({ page }) => {
+  await page.goto("/demo/semantic-overlay/slide-prompt-blocks", { waitUntil: "networkidle" });
+
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("The slide stays a slide");
+  await expect(page.locator(".mermaid-output svg")).toHaveCount(1, { timeout: 20_000 });
+  await expect(page.locator(".diagram-error")).toHaveCount(0);
+
+  const text = page.getByRole("tab", { name: /01 · Text/ });
+  await text.click();
+  await expect(text).toHaveAttribute("aria-selected", "true");
+  await expect(page.locator(".mini-inspector")).toContainText("Text box");
+  await expect(page.locator(".text-element button")).toHaveCount(0);
+
+  const published = page.getByRole("tab", { name: /04 · Publish/ });
+  await published.click();
+  await expect(page.locator(".text-element")).toContainText("92%");
+  await expect(page.getByRole("button", { name: "Edit Prompt Block" })).toBeVisible();
+  await expect(page.locator(".mini-inspector")).toContainText("EXACT TEXT");
+  await expect(page.locator(".flight-map")).toContainText("one refresh worker");
+  await page.screenshot({ path: "/tmp/slide-prompt-blocks-reference.png", fullPage: true });
+});
+
 test("the live proof exposes direct and named-variable generation", async ({ page }) => {
   await page.goto("/demo/semantic-overlay/derived-output-live", { waitUntil: "networkidle" });
 
@@ -295,6 +317,7 @@ test("architecture surfaces follow Helios and Selene", async ({ page }) => {
     "/demo/semantic-overlay/agent-runtime",
     "/demo/semantic-overlay/resource-reading",
     "/demo/semantic-overlay/material-layer",
+    "/demo/semantic-overlay/slide-prompt-blocks",
     "/demo/semantic-overlay/derived-output-live"
   ]) {
     await page.goto(route, { waitUntil: "networkidle" });
@@ -305,13 +328,16 @@ test("architecture surfaces follow Helios and Selene", async ({ page }) => {
     if (await toHelios.isVisible()) await toHelios.click();
     else await page.evaluate(() => (document.documentElement.dataset.appearance = "helios"));
     await expect(root).toHaveAttribute("data-appearance", "helios");
-    const surface = page.locator(".flow-page, .runtime-page, .reading-page, .material-page, .proof-shell").first();
+    const surface = page.locator(".flow-page, .runtime-page, .reading-page, .material-page, .reference-page, .proof-shell").first();
     const day = await surface.evaluate((node) => getComputedStyle(node).backgroundColor);
     if (route === "/demo/semantic-overlay/resource-reading") {
       await page.screenshot({ path: "/tmp/derived-output-resource-reading-helios.png", fullPage: true });
     }
     if (route === "/demo/semantic-overlay/material-layer") {
       await page.screenshot({ path: "/tmp/semantic-material-layer-helios.png", fullPage: true });
+    }
+    if (route === "/demo/semantic-overlay/slide-prompt-blocks") {
+      await page.screenshot({ path: "/tmp/slide-prompt-blocks-helios.png", fullPage: true });
     }
 
     const toSelene = page.getByRole("button", {
@@ -328,6 +354,9 @@ test("architecture surfaces follow Helios and Selene", async ({ page }) => {
     if (route === "/demo/semantic-overlay/material-layer") {
       await page.screenshot({ path: "/tmp/semantic-material-layer-selene.png", fullPage: true });
     }
+    if (route === "/demo/semantic-overlay/slide-prompt-blocks") {
+      await page.screenshot({ path: "/tmp/slide-prompt-blocks-selene.png", fullPage: true });
+    }
   }
 });
 
@@ -337,7 +366,8 @@ test("architecture pages contain narrow overflow only inside intentional diagram
     "/demo/semantic-overlay/derived-output-flow",
     "/demo/semantic-overlay/agent-runtime",
     "/demo/semantic-overlay/resource-reading",
-    "/demo/semantic-overlay/material-layer"
+    "/demo/semantic-overlay/material-layer",
+    "/demo/semantic-overlay/slide-prompt-blocks"
   ]) {
     await page.goto(route, { waitUntil: "networkidle" });
     if (

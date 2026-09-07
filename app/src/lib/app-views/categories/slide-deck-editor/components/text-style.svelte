@@ -76,7 +76,7 @@
 
   const background = $derived.by(() => {
     if (holder === undefined) return { path: `${blockId}/format/background`, value: format?.background ?? "" };
-    if (holder.content.type === "text" || holder.content.type === "shape") return { path: `${holder.id}/paint/fill`, value: holder.paint?.fill ?? "" };
+    if (holder.content.type === "text" || holder.content.type === "prompt" || holder.content.type === "shape") return { path: `${holder.id}/paint/fill`, value: holder.paint?.fill ?? "" };
     if (holder.content.type === "table") {
       const cell = holder.content.block.rows.flatMap((row) => row.cells).find((held) => held.blocks.some((candidate) => candidate.id === blockId));
       return cell === undefined ? undefined : { path: `${cell.id}/format/background`, value: cell.format?.background ?? "" };

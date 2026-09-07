@@ -378,3 +378,92 @@ test("shape identity and speaker notes follow the same inspector grammar", async
   await inspector.getByRole("button", { name: "Spacing", exact: true }).click();
   await expect(inspector.getByRole("spinbutton", { name: "Indent" })).toBeVisible();
 });
+
+test("a text box becomes an editable slide Prompt Block without changing its element shell", async ({ page }) => {
+  const surface = await openDeck(page);
+  const context = page.locator('aside[aria-label="Context"]');
+  const inspector = page.locator('aside[aria-label="Inspector"]');
+
+  await context.getByRole("button", { name: "Insert", exact: true }).click();
+  await context.getByRole("button", { name: "Text box", exact: true }).click();
+  const item = surface.locator("[data-item]").last();
+  await expect(item).toContainText("Text");
+  await expect(inspector).toHaveAttribute("data-inspected", "slide-deck-editor.text-box");
+  await expect(inspector.getByRole("button", { name: "Prompt", exact: true })).toBeVisible();
+  await expect(inspector.getByRole("button", { name: "Comment", exact: true })).toBeVisible();
+
+  await inspector.getByRole("button", { name: "Prompt", exact: true }).click();
+  await expect(inspector).toHaveAttribute("data-inspected", "slide-deck-editor.prompt-block");
+  await expect(inspector.getByLabel("Prompt", { exact: true })).toBeVisible();
+  await expect(inspector.getByRole("button", { name: "Generate", exact: true })).toBeDisabled();
+  await expect(inspector.getByRole("button", { name: "Text style", exact: true })).toBeVisible();
+
+  const star = surface.locator("[data-prompt]").last();
+  await expect(star).toHaveAttribute("aria-label", "Edit Prompt Block");
+  await expect(item).toContainText("Text");
+
+  await item.dblclick({ position: { x: 24, y: 18 } });
+  await expect(inspector).toHaveAttribute(
+    "data-inspected",
+    /slide-deck-editor\.(next-letter|text-selection)/
+  );
+  await page.keyboard.press("End");
+  await page.keyboard.type(" retained");
+  await expect(item).toContainText("Text retained");
+
+  await star.click();
+  await expect(inspector).toHaveAttribute("data-inspected", "slide-deck-editor.prompt-block");
+
+  await context.getByRole("button", { name: "Prompts", exact: true }).click();
+  await expect(context.getByRole("heading", { name: "Prompts", exact: true })).toBeVisible();
+  await expect(context).toContainText("Text retained");
+});
+
+test("a slide Prompt Block generates grounded editable text from another resource", async ({ page }) => {
+  test.skip(
+    process.env.ICARUS_LIVE_DERIVED_OUTPUT !== "1",
+    "Set ICARUS_LIVE_DERIVED_OUTPUT=1 to spend real embedding and intelligence calls"
+  );
+  test.setTimeout(420_000);
+
+  // Author the evidence through the ordinary document persistence path.
+  await page.goto("/app/dev-project", { waitUntil: "networkidle" });
+  const tabs = page.getByRole("toolbar", { name: "Open tabs" });
+  await tabs.locator('button.tab.icon[aria-label="New tab"]').click();
+  await page
+    .locator(".area-editors")
+    .getByRole("button", { name: "Document", exact: true })
+    .click();
+  await expect(page.locator(".title-bar h1")).toHaveText(/^Untitled document \d+$/);
+  const sourceTitle = (await page.locator(".title-bar h1").textContent()) ?? "";
+  const source = page.locator(".ProseMirror");
+  await source.click();
+  await page.keyboard.type("The Meridian observatory's test aperture is 27 millimeters.");
+  await expect(page.locator(".title-bar")).toContainText("Saved", { timeout: 15_000 });
+
+  // Convert an ordinary slide text box, then use the production Derived Output path.
+  const surface = await openDeck(page);
+  const context = page.locator('aside[aria-label="Context"]');
+  const inspector = page.locator('aside[aria-label="Inspector"]');
+  await context.getByRole("button", { name: "Insert", exact: true }).click();
+  await context.getByRole("button", { name: "Text box", exact: true }).click();
+  const item = surface.locator("[data-item]").last();
+  await inspector.getByRole("button", { name: "Prompt", exact: true }).click();
+  await inspector
+    .getByLabel("Prompt", { exact: true })
+    .fill("What is the Meridian observatory's test aperture in millimeters?");
+  await inspector.getByRole("button", { name: "Generate", exact: true }).click();
+
+  await expect(item).toContainText("27", { timeout: 300_000 });
+  await expect(surface.locator("[data-prompt]").last()).toBeVisible();
+  await expect(inspector).toHaveAttribute("data-inspected", "slide-deck-editor.prompt-block");
+  await expect(inspector.getByRole("button", { name: sourceTitle, exact: true })).toBeVisible();
+  await expect(inspector).toContainText("test aperture is 27 millimeters");
+
+  // Refresh remains an available pull signal even when the current value is fresh.
+  const refresh = inspector.getByRole("button", { name: "Refresh", exact: true });
+  await expect(refresh).toBeEnabled();
+  await refresh.click();
+  await expect(item).toContainText("27", { timeout: 300_000 });
+  await expect(refresh).toBeEnabled({ timeout: 300_000 });
+});

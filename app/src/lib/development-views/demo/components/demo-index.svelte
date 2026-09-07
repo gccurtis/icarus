@@ -43,6 +43,14 @@
         "A connected architecture set: exact procedure flow, agent runtime, resource reading, semantic materials, evidence protocol, and scaling seams."
     },
     {
+      href: "/demo/semantic-overlay/slide-prompt-blocks",
+      title: "Slide Prompt Blocks",
+      sub: "One ordinary text box; one generated relationship",
+      icon: Sparkles,
+      about:
+        "The implemented slide interaction: in-place conversion, editor/server ownership, collaborative refresh, editable publication, and its exact file map."
+    },
+    {
       href: "/demo/semantic-overlay/derived-output-live",
       title: "Executable Derived Output",
       sub: "Type a fact; retrieve and render it",

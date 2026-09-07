@@ -184,6 +184,7 @@ export type InspectorView =
   | "slide-deck-editor.multi-selection"
   | "slide-deck-editor.named-style"
   | "slide-deck-editor.next-letter"
+  | "slide-deck-editor.prompt-block"
   | "slide-deck-editor.shape"
   | "slide-deck-editor.slide"
   | "slide-deck-editor.speaker-notes"

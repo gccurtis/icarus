@@ -3,9 +3,9 @@
 This is the project standard for a development page whose job is to make a
 system understandable and provable. It records the decisions behind the
 Derived Output procedure flow, agent runtime, resource-reading contract,
-semantic material layer, and executable proof pages. It is not a layout
-template. Each page must take the visual form that best explains its own
-subject.
+semantic material layer, executable proof, and slide Prompt Block pages. It is
+not a layout template. Each page must take the visual form that best explains
+its own subject.
 
 The standard is the method and the quality bar:
 
@@ -17,10 +17,10 @@ The standard is the method and the quality bar:
    diagnostics;
 6. leave a durable map from the page back to the code it describes.
 
-## Why the Derived Output reference is five pages
+## Why the Derived Output reference is six pages
 
 One long reference page could contain all the information, but it would force
-five different questions into one visual hierarchy. The pages are separated
+six different questions into one visual hierarchy. The pages are separated
 by the kind of understanding they need to create.
 
 | Surface | Question | Visual grammar | Proof level |
@@ -30,10 +30,11 @@ by the kind of understanding they need to create.
 | Resource reading | How does the agent traverse a document or deck, understand a slide, and obtain typed evidence? | authority grammar, interactive tool field, task routes, slide anatomy, evidence spectrum, projection seam | live orientation/evidence tools with current bounds and named renderer/upload limitations |
 | Semantic material | How do tables, CSV data, images, charts, and code become semantically discoverable without replacing their native authority? | two-lane retrieval machine, interactive material record, processing track, evidence-distance ruler, schema wall | live registry, profiles, descriptors, image vectors, queues, index lane, retrieval, and readers |
 | Live proof | Does the vertical slice really work? | two-input laboratory, execution rail, stored result, evidence record | real project store, real resource write, real embedding/index query, real structured generation, real value read |
+| Slide Prompt Blocks | How does one ordinary text box acquire generated behavior without changing its slide presentation or collaboration contract? | interactive four-state editor specimen, data-boundary X-ray, exact sequence, one-flight collaboration map, file ledger | real conversion/editing/publication procedures plus Chromium editor proof |
 
 The pages link to one another, but each can stand on its own. Reusing navigation,
 typography, or a diagram renderer is useful; forcing the same card grid or
-section convention onto all five is not.
+section convention onto all six is not.
 
 ## Source-of-truth pass
 
@@ -137,7 +138,8 @@ own project evidence.
 
 ### Prompt Block product entry
 
-Prompt creation belongs to the document, not the context rail:
+Prompt creation belongs to the authoring surface, not the context rail. In a
+document:
 
 1. place the caret on an empty line;
 2. choose `Prompt` from the normal Block selector;
@@ -192,6 +194,46 @@ routine inspector chrome.
 
 The Prompts context panel is an index of Prompt Blocks already in the current
 document. It can navigate and inspect; it does not create.
+
+In a slide deck, the same product rule takes a different editor-native form:
+
+1. select a standalone text box;
+2. choose `Prompt` beside `Comment` in its inspector;
+3. convert only the inner content kind while retaining the outer element and
+   every presentation field;
+4. configure and generate from the dedicated slide Prompt inspector;
+5. publish the response through native deck atom/mark operations;
+6. edit or format the response through the ordinary slide text path;
+7. use the editor-only star or the Prompts index to reopen settings.
+
+This interaction did not copy the document's empty-line mechanism because the
+two editors have different creation grammars. It did preserve the system
+contract: one ordinary editable presentation block holds one Derived Output ID,
+while server generation and evidence remain outside the resource. The visual
+reference makes that narrow conversion inspectable as a four-state specimen,
+then separates the slide shell, Prompt content, and Derived Output record in a
+data-boundary X-ray. Its Mermaid sequence and collaboration map name the actual
+procedures and server job behavior rather than implying the browser owns work.
+
+The implementation initially tried to publish slide responses by setting the
+`atoms` and `marks` arrays directly, mirroring the document adapter. A focused
+test through the real deck operation applier rejected that: identified slide
+lists must use native `insert` and `remove` operations. The adapter now removes
+marks and atoms, inserts the response atom, and reinserts clipped mark ranges.
+That test-driven correction preserves collaborative operation semantics instead
+of weakening the applier for one feature.
+
+The reference also draws the current collaboration boundary precisely: Derived
+Output generation is coalesced and canonically published by the server, while a
+mounted editor still mirrors that canonical value into slide atoms and marks
+through normal collaborative deck operations. A server-owned idempotent
+single-writer presentation mirror is recorded as follow-up work so the page does
+not imply duplicate client publication has already been eliminated.
+
+The full design, exact before/after shape, call sequence, ownership decisions,
+test contract, and explicit follow-ups are recorded in
+`app/src/lib/development-views/slide-prompt-blocks/slide-prompt-blocks.md` and
+served at `/demo/semantic-overlay/slide-prompt-blocks`.
 
 ### Agent evidence boundaries
 
@@ -458,7 +500,11 @@ grounds must react to both:
 The procedure page begins from Helios and has an explicit Selene palette. The
 agent page begins from the same visual concept but expresses it in both
 materials. The live proof adapts its laboratory cards, inputs, rail, result, and
-evidence—not just its outer background.
+evidence—not just its outer background. The slide Prompt Block page uses only
+semantic surface, ink, border, status, intelligence, typography, radius, and
+shadow tokens, so its mini editor, inverted X-ray, and collaboration map all
+respond to the active Celestial appearance without a parallel hard-coded
+palette.
 
 ## Responsive and interaction contract
 
@@ -481,7 +527,9 @@ evidence—not just its outer background.
 | Resource-reading page | `app/src/lib/development-views/derived-output-architecture/components/resource-reading.svelte` |
 | Semantic-material page | `app/src/lib/development-views/derived-output-architecture/components/material-layer.svelte` |
 | Executable proof page | `app/src/lib/development-views/derived-output-architecture/components/live-proof.svelte` |
-| Adaptive diagram renderer | `app/src/lib/development-views/derived-output-architecture/components/mermaid-diagram.svelte` |
+| Slide Prompt Block visual reference | `app/src/lib/development-views/slide-prompt-blocks/slide-prompt-blocks.svelte` |
+| Slide Prompt Block design record | `app/src/lib/development-views/slide-prompt-blocks/slide-prompt-blocks.md` |
+| Adaptive diagram renderer | `app/src/lib/components/development/mermaid-diagram.svelte` |
 | Exact executable agent instruction | `app/src/lib/capabilities/derived-output/api/shared/agent-instructions.ts` |
 | Coalesced server refresh queue | `app/src/lib/capabilities/derived-output/api/shared/refresh-queue.ts` |
 | Prompt Block inspector | `app/src/lib/app-views/categories/document-editor/inspector/prompt-block.svelte` |
@@ -489,11 +537,15 @@ evidence—not just its outer background.
 | Prompt list context | `app/src/lib/app-views/categories/document-editor/context/prompts.svelte` |
 | Prompt and comment gutter | `app/src/lib/app-views/categories/document-editor/content/document.svelte` |
 | Editable response synchronization | `app/src/lib/app-views/categories/document-editor/procedures/prompt-blocks.ts` |
+| Slide Prompt conversion and publication | `app/src/lib/app-views/categories/slide-deck-editor/procedures/prompt-blocks.ts` |
+| Slide Prompt inspector and refresh | `app/src/lib/app-views/categories/slide-deck-editor/inspector/prompt-block.svelte` and `components/prompt-settings.svelte` |
+| Slide Prompt marker and navigation | `app/src/lib/components/authored/slide-surface/slide-surface.svelte` and `app/src/lib/app-views/categories/slide-deck-editor/context/prompts.svelte` |
 | Durable blank-resource entry | `app/src/lib/app-views/categories/new-tab/procedures/creating.ts` |
 | Represented first document block | `app/src/lib/capabilities/project-resources/api/create-project-resource/create-project-resource.ts` |
 | DAG-safe store serialization | `app/src/lib/representation/store/path.ts` |
 | Architecture and live-provider proof | `app/test/browser/derived-output-architecture.spec.ts` |
 | Gutter and inspector-stability proof | `app/test/browser/document-editor.spec.ts` |
+| Slide conversion, direct editing, and navigation proof | `app/test/browser/slide-deck-editor.spec.ts` |
 
 Routes are served under:
 
@@ -503,6 +555,7 @@ Routes are served under:
 - `/demo/semantic-overlay/material-layer`
 - `/demo/semantic-overlay/derived-output-live` (redirects into the project-scoped
   application route before executing writes)
+- `/demo/semantic-overlay/slide-prompt-blocks`
 
 ## Review checklist
 
