@@ -6,44 +6,56 @@ export const STAGES: readonly Stage[] = [
     title: "Read what was typed",
     detail:
       "Text becomes one of three intents: clear, an expression when it opens with =, or a literal. A literal carrying more decimals than the number needs also mints a value format, so 7.00 keeps both zeros.",
-    source: "procedures/values.ts · procedures/cells.ts"
+    source: "spreadsheet-editor/procedures/values.ts · cells.ts"
   },
   {
     index: "02",
-    title: "Turn the intent into ops",
-    detail: "typed() refuses a write under a spill or a merge, then returns the ops that set the cell's value or its expression. Nothing is applied here; a refusal is an answer.",
-    source: "procedures/cells.ts"
+    title: "Translate the addresses",
+    detail:
+      "E4 becomes the ids of its row and its column, and the dollar signs are lifted out into a mask stored beside the formula. From here on nothing knows the sheet the person was looking at.",
+    source: "behavior/spreadsheets/translation.ts"
   },
   {
     index: "03",
-    title: "Apply to a copy",
-    detail: "withRecalculation applies the edit to a copy of the live sheet with the shared applier, so recalculation sees the sheet as it will be rather than as it was.",
-    source: "representation/data/behavior/spreadsheets/apply-ops.ts"
+    title: "Turn the intent into ops",
+    detail:
+      "typed() refuses a write under a spill or a merge, then returns the ops that set the cell's value, or its formula and its anchors. Nothing is applied here; a refusal is an answer.",
+    source: "spreadsheet-editor/procedures/cells.ts"
   },
   {
     index: "04",
-    title: "Order the formulas",
+    title: "Apply to a copy",
     detail:
-      "Every formula cell's addresses are collected, edges are drawn between formula cells only, and Kahn's algorithm gives an order. Whatever will not sort is a cycle and is marked, not evaluated.",
-    source: "procedures/evaluate.ts"
+      "withRecalculation applies the edit to a copy of the live sheet with the shared applier, so recalculation sees the sheet as it will be rather than as it was.",
+    source: "behavior/spreadsheets/apply-ops.ts"
   },
   {
     index: "05",
-    title: "Evaluate each one",
-    detail: "Tokenise, parse by precedence, walk the tree. A cell reads through an overlay, so a formula sees values computed earlier in this same pass rather than last pass's.",
-    source: "procedures/evaluate.ts"
+    title: "Order the formulas",
+    detail:
+      "Every formula's addresses are read off the ids it stores, edges are drawn between formula cells only, and Kahn's algorithm gives an order. Whatever will not sort is a ring, and every cell in it is marked.",
+    source: "behavior/spreadsheets/formulas.ts"
   },
   {
     index: "06",
-    title: "Append the consequences",
-    detail: "Only values that actually changed become ops, and they ride with the edit as one change. Undo takes the edit and its consequences back together.",
-    source: "procedures/evaluate.ts"
+    title: "Answer each one",
+    detail:
+      "Tokenise, parse by precedence, walk the tree. Names go to the built-ins, then the project's variables, then whatever the id names; a cell reads through an overlay, so a formula sees values computed earlier in this same pass.",
+    source: "behavior/formulas/evaluate.ts"
   },
   {
     index: "07",
-    title: "Persist",
-    detail: "The runtime applies the change set optimistically and flushes it; the capability diffs before and after and writes the sheetCells rows that moved.",
-    source: "model/client/spreadsheet-runtimes · capabilities/spreadsheet"
+    title: "Append the consequences",
+    detail:
+      "Only values and failures that actually changed become ops, and they ride with the edit as one change. Undo takes the edit and its consequences back together.",
+    source: "behavior/spreadsheets/formulas.ts"
+  },
+  {
+    index: "08",
+    title: "Answer it again, with authority",
+    detail:
+      "The capability applies the same ops, recomputes with every sheet and every variable in the project in reach, mints or updates the formulas rows the cells point at, and writes the back references. What the client computed optimistically and what is stored agree because both ran the same function.",
+    source: "capabilities/spreadsheet/api/shared/answering.ts"
   }
 ];
 
@@ -51,13 +63,16 @@ export const PRECEDENCE: Grid = {
   columns: ["Binding", "Operators", "Notes"],
   mono: [1],
   rows: [
-    ["1 · loosest", "=  <>  <  >  <=  >=", "Answers a logic value; text compares case-insensitively"],
-    ["2", "&", "Joins as text, coercing numbers and logic"],
-    ["3", "+  −", "Blank reads as zero"],
-    ["4", "*  /", "Division by zero refuses"],
-    ["5 · tightest", "^", "Right associative"],
+    ["1 · loosest", "or", "Reads as the word"],
+    ["2", "and", "Reads as the word"],
+    ["3", "not", "A prefix, so not a = b negates the comparison"],
+    ["4", "=  <>  <  >  <=  >=", "Answers a logic value; text compares case-insensitively"],
+    ["5", "&", "Joins as text, coercing numbers and logic"],
+    ["6", "+  −", "Blank reads as zero"],
+    ["7", "*  /", "Division by zero refuses"],
+    ["8 · tightest", "^", "Right associative"],
     ["prefix", "−  +", "Binds tighter than ^, as Excel does: -A2^2 is 16"],
-    ["postfix", "%", "Divides by a hundred"]
+    ["postfix", "[ ]  . field  .{ }  !  %", "Slice, field, query, resolve, per cent — chained left to right"]
   ]
 };
 
@@ -65,169 +80,158 @@ export const CALLS: Grid = {
   columns: ["Signature", "Group", "Does", "State"],
   mono: [0],
   rows: [
-    ["SUM(range)", "Maths", "Adds every number, ignoring text and blanks", "works"],
-    ["ROUND(n, digits)", "Maths", "Rounds half away from zero", "works"],
-    ["ABS(n) · SQRT(n) · POWER(n, e)", "Maths", "Magnitude, root, power", "works"],
-    ["MEAN(range) · MEDIAN(range)", "Statistics", "Average and middle", "works"],
+    ["SUM(…)", "Maths", "Adds every number it can find, at any depth", "works"],
+    ["ROUND(n, digits) · ABS · SQRT · POWER", "Maths", "Round half away from zero, magnitude, root, power", "works"],
+    ["MEAN · AVERAGE · MEDIAN · MIN · MAX", "Statistics", "Over nothing, each answers #N/A", "works"],
     ["PERCENTILE(range, p)", "Statistics", "The value below which p of the range falls", "works"],
-    ["MIN(range) · MAX(range)", "Statistics", "Smallest and largest", "works"],
-    ["COUNT(range) · COUNTA(range)", "List and range", "Numbers, and anything at all", "works"],
-    ["COUNTIF(range, test) · SUMIF(range, test, sums)", "List and range", "Match a value or a comparison such as \">200\"", "works"],
-    ["IF(test, then, else) · IFERROR(value, otherwise)", "Logic", "Only the branch taken is evaluated", "works"],
-    ["AND(…) · OR(…) · NOT(…)", "Logic", "Logic over values and ranges", "works"],
-    ["CONCAT(…) · UPPER · LOWER · TRIM · LEN", "Text", "Join, case, trim, length", "works"],
-    ["FILTER(range, test) · UNIQUE(range)", "List and range", "Offered by the builder; answer with a range, which this evaluator will not write", "offered"]
+    ["COUNT(…) · COUNTA(…)", "Lists", "Numbers, and anything that is not empty", "works"],
+    ["COUNTIF(range, test) · SUMIF(range, test, sums)", "Lists", "Match a value or a comparison such as \">200\"", "works"],
+    ["UNIQUE(list)", "Lists", "The first of each value, in order", "works"],
+    ["ISEMPTY(x)", "Lists", "Whether anything survived", "works"],
+    ["IF(test, then, else) · IFERROR(value, otherwise) · IFEMPTY(value, otherwise)", "Logic", "Only the branch taken is evaluated", "works"],
+    ["AND(…) · OR(…) · NOT(x)", "Logic", "Logic over values, lists and ranges", "works"],
+    ["CONCAT · CONCATENATE · UPPER · LOWER · TRIM · LEN", "Text", "Join, case, trim, length", "works"],
+    ["DATE(y, m, d) · YEAR · MONTH · DAY", "Dates", "Built from parts rather than from a clock, so the domain stays pure", "works"]
   ]
 };
 
 export const FILES: Grid = {
-  columns: ["Path", "Lines", "Status", "Owns"],
+  columns: ["Path", "Lines", "Owns"],
   mono: [0],
   rows: [
-    ["procedures/evaluate.ts", "546", "new", "Tokeniser, parser, evaluator, dependency order, recalculation"],
-    ["procedures/test/unit/evaluate.test.ts", "113", "new", "Eight cases: arithmetic, functions, errors, unsupported, order, cycles, one change"],
-    ["components/cell-head.svelte", "158", "new", "The editable value or expression, reference picking, F4"],
-    ["procedures/picking.ts", "19", "new", "The channel a lens opens so a grid click writes an address"],
-    ["procedures/anchoring.ts", "24", "new", "What F4 cycles: A1 → $A$1 → A$1 → $A1"],
-    ["procedures/builtins.ts", "75", "changed", "The eleven functions the builder offers"],
-    ["procedures/references.ts", "146", "changed", "Precedents, dependents, problems, sheet-qualified references"],
-    ["procedures/formulas.ts", "54", "changed", "The rows the Formulas panel lists"],
-    ["context/formulas.svelte", "191", "changed", "The panel and the function builder modal"],
-    ["content/sheet.svelte and nine lenses", "—", "changed", "Every apply now carries recalculation"]
+    ["types/formulas/", "114", "Expression, Address, Slice, Refusal, Answer, Resolver"],
+    ["behavior/formulas/parse.ts", "240", "Precedence, slices, queries, suffixes"],
+    ["behavior/formulas/builtins.ts", "241", "Thirty-three functions, three of them lazy"],
+    ["behavior/formulas/evaluate.ts", "165", "The walk, the resolution order, the reference ring guard"],
+    ["behavior/formulas/slicing.ts", "118", "Positional and semantic slicing over every shape"],
+    ["behavior/formulas/values.ts", "131", "Coercions, comparison, shapes"],
+    ["behavior/formulas/refusals.ts", "99", "The declared token vocabulary and how a refusal travels"],
+    ["behavior/formulas/addresses.ts", "90", "How an id is written inside a formula"],
+    ["behavior/formulas/tokens.ts · names.ts", "73", "The tokeniser, and what a legal word is"],
+    ["behavior/spreadsheets/formulas.ts", "269", "The sheet's resolver, dependency order, recalculation"],
+    ["behavior/spreadsheets/translation.ts", "217", "A1 to ids and back, the locks, and shifting on a fill"],
+    ["behavior/spreadsheets/addressing.ts", "188", "Where a cell sits, moved down from the editor"],
+    ["capabilities/variables/", "278", "Read, save and remove a project's names"],
+    ["capabilities/spreadsheet/api/shared/answering.ts", "180", "Recomputation, the formulas table, the back references"],
+    ["spreadsheet-editor/procedures/recalculation.ts", "76", "What the lenses call: facts, drawing, and one edit"],
+    ["spreadsheet-editor/context/variables.svelte", "150", "The panel"]
   ]
 };
 
 export const GAPS: readonly Card[] = [
   {
-    title: "The formulas table is untouched",
+    title: "A table does not spill yet",
     detail:
-      "A formula lives as text on the cell. The representation already has a formulas table with an id, a representation string and a usedBy list, and SheetCell.formulaId to point at it. Nothing writes either.",
-    tag: "large",
-    tone: "gap"
-  },
-  {
-    title: "No back references",
-    detail:
-      "dataBackReferences exists to record what each formula points at, which is the stored dependency graph. Today the graph is rebuilt from text on every edit: fine for one sheet of forty formulas, wrong at project scale.",
+      "A formula can answer with a list, a record or a table, and the body already models a spill. Nothing writes one, so a table lands in its cell and the grid draws it as a count.",
     tag: "medium",
     tone: "gap"
   },
   {
-    title: "Names do not resolve",
-    detail: "Any bare name answers #NAME?. Variables are read by the function builder for display and by nothing else, and the variables table has no rows at all.",
-    tag: "large",
-    tone: "gap"
-  },
-  {
-    title: "Another sheet is left alone",
+    title: "A variable cannot hold a function",
     detail:
-      "='Hardening cost model'!E10 parses and the precedent row opens that sheet, but the value is not computed. FormulaValue already models a range as a resource id and a pair of corners.",
+      "The value kind exists and a formula row can be pointed at, but calling a name that holds a function answers #NAME?. Nothing yet writes a formula row from a variable.",
     tag: "medium",
     tone: "gap"
   },
   {
-    title: "No lists, records or tables",
-    detail: "Everything on the Values, Slicing and References pages is a proposal. The evaluator answers with a number, text, logic or an error, and nothing else.",
+    title: "Resolution runs where the sheet is, not where the rows are",
+    detail:
+      "The ruling was that a filter over a hundred thousand rows runs in the capability. It does run there, but over the whole sheet loaded into memory rather than against an index.",
     tag: "large",
     tone: "gap"
   },
   {
-    title: "Addresses are text, not identity",
+    title: "The back references are written and not yet read",
     detail:
-      "A1 in the stored text is resolved against the grid at evaluation. Insert a row above and the same text names a different cell, because nothing rewrites the formula.",
-    tag: "large",
-    tone: "gap"
-  },
-  {
-    title: "It runs in the view layer",
-    detail: "Recalculation is a procedure the views call, so it is per sheet and per browser. Nothing recomputes on the server.",
+      "Every formula's targets are stored on save. Recalculation still rebuilds the graph from the ids in the sheet, which is right for one sheet and wrong at project scale.",
     tag: "medium",
     tone: "gap"
   },
   {
-    title: "The built-in set is too small",
+    title: "A document cannot hold one yet",
     detail:
-      "Twenty-five names cover arithmetic, five statistics, some logic and a little text. There is nothing for dates, nothing that takes a table, no way to ask whether a result is empty, and no text search. Every page in this suite assumes functions this table does not have.",
+      "Nothing in the language knows what a spreadsheet is, and a content block already has a formula item. The wiring on that side is not written, so the claim is true and untested.",
     tag: "medium",
+    tone: "gap"
+  },
+  {
+    title: "The client sees one sheet",
+    detail:
+      "A formula naming another sheet is left alone in the browser and answered by the capability. The value is right the moment it is saved, and stale for as long as the edit is unsaved.",
+    tag: "small",
     tone: "gap"
   }
 ];
 
 export const RULED: readonly Card[] = [
   {
-    title: "The evaluator moves before it grows",
+    title: "The evaluator moved before it grew",
     detail:
-      "Capability, formulas table and ids first; slicing and variables after. They then land on a design that will hold them, and the editor keeps working throughout because the ops language does not change. Growing first would write every line against a shape that has to be replaced.",
-    tag: "ruled",
+      "The language went to the representation as its own domain, the sheet's addressing went with it, and the capability became the authority. Slicing and variables landed on that rather than on top of the old evaluator.",
+    tag: "done",
     tone: "ruled"
   },
   {
-    title: "The parser survives",
+    title: "The parser survived",
     detail:
-      "Tokeniser, precedence and the function table are the parts worth keeping. What changes is where a name goes to become a value, which is the one thing this evaluator does that belongs somewhere else. Starting again is cleaner on paper and throws away the eight cases that already hold.",
-    tag: "ruled",
+      "Tokeniser, precedence and the function table are recognisably the ones that were there. What changed is where a name goes to become a value, which is the whole point.",
+    tag: "done",
     tone: "ruled"
   },
   {
-    title: "Emptiness and dates are the next built-ins",
+    title: "Emptiness and dates came first",
     detail:
-      "ISEMPTY, and the date parts a formula needs to ask a date anything. Both are small, both are asked for by pages in this suite, and neither waits on slicing. The table functions come after, because every one of them needs the value kinds to land first.",
-    tag: "ruled",
+      "ISEMPTY, IFEMPTY and the four date functions are in. DATE is computed from civil parts rather than asked of a clock, because a pure domain cannot read one.",
+    tag: "done",
     tone: "ruled"
   }
 ];
 
 export const REPRESENTATION: readonly Card[] = [
   {
-    title: "FormulaValue gains a reference member",
+    title: "FormulaValue gained a reference member",
     detail:
-      "A formula can answer with a pointer today only if a cell is written directly, because a cell stores a VariableValue while a formula produces a FormulaValue. A reference is its own kind and a big answer travels as one, so the member has to exist.",
-    tag: "approved · new member",
-    tone: "ruled"
-  },
-  {
-    title: "The holder's state carries a failure",
-    detail:
-      "A refused formula stores empty rather than the token as text, which means the state beside the value has to say what failed. There is no error kind, by design, and this is the field that replaces one.",
-    tag: "approved · new field",
-    tone: "ruled"
-  },
-  {
-    title: "That failure names the cell it came from",
-    detail:
-      "So a total three hops from the break can point at the break. It rides on the same state field rather than adding a second one.",
-    tag: "approved · new field",
-    tone: "ruled"
-  },
-  {
-    title: "Three error tokens join the vocabulary",
-    detail:
-      "#FIELD?, #INDEX! and #SHAPE!. The vocabulary is declared rather than inferred, which is why #NULL! can sit in it raised by nothing, and why adding three is an edit rather than an accident.",
-    tag: "approved · vocabulary",
-    tone: "ruled"
-  },
-  {
-    title: "variables gains a declared type",
-    detail:
-      "The value must satisfy it, so a formula can be checked before it runs. The table has name, value and provenance today and nothing that says what a name is allowed to hold.",
-    tag: "approved · new field",
-    tone: "ruled"
-  },
-  {
-    title: "Nothing else has to change",
-    detail:
-      "The formulas table, dataBackReferences, SheetCell.formulaId, FormulaUse and CellRef are already the shapes this design needs. The work against them is wiring rather than modelling, which is the point of having written the pages first.",
-    tag: "unchanged",
+      "A pointer is a value kind. VariableValue became an alias for FormulaValue, because the two lists are now the same list.",
+    tag: "made",
     tone: "works"
+  },
+  {
+    title: "The cell carries its failure",
+    detail:
+      "SheetCell.failure holds the token, the word it could not place, and the cell the refusal started in. The value stays empty, so nothing has to tell a failure from text that looks like one.",
+    tag: "made",
+    tone: "works"
+  },
+  {
+    title: "Three error tokens joined the vocabulary",
+    detail:
+      "#FIELD?, #INDEX! and #SHAPE!, declared in behavior/formulas/refusals.ts with the other nine and a sentence each.",
+    tag: "made",
+    tone: "works"
+  },
+  {
+    title: "variables gained a declared type",
+    detail:
+      "And a description. The capability checks the type against the value's kind before a row is written.",
+    tag: "made",
+    tone: "works"
+  },
+  {
+    title: "The cell also carries its anchors",
+    detail:
+      "Not in the approved five. A lock has to be remembered somewhere and the ruling put it outside the formula, so SheetCell.anchors holds one mask per reference. It is the only change to the tree that was not agreed in advance.",
+    tag: "unapproved",
+    tone: "gap"
   }
 ];
 
 export const COUNTS = {
-  written: 860,
-  created: 5,
-  changed: 5,
-  calls: 25,
-  failures: 8,
-  cases: 8,
-  suite: 930
+  written: 6205,
+  created: 43,
+  changed: 67,
+  deleted: 3,
+  calls: 33,
+  failures: 12,
+  cases: 110,
+  suite: 1032
 } as const;

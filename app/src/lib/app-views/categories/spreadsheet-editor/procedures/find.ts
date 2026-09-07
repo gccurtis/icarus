@@ -7,7 +7,8 @@ import {
   type Grid
 } from "$app-views/categories/spreadsheet-editor/procedures/addresses";
 import { typed } from "$app-views/categories/spreadsheet-editor/procedures/cells";
-import { displayOf, rawOf } from "$app-views/categories/spreadsheet-editor/procedures/values";
+import { shownOf, type SheetFacts } from "$app-views/categories/spreadsheet-editor/procedures/recalculation";
+import { displayOf } from "$app-views/categories/spreadsheet-editor/procedures/values";
 
 export type Hit = {
   readonly id: string;
@@ -24,13 +25,19 @@ export type Hit = {
 
 const CONTEXT = 18;
 
-const textOf = (sheet: LiveSheet, key: string): { text: string; inExpression: boolean } => {
+const textOf = (sheet: LiveSheet, key: string, facts: SheetFacts): { text: string; inExpression: boolean } => {
   const held = sheet.cells[key];
-  if (held?.expression !== undefined) return { text: held.expression, inExpression: true };
+  if (held?.expression !== undefined) return { text: shownOf(facts, held), inExpression: true };
   return { text: displayOf(held?.value), inExpression: false };
 };
 
-export const hitsOf = (sheet: LiveSheet, grid: Grid, query: string, matchCase: boolean): Hit[] => {
+export const hitsOf = (
+  sheet: LiveSheet,
+  grid: Grid,
+  query: string,
+  matchCase: boolean,
+  facts: SheetFacts
+): Hit[] => {
   if (query.length === 0) return [];
   const needle = matchCase ? query : query.toLowerCase();
   const hits: Hit[] = [];
@@ -39,7 +46,7 @@ export const hitsOf = (sheet: LiveSheet, grid: Grid, query: string, matchCase: b
     const ref = { rowId: cell.rowId, columnId: cell.columnId };
     if (indexOf(grid, ref) === undefined) continue;
     const key = `${cell.rowId}/${cell.columnId}`;
-    const { text, inExpression } = textOf(sheet, key);
+    const { text, inExpression } = textOf(sheet, key, facts);
     const haystack = matchCase ? text : text.toLowerCase();
     const label = labelOf(grid, ref);
     let from = haystack.indexOf(needle);
@@ -69,13 +76,15 @@ export const hitsOf = (sheet: LiveSheet, grid: Grid, query: string, matchCase: b
   });
 };
 
-const replacedText = (sheet: LiveSheet, hits: readonly Hit[], replacement: string): string => {
+const replacedText = (
+  sheet: LiveSheet,
+  hits: readonly Hit[],
+  replacement: string,
+  facts: SheetFacts
+): string => {
   const [first] = hits;
   const key = `${first.ref.rowId}/${first.ref.columnId}`;
-  const held = sheet.cells[key];
-  const text = held?.expression ?? rawOf(held);
-  const shown = textOf(sheet, key).text;
-  if (text !== shown) return text;
+  const text = textOf(sheet, key, facts).text;
   let out = "";
   let cursor = 0;
   for (const hit of [...hits].sort((a, b) => a.from - b.from)) {
@@ -94,11 +103,17 @@ const byCell = (hits: readonly Hit[]): Map<string, Hit[]> => {
   return groups;
 };
 
-export const replaceOps = (sheet: LiveSheet, grid: Grid, hits: readonly Hit[], replacement: string): SpreadsheetOp[] => {
+export const replaceOps = (
+  sheet: LiveSheet,
+  grid: Grid,
+  hits: readonly Hit[],
+  replacement: string,
+  facts: SheetFacts
+): SpreadsheetOp[] => {
   const ops: SpreadsheetOp[] = [];
   for (const group of byCell(hits).values()) {
-    const next = replacedText(sheet, group, replacement);
-    const edit = typed(sheet, grid, group[0].ref, next);
+    const next = replacedText(sheet, group, replacement, facts);
+    const edit = typed(sheet, grid, group[0].ref, next, facts);
     if (edit.refused === undefined) ops.push(...edit.ops);
   }
   return ops;

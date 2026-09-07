@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { untrack } from "svelte";
+
   import Minus from "@lucide/svelte/icons/minus";
   import Plus from "@lucide/svelte/icons/plus";
   import Redo2 from "@lucide/svelte/icons/redo-2";
@@ -34,8 +36,21 @@
   import { pasted } from "$app-views/categories/spreadsheet-editor/procedures/clipboard";
   import { anchorOf, pinsOf, threadsOf } from "$app-views/categories/spreadsheet-editor/procedures/comments";
   import { filled } from "$app-views/categories/spreadsheet-editor/procedures/fill";
-  import { armed, pick } from "$app-views/categories/spreadsheet-editor/procedures/picking";
-  import { withRecalculation } from "$app-views/categories/spreadsheet-editor/procedures/evaluate";
+  import { armed, beginWriting, drafted, pick } from "$app-views/categories/spreadsheet-editor/procedures/picking.svelte";
+  import {
+    AROUND,
+    factsOf,
+    recalculated,
+    recalculating,
+    sourceFor,
+    storedOf,
+    type SheetCell
+  } from "$app-views/categories/spreadsheet-editor/procedures/recalculation";
+  import {
+    loadVariables,
+    variablesLoaded,
+    variablesRevision
+  } from "$app-views/categories/spreadsheet-editor/procedures/variables.svelte";
   import { dependentsOf, referencesIn } from "$app-views/categories/spreadsheet-editor/procedures/references";
   import { sceneOf } from "$app-views/categories/spreadsheet-editor/procedures/scene";
   import {
@@ -65,7 +80,8 @@
     movedRow,
     removedColumns,
     removedRows,
-    resizedColumn
+    resizedColumn,
+    resizedRow
   } from "$app-views/categories/spreadsheet-editor/procedures/structure";
   import { workspaceState, type SpreadsheetRuntime, type SyncState } from "$model/client/workspace-state";
 
@@ -103,8 +119,23 @@
     runtime = sheetId === undefined ? undefined : view.spreadsheetRuntime(sheetId);
   });
 
+  $effect(() => {
+    if (!variablesLoaded()) void loadVariables();
+  });
+
+  $effect(() => {
+    void variablesRevision();
+    untrack(() => {
+      const open = sheet;
+      if (open === undefined || sheetId === undefined) return;
+      const ops = recalculated(sourceFor(sheetId, open), AROUND);
+      if (ops.length > 0) runtime?.apply(ops);
+    });
+  });
+
   const sheet = $derived(runtime?.sheet);
   const grid = $derived(gridOf(sheet?.body));
+  const facts = $derived(factsOf(sheetId, sheet, title ?? ""));
 
   const threadRows = tableQuery("commentThreads");
   const allThreads = $derived(rowsOf(threadRows, "commentThreads"));
@@ -116,7 +147,7 @@
       : pinsOf(threads, sheet, grid, currentThread, view.selection?.kind === "cell" ? view.selection.id : undefined)
   );
 
-  const scene = $derived(sheet === undefined ? undefined : sceneOf(sheet, grid, pins));
+  const scene = $derived(sheet === undefined ? undefined : sceneOf(sheet, grid, pins, facts));
   const selection = $derived.by((): SurfaceSelection | undefined => {
     const held = view.selection;
     if (held?.kind !== "comment") return surfaceSelectionOf(grid, held);
@@ -136,12 +167,26 @@
     const ref = selectedRef(view.selection);
     if (ref === undefined) return found;
     const held = sheet.cells[`${ref.rowId}/${ref.columnId}`];
-    if (held?.expression !== undefined) {
-      for (const reference of referencesIn(grid, held.expression)) {
+
+    const writing = drafted();
+    const draft = writing === undefined ? undefined : storedOf(facts, writing);
+    const reading: SheetCell | undefined =
+      draft === undefined
+        ? held
+        : {
+            rowId: ref.rowId,
+            columnId: ref.columnId,
+            value: { kind: "empty" },
+            expression: draft.formula,
+            anchors: [...draft.anchors]
+          };
+
+    if (reading?.expression !== undefined) {
+      for (const reference of referencesIn(facts, reading)) {
         if (reference.rect !== undefined) found.push({ rect: reference.rect, tone: "reads" });
       }
     }
-    for (const feed of dependentsOf(sheet, grid, ref)) {
+    for (const feed of dependentsOf(sheet, facts, ref)) {
       const at = indexOf(grid, feed.ref);
       if (at !== undefined) found.push({ rect: { row: at.row, column: at.column, rows: 1, columns: 1 }, tone: "feeds" });
     }
@@ -166,7 +211,7 @@
 
   const apply = (ops: Edit["ops"]) => {
     if (ops.length === 0 || sheet === undefined) return;
-    runtime?.apply(withRecalculation(sheet, ops));
+    runtime?.apply(recalculating(sheetId, sheet, ops));
   };
 
   const perform = (edit: Edit): boolean => {
@@ -246,7 +291,7 @@
     if (sheet === undefined) return;
     for (const edit of edits) {
       const ref = refAt(grid, edit.row, edit.column);
-      if (ref !== undefined) perform(typed(sheet, grid, ref, edit.text));
+      if (ref !== undefined) perform(typed(sheet, grid, ref, edit.text, facts));
     }
   };
 
@@ -271,7 +316,7 @@
   const paste = (wanted: SurfacePaste) => {
     if (sheet === undefined) return;
     const [rect] = selectedRects(grid, view.selection);
-    const edit = pasted(sheet, grid, wanted, wanted.values, rect);
+    const edit = pasted(sheet, grid, wanted, wanted.values, facts, rect);
     if (perform(edit) && edit.summary !== undefined) say(edit.summary);
   };
 
@@ -279,6 +324,13 @@
     const id = grid.columns[column]?.id;
     if (id === undefined) return;
     const op = resizedColumn(grid, id, size);
+    if (op !== undefined) apply([op]);
+  };
+
+  const resizeRow = (row: number, size: number) => {
+    const id = grid.rows[row]?.id;
+    if (id === undefined) return;
+    const op = resizedRow(grid, id, size);
     if (op !== undefined) apply([op]);
   };
 
@@ -490,10 +542,12 @@
               bind:api
               onselect={select}
               onedit={edited}
+              onbegin={beginWriting}
               ondelete={deleted}
               onfill={fill}
               onpaste={paste}
               onresize={resize}
+              onrowresize={resizeRow}
               onmovecolumn={moveColumn}
               onmoverow={moveRow}
               appendHint={`+ ${APPEND_ROWS} rows`}

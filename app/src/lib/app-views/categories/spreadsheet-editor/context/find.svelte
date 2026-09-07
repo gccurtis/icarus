@@ -10,7 +10,7 @@
     PanelToggle
   } from "$authored-components/panel";
   import { gridOf } from "$app-views/categories/spreadsheet-editor/procedures/addresses";
-  import { withRecalculation } from "$app-views/categories/spreadsheet-editor/procedures/evaluate";
+  import { factsOf, recalculating } from "$app-views/categories/spreadsheet-editor/procedures/recalculation";
   import { hitsOf, replaceOps, type Hit } from "$app-views/categories/spreadsheet-editor/procedures/find";
   import { cellSignal, selectedRef } from "$app-views/categories/spreadsheet-editor/procedures/selecting";
   import { workspaceState, type SpreadsheetRuntime } from "$model/client/workspace-state";
@@ -32,13 +32,14 @@
 
   const sheet = $derived(runtime?.sheet);
   const grid = $derived(gridOf(sheet?.body));
+  const facts = $derived(factsOf(sheetId, sheet));
 
   let query = $state("");
   let replacement = $state("");
   let mode = $state("find");
   let matchCase = $state(false);
 
-  const hits = $derived(sheet === undefined ? [] : hitsOf(sheet, grid, query, matchCase));
+  const hits = $derived(sheet === undefined ? [] : hitsOf(sheet, grid, query, matchCase, facts));
   const current = $derived(selectedRef(view.selection));
 
   const isCurrent = (hit: Hit): boolean =>
@@ -46,7 +47,7 @@
 
   const commit = (ops: Parameters<SpreadsheetRuntime["apply"]>[0]) => {
     if (ops.length === 0 || sheet === undefined) return;
-    runtime?.apply(withRecalculation(sheet, ops));
+    runtime?.apply(recalculating(sheetId, sheet, ops));
   };
 
   const show = (hit: Hit) => {
@@ -58,12 +59,12 @@
 
   const replaceOne = (hit: Hit) => {
     if (sheet === undefined) return;
-    commit(replaceOps(sheet, grid, [hit], replacement));
+    commit(replaceOps(sheet, grid, [hit], replacement, facts));
   };
 
   const replaceEvery = () => {
     if (sheet === undefined) return;
-    commit(replaceOps(sheet, grid, hits, replacement));
+    commit(replaceOps(sheet, grid, hits, replacement, facts));
   };
 
   const replacing = (hit: Hit): string =>

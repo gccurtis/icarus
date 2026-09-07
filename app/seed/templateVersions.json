@@ -777,9 +777,10 @@
                   "y": 10
                 },
                 "border": {
-                  "color": "--token-color-active-border",
-                  "width": 1,
-                  "style": "solid"
+                  "top": { "color": "--token-color-active-border", "width": 1, "style": "solid" },
+                  "right": { "color": "--token-color-active-border", "width": 1, "style": "solid" },
+                  "bottom": { "color": "--token-color-active-border", "width": 1, "style": "solid" },
+                  "left": { "color": "--token-color-active-border", "width": 1, "style": "solid" }
                 }
               }
             }
@@ -1001,9 +1002,10 @@
                   "y": 16
                 },
                 "border": {
-                  "color": "--token-color-active-border",
-                  "width": 1,
-                  "style": "solid"
+                  "top": { "color": "--token-color-active-border", "width": 1, "style": "solid" },
+                  "right": { "color": "--token-color-active-border", "width": 1, "style": "solid" },
+                  "bottom": { "color": "--token-color-active-border", "width": 1, "style": "solid" },
+                  "left": { "color": "--token-color-active-border", "width": 1, "style": "solid" }
                 }
               }
             }
@@ -1432,9 +1434,10 @@
                   "y": 16
                 },
                 "border": {
-                  "color": "--token-color-intelligence-border",
-                  "width": 1,
-                  "style": "solid"
+                  "top": { "color": "--token-color-intelligence-border", "width": 1, "style": "solid" },
+                  "right": { "color": "--token-color-intelligence-border", "width": 1, "style": "solid" },
+                  "bottom": { "color": "--token-color-intelligence-border", "width": 1, "style": "solid" },
+                  "left": { "color": "--token-color-intelligence-border", "width": 1, "style": "solid" }
                 }
               }
             }
@@ -1681,9 +1684,10 @@
                   "y": 16
                 },
                 "border": {
-                  "color": "--token-color-active-border",
-                  "width": 1,
-                  "style": "solid"
+                  "top": { "color": "--token-color-active-border", "width": 1, "style": "solid" },
+                  "right": { "color": "--token-color-active-border", "width": 1, "style": "solid" },
+                  "bottom": { "color": "--token-color-active-border", "width": 1, "style": "solid" },
+                  "left": { "color": "--token-color-active-border", "width": 1, "style": "solid" }
                 }
               }
             }
@@ -1895,9 +1899,10 @@
           "format": {
             "background": "--token-surface-secondary",
             "border": {
-              "color": "--token-color-active-border",
-              "width": 1,
-              "style": "solid"
+              "top": { "color": "--token-color-active-border", "width": 1, "style": "solid" },
+              "right": { "color": "--token-color-active-border", "width": 1, "style": "solid" },
+              "bottom": { "color": "--token-color-active-border", "width": 1, "style": "solid" },
+              "left": { "color": "--token-color-active-border", "width": 1, "style": "solid" }
             }
           }
         },
@@ -2138,9 +2143,10 @@
           "format": {
             "background": "--token-surface-secondary",
             "border": {
-              "color": "--token-color-active-border",
-              "width": 1,
-              "style": "solid"
+              "top": { "color": "--token-color-active-border", "width": 1, "style": "solid" },
+              "right": { "color": "--token-color-active-border", "width": 1, "style": "solid" },
+              "bottom": { "color": "--token-color-active-border", "width": 1, "style": "solid" },
+              "left": { "color": "--token-color-active-border", "width": 1, "style": "solid" }
             }
           }
         },

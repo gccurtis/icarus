@@ -6,6 +6,7 @@ import type { SpreadsheetOp } from "$representation/data/types/spreadsheets/op";
 import { emptyBody } from "$representation/data/behavior/spreadsheets/empty-sheet";
 
 import { cellRowsOf, cellsOf } from "$capabilities/spreadsheet/api/shared/cells";
+import { answered, writeFormulas } from "$capabilities/spreadsheet/api/shared/answering";
 import { leaderOf } from "$capabilities/spreadsheet/api/shared/leader";
 import { withoutSharedReferences } from "$capabilities/spreadsheet/api/shared/without-shared-references";
 import { applyOps } from "$capabilities/spreadsheet/api/submit-spreadsheet-changes/apply-ops";
@@ -100,7 +101,8 @@ export const submitSpreadsheetChanges = async (
   const rows = cellRowsOf(store, projectId, resourceId);
   let next;
   try {
-    next = applyOps({ body: leader?.body ?? emptyBody(), cells: cellsOf(rows) }, changeSet.ops);
+    const applied = applyOps({ body: leader?.body ?? emptyBody(), cells: cellsOf(rows) }, changeSet.ops);
+    next = writeFormulas(store, projectId, resourceId, answered(store, projectId, resourceId, applied));
   } catch (error) {
     return {
       accepted: false,

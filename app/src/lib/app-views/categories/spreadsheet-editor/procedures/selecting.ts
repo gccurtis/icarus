@@ -27,10 +27,11 @@ export const COLUMN = "column";
 export const STYLE = "named-style";
 export const TEXT = "text-selection";
 export const COMMENT = "comment";
+export const VARIABLE = "variable";
 
 export const lensFor = (sheet: LiveSheet, grid: Grid, ref: CellRef): InspectorView => {
   const held = sheet.cells[keyOf(ref)];
-  if (errorOf(held?.value) !== undefined) return "spreadsheet-editor.error-cell";
+  if (errorOf(held) !== undefined) return "spreadsheet-editor.error-cell";
   if (spillChildOf(sheet, grid, ref) !== undefined) return "spreadsheet-editor.spill";
   if (held?.expression !== undefined) return "spreadsheet-editor.cell-with-formula";
   return "spreadsheet-editor.cell";
@@ -126,6 +127,11 @@ export const columnSignal = (grid: Grid, columns: readonly number[]): Signal | u
 export const styleSignal = (key: string): Signal => ({
   key: "spreadsheet-editor.named-style",
   selection: { kind: STYLE, id: key }
+});
+
+export const variableSignal = (name: string): Signal => ({
+  key: "spreadsheet-editor.variable",
+  selection: { kind: VARIABLE, id: name }
 });
 
 export const textSignal = (ref: CellRef, from: number, to: number): Signal => ({

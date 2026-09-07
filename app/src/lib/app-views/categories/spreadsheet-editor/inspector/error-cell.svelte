@@ -12,7 +12,7 @@
   import CellHead from "$app-views/categories/spreadsheet-editor/components/cell-head.svelte";
   import { gridOf, labelOf, type CellRef } from "$app-views/categories/spreadsheet-editor/procedures/addresses";
   import { cellAt, cleared, type Edit } from "$app-views/categories/spreadsheet-editor/procedures/cells";
-  import { withRecalculation } from "$app-views/categories/spreadsheet-editor/procedures/evaluate";
+  import { factsOf, recalculating } from "$app-views/categories/spreadsheet-editor/procedures/recalculation";
   import { paintOf } from "$app-views/categories/spreadsheet-editor/procedures/formatting";
   import {
     explanationOf,
@@ -24,7 +24,7 @@
   } from "$app-views/categories/spreadsheet-editor/procedures/references";
   import { cellSignal, selectedRef } from "$app-views/categories/spreadsheet-editor/procedures/selecting";
   import { rowsOf, tableQuery } from "$app-views/categories/spreadsheet-editor/procedures/store";
-  import { ERROR_NAMES, displayOf, errorOf, type SheetCell } from "$app-views/categories/spreadsheet-editor/procedures/values";
+  import { ERROR_NAMES, displayOf, errorOf, type ErrorToken, type SheetCell } from "$app-views/categories/spreadsheet-editor/procedures/values";
   import { isInspectorView, workspaceState, type SpreadsheetRuntime } from "$model/client/workspace-state";
 
   const view = workspaceState();
@@ -42,24 +42,19 @@
   const ref = $derived(selectedRef(view.selection));
   const held = $derived(sheet === undefined || ref === undefined ? undefined : cellAt(sheet, ref));
   const label = $derived(ref === undefined ? "?" : labelOf(grid, ref));
-  const error = $derived(errorOf(held?.value));
-  const explanation = $derived(error === undefined ? "" : explanationOf(grid, error, held?.expression));
-  const precedents = $derived(sheet === undefined || ref === undefined ? [] : precedentsOf(sheet, grid, ref));
+  const error = $derived(errorOf(held));
+  const explanation = $derived(explanationOf(held));
+  const facts = $derived(factsOf(sheetId, sheet));
+  const precedents = $derived(sheet === undefined || ref === undefined ? [] : precedentsOf(sheet, facts, ref));
   const unresolved = $derived(
-    held?.expression === undefined ? [] : referencesIn(grid, held.expression).filter((reference) => reference.rect === undefined)
+    referencesIn(facts, held).filter((reference) => reference.rect === undefined && reference.kind !== "external")
   );
 
   const sheetRows = tableQuery("spreadsheets");
   const sheets = $derived(rowsOf(sheetRows, "spreadsheets"));
 
   const apply = (edit: Edit) => {
-    if (edit.refused === undefined && edit.ops.length > 0 && sheet !== undefined) runtime?.apply(withRecalculation(sheet, edit.ops));
-  };
-
-  const clear = () => {
-    if (sheet === undefined || ref === undefined) return;
-    apply(cleared(sheet, grid, [ref]));
-    view.inspect("spreadsheet-editor.spreadsheet");
+    if (edit.refused === undefined && edit.ops.length > 0 && sheet !== undefined) runtime?.apply(recalculating(sheetId, sheet, edit.ops));
   };
 
   const shown = (cell: SheetCell | undefined, target: CellRef): string => {
@@ -80,7 +75,6 @@
 
   const subOf = (reference: Reference): string => {
     if (reference.kind === "broken") return "gone";
-    if (reference.kind === "name") return "undefined name";
     const target = targetOf(reference);
     return target === undefined ? `no sheet called ${reference.sheet ?? "that"}` : target.title;
   };
@@ -107,7 +101,7 @@
     <div class="head">
       <div class="problem">
         <PanelChip tone="danger">{error}</PanelChip>
-        <span class="text-caption text-ink-secondary">{ERROR_NAMES[error] ?? "Error"} · {explanation}</span>
+        <span class="text-caption text-ink-secondary">{ERROR_NAMES[error as ErrorToken] ?? "Error"} · {explanation}</span>
       </div>
     </div>
 
@@ -128,13 +122,6 @@
         />
       {/each}
     </PanelSection>
-
-    <div class="actions">
-      {#if error === "#NAME?"}
-        <PanelButton label="Variables" onclick={() => view.selectContext("spreadsheet-editor.variables")} />
-      {/if}
-      <PanelButton label="Clear cell" tone="danger" onclick={clear} />
-    </div>
 
     <CellComments />
   {:else}
@@ -157,10 +144,4 @@
     gap: calc(var(--token-spacing-unit) * 1.5);
   }
 
-  .actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: calc(var(--token-spacing-unit) * 1.5);
-    padding: calc(var(--token-spacing-unit) * 1) calc(var(--token-spacing-unit) * 3) calc(var(--token-spacing-unit) * 2);
-  }
 </style>

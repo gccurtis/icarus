@@ -1,0 +1,123 @@
+[
+  {
+    "_id": "variables:1",
+    "_creationTime": 1788700000000,
+    "projectId": "default",
+    "name": "perMinuteRate",
+    "value": {
+      "kind": "number",
+      "value": 3.1
+    },
+    "type": "number",
+    "description": "What a customer minute of interruption costs.",
+    "createdBy": {
+      "kind": "user",
+      "userId": "users:1"
+    },
+    "updatedAt": 1788700000000
+  },
+  {
+    "_id": "variables:2",
+    "_creationTime": 1788700000000,
+    "projectId": "default",
+    "name": "region",
+    "value": {
+      "kind": "text",
+      "value": "North"
+    },
+    "type": "text",
+    "description": "The licence area this workbook covers.",
+    "createdBy": {
+      "kind": "user",
+      "userId": "users:1"
+    },
+    "updatedAt": 1788700000000
+  },
+  {
+    "_id": "variables:3",
+    "_creationTime": 1788700000000,
+    "projectId": "default",
+    "name": "hardeningApproved",
+    "value": {
+      "kind": "logic",
+      "value": true
+    },
+    "type": "logic",
+    "createdBy": {
+      "kind": "user",
+      "userId": "users:1"
+    },
+    "updatedAt": 1788700000000
+  },
+  {
+    "_id": "variables:4",
+    "_creationTime": 1788700000000,
+    "projectId": "default",
+    "name": "seasonStart",
+    "value": {
+      "kind": "date",
+      "value": {
+        "calendar": "gregorian",
+        "year": 2026,
+        "month": 11,
+        "day": 1,
+        "utc": 1793577600000
+      }
+    },
+    "type": "date",
+    "createdBy": {
+      "kind": "user",
+      "userId": "users:1"
+    },
+    "updatedAt": 1788700000000
+  },
+  {
+    "_id": "variables:5",
+    "_creationTime": 1788700000000,
+    "projectId": "default",
+    "name": "tiers",
+    "value": {
+      "kind": "list",
+      "values": [
+        {
+          "kind": "text",
+          "value": "Tier 1"
+        },
+        {
+          "kind": "text",
+          "value": "Tier 2"
+        },
+        {
+          "kind": "text",
+          "value": "Tier 3"
+        }
+      ]
+    },
+    "type": "list",
+    "createdBy": {
+      "kind": "user",
+      "userId": "users:1"
+    },
+    "updatedAt": 1788700000000
+  },
+  {
+    "_id": "variables:6",
+    "_creationTime": 1788700000000,
+    "projectId": "default",
+    "name": "rateAlias",
+    "value": {
+      "kind": "reference",
+      "target": {
+        "to": "variable",
+        "name": "perMinuteRate"
+      }
+    },
+    "type": "reference",
+    "description": "An alias, to show what the resolution suffix does.",
+    "createdBy": {
+      "kind": "user",
+      "userId": "users:1"
+    },
+    "updatedAt": 1788700000000
+  }
+]

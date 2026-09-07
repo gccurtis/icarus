@@ -20,10 +20,10 @@
         </p>
       </div>
       <aside class="aside">
-        <span class="kicker">Already modelled</span>
+        <span class="kicker">Wired</span>
         <p>
-          The reference kinds exist in the representation today. None of them resolves yet, which
-          makes this page a wiring plan rather than a proposal for new data.
+          The reference kinds are in the representation and the evaluator walks them. A variable and
+          a sheet resolve; a document, a deck and a file are the wiring still to do.
         </p>
       </aside>
     </header>

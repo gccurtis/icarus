@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 
+import type { SpreadsheetBody } from "$representation/data/types/spreadsheets/body";
 import type { LiveSheet } from "$representation/data/types/spreadsheets/live";
 import { gridOf } from "$app-views/categories/spreadsheet-editor/procedures/addresses";
 import { applyOps } from "$representation/data/behavior/spreadsheets/apply-ops";
 import { hitsOf, replaceOps } from "$app-views/categories/spreadsheet-editor/procedures/find";
 import { alignOf, paintOf } from "$app-views/categories/spreadsheet-editor/procedures/formatting";
 import { formulaRows, matchesFilter } from "$app-views/categories/spreadsheet-editor/procedures/formulas";
+import { factsOf, shownOf, toStored } from "$app-views/categories/spreadsheet-editor/procedures/recalculation";
 import { dependentsOf, precedentsOf, problemsOf, referencesIn } from "$app-views/categories/spreadsheet-editor/procedures/references";
 import { runsOf, sceneOf } from "$app-views/categories/spreadsheet-editor/procedures/scene";
 import {
@@ -19,22 +21,32 @@ import {
 import { aggregateOf, usedRect } from "$app-views/categories/spreadsheet-editor/procedures/stats";
 import { appliedStyle, deletedStyle, styleRows } from "$app-views/categories/spreadsheet-editor/procedures/styles";
 
+const body = (): SpreadsheetBody => ({
+  rows: Array.from({ length: 5 }, (_, index) => ({ id: `r${index + 1}`, order: index + 1 })),
+  columns: Array.from({ length: 4 }, (_, index) => ({ id: `c${index + 1}`, order: index + 1 })),
+  rowPartCounts: [5],
+  formatRules: [
+    { id: "f1", from: { rowId: "r1", columnId: "c1" }, to: { rowId: "r1", columnId: "c4" }, style: "header" },
+    { id: "f2", from: { rowId: "r2", columnId: "c2" }, to: { rowId: "r4", columnId: "c2" }, format: { valueFormat: "#,##0" } }
+  ],
+  frozenColumns: 1,
+  print: { page: { paper: "letter", orientation: "portrait", margins: { top: 0.5, right: 0.5, bottom: 0.5, left: 0.5 } } },
+  styles: {
+    styles: { body: { name: "Body" }, header: { name: "Header", fontWeight: 600, horizontalAlignment: "center" } },
+    defaultKey: "body"
+  }
+});
+
+const grid = gridOf(body());
+const facts = factsOf("spreadsheets:1", { body: body(), cells: {} }, "Sheet");
+
+const stored = (text: string) => {
+  const { formula, anchors } = toStored(text, facts);
+  return { expression: formula, anchors: [...anchors] };
+};
+
 const sheet = (): LiveSheet => ({
-  body: {
-    rows: Array.from({ length: 5 }, (_, index) => ({ id: `r${index + 1}`, order: index + 1 })),
-    columns: Array.from({ length: 4 }, (_, index) => ({ id: `c${index + 1}`, order: index + 1 })),
-    rowPartCounts: [5],
-    formatRules: [
-      { id: "f1", from: { rowId: "r1", columnId: "c1" }, to: { rowId: "r1", columnId: "c4" }, style: "header" },
-      { id: "f2", from: { rowId: "r2", columnId: "c2" }, to: { rowId: "r4", columnId: "c2" }, format: { valueFormat: "#,##0" } }
-    ],
-    frozenColumns: 1,
-    print: { page: { paper: "letter", orientation: "portrait", margins: { top: 0.5, right: 0.5, bottom: 0.5, left: 0.5 } } },
-    styles: {
-      styles: { body: { name: "Body" }, header: { name: "Header", fontWeight: 600, horizontalAlignment: "center" } },
-      defaultKey: "body"
-    }
-  },
+  body: body(),
   cells: {
     "r1/c1": { rowId: "r1", columnId: "c1", value: { kind: "text", value: "Feeder" } },
     "r2/c1": {
@@ -45,13 +57,17 @@ const sheet = (): LiveSheet => ({
     },
     "r2/c2": { rowId: "r2", columnId: "c2", value: { kind: "number", value: 1842000 } },
     "r3/c2": { rowId: "r3", columnId: "c2", value: { kind: "number", value: 318400 } },
-    "r4/c2": { rowId: "r4", columnId: "c2", value: { kind: "number", value: 2160400 }, expression: "=SUM(B2:B3)" },
-    "r4/c3": { rowId: "r4", columnId: "c3", value: { kind: "text", value: "#NAME?" }, expression: "=B4/eventCount" },
-    "r5/c3": { rowId: "r5", columnId: "c3", value: { kind: "number", value: 0.5 }, expression: "=B4/Rates!B2+IF(TRUE,1,0)" }
+    "r4/c2": { rowId: "r4", columnId: "c2", value: { kind: "number", value: 2160400 }, ...stored("=SUM(B2:B3)") },
+    "r4/c3": {
+      rowId: "r4",
+      columnId: "c3",
+      value: { kind: "empty" },
+      ...stored("=B4/eventCount"),
+      failure: { token: "#NAME?", word: "eventCount" }
+    },
+    "r5/c3": { rowId: "r5", columnId: "c3", value: { kind: "number", value: 0.5 }, ...stored("=B4/1000+IF(TRUE,1,0)") }
   }
 });
-
-const grid = gridOf(sheet().body);
 
 describe("paint", () => {
   it("layers the default style, the rules in order and the cell's own format", () => {
@@ -69,13 +85,17 @@ describe("paint", () => {
 
 describe("the scene", () => {
   it("projects tracks, formatted text, tones and marks the surface can draw", () => {
-    const scene = sceneOf(sheet(), grid, new Map());
+    const scene = sceneOf(sheet(), grid, new Map(), facts);
 
     expect(scene.columns.map((column) => column.label)).toEqual(["A", "B", "C", "D"]);
     expect(scene.frozenColumns).toBe(1);
     expect(scene.cellAt(1, 1)).toMatchObject({ text: "1,842,000", raw: "1842000", align: "right", valign: "middle", tone: "plain", spilled: false });
     expect(scene.cellAt(3, 1)).toMatchObject({ text: "2,160,400", raw: "=SUM(B2:B3)", tone: "formula" });
-    expect(scene.cellAt(3, 2)).toMatchObject({ text: "#NAME?", tone: "error" });
+    expect(scene.cellAt(3, 2)).toMatchObject({
+      text: "#NAME?",
+      raw: "=B4/eventCount",
+      tone: "error"
+    });
     expect(scene.cellAt(0, 0)).toMatchObject({ weight: 600, align: "center" });
     expect(scene.cellAt(1, 0).runs).toEqual([
       { text: "F", bold: true, italic: false, underline: false, strike: false, code: false, color: undefined },
@@ -95,22 +115,27 @@ describe("the scene", () => {
 });
 
 describe("references", () => {
-  it("scans cells, ranges, names, broken tokens and other sheets out of an expression", () => {
-    expect(referencesIn(grid, "=B4/Rates!B2+IF(TRUE,1,0)+SUM(A1:B2)+#REF!+eventCount").map((reference) => [reference.text, reference.kind])).toEqual([
+  it("scans cells, ranges and broken tokens out of an expression", () => {
+    const reads = referencesIn(facts, {
+      rowId: "r5",
+      columnId: "c4",
+      value: { kind: "empty" },
+      ...stored("=B4+SUM(A1:B2)+B9")
+    });
+
+    expect(reads.map((reference) => [reference.text, reference.kind])).toEqual([
       ["B4", "cell"],
-      ["Rates!B2", "external"],
       ["A1:B2", "range"],
-      ["#REF!", "broken"],
-      ["eventCount", "name"]
+      ["#REF!", "broken"]
     ]);
   });
 
   it("lists what a cell reads and what reads it", () => {
     const held = sheet();
 
-    expect(precedentsOf(held, grid, { rowId: "r4", columnId: "c2" }).map((dependency) => dependency.ref.rowId)).toEqual(["r2", "r3"]);
-    expect(dependentsOf(held, grid, { rowId: "r2", columnId: "c2" }).map((dependency) => dependency.ref)).toEqual([{ rowId: "r4", columnId: "c2" }]);
-    expect(dependentsOf(held, grid, { rowId: "r4", columnId: "c2" }).map((dependency) => dependency.ref.columnId)).toEqual(["c3", "c3"]);
+    expect(precedentsOf(held, facts, { rowId: "r4", columnId: "c2" }).map((dependency) => dependency.ref.rowId)).toEqual(["r2", "r3"]);
+    expect(dependentsOf(held, facts, { rowId: "r2", columnId: "c2" }).map((dependency) => dependency.ref)).toEqual([{ rowId: "r4", columnId: "c2" }]);
+    expect(dependentsOf(held, facts, { rowId: "r4", columnId: "c2" }).map((dependency) => dependency.ref.columnId)).toEqual(["c3", "c3"]);
   });
 
   it("explains a problem by the name it could not find", () => {
@@ -123,31 +148,31 @@ describe("references", () => {
 
 describe("find", () => {
   it("searches what a cell shows or, for a formula, what it says, ordered by position", () => {
-    expect(hitsOf(sheet(), grid, "b2", false).map((hit) => `${hit.label}:${hit.inExpression}`)).toEqual(["B4:true", "C5:true"]);
-    expect(hitsOf(sheet(), grid, "F-1", true).map((hit) => hit.label)).toEqual(["A2"]);
-    expect(hitsOf(sheet(), grid, "f-1", true)).toEqual([]);
-    expect(hitsOf(sheet(), grid, "", false)).toEqual([]);
-    expect(hitsOf(sheet(), grid, "eed", false)[0]).toMatchObject({ before: "F", match: "eed", after: "er" });
+    expect(hitsOf(sheet(), grid, "b4", false, facts).map((hit) => `${hit.label}:${hit.inExpression}`)).toEqual(["C4:true", "C5:true"]);
+    expect(hitsOf(sheet(), grid, "F-1", true, facts).map((hit) => hit.label)).toEqual(["A2"]);
+    expect(hitsOf(sheet(), grid, "f-1", true, facts)).toEqual([]);
+    expect(hitsOf(sheet(), grid, "", false, facts)).toEqual([]);
+    expect(hitsOf(sheet(), grid, "eed", false, facts)[0]).toMatchObject({ before: "F", match: "eed", after: "er" });
   });
 
   it("replaces inside a value or an expression through the same write a person would make", () => {
     const held = sheet();
-    const hits = hitsOf(held, grid, "B3", false);
-    const ops = replaceOps(held, grid, hits, "B9");
+    const hits = hitsOf(held, grid, "B3", false, facts);
+    const ops = replaceOps(held, grid, hits, "B5", facts);
     const next = applyOps(held, ops);
 
-    expect(next.cells["r4/c2"]?.expression).toBe("=SUM(B2:B9)");
+    expect(shownOf(facts, next.cells["r4/c2"])).toBe("=SUM(B2:B5)");
   });
 });
 
 describe("formula rows", () => {
   it("list every formula cell in grid order with what it shows and whether it is broken", () => {
-    const rows = formulaRows(sheet(), grid);
+    const rows = formulaRows(sheet(), facts);
 
     expect(rows.map((row) => `${row.label}:${row.error ?? "ok"}`)).toEqual(["B4:ok", "C4:#NAME?", "C5:ok"]);
     expect(rows[0].shows).toBe("2,160,400");
-    expect(rows.filter((row) => matchesFilter(row, "c")).map((row) => row.label)).toEqual(["C4", "C5"]);
-    expect(rows.filter((row) => matchesFilter(row, "rates")).map((row) => row.label)).toEqual(["C5"]);
+    expect(rows.filter((row) => matchesFilter(row, "c5")).map((row) => row.label)).toEqual(["C5"]);
+    expect(rows.filter((row) => matchesFilter(row, "eventCount")).map((row) => row.label)).toEqual(["C4"]);
   });
 });
 

@@ -1,9 +1,13 @@
 import type { TableBlock, TableCell } from "$representation/data/types/content/content-block";
+import { boxLineOf, boxedBorder } from "$representation/data/behavior/content/borders";
 import { applyOps } from "$representation/data/behavior/slide-decks/apply-ops";
 import type { SlideDeckBody, SlideElement } from "$representation/data/types/slide-decks/body";
 import type { SlideDeckOp } from "$representation/data/types/slide-decks/op";
 import { emptyText, type Edit } from "$app-views/categories/slide-deck-editor/procedures/deck";
 import { mint } from "$app-views/categories/slide-deck-editor/procedures/ids";
+
+export { boxLineOf, boxedBorder };
+export type { BorderStyle } from "$representation/data/types/content/block-format";
 
 export type GridCell = {
   readonly cell: TableCell;

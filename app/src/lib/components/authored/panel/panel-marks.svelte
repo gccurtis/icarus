@@ -1,8 +1,10 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, type Component } from "svelte";
   import * as ToggleGroup from "$vendored-components/toggle-group";
   import { cn } from "$vendored-components/utils";
   import { traceNode } from "$development-components/trace.svelte";
+
+  type Glyph = Component<{ size?: number | string; "aria-hidden"?: boolean | "true" | "false" }>;
 
   /**
    * Several independent on-or-off options, as one row.
@@ -41,7 +43,7 @@
     label: string;
     /** The marks that are on. */
     value?: string[];
-    options: readonly { value: string; label: string; short?: string }[];
+    options: readonly { value: string; label: string; short?: string; icon?: Glyph }[];
     /** Marks that some of the selection carries and some does not. */
     mixed?: readonly string[];
     disabled?: boolean;
@@ -85,9 +87,11 @@
   class={cn("panel-marks flex w-full flex-nowrap gap-1", flush ? "px-0" : "px-3")}
 >
   {#each options as option (option.value)}
+    {@const Icon = option.icon}
     <ToggleGroup.Item
       value={option.value}
       title={mixed.includes(option.value) ? `${option.label} — some of the selection` : option.label}
+      aria-label={Icon ? option.label : undefined}
       class={cn(
         "text-caption border-border-subtle bg-surface-panel text-ink-secondary rounded-control",
         "data-[state=on]:border-active-border data-[state=on]:bg-active-surface data-[state=on]:text-active-text",
@@ -96,15 +100,19 @@
         mixed.includes(option.value) && "border-dashed opacity-70"
       )}
     >
-      <span
-        class:font-bold={option.value === "bold"}
-        class:italic={option.value === "italic"}
-        class:underline={option.value === "underline"}
-        class:line-through={option.value === "strikethrough"}
-      >
-        <span class="short-label">{option.short ?? option.label.slice(0, 1)}</span>
-        <span class="full-label">{option.label}</span>
-      </span>
+      {#if Icon}
+        <Icon size={13} aria-hidden="true" />
+      {:else}
+        <span
+          class:font-bold={option.value === "bold"}
+          class:italic={option.value === "italic"}
+          class:underline={option.value === "underline"}
+          class:line-through={option.value === "strikethrough"}
+        >
+          <span class="short-label">{option.short ?? option.label.slice(0, 1)}</span>
+          <span class="full-label">{option.label}</span>
+        </span>
+      {/if}
     </ToggleGroup.Item>
   {/each}
 </ToggleGroup.Root>

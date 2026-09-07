@@ -9,6 +9,9 @@ import {
 
 import type { Measure } from "$authored-components/sheet-surface/sheet-surface-theme";
 import type {
+  SurfaceBorder,
+  SurfaceBorderLine,
+  SurfaceBorderSide,
   SurfaceCell,
   SurfaceDirection,
   SurfaceHighlight,
@@ -265,6 +268,57 @@ export const drawRuns = (
     if (run.strike) ctx.fillRect(x, y - 1, widths[index], 1);
     x += widths[index];
   });
+  ctx.restore();
+};
+
+const DASH: Record<SurfaceBorderLine["style"], readonly number[]> = {
+  solid: [],
+  dashed: [4, 3],
+  dotted: [1, 3]
+};
+
+const EDGES: readonly SurfaceBorderSide[] = ["top", "right", "bottom", "left"];
+
+/** The grid draws its own hairline over every cell after this, so a border sits inside it. */
+const RULE = 1;
+
+const edgeOf = (rect: Rectangle, side: SurfaceBorderSide, inset: number): readonly [number, number, number, number] => {
+  const right = rect.x + rect.width;
+  const bottom = rect.y + rect.height;
+  switch (side) {
+    case "top":
+      return [rect.x, rect.y + inset, right, rect.y + inset];
+    case "bottom":
+      return [rect.x, bottom - inset, right, bottom - inset];
+    case "left":
+      return [rect.x + inset, rect.y, rect.x + inset, bottom];
+    default:
+      return [right - inset, rect.y, right - inset, bottom];
+  }
+};
+
+/** A cell's own border, drawn inside its rectangle so a neighbour cannot cover it. */
+export const drawBorder = (
+  ctx: CanvasRenderingContext2D,
+  rect: Rectangle,
+  border: SurfaceBorder,
+  measure: Measure,
+  scale: number
+): void => {
+  ctx.save();
+  for (const side of EDGES) {
+    const line = border[side];
+    if (line === undefined) continue;
+    const width = Math.max(1, Math.round(line.width * scale));
+    const [fromX, fromY, toX, toY] = edgeOf(rect, side, width / 2 + RULE);
+    ctx.strokeStyle = measure.paint(line.color, "--token-border-strong");
+    ctx.lineWidth = width;
+    ctx.setLineDash(DASH[line.style].map((part) => part * scale));
+    ctx.beginPath();
+    ctx.moveTo(fromX, fromY);
+    ctx.lineTo(toX, toY);
+    ctx.stroke();
+  }
   ctx.restore();
 };
 

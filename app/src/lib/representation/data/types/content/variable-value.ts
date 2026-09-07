@@ -1,16 +1,25 @@
 import type { FormulaValue } from "$representation/data/types/content/formula-value";
-import type { ResourceRef } from "$representation/data/types/core/resource";
 
 /**
- * What a name holds: everything a formula can produce, plus a reference.
+ * What a name holds.
  *
- * A reference is not a copy — it resolves when it is asked for, walking to
- * another variable until it reaches a value. Storing what it currently resolves
- * to would make an alias a snapshot, which is the one thing an alias is not.
+ * The same list a formula can answer with, references included. It was once
+ * `FormulaValue` plus a reference, back when only a name could hold a pointer;
+ * a reference is a value kind now, so the two lists are one and this name says
+ * which side of the question is being asked rather than which shapes are legal.
  */
-export type VariableValue =
-  | FormulaValue
-  | {
-      kind: "reference";
-      target: { to: "variable"; name: string } | { to: "resource"; ref: ResourceRef };
-    };
+export type VariableValue = FormulaValue;
+
+/** What a variable is allowed to hold, declared rather than derived. */
+export type VariableType =
+  | "any"
+  | "number"
+  | "text"
+  | "logic"
+  | "date"
+  | "list"
+  | "record"
+  | "table"
+  | "reference"
+  | "range"
+  | "function";

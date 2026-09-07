@@ -1,6 +1,9 @@
 export type HorizontalAlignment = "start" | "center" | "end" | "justify";
 export type VerticalAlignment = "top" | "middle" | "bottom";
 export type BorderStyle = "solid" | "dashed" | "dotted";
+export type BorderSide = "top" | "right" | "bottom" | "left";
+export type BorderLine = { color: string; width: number; style: BorderStyle };
+export type Border = Partial<Record<BorderSide, BorderLine>>;
 
 export type BlockFormat = {
   horizontalAlignment?: HorizontalAlignment;
@@ -16,7 +19,7 @@ export type BlockFormat = {
   spaceBefore?: number;
   spaceAfter?: number;
   background?: string;
-  border?: { color: string; width: number; style: BorderStyle };
+  border?: Border;
   padding?: { x?: number; y?: number };
   indent?: number;
   valueFormat?: string;

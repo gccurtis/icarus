@@ -14,15 +14,15 @@
         <h1>The other half of a formula.</h1>
         <p class="lede">
           A variable is a name, a value and who last touched it. It is also the only way a formula
-          can say something about the project rather than about a rectangle of cells. The table
-          exists, the value type is complete, and nothing has ever written a row.
+          can say something about the project rather than about a rectangle of cells. The table is
+          written, the value type is complete, and a formula that says a name gets an answer.
         </p>
       </div>
       <aside class="aside">
         <span class="kicker">Today</span>
         <p>
-          variables is declared in the store and empty. The Variables rail entry renders the shell's
-          placeholder. The function builder lists variables beside built-ins and finds none.
+          capabilities/variables reads, saves and removes a project's names, and six are seeded. The
+          Variables panel is on the rail where the shell's placeholder used to be.
         </p>
       </aside>
     </header>
@@ -30,7 +30,7 @@
     <section>
       <div class="section-head">
         <h2>The shape of a variable</h2>
-        <p>Five fields exist. Two more are proposed, and the second of them decides whether a formula can be checked before it runs.</p>
+        <p>Seven fields, all of them in the table. The declared type is what lets a formula be checked before it runs.</p>
       </div>
       <SpecTable grid={SHAPE} />
     </section>
@@ -65,7 +65,7 @@
     <section>
       <div class="section-head">
         <h2>What that reads like</h2>
-        <p>Five lines nobody can write today.</p>
+        <p>Five lines the language answers, once the project holds the names.</p>
       </div>
       <ExampleList examples={EXAMPLES} />
     </section>

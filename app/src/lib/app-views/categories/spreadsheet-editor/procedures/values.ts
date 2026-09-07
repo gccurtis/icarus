@@ -7,32 +7,11 @@ export type { FormulaValue } from "$representation/data/types/content/formula-va
 export type { VariableValue } from "$representation/data/types/content/variable-value";
 export type { SheetCell } from "$representation/data/types/spreadsheets/cell";
 
-export const ERRORS: Readonly<Record<string, string>> = {
-  "#REF!": "This formula refers to a range that no longer exists.",
-  "#NAME?": "This formula names something nothing defines.",
-  "#DIV/0!": "This formula divides by zero.",
-  "#VALUE!": "This formula was given a value of the wrong kind.",
-  "#N/A": "No value is available here.",
-  "#NUM!": "This formula produced a number that cannot be represented.",
-  "#NULL!": "This formula intersects two ranges that do not meet.",
-  "#ERROR!": "This formula could not be read.",
-  "#CYCLE!": "This formula depends on itself."
-};
+export { ERROR_MEANINGS as ERRORS, ERROR_NAMES, ERROR_TOKENS } from "$representation/data/behavior/formulas/refusals";
+export type { ErrorToken, Refusal } from "$representation/data/types/formulas/refusal";
 
-export const ERROR_NAMES: Readonly<Record<string, string>> = {
-  "#REF!": "Broken reference",
-  "#NAME?": "Unknown name",
-  "#DIV/0!": "Division by zero",
-  "#VALUE!": "Wrong kind of value",
-  "#N/A": "Not available",
-  "#NUM!": "Number out of range",
-  "#NULL!": "Empty intersection",
-  "#ERROR!": "Cannot be read",
-  "#CYCLE!": "Depends on itself"
-};
-
-export const errorOf = (value: VariableValue | undefined): string | undefined =>
-  value?.kind === "text" && value.value in ERRORS ? value.value : undefined;
+/** Why a cell has no value. A refusal lives beside the value, never inside it. */
+export const errorOf = (cell: SheetCell | undefined): string | undefined => cell?.failure?.token;
 
 export type ValueKind = "empty" | "text" | "number" | "logic" | "date" | "other";
 
@@ -110,9 +89,6 @@ export const literalOf = (value: VariableValue | undefined): string => {
       return displayOf(value);
   }
 };
-
-export const rawOf = (cell: SheetCell | undefined): string =>
-  cell === undefined ? "" : (cell.expression ?? literalOf(cell.value));
 
 export type Typed =
   | { readonly kind: "clear" }

@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import { applyOps } from "$representation/data/behavior/spreadsheets/apply-ops";
+import type { SpreadsheetBody } from "$representation/data/types/spreadsheets/body";
 import type { LiveSheet } from "$representation/data/types/spreadsheets/live";
 import { gridOf } from "$app-views/categories/spreadsheet-editor/procedures/addresses";
+import { factsOf, shownOf, toStored } from "$app-views/categories/spreadsheet-editor/procedures/recalculation";
 import { referencesIn, sheetNamed } from "$app-views/categories/spreadsheet-editor/procedures/references";
 import {
   duplicatedColumns,
@@ -12,30 +14,39 @@ import {
 } from "$app-views/categories/spreadsheet-editor/procedures/structure";
 import { pixelsOf, pointsOf } from "$app-views/categories/spreadsheet-editor/procedures/units";
 
+const body = (): SpreadsheetBody => ({
+  rows: [
+    { id: "r1", order: 1, height: 40 },
+    { id: "r2", order: 2 },
+    { id: "r3", order: 3 }
+  ],
+  columns: [
+    { id: "c1", order: 1, width: 160 },
+    { id: "c2", order: 2 }
+  ],
+  rowPartCounts: [3],
+  formatRules: [{ id: "f1", from: { rowId: "r1", columnId: "c1" }, to: { rowId: "r1", columnId: "c2" }, style: "title" }],
+  print: { page: { paper: "letter", orientation: "portrait", margins: { top: 0.5, right: 0.5, bottom: 0.5, left: 0.5 } } },
+  styles: { styles: { body: { name: "Body" }, title: { name: "Title", fontSize: 24 } }, defaultKey: "body" }
+});
+
+const grid = gridOf(body());
+const facts = factsOf("spreadsheets:1", { body: body(), cells: {} }, "Sheet");
+const other = factsOf("spreadsheets:2", { body: body(), cells: {} }, "Hardening cost model");
+
+const stored = (text: string) => {
+  const { formula, anchors } = toStored(text, facts, (title) => (title === other.title ? other : undefined));
+  return { expression: formula, anchors: [...anchors] };
+};
+
 const sheet = (): LiveSheet => ({
-  body: {
-    rows: [
-      { id: "r1", order: 1, height: 40 },
-      { id: "r2", order: 2 },
-      { id: "r3", order: 3 }
-    ],
-    columns: [
-      { id: "c1", order: 1, width: 160 },
-      { id: "c2", order: 2 }
-    ],
-    rowPartCounts: [3],
-    formatRules: [{ id: "f1", from: { rowId: "r1", columnId: "c1" }, to: { rowId: "r1", columnId: "c2" }, style: "title" }],
-    print: { page: { paper: "letter", orientation: "portrait", margins: { top: 0.5, right: 0.5, bottom: 0.5, left: 0.5 } } },
-    styles: { styles: { body: { name: "Body" }, title: { name: "Title", fontSize: 24 } }, defaultKey: "body" }
-  },
+  body: body(),
   cells: {
     "r1/c1": { rowId: "r1", columnId: "c1", value: { kind: "text", value: "Outage minutes by substation" } },
     "r2/c1": { rowId: "r2", columnId: "c1", value: { kind: "text", value: "Ashgrove" }, format: { bold: true } },
-    "r2/c2": { rowId: "r2", columnId: "c2", value: { kind: "number", value: 4180 }, expression: "=SUM(A1:A1)" }
+    "r2/c2": { rowId: "r2", columnId: "c2", value: { kind: "number", value: 4180 }, ...stored("=SUM(A1:A1)") }
   }
 });
-
-const grid = gridOf(sheet().body);
 
 describe("duplicating tracks", () => {
   it("copies a row's cells and height into a new row placed after it", () => {
@@ -47,7 +58,7 @@ describe("duplicating tracks", () => {
     expect(next.body.rows[2].id).not.toBe("r3");
     const copy = next.body.rows[2].id;
     expect(next.cells[`${copy}/c1`]).toMatchObject({ value: { kind: "text", value: "Ashgrove" }, format: { bold: true } });
-    expect(next.cells[`${copy}/c2`]).toMatchObject({ expression: "=SUM(A1:A1)" });
+    expect(shownOf(facts, next.cells[`${copy}/c2`])).toBe("=SUM(A1:A1)");
   });
 
   it("copies a column's cells and width into a new column placed after it", () => {
@@ -78,10 +89,19 @@ describe("fitting tracks to their content", () => {
 
 describe("references to other sheets", () => {
   it("reads quoted and bare sheet names and finds the sheet by title", () => {
-    const found = referencesIn(grid, "='Hardening cost model'!B4+Rates!C2");
+    const found = referencesIn(
+      facts,
+      {
+        rowId: "r3",
+        columnId: "c2",
+        value: { kind: "empty" },
+        ...stored("='Hardening cost model'!B2+Rates!C2")
+      },
+      (id) => (id === other.resourceId ? other : undefined)
+    );
     expect(found).toEqual([
-      { text: "'Hardening cost model'!B4", kind: "external", sheet: "Hardening cost model", address: "B4" },
-      { text: "Rates!C2", kind: "external", sheet: "Rates", address: "C2" }
+      { text: "'Hardening cost model'!B2", kind: "external", sheet: "spreadsheets:2", address: "B2" },
+      { text: "#REF!", kind: "broken" }
     ]);
     const sheets = [{ _id: "spreadsheets:2", title: "Hardening cost model" }];
     expect(sheetNamed(sheets, "hardening cost model")?._id).toBe("spreadsheets:2");

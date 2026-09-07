@@ -78,7 +78,7 @@
     <section>
       <div class="section-head">
         <h2>What the design commits to</h2>
-        <p>Seven claims. Two hold in code today, two were settled in review, and the rest are what the next build is for.</p>
+        <p>Seven claims. Five hold in code today, and the other two were settled in review.</p>
       </div>
       <CardList cards={PILLARS} />
     </section>

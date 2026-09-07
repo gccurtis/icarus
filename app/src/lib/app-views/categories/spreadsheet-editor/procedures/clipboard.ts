@@ -8,6 +8,7 @@ import {
   type Rect
 } from "$app-views/categories/spreadsheet-editor/procedures/addresses";
 import { cleared, expressed, written } from "$app-views/categories/spreadsheet-editor/procedures/cells";
+import { toStored, type SheetFacts } from "$app-views/categories/spreadsheet-editor/procedures/recalculation";
 import {
   isAnchor,
   mergeSpans,
@@ -48,6 +49,7 @@ export const pasted = (
   grid: Grid,
   at: { readonly row: number; readonly column: number },
   values: readonly (readonly string[])[],
+  facts: SheetFacts,
   selection?: Rect
 ): Pasted => {
   const targets = targetsOf(at, values, selection);
@@ -96,7 +98,7 @@ export const pasted = (
       continue;
     }
     if (parsed.kind === "expression") {
-      ops.push(...expressed(sheet, ref, parsed.expression));
+      ops.push(...expressed(sheet, ref, toStored(parsed.expression, facts)));
       continue;
     }
     ops.push(...written(sheet, ref, parsed.value));

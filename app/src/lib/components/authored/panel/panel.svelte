@@ -85,7 +85,7 @@
     body grows the panel past the zone and the whole flank scrolls instead.
   -->
   <div
-    class="min-h-0 flex-1 overflow-y-auto pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+    class="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
   >
     {@render children()}
   </div>

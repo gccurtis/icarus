@@ -33,29 +33,29 @@ export const RULES: readonly Card[] = [
     title: "A bare name projects, a parenthesis filters",
     detail:
       "Inside the braces, a name on its own asks for that column. Anything in parentheses is an expression, evaluated once per row, and the row is kept when it answers TRUE. That is the whole rule, and it is why a logic field cannot be mistaken for a filter: write (flagged) to filter, flagged to project.",
-    tag: "proposed",
-    tone: "proposed"
+    tag: "built",
+    tone: "works"
   },
   {
     title: "Order inside the braces does not matter",
     detail:
       "Projections and predicates can be written in any order and comma separated. Selection always happens before projection, so a predicate may name a field the projection drops.",
-    tag: "proposed",
-    tone: "proposed"
+    tag: "built",
+    tone: "works"
   },
   {
     title: "A field name inside a predicate means this row's field",
     detail:
       "minutes inside the braces is the row's minutes, not a variable called minutes. A name that is not a field of the table falls through to the ordinary resolution order, so a project variable can be compared against.",
-    tag: "proposed",
-    tone: "proposed"
+    tag: "built",
+    tone: "works"
   },
   {
     title: "Both operators and words",
     detail:
       "and, or, not read as the symbols do, because a person writing a filter should not have to remember which dialect this is. = compares, <> differs, and the four inequalities do what they look like.",
-    tag: "proposed",
-    tone: "proposed"
+    tag: "built",
+    tone: "works"
   },
   {
     title: "A field name is a legal word",
@@ -68,8 +68,8 @@ export const RULES: readonly Card[] = [
     title: "Slicing never mutates",
     detail:
       "Every slice answers with a new value. A formula cannot write through a slice, which is what keeps a sheet's dependency graph a graph.",
-    tag: "proposed",
-    tone: "proposed"
+    tag: "built",
+    tone: "works"
   }
 ];
 

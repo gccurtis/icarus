@@ -25,7 +25,8 @@ import {
 import { endOf, startOf } from "$app-views/categories/spreadsheet-editor/procedures/marks";
 import { isAnchor, mergeSpans, spanCovering, spillSpans } from "$app-views/categories/spreadsheet-editor/procedures/spans";
 import { DEFAULT_COLUMN_WIDTH, DEFAULT_ROW_HEIGHT } from "$app-views/categories/spreadsheet-editor/procedures/structure";
-import { displayOf, errorOf, kindOf, rawOf } from "$app-views/categories/spreadsheet-editor/procedures/values";
+import { displayOf, errorOf, kindOf } from "$app-views/categories/spreadsheet-editor/procedures/values";
+import { editableOf, shownOf, type SheetFacts } from "$app-views/categories/spreadsheet-editor/procedures/recalculation";
 
 export type { SurfacePin } from "$authored-components/sheet-surface";
 
@@ -79,7 +80,8 @@ export const runsOf = (text: string, marks: readonly Mark[]): SurfaceRun[] => {
 export const sceneOf = (
   sheet: LiveSheet,
   grid: Grid,
-  pins: ReadonlyMap<string, SurfacePin>
+  pins: ReadonlyMap<string, SurfacePin>,
+  facts: SheetFacts
 ): SurfaceScene => {
   const merges = mergeSpans(sheet, grid);
   const spills = spillSpans(sheet, grid);
@@ -120,16 +122,21 @@ export const sceneOf = (
 
     const paint = paintOf(sheet.body, grid, ref, held);
     const kind = kindOf(held?.value);
-    const error = errorOf(held?.value);
-    const pending = held?.expression !== undefined && held.value.kind === "empty";
-    const text = pending ? (held.expression ?? "") : displayOf(held?.value, paint.format.valueFormat);
+    const error = errorOf(held);
+    const pending = error === undefined && held?.expression !== undefined && held.value.kind === "empty";
+    const text =
+      error !== undefined
+        ? error
+        : pending
+          ? shownOf(facts, held)
+          : displayOf(held?.value, paint.format.valueFormat);
     const tone = error !== undefined ? "error" : child ? "spill" : pending ? "pending" : held?.expression !== undefined ? "formula" : "plain";
     const marks = held?.marks;
     const emphasis = emphasisOf(paint);
 
     const cell: SurfaceCell = {
       text,
-      raw: rawOf(held),
+      raw: editableOf(facts, held),
       tone,
       align: alignOf(paint, kind),
       valign: valignOf(paint),
@@ -147,11 +154,18 @@ export const sceneOf = (
       covered: false,
       readonly: child,
       runs: marks !== undefined && marks.length > 0 && tone === "plain" ? runsOf(text, marks) : undefined,
-      pin: pins.get(key)
+      pin: pins.get(key),
+      border: paint.format.border
     };
     cache.set(cacheKey, cell);
     return cell;
   };
 
-  return { columns, rows, frozenColumns: sheet.body.frozenColumns ?? 0, cellAt };
+  return {
+    columns,
+    rows,
+    frozenColumns: sheet.body.frozenColumns ?? 0,
+    frozenRows: Math.min(sheet.body.frozenRows ?? 0, Math.max(0, rows.length - 1)),
+    cellAt
+  };
 };

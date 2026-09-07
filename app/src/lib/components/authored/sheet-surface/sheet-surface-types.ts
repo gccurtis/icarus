@@ -18,6 +18,16 @@ export type SurfaceRun = {
 
 export type SurfacePin = { readonly count: number; readonly state: "open" | "current" | "detached" };
 
+export type SurfaceBorderSide = "top" | "right" | "bottom" | "left";
+
+export type SurfaceBorderLine = {
+  readonly color: string;
+  readonly width: number;
+  readonly style: "solid" | "dashed" | "dotted";
+};
+
+export type SurfaceBorder = { readonly [side in SurfaceBorderSide]?: SurfaceBorderLine };
+
 export type SurfaceCell = {
   readonly text: string;
   readonly raw: string;
@@ -40,12 +50,15 @@ export type SurfaceCell = {
   readonly readonly: boolean;
   readonly runs?: readonly SurfaceRun[];
   readonly pin?: SurfacePin;
+  readonly border?: SurfaceBorder;
 };
 
 export type SurfaceScene = {
   readonly columns: readonly SurfaceTrack[];
   readonly rows: readonly SurfaceTrack[];
   readonly frozenColumns: number;
+  /** How many rows the grid pins, counted from the last one. */
+  readonly frozenRows: number;
   readonly cellAt: (row: number, column: number) => SurfaceCell;
 };
 

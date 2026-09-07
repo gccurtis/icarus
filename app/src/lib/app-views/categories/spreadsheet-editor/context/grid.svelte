@@ -17,12 +17,13 @@
   import { Button } from "$vendored-components/button";
   import { Input } from "$vendored-components/input";
   import { columnIndexOf, columnLabel, gridOf, rectLabelOf } from "$app-views/categories/spreadsheet-editor/procedures/addresses";
-  import { withRecalculation } from "$app-views/categories/spreadsheet-editor/procedures/evaluate";
+  import { recalculating } from "$app-views/categories/spreadsheet-editor/procedures/recalculation";
   import { problemsOf } from "$app-views/categories/spreadsheet-editor/procedures/references";
   import { selectedRects } from "$app-views/categories/spreadsheet-editor/procedures/selecting";
   import { formulaCount, populatedCount, usedRect } from "$app-views/categories/spreadsheet-editor/procedures/stats";
   import {
     frozenColumnsSet,
+    frozenRowsSet,
     insertedColumns,
     insertedRows,
     removedColumns,
@@ -49,16 +50,22 @@
   const rects = $derived(selectedRects(grid, view.selection));
   const primary = $derived(rects[0]);
   const frozenColumns = $derived(sheet?.body.frozenColumns ?? 0);
+  const frozenRows = $derived(sheet?.body.frozenRows ?? 0);
 
   let columnDraft = $state("");
+  let rowDraft = $state("");
 
   $effect(() => {
     columnDraft = frozenColumns === 0 ? "" : columnLabel(frozenColumns - 1);
   });
 
+  $effect(() => {
+    rowDraft = frozenRows === 0 ? "" : String(frozenRows);
+  });
+
   const apply = (ops: Parameters<SpreadsheetRuntime["apply"]>[0]) => {
     if (ops.length === 0 || sheet === undefined) return;
-    runtime?.apply(withRecalculation(sheet, ops));
+    runtime?.apply(recalculating(sheetId, sheet, ops));
   };
 
   const addRow = (where: "above" | "below") => {
@@ -121,6 +128,19 @@
     else columnDraft = frozenColumns === 0 ? "" : columnLabel(frozenColumns - 1);
   };
 
+  const freezeRows = (raw: string) => {
+    if (sheet === undefined) return;
+    const trimmed = raw.trim();
+    const count = trimmed === "" || trimmed === "-" || trimmed === "–" ? 0 : /^\d+$/.test(trimmed) ? Number(trimmed) : undefined;
+    if (count === undefined) {
+      rowDraft = frozenRows === 0 ? "" : String(frozenRows);
+      return;
+    }
+    const op = frozenRowsSet(sheet.body, count);
+    if (op !== undefined) apply([op]);
+    else rowDraft = frozenRows === 0 ? "" : String(frozenRows);
+  };
+
   const rowWord = $derived(primary === undefined || primary.rows === 1 ? "row" : `${primary.rows} rows`);
   const columnWord = $derived(primary === undefined || primary.columns === 1 ? "column" : `${primary.columns} columns`);
 </script>
@@ -128,8 +148,8 @@
 <Panel title="Grid">
   {#if sheet}
     <PanelSection title="This grid">
-      <PanelFields>
-        <PanelField label="Content cells">{used === undefined ? "Empty" : rectLabelOf(grid, used)}</PanelField>
+      <PanelFields align="end">
+        <PanelField label="Cells">{used === undefined ? "Empty" : rectLabelOf(grid, used)}</PanelField>
         <PanelField label="Rows">{grid.rows.length}</PanelField>
         <PanelField label="Cols">{grid.columns.length}</PanelField>
         <PanelField label="Values">{values}</PanelField>
@@ -183,12 +203,15 @@
       <PanelControlGroup flush>
         <PanelControlRow label="Row">
           <Input
-            value=""
+            value={rowDraft}
             placeholder="–"
-            disabled
             aria-label="Frozen rows"
-            title="Not yet: the grid draws frozen columns and trailing rows only, so a leading frozen row needs a second stacked canvas"
+            title="How many rows stay pinned at the bottom of the view"
             class="text-body-sm h-7 tabular-nums"
+            oninput={(event: Event & { currentTarget: EventTarget & HTMLInputElement }) => {
+              rowDraft = event.currentTarget.value;
+            }}
+            onchange={(event: Event & { currentTarget: EventTarget & HTMLInputElement }) => freezeRows(event.currentTarget.value)}
           />
         </PanelControlRow>
         <PanelControlRow label="Col">

@@ -7,7 +7,8 @@ import {
   type Grid,
   type Rect
 } from "$app-views/categories/spreadsheet-editor/procedures/addresses";
-import { written } from "$app-views/categories/spreadsheet-editor/procedures/cells";
+import { expressed, written } from "$app-views/categories/spreadsheet-editor/procedures/cells";
+import { shifted } from "$representation/data/behavior/spreadsheets/translation";
 import {
   isAnchor,
   mergeSpans,
@@ -19,7 +20,12 @@ import { displayOf } from "$app-views/categories/spreadsheet-editor/procedures/v
 
 export type Filled = Edit & { readonly summary?: string };
 
-type Lane = { readonly pattern: readonly (FormulaValue | undefined)[]; readonly targets: readonly (readonly [number, number])[]; readonly forward: boolean };
+type Lane = {
+  readonly pattern: readonly (FormulaValue | undefined)[];
+  readonly sources: readonly (readonly [number, number])[];
+  readonly targets: readonly (readonly [number, number])[];
+  readonly forward: boolean;
+};
 
 const TRAILING = /^(.*?)(\d+)$/;
 
@@ -86,6 +92,7 @@ const lanesOf = (sheet: LiveSheet, grid: Grid, source: Rect, target: Rect): Lane
       const column = source.column + offset;
       return {
         pattern: Array.from({ length: source.rows }, (_, index) => cellOf(source.row + index, column)),
+        sources: Array.from({ length: source.rows }, (_, index) => [source.row + index, column] as const),
         targets: Array.from({ length: target.rows }, (_, index) => [target.row + index, column] as const),
         forward
       };
@@ -97,6 +104,7 @@ const lanesOf = (sheet: LiveSheet, grid: Grid, source: Rect, target: Rect): Lane
       const row = source.row + offset;
       return {
         pattern: Array.from({ length: source.columns }, (_, index) => cellOf(row, source.column + index)),
+        sources: Array.from({ length: source.columns }, (_, index) => [row, source.column + index] as const),
         targets: Array.from({ length: target.columns }, (_, index) => [row, target.column + index] as const),
         forward
       };
@@ -108,16 +116,6 @@ const lanesOf = (sheet: LiveSheet, grid: Grid, source: Rect, target: Rect): Lane
 export const filled = (sheet: LiveSheet, grid: Grid, source: Rect, target: Rect): Filled => {
   const lanes = lanesOf(sheet, grid, source, target);
   if (lanes === undefined) return { ops: [], refused: "Fill runs down, up, left or right, one direction at a time." };
-
-  for (let row = source.row; row < source.row + source.rows; row += 1) {
-    for (let column = source.column; column < source.column + source.columns; column += 1) {
-      const ref = refAt(grid, row, column);
-      const expression = ref === undefined ? undefined : sheet.cells[keyOf(ref)]?.expression;
-      if (expression !== undefined) {
-        return { ops: [], refused: `Not filled. Shifting the references in ${expression} needs the engine's parser.` };
-      }
-    }
-  }
 
   const spills = spillSpans(sheet, grid);
   const merges = mergeSpans(sheet, grid);
@@ -138,6 +136,19 @@ export const filled = (sheet: LiveSheet, grid: Grid, source: Rect, target: Rect)
         skipped += 1;
         return;
       }
+      const [sourceRow, sourceColumn] = lane.sources[index % lane.sources.length];
+      const from = refAt(grid, sourceRow, sourceColumn);
+      const held = from === undefined ? undefined : sheet.cells[keyOf(from)];
+
+      if (held?.expression !== undefined) {
+        const anchors = held.anchors ?? [];
+        const formula = shifted(held.expression, anchors, grid, row - sourceRow, column - sourceColumn);
+        if (preview.length < 3) preview.push("a formula");
+        word = "Filled";
+        ops.push(...expressed(sheet, ref, { formula, anchors }));
+        return;
+      }
+
       const value = series.values[index];
       if (preview.length < 3) preview.push(displayOf(value));
       ops.push(...written(sheet, ref, value));

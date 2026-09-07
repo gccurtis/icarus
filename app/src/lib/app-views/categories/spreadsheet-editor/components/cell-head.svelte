@@ -2,13 +2,31 @@
   import { Input } from "$vendored-components/input";
   import { cn } from "$vendored-components/utils";
   import { gridOf } from "$app-views/categories/spreadsheet-editor/procedures/addresses";
-  import { anchored } from "$app-views/categories/spreadsheet-editor/procedures/anchoring";
+  import {
+    anchorLabel,
+    anchored,
+    lockedAt,
+    referenceAt
+  } from "$app-views/categories/spreadsheet-editor/procedures/anchoring";
   import { cellAt, typed } from "$app-views/categories/spreadsheet-editor/procedures/cells";
-  import { withRecalculation } from "$app-views/categories/spreadsheet-editor/procedures/evaluate";
-  import { arm, disarm, type Picker } from "$app-views/categories/spreadsheet-editor/procedures/picking";
+  import { editableOf, factsOf, recalculating } from "$app-views/categories/spreadsheet-editor/procedures/recalculation";
+  import {
+    arm,
+    disarm,
+    drafting,
+    writingBegun,
+    writingTaken,
+    type Picker
+  } from "$app-views/categories/spreadsheet-editor/procedures/picking.svelte";
   import { selectedRef } from "$app-views/categories/spreadsheet-editor/procedures/selecting";
-  import { rawOf } from "$app-views/categories/spreadsheet-editor/procedures/values";
   import { workspaceState, type SpreadsheetRuntime } from "$model/client/workspace-state";
+
+  const LOCKS = [
+    { label: "free", column: false, row: false, hint: "Both halves move when this formula is copied" },
+    { label: "both", column: true, row: true, hint: "Neither half moves" },
+    { label: "row", column: false, row: true, hint: "The row is held still" },
+    { label: "column", column: true, row: false, hint: "The column is held still" }
+  ];
 
   const view = workspaceState();
 
@@ -22,9 +40,10 @@
 
   const sheet = $derived(runtime?.sheet);
   const grid = $derived(gridOf(sheet?.body));
+  const facts = $derived(factsOf(sheetId, sheet));
   const ref = $derived(selectedRef(view.selection));
   const held = $derived(sheet === undefined || ref === undefined ? undefined : cellAt(sheet, ref));
-  const shown = $derived(rawOf(held));
+  const shown = $derived(editableOf(facts, held));
   const expression = $derived(held?.expression !== undefined);
 
   let editing = $state(false);
@@ -64,29 +83,65 @@
     return () => disarm(picker);
   });
 
-  const start = () => {
+  $effect(() => {
+    drafting(picking ? draft : undefined);
+    return () => drafting(undefined);
+  });
+
+  let caret = $state(0);
+
+  const anchor = $derived(picking ? referenceAt(draft, caret) : undefined);
+
+  const relock = (column: boolean, row: boolean) => {
+    const input = field;
+    if (input === null) return;
+    const next = lockedAt(draft, caret, column, row);
+    if (next === undefined) return;
+    draft = next.text;
+    span = undefined;
+    setTimeout(() => {
+      input.focus();
+      input.setSelectionRange(next.caret, next.caret);
+      caret = next.caret;
+    }, 0);
+  };
+
+  const track = () => {
+    caret = field?.selectionStart ?? draft.length;
+  };
+
+  const start = (seed?: string) => {
     if (sheet === undefined || ref === undefined) return;
-    draft = shown;
+    draft = seed === undefined || seed === "" ? shown : seed;
     span = undefined;
     editing = true;
     setTimeout(() => {
       field?.focus();
-      field?.select();
+      if (seed === undefined || seed === "") field?.select();
+      else field?.setSelectionRange(draft.length, draft.length);
+      caret = draft.length;
     }, 0);
   };
+
+  $effect(() => {
+    const wanted = writingBegun();
+    if (wanted === undefined) return;
+    writingTaken();
+    start(wanted.seed);
+  });
 
   const commit = () => {
     if (!editing || sheet === undefined || ref === undefined) return;
     editing = false;
     disarm(picker);
     if (draft === shown) return;
-    const edit = typed(sheet, grid, ref, draft);
+    const edit = typed(sheet, grid, ref, draft, facts);
     if (edit.refused !== undefined) {
       refusal = edit.refused;
       return;
     }
     refusal = undefined;
-    if (edit.ops.length > 0) runtime?.apply(withRecalculation(sheet, edit.ops));
+    if (edit.ops.length > 0) runtime?.apply(recalculating(sheetId, sheet, edit.ops));
   };
 
   const keydown = (event: KeyboardEvent) => {
@@ -123,11 +178,33 @@
         aria-label={expression ? "Expression" : "Value"}
         class="text-body h-9 w-full font-mono"
         onkeydown={keydown}
-        oninput={() => (span = undefined)}
+        oninput={() => {
+          span = undefined;
+          track();
+        }}
+        onkeyup={track}
+        onclick={track}
+        onselect={track}
         onblur={() => {
           if (!picking) commit();
         }}
       />
+      {#if anchor !== undefined}
+        <div class="locks" role="group" aria-label="What copying holds still">
+          {#each LOCKS as lock (lock.label)}
+            <button
+              type="button"
+              class="lock"
+              aria-pressed={anchor.column === lock.column && anchor.row === lock.row}
+              title={lock.hint}
+              onmousedown={(event) => event.preventDefault()}
+              onclick={() => relock(lock.column, lock.row)}
+            >
+              {anchorLabel(anchor, lock.column, lock.row)}
+            </button>
+          {/each}
+        </div>
+      {/if}
     {:else}
       <button
         type="button"
@@ -137,7 +214,7 @@
           "text-body border-border-subtle hover:bg-surface-panel-hover rounded-control flex min-h-9 w-full items-center border border-transparent px-2 py-1 text-start font-mono",
           shown === "" ? "text-ink-muted italic" : "text-ink-primary"
         )}
-        onclick={start}
+        onclick={() => start()}
       >
         <span class="min-w-0 flex-1 truncate">{shown === "" ? "Empty" : shown}</span>
       </button>
@@ -154,5 +231,33 @@
     flex-direction: column;
     gap: calc(var(--token-spacing-unit) * 1);
     padding: calc(var(--token-spacing-unit) * 2) calc(var(--token-spacing-unit) * 3) calc(var(--token-spacing-unit) * 1);
+  }
+
+  .locks {
+    display: flex;
+    gap: 2px;
+    padding: 2px;
+    border: var(--token-hairline) solid var(--token-border-strong);
+    border-radius: var(--token-radius-control);
+  }
+
+  .lock {
+    flex: 1;
+    border-radius: var(--token-radius-control);
+    padding: calc(var(--token-spacing-unit) * 0.75) 0;
+    color: var(--token-ink-secondary);
+    font-family: var(--token-font-mono);
+    font-size: var(--token-text-caption);
+    transition: background-color var(--token-motion-micro) var(--token-ease-standard);
+  }
+
+  .lock:hover {
+    background-color: var(--token-surface-panel-hover);
+    color: var(--token-ink-primary);
+  }
+
+  .lock[aria-pressed="true"] {
+    background-color: var(--token-color-active-surface);
+    color: var(--token-color-active-text);
   }
 </style>

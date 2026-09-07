@@ -8,11 +8,17 @@ const model = vi.hoisted(() => ({
   snapshots: [] as Row[],
   changeSets: [] as Row[],
   cells: [] as Row[],
+  variables: [] as Row[],
+  formulas: [] as Row[],
+  backReferences: [] as Row[],
   minted: 0,
   tableOf(path: string): Row[] {
     const table = path.split(".")[0];
     if (table === "spreadsheetChangeSets") return model.changeSets;
     if (table === "sheetCells") return model.cells;
+    if (table === "variables") return model.variables;
+    if (table === "formulas") return model.formulas;
+    if (table === "dataBackReferences") return model.backReferences;
     return model.snapshots;
   },
   store: {
@@ -114,6 +120,9 @@ beforeEach(() => {
   model.snapshots.length = 0;
   model.changeSets.length = 0;
   model.cells.length = 0;
+  model.variables.length = 0;
+  model.formulas.length = 0;
+  model.backReferences.length = 0;
   model.minted = 0;
 });
 

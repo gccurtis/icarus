@@ -1,20 +1,20 @@
 import type { Card, Example, Grid } from "$development-views/formula-language-reference/types";
 
 export const KINDS: Grid = {
-  columns: ["Kind", "Shape", "Written as", "In a cell", "State"],
+  columns: ["Kind", "Shape", "Where one comes from", "In a cell", "State"],
   mono: [0, 2],
   rows: [
     ["empty", "nothing", "—", "A blank cell, which is not a zero and not an empty string", "built"],
     ["number", "one number", "1842 · 3.10 · 12.5%", "Drawn through the cell's number format", "built"],
     ["text", "one string", "\"Ashgrove\"", "Drawn as written, marks and all", "built"],
     ["logic", "true or false", "TRUE · FALSE", "TRUE or FALSE, centred", "built"],
-    ["date", "calendar parts and a utc instant", "DATE(2026, 8, 30)", "Typed, stored as parts and drawn; no built-in reads one yet", "built"],
-    ["list", "values in order", "[1, 2, 3]", "Spills down the column it starts in", "proposed"],
-    ["record", "named fields, one row", "{ name: \"Ashgrove\", minutes: 1610 }", "Spills across the row it starts in", "proposed"],
-    ["table", "named columns, many rows", "outages", "Spills over the rectangle it needs", "proposed"],
-    ["reference", "a pointer at something that resolves", "→ outageEvents", "Drawn as what it points at until ! resolves it", "variable only"],
-    ["range", "a resource id and two corners", "B2:C9 · 'Hardening cost model'!E10", "An address, resolved before it is drawn", "partly"],
-    ["function", "parameters and a formula id", "—", "A value a variable can hold and a call can name", "proposed"]
+    ["date", "calendar parts and a utc instant", "typed, or DATE(2026, 8, 30)", "Typed, stored as parts and drawn; YEAR, MONTH and DAY read one", "built"],
+    ["list", "values in order", "t.minutes · UNIQUE(…) · a range", "The cell draws its values in order, comma separated. It does not spill yet", "built"],
+    ["record", "named fields, one row", "t[0] · a variable", "The cell draws each field as a name and a value. It does not spill yet", "built"],
+    ["table", "named columns, many rows", "t.{…} · a sheet resolved · a variable", "The cell draws how many rows it has. It does not spill yet", "built"],
+    ["reference", "a pointer at something that resolves", "a variable holding one", "The cell draws an arrow and the name, until ! resolves it", "built"],
+    ["range", "a resource id and two corners", "B2:C9 · 'Hardening cost model'!E10", "An address, resolved as soon as it is read as data", "built"],
+    ["function", "parameters and a formula id", "nothing writes one yet", "A value a variable can hold; calling that name answers #NAME?", "proposed"]
   ]
 };
 
@@ -70,16 +70,16 @@ export const EMPTINESS: readonly Card[] = [
   {
     title: "An error is not a kind",
     detail:
-      "The representation has no error member. A refused formula stores its token as text and the holder's state carries the failure, which is why a cell holding #REF! reads as text everywhere except in the lens that explains it.",
-    tag: "gap",
-    tone: "gap"
+      "The representation has no error member. A refused formula stores empty and the cell carries the refusal beside it in failure, so a cell that failed is never confused with a cell that says #REF! on purpose.",
+    tag: "built",
+    tone: "works"
   },
   {
-    title: "A formula cannot answer with a reference yet",
+    title: "A formula answers with a reference",
     detail:
-      "VariableValue is FormulaValue plus a reference, and a cell's stored value is a VariableValue, so a cell can already hold a pointer. FormulaValue itself has no reference member. Making a formula produce one is a change to the representation rather than to the evaluator.",
-    tag: "representation",
-    tone: "gap"
+      "FormulaValue gained the reference member, so a pointer is a value kind rather than something only a name could hold. VariableValue became an alias of FormulaValue, because the two lists are one list now. That was the cost: a change to the representation, agreed in review before anything was written.",
+    tag: "built",
+    tone: "works"
   }
 ];
 
@@ -101,7 +101,7 @@ export const RULED: readonly Card[] = [
   {
     title: "Dates are a kind, and already are one",
     detail:
-      "DateValue is in the representation as calendar parts plus a utc instant, and the editor types, stores and draws one today. A formula deals with a date directly rather than through a serial number and a convention. What is missing is any built-in that produces or reads one, which is why they are next.",
+      "DateValue is in the representation as calendar parts plus a utc instant, and the editor types, stores and draws one today. A formula deals with a date directly rather than through a serial number and a convention. DATE builds one from civil parts and YEAR, MONTH and DAY read one back.",
     tag: "ruled",
     tone: "ruled"
   },
@@ -115,7 +115,7 @@ export const RULED: readonly Card[] = [
   {
     title: "A big answer travels as a reference",
     detail:
-      "Above a size threshold a formula answers with a pointer rather than with rows, and the reader resolves it. That keeps a cell small and a change set small. It is also what turns the missing reference member on FormulaValue from something that might be added into something that has to be.",
+      "Above a size threshold a formula answers with a pointer rather than with rows, and the reader resolves it. That keeps a cell small and a change set small. It is also why FormulaValue gained its reference member rather than leaving a pointer as something only a name could hold. The threshold itself is not written yet.",
     tag: "ruled",
     tone: "ruled"
   }

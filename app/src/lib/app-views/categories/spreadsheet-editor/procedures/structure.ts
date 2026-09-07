@@ -184,6 +184,7 @@ export const widthOf = (grid: Grid, id: string): number =>
 const copied = (cell: SheetCell): Omit<SheetCell, "rowId" | "columnId"> => ({
   value: cell.value,
   ...(cell.expression === undefined ? {} : { expression: cell.expression }),
+  ...(cell.anchors === undefined ? {} : { anchors: [...cell.anchors] }),
   ...(cell.format === undefined ? {} : { format: cell.format }),
   ...(cell.marks === undefined ? {} : { marks: cell.marks })
 });

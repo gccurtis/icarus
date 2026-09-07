@@ -12,17 +12,17 @@
         <span class="kicker">04 · Errors</span>
         <h1>A refusal is an answer.</h1>
         <p class="lede">
-          Eight tokens are raised today, one is declared and unused, and three more are proposed for
-          the slicing this language is about to grow. Every one of them is a stored value that
-          travels through arithmetic, lists in the Problems panel, and explains itself in the lens.
+          Eleven tokens are raised today, including the three the slicing needed, and one is declared
+          and unused. Every one of them is a stored refusal that travels through arithmetic, lists in
+          the Problems panel, and explains itself in the lens.
         </p>
       </div>
       <aside class="aside">
         <span class="kicker">The one distinction</span>
         <p>
-          An error means the formula is wrong. Unsupported means the evaluator has nothing to say
-          and the cell keeps what it had. Conflating them would turn every unfinished feature into a
-          red cell.
+          An error means the formula is wrong. A formula naming a sheet the browser has not loaded is
+          not wrong, so the cell keeps what it had and the capability answers it. Conflating the two
+          would turn a sheet nobody opened into a red cell.
         </p>
       </aside>
     </header>
@@ -46,7 +46,7 @@
     <section>
       <div class="section-head">
         <h2>Settled</h2>
-        <p>Three rulings from review, and all three of them change the representation.</p>
+        <p>Three rulings from review, and all three of them are made.</p>
       </div>
       <CardList cards={RULED} />
     </section>

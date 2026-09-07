@@ -202,6 +202,7 @@ export type InspectorView =
   | "spreadsheet-editor.spill"
   | "spreadsheet-editor.spreadsheet"
   | "spreadsheet-editor.text-selection"
+  | "spreadsheet-editor.variable"
   | "templates.body-entity"
   | "templates.template"
   | "templates.template-variable"

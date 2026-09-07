@@ -995,7 +995,15 @@
               "id": "options-body-element",
               "frame": { "x": 0.07, "y": 0.33, "width": 0.86, "height": 0.56 },
               "overflow": "shrink",
-              "format": { "border": { "color": "--token-color-active-border", "width": 1, "style": "solid" }, "padding": { "x": 18, "y": 16 } },
+              "format": {
+                "border": {
+                  "top": { "color": "--token-color-active-border", "width": 1, "style": "solid" },
+                  "right": { "color": "--token-color-active-border", "width": 1, "style": "solid" },
+                  "bottom": { "color": "--token-color-active-border", "width": 1, "style": "solid" },
+                  "left": { "color": "--token-color-active-border", "width": 1, "style": "solid" }
+                },
+                "padding": { "x": 18, "y": 16 }
+              },
               "blocks": [
                 {
                   "id": "options-body-block",

@@ -12,9 +12,9 @@
         <span class="kicker">05 · As built</span>
         <h1>What happens when you press Enter.</h1>
         <p class="lede">
-          The path a typed line actually takes today, the file that owns each step, every function
-          that runs, and the eight things this evaluator does not do. Written to be checked against
-          the code rather than believed.
+          The path a typed line actually takes, the file that owns each step, every function that
+          runs, and the six things it still does not do. Written to be checked against the code
+          rather than believed.
         </p>
         <p class="open"><a href="/app/dev-project">Open the editor <span aria-hidden="true">↗</span></a></p>
       </div>
@@ -22,8 +22,8 @@
         <span class="kicker">Size</span>
         <ul>
           <li><strong>{COUNTS.written} lines</strong> written, across {COUNTS.created} new files and {COUNTS.changed} changed ones.</li>
-          <li><strong>{COUNTS.calls} function names</strong>, {COUNTS.failures} error tokens raised.</li>
-          <li><strong>{COUNTS.cases} formula cases</strong> in a suite of {COUNTS.suite}.</li>
+          <li><strong>{COUNTS.calls} function names</strong>, {COUNTS.failures} declared error tokens.</li>
+          <li><strong>{COUNTS.cases} cases</strong> for the language alone, in a suite of {COUNTS.suite}.</li>
         </ul>
       </aside>
     </header>
@@ -58,7 +58,7 @@
     <section>
       <div class="section-head">
         <h2>Functions that run</h2>
-        <p>The eleven the builder offers, plus what the seeded sheets and ordinary work need.</p>
+        <p>Thirty-three names. Three of them decide for themselves which arguments to evaluate.</p>
       </div>
       <SpecTable grid={CALLS} />
     </section>
@@ -66,7 +66,7 @@
     <section>
       <div class="section-head">
         <h2>The files</h2>
-        <p>Everything the formula path touches.</p>
+        <p>What the language and its wiring are made of. Every path is under <code>src/lib</code>.</p>
       </div>
       <SpecTable grid={FILES} />
     </section>
@@ -74,25 +74,25 @@
     <section>
       <div class="section-head">
         <h2>What it does not do</h2>
-        <p>The representation already models more than this evaluator uses. Each gap is a thing the tree expects and the code does not honour.</p>
+        <p>Six things, each one a claim on these pages that the code does not yet keep.</p>
       </div>
       <CardList cards={GAPS} />
     </section>
 
     <section>
       <div class="section-head">
-        <h2>Settled</h2>
-        <p>Three rulings from review about which of those gaps closes first, and in what order.</p>
+        <h2>What review settled, and what happened</h2>
+        <p>Three rulings about the order of work, and how each one turned out.</p>
       </div>
       <CardList cards={RULED} />
     </section>
 
     <section>
       <div class="section-head">
-        <h2>What this costs the representation</h2>
+        <h2>What it cost the representation</h2>
         <p>
-          Everything the settled design needs that the tree does not already hold. Five changes,
-          approved in review and none of them made yet, and one line saying what does not move.
+          The four changes approved in review, all of them made, and one more that was not approved
+          and had to be.
         </p>
       </div>
       <CardList cards={REPRESENTATION} />

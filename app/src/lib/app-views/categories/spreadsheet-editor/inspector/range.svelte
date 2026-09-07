@@ -14,7 +14,7 @@
   import NumberFormat from "$app-views/categories/spreadsheet-editor/components/number-format.svelte";
   import { gridOf, rectLabelOf, refsIn, type Rect } from "$app-views/categories/spreadsheet-editor/procedures/addresses";
   import { cleared, populatedIn, type Edit } from "$app-views/categories/spreadsheet-editor/procedures/cells";
-  import { withRecalculation } from "$app-views/categories/spreadsheet-editor/procedures/evaluate";
+  import { recalculating } from "$app-views/categories/spreadsheet-editor/procedures/recalculation";
   import { selectedRects } from "$app-views/categories/spreadsheet-editor/procedures/selecting";
   import { merged } from "$app-views/categories/spreadsheet-editor/procedures/spans";
   import { aggregateOf, figure } from "$app-views/categories/spreadsheet-editor/procedures/stats";
@@ -44,7 +44,7 @@
 
   const apply = (ops: Edit["ops"]) => {
     if (ops.length === 0 || sheet === undefined) return;
-    runtime?.apply(withRecalculation(sheet, ops));
+    runtime?.apply(recalculating(sheetId, sheet, ops));
   };
 
   const mergeable = $derived(rects.length === 1 && primary !== undefined && primary.rows * primary.columns > 1);

@@ -5,7 +5,7 @@ export const TRANSLATION: readonly Stage[] = [
     index: "01",
     title: "The equals sign says this is a formula",
     detail:
-      "A sheet reading =B2:C9 knows two things immediately: what follows is an expression rather than text, and a formula now has to exist for it. The formula is a row with an id, not a string living on the cell.",
+      "A sheet reading =B2:C9 knows two things immediately: what follows is an expression rather than text, and a formula now has to exist for it. The cell keeps the expression addressed by ids and points at the formulas row the capability mints for it.",
     source: "the spreadsheet"
   },
   {
@@ -26,7 +26,7 @@ export const TRANSLATION: readonly Stage[] = [
     index: "04",
     title: "The formula is asked for a value",
     detail:
-      "The sheet hands over the translated formula, takes a value back, and draws it. It does not take part in resolving anything, which is what lets a document block hold a formula on exactly the same terms.",
+      "The sheet hands over the translated formula, takes a value back, and draws it. It answers the two questions a resolver is asked and nothing more, which is what lets a document block hold a formula on exactly the same terms.",
     source: "the formula"
   }
 ];
@@ -36,8 +36,8 @@ export const RESOLUTION: Grid = {
   mono: [1, 3],
   rows: [
     ["1", "A name in call position", "The built-in table, which is code", "SUM(…)"],
-    ["2", "A project name", "The variables table, which answers with a value or a reference", "rates.perMinute"],
-    ["3", "An id", "The thing that id names: a row and a column answer with a cell's value, a sheet or a document answers with a table", "row:9c1 · col:4a7"],
+    ["2", "A project name", "The variables table, which answers with a value or a reference", "perMinuteRate"],
+    ["3", "An id", "The thing that id names: a row and a column answer with a cell's value, a sheet answers with a table", "row:9c1 · col:4a7"],
     ["4", "Anything else", "Nobody. The formula answers #NAME? and says the word it could not place", "widgets"]
   ]
 };
@@ -72,22 +72,22 @@ export const PILLARS: readonly Card[] = [
     title: "A table is a list and a record at once",
     detail:
       "Bracket it and you take rows, which are records. Dot it and you take a column, which is a list. A record is a table one row tall; a list is a table one column wide. Every slice answers with one of the same kinds, so slicing composes.",
-    tag: "proposed",
-    tone: "proposed"
+    tag: "built",
+    tone: "works"
   },
   {
     title: "Positional and semantic slicing are different gestures",
     detail:
       "Square brackets ask where. Curly braces ask which. Where uses Python's index rules; which uses field names and predicates. Neither can be mistaken for the other while reading.",
-    tag: "proposed",
-    tone: "proposed"
+    tag: "built",
+    tone: "works"
   },
   {
     title: "A big table travels as a reference",
     detail:
       "A value can be a pointer at a resource rather than its rows, and a pointer is its own kind. Resolution is written down with !, so nothing quietly drags a hundred thousand rows into a cell.",
-    tag: "proposed",
-    tone: "proposed"
+    tag: "built",
+    tone: "works"
   },
   {
     title: "A refusal is a value",
@@ -110,8 +110,9 @@ export const READING: readonly { readonly index: string; readonly title: string;
   { index: "02", title: "Slicing", detail: "Brackets for position, braces for meaning, and what happens when nothing survives." },
   { index: "03", title: "References", detail: "Pointing at a thing instead of carrying it, and the suffix that resolves one." },
   { index: "04", title: "Errors", detail: "Every refusal, what raises it, and what the reader sees." },
-  { index: "05", title: "As built", detail: "What runs today, file by file, and the eight things it does not do." },
-  { index: "06", title: "Variables", detail: "The other half. A formula that cannot say a project's name is a calculator." }
+  { index: "05", title: "As built", detail: "What runs today, file by file, and the six things it does not do." },
+  { index: "06", title: "Variables", detail: "The other half. A formula that cannot say a project's name is a calculator." },
+  { index: "07", title: "The build", detail: "Every file that moved to make the rest of these pages true, and why each one had to." }
 ];
 
 export const RULED: readonly Card[] = [

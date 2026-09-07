@@ -9,13 +9,13 @@ export const TOKENS: Grid = {
     ["#NAME?", "A word nothing can place: not an address, not a variable, not a built-in", "=SUMM(D4:D17)", "built"],
     ["#REF!", "An address off the grid, or carried from a cell that already holds #REF!", "=Z99+1", "built"],
     ["#NUM!", "A number that cannot be represented", "=SQRT(0-1)", "built"],
-    ["#N/A", "A statistic asked of nothing", "=PERCENTILE(A1:A3, 0.5) over blanks", "built"],
+    ["#N/A", "MEAN, MEDIAN, MIN, MAX or PERCENTILE asked of no numbers at all. SUM and COUNT answer 0 instead", "=PERCENTILE(A1:A3, 0.5) over blanks", "built"],
     ["#ERROR!", "An expression that cannot be read at all", "=A1+", "built"],
-    ["#CYCLE!", "A formula that depends on itself, directly or through others", "A5 =A6+1 with A6 =A5+1", "built"],
+    ["#CYCLE!", "A formula that depends on itself, directly or through others, or a reference ring that returns to where it started", "A5 =A6+1 with A6 =A5+1", "built"],
     ["#NULL!", "Declared in the vocabulary and raised by nothing", "—", "unused"],
-    ["#FIELD?", "A field the value does not have", "=outages.custmers", "proposed"],
-    ["#INDEX!", "A position past the end of a list or table", "=outages[99]", "proposed"],
-    ["#SHAPE!", "A gesture the shape does not support", "=outages{name} on a number", "proposed"]
+    ["#FIELD?", "A field the value does not have", "=outages.custmers", "built"],
+    ["#INDEX!", "A position past the end of a list or table", "=outages[99]", "built"],
+    ["#SHAPE!", "A gesture the shape does not support", "=total.{name} where total is a number", "built"]
   ]
 };
 
@@ -30,14 +30,14 @@ export const BEHAVIOUR: readonly Card[] = [
   {
     title: "IFERROR is the only thing that stops it",
     detail:
-      "It catches a refusal and answers with its second argument. It does not catch an unsupported expression, because that is not a refusal: the cell keeps what it had.",
+      "It catches a refusal and answers with its second argument, which is evaluated only when the first refuses. Nothing else in the language stops a refusal travelling.",
     tag: "built",
     tone: "works"
   },
   {
-    title: "Unsupported is not an error",
+    title: "A sheet the browser has not loaded is left alone",
     detail:
-      "A cross-sheet reference and a function that answers with a range are left alone. The cell keeps its stored value and the Problems list stays quiet, because nothing is wrong: the evaluator simply has nothing to say yet.",
+      "There is no unsupported any more: every expression the language can read is answered. The one thing recalculation skips is a formula naming a sheet the browser does not hold. The cell keeps its stored value, the Problems list stays quiet, and the capability answers it with every sheet in the project in reach.",
     tag: "built",
     tone: "works"
   },
@@ -68,22 +68,22 @@ export const RULED: readonly Card[] = [
   {
     title: "Slicing failures get their own tokens",
     detail:
-      "#FIELD? for a field the value does not have, #INDEX! for a position past the end, #SHAPE! for a gesture the shape does not support. Somebody who mistyped a field name should not have to work out which of five meanings of #VALUE! applies. Three tokens join the declared vocabulary.",
-    tag: "representation",
+      "#FIELD? for a field the value does not have, #INDEX! for a position past the end, #SHAPE! for a gesture the shape does not support. Somebody who mistyped a field name should not have to work out which of five meanings of #VALUE! applies. The three tokens are in the declared vocabulary now, and the slicing that needed them raises each one.",
+    tag: "made",
     tone: "ruled"
   },
   {
     title: "An error carries where it came from",
     detail:
-      "The token, plus the cell that first raised it, so a total three hops from the break can say which cell broke. Carrying the token alone is what every other spreadsheet does and the reason people hunt. There is no error member in the representation, so this is a new field on the holder's state.",
-    tag: "representation",
+      "The token, plus the cell that first raised it, so a total three hops from the break can say which cell broke. Carrying the token alone is what every other spreadsheet does and the reason people hunt. The field is made: SheetCell.failure holds the token, the word it could not place, and the origin cell.",
+    tag: "made",
     tone: "ruled"
   },
   {
     title: "A refused formula stores empty",
     detail:
-      "With the failure on the holder's state, which is what the representation already intends: there is no error kind because a failure belongs to the holder. Storing the token as text leaves a cell that failed indistinguishable from a cell that says #REF! on purpose. It costs a migration and a state field the store does not have.",
-    tag: "representation",
+      "With the failure beside it on the cell, which is what the representation already intends: there is no error kind because a failure belongs to the holder. Storing the token as text would leave a cell that failed indistinguishable from a cell that says #REF! on purpose. It is made, and the cell is the holder.",
+    tag: "made",
     tone: "ruled"
   }
 ];

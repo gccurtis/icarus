@@ -4,8 +4,8 @@ import {
   displayOf,
   errorOf,
   formatNumber,
-  parseTyped,
-  rawOf
+  literalOf,
+  parseTyped
 } from "$app-views/categories/spreadsheet-editor/procedures/values";
 
 describe("number formats", () => {
@@ -28,16 +28,18 @@ describe("what a cell shows", () => {
     expect(displayOf({ kind: "list", values: [{ kind: "number", value: 1 }, { kind: "text", value: "a" }] })).toBe("1, a");
   });
 
-  it("knows an error when the stored text is one", () => {
-    expect(errorOf({ kind: "text", value: "#REF!" })).toBe("#REF!");
-    expect(errorOf({ kind: "text", value: "#nope" })).toBeUndefined();
-    expect(errorOf({ kind: "number", value: 1 })).toBeUndefined();
+  it("reads a refusal from beside the value rather than out of it", () => {
+    const cell = { rowId: "r1", columnId: "c1", value: { kind: "empty" } } as const;
+    expect(errorOf({ ...cell, failure: { token: "#REF!" } })).toBe("#REF!");
+    expect(errorOf(cell)).toBeUndefined();
+    expect(errorOf(undefined)).toBeUndefined();
+    expect(errorOf({ rowId: "r1", columnId: "c1", value: { kind: "text", value: "#REF!" } })).toBeUndefined();
   });
 
-  it("edits from the expression when there is one and the literal otherwise", () => {
-    expect(rawOf({ rowId: "r1", columnId: "c1", value: { kind: "number", value: 12 }, expression: "=A1*2" })).toBe("=A1*2");
-    expect(rawOf({ rowId: "r1", columnId: "c1", value: { kind: "number", value: 1842000 } })).toBe("1842000");
-    expect(rawOf(undefined)).toBe("");
+  it("writes a number back as the literal somebody could retype", () => {
+    expect(literalOf({ kind: "number", value: 1842000 })).toBe("1842000");
+    expect(literalOf({ kind: "text", value: "Ashgrove" })).toBe("Ashgrove");
+    expect(literalOf(undefined)).toBe("");
   });
 });
 

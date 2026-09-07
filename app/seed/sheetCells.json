@@ -249,7 +249,11 @@
       "kind": "number",
       "value": 23.11004784688995
     },
-    "expression": "=E4*60/C4"
+    "expression": "=`cell|spreadsheets:1|r4|c5`*60/`cell|spreadsheets:1|r4|c3`",
+    "anchors": [
+      "",
+      ""
+    ]
   },
   {
     "_id": "sheetCells:20",
@@ -289,7 +293,11 @@
       "kind": "number",
       "value": 6601
     },
-    "expression": "=E4*H4"
+    "expression": "=`cell|spreadsheets:1|r4|c5`*`cell|spreadsheets:1|r4|c8`",
+    "anchors": [
+      "",
+      ""
+    ]
   },
   {
     "_id": "sheetCells:23",
@@ -394,7 +402,11 @@
       "kind": "number",
       "value": 8.35135135135135
     },
-    "expression": "=E5*60/C5"
+    "expression": "=`cell|spreadsheets:1|r5|c5`*60/`cell|spreadsheets:1|r5|c3`",
+    "anchors": [
+      "",
+      ""
+    ]
   },
   {
     "_id": "sheetCells:31",
@@ -434,7 +446,11 @@
       "kind": "number",
       "value": 782.8
     },
-    "expression": "=E5*H5"
+    "expression": "=`cell|spreadsheets:1|r5|c5`*`cell|spreadsheets:1|r5|c8`",
+    "anchors": [
+      "",
+      ""
+    ]
   },
   {
     "_id": "sheetCells:34",
@@ -526,7 +542,11 @@
       "kind": "number",
       "value": 29.264705882352942
     },
-    "expression": "=E6*60/C6"
+    "expression": "=`cell|spreadsheets:1|r6|c5`*60/`cell|spreadsheets:1|r6|c3`",
+    "anchors": [
+      "",
+      ""
+    ]
   },
   {
     "_id": "sheetCells:41",
@@ -566,7 +586,11 @@
       "kind": "number",
       "value": 10149
     },
-    "expression": "=E6*H6"
+    "expression": "=`cell|spreadsheets:1|r6|c5`*`cell|spreadsheets:1|r6|c8`",
+    "anchors": [
+      "",
+      ""
+    ]
   },
   {
     "_id": "sheetCells:44",
@@ -671,7 +695,11 @@
       "kind": "number",
       "value": 6.195652173913044
     },
-    "expression": "=E7*60/C7"
+    "expression": "=`cell|spreadsheets:1|r7|c5`*60/`cell|spreadsheets:1|r7|c3`",
+    "anchors": [
+      "",
+      ""
+    ]
   },
   {
     "_id": "sheetCells:52",
@@ -711,7 +739,11 @@
       "kind": "number",
       "value": 228
     },
-    "expression": "=E7*H7"
+    "expression": "=`cell|spreadsheets:1|r7|c5`*`cell|spreadsheets:1|r7|c8`",
+    "anchors": [
+      "",
+      ""
+    ]
   },
   {
     "_id": "sheetCells:55",
@@ -803,7 +835,11 @@
       "kind": "number",
       "value": 13.958724202626641
     },
-    "expression": "=E8*60/C8"
+    "expression": "=`cell|spreadsheets:1|r8|c5`*60/`cell|spreadsheets:1|r8|c3`",
+    "anchors": [
+      "",
+      ""
+    ]
   },
   {
     "_id": "sheetCells:62",
@@ -843,7 +879,11 @@
       "kind": "number",
       "value": 3472
     },
-    "expression": "=E8*H8"
+    "expression": "=`cell|spreadsheets:1|r8|c5`*`cell|spreadsheets:1|r8|c8`",
+    "anchors": [
+      "",
+      ""
+    ]
   },
   {
     "_id": "sheetCells:65",
@@ -935,7 +975,11 @@
       "kind": "number",
       "value": 38.88563049853372
     },
-    "expression": "=E9*60/C9"
+    "expression": "=`cell|spreadsheets:1|r9|c5`*60/`cell|spreadsheets:1|r9|c3`",
+    "anchors": [
+      "",
+      ""
+    ]
   },
   {
     "_id": "sheetCells:72",
@@ -975,7 +1019,11 @@
       "kind": "number",
       "value": 8619
     },
-    "expression": "=E9*H9"
+    "expression": "=`cell|spreadsheets:1|r9|c5`*`cell|spreadsheets:1|r9|c8`",
+    "anchors": [
+      "",
+      ""
+    ]
   },
   {
     "_id": "sheetCells:75",
@@ -1080,7 +1128,11 @@
       "kind": "number",
       "value": 14.008810572687224
     },
-    "expression": "=E10*60/C10"
+    "expression": "=`cell|spreadsheets:1|r10|c5`*60/`cell|spreadsheets:1|r10|c3`",
+    "anchors": [
+      "",
+      ""
+    ]
   },
   {
     "_id": "sheetCells:83",
@@ -1120,7 +1172,11 @@
       "kind": "number",
       "value": 1219
     },
-    "expression": "=E10*H10"
+    "expression": "=`cell|spreadsheets:1|r10|c5`*`cell|spreadsheets:1|r10|c8`",
+    "anchors": [
+      "",
+      ""
+    ]
   },
   {
     "_id": "sheetCells:86",
@@ -1212,7 +1268,11 @@
       "kind": "number",
       "value": 6.88212927756654
     },
-    "expression": "=E11*60/C11"
+    "expression": "=`cell|spreadsheets:1|r11|c5`*60/`cell|spreadsheets:1|r11|c3`",
+    "anchors": [
+      "",
+      ""
+    ]
   },
   {
     "_id": "sheetCells:93",
@@ -1252,7 +1312,11 @@
       "kind": "number",
       "value": 2353
     },
-    "expression": "=E11*H11"
+    "expression": "=`cell|spreadsheets:1|r11|c5`*`cell|spreadsheets:1|r11|c8`",
+    "anchors": [
+      "",
+      ""
+    ]
   },
   {
     "_id": "sheetCells:96",
@@ -1344,7 +1408,11 @@
       "kind": "number",
       "value": 22.831858407079647
     },
-    "expression": "=E12*60/C12"
+    "expression": "=`cell|spreadsheets:1|r12|c5`*60/`cell|spreadsheets:1|r12|c3`",
+    "anchors": [
+      "",
+      ""
+    ]
   },
   {
     "_id": "sheetCells:103",
@@ -1368,10 +1436,15 @@
     "columnId": "c8",
     "rowOrder": 12,
     "value": {
-      "kind": "text",
-      "value": "#REF!"
+      "kind": "empty"
     },
-    "expression": "=Rates!B4"
+    "expression": "=`cell|spreadsheets:1|?|?`",
+    "anchors": [
+      ""
+    ],
+    "failure": {
+      "token": "#REF!"
+    }
   },
   {
     "_id": "sheetCells:105",
@@ -1489,7 +1562,11 @@
       "kind": "number",
       "value": 2.0930232558139537
     },
-    "expression": "=E13*60/C13"
+    "expression": "=`cell|spreadsheets:1|r13|c5`*60/`cell|spreadsheets:1|r13|c3`",
+    "anchors": [
+      "",
+      ""
+    ]
   },
   {
     "_id": "sheetCells:114",
@@ -1529,7 +1606,11 @@
       "kind": "number",
       "value": 40.5
     },
-    "expression": "=E13*H13"
+    "expression": "=`cell|spreadsheets:1|r13|c5`*`cell|spreadsheets:1|r13|c8`",
+    "anchors": [
+      "",
+      ""
+    ]
   },
   {
     "_id": "sheetCells:117",
@@ -1621,7 +1702,11 @@
       "kind": "number",
       "value": 20.87939698492462
     },
-    "expression": "=E14*60/C14"
+    "expression": "=`cell|spreadsheets:1|r14|c5`*60/`cell|spreadsheets:1|r14|c3`",
+    "anchors": [
+      "",
+      ""
+    ]
   },
   {
     "_id": "sheetCells:124",
@@ -1661,7 +1746,11 @@
       "kind": "number",
       "value": 3739.5
     },
-    "expression": "=E14*H14"
+    "expression": "=`cell|spreadsheets:1|r14|c5`*`cell|spreadsheets:1|r14|c8`",
+    "anchors": [
+      "",
+      ""
+    ]
   },
   {
     "_id": "sheetCells:127",
@@ -1753,7 +1842,11 @@
       "kind": "number",
       "value": 37.219251336898395
     },
-    "expression": "=E15*60/C15"
+    "expression": "=`cell|spreadsheets:1|r15|c5`*60/`cell|spreadsheets:1|r15|c3`",
+    "anchors": [
+      "",
+      ""
+    ]
   },
   {
     "_id": "sheetCells:134",
@@ -1793,7 +1886,11 @@
       "kind": "number",
       "value": 15312
     },
-    "expression": "=E15*H15"
+    "expression": "=`cell|spreadsheets:1|r15|c5`*`cell|spreadsheets:1|r15|c8`",
+    "anchors": [
+      "",
+      ""
+    ]
   },
   {
     "_id": "sheetCells:137",
@@ -1898,7 +1995,11 @@
       "kind": "number",
       "value": 8.014598540145986
     },
-    "expression": "=E16*60/C16"
+    "expression": "=`cell|spreadsheets:1|r16|c5`*60/`cell|spreadsheets:1|r16|c3`",
+    "anchors": [
+      "",
+      ""
+    ]
   },
   {
     "_id": "sheetCells:145",
@@ -1938,7 +2039,11 @@
       "kind": "number",
       "value": 658.8
     },
-    "expression": "=E16*H16"
+    "expression": "=`cell|spreadsheets:1|r16|c5`*`cell|spreadsheets:1|r16|c8`",
+    "anchors": [
+      "",
+      ""
+    ]
   },
   {
     "_id": "sheetCells:148",
@@ -2030,7 +2135,11 @@
       "kind": "number",
       "value": 19.238095238095237
     },
-    "expression": "=E17*60/C17"
+    "expression": "=`cell|spreadsheets:1|r17|c5`*60/`cell|spreadsheets:1|r17|c3`",
+    "anchors": [
+      "",
+      ""
+    ]
   },
   {
     "_id": "sheetCells:155",
@@ -2070,7 +2179,11 @@
       "kind": "number",
       "value": 2525
     },
-    "expression": "=E17*H17"
+    "expression": "=`cell|spreadsheets:1|r17|c5`*`cell|spreadsheets:1|r17|c8`",
+    "anchors": [
+      "",
+      ""
+    ]
   },
   {
     "_id": "sheetCells:158",
@@ -2110,7 +2223,10 @@
       "kind": "number",
       "value": 55290
     },
-    "expression": "=SUM(C4:C17)"
+    "expression": "=SUM(`range|spreadsheets:1|r4|c3|r17|c3`)",
+    "anchors": [
+      ":"
+    ]
   },
   {
     "_id": "sheetCells:161",
@@ -2121,10 +2237,16 @@
     "columnId": "c4",
     "rowOrder": 18,
     "value": {
-      "kind": "text",
-      "value": "#NAME?"
+      "kind": "empty"
     },
-    "expression": "=SUMM(D4:D17)"
+    "expression": "=SUMM(`range|spreadsheets:1|r4|c4|r17|c4`)",
+    "anchors": [
+      ":"
+    ],
+    "failure": {
+      "token": "#NAME?",
+      "word": "SUMM"
+    }
   },
   {
     "_id": "sheetCells:162",
@@ -2138,7 +2260,10 @@
       "kind": "number",
       "value": 18088
     },
-    "expression": "=SUM(E4:E17)"
+    "expression": "=SUM(`range|spreadsheets:1|r4|c5|r17|c5`)",
+    "anchors": [
+      ":"
+    ]
   },
   {
     "_id": "sheetCells:163",
@@ -2152,7 +2277,11 @@
       "kind": "number",
       "value": 19.628865979381445
     },
-    "expression": "=E18*60/C18"
+    "expression": "=`cell|spreadsheets:1|r18|c5`*60/`cell|spreadsheets:1|r18|c3`",
+    "anchors": [
+      "",
+      ""
+    ]
   },
   {
     "_id": "sheetCells:164",
@@ -2166,7 +2295,10 @@
       "kind": "number",
       "value": 60859.6
     },
-    "expression": "=SUM(I4:I17)"
+    "expression": "=SUM(`range|spreadsheets:1|r4|c9|r17|c9`)",
+    "anchors": [
+      ":"
+    ]
   },
   {
     "_id": "sheetCells:165",
@@ -2206,11 +2338,10 @@
       "kind": "text",
       "value": "Tier 1"
     },
-    "expression": "=UNIQUE(J4:J17)",
-    "spillTo": {
-      "rowId": "r25",
-      "columnId": "c1"
-    }
+    "expression": "=UNIQUE(`range|spreadsheets:1|r4|c10|r17|c10`)[0]",
+    "anchors": [
+      ":"
+    ]
   },
   {
     "_id": "sheetCells:168",
@@ -2263,7 +2394,11 @@
       "kind": "number",
       "value": 4
     },
-    "expression": "=COUNTIF(J$4:J$17,A22)"
+    "expression": "=COUNTIF(`range|spreadsheets:1|r4|c10|r17|c10`,`cell|spreadsheets:1|r22|c1`)",
+    "anchors": [
+      "r:r",
+      ""
+    ]
   },
   {
     "_id": "sheetCells:172",
@@ -2277,7 +2412,11 @@
       "kind": "number",
       "value": 5
     },
-    "expression": "=COUNTIF(J$4:J$17,A23)"
+    "expression": "=COUNTIF(`range|spreadsheets:1|r4|c10|r17|c10`,`cell|spreadsheets:1|r23|c1`)",
+    "anchors": [
+      "r:r",
+      ""
+    ]
   },
   {
     "_id": "sheetCells:173",
@@ -2291,7 +2430,11 @@
       "kind": "number",
       "value": 3
     },
-    "expression": "=COUNTIF(J$4:J$17,A24)"
+    "expression": "=COUNTIF(`range|spreadsheets:1|r4|c10|r17|c10`,`cell|spreadsheets:1|r24|c1`)",
+    "anchors": [
+      "r:r",
+      ""
+    ]
   },
   {
     "_id": "sheetCells:174",
@@ -2305,7 +2448,11 @@
       "kind": "number",
       "value": 2
     },
-    "expression": "=COUNTIF(J$4:J$17,A25)"
+    "expression": "=COUNTIF(`range|spreadsheets:1|r4|c10|r17|c10`,`cell|spreadsheets:1|r25|c1`)",
+    "anchors": [
+      "r:r",
+      ""
+    ]
   },
   {
     "_id": "sheetCells:175",
@@ -2361,10 +2508,13 @@
       "kind": "number",
       "value": 6941600
     },
-    "expression": "='Hardening cost model'!E10",
+    "expression": "=`cell|spreadsheets:2|r10|c5`",
     "format": {
       "valueFormat": "$#,##0"
-    }
+    },
+    "anchors": [
+      ""
+    ]
   },
   {
     "_id": "sheetCells:178",
@@ -2551,7 +2701,11 @@
       "kind": "number",
       "value": 2856000
     },
-    "expression": "=C4*D4"
+    "expression": "=`cell|spreadsheets:2|r4|c3`*`cell|spreadsheets:2|r4|c4`",
+    "anchors": [
+      "",
+      ""
+    ]
   },
   {
     "_id": "sheetCells:192",
@@ -2578,7 +2732,10 @@
       "kind": "number",
       "value": 3776000
     },
-    "expression": "=F4*Rates.perMinute"
+    "expression": "=`cell|spreadsheets:2|r4|c6`*perMinuteRate",
+    "anchors": [
+      ""
+    ]
   },
   {
     "_id": "sheetCells:194",
@@ -2592,7 +2749,11 @@
       "kind": "number",
       "value": 0.8
     },
-    "expression": "=E4/G4"
+    "expression": "=`cell|spreadsheets:2|r4|c5`/`cell|spreadsheets:2|r4|c7`",
+    "anchors": [
+      "",
+      ""
+    ]
   },
   {
     "_id": "sheetCells:195",
@@ -2658,7 +2819,11 @@
       "kind": "number",
       "value": 738000
     },
-    "expression": "=C5*D5"
+    "expression": "=`cell|spreadsheets:2|r5|c3`*`cell|spreadsheets:2|r5|c4`",
+    "anchors": [
+      "",
+      ""
+    ]
   },
   {
     "_id": "sheetCells:200",
@@ -2685,7 +2850,10 @@
       "kind": "number",
       "value": 1922000
     },
-    "expression": "=F5*Rates.perMinute"
+    "expression": "=`cell|spreadsheets:2|r5|c6`*perMinuteRate",
+    "anchors": [
+      ""
+    ]
   },
   {
     "_id": "sheetCells:202",
@@ -2699,7 +2867,11 @@
       "kind": "number",
       "value": 0.4
     },
-    "expression": "=E5/G5"
+    "expression": "=`cell|spreadsheets:2|r5|c5`/`cell|spreadsheets:2|r5|c7`",
+    "anchors": [
+      "",
+      ""
+    ]
   },
   {
     "_id": "sheetCells:203",
@@ -2765,7 +2937,11 @@
       "kind": "number",
       "value": 744000
     },
-    "expression": "=C6*D6"
+    "expression": "=`cell|spreadsheets:2|r6|c3`*`cell|spreadsheets:2|r6|c4`",
+    "anchors": [
+      "",
+      ""
+    ]
   },
   {
     "_id": "sheetCells:208",
@@ -2792,7 +2968,10 @@
       "kind": "number",
       "value": 861000
     },
-    "expression": "=F6*Rates.perMinute"
+    "expression": "=`cell|spreadsheets:2|r6|c6`*perMinuteRate",
+    "anchors": [
+      ""
+    ]
   },
   {
     "_id": "sheetCells:210",
@@ -2806,7 +2985,11 @@
       "kind": "number",
       "value": 0.9
     },
-    "expression": "=E6/G6"
+    "expression": "=`cell|spreadsheets:2|r6|c5`/`cell|spreadsheets:2|r6|c7`",
+    "anchors": [
+      "",
+      ""
+    ]
   },
   {
     "_id": "sheetCells:211",
@@ -2872,7 +3055,11 @@
       "kind": "number",
       "value": 1176000
     },
-    "expression": "=C7*D7"
+    "expression": "=`cell|spreadsheets:2|r7|c3`*`cell|spreadsheets:2|r7|c4`",
+    "anchors": [
+      "",
+      ""
+    ]
   },
   {
     "_id": "sheetCells:216",
@@ -2899,7 +3086,10 @@
       "kind": "number",
       "value": 1241000
     },
-    "expression": "=F7*Rates.perMinute"
+    "expression": "=`cell|spreadsheets:2|r7|c6`*perMinuteRate",
+    "anchors": [
+      ""
+    ]
   },
   {
     "_id": "sheetCells:218",
@@ -2913,7 +3103,11 @@
       "kind": "number",
       "value": 0.9
     },
-    "expression": "=E7/G7"
+    "expression": "=`cell|spreadsheets:2|r7|c5`/`cell|spreadsheets:2|r7|c7`",
+    "anchors": [
+      "",
+      ""
+    ]
   },
   {
     "_id": "sheetCells:219",
@@ -2979,7 +3173,11 @@
       "kind": "number",
       "value": 1274000
     },
-    "expression": "=C8*D8"
+    "expression": "=`cell|spreadsheets:2|r8|c3`*`cell|spreadsheets:2|r8|c4`",
+    "anchors": [
+      "",
+      ""
+    ]
   },
   {
     "_id": "sheetCells:224",
@@ -3006,7 +3204,10 @@
       "kind": "number",
       "value": 1092000
     },
-    "expression": "=F8*Rates.perMinute"
+    "expression": "=`cell|spreadsheets:2|r8|c6`*perMinuteRate",
+    "anchors": [
+      ""
+    ]
   },
   {
     "_id": "sheetCells:226",
@@ -3020,7 +3221,11 @@
       "kind": "number",
       "value": 1.2
     },
-    "expression": "=E8/G8"
+    "expression": "=`cell|spreadsheets:2|r8|c5`/`cell|spreadsheets:2|r8|c7`",
+    "anchors": [
+      "",
+      ""
+    ]
   },
   {
     "_id": "sheetCells:227",
@@ -3086,7 +3291,11 @@
       "kind": "number",
       "value": 153600
     },
-    "expression": "=C9*D9"
+    "expression": "=`cell|spreadsheets:2|r9|c3`*`cell|spreadsheets:2|r9|c4`",
+    "anchors": [
+      "",
+      ""
+    ]
   },
   {
     "_id": "sheetCells:232",
@@ -3113,7 +3322,10 @@
       "kind": "number",
       "value": 243600
     },
-    "expression": "=F9*Rates.perMinute"
+    "expression": "=`cell|spreadsheets:2|r9|c6`*perMinuteRate",
+    "anchors": [
+      ""
+    ]
   },
   {
     "_id": "sheetCells:234",
@@ -3127,7 +3339,11 @@
       "kind": "number",
       "value": 0.6
     },
-    "expression": "=E9/G9"
+    "expression": "=`cell|spreadsheets:2|r9|c5`/`cell|spreadsheets:2|r9|c7`",
+    "anchors": [
+      "",
+      ""
+    ]
   },
   {
     "_id": "sheetCells:235",
@@ -3154,7 +3370,10 @@
       "kind": "number",
       "value": 6941600
     },
-    "expression": "=SUM(E4:E9)"
+    "expression": "=SUM(`range|spreadsheets:2|r4|c5|r9|c5`)",
+    "anchors": [
+      ":"
+    ]
   },
   {
     "_id": "sheetCells:237",
@@ -3168,7 +3387,10 @@
       "kind": "number",
       "value": 2919000
     },
-    "expression": "=SUM(F4:F9)"
+    "expression": "=SUM(`range|spreadsheets:2|r4|c6|r9|c6`)",
+    "anchors": [
+      ":"
+    ]
   },
   {
     "_id": "sheetCells:238",
@@ -3182,7 +3404,10 @@
       "kind": "number",
       "value": 9135600
     },
-    "expression": "=SUM(G4:G9)"
+    "expression": "=SUM(`range|spreadsheets:2|r4|c7|r9|c7`)",
+    "anchors": [
+      ":"
+    ]
   },
   {
     "_id": "sheetCells:239",
@@ -3196,7 +3421,11 @@
       "kind": "number",
       "value": 0.8
     },
-    "expression": "=E10/G10"
+    "expression": "=`cell|spreadsheets:2|r10|c5`/`cell|spreadsheets:2|r10|c7`",
+    "anchors": [
+      "",
+      ""
+    ]
   },
   {
     "_id": "sheetCells:240",
@@ -3208,7 +3437,7 @@
     "rowOrder": 12,
     "value": {
       "kind": "text",
-      "value": "Rates.perMinute is a project variable, 3.10 for FY26."
+      "value": "perMinuteRate is a project variable, 3.10 for FY26."
     }
   }
 ]

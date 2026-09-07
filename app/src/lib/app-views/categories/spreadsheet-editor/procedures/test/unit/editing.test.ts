@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 
 import { applyOps } from "$representation/data/behavior/spreadsheets/apply-ops";
+import type { SpreadsheetBody } from "$representation/data/types/spreadsheets/body";
 import type { LiveSheet } from "$representation/data/types/spreadsheets/live";
 import { gridOf } from "$app-views/categories/spreadsheet-editor/procedures/addresses";
 import { cleared, typed } from "$app-views/categories/spreadsheet-editor/procedures/cells";
 import { pasted } from "$app-views/categories/spreadsheet-editor/procedures/clipboard";
 import { filled } from "$app-views/categories/spreadsheet-editor/procedures/fill";
+import { factsOf, shownOf, toStored } from "$app-views/categories/spreadsheet-editor/procedures/recalculation";
 import { merged, unmerged } from "$app-views/categories/spreadsheet-editor/procedures/spans";
 import {
   frozenColumnsSet,
@@ -16,26 +18,36 @@ import {
   resizedColumn
 } from "$app-views/categories/spreadsheet-editor/procedures/structure";
 
+const body = (): SpreadsheetBody => ({
+  rows: Array.from({ length: 6 }, (_, index) => ({ id: `r${index + 1}`, order: index + 1 })),
+  columns: Array.from({ length: 4 }, (_, index) => ({ id: `c${index + 1}`, order: index + 1, width: 100 })),
+  rowPartCounts: [6],
+  formatRules: [{ id: "f1", from: { rowId: "r1", columnId: "c1" }, to: { rowId: "r1", columnId: "c4" }, style: "header" }],
+  print: { page: { paper: "letter", orientation: "portrait", margins: { top: 0.5, right: 0.5, bottom: 0.5, left: 0.5 } } },
+  styles: { styles: { body: { name: "Body" }, header: { name: "Header", fontWeight: 600 } }, defaultKey: "body" }
+});
+
+const grid = gridOf(body());
+const facts = factsOf("spreadsheets:1", { body: body(), cells: {} }, "Sheet");
+
+const stored = (text: string) => {
+  const { formula, anchors } = toStored(text, facts);
+  return { expression: formula, anchors: [...anchors] };
+};
+
 const sheet = (): LiveSheet => ({
-  body: {
-    rows: Array.from({ length: 6 }, (_, index) => ({ id: `r${index + 1}`, order: index + 1 })),
-    columns: Array.from({ length: 4 }, (_, index) => ({ id: `c${index + 1}`, order: index + 1, width: 100 })),
-    rowPartCounts: [6],
-    formatRules: [{ id: "f1", from: { rowId: "r1", columnId: "c1" }, to: { rowId: "r1", columnId: "c4" }, style: "header" }],
-    print: { page: { paper: "letter", orientation: "portrait", margins: { top: 0.5, right: 0.5, bottom: 0.5, left: 0.5 } } },
-    styles: { styles: { body: { name: "Body" }, header: { name: "Header", fontWeight: 600 } }, defaultKey: "body" }
-  },
+  body: body(),
   cells: {
     "r1/c1": { rowId: "r1", columnId: "c1", value: { kind: "text", value: "Substation" } },
     "r2/c1": { rowId: "r2", columnId: "c1", value: { kind: "text", value: "Tier 1" } },
     "r2/c2": { rowId: "r2", columnId: "c2", value: { kind: "number", value: 2 } },
     "r3/c2": { rowId: "r3", columnId: "c2", value: { kind: "number", value: 4 } },
-    "r2/c3": { rowId: "r2", columnId: "c3", value: { kind: "number", value: 10 }, expression: "=B2*5" },
+    "r2/c3": { rowId: "r2", columnId: "c3", value: { kind: "number", value: 10 }, ...stored("=B2*5") },
     "r4/c1": {
       rowId: "r4",
       columnId: "c1",
       value: { kind: "text", value: "Tier 1" },
-      expression: "=UNIQUE(A2:A3)",
+      ...stored("=UNIQUE(A2:A3)"),
       spillTo: { rowId: "r5", columnId: "c1" }
     },
     "r5/c1": { rowId: "r5", columnId: "c1", value: { kind: "text", value: "Tier 2" } },
@@ -43,11 +55,9 @@ const sheet = (): LiveSheet => ({
   }
 });
 
-const grid = gridOf(sheet().body);
-
 describe("typing into a cell", () => {
   it("writes a number into an empty coordinate as one whole-cell set", () => {
-    const edit = typed(sheet(), grid, { rowId: "r3", columnId: "c3" }, "42");
+    const edit = typed(sheet(), grid, { rowId: "r3", columnId: "c3" }, "42", facts);
 
     expect(edit.ops).toEqual([
       { op: "set", target: "cell", path: "r3/c3", value: { value: { kind: "number", value: 42 } }, was: null }
@@ -55,30 +65,30 @@ describe("typing into a cell", () => {
   });
 
   it("replaces a value and drops the expression it had", () => {
-    const edit = typed(sheet(), grid, { rowId: "r2", columnId: "c3" }, "11");
+    const edit = typed(sheet(), grid, { rowId: "r2", columnId: "c3" }, "11", facts);
 
-    expect(edit.ops.map((op) => op.path)).toEqual(["r2/c3/value", "r2/c3/expression"]);
+    expect(edit.ops.map((op) => op.path)).toEqual(["r2/c3/value", "r2/c3/expression", "r2/c3/anchors"]);
     expect(applyOps(sheet(), edit.ops).cells["r2/c3"]).toEqual({ rowId: "r2", columnId: "c3", value: { kind: "number", value: 11 } });
   });
 
   it("stores a formula as an expression and leaves the value to the engine", () => {
-    const edit = typed(sheet(), grid, { rowId: "r3", columnId: "c3" }, "=B3*5");
+    const edit = typed(sheet(), grid, { rowId: "r3", columnId: "c3" }, "=B3*5", facts);
 
     expect(applyOps(sheet(), edit.ops).cells["r3/c3"]).toEqual({
       rowId: "r3",
       columnId: "c3",
       value: { kind: "empty" },
-      expression: "=B3*5"
+      ...stored("=B3*5")
     });
   });
 
   it("writes nothing when the text is what the cell already holds", () => {
-    expect(typed(sheet(), grid, { rowId: "r2/c2".split("/")[0], columnId: "c2" }, "2").ops).toEqual([]);
-    expect(typed(sheet(), grid, { rowId: "r2", columnId: "c3" }, "=B2*5").ops).toEqual([]);
+    expect(typed(sheet(), grid, { rowId: "r2/c2".split("/")[0], columnId: "c2" }, "2", facts).ops).toEqual([]);
+    expect(typed(sheet(), grid, { rowId: "r2", columnId: "c3" }, "=B2*5", facts).ops).toEqual([]);
   });
 
   it("refuses a spill child and names the origin", () => {
-    const edit = typed(sheet(), grid, { rowId: "r5", columnId: "c1" }, "x");
+    const edit = typed(sheet(), grid, { rowId: "r5", columnId: "c1" }, "x", facts);
 
     expect(edit.ops).toEqual([]);
     expect(edit.refused).toMatch(/A5 is filled by A4/);
@@ -121,27 +131,29 @@ describe("the fill handle", () => {
     expect(applyOps(sheet(), repeated.ops).cells["r1/c3"]?.value).toEqual({ kind: "text", value: "Substation" });
   });
 
-  it("refuses to fill a formula", () => {
+  it("fills a formula by shifting every reference in it", () => {
     const edit = filled(sheet(), grid, { row: 1, column: 2, rows: 1, columns: 1 }, { row: 2, column: 2, rows: 2, columns: 1 });
+    const next = applyOps(sheet(), edit.ops);
 
-    expect(edit.ops).toEqual([]);
-    expect(edit.refused).toMatch(/engine's parser/);
+    expect(edit.refused).toBeUndefined();
+    expect(shownOf(facts, next.cells["r3/c3"])).toBe("=B3*5");
+    expect(shownOf(facts, next.cells["r4/c3"])).toBe("=B4*5");
   });
 });
 
 describe("paste", () => {
   it("parses a block the way typing does and anchors it at the target", () => {
-    const edit = pasted(sheet(), grid, { row: 2, column: 2 }, [["7", "=A1"], ["TRUE", ""]]);
+    const edit = pasted(sheet(), grid, { row: 2, column: 2 }, [["7", "=A1"], ["TRUE", ""]], facts);
 
     const next = applyOps(sheet(), edit.ops);
     expect(next.cells["r3/c3"]?.value).toEqual({ kind: "number", value: 7 });
-    expect(next.cells["r3/c4"]?.expression).toBe("=A1");
+    expect(shownOf(facts, next.cells["r3/c4"])).toBe("=A1");
     expect(next.cells["r4/c3"]?.value).toEqual({ kind: "logic", value: true });
     expect(next.cells["r4/c4"]).toBeUndefined();
   });
 
   it("grows the grid when the block runs past the last row", () => {
-    const edit = pasted(sheet(), grid, { row: 5, column: 0, }, [["a"], ["b"], ["c"]]);
+    const edit = pasted(sheet(), grid, { row: 5, column: 0 }, [["a"], ["b"], ["c"]], facts);
 
     const next = applyOps(sheet(), edit.ops);
     expect(next.body.rows).toHaveLength(8);
@@ -149,10 +161,10 @@ describe("paste", () => {
   });
 
   it("fills a whole selection with one value and refuses a spill", () => {
-    const filledIn = pasted(sheet(), grid, { row: 1, column: 3 }, [["9"]], { row: 1, column: 3, rows: 2, columns: 1 });
+    const filledIn = pasted(sheet(), grid, { row: 1, column: 3 }, [["9"]], facts, { row: 1, column: 3, rows: 2, columns: 1 });
     expect(filledIn.ops).toHaveLength(2);
 
-    const refused = pasted(sheet(), grid, { row: 4, column: 0 }, [["x"]]);
+    const refused = pasted(sheet(), grid, { row: 4, column: 0 }, [["x"]], facts);
     expect(refused.refused).toMatch(/spill/);
   });
 });

@@ -11,6 +11,8 @@ const canon = (cell: SheetCell, rowOrder: number): string =>
     rowOrder,
     value: cell.value,
     expression: cell.expression ?? null,
+    anchors: cell.anchors ?? null,
+    failure: cell.failure ?? null,
     formulaId: cell.formulaId ?? null,
     marks: cell.marks ?? null,
     format: cell.format ?? null,

@@ -21,8 +21,9 @@
       <aside class="aside">
         <span class="kicker">Where this comes from</span>
         <p>
-          FormulaValue and VariableValue in the representation, unchanged. Nothing on this page asks
-          for a new kind, which is the strongest evidence the shape was already right.
+          FormulaValue in the representation, which gained the reference member and took VariableValue
+          with it as an alias. That was the only kind this page asked for, which is the strongest
+          evidence the shape was already right.
         </p>
       </aside>
     </header>

@@ -4,10 +4,10 @@ export const KINDS: Grid = {
   columns: ["A reference points at", "Which resolves to", "Written in the representation", "Today"],
   mono: [2],
   rows: [
-    ["Another variable, by name", "whatever that variable holds, however many hops away", "{ kind: \"reference\", target: { to: \"variable\", name } }", "Modelled; nothing resolves it"],
-    ["A resource: a sheet, a document, a deck, a file", "a table, because every resource is representable as one", "{ kind: \"reference\", target: { to: \"resource\", ref } }", "Modelled; nothing resolves it"],
-    ["A cell, a row or a column, by id", "the value, the record or the list that id names", "the ids a stored formula carries", "Proposed"],
-    ["Another reference", "the walk continues until something is not a reference", "a reference whose target is a reference", "Proposed"]
+    ["Another variable, by name", "whatever that variable holds, however many hops away", "{ kind: \"reference\", target: { to: \"variable\", name } }", "Resolved; the walk follows it"],
+    ["A resource: a sheet, a document, a deck, a file", "a table, because every resource is representable as one", "{ kind: \"reference\", target: { to: \"resource\", ref } }", "A sheet resolves; a document, a deck and a file do not yet"],
+    ["A cell, a row or a column, by id", "the value, the record or the list that id names", "the ids a stored formula carries", "Proposed; a reference target is a variable or a resource"],
+    ["Another reference", "the walk continues until something is not a reference", "a reference whose target is a reference", "Resolved; a ring answers #CYCLE!"]
   ]
 };
 
@@ -16,15 +16,15 @@ export const WHY: readonly Card[] = [
     title: "A cell should not carry a hundred thousand rows",
     detail:
       "A value that is a pointer keeps the sheet's stored body small, keeps a change set small, and keeps the grid drawing what it can see rather than what exists.",
-    tag: "proposed",
-    tone: "proposed"
+    tag: "built",
+    tone: "works"
   },
   {
     title: "An alias is not a copy",
     detail:
-      "The representation says this out loud: a reference resolves when it is asked, walking to another variable until it reaches a value. Storing what it currently resolves to would make an alias a snapshot.",
-    tag: "modelled",
-    tone: "proposed"
+      "The evaluator does this: a reference resolves when it is asked, walking to another variable until it reaches a value. Storing what it currently resolves to would make an alias a snapshot.",
+    tag: "built",
+    tone: "works"
   },
   {
     title: "A range is not a reference",
@@ -48,18 +48,18 @@ export const WHY: readonly Card[] = [
     tone: "ruled"
   },
   {
-    title: "A cell can hold one; a formula cannot answer with one",
+    title: "A cell holds one and a formula answers with one",
     detail:
-      "A cell's stored value is a VariableValue, which is FormulaValue plus a reference, so a pointer already fits in a cell. FormulaValue has no reference member, so letting a formula produce one is a change to the representation and not just to the evaluator.",
-    tag: "representation",
-    tone: "gap"
+      "FormulaValue gained the reference member, so a formula naming a variable that holds a pointer answers with the pointer rather than with what it names. VariableValue is an alias of FormulaValue now, because a cell's list and a formula's list are the same list.",
+    tag: "built",
+    tone: "works"
   },
   {
     title: "A reference can point at a reference",
     detail:
       "Nesting is how a big table gets split. The resolver walks until it reaches something that is not a reference, and refuses when the walk returns to where it started.",
-    tag: "proposed",
-    tone: "proposed"
+    tag: "built",
+    tone: "works"
   }
 ];
 
@@ -98,7 +98,7 @@ export const RULED: readonly Card[] = [
   {
     title: "A resource reference resolves to a table",
     detail:
-      "Not implemented now, and worth writing down now: when it lands, resolving a document or a deck answers with a table, which is a shape the language already slices.",
+      "A sheet resolves to one today, read as the rectangle anything was written into. When a document or a deck lands it answers with a table too, which is a shape the language already slices.",
     tag: "ruled",
     tone: "ruled"
   },

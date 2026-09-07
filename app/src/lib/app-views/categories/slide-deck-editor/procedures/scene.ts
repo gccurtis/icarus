@@ -4,6 +4,7 @@ import type {
   TableCell,
   TextBlock
 } from "$representation/data/types/content/content-block";
+import { boxLineOf } from "$representation/data/behavior/content/borders";
 import { rangeOf } from "$representation/data/behavior/content/positions";
 import type {
   AspectRatio,
@@ -207,10 +208,10 @@ const cellSceneOf = (body: SlideDeckBody, placed: GridCell, header: boolean): Ce
     rowSpan: placed.rowSpan,
     columnSpan: placed.columnSpan,
     fill: cell.format?.background === undefined ? undefined : colorOf(cell.format.background, "transparent"),
-    border:
-      cell.format?.border === undefined
+    border: ((line) =>
+      line === undefined
         ? undefined
-        : { color: colorOf(cell.format.border.color, "var(--token-border-strong)"), width: cell.format.border.width, style: cell.format.border.style },
+        : { color: colorOf(line.color, "var(--token-border-strong)"), width: line.width, style: line.style })(boxLineOf(cell.format?.border)),
     header
   };
 };

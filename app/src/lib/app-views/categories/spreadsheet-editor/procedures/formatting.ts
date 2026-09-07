@@ -12,7 +12,8 @@ import {
 } from "$app-views/categories/spreadsheet-editor/procedures/addresses";
 import type { ValueKind } from "$app-views/categories/spreadsheet-editor/procedures/values";
 
-export type { BlockFormat } from "$representation/data/types/content/block-format";
+export type { BlockFormat, Border, BorderLine, BorderSide, BorderStyle } from "$representation/data/types/content/block-format";
+export { BORDER_SIDES, hasBorder } from "$representation/data/behavior/content/borders";
 export type { FormatRule } from "$representation/data/types/spreadsheets/body";
 export type { TextStyle } from "$representation/data/types/spreadsheets/style-set";
 

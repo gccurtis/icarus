@@ -9,8 +9,8 @@ export const SHAPE: Grid = {
     ["name", "What a formula says", "in the table", "The only part a person types, and the part that has to be unique"],
     ["value", "A VariableValue: any formula value, or a reference", "in the table", "A reference is an alias, resolved when asked rather than copied"],
     ["createdBy · updatedAt", "Who and when", "in the table", "The ordinary provenance every row carries"],
-    ["type", "What the value is allowed to be", "not in the table", "Proposed: today the kind is whatever the value currently is"],
-    ["description", "What it means", "not in the table", "Proposed: the function builder has a column for it and nothing to put there"]
+    ["type", "What the value is allowed to be", "in the table", "The capability checks it against the value's kind before a row is written; any promises nothing"],
+    ["description", "What it means", "in the table", "Stored and read back with the row; three of the six seeded variables carry one and no surface writes one yet"]
   ]
 };
 
@@ -28,7 +28,7 @@ export const HOLDS: Grid = {
     ["A range", "feederMinutes = 'Outage minutes'!E4:E17", "An address in a sheet, resolved when read. Not a reference"],
     ["A reference to another variable", "rate = → rates.perMinute", "A pointer. Resolve it with ! to reach what it aliases"],
     ["A reference to a resource", "outageEvents = → spreadsheets:1", "A pointer at a table, resolved with !"],
-    ["A formula", "saidi = a formula row with parameters", "A function a formula can call"]
+    ["A formula", "saidi = a formula row with parameters", "Nothing yet: a call on a name that holds one answers #NAME?"]
   ]
 };
 
@@ -102,9 +102,9 @@ export const COLLISION: readonly Card[] = [
   {
     title: "Case is not identity",
     detail:
-      "Rates and rates should be the same variable, because a person typing a formula does not remember which one they created. Matching should be case-insensitive and display should keep what was typed.",
-    tag: "proposed",
-    tone: "proposed"
+      "Rates and rates are the same variable, because a person typing a formula does not remember which one they created. Matching is case-insensitive in the capability and in the editor, and display keeps what was typed.",
+    tag: "built",
+    tone: "works"
   }
 ];
 
@@ -140,7 +140,7 @@ export const RULED: readonly Card[] = [
   {
     title: "A variable's type is declared",
     detail:
-      "And the value must satisfy it, so a formula can be checked before it runs, a table can promise its columns, and a wrong write is refused at the edge. Deriving the type from whatever a name currently holds means nothing can be told it is wrong until it runs. The field is not in the table today.",
+      "And the value must satisfy it, so a formula can be checked before it runs, a table can promise its columns, and a wrong write is refused at the edge. Deriving the type from whatever a name currently holds means nothing can be told it is wrong until it runs. The field is in the table, and the capability refuses a value the declared type does not allow.",
     tag: "ruled",
     tone: "ruled"
   },
@@ -162,32 +162,32 @@ export const RULED: readonly Card[] = [
 
 export const STATE: readonly Card[] = [
   {
-    title: "The table exists and is empty",
+    title: "The table is written and read",
     detail:
-      "variables is in the store with name, value, createdBy and updatedAt. Nothing seeds it, no capability writes it, and the Variables rail entry renders the shell's placeholder.",
-    tag: "gap",
-    tone: "gap"
-  },
-  {
-    title: "The value type is complete",
-    detail:
-      "VariableValue is every formula value plus a reference to a variable or a resource. Nothing in this page needs a new value kind, which is the strongest signal that the shape was right.",
-    tag: "modelled",
-    tone: "works"
-  },
-  {
-    title: "The function builder already reads it",
-    detail:
-      "The modal lists variables beside built-ins and finds none. It is the one surface that will work the day rows exist.",
+      "variables carries projectId, name, value, type, description, createdBy and updatedAt. capabilities/variables reads a project's names, saves one as an upsert on the name, and removes one. Six are seeded: a number, text, logic, a date, a list and an alias.",
     tag: "built",
     tone: "works"
   },
   {
-    title: "Formulas can be held by a variable",
+    title: "The value type is complete",
     detail:
-      "FormulaUse says a formula row is held either in a resource at a path or in a variable by name, so a named formula is a variable whose value is a function.",
-    tag: "modelled",
+      "VariableValue is an alias of FormulaValue now. Every value a formula answers with is a value a name can hold, and nothing on this page needed a new kind, which is the strongest signal that the shape was right.",
+    tag: "built",
     tone: "works"
+  },
+  {
+    title: "The Variables panel is the surface",
+    detail:
+      "It lists the project's names with what each holds and what it is allowed to hold, filters them, and creates, edits and removes one. The rail entry had been drawing the shell's placeholder. It does not offer a field for a description.",
+    tag: "built",
+    tone: "works"
+  },
+  {
+    title: "A variable holding a formula is modelled and not callable",
+    detail:
+      "FormulaUse says a formula row is held either in a resource at a path or in a variable by name, and function is in the value list. Nothing writes that row, so calling a name that holds one answers #NAME?.",
+    tag: "gap",
+    tone: "gap"
   }
 ];
 

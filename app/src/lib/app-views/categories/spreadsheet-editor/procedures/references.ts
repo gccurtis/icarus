@@ -1,74 +1,80 @@
+import { addressText, addressesIn } from "$representation/data/behavior/formulas/addresses";
 import type { SheetCell } from "$representation/data/types/spreadsheets/cell";
 import type { LiveSheet } from "$representation/data/types/spreadsheets/live";
 import {
   contains,
   indexOf,
   keyOf,
-  parseRange,
+  rectOf,
   refsIn,
   type CellRef,
   type Grid,
   type Rect
 } from "$app-views/categories/spreadsheet-editor/procedures/addresses";
-import { ERRORS, errorOf } from "$app-views/categories/spreadsheet-editor/procedures/values";
+import { toShown, type SheetFacts } from "$app-views/categories/spreadsheet-editor/procedures/recalculation";
+import { ERRORS, errorOf, type ErrorToken } from "$app-views/categories/spreadsheet-editor/procedures/values";
 
 export type Reference = {
   readonly text: string;
-  readonly kind: "cell" | "range" | "external" | "name" | "broken";
+  readonly kind: "cell" | "range" | "external" | "broken";
   readonly rect?: Rect;
   readonly sheet?: string;
   readonly address?: string;
 };
 
-const TOKEN =
-  /"[^"]*"|(#REF!)|(?:'([^']+)'|([A-Za-z_][A-Za-z0-9_]*))!(\$?[A-Za-z]{1,3}\$?\d+(?::\$?[A-Za-z]{1,3}\$?\d+)?)|(\$?[A-Za-z]{1,3}\$?\d+(?::\$?[A-Za-z]{1,3}\$?\d+)?)(?![A-Za-z0-9_(])|([A-Za-z_][A-Za-z0-9_.]*)/g;
-
-const RESERVED = new Set(["TRUE", "FALSE"]);
-
-export const referencesIn = (grid: Grid, expression: string): Reference[] => {
+/**
+ * What one cell's formula points at, read off the ids it stores rather than
+ * scanned out of its text. A reference that names another sheet is `external`
+ * and carries that sheet's id; one whose ids are gone is `broken`.
+ */
+export const referencesIn = (
+  facts: SheetFacts,
+  cell: SheetCell | undefined,
+  byId?: (id: string) => SheetFacts | undefined
+): Reference[] => {
+  if (cell?.expression === undefined) return [];
   const found: Reference[] = [];
   const seen = new Set<string>();
-  const body = expression.startsWith("=") ? expression.slice(1) : expression;
 
-  for (const match of body.matchAll(TOKEN)) {
-    const [whole, broken, quotedSheet, bareSheet, external, local, name] = match;
-    if (whole.startsWith('"')) continue;
-    const after = body.slice((match.index ?? 0) + whole.length);
-    const sheetName = quotedSheet ?? bareSheet;
-    let reference: Reference | undefined;
-
-    if (broken !== undefined) reference = { text: broken, kind: "broken" };
-    else if (sheetName !== undefined && external !== undefined) {
-      reference = { text: whole, kind: "external", sheet: sheetName, address: external.replace(/\$/g, "") };
-    } else if (local !== undefined) {
-      const range = parseRange(grid, local.replace(/\$/g, ""));
-      const rect = range === undefined ? undefined : rectOfRange(grid, range);
-      reference =
-        rect === undefined
-          ? { text: local, kind: "broken" }
-          : { text: local, kind: local.includes(":") ? "range" : "cell", rect };
-    } else if (name !== undefined) {
-      if (/^\s*\(/.test(after) || RESERVED.has(name.toUpperCase())) continue;
-      reference = { text: name, kind: "name" };
+  addressesIn(cell.expression).forEach((address, index) => {
+    if (address.at === "resource") {
+      const reference: Reference = { text: address.ref.id, kind: "external", sheet: address.ref.id };
+      if (!seen.has(reference.text)) {
+        seen.add(reference.text);
+        found.push(reference);
+      }
+      return;
     }
 
-    if (reference === undefined || seen.has(reference.text)) continue;
+    const drawn = toShown(addressText(address), facts, {
+      byId,
+      anchors: [(cell.anchors ?? [])[index] ?? ""]
+    });
+
+    if (address.resourceId !== facts.resourceId) {
+      const reference: Reference = {
+        text: drawn,
+        kind: "external",
+        sheet: address.resourceId,
+        address: drawn.includes("!") ? drawn.slice(drawn.indexOf("!") + 1) : drawn
+      };
+      if (seen.has(reference.text)) return;
+      seen.add(reference.text);
+      found.push(reference);
+      return;
+    }
+
+    const range = address.at === "cell" ? { from: address.cell, to: address.cell } : address.range;
+    const rect = rectOf(facts.grid, range);
+    const reference: Reference =
+      rect === undefined
+        ? { text: drawn, kind: "broken" }
+        : { text: drawn, kind: address.at === "range" ? "range" : "cell", rect };
+    if (seen.has(reference.text)) return;
     seen.add(reference.text);
     found.push(reference);
-  }
+  });
   return found;
-};
-
-const rectOfRange = (grid: Grid, range: { from: CellRef; to: CellRef }): Rect | undefined => {
-  const from = indexOf(grid, range.from);
-  const to = indexOf(grid, range.to);
-  if (from === undefined || to === undefined) return undefined;
-  return {
-    row: Math.min(from.row, to.row),
-    column: Math.min(from.column, to.column),
-    rows: Math.abs(from.row - to.row) + 1,
-    columns: Math.abs(from.column - to.column) + 1
-  };
 };
 
 export type Dependency = { readonly ref: CellRef; readonly cell: SheetCell | undefined };
@@ -80,14 +86,19 @@ export const sheetNamed = <T extends { readonly title: string }>(sheets: readonl
 
 const CAP = 200;
 
-export const precedentsOf = (sheet: LiveSheet, grid: Grid, ref: CellRef): Dependency[] => {
+/** Every cell this one reads, in this sheet. */
+export const precedentsOf = (sheet: LiveSheet, facts: SheetFacts, ref: CellRef): Dependency[] => {
   const held = sheet.cells[keyOf(ref)];
   if (held?.expression === undefined) return [];
   const refs: Dependency[] = [];
   const seen = new Set<string>();
-  for (const reference of referencesIn(grid, held.expression)) {
-    if (reference.rect === undefined) continue;
-    for (const target of refsIn(grid, reference.rect)) {
+
+  for (const address of addressesIn(held.expression)) {
+    if (address.at === "resource" || address.resourceId !== facts.resourceId) continue;
+    const range = address.at === "cell" ? { from: address.cell, to: address.cell } : address.range;
+    const rect = rectOf(facts.grid, range);
+    if (rect === undefined) continue;
+    for (const target of refsIn(facts.grid, rect)) {
       const key = keyOf(target);
       if (seen.has(key) || key === keyOf(ref)) continue;
       seen.add(key);
@@ -98,19 +109,25 @@ export const precedentsOf = (sheet: LiveSheet, grid: Grid, ref: CellRef): Depend
   return refs;
 };
 
-export const dependentsOf = (sheet: LiveSheet, grid: Grid, ref: CellRef): Dependency[] => {
-  const at = indexOf(grid, ref);
+/** Every cell that reads this one. */
+export const dependentsOf = (sheet: LiveSheet, facts: SheetFacts, ref: CellRef): Dependency[] => {
+  const at = indexOf(facts.grid, ref);
   if (at === undefined) return [];
+
+  const reads = (cell: SheetCell): boolean =>
+    addressesIn(cell.expression ?? "").some((address) => {
+      if (address.at === "resource" || address.resourceId !== facts.resourceId) return false;
+      const range = address.at === "cell" ? { from: address.cell, to: address.cell } : address.range;
+      const rect = rectOf(facts.grid, range);
+      return rect !== undefined && contains(rect, at.row, at.column);
+    });
+
   return Object.values(sheet.cells)
     .filter((cell) => cell.expression !== undefined && !(cell.rowId === ref.rowId && cell.columnId === ref.columnId))
-    .filter((cell) =>
-      referencesIn(grid, cell.expression ?? "").some(
-        (reference) => reference.rect !== undefined && contains(reference.rect, at.row, at.column)
-      )
-    )
+    .filter(reads)
     .sort((a, b) => {
-      const left = indexOf(grid, { rowId: a.rowId, columnId: a.columnId });
-      const right = indexOf(grid, { rowId: b.rowId, columnId: b.columnId });
+      const left = indexOf(facts.grid, { rowId: a.rowId, columnId: a.columnId });
+      const right = indexOf(facts.grid, { rowId: b.rowId, columnId: b.columnId });
       return (left?.row ?? 0) - (right?.row ?? 0) || (left?.column ?? 0) - (right?.column ?? 0);
     })
     .map((cell) => ({ ref: { rowId: cell.rowId, columnId: cell.columnId }, cell }));
@@ -123,21 +140,27 @@ export type Problem = {
   readonly explanation: string;
 };
 
-export const explanationOf = (grid: Grid, error: string, expression: string | undefined): string => {
-  if (error === "#NAME?" && expression !== undefined) {
-    const name = referencesIn(grid, expression).find((reference) => reference.kind === "name");
-    if (name !== undefined) return `No name in this spreadsheet or this project is called ${name.text}.`;
+/**
+ * What a refusal means, in a sentence. `#NAME?` quotes the word the formula
+ * could not place, which the refusal carried out of the engine rather than
+ * anything having to guess at it.
+ */
+export const explanationOf = (cell: SheetCell | undefined): string => {
+  const failure = cell?.failure;
+  if (failure === undefined) return "";
+  if (failure.token === "#NAME?" && failure.word !== undefined) {
+    return `No name in this spreadsheet or this project is called ${failure.word}.`;
   }
-  return ERRORS[error] ?? "This formula could not be evaluated.";
+  return ERRORS[failure.token as ErrorToken] ?? "This formula could not be evaluated.";
 };
 
 export const problemsOf = (sheet: LiveSheet, grid: Grid): Problem[] =>
   Object.values(sheet.cells)
     .flatMap((cell) => {
-      const error = errorOf(cell.value);
+      const error = errorOf(cell);
       if (error === undefined) return [];
       const ref = { rowId: cell.rowId, columnId: cell.columnId };
-      return [{ ref, cell, error, explanation: explanationOf(grid, error, cell.expression) }];
+      return [{ ref, cell, error, explanation: explanationOf(cell) }];
     })
     .sort((a, b) => {
       const left = indexOf(grid, a.ref);

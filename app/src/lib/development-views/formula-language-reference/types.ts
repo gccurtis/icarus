@@ -1,4 +1,12 @@
-export type PageSlug = "overview" | "values" | "slicing" | "references" | "errors" | "built" | "variables";
+export type PageSlug =
+  | "overview"
+  | "values"
+  | "slicing"
+  | "references"
+  | "errors"
+  | "built"
+  | "variables"
+  | "changes";
 
 export type NavItem = {
   readonly slug: PageSlug;

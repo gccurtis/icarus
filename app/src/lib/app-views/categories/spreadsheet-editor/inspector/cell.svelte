@@ -6,16 +6,15 @@
     PanelCrumbs,
     PanelEmpty,
     PanelRow,
-    PanelSection,
-    PanelSelect
+    PanelSection
   } from "$authored-components/panel";
   import CellComments from "$app-views/categories/spreadsheet-editor/components/cell-comments.svelte";
   import CellHead from "$app-views/categories/spreadsheet-editor/components/cell-head.svelte";
   import FormatBand from "$app-views/categories/spreadsheet-editor/components/format-band.svelte";
   import NumberFormat from "$app-views/categories/spreadsheet-editor/components/number-format.svelte";
   import { gridOf, labelOf, rectLabelOf, type CellRef } from "$app-views/categories/spreadsheet-editor/procedures/addresses";
-  import { cellAt, coerced, type CellKind, type Edit } from "$app-views/categories/spreadsheet-editor/procedures/cells";
-  import { withRecalculation } from "$app-views/categories/spreadsheet-editor/procedures/evaluate";
+  import { cellAt, type Edit } from "$app-views/categories/spreadsheet-editor/procedures/cells";
+  import { factsOf, recalculating } from "$app-views/categories/spreadsheet-editor/procedures/recalculation";
   import { paintOf } from "$app-views/categories/spreadsheet-editor/procedures/formatting";
   import { dependentsOf, type Dependency } from "$app-views/categories/spreadsheet-editor/procedures/references";
   import { runsOf } from "$app-views/categories/spreadsheet-editor/procedures/scene";
@@ -23,13 +22,6 @@
   import { mergeOf, spillOf, unmerged } from "$app-views/categories/spreadsheet-editor/procedures/spans";
   import { displayOf, kindOf, type SheetCell } from "$app-views/categories/spreadsheet-editor/procedures/values";
   import { isInspectorView, workspaceState, type SpreadsheetRuntime } from "$model/client/workspace-state";
-
-  const TYPES: readonly { value: CellKind; label: string }[] = [
-    { value: "number", label: "Number" },
-    { value: "text", label: "Text" },
-    { value: "logic", label: "Logic" },
-    { value: "date", label: "Date" }
-  ];
 
   const view = workspaceState();
 
@@ -49,10 +41,10 @@
   const paint = $derived(sheet === undefined || ref === undefined ? undefined : paintOf(sheet.body, grid, ref, held));
   const shows = $derived(displayOf(held?.value, paint?.format.valueFormat));
   const kind = $derived(kindOf(held?.value));
-  const type = $derived(TYPES.some((option) => option.value === kind) ? kind : "");
   const merge = $derived(sheet === undefined || ref === undefined ? undefined : mergeOf(sheet, grid, ref));
   const spill = $derived(sheet === undefined || ref === undefined ? undefined : spillOf(sheet, grid, ref));
-  const dependents = $derived(sheet === undefined || ref === undefined ? [] : dependentsOf(sheet, grid, ref));
+  const facts = $derived(factsOf(sheetId, sheet));
+  const dependents = $derived(sheet === undefined || ref === undefined ? [] : dependentsOf(sheet, facts, ref));
   const runs = $derived(
     held !== undefined && kind === "text" && held.expression === undefined && shows !== "" ? runsOf(shows, held.marks ?? []) : []
   );
@@ -68,12 +60,7 @@
       refusalTimer = setTimeout(() => (refusal = undefined), 5000);
       return;
     }
-    if (edit.ops.length > 0 && sheet !== undefined) runtime?.apply(withRecalculation(sheet, edit.ops));
-  };
-
-  const retype = (next: string) => {
-    if (sheet === undefined || ref === undefined) return;
-    apply(coerced(sheet, ref, next as CellKind));
+    if (edit.ops.length > 0 && sheet !== undefined) runtime?.apply(recalculating(sheetId, sheet, edit.ops));
   };
 
   const unmerge = () => {
@@ -173,12 +160,11 @@
       {/if}
     </div>
 
-    <PanelControlGroup>
-      <PanelSelect label="Type" value={type} placeholder="Empty" options={TYPES} disabled={held === undefined} onchange={retype} />
-      {#if refusal}
+    {#if refusal}
+      <PanelControlGroup>
         <span class="text-caption text-danger-text">{refusal}</span>
-      {/if}
-    </PanelControlGroup>
+      </PanelControlGroup>
+    {/if}
 
     <FormatBand />
     {#if held === undefined || kind === "number"}

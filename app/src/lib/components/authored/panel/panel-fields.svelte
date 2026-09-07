@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
+  import { cn } from "$vendored-components/utils";
   import { traceNode } from "$development-components/trace.svelte";
 
   /**
@@ -16,11 +17,19 @@
    * leaves nothing for the value — so a pair whose value will not fit stacks instead,
    * which is `PanelField`'s `stacked`.
    */
-  let { children }: { children: Snippet } = $props();
+  let { children, align = "start" }: { children: Snippet; align?: "start" | "end" } = $props();
 
-  const trace = traceNode("PanelFields", () => ({}));
+  const trace = traceNode("PanelFields", () => ({ align }));
 </script>
 
-<dl {...trace} class="m-0 grid grid-cols-[minmax(0,7rem)_minmax(0,1fr)] items-baseline gap-x-2 gap-y-1.5 px-3">
+<dl
+  {...trace}
+  class={cn(
+    "m-0 grid items-baseline gap-x-2 gap-y-1.5 px-3",
+    align === "end"
+      ? "grid-cols-[minmax(0,max-content)_minmax(0,1fr)] [&>dd]:text-end"
+      : "grid-cols-[minmax(0,7rem)_minmax(0,1fr)]"
+  )}
+>
   {@render children()}
 </dl>

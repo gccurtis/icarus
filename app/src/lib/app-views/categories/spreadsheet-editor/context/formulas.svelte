@@ -24,7 +24,7 @@
   import { gridOf, labelOf, type CellRef } from "$app-views/categories/spreadsheet-editor/procedures/addresses";
   import { BUILTINS, type Builtin } from "$app-views/categories/spreadsheet-editor/procedures/builtins";
   import { typed } from "$app-views/categories/spreadsheet-editor/procedures/cells";
-  import { withRecalculation } from "$app-views/categories/spreadsheet-editor/procedures/evaluate";
+  import { factsOf, recalculating } from "$app-views/categories/spreadsheet-editor/procedures/recalculation";
   import { formulaRows, matchesFilter } from "$app-views/categories/spreadsheet-editor/procedures/formulas";
   import { cellSignal, selectedRef } from "$app-views/categories/spreadsheet-editor/procedures/selecting";
   import { workspaceState, type SpreadsheetRuntime } from "$model/client/workspace-state";
@@ -41,6 +41,7 @@
 
   const sheet = $derived(runtime?.sheet);
   const grid = $derived(gridOf(sheet?.body));
+  const facts = $derived(factsOf(sheetId, sheet));
 
   let filter = $state("");
   let building = $state(false);
@@ -48,7 +49,7 @@
   let search = $state("");
   let picked = $state<string | undefined>(undefined);
 
-  const rows = $derived(sheet === undefined ? [] : formulaRows(sheet, grid));
+  const rows = $derived(sheet === undefined ? [] : formulaRows(sheet, facts));
   const shown = $derived(rows.filter((row) => matchesFilter(row, filter)));
   const formulas = $derived(shown.filter((row) => row.error === undefined));
   const problems = $derived(shown.filter((row) => row.error !== undefined));
@@ -89,8 +90,8 @@
       reset();
       return;
     }
-    const edit = typed(sheet, grid, current, expression.startsWith("=") ? expression : `=${expression}`);
-    if (edit.refused === undefined && edit.ops.length > 0) runtime?.apply(withRecalculation(sheet, edit.ops));
+    const edit = typed(sheet, grid, current, expression.startsWith("=") ? expression : `=${expression}`, facts);
+    if (edit.refused === undefined && edit.ops.length > 0) runtime?.apply(recalculating(sheetId, sheet, edit.ops));
     reset();
   };
 </script>

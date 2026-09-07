@@ -18,6 +18,11 @@ import {
   spillSpans,
   type Edit
 } from "$app-views/categories/spreadsheet-editor/procedures/spans";
+import {
+  toStored,
+  type SheetFacts,
+  type Translated
+} from "$app-views/categories/spreadsheet-editor/procedures/recalculation";
 import { paintOf } from "$app-views/categories/spreadsheet-editor/procedures/formatting";
 import { PLAIN, patternOf } from "$app-views/categories/spreadsheet-editor/procedures/number-format";
 import { displayOf, parseTyped, sameValue } from "$app-views/categories/spreadsheet-editor/procedures/values";
@@ -48,15 +53,26 @@ export const written = (sheet: LiveSheet, ref: CellRef, value: FormulaValue): Sp
   const ops: SpreadsheetOp[] = [];
   if (!sameValue(held.value, value)) ops.push(set(`${key}/value`, value, held.value));
   if (held.expression !== undefined) ops.push(set(`${key}/expression`, null, held.expression));
+  if (held.anchors !== undefined) ops.push(set(`${key}/anchors`, null, held.anchors));
+  if (held.failure !== undefined) ops.push(set(`${key}/failure`, null, held.failure));
   return ops;
 };
 
-export const expressed = (sheet: LiveSheet, ref: CellRef, expression: string): SpreadsheetOp[] => {
+export const expressed = (sheet: LiveSheet, ref: CellRef, formula: Translated): SpreadsheetOp[] => {
   const key = keyOf(ref);
   const held = sheet.cells[key];
-  if (held === undefined) return [set(key, { value: { kind: "empty" }, expression }, null)];
-  if (held.expression === expression) return [];
-  return [set(`${key}/expression`, expression, held.expression ?? null)];
+  const anchors = [...formula.anchors];
+  if (held === undefined) {
+    return [set(key, { value: { kind: "empty" }, expression: formula.formula, anchors }, null)];
+  }
+  const ops: SpreadsheetOp[] = [];
+  if (held.expression !== formula.formula) {
+    ops.push(set(`${key}/expression`, formula.formula, held.expression ?? null));
+  }
+  if (JSON.stringify(held.anchors ?? []) !== JSON.stringify(anchors)) {
+    ops.push(set(`${key}/anchors`, anchors, held.anchors ?? null));
+  }
+  return ops;
 };
 
 export const setField = (
@@ -114,7 +130,14 @@ export const cleared = (sheet: LiveSheet, grid: Grid, refs: readonly CellRef[]):
   return { ops, skipped, cleared };
 };
 
-export const typed = (sheet: LiveSheet, grid: Grid, ref: CellRef, text: string): Edit => {
+export const typed = (
+  sheet: LiveSheet,
+  grid: Grid,
+  ref: CellRef,
+  text: string,
+  facts: SheetFacts,
+  byTitle?: (title: string) => SheetFacts | undefined
+): Edit => {
   const at = indexOf(grid, ref);
   if (at === undefined) return { ops: [], refused: "That coordinate is off the grid." };
 
@@ -130,7 +153,9 @@ export const typed = (sheet: LiveSheet, grid: Grid, ref: CellRef, text: string):
 
   const parsed = parseTyped(text);
   if (parsed.kind === "clear") return cleared(sheet, grid, [ref]);
-  if (parsed.kind === "expression") return { ops: expressed(sheet, ref, parsed.expression) };
+  if (parsed.kind === "expression") {
+    return { ops: expressed(sheet, ref, toStored(parsed.expression, facts, byTitle)) };
+  }
 
   const ops = written(sheet, ref, parsed.value);
   const held = sheet.cells[keyOf(ref)];

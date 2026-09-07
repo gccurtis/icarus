@@ -8,7 +8,7 @@ import type {
   StoredAnchorWithin
 } from "$representation/data/types/collaboration/anchor";
 import type { ContentBlock, MarkLink } from "$representation/data/types/content/content-block";
-import type { VariableValue } from "$representation/data/types/content/variable-value";
+import type { VariableType, VariableValue } from "$representation/data/types/content/variable-value";
 import type { MembershipRole } from "$representation/data/types/core/access";
 import type { Actor } from "$representation/data/types/core/actor";
 import type { Id, Row } from "$representation/data/types/core/id";
@@ -410,6 +410,8 @@ export type VariableFields = {
   projectId: Id<"projects">;
   name: string;
   value: VariableValue;
+  type: VariableType;
+  description?: string;
   createdBy: Actor;
   updatedAt: number;
 };

@@ -15,7 +15,7 @@
   import NumberFormat from "$app-views/categories/spreadsheet-editor/components/number-format.svelte";
   import { gridOf, labelOf, rectLabelOf, type CellRef } from "$app-views/categories/spreadsheet-editor/procedures/addresses";
   import { cellAt, type Edit } from "$app-views/categories/spreadsheet-editor/procedures/cells";
-  import { withRecalculation } from "$app-views/categories/spreadsheet-editor/procedures/evaluate";
+  import { factsOf, recalculating } from "$app-views/categories/spreadsheet-editor/procedures/recalculation";
   import { paintOf } from "$app-views/categories/spreadsheet-editor/procedures/formatting";
   import {
     dependentsOf,
@@ -49,10 +49,11 @@
   const paint = $derived(sheet === undefined || ref === undefined ? undefined : paintOf(sheet.body, grid, ref, held));
   const kind = $derived(kindOf(held?.value));
   const typeOptions = $derived([{ value: kind, label: `${KIND_LABEL[kind].replace(/^\w/, (letter) => letter.toUpperCase())} · formula` }]);
-  const precedents = $derived(sheet === undefined || ref === undefined ? [] : precedentsOf(sheet, grid, ref));
-  const dependents = $derived(sheet === undefined || ref === undefined ? [] : dependentsOf(sheet, grid, ref));
+  const facts = $derived(factsOf(sheetId, sheet));
+  const precedents = $derived(sheet === undefined || ref === undefined ? [] : precedentsOf(sheet, facts, ref));
+  const dependents = $derived(sheet === undefined || ref === undefined ? [] : dependentsOf(sheet, facts, ref));
   const unresolved = $derived(
-    held?.expression === undefined ? [] : referencesIn(grid, held.expression).filter((reference) => reference.rect === undefined)
+    referencesIn(facts, held).filter((reference) => reference.rect === undefined && reference.kind !== "external")
   );
   const merge = $derived(sheet === undefined || ref === undefined ? undefined : mergeOf(sheet, grid, ref));
   const spill = $derived(sheet === undefined || ref === undefined ? undefined : spillOf(sheet, grid, ref));
@@ -61,7 +62,7 @@
   const sheets = $derived(rowsOf(sheetRows, "spreadsheets"));
 
   const apply = (edit: Edit) => {
-    if (edit.refused === undefined && edit.ops.length > 0 && sheet !== undefined) runtime?.apply(withRecalculation(sheet, edit.ops));
+    if (edit.refused === undefined && edit.ops.length > 0 && sheet !== undefined) runtime?.apply(recalculating(sheetId, sheet, edit.ops));
   };
 
   const unmerge = () => {
@@ -87,7 +88,6 @@
 
   const subOf = (reference: Reference): string => {
     if (reference.kind === "broken") return "gone";
-    if (reference.kind === "name") return "undefined name";
     const target = targetOf(reference);
     return target === undefined ? `no sheet called ${reference.sheet ?? "that"}` : target.title;
   };

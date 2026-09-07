@@ -10,7 +10,7 @@
   } from "$authored-components/panel";
   import { columnLabel, gridOf } from "$app-views/categories/spreadsheet-editor/procedures/addresses";
   import type { Edit } from "$app-views/categories/spreadsheet-editor/procedures/cells";
-  import { withRecalculation } from "$app-views/categories/spreadsheet-editor/procedures/evaluate";
+  import { recalculating } from "$app-views/categories/spreadsheet-editor/procedures/recalculation";
   import { selectedColumnIds, selectedRects } from "$app-views/categories/spreadsheet-editor/procedures/selecting";
   import { aggregateOf } from "$app-views/categories/spreadsheet-editor/procedures/stats";
   import {
@@ -54,7 +54,7 @@
 
   const apply = (ops: Edit["ops"]) => {
     if (ops.length === 0 || sheet === undefined) return;
-    runtime?.apply(withRecalculation(sheet, ops));
+    runtime?.apply(recalculating(sheetId, sheet, ops));
   };
 
   const resize = (points: number) => {
