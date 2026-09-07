@@ -5,6 +5,8 @@
   import ElementGeometry from "$app-views/categories/slide-deck-editor/components/element-geometry.svelte";
   import ElementOrder from "$app-views/categories/slide-deck-editor/components/element-order.svelte";
   import ElementPaint from "$app-views/categories/slide-deck-editor/components/element-paint.svelte";
+  import TextSpacing from "$app-views/categories/slide-deck-editor/components/text-spacing.svelte";
+  import TextStyle from "$app-views/categories/slide-deck-editor/components/text-style.svelte";
   import { elementIn, slideHolding, slideIndexOf, withSet } from "$app-views/categories/slide-deck-editor/procedures/deck";
   import { selectedIds, slideSignal } from "$app-views/categories/slide-deck-editor/procedures/selecting";
   import { workspaceState, type SlideDeckRuntime } from "$model/client/workspace-state";
@@ -24,6 +26,7 @@
   const slide = $derived(body === undefined || id === undefined ? undefined : slideHolding(body, id));
   const position = $derived(body === undefined || slide === undefined ? 0 : slideIndexOf(body, slide.id) + 1);
   const content = $derived(element?.content.type === "shape" ? element.content : undefined);
+  const block = $derived(content?.block);
   const shapeTitle = $derived(content === undefined ? "Shape" : content.shape[0].toUpperCase() + content.shape.slice(1));
   const fullText = $derived(content?.block?.display.trim().replace(/\s+/g, " ") ?? "");
   const excerpt = $derived(fullText.length <= 64 ? fullText : `${fullText.slice(0, 63).trimEnd()}…`);
@@ -57,12 +60,18 @@
 
   {#if element && content}
     <PanelSection title="Kind">
-      <PanelSelect label="Shape" value={content.shape} options={KINDS} onchange={(value) => set(`${element.id}/content/shape`, value)} />
+      <PanelSelect label="Kind" value={content.shape} options={KINDS} onchange={(value) => set(`${element.id}/content/shape`, value)} />
     </PanelSection>
+    {#if block}
+      <TextStyle blockId={block.id} whole wrapping />
+    {/if}
     <ElementGeometry elementId={element.id} />
     <ElementPaint elementId={element.id} />
-    <ElementEffects elementId={element.id} />
     <ElementOrder elementId={element.id} />
+    {#if block}
+      <TextSpacing blockId={block.id} />
+    {/if}
+    <ElementEffects elementId={element.id} />
     {#if element.fromPlaceholder}
       <PanelSection title="Origin" open={false} chevron="end">
         <PanelNote>From the layout's “{element.fromPlaceholder}” placeholder.</PanelNote>

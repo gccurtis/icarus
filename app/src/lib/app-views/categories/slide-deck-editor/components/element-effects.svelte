@@ -66,7 +66,7 @@
   };
 </script>
 
-<PanelSection title="Effects">
+<PanelSection title="Effects" open={false} chevron="end">
   <div class="grid grid-cols-[3.5rem_1fr] items-center gap-x-2 gap-y-1.5">
     <span class="text-caption text-ink-muted">Opacity</span>
     <PanelNumber

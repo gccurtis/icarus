@@ -23,12 +23,12 @@
     { value: "muted", label: "Muted", token: "var(--token-ink-muted)" },
     { value: "accent", label: "Accent", token: "var(--token-color-accent-1-fill)" },
     { value: "attention", label: "Attention", token: "var(--token-color-attention-fill)" },
-    { value: "none", label: "None", token: "transparent" }
+    { value: "", label: "None", token: "transparent" }
   ];
 
   let selected = $state(["bold"]);
   let foreground = $state("ink");
-  let background = $state("none");
+  let background = $state("");
   let indent = $state(0);
   let custom = $state(false);
 </script>
@@ -58,8 +58,8 @@
           />
 
           <div class="color-row">
-            <div><span>FG</span><PanelColorPicker label="Foreground" value={foreground} options={colors} onchange={(next) => (foreground = next)} oncustom={() => (custom = true)} /></div>
-            <div><span>BG</span><PanelColorPicker label="Background" value={background} options={colors} onchange={(next) => (background = next)} oncustom={() => (custom = true)} /></div>
+            <div><span>FG</span><PanelColorPicker compact label="Foreground" value={foreground} options={colors.filter((color) => color.value !== "")} onchange={(next) => (foreground = next)} oncustom={() => (custom = true)} /></div>
+            <div><span>BG</span><PanelColorPicker compact label="Background" value={background} options={colors} onchange={(next) => (background = next)} oncustom={() => (custom = true)} /></div>
           </div>
 
           <PanelControlGroup flush>
@@ -149,8 +149,6 @@
 
   .color-row > div {
     display: flex;
-    min-width: 0;
-    flex: 1;
     align-items: center;
     gap: calc(var(--token-spacing-unit) * 1.5);
   }

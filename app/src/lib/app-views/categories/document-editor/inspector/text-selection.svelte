@@ -1,13 +1,16 @@
 <script lang="ts">
   import {
     Panel,
-    PanelBodyStyle,
+    PanelAlignment,
     PanelButton,
+    PanelControlGroup,
+    PanelControlRow,
     PanelCrumbs,
     PanelNote,
     PanelQuote,
     PanelInlineStyle,
     PanelSection,
+    PanelSpacing,
     PanelSelect
   } from "$authored-components/panel";
   import { Input } from "$vendored-components/input";
@@ -349,16 +352,22 @@
         onforeground={setInk}
         onbackground={setFill}
       />
+      <PanelControlGroup flush>
+        <PanelControlRow label="Alignment">
+          <PanelAlignment
+            value={align.value ?? "start"}
+            mixed={align.mixed}
+            onchange={setAlign}
+          />
+        </PanelControlRow>
+      </PanelControlGroup>
     </div>
 
-    <PanelBodyStyle
-      alignment={align.value ?? "start"}
-      alignmentMixed={align.mixed}
+    <PanelSpacing
       spaceBefore={before.value ?? 0}
       spaceAfter={after.value ?? 0}
       lineHeight={leading.value ?? 26}
       indent={indent.value ?? 0}
-      onalignment={setAlign}
       onchange={setSpacing}
     />
 

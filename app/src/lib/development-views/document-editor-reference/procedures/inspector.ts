@@ -42,10 +42,10 @@ export const inspectorReference: AreaReference = {
       why: "A shared primitive prevents visual drift while correct mark algebra permits unlimited replacement."
     },
     {
-      title: "Body style recomposes block controls",
+      title: "Alignment and spacing follow their visual roles",
       before: "Alignment and ambiguous Before/After spacing were separate; numeric controls were crowded with plus/minus buttons and zero looked disabled.",
-      now: "Body style combines alignment, Space above, Space below, Line height, and Indent. Direct number inputs use native arrow keys, clear units, and normal zero styling.",
-      why: "The grouping matches the domain, and direct numeric entry uses less space without hiding editability."
+      now: "Alignment sits with Style; a collapsed Spacing section contains Space above, Space below, Line height, and Indent. Direct number inputs use native arrow keys, clear units, and normal zero styling.",
+      why: "Alignment changes how the text reads, while the lower-priority spacing controls remain available without dominating the inspector."
     },
     {
       title: "Links separate meaning from appearance",
@@ -153,13 +153,13 @@ export const inspectorReference: AreaReference = {
       sources: ["src/lib/app-views/categories/document-editor/procedures/marks.ts", "src/lib/app-views/categories/document-editor/inspector/text-selection.svelte"]
     },
     {
-      name: "Body style",
+      name: "Text alignment and spacing",
       owner: "Block format + named style resolution",
       shape: "alignment + spaceBefore + spaceAfter + lineHeight + indent",
       states: ["single value", "mixed", "inherited", "direct override"],
       transitions: ["direct edit", "named style application", "reset/inherit"],
       invariants: ["Zero is a valid editable value", "Space labels describe their physical effect", "Quote receives no private CSS ornament"],
-      sources: ["src/lib/components/authored/panel/panel-body-style.svelte", "src/lib/app-views/categories/document-editor/procedures/styles.ts"]
+      sources: ["src/lib/components/authored/panel/panel-alignment.svelte", "src/lib/components/authored/panel/panel-spacing.svelte", "src/lib/app-views/categories/document-editor/procedures/styles.ts"]
     },
     {
       name: "Link occurrence",
@@ -242,12 +242,12 @@ export const inspectorReference: AreaReference = {
     { path: "src/lib/surfaces/inspector/inspector.svelte", role: "Surface host", note: "Registry resolution, stable subject lifetime, placeholder, and resize/collapse composition." },
     { path: "src/lib/app-views/categories/document-editor/inspector/*.svelte", role: "Document lenses", note: "Text selection, next letter, empty line, named style, image, and table semantics." },
     { path: "src/lib/app-views/general/comment/comment.svelte", role: "General lens", note: "Comment source/conversation projection and thread actions shared beyond one category." },
-    { path: "src/lib/components/authored/panel/*", role: "Authored controls", note: "Marks, inline style, color picker, number input, body style, rows, and groups." },
+    { path: "src/lib/components/authored/panel/*", role: "Authored controls", note: "Marks, inline style, color picker, number input, spacing, rows, and groups." },
     { path: "src/lib/app-views/categories/document-editor/procedures/*", role: "Domain procedures", note: "Selection summaries and native operation construction kept outside presentation." }
   ],
   review: [
     { tone: "settled", title: "Selection and focus are separate", detail: "Inspector interactions preserve a structural subject and the content decoration, even though browser focus moves to a control." },
-    { tone: "settled", title: "Shared controls carry the responsive contract", detail: "Lenses compose PanelMarks, PanelInlineStyle, PanelColorPicker, PanelNumber, and PanelBodyStyle instead of cloning them." },
+    { tone: "settled", title: "Shared controls carry the responsive contract", detail: "Lenses compose PanelMarks, PanelInlineStyle, PanelColorPicker, PanelNumber, and PanelSpacing instead of cloning them." },
     { tone: "watch", title: "Text-selection lens is a near-term extraction seam", detail: "It coordinates many coherent domains but is now large enough to split link, comment, and appearance sections into focused child components while keeping one selection model." },
     { tone: "deferred", title: "Custom color maker can deepen later", detail: "The contract and hex path exist now; a richer hue/saturation surface can replace that detail without changing lens or operation APIs." }
   ],

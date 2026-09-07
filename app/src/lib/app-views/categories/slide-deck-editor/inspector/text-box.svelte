@@ -1,20 +1,17 @@
 <script lang="ts">
-  import { Panel, PanelChoice, PanelCrumbs, PanelEmpty, PanelSection } from "$authored-components/panel";
+  import { Panel, PanelCrumbs, PanelEmpty, PanelSection, PanelSelect } from "$authored-components/panel";
   import CommentAction from "$app-views/categories/slide-deck-editor/components/comment-action.svelte";
   import ElementEffects from "$app-views/categories/slide-deck-editor/components/element-effects.svelte";
   import ElementGeometry from "$app-views/categories/slide-deck-editor/components/element-geometry.svelte";
   import ElementOrder from "$app-views/categories/slide-deck-editor/components/element-order.svelte";
   import ElementPaint from "$app-views/categories/slide-deck-editor/components/element-paint.svelte";
+  import TextSpacing from "$app-views/categories/slide-deck-editor/components/text-spacing.svelte";
   import TextStyle from "$app-views/categories/slide-deck-editor/components/text-style.svelte";
-  import { elementIn, slideHolding, slideIndexOf, withSet } from "$app-views/categories/slide-deck-editor/procedures/deck";
+  import { elementIn, slideHolding, slideIndexOf } from "$app-views/categories/slide-deck-editor/procedures/deck";
   import { selectedIds, slideSignal } from "$app-views/categories/slide-deck-editor/procedures/selecting";
   import { workspaceState, type SlideDeckRuntime } from "$model/client/workspace-state";
 
-  const OVERFLOW = [
-    { value: "grow", label: "Grow" },
-    { value: "shrink", label: "Shrink" },
-    { value: "clip", label: "Clip" }
-  ];
+  const KIND = [{ value: "text", label: "Text box" }];
 
   const view = workspaceState();
   const deckId = $derived(view.active.resourceId);
@@ -30,16 +27,12 @@
   const position = $derived(body === undefined || slide === undefined ? 0 : slideIndexOf(body, slide.id) + 1);
   const block = $derived(element?.content.type === "text" ? element.content.block : undefined);
 
-  const set = (path: string, value: unknown) => {
-    if (body === undefined) return;
-    runtime?.apply(withSet(body, path, value).ops);
-  };
 </script>
 
-<Panel title="Text">
+<Panel title="Text box">
   {#snippet crumbs()}
     <PanelCrumbs
-      trail={[{ label: "Deck" }, { label: `Slide ${position}`, key: "slide-deck-editor.slide" }, { label: "Text" }]}
+      trail={[{ label: "Deck" }, { label: `Slide ${position}`, key: "slide-deck-editor.slide" }, { label: "Text box" }]}
       onnavigate={() => { if (slide) view.inspect("slide-deck-editor.slide", slideSignal(slide.id).selection); }}
     />
   {/snippet}
@@ -50,14 +43,15 @@
   {/snippet}
 
   {#if element && block}
-    <TextStyle blockId={block.id} whole />
-    <PanelSection title="Height">
-      <PanelChoice label="Height" value={element.overflow ?? "clip"} options={OVERFLOW} flush fill onchange={(value) => set(`${element.id}/overflow`, value)} />
+    <PanelSection title="Kind">
+      <PanelSelect label="Kind" value="text" options={KIND} disabled />
     </PanelSection>
+    <TextStyle blockId={block.id} whole wrapping />
     <ElementGeometry elementId={element.id} />
     <ElementPaint elementId={element.id} />
-    <ElementEffects elementId={element.id} />
     <ElementOrder elementId={element.id} />
+    <TextSpacing blockId={block.id} />
+    <ElementEffects elementId={element.id} />
   {:else}
     <PanelEmpty title="Pick a text box on the slide" />
   {/if}

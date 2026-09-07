@@ -70,8 +70,8 @@
       </div>
     </PanelSection>
     <ElementPaint elementId={element.id} fill={false} />
-    <ElementEffects elementId={element.id} corner={false} />
     <ElementOrder elementId={element.id} />
+    <ElementEffects elementId={element.id} corner={false} />
   {:else}
     <PanelEmpty title="Pick a line on the slide" />
   {/if}

@@ -122,4 +122,37 @@ describe("normalizeSlideDeckBody", () => {
     expect(normalizeSlideDeckBody(legacy)).toEqual(first);
     expect(normalizeSlideDeckBody(first)).toEqual(first);
   });
+
+  it("gives an existing shape an editable empty text block", () => {
+    const body = normalizeSlideDeckBody({
+      aspectRatio: "16:9",
+      theme: { colors: { text: "ink", accent: "accent" } },
+      styles: { defaultKey: "body", styles: { body: { name: "Body" } } },
+      layouts: [],
+      sections: [],
+      slides: [
+        {
+          id: "slide",
+          notes: [],
+          elements: [
+            {
+              id: "shape",
+              frame: { x: 0.2, y: 0.2, width: 0.3, height: 0.3 },
+              content: { type: "shape", shape: "rectangle" }
+            }
+          ]
+        }
+      ]
+    });
+
+    const content = body.slides[0].elements[0].content;
+    if (content.type !== "shape") throw new Error("expected a shape");
+    expect(content.block).toMatchObject({
+      id: "shape-text",
+      type: "text",
+      display: "",
+      marks: []
+    });
+    expect(normalizeSlideDeckBody(body)).toEqual(body);
+  });
 });

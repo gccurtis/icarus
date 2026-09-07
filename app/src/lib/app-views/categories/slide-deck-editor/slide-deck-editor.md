@@ -54,7 +54,7 @@ The registered context keys are the complete rail vocabulary for this editor.
 | Key | Current responsibility |
 | --- | --- |
 | `slide-deck-editor.slides` | Create, duplicate, delete, select, preview, and reorder slides. |
-| `slide-deck-editor.insert` | Search available object types and arm placement on the current slide. |
+| `slide-deck-editor.insert` | Search available object types and insert one in the centre of the current slide. |
 | `slide-deck-editor.layers` | Select, reorder, lock, hide, and restack elements on the current slide. |
 | `slide-deck-editor.theme` | Edit slide aspect/background, save or remove layouts, and open deck named styles. |
 | `slide-deck-editor.find` | Find or replace text in slide objects, table cells, and speaker notes. |
@@ -163,9 +163,12 @@ carets, speaker notes, and named styles:
 1. Named style, except while editing the named style itself.
 2. Font and size.
 3. Bold, italic, underline, and strikethrough press buttons.
-4. Foreground and background colors.
-5. Body style: horizontal alignment, vertical Top/Middle/Bottom, space above,
-   space below, unitless line height, and indent where the target supports them.
+4. Compact FG and BG color controls; foreground always resolves to a text color,
+   while an empty background is shown with an explicit X.
+5. Text style also owns horizontal alignment, vertical Top/Middle/Bottom, and a
+   text-wrap policy where the target supports them.
+6. A collapsed Spacing section owns space above, space below, unitless line
+   height, and indent.
 
 These are independent slide-editor components. Matching the document editor's
 visual grammar must not create a cross-editor component dependency because the
@@ -176,8 +179,8 @@ two editors have different represented semantics.
 The style name is edited in place and saved when the edit commits. The inspector
 does not expose storage keys, Usage, Placement, Reads as, a redundant style
 dropdown, or a separate numeric weight control. It supports duplicate, make
-default, and delete (except for the active default), followed by Style and Body
-style sections.
+default, and delete (except for the active default), followed by Text style and
+Spacing sections.
 
 ### Speaker notes
 

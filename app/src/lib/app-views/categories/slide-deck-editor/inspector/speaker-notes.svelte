@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Panel, PanelCrumbs, PanelEmpty } from "$authored-components/panel";
   import { SlideSurfaceText, type SurfaceTextEdit } from "$authored-components/slide-surface";
+  import TextSpacing from "$app-views/categories/slide-deck-editor/components/text-spacing.svelte";
   import TextStyle from "$app-views/categories/slide-deck-editor/components/text-style.svelte";
   import { emptyText, notesBlock, slideIndexOf, styleOf, withNotes } from "$app-views/categories/slide-deck-editor/procedures/deck";
   import { colorOf, textSceneOf } from "$app-views/categories/slide-deck-editor/procedures/scene";
@@ -54,6 +55,7 @@
         <SlideSurfaceText text={scene} editing onedit={edited} oncaret={(from, to) => (range = { from, to })} />
       </div>
       <TextStyle blockId={block.id} from={range.from} to={range.to} />
+      <TextSpacing blockId={block.id} />
     {:else}
       <PanelEmpty title="No notes on this slide yet." action="Start notes" onaction={start} />
     {/if}

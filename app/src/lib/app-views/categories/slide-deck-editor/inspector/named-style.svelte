@@ -137,7 +137,7 @@
   {#if style === undefined}
     <div class="pt-2"><PanelNote tone="muted">The deck has no style called {key}.</PanelNote></div>
   {:else}
-    <PanelSection title="Style">
+    <PanelSection title="Text style">
       <div class="grid min-w-0 grid-cols-[minmax(0,1fr)_5.5rem] gap-2">
         <label class="flex min-w-0 flex-col gap-1">
           <span class="text-caption text-ink-muted">Font</span>
@@ -160,9 +160,6 @@
         onforeground={(next) => setField("color", next === "" ? undefined : next)}
         onbackground={(next) => setField("background", next === "" ? undefined : next)}
       />
-    </PanelSection>
-
-    <PanelSection title="Body style" open>
       <PanelControlGroup flush>
         <PanelControlRow label="Alignment">
           <PanelAlignment value={style.horizontalAlignment ?? "start"} onchange={(next) => setField("horizontalAlignment", next)} />
@@ -170,6 +167,11 @@
         <PanelControlRow label="Vertical alignment">
           <PanelChoice label="Vertical alignment" value={style.verticalAlignment ?? "top"} options={VERTICAL} flush fill onchange={(next) => setField("verticalAlignment", next === "top" ? undefined : next as "middle" | "bottom")} />
         </PanelControlRow>
+      </PanelControlGroup>
+    </PanelSection>
+
+    <PanelSection title="Spacing" open={false} chevron="end">
+      <PanelControlGroup flush>
         <PanelControlRow label="Space above">
           <PanelNumber label="Space above" value={style.spaceBefore ?? 0} unit="px" min={0} max={200} flush onchange={(next) => setField("spaceBefore", next)} />
         </PanelControlRow>

@@ -66,6 +66,8 @@ describe("what a fresh object is", () => {
       expect(element.content.type).toBe("shape");
       if (element.content.type !== "shape") throw new Error("not a shape");
       expect(element.content.shape).toBe(kind);
+      expect(element.content.block?.style).toBe("body");
+      expect(element.content.block?.display).toBe("");
       expect(element.paint?.fill).toBe("--token-color-accent-1-fill");
     }
   });

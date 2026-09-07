@@ -41,7 +41,6 @@
     withDuplicatedElements,
     withElementFrame,
     withGrouped,
-    withInsertedElements,
     withSet,
     withSets,
     withUngrouped,
@@ -50,13 +49,11 @@
   } from "$app-views/categories/slide-deck-editor/procedures/deck";
   import {
     INSERT_GROUPS,
-    frameFor,
-    makeElement,
+    insertedElement,
     type InsertEntry,
     type PlacedKind
   } from "$app-views/categories/slide-deck-editor/procedures/inserting";
   import { nudged } from "$app-views/categories/slide-deck-editor/procedures/arrange";
-  import { arm, placing } from "$app-views/categories/slide-deck-editor/procedures/placing.svelte";
   import { sceneOf } from "$app-views/categories/slide-deck-editor/procedures/scene";
   import {
     cellsSignal,
@@ -356,8 +353,7 @@
 
   const put = (kind: PlacedKind, at: SurfacePoint | undefined) => {
     if (body === undefined || slide === undefined) return;
-    const element = makeElement(kind, body, frameFor(kind, at));
-    const edit = withInsertedElements(body, slide.id, [element]);
+    const { element, edit } = insertedElement(kind, body, slide.id, at);
     if (edit.ops.length === 0) return;
     editing = undefined;
     apply(edit.ops);
@@ -369,14 +365,6 @@
     if (!entry.ready) return;
     put(entry.kind as PlacedKind, insertAt);
   };
-
-  const place = (at: SurfacePoint) => {
-    const kind = placing.kind;
-    arm(undefined);
-    if (kind !== undefined) put(kind, at);
-  };
-
-  $effect(() => () => arm(undefined));
 
   const snap = (frame: SurfaceFrame, id: string, alt: boolean): { frame: SurfaceFrame; guides: SurfaceGuide[] } => {
     if (alt || slide === undefined) return { frame, guides: [] };
@@ -405,8 +393,7 @@
     if (event.target instanceof HTMLElement && (["INPUT", "TEXTAREA", "SELECT"].includes(event.target.tagName) || event.target.isContentEditable)) return;
 
     if (event.key === "Escape") {
-      if (placing.kind !== undefined) arm(undefined);
-      else if (cells.length > 0) select(selected);
+      if (cells.length > 0) select(selected);
       else clear();
       return;
     }
@@ -529,7 +516,6 @@
     if (holderOf(range.blockId) !== undefined) editing = range.blockId;
   });
 
-  const armedLabel = $derived(INSERT_GROUPS.flatMap((group) => group.entries).find((entry) => entry.kind === placing.kind)?.label);
 </script>
 
 <svelte:window onkeydown={keydown} />
@@ -552,7 +538,6 @@
             <div
               bind:this={board}
               class="pasteboard"
-              class:is-placing={placing.kind !== undefined}
               style="padding: {GUTTER}px"
               role="presentation"
               oncontextmenu={armMenu}
@@ -566,11 +551,9 @@
                 {editing}
                 {badges}
                 {board}
-                placing={placing.kind !== undefined}
                 onselect={(ids) => select(ids)}
                 onselectcells={pickCells}
                 onclear={clear}
-                onplace={place}
                 onframes={(moves) => frames(moves)}
                 onrotate={(id, rotation) => rotate(id, rotation)}
                 online={(id, from, to) => line(id, from, to)}
@@ -647,10 +630,6 @@
       >
         <StickyNote aria-hidden="true" />Notes
       </Button>
-      {#if armedLabel}
-        <span class="text-caption text-active-text ms-3">Click on the slide to place the {armedLabel.toLowerCase()} · Esc cancels</span>
-      {/if}
-
       <span class="ms-auto flex items-center gap-1">
         <Button variant="ghost" size="icon-xs" aria-label="Zoom out" onclick={() => zoomBy(-1)}><Minus aria-hidden="true" /></Button>
         <button
@@ -737,7 +716,4 @@
     justify-content: center;
   }
 
-  .pasteboard.is-placing {
-    cursor: crosshair;
-  }
 </style>

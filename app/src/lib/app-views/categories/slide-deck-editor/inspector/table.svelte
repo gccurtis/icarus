@@ -60,8 +60,8 @@
     </PanelSection>
     <ElementGeometry elementId={element.id} />
     <ElementPaint elementId={element.id} fill={false} />
-    <ElementEffects elementId={element.id} corner={false} />
     <ElementOrder elementId={element.id} />
+    <ElementEffects elementId={element.id} corner={false} />
   {:else}
     <PanelEmpty title="Pick a table on the slide" />
   {/if}

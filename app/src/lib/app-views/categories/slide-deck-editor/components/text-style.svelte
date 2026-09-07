@@ -11,14 +11,14 @@
     to,
     whole = false,
     paragraph = true,
-    spacing = true
+    wrapping = false
   }: {
     blockId: string;
     from?: number;
     to?: number;
     whole?: boolean;
     paragraph?: boolean;
-    spacing?: boolean;
+    wrapping?: boolean;
   } = $props();
 
   const MARKS = [
@@ -32,6 +32,12 @@
     { value: "top", label: "Top" },
     { value: "middle", label: "Middle" },
     { value: "bottom", label: "Bottom" }
+  ];
+
+  const WRAPPING = [
+    { value: "grow", label: "Grow box" },
+    { value: "shrink", label: "Shrink text" },
+    { value: "clip", label: "Clip text" }
   ];
 
   const view = workspaceState();
@@ -109,7 +115,7 @@
   };
 </script>
 
-<PanelSection title="Style">
+<PanelSection title="Text style">
   <PanelSelect label="Named style" value={styleKey} options={styleOptions} onchange={(value) => set(`${blockId}/style`, value)} />
   <div class="grid grid-cols-[minmax(0,1fr)_4rem] items-center gap-1.5">
     <PanelSelect label="Font" value={format?.fontFamily ?? style?.fontFamily ?? body?.theme.fontFamily ?? "IBM Plex Sans"} options={familyOptions} onchange={(value) => onBlock("fontFamily", value)} />
@@ -127,10 +133,7 @@
     onforeground={setFontColor}
     onbackground={setBackground}
   />
-</PanelSection>
-
-{#if paragraph || spacing}
-  <PanelSection title="Body style">
+  {#if paragraph || (wrapping && holder !== undefined)}
     <PanelControlGroup flush>
       {#if paragraph}
         <PanelControlRow label="Alignment">
@@ -140,20 +143,18 @@
           <PanelChoice label="Vertical alignment" value={format?.verticalAlignment ?? style?.verticalAlignment ?? "top"} options={VALIGN} flush fill onchange={(value) => onBlock("verticalAlignment", value === "top" ? null : value)} />
         </PanelControlRow>
       {/if}
-      {#if spacing}
-        <PanelControlRow label="Space above">
-          <PanelNumber label="Space before" value={format?.spaceBefore ?? style?.spaceBefore ?? 0} unit="px" min={0} max={200} step={1} flush onchange={(value) => onBlock("spaceBefore", value)} />
-        </PanelControlRow>
-        <PanelControlRow label="Space below">
-          <PanelNumber label="Space after" value={format?.spaceAfter ?? style?.spaceAfter ?? 0} unit="px" min={0} max={200} step={1} flush onchange={(value) => onBlock("spaceAfter", value)} />
-        </PanelControlRow>
-        <PanelControlRow label="Line height" detail="Unitless multiplier">
-          <PanelNumber label="Line height" value={format?.lineHeight ?? style?.lineHeight ?? 1.3} min={0.8} max={3} step={0.05} flush onchange={(value) => onBlock("lineHeight", value)} />
-        </PanelControlRow>
-        <PanelControlRow label="Indent">
-          <PanelNumber label="Indent" value={format?.indent ?? style?.indent ?? 0} unit="px" min={0} max={200} step={1} flush onchange={(value) => onBlock("indent", value)} />
+      {#if wrapping && holder !== undefined}
+        <PanelControlRow label="Text wrap">
+          <PanelChoice
+            label="Text wrap"
+            value={holder.overflow ?? "clip"}
+            options={WRAPPING}
+            flush
+            fill
+            onchange={(value) => set(`${holder.id}/overflow`, value)}
+          />
         </PanelControlRow>
       {/if}
     </PanelControlGroup>
-  </PanelSection>
-{/if}
+  {/if}
+</PanelSection>

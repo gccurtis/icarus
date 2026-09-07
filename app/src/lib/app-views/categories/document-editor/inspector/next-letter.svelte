@@ -1,10 +1,13 @@
 <script lang="ts">
   import {
     Panel,
-    PanelBodyStyle,
+    PanelAlignment,
+    PanelControlGroup,
+    PanelControlRow,
     PanelCrumbs,
     PanelInlineStyle,
     PanelNote,
+    PanelSpacing,
     PanelSelect
   } from "$authored-components/panel";
   import {
@@ -117,7 +120,7 @@
   {:else}
     <div class="flex flex-col gap-2 pt-2">
       <PanelNote tone="muted">
-        Inline formatting applies to what is typed next. The named style and body style apply to the whole block.
+        Inline formatting applies to what is typed next. The named style and spacing apply to the whole block.
       </PanelNote>
 
       {@render head("Style")}
@@ -151,15 +154,18 @@
           onforeground={(next) => push({ styles: [...styles], ink: next, fill })}
           onbackground={(next) => push({ styles: [...styles], ink, fill: next })}
         />
+        <PanelControlGroup flush>
+          <PanelControlRow label="Alignment">
+            <PanelAlignment value={resolved.horizontalAlignment ?? "start"} onchange={setAlign} />
+          </PanelControlRow>
+        </PanelControlGroup>
       </div>
 
-      <PanelBodyStyle
-        alignment={resolved.horizontalAlignment ?? "start"}
+      <PanelSpacing
         spaceBefore={resolved.spaceBefore ?? 0}
         spaceAfter={resolved.spaceAfter ?? 0}
         lineHeight={resolved.lineHeight ?? 26}
         indent={resolved.indent ?? 0}
-        onalignment={setAlign}
         onchange={(field, next) => setFormat({ [field]: next })}
       />
 

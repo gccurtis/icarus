@@ -1,5 +1,10 @@
 <script lang="ts">
-  import { PanelNumber, PanelSection } from "$authored-components/panel";
+  import {
+    PanelControlGroup,
+    PanelControlRow,
+    PanelNumber,
+    PanelSection
+  } from "$authored-components/panel";
   import {
     placedById,
     slideHolding,
@@ -40,17 +45,22 @@
 
 <PanelSection title="Geometry">
   {#if placed}
-    <div class="grid grid-cols-[auto_1fr_auto_1fr] items-center gap-x-1.5 gap-y-1.5">
-      <span class="text-caption text-ink-muted">X</span>
-      <PanelNumber label="X" value={shown(placed.frame.x)} step={0.001} flush onchange={(x) => set({ x })} />
-      <span class="text-caption text-ink-muted ps-1">Y</span>
-      <PanelNumber label="Y" value={shown(placed.frame.y)} step={0.001} flush onchange={(y) => set({ y })} />
-      <span class="text-caption text-ink-muted">W</span>
-      <PanelNumber label="Width" value={shown(placed.frame.width)} step={0.001} min={0.01} flush onchange={(width) => set({ width })} />
-      <span class="text-caption text-ink-muted ps-1">H</span>
-      <PanelNumber label="Height" value={shown(placed.frame.height)} step={0.001} min={0.01} flush onchange={(height) => set({ height })} />
-      <span class="text-caption text-ink-muted">Turn</span>
-      <div class="col-span-3"><PanelNumber label="Rotation" value={placed.element.rotation ?? 0} unit="°" step={1} flush onchange={rotate} /></div>
-    </div>
+    <PanelControlGroup flush>
+      <PanelControlRow label="Width">
+        <PanelNumber label="Width" value={shown(placed.frame.width)} step={0.001} min={0.01} flush onchange={(width) => set({ width })} />
+      </PanelControlRow>
+      <PanelControlRow label="Height">
+        <PanelNumber label="Height" value={shown(placed.frame.height)} step={0.001} min={0.01} flush onchange={(height) => set({ height })} />
+      </PanelControlRow>
+      <PanelControlRow label="X">
+        <PanelNumber label="X" value={shown(placed.frame.x)} step={0.001} flush onchange={(x) => set({ x })} />
+      </PanelControlRow>
+      <PanelControlRow label="Y">
+        <PanelNumber label="Y" value={shown(placed.frame.y)} step={0.001} flush onchange={(y) => set({ y })} />
+      </PanelControlRow>
+      <PanelControlRow label="Rotation">
+        <PanelNumber label="Rotation" value={placed.element.rotation ?? 0} unit="°" step={1} flush onchange={rotate} />
+      </PanelControlRow>
+    </PanelControlGroup>
   {/if}
 </PanelSection>

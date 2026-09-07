@@ -5,7 +5,11 @@ import type {
   SlideDeckBody,
   SlideElement
 } from "$representation/data/types/slide-decks/body";
-import { emptyText } from "$app-views/categories/slide-deck-editor/procedures/deck";
+import {
+  emptyText,
+  withInsertedElements,
+  type Edit
+} from "$app-views/categories/slide-deck-editor/procedures/deck";
 import { mint } from "$app-views/categories/slide-deck-editor/procedures/ids";
 
 export type InsertKind =
@@ -105,7 +109,16 @@ export const makeElement = (kind: PlacedKind, body: SlideDeckBody, frame: Frame)
   const id = mint("element");
 
   if (isShape(kind)) {
-    return { id, frame, paint: { fill: body.theme.colors.accent }, content: { type: "shape", shape: kind } };
+    return {
+      id,
+      frame,
+      paint: { fill: body.theme.colors.accent },
+      content: {
+        type: "shape",
+        shape: kind,
+        block: emptyText(body.styles.defaultKey, "")
+      }
+    };
   }
 
   switch (kind) {
@@ -155,4 +168,14 @@ export const makeElement = (kind: PlacedKind, body: SlideDeckBody, frame: Frame)
       };
     }
   }
+};
+
+export const insertedElement = (
+  kind: PlacedKind,
+  body: SlideDeckBody,
+  slideId: string,
+  at?: Point
+): { readonly element: SlideElement; readonly edit: Edit } => {
+  const element = makeElement(kind, body, frameFor(kind, at));
+  return { element, edit: withInsertedElements(body, slideId, [element]) };
 };

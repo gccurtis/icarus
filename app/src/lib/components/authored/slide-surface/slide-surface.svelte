@@ -35,12 +35,10 @@
     editing,
     badges = [],
     interactive = true,
-    placing = false,
     board,
     onselect,
     onselectcells,
     onclear,
-    onplace,
     onframes,
     onrotate,
     online,
@@ -61,12 +59,10 @@
     editing?: string;
     badges?: readonly SurfaceBadge[];
     interactive?: boolean;
-    placing?: boolean;
     board?: HTMLElement | null;
     onselect?: (ids: string[], additive: boolean) => void;
     onselectcells?: (tableId: string, cellIds: string[]) => void;
     onclear?: () => void;
-    onplace?: (at: SurfacePoint) => void;
     onframes?: (moves: SurfaceMove[], final: boolean) => void;
     onrotate?: (id: string, rotation: number, final: boolean) => void;
     online?: (id: string, from: SurfacePoint, to: SurfacePoint, final: boolean) => void;
@@ -153,11 +149,6 @@
     if (!interactive || event.button !== 0) return;
     const at = toUnits(event);
 
-    if (placing) {
-      onplace?.(toFraction(at));
-      return;
-    }
-
     const hit = itemAt(event.target);
 
     if (editing !== undefined) {
@@ -197,7 +188,7 @@
     const element = board;
     if (element == null || !interactive) return;
     const down = (event: PointerEvent) => {
-      if (event.button !== 0 || placing || stage === null) return;
+      if (event.button !== 0 || stage === null) return;
       if (event.target instanceof Node && stage.contains(event.target)) return;
       if (editing !== undefined) onexit?.();
       startMarquee(event);
@@ -425,7 +416,7 @@
   };
 
   const doubleClick = (event: MouseEvent) => {
-    if (!interactive || placing) return;
+    if (!interactive) return;
     const under = document.elementFromPoint(event.clientX, event.clientY);
     const hit = itemAt(under);
     if (hit === undefined) return;
@@ -470,7 +461,7 @@
   const handleSize = $derived(9 / scale);
   const busy = $derived(gesture.kind !== "idle");
   const hoverItem = $derived(
-    hovered !== undefined && !busy && editing === undefined && !placing && !selected.includes(hovered) ? byId.get(hovered) : undefined
+    hovered !== undefined && !busy && editing === undefined && !selected.includes(hovered) ? byId.get(hovered) : undefined
   );
 
   const grow = (id: string, heightUnits: number) => {
@@ -484,7 +475,6 @@
     class="stage"
     class:is-idle={gesture.kind === "idle"}
     class:is-moving={gesture.kind === "move"}
-    class:is-placing={placing}
     style="width: {units.width}px; height: {units.height}px; transform: scale({scale}); background: {scene.background};"
     role="application"
     aria-label="Slide"
@@ -625,11 +615,6 @@
   .stage.is-moving,
   .stage.is-moving :global(.item) {
     cursor: move;
-  }
-
-  .stage.is-placing,
-  .stage.is-placing :global(.item) {
-    cursor: crosshair;
   }
 
   .overlay {

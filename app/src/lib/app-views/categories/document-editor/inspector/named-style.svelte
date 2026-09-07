@@ -4,13 +4,16 @@
 
   import {
     Panel,
-    PanelBodyStyle,
+    PanelAlignment,
     PanelButton,
+    PanelControlGroup,
+    PanelControlRow,
     PanelCrumbs,
     PanelEditableText,
     PanelInlineStyle,
     PanelNote,
     PanelNumber,
+    PanelSpacing,
     PanelSelect
   } from "$authored-components/panel";
   import { FILLS, INKS, cssColour, orClear, orNone } from "$app-views/categories/document-editor/procedures/colours";
@@ -196,16 +199,21 @@
           onforeground={(next) => setField("color", orClear(next))}
           onbackground={(next) => setField("background", orClear(next))}
         />
+        <PanelControlGroup flush>
+          <PanelControlRow label="Alignment">
+            <PanelAlignment
+              value={style.horizontalAlignment ?? "start"}
+              onchange={(next) => setField("horizontalAlignment", next)}
+            />
+          </PanelControlRow>
+        </PanelControlGroup>
       </div>
 
-      <PanelBodyStyle
-        alignment={style.horizontalAlignment ?? "start"}
+      <PanelSpacing
         spaceBefore={style.spaceBefore ?? 0}
         spaceAfter={style.spaceAfter ?? 0}
         lineHeight={presentation.lineHeight ?? 26}
         indent={style.indent ?? 0}
-        open
-        onalignment={(next) => setField("horizontalAlignment", next)}
         onchange={(field, next) => setField(field, next)}
       />
     </div>

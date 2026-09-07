@@ -10,8 +10,7 @@ export const INKS: readonly Swatch[] = [
   named("Accent 2", "var(--token-color-accent-2-fill)"),
   named("Attention", "var(--token-color-attention-fill)"),
   named("Success", "var(--token-color-success-fill)"),
-  named("Danger", "var(--token-color-danger-fill)"),
-  { value: "", label: "None", token: "transparent" }
+  named("Danger", "var(--token-color-danger-fill)")
 ];
 
 export const FILLS: readonly Swatch[] = [

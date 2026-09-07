@@ -2,10 +2,12 @@
   import ChevronDown from "@lucide/svelte/icons/chevron-down";
   import Pipette from "@lucide/svelte/icons/pipette";
   import SlidersHorizontal from "@lucide/svelte/icons/sliders-horizontal";
+  import X from "@lucide/svelte/icons/x";
 
   import PanelColor from "$authored-components/panel/panel-color.svelte";
   import { traceNode } from "$development-components/trace.svelte";
   import * as Popover from "$vendored-components/popover";
+  import { cn } from "$vendored-components/utils";
 
   let {
     label,
@@ -13,6 +15,7 @@
     options,
     mixed = false,
     disabled = false,
+    compact = false,
     onchange,
     oncustom
   }: {
@@ -21,16 +24,17 @@
     options: readonly { value: string; label: string; token: string }[];
     mixed?: boolean;
     disabled?: boolean;
+    compact?: boolean;
     onchange?: (next: string) => void;
     oncustom?: () => void;
   } = $props();
 
   let open = $state(false);
-  const trace = traceNode("PanelColorPicker", () => ({ label, value, mixed, disabled }));
+  const trace = traceNode("PanelColorPicker", () => ({ label, value, mixed, disabled, compact }));
   const eyedropper = typeof window !== "undefined" && "EyeDropper" in window;
 
   const token = $derived(
-    options.find((option) => option.value === value)?.token ?? value ?? "transparent"
+    value === "" ? "transparent" : (options.find((option) => option.value === value)?.token ?? value)
   );
 
   const choose = (next: string) => {
@@ -60,14 +64,26 @@
     {...trace}
     disabled={disabled}
     aria-label={label}
-    class="border-border-subtle bg-surface-panel hover:bg-surface-panel-hover rounded-control flex min-h-6 min-w-0 flex-1 items-center gap-1.5 border px-1.5 py-1 disabled:cursor-not-allowed"
+    title={compact ? label : undefined}
+    class={cn(
+      "bg-surface-panel hover:bg-surface-panel-hover focus-visible:ring-active-border flex items-center focus-visible:ring-2 focus-visible:outline-none disabled:cursor-not-allowed",
+      compact
+        ? "rounded-full size-6 shrink-0 justify-center p-0"
+        : "border-border-subtle rounded-control min-h-6 min-w-0 flex-1 gap-1.5 border px-1.5 py-1"
+    )}
   >
     <span
-      class="border-border-subtle size-4 shrink-0 rounded-full border"
+      class="border-border-subtle text-ink-muted flex size-4 shrink-0 items-center justify-center rounded-full border"
       style:background={mixed ? "var(--token-surface-selection)" : token}
-    ></span>
-    <span class="text-caption text-ink-secondary truncate">{mixed ? "Mixed" : label}</span>
-    <ChevronDown size={12} aria-hidden="true" class="text-ink-muted ms-auto shrink-0" />
+    >
+      {#if value === "" && !mixed}
+        <X size={12} strokeWidth={2.25} aria-hidden="true" />
+      {/if}
+    </span>
+    {#if !compact}
+      <span class="text-caption text-ink-secondary truncate">{mixed ? "Mixed" : label}</span>
+      <ChevronDown size={12} aria-hidden="true" class="text-ink-muted ms-auto shrink-0" />
+    {/if}
   </Popover.Trigger>
 
   <Popover.Content class="w-56 p-0" sideOffset={4}>

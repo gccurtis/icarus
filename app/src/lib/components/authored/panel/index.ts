@@ -90,7 +90,7 @@ export { default as PanelColorPicker } from "$authored-components/panel/panel-co
 export { default as PanelControlGroup } from "$authored-components/panel/panel-control-group.svelte";
 export { default as PanelControlRow } from "$authored-components/panel/panel-control-row.svelte";
 export { default as PanelAlignment } from "$authored-components/panel/panel-alignment.svelte";
-export { default as PanelBodyStyle } from "$authored-components/panel/panel-body-style.svelte";
+export { default as PanelSpacing } from "$authored-components/panel/panel-spacing.svelte";
 export { default as PanelInlineStyle } from "$authored-components/panel/panel-inline-style.svelte";
 
 /**

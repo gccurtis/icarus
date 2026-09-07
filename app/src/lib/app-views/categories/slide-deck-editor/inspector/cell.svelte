@@ -186,7 +186,7 @@
 
   {#if body && element && table && first !== undefined}
     {#if block}
-      <TextStyle blockId={block.id} whole spacing={false} />
+      <TextStyle blockId={block.id} whole />
     {:else}
       <PanelSection title="Text">
         <PanelChoice label="Alignment" value={sharedAlign ?? "start"} mixed={sharedAlign === undefined} options={ALIGN} flush fill onchange={setAlign} />

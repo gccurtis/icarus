@@ -58,8 +58,8 @@
       <PanelNote>Enter sets the picture from a URL. Files from the project arrive with the file picker.</PanelNote>
     </PanelSection>
     <ElementGeometry elementId={element.id} />
-    <ElementEffects elementId={element.id} />
     <ElementOrder elementId={element.id} />
+    <ElementEffects elementId={element.id} />
   {:else}
     <PanelEmpty title="Pick a picture on the slide" />
   {/if}

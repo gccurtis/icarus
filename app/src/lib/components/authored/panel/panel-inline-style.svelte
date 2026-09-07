@@ -37,6 +37,10 @@
   } = $props();
 
   const defaultHex = () => `#${"0".repeat(6)}`;
+  const usableForegrounds = $derived(foregroundOptions.filter((option) => option.value !== ""));
+  const shownForeground = $derived(
+    foreground === "" ? (usableForegrounds[0]?.value ?? "var(--token-ink-primary)") : foreground
+  );
   let custom = $state<"foreground" | "background" | undefined>(undefined);
   let hex = $state(defaultHex());
   let invalid = $state(false);
@@ -70,25 +74,27 @@
   onchange={onmarks}
 />
 
-<div class="flex min-w-0 items-center gap-3">
-  <div class="flex min-w-0 flex-1 items-center gap-1.5">
+<div class="flex min-w-0 items-center gap-4">
+  <div class="flex items-center gap-1.5">
     <span class="text-caption text-ink-muted shrink-0 font-medium">FG</span>
     <PanelColorPicker
       label={prefix ? `Foreground ${prefix}` : "Foreground"}
-      value={foreground}
+      value={shownForeground}
       mixed={coloursMixed}
-      options={foregroundOptions}
+      options={usableForegrounds}
+      compact
       onchange={onforeground}
       oncustom={() => openCustom("foreground")}
     />
   </div>
-  <div class="flex min-w-0 flex-1 items-center gap-1.5">
+  <div class="flex items-center gap-1.5">
     <span class="text-caption text-ink-muted shrink-0 font-medium">BG</span>
     <PanelColorPicker
       label={prefix ? `Background ${prefix}` : "Background"}
       value={background}
       mixed={coloursMixed}
       options={backgroundOptions}
+      compact
       onchange={onbackground}
       oncustom={() => openCustom("background")}
     />

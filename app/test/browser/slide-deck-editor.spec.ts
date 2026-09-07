@@ -92,6 +92,54 @@ test("horizontal slide overflow uses the quiet themed canvas scrollbar", async (
   await page.getByTitle("Back to fit").click();
 });
 
+test("Insert tiles immediately add centered objects with the unified text inspector", async ({ page }) => {
+  const surface = await openDeck(page);
+  const context = page.locator('aside[aria-label="Context"]');
+  const inspector = page.locator('aside[aria-label="Inspector"]');
+  await context.getByRole("button", { name: "Insert", exact: true }).click();
+
+  const before = await surface.locator("[data-item]").count();
+  await context.getByRole("button", { name: "Rectangle", exact: true }).click();
+  await expect(surface.locator("[data-item]")).toHaveCount(before + 1);
+  await expect(inspector).toHaveAttribute("data-inspected", "slide-deck-editor.shape");
+
+  const stageBox = await surface.boundingBox();
+  const shapeBox = await surface.locator("[data-item]").last().boundingBox();
+  expect(stageBox).not.toBeNull();
+  expect(shapeBox).not.toBeNull();
+  expect((shapeBox?.x ?? 0) + (shapeBox?.width ?? 0) / 2).toBeCloseTo(
+    (stageBox?.x ?? 0) + (stageBox?.width ?? 0) / 2,
+    0
+  );
+  expect((shapeBox?.y ?? 0) + (shapeBox?.height ?? 0) / 2).toBeCloseTo(
+    (stageBox?.y ?? 0) + (stageBox?.height ?? 0) / 2,
+    0
+  );
+
+  await expect(inspector.getByRole("button", { name: "Kind", exact: true }).last()).toHaveText("Rectangle");
+  await expect(inspector.getByRole("group", { name: "Text wrap" })).toBeVisible();
+  for (const field of ["Width", "Height", "X", "Y"] as const) {
+    await expect(inspector.getByRole("spinbutton", { name: field, exact: true })).toBeVisible();
+  }
+  await expect(inspector.getByRole("spinbutton", { name: /^Rotation/ })).toBeVisible();
+  await expect(inspector.getByRole("button", { name: "Spacing", exact: true })).toHaveAttribute("aria-expanded", "false");
+  await expect(inspector.getByRole("button", { name: "Effects", exact: true })).toHaveAttribute("aria-expanded", "false");
+
+  const orderY = (await inspector.getByRole("button", { name: /^Order\b/ }).boundingBox())?.y ?? 0;
+  const spacingY = (await inspector.getByRole("button", { name: "Spacing", exact: true }).boundingBox())?.y ?? 0;
+  const effectsY = (await inspector.getByRole("button", { name: "Effects", exact: true }).boundingBox())?.y ?? 0;
+  expect(orderY).toBeLessThan(spacingY);
+  expect(spacingY).toBeLessThan(effectsY);
+
+  await context.getByRole("button", { name: "Text box", exact: true }).click();
+  await expect(surface.locator("[data-item]")).toHaveCount(before + 2);
+  await expect(inspector).toHaveAttribute("data-inspected", "slide-deck-editor.text-box");
+  await expect(inspector.getByRole("heading", { name: "Text box" })).toBeVisible();
+  await expect(inspector.getByRole("button", { name: "Kind", exact: true }).last()).toBeDisabled();
+  await expect(inspector.getByRole("group", { name: "Text wrap" })).toBeVisible();
+  await expect(context.getByText(/click where it goes|click on the slide/i)).toHaveCount(0);
+});
+
 test("shift-click adds objects and control-click removes one without losing selection ids", async ({ page }) => {
   const surface = await openDeck(page);
   const first = surface.locator('[data-item="el-1"]');
@@ -220,6 +268,10 @@ test("deck named styles use a dedicated complete inspector and render their mark
   const background = inspector.getByRole("button", { name: "Background for this style" });
   await expect(background).toBeVisible();
   await expect(inspector.getByRole("group", { name: "Vertical alignment" })).toBeVisible();
+  await expect(inspector.getByRole("button", { name: "Text style", exact: true })).toBeVisible();
+  await expect(inspector.getByRole("button", { name: "Spacing", exact: true })).toHaveAttribute("aria-expanded", "false");
+  await expect(inspector.getByText("Body style", { exact: true })).toHaveCount(0);
+  await inspector.getByRole("button", { name: "Spacing", exact: true }).click();
   await expect(inspector.getByRole("spinbutton", { name: "Indent" })).toBeVisible();
 
   const strike = inspector.getByTitle("Strikethrough");
@@ -251,5 +303,7 @@ test("shape identity and speaker notes follow the same inspector grammar", async
     await expect(inspector.getByTitle(mark)).toBeVisible();
   }
   await expect(inspector.getByRole("group", { name: "Vertical alignment" })).toBeVisible();
+  await expect(inspector.getByRole("button", { name: "Spacing", exact: true })).toHaveAttribute("aria-expanded", "false");
+  await inspector.getByRole("button", { name: "Spacing", exact: true }).click();
   await expect(inspector.getByRole("spinbutton", { name: "Indent" })).toBeVisible();
 });

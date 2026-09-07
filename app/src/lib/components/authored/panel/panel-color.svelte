@@ -68,7 +68,9 @@
     >
       <span bind:this={well} class="absolute inset-0" style:background={shown}></span>
       {#if value === "" && !mixed}
-        <span class="none-mark" aria-hidden="true"></span>
+        <span class="text-ink-muted pointer-events-none absolute inset-0 flex items-center justify-center" aria-hidden="true">
+          <X size={15} strokeWidth={2.25} />
+        </span>
       {/if}
       <input
         type="color"
@@ -107,31 +109,20 @@
         title={option.label}
         onclick={() => onchange?.(option.value)}
         class={cn(
-          "border-border-subtle size-5 rounded-full border",
+          "border-border-subtle text-ink-muted flex size-5 items-center justify-center rounded-full border",
           "focus-visible:outline-none",
           !mixed && option.value === value && "ring-active-border ring-offset-surface-panel ring-2 ring-offset-2",
           disabled && "cursor-not-allowed opacity-50"
         )}
-        style:background={option.token}
-      ></button>
+        style:background={option.value === "" ? "var(--token-surface-panel)" : option.token}
+      >
+        {#if option.value === ""}
+          <X size={13} strokeWidth={2.25} aria-hidden="true" />
+        {/if}
+      </button>
     {/each}
     {#if mixed}
       <span class="text-caption text-ink-muted">Mixed</span>
     {/if}
   </div>
 {/if}
-
-<style>
-  .none-mark {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(
-      to top right,
-      transparent calc(50% - 1px),
-      var(--token-color-danger-fill) calc(50% - 1px),
-      var(--token-color-danger-fill) calc(50% + 1px),
-      transparent calc(50% + 1px)
-    );
-    pointer-events: none;
-  }
-</style>

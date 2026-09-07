@@ -194,6 +194,16 @@ const normalizedElement = (
   if (!isFields(value)) return value as SlideElement;
 
   if (isFields(value.content)) {
+    if (value.content.type === "shape" && !isFields(value.content.block)) {
+      const elementId = typeof value.id === "string" ? value.id : "shape";
+      return {
+        ...value,
+        content: {
+          ...value.content,
+          block: emptyShapeBlock(mint(`${elementId}-text`), {})
+        }
+      } as SlideElement;
+    }
     if (value.content.type !== "group" || !Array.isArray(value.content.children)) {
       return {
         ...value,
@@ -228,9 +238,7 @@ const normalizedElement = (
       content: {
         type: "shape",
         shape: "rectangle",
-        ...(contentFormat === undefined
-          ? {}
-          : { block: emptyShapeBlock(mint(`${elementId}-empty-block`), contentFormat) })
+        block: emptyShapeBlock(mint(`${elementId}-empty-block`), contentFormat ?? {})
       }
     } as SlideElement;
   }
@@ -251,12 +259,17 @@ const normalizedElement = (
   })) as SlideElement[];
 
   if (paint !== undefined) {
+    const backgroundId = mint(`${elementId}-background`);
     children.unshift({
-      id: mint(`${elementId}-background`),
+      id: backgroundId,
       frame: { x: 0, y: 0, width: 1, height: 1 },
       paint,
       locked: true,
-      content: { type: "shape", shape: "rectangle" }
+      content: {
+        type: "shape",
+        shape: "rectangle",
+        block: emptyShapeBlock(mint(`${backgroundId}-text`), {})
+      }
     });
   }
 

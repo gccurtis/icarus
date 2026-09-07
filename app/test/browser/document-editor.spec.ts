@@ -641,7 +641,8 @@ test("a text selection opens the functional responsive inspector", async ({ page
   const [fg, bg] = await Promise.all([foreground.boundingBox(), background.boundingBox()]);
   expect(Math.abs((fg?.y ?? 0) - (bg?.y ?? 0))).toBeLessThan(2);
 
-  await inspector.getByRole("button", { name: /^Body style/ }).click();
+  await expect(inspector.getByRole("group", { name: "Alignment" })).toBeVisible();
+  await inspector.getByRole("button", { name: "Spacing", exact: true }).click();
   await expect(page.locator(".held-selection").first()).toBeVisible();
   await expect(inspector.getByText("Space above", { exact: true })).toBeVisible();
   await expect(inspector.getByText("Space below", { exact: true })).toBeVisible();
@@ -740,6 +741,11 @@ test("document named styles mirror the text formatting inspector without metadat
   }
   await expect(inspector.getByRole("button", { name: "Foreground for this style" })).toBeVisible();
   await expect(inspector.getByRole("button", { name: "Background for this style" })).toBeVisible();
+  await expect(inspector.getByRole("button", { name: "Spacing", exact: true })).toBeVisible();
+  await expect(inspector.getByRole("button", { name: "Spacing", exact: true })).toHaveAttribute("aria-expanded", "false");
+  await expect(inspector.getByText("Body style", { exact: true })).toHaveCount(0);
+  await expect(inspector.getByRole("group", { name: "Alignment" })).toBeVisible();
+  await inspector.getByRole("button", { name: "Spacing", exact: true }).click();
   await expect(inspector.getByRole("spinbutton", { name: "Line height" })).toBeVisible();
   await expect(inspector.getByRole("spinbutton", { name: "Indent" })).toBeVisible();
 
@@ -777,8 +783,14 @@ test("shared editor controls keep one behavior across the width matrix", async (
     await expect(panel.getByTitle("Strikethrough")).toHaveCount(1);
     await expect(panel.getByRole("button", { name: "Foreground" })).toHaveCount(1);
     await expect(panel.getByRole("button", { name: "Background" })).toHaveCount(1);
+    await expect(panel.getByRole("button", { name: "Foreground" })).toHaveText("");
+    await expect(panel.getByRole("button", { name: "Background" })).toHaveText("");
     await expect(panel.getByRole("button", { name: /Increase|Decrease/ })).toHaveCount(0);
   }
+
+  await expect(panels.nth(1).getByText("FG", { exact: true })).toBeVisible();
+  await expect(panels.nth(1).getByText("BG", { exact: true })).toBeVisible();
+  await expect(panels.nth(1).getByRole("button", { name: "Background" }).locator("svg")).toHaveCount(1);
 
   await expect(panels.nth(0).locator(".short-label").first()).toBeVisible();
   await expect(panels.nth(0).locator(".full-label").first()).toBeHidden();
@@ -786,6 +798,14 @@ test("shared editor controls keep one behavior across the width matrix", async (
   await expect(panels.nth(2).locator(".full-label").first()).toBeVisible();
 
   await panels.nth(1).getByRole("button", { name: "Foreground" }).click();
+  await expect(page.getByRole("radiogroup", { name: "Foreground" }).getByRole("radio", { name: "None" })).toHaveCount(0);
   await page.getByRole("button", { name: "More colours…" }).click();
   await expect(page.getByRole("status").first()).toContainText("custom-colour detail screen");
+
+  await panels.nth(1).getByRole("button", { name: "Background" }).click();
+  const none = page
+    .getByRole("radiogroup", { name: "Background" })
+    .getByRole("radio", { name: "None" });
+  await expect(none).toBeVisible();
+  await expect(none.locator("svg")).toHaveCount(1);
 });

@@ -1,10 +1,13 @@
 <script lang="ts">
   import {
     Panel,
-    PanelBodyStyle,
+    PanelAlignment,
+    PanelControlGroup,
+    PanelControlRow,
     PanelCrumbs,
     PanelInlineStyle,
     PanelNote,
+    PanelSpacing,
     PanelSelect
   } from "$authored-components/panel";
   import {
@@ -164,15 +167,18 @@
           onforeground={setInk}
           onbackground={setFill}
         />
+        <PanelControlGroup flush>
+          <PanelControlRow label="Alignment">
+            <PanelAlignment value={resolved.horizontalAlignment ?? "start"} onchange={setAlign} />
+          </PanelControlRow>
+        </PanelControlGroup>
       </div>
 
-      <PanelBodyStyle
-        alignment={resolved.horizontalAlignment ?? "start"}
+      <PanelSpacing
         spaceBefore={resolved.spaceBefore ?? 0}
         spaceAfter={resolved.spaceAfter ?? 0}
         lineHeight={resolved.lineHeight ?? 26}
         indent={resolved.indent ?? 0}
-        onalignment={setAlign}
         onchange={(field, next) => setFormat({ [field]: next })}
       />
     </div>
