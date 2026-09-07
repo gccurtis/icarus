@@ -69,6 +69,33 @@ test("the canonical deck opens with its slide surface and controls", async ({ pa
   await expect(page.getByTitle("Back to fit")).toHaveText(/^\d+%$/);
 });
 
+test("the slide inspector lists only background and hidden state", async ({ page }) => {
+  const surface = await openDeck(page);
+  await surface.click({ position: { x: 8, y: 8 } });
+
+  const inspector = page.locator(
+    'aside[aria-label="Inspector"][data-inspected="slide-deck-editor.slide"]'
+  );
+  await expect(inspector).toBeVisible();
+  await expect(inspector.getByText("Background", { exact: true })).toBeVisible();
+  await expect(inspector.getByLabel("Slide background override")).toBeVisible();
+  const hidden = inspector.getByRole("switch", { name: "Hide this slide" });
+  await expect(inspector.getByText("Hidden", { exact: true })).toBeVisible();
+  await expect(hidden).toBeVisible();
+
+  await expect(inspector.getByRole("button", { name: "Slide", exact: true })).toHaveCount(0);
+  await expect(inspector.getByRole("button", { name: "Reset to layout" })).toHaveCount(0);
+  await expect(inspector.getByRole("button", { name: "Edit notes" })).toHaveCount(0);
+  await expect(inspector.getByRole("button", { name: "Notes", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("main").getByRole("button", { name: "Notes", exact: true })).toBeVisible();
+
+  const wasHidden = await hidden.isChecked();
+  await hidden.click();
+  await expect(hidden).toBeChecked({ checked: !wasHidden });
+  await hidden.click();
+  await expect(hidden).toBeChecked({ checked: wasHidden });
+});
+
 test("horizontal slide overflow uses the quiet themed canvas scrollbar", async ({ page }) => {
   await openDeck(page);
   const canvas = page.locator(".area-canvas");

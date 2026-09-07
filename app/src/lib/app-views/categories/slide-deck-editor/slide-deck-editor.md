@@ -113,7 +113,7 @@ The registered inspector keys below are all implemented and editor-owned.
 
 | Key | Selection contract |
 | --- | --- |
-| `slide-deck-editor.slide` | One slide; slide facts, background, notes, and slide-scoped comments. |
+| `slide-deck-editor.slide` | One slide; its background and hidden state. |
 | `slide-deck-editor.shape` | One shape; kind and text excerpt in the heading, then geometry and appearance. |
 | `slide-deck-editor.text-box` | One text box; text style, geometry, paint, effects, order, and comments. |
 | `slide-deck-editor.line` | One line; endpoints, stroke, effects, order, and comments. |
@@ -184,10 +184,11 @@ Spacing sections.
 
 ### Speaker notes
 
-Notes are edited in the inspector instead of consuming permanent canvas height.
-An empty slide offers Start notes; a non-empty note uses the slide text renderer
-and the same text-style component. Find includes notes and opens this inspector
-at the containing slide.
+Each slide owns at most one notes block. The Notes control below the canvas opens
+its dedicated inspector; the general slide inspector does not repeat the note or
+offer a second route to it. An empty slide offers Start notes; a non-empty note
+uses the slide text renderer and the same text-style component. Find includes
+notes and opens this inspector at the containing slide.
 
 ## Comment contract
 
