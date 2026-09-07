@@ -694,6 +694,32 @@
     grid-area: canvas;
     min-height: 0;
     overflow: auto;
+    scrollbar-color: transparent transparent;
+    scrollbar-width: thin;
+  }
+
+  .area-canvas:hover {
+    scrollbar-color: color-mix(in srgb, var(--token-border-strong) 55%, transparent) transparent;
+  }
+
+  .area-canvas::-webkit-scrollbar {
+    width: calc(var(--token-spacing-unit) * 1.5);
+    height: calc(var(--token-spacing-unit) * 1.5);
+  }
+
+  .area-canvas::-webkit-scrollbar-thumb {
+    border-radius: var(--token-radius-control);
+    background-color: transparent;
+    transition: background-color var(--token-motion-small) var(--token-ease-standard);
+  }
+
+  .area-canvas:hover::-webkit-scrollbar-thumb {
+    background-color: color-mix(in srgb, var(--token-border-strong) 55%, transparent);
+  }
+
+  .area-canvas::-webkit-scrollbar-track,
+  .area-canvas::-webkit-scrollbar-corner {
+    background: transparent;
   }
 
   .area-strip {

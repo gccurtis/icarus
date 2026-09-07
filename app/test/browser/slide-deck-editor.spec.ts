@@ -69,6 +69,29 @@ test("the canonical deck opens with its slide surface and controls", async ({ pa
   await expect(page.getByTitle("Back to fit")).toHaveText(/^\d+%$/);
 });
 
+test("horizontal slide overflow uses the quiet themed canvas scrollbar", async ({ page }) => {
+  await openDeck(page);
+  const canvas = page.locator(".area-canvas");
+  await page.getByTitle("Back to fit").click();
+
+  const zoomIn = page.getByRole("button", { name: "Zoom in" });
+  for (let step = 0; step < 20; step += 1) await zoomIn.click();
+  await expect.poll(() => canvas.evaluate((node) => node.scrollWidth > node.clientWidth)).toBe(true);
+
+  const quiet = await canvas.evaluate((node) => {
+    const style = getComputedStyle(node);
+    return { width: style.scrollbarWidth, color: style.scrollbarColor };
+  });
+  expect(quiet.width).toBe("thin");
+  expect(quiet.color).not.toBe("auto");
+
+  await canvas.hover();
+  await expect.poll(() => canvas.evaluate((node) => getComputedStyle(node).scrollbarColor))
+    .not.toBe(quiet.color);
+
+  await page.getByTitle("Back to fit").click();
+});
+
 test("shift-click adds objects and control-click removes one without losing selection ids", async ({ page }) => {
   const surface = await openDeck(page);
   const first = surface.locator('[data-item="el-1"]');
