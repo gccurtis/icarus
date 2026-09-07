@@ -23,7 +23,9 @@ when the other claimant belongs to another project, because Store mutation paths
 would otherwise be ambiguous.
 
 `createProjectResource` creates an editor-ready blank document or slide deck and
-its revision-zero leader snapshot. It accepts only `target` and an optional
+its revision-zero leader snapshot. Editor-ready is a represented invariant: a
+document contains one empty paragraph and a deck contains one empty slide, so
+the first edit never targets a client-only projection. It accepts only `target` and an optional
 explicit `title`; project and actor come from request scope, and provenance
 cannot be supplied. When `title` is omitted, the capability reads represented
 titles in that project and allocates the first free `Untitled document N` or
@@ -31,7 +33,9 @@ titles in that project and allocates the first free `Untitled document N` or
 Project Overview therefore do not choose names from potentially stale cached
 indexes. The result carries that chosen title with the opaque resource id and
 revision. This replaces Project Overview's former client-shaped generic Store
-mutation. Spreadsheet creation stays visibly unavailable until its editor consumes
+mutation. Both launchers refresh the merged resource index and the exact
+`documents` or `slideDecks` query before opening, because tab and editor titles
+consume the latter. Spreadsheet creation stays visibly unavailable until its editor consumes
 represented ids.
 
 Request scope currently proves project membership but does not include the

@@ -13,6 +13,11 @@ five, which is what a launcher is for.
 The one category with no overview view, because a blank tab has nothing to be
 an overview of.
 
+The centre's Document and Slide deck shortcuts create represented project rows
+and revision-zero leader snapshots through Project Resources, refresh the editor
+title query, and only then open the returned opaque id. Spreadsheet remains an
+explicit not-wired alert; it never opens a title-shaped fake resource.
+
 ## Context
 
 ### bring-in
@@ -118,7 +123,8 @@ has since been closed needs a defined outcome, and there is none yet.
 
 ### new-document, new-deck and new-spreadsheet
 
-Three panels, one per editor, and they are siblings on purpose. Each has the
+These three draft panels remain a proposed inspector flow rather than the live
+centre shortcut described above. They are siblings on purpose. Each has the
 same shape: an identity band with just a title, then a band for whatever must be
 decided before the thing exists, then a create band at the very end of the body.
 Each holds its draft locally — an untouched field reads the default it was
@@ -129,11 +135,10 @@ footer for the usual reason, that controls get buried under content of unbounded
 length, but this is a bounded form and the last thing in a three-field form is
 its commit.
 
-Pressing Create opens the editor category keyed by the title, so a second press
-lands on the same tab instead of stacking two blank documents, and each panel
-says under the button that this tab becomes the thing rather than opening a
-second one. What Create cannot do is mint the resource and rebind the tab to
-it — that is one step, and it is the step none of these three has.
+When these panels are implemented, Create must use the same Project Resources
+procedure as the centre shortcut and open the returned opaque id. A title is
+display data, not tab identity; opening an editor keyed by a draft title would
+recreate the non-durable launcher defect the live shortcut now avoids.
 
 What differs between the three is entirely the middle band.
 

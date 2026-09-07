@@ -2,6 +2,10 @@
 
 Every table, in memory, for the life of the process. One JSON file per table
 under the directory `configuration/representation.yaml` names.
+The process-level `ICARUS_STORE_DIRECTORY` override exists for isolated harnesses;
+the Playwright server points it at a disposable seed copy and removes that copy
+when the server exits. Ordinary development never sets it and continues to use
+`data/`.
 
 A path is a string — `documents.r-memo.title` — so what goes in is `unknown`
 and what comes back is `Found`. What a field holds is checked by the procedure

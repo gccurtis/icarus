@@ -5,5 +5,13 @@ import type { StoreModel } from "$model/server/store/types";
 
 const DIRECTORY = "representation.store.directory";
 
-export const createStore = (configuration: Configuration): StoreModel =>
-  defineStore({ directory: requiredString(configuration, DIRECTORY) });
+export const createStore = (
+  configuration: Configuration,
+  directoryOverride?: string
+): StoreModel =>
+  defineStore({
+    directory:
+      directoryOverride?.trim().length
+        ? directoryOverride.trim()
+        : requiredString(configuration, DIRECTORY)
+  });

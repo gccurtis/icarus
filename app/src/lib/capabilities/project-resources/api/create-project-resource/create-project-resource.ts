@@ -2,12 +2,14 @@ import { requireScope } from "$runtime/server/scope.server";
 import { serverModel } from "$runtime/server/start.server";
 import type { StoreModel } from "$model/server/store/index.server";
 import { asId } from "$representation/data/behavior/core/id";
+import type { DocumentBody } from "$representation/data/types/documents/body";
 import type { SlideDeckBody } from "$representation/data/types/slide-decks/body";
 
 import { validateCreateProjectResource } from "$capabilities/project-resources/api/create-project-resource/validate-create-project-resource";
 import type { CreateProjectResourceResult } from "$capabilities/project-resources/types/project-resources";
 
-const EMPTY_DECK: SlideDeckBody = {
+/** A represented blank deck still needs somewhere to edit. */
+const emptyDeck = (): SlideDeckBody => ({
   aspectRatio: "16:9",
   theme: {
     colors: {
@@ -22,9 +24,29 @@ const EMPTY_DECK: SlideDeckBody = {
     styles: { body: { name: "Body", fontFamily: "IBM Plex Sans" } }
   },
   layouts: [],
-  slides: [],
+  slides: [{ id: `slide-${crypto.randomUUID()}`, elements: [], notes: [] }],
   sections: []
-};
+});
+
+/** A document's first editable paragraph is represented, not a client-only projection. */
+const emptyDocument = (): DocumentBody => ({
+  rows: [
+    {
+      id: `row-${crypto.randomUUID()}`,
+      kind: "blocks",
+      blocks: [
+        {
+          id: `block-${crypto.randomUUID()}`,
+          type: "text",
+          variant: "paragraph",
+          atoms: [{ id: `atom-${crypto.randomUUID()}`, kind: "literal", text: "" }],
+          display: "",
+          marks: []
+        }
+      ]
+    }
+  ]
+});
 
 const representedRows = (
   store: StoreModel,
@@ -90,7 +112,7 @@ export const createProjectResource = async (input: unknown): Promise<CreateProje
       revision: 0,
       role: "leader",
       part: 0,
-      body: { rows: [] },
+      body: emptyDocument(),
       at
     });
     return { accepted: true, target: asked.target, resourceId, title, revision: 0 };
@@ -109,7 +131,7 @@ export const createProjectResource = async (input: unknown): Promise<CreateProje
     revision: 0,
     role: "leader",
     part: 0,
-    body: EMPTY_DECK,
+    body: emptyDeck(),
     at
   });
   return { accepted: true, target: asked.target, resourceId, title, revision: 0 };

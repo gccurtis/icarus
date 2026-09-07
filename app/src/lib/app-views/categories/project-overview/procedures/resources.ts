@@ -49,8 +49,9 @@ export type Resource = {
 export const createProjectResource = (
   view: WorkspaceStateModel,
   input: CreateProjectResourceInput
-) =>
-  view.singleFlight(
+) => {
+  const table = view.readStore(input.target === "document" ? "documents" : "slideDecks");
+  return view.singleFlight(
     [
       "project-resource",
       view.project,
@@ -58,8 +59,15 @@ export const createProjectResource = (
       input.target,
       input.title?.trim() ?? null
     ],
-    () => createProjectResourceRemote(input).updates(readProjectResourceIndex)
+    async () => {
+      const result = await createProjectResourceRemote(input).updates(readProjectResourceIndex);
+      // This table query may be warm but unmounted while Overview is active.
+      // Refresh it explicitly before the editor and tab bar consume its title.
+      await table.refresh();
+      return result;
+    }
   );
+};
 
 export const resourcesIn = (
   indexed: ProjectResourceIndex | undefined,

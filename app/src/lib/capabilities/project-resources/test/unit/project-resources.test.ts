@@ -68,9 +68,30 @@ describe("createProjectResource", () => {
         resourceId: "documents:new",
         revision: 0,
         role: "leader",
-        body: { rows: [] }
+        body: {
+          rows: [
+            {
+              kind: "blocks",
+              blocks: [
+                {
+                  type: "text",
+                  variant: "paragraph",
+                  atoms: [{ kind: "literal", text: "" }],
+                  display: "",
+                  marks: []
+                }
+              ]
+            }
+          ]
+        }
       }
     });
+    const snapshot = model.writes[1].fields.body as {
+      rows: { id: string; blocks: { id: string; atoms: { id: string }[] }[] }[];
+    };
+    expect(snapshot.rows[0].id).toMatch(/^row-[0-9a-f-]{36}$/);
+    expect(snapshot.rows[0].blocks[0].id).toMatch(/^block-[0-9a-f-]{36}$/);
+    expect(snapshot.rows[0].blocks[0].atoms[0].id).toMatch(/^atom-[0-9a-f-]{36}$/);
   });
 
   it("creates an editor-ready empty deck", async () => {
@@ -85,8 +106,18 @@ describe("createProjectResource", () => {
     });
     expect(model.writes[1]).toMatchObject({
       table: "slideDeckSnapshots",
-      fields: { body: { aspectRatio: "16:9", slides: [], sections: [] } }
+      fields: {
+        body: {
+          aspectRatio: "16:9",
+          slides: [{ elements: [], notes: [] }],
+          sections: []
+        }
+      }
     });
+    const snapshot = model.writes[1].fields.body as {
+      slides: { id: string }[];
+    };
+    expect(snapshot.slides[0].id).toMatch(/^slide-[0-9a-f-]{36}$/);
   });
 
   it("allocates the first free project-local Untitled suffix when title is omitted", async () => {

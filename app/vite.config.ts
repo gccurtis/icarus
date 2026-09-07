@@ -11,6 +11,13 @@ export default defineConfig({
 
   server: {
     port: 3000,
+    // The represented store persists runtime writes beside the app in
+    // `data/*.json`. Those writes are application state, not source changes;
+    // watching them reloads the whole workspace in the middle of commands such
+    // as Create resource or Add comment.
+    watch: {
+      ignored: ["**/data/**"],
+    },
   },
 
   // Tests reuse this config, which is the whole reason they run under vitest

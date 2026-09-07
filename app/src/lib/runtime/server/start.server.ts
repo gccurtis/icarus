@@ -44,7 +44,9 @@ export type { Logger } from "$model/server/observability/index.server";
 const buildServerModel = async (): Promise<ServerModel> => {
   const configuration = await createConfiguration();
   const observability = createObservability(configuration);
-  const store = createStore(configuration);
+  // Browser suites may point the process at a disposable represented store.
+  // Production and ordinary development continue to use configured data/.
+  const store = createStore(configuration, process.env.ICARUS_STORE_DIRECTORY);
 
   observability.logger.info("model.started");
 

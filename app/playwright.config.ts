@@ -22,9 +22,9 @@ export default defineConfig({
   webServer: process.env.ICARUS_BROWSER_BASE_URL
     ? undefined
     : {
-        command: `pnpm dev --host 127.0.0.1 --port ${port} --strictPort`,
+        command: `node scripts/browser-server.mjs ${port}`,
         url: baseURL,
-        reuseExistingServer: true,
+        reuseExistingServer: false,
         timeout: 120_000
       },
   projects: [

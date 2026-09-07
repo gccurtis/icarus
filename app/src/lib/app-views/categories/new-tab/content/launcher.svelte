@@ -33,9 +33,10 @@
     type EditorKind,
     type LibraryTemplate
   } from "$app-views/categories/new-tab/procedures/library";
+  import { createProjectResource } from "$app-views/categories/new-tab/procedures/creating";
   import { openingFor } from "$app-views/categories/new-tab/procedures/opening";
   import { project, resources } from "$app-views/categories/new-tab/procedures/project";
-  import { workspaceState, type Category } from "$model/client/workspace-state";
+  import { workspaceState } from "$model/client/workspace-state";
 
   const view = workspaceState();
 
@@ -81,13 +82,6 @@
   const results = $derived(
     needle === "" ? [] : everything.filter((row) => row.name.toLowerCase().includes(needle))
   );
-
-  /** Which editor a pill opens, and what the strip calls the blank thing there. */
-  const BLANK = {
-    Document: { category: "document-editor", noun: "document" },
-    "Slide deck": { category: "slide-deck-editor", noun: "deck" },
-    Spreadsheet: { category: "spreadsheet-editor", noun: "spreadsheet" }
-  } as const satisfies Record<EditorKind["name"], { category: Category; noun: string }>;
 
   const EDITOR_ICON: Record<EditorKind["name"], typeof FileText> = {
     Document: FileText,
@@ -152,24 +146,33 @@
 
   const blocked = $derived(startable.filter((row) => row.variables > 0).length);
 
-  /**
-   * The tab strip labels an editor tab by its `resourceId`, so a minted id has
-   * to read as a name rather than as a key. The number steps past whatever that
-   * category already holds, because `open` is keyed by the id: two blank documents
-   * are two things, and two that share a name are one tab.
-   */
-  const untitled = (category: Category, noun: string): string => {
-    const taken = new Set(
-      view.tabs.filter((tab) => tab.category === category).map((tab) => tab.resourceId)
-    );
-    let count = 1;
-    while (taken.has(`Untitled ${noun} ${count}`)) count += 1;
-    return `Untitled ${noun} ${count}`;
-  };
+  let creating = $state<"Document" | "Slide deck">();
+  let creationError = $state<string>();
 
-  const create = (kind: EditorKind) => {
-    const { category, noun } = BLANK[kind.name];
-    view.open({ category, resourceId: untitled(category, noun) });
+  /** Create the represented row and leader snapshot before the editor consumes its id. */
+  const create = async (kind: EditorKind) => {
+    if (kind.name === "Spreadsheet") {
+      alert("Creating a spreadsheet is not wired up yet.");
+      return;
+    }
+    if (creating !== undefined) return;
+
+    const originTabId = view.activeId;
+    creating = kind.name;
+    creationError = undefined;
+    try {
+      const target = kind.name === "Document" ? "document" : "slides";
+      const { resourceId } = await createProjectResource(view, { target });
+      if (view.activeId !== originTabId) return;
+      view.open({
+        category: target === "document" ? "document-editor" : "slide-deck-editor",
+        resourceId
+      });
+    } catch (error) {
+      creationError = error instanceof Error ? error.message : String(error);
+    } finally {
+      creating = undefined;
+    }
   };
 
   /**
@@ -267,6 +270,7 @@
           size="lg"
           title={kind.detail}
           onclick={() => create(kind)}
+          disabled={kind.name !== "Spreadsheet" && creating !== undefined}
           class="rounded-control text-body-sm px-4"
         >
           <Icon aria-hidden="true" />
@@ -274,6 +278,9 @@
         </Button>
       {/each}
     </div>
+    {#if creationError}
+      <ScreenNote tone="gap">Could not create the resource: {creationError}</ScreenNote>
+    {/if}
 
     <!--
       A shelf rather than a grid: a grid of twelve cards pushes the search field
