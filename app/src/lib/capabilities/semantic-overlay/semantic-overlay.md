@@ -21,6 +21,9 @@ lanes: exact text and interpreted semantic material.
   spreadsheets. Native image vectors use Jina v4's shared vector space.
 - `backfillSemanticOverlay` enumerates document/deck/spreadsheet leaders and
   external files and joins the same queue/worker paths used by normal authoring.
+- A Derived Output refresh is itself a server pull boundary: its coalesced
+  worker drains these queues before checking whether the current answer can be
+  returned without provider work.
 
 - `rebuildSemanticIndex` and `stageSemanticIndex` deterministically cluster each
   lane independently, write a replacement tree, publish its roots, and only

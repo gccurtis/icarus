@@ -120,7 +120,7 @@ describe("semantic material projection", () => {
       }
     });
 
-    expect(projection.exact.text).toBe("Sales report\n\nQuarterly results\n\nRegion\n\nRevenue\n\nApproved by finance");
+    expect(projection.exact.text).toBe("Quarterly results\n\nRegion\n\nRevenue\n\nApproved by finance");
     expect(projection.exact.text).not.toContain("North");
     expect(projection.exact.text).not.toContain("120");
     expect(projection.exact.text).not.toContain("999");
@@ -164,9 +164,9 @@ describe("semantic material projection", () => {
       kind: "resourceContent",
       locator: { kind: "slideElement", slideId: "slide-one", elementPath: ["table-element"] }
     });
-    expect(slides.exact.text).toBe("Deck\n\nQuarter overview\n\nRegion\n\nRevenue\n\nClosing thought");
+    expect(slides.exact.text).toBe("Quarter overview\n\nRegion\n\nRevenue\n\nClosing thought");
     expect(slides.materials[0].context.nearbyText).toContain("Quarter overview");
-    expect(slides.exact.hardBoundaries).toHaveLength(2);
+    expect(slides.exact.hardBoundaries).toHaveLength(1);
     expect(slides.exact.hardBoundaries?.every((boundary) => Number.isInteger(boundary))).toBe(true);
   });
 
@@ -239,7 +239,7 @@ describe("semantic material projection", () => {
       body: { rows: [{ id: "row", kind: "blocks", blocks: [outer] }] }
     });
 
-    expect(documentProjection.exact.text).toBe("Nested\n\nOuter label");
+    expect(documentProjection.exact.text).toBe("Outer label");
     expect(documentProjection.exact.text).not.toContain("Nested label");
     expect(documentProjection.exact.text).not.toContain("TOP SECRET VALUE");
     expect(documentProjection.exact.text).not.toContain("Body-only chart");

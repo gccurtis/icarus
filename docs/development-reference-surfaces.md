@@ -143,10 +143,11 @@ Prompt creation belongs to the document, not the context rail:
 2. choose `Prompt` from the normal Block selector;
 3. configure the prompt in the Prompt inspector;
 4. create and link the Derived Output;
-5. process pending semantic work and refresh;
-6. replace the block's editable text while preserving its editor-owned mark
+5. signal refresh by Derived Output ID;
+6. let the coalesced server worker drain pending semantic work and generate;
+7. replace the block's editable text while preserving its editor-owned mark
    ranges;
-7. use the star in the pasteboard gutter to reopen Prompt settings.
+8. use the star in the pasteboard gutter to reopen Prompt settings.
 
 The block looks like ordinary text. Its generated response is selectable,
 formattable, and editable. The small star is an out-of-content control in the
@@ -172,9 +173,11 @@ Linked settings intentionally contain only the prompt, a compact Scope selector,
 Refresh, errors/progress when relevant, and evidence. The first selector has one
 choice, `Whole project`, but keeps the control seam for saved Resource Sets.
 Refresh remains available whenever the prompt is non-empty; clicking it drains
-pending semantic work before asking the pull-based freshness gate to regenerate
-or return the current value. There is no `Current`, placement, response-status,
-or internal-details presentation. Each citation shows only retrieved authored
+pending semantic work on the server before asking the pull-based freshness gate
+to regenerate or return the current value. Every browser signal coalesces into
+one durable job keyed by Derived Output ID, and concurrent callers join the same
+server flight rather than racing a client-owned loading flag. There is no
+`Current`, placement, response-status, or internal-details presentation. Each citation shows only retrieved authored
 content followed by the authoritative resource title; historical title locators
 are removed from the visible quote, and clock suffixes use minute precision. The
 title opens the resource in an app tab. Evidence IDs, source kinds, offsets,
@@ -366,6 +369,13 @@ Automated provider tests use explicitly synthetic equipment facts. Do not put
 personal or confidential content in an external-provider smoke test merely
 because the product can accept that content at runtime.
 
+The editor does not own the generation procedure. It submits one refresh intent
+and renders the canonical result; semantic draining, freshness, retry,
+deduplication, and synthesis all execute behind the server capability boundary.
+The current JSON runtime serializes active work in one process and persists the
+job for recovery. A production multi-process store must implement the same
+claim/version transition atomically.
+
 The live editor scenario is separate and equally important: type a fact in one
 ordinary document, create a Prompt Block in another, generate, see the answer as
 normal text, reopen settings from the gutter, refresh again, and follow the
@@ -408,6 +418,15 @@ on the next real document edit, while repeated reads are pure and selection
 synchronization settles. A unit regression uses the exact legacy empty-Prompt
 shape, and the persisted two-Prompt review document is exercised separately in
 Chromium.
+
+The same live document exposed a second orchestration defect. Refresh originally
+ran semantic draining and generation as separate client commands. Updating a
+query could remount the inspector between those calls, reset its local running
+flag, and allow repeated clicks to collide with the output's generating state.
+The failed block then retained its earlier SSR error because no successful
+publication replaced it. Refresh is now one coalesced server operation keyed by
+Derived Output ID. Inspector remounts and concurrent users can only join or
+advance that backend job; they cannot create competing provider runs.
 
 Finally, persistent review data and resettable fixture data answer different
 questions. The server accepts an opt-in `ICARUS_STORE_DIRECTORY` override so a
@@ -457,6 +476,7 @@ evidence—not just its outer background.
 | Executable proof page | `app/src/lib/development-views/derived-output-architecture/components/live-proof.svelte` |
 | Adaptive diagram renderer | `app/src/lib/development-views/derived-output-architecture/components/mermaid-diagram.svelte` |
 | Exact executable agent instruction | `app/src/lib/capabilities/derived-output/api/shared/agent-instructions.ts` |
+| Coalesced server refresh queue | `app/src/lib/capabilities/derived-output/api/shared/refresh-queue.ts` |
 | Prompt Block inspector | `app/src/lib/app-views/categories/document-editor/inspector/prompt-block.svelte` |
 | Linked Prompt settings | `app/src/lib/app-views/categories/document-editor/components/prompt-settings.svelte` |
 | Prompt list context | `app/src/lib/app-views/categories/document-editor/context/prompts.svelte` |

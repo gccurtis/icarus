@@ -15,7 +15,6 @@
     refreshDerivedOutput,
     updateDerivedOutput
   } from "$capabilities/derived-output/index.remote";
-  import { processSemanticSyncQueue } from "$capabilities/semantic-overlay/index.remote";
   import { blockIn } from "$app-views/categories/document-editor/procedures/blocks";
   import {
     announcePromptOutput,
@@ -86,7 +85,7 @@
   const queryError = $derived(
     detailQuery.error === undefined ? undefined : String(detailQuery.error)
   );
-  const shownError = $derived(actionError ?? output?.error ?? queryError);
+  const shownError = $derived(running ? undefined : actionError ?? output?.error ?? queryError);
   const sourceTitles = $derived.by(() => {
     const titles = new Map<string, string>();
     for (const document of rowsOf(documentsQuery, "documents")) {
@@ -170,19 +169,13 @@
           ...(responseChanged
             ? { lastResponse: currentResponse.length === 0 ? null : currentResponse }
             : {})
-        }).updates(detailQuery);
+        });
         if (changed === null) throw new Error("The Derived Output no longer exists");
       }
 
-      const queue = await processSemanticSyncQueue({ limit: 50 });
-      const failed = queue.processed.find((job) => job.error !== undefined);
-      const failedMaterial = queue.materials.processed.find((job) => job.error !== undefined);
-      if (failed?.error !== undefined) throw new Error(failed.error);
-      if (failedMaterial?.error !== undefined) throw new Error(failedMaterial.error);
-
       const refreshed = await refreshDerivedOutput({
         derivedOutputId: outputId
-      }).updates(detailQuery);
+      });
       if (refreshed === null) throw new Error("The Derived Output no longer exists");
 
       const ops = syncPromptBlockOps(currentBlock(), refreshed.output);

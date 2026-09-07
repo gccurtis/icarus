@@ -30,7 +30,8 @@ import type { QuestionStatus, RelatedItem } from "$representation/data/types/inv
 import type { ResearchMode } from "$representation/data/types/investigation/research-thread";
 import type {
   DerivedOutput as SemanticDerivedOutput,
-  DerivedOutputFields as SemanticDerivedOutputFields
+  DerivedOutputFields as SemanticDerivedOutputFields,
+  DerivedOutputRefreshJobFields as SemanticDerivedOutputRefreshJobFields
 } from "$representation/data/types/semantic/derived-output";
 import type {
   RecursiveIndexConfiguration,
@@ -309,6 +310,9 @@ export type SemanticMaterialHistory = Row<"semanticMaterialHistory"> & SemanticM
 
 export type DerivedOutputFields = SemanticDerivedOutputFields;
 export type DerivedOutput = SemanticDerivedOutput;
+export type DerivedOutputRefreshJobFields = SemanticDerivedOutputRefreshJobFields;
+export type DerivedOutputRefreshJob = Row<"derivedOutputRefreshJobs"> &
+  DerivedOutputRefreshJobFields;
 
 export type ThreadFields = {
   projectId: Id<"projects">;
@@ -576,6 +580,7 @@ export const TABLE_NAMES = [
   "commentThreads",
   "connectors",
   "dataBackReferences",
+  "derivedOutputRefreshJobs",
   "derivedOutputs",
   "documentChangeSets",
   "documents",
@@ -628,6 +633,7 @@ export type TableFields = {
   commentThreads: CommentThreadFields;
   connectors: ConnectorFields;
   dataBackReferences: DataBackReferenceFields;
+  derivedOutputRefreshJobs: DerivedOutputRefreshJobFields;
   derivedOutputs: DerivedOutputFields;
   documentChangeSets: DocumentChangeSetFields;
   documents: DocumentFields;

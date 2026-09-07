@@ -19,7 +19,13 @@ import { refreshDerivedOutput as refreshDerivedOutputProcedure } from "$capabili
 import { createTemplatedDerivedOutput as createTemplatedDerivedOutputProcedure } from "$capabilities/derived-output/api/create-templated-derived-output/create-templated-derived-output";
 import { readDerivedOutputValue as readDerivedOutputValueProcedure } from "$capabilities/derived-output/api/read-derived-output-value/read-derived-output-value";
 
-export const refreshDerivedOutput = command("unchecked", refreshDerivedOutputProcedure);
+export const refreshDerivedOutput = command("unchecked", async (input) => {
+  const result = await refreshDerivedOutputProcedure(input);
+  if (result !== null) {
+    await readDerivedOutput({ derivedOutputId: result.output._id }).refresh();
+  }
+  return result;
+});
 export const createTemplatedDerivedOutput = command(
   "unchecked",
   createTemplatedDerivedOutputProcedure

@@ -24,6 +24,8 @@ const state = vi.hoisted(() => {
     retrieveResults: [] as unknown[],
     firstTools: [] as (string | undefined)[],
     userPrompts: [] as string[],
+    queueCalls: 0,
+    queuedSourceRevision: undefined as number | undefined,
     release: undefined as (() => void) | undefined
   };
   const store = {
@@ -61,6 +63,10 @@ const state = vi.hoisted(() => {
     remove: (path: string) => {
       const [table, id] = path.split(".");
       tables.set(table, rows(table).filter((row) => row._id !== id));
+    },
+    removeRows: (table: string, ids: readonly string[]) => {
+      const removed = new Set(ids);
+      tables.set(table, rows(table).filter((row) => !removed.has(row._id)));
     }
   };
   const source = (): Row => rows("semanticSources")[0];
@@ -147,7 +153,7 @@ vi.mock("$runtime/server/scope.server", () => ({
   requireScope: async () => ({ projectId: "projects:1", userId: "users:1", username: "You" })
 }));
 vi.mock("$runtime/server/start.server", () => ({ serverModel: () => state.model }));
-vi.mock("$capabilities/semantic-overlay/index.remote", () => ({
+vi.mock("$capabilities/semantic-overlay/api/query-semantic-overlay/query-semantic-overlay", () => ({
   querySemanticOverlay: async (input: Record<string, unknown>) => {
     state.controls.queryInputs.push(input);
     const source = state.source();
@@ -185,6 +191,30 @@ vi.mock("$capabilities/semantic-overlay/index.remote", () => ({
         exhausted: true
       }
     };
+  }
+}));
+vi.mock("$capabilities/semantic-overlay/api/query-semantic-materials/query-semantic-materials", () => ({
+  querySemanticMaterials: async () => ({
+    overlayGeneration: Number(state.rows("semanticOverlays")[0].generation),
+    hits: [],
+    usage: [],
+    diagnostics: {
+      eligibleObjects: 0,
+      candidateTarget: 0,
+      visitedNodes: 0,
+      evaluatedObjects: 0,
+      exhausted: true
+    }
+  })
+}));
+vi.mock("$capabilities/semantic-overlay/api/shared/queue-processor", () => ({
+  processSemanticSyncQueueFor: async () => {
+    state.controls.queueCalls += 1;
+    if (state.controls.queuedSourceRevision !== undefined) {
+      state.source().revision = state.controls.queuedSourceRevision;
+      state.controls.queuedSourceRevision = undefined;
+    }
+    return { processed: [], remaining: 0, materials: { processed: [], remaining: 0 } };
   }
 }));
 
@@ -263,6 +293,8 @@ beforeEach(() => {
   state.controls.retrieveResults.length = 0;
   state.controls.firstTools.length = 0;
   state.controls.userPrompts.length = 0;
+  state.controls.queueCalls = 0;
+  state.controls.queuedSourceRevision = undefined;
   state.controls.release = undefined;
   baseRows();
 });
@@ -539,6 +571,36 @@ describe("Derived Output lifecycle", () => {
     assert.equal(result?.usage.providerRequests, 0);
     assert.equal(state.controls.intelligenceCalls, 0);
     assert.equal(result?.output.lastRevision, 1);
+    assert.equal(state.controls.queueCalls, 1);
+  });
+
+  it("drains pending semantic work before deciding that a response is current", async () => {
+    const id = seedOutput({
+      state: "fresh",
+      lastResponse: textBlock("Launch is Tuesday."),
+      lastRevision: 1,
+      lastGeneration: 4,
+      evidence: [{
+        selections: [{ evidenceId: "evidence-1", use: "Establishes the launch day" }],
+        source: {
+          ref: { kind: "document", id: "launch-brief" },
+          revision: 1,
+          encoding: "utf-16"
+        },
+        span: { from: 0, to: 19, text: "Launch is Tuesday." },
+        overlayGeneration: 4
+      }]
+    });
+    state.controls.queuedSourceRevision = 2;
+
+    const result = await refreshDerivedOutput({ derivedOutputId: id });
+
+    assert.equal(result?.outcome, "published");
+    assert.equal(state.controls.queueCalls, 1);
+    assert.equal(state.controls.intelligenceCalls, 1);
+    const evidence = result?.output.evidence[0];
+    assert.ok(evidence !== undefined && "span" in evidence);
+    assert.equal(evidence.source.revision, 2);
   });
 
   it("restarts synthesis when a cited revision changes before publication", async () => {
@@ -671,18 +733,22 @@ describe("Derived Output lifecycle", () => {
     assert.match(result?.output.error ?? "", /redacted/);
   });
 
-  it("uses the generating state as a single-process refresh lock", async () => {
+  it("coalesces concurrent browser signals onto one server refresh flight", async () => {
     state.controls.mode = "gate";
     const id = seedOutput();
     const first = refreshDerivedOutput({ derivedOutputId: id });
     await vi.waitFor(() => expect(state.rows("derivedOutputs")[0].state).toBe("generating"));
 
-    await assert.rejects(
-      () => refreshDerivedOutput({ derivedOutputId: id }),
-      /already generating/
-    );
+    const second = refreshDerivedOutput({ derivedOutputId: id });
+    state.controls.mode = "normal";
     state.controls.release?.();
-    assert.equal((await first)?.outcome, "published");
+    const [firstResult, secondResult] = await Promise.all([first, second]);
+
+    assert.equal(firstResult?.outcome, "current");
+    assert.deepEqual(secondResult, firstResult);
+    assert.equal(firstResult?.output.lastRevision, 1);
+    assert.equal(state.controls.intelligenceCalls, 1);
+    assert.equal(state.rows("derivedOutputRefreshJobs").length, 0);
   });
 
   it("does not publish over a definition superseded while synthesis is in flight", async () => {

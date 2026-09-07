@@ -17,7 +17,6 @@
     refreshDerivedOutput,
     updateDerivedOutput
   } from "$capabilities/derived-output/index.remote";
-  import { processSemanticSyncQueue } from "$capabilities/semantic-overlay/index.remote";
   import PromptSettings from "$app-views/categories/document-editor/components/prompt-settings.svelte";
   import { blockIn } from "$app-views/categories/document-editor/procedures/blocks";
   import {
@@ -30,7 +29,7 @@
   import { announcePromptOutput } from "$app-views/categories/document-editor/procedures/prompt-output-events";
   import { isInspectorView, workspaceState } from "$model/client/workspace-state";
   import type { DocumentRuntime } from "$model/client/workspace-state";
-  type Phase = "creating" | "saving" | "indexing" | "generating";
+  type Phase = "creating" | "saving" | "generating";
 
   const SCOPES = [{ value: "project", label: "Whole project" }] as const;
 
@@ -58,7 +57,6 @@
   const PHASE: Record<Phase, string> = {
     creating: "Creating Derived Output",
     saving: "Saving Prompt Block",
-    indexing: "Indexing pending sources",
     generating: "Generating response"
   };
 
@@ -115,13 +113,6 @@
       await currentRuntime.flush();
       const linkFailure = failureDetail(currentRuntime);
       if (linkFailure !== undefined) throw new Error(linkFailure);
-
-      phase = "indexing";
-      const queue = await processSemanticSyncQueue({ limit: 50 });
-      const failed = queue.processed.find((job) => job.error !== undefined);
-      const failedMaterial = queue.materials.processed.find((job) => job.error !== undefined);
-      if (failed?.error !== undefined) throw new Error(failed.error);
-      if (failedMaterial?.error !== undefined) throw new Error(failedMaterial.error);
 
       phase = "generating";
       const refreshed = await refreshDerivedOutput({ derivedOutputId: created._id });

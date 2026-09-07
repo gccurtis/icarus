@@ -77,7 +77,7 @@ describe("Derived Output resource-reading session", () => {
     createResourceReadingSession({
       model,
       projectId,
-      selection: { ref: { kind: "document", id: "documents:doc" }, from: 5, to: 18 },
+      selection: { ref: { kind: "document", id: "documents:doc" }, from: 0, to: 13 },
       ...(scope === undefined ? {} : { scope }),
       issue: (_key, evidence) => {
         const id = `evidence-${nextEvidence++}`;

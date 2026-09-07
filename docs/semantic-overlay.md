@@ -245,10 +245,11 @@ Documents expose Derived Output through a normal editable Prompt Block:
 1. convert an empty line with the ordinary Block selector;
 2. configure the prompt and its scope in the Prompt inspector;
 3. create/link the Derived Output;
-4. drain one bounded semantic batch and refresh;
-5. copy response text into the block while preserving editor-owned mark ranges;
-6. reopen settings through the star in the pasteboard gutter;
-7. follow source titles in the evidence list back to resources.
+4. signal refresh by Derived Output ID;
+5. let the coalesced server worker drain pending semantic work and refresh;
+6. copy response text into the block while preserving editor-owned mark ranges;
+7. reopen settings through the star in the pasteboard gutter;
+8. follow source titles in the evidence list back to resources.
 
 The Prompts context rail only indexes existing blocks. It does not create them.
 Prompt text/output stays text-only; marks and presentation never enter the
@@ -256,10 +257,13 @@ semantic or Derived Output capability.
 
 ## Persistence and deployment boundary
 
-The JSON store has durable source/object/index/history rows and separate exact
-and material job tables. It does not provide a cross-table transaction between
-an accepted leader and its outbox enqueue, and this repository has no always-on
-worker host. The current writes are adjacent, workers are explicitly callable,
+The JSON store has durable source/object/index/history rows, separate exact and
+material job tables, and a coalesced `derivedOutputRefreshJobs` table keyed by
+Derived Output. Concurrent browsers join one server flight; a mid-flight signal
+advances the durable request version and causes one follow-up pull. It does not
+provide a cross-table transaction between an accepted leader and its outbox
+enqueue, and this repository has no always-on worker host. The current writes
+are adjacent, workers are explicitly callable,
 and every publication has supersession guards. A production deployment still
 needs transactional outbox semantics, leases/recovery, retry policy, and an
 always-on host.
@@ -276,7 +280,7 @@ capabilities/semantic-overlay/api/
   shared/{sync,publication,index-publication,freshness,material-*}.ts
 
 capabilities/derived-output/api/shared/
-  agent-instructions.ts · synthesis.ts · resource-reading.ts · rows.ts
+  agent-instructions.ts · synthesis.ts · resource-reading.ts · refresh-queue.ts · rows.ts
 ```
 
 The visual procedure flow is served at

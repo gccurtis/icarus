@@ -1,9 +1,13 @@
 import { requireScope } from "$runtime/server/scope.server";
-import { serverModel } from "$runtime/server/start.server";
+import { serverModel, type ServerModel } from "$runtime/server/start.server";
 import { changedSemanticMaterials, changedSemanticSources } from "$representation/data/behavior/semantic/citation";
 import type { Id } from "$representation/data/types/core/id";
 import type { DerivedOutput } from "$representation/data/types/semantic/derived-output";
-import { querySemanticMaterials, querySemanticOverlay } from "$capabilities/semantic-overlay/index.remote";
+import {
+  processSemanticSyncQueueFor,
+  querySemanticMaterials,
+  querySemanticOverlay
+} from "$capabilities/semantic-overlay";
 
 import type {
   DerivedSynthesisUsage,
@@ -19,6 +23,10 @@ import {
   writeOutput
 } from "$capabilities/derived-output/api/shared/rows";
 import { synthesize } from "$capabilities/derived-output/api/shared/synthesis";
+import {
+  enqueueDerivedOutputRefreshFor,
+  processDerivedOutputRefreshFor
+} from "$capabilities/derived-output/api/shared/refresh-queue";
 
 /**
  * refresh-derived-output.
@@ -28,10 +36,11 @@ import { synthesize } from "$capabilities/derived-output/api/shared/synthesis";
  * it sent and this is the check.
  */
 const configuredInteger = (
+  model: ServerModel,
   key: string,
   options: { min: number; max: number }
 ): number => {
-  const value = serverModel().configuration.get(key);
+  const value = model.configuration.get(key);
   if (!Number.isInteger(value) || (value as number) < options.min || (value as number) > options.max) {
     throw new Error(
       `Configuration key '${key}' must be an integer from ${options.min} through ${options.max}`
@@ -81,16 +90,45 @@ const safeFailure = (error: unknown): string =>
     .replace(/(?:api[-_ ]?key)\s*[:=]\s*\S+/gi, "apiKey=[redacted]")
     .slice(0, 400);
 
-export const refreshDerivedOutput = async (input: unknown): Promise<RefreshDerivedOutputResult> => {
-  const scope = await requireScope();
+const prepareSemanticOverlay = async (
+  model: ServerModel,
+  projectId: Id<"projects">
+): Promise<void> => {
+  // Refresh is a pull boundary. Drain bounded batches until the project has no
+  // queued exact-text or material work, while refusing an unbounded churn loop.
+  for (let batch = 0; batch < 20; batch += 1) {
+    const processed = await processSemanticSyncQueueFor(model, projectId, 50);
+    const failed = processed.processed.find((job) => job.error !== undefined);
+    const failedMaterial = processed.materials.processed.find(
+      (job) => job.error !== undefined
+    );
+    if (failed?.error !== undefined) throw new Error(failed.error);
+    if (failedMaterial?.error !== undefined) throw new Error(failedMaterial.error);
+    if (processed.remaining === 0 && processed.materials.remaining === 0) return;
+  }
+  throw new Error("The Semantic Overlay queue did not settle before refresh");
+};
 
-  const asked = validateRefreshDerivedOutput(input);
-  const model = serverModel();
-  const projectId = scope.projectId as Id<"projects">;
-  const original = outputOf(model.store, projectId, asked.derivedOutputId);
+type RefreshRequest = ReturnType<typeof validateRefreshDerivedOutput>;
+
+const performDerivedOutputRefresh = async (
+  model: ServerModel,
+  projectId: Id<"projects">,
+  asked: RefreshRequest
+): Promise<RefreshDerivedOutputResult> => {
+  await prepareSemanticOverlay(model, projectId);
+
+  let original = outputOf(model.store, projectId, asked.derivedOutputId);
   if (original === undefined) return null;
   if (original.state === "generating") {
-    throw new Error("This derived output is already generating");
+    // A live worker is joined by processDerivedOutputRefreshFor before this
+    // function is entered. A persisted generating row here is therefore an
+    // interrupted older worker and is safe for the new durable job to reclaim.
+    original = writeOutput(model.store, original, {
+      state: original.lastResponse === undefined ? "idle" : "stale",
+      error: undefined,
+      updatedAt: Date.now()
+    });
   }
 
   if (original.state === "fresh" && asked.selection === undefined) {
@@ -121,11 +159,11 @@ export const refreshDerivedOutput = async (input: unknown): Promise<RefreshDeriv
     }
   }
 
-  const maxRetries = configuredInteger("intelligence.agent.maxSourceRetries", {
+  const maxRetries = configuredInteger(model, "intelligence.agent.maxSourceRetries", {
     min: 0,
     max: 10
   });
-  const defaultTopK = configuredInteger("intelligence.agent.defaultTopK", {
+  const defaultTopK = configuredInteger(model, "intelligence.agent.defaultTopK", {
     min: 1,
     max: 20
   });
@@ -247,4 +285,29 @@ export const refreshDerivedOutput = async (input: unknown): Promise<RefreshDeriv
   }
 
   throw new Error("derived output refresh ended without a result");
+};
+
+export const refreshDerivedOutput = async (input: unknown): Promise<RefreshDerivedOutputResult> => {
+  const scope = await requireScope();
+  const asked = validateRefreshDerivedOutput(input);
+  const model = serverModel();
+  const projectId = scope.projectId as Id<"projects">;
+  if (outputOf(model.store, projectId, asked.derivedOutputId) === undefined) return null;
+
+  enqueueDerivedOutputRefreshFor(
+    model,
+    projectId,
+    asked.derivedOutputId,
+    asked.selection
+  );
+  return processDerivedOutputRefreshFor(
+    model,
+    projectId,
+    asked.derivedOutputId,
+    async (selection) =>
+      await performDerivedOutputRefresh(model, projectId, {
+        derivedOutputId: asked.derivedOutputId,
+        ...(selection === undefined ? {} : { selection })
+      })
+  );
 };

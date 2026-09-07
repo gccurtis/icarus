@@ -69,6 +69,8 @@ export type DerivedOutputSelection = {
 
 export type DerivedState = "idle" | "generating" | "fresh" | "stale" | "error";
 
+export type DerivedOutputRefreshJobState = "queued" | "running" | "failed";
+
 export type DerivedVariableDefinition = {
   name: string;
   prompt: string;
@@ -110,3 +112,26 @@ export type DerivedOutputFields = {
 };
 
 export type DerivedOutput = Row<"derivedOutputs"> & DerivedOutputFields;
+
+/**
+ * One durable, coalesced refresh intent per Derived Output.
+ *
+ * `requestedVersion` advances when another browser signals refresh while a
+ * worker is running. The worker performs one cheap follow-up pull after its
+ * current attempt, so a source edit which landed mid-generation is not lost.
+ */
+export type DerivedOutputRefreshJobFields = {
+  projectId: Id<"projects">;
+  derivedOutputId: Id<"derivedOutputs">;
+  selection?: DerivedOutputSelection;
+  state: DerivedOutputRefreshJobState;
+  requestedVersion: number;
+  attempts: number;
+  error?: string;
+  queuedAt: number;
+  startedAt?: number;
+  updatedAt: number;
+};
+
+export type DerivedOutputRefreshJob = Row<"derivedOutputRefreshJobs"> &
+  DerivedOutputRefreshJobFields;

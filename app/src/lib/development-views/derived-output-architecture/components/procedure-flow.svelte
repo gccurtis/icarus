@@ -222,12 +222,12 @@
     },
     {
       order: "04",
-      name: "enqueueDerivedRefresh",
-      owner: "derived-output capability",
-      status: "deferred",
-      input: "derivedOutputId + definition revision",
-      output: "idempotent refresh job",
-      note: "Target scale-up seam. The current document path calls refresh in the creation request after draining one bounded semantic batch."
+      name: "enqueueDerivedOutputRefreshFor",
+      owner: "derived-output server",
+      status: "new",
+      input: "derivedOutputId + optional selection",
+      output: "one versioned job per output",
+      note: "Every browser signal coalesces here. A signal received during generation advances requestedVersion so the worker performs one follow-up pull."
     },
     {
       order: "05",
@@ -236,7 +236,7 @@
       status: "existing",
       input: "derivedOutputId",
       output: "published / failed / superseded",
-      note: "Claims the output, snapshots its definition, bounds retries, and preserves the last good response on failure. The document rail invokes it directly today."
+      note: "Joins the server flight, drains pending exact/material work, checks freshness, bounds retries, and preserves the last good response on failure."
     },
     {
       order: "06",
@@ -442,9 +442,11 @@
     DR->>R: flush accepted document revision
     Note over DR,R: Block owns editable presentation + ID, output owns canonical evidence
 
-    UI->>SO: processSemanticSyncQueue(limit: 50)
+    UI->>DO: refreshDerivedOutput(id) — signal only
+    DO->>R: coalesce derivedOutputRefreshJobs by ID
+    DO->>SO: processSemanticSyncQueueFor until settled
     SO->>R: publish pending authoritative resource projections
-    UI->>DO: refreshDerivedOutput(id)
+    Note over UI,DO: Concurrent browsers join the same server flight
     DO->>R: claim state + snapshot definition
     DO->>A: synthesize(run context, tools, schema)
     loop bounded tool rounds
@@ -518,6 +520,12 @@ readDerivedOutputValue({ derivedOutputId })
       never: "resource bodies, native bytes, or provider credentials"
     },
     {
+      table: "derivedOutputRefreshJobs",
+      key: "project + derivedOutputId",
+      owns: "coalesced request version, worker state, attempts, and recovery error",
+      never: "response prose, evidence, editor marks, or browser-local loading state"
+    },
+    {
       table: "derivedOutputs",
       key: "derivedOutputId",
       owns: "prompt/template, scope, state, response, named values, and locator-bearing citations",
@@ -584,8 +592,8 @@ readDerivedOutputValue({ derivedOutputId })
     },
     {
       number: "02",
-      title: "One queue now, one next",
-      body: "Semantic synchronization has a persisted, revision-coalesced queue. The document Prompt Block now invokes refresh explicitly; a durable derived-refresh queue remains the independent scale-up seam."
+      title: "Signals converge on the server",
+      body: "Semantic synchronization and Derived Output refresh each have persisted, coalesced jobs. The browser submits intent; the Derived Output worker owns semantic draining, freshness, retries, and generation by ID."
     },
     {
       number: "03",
@@ -769,7 +777,8 @@ readDerivedOutputValue({ derivedOutputId })
         <div><span class="section-number">03</span><h2>The document block<br />works end to end.</h2></div>
         <p>
           An empty line becomes Prompt through the ordinary Block menu. Its inspector creates and
-          links the Derived Output, drains one bounded semantic batch, publishes the response, then
+          links the Derived Output and submits one refresh signal. The server drains pending semantic
+          work, publishes the response, then the adapter
           copies that response into normal editable document text.
         </p>
       </header>
@@ -785,7 +794,7 @@ readDerivedOutputValue({ derivedOutputId })
         <MermaidDiagram
           source={DERIVED_SEQUENCE}
           label="Implemented document Prompt Block creation and Derived Output generation sequence"
-          caption="Implemented first pass: document creation waits for generation. A durable derived-refresh queue and deck placement adapter remain explicit follow-up seams."
+          caption="Implemented server path: concurrent browser signals coalesce by Derived Output ID; the worker prepares the overlay and publishes one canonical result. Deck placement remains a separate adapter."
           minHeight="46rem"
         />
       </div>
