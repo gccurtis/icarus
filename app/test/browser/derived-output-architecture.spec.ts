@@ -103,6 +103,14 @@ test("the resource-reading page separates orientation from evidence", async ({ p
   await expect(page.locator("#tool-contract")).toContainText("ISSUES EVIDENCE");
   await expect(page.locator("#tool-contract")).toContainText("original project image");
 
+  await page.getByRole("tab", { name: /retrieve_materials/ }).click();
+  await expect(page.locator("#tool-contract")).toContainText("separate material index");
+  await expect(page.locator("#tool-contract")).toContainText("broad relevance claim");
+
+  await page.getByRole("tab", { name: /read_code/ }).click();
+  await expect(page.locator("#tool-contract")).toContainText("verbatim code");
+  await expect(page.locator("#tool-contract")).toContainText("immutable file hash");
+
   await page.getByRole("tab", { name: /IMAGE \/ PIXELS ARE SOURCE/ }).click();
   await expect(page.locator(".route-ledger")).toContainText("visual · image-03");
   await expect(page.locator(".route-ledger")).toContainText("not selectable");
@@ -111,6 +119,27 @@ test("the resource-reading page separates orientation from evidence", async ({ p
   await expect(page.locator(".next-call")).toContainText("read_image");
   await expect(page.locator(".next-call")).toContainText("visual evidence");
   await page.screenshot({ path: "/tmp/derived-output-resource-reading.png", fullPage: true });
+});
+
+test("the semantic material page separates discovery summaries from native authority", async ({ page }) => {
+  await page.goto("/demo/semantic-overlay/material-layer", { waitUntil: "networkidle" });
+
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("Search the meaning");
+  await expect(page.locator(".machine-lanes")).toContainText("retrieve");
+  await expect(page.locator(".machine-lanes")).toContainText("retrieve_materials");
+
+  const image = page.getByRole("tab", { name: /IMAGE ASSET/ });
+  await image.click();
+  await expect(image).toHaveAttribute("aria-selected", "true");
+  await expect(page.locator("#material-specimen")).toContainText("North station installation");
+  await expect(page.locator("#material-specimen")).toContainText("Jina v4 image vector");
+  await expect(page.locator("#material-specimen")).toContainText("read_image");
+
+  await page.getByRole("tab", { name: /RELEVANT CODE/ }).click();
+  await expect(page.locator(".query-console")).toContainText("pricing-engine.ts");
+  await expect(page.locator(".query-route")).toContainText("read_code");
+  await expect(page.locator(".evidence-ruler")).toContainText("DERIVED DESCRIPTOR");
+  await page.screenshot({ path: "/tmp/semantic-material-layer.png", fullPage: true });
 });
 
 test("the live proof exposes direct and named-variable generation", async ({ page }) => {
@@ -263,6 +292,7 @@ test("architecture surfaces follow Helios and Selene", async ({ page }) => {
     "/demo/semantic-overlay/derived-output-flow",
     "/demo/semantic-overlay/agent-runtime",
     "/demo/semantic-overlay/resource-reading",
+    "/demo/semantic-overlay/material-layer",
     "/demo/semantic-overlay/derived-output-live"
   ]) {
     await page.goto(route, { waitUntil: "networkidle" });
@@ -273,10 +303,13 @@ test("architecture surfaces follow Helios and Selene", async ({ page }) => {
     if (await toHelios.isVisible()) await toHelios.click();
     else await page.evaluate(() => (document.documentElement.dataset.appearance = "helios"));
     await expect(root).toHaveAttribute("data-appearance", "helios");
-    const surface = page.locator(".flow-page, .runtime-page, .reading-page, .proof-shell").first();
+    const surface = page.locator(".flow-page, .runtime-page, .reading-page, .material-page, .proof-shell").first();
     const day = await surface.evaluate((node) => getComputedStyle(node).backgroundColor);
     if (route === "/demo/semantic-overlay/resource-reading") {
       await page.screenshot({ path: "/tmp/derived-output-resource-reading-helios.png", fullPage: true });
+    }
+    if (route === "/demo/semantic-overlay/material-layer") {
+      await page.screenshot({ path: "/tmp/semantic-material-layer-helios.png", fullPage: true });
     }
 
     const toSelene = page.getByRole("button", {
@@ -290,6 +323,9 @@ test("architecture surfaces follow Helios and Selene", async ({ page }) => {
     if (route === "/demo/semantic-overlay/resource-reading") {
       await page.screenshot({ path: "/tmp/derived-output-resource-reading-selene.png", fullPage: true });
     }
+    if (route === "/demo/semantic-overlay/material-layer") {
+      await page.screenshot({ path: "/tmp/semantic-material-layer-selene.png", fullPage: true });
+    }
   }
 });
 
@@ -298,10 +334,14 @@ test("architecture pages contain narrow overflow only inside intentional diagram
   for (const route of [
     "/demo/semantic-overlay/derived-output-flow",
     "/demo/semantic-overlay/agent-runtime",
-    "/demo/semantic-overlay/resource-reading"
+    "/demo/semantic-overlay/resource-reading",
+    "/demo/semantic-overlay/material-layer"
   ]) {
     await page.goto(route, { waitUntil: "networkidle" });
-    if (route !== "/demo/semantic-overlay/resource-reading") {
+    if (
+      route === "/demo/semantic-overlay/derived-output-flow" ||
+      route === "/demo/semantic-overlay/agent-runtime"
+    ) {
       await expect(page.locator(".mermaid-output svg").first()).toBeVisible({ timeout: 20_000 });
     }
     expect(

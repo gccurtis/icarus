@@ -209,7 +209,7 @@
       status: "extend",
       input: "DerivedOutput + intelligence + retrieve",
       output: "SynthesisDecision + issued evidence",
-      note: "Keep the bounded structured-output loop; add selection, discovery, traversal, contextual view, and typed evidentiary readers beside retrieve."
+      note: "Keep the bounded structured-output loop; add selection, discovery, interpreted material retrieval, traversal, contextual view, and typed evidentiary readers beside exact-text retrieve."
     },
     {
       order: "08",
@@ -227,7 +227,7 @@
       status: "deferred",
       input: "scoped resource/content handles + bounded typed request",
       output: "navigation/context or typed evidence",
-      note: "find/list/inspect/view orient without evidence; read_text/read_table/read_chart/read_image use direct project-resource paths and mint evidence IDs."
+      note: "find/list/inspect/view orient without evidence; retrieve_materials issues interpreted descriptor evidence; read_text/read_table/read_chart/read_image/read_csv/read_code use direct project-resource paths and mint native evidence IDs."
     },
     {
       order: "10",
@@ -653,7 +653,7 @@ readDerivedOutputValue({ derivedOutputId })
       <div class="convergence-strip">
         <span><Network size={17} aria-hidden="true" /> SHARED NEXT CALL</span>
         <code>{"processSemanticSyncQueue({ ref?, limit? })"}</code>
-        <p>claim latest → read authoritative snapshot → project text → translate → publish → index</p>
+        <p>claim latest → read authoritative snapshot → project exact text → translate → publish → index</p>
       </div>
     </section>
 
@@ -662,7 +662,7 @@ readDerivedOutputValue({ derivedOutputId })
         <div><span class="section-number">02</span><h2>The resource-to-overlay<br />call graph.</h2></div>
         <p>
           Dashed lines leave latency-sensitive work. Solid lines carry typed messages. The resource
-          adapter is the only stage allowed to know whether the text came from a page, a slide, or a shape.
+          adapter is the only stage allowed to know whether exact text or a material seed came from a document block, slide shape, or external source.
         </p>
       </header>
 
@@ -679,12 +679,14 @@ readDerivedOutputValue({ derivedOutputId })
       <div class="projection-rule">
         <div class="projection-icon"><FileText size={21} aria-hidden="true" /></div>
         <div>
-          <span>THE NORMALIZATION CONTRACT</span>
-          <h3>Everything is text; location is a sidecar.</h3>
+          <span>THE LIVE EXACT-TEXT CONTRACT</span>
+          <h3>Narrative retrieval is text; location is a sidecar.</h3>
           <p>
             <code>readSemanticResource</code> returns one canonical string plus a locator map from
             text ranges back to blocks, slides, notes, and shapes. Translation consumes only the
-            string. Read tools and citations use the map when a human needs structural context.
+            string. The target resource walk also emits first-class material seeds into a separate
+            profiling and description pipeline; those generated descriptors never enter ordinary
+            text retrieval. <a href="/demo/semantic-overlay/material-layer">Open the material-layer contract ↗</a>
           </p>
         </div>
         <pre><code>{`type SemanticResourceProjection = SemanticSourceInput & {

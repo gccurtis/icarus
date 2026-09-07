@@ -257,14 +257,24 @@ the accepted target adds out-of-band hard slide boundaries so translation and
 citation coalescence cannot bridge two slides while the deck retains one global
 coordinate space.
 
-The target projection layout separates resource traversal from shared content
-projection under `behavior/semantic/projection/`: document and slide-deck
-adapters own ordering and locators, while text, table, chart, and image modules
-own their content-specific contribution. The current behavior already shares a
-content-block walk, projects nested table text plus image alt/caption text, and
-excludes prompt content. Native chart data is the next structured projection;
-original image pixels remain an authoritative direct-read concern rather than
-text sent to the embedding provider.
+The target projection layout separates resource traversal from exact narrative
+projection and first-class material inventory. Document and slide-deck adapters
+own ordering and locators. Narrative text continues into the exact-text lane;
+tables, CSV data, charts, images, and code enter the independent semantic
+material pipeline. The current behavior already shares a content-block walk,
+projects nested table text plus image alt/caption text, and excludes prompt
+content. The target stops relying on flattened raw rows for discovery: native
+material receives a deterministic profile, optional authored/generated
+descriptions, and specialized direct readers.
+
+The material lane shares project scope and embedding dimensions with text but
+uses separate recursive-index roots. `retrieve` therefore remains exact-text
+only. Target `retrieve_materials` returns explicitly interpreted, source-bound
+descriptor evidence. Exact numerical, code, chart, or visual claims still use
+`read_csv`, `read_code`, `read_table`, `read_chart`, or `read_image`. Jina v4 can
+add native image vectors in the shared vector space after the currently
+string-only adapter gains a typed image operation. The complete target is in
+`docs/semantic-material-layer.md`.
 
 Accepted resource changes coalesce by resource and requested revision in
 `semanticSyncJobs`. The bounded worker embeds the latest projection, checks that
@@ -280,12 +290,17 @@ infrastructure gaps rather than missing procedure contracts.
 
 1. Add a transactional resource-write/outbox boundary and always-on worker host.
 2. Add source-local large-text and reader window planning.
-3. Add the bounded resource-reading tool grammar: `find_*`, `list_*`,
-   `inspect_*`, and `view_*` orient without evidence IDs; `retrieve` and typed
-   `read_*` tools mint evidence. Only `retrieve` queries the Semantic Overlay.
-   `read_text`, `read_table`, `read_chart`, and `read_image` go directly to
-   authoritative project resources; `view_slide` is contextual and non-citable.
-4. Add an optional bounded query frontier with truncation diagnostics and recall
+3. Add semantic material identity plus document/deck inventory and deterministic
+   profiles without changing current retrieval behavior.
+4. Add the bounded resource-reading tool grammar: `find_*`, `list_*`,
+   `inspect_*`, and `view_*` orient without evidence IDs; exact-text `retrieve`,
+   interpreted `retrieve_materials`, and typed `read_*` tools mint evidence.
+   Every `read_*` tool goes directly to authoritative project resources;
+   `view_slide` is contextual and non-citable.
+5. Add descriptor generation, separate material index roots, CSV/code adapters,
+   and native Jina image embeddings according to
+   `docs/semantic-material-layer.md`.
+6. Add an optional bounded query frontier with truncation diagnostics and recall
    tests.
 
 The development-reference method and the visual/executable proof for this flow

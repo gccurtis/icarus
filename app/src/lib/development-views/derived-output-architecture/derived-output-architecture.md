@@ -1,6 +1,6 @@
 # Derived Output architecture development views
 
-Four purpose-built pages communicate and exercise the system from different angles.
+Five purpose-built pages communicate and exercise the system from different angles.
 
 - `components/procedure-flow.svelte` follows authoritative resource text into the Semantic
   Overlay, then follows a Prompt Block through generation and ID-based reading.
@@ -9,6 +9,9 @@ Four purpose-built pages communicate and exercise the system from different angl
 - `components/resource-reading.svelte` refines direct reading into a specialized tool
   grammar, separates evidence-producing reads from contextual traversal, and maps the
   shared document/deck projection seam.
+- `components/material-layer.svelte` defines how tables, CSV data, charts, images, and
+  code acquire deterministic profiles, interpreted descriptors, separate semantic
+  facets, native read paths, and a material-only retrieval lane.
 - `components/live-proof.svelte` creates a real document, drains its semantic
   job, runs direct-prompt or named-variable synthesis, and displays the value
   API plus copied evidence.
@@ -25,9 +28,14 @@ gray marks explicit follow-ups such as the deck adapter, durable generation
 queue, selected-text focus, and read tools. The agent page keeps target
 `read_selection` and `find_resources` contracts beside the current single
 `retrieve` tool. The resource-reading page supersedes the earlier generic target
-`read` sketch with explicit `read_text`,
-`read_table`, `read_chart`, and `read_image` tools. `retrieve` remains the only
-Semantic Overlay query; every `read_*` tool uses the authoritative resource path.
+`read` sketch with explicit `read_text`, `read_table`, `read_chart`,
+`read_image`, `read_csv`, and `read_code` tools. `retrieve` remains the live
+exact-text Semantic Overlay query; the target `retrieve_materials` uses a
+separate interpreted-material index. Every `read_*` tool uses the authoritative
+resource path.
+
+The durable target contract for this additional lane lives in
+[`semantic-material-layer.md`](../../../../../docs/semantic-material-layer.md).
 
 The full construction method, visual rationale, theme contract, failure found by
 the live proof, and review checklist live in

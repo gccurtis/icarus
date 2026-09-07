@@ -2,9 +2,10 @@
 
 This is the project standard for a development page whose job is to make a
 system understandable and provable. It records the decisions behind the
-Derived Output procedure flow, agent runtime, resource-reading contract, and executable proof pages. It is
-not a layout template. Each page must take the visual form that best explains
-its own subject.
+Derived Output procedure flow, agent runtime, resource-reading contract,
+semantic material layer, and executable proof pages. It is not a layout
+template. Each page must take the visual form that best explains its own
+subject.
 
 The standard is the method and the quality bar:
 
@@ -16,10 +17,10 @@ The standard is the method and the quality bar:
    diagnostics;
 6. leave a durable map from the page back to the code it describes.
 
-## Why the Derived Output reference is four pages
+## Why the Derived Output reference is five pages
 
 One long reference page could contain all the information, but it would force
-three different questions into one visual hierarchy. The pages are separated
+five different questions into one visual hierarchy. The pages are separated
 by the kind of understanding they need to create.
 
 | Surface | Question | Visual grammar | Proof level |
@@ -27,11 +28,12 @@ by the kind of understanding they need to create.
 | Procedure flow | What calls what, from an authored resource to an editable generated block? | converging entry paths, call graphs, sequence, state machine, callable ledger | exact symbols and current/deferred status |
 | Agent runtime | What does the agent know, what may it call, and how does evidence become durable? | context stack, control loop, interactive tool console, evidence chain, infrastructure priorities | executable system prompt imported from the capability; target tools labeled as target |
 | Resource reading | How does the agent traverse a document or deck, understand a slide, and obtain typed evidence? | authority grammar, interactive tool field, task routes, slide anatomy, evidence spectrum, projection seam | live `retrieve` and projector facts separated from proposed specialized tools and target files |
+| Semantic material | How do tables, CSV data, images, charts, and code become semantically discoverable without replacing their native authority? | two-lane retrieval machine, interactive material record, processing track, evidence-distance ruler, target schema wall | current content/file/embedding facts separated from the proposed material registry and pipeline |
 | Live proof | Does the vertical slice really work? | two-input laboratory, execution rail, stored result, evidence record | real project store, real resource write, real embedding/index query, real structured generation, real value read |
 
 The pages link to one another, but each can stand on its own. Reusing navigation,
 typography, or a diagram renderer is useful; forcing the same card grid or
-section convention onto all three is not.
+section convention onto all five is not.
 
 ## Source-of-truth pass
 
@@ -184,24 +186,30 @@ into several narrow tools. Their names now carry a stable grammar:
 
 - `find_*`, `list_*`, `inspect_*`, and `view_*` orient the agent and never mint
   evidence IDs;
-- `retrieve` and every `read_*` tool return source material and mint evidence
-  IDs;
-- `retrieve` is the only Semantic Overlay query; every `read_*` call reads the
-  authoritative project resource directly.
+- `retrieve`, the target `retrieve_materials`, and every `read_*` tool return
+  source-backed material and mint evidence IDs;
+- `retrieve` queries the exact-text Semantic Overlay lane,
+  `retrieve_materials` queries the interpreted-material lane, and every
+  `read_*` call reads the authoritative project resource directly.
 
 | Tool | Authority | Purpose | Evidence behavior |
 | --- | --- | --- | --- |
 | `read_selection` | authoritative resource | resolve the user's current selection | exact selected content receives an evidence ID |
 | `find_resources` | project navigation | find scoped resource handles | no evidence ID |
 | `retrieve` | Semantic Overlay | find exact semantically similar text | consolidated exact spans receive evidence IDs |
+| `retrieve_materials` | material index lane | find semantically relevant tables, CSV data, charts, images, and code | source-bound matching facets receive explicitly interpreted evidence IDs |
 | `list_document_blocks` | resource navigation | traverse document order and handles | no evidence ID and no factual payload |
 | `list_deck_slides` | resource navigation | obtain neighboring slide handles | no evidence ID |
 | `inspect_slide` | contextual structure | list typed items, bounds, text ranges, and content handles | no evidence ID |
+| `inspect_dataset` | contextual structure | list bounded sheets, tables, partitions, columns, and native-read handles | no evidence ID |
+| `inspect_code` | contextual structure | list parser-derived symbols and exact source ranges | no evidence ID |
 | `view_slide` | contextual rendering | let the agent understand the composite slide | explicitly non-citable; no evidence ID |
 | `read_text` | authoritative resource | read a bounded block, shape, note, or range | exact text evidence |
 | `read_table` | authoritative resource | read native cells and relationships | structured evidence |
 | `read_chart` | authoritative resource | read native axes, series, labels, and values | structured evidence |
 | `read_image` | authoritative resource | read original image pixels or an exact crop | visual evidence |
+| `read_csv` | authoritative external file | read bounded rows and columns | structured evidence |
+| `read_code` | authoritative external file | read exact line or symbol ranges | verbatim code evidence |
 
 The distinction between `view_slide` and `read_image` is deliberate. A rendered
 slide helps the agent understand association, layout, and hierarchy, but it is a
@@ -210,10 +218,14 @@ The original image content item returned by `read_image` is visual evidence.
 Likewise, native chart data from `read_chart` is preferred to reconstructing a
 chart from pixels.
 
-Retrieval does not preload `hasImages`, `hasCharts`, or a whole resource
-inventory. Its existing locator tells the agent where exact text lives. When
-the question requires more context, `inspect_slide` exposes bounded typed
-handles, and the agent chooses the corresponding view or evidentiary reader.
+Exact-text retrieval does not preload `hasImages`, `hasCharts`, or a whole
+resource inventory. Its existing locator tells the agent where exact text
+lives. When the question explicitly asks for relevant non-prose material,
+`retrieve_materials` searches a separate lane of deterministic profiles,
+user-authored descriptions, generated summaries, and native image vectors.
+When the question requires more context, `inspect_slide`, `inspect_dataset`, or
+`inspect_code` exposes bounded typed handles, and the agent chooses the
+corresponding view or evidentiary reader.
 
 When a selection exists, the run envelope carries `hasSelection: true`, not the
 selected text. The target loop first calls `read_selection`; the application
@@ -242,11 +254,15 @@ attempt. Touching or overlapping citations from the same source snapshot and
 overlay generation become one durable citation; all selected IDs and use
 annotations remain attached to it.
 
-Text, structured, and visual evidence share the attempt-local registry but not
-one generic payload. Text is verbatim. Structured and visual claims are
-interpretations grounded in native cells/series or original pixels. Durable
-citations therefore retain different source shapes, and the UI can distinguish
-them without treating contextual slide renders as evidence.
+Text, structured, visual, and descriptor evidence share the attempt-local
+registry but not one generic payload. Text and code are verbatim. Structured
+and visual claims are interpretations grounded in native cells/series or
+original pixels. A semantic descriptor is farther from authority: it can
+support broad relevance or inventory claims, is always labeled interpreted,
+and retains its source, input hash, model, and prompt version. Exact values or
+depicted details still require a native read. Durable citations therefore
+retain different source shapes, and the UI can distinguish all four without
+treating contextual slide renders as evidence.
 
 ### Resource projection seam
 
@@ -270,16 +286,24 @@ representation/data/behavior/semantic/projection/
 │   └── slide-deck.ts
 └── content/
     ├── text.ts
-    ├── table.ts
-    ├── chart.ts
-    └── image.ts
+    ├── formula.ts
+    ├── authored-labels.ts
+    └── material-seed.ts
 ```
 
 Resource adapters determine traversal and locators. Shared content projectors
-determine what each content kind contributes. The target projection also gains
-out-of-band hard slide boundaries: the deck retains one coordinate space, while
-translation and citation consolidation may not create a span crossing from one
-slide into the next. The boundary is metadata, not an indexed `Slide 1` token.
+determine what narrative content contributes to the exact text lane. The same
+resource walk also emits a first-class inventory of tables, charts, images, and
+other materials into a separate asynchronous pipeline. The target projection
+gains out-of-band hard slide boundaries: the deck retains one coordinate space,
+while translation and citation consolidation may not create a span crossing
+from one slide into the next. The boundary is metadata, not an indexed
+`Slide 1` token.
+
+The complete material identity, profiling, description, facet, two-lane index,
+freshness, tool, evidence-distance, and migration design lives in
+`docs/semantic-material-layer.md`. The development surface is
+`/demo/semantic-overlay/material-layer`.
 
 ### Instructions as an application-owned runtime skill
 
@@ -408,6 +432,7 @@ evidence—not just its outer background.
 | Procedure flow page | `app/src/lib/development-views/derived-output-architecture/components/procedure-flow.svelte` |
 | Agent runtime page | `app/src/lib/development-views/derived-output-architecture/components/agent-runtime.svelte` |
 | Resource-reading page | `app/src/lib/development-views/derived-output-architecture/components/resource-reading.svelte` |
+| Semantic-material page | `app/src/lib/development-views/derived-output-architecture/components/material-layer.svelte` |
 | Executable proof page | `app/src/lib/development-views/derived-output-architecture/components/live-proof.svelte` |
 | Adaptive diagram renderer | `app/src/lib/development-views/derived-output-architecture/components/mermaid-diagram.svelte` |
 | Exact executable agent instruction | `app/src/lib/capabilities/derived-output/api/shared/agent-instructions.ts` |
@@ -427,6 +452,7 @@ Routes are served under:
 - `/demo/semantic-overlay/derived-output-flow`
 - `/demo/semantic-overlay/agent-runtime`
 - `/demo/semantic-overlay/resource-reading`
+- `/demo/semantic-overlay/material-layer`
 - `/demo/semantic-overlay/derived-output-live` (redirects into the project-scoped
   application route before executing writes)
 

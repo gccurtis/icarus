@@ -8,7 +8,9 @@
   import Check from "@lucide/svelte/icons/check";
   import Compass from "@lucide/svelte/icons/compass";
   import Eye from "@lucide/svelte/icons/eye";
+  import FileCode2 from "@lucide/svelte/icons/file-code-2";
   import FileSearch from "@lucide/svelte/icons/file-search";
+  import FileSpreadsheet from "@lucide/svelte/icons/file-spreadsheet";
   import FileText from "@lucide/svelte/icons/file-text";
   import Image from "@lucide/svelte/icons/image";
   import Layers3 from "@lucide/svelte/icons/layers-3";
@@ -19,6 +21,7 @@
   import Route from "@lucide/svelte/icons/route";
   import ScanEye from "@lucide/svelte/icons/scan-eye";
   import Search from "@lucide/svelte/icons/search";
+  import Sparkles from "@lucide/svelte/icons/sparkles";
   import TableIcon from "@lucide/svelte/icons/table";
 
   type Icon = Component<{
@@ -99,9 +102,44 @@
   }];
 }`,
       rules: [
-        "This is the only tool that queries the Semantic Overlay.",
+        "This is the only live query tool and it searches the exact-text Semantic Overlay lane.",
         "Every returned hit is already exact, citable text and receives an evidence ID.",
         "The hit says where the text lives; it does not preload a resource inventory."
+      ]
+    },
+    {
+      id: "retrieve-materials",
+      name: "retrieve_materials",
+      group: "discover",
+      authority: "evidence",
+      status: "target",
+      icon: Sparkles,
+      summary: "Search interpreted descriptions of tables, CSV data, charts, images, and code.",
+      when: "The question asks whether a relevant non-prose material exists or where to inspect it.",
+      input: `{
+  query: string;
+  kinds?: ("table" | "csv" | "chart" | "image" | "code")[];
+  topK?: number;
+}`,
+      output: `{
+  hits: [{
+    evidenceId: string;
+    evidenceKind: "interpreted";
+    materialHandle: string;
+    kind: MaterialKind;
+    name: string;
+    profile: MaterialProfileDigest;
+    description?: MaterialDescription;
+    matchedFacets: MaterialFacet[];
+    source: MaterialSourceSnapshot;
+    freshness: "current";
+    score: number;
+  }];
+}`,
+      rules: [
+        "Searches a separate material index; ordinary retrieve continues to return exact text only.",
+        "A hit may support a broad relevance claim, but exact values or depicted details require the matching native read_* tool.",
+        "Generated summary, deterministic profile, user description, and native visual vector keep distinct provenance."
       ]
     },
     {
@@ -223,6 +261,70 @@
         "The manifest exposes kinds, placement, ranges, and handles—not factual values.",
         "A contentHandle routes to read_text, read_table, read_chart, or read_image.",
         "The visualHandle routes to view_slide for orientation only."
+      ]
+    },
+    {
+      id: "inspect-dataset",
+      name: "inspect_dataset",
+      group: "traverse",
+      authority: "context",
+      status: "target",
+      icon: FileSpreadsheet,
+      summary: "Expose a bounded dataset outline without returning its factual rows.",
+      when: "A material hit identifies a CSV, spreadsheet, or large table and the agent must choose a native selection.",
+      input: `{
+  materialHandle: string;
+  cursor?: string;
+  limit?: number;
+}`,
+      output: `{
+  parts: [{
+    partHandle: string;
+    kind: "sheet" | "table" | "partition";
+    name: string;
+    rowRange?: { from, to };
+    columns: [{ id: string; name: string; inferredType: string }];
+  }];
+  nextCursor?: string;
+  // no row values, no evidenceId
+}`,
+      rules: [
+        "Returns topology, schema, and handles; native values remain unread.",
+        "A partHandle and bounded row/column request route to read_csv or read_table.",
+        "Large datasets expose deterministic partitions rather than an unlimited outline."
+      ]
+    },
+    {
+      id: "inspect-code",
+      name: "inspect_code",
+      group: "traverse",
+      authority: "context",
+      status: "target",
+      icon: FileCode2,
+      summary: "Expose a code file's symbol and range outline without source text.",
+      when: "A code material hit identifies a file and the agent must choose the exact implementation to read.",
+      input: `{
+  materialHandle: string;
+  query?: string;
+  cursor?: string;
+  limit?: number;
+}`,
+      output: `{
+  language: string;
+  symbols: [{
+    symbolHandle: string;
+    kind: string;
+    name: string;
+    range: { fromLine, toLine };
+  }];
+  parserStatus: "parsed" | "fallback";
+  nextCursor?: string;
+  // no source text, no evidenceId
+}`,
+      rules: [
+        "A parser-derived outline or explicit fallback is orientation, not evidence.",
+        "The symbolHandle routes to read_code for exact source lines.",
+        "Query, pagination, and file-size limits keep repository navigation bounded."
       ]
     },
     {
@@ -379,6 +481,72 @@
         "The pixels are authoritative; the factual description inferred from them remains interpretive.",
         "A visual citation can render as a thumbnail linked back to its resource and content item."
       ]
+    },
+    {
+      id: "read-csv",
+      name: "read_csv",
+      group: "read",
+      authority: "evidence",
+      status: "target",
+      icon: FileSpreadsheet,
+      summary: "Read a bounded native row and column selection from a raw CSV file.",
+      when: "The answer needs exact values from a CSV material rather than its semantic descriptor.",
+      input: `{
+  partHandle: string;
+  rows: { from: number; to: number };
+  columnIds?: string[];
+  cursor?: string;
+}`,
+      output: `{
+  evidenceId: string;
+  kind: "structured";
+  source: { fileId, hash, mediaType };
+  selection: {
+    header: NativeCell[];
+    rows: NativeCell[][];
+    rowRange: { from, to };
+    columnIds: string[];
+  };
+  parseDiagnostics: ParseDiagnostic[];
+  nextCursor?: string;
+}`,
+      rules: [
+        "The immutable file hash and exact native selection anchor the evidence.",
+        "Parsing preserves quoted delimiters, encoding diagnostics, and original row positions.",
+        "Row, column, byte, and response limits are enforced before values reach the model."
+      ]
+    },
+    {
+      id: "read-code",
+      name: "read_code",
+      group: "read",
+      authority: "evidence",
+      status: "target",
+      icon: FileCode2,
+      summary: "Read exact source lines or one known code symbol.",
+      when: "The answer makes a claim about implementation, declaration, or behavior in a code file.",
+      input: `{
+  symbolHandle?: string;
+  materialHandle?: string;
+  range?: { fromLine: number; toLine: number };
+  beforeLines?: number;
+  afterLines?: number;
+}`,
+      output: `{
+  chunks: [{
+    evidenceId: string;
+    kind: "text";
+    source: { fileId, hash, language };
+    range: { fromLine, toLine };
+    text: string;
+  }];
+  truncated: boolean;
+}`,
+      rules: [
+        "Returns verbatim code from the authoritative file; it never reads a generated summary.",
+        "Exact line ranges and immutable file hash survive into the citation record.",
+        "A bounded neighborhood can expand a symbol without exposing the whole repository file."
+      ]
     }
   ];
 
@@ -424,7 +592,7 @@
       title: "Describe what the photograph shows.",
       question: "What safety condition is visible in the field photograph?",
       steps: [
-        { tool: "retrieve", authority: "evidence", note: "find caption or adjacent text" },
+        { tool: "retrieve_materials", authority: "evidence", note: "find image meaning" },
         { tool: "inspect_slide", authority: "context", note: "discover image-03" },
         { tool: "read_image", authority: "evidence", note: "read original pixels" },
         { tool: "view_slide", authority: "context", note: "understand placement" }
@@ -506,26 +674,26 @@
 │   ├── document.ts             document traversal only
 │   └── slide-deck.ts           slide + shape traversal only
 └── content/
-    ├── text.ts                 display text
-    ├── table.ts                native cells → citable text
-    ├── chart.ts                native data → citable text
-    └── image.ts                alt + caption only`;
+    ├── text.ts                 narrative display text
+    ├── formula.ts              authored display text
+    ├── authored-labels.ts      bounded labels + captions
+    └── material-seed.ts        table/chart/image identity`;
 
-  const PROJECTION_CONTRACT = `type SemanticResourceProjection = {
-  ref: ResourceRef;
-  revision: number;
-  encoding: "utf-16";
-  text: string;
-  locators: SemanticLocatorSpan[];
-  hardBoundaries: {
-    at: number;
-    kind: "slide";
-    slideId: string;
-  }[];
+  const PROJECTION_CONTRACT = `type ProjectedResource = {
+  exact: {
+    ref: ResourceRef;
+    revision: number;
+    encoding: "utf-16";
+    text: string;
+    locators: SemanticLocatorSpan[];
+    hardBoundaries: HardBoundary[];
+  };
+  materials: MaterialSeed[];
 };
 
 // no "Slide 1" tokens
 // no Prompt Block responses
+// raw rows/pixels stay out of exact text
 // no segment or citation crosses a hard boundary`;
 </script>
 
@@ -552,6 +720,7 @@
       <a href="#slide">slide anatomy</a>
       <a href="#evidence">evidence</a>
       <a href="#projection">projection</a>
+      <a href="/demo/semantic-overlay/material-layer">material layer</a>
       <a class="back-link" href="/demo/semantic-overlay/agent-runtime">
         <ArrowLeft size={13} aria-hidden="true" /> agent runtime
       </a>
@@ -565,8 +734,8 @@
         <h1><span>Read</span> means cite.</h1>
         <p>
           Give the agent several narrow doors whose names declare their authority. Find, list,
-          inspect, and view establish orientation. Retrieve and read return source material and
-          therefore mint evidence IDs.
+          inspect, and view establish orientation. Retrieve and read return source-backed material
+          and therefore mint evidence IDs—with the evidence kind stating whether it is exact or interpreted.
         </p>
         <div class="hero-status">
           <span class="status-live">LIVE · retrieve</span>
@@ -580,7 +749,7 @@
         <article><span>02</span><strong>LIST</strong><p>Traverse its order.</p><small>NO EVIDENCE</small></article>
         <article><span>03</span><strong>INSPECT</strong><p>Expose typed handles.</p><small>NO EVIDENCE</small></article>
         <article><span>04</span><strong>VIEW</strong><p>Understand composition.</p><small>NO EVIDENCE</small></article>
-        <article class="evidentiary"><span>05</span><strong>RETRIEVE</strong><p>Search exact project text.</p><small>EVIDENCE IDs</small></article>
+        <article class="evidentiary"><span>05</span><strong>RETRIEVE</strong><p>Search one explicit index lane.</p><small>EVIDENCE IDs</small></article>
         <article class="evidentiary"><span>06</span><strong>READ</strong><p>Open authoritative content.</p><small>EVIDENCE IDs</small></article>
       </div>
     </section>
@@ -606,8 +775,8 @@
         </div>
         <article class="with-id">
           <header><BookOpen size={19} aria-hidden="true" /><span>EVIDENCE CHANNEL</span></header>
-          <div><code>retrieve</code><code>read*</code></div>
-          <p>Returns source material with an application-issued evidence ID and a durable provenance shape.</p>
+          <div><code>retrieve</code><code>retrieve_materials</code><code>read*</code></div>
+          <p>Returns source-backed material with an application-issued evidence ID, evidence kind, and durable provenance shape.</p>
         </article>
       </div>
 
@@ -615,6 +784,12 @@
         <Check size={17} aria-hidden="true" />
         <p><strong><code>view_slide</code> replaces “read visual slide.”</strong> The name prevents a composite screenshot from sounding citable. <code>read_image</code> is the evidentiary visual tool because it returns the original content item.</p>
       </div>
+
+      <a class="material-expansion" href="/demo/semantic-overlay/material-layer">
+        <Sparkles size={20} aria-hidden="true" />
+        <div><span>SEMANTIC MATERIAL LAYER</span><strong>Exact text and interpreted material use separate retrieval lanes.</strong><small>See how CSV data, native tables, images, charts, and code become discoverable without replacing their authoritative source.</small></div>
+        <ArrowRight size={18} aria-hidden="true" />
+      </a>
     </section>
 
     <section id="tools" class="section tools-section">
@@ -676,7 +851,8 @@
         <div><span>03 / TOOL SELECTION</span><h2>A question traces<br />its own route.</h2></div>
         <p>
           Specialized tools do not create model confusion when their preconditions are distinct.
-          Each route crosses the evidence boundary only when it reaches exact source material.
+          Each route states whether it crosses the evidence boundary through exact text,
+          interpreted material discovery, or an authoritative native read.
         </p>
       </header>
 
@@ -781,12 +957,12 @@
         <article class="text-evidence">
           <header><FileText size={20} aria-hidden="true" /><span>TEXT EVIDENCE</span><small>VERBATIM</small></header>
           <blockquote>“Response time improved after the field retrofit.”</blockquote>
-          <dl><div><dt>stores</dt><dd>source · revision · exact span · locators</dd></div><div><dt>reader</dt><dd><code>retrieve</code> or <code>read_text</code></dd></div></dl>
+          <dl><div><dt>stores</dt><dd>source · revision/hash · exact span/range · locators</dd></div><div><dt>reader</dt><dd><code>retrieve</code> · <code>read_text</code> · <code>read_code</code></dd></div></dl>
         </article>
         <article class="structured-evidence">
           <header><ChartColumn size={20} aria-hidden="true" /><span>STRUCTURED EVIDENCE</span><small>INTERPRETED</small></header>
           <div class="mini-series"><span>Q1 <b>62</b></span><span>Q2 <b>68</b></span><span>Q3 <b>79</b></span><span>Q4 <b>91</b></span></div>
-          <dl><div><dt>stores</dt><dd>source · content ID · native selection · values</dd></div><div><dt>reader</dt><dd><code>read_table</code> or <code>read_chart</code></dd></div></dl>
+          <dl><div><dt>stores</dt><dd>source · content ID/hash · native selection · values</dd></div><div><dt>reader</dt><dd><code>read_table</code> · <code>read_chart</code> · <code>read_csv</code></dd></div></dl>
         </article>
         <article class="visual-evidence">
           <header><Image size={20} aria-hidden="true" /><span>VISUAL EVIDENCE</span><small>INTERPRETED</small></header>
@@ -805,15 +981,21 @@
         <div><span>PUBLICATION RULE</span><strong>The final response selects evidence IDs; it never selects context handles.</strong></div>
         <code>SynthesisDecision.evidence[]</code>
       </div>
+
+      <a class="descriptor-rule" href="/demo/semantic-overlay/material-layer">
+        <Sparkles size={19} aria-hidden="true" />
+        <div><span>DERIVED DESCRIPTOR EVIDENCE</span><strong>A semantic material summary is one step farther from authority.</strong><p>It can establish broad relevance when visibly labeled interpreted. Exact values, code behavior, and visual details still resolve through the native reader.</p></div>
+        <code>retrieve_materials → read_*</code>
+      </a>
     </section>
 
     <section id="projection" class="section projection-section">
       <header class="section-heading">
         <div><span>06 / PROJECTION SEAM</span><h2>Resources traverse.<br />Content projects.</h2></div>
         <p>
-          Documents and decks decide order and location. Shared content projectors decide what each
-          content kind contributes. The Semantic Overlay still receives one canonical text value,
-          exact locators, and explicit structural boundaries.
+          Documents and decks decide order and location. Shared adapters produce two outputs: one
+          exact-text projection and one first-class material inventory. The material pipeline is
+          independent so generated descriptions never enter ordinary text retrieval.
         </p>
       </header>
 
@@ -833,18 +1015,26 @@
         </div>
         <div class="projection-arrow"><span></span><ArrowRight size={19} aria-hidden="true" /><span></span></div>
         <div class="content-core">
-          <header><Layers3 size={20} aria-hidden="true" /><span>SHARED CONTENT PROJECTORS</span></header>
-          <div><code>text.ts</code><small>display text</small></div>
-          <div><code>table.ts</code><small>native cells</small></div>
-          <div><code>chart.ts</code><small>native series</small></div>
-          <div><code>image.ts</code><small>alt + caption</small></div>
+          <header><Layers3 size={20} aria-hidden="true" /><span>SHARED CONTENT ADAPTERS</span></header>
+          <div><code>text.ts</code><small>narrative display</small></div>
+          <div><code>formula.ts</code><small>authored display</small></div>
+          <div><code>authored-labels.ts</code><small>captions + labels</small></div>
+          <div><code>material-seed.ts</code><small>native identity only</small></div>
           <p><code>prompt</code> is always excluded from semantic projection.</p>
         </div>
         <div class="projection-arrow"><span></span><ArrowRight size={19} aria-hidden="true" /><span></span></div>
         <div class="projection-output">
           <Braces size={22} aria-hidden="true" /><span>SEMANTIC INPUT</span><strong>one UTF-16 text space</strong>
-          <small>text + locators + hard slide boundaries</small>
+          <small>exact text + locators + hard slide boundaries</small>
         </div>
+      </div>
+
+      <div class="material-fork">
+        <div><Layers3 size={18} aria-hidden="true" /><span>SAME RESOURCE WALK</span><strong>inventory tables · charts · images</strong></div>
+        <ArrowRight size={18} aria-hidden="true" />
+        <div><Sparkles size={18} aria-hidden="true" /><span>SEPARATE TARGET</span><strong>SemanticMaterial[]</strong></div>
+        <ArrowRight size={18} aria-hidden="true" />
+        <a href="/demo/semantic-overlay/material-layer">Open the material pipeline</a>
       </div>
 
       <div class="contract-pair">
@@ -933,9 +1123,9 @@
   }
 
   .brand, .local-nav nav, .back-link, .eyebrow, .hero-status, .law-strip article header,
-  .grammar-note, .tool-contract > header, .tool-contract li, .scenario-stage > header,
-  .evidence-spectrum article header, .evidence-rule, .projection-now > div,
-  .content-core header, .decision-card, .decision-card a, .page-footer {
+  .grammar-note, .material-expansion, .tool-contract > header, .tool-contract li, .scenario-stage > header,
+  .evidence-spectrum article header, .evidence-rule, .descriptor-rule, .projection-now > div,
+  .content-core header, .material-fork, .material-fork > div, .decision-card, .decision-card a, .page-footer {
     display: flex;
     align-items: center;
   }
@@ -1001,6 +1191,11 @@
   .grammar-note { gap: 0.7rem; margin-top: 1rem; padding: 1rem 1.2rem; border: 1px solid var(--context-border); background: var(--context-surface); color: var(--context); }
   .grammar-note p { margin: 0; font-size: 0.74rem; line-height: 1.55; }
   .grammar-note strong { color: var(--ink); }
+  .material-expansion { gap: 0.8rem; margin-top: 0.75rem; padding: 1rem 1.2rem; border: 1px solid var(--structured-border); background: var(--structured-surface); color: var(--structured); text-decoration: none; }
+  .material-expansion > div { min-width: 0; flex: 1; }
+  .material-expansion span { font: 0.5rem var(--token-font-mono); letter-spacing: 0.09em; }
+  .material-expansion strong { display: block; margin-top: 0.28rem; color: var(--ink); font: 400 0.92rem var(--token-font-reading); }
+  .material-expansion small { display: block; margin-top: 0.24rem; color: var(--secondary); font-size: 0.63rem; line-height: 1.45; }
 
   .tool-field { display: grid; grid-template-columns: repeat(4, 1fr); border: 1px solid var(--line-strong); background: var(--line); gap: 1px; }
   .tool-group { min-width: 0; background: var(--panel); }
@@ -1135,6 +1330,11 @@
   .evidence-rule div span { display: block; font: 0.5rem var(--token-font-mono); letter-spacing: 0.08em; }
   .evidence-rule strong { display: block; margin-top: 0.3rem; color: var(--ink); font: 400 1rem var(--token-font-reading); }
   .evidence-rule > code { color: var(--evidence); font-size: 0.65rem; }
+  .descriptor-rule { display: grid; grid-template-columns: auto 1fr auto; gap: 1rem; margin-top: 0.75rem; padding: 1.2rem; border: 1px solid var(--structured-border); background: var(--structured-surface); color: var(--structured); text-decoration: none; }
+  .descriptor-rule span { color: var(--structured); font: 0.5rem var(--token-font-mono); letter-spacing: 0.08em; }
+  .descriptor-rule strong { display: block; margin-top: 0.3rem; color: var(--ink); font: 400 1rem var(--token-font-reading); }
+  .descriptor-rule p { max-width: 80ch; margin: 0.3rem 0 0; color: var(--secondary); font-size: 0.64rem; line-height: 1.45; }
+  .descriptor-rule > code { color: var(--structured); font-size: 0.63rem; }
 
   .projection-now { display: grid; grid-template-columns: minmax(17rem, 0.7fr) 1fr; gap: 2rem; align-items: center; margin-bottom: 1rem; padding: 1rem 1.2rem; border: 1px solid var(--token-color-success-border); background: var(--token-color-success-surface); }
   .projection-now > div { gap: 0.6rem; flex-wrap: wrap; }
@@ -1161,6 +1361,11 @@
   .projection-output { padding: 1rem; }
   .projection-output :global(svg) { color: var(--evidence); }
   .projection-output > span { color: var(--evidence); }
+  .material-fork { justify-content: center; gap: 0.75rem; margin-top: 0.75rem; padding: 0.85rem; border: 1px solid var(--structured-border); background: var(--structured-surface); color: var(--structured); }
+  .material-fork > div { gap: 0.45rem; }
+  .material-fork span { color: var(--muted); font: 0.48rem var(--token-font-mono); letter-spacing: 0.07em; }
+  .material-fork strong { color: var(--ink); font: 500 0.63rem var(--token-font-mono); }
+  .material-fork > a { padding: 0.45rem 0.6rem; border: 1px solid var(--structured-border); color: var(--structured); font-size: 0.62rem; font-weight: 600; text-decoration: none; }
   .contract-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; margin-top: 1rem; border: 1px solid var(--line-strong); background: var(--line); }
   .contract-pair article { min-width: 0; background: var(--raised); }
   .contract-pair header { display: flex; justify-content: space-between; gap: 1rem; padding: 0.8rem 1rem; border-bottom: 1px solid var(--line); }
@@ -1204,6 +1409,8 @@
     .law-gate { grid-template: none; grid-auto-flow: column; align-items: center; min-height: 5rem; }
     .law-gate span { width: 100%; height: 1px; }
     .schema-grid, .tool-contract ul, .route-ledger, .slide-lab, .contract-pair, .decision-card { grid-template-columns: 1fr; }
+    .material-fork { align-items: flex-start; flex-direction: column; }
+    .material-fork > :global(svg) { transform: rotate(90deg); align-self: center; }
     .scenario-stage > header { align-items: flex-start; flex-wrap: wrap; }
     .scenario-stage > header p { width: 100%; margin-left: 0; }
     .decision-card a { width: fit-content; }
@@ -1229,6 +1436,8 @@
     .manifest small { grid-column: 2; }
     .evidence-rule { grid-template-columns: auto 1fr; align-items: start; }
     .evidence-rule > code { grid-column: 2; }
+    .descriptor-rule { grid-template-columns: auto 1fr; align-items: start; }
+    .descriptor-rule > code { grid-column: 2; }
     .boundary-rule { grid-template-columns: 1fr; gap: 0.5rem; }
     .boundary-rule i { display: none; }
     .boundary-rule p { grid-column: auto; }

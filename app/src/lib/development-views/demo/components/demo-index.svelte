@@ -8,6 +8,7 @@
   import MessagesSquare from "@lucide/svelte/icons/messages-square";
   import ScanEye from "@lucide/svelte/icons/scan-eye";
   import Shapes from "@lucide/svelte/icons/shapes";
+  import Sparkles from "@lucide/svelte/icons/sparkles";
   import Workflow from "@lucide/svelte/icons/workflow";
 
   import { ScreenCard, ScreenCards } from "$authored-components/screen";
@@ -39,7 +40,7 @@
       sub: "Resource text in; grounded content out",
       icon: Workflow,
       about:
-        "Two purpose-built maps: the exact ingestion/generation/read procedure and the agent's prompt, tools, evidence protocol, and scaling seams."
+        "A connected architecture set: exact procedure flow, agent runtime, resource reading, semantic materials, evidence protocol, and scaling seams."
     },
     {
       href: "/demo/semantic-overlay/derived-output-live",
@@ -56,6 +57,14 @@
       icon: ScanEye,
       about:
         "The proposed traversal, contextual slide view, specialized evidence readers, evidence kinds, and shared document/deck projection seam."
+    },
+    {
+      href: "/demo/semantic-overlay/material-layer",
+      title: "Semantic material layer",
+      sub: "Make data, images, tables, and code discoverable",
+      icon: Sparkles,
+      about:
+        "The goal-state material registry, profiling and description pipeline, two-lane overlay, interpreted evidence policy, native readers, and implementation surface."
     },
     {
       href: "/demo/document-editor-reference",

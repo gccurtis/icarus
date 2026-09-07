@@ -132,11 +132,13 @@
     registry --> decide{"Enough grounded context?"}:::decision
     decide -- "no · resource unknown" --> find["find_resources"]:::tool
     decide -- "no · need more meaning" --> retrieveMore["retrieve"]:::tool
+    decide -- "no · need non-prose material" --> material["retrieve_materials"]:::tool
     decide -- "no · need orientation" --> orient["list_* / inspect_* / view_*"]:::context
-    decide -- "no · need source material" --> read["read_text / table / chart / image"]:::tool
+    decide -- "no · need source material" --> read["read_text / table / chart / image / csv / code"]:::tool
     find --> agent
     orient --> agent
     retrieveMore --> registry
+    material --> registry
     read --> registry
     decide -- yes --> structured["SynthesisDecision<br/>response + selected IDs"]:::answer
     structured --> validate["parse schema + reject<br/>duplicate or unissued IDs"]:::gate
@@ -304,6 +306,7 @@ type TemplatedDerivedDecision = {
       <a href="#evidence">evidence</a>
       <a href="#infrastructure">infrastructure</a>
       <a href="/demo/semantic-overlay/resource-reading">resource reading</a>
+      <a href="/demo/semantic-overlay/material-layer">material layer</a>
       <a href="/demo/semantic-overlay/derived-output-live">live proof</a>
       <a class="flow-link" href="/demo/semantic-overlay/derived-output-flow"><ArrowLeft size={13} aria-hidden="true" /> procedure flow</a>
     </nav>
@@ -379,8 +382,8 @@ type TemplatedDerivedDecision = {
         <div><span>02 / CONTROL LOOP</span><h2>One agent.<br />A bounded tool grammar.</h2></div>
         <p>
           Today, retrieval is the forced first action and the only executable tool. The target loop
-          conditionally starts with selection, then uses discovery, contextual traversal, and
-          specialized authoritative readers inside one attempt.
+          conditionally starts with selection, then uses exact-text or interpreted-material
+          discovery, contextual traversal, and specialized authoritative readers inside one attempt.
         </p>
       </header>
 
@@ -389,7 +392,7 @@ type TemplatedDerivedDecision = {
         <MermaidDiagram
           source={AGENT_LOOP}
           label="Bounded Derived Output agent control loop with selection, discovery, retrieval, contextual traversal, and specialized evidence readers"
-          caption="Retrieve and its retry-local evidence registry are live. Selection, discovery, contextual traversal, and typed readers are explicit target extensions."
+          caption="Exact-text retrieve and its retry-local evidence registry are live. Material retrieval, selection, discovery, contextual traversal, and typed readers are explicit target extensions."
           minHeight="48rem"
         />
       </div>
@@ -448,7 +451,7 @@ type TemplatedDerivedDecision = {
 
       <a class="reading-expansion" href="/demo/semantic-overlay/resource-reading">
         <Layers3 size={23} aria-hidden="true" />
-        <div><span>RESOURCE-READING CONTRACT</span><strong>Find and view orient. Retrieve and read cite.</strong><small>Inspect eleven exact tool contracts, four task routes, slide anatomy, evidence kinds, and the document/deck projection seam.</small></div>
+        <div><span>RESOURCE-READING CONTRACT</span><strong>Find and view orient. Retrieve and read cite.</strong><small>Inspect sixteen exact tool contracts, four task routes, slide anatomy, evidence kinds, and the document/deck projection seam.</small></div>
         <ArrowRight size={19} aria-hidden="true" />
       </a>
     </section>
