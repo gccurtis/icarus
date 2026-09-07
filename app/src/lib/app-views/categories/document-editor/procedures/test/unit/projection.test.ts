@@ -113,23 +113,31 @@ test("a non-text block is drawn as an atom beside its text, and comes back whole
   assert.deepEqual(bodyOf(doc, before), before);
 });
 
-test("a Prompt Block is a selectable atom whose Derived Output link round-trips", () => {
+test("a Prompt Block is ordinary styled text whose Derived Output link round-trips", () => {
   const prompt: ContentBlock = {
     id: "#prompt",
     type: "prompt",
     derivedOutputId: "derivedOutputs:7" as Id<"derivedOutputs">,
-    atoms: [],
-    display: "",
-    marks: [],
-    state: "idle"
+    atoms: [{ id: "#prompt-atom", kind: "literal", text: "Generated answer" }],
+    display: "Generated answer",
+    marks: [
+      {
+        id: "#prompt-mark",
+        from: { atom: "#prompt-atom", offset: 0 },
+        to: { atom: "#prompt-atom", offset: 9 },
+        style: ["bold"]
+      }
+    ],
+    state: "fresh"
   };
   const before = body([blocks("#r1", [text("#b1", "One"), prompt], [3, 2])]);
 
   const doc = docOf(before, METRICS);
   const row = rowNodesOf(doc)[0];
 
-  assert.equal(row.child(1).type.name, "prompt_block");
-  assert.equal(row.child(1).attrs.block.derivedOutputId, "derivedOutputs:7");
+  assert.equal(row.child(1).type.name, "text_block");
+  assert.equal(row.child(1).attrs.kind, "prompt");
+  assert.equal(row.child(1).textContent, "Generated answer");
   assert.deepEqual(bodyOf(doc, before), before);
 });
 

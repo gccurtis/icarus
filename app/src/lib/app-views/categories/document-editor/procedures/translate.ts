@@ -81,7 +81,17 @@ const atomOps = (was: Styled, now: Styled): DocumentOp[] => {
   return ops;
 };
 
-const FIELDS = ["variant", "level", "listStyle", "checked", "language", "style", "format"] as const;
+const FIELDS = [
+  "variant",
+  "level",
+  "listStyle",
+  "checked",
+  "language",
+  "style",
+  "format",
+  "state",
+  "error"
+] as const;
 
 const fieldOps = (was: Styled, now: Styled): DocumentOp[] => {
   const ops: DocumentOp[] = [];

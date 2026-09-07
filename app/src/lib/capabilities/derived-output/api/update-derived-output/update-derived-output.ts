@@ -37,27 +37,28 @@ export const updateDerivedOutput = async (input: unknown): Promise<UpdateDerived
     JSON.stringify(output.scope) === JSON.stringify(asked.scope);
   const responseChanged =
     asked.lastResponse !== undefined &&
-    (output.lastResponse?.type !== "text" ||
-      output.lastResponse.display !== asked.lastResponse);
+    (asked.lastResponse === null
+      ? output.lastResponse !== undefined
+      : output.lastResponse?.type !== "text" || output.lastResponse.display !== asked.lastResponse);
   if (sameDefinition && !responseChanged) return output;
 
   const at = Date.now();
   const editedRevision = (output.lastRevision ?? 0) + 1;
   const editedResponse =
-    asked.lastResponse === undefined || !responseChanged
+    asked.lastResponse === undefined || asked.lastResponse === null || !responseChanged
       ? undefined
       : responseBlock(output, editedRevision, asked.lastResponse, at);
 
   return writeOutput(model.store, output, {
     prompt: asked.prompt,
     scope: asked.scope,
-    ...(editedResponse === undefined
+    ...(!responseChanged
       ? {}
       : {
           queries: [],
           evidence: [],
           lastResponse: editedResponse,
-          lastRevision: editedRevision,
+          lastRevision: asked.lastResponse === null ? undefined : editedRevision,
           lastGeneration: undefined,
           refreshedAt: undefined
         }),

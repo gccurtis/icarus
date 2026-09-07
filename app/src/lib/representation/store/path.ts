@@ -157,16 +157,17 @@ export const createdIn = <T extends TableName>(
 
 /** Refuses what a JSON file cannot hold, so a write cannot half-persist. */
 export const asStorable = (value: unknown): unknown => {
-  const seen = new WeakSet<object>();
+  const ancestors = new WeakSet<object>();
   const walk = (step: unknown): unknown => {
     if (step === undefined) throw new Error("undefined is not storable");
     if (typeof step === "function" || typeof step === "symbol" || typeof step === "bigint") {
       throw new Error(`${typeof step} is not storable`);
     }
     if (step === null || typeof step !== "object") return step;
-    if (seen.has(step)) throw new Error("a cycle is not storable");
-    seen.add(step);
+    if (ancestors.has(step)) throw new Error("a cycle is not storable");
+    ancestors.add(step);
     for (const entry of Object.values(step)) walk(entry);
+    ancestors.delete(step);
     return step;
   };
   return walk(value);

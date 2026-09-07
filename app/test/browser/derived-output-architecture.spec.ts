@@ -42,7 +42,8 @@ test("the procedure page renders all three diagrams and switches its callable sp
   const generation = page.getByRole("tab", { name: /Prompt → response/ });
   await generation.click();
   await expect(generation).toHaveAttribute("aria-selected", "true");
-  await expect(page.locator(".function-list")).toContainText("appendPromptBlock");
+  await expect(page.locator(".function-list")).toContainText("blockTypeOps");
+  await expect(page.locator(".function-list")).toContainText("syncPromptBlockOps");
   await expect(page.locator(".function-list")).toContainText("querySemanticOverlay");
 
   const reading = page.getByRole("tab", { name: /ID → rendered value/ });
@@ -63,9 +64,14 @@ test("the agent page renders its loop and exposes every tool contract", async ({
   await expect(find).toHaveAttribute("aria-selected", "true");
   await expect(page.locator(".tool-detail")).toContainText("Navigation does not mint factual evidence");
 
-  const read = page.getByRole("tab", { name: /^03 read/ });
+  const selection = page.getByRole("tab", { name: /read_selection/ });
+  await selection.click();
+  await expect(page.locator(".tool-detail")).toContainText("does not query the Semantic Overlay");
+
+  const read = page.getByRole("tab", { name: /^04 read/ });
   await read.click();
   await expect(page.locator(".tool-detail")).toContainText("allowlisted and paginated");
+  await expect(page.locator(".tool-detail")).toContainText("never calls or queries the Semantic Overlay");
   await page.screenshot({ path: "/tmp/derived-output-agent-runtime.png", fullPage: true });
 });
 
@@ -127,35 +133,99 @@ test("a document Prompt Block resolves a Derived Output from another resource", 
   );
   test.setTimeout(420_000);
 
-  // Establish a deterministic source resource through the development entry point.
-  await page.goto("/demo/semantic-overlay/derived-output-live", { waitUntil: "networkidle" });
-  await page.getByRole("button", { name: /Run grounded generation/ }).click();
-  await expect(page.locator(".result-card blockquote")).toContainText("37", { timeout: 240_000 });
-
-  // Create a second, ordinary document and use the production Prompt Block entry point.
+  // Create and save an ordinary source resource through the production editor path.
   await page.goto("/app/dev-project", { waitUntil: "networkidle" });
-  await page.getByRole("button", { name: "Document", exact: true }).click();
+  const tabs = page.getByRole("toolbar", { name: "Open tabs" });
+  await tabs.locator('button.tab.icon[aria-label="New tab"]').click();
+  await page
+    .locator(".area-editors")
+    .getByRole("button", { name: "Document", exact: true })
+    .click();
+  await expect(page.locator(".title-bar h1")).toHaveText(/^Untitled document \d+$/);
   await expect(page.locator(".ProseMirror")).toBeVisible();
+  await page.locator(".ProseMirror").click();
+  await page.keyboard.type("The Atlas beacon's calibration frequency is 27 kHz.");
+  await expect(page.locator(".ProseMirror")).toContainText("calibration frequency is 27 kHz");
+  await expect(page.locator(".title-bar")).toContainText("Saving");
+  await expect(page.locator(".title-bar")).toContainText("Saved", { timeout: 15_000 });
 
-  const context = page.locator('aside[aria-label="Context"]');
-  await context.getByRole("button", { name: "Prompts", exact: true }).click();
-  await context
-    .getByLabel("Ask project sources")
-    .fill("According to project sources, what frequency does the fictional Atlas beacon emit at?");
-  await context.getByRole("button", { name: "Create and generate" }).click();
+  // Create a second document, convert its empty line, and configure generation in the inspector.
+  await tabs.locator('button.tab.icon[aria-label="New tab"]').click();
+  await page
+    .locator(".area-editors")
+    .getByRole("button", { name: "Document", exact: true })
+    .click();
+  await expect(page.locator(".title-bar h1")).toHaveText(/^Untitled document \d+$/);
+  const editor = page.locator(".ProseMirror");
+  await expect(editor).toBeVisible();
+  await editor.locator('.document-block[data-kind="text"]').first().click();
 
-  const block = page.locator(".document-prompt").last();
-  await expect(block).toContainText("37", { timeout: 300_000 });
-  await expect(block.locator('[data-state="fresh"]')).toBeVisible();
-  await expect(block).toContainText(/evidence source/);
+  const emptyInspector = page.locator(
+    'aside[aria-label="Inspector"][data-inspected="document-editor.empty-line"]'
+  );
+  await expect(emptyInspector).toBeVisible();
+  await emptyInspector.getByRole("button", { name: "Block", exact: true }).click();
+  await page.getByRole("option", { name: "Prompt", exact: true }).click();
+  await expect(page.locator('.document-block[data-kind="prompt"]')).toHaveCount(1);
 
-  await block.locator(".kind").click();
   const inspector = page.locator(
     'aside[aria-label="Inspector"][data-inspected="document-editor.prompt-block"]'
   );
+  await expect(inspector).toBeVisible();
+  await inspector.getByLabel("Prompt").fill("What is the Atlas beacon's calibration frequency?");
+  await expect(inspector).toContainText("Whole project");
+  const generate = inspector.getByRole("button", { name: "Generate" });
+  await expect(generate).toBeEnabled();
+  await generate.click();
+
+  const block = page.locator('.document-block[data-kind="prompt"]').last();
+  await expect(block).toContainText("27", { timeout: 300_000 });
+  await expect(block.locator(".document-prompt-marker")).toBeVisible();
+
+  // Generated output remains ordinary editor text: select it and use the shared mark controls.
+  await block.dblclick({ position: { x: 35, y: 8 } });
+  const textInspector = page.locator(
+    'aside[aria-label="Inspector"][data-inspected="document-editor.text-selection"]'
+  );
+  await expect(textInspector).toBeVisible();
+  const bold = textInspector.getByTitle("Bold");
+  if ((await bold.getAttribute("data-state")) !== "on") await bold.click();
+  await expect(block.locator("strong").first()).toBeVisible();
+
+  await block.locator(".document-prompt-marker").click();
   await expect(inspector).toContainText("Derived Output ID");
-  await expect(inspector).toContainText("Atlas beacon emits at 37");
+  await expect(inspector).toContainText("calibration frequency is 27 kHz");
+  await expect(inspector.getByRole("button", { name: "Refresh" })).toBeDisabled();
   await page.screenshot({ path: "/tmp/derived-output-document-prompt.png", fullPage: true });
+});
+
+test("architecture surfaces follow Helios and Selene", async ({ page }) => {
+  test.setTimeout(120_000);
+  for (const route of [
+    "/demo/semantic-overlay/derived-output-flow",
+    "/demo/semantic-overlay/agent-runtime",
+    "/demo/semantic-overlay/derived-output-live"
+  ]) {
+    await page.goto(route, { waitUntil: "networkidle" });
+    const root = page.locator("html");
+    const toHelios = page.getByRole("button", {
+      name: /^(Helios|Switch to Celestial Helios)$/
+    });
+    if (await toHelios.isVisible()) await toHelios.click();
+    else await page.evaluate(() => (document.documentElement.dataset.appearance = "helios"));
+    await expect(root).toHaveAttribute("data-appearance", "helios");
+    const surface = page.locator(".flow-page, .runtime-page, .proof-shell").first();
+    const day = await surface.evaluate((node) => getComputedStyle(node).backgroundColor);
+
+    const toSelene = page.getByRole("button", {
+      name: /^(Selene|Switch to Celestial Selene)$/
+    });
+    if (await toSelene.isVisible()) await toSelene.click();
+    else await page.evaluate(() => (document.documentElement.dataset.appearance = "selene"));
+    await expect(root).toHaveAttribute("data-appearance", "selene");
+    const night = await surface.evaluate((node) => getComputedStyle(node).backgroundColor);
+    expect(night, `${route} should change its ground with appearance`).not.toBe(day);
+  }
 });
 
 test("both pages contain page-level overflow at narrow width only inside intentional diagrams", async ({ page }) => {

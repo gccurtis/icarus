@@ -44,10 +44,6 @@ const nodeSignal = (state: EditorState): Signal | undefined => {
   if (node.type.name === "formula_block") {
     return { key: "document-editor.formula", selection: { kind: "formula", id: blockId } };
   }
-  if (node.type.name === "prompt_block") {
-    return { key: "document-editor.prompt-block", selection: { kind: "prompt", id: blockId } };
-  }
-
   return undefined;
 };
 

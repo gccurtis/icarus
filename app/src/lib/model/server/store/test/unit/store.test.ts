@@ -47,6 +47,19 @@ describe("create", () => {
     const store = inMemory();
     expect(() => store.create("projects", { name: () => "no" })).toThrow(/not storable/);
     expect(() => store.create("projects", ["not", "an", "object"])).toThrow(/is an object/);
+
+    const cycle: Record<string, unknown> = {};
+    cycle.self = cycle;
+    expect(() => store.create("projects", { name: "cyclic", cycle })).toThrow(/cycle/);
+  });
+
+  it("accepts shared references because JSON can duplicate an acyclic value", () => {
+    const store = inMemory();
+    const shared = { value: "same source snapshot" };
+
+    expect(() =>
+      store.create("projects", { name: "shared", first: shared, second: shared })
+    ).not.toThrow();
   });
 
   it("creates a collection as one admitted table change", () => {

@@ -14,9 +14,11 @@ The one category with no overview view, because a blank tab has nothing to be
 an overview of.
 
 The centre's Document and Slide deck shortcuts create represented project rows
-and revision-zero leader snapshots through Project Resources, refresh the editor
-title query, and only then open the returned opaque id. Spreadsheet remains an
-explicit not-wired alert; it never opens a title-shaped fake resource.
+and revision-zero leader snapshots through Project Resources, refresh both the
+resource index and the editor title query, and only then open the returned opaque
+id. A title is display data, not identity, so repeated `Untitled document 1`
+labels cannot collide with an old snapshot. Spreadsheet remains visibly unwired
+until its editor has the same durable creation path.
 
 ## Context
 

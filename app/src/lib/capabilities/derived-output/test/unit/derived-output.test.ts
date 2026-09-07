@@ -378,6 +378,25 @@ describe("Derived Output lifecycle", () => {
     assert.match(state.controls.userPrompts[0], /continuity only/);
   });
 
+  it("can explicitly clear an edited continuity response", async () => {
+    const id = seedOutput({
+      state: "fresh",
+      lastResponse: textBlock("Remove this response"),
+      lastRevision: 2,
+      lastGeneration: 4
+    });
+
+    const updated = await updateDerivedOutput({
+      derivedOutputId: id,
+      prompt: "Start over from evidence",
+      lastResponse: null
+    });
+
+    assert.equal(updated?.lastResponse, undefined);
+    assert.equal(updated?.state, "stale");
+    assert.equal(updated?.lastGeneration, undefined);
+  });
+
   it("retrieves text, selects issued evidence, and atomically publishes one revision", async () => {
     const id = seedOutput();
     const result = await refreshDerivedOutput({ derivedOutputId: id });
@@ -473,7 +492,7 @@ describe("Derived Output lifecycle", () => {
     if (response?.type !== "text") assert.fail("expected a text response");
     assert.equal(
       response.display,
-      "The Semantic Overlay did not return enough evidence to answer this request."
+      "The project does not contain enough evidence to answer this request."
     );
     assert.equal(result?.output.lastGeneration, 4);
     assert.equal((await readDerivedOutput({ derivedOutputId: id }))?.effectiveState, "fresh");
@@ -514,7 +533,7 @@ describe("Derived Output lifecycle", () => {
     if (response?.type !== "text") assert.fail("expected a text response");
     assert.equal(
       response.display,
-      "The Semantic Overlay did not return enough evidence to answer this request."
+      "The project does not contain enough evidence to answer this request."
     );
   });
 

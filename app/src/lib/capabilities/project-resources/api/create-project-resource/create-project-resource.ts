@@ -50,6 +50,26 @@ const emptyDocument = (): DocumentBody => ({
   ]
 });
 
+/** A document's first editable paragraph is represented, not a client-only projection. */
+const emptyDocument = (): DocumentBody => ({
+  rows: [
+    {
+      id: `row-${crypto.randomUUID()}`,
+      kind: "blocks",
+      blocks: [
+        {
+          id: `block-${crypto.randomUUID()}`,
+          type: "text",
+          variant: "paragraph",
+          atoms: [{ id: `atom-${crypto.randomUUID()}`, kind: "literal", text: "" }],
+          display: "",
+          marks: []
+        }
+      ]
+    }
+  ]
+});
+
 const representedRows = (
   store: Pick<StoreUnitOfWork, "read">,
   table: "documents" | "slideDecks" | "spreadsheets"

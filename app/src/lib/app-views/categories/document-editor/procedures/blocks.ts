@@ -2,6 +2,7 @@ import type { BlockFormat, HorizontalAlignment } from "$representation/data/type
 import type {
   ContentBlock,
   ImageBlock,
+  PromptBlock,
   TableBlock,
   TableCell,
   TableRow,
@@ -25,12 +26,13 @@ export const ALIGNMENTS: readonly { value: HorizontalAlignment; label: string }[
   { value: "justify", label: "Justify" }
 ];
 
-export type BlockKind = "text" | "table" | "image" | "pageBreak";
+export type BlockKind = "text" | "table" | "image" | "prompt" | "pageBreak";
 
 export const BLOCK_KINDS: readonly { value: BlockKind; label: string }[] = [
   { value: "text", label: "Text" },
   { value: "table", label: "Table" },
   { value: "image", label: "Image" },
+  { value: "prompt", label: "Prompt" },
   { value: "pageBreak", label: "Page break" }
 ];
 
@@ -88,7 +90,13 @@ export const placementOf = (
 };
 
 export const kindOf = (block: ContentBlock | undefined): BlockKind =>
-  block?.type === "table" ? "table" : block?.type === "image" ? "image" : "text";
+  block?.type === "table"
+    ? "table"
+    : block?.type === "image"
+      ? "image"
+      : block?.type === "prompt"
+        ? "prompt"
+        : "text";
 
 const emptyText = (): TextBlock => ({
   id: mint("block"),
@@ -97,6 +105,15 @@ const emptyText = (): TextBlock => ({
   atoms: [{ id: mint("atom"), kind: "literal", text: "" }],
   display: "",
   marks: []
+});
+
+export const emptyPrompt = (): PromptBlock => ({
+  id: mint("block"),
+  type: "prompt",
+  atoms: [{ id: mint("atom"), kind: "literal", text: "" }],
+  display: "",
+  marks: [],
+  state: "idle"
 });
 
 const cell = (): TableCell => ({ id: mint("block"), blocks: [emptyText()] });
@@ -136,7 +153,13 @@ export const blockTypeOps = (body: DocumentBody, blockId: string, kind: BlockKin
   }
 
   const next: ContentBlock =
-    kind === "table" ? emptyTable() : kind === "image" ? emptyImage() : emptyText();
+    kind === "table"
+      ? emptyTable()
+      : kind === "image"
+        ? emptyImage()
+        : kind === "prompt"
+          ? emptyPrompt()
+          : emptyText();
 
   return [
     { op: "remove", target: "block", path: `${row.id}/blocks`, ids: [held.id], after: before(row.blocks, index), values: [held] },

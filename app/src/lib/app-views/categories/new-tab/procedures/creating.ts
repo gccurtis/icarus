@@ -8,9 +8,9 @@ import type { WorkspaceStateModel } from "$model/client/workspace-state";
 /**
  * Mint a represented resource before opening its editor.
  *
- * The resource table query is named explicitly because editor titles read that
- * table, not the project overview's merged index. Refreshing only the index
- * leaves a newly opened editor looking disconnected even though its row exists.
+ * The editor title reads the represented resource table, not the merged project
+ * index. Refresh both views before opening so an opaque id never appears as a
+ * disconnected tab while its newly created row is already durable.
  */
 export const createProjectResource = (
   view: WorkspaceStateModel,

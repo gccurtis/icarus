@@ -5,9 +5,11 @@ import { applyOps } from "$representation/data/behavior/documents/apply-ops";
 import type { PromptBlock } from "$representation/data/types/content/content-block";
 import type { Id } from "$representation/data/types/core/id";
 import type { DocumentBody } from "$representation/data/types/documents/body";
+import type { DerivedOutput } from "$representation/data/types/semantic/derived-output";
 import {
-  appendPromptBlock,
-  promptBlocksIn
+  linkPromptBlockOps,
+  promptBlocksIn,
+  syncPromptBlockOps
 } from "$app-views/categories/document-editor/procedures/prompt-blocks";
 
 const body: DocumentBody = {
@@ -29,17 +31,70 @@ const body: DocumentBody = {
   ]
 };
 
-test("appending a Prompt Block persists only placement and its Derived Output ID", () => {
-  const made = appendPromptBlock(body, "derivedOutputs:9" as Id<"derivedOutputs">);
+const prompt = (): PromptBlock => ({
+  id: "#prompt",
+  type: "prompt",
+  atoms: [{ id: "#prompt-atom", kind: "literal", text: "Old answer" }],
+  display: "Old answer",
+  marks: [
+    {
+      id: "#mark",
+      from: { atom: "#prompt-atom", offset: 0 },
+      to: { atom: "#prompt-atom", offset: 10 },
+      style: ["bold"]
+    }
+  ],
+  state: "stale"
+});
 
-  assert.equal(made.op.after, "#source-row");
-  assert.equal(made.block.derivedOutputId, "derivedOutputs:9");
-  assert.equal(made.block.display, "");
-  assert.deepEqual(made.block.atoms, []);
+const output = (): DerivedOutput => ({
+  _id: "derivedOutputs:9" as Id<"derivedOutputs">,
+  _creationTime: 1,
+  projectId: "projects:1" as Id<"projects">,
+  prompt: "What changed?",
+  queries: [],
+  evidence: [],
+  lastResponse: {
+    id: "#answer",
+    type: "text",
+    variant: "paragraph",
+    atoms: [{ id: "#answer-atom", kind: "literal", text: "A longer current answer" }],
+    display: "A longer current answer",
+    marks: []
+  },
+  state: "fresh",
+  refreshedAt: 12,
+  createdBy: { kind: "system" },
+  updatedAt: 12
+});
 
-  const changed = applyOps(body, [made.op]);
-  assert.equal(changed.rows.length, 2);
-  assert.deepEqual(promptBlocksIn(changed), [made.block]);
+test("linking a Prompt Block adds only the Derived Output identity", () => {
+  const block = prompt();
+  const changed = applyOps(
+    { rows: [{ id: "#row", kind: "blocks", blocks: [block] }] },
+    linkPromptBlockOps(block, "derivedOutputs:9" as Id<"derivedOutputs">)
+  );
+  const linked = changed.rows[0].kind === "blocks" ? changed.rows[0].blocks[0] : undefined;
+
+  assert.equal(linked?.type === "prompt" && linked.derivedOutputId, "derivedOutputs:9");
+  assert.equal(linked?.type === "prompt" && linked.display, "Old answer");
+});
+
+test("publishing a response replaces editable text and preserves author formatting", () => {
+  const block = prompt();
+  const changed = applyOps(
+    { rows: [{ id: "#row", kind: "blocks", blocks: [block] }] },
+    syncPromptBlockOps(block, output())
+  );
+  const synced = changed.rows[0].kind === "blocks" ? changed.rows[0].blocks[0] : undefined;
+
+  assert.equal(synced?.type === "prompt" && synced.display, "A longer current answer");
+  assert.equal(synced?.type === "prompt" && synced.state, "fresh");
+  assert.equal(synced?.type === "prompt" && synced.refreshedAt, 12);
+  assert.deepEqual(synced?.type === "prompt" && synced.marks[0].to, {
+    atom: "#prompt-atom",
+    offset: 23
+  });
 });
 
 test("prompt discovery ignores furniture and ordinary content", () => {

@@ -65,6 +65,9 @@
     const id = made?.op === "insert" ? made.ids[0] : undefined;
     if (next === "table" && id !== undefined) view.inspect("document-editor.table", { kind: "table", id });
     else if (next === "image" && id !== undefined) view.inspect("document-editor.image", { kind: "image", id });
+    else if (next === "prompt" && id !== undefined) {
+      view.inspect("document-editor.prompt-block", { kind: "prompt", id });
+    }
     else if (next !== "text") view.clear();
   };
 

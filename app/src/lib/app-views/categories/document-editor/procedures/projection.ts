@@ -11,6 +11,7 @@ import type {
   MarkEnd,
   MarkLink,
   MarkStyle,
+  PromptBlock,
   TextAtom
 } from "$representation/data/types/content/content-block";
 import type { DocumentBody, DocumentRow } from "$representation/data/types/documents/body";
@@ -217,23 +218,20 @@ const inlineOf = (block: Styled): ProseMirrorNode[] => {
 const literalIds = (block: Styled): string[] =>
   block.atoms.filter((atom) => atom.kind === "literal").map((atom) => atom.id);
 
-const textBlockNode = (
-  block: Extract<ContentBlock, { type: "text" }>,
-  share: number,
-  styles: StyleSet
-): ProseMirrorNode => {
+const textBlockNode = (block: Styled, share: number, styles: StyleSet): ProseMirrorNode => {
   const style = resolve(styles, block.style, block.format);
+  const text = block.type === "text" ? block : undefined;
 
   return schema.node(
     "text_block",
     {
       blockId: block.id,
-      kind: "text",
-      variant: block.variant,
-      level: block.level ?? null,
-      listStyle: block.listStyle ?? null,
-      checked: block.checked ?? null,
-      language: block.language ?? null,
+      kind: block.type,
+      variant: text?.variant ?? "paragraph",
+      level: text?.level ?? null,
+      listStyle: text?.listStyle ?? null,
+      checked: text?.checked ?? null,
+      language: text?.language ?? null,
       styleKey: block.style ?? null,
       format: block.format ?? null,
       atomIds: literalIds(block),
@@ -255,10 +253,7 @@ const ATOM_NODE: Record<"image" | "table" | "formula", string> = {
 };
 
 const blockNode = (block: ContentBlock, share: number, styles: StyleSet): ProseMirrorNode => {
-  if (block.type === "text") return textBlockNode(block, share, styles);
-  if (block.type === "prompt") {
-    return schema.node("prompt_block", { blockId: block.id, share, block });
-  }
+  if (isStyled(block)) return textBlockNode(block, share, styles);
   return schema.node(ATOM_NODE[block.type], { blockId: block.id, share, block });
 };
 
@@ -282,7 +277,7 @@ const rowNode = (row: DocumentRow, styles: StyleSet): ProseMirrorNode => {
 };
 
 const typeable = (row: DocumentRow): boolean =>
-  isBlocks(row) && row.blocks.some((block) => block.type === "text");
+  isBlocks(row) && row.blocks.some(isStyled);
 
 export const docOf = (body: DocumentBody, metrics: Metrics): ProseMirrorNode => {
   const styles = styleSetOf(body);
@@ -552,8 +547,22 @@ const blockOf = (
   const style = (node.attrs.styleKey as string | null) ?? undefined;
 
   if (node.attrs.kind === "prompt") {
-    const prompt = base?.type === "prompt" ? base : { id, type: "prompt" as const, state: "idle" as const };
-    return strip({ ...prompt, id, atoms, display, marks, style, format });
+    const prompt: PromptBlock =
+      base?.type === "prompt"
+        ? base
+        : { id, type: "prompt", atoms: [], display: "", marks: [], state: "idle" };
+    const edited = prompt.derivedOutputId !== undefined && prompt.display !== display;
+    return strip({
+      ...prompt,
+      id,
+      atoms,
+      display,
+      marks,
+      style,
+      format,
+      state: edited ? "stale" : prompt.state,
+      error: edited ? undefined : prompt.error
+    });
   }
 
   const text = base?.type === "text" ? base : undefined;

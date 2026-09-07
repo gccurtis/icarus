@@ -63,7 +63,7 @@
     type DocumentBody,
     type Metrics
   } from "$app-views/categories/document-editor/procedures/projection";
-  import { promptNodeView } from "$app-views/categories/document-editor/procedures/prompt-node-view";
+  import { promptMarkers } from "$app-views/categories/document-editor/procedures/prompt-markers";
   import { schema } from "$app-views/categories/document-editor/procedures/schema";
   import { translate } from "$app-views/categories/document-editor/procedures/translate";
   import { rowsOf, tableQuery } from "$app-views/categories/document-editor/procedures/store";
@@ -147,6 +147,7 @@
     editorPointerGestures(),
     pageNumbersPlugin(() => pageNumbersOf(runtime?.body)),
     annotationsPlugin(() => untrack(() => annotations)),
+    promptMarkers((id) => view.inspect("document-editor.prompt-block", { kind: "prompt", id })),
     keymap({ Enter: splitRow, Backspace: mergeRow }),
     keymap({ "Mod-z": undo, "Shift-Mod-z": redo, "Mod-y": redo }),
     keymap(baseKeymap)
@@ -243,11 +244,7 @@
     sent = bodyOf(state.doc, body);
 
     if (editor === undefined) {
-      editor = new EditorView(host, {
-        state,
-        dispatchTransaction: dispatch,
-        nodeViews: { prompt_block: promptNodeView }
-      });
+      editor = new EditorView(host, { state, dispatchTransaction: dispatch });
       appliedThreadKey = threadKey;
       return;
     }
@@ -803,19 +800,33 @@
     font-size: var(--token-text-caption);
   }
 
-  .editor :global(.document-prompt) {
-    display: block;
-    margin: 0 0 calc(var(--token-spacing-unit) * 4);
-    border-radius: var(--token-radius-panel);
+  .editor :global(.document-block[data-kind="prompt"]) {
+    position: relative;
   }
 
-  .editor :global(.document-prompt-unlinked) {
-    display: block;
-    padding: calc(var(--token-spacing-unit) * 3);
-    border: 1px dashed var(--token-border-strong);
-    border-radius: var(--token-radius-control);
-    color: var(--token-ink-muted);
-    font-size: var(--token-text-caption);
+  .editor :global(.document-prompt-marker) {
+    position: absolute;
+    top: 0.05rem;
+    left: calc(100% + 0.4rem);
+    display: grid;
+    width: 1.35rem;
+    height: 1.35rem;
+    padding: 0;
+    place-items: center;
+    border: 1px solid var(--token-border-subtle);
+    border-radius: 999px;
+    background: var(--token-surface-elevated);
+    color: var(--token-color-intelligence-text);
+    font-size: 0.75rem;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .editor :global(.document-prompt-marker:hover),
+  .editor :global(.document-prompt-marker:focus-visible) {
+    border-color: var(--token-color-intelligence-border);
+    background: var(--token-color-intelligence-surface);
+    outline: none;
   }
 
   .editor :global(.document-divider) {
@@ -884,10 +895,8 @@
 
   .editor :global(.document-image.ProseMirror-selectednode),
   .editor :global(.document-table.ProseMirror-selectednode),
-  .editor :global(.document-formula-block.ProseMirror-selectednode),
-  .editor :global(.document-prompt.ProseMirror-selectednode) {
+  .editor :global(.document-formula-block.ProseMirror-selectednode) {
     outline: 2px solid var(--token-color-active-border);
-    outline-offset: 2px;
   }
 
   .editor :global(.held-selection),

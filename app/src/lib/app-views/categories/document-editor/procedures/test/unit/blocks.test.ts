@@ -68,6 +68,17 @@ test("changing a block to a table swaps it inside its row and inverts cleanly", 
   assert.deepEqual(applyOps(after, invertAll(ops)), before);
 });
 
+test("changing an empty line to Prompt creates editable prompt text", () => {
+  const before = body();
+  const after = applyOps(before, blockTypeOps(before, "#b1", "prompt"));
+  const held = after.rows[0].kind === "blocks" ? after.rows[0].blocks[0] : undefined;
+
+  assert.equal(held?.type, "prompt");
+  assert.equal(held?.type === "prompt" && held.state, "idle");
+  assert.equal(held?.type === "prompt" && held.atoms[0]?.kind, "literal");
+  assert.equal(held?.type === "prompt" && held.display, "");
+});
+
 test("changing a block to a page break replaces its row", () => {
   const before = body();
   const after = applyOps(before, blockTypeOps(before, "#b1", "pageBreak"));

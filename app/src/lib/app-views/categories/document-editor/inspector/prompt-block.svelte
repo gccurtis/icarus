@@ -1,25 +1,53 @@
 <script lang="ts">
+  import Sparkles from "@lucide/svelte/icons/sparkles";
+
   import {
     Panel,
+    PanelActions,
+    PanelBanner,
     PanelCrumbs,
     PanelField,
     PanelFields,
     PanelNote,
+    PanelProgress,
     PanelSection
   } from "$authored-components/panel";
-  import PromptOutput from "$app-views/categories/document-editor/components/prompt-output.svelte";
+  import { Button } from "$vendored-components/button";
+  import { Textarea } from "$vendored-components/textarea";
+  import {
+    createDerivedOutput,
+    refreshDerivedOutput,
+    updateDerivedOutput
+  } from "$capabilities/derived-output/index.remote";
+  import { processSemanticSyncQueue } from "$capabilities/semantic-overlay/index.remote";
+  import PromptSettings from "$app-views/categories/document-editor/components/prompt-settings.svelte";
   import { blockIn, placementOf } from "$app-views/categories/document-editor/procedures/blocks";
+  import {
+    linkPromptBlockOps,
+    syncPromptBlockOps,
+    type Id,
+    type LinkedPromptBlock,
+    type PromptBlock
+  } from "$app-views/categories/document-editor/procedures/prompt-blocks";
+  import { announcePromptOutput } from "$app-views/categories/document-editor/procedures/prompt-output-events";
   import {
     DEFAULT_PAGE_SETUP,
     layoutMetrics
   } from "$app-views/categories/document-editor/procedures/page-setup";
   import { isInspectorView, workspaceState } from "$model/client/workspace-state";
   import type { DocumentRuntime } from "$model/client/workspace-state";
+  type Phase = "creating" | "saving" | "indexing" | "generating";
 
   const view = workspaceState();
   const documentId = $derived(view.active.resourceId);
 
   let runtime = $state<DocumentRuntime>();
+  let promptDraft = $state("");
+  let exampleDraft = $state("");
+  let draftedFor = $state("");
+  let phase = $state<Phase>();
+  let actionError = $state<string>();
+
   $effect(() => {
     runtime = documentId === undefined ? undefined : view.documentRuntime(documentId);
   });
@@ -28,10 +56,97 @@
   const blockId = $derived(view.selection?.id ?? "");
   const held = $derived(body === undefined ? undefined : blockIn(body, blockId));
   const prompt = $derived(held?.type === "prompt" ? held : undefined);
+  const linked = $derived(
+    prompt?.derivedOutputId === undefined ? undefined : (prompt as LinkedPromptBlock)
+  );
   const metrics = $derived(layoutMetrics(body?.pageSetup ?? DEFAULT_PAGE_SETUP));
   const placement = $derived(
     body === undefined || prompt === undefined ? undefined : placementOf(body, prompt.id, metrics)
   );
+
+  const PHASE: Record<Phase, string> = {
+    creating: "Creating Derived Output",
+    saving: "Saving Prompt Block",
+    indexing: "Indexing pending sources",
+    generating: "Generating response"
+  };
+
+  $effect(() => {
+    const current = prompt;
+    if (current === undefined || current.id === draftedFor) return;
+    draftedFor = current.id;
+    promptDraft = "";
+    exampleDraft = current.display;
+    actionError = undefined;
+  });
+
+  const currentPrompt = (): PromptBlock => {
+    const currentBody = runtime?.body;
+    if (currentBody === undefined) throw new Error("The document is not loaded");
+    const current = blockIn(currentBody, blockId);
+    if (current?.type !== "prompt") throw new Error("The Prompt Block is no longer in the document");
+    return current;
+  };
+
+  const failureDetail = (held: DocumentRuntime): string | undefined => held.failure?.detail;
+
+  const create = async () => {
+    const currentRuntime = runtime;
+    const promptText = promptDraft.trim();
+    const example = exampleDraft.replace(/\s+/g, " ").trim();
+    if (currentRuntime === undefined || promptText.length === 0 || phase !== undefined) return;
+
+    phase = "creating";
+    actionError = undefined;
+    let derivedOutputId: Id<"derivedOutputs"> | undefined;
+
+    try {
+      const created = await createDerivedOutput({ prompt: promptText });
+      derivedOutputId = created._id;
+      const seeded =
+        example.length === 0
+          ? created
+          : await updateDerivedOutput({
+              derivedOutputId: created._id,
+              prompt: promptText,
+              lastResponse: example
+            });
+      if (seeded === null) throw new Error("The Derived Output disappeared during creation");
+
+      phase = "saving";
+      const before = currentPrompt();
+      currentRuntime.apply([
+        ...linkPromptBlockOps(before, created._id),
+        ...syncPromptBlockOps(before, seeded)
+      ]);
+      await currentRuntime.flush();
+      const linkFailure = failureDetail(currentRuntime);
+      if (linkFailure !== undefined) throw new Error(linkFailure);
+
+      phase = "indexing";
+      const queue = await processSemanticSyncQueue({ limit: 50 });
+      const failed = queue.processed.find((job) => job.error !== undefined);
+      if (failed?.error !== undefined) throw new Error(failed.error);
+
+      phase = "generating";
+      const refreshed = await refreshDerivedOutput({ derivedOutputId: created._id });
+      if (refreshed === null) throw new Error("The Derived Output disappeared during generation");
+      const after = currentPrompt();
+      const ops = syncPromptBlockOps(after, refreshed.output);
+      if (ops.length > 0) currentRuntime.apply(ops);
+      await currentRuntime.flush();
+      const responseFailure = failureDetail(currentRuntime);
+      if (responseFailure !== undefined) throw new Error(responseFailure);
+      if (refreshed.outcome === "failed") {
+        throw new Error(refreshed.output.error ?? "The response could not be generated");
+      }
+    } catch (error) {
+      actionError = error instanceof Error ? error.message : String(error);
+    } finally {
+      if (derivedOutputId !== undefined) announcePromptOutput(derivedOutputId);
+      phase = undefined;
+    }
+  };
 
   const navigate = (next: string) => {
     if (isInspectorView(next)) view.inspect(next);
@@ -46,18 +161,72 @@
     />
   {/snippet}
 
-  {#if prompt === undefined}
+  {#if prompt === undefined || runtime === undefined}
     <div class="pt-2">
       <PanelNote tone="muted">The Prompt Block is gone.</PanelNote>
     </div>
-  {:else if prompt.derivedOutputId === undefined}
-    <div class="pt-2">
-      <PanelNote tone="gap">This block has no Derived Output ID. Recreate it from Prompts.</PanelNote>
-    </div>
   {:else}
-    <div class="pt-2">
-      <PromptOutput derivedOutputId={prompt.derivedOutputId} surface="inspector" />
-    </div>
+    {#if phase !== undefined}
+      <div class="pt-2">
+        <PanelProgress label={PHASE[phase]} tone="intelligence" />
+      </div>
+    {/if}
+
+    {#if actionError !== undefined}
+      <div class="pt-2">
+        <PanelBanner title="This Prompt Block needs attention" tone="attention">
+          {actionError}. The block remains available so you can try again.
+        </PanelBanner>
+      </div>
+    {/if}
+
+    {#if linked === undefined}
+      <div class="setup">
+        <label for={`new-prompt-${prompt.id}`}>Prompt</label>
+        <Textarea
+          id={`new-prompt-${prompt.id}`}
+          bind:value={promptDraft}
+          rows={5}
+          maxlength={8000}
+          placeholder="What should this block derive from project sources?"
+          disabled={phase !== undefined}
+        />
+
+        <label for={`new-example-${prompt.id}`}>Previous / example response <span>optional</span></label>
+        <Textarea
+          id={`new-example-${prompt.id}`}
+          bind:value={exampleDraft}
+          rows={3}
+          maxlength={8000}
+          placeholder="A response whose wording or shape should be preserved"
+          disabled={phase !== undefined}
+        />
+
+        <div class="scope">
+          <span>Resource Set</span>
+          <strong>Whole project</strong>
+        </div>
+      </div>
+
+      <PanelNote>
+        The example guides wording and organization only. It is never accepted as factual evidence.
+      </PanelNote>
+
+      <PanelActions>
+        <Button
+          size="xs"
+          disabled={phase !== undefined || promptDraft.trim().length === 0}
+          onclick={create}
+        >
+          <Sparkles aria-hidden="true" />
+          Generate
+        </Button>
+      </PanelActions>
+    {:else}
+      {#key linked.derivedOutputId}
+        <PromptSettings blockId={linked.id} derivedOutputId={linked.derivedOutputId} />
+      {/key}
+    {/if}
 
     {#if placement !== undefined}
       <PanelSection title="Placement" chevron="end">
@@ -67,10 +236,49 @@
         </PanelFields>
       </PanelSection>
     {/if}
-
-    <PanelNote>
-      The document stores this block and its ID. The response, revision, and evidence above are read
-      live from the Derived Output.
-    </PanelNote>
   {/if}
 </Panel>
+
+<style>
+  .setup {
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--token-spacing-unit) * 2);
+    padding: calc(var(--token-spacing-unit) * 2) calc(var(--token-spacing-unit) * 3);
+  }
+
+  .setup label,
+  .scope span {
+    color: var(--token-ink-muted);
+    font-size: var(--token-text-caption);
+    line-height: var(--token-text-caption-leading);
+    font-weight: 600;
+  }
+
+  .setup label span {
+    font-weight: 400;
+  }
+
+  .setup :global(textarea) {
+    border-color: var(--token-border-subtle);
+    background: var(--token-surface-panel);
+    font-size: var(--token-text-body-sm);
+    line-height: var(--token-text-body-sm-leading);
+  }
+
+  .scope {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: calc(var(--token-spacing-unit) * 2);
+    padding: calc(var(--token-spacing-unit) * 2);
+    border: 1px solid var(--token-border-subtle);
+    border-radius: var(--token-radius-control);
+  }
+
+  .scope strong {
+    color: var(--token-ink-primary);
+    font-size: var(--token-text-caption);
+    font-weight: 500;
+  }
+</style>

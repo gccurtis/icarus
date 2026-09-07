@@ -143,7 +143,6 @@ export const schema = new Schema({
     image_block: atomBlockSpec("image"),
     table_block: atomBlockSpec("table"),
     formula_block: atomBlockSpec("formula"),
-    prompt_block: atomBlockSpec("prompt"),
 
     text: { group: "inline" },
 

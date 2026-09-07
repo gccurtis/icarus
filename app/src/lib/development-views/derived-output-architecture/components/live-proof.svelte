@@ -331,6 +331,53 @@
   .evidence > div { border-left: 3px solid #ca8135; background: #faf5eb; padding: 10px 13px; margin-top: 8px; }.evidence span,.evidence small { color: #7e694c; font: 9px "IBM Plex Mono", monospace; }.evidence p { margin: 5px 0; font-size: 12px; }
   footer { margin-top: 22px; padding-top: 12px; border-top: 1px solid #deded6; display: grid; grid-template-columns: auto 1fr; gap: 5px 12px; color: #858b87; font-size: 9px; } footer code { overflow-wrap: anywhere; color: #59635f; }
   .error { margin-top: 28px; border-left: 4px solid #b85043; background: #faece9; padding: 15px; color: #7f2f28; }.error p { margin-bottom: 0; font: 11px/1.5 "IBM Plex Mono", monospace; }
+
+  :global(html[data-appearance="selene"]) .proof-shell {
+    background-color: #08111c;
+    background-image: linear-gradient(rgba(145,165,180,.07) 1px, transparent 1px), linear-gradient(90deg, rgba(145,165,180,.07) 1px, transparent 1px);
+    color: #eef7f3;
+  }
+  :global(html[data-appearance="selene"]) .masthead { border-bottom-color: #29445b; }
+  :global(html[data-appearance="selene"]) .masthead a { color: #d7e8e2; }
+  :global(html[data-appearance="selene"]) .live-mark { color: #8ed9c2; }
+  :global(html[data-appearance="selene"]) .eyebrow { color: #ecad70; }
+  :global(html[data-appearance="selene"]) h1 em { color: #4ed9b1; }
+  :global(html[data-appearance="selene"]) .lede,
+  :global(html[data-appearance="selene"]) .input-card > p,
+  :global(html[data-appearance="selene"]) label,
+  :global(html[data-appearance="selene"]) .step,
+  :global(html[data-appearance="selene"]) .resolved span,
+  :global(html[data-appearance="selene"]) footer { color: #91a5b4; }
+  :global(html[data-appearance="selene"]) .mode-switch { border-color: #29445b; background: rgba(15,28,43,.8); }
+  :global(html[data-appearance="selene"]) .mode-switch button { color: #91a5b4; }
+  :global(html[data-appearance="selene"]) .mode-switch button.active { background: #347f78; color: #fff; }
+  :global(html[data-appearance="selene"]) .input-card,
+  :global(html[data-appearance="selene"]) .result-card.has-result { border-color: #29445b; background: rgba(15,28,43,.94); box-shadow: 0 12px 38px rgba(0,0,0,.22); }
+  :global(html[data-appearance="selene"]) textarea,
+  :global(html[data-appearance="selene"]) input { border-color: #31516b; background: #0b1724; color: #eef7f3; }
+  :global(html[data-appearance="selene"]) .number { border-color: #31516b; color: #91a5b4; }
+  :global(html[data-appearance="selene"]) .card-heading small,
+  :global(html[data-appearance="selene"]) .result-top span,
+  :global(html[data-appearance="selene"]) .evidence h3 { color: #91a5b4; }
+  :global(html[data-appearance="selene"]) .variables div,
+  :global(html[data-appearance="selene"]) .resolved div { background: #142538; }
+  :global(html[data-appearance="selene"]) .transfer { color: #60798a; }
+  :global(html[data-appearance="selene"]) .transfer span,
+  :global(html[data-appearance="selene"]) .step:not(:last-child)::after { background: #29445b; }
+  :global(html[data-appearance="selene"]) .node { border-color: #31516b; background: #08111c; }
+  :global(html[data-appearance="selene"]) .step strong { color: #aebfc8; }
+  :global(html[data-appearance="selene"]) .step.running strong,
+  :global(html[data-appearance="selene"]) .step.complete strong { color: #8ed9c2; }
+  :global(html[data-appearance="selene"]) .result-card { border-color: #31516b; background: rgba(15,28,43,.64); }
+  :global(html[data-appearance="selene"]) blockquote { color: #dff8ef; }
+  :global(html[data-appearance="selene"]) .empty-result { color: #718798; }
+  :global(html[data-appearance="selene"]) .evidence,
+  :global(html[data-appearance="selene"]) footer { border-color: #29445b; }
+  :global(html[data-appearance="selene"]) .evidence > div { background: #211d1a; }
+  :global(html[data-appearance="selene"]) .evidence span,
+  :global(html[data-appearance="selene"]) .evidence small { color: #d4ae7b; }
+  :global(html[data-appearance="selene"]) footer code { color: #b8c5cd; }
+  :global(html[data-appearance="selene"]) .error { background: #321d21; color: #ffb4aa; }
   @media (max-width: 800px) { .intro,.execution { grid-template-columns: 1fr; gap: 24px; }.bench { grid-template-columns: 1fr; gap: 14px; }.transfer { height: 32px; transform: rotate(90deg); width: 70px; margin: auto; }.intro { margin-top: 35px; }.lede { max-width: 600px; }.rail { display: grid; grid-template-columns: repeat(2,1fr); gap: 10px; }.step { min-height: 55px; }.step::after { display:none; } }
   @media (max-width: 480px) { .proof-shell { padding-inline: 14px; }.masthead { align-items: flex-start; gap: 12px; }.live-mark { text-align: right; }.rail { grid-template-columns: 1fr; }.intro { margin-top: 28px; }.input-card,.result-card { padding: 17px; } }
 </style>

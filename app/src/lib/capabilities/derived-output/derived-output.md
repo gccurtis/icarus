@@ -22,6 +22,12 @@ bounded agent a single `retrieve` tool. Retrieval returns exact source spans and
 overlapping document/slide locator spans plus application-issued, attempt-local
 evidence IDs.
 
+The executable instruction is application-owned in `api/shared/agent-instructions.ts` and
+shared with the development reference surface. The intended expanded tool set
+keeps its authority boundaries sharp: only `retrieve` queries the Semantic
+Overlay; `read_selection` and `read` will read authoritative project resources
+directly, and `find_resources` will return navigation metadata without evidence.
+
 The final provider turn must match a strict structured-output schema containing
 an `answered`/`insufficient` status, response text, and selected evidence IDs
 with use annotations. Application code rejects duplicate or unissued IDs. An
@@ -40,12 +46,15 @@ it becomes stale when the overlay advances beyond the generation it searched.
 text value and content block, effective state, response revision, named variable
 resolutions, and stored citations without exposing consumers to row layout.
 
-The document editor now has the first Prompt Block adapter. Its Prompts rail
-creates an idle Derived Output, appends a document block containing only the
-`derivedOutputId`, flushes the document revision, processes up to 50 pending
-semantic-sync jobs, and calls `refreshDerivedOutput`. The document node view and
-inspector both render through the ID-based read APIs, so generated prose,
-revision, and evidence are never copied into the document snapshot.
+The document editor now has the first Prompt Block adapter. The ordinary Block
+selector converts an empty line to Prompt and opens its inspector. The inspector
+creates and links an idle Derived Output, flushes the document revision,
+processes up to 50 pending semantic-sync jobs, and calls
+`refreshDerivedOutput`. The published response is copied into normal editable
+atoms/display/marks and carries only a small right-edge settings decoration.
+Editing that text marks it stale and supplies ungrounded continuity on the next
+refresh; canonical revision and evidence remain on the Derived Output. The
+Prompts context rail only lists existing blocks.
 
 This first product path is deliberately request-bound so its behavior can be
 tested end to end. A durable Derived Output refresh queue, selected-text focus,

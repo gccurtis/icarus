@@ -7,7 +7,7 @@ export type UpdateDerivedOutputInput = {
   readonly prompt: string;
   readonly scope?: ResourceSet;
   /** Optional user-edited continuity draft for the next refresh. */
-  readonly lastResponse?: string;
+  readonly lastResponse?: string | null;
 };
 
 export type UpdateDerivedOutputResult = DerivedOutput | null;

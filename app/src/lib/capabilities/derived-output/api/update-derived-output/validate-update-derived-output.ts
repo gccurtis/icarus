@@ -14,11 +14,13 @@ export const validateUpdateDerivedOutput = (input: unknown): UpdateDerivedOutput
     ...(candidate.scope === undefined ? {} : { scope: resourceSet(candidate.scope) }),
     ...(candidate.lastResponse === undefined
       ? {}
-      : {
-          lastResponse: nonblank(
-            candidate.lastResponse,
-            "derived output last response must not be blank"
-          ).replace(/\s+/g, " ")
-        })
+      : candidate.lastResponse === null
+        ? { lastResponse: null }
+        : {
+            lastResponse: nonblank(
+              candidate.lastResponse,
+              "derived output last response must not be blank"
+            ).replace(/\s+/g, " ")
+          })
   };
 };

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
 import type { Node as ProseMirrorNode } from "prosemirror-model";
-import { EditorState, NodeSelection, TextSelection } from "prosemirror-state";
+import { EditorState, TextSelection } from "prosemirror-state";
 import type { ContentBlock, TextBlock } from "$representation/data/types/content/content-block";
 import type { Id } from "$representation/data/types/core/id";
 import type { DocumentBody, DocumentRow } from "$representation/data/types/documents/body";
@@ -65,7 +65,7 @@ const TWO = body([
 
 const EMPTY = body([blocks("#r1", [text("#b1", "")])]);
 
-test("selecting a Prompt Block opens its dedicated inspector", () => {
+test("selecting Prompt Block text uses the ordinary text-selection inspector", () => {
   const held = body([
     blocks("#r1", [
       text("#b1", "Source"),
@@ -73,25 +73,21 @@ test("selecting a Prompt Block opens its dedicated inspector", () => {
         id: "#prompt",
         type: "prompt",
         derivedOutputId: "derivedOutputs:7" as Id<"derivedOutputs">,
-        atoms: [],
-        display: "",
+        atoms: [{ id: "#prompt-atom", kind: "literal", text: "Generated answer" }],
+        display: "Generated answer",
         marks: [],
         state: "idle"
       }
     ])
   ]);
-  const doc = docOf(held, METRICS);
-  let at: number | undefined;
-  doc.descendants((node, position) => {
-    if (node.type.name === "prompt_block") at = position;
-  });
-  if (at === undefined) throw new Error("No Prompt Block in projected document");
-
-  const state = EditorState.create({ doc, selection: NodeSelection.create(doc, at) });
-
+  const state = stateOver(held, ["#prompt", 0], ["#prompt", 9]);
   assert.deepEqual(signalOf(state), {
-    key: "document-editor.prompt-block",
-    selection: { kind: "prompt", id: "#prompt" }
+    key: "document-editor.text-selection",
+    selection: {
+      kind: "text-selection",
+      id: "#prompt/atoms/#prompt-atom@0",
+      at: "#prompt/atoms/#prompt-atom@9"
+    }
   });
 });
 

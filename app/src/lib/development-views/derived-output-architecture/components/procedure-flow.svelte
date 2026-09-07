@@ -150,30 +150,30 @@
   const GENERATION: FunctionStep[] = [
     {
       order: "01",
-      name: "appendPromptBlock",
+      name: "blockTypeOps → emptyPrompt",
       owner: "document editor",
       status: "new",
-      input: "DocumentBody + derivedOutputId",
-      output: "insert_rows edit + PromptBlock",
-      note: "The document adapter persists only placement and the Derived Output ID. A deck placement adapter remains a separate slice."
+      input: "empty line + kind: prompt",
+      output: "editable unlinked PromptBlock",
+      note: "The ordinary Block selector performs the conversion and opens the Prompt inspector. The context rail only indexes blocks already in the document."
     },
     {
       order: "02",
-      name: "createDerivedOutput",
+      name: "createDerivedOutput / createTemplatedDerivedOutput",
       owner: "derived-output capability",
       status: "existing",
       input: "prompt + scope?",
       output: "idle DerivedOutput row",
-      note: "The row is the durable definition and canonical generated value; the document block holds only its ID."
+      note: "The row is the durable definition, evidence record, and canonical generated value. The simple document inspector creates the direct-prompt variant today."
     },
     {
       order: "03",
-      name: "createTemplatedDerivedOutput",
-      owner: "derived-output capability",
+      name: "linkPromptBlockOps",
+      owner: "document editor",
       status: "new",
-      input: "named variable prompts + template + scope?",
-      output: "idle templated DerivedOutput row",
-      note: "The model resolves grounded values; application code owns exact placeholder substitution."
+      input: "PromptBlock + derivedOutputId",
+      output: "document set op + accepted revision",
+      note: "Links the surface block before provider work. Optional example text is stored as ungrounded continuity, never evidence."
     },
     {
       order: "04",
@@ -198,9 +198,9 @@
       name: "buildDerivedRunContext",
       owner: "derived-output capability",
       status: "deferred",
-      input: "definition + focus + prior response",
+      input: "definition + hasSelection + prior response",
       output: "system prompt + task envelope + budgets",
-      note: "Per-run context stays outside the stable system prompt; focus text is treated as untrusted data."
+      note: "The envelope carries only a selection-presence flag. The target read_selection tool returns selected text as registered, untrusted evidence."
     },
     {
       order: "07",
@@ -209,7 +209,7 @@
       status: "extend",
       input: "DerivedOutput + intelligence + retrieve",
       output: "SynthesisDecision + issued evidence",
-      note: "Keep the bounded structured-output loop; add find_resources and read beside the existing retrieve tool."
+      note: "Keep the bounded structured-output loop; add read_selection, find_resources, and direct read beside the existing retrieve tool."
     },
     {
       order: "08",
@@ -222,12 +222,12 @@
     },
     {
       order: "09",
-      name: "readResourceEvidence",
-      owner: "resource projection",
+      name: "readProjectResource",
+      owner: "project-resource capability",
       status: "deferred",
-      input: "ref + view + locator + cursor",
-      output: "bounded chunks + evidence IDs",
-      note: "Reads authoritative text, outline, or allowlisted structure when semantic snippets are not enough."
+      input: "handle + view + range/window + cursor",
+      output: "authoritative ranged chunks + evidence IDs",
+      note: "The future read tool calls this direct project-resource path. It never calls or queries the Semantic Overlay; retrieve is the only overlay tool."
     },
     {
       order: "10",
@@ -255,6 +255,15 @@
       input: "validated response + evidence + revision",
       output: "fresh canonical ContentBlock",
       note: "Publish response, citations, queries, and revision together. No separate artifact table is needed for the first pass."
+    },
+    {
+      order: "13",
+      name: "syncPromptBlockOps",
+      owner: "document editor",
+      status: "new",
+      input: "PromptBlock + published DerivedOutput",
+      output: "editable atoms/display/marks + freshness mirror",
+      note: "Copies the published value into ordinary document text while retaining author marks. Later inline edits become ungrounded continuity on refresh."
     }
   ];
 
@@ -279,28 +288,37 @@
     },
     {
       order: "03",
-      name: "PromptOutput",
+      name: "syncPromptBlockOps",
       owner: "document editor",
       status: "new",
-      input: "PromptBlock.derivedOutputId",
-      output: "live card + local presentation state",
-      note: "The document node view and inspector share the same ID-based reader. Missing output, generating, stale, and error stay explicit."
+      input: "PromptBlock + DerivedOutput",
+      output: "ordinary editable text ops",
+      note: "Generated prose is copied into the Prompt Block's atoms/display and remains selectable, markable, and editable like normal document text."
     },
     {
       order: "04",
+      name: "promptMarkers",
+      owner: "document editor",
+      status: "new",
+      input: "projected text_block(kind: prompt)",
+      output: "right-edge settings star",
+      note: "An out-of-content decoration opens Prompt settings without giving generated prose a visually alien card treatment."
+    },
+    {
+      order: "05",
       name: "resolvePresentationSnapshot",
       owner: "export / deck adapter",
       status: "deferred",
       input: "DerivedOutputValue + target format",
       output: "frozen presentation value",
-      note: "The live document intentionally does not copy generated prose into its snapshot. Freeze only for exports or surfaces that require it."
+      note: "Exports and decks can resolve the canonical value by ID or deliberately freeze the current editable presentation, according to their own contract."
     }
   ];
 
   const GROUPS: { id: FunctionGroup; label: string; detail: string; icon: typeof Layers3 }[] = [
     { id: "ingestion", label: "Resource → overlay", detail: "12 calls", icon: Layers3 },
-    { id: "generation", label: "Prompt → response", detail: "12 calls", icon: Sparkles },
-    { id: "reading", label: "ID → rendered value", detail: "4 calls", icon: KeyRound }
+    { id: "generation", label: "Prompt → response", detail: "13 calls", icon: Sparkles },
+    { id: "reading", label: "ID → rendered value", detail: "5 calls", icon: KeyRound }
   ];
 
   const functions: Record<FunctionGroup, FunctionStep[]> = {
@@ -354,20 +372,23 @@
 
   const DERIVED_SEQUENCE = `sequenceDiagram
     autonumber
-    participant UI as Document Prompts rail
+    participant UI as Block menu + Prompt inspector
     participant DR as Document runtime
     participant DO as Derived Output capability
     participant SO as Semantic Overlay
     participant A as Agent runtime
     participant R as Representation
 
+    UI->>DR: blockTypeOps(empty line, prompt)
+    DR->>R: flush editable PromptBlock
+    Note over UI,R: Context rail lists prompts—it does not create them
     UI->>DO: createDerivedOutput(prompt, optional scope)
     DO->>R: create derivedOutputs row
     R-->>DO: derivedOutputId
     DO-->>UI: idle output + ID
-    UI->>DR: appendPromptBlock(body, derivedOutputId)
+    UI->>DR: linkPromptBlockOps(block, derivedOutputId)
     DR->>R: flush accepted document revision
-    Note over DR,R: Stored block contains placement + ID, never generated prose
+    Note over DR,R: Block owns editable presentation + ID, output owns canonical evidence
 
     UI->>SO: processSemanticSyncQueue(limit: 50)
     SO->>R: publish pending authoritative resource projections
@@ -383,8 +404,9 @@
     alt evidence remains current
       DO->>R: publish response + evidence + revision atomically
       DO-->>UI: fresh response projection
-      UI->>DO: readDerivedOutputValue(id)
-      DO-->>UI: value + state + revision + evidence
+      UI->>DR: syncPromptBlockOps(block, output)
+      DR->>R: flush atoms + display + marks + state
+      Note over UI,DR: Normal selectable text + right-edge settings star
     else cited source changed
       DO->>A: retry with a fresh evidence registry
     end`;
@@ -438,17 +460,17 @@ readDerivedOutputValue({ derivedOutputId })
     {
       table: "document / deck snapshot",
       key: "resourceId + leader revision",
-      owns: "PromptBlock placement and its derivedOutputId",
-      never: "the canonical generated evidence record"
+      owns: "PromptBlock placement, editable atoms/display/marks, state mirror, and derivedOutputId",
+      never: "the canonical generated definition or evidence record"
     }
   ];
 
   const FOOTPRINT = [
     {
-      count: "03",
-      label: "Resource write triggers",
-      path: "document · slide-deck · project-resources",
-      change: "Accepted leader revisions now enqueue coalesced semantic work."
+      count: "07",
+      label: "Resource entry + write triggers",
+      path: "new-tab · project-resources · document · slide-deck",
+      change: "Creation persists an editable first block; accepted leader revisions enqueue coalesced semantic work."
     },
     {
       count: "28",
@@ -457,31 +479,31 @@ readDerivedOutputValue({ derivedOutputId })
       change: "The new orchestration spine owns text ingestion through queryable generation."
     },
     {
-      count: "12",
+      count: "16",
       label: "Derived capability",
       path: "synthesis · templates · value read",
       change: "Named variables, strict evidence, freshness, and presentation reads land here."
     },
     {
-      count: "12",
+      count: "16",
       label: "Representation + store",
       path: "contracts · tables · deterministic behavior",
       change: "Durable job, locator, template, and variable shapes remain model-independent."
     },
     {
-      count: "10",
+      count: "11",
       label: "Demo surfaces + routes",
       path: "flow · runtime · executable proof",
       change: "Three purpose-built views explain, inspect, and execute the architecture."
     },
     {
-      count: "14",
+      count: "17",
       label: "Document Prompt Block",
-      path: "rail · node view · inspector · projection",
-      change: "One ID-backed document atom creates, renders, selects, refreshes, and inspects the canonical output."
+      path: "block menu · inspector · marker · projection",
+      change: "One ID-backed styled block creates, edits, formats, refreshes, and inspects the canonical output."
     },
     {
-      count: "05",
+      count: "06",
       label: "Cross-cutting proof + docs",
       path: "browser · vertical integration · working notes",
       change: "The resource-to-value path is tested as one system, not only as isolated units."
@@ -607,11 +629,6 @@ readDerivedOutputValue({ derivedOutputId })
           <footer>Also used by imports, connectors, templates, and any future text-bearing resource mutation.</footer>
         </article>
 
-        <div class="merge-mark" aria-hidden="true">
-          <span></span><strong>MERGE</strong><span></span>
-          <ArrowDown size={18} />
-        </div>
-
         <article class="entry-card development">
           <header><span>DEVELOPMENT / BACKFILL</span><GitBranch size={15} aria-hidden="true" /></header>
           <div class="entry-trigger">
@@ -626,6 +643,11 @@ readDerivedOutputValue({ derivedOutputId })
           </ol>
           <footer>Revision idempotency makes repeated seed runs safe; <code>force</code> intentionally rebuilds the same revision.</footer>
         </article>
+      </div>
+
+      <div class="merge-rail" aria-hidden="true">
+        <span></span><strong>BOTH WRITE THE SAME COALESCED JOB</strong><span></span>
+        <ArrowDown size={18} />
       </div>
 
       <div class="convergence-strip">
@@ -676,14 +698,15 @@ readDerivedOutputValue({ derivedOutputId })
       <header class="section-heading">
         <div><span class="section-number">03</span><h2>The document block<br />works end to end.</h2></div>
         <p>
-          The Prompts rail creates the Derived Output, inserts its ID-backed block, drains one bounded
-          semantic batch, generates the response, and renders the canonical value without copying it.
+          An empty line becomes Prompt through the ordinary Block menu. Its inspector creates and
+          links the Derived Output, drains one bounded semantic batch, publishes the response, then
+          copies that response into normal editable document text.
         </p>
       </header>
 
       <div class="callout-band">
         <div><Boxes size={19} aria-hidden="true" /><span>EXECUTABLE NOW</span></div>
-        <code>{`create → idle ID → refresh → readDerivedOutputValue`}</code>
+        <code>{`Prompt block → create + link → refresh → sync editable text`}</code>
         <p><a href="/demo/semantic-overlay/derived-output-live">Run direct prompt or named-variable generation ↗</a></p>
       </div>
 
@@ -706,7 +729,7 @@ readDerivedOutputValue({ derivedOutputId })
         <article>
           <span>WRITE B / PLACEMENT</span>
           <strong>PromptBlock in its resource</strong>
-          <p>Block identity, editable presentation, format and <code>derivedOutputId</code>. Its surface owns placement.</p>
+          <p>Block identity, editable atoms/display/marks, format, freshness mirror, and <code>derivedOutputId</code>. Its surface owns presentation and placement.</p>
         </article>
         <article class="recommended">
           <span>ATOMICITY REQUIREMENT</span>
@@ -762,14 +785,15 @@ readDerivedOutputValue({ derivedOutputId })
       <header class="section-heading compact-heading">
         <div><span class="section-number">05</span><h2>The actual change<br />surface.</h2></div>
         <p>
-          The implementation slice touches 84 files. The complete stacked branch—including the
-          semantic foundation and these visual reviews—differs from its main anchor in 142 files.
+          The resource-to-output implementation slice touches 101 files. The complete stacked
+          branch—including the semantic foundation and these visual reviews—differs from its
+          merge-base anchor in 155 files.
         </p>
       </header>
 
       <div class="footprint-summary" aria-label="Implementation change totals">
-        <div><span>THIS IMPLEMENTATION SLICE</span><strong>84</strong><small>files</small></div>
-        <div><span>FULL STACK FROM MAIN</span><strong>142</strong><small>files</small></div>
+        <div><span>THIS IMPLEMENTATION SLICE</span><strong>101</strong><small>files</small></div>
+        <div><span>FULL STACK FROM MERGE BASE</span><strong>155</strong><small>files</small></div>
         <p>Counts are grouped by architectural ownership below; generated build and local provider data are excluded.</p>
       </div>
 
@@ -833,7 +857,7 @@ readDerivedOutputValue({ derivedOutputId })
           <ArrowDown class="read-arrow" size={18} aria-hidden="true" />
           <div><span>3</span><strong>effective freshness</strong><code>changedSemanticSources</code></div>
           <ArrowDown class="read-arrow" size={18} aria-hidden="true" />
-          <div><span>4</span><strong>PromptOutput</strong><code>render canonical value live</code></div>
+          <div><span>4</span><strong>syncPromptBlockOps</strong><code>ordinary editable text + marker</code></div>
         </div>
       </div>
 
@@ -864,7 +888,7 @@ readDerivedOutputValue({ derivedOutputId })
       <div>
         <span>NEXT REFERENCE / AGENT RUNTIME</span>
         <h2>The flow is fixed.<br />Now inspect the mind inside it.</h2>
-        <p>System prompt, selected text, three tool contracts, evidence IDs, loop bounds, and the infrastructure that keeps it fast.</p>
+        <p>Exact system prompt, selected-text tool, four tool contracts, evidence IDs, loop bounds, and the infrastructure that keeps it fast.</p>
       </div>
       <a href="/demo/semantic-overlay/agent-runtime">Open agent runtime <ArrowRight size={17} aria-hidden="true" /></a>
     </section>
@@ -939,6 +963,104 @@ readDerivedOutputValue({ derivedOutputId })
   .page-footer {
     display: flex;
     align-items: center;
+  }
+
+  :global(html[data-appearance="selene"]) .flow-page {
+    --paper: #08111c;
+    --paper-raised: #0f1c2b;
+    --ink: #eef7f3;
+    --muted: #91a5b4;
+    --line: #29445b;
+    --blue: #77a9d4;
+    --teal: #4ed9b1;
+    --orange: #ec8f6b;
+    --pale-orange: #3a231f;
+    background:
+      linear-gradient(90deg, transparent calc(50% - 0.5px), rgba(238, 247, 243, 0.035) 50%, transparent calc(50% + 0.5px)),
+      var(--paper);
+  }
+
+  :global(html[data-appearance="selene"]) .local-nav {
+    border-bottom-color: var(--line);
+    background: color-mix(in srgb, var(--paper) 92%, transparent);
+  }
+
+  :global(html[data-appearance="selene"]) .hero-copy > p,
+  :global(html[data-appearance="selene"]) .entry-card li,
+  :global(html[data-appearance="selene"]) .function-contract code,
+  :global(html[data-appearance="selene"]) .footprint-grid p,
+  :global(html[data-appearance="selene"]) .storage-grid dd {
+    color: #b8c5cd;
+  }
+
+  :global(html[data-appearance="selene"]) .hero-actions a,
+  :global(html[data-appearance="selene"]) .entry-card > header,
+  :global(html[data-appearance="selene"]) .convergence-strip,
+  :global(html[data-appearance="selene"]) .atomicity-grid article.recommended,
+  :global(html[data-appearance="selene"]) .function-tabs button.active,
+  :global(html[data-appearance="selene"]) .footprint-summary,
+  :global(html[data-appearance="selene"]) .artifact-decision,
+  :global(html[data-appearance="selene"]) .contract-card,
+  :global(html[data-appearance="selene"]) .next-page {
+    background: #142538;
+    color: #eef7f3;
+  }
+
+  :global(html[data-appearance="selene"]) .hero-actions .secondary {
+    background: transparent;
+    color: var(--ink);
+  }
+
+  :global(html[data-appearance="selene"]) .rule-path span,
+  :global(html[data-appearance="selene"]) .diagram-label {
+    background: #142538;
+  }
+
+  :global(html[data-appearance="selene"]) .projection-rule {
+    background: #102a2a;
+  }
+
+  :global(html[data-appearance="selene"]) .projection-rule p {
+    color: #b3c9c3;
+  }
+
+  :global(html[data-appearance="selene"]) .projection-rule pre {
+    background: #0b2022;
+    color: #d7e8e2;
+  }
+
+  :global(html[data-appearance="selene"]) .callout-band,
+  :global(html[data-appearance="selene"]) .projection-icon {
+    color: #071711;
+  }
+
+  :global(html[data-appearance="selene"]) .status-existing {
+    background: #102a2a;
+  }
+
+  :global(html[data-appearance="selene"]) .status-extend {
+    background: #142538;
+    color: #9dbada;
+  }
+
+  :global(html[data-appearance="selene"]) .status-deferred {
+    background: #242932;
+    color: #b6bec7;
+  }
+
+  :global(html[data-appearance="selene"]) .convergence-strip > span,
+  :global(html[data-appearance="selene"]) .footprint-summary span,
+  :global(html[data-appearance="selene"]) .next-page span,
+  :global(html[data-appearance="selene"]) .contract-card header {
+    color: #9fd6c8;
+  }
+
+  :global(html[data-appearance="selene"]) .convergence-strip p,
+  :global(html[data-appearance="selene"]) .atomicity-grid .recommended p,
+  :global(html[data-appearance="selene"]) .artifact-decision p,
+  :global(html[data-appearance="selene"]) .contract-card pre,
+  :global(html[data-appearance="selene"]) .next-page p {
+    color: #b8c5cd;
   }
 
   .brand {
@@ -1213,8 +1335,8 @@ readDerivedOutputValue({ derivedOutputId })
 
   .entry-grid {
     display: grid;
-    grid-template-columns: 1fr 4rem 1fr;
-    gap: 1rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.25rem;
     align-items: stretch;
   }
 
@@ -1293,21 +1415,21 @@ readDerivedOutputValue({ derivedOutputId })
     line-height: 1.5;
   }
 
-  .merge-mark {
+  .merge-rail {
     display: grid;
-    grid-template-rows: 1fr auto 1fr auto;
-    gap: 0.4rem;
-    justify-items: center;
+    grid-template-columns: 1fr auto 1fr auto;
+    gap: 0.75rem;
+    align-items: center;
+    margin: 1rem 1.5rem 0;
     color: var(--orange);
   }
 
-  .merge-mark span {
-    width: 1px;
+  .merge-rail span {
+    height: 1px;
     background: var(--orange);
   }
 
-  .merge-mark strong {
-    writing-mode: vertical-rl;
+  .merge-rail strong {
     font-family: var(--token-font-mono);
     font-size: 0.58rem;
     letter-spacing: 0.14em;
@@ -1681,9 +1803,7 @@ readDerivedOutputValue({ derivedOutputId })
     .section { padding: 4.5rem 0; }
     .section-heading { grid-template-columns: 1fr; gap: 1.5rem; }
     .entry-grid { grid-template-columns: 1fr; }
-    .merge-mark { grid-template: none; grid-auto-flow: column; align-items: center; }
-    .merge-mark span { width: 100%; height: 1px; }
-    .merge-mark strong { writing-mode: initial; }
+    .merge-rail { margin-inline: 0; }
     .convergence-strip, .projection-rule, .callout-band { grid-template-columns: 1fr; }
     .atomicity-grid, .function-tabs, .footprint-summary, .footprint-grid, .storage-grid, .read-grid, .decision-list { grid-template-columns: minmax(0, 1fr); }
     .footprint-summary > div { border-right: 0; border-bottom: 1px solid #4d5862; }

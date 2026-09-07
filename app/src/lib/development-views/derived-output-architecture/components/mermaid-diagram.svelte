@@ -1,13 +1,26 @@
+<script module lang="ts">
+  let renderQueue: Promise<void> = Promise.resolve();
+
+  const serializeRender = <T,>(work: () => Promise<T>): Promise<T> => {
+    const result = renderQueue.then(work, work);
+    renderQueue = result.then(
+      () => undefined,
+      () => undefined
+    );
+    return result;
+  };
+</script>
+
 <script lang="ts">
   import { onMount } from "svelte";
 
-  type Palette = "paper" | "night";
+  type Palette = "adaptive" | "paper" | "night";
 
   let {
     source,
     label,
     caption,
-    palette = "paper",
+    palette = "adaptive",
     minHeight = "24rem"
   }: {
     source: string;
@@ -20,6 +33,13 @@
   let host: HTMLDivElement;
   let status = $state<"loading" | "ready" | "error">("loading");
   let failure = $state("");
+
+  const activePalette = (): "paper" | "night" =>
+    palette === "adaptive"
+      ? document.documentElement.dataset.appearance === "selene"
+        ? "night"
+        : "paper"
+      : palette;
 
   const themeVariables = (selected: Palette) =>
     selected === "night"
@@ -68,35 +88,50 @@
 
   onMount(() => {
     let live = true;
+    let turn = 0;
 
     const render = async () => {
+      const rendering = ++turn;
+      status = "loading";
       try {
-        const { default: mermaid } = await import("mermaid");
-        if (!live) return;
-        mermaid.initialize({
-          startOnLoad: false,
-          securityLevel: "strict",
-          theme: "base",
-          flowchart: { curve: "basis", htmlLabels: true, useMaxWidth: true },
-          sequence: { useMaxWidth: true, actorMargin: 48, messageMargin: 30 },
-          themeVariables: themeVariables(palette)
+        const rendered = await serializeRender(async () => {
+          const { default: mermaid } = await import("mermaid");
+          mermaid.initialize({
+            startOnLoad: false,
+            securityLevel: "strict",
+            theme: "base",
+            flowchart: { curve: "basis", htmlLabels: true, useMaxWidth: true },
+            sequence: { useMaxWidth: true, actorMargin: 48, messageMargin: 30 },
+            themeVariables: themeVariables(activePalette())
+          });
+          const id = `icarus-diagram-${crypto.randomUUID().replaceAll("-", "")}`;
+          return mermaid.render(id, source);
         });
-        const id = `icarus-diagram-${crypto.randomUUID().replaceAll("-", "")}`;
-        const rendered = await mermaid.render(id, source);
-        if (!live) return;
+        if (!live || rendering !== turn) return;
         host.innerHTML = rendered.svg;
         rendered.bindFunctions?.(host);
         status = "ready";
       } catch (error) {
-        if (!live) return;
+        if (!live || rendering !== turn) return;
         status = "error";
         failure = error instanceof Error ? error.message : "The diagram could not be rendered.";
       }
     };
 
+    const observer = new MutationObserver(() => {
+      if (palette === "adaptive") void render();
+    });
+    if (palette === "adaptive") {
+      observer.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ["data-appearance"]
+      });
+    }
     void render();
     return () => {
       live = false;
+      turn += 1;
+      observer.disconnect();
     };
   });
 </script>

@@ -4,12 +4,12 @@ type Listener = () => void;
 
 const listeners = new Map<Id<"derivedOutputs">, Set<Listener>>();
 
-/** Tell every mounted projection of one Derived Output to re-read its value. */
+/** Tell every mounted inspector of one Derived Output to re-read its value. */
 export const announcePromptOutput = (id: Id<"derivedOutputs">): void => {
   for (const listener of listeners.get(id) ?? []) listener();
 };
 
-/** The document node view and inspector can coexist without owning each other. */
+/** Creation and settings surfaces can overlap without owning each other. */
 export const observePromptOutput = (
   id: Id<"derivedOutputs">,
   listener: Listener

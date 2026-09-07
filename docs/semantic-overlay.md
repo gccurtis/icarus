@@ -224,13 +224,15 @@ provider returns a structured array of variable values and evidence selections;
 the application validates exact names and grounding, stores the resolutions,
 and renders the final text itself.
 
-Documents now expose that lifecycle through a simple Prompt Block. The Prompts
-rail creates a Derived Output, persists only its ID and placement in the document,
-processes up to 50 pending semantic-sync jobs, then refreshes it in the same user
-request. The inline card and inspector call the canonical ID-based reads, so the
-answer, state, revision, and citations update without rewriting the document.
-Queued Derived Output execution and non-document placement adapters remain
-separate scale-up work.
+Documents now expose that lifecycle through a simple Prompt Block. An empty line
+converts through the ordinary Block selector, then the Prompt inspector creates
+and links the Derived Output, processes up to 50 pending semantic-sync jobs, and
+refreshes it in the same user request. The published answer is synchronized into
+the block's normal atoms/display/marks, so it remains selectable, formattable,
+and editable; a small right-edge star reopens settings. An inline edit becomes
+ungrounded continuity on the next refresh. The Prompts rail is only an index of
+blocks in the current document. Queued Derived Output execution and non-document
+placement adapters remain separate scale-up work.
 
 ## Resource publication
 
@@ -253,6 +255,11 @@ infrastructure gaps rather than missing procedure contracts.
 
 1. Add a transactional resource-write/outbox boundary and always-on worker host.
 2. Add source-local large-text and reader window planning.
-3. Add bounded `find_resources` and authoritative `read` evidence tools.
+3. Add bounded `read_selection`, `find_resources`, and authoritative `read`
+   evidence tools. Only `retrieve` queries the Semantic Overlay; selection and
+   read go directly to project resources.
 4. Add an optional bounded query frontier with truncation diagnostics and recall
    tests.
+
+The development-reference method and the visual/executable proof for this flow
+are documented in `docs/development-reference-surfaces.md`.

@@ -733,9 +733,11 @@ test("document context panels are operational and compact", async ({ page }) => 
 
   await context.getByRole("button", { name: "Prompts", exact: true }).click();
   await expect(context.getByRole("heading", { name: "Prompts" })).toBeVisible();
-  await expect(context.getByLabel("Ask project sources")).toBeVisible();
-  await expect(context.getByRole("button", { name: "Create and generate" })).toBeDisabled();
+  await expect(context.getByLabel("Ask project sources")).toHaveCount(0);
+  await expect(context.getByRole("button", { name: "Create and generate" })).toHaveCount(0);
   await expect(context.getByText("No Prompt Blocks yet.", { exact: true })).toBeVisible();
+  await expect(context).toContainText("empty line");
+  await expect(context).toContainText("Block type to Prompt");
 });
 
 test("document named styles mirror the text formatting inspector without metadata clutter", async ({ page }) => {
