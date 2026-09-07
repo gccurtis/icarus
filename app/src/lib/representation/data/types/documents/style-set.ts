@@ -8,8 +8,10 @@ export type TextStyle = {
   bold?: boolean;
   italic?: boolean;
   underline?: boolean;
+  strikethrough?: boolean;
   color?: string;
   background?: string;
+  /** Absolute CSS pixels. Slide-deck styles use a unitless ratio instead. */
   lineHeight?: number;
   spaceBefore?: number;
   spaceAfter?: number;

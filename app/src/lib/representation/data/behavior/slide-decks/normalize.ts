@@ -309,3 +309,13 @@ export const normalizeSlideDeckBody = (value: unknown): SlideDeckBody => {
       : value.slides
   } as SlideDeckBody;
 };
+
+/** Every persisted editor deck has a canvas, even when its template is intentionally blank. */
+export const ensureSlideDeckReady = (body: SlideDeckBody): SlideDeckBody => {
+  if (body.slides.length > 0) return body;
+  const mint = identifierMint(body);
+  return {
+    ...body,
+    slides: [{ id: mint("slide-1"), elements: [], notes: [] }]
+  };
+};

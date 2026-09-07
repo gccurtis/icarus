@@ -243,6 +243,7 @@ const validTextStyle = (value: unknown): boolean => {
       "bold",
       "italic",
       "underline",
+      "strikethrough",
       "color",
       "background",
       "lineHeight",
@@ -259,7 +260,7 @@ const validTextStyle = (value: unknown): boolean => {
   for (const key of ["fontFamily", "color", "background"] as const) {
     if (value[key] !== undefined && !validText(value[key], 1_000)) return false;
   }
-  for (const key of ["bold", "italic", "underline"] as const) {
+  for (const key of ["bold", "italic", "underline", "strikethrough"] as const) {
     if (value[key] !== undefined && typeof value[key] !== "boolean") return false;
   }
   if (

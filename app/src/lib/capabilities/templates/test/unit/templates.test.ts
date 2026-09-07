@@ -650,8 +650,30 @@ describe("instantiation", () => {
     assert.equal(model.tables.documentSnapshots[0].role, "leader");
     assert.equal(model.tables.slideDecks[0].templateId, "templates:2");
     assert.equal(model.tables.slideDeckSnapshots[0].revision, 0);
+    const readyDeck = model.tables.slideDeckSnapshots[0].body as { slides: { id: string }[] };
+    assert.equal(readyDeck.slides.length, 1);
+    assert.match(readyDeck.slides[0].id, /^slide-/);
     assert.notEqual(model.tables.documents[0].createdBy, model.tables.documents[0].updatedBy);
     assert.notEqual(model.tables.slideDecks[0].createdBy, model.tables.slideDecks[0].updatedBy);
+  });
+
+  test("normalizes legacy document leading before a template becomes a snapshot", async () => {
+    model.tables.templates.push(template("1", "u", {
+      resource: "document",
+      styles: {
+        defaultKey: "body",
+        styles: { body: { name: "Body", fontSize: 11, lineHeight: 1.5 } }
+      },
+      rows: []
+    }));
+
+    const answer = await instantiateTemplate({ templateId: "templates:1" });
+    const snapshot = model.tables.documentSnapshots[0].body as {
+      styles: { styles: { body: { lineHeight: number } } };
+    };
+
+    assert.equal(answer.accepted, true);
+    assert.equal(snapshot.styles.styles.body.lineHeight, 16.5);
   });
 
   test("materializes addressed spreadsheet cells into stable row and column ids", async () => {

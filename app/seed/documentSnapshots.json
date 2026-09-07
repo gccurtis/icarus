@@ -318,7 +318,7 @@
         "defaultKey": "body",
         "styles": {
           "title": { "name": "Title", "fontFamily": "IBM Plex Sans", "fontSize": 28, "fontWeight": 650, "color": "--token-ink-primary" },
-          "body": { "name": "Body", "fontFamily": "IBM Plex Sans", "fontSize": 11, "color": "--token-ink-primary", "lineHeight": 1.5 }
+          "body": { "name": "Body", "fontFamily": "IBM Plex Sans", "fontSize": 11, "color": "--token-ink-primary", "lineHeight": 16.5 }
         }
       },
       "rows": [
@@ -372,7 +372,7 @@
         "styles": {
           "title": { "name": "Title", "fontFamily": "IBM Plex Sans", "fontSize": 28, "fontWeight": 650, "color": "--token-ink-primary" },
           "term": { "name": "Term", "fontFamily": "IBM Plex Sans", "fontSize": 13, "fontWeight": 650, "color": "--token-color-accent-1-text" },
-          "body": { "name": "Body", "fontFamily": "IBM Plex Sans", "fontSize": 11, "color": "--token-ink-primary", "lineHeight": 1.45 }
+          "body": { "name": "Body", "fontFamily": "IBM Plex Sans", "fontSize": 11, "color": "--token-ink-primary", "lineHeight": 15.95 }
         }
       },
       "rows": [
@@ -436,7 +436,7 @@
         "styles": {
           "title": { "name": "Title", "fontFamily": "IBM Plex Sans", "fontSize": 28, "fontWeight": 650, "color": "--token-ink-primary" },
           "heading": { "name": "Heading", "fontFamily": "IBM Plex Sans", "fontSize": 15, "fontWeight": 650, "color": "--token-ink-primary", "spaceBefore": 14 },
-          "body": { "name": "Body", "fontFamily": "IBM Plex Sans", "fontSize": 11, "color": "--token-ink-primary", "lineHeight": 1.5 }
+          "body": { "name": "Body", "fontFamily": "IBM Plex Sans", "fontSize": 11, "color": "--token-ink-primary", "lineHeight": 16.5 }
         }
       },
       "rows": [

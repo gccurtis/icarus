@@ -18,7 +18,7 @@
         "styles": {
           "title": { "name": "Title", "fontSize": 30, "bold": true, "color": "--token-ink-primary", "spaceAfter": 14 },
           "heading": { "name": "Heading", "fontSize": 16, "bold": true, "color": "--token-ink-primary", "spaceBefore": 16, "spaceAfter": 6 },
-          "body": { "name": "Body", "fontSize": 11, "color": "--token-ink-secondary", "lineHeight": 1.5 }
+          "body": { "name": "Body", "fontSize": 11, "color": "--token-ink-secondary", "lineHeight": 16.5 }
         }
       },
       "rows": [
@@ -123,7 +123,7 @@
         "styles": {
           "title": { "name": "Brief title", "fontSize": 24, "bold": true, "horizontalAlignment": "center", "color": "--token-ink-primary", "spaceAfter": 18 },
           "heading": { "name": "Section", "fontSize": 14, "bold": true, "color": "--token-ink-primary", "spaceBefore": 14, "spaceAfter": 6 },
-          "body": { "name": "Brief body", "fontSize": 11, "color": "--token-ink-secondary", "lineHeight": 1.55, "horizontalAlignment": "justify" }
+          "body": { "name": "Brief body", "fontSize": 11, "color": "--token-ink-secondary", "lineHeight": 17.05, "horizontalAlignment": "justify" }
         }
       },
       "rows": [
@@ -234,7 +234,7 @@
         "styles": {
           "title": { "name": "Title", "fontSize": 28, "bold": true, "color": "--token-ink-primary", "spaceAfter": 12 },
           "term": { "name": "Term", "fontSize": 13, "bold": true, "color": "--token-color-accent-1-text", "spaceBefore": 10 },
-          "definition": { "name": "Definition", "fontSize": 10.5, "color": "--token-ink-secondary", "lineHeight": 1.45 }
+          "definition": { "name": "Definition", "fontSize": 10.5, "color": "--token-ink-secondary", "lineHeight": 15.23 }
         }
       },
       "rows": [
@@ -338,7 +338,7 @@
         "styles": {
           "title": { "name": "Title", "fontSize": 29, "bold": true, "color": "--token-ink-primary", "spaceAfter": 12 },
           "heading": { "name": "Heading", "fontSize": 15, "bold": true, "color": "--token-ink-primary", "spaceBefore": 14, "spaceAfter": 5 },
-          "body": { "name": "Body", "fontSize": 11, "color": "--token-ink-secondary", "lineHeight": 1.5 },
+          "body": { "name": "Body", "fontSize": 11, "color": "--token-ink-secondary", "lineHeight": 16.5 },
           "callout": { "name": "Recommendation", "fontSize": 12, "bold": true, "background": "--token-color-active-surface", "color": "--token-color-active-text" }
         }
       },

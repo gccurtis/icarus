@@ -45,7 +45,7 @@
             "name": "Body",
             "fontSize": 11,
             "color": "--token-ink-secondary",
-            "lineHeight": 1.5
+            "lineHeight": 16.5
           }
         }
       },
@@ -233,7 +233,7 @@
             "name": "Brief body",
             "fontSize": 11,
             "color": "--token-ink-secondary",
-            "lineHeight": 1.55,
+            "lineHeight": 17.05,
             "horizontalAlignment": "justify"
           }
         }
@@ -439,7 +439,7 @@
             "name": "Definition",
             "fontSize": 10.5,
             "color": "--token-ink-secondary",
-            "lineHeight": 1.45
+            "lineHeight": 15.23
           }
         }
       },
@@ -621,7 +621,7 @@
             "name": "Body",
             "fontSize": 11,
             "color": "--token-ink-secondary",
-            "lineHeight": 1.5
+            "lineHeight": 16.5
           },
           "callout": {
             "name": "Recommendation",
