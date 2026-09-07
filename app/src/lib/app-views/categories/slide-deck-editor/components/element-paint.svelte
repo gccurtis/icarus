@@ -3,7 +3,7 @@
   import { elementIn, withSet, withSets } from "$app-views/categories/slide-deck-editor/procedures/deck";
   import { workspaceState, type SlideDeckRuntime } from "$model/client/workspace-state";
 
-  let { elementId, fill = true }: { elementId: string; fill?: boolean } = $props();
+  let { elementId }: { elementId: string } = $props();
 
   const DASHES = [
     { value: "solid", label: "Solid" },
@@ -21,11 +21,6 @@
   const body = $derived(runtime?.body);
   const element = $derived(body === undefined ? undefined : elementIn(body, elementId));
   const paint = $derived(element?.paint);
-
-  const setFill = (value: string) => {
-    if (body === undefined) return;
-    runtime?.apply(withSet(body, `${elementId}/paint/fill`, value === "" ? null : value).ops);
-  };
 
   const setBorder = (value: string) => {
     if (body === undefined) return;
@@ -67,12 +62,8 @@
   };
 </script>
 
-<PanelSection title={fill ? "Fill and border" : "Border"}>
+<PanelSection title="Border">
   <div class="grid grid-cols-[2.75rem_minmax(0,1fr)] items-center gap-x-2 gap-y-2">
-    {#if fill}
-      <span class="text-caption text-ink-muted">Fill</span>
-      <PanelColor picker clearable label="Fill colour" value={paint?.fill ?? ""} flush onchange={setFill} />
-    {/if}
     <span class="text-caption text-ink-muted">Border</span>
     <div class="flex min-w-0 items-center gap-1.5">
       <PanelColor picker clearable label="Border colour" value={paint?.stroke?.color ?? ""} flush onchange={setBorder} />

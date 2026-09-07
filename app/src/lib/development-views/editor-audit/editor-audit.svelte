@@ -128,7 +128,7 @@
         <div class="mock-label">Typography</div>
         <div class="mock-fields"><span>IBM Plex Sans</span><span>18 px</span></div>
         <div class="mark-row"><button class="pressed">B</button><button><i>I</i></button><button><u>U</u></button><button><s>S</s></button></div>
-        <div class="mock-fields"><span>Foreground</span><span>Background</span></div>
+        <div class="mock-fields"><span>Color</span><span>Background</span></div>
         <div class="mock-label">Body style</div>
         <footer>No Identity, Key, Reads as, Usage, or redundant style dropdown.</footer>
       </article>

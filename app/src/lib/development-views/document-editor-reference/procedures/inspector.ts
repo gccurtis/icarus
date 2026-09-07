@@ -38,7 +38,7 @@ export const inspectorReference: AreaReference = {
     {
       title: "Color uses one shared instrument",
       before: "Foreground/background controls were separate swatch walls and repeated replacement could fail.",
-      now: "FG and BG share a row and each invokes PanelColorPicker with palette, EyeDropper capability state, and More colours/custom hex entry. Replacement is computed against evolving operation state.",
+      now: "Color and Background share a row and each invokes PanelColorPicker with palette, EyeDropper capability state, and More colours/custom hex entry. Replacement is computed against evolving operation state.",
       why: "A shared primitive prevents visual drift while correct mark algebra permits unlimited replacement."
     },
     {

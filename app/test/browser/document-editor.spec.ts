@@ -134,8 +134,12 @@ const openDocumentNamed = async (page: Page, title: string) => {
   if ((await toolbarTab.count()) > 0) {
     await toolbarTab.click();
   } else {
-    await page.getByPlaceholder("Search this project").fill(title);
-    await page.getByRole("button", { name: title, exact: true }).first().dblclick();
+    await page
+      .getByRole("toolbar", { name: "Open tabs" })
+      .getByRole("button", { name: "New tab" })
+      .click();
+    await page.getByRole("searchbox", { name: "Search this project" }).fill(title);
+    await page.getByRole("button", { name: title }).first().click();
   }
   await expect(page.locator(".title-bar h1")).toHaveText(title);
   await expect(page.locator(".ProseMirror")).toBeVisible();
@@ -367,12 +371,12 @@ test("links use ordinary marks, keep notes, and obey document pointer gestures",
   await underline.click();
   await expect(block.locator("u")).toContainText("reconductoring");
 
-  const foreground = inspector.getByRole("button", { name: "Foreground" });
+  const foreground = inspector.getByRole("button", { name: "Color" });
   await foreground.click();
-  await page.getByRole("radiogroup", { name: "Foreground" }).getByRole("radio", { name: "Accent 2" }).click();
+  await page.getByRole("radiogroup", { name: "Color" }).getByRole("radio", { name: "Accent 2" }).click();
   await expect(page.locator(".held-selection")).toBeVisible();
   await foreground.click();
-  await page.getByRole("radiogroup", { name: "Foreground" }).getByRole("radio", { name: "Danger" }).click();
+  await page.getByRole("radiogroup", { name: "Color" }).getByRole("radio", { name: "Danger" }).click();
   await foreground.click();
   await expect(page.getByRole("button", { name: "Pick from screen" })).toBeVisible();
   await page.getByRole("button", { name: "More colours…" }).click();
@@ -634,7 +638,7 @@ test("a text selection opens the functional responsive inspector", async ({ page
   await expect(inspector.getByTitle("Strikethrough")).toHaveCount(1);
   await expect(inspector.getByTitle("Code")).toHaveCount(0);
 
-  const foreground = inspector.getByRole("button", { name: "Foreground" });
+  const foreground = inspector.getByRole("button", { name: "Color" });
   const background = inspector.getByRole("button", { name: "Background" });
   await expect(foreground).toBeVisible();
   await expect(background).toBeVisible();
@@ -739,7 +743,7 @@ test("document named styles mirror the text formatting inspector without metadat
   for (const mark of ["Bold", "Italic", "Underline", "Strikethrough"] as const) {
     await expect(inspector.getByTitle(mark)).toBeVisible();
   }
-  await expect(inspector.getByRole("button", { name: "Foreground for this style" })).toBeVisible();
+  await expect(inspector.getByRole("button", { name: "Color for this style" })).toBeVisible();
   await expect(inspector.getByRole("button", { name: "Background for this style" })).toBeVisible();
   await expect(inspector.getByRole("button", { name: "Spacing", exact: true })).toBeVisible();
   await expect(inspector.getByRole("button", { name: "Spacing", exact: true })).toHaveAttribute("aria-expanded", "false");
@@ -781,15 +785,15 @@ test("shared editor controls keep one behavior across the width matrix", async (
     await expect(panel.getByTitle("Italic")).toHaveCount(1);
     await expect(panel.getByTitle("Underline")).toHaveCount(1);
     await expect(panel.getByTitle("Strikethrough")).toHaveCount(1);
-    await expect(panel.getByRole("button", { name: "Foreground" })).toHaveCount(1);
+    await expect(panel.getByRole("button", { name: "Color" })).toHaveCount(1);
     await expect(panel.getByRole("button", { name: "Background" })).toHaveCount(1);
-    await expect(panel.getByRole("button", { name: "Foreground" })).toHaveText("");
+    await expect(panel.getByRole("button", { name: "Color" })).toHaveText("");
     await expect(panel.getByRole("button", { name: "Background" })).toHaveText("");
     await expect(panel.getByRole("button", { name: /Increase|Decrease/ })).toHaveCount(0);
   }
 
-  await expect(panels.nth(1).getByText("FG", { exact: true })).toBeVisible();
-  await expect(panels.nth(1).getByText("BG", { exact: true })).toBeVisible();
+  await expect(panels.nth(1).getByText("Color", { exact: true })).toBeVisible();
+  await expect(panels.nth(1).getByText("Background", { exact: true })).toBeVisible();
   await expect(panels.nth(1).getByRole("button", { name: "Background" }).locator("svg")).toHaveCount(1);
 
   await expect(panels.nth(0).locator(".short-label").first()).toBeVisible();
@@ -797,8 +801,8 @@ test("shared editor controls keep one behavior across the width matrix", async (
   await expect(panels.nth(2).locator(".short-label").first()).toBeHidden();
   await expect(panels.nth(2).locator(".full-label").first()).toBeVisible();
 
-  await panels.nth(1).getByRole("button", { name: "Foreground" }).click();
-  await expect(page.getByRole("radiogroup", { name: "Foreground" }).getByRole("radio", { name: "None" })).toHaveCount(0);
+  await panels.nth(1).getByRole("button", { name: "Color" }).click();
+  await expect(page.getByRole("radiogroup", { name: "Color" }).getByRole("radio", { name: "None" })).toHaveCount(0);
   await page.getByRole("button", { name: "More colours…" }).click();
   await expect(page.getByRole("status").first()).toContainText("custom-colour detail screen");
 

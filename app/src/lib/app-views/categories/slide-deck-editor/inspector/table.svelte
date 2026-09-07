@@ -59,7 +59,7 @@
       </div>
     </PanelSection>
     <ElementGeometry elementId={element.id} />
-    <ElementPaint elementId={element.id} fill={false} />
+    <ElementPaint elementId={element.id} />
     <ElementOrder elementId={element.id} />
     <ElementEffects elementId={element.id} corner={false} />
   {:else}

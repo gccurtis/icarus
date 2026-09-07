@@ -119,7 +119,7 @@
         "Implement safe link activation and prevent raw text-block node selection.",
         "Cover IME, local, accepted, remote, formula-display, and layout-only origins."
       ],
-      tests: ["Projection round trip", "10× FG/BG replacement", "Multi-range repaint", "Enter matrix", "IME"],
+      tests: ["Projection round trip", "10× Color/Background replacement", "Multi-range repaint", "Enter matrix", "IME"],
       exit: "Data and pixels agree, and every legal selection survives every repaint path."
     },
     {
@@ -673,8 +673,8 @@
             <li>Double-click word and Shift-double-click block never expose node chrome.</li>
           </ul></article>
           <article><h3>Formatting + panels</h3><ul>
-            <li>Ten FG, ten BG, and alternating changes succeed and reverse in order.</li>
-            <li>B/I/U/S, FG/BG, and orientation hold one row at every rail width.</li>
+            <li>Ten Color, ten Background, and alternating changes succeed and reverse in order.</li>
+            <li>B/I/U/S, Color/Background, and orientation hold one row at every rail width.</li>
             <li>Zero numeric values look editable; Sections never prints fractional placement.</li>
             <li>Every panel mutation produces the intended native operation.</li>
           </ul></article>

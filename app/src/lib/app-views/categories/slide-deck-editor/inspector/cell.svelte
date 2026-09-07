@@ -190,13 +190,15 @@
     {:else}
       <PanelSection title="Text">
         <PanelChoice label="Alignment" value={sharedAlign ?? "start"} mixed={sharedAlign === undefined} options={ALIGN} flush fill onchange={setAlign} />
+        <div class="grid grid-cols-[4.75rem_minmax(0,1fr)] items-center gap-x-2 gap-y-2">
+          <span class="text-caption text-ink-muted">Background</span>
+          <PanelColor picker clearable label="Cell background" value={sharedFill ?? ""} mixed={sharedFill === undefined} flush onchange={setFill} />
+        </div>
       </PanelSection>
     {/if}
 
-    <PanelSection title="Fill and border">
+    <PanelSection title="Border">
       <div class="grid grid-cols-[2.75rem_minmax(0,1fr)] items-center gap-x-2 gap-y-2">
-        <span class="text-caption text-ink-muted">Fill</span>
-        <PanelColor picker clearable label="Cell colour" value={sharedFill ?? ""} mixed={sharedFill === undefined} flush onchange={setFill} />
         <span class="text-caption text-ink-muted">Border</span>
         <div class="flex min-w-0 items-center gap-1.5">
           <PanelColor picker clearable label="Cell border colour" value={sharedBorderColor ?? ""} mixed={sharedBorderColor === undefined} flush onchange={setBorderColor} />

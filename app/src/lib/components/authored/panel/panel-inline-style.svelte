@@ -76,9 +76,9 @@
 
 <div class="flex min-w-0 items-center gap-4">
   <div class="flex items-center gap-1.5">
-    <span class="text-caption text-ink-muted shrink-0 font-medium">FG</span>
+    <span class="text-caption text-ink-muted shrink-0 font-medium">Color</span>
     <PanelColorPicker
-      label={prefix ? `Foreground ${prefix}` : "Foreground"}
+      label={prefix ? `Color ${prefix}` : "Color"}
       value={shownForeground}
       mixed={coloursMixed}
       options={usableForegrounds}
@@ -88,7 +88,7 @@
     />
   </div>
   <div class="flex items-center gap-1.5">
-    <span class="text-caption text-ink-muted shrink-0 font-medium">BG</span>
+    <span class="text-caption text-ink-muted shrink-0 font-medium">Background</span>
     <PanelColorPicker
       label={prefix ? `Background ${prefix}` : "Background"}
       value={background}
@@ -104,12 +104,12 @@
 {#if custom !== undefined}
   <div class="border-border-subtle bg-surface-panel-hover rounded-control flex min-w-0 flex-col gap-1.5 border p-2">
     <label for={`custom-${custom}`} class="text-caption text-ink-secondary">
-      Custom {custom} colour
+      Custom {custom === "foreground" ? "color" : "background"}
     </label>
     <div class="flex min-w-0 items-center gap-1.5">
       <input
         type="color"
-        aria-label={`Choose custom ${custom} colour`}
+        aria-label={`Choose custom ${custom === "foreground" ? "color" : "background"}`}
         value={hex}
         class="border-border-subtle rounded-control h-7 w-8 shrink-0 cursor-pointer border bg-transparent p-0.5"
         oninput={(event) => {

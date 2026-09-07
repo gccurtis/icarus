@@ -52,11 +52,13 @@
       <PanelControlRow label="Height">
         <PanelNumber label="Height" value={shown(placed.frame.height)} step={0.001} min={0.01} flush onchange={(height) => set({ height })} />
       </PanelControlRow>
-      <PanelControlRow label="X">
-        <PanelNumber label="X" value={shown(placed.frame.x)} step={0.001} flush onchange={(x) => set({ x })} />
-      </PanelControlRow>
-      <PanelControlRow label="Y">
-        <PanelNumber label="Y" value={shown(placed.frame.y)} step={0.001} flush onchange={(y) => set({ y })} />
+      <PanelControlRow label="Position">
+        <div class="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-1.5">
+          <span class="text-caption text-ink-muted">X</span>
+          <PanelNumber label="X" value={shown(placed.frame.x)} step={0.001} flush onchange={(x) => set({ x })} />
+          <span class="text-caption text-ink-muted">Y</span>
+          <PanelNumber label="Y" value={shown(placed.frame.y)} step={0.001} flush onchange={(y) => set({ y })} />
+        </div>
       </PanelControlRow>
       <PanelControlRow label="Rotation">
         <PanelNumber label="Rotation" value={placed.element.rotation ?? 0} unit="°" step={1} flush onchange={rotate} />

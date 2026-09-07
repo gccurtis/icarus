@@ -58,8 +58,8 @@
           />
 
           <div class="color-row">
-            <div><span>FG</span><PanelColorPicker compact label="Foreground" value={foreground} options={colors.filter((color) => color.value !== "")} onchange={(next) => (foreground = next)} oncustom={() => (custom = true)} /></div>
-            <div><span>BG</span><PanelColorPicker compact label="Background" value={background} options={colors} onchange={(next) => (background = next)} oncustom={() => (custom = true)} /></div>
+            <div><span>Color</span><PanelColorPicker compact label="Color" value={foreground} options={colors.filter((color) => color.value !== "")} onchange={(next) => (foreground = next)} oncustom={() => (custom = true)} /></div>
+            <div><span>Background</span><PanelColorPicker compact label="Background" value={background} options={colors} onchange={(next) => (background = next)} oncustom={() => (custom = true)} /></div>
           </div>
 
           <PanelControlGroup flush>

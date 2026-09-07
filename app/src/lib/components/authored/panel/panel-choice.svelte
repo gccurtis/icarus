@@ -52,7 +52,7 @@
      */
     label: string;
     value: string;
-    options: readonly { value: string; label: string; short?: string; icon?: Glyph }[];
+    options: readonly { value: string; label: string; short?: string; title?: string; icon?: Glyph }[];
     /**
      * Several things are selected and they do not agree.
      *
@@ -129,7 +129,7 @@
     {@const Icon = option.icon}
     <ToggleGroup.Item
       value={option.value}
-      title={Icon ? option.label : undefined}
+      title={option.title ?? (Icon ? option.label : undefined)}
       aria-label={option.label}
       class={cn(
         "text-body-sm border-border-subtle bg-surface-panel text-ink-secondary rounded-control data-[state=on]:border-active-border data-[state=on]:bg-active-surface data-[state=on]:text-active-text h-7 min-w-0 justify-center truncate border px-2 font-normal",

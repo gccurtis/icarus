@@ -69,7 +69,7 @@
     "Bold · Italic · Underline · Strikethrough",
     "Full words when space allows; B/I/U/S when it does not",
     "One full-width formatting row",
-    "FG and BG on one row",
+    "Color and Background on one row",
     "Shared color picker · eyedropper · More colors",
     "Body style = alignment + spacing",
     "Space above / Space below labels",
@@ -396,13 +396,13 @@
                 </div>
 
                 <div class="color-row">
-                  <div><span>FG</span><button type="button" onclick={() => (picker = picker === "fg" ? undefined : "fg")}><i style:background={colorOf(foreground)}></i><b>Foreground</b><em>⌄</em></button></div>
-                  <div><span>BG</span><button type="button" onclick={() => (picker = picker === "bg" ? undefined : "bg")}><i style:background={colorOf(background)}></i><b>Background</b><em>⌄</em></button></div>
+                  <div><span>Color</span><button type="button" aria-label="Color" title="Color" onclick={() => (picker = picker === "fg" ? undefined : "fg")}><i style:background={colorOf(foreground)}></i></button></div>
+                  <div><span>Background</span><button type="button" aria-label="Background" title="Background" onclick={() => (picker = picker === "bg" ? undefined : "bg")}><i style:background={colorOf(background)}></i></button></div>
                 </div>
 
                 {#if picker !== undefined}
                   <div class="color-picker">
-                    <div class="picker-head"><b>{picker === "fg" ? "Foreground" : "Background"}</b><span>Document colors</span></div>
+                    <div class="picker-head"><b>{picker === "fg" ? "Color" : "Background"}</b><span>Document colors</span></div>
                     <div class="swatch-grid">
                       {#each colors as color}
                         <button
@@ -536,7 +536,7 @@
         <ul>
           <li><span>✓</span> Typecheck, unit tests, lint, and production build</li>
           <li><span>✓</span> Narrow, default, and expanded inspector/browser runs</li>
-          <li><span>✓</span> Ten consecutive FG/BG changes plus undo/redo</li>
+          <li><span>✓</span> Ten consecutive Color/Background changes plus undo/redo</li>
           <li><span>✓</span> Style continuation matrix for Body, headings, Quote, Caption, Code</li>
           <li><span>✓</span> Comments, links, header/footer, page numbering, and Sections paths</li>
           <li><span>✓</span> Zero console errors, page errors, or unexpected failed requests</li>
@@ -695,10 +695,8 @@
   .color-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .55rem; }
   .color-row > div { display: flex; align-items: center; gap: .35rem; min-width: 0; }
   .color-row > div > span { flex: none; color: var(--ink-3); font-size: 9px; font-weight: 700; }
-  .color-row button { display: flex; min-width: 0; height: 1.85rem; flex: 1; align-items: center; gap: .35rem; padding: 0 .42rem; border: 1px solid var(--rule-strong); border-radius: 6px; background: var(--raised); cursor: pointer; }
+  .color-row button { display: flex; width: 1.85rem; height: 1.85rem; flex: none; align-items: center; justify-content: center; padding: 0; border: 1px solid var(--rule-strong); border-radius: 50%; background: var(--raised); cursor: pointer; }
   .color-row i { width: .85rem; height: .85rem; flex: none; border: 1px solid var(--rule); border-radius: 50%; }
-  .color-row b { min-width: 0; overflow: hidden; color: var(--ink-3); font-size: 9.5px; font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
-  .color-row em { margin-left: auto; color: var(--ink-3); font-style: normal; }
   .color-picker { border: 1px solid var(--rule-strong); border-radius: 8px; background: var(--raised); box-shadow: var(--token-shadow-overlay); overflow: hidden; }
   .picker-head { display: flex; justify-content: space-between; padding: .55rem .6rem; border-bottom: 1px solid var(--rule); }
   .picker-head b { font-size: 11px; }

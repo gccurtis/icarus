@@ -35,9 +35,9 @@
   ];
 
   const WRAPPING = [
-    { value: "grow", label: "Grow box" },
-    { value: "shrink", label: "Shrink text" },
-    { value: "clip", label: "Clip text" }
+    { value: "grow", label: "Grow box", title: "Grow the box to fit its text" },
+    { value: "shrink", label: "Shrink text", title: "Shrink the text to fit inside the box" },
+    { value: "clip", label: "Clip text", title: "Hide text that extends beyond the box" }
   ];
 
   const view = workspaceState();

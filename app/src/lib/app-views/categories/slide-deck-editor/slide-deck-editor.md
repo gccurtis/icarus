@@ -163,7 +163,7 @@ carets, speaker notes, and named styles:
 1. Named style, except while editing the named style itself.
 2. Font and size.
 3. Bold, italic, underline, and strikethrough press buttons.
-4. Compact FG and BG color controls; foreground always resolves to a text color,
+4. Compact Color and Background controls; text color always resolves to a color,
    while an empty background is shown with an explicit X.
 5. Text style also owns horizontal alignment, vertical Top/Middle/Bottom, and a
    text-wrap policy where the target supports them.

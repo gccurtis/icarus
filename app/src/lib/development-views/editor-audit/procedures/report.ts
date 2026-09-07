@@ -66,7 +66,7 @@ export const PHASES: readonly RemediationPhase[] = [
 export const CONSISTENCY_MATRIX = [
   ["Style identity", "Editable title; no Identity/Usage", "Editable title; dedicated lens", "Independent copies"],
   ["Typography", "Font · Size · B I U S", "Font · Size · B I U S", "Same order"],
-  ["Color", "Foreground · Background", "Foreground · Background", "Same vocabulary"],
+  ["Color", "Color · Background", "Color · Background", "Same vocabulary"],
   ["Body", "Align · spacing · list/indent", "Horizontal · vertical · spacing · indent", "Domain-appropriate tail"],
   ["Line height", "Absolute pixels", "Unitless ratio", "Never reuse semantics"],
   ["Comments", "Inline-range locate", "Slide/element locate", "Same visual sequence"],

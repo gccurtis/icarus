@@ -117,11 +117,33 @@ test("Insert tiles immediately add centered objects with the unified text inspec
   );
 
   await expect(inspector.getByRole("button", { name: "Kind", exact: true }).last()).toHaveText("Rectangle");
-  await expect(inspector.getByRole("group", { name: "Text wrap" })).toBeVisible();
+  const wrapping = inspector.getByRole("group", { name: "Text wrap" });
+  await expect(wrapping).toBeVisible();
+  await expect(wrapping.getByRole("radio", { name: "Grow box" })).toHaveAttribute(
+    "title",
+    "Grow the box to fit its text"
+  );
+  await expect(wrapping.getByRole("radio", { name: "Shrink text" })).toHaveAttribute(
+    "title",
+    "Shrink the text to fit inside the box"
+  );
+  await expect(wrapping.getByRole("radio", { name: "Clip text" })).toHaveAttribute(
+    "title",
+    "Hide text that extends beyond the box"
+  );
   for (const field of ["Width", "Height", "X", "Y"] as const) {
     await expect(inspector.getByRole("spinbutton", { name: field, exact: true })).toBeVisible();
   }
+  const [xBox, yBox] = await Promise.all([
+    inspector.getByRole("spinbutton", { name: "X", exact: true }).boundingBox(),
+    inspector.getByRole("spinbutton", { name: "Y", exact: true }).boundingBox()
+  ]);
+  expect(Math.abs((xBox?.y ?? 0) - (yBox?.y ?? 0))).toBeLessThan(2);
   await expect(inspector.getByRole("spinbutton", { name: /^Rotation/ })).toBeVisible();
+  await expect(inspector.getByRole("button", { name: "Color", exact: true })).toBeVisible();
+  await expect(inspector.getByRole("button", { name: "Background", exact: true })).toBeVisible();
+  await expect(inspector.getByRole("button", { name: "Border", exact: true }).first()).toBeVisible();
+  await expect(inspector.getByText("Fill", { exact: true })).toHaveCount(0);
   await expect(inspector.getByRole("button", { name: "Spacing", exact: true })).toHaveAttribute("aria-expanded", "false");
   await expect(inspector.getByRole("button", { name: "Effects", exact: true })).toHaveAttribute("aria-expanded", "false");
 
@@ -264,7 +286,7 @@ test("deck named styles use a dedicated complete inspector and render their mark
   for (const mark of ["Bold", "Italic", "Underline", "Strikethrough"] as const) {
     await expect(inspector.getByTitle(mark)).toBeVisible();
   }
-  await expect(inspector.getByRole("button", { name: "Foreground for this style" })).toBeVisible();
+  await expect(inspector.getByRole("button", { name: "Color for this style" })).toBeVisible();
   const background = inspector.getByRole("button", { name: "Background for this style" });
   await expect(background).toBeVisible();
   await expect(inspector.getByRole("group", { name: "Vertical alignment" })).toBeVisible();
