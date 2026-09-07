@@ -37,7 +37,7 @@
   );
   const open = $derived(threadsOf(all, documentId ?? ""));
   const resolved = $derived(all.filter((thread) => thread.resolution !== undefined));
-  const current = $derived(view.inspected === "general.comment" ? view.selection?.id : undefined);
+  const current = $derived(view.inspected === "document-editor.comment" ? view.selection?.id : undefined);
   const now = Date.now();
 
   const bodyOf = (thread: Thread): string => {
@@ -48,7 +48,7 @@
   const show = (thread: Thread) => {
     const blockId = firstAnchorBlockId(thread);
     if (runtime !== undefined && blockId !== undefined) runtime.scrollTo = blockId;
-    view.inspect("general.comment", { kind: "comment", id: thread._id });
+    view.inspect("document-editor.comment", { kind: "comment", id: thread._id });
   };
 </script>
 

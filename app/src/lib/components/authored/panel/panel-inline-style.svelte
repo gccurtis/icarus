@@ -15,6 +15,7 @@
     foregroundOptions,
     backgroundOptions,
     coloursMixed = false,
+    marksDisabled = false,
     prefix = "",
     onmarks,
     onforeground,
@@ -28,6 +29,7 @@
     foregroundOptions: readonly Swatch[];
     backgroundOptions: readonly Swatch[];
     coloursMixed?: boolean;
+    marksDisabled?: boolean;
     prefix?: string;
     onmarks?: (next: string[]) => void;
     onforeground?: (next: string) => void;
@@ -63,6 +65,7 @@
   value={marks}
   mixed={mixedMarks}
   {options}
+  disabled={marksDisabled}
   flush
   onchange={onmarks}
 />

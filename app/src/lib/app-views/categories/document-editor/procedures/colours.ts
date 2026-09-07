@@ -28,3 +28,7 @@ export const FILLS: readonly Swatch[] = [
 export const orNone = (value: string | undefined): string => value ?? "";
 
 export const orClear = (value: string): string | undefined => (value.length === 0 ? undefined : value);
+
+/** Stored theme-token names become valid CSS only at the presentation boundary. */
+export const cssColour = (value: string | undefined): string | undefined =>
+  value?.startsWith("--") === true ? `var(${value})` : value;

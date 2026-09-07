@@ -9,7 +9,9 @@ import {
   type Transaction
 } from "prosemirror-state";
 import type { Mappable } from "prosemirror-transform";
-import { Decoration, DecorationSet } from "prosemirror-view";
+import { Decoration, DecorationSet, type EditorView } from "prosemirror-view";
+
+import { wordAt } from "$app-views/categories/document-editor/procedures/links";
 
 export type Span = readonly [number, number];
 
@@ -121,6 +123,7 @@ export const combined = (state: EditorState): Selection | undefined => {
   const current = state.selection;
   if (current instanceof MultiSelection || current.empty) return undefined;
   if (!(current instanceof TextSelection)) return undefined;
+  if (!current.$from.parent.inlineContent || !current.$to.parent.inlineContent) return undefined;
 
   return MultiSelection.create(
     state.doc,
@@ -130,8 +133,43 @@ export const combined = (state: EditorState): Selection | undefined => {
   );
 };
 
-export const multiSelection = (): Plugin<Held> =>
-  new Plugin<Held>({
+const wordSpanAt = (view: EditorView, event: MouseEvent): Span | undefined => {
+  if (!(event.target instanceof Element)) return undefined;
+  const blockId = event.target.closest<HTMLElement>("[data-block]")?.dataset.block;
+  if (blockId === undefined) return undefined;
+
+  const hit = view.posAtCoords({ left: event.clientX, top: event.clientY });
+  if (hit === null) return undefined;
+
+  let span: Span | undefined;
+  view.state.doc.descendants((node, before) => {
+    if (span !== undefined) return false;
+    if (node.type.name !== "text_block" || node.attrs.blockId !== blockId) return;
+
+    const word = wordAt(node.textContent, hit.pos - before - 1);
+    if (word === undefined) return false;
+    span = [before + 1 + word.from, before + 1 + word.to];
+    return false;
+  });
+
+  return span;
+};
+
+export const multiSelection = (): Plugin<Held> => {
+  let cleanup: ReturnType<typeof setTimeout> | undefined;
+
+  const cancelCleanup = () => {
+    if (cleanup !== undefined) clearTimeout(cleanup);
+    cleanup = undefined;
+  };
+
+  const clearHeld = (view: EditorView) => {
+    cancelCleanup();
+    if (MULTI.getState(view.state)?.held === null) return;
+    view.dispatch(view.state.tr.setMeta(MULTI, NONE).setMeta("addToHistory", false));
+  };
+
+  return new Plugin<Held>({
     key: MULTI,
     state: {
       init: () => NONE,
@@ -158,8 +196,21 @@ export const multiSelection = (): Plugin<Held> =>
       handleDOMEvents: {
         mousedown: (view, event) => {
           const adding = event.metaKey || event.ctrlKey;
-          const held = adding ? heldSpans(view.state.selection) : null;
           const current = MULTI.getState(view.state)?.held ?? null;
+          if (!adding) {
+            cancelCleanup();
+            if (current !== null) {
+              view.dispatch(view.state.tr.setMeta(MULTI, NONE).setMeta("addToHistory", false));
+            }
+            return false;
+          }
+
+          cancelCleanup();
+          // The second press of a double-click must retain the selection that
+          // existed before its first press; the intervening click is a caret.
+          const held = event.detail > 1 && current !== null
+            ? current
+            : heldSpans(view.state.selection);
           if ((held === null && current === null) || (held !== null && held.length === 0)) {
             if (current !== null) {
               view.dispatch(view.state.tr.setMeta(MULTI, NONE).setMeta("addToHistory", false));
@@ -170,13 +221,35 @@ export const multiSelection = (): Plugin<Held> =>
           view.dispatch(view.state.tr.setMeta(MULTI, { held }).setMeta("addToHistory", false));
           return false;
         },
-        mouseup: (view) => {
+        mouseup: (view, event) => {
           if (MULTI.getState(view.state)?.held === null) return false;
-          window.setTimeout(() => {
-            if (MULTI.getState(view.state)?.held === null) return;
-            view.dispatch(view.state.tr.setMeta(MULTI, NONE).setMeta("addToHistory", false));
-          }, 0);
+          if (event.detail > 1) return false;
+
+          // A drag has already produced the final MultiSelection. A first
+          // click may still become a double-click, so retain its base briefly;
+          // the explicit dblclick handler below owns final word selection.
+          if (view.state.selection instanceof MultiSelection) clearHeld(view);
+          else cleanup = setTimeout(() => clearHeld(view), 700);
           return false;
+        },
+        dblclick: (view, event) => {
+          if (!event.metaKey && !event.ctrlKey) return false;
+          const held = MULTI.getState(view.state)?.held;
+          if (held === null || held === undefined || held.length === 0) return false;
+          const word = wordSpanAt(view, event);
+          if (word === undefined) return false;
+
+          event.preventDefault();
+          event.stopPropagation();
+          cancelCleanup();
+          view.dispatch(
+            view.state.tr
+              .setSelection(MultiSelection.create(view.state.doc, [...held, word], word[0], word[1]))
+              .setMeta(MULTI, NONE)
+              .setMeta("addToHistory", false)
+          );
+          view.focus();
+          return true;
         }
       },
       decorations: (state) => {
@@ -190,8 +263,10 @@ export const multiSelection = (): Plugin<Held> =>
             .map(([from, to]) => Decoration.inline(from, to, { class: "multi-range" }))
         );
       }
-    }
+    },
+    view: () => ({ destroy: cancelCleanup })
   });
+};
 
 export const secondarySpans = (selection: Selection): Span[] =>
   selection instanceof MultiSelection ? selection.spans.slice(1) : [];

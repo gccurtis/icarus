@@ -86,6 +86,23 @@
 
   // The marker is forwarded through `ToggleGroup.Root` onto the element it renders.
   const trace = traceNode("PanelChoice", () => ({ label, value, options, mixed, flush, fill }));
+
+  /**
+   * A compact label must still distinguish every option. Using the first letter
+   * made Selection and Slide both render as “S”. Find the shortest unique
+   * prefix unless a caller supplies a domain-specific abbreviation.
+   */
+  const compactLabel = (option: (typeof options)[number], index: number): string => {
+    if (option.short !== undefined) return option.short;
+    const candidate = option.label.trim();
+    for (let length = 1; length <= candidate.length; length += 1) {
+      const prefix = candidate.slice(0, length).toLocaleLowerCase();
+      if (options.every((held, heldIndex) => heldIndex === index || !held.label.trim().toLocaleLowerCase().startsWith(prefix))) {
+        return candidate.slice(0, length);
+      }
+    }
+    return `${candidate.slice(0, 1)}${index + 1}`;
+  };
 </script>
 
 <ToggleGroup.Root
@@ -102,13 +119,13 @@
     onchange?.(next);
   }}
   class={cn(
-    "flex justify-start gap-1",
-    fill ? "w-full flex-nowrap" : "flex-wrap",
+    "flex w-full justify-start gap-1",
+    fill ? "flex-nowrap" : "flex-wrap",
     flush ? "px-0" : "px-3"
   )}
-  style={fill ? "container-type: inline-size; width: 100%" : "container-type: inline-size"}
+  style="container-type: inline-size; width: 100%"
 >
-  {#each options as option (option.value)}
+  {#each options as option, index (option.value)}
     {@const Icon = option.icon}
     <ToggleGroup.Item
       value={option.value}
@@ -124,7 +141,7 @@
       {#if Icon}
         <Icon size={14} aria-hidden="true" />
       {:else}
-        <span class="choice-short">{option.short ?? option.label.slice(0, 1)}</span>
+        <span class="choice-short">{compactLabel(option, index)}</span>
         <span class="choice-full">{option.label}</span>
       {/if}
     </ToggleGroup.Item>

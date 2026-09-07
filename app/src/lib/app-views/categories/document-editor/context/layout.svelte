@@ -25,13 +25,13 @@
     paperOps,
     setupOf
   } from "$app-views/categories/document-editor/procedures/layout";
+  import { focusOfFurniture } from "$app-views/categories/document-editor/procedures/furniture";
   import {
     figures,
     layoutMetrics,
     paperDimensions,
     paperOptions
   } from "$app-views/categories/document-editor/procedures/page-setup";
-  import { focusOfFurniture } from "$app-views/categories/document-editor/procedures/furniture";
   import { workspaceState } from "$model/client/workspace-state";
   import type { DocumentRuntime } from "$model/client/workspace-state";
 
@@ -66,15 +66,22 @@
     if (body !== undefined) commit(make(body));
   };
 
-  const edit = (which: "header" | "footer") => {
-    const target = body?.[which] === undefined ? undefined : focusOfFurniture(body[which]);
-    if (target === undefined || runtime === undefined) return;
-    runtime.scrollTo = target.blockId;
-    view.inspect("document-editor.next-letter", {
-      kind: "next-letter",
-      id: target.address
-    });
+  const toggleFurniture = (which: "header" | "footer") => {
+    const held = body;
+    if (held === undefined) return;
+
+    const adding = held[which] === undefined;
+    commit(furnitureOps(held, which, adding));
+    if (!adding) return;
+
+    const furniture = runtime?.body?.[which];
+    const target = furniture === undefined ? undefined : focusOfFurniture(furniture);
+    if (target === undefined) return;
+
+    runtime!.scrollTo = target.blockId;
+    view.inspect("document-editor.empty-line", { kind: "empty-line", id: target.address });
   };
+
 </script>
 
 <Panel title="Layout">
@@ -119,19 +126,26 @@
 
     <PanelSection title="Header and footer">
       <PanelControlGroup flush>
-        <PanelControlRow label="Header">
-          <PanelToggle label="Show header" checked={body.header !== undefined} onchange={(next) => withBody((held) => furnitureOps(held, "header", next))} />
-          {#if body.header !== undefined}
-            <PanelButton label="Edit header" onclick={() => edit("header")} />
-          {/if}
+        <PanelControlRow label="Header" detail="Repeats on every page">
+          <PanelButton
+            label={body.header === undefined ? "Add header" : "Remove header"}
+            tone={body.header === undefined ? "primary" : "danger"}
+            title={body.header?.pageNumber === undefined ? undefined : "Removing the header also removes its page numbers"}
+            onclick={() => toggleFurniture("header")}
+          />
         </PanelControlRow>
-        <PanelControlRow label="Footer">
-          <PanelToggle label="Show footer" checked={body.footer !== undefined} onchange={(next) => withBody((held) => furnitureOps(held, "footer", next))} />
-          {#if body.footer !== undefined}
-            <PanelButton label="Edit footer" onclick={() => edit("footer")} />
-          {/if}
+        <PanelControlRow label="Footer" detail="Repeats on every page">
+          <PanelButton
+            label={body.footer === undefined ? "Add footer" : "Remove footer"}
+            tone={body.footer === undefined ? "primary" : "danger"}
+            title={body.footer?.pageNumber === undefined ? undefined : "Removing the footer also removes its page numbers"}
+            onclick={() => toggleFurniture("footer")}
+          />
         </PanelControlRow>
       </PanelControlGroup>
+      <div class="px-3 pt-1">
+        <span class="text-caption text-ink-muted">Applies to all pages. Edit the visible placeholder on the page.</span>
+      </div>
     </PanelSection>
 
     <PanelSection title="Page numbers">

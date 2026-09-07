@@ -8,8 +8,7 @@
     ensureStylesOps,
     newStyleOps,
     shorthand,
-    styleSetOf,
-    usageOf
+    styleSetOf
   } from "$app-views/categories/document-editor/procedures/styles";
   import { workspaceState } from "$model/client/workspace-state";
   import type { DocumentRuntime } from "$model/client/workspace-state";
@@ -28,13 +27,7 @@
 
   const body = $derived(runtime?.body);
   const set = $derived(styleSetOf(body));
-  const entries = $derived(
-    Object.entries(set.styles).map(([key, style]) => ({
-      key,
-      style,
-      usage: body === undefined ? 0 : usageOf(body, key)
-    }))
-  );
+  const entries = $derived(Object.entries(set.styles).map(([key, style]) => ({ key, style })));
   const shown = $derived(
     entries.filter(({ style }) => style.name.toLowerCase().includes(query.trim().toLowerCase()))
   );
@@ -81,7 +74,6 @@
         <PanelRow
           title={entry.style.name}
           sub={shorthand(entry.style)}
-          meta={entry.usage === 0 ? undefined : `${entry.usage}`}
           selected={inspected === entry.key}
           onselect={() => open(entry.key)}
         >

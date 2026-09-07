@@ -25,6 +25,7 @@
     sub,
     meta,
     icon: Icon,
+    badge,
     tone = "default",
     titleTone,
     selected = false,
@@ -40,6 +41,8 @@
     /** The right-hand column: a time, a count. Never a control. */
     meta?: string;
     icon?: Component<{ size?: number | string; "aria-hidden"?: boolean | "true" | "false" }>;
+    /** A compact structural kind, such as H1, when an image icon would hide information. */
+    badge?: string;
     /** Colours the icon when the row reports a state rather than a thing. */
     tone?: "default" | "success" | "danger" | "attention" | "active" | "intelligence";
     /**
@@ -84,6 +87,7 @@
     title,
     sub,
     meta,
+    badge,
     tone,
     titleTone,
     selected,
@@ -142,7 +146,11 @@
     selected && "bg-active-surface"
   )}
 >
-  {#if Icon}
+  {#if badge}
+    <span class="bg-surface-panel-hover text-ink-secondary rounded-control mt-px grid h-5 min-w-7 shrink-0 place-items-center px-1 font-mono text-[9px] font-semibold">
+      {badge}
+    </span>
+  {:else if Icon}
     <span class={cn("mt-0.5 flex shrink-0", selected ? "text-active-text" : ICON_TONE[tone])}>
       <Icon size={14} aria-hidden="true" />
     </span>

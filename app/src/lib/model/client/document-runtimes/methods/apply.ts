@@ -7,6 +7,7 @@ export const buffer = (runtime: Runtime, ops: readonly DocumentOp[]): void => {
   if (held !== undefined) runtime.body = applyOps(held, ops);
 
   runtime.buffer = [...runtime.buffer, ...ops];
+  if (runtime.failure === undefined) runtime.sync = "saving";
 };
 
 export const apply = (runtime: Runtime, ops: readonly DocumentOp[]): void => {

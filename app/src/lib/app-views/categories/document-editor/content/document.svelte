@@ -33,6 +33,7 @@
   import { mint } from "$app-views/categories/document-editor/procedures/ids";
   import { editorPointerGestures } from "$app-views/categories/document-editor/procedures/links";
   import {
+    MultiSelection,
     multiSelection,
     secondarySpans
   } from "$app-views/categories/document-editor/procedures/multi-selection";
@@ -43,6 +44,7 @@
   import {
     atomAt,
     positionOfAddress,
+    sameSelection,
     signalOf,
     worthSending
   } from "$app-views/categories/document-editor/procedures/inspecting";
@@ -110,7 +112,7 @@
   const threads = $derived(
     documentId === undefined ? [] : threadsOf(rowsOf(threadsQuery, "commentThreads"), documentId)
   );
-  const current = $derived(view.inspected === "general.comment" ? view.selection?.id : undefined);
+  const current = $derived(view.inspected === "document-editor.comment" ? view.selection?.id : undefined);
   const threadKey = $derived(
     JSON.stringify(
       threads.map((thread) => [thread._id, thread.within ?? null, thread.resolution ?? null])
@@ -346,22 +348,30 @@
     if (typeof key !== "string" || !key.startsWith("document-editor.")) return;
     if (held.kind !== "text-selection" && held.kind !== "next-letter" && held.kind !== "empty-line") return;
 
-    const mine = signalOf(editor.state);
-    if (
-      mine !== undefined &&
-      mine.selection.id === held.id &&
-      (mine.selection.at ?? mine.selection.id) === (held.at ?? held.id)
-    ) {
-      return;
-    }
+    const mine = signalOf(editor.state, extraRanges(editor.state));
+    if (mine !== undefined && sameSelection(mine.selection, held)) return;
 
     const from = positionOfAddress(editor.state.doc, body, held.id);
     const to = held.at === undefined ? from : positionOfAddress(editor.state.doc, body, held.at);
     if (from === undefined) return;
 
+    const extra = (held.ranges ?? []).flatMap((range) => {
+      const start = positionOfAddress(editor!.state.doc, body, range.id);
+      const end = positionOfAddress(editor!.state.doc, body, range.at);
+      return start === undefined || end === undefined ? [] : [[start, end] as const];
+    });
+    const nextSelection = extra.length === 0
+      ? TextSelection.create(editor.state.doc, from, to ?? from)
+      : MultiSelection.create(
+          editor.state.doc,
+          [[from, to ?? from] as const, ...extra],
+          from,
+          to ?? from
+        );
+
     editor.dispatch(
       editor.state.tr
-        .setSelection(TextSelection.create(editor.state.doc, from, to ?? from))
+        .setSelection(nextSelection)
         .setMeta("addToHistory", false)
         .scrollIntoView()
     );
@@ -440,7 +450,7 @@
     const id = pin.ids.includes(current ?? "") && pin.ids.length > 1
       ? pin.ids[(pin.ids.indexOf(current ?? "") + 1) % pin.ids.length]
       : pin.ids[0];
-    view.inspect("general.comment", { kind: "comment", id });
+    view.inspect("document-editor.comment", { kind: "comment", id });
   };
 
   const pinTitle = (pin: Pin): string =>
@@ -713,6 +723,22 @@
   .editor :global(.document-furniture-editable .document-block) {
     min-height: 1rem;
     flex: 1;
+  }
+
+  .editor :global(.document-header.document-furniture-editable .document-block:has(> br.ProseMirror-trailingBreak)::before),
+  .editor :global(.document-header.document-furniture-editable .document-block:empty::before) {
+    content: "Header";
+  }
+
+  .editor :global(.document-footer.document-furniture-editable .document-block:has(> br.ProseMirror-trailingBreak)::before),
+  .editor :global(.document-footer.document-furniture-editable .document-block:empty::before) {
+    content: "Footer";
+  }
+
+  .editor :global(.document-furniture-editable .document-block::before) {
+    color: var(--token-ink-muted);
+    font-style: italic;
+    pointer-events: none;
   }
 
   .editor :global(.document-header) {

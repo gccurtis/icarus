@@ -500,6 +500,22 @@ export const linksOn = (body: DocumentBody, ranges: readonly Range[]): PlacedLin
   return links;
 };
 
+/**
+ * Links inherited by the next typed character. The caret is left-affine, just
+ * like stylesAt: the end of a link remains inside it, while its untouched
+ * leading edge does not claim text typed immediately before it.
+ */
+export const linksAt = (body: DocumentBody, blockId: string, at: number): PlacedLink[] => {
+  const block = blockOf(body, blockId);
+  if (block === undefined) return [];
+
+  return placed(block).flatMap((held) =>
+    held.mark.link !== undefined && held.from < at && held.to >= at
+      ? [{ blockId, mark: held.mark, from: held.from, to: held.to }]
+      : []
+  );
+};
+
 export const stylesAt = (body: DocumentBody, blockId: string, at: number): MarkStyle[] => {
   const block = blockOf(body, blockId);
   if (block === undefined) return [];

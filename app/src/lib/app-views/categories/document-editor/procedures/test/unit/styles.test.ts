@@ -9,8 +9,10 @@ import {
   defaultStyleOps,
   deleteStyleOps,
   duplicateStyleOps,
+  inlineStyleOf,
   resolve,
   styleFieldOps,
+  styleFieldsOps,
   styleSetOf,
   usageOf
 } from "$app-views/categories/document-editor/procedures/styles";
@@ -39,6 +41,16 @@ test("block layout overrides its style without taking ownership of typography", 
   assert.equal(style.fontWeight, 600);
 });
 
+test("legacy ratio leading resolves to document pixels for styles and block overrides", () => {
+  const set = {
+    defaultKey: "body",
+    styles: { body: { name: "Body", fontSize: 11, lineHeight: 1.5 } }
+  };
+
+  assert.equal(resolve(set, "body", undefined).lineHeight, 16.5);
+  assert.equal(resolve(set, "body", { lineHeight: 1.45 }).lineHeight, 15.95);
+});
+
 test("the first style edit writes the default set into the document first", () => {
   const ops = styleFieldOps(BARE, "body", "fontSize", 18);
   const after = applyOps(BARE, ops);
@@ -52,6 +64,34 @@ test("the first style edit writes the default set into the document first", () =
 test("an edit to a value already held is nothing", () => {
   assert.deepEqual(styleFieldOps(BARE, "body", "fontSize", 16), []);
   assert.deepEqual(styleFieldOps(BARE, "nope", "fontSize", 16), []);
+});
+
+test("a grouped style edit initializes defaults once and changes each requested field", () => {
+  const ops = styleFieldsOps(BARE, "heading-1", {
+    bold: true,
+    fontWeight: undefined,
+    strikethrough: true
+  });
+  const after = applyOps(BARE, ops);
+
+  assert.equal(ops.filter((op) => op.path === "styles").length, 1);
+  assert.equal(after.styles?.styles["heading-1"].bold, true);
+  assert.equal(after.styles?.styles["heading-1"].fontWeight, undefined);
+  assert.equal(after.styles?.styles["heading-1"].strikethrough, true);
+});
+
+test("style presentation resolves stored token names and combines decorations", () => {
+  const css = inlineStyleOf({
+    name: "Reviewed",
+    color: "--token-ink-secondary",
+    background: "--token-surface-panel",
+    underline: true,
+    strikethrough: true
+  });
+
+  assert.match(css, /color: var\(--token-ink-secondary\)/);
+  assert.match(css, /background-color: var\(--token-surface-panel\)/);
+  assert.match(css, /text-decoration-line: underline line-through/);
 });
 
 test("applying a style sets the key and the variant it implies", () => {

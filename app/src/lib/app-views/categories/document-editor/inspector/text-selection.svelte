@@ -23,6 +23,7 @@
   import {
     ago,
     anchorOf,
+    isCommentableSelection,
     nameOf,
     quoteOf,
     remarkFields,
@@ -32,7 +33,10 @@
     threadsOf,
     threadsOn
   } from "$app-views/categories/document-editor/procedures/comments";
-  import { selectedText } from "$app-views/categories/document-editor/procedures/inspecting";
+  import {
+    selectedText,
+    selectedTexts
+  } from "$app-views/categories/document-editor/procedures/inspecting";
   import {
     STYLES,
     blocksIn,
@@ -78,7 +82,16 @@
   const body = $derived(runtime?.body);
   const selection = $derived(view.selection);
   const text = $derived(selectedText(body, selection));
+  const texts = $derived(selectedTexts(body, selection));
   const ranges = $derived(rangesOf(body, selection));
+  const selectionCount = $derived(selection === undefined ? 0 : 1 + (selection.ranges?.length ?? 0));
+  const commentable = $derived(isCommentableSelection(selection));
+  const characterCount = $derived(ranges.reduce((total, range) => total + range.to - range.from, 0));
+  const selectionExcerpt = $derived(
+    texts
+      .map((held) => held.length > 180 ? `${held.slice(0, 179).trimEnd()}…` : held)
+      .join("\n\n")
+  );
   const blocks = $derived(blocksIn(body, selection));
   const spans = $derived(blocks.length > 1);
 
@@ -215,12 +228,19 @@
     const held = body;
     const at = selection;
     const message = composing.trim();
-    if (held === undefined || at === undefined || documentId === undefined || message.length === 0) return;
+    if (
+      held === undefined ||
+      !isCommentableSelection(at) ||
+      documentId === undefined ||
+      message.length === 0
+    ) return;
+
+    const within = anchorOf(held, at);
+    if (within === undefined) return;
 
     sending = true;
     failed = undefined;
     try {
-      const within = anchorOf(held, at);
       const { id } = await create({
         table: "commentThreads",
         fields: threadFields({
@@ -249,7 +269,8 @@
     if (isInspectorView(key)) view.inspect(key);
   };
 
-  const openThread = (id: string) => view.inspect("general.comment", { kind: "comment", id });
+  const openThread = (id: string) =>
+    view.inspect("document-editor.comment", { kind: "comment", id });
   const openPerson = (id: string) => view.inspect("general.person", { kind: "person", id });
 </script>
 
@@ -273,6 +294,10 @@
         <PanelNote tone="muted">Nothing is selected in the document.</PanelNote>
       {:else if text.length === 0}
         <PanelNote tone="muted">The caret is here, but nothing is selected yet.</PanelNote>
+      {:else if selectionCount > 1}
+        <PanelQuote source={`${selectionCount} selections · ${characterCount} characters`}>
+          {selectionExcerpt}
+        </PanelQuote>
       {:else}
         <PanelQuote source={`${text.length} characters`}>{text}</PanelQuote>
       {/if}
@@ -338,25 +363,33 @@
     />
 
     <PanelSection title="Comments" count={here.length} open={here.length > 0} chevron="end" flush>
-      <div class="flex flex-col gap-2.5 px-3 pb-1">
-        <span class="text-caption text-ink-muted font-medium">New comment on the selected text</span>
-        <Textarea
-          placeholder="Write a comment on the selection…"
-          bind:value={composing}
-          class="text-body-sm field-sizing-content min-h-16 resize-none"
-        />
-        <div class="flex">
-          <PanelButton
-            label={sending ? "Adding…" : "Add comment"}
-            tone="primary"
-            disabled={sending || composing.trim().length === 0 || viewer.length === 0 || project.length === 0}
-            onclick={() => void addComment()}
+      {#if commentable}
+        <div class="flex flex-col gap-2.5 px-3 pb-1">
+          <span class="text-caption text-ink-muted font-medium">New comment on the selected text</span>
+          <Textarea
+            placeholder="Write a comment on the selection…"
+            bind:value={composing}
+            class="text-body-sm field-sizing-content min-h-16 resize-none"
           />
+          <div class="flex">
+            <PanelButton
+              label={sending ? "Adding…" : "Add comment"}
+              tone="primary"
+              disabled={sending || composing.trim().length === 0 || viewer.length === 0 || project.length === 0}
+              onclick={() => void addComment()}
+            />
+          </div>
+          {#if failed !== undefined}
+            <PanelNote tone="gap">{failed}</PanelNote>
+          {/if}
         </div>
-        {#if failed !== undefined}
-          <PanelNote tone="gap">{failed}</PanelNote>
-        {/if}
-      </div>
+      {:else}
+        <div class="px-3 pb-1">
+          <PanelNote tone="muted">
+            Comments require one contiguous selection. Keep one passage selected to start a thread.
+          </PanelNote>
+        </div>
+      {/if}
 
       <div class="border-border-subtle mt-1.5 flex flex-col gap-2.5 border-t pt-2">
         {#if here.length > 0}

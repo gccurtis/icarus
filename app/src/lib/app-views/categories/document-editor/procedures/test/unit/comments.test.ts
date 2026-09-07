@@ -5,6 +5,7 @@ import type { DocumentBody } from "$representation/data/types/documents/body";
 import {
   ago,
   anchorOf,
+  isCommentableSelection,
   quoteOf,
   threadFields,
   threadsOn,
@@ -58,6 +59,28 @@ test("a selection across blocks keeps one structural span per block", () => {
   );
 });
 
+test("only one contiguous selection can start a comment", () => {
+  assert.equal(
+    isCommentableSelection({
+      kind: "text-selection",
+      id: "#b1/atoms/#b1-atom@6",
+      at: "#b2/atoms/#b2-atom@4"
+    }),
+    true,
+    "one continuous range may cross block boundaries"
+  );
+  assert.equal(
+    isCommentableSelection({
+      kind: "text-selection",
+      id: "#b1/atoms/#b1-atom@0",
+      at: "#b1/atoms/#b1-atom@5",
+      ranges: [{ id: "#b2/atoms/#b2-atom@0", at: "#b2/atoms/#b2-atom@4" }]
+    }),
+    false,
+    "a Control/Command-added secondary range is disjoint"
+  );
+});
+
 test("the quote is the text under the anchor", () => {
   const anchor = anchorOf(BODY, { kind: "text-selection", id: "#b1/atoms/#b1-atom@6", at: "#b1/atoms/#b1-atom@18" });
   assert.equal(quoteOf(BODY, anchor), "the exposure");
@@ -79,6 +102,28 @@ test("threads on a selection are the ones whose anchors overlap it", () => {
     threadsOn(threads, BODY, { kind: "next-letter", id: "#b1/atoms/#b1-atom@3" }).map((held) => held._id),
     ["t1"],
     "a caret inside an anchor counts"
+  );
+});
+
+test("one thread is returned once when several of its anchors touch the selection", () => {
+  const held = {
+    ...thread("t1", "#b1", 0, 5),
+    within: {
+      kind: "text",
+      spans: [
+        { blockId: "#b1", from: { atom: "#b1-atom", offset: 0 }, to: { atom: "#b1-atom", offset: 5 } },
+        { blockId: "#b1", from: { atom: "#b1-atom", offset: 10 }, to: { atom: "#b1-atom", offset: 20 } }
+      ]
+    }
+  } as Thread;
+
+  assert.deepEqual(
+    threadsOn([held], BODY, {
+      kind: "text-selection",
+      id: "#b1/atoms/#b1-atom@0",
+      at: "#b1/atoms/#b1-atom@20"
+    }).map((found) => found._id),
+    ["t1"]
   );
 });
 

@@ -185,12 +185,6 @@
   {/snippet}
 
   {#snippet actions()}
-    <PanelButton label="Reply" tone="primary" disabled={thread === undefined || busy} onclick={() => composer?.focus()} />
-    {#if resolved === undefined}
-      <PanelButton label="Resolve" icon={Check} disabled={thread === undefined || busy || viewer.length === 0} onclick={() => void resolve()} />
-    {:else}
-      <PanelButton label="Reopen" icon={RotateCcw} disabled={busy} onclick={() => void reopen()} />
-    {/if}
     {#if canLocate}
       <PanelButton
         label={thread?.target.kind === "slides" ? "Show in deck" : "Show in document"}
@@ -248,6 +242,34 @@
             </PanelQuote>
           </div>
         {/if}
+
+        <div class="border-border-subtle mx-3 border-t" aria-hidden="true"></div>
+        <div class="flex flex-col gap-2.5 px-3">
+          <Textarea
+            bind:ref={composer}
+            placeholder="Write a reply…"
+            bind:value={reply}
+            class="text-body-sm field-sizing-content min-h-16 resize-none"
+          />
+          <div class="flex items-center justify-between gap-2">
+            {#if resolved === undefined}
+              <PanelButton label="Resolve" icon={Check} disabled={busy || viewer.length === 0} onclick={() => void resolve()} />
+            {:else}
+              <PanelButton label="Reopen" icon={RotateCcw} disabled={busy} onclick={() => void reopen()} />
+            {/if}
+            <PanelButton
+              label={busy ? "Sending…" : "Reply"}
+              tone="primary"
+              disabled={busy || reply.trim().length === 0 || viewer.length === 0}
+              onclick={() => void send()}
+            />
+          </div>
+          {#if failed !== undefined}
+            <PanelNote tone="gap">{failed}</PanelNote>
+          {/if}
+        </div>
+        <div class="border-border-subtle mx-3 border-t" aria-hidden="true"></div>
+
         {#if remarks.length > 1}
           <span class="text-caption text-ink-muted px-3 font-medium">Replies</span>
         {/if}
@@ -264,26 +286,6 @@
           <PanelNote tone="muted">Nothing has been said on this thread yet.</PanelNote>
         {/if}
       </section>
-
-      <div class="flex flex-col gap-2.5 px-3">
-        <Textarea
-          bind:ref={composer}
-          placeholder="Reply…"
-          bind:value={reply}
-          class="text-body-sm field-sizing-content min-h-16 resize-none"
-        />
-        <div class="flex">
-          <PanelButton
-            label={busy ? "Sending…" : "Send reply"}
-            tone="primary"
-            disabled={busy || reply.trim().length === 0 || viewer.length === 0}
-            onclick={() => void send()}
-          />
-        </div>
-        {#if failed !== undefined}
-          <PanelNote tone="gap">{failed}</PanelNote>
-        {/if}
-      </div>
     </div>
   {/if}
 </Panel>

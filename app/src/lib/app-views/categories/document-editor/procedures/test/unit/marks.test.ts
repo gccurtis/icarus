@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   colourOps,
   linkOps,
+  linksAt,
   linksOn,
   updateLinkOps,
   type Range
@@ -48,6 +49,18 @@ describe("mark replacement batches", () => {
       expect(applyOps(next, invertAll(ops))).toEqual(held);
       held = next;
     }
+  });
+
+  it("projects links carried by a left-affine caret", () => {
+    const linked = applyOps(body(), linkOps(body(), [range], {
+      kind: "url",
+      url: "https://example.com/source"
+    }));
+
+    expect(linksAt(linked, "#b1", 0)).toEqual([]);
+    expect(linksAt(linked, "#b1", 1)).toHaveLength(1);
+    expect(linksAt(linked, "#b1", 6)).toHaveLength(1);
+    expect(linksAt(linked, "#b1", 7)).toEqual([]);
   });
 
   it("can replace a last-position link and preserve its occurrence note", () => {

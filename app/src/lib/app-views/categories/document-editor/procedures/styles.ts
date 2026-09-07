@@ -7,6 +7,11 @@ import type {
 import type { DocumentBody } from "$representation/data/types/documents/body";
 import type { DocumentOp } from "$representation/data/types/documents/op";
 import type { StyleSet, TextStyle } from "$representation/data/types/documents/style-set";
+import {
+  documentLineHeightPx,
+  normalizeDocumentTextStyle
+} from "$representation/data/behavior/documents/typography";
+import { cssColour } from "$app-views/categories/document-editor/procedures/colours";
 
 export type Styled = TextBlock | PromptBlock;
 
@@ -118,11 +123,19 @@ export const resolve = (
   format: BlockFormat | undefined
 ): TextStyle => {
   const base = set.styles[key ?? set.defaultKey] ?? set.styles[set.defaultKey] ?? { name: "Body" };
-  const resolved: TextStyle = { ...base };
+  const resolved: TextStyle = { ...normalizeDocumentTextStyle(base) };
 
   for (const field of OVERRIDES) {
     const value = format?.[field];
-    if (value !== undefined) Object.assign(resolved, { [field]: value });
+    if (value === undefined) continue;
+    if (field === "lineHeight") {
+      resolved.lineHeight = documentLineHeightPx(
+        resolved.fontSize ?? BODY_FONT_SIZE,
+        value as number
+      );
+      continue;
+    }
+    Object.assign(resolved, { [field]: value });
   }
 
   return resolved;
@@ -144,9 +157,13 @@ export const inlineStyleOf = (style: TextStyle): string => {
   if (style.fontWeight !== undefined) rules.push(`font-weight: ${style.fontWeight}`);
   if (style.bold === true) rules.push("font-weight: 700");
   if (style.italic === true) rules.push("font-style: italic");
-  if (style.underline === true) rules.push("text-decoration: underline");
-  if (style.color !== undefined) rules.push(`color: ${style.color}`);
-  if (style.background !== undefined) rules.push(`background-color: ${style.background}`);
+  const decorations = [
+    ...(style.underline === true ? ["underline"] : []),
+    ...(style.strikethrough === true ? ["line-through"] : [])
+  ];
+  if (decorations.length > 0) rules.push(`text-decoration-line: ${decorations.join(" ")}`);
+  if (style.color !== undefined) rules.push(`color: ${cssColour(style.color)}`);
+  if (style.background !== undefined) rules.push(`background-color: ${cssColour(style.background)}`);
   if (style.spaceBefore !== undefined) rules.push(`margin-top: ${style.spaceBefore}px`);
   if (style.spaceAfter !== undefined) rules.push(`margin-bottom: ${style.spaceAfter}px`);
   if (style.indent !== undefined) rules.push(`text-indent: ${style.indent}px`);
@@ -252,11 +269,29 @@ export const styleFieldOps = <K extends keyof TextStyle>(
   field: K,
   value: TextStyle[K] | undefined
 ): DocumentOp[] => {
+  return styleFieldsOps(body, key, { [field]: value });
+};
+
+export const styleFieldsOps = (
+  body: DocumentBody,
+  key: string,
+  patch: Partial<TextStyle>
+): DocumentOp[] => {
   const held = styleSetOf(body).styles[key];
   if (held === undefined) return [];
-  if (JSON.stringify(held[field] ?? null) === JSON.stringify(value ?? null)) return [];
 
-  return [...ensureStylesOps(body), document(`styles/${key}/${field}`, value, held[field])];
+  const changes = (Object.entries(patch) as [keyof TextStyle, TextStyle[keyof TextStyle]][])
+    .filter(([field, value]) =>
+      JSON.stringify(held[field] ?? null) !== JSON.stringify(value ?? null)
+    );
+  if (changes.length === 0) return [];
+
+  return [
+    ...ensureStylesOps(body),
+    ...changes.map(([field, value]) =>
+      document(`styles/${key}/${field}`, value, held[field])
+    )
+  ];
 };
 
 export const defaultStyleOps = (body: DocumentBody, key: string): DocumentOp[] => {

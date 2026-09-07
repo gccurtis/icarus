@@ -1,6 +1,4 @@
 <script lang="ts">
-  import Heading from "@lucide/svelte/icons/heading";
-
   import { Panel, PanelBranch, PanelEmpty, PanelRow, PanelTree } from "$authored-components/panel";
   import { addressOf } from "$app-views/categories/document-editor/procedures/inspecting";
   import {
@@ -42,7 +40,7 @@
     <PanelBranch
       label={section.title}
       meta={whereabouts(section)}
-      icon={Heading}
+      badge={`H${section.level}`}
       open
       selected={current === section.blockId}
       onselect={() => go(section)}
@@ -55,7 +53,7 @@
     <PanelRow
       title={section.title}
       meta={whereabouts(section)}
-      icon={Heading}
+      badge={`H${section.level}`}
       selected={current === section.blockId}
       onselect={() => go(section)}
     />

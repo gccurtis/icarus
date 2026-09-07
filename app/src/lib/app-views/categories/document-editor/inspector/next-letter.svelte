@@ -3,16 +3,12 @@
     Panel,
     PanelBodyStyle,
     PanelCrumbs,
-    PanelField,
-    PanelFields,
     PanelInlineStyle,
     PanelNote,
-    PanelSection,
     PanelSelect
   } from "$authored-components/panel";
   import {
     formatOps,
-    placementOf,
     resolvedOf,
     type HorizontalAlignment
   } from "$app-views/categories/document-editor/procedures/blocks";
@@ -25,7 +21,6 @@
     stylesAt,
     type MarkStyle
   } from "$app-views/categories/document-editor/procedures/marks";
-  import { DEFAULT_PAGE_SETUP, layoutMetrics } from "$app-views/categories/document-editor/procedures/page-setup";
   import { linearOf } from "$app-views/categories/document-editor/procedures/projection";
   import {
     applyStyleOps,
@@ -35,6 +30,8 @@
   } from "$app-views/categories/document-editor/procedures/styles";
   import { isInspectorView, workspaceState } from "$model/client/workspace-state";
   import type { DocumentRuntime } from "$model/client/workspace-state";
+  import NextLetterComments from "$app-views/categories/document-editor/components/next-letter-comments.svelte";
+  import NextLetterLinks from "$app-views/categories/document-editor/components/next-letter-links.svelte";
 
   const view = workspaceState();
 
@@ -58,10 +55,6 @@
 
   const set = $derived(styleSetOf(body));
   const resolved = $derived(body === undefined || block === undefined ? undefined : resolvedOf(body, block));
-  const metrics = $derived(layoutMetrics(body?.pageSetup ?? DEFAULT_PAGE_SETUP));
-  const placement = $derived(
-    body === undefined || block === undefined ? undefined : placementOf(body, block.id, metrics)
-  );
 
   const carried = $derived(body === undefined || block === undefined ? [] : stylesAt(body, block.id, at));
   const tint = $derived(body === undefined || block === undefined ? {} : colourAt(body, block.id, at));
@@ -170,14 +163,8 @@
         onchange={(field, next) => setFormat({ [field]: next })}
       />
 
-      {#if placement !== undefined}
-        <PanelSection title="Placement" chevron="end">
-          <PanelFields>
-            <PanelField label="Page" mono stacked>{placement.page}</PanelField>
-            <PanelField label="In row" mono stacked>{placement.index} of {placement.of}</PanelField>
-          </PanelFields>
-        </PanelSection>
-      {/if}
+      <NextLetterComments />
+      <NextLetterLinks />
     </div>
   {/if}
 </Panel>

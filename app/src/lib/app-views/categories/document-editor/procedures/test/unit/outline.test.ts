@@ -52,7 +52,7 @@ test("a section knows the line it starts on and the page it lands on", () => {
   assert.equal(one.page, 1);
   assert.ok(two.line > one.line);
   assert.ok(two.page > 1, "a long paragraph pushed it onto a later page");
-  assert.equal(whereabouts(one), "l.1 · p.1");
+  assert.equal(whereabouts(one), "P1");
 });
 
 test("a deeper heading with no parent still lists", () => {

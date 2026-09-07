@@ -142,8 +142,37 @@ export const selectedText = (
   return `${head.display.slice(start)} … ${tail.display.slice(0, linearAddress(body, to) ?? 0)}`;
 };
 
+export const selectedTexts = (
+  body: DocumentBody | undefined,
+  selection: Selection | undefined
+): string[] => {
+  if (body === undefined || selection === undefined) return [];
+
+  return [
+    { id: selection.id, at: selection.at },
+    ...(selection.ranges ?? [])
+  ].flatMap((range) => {
+    const text = selectedText(body, { kind: "text-selection", ...range });
+    return text === undefined ? [] : [text];
+  });
+};
+
 const sameRanges = (a: readonly SelectionRange[] | undefined, b: readonly SelectionRange[] | undefined): boolean =>
   JSON.stringify(a ?? []) === JSON.stringify(b ?? []);
+
+const sameIds = (a: readonly string[] | undefined, b: readonly string[] | undefined): boolean =>
+  JSON.stringify(a ?? []) === JSON.stringify(b ?? []);
+
+export const sameSelection = (a: Selection | undefined, b: Selection | undefined): boolean =>
+  a === b || (
+    a !== undefined &&
+    b !== undefined &&
+    a.kind === b.kind &&
+    a.id === b.id &&
+    a.at === b.at &&
+    sameRanges(a.ranges, b.ranges) &&
+    sameIds(a.ids, b.ids)
+  );
 
 export const worthSending = (
   signal: Signal,
@@ -151,17 +180,7 @@ export const worthSending = (
   held: Selection | undefined
 ): boolean => {
   if (inspected !== signal.key) return true;
-  if (signal.key === "document-editor.next-letter") {
-    if (held?.kind !== "next-letter") return true;
-    return addressOf(held.id)?.blockId !== addressOf(signal.selection.id)?.blockId;
-  }
-
-  return (
-    held?.kind !== signal.selection.kind ||
-    held.id !== signal.selection.id ||
-    held.at !== signal.selection.at ||
-    !sameRanges(held.ranges, signal.selection.ranges)
-  );
+  return !sameSelection(held, signal.selection);
 };
 
 export const positionOfAddress = (

@@ -39,6 +39,7 @@
     label,
     meta,
     icon: Icon,
+    badge,
     open = $bindable(false),
     selected = false,
     onselect,
@@ -48,6 +49,8 @@
     /** The right-hand end: a count of what is inside, a state, a time. */
     meta?: string;
     icon?: Component<{ size?: number | string; "aria-hidden"?: boolean | "true" | "false" }>;
+    /** A compact structural kind, such as H1, when an image icon would hide information. */
+    badge?: string;
     /**
      * Whether it starts open, and bindable for the caller that has an Expand all.
      *
@@ -65,7 +68,7 @@
 
   // Two roots, one per form: the leaf's `div` is marked, the disclosure's is
   // `Collapsible.Root`, a component, so that form registers but marks no DOM.
-  const trace = traceNode("PanelBranch", () => ({ label, meta, open, selected }));
+  const trace = traceNode("PanelBranch", () => ({ label, meta, badge, open, selected }));
 
   /**
    * The twisty's box is 16px and the gap after it is 4px, so a level is 20px and
@@ -84,7 +87,11 @@
 
 {#snippet face()}
   <span class="flex min-w-0 flex-1 items-center gap-1.5 text-start">
-    {#if Icon}
+    {#if badge}
+      <span class="bg-surface-panel-hover text-ink-secondary rounded-control grid h-5 min-w-7 shrink-0 place-items-center px-1 font-mono text-[9px] font-semibold">
+        {badge}
+      </span>
+    {:else if Icon}
       <span class={cn("flex shrink-0", selected ? "text-active-text" : "text-ink-muted")}>
         <Icon size={14} aria-hidden="true" />
       </span>

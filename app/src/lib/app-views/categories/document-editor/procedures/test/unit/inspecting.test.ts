@@ -7,6 +7,7 @@ import type { DocumentBody, DocumentRow } from "$representation/data/types/docum
 import {
   addressOf,
   selectedText,
+  selectedTexts,
   signalOf,
   worthSending
 } from "$app-views/categories/document-editor/procedures/inspecting";
@@ -102,7 +103,7 @@ test("a caret in a block with nothing in it is an empty line", () => {
   });
 });
 
-test("the next letter is only sent again after the caret crosses a block boundary", () => {
+test("the next letter is sent when the caret moves so inline context stays current", () => {
   const found = signalOf(stateOver(ONE, ["#b1", 6]));
   if (found === undefined) throw new Error("no signal");
 
@@ -112,8 +113,8 @@ test("the next letter is only sent again after the caret crosses a block boundar
       kind: "next-letter",
       id: "#b1/atoms/#b1-atom@2"
     }),
-    false,
-    "moving within the block leaves the inspector where it is"
+    true,
+    "moving within the block can cross a comment or link boundary"
   );
   assert.equal(
     worthSending(found, "document-editor.next-letter", {
@@ -152,6 +153,26 @@ test("a selection that says what the inspector already says is not sent again", 
   );
 });
 
+test("a secondary-range change is sent even when the primary range is unchanged", () => {
+  const found = signalOf(stateOver(ONE, ["#b1", 6], ["#b1", 18]));
+  if (found === undefined) throw new Error("no signal");
+
+  assert.equal(
+    worthSending(
+      {
+        ...found,
+        selection: {
+          ...found.selection,
+          ranges: [{ id: "#b2/atoms/#b2-atom@0", at: "#b2/atoms/#b2-atom@4" }]
+        }
+      },
+      found.key,
+      found.selection
+    ),
+    true
+  );
+});
+
 test("an address is the block, the atom, and the offset into that atom", () => {
   assert.deepEqual(addressOf("#b1/atoms/#a1@12"), { blockId: "#b1", atomId: "#a1", offset: 12 });
   assert.equal(addressOf("#b1/atoms/#a1"), undefined, "an address with no offset is not one");
@@ -169,6 +190,18 @@ test("a selection across two blocks joins the tail of one to the head of the oth
   assert.equal(
     selectedText(TWO, { kind: "text-selection", id: "#b1/atoms/#b1-atom@6", at: "#b2/atoms/#b2-atom@4" }),
     "the exposure sits … What"
+  );
+});
+
+test("disjoint selected text keeps one snippet per represented range", () => {
+  assert.deepEqual(
+    selectedTexts(TWO, {
+      kind: "text-selection",
+      id: "#b1/atoms/#b1-atom@6",
+      at: "#b1/atoms/#b1-atom@18",
+      ranges: [{ id: "#b2/atoms/#b2-atom@0", at: "#b2/atoms/#b2-atom@4" }]
+    }),
+    ["the exposure", "What"]
   );
 });
 

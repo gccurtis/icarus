@@ -71,4 +71,4 @@ export const outlineOf = (body: DocumentBody, metrics: Metrics): Section[] => {
 export const flatten = (sections: readonly Section[]): Section[] =>
   sections.flatMap((section) => [section, ...flatten(section.children)]);
 
-export const whereabouts = (section: Section): string => `l.${section.line} · p.${section.page}`;
+export const whereabouts = (section: Section): string => `P${section.page || "—"}`;

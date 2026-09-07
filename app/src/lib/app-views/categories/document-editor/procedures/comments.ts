@@ -4,11 +4,18 @@ import type { TextBlock } from "$representation/data/types/content/content-block
 import type { Actor } from "$representation/data/types/core/actor";
 import type { DocumentBody } from "$representation/data/types/documents/body";
 import type { Selection } from "$representation/data/types/workspace/tab";
-import type { Comment, CommentThread, User } from "$representation/store/tables";
+import type {
+  Comment,
+  CommentThread,
+  TableName,
+  TableRow,
+  User
+} from "$representation/store/tables";
 import { mint } from "$app-views/categories/document-editor/procedures/ids";
 import { addressOf } from "$app-views/categories/document-editor/procedures/inspecting";
 import { blockOf, rangesOf, type Range } from "$app-views/categories/document-editor/procedures/marks";
 import { endAt, linearOf } from "$app-views/categories/document-editor/procedures/projection";
+import { readStore, readUsername } from "$model/client/workspace-state";
 
 export type Thread = CommentThread;
 export type Remark = Comment;
@@ -16,8 +23,45 @@ export type Person = User;
 
 export type { AnchorWithin } from "$representation/data/types/collaboration/anchor";
 
+export type TableQuery = ReturnType<typeof readStore>;
+
+export const tableQuery = (table: TableName): TableQuery => readStore(table);
+
+export const rowsOf = <T extends TableName>(
+  query: TableQuery,
+  table: T
+): readonly TableRow<T>[] => {
+  if (!query.ready) return [];
+
+  const found = query.current;
+  return found?.kind === "table" && found.table === table
+    ? (found.rows as unknown as readonly TableRow<T>[])
+    : [];
+};
+
+export const rowsIn = <T extends TableName>(table: T): readonly TableRow<T>[] =>
+  rowsOf(readStore(table), table);
+
+export const refreshAll = (...queries: readonly TableQuery[]): Promise<void> =>
+  Promise.all(queries.map((query) => query.refresh())).then(() => undefined);
+
+export const viewerId = (): string => {
+  const answer = readUsername();
+  if (!answer.ready) return "";
+
+  const name = answer.current;
+  return rowsIn("users").find((user) => user.displayName === name)?._id ?? "";
+};
+
+export const threadOf = (
+  rows: readonly CommentThread[],
+  id: string
+): CommentThread | undefined => rows.find((thread) => thread._id === id);
+
 export const firstAnchorBlockId = (thread: Thread): string | undefined =>
   textAnchorSpans(thread.within)[0]?.blockId;
+
+export const blockIdOf = firstAnchorBlockId;
 
 export const threadsOf = (rows: readonly Thread[], documentId: string): Thread[] =>
   rows
@@ -40,6 +84,9 @@ export const nameOf = (users: readonly Person[], actor: Actor | undefined): stri
 
   return users.find((user) => user._id === actor.userId)?.displayName ?? "Someone";
 };
+
+export const userIdOf = (actor: Actor | undefined): string | undefined =>
+  actor?.kind === "user" ? actor.userId : undefined;
 
 const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
@@ -74,6 +121,14 @@ export const remarkBlock = (text: string): TextBlock => ({
   display: text,
   marks: []
 });
+
+/** Comments belong to one continuous gesture, even when that range crosses blocks. */
+export const isCommentableSelection = (
+  selection: Selection | undefined
+): selection is Selection & { readonly kind: "text-selection"; readonly at: string } =>
+  selection?.kind === "text-selection" &&
+  selection.at !== undefined &&
+  (selection.ranges?.length ?? 0) === 0;
 
 export const anchorOf = (body: DocumentBody, selection: Selection): AnchorWithin | undefined => {
   const spans = rangesOf(body, selection).flatMap((range) => {
@@ -133,6 +188,19 @@ const overlaps = (anchored: Anchored, range: Range): boolean =>
 const touches = (anchored: Anchored, blockId: string, at: number): boolean =>
   anchored.blockId === blockId && anchored.from <= at && anchored.to >= at;
 
+const distinctThreads = (anchored: readonly Anchored[]): Thread[] => {
+  const seen = new Set<string>();
+  const threads: Thread[] = [];
+
+  for (const held of anchored) {
+    if (seen.has(held.thread._id)) continue;
+    seen.add(held.thread._id);
+    threads.push(held.thread);
+  }
+
+  return threads;
+};
+
 export const threadsOn = (
   threads: readonly Thread[],
   body: DocumentBody,
@@ -144,7 +212,7 @@ export const threadsOn = (
   const ranges = rangesOf(body, selection);
 
   if (ranges.length > 0) {
-    return anchored.filter((held) => ranges.some((range) => overlaps(held, range))).map((held) => held.thread);
+    return distinctThreads(anchored.filter((held) => ranges.some((range) => overlaps(held, range))));
   }
 
   const caret = addressOf(selection.id);
@@ -153,7 +221,7 @@ export const threadsOn = (
   if (block === undefined) return [];
   const at = linearOf(block.atoms, { atom: caret.atomId, offset: caret.offset });
 
-  return anchored.filter((held) => touches(held, caret.blockId, at)).map((held) => held.thread);
+  return distinctThreads(anchored.filter((held) => touches(held, caret.blockId, at)));
 };
 
 export const detached = (thread: Thread, body: DocumentBody): boolean => {
@@ -192,3 +260,10 @@ export const remarkFields = (held: {
   mentions: [],
   author: { kind: "user", userId: held.by as Person["_id"] }
 });
+
+export const replyFields = (
+  thread: Thread,
+  text: string,
+  by: string
+): Omit<Remark, "_id" | "_creationTime"> =>
+  remarkFields({ projectId: thread.projectId, threadId: thread._id, text, by });

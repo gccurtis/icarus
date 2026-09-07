@@ -1,4 +1,4 @@
-import { expect, test, type Page, type TestInfo } from "@playwright/test";
+import { expect, test, type Locator, type Page, type TestInfo } from "@playwright/test";
 
 const viewports = {
   narrow: { width: 1120, height: 850 },
@@ -56,6 +56,46 @@ const openFixture = async (page: Page) => {
   await expect(editor).toContainText("Winter readiness brief");
 };
 
+const pointOnText = async (target: Locator, text: string) => {
+  await target.scrollIntoViewIfNeeded();
+  const point = await target.evaluate((node, needle) => {
+    const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
+    let current = walker.nextNode();
+    while (current !== null) {
+      const value = current.textContent ?? "";
+      const from = value.indexOf(needle);
+      if (from !== -1) {
+        const range = document.createRange();
+        range.setStart(current, from);
+        range.setEnd(current, from + needle.length);
+        const rect = range.getClientRects()[0];
+        if (rect !== undefined) {
+          return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+        }
+      }
+      current = walker.nextNode();
+    }
+    return undefined;
+  }, text);
+  if (point === undefined) throw new Error(`The text ${text} was not laid out.`);
+  return point;
+};
+
+const openDocumentNamed = async (page: Page, title: string) => {
+  await page.goto("/app/dev-project", { waitUntil: "networkidle" });
+  const toolbarTab = page
+    .getByRole("toolbar", { name: "Open tabs" })
+    .getByRole("button", { name: title, exact: true });
+  if ((await toolbarTab.count()) > 0) {
+    await toolbarTab.click();
+  } else {
+    await page.getByPlaceholder("Search this project").fill(title);
+    await page.getByRole("button", { name: title, exact: true }).first().dblclick();
+  }
+  await expect(page.locator(".title-bar h1")).toHaveText(title);
+  await expect(page.locator(".ProseMirror")).toBeVisible();
+};
+
 test.beforeEach(async ({ page }) => {
   unexpected.length = 0;
   watchDiagnostics(page);
@@ -77,6 +117,49 @@ for (const [name, viewport] of Object.entries(viewports)) {
   });
 }
 
+test("the reported incident and decision documents use sane non-overlapping leading", async ({ page }) => {
+  await page.setViewportSize(viewports.default);
+  for (const title of [
+    "Substation 14 incident write-up",
+    "Transformer bank replacement decision"
+  ]) {
+    await openDocumentNamed(page, title);
+    const paragraph = page.locator('.document-block[data-style="body"]').first();
+    const typography = await paragraph.evaluate((node) => {
+      const style = getComputedStyle(node);
+      return { fontSize: Number.parseFloat(style.fontSize), lineHeight: Number.parseFloat(style.lineHeight) };
+    });
+    expect(typography.lineHeight, `${title} should not retain ratio-sized pixel leading`)
+      .toBeGreaterThanOrEqual(typography.fontSize * 1.25);
+
+    const boxes = await page.locator(".document-page .document-block").evaluateAll((nodes) =>
+      nodes
+        .map((node) => {
+          const rect = node.getBoundingClientRect();
+          return {
+            top: rect.top,
+            right: rect.right,
+            bottom: rect.bottom,
+            left: rect.left,
+            text: node.textContent?.trim() ?? ""
+          };
+        })
+        .filter((rect) => rect.text.length > 0)
+        .sort((left, right) => left.top - right.top)
+    );
+    for (let index = 0; index < boxes.length; index += 1) {
+      for (let other = index + 1; other < boxes.length; other += 1) {
+        const horizontalOverlap =
+          Math.min(boxes[index].right, boxes[other].right) -
+          Math.max(boxes[index].left, boxes[other].left);
+        if (horizontalOverlap <= 0) continue;
+        expect(boxes[other].top, `${title}: ${boxes[other].text} overlaps ${boxes[index].text}`)
+          .toBeGreaterThanOrEqual(boxes[index].bottom - 0.5);
+      }
+    }
+  }
+});
+
 test("the review fixture exposes page furniture and every comment state", async ({ page }) => {
   await page.setViewportSize(viewports.default);
   await openFixture(page);
@@ -95,7 +178,9 @@ test("the review fixture exposes page furniture and every comment state", async 
   await expect(page.locator('button.pin[data-threads~="commentThreads:6"]')).toHaveCount(0);
 
   await page.locator('button.pin[data-threads~="commentThreads:4"]').first().click();
-  const inspector = page.locator('aside[aria-label="Inspector"][data-inspected="general.comment"]');
+  const inspector = page.locator(
+    'aside[aria-label="Inspector"][data-inspected="document-editor.comment"]'
+  );
   await expect(inspector.getByRole("heading", { name: "Comment" })).toBeVisible();
 
   const selected = inspector.locator('section[aria-labelledby="comment-anchor"]');
@@ -104,6 +189,24 @@ test("the review fixture exposes page furniture and every comment state", async 
   await expect(selected).toContainText("The second concentration is behind the coastal tie");
   await expect(conversation.getByText("Original comment", { exact: true })).toBeVisible();
   await expect(conversation.getByText("Replies", { exact: true })).toBeVisible();
+  const opening = conversation.getByText("Original comment", { exact: true });
+  const composer = conversation.getByPlaceholder("Write a reply…");
+  const replies = conversation.getByText("Replies", { exact: true });
+  expect(
+    await opening.evaluate((node, following) =>
+      Boolean(node.compareDocumentPosition(following as Node) & Node.DOCUMENT_POSITION_FOLLOWING),
+      await composer.elementHandle()
+    )
+  ).toBe(true);
+  expect(
+    await composer.evaluate((node, following) =>
+      Boolean(node.compareDocumentPosition(following as Node) & Node.DOCUMENT_POSITION_FOLLOWING),
+      await replies.elementHandle()
+    )
+  ).toBe(true);
+  await expect(conversation.getByRole("button", { name: "Resolve", exact: true })).toBeVisible();
+  await expect(conversation.getByRole("button", { name: "Reply", exact: true })).toBeDisabled();
+  await expect(inspector.locator("header").getByRole("button", { name: /Reply|Resolve/ })).toHaveCount(0);
   expect(
     await selected.evaluate((node, following) =>
       Boolean(node.compareDocumentPosition(following as Node) & Node.DOCUMENT_POSITION_FOLLOWING),
@@ -193,6 +296,100 @@ test("links use ordinary marks, keep notes, and obey document pointer gestures",
   await expect(inspector.locator("figure")).toContainText("rather than headroom.");
 });
 
+test("Next letter keeps the comment and link context under the caret", async ({ page }) => {
+  await page.setViewportSize(viewports.default);
+  await openFixture(page);
+
+  const link = page.locator('[data-block="#bbody3"]').getByRole("link", {
+    name: "reconductoring",
+    exact: true
+  });
+  await link.dblclick();
+  await expect(
+    page.locator('aside[aria-label="Inspector"][data-inspected="document-editor.text-selection"]')
+  ).toBeVisible();
+  await page.keyboard.press("ArrowRight");
+
+  const inspector = page.locator(
+    'aside[aria-label="Inspector"][data-inspected="document-editor.next-letter"]'
+  );
+  await expect(inspector).toBeVisible();
+  await expect(inspector.getByRole("button", { name: /Links\s+1/ })).toBeVisible();
+  await expect(inspector.getByText("Engineering scope and seasonal construction assumptions.", {
+    exact: true
+  })).toBeVisible();
+  await expect(inspector.getByRole("button", { name: /^Comments/ })).toContainText("0");
+
+  const commentAnchor = page.locator('.comment-anchor[data-thread="commentThreads:4"]').first();
+  await commentAnchor.scrollIntoViewIfNeeded();
+  const commentPoint = await commentAnchor.evaluate((node) => {
+    const rect = node.getClientRects()[0];
+    return rect === undefined ? undefined : { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+  });
+  if (commentPoint === undefined) throw new Error("The comment anchor was not laid out.");
+  await page.mouse.dblclick(commentPoint.x, commentPoint.y);
+  await expect(
+    page.locator('aside[aria-label="Inspector"][data-inspected="document-editor.text-selection"]')
+  ).toBeVisible();
+  await page.keyboard.press("ArrowRight");
+
+  await expect(inspector.getByRole("button", { name: /Comments\s+1/ })).toBeVisible();
+  await expect(inspector.getByText("Open conversations under the caret", { exact: true })).toBeVisible();
+});
+
+test("Control-double-click adds a distinct range but comments require one contiguous selection", async ({ page }) => {
+  await page.setViewportSize(viewports.default);
+  await openFixture(page);
+
+  const first = await pointOnText(page.locator('[data-block="#bbody1"]'), "Substation");
+  await page.mouse.dblclick(first.x, first.y);
+  const inspector = page.locator(
+    'aside[aria-label="Inspector"][data-inspected="document-editor.text-selection"]'
+  );
+  await expect(inspector.locator("figure")).toContainText("Substation");
+
+  const second = await pointOnText(page.locator('[data-block="#bbody2"]'), "Nothing");
+  await page.keyboard.down("Control");
+  await page.mouse.dblclick(second.x, second.y);
+  await page.keyboard.up("Control");
+
+  await expect(inspector.locator("figure")).toContainText("2 selections");
+  await expect(inspector.locator("figure")).toContainText("Substation");
+  await expect(inspector.locator("figure")).toContainText("Nothing");
+  await expect(page.locator(".multi-range")).toHaveCount(1);
+
+  const comments = inspector.getByRole("button", { name: /^Comments/ });
+  await comments.click();
+  await expect(
+    inspector.getByText(
+      "Comments require one contiguous selection. Keep one passage selected to start a thread.",
+      { exact: true }
+    )
+  ).toBeVisible();
+  await expect(inspector.getByPlaceholder("Write a comment on the selection…")).toHaveCount(0);
+  await expect(inspector.getByRole("button", { name: "Add comment" })).toHaveCount(0);
+
+  await page.mouse.dblclick(first.x, first.y);
+  await expect(inspector.locator("figure").first()).not.toContainText("2 selections");
+  await expect(inspector.locator("figure").first()).toContainText("Substation");
+  await comments.click();
+  await inspector.getByPlaceholder("Write a comment on the selection…").fill(
+    "This passage needs review."
+  );
+  await inspector.getByRole("button", { name: "Add comment" }).click();
+
+  await expect(comments).toContainText("1");
+  await expect(inspector.getByTitle("Open the thread")).toHaveCount(1);
+  await page.mouse.dblclick(first.x, first.y);
+  await page.keyboard.press("ArrowRight");
+  const caretInspector = page.locator(
+    'aside[aria-label="Inspector"][data-inspected="document-editor.next-letter"]'
+  );
+  await expect(caretInspector).toBeVisible();
+  await page.keyboard.type("!");
+  await expect(caretInspector).toBeVisible();
+});
+
 test("quote Enter creates a normal body paragraph without ornamental quote chrome", async ({ page }) => {
   await page.setViewportSize(viewports.default);
   await openFixture(page);
@@ -230,7 +427,7 @@ test("a header comment remains anchored while text is inserted before it", async
 
   const context = page.locator('aside[aria-label="Context"]');
   await context.getByRole("button", { name: "Layout", exact: true }).click();
-  await context.getByRole("button", { name: "Edit header" }).click();
+  await page.locator('[data-furniture="header"] .document-block').first().click();
   await page.keyboard.type("FY26 · ");
   await expect(anchor).toHaveText("Winter readiness");
   await expect(page.locator(".title-bar")).toContainText("Saved", { timeout: 10_000 });
@@ -360,6 +557,11 @@ test("document context panels are operational and compact", async ({ page }) => 
 
   await context.getByRole("button", { name: "Sections", exact: true }).click();
   await expect(context.getByRole("heading", { name: "Sections" })).toBeVisible();
+  await expect(context.getByRole("button", { name: /H1 Winter readiness brief P1/ })).toBeVisible();
+  await expect(context.getByRole("button", { name: /H2 Where the exposure sits P1/ })).toBeVisible();
+  await expect(context.getByRole("button", { name: /H2 What it would cost P2/ })).toBeVisible();
+  await expect(context.getByText(/L\d+/)).toHaveCount(0);
+  await expect(context.locator('[title="Where the exposure sits"]')).toBeVisible();
 
   await context.getByRole("button", { name: "Find", exact: true }).click();
   await expect(context.getByRole("heading", { name: "Find" })).toBeVisible();
@@ -398,19 +600,61 @@ test("document context panels are operational and compact", async ({ page }) => 
   }
 });
 
+test("document named styles mirror the text formatting inspector without metadata clutter", async ({ page }) => {
+  await page.setViewportSize(viewports.default);
+  await openFixture(page);
+
+  const context = page.locator('aside[aria-label="Context"]');
+  await context.getByRole("button", { name: "Styles", exact: true }).click();
+  await context.getByRole("button", { name: "Body", exact: true }).click();
+
+  const inspector = page.locator(
+    'aside[aria-label="Inspector"][data-inspected="document-editor.named-style"]'
+  );
+  await expect(inspector).toBeVisible();
+  const name = inspector.getByRole("button", { name: "Body", exact: true }).first();
+  await name.click();
+  await expect(inspector.getByRole("textbox", { name: "Style name" })).toBeVisible();
+  await inspector.getByRole("textbox", { name: "Style name" }).press("Escape");
+
+  for (const mark of ["Bold", "Italic", "Underline", "Strikethrough"] as const) {
+    await expect(inspector.getByTitle(mark)).toBeVisible();
+  }
+  await expect(inspector.getByRole("button", { name: "Foreground for this style" })).toBeVisible();
+  await expect(inspector.getByRole("button", { name: "Background for this style" })).toBeVisible();
+  await expect(inspector.getByRole("spinbutton", { name: "Line height" })).toBeVisible();
+  await expect(inspector.getByRole("spinbutton", { name: "Indent" })).toBeVisible();
+
+  for (const obsolete of ["Identity", "Usage", "Key", "Reads as", "Weight"]) {
+    await expect(inspector.getByText(obsolete, { exact: true })).toHaveCount(0);
+  }
+});
+
 test("headers and footers edit on the page through the shared editor", async ({ page }) => {
   await page.setViewportSize(viewports.default);
   await openFixture(page);
 
   const context = page.locator('aside[aria-label="Context"]');
   await context.getByRole("button", { name: "Layout", exact: true }).click();
-  const showHeader = context.getByRole("switch", { name: "Show header" });
-  if (!(await showHeader.isChecked())) await showHeader.click();
+  await expect(context.getByText("Applies to all pages. Edit the visible placeholder on the page.", {
+    exact: true
+  })).toBeVisible();
+  const removeHeader = context.getByRole("button", { name: "Remove header" });
+  if (await removeHeader.isVisible()) {
+    await removeHeader.click();
+    await expect(page.locator('[data-furniture="header"]')).toHaveCount(0);
+  }
+  await context.getByRole("button", { name: "Add header" }).click();
 
   const canonical = page.locator('[data-furniture="header"]');
   await expect(canonical).toBeVisible();
   await expect(page.locator(".ProseMirror")).toHaveCount(1);
-  await context.getByRole("button", { name: "Edit header" }).click();
+  expect(
+    await canonical.locator(".document-block").first().evaluate((node) =>
+      getComputedStyle(node, "::before").content.replaceAll('"', "")
+    )
+  ).toBe("Header");
+  await canonical.locator(".document-block").first().click();
   await page.keyboard.type("Operations brief");
   await expect(canonical).toContainText("Operations brief");
 
