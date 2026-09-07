@@ -459,9 +459,19 @@
                   "id": "#ttg-title-a",
                   "kind": "literal",
                   "text": "Technical glossary"
+                },
+                {
+                  "id": "#ttg-title-sep",
+                  "kind": "literal",
+                  "text": " · "
+                },
+                {
+                  "id": "#ttg-title-subject",
+                  "kind": "template",
+                  "name": "subject_line"
                 }
               ],
-              "display": "Technical glossary",
+              "display": "Technical glossary · {subject_line}",
               "marks": []
             }
           ]
@@ -571,6 +581,12 @@
           ],
           "exclude": []
         }
+      },
+      {
+        "name": "subject_line",
+        "label": "Subject line",
+        "description": "The one line at the top that says what this glossary covers.",
+        "kind": "text"
       }
     ],
     "at": 1787244300000
@@ -2203,20 +2219,41 @@
     "revision": 1,
     "name": "Section divider",
     "description": "One slide that opens a section: a large title over a one-line lead.",
-    "tags": ["Presentation", "Brand"],
+    "tags": [
+      "Presentation",
+      "Brand"
+    ],
     "body": {
       "resource": "slides",
       "aspectRatio": "16:9",
       "theme": {
-        "background": { "kind": "color", "color": "--token-surface-primary" },
-        "colors": { "text": "--token-ink-primary", "accent": "--token-color-accent-1-fill", "muted": "--token-ink-muted" },
+        "background": {
+          "kind": "color",
+          "color": "--token-surface-primary"
+        },
+        "colors": {
+          "text": "--token-ink-primary",
+          "accent": "--token-color-accent-1-fill",
+          "muted": "--token-ink-muted"
+        },
         "fontFamily": "IBM Plex Sans"
       },
       "styles": {
         "defaultKey": "body",
         "styles": {
-          "title": { "name": "Title", "fontSize": 40, "fontWeight": 650, "color": "--token-ink-primary", "lineHeight": 1.05 },
-          "body": { "name": "Body", "fontSize": 20, "color": "--token-ink-secondary", "lineHeight": 1.35 }
+          "title": {
+            "name": "Title",
+            "fontSize": 40,
+            "fontWeight": 650,
+            "color": "--token-ink-primary",
+            "lineHeight": 1.05
+          },
+          "body": {
+            "name": "Body",
+            "fontSize": 20,
+            "color": "--token-ink-secondary",
+            "lineHeight": 1.35
+          }
         }
       },
       "layouts": [
@@ -2226,8 +2263,26 @@
           "name": "Section divider",
           "locked": [],
           "placeholders": [
-            { "role": "title", "frame": { "x": 0.08, "y": 0.34, "width": 0.84, "height": 0.2 }, "styleKey": "title" },
-            { "role": "lead", "frame": { "x": 0.08, "y": 0.56, "width": 0.84, "height": 0.12 }, "styleKey": "body" }
+            {
+              "role": "title",
+              "frame": {
+                "x": 0.08,
+                "y": 0.34,
+                "width": 0.84,
+                "height": 0.2
+              },
+              "styleKey": "title"
+            },
+            {
+              "role": "lead",
+              "frame": {
+                "x": 0.08,
+                "y": 0.56,
+                "width": 0.84,
+                "height": 0.12
+              },
+              "styleKey": "body"
+            }
           ]
         }
       ],
@@ -2238,7 +2293,12 @@
           "elements": [
             {
               "id": "#tdiv-title-element",
-              "frame": { "x": 0.08, "y": 0.34, "width": 0.84, "height": 0.2 },
+              "frame": {
+                "x": 0.08,
+                "y": 0.34,
+                "width": 0.84,
+                "height": 0.2
+              },
               "overflow": "shrink",
               "fromPlaceholder": "title",
               "content": {
@@ -2249,7 +2309,13 @@
                   "variant": "heading",
                   "level": 1,
                   "style": "title",
-                  "atoms": [{ "id": "#tdiv-title-a", "kind": "literal", "text": "Section title" }],
+                  "atoms": [
+                    {
+                      "id": "#tdiv-title-a",
+                      "kind": "literal",
+                      "text": "Section title"
+                    }
+                  ],
                   "display": "Section title",
                   "marks": []
                 }
@@ -2257,7 +2323,12 @@
             },
             {
               "id": "#tdiv-lead-element",
-              "frame": { "x": 0.08, "y": 0.56, "width": 0.84, "height": 0.12 },
+              "frame": {
+                "x": 0.08,
+                "y": 0.56,
+                "width": 0.84,
+                "height": 0.12
+              },
               "overflow": "shrink",
               "fromPlaceholder": "lead",
               "content": {
@@ -2267,7 +2338,13 @@
                   "type": "text",
                   "variant": "paragraph",
                   "style": "body",
-                  "atoms": [{ "id": "#tdiv-lead-a", "kind": "literal", "text": "One line on what this section settles." }],
+                  "atoms": [
+                    {
+                      "id": "#tdiv-lead-a",
+                      "kind": "literal",
+                      "text": "One line on what this section settles."
+                    }
+                  ],
                   "display": "One line on what this section settles.",
                   "marks": []
                 }

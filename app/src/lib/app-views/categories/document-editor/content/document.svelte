@@ -893,6 +893,16 @@
     outline-offset: 1px;
   }
 
+  /* A template's own hole, waiting for whoever places the template to fill it. */
+  .editor :global(.document-template-atom) {
+    padding: 0 0.15em;
+    border-radius: var(--token-radius-control);
+    background-color: var(--token-color-accent-1-surface);
+    color: var(--token-color-accent-1-text);
+    font-family: var(--token-font-mono);
+    font-size: 0.9em;
+  }
+
   .editor :global(.document-underline) {
     text-decoration: underline;
     text-underline-offset: 0.12em;

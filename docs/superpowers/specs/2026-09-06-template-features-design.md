@@ -184,6 +184,22 @@ Still open, each built the recommended way:
 2. **Inserting a deck template.** Recommended: bring missing layouts and styles across.
    Alternative: slides only.
 
+## Parameters
+
+A template is a function, and a body asks for its parameters in two ways. A prompt's scope naming
+one makes it a **scope** parameter: a group of resources, always answered, because the whole project
+is the floor. A `template` atom in the prose makes it a **text** parameter: words, answered by
+nobody until somebody types them, and the only thing that can hold a placement up.
+
+The atom is deliberately not called a variable. A variable here is a named value a formula reads,
+and it has nothing to do with templates; `{ id, kind: "template", name }` appears nowhere outside a
+template body and the copy that template is edited through, and it draws as its name in braces.
+
+Placing a template opens one list of every parameter, key on the left and what answers it on the
+right. A row opens to its description; a scope's value opens the builder; a text parameter's opens a
+field. A row with no words carries a rule down its left edge, and the confirm names what is still
+missing. `instantiateTemplate` refuses the same thing on the server.
+
 ## Scope
 
 Designed after the fourth review and built. A variable's scope is chosen in one modal that edits a

@@ -4,7 +4,7 @@ import type {
   TableCell,
   TextBlock
 } from "$representation/data/types/content/content-block";
-import { rangeOf } from "$representation/data/behavior/content/positions";
+import { displayOfAtom, rangeOf } from "$representation/data/behavior/content/positions";
 import type {
   AspectRatio,
   Dash,
@@ -134,8 +134,8 @@ export const runsOf = (block: TextSceneBlock): Run[] => {
   let offset = 0;
   const formulaRanges: [number, number][] = [];
   for (const atom of block.atoms) {
-    const length = atom.kind === "literal" ? atom.text.length : atom.lastResolvedDisplay.length;
-    if (atom.kind === "formula") {
+    const length = displayOfAtom(atom).length;
+    if (atom.kind === "formula" || atom.kind === "template") {
       formulaRanges.push([offset, offset + length]);
       cuts.add(offset);
       cuts.add(offset + length);

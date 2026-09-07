@@ -149,10 +149,14 @@ export type RemoveTemplateResult =
       readonly detail: string;
     };
 
+/** What a caller typed into the template's text parameters, by name. */
+export type TemplateTexts = Readonly<Record<string, string>>;
+
 export type InstantiateTemplateInput = {
   readonly templateId: string;
   readonly name?: string;
   readonly answers?: TemplateAnswers;
+  readonly texts?: TemplateTexts;
 };
 
 export type InstantiateTemplateResult =

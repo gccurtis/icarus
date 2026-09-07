@@ -11,6 +11,7 @@
     DOORS,
     FORKS,
     GAPS,
+    KINDS,
     LIFECYCLE,
     REFUSALS,
     RULES,
@@ -62,6 +63,7 @@
     </header>
 
     <nav class="tref-jumps" aria-label="On this page">
+      <a href="#parameters">Two kinds of parameter</a>
       <a href="#why">Why a row at all</a>
       <a href="#terms">Every term</a>
       <a href="#difference">A set is a difference</a>
@@ -74,6 +76,47 @@
       <a href="#forks">Eight decisions</a>
       <a href="#missing">What is still missing</a>
     </nav>
+
+    <section class="tref-section" id="parameters">
+      <div class="tref-section-head">
+        <div><span class="tref-kicker">What a template asks for</span><h2>Two kinds of parameter</h2></div>
+        <p>
+          A template is a function and these are its parameters. Both are found from the body rather
+          than authored, both are declared in one list, and both carry a name, a label and a
+          description written by whoever made the template.
+        </p>
+      </div>
+
+      <div class="tref-scroll">
+        <table class="tref-table">
+          <thead>
+            <tr><th>Found because</th><th>Kind</th><th>Answered with</th><th>When</th><th>What happens</th></tr>
+          </thead>
+          <tbody>
+            {#each KINDS as kind (kind.opens)}
+              <tr>
+                <td>{kind.where}</td>
+                <td><code>{kind.opens}</code></td>
+                <td>{kind.title}</td>
+                <td class="muted">{kind.confirms}</td>
+                <td class="muted">{kind.writes}</td>
+              </tr>
+            {/each}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="tref-note attention">
+        <h4>A template's parameter is not a variable</h4>
+        <p>
+          A variable in this application is a named value a formula reads, and it has nothing to do
+          with templates. So the atom that holds a hole in a template's prose is a
+          <code>template</code> atom, not a variable atom, and it appears nowhere outside a template
+          body and the copy that template is edited through. The word is worth guarding: two
+          unrelated ideas sharing it is how a vocabulary stops being one.
+        </p>
+      </div>
+    </section>
 
     <section class="tref-section" id="why">
       <div class="tref-section-head">
@@ -210,9 +253,8 @@
       <figure class="tref-figure">
         <DiagramBuilder />
         <figcaption>
-          <b>Three states of one modal.</b> The resting state answers the common case in one press; the
-          working state is two lists and a count; Add is a single picker with three sources rather than
-          three separate controls.
+          <b>Two modals, and never a third.</b> The ask lists every parameter and holds Insert while any
+          words are missing; a value opens the builder, which is two tabs and, inside one, two panes.
         </figcaption>
       </figure>
     </section>

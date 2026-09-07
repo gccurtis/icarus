@@ -32,7 +32,10 @@ import {
   type ScopeOffering
 } from "$representation/data/behavior/core/scope-draft";
 import { withFreshIds, type IdHint } from "$representation/data/behavior/templates/fresh-ids";
-import { resolveTemplateScopes } from "$representation/data/behavior/templates/scopes";
+import {
+  fillTemplateAtoms,
+  resolveTemplateScopes
+} from "$representation/data/behavior/templates/scopes";
 import type { TemplatedResourceSet } from "$representation/data/types/core/resource-set";
 import type { DocumentBody, DocumentRow } from "$representation/data/types/documents/body";
 import type { DocumentOp } from "$representation/data/types/documents/op";
@@ -51,6 +54,12 @@ export type {
 } from "$capabilities/templates/index.remote";
 export type { TemplatedResourceSet } from "$representation/data/types/core/resource-set";
 export type { TemplateVariable } from "$representation/data/types/templates/template";
+
+export {
+  answerRowsOf,
+  missingIn,
+  type AnswerRow
+} from "$representation/data/behavior/templates/answers";
 
 export {
   PROJECT_KINDS as KINDS,
@@ -107,6 +116,16 @@ export const offeringOf = (
  * default apply. Everything present is sent as built; the server decides
  * whether it needs a row.
  */
+/** The words typed for each text parameter, with the untouched ones left out. */
+export const wordsFrom = (
+  texts: Readonly<Record<string, string | undefined>>
+): Readonly<Record<string, string>> =>
+  Object.fromEntries(
+    Object.entries(texts).flatMap(([name, words]) =>
+      words === undefined || words.trim() === "" ? [] : [[name, words] as const]
+    )
+  );
+
 export const answersFrom = (
   choices: Readonly<Record<string, ScopeDraft | undefined>>
 ): TemplateAnswers =>
@@ -175,7 +194,8 @@ export const insertionOf = (
   template: TemplateDetail,
   afterRowId: string | null,
   mode: "resolve" | "keep",
-  answers: TemplateAnswers = {}
+  answers: TemplateAnswers = {},
+  texts: Readonly<Record<string, string>> = {}
 ): Insertion => {
   if (template.body.resource !== "document") return { ops: [], firstBlockId: undefined };
 
@@ -185,7 +205,9 @@ export const insertionOf = (
     if (!resolved.accepted || resolved.body.resource !== "document") {
       return { ops: [], firstBlockId: undefined };
     }
-    source = resolved.body;
+    const filled = fillTemplateAtoms(resolved.body, texts);
+    if (filled.resource !== "document") return { ops: [], firstBlockId: undefined };
+    source = filled;
   }
 
   const rows = withFreshIds(source.rows, mintFor, "row");

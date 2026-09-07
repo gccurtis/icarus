@@ -4,6 +4,7 @@ import type {
   Mark,
   MarkEnd
 } from "$representation/data/types/content/content-block";
+import { displayOfAtom } from "$representation/data/behavior/content/positions";
 import type { DocumentBody, DocumentRow } from "$representation/data/types/documents/body";
 import type { DocumentOp } from "$representation/data/types/documents/op";
 import type { StyleSet, TextStyle } from "$representation/data/types/documents/style-set";
@@ -23,7 +24,7 @@ const isMarked = (block: ContentBlock): block is Marked =>
   block.type === "text" || block.type === "prompt";
 
 export const displayOf = (atoms: readonly Atom[]): string =>
-  atoms.map((atom) => (atom.kind === "literal" ? atom.text : atom.lastResolvedDisplay)).join("");
+  atoms.map(displayOfAtom).join("");
 
 const insertAfter = <T extends { id: string }>(
   items: readonly T[],

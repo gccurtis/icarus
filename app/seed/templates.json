@@ -467,9 +467,19 @@
                   "id": "#ttg-title-a",
                   "kind": "literal",
                   "text": "Technical glossary"
+                },
+                {
+                  "id": "#ttg-title-sep",
+                  "kind": "literal",
+                  "text": " · "
+                },
+                {
+                  "id": "#ttg-title-subject",
+                  "kind": "template",
+                  "name": "subject_line"
                 }
               ],
-              "display": "Technical glossary",
+              "display": "Technical glossary · {subject_line}",
               "marks": []
             }
           ]
@@ -579,6 +589,12 @@
           ],
           "exclude": []
         }
+      },
+      {
+        "name": "subject_line",
+        "label": "Subject line",
+        "description": "The one line at the top that says what this glossary covers.",
+        "kind": "text"
       }
     ],
     "createdBy": {

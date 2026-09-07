@@ -235,6 +235,12 @@ export const nextTemplateName = (
 };
 
 export {
+  answerRowsOf,
+  missingIn,
+  type AnswerRow
+} from "$representation/data/behavior/templates/answers";
+
+export {
   PROJECT_KINDS as KINDS,
   builderView,
   draftOf,
@@ -289,6 +295,16 @@ export const offeringOf = (
  * default apply. Everything present is sent as built; the server decides
  * whether it needs a row.
  */
+/** The words typed for each text parameter, with the untouched ones left out. */
+export const wordsFrom = (
+  texts: Readonly<Record<string, string | undefined>>
+): Readonly<Record<string, string>> =>
+  Object.fromEntries(
+    Object.entries(texts).flatMap(([name, words]) =>
+      words === undefined || words.trim() === "" ? [] : [[name, words] as const]
+    )
+  );
+
 export const answersFrom = (
   choices: Readonly<Record<string, ScopeDraft | undefined>>
 ): TemplateAnswers =>
@@ -441,14 +457,16 @@ export const removeTemplate = (view: WorkspaceStateModel, row: LibraryTemplateDe
 export const instantiateTemplate = (
   view: WorkspaceStateModel,
   row: LibraryTemplate,
-  answers: TemplateAnswers = {}
+  answers: TemplateAnswers = {},
+  texts: Readonly<Record<string, string>> = {}
 ) =>
   view.singleFlight(
-    ["template", view.project, row.id, "instantiate", JSON.stringify(answers)],
+    ["template", view.project, row.id, "instantiate", JSON.stringify(answers), JSON.stringify(texts)],
     () =>
       instantiateTemplateRemote({
         templateId: row.id,
-        ...(Object.keys(answers).length === 0 ? {} : { answers })
+        ...(Object.keys(answers).length === 0 ? {} : { answers }),
+        ...(Object.keys(texts).length === 0 ? {} : { texts })
       }).updates(readTemplateLibrary, readProjectResourceIndex)
   );
 

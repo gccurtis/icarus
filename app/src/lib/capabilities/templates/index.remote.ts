@@ -112,6 +112,7 @@ export type {
   RemoveTemplateResult,
   ResourceTemplateStage,
   TemplateAnswers,
+  TemplateTexts,
   TemplateAvailability,
   TemplateDetail,
   TemplateLibraryItem,

@@ -52,6 +52,23 @@ export const TERMS: ScopeTerm[] = [
   }
 ];
 
+export const KINDS: ScopeDoor[] = [
+  {
+    where: "A prompt's scope names it",
+    opens: "scope",
+    title: "A group of resources",
+    confirms: "Always answered: what the caller chose, else the default, else the whole project",
+    writes: "Built in the scope builder, and stored as a row when it excludes or names resources"
+  },
+  {
+    where: "A template atom in the prose names it",
+    opens: "text",
+    title: "Words",
+    confirms: "Answered by nobody until somebody types them, which is the only thing that holds a placement up",
+    writes: "The atom becomes a literal, and the block's display follows"
+  }
+];
+
 export const DOORS: ScopeDoor[] = [
   {
     where: "Templates panel · a variable card on a working copy",

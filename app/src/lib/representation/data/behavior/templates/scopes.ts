@@ -1,3 +1,5 @@
+import { displayOfAtom } from "$representation/data/behavior/content/positions";
+import type { Atom } from "$representation/data/types/content/content-block";
 import type {
   ResourceSet,
   SetTerm,
@@ -38,6 +40,52 @@ const cloneScope = (scope: Scope): Scope => ({
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   value !== null && typeof value === "object" && !Array.isArray(value);
+
+const isTemplateAtom = (value: Record<string, unknown>): boolean =>
+  value.kind === "template" && typeof value.name === "string" && typeof value.id === "string";
+
+/** Every parameter the body's template atoms ask for words for. */
+export const templateAtomNamesIn = (body: TemplateBody): readonly string[] => {
+  const names = new Set<string>();
+  const walk = (value: unknown): void => {
+    if (Array.isArray(value)) {
+      for (const entry of value) walk(entry);
+      return;
+    }
+    if (!isRecord(value)) return;
+    if (isTemplateAtom(value)) names.add(value.name as string);
+    for (const nested of Object.values(value)) walk(nested);
+  };
+  walk(body);
+  return [...names].sort();
+};
+
+/**
+ * A template atom becomes the words it was answered with.
+ *
+ * An atom nobody answered is left exactly as it is, because a template being
+ * edited is full of unanswered holes and that is what it is for. A block's
+ * display is rebuilt from its atoms afterwards, since the words changed.
+ */
+export const fillTemplateAtoms = (
+  body: TemplateBody,
+  texts: Readonly<Record<string, string>>
+): TemplateBody => {
+  const walk = (value: unknown): unknown => {
+    if (Array.isArray(value)) return value.map(walk);
+    if (!isRecord(value)) return value;
+    if (isTemplateAtom(value)) {
+      const held = texts[value.name as string];
+      return held === undefined ? value : { id: value.id, kind: "literal", text: held };
+    }
+    const next = Object.fromEntries(
+      Object.entries(value).map(([field, nested]) => [field, walk(nested)])
+    );
+    if (!Array.isArray(next.atoms) || typeof next.display !== "string") return next;
+    return { ...next, display: (next.atoms as Atom[]).map(displayOfAtom).join("") };
+  };
+  return walk(body) as TemplateBody;
+};
 
 export const variableNamesIn = (body: TemplateBody): readonly string[] => {
   const names = new Set<string>();

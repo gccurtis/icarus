@@ -90,14 +90,19 @@ test("inserting a template into a document asks for each variable, shows its def
 
   const modal = page.getByRole("dialog", { name: "Insert “Technical glossary”" });
   await expect(modal).toBeVisible();
-  await expect(modal.getByText("Source material", { exact: true })).toBeVisible();
-  await expect(modal.getByText("Default · Documents, Findings")).toBeVisible();
 
-  await modal.getByRole("button", { name: "Change", exact: true }).click();
+  // Every parameter is listed, with what it is answered with beside it.
+  await expect(modal.getByRole("button", { name: "Source material" })).toBeVisible();
+  await expect(modal.getByRole("button", { name: "Default · Documents, Findings" })).toBeVisible();
+
+  // One of them takes words, so Insert is held until it has some.
+  await expect(modal.getByRole("button", { name: "Needs input" })).toBeVisible();
+  await modal.getByRole("textbox", { name: "What Subject line says here" }).fill("Winter terms");
+  await expect(modal.getByRole("button", { name: "Needs input" })).toHaveCount(0);
+
+  await modal.getByRole("button", { name: "Default · Documents, Findings" }).click();
   const builder = page.getByRole("dialog", { name: "What Source material selects here" });
   await expect(builder).toBeVisible();
-  await builder.getByRole("button", { name: "Choose what to include", exact: true }).click();
-  await builder.getByRole("button", { name: "Add", exact: true }).first().click();
   await builder.getByRole("button", { name: "Sets", exact: true }).click();
   await builder
     .locator(".offer")
@@ -107,11 +112,12 @@ test("inserting a template into a document asks for each variable, shows its def
   await expect(builder.getByText("Winter filings").first()).toBeVisible();
   await builder.getByRole("button", { name: "Use this", exact: true }).click();
 
-  await expect(modal.getByText("Winter filings", { exact: true })).toBeVisible();
+  await expect(modal.getByRole("button", { name: "Winter filings" })).toBeVisible();
   await modal.getByRole("button", { name: "Insert", exact: true }).click();
 
   await expect(context.getByText("Inserted “Technical glossary”.", { exact: true })).toBeVisible();
-  await expect(editor).toContainText("Technical glossary");
+  // The words filled the template's own atom, so the heading carries them.
+  await expect(editor).toContainText("Technical glossary · Winter terms");
 
   await editor.click();
   await page.keyboard.press("ControlOrMeta+z");
@@ -145,7 +151,7 @@ test("a document is saved as a template, takes its variable from an inserted pro
 
   const modal = page.getByRole("dialog", { name: "Default scope for Source material" });
   await expect(modal).toBeVisible();
-  await modal.getByRole("button", { name: "Everything in the project", exact: true }).click();
+  await modal.getByRole("button", { name: "Whole project", exact: true }).click();
   await modal.getByRole("button", { name: "Set the default scope", exact: true }).click();
   await expect(scope).toHaveAttribute("title", /^Everything in the project — /);
 
@@ -196,8 +202,6 @@ test("the project's resource sets are made, counted, and removed from the Contex
 
   const builder = page.getByRole("dialog", { name: "A set of resources" });
   await expect(builder).toBeVisible();
-  await builder.getByRole("button", { name: "Choose what to include", exact: true }).click();
-  await builder.getByRole("button", { name: "Add", exact: true }).first().click();
   await builder
     .locator(".offer")
     .filter({ hasText: "Findings" })
@@ -238,14 +242,13 @@ test("a variable's default is built with an exclusion, stored, and read back as 
   await expect(builder).toBeVisible();
   await expect(builder.getByText("Findings, Documents, Spreadsheets, minus Interconnect glossary")).toBeVisible();
 
-  await builder.getByRole("button", { name: "Add an exception", exact: true }).click();
+  await builder.getByRole("button", { name: /^Exclude/ }).click();
   await builder.getByRole("button", { name: "Resources", exact: true }).click();
   await builder
     .locator(".offer")
     .filter({ hasText: "Substation 14 incident write-up" })
     .getByRole("button", { name: "Add", exact: true })
     .click();
-  await builder.getByRole("button", { name: "Done", exact: true }).click();
   await builder.getByRole("button", { name: "Set the default scope", exact: true }).click();
 
   await expect(scope).toHaveAttribute(
@@ -257,6 +260,7 @@ test("a variable's default is built with an exclusion, stored, and read back as 
   // Put the seeded template back the way the fixture had it.
   await scope.click();
   await expect(builder).toBeVisible();
+  await builder.getByRole("button", { name: /^Exclude/ }).click();
   await builder
     .locator(".term")
     .filter({ hasText: "Substation 14 incident write-up" })

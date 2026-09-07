@@ -20,7 +20,22 @@ export type FormulaAtom = {
   error?: string;
 };
 
-export type Atom = TextAtom | FormulaAtom;
+/**
+ * A hole in a template's prose, filled with words when the template is placed.
+ *
+ * **It is a template's parameter, not a variable.** A variable in this
+ * application is a named value a formula can read; this is unrelated to that and
+ * must not borrow the word. What it names is one of the template's own
+ * parameters, which is why the kind is `template`: outside a template body and
+ * the copy it is edited through, this atom does not belong anywhere.
+ *
+ * It carries only the name. The label and the description that explain it to
+ * whoever fills it in live on the template's parameter of that name, because two
+ * atoms may name one parameter and there must be one answer.
+ */
+export type TemplateAtom = { id: string; kind: "template"; name: string };
+
+export type Atom = TextAtom | FormulaAtom | TemplateAtom;
 
 export type MarkStyle = "bold" | "italic" | "underline" | "strikethrough" | "code";
 

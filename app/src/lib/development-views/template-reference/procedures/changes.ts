@@ -97,6 +97,15 @@ export const SYSTEMATIC: SystematicChange[] = [
     now: "One builder, opened from four places, with two term lists and a live count. A rule that excludes something or names resources is stored as a resourceSets row with no name, bound to the variable that owns it, and what points at it is a single set term.",
     why: "Resolving a template substitutes one term for what fills it, on either side of a prompt's scope, and a difference cannot be substituted on the excluding side. The row is what makes exclusions expressible at all.",
     area: "sets"
+  },
+  {
+    index: "13",
+    title: "A template asks for words as well as for resources",
+    before:
+      "A template's only parameter was a prompt's scope. Prose was fixed: a template that wanted a subject line, a client name or a date had to be edited after it was placed.",
+    now: "A template atom is a hole in the prose, found from the body like a scope is and declared beside it. Placing a template lists every parameter as a key and what answers it, opens each one to its description, and refuses while any words are missing.",
+    why: "It is deliberately not called a variable: a variable here is a named value a formula reads, and a template's parameters have nothing to do with that.",
+    area: "vocabulary"
   }
 ];
 
@@ -164,9 +173,9 @@ export const DECISIONS: Decision[] = [
 ];
 
 export const VERIFICATION: Verification[] = [
-  { check: "Types", command: "pnpm typecheck", result: "0 errors, 0 warnings across 2,501 files", clean: true },
+  { check: "Types", command: "pnpm typecheck", result: "0 errors, 0 warnings across 2,505 files", clean: true },
   { check: "Structure", command: "pnpm lint", result: "56 checks, 56 clean", clean: true },
-  { check: "Unit", command: "pnpm test", result: "903 tests in 94 files", clean: true },
+  { check: "Unit", command: "pnpm test", result: "909 tests in 95 files", clean: true },
   { check: "Category keys", command: "pnpm category-keys -- --check", result: "10 categories and 13 content views in step", clean: true },
   {
     check: "Browser",

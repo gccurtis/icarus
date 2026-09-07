@@ -100,8 +100,9 @@ test("the scope page carries its mock, its file list and its settled decisions",
   await page.goto("/app/dev-project/reference/templates/scope", { waitUntil: "networkidle" });
 
   await expect(page.getByRole("heading", { level: 2, name: "The builder" })).toBeVisible();
-  await expect(page.getByText("Default scope for Source material").first()).toBeVisible();
-  await expect(page.getByText("Add to Include", { exact: true })).toBeVisible();
+  await expect(page.getByText("Insert “Technical glossary”").first()).toBeVisible();
+  await expect(page.getByText("Add to exclude", { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: "Two kinds of parameter" })).toBeVisible();
 
   await expect(page.getByRole("heading", { level: 2, name: "Every file it touched" })).toBeVisible();
   await expect(page.locator("#work tbody tr").first()).toBeVisible();

@@ -3,7 +3,10 @@ import { serverModel } from "$runtime/server/start.server";
 import { asId } from "$representation/data/behavior/core/id";
 import { normalizeDocumentStyleSet } from "$representation/data/behavior/documents/typography";
 import { ensureSlideDeckReady } from "$representation/data/behavior/slide-decks/normalize";
-import { resolveTemplateScopes } from "$representation/data/behavior/templates/scopes";
+import {
+  fillTemplateAtoms,
+  resolveTemplateScopes
+} from "$representation/data/behavior/templates/scopes";
 import type { TemplateBody } from "$representation/data/types/templates/template";
 
 import { validateInstantiateTemplate } from "$capabilities/templates/api/instantiate-template/validate-instantiate-template";
@@ -14,6 +17,7 @@ import {
   visibleTemplate
 } from "$capabilities/templates/api/shared/projection";
 import { normalizeScope, unknownSetsIn } from "$capabilities/templates/api/shared/scopes";
+import { kindOf } from "$capabilities/templates/api/shared/variables";
 import type {
   InstantiateTemplateResult,
   TemplateAnswers
@@ -61,6 +65,21 @@ export const instantiateTemplate = async (input: unknown): Promise<InstantiateTe
       reason: "unsupported-body",
       revision: reportableRevision(stored.revision),
       detail: error instanceof Error ? error.message : String(error)
+    };
+  }
+
+  const texts = asked.texts ?? {};
+  const unfilled = variables
+    .filter((variable) => kindOf(variable) === "text")
+    .map((variable) => variable.name)
+    .filter((name) => texts[name] === undefined || texts[name].trim() === "");
+  if (unfilled.length > 0) {
+    return {
+      accepted: false,
+      templateId: template._id,
+      reason: "unsupported-body",
+      revision: template.revision,
+      detail: `these need words before the template can be placed: ${unfilled.join(", ")}`
     };
   }
 
@@ -139,7 +158,7 @@ export const instantiateTemplate = async (input: unknown): Promise<InstantiateTe
       detail: `the body names a variable the template does not declare: ${resolved.undeclared.join(", ")}`
     };
   }
-  body = resolved.body;
+  body = fillTemplateAtoms(resolved.body, texts);
   store.update(`templates.${template._id}.lastUsedAt`, at);
 
   if (body.resource === "document") {

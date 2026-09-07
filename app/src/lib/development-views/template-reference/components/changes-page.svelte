@@ -37,7 +37,7 @@
         <span class="tref-kicker">02 · The audit</span>
         <h1>What changed</h1>
         <p class="tref-lede">
-          Twelve systematic changes, the decisions three reviews settled, every file with its line count, what
+          Thirteen systematic changes, the decisions three reviews settled, every file with its line count, what
           was run to check the work, and what is still open. Measured against <code>{BASELINE}</code>, the
           commit this branch sits on, so it keeps saying the same thing as main moves on.
         </p>
@@ -54,7 +54,7 @@
     </header>
 
     <nav class="tref-jumps" aria-label="On this page">
-      <a href="#systematic">Twelve changes</a>
+      <a href="#systematic">Thirteen changes</a>
       <a href="#model">The model, before and after</a>
       <a href="#decisions">What the reviews settled</a>
       <a href="#ledger">Every file</a>
@@ -65,7 +65,7 @@
 
     <section class="tref-section" id="systematic">
       <div class="tref-section-head">
-        <div><span class="tref-kicker">Before → now</span><h2>Twelve systematic changes</h2></div>
+        <div><span class="tref-kicker">Before → now</span><h2>Thirteen systematic changes</h2></div>
         <p>
           Each is a decision with consequences across several files, written with what it replaced and why,
           so the page stays useful after the code is familiar.

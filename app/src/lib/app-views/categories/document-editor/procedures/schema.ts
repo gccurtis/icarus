@@ -149,6 +149,32 @@ export const schema = new Schema({
 
     text: { group: "inline" },
 
+    /**
+     * A template's own hole, drawn as its name in braces.
+     *
+     * It is an atom like a formula is: one indivisible thing the caret steps
+     * over, because half a parameter name is not a thing anyone means to type.
+     */
+    template_atom: {
+      group: "inline",
+      inline: true,
+      atom: true,
+      selectable: true,
+      attrs: {
+        atomId: { default: null },
+        name: { default: "" }
+      },
+      toDOM: (node) => [
+        "span",
+        {
+          class: "document-template-atom",
+          "data-atom": node.attrs.atomId,
+          title: `${node.attrs.name} · filled in when this template is placed`
+        },
+        `{${node.attrs.name}}`
+      ]
+    },
+
     formula_atom: {
       group: "inline",
       inline: true,

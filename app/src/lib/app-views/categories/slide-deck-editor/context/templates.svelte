@@ -16,11 +16,15 @@
     PanelSection
   } from "$authored-components/panel";
   import { ScopeBuilder } from "$authored-components/scope-builder";
+  import { TemplateAnswers as TemplateAnswerList } from "$authored-components/template-answers";
   import { slideIndexOf } from "$app-views/categories/slide-deck-editor/procedures/deck";
   import { slideSignal } from "$app-views/categories/slide-deck-editor/procedures/selecting";
   import {
+    answerRowsOf,
     answersFrom,
     builderView,
+    missingIn,
+    wordsFrom,
     commitStage,
     deckTemplatesIn,
     detailIn,
@@ -108,7 +112,13 @@
   let insertOpen = $state(false);
   let answerOpen = $state(false);
   let choices = $state<Record<string, ScopeDraft | undefined>>({});
+  let texts = $state<Record<string, string | undefined>>({});
   let answering = $state<TemplateVariable | undefined>(undefined);
+
+  const askRows = $derived(answerRowsOf(insertFor?.variables ?? [], choices, texts, setNames));
+  const askBlocked = $derived(
+    missingIn(askRows).length === 0 ? undefined : `${missingIn(askRows).join(", ")} still needs words.`
+  );
 
   const shown = $derived(
     templates.filter((item) => item.name.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()))
@@ -219,14 +229,19 @@
       });
     });
 
-  const place = async (detail: TemplateDetail, answers: TemplateAnswers) => {
+  const place = async (
+    detail: TemplateDetail,
+    answers: TemplateAnswers,
+    words: Readonly<Record<string, string>> = {}
+  ) => {
     if (body === undefined || runtime === undefined) return;
     const insertion = insertionOf(
       body,
       detail,
       current?.id ?? null,
       stage === undefined ? "resolve" : "keep",
-      answers
+      answers,
+      words
     );
     if (insertion.ops.length === 0) {
       notice = ["That template has no slides to insert."];
@@ -255,6 +270,7 @@
       if (stage === undefined && detail.variables.length > 0) {
         insertFor = detail;
         choices = {};
+        texts = {};
         answering = undefined;
         insertOpen = true;
         return;
@@ -265,7 +281,7 @@
   const confirmInsert = () => {
     const detail = insertFor;
     if (detail === undefined) return;
-    void run(`place:${detail.id}`, () => place(detail, answersFrom(choices)));
+    void run(`place:${detail.id}`, () => place(detail, answersFrom(choices), wordsFrom(texts)));
   };
 
   const changeVariables = (next: readonly ChosenVariable[]) =>
@@ -293,9 +309,11 @@
    * Swapping one modal's title, body and confirm while it is open replaces the
    * footer under the pointer, and the press lands on a button that has gone.
    */
-  const openAnswer = (variable: TemplateVariable) => {
+  const openAnswer = (name: string) => {
+    const variable = insertFor?.variables.find((candidate) => candidate.name === name);
+    if (variable === undefined) return;
     answering = variable;
-    draft = draftOf(choices[variable.name] ?? variable.default);
+    draft = draftOf(choices[name] ?? variable.default);
     insertOpen = false;
     answerOpen = true;
   };
@@ -312,9 +330,23 @@
     insertOpen = true;
   };
 
-  const clearAnswer = (variable: TemplateVariable) => {
-    const { [variable.name]: _dropped, ...rest } = choices;
-    choices = rest;
+  /** Inside the ask, Default means the template's own suggestion, not the floor. */
+  const resetAnswering = () => {
+    if (answering !== undefined) clearAnswer(answering.name);
+    answering = undefined;
+    answerOpen = false;
+    insertOpen = true;
+  };
+
+  const writeText = (name: string, words: string) => {
+    texts = { ...texts, [name]: words };
+  };
+
+  const clearAnswer = (name: string) => {
+    const { [name]: _chosen, ...restChoices } = choices;
+    const { [name]: _typed, ...restTexts } = texts;
+    choices = restChoices;
+    texts = restTexts;
   };
 
   /** Every builder edits this one draft, because only one is ever open. */
@@ -443,63 +475,46 @@
 <OverlayModal
   bind:open={insertOpen}
   title={`Insert “${insertFor?.name ?? "the template"}”`}
-  description="What each variable selects in this deck. Untouched, each uses the template's own default."
+  description="Every parameter this template asks for. Open one to read what it means."
   confirm="Insert"
   width="narrow"
+  blocked={askBlocked}
   onconfirm={confirmInsert}
 >
-  <div class="answers">
-    {#each insertFor?.variables ?? [] as variable (variable.name)}
-      <div class="answer">
-        <span class="answer-label">{variable.label}</span>
-        {#if variable.description}
-          <span class="answer-help">{variable.description}</span>
-        {/if}
-        <span class="answer-rule">
-          {choices[variable.name] === undefined ? "Default · " : ""}{ruleOf(
-            choices[variable.name] ?? variable.default,
-            setNames
-          )}
-        </span>
-        <span class="answer-actions">
-          <PanelButton
-            label="Change"
-            title={`Choose what ${variable.label} selects here`}
-            onclick={() => openAnswer(variable)}
-          />
-          {#if choices[variable.name] !== undefined}
-            <PanelButton
-              label="Use the default"
-              tone="ghost"
-              title={`Put ${variable.label} back to the template's own default`}
-              onclick={() => clearAnswer(variable)}
-            />
-          {/if}
-        </span>
-      </div>
-    {/each}
-  </div>
+  <TemplateAnswerList
+    rows={askRows}
+    onscope={openAnswer}
+    ontext={writeText}
+    onreset={clearAnswer}
+  />
 </OverlayModal>
 
 <OverlayModal
   bind:open={answerOpen}
-  title={`What ${answering?.label ?? "the variable"} selects here`}
+  title={`What ${answering?.label ?? "the parameter"} selects here`}
   description="For this copy only. Nothing here changes the template."
   confirm="Use this"
-  width="narrow"
+  width="wide"
   blocked={scopeBlocked}
   onconfirm={confirmAnswer}
   oncancel={cancelAnswer}
 >
-  <ScopeBuilder {...view$} onmode={setMode} onadd={addTerm} ondrop={dropTerm} />
+  <ScopeBuilder
+    {...view$}
+    resettable
+    onmode={setMode}
+    onadd={addTerm}
+    ondrop={dropTerm}
+    onreset={resetAnswering}
+  />
 </OverlayModal>
 
 <OverlayModal
   bind:open={defaultOpen}
-  title={`Default scope for ${defaultFor?.label ?? "the variable"}`}
-  description="What the variable selects until whoever places the template says otherwise."
+  title={`Default scope for ${defaultFor?.label ?? "the parameter"}`}
+  description="What it selects until whoever places the template says otherwise."
   confirm="Set the default scope"
-  width="narrow"
+  width="wide"
   blocked={scopeBlocked}
   onconfirm={confirmDefault}
 >
@@ -507,46 +522,6 @@
 </OverlayModal>
 
 <style>
-  .answers {
-    display: flex;
-    flex-direction: column;
-    gap: calc(var(--token-spacing-unit) * 3);
-    padding: 0 calc(var(--token-spacing-unit) * 3);
-  }
-
-  .answer {
-    display: flex;
-    flex-direction: column;
-    gap: calc(var(--token-spacing-unit) * 1);
-  }
-
-  .answer-label {
-    color: var(--token-ink-primary);
-    font-size: var(--token-text-body-sm);
-    line-height: var(--token-text-body-sm-leading);
-    font-weight: 600;
-  }
-
-  .answer-help {
-    color: var(--token-ink-muted);
-    font-size: var(--token-text-caption);
-    line-height: var(--token-text-caption-leading);
-  }
-
-  .answer-rule {
-    padding: calc(var(--token-spacing-unit) * 1) calc(var(--token-spacing-unit) * 1.5);
-    border-inline-start: 2px solid var(--token-color-accent-1-text);
-    border-radius: 0 var(--token-radius-control) var(--token-radius-control) 0;
-    background: var(--token-color-accent-1-surface);
-    color: var(--token-ink-primary);
-    font-size: var(--token-text-body-sm);
-    line-height: var(--token-text-body-sm-leading);
-  }
-
-  .answer-actions {
-    display: flex;
-    gap: calc(var(--token-spacing-unit) * 1);
-  }
 
   .notice {
     display: flex;

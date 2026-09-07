@@ -654,6 +654,12 @@ const validAtom = (value: unknown): boolean => {
       validText(value.text, MAX_BLOCK_TEXT_LENGTH, true)
     );
   }
+  if (value.kind === "template") {
+    return (
+      hasOnlyKeys(value, ["id", "kind", "name"]) &&
+      validCanonicalText(value.name, MAX_VARIABLE_NAME_LENGTH)
+    );
+  }
   return (
     value.kind === "formula" &&
     hasOnlyKeys(value, [
@@ -680,7 +686,9 @@ const displayOfAtoms = (atoms: readonly unknown[]): string =>
     .map((atom) =>
       isRecord(atom) && atom.kind === "formula"
         ? (atom.lastResolvedDisplay as string)
-        : ((atom as Fields).text as string)
+        : isRecord(atom) && atom.kind === "template"
+          ? `{${atom.name as string}}`
+          : ((atom as Fields).text as string)
     )
     .join("");
 
@@ -1674,6 +1682,28 @@ export const answersOf = (value: unknown, subject: string): TemplateAnswers => {
   return answers;
 };
 
+/** The words a caller filled the template's text parameters in with. */
+export const textsOf = (value: unknown, subject: string): Readonly<Record<string, string>> => {
+  if (!isRecord(value)) {
+    throw new Error(`templates/${subject}: texts map variable names to words`);
+  }
+  const entries = Object.entries(value);
+  if (entries.length > MAX_TEMPLATE_VARIABLES) {
+    throw new Error(`templates/${subject}: at most ${MAX_TEMPLATE_VARIABLES} variables are answered`);
+  }
+  const texts: Record<string, string> = {};
+  for (const [name, words] of entries) {
+    if (!validCanonicalText(name, MAX_VARIABLE_NAME_LENGTH)) {
+      throw new Error(`templates/${subject}: every answered variable has a name`);
+    }
+    if (!validText(words, MAX_BLOCK_TEXT_LENGTH, true)) {
+      throw new Error(`templates/${subject}: a text answer is words`);
+    }
+    texts[name] = words as string;
+  }
+  return texts;
+};
+
 const MAX_TEMPLATE_VARIABLES = 100;
 const MAX_TEMPLATE_TERMS_PER_SIDE = 100;
 const MAX_TEMPLATE_KINDS_PER_TERM = 100;
@@ -1763,9 +1793,15 @@ export const variablesOf = (
   for (const variable of value) {
     if (
       !isRecord(variable) ||
-      !hasOnlyKeys(variable, ["name", "label", "description", "default"])
+      !hasOnlyKeys(variable, ["name", "label", "description", "kind", "default"])
     ) {
       throw new Error(`templates/${subject}: a variable has only represented fields`);
+    }
+    if (variable.kind !== undefined && variable.kind !== "scope" && variable.kind !== "text") {
+      throw new Error(`templates/${subject}: a variable is answered with a scope or with text`);
+    }
+    if (variable.kind === "text" && variable.default !== undefined) {
+      throw new Error(`templates/${subject}: a text variable has no default scope`);
     }
     if (!validCanonicalText(variable.name, MAX_VARIABLE_NAME_LENGTH)) {
       throw new Error(`templates/${subject}: every variable has a name`);

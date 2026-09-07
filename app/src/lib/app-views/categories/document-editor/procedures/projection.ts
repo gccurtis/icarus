@@ -72,8 +72,9 @@ export const emptyRow = (): DocumentRow => ({
   ]
 });
 
-export const displayOfAtom = (atom: Atom): string =>
-  atom.kind === "literal" ? atom.text : atom.lastResolvedDisplay;
+import { displayOfAtom } from "$representation/data/behavior/content/positions";
+
+export { displayOfAtom };
 
 export type Segment = { readonly atom: Atom; readonly start: number; readonly end: number };
 
@@ -174,6 +175,9 @@ const formulaNode = (atom: Extract<Atom, { kind: "formula" }>, marks: readonly P
     [...marks]
   );
 
+const templateNode = (atom: Extract<Atom, { kind: "template" }>, marks: readonly ProseMirrorMark[]) =>
+  schema.node("template_atom", { atomId: atom.id, name: atom.name }, undefined, [...marks]);
+
 const inlineOf = (block: Styled): ProseMirrorNode[] => {
   const segments = segmentsOf(block.atoms);
   const spans: Span[] = block.marks
@@ -192,6 +196,10 @@ const inlineOf = (block: Styled): ProseMirrorNode[] => {
   for (const segment of segments) {
     if (segment.atom.kind === "formula") {
       nodes.push(formulaNode(segment.atom, covering(segment.start, segment.end)));
+      continue;
+    }
+    if (segment.atom.kind === "template") {
+      nodes.push(templateNode(segment.atom, covering(segment.start, segment.end)));
       continue;
     }
 
@@ -291,10 +299,18 @@ export const docOf = (body: DocumentBody, metrics: Metrics): ProseMirrorNode => 
   );
 };
 
+/** What one inline child stands for in the body's own text, atoms included. */
+const displayOfChild = (child: ProseMirrorNode): string =>
+  child.type.name === "formula_atom"
+    ? String(child.attrs.resolved)
+    : child.type.name === "template_atom"
+      ? `{${String(child.attrs.name)}}`
+      : (child.text ?? "");
+
 export const displayTextOf = (node: ProseMirrorNode): string => {
   let text = "";
   node.forEach((child) => {
-    text += child.type.name === "formula_atom" ? String(child.attrs.resolved) : child.text ?? "";
+    text += displayOfChild(child);
   });
   return text;
 };
@@ -427,6 +443,15 @@ const atomsOf = (node: ProseMirrorNode): Walked => {
   };
 
   node.forEach((child) => {
+    if (child.type.name === "template_atom") {
+      if (run.length > 0) flush();
+      atoms.push({
+        id: child.attrs.atomId as string,
+        kind: "template",
+        name: child.attrs.name as string
+      });
+      return;
+    }
     if (child.type.name !== "formula_atom") {
       run += child.text ?? "";
       return;
@@ -463,7 +488,7 @@ const gather = (node: ProseMirrorNode): Map<string, Gathered> => {
   let at = 0;
 
   node.forEach((child) => {
-    const length = child.type.name === "formula_atom" ? String(child.attrs.resolved).length : (child.text?.length ?? 0);
+    const length = displayOfChild(child).length;
     const from = at;
     const to = at + length;
     at = to;
@@ -633,9 +658,9 @@ export const displayOffsetOf = (block: ProseMirrorNode, offset: number): number 
 
   for (let index = 0; index < block.childCount && pm < offset; index += 1) {
     const child = block.child(index);
-    if (child.type.name === "formula_atom") {
+    if (child.type.name === "formula_atom" || child.type.name === "template_atom") {
       pm += 1;
-      display += String(child.attrs.resolved).length;
+      display += displayOfChild(child).length;
       continue;
     }
 
@@ -654,8 +679,8 @@ export const proseOffsetOf = (block: ProseMirrorNode, display: number): number =
 
   for (let index = 0; index < block.childCount && seen < display; index += 1) {
     const child = block.child(index);
-    if (child.type.name === "formula_atom") {
-      const length = String(child.attrs.resolved).length;
+    if (child.type.name === "formula_atom" || child.type.name === "template_atom") {
+      const length = displayOfChild(child).length;
       if (seen + length > display) break;
       seen += length;
       pm += 1;

@@ -7,21 +7,23 @@
    * One rule, built by hand: what it includes, what it takes back out, and how
    * many resources that is right now.
    *
-   * **Every set is a difference**, so both lists are always here and the second
-   * is usually empty. Nothing this component can produce is a rule the
-   * vocabulary cannot hold, because it never builds one: it is handed rows and
-   * offers already in words, and it answers with the keys it was given.
+   * **Every set is a difference**, so both sides are always here — as two tabs
+   * rather than two stacked lists, because a side you are not editing is a list
+   * you are only reading, and reading it is what the sentence underneath is for.
    *
-   * **The whole project is a mode rather than a term you add.** It is the common
-   * answer and the floor a variable falls back to, so it is one press.
+   * **A tab is two panes: what you can add, and what is in.** Searching and
+   * holding are different activities and each gets its own surface. Nothing
+   * opens on top of anything: the sources are a row of tabs inside the left
+   * pane, not a menu, because a menu over a modal over a modal is three lids on
+   * one box.
    *
-   * **The count is why the modal exists.** A rule with no number beside it is a
-   * guess, so the caller resolves it on every change and it sits under the
-   * sentence rather than behind a disclosure.
+   * **The floor is a button, not a term.** Whole project is the common answer
+   * and the thing a parameter falls back to, and Default puts it back to
+   * whatever the template suggested — both sit under the panes where a decision
+   * about the whole rule belongs.
    *
-   * What it owns is the disclosure: which side is being added to, which source
-   * is open, what is typed in the filter, and whether the preview is showing.
-   * Everything else belongs to whoever opened it.
+   * It is handed rows and offers already in words and answers with the keys it
+   * was given, so it cannot express a rule the vocabulary would refuse.
    */
 
   export type ScopeSide = "include" | "exclude";
@@ -53,10 +55,12 @@
     count,
     preview = [],
     sources = [],
+    resettable = false,
     disabled = false,
     onmode,
     onadd,
-    ondrop
+    ondrop,
+    onreset
   }: {
     /** Whether the rule is the floor: everything the project holds. */
     whole: boolean;
@@ -70,10 +74,13 @@
     preview?: readonly ScopePreview[];
     /** Where a term can be added from. A source with no placeholder is not filtered. */
     sources?: readonly ScopeSource[];
+    /** Whether there is a default to go back to, which only placing a template has. */
+    resettable?: boolean;
     disabled?: boolean;
     onmode: (whole: boolean) => void;
     onadd: (side: ScopeSide, source: string, key: string) => void;
     ondrop: (side: ScopeSide, key: string) => void;
+    onreset?: () => void;
   } = $props();
 
   const trace = traceNode("ScopeBuilder", () => ({
@@ -84,12 +91,13 @@
     disabled
   }));
 
-  let adding = $state<ScopeSide | undefined>(undefined);
+  let side = $state<ScopeSide>("include");
   let openSource = $state<string | undefined>(undefined);
   let query = $state("");
   let showing = $state(false);
 
   const current = $derived(sources.find((source) => source.key === openSource) ?? sources[0]);
+  const held = $derived(side === "include" ? include : exclude);
 
   const shown = $derived(
     current === undefined
@@ -100,53 +108,91 @@
             candidate.label.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase())
         )
   );
-
-  const rowsOn = (side: ScopeSide) => (side === "include" ? include : exclude);
-
-  const openAdd = (side: ScopeSide) => {
-    adding = side;
-    openSource = sources[0]?.key;
-    query = "";
-  };
 </script>
 
 <div {...trace} class="builder">
-  <div class="modes" role="group" aria-label="What this selects">
-    <Button
-      variant={whole ? "default" : "outline"}
-      size="xs"
-      {disabled}
-      aria-pressed={whole}
-      onclick={() => onmode(true)}
-    >
-      Everything in the project
-    </Button>
-    <Button
-      variant={whole ? "outline" : "default"}
-      size="xs"
-      {disabled}
-      aria-pressed={!whole}
-      onclick={() => onmode(false)}
-    >
-      Choose what to include
-    </Button>
+  <div class="tabs" role="group" aria-label="Which side to edit">
+    {#each ["include", "exclude"] as const as name (name)}
+      <button
+        type="button"
+        class:on={side === name}
+        aria-pressed={side === name}
+        {disabled}
+        onclick={() => {
+          side = name;
+          query = "";
+        }}
+      >
+        {name === "include" ? "Include" : "Exclude"}
+        <span>{(name === "include" ? include : exclude).length}</span>
+      </button>
+    {/each}
   </div>
 
-  {#if whole}
-    <p class="resting">
-      Every resource the project holds, now and later. This is also the floor: anything with no
-      scope of its own selects exactly this.
-    </p>
-  {:else}
-    {#each ["include", "exclude"] as const as side (side)}
-      <section class="list" aria-label={side === "include" ? "Included" : "Excluded"}>
-        <header>
-          <b>{side === "include" ? "Include" : "Exclude"}</b>
-          <Button variant="outline" size="xs" {disabled} onclick={() => openAdd(side)}>
-            {side === "include" ? "Add" : "Add an exception"}
+  <div class="panes">
+    <section class="pane" aria-label={`Add to ${side === "include" ? "include" : "exclude"}`}>
+      <header>
+        <b>Add to {side === "include" ? "include" : "exclude"}</b>
+      </header>
+      <div class="sources" role="group" aria-label="Where to add from">
+        {#each sources as source (source.key)}
+          <Button
+            variant={source.key === current?.key ? "secondary" : "ghost"}
+            size="xs"
+            {disabled}
+            aria-pressed={source.key === current?.key}
+            onclick={() => {
+              openSource = source.key;
+              query = "";
+            }}
+          >
+            {source.label}
           </Button>
-        </header>
-        {#each rowsOn(side) as row (row.key)}
+        {/each}
+      </div>
+      {#if current?.placeholder !== undefined}
+        <Input
+          type="search"
+          bind:value={query}
+          placeholder={current.placeholder}
+          aria-label={current.placeholder}
+          class="text-body-sm h-7 [&::-webkit-search-cancel-button]:hidden"
+        />
+      {/if}
+      <div class="offers">
+        {#each shown.slice(0, 80) as candidate (candidate.key)}
+          <div class="offer">
+            <span class="offer-name">{candidate.label}</span>
+            {#if candidate.note}<small>{candidate.note}</small>{/if}
+            {#if candidate.refused !== undefined}
+              <span class="refused" title={candidate.refused}>Would loop</span>
+            {:else if candidate.held === side}
+              <span class="in">In</span>
+            {:else}
+              <Button
+                variant="outline"
+                size="xs"
+                {disabled}
+                title={`Add ${candidate.label}`}
+                onclick={() => onadd(side, current?.key ?? "", candidate.key)}
+              >
+                Add
+              </Button>
+            {/if}
+          </div>
+        {/each}
+        {#if shown.length === 0}
+          <p class="empty">Nothing matches.</p>
+        {/if}
+      </div>
+    </section>
+
+    <section class="pane" aria-label={side === "include" ? "Included" : "Excluded"}>
+      <header>
+        <b>{side === "include" ? "Included" : "Excluded"}</b>
+      </header>
+      <div class="terms">
+        {#each held as row (row.key)}
           <div class="term">
             <code>{row.kind}</code>
             <span>{row.words}</span>
@@ -161,27 +207,55 @@
             </Button>
           </div>
         {/each}
-        {#if rowsOn(side).length === 0}
+        {#if held.length === 0}
           <p class="empty">
             {side === "include"
-              ? "Nothing is included yet, so this selects nothing."
-              : "Nothing is excluded."}
+              ? whole
+                ? "Everything in the project, because nothing narrower is included."
+                : "Nothing is included yet, so this selects nothing."
+              : "Nothing is taken back out."}
           </p>
         {/if}
-      </section>
-    {/each}
-  {/if}
+      </div>
+    </section>
+  </div>
 
   <p class="sentence">{sentence}</p>
 
-  <div class="count">
-    <b>{count}</b>
-    <span>{count === 1 ? "resource right now" : "resources right now"}</span>
-    {#if preview.length > 0}
-      <Button variant="ghost" size="xs" onclick={() => (showing = !showing)}>
-        {showing ? "Hide them" : "Show them"}
+  <div class="foot">
+    <div class="floor">
+      <Button
+        variant={whole ? "secondary" : "outline"}
+        size="xs"
+        {disabled}
+        aria-pressed={whole}
+        title="Select everything the project holds"
+        onclick={() => onmode(true)}
+      >
+        Whole project
       </Button>
-    {/if}
+      {#if resettable && onreset !== undefined}
+        <Button
+          variant="ghost"
+          size="xs"
+          {disabled}
+          title="Go back to what the template suggests"
+          onclick={onreset}
+        >
+          Default
+        </Button>
+      {/if}
+    </div>
+
+    <div class="count">
+      <b>{count}</b>
+      <span>{count === 1 ? "resource" : "resources"}</span>
+      {#if preview.length > 0}
+        <Button variant="ghost" size="xs" onclick={() => (showing = !showing)}>
+          {showing ? "Hide" : "Show"}
+        </Button>
+      {/if}
+    </div>
   </div>
 
   {#if showing && preview.length > 0}
@@ -190,67 +264,6 @@
         <li><span>{item.label}</span>{#if item.note}<small>{item.note}</small>{/if}</li>
       {/each}
     </ul>
-  {/if}
-
-  {#if adding !== undefined && current !== undefined}
-    <section class="adding" aria-label={`Add to ${adding === "include" ? "Include" : "Exclude"}`}>
-      <header>
-        <b>Add to {adding === "include" ? "Include" : "Exclude"}</b>
-        <Button variant="ghost" size="xs" onclick={() => (adding = undefined)}>Done</Button>
-      </header>
-
-      <div class="sources" role="group" aria-label="Where to add from">
-        {#each sources as source (source.key)}
-          <Button
-            variant={source.key === current.key ? "secondary" : "ghost"}
-            size="xs"
-            aria-pressed={source.key === current.key}
-            onclick={() => {
-              openSource = source.key;
-              query = "";
-            }}
-          >
-            {source.label}
-          </Button>
-        {/each}
-      </div>
-
-      {#if current.placeholder !== undefined}
-        <Input
-          type="search"
-          bind:value={query}
-          placeholder={current.placeholder}
-          aria-label={current.placeholder}
-          class="text-body-sm h-7 [&::-webkit-search-cancel-button]:hidden"
-        />
-      {/if}
-
-      <div class="offers">
-        {#each shown.slice(0, 60) as candidate (candidate.key)}
-          <div class="offer">
-            <span class="offer-name">{candidate.label}</span>
-            {#if candidate.note}<small>{candidate.note}</small>{/if}
-            {#if candidate.refused !== undefined}
-              <span class="refused" title={candidate.refused}>Would loop</span>
-            {:else if candidate.held !== undefined}
-              <span class="held">{candidate.held === "include" ? "Included" : "Excluded"}</span>
-            {:else}
-              <Button
-                variant="outline"
-                size="xs"
-                title={`Add ${candidate.label}`}
-                onclick={() => onadd(adding as ScopeSide, current.key, candidate.key)}
-              >
-                Add
-              </Button>
-            {/if}
-          </div>
-        {/each}
-        {#if shown.length === 0}
-          <p class="empty">Nothing matches.</p>
-        {/if}
-      </div>
-    </section>
   {/if}
 </div>
 
@@ -262,37 +275,95 @@
     padding: 0 calc(var(--token-spacing-unit) * 3);
   }
 
-  .modes {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+  .tabs {
+    display: flex;
     gap: calc(var(--token-spacing-unit) * 1);
+    border-bottom: 1px solid var(--token-border-subtle);
   }
 
-  .resting,
-  .empty {
-    margin: 0;
-    color: var(--token-ink-secondary);
-    font-size: var(--token-type-caption-size);
-  }
-
-  .empty { font-style: italic; }
-
-  .list { display: flex; flex-direction: column; gap: calc(var(--token-spacing-unit) * 1); }
-
-  .list header {
+  .tabs button {
     display: flex;
     align-items: center;
-    justify-content: space-between;
     gap: calc(var(--token-spacing-unit) * 1);
+    padding: calc(var(--token-spacing-unit) * 1) calc(var(--token-spacing-unit) * 1.5);
+    border: 0;
+    background: transparent;
+    color: var(--token-ink-secondary);
+    font-size: var(--token-text-body-sm);
+    font-weight: 600;
+    cursor: pointer;
   }
 
-  .list header b {
+  .tabs button.on {
+    box-shadow: inset 0 -2px 0 var(--token-color-active-text);
+    color: var(--token-color-active-text);
+  }
+
+  .tabs span {
+    padding: 0 calc(var(--token-spacing-unit) * 1);
+    border-radius: var(--token-radius-control);
+    background: var(--token-surface-work);
     color: var(--token-ink-muted);
-    font-size: var(--token-type-caption-size);
+    font-size: 10px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .panes {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: calc(var(--token-spacing-unit) * 2);
+  }
+
+  .pane {
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--token-spacing-unit) * 1);
+    min-height: 16rem;
+    padding: calc(var(--token-spacing-unit) * 1.5);
+    border: 1px solid var(--token-border-subtle);
+    border-radius: var(--token-radius-panel);
+    background: var(--token-surface-panel);
+  }
+
+  .pane header b {
+    color: var(--token-ink-muted);
+    font-size: var(--token-text-caption);
     font-weight: 700;
     letter-spacing: .08em;
     text-transform: uppercase;
   }
+
+  .sources { display: flex; flex-wrap: wrap; gap: calc(var(--token-spacing-unit) * .5); }
+
+  .offers,
+  .terms {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    max-height: 16rem;
+    overflow-y: auto;
+  }
+
+  .terms { gap: calc(var(--token-spacing-unit) * 1); }
+
+  .offer {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    gap: calc(var(--token-spacing-unit) * 1);
+    align-items: center;
+    padding: calc(var(--token-spacing-unit) * .5) 0;
+    border-bottom: 1px solid var(--token-border-subtle);
+  }
+
+  .offer-name,
+  .term span {
+    overflow: hidden;
+    font-size: var(--token-text-body-sm);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .offer small { color: var(--token-ink-muted); font-size: 10px; }
 
   .term {
     display: grid;
@@ -313,12 +384,23 @@
     font-size: 10px;
   }
 
-  .term span {
-    overflow: hidden;
-    font-size: var(--token-type-body-sm-size);
-    text-overflow: ellipsis;
-    white-space: nowrap;
+  .empty {
+    margin: 0;
+    color: var(--token-ink-secondary);
+    font-size: var(--token-text-caption);
+    font-style: italic;
   }
+
+  .in,
+  .refused {
+    padding: 0 calc(var(--token-spacing-unit) * 1);
+    border-radius: var(--token-radius-control);
+    background: var(--token-surface-work);
+    color: var(--token-ink-muted);
+    font-size: 10px;
+  }
+
+  .refused { color: var(--token-color-attention-text); }
 
   .sentence {
     margin: 0;
@@ -327,23 +409,28 @@
     border-radius: 0 var(--token-radius-control) var(--token-radius-control) 0;
     background: var(--token-color-accent-1-surface);
     color: var(--token-ink-primary);
-    font-size: var(--token-type-body-sm-size);
+    font-size: var(--token-text-body-sm);
   }
 
-  .count {
+  .foot {
     display: flex;
-    align-items: baseline;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
     gap: calc(var(--token-spacing-unit) * 1);
   }
 
-  .count b { font-size: 20px; font-weight: 700; }
-  .count span { color: var(--token-ink-secondary); font-size: var(--token-type-caption-size); }
+  .floor { display: flex; gap: calc(var(--token-spacing-unit) * 1); }
+
+  .count { display: flex; align-items: baseline; gap: calc(var(--token-spacing-unit) * 1); }
+  .count b { font-size: 18px; font-weight: 700; }
+  .count span { color: var(--token-ink-secondary); font-size: var(--token-text-caption); }
 
   .preview {
     display: flex;
     flex-direction: column;
     gap: calc(var(--token-spacing-unit) * .5);
-    max-height: 12rem;
+    max-height: 10rem;
     margin: 0;
     padding: 0;
     overflow-y: auto;
@@ -355,64 +442,13 @@
     align-items: baseline;
     justify-content: space-between;
     gap: calc(var(--token-spacing-unit) * 1);
-    font-size: var(--token-type-caption-size);
+    font-size: var(--token-text-caption);
   }
 
   .preview small { color: var(--token-ink-muted); }
 
-  .adding {
-    display: flex;
-    flex-direction: column;
-    gap: calc(var(--token-spacing-unit) * 1);
-    padding: calc(var(--token-spacing-unit) * 1.5);
-    border: 1px solid var(--token-border-strong);
-    border-radius: var(--token-radius-panel);
-    background: var(--token-surface-panel);
+  @media (max-width: 44rem) {
+    .panes { grid-template-columns: minmax(0, 1fr); }
+    .pane { min-height: 0; }
   }
-
-  .adding header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  .adding header b { font-size: var(--token-type-body-sm-size); }
-
-  .sources { display: flex; gap: calc(var(--token-spacing-unit) * .5); }
-
-  .offers {
-    display: flex;
-    flex-direction: column;
-    max-height: 14rem;
-    overflow-y: auto;
-  }
-
-  .offer {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto auto;
-    gap: calc(var(--token-spacing-unit) * 1);
-    align-items: center;
-    padding: calc(var(--token-spacing-unit) * .5) 0;
-    border-bottom: 1px solid var(--token-border-subtle);
-  }
-
-  .offer-name {
-    overflow: hidden;
-    font-size: var(--token-type-body-sm-size);
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .offer small { color: var(--token-ink-muted); font-size: 10px; }
-
-  .held,
-  .refused {
-    padding: 0 calc(var(--token-spacing-unit) * 1);
-    border-radius: var(--token-radius-control);
-    background: var(--token-surface-work);
-    color: var(--token-ink-muted);
-    font-size: 10px;
-  }
-
-  .refused { color: var(--token-color-attention-text); }
 </style>

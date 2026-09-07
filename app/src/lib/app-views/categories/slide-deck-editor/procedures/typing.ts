@@ -5,14 +5,13 @@ import type {
   PromptBlock,
   TextBlock
 } from "$representation/data/types/content/content-block";
-import { endAt, rangeOf } from "$representation/data/behavior/content/positions";
+import { displayOfAtom, endAt, rangeOf } from "$representation/data/behavior/content/positions";
 import type { SlideDeckOp } from "$representation/data/types/slide-decks/op";
 import { mint } from "$app-views/categories/slide-deck-editor/procedures/ids";
 
 type EditableTextBlock = TextBlock | PromptBlock;
 
-const lengthOf = (atom: Atom): number =>
-  atom.kind === "literal" ? atom.text.length : atom.lastResolvedDisplay.length;
+const lengthOf = (atom: Atom): number => displayOfAtom(atom).length;
 
 export const replaced = (block: EditableTextBlock, from: number, to: number, insert: string): SlideDeckOp[] => {
   const start = Math.min(from, to);

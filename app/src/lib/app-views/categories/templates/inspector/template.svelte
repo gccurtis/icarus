@@ -18,13 +18,17 @@
     PanelSkeleton
   } from "$authored-components/panel";
   import { ScopeBuilder } from "$authored-components/scope-builder";
+  import { TemplateAnswers as TemplateAnswerList } from "$authored-components/template-answers";
   import { Button } from "$vendored-components/button";
   import { Input } from "$vendored-components/input";
   import { Textarea } from "$vendored-components/textarea";
   import {
     EDITOR_CATEGORY,
+    answerRowsOf,
     answersFrom,
     builderView,
+    missingIn,
+    wordsFrom,
     detailIn,
     draftOf,
     duplicateTemplate,
@@ -99,7 +103,13 @@
   let useOpen = $state(false);
   let answerOpen = $state(false);
   let useChoices = $state<Record<string, ScopeDraft | undefined>>({});
+  let useTexts = $state<Record<string, string | undefined>>({});
   let answering = $state<TemplateVariable | undefined>(undefined);
+
+  const askRows = $derived(answerRowsOf(template?.variables ?? [], useChoices, useTexts, setNames));
+  const askBlocked = $derived(
+    missingIn(askRows).length === 0 ? undefined : `${missingIn(askRows).join(", ")} still needs words.`
+  );
   const scopeBlocked = $derived(
     draft.include.length === 0 ? "Include something, or choose everything in the project." : undefined
   );
@@ -517,20 +527,23 @@
       return;
     }
     useChoices = {};
+    useTexts = {};
     answering = undefined;
     useOpen = true;
   };
 
-  const confirmUse = () => void instantiate(answersFrom(useChoices));
+  const confirmUse = () => void instantiate(answersFrom(useChoices), wordsFrom(useTexts));
 
   /**
    * The builder is its own modal rather than a second face of the ask modal.
    * Swapping one modal's title, body and confirm while it is open replaces the
    * footer under the pointer, and the press lands on a button that has gone.
    */
-  const openAnswer = (variable: TemplateVariable) => {
+  const openAnswer = (name: string) => {
+    const variable = template?.variables.find((candidate) => candidate.name === name);
+    if (variable === undefined) return;
     answering = variable;
-    draft = draftOf(useChoices[variable.name] ?? variable.default);
+    draft = draftOf(useChoices[name] ?? variable.default);
     useOpen = false;
     answerOpen = true;
   };
@@ -547,12 +560,29 @@
     useOpen = true;
   };
 
-  const clearAnswer = (variable: TemplateVariable) => {
-    const { [variable.name]: _dropped, ...rest } = useChoices;
-    useChoices = rest;
+  /** Inside the ask, Default means the template's own suggestion, not the floor. */
+  const resetAnswering = () => {
+    if (answering !== undefined) clearAnswer(answering.name);
+    answering = undefined;
+    answerOpen = false;
+    useOpen = true;
   };
 
-  const instantiate = async (answers: TemplateAnswers) => {
+  const writeText = (name: string, words: string) => {
+    useTexts = { ...useTexts, [name]: words };
+  };
+
+  const clearAnswer = (name: string) => {
+    const { [name]: _chosen, ...restChoices } = useChoices;
+    const { [name]: _typed, ...restTexts } = useTexts;
+    useChoices = restChoices;
+    useTexts = restTexts;
+  };
+
+  const instantiate = async (
+    answers: TemplateAnswers,
+    words: Readonly<Record<string, string>> = {}
+  ) => {
     if (template === undefined || pending !== undefined) return;
     const subject = template;
     const originTabId = view.activeId;
@@ -560,7 +590,7 @@
     pending = "use";
     actionError = undefined;
     try {
-      const result = await instantiateTemplate(view, subject, answers);
+      const result = await instantiateTemplate(view, subject, answers, words);
       if (!stillInspecting(originTabId, subject.id)) return;
       if (!result.accepted) {
         actionError = result.detail;
@@ -913,68 +943,46 @@
 <OverlayModal
   bind:open={useOpen}
   title={`Use “${template?.name ?? "the template"}”`}
-  description="What each variable selects in the new resource. Untouched, each uses the template's own default."
+  description="Every parameter this template asks for. Open one to read what it means."
   confirm="Create"
   width="narrow"
+  blocked={askBlocked}
   onconfirm={confirmUse}
 >
-  <div class="answers">
-    {#each template?.variables ?? [] as variable (variable.id)}
-      <div class="answer">
-        <span class="answer-label">{variable.label}</span>
-        {#if variable.description}
-          <span class="answer-help">{variable.description}</span>
-        {/if}
-        <span class="answer-rule">
-          {useChoices[variable.name] === undefined ? "Default · " : ""}{ruleOf(
-            useChoices[variable.name] ?? variable.default,
-            setNames
-          )}
-        </span>
-        <span class="answer-actions">
-          <Button
-            variant="outline"
-            size="xs"
-            title={`Choose what ${variable.label} selects here`}
-            onclick={() => openAnswer(variable)}
-          >
-            Change
-          </Button>
-          {#if useChoices[variable.name] !== undefined}
-            <Button
-              variant="ghost"
-              size="xs"
-              title={`Put ${variable.label} back to the template's own default`}
-              onclick={() => clearAnswer(variable)}
-            >
-              Use the default
-            </Button>
-          {/if}
-        </span>
-      </div>
-    {/each}
-  </div>
+  <TemplateAnswerList
+    rows={askRows}
+    onscope={openAnswer}
+    ontext={writeText}
+    onreset={clearAnswer}
+  />
 </OverlayModal>
 
 <OverlayModal
   bind:open={answerOpen}
-  title={`What ${answering?.label ?? "the variable"} selects here`}
+  title={`What ${answering?.label ?? "the parameter"} selects here`}
   description="For the new resource only. Nothing here changes the template."
   confirm="Use this"
-  width="narrow"
+  width="wide"
   blocked={scopeBlocked}
   onconfirm={confirmAnswer}
   oncancel={cancelAnswer}
 >
-  <ScopeBuilder {...view$} onmode={setMode} onadd={addTerm} ondrop={dropTerm} />
+  <ScopeBuilder
+    {...view$}
+    resettable
+    onmode={setMode}
+    onadd={addTerm}
+    ondrop={dropTerm}
+    onreset={resetAnswering}
+  />
 </OverlayModal>
 
 <OverlayModal
   bind:open={defaultOpen}
-  title={`Default scope for ${defaultFor?.label ?? "the variable"}`}
-  description="What the variable selects until whoever places the template says otherwise."
+  title={`Default scope for ${defaultFor?.label ?? "the parameter"}`}
+  description="What it selects until whoever places the template says otherwise."
   confirm="Set the default scope"
-  width="narrow"
+  width="wide"
   blocked={scopeBlocked}
   onconfirm={() => void setDefault()}
 >
@@ -982,46 +990,6 @@
 </OverlayModal>
 
 <style>
-  .answers {
-    display: flex;
-    flex-direction: column;
-    gap: calc(var(--token-spacing-unit) * 3);
-    padding: 0 calc(var(--token-spacing-unit) * 3);
-  }
-
-  .answer {
-    display: flex;
-    flex-direction: column;
-    gap: calc(var(--token-spacing-unit) * 1);
-  }
-
-  .answer-label {
-    color: var(--token-ink-primary);
-    font-size: var(--token-text-body-sm);
-    line-height: var(--token-text-body-sm-leading);
-    font-weight: 600;
-  }
-
-  .answer-help {
-    color: var(--token-ink-muted);
-    font-size: var(--token-text-caption);
-    line-height: var(--token-text-caption-leading);
-  }
-
-  .answer-rule {
-    padding: calc(var(--token-spacing-unit) * 1) calc(var(--token-spacing-unit) * 1.5);
-    border-inline-start: 2px solid var(--token-color-accent-1-text);
-    border-radius: 0 var(--token-radius-control) var(--token-radius-control) 0;
-    background: var(--token-color-accent-1-surface);
-    color: var(--token-ink-primary);
-    font-size: var(--token-text-body-sm);
-    line-height: var(--token-text-body-sm-leading);
-  }
-
-  .answer-actions {
-    display: flex;
-    gap: calc(var(--token-spacing-unit) * 1);
-  }
 
   .inspector-stack {
     display: flex;

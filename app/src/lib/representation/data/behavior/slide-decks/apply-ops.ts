@@ -4,6 +4,7 @@ import type {
   PromptBlock,
   TextBlock
 } from "$representation/data/types/content/content-block";
+import { displayOfAtom } from "$representation/data/behavior/content/positions";
 import type { SlideDeckBody } from "$representation/data/types/slide-decks/body";
 import type { SlideDeckOp } from "$representation/data/types/slide-decks/op";
 
@@ -218,8 +219,7 @@ const applyMove = (body: SlideDeckBody, op: Extract<SlideDeckOp, { op: "move" }>
     return insertAfter(withoutIds(list, [op.id]), op.after, [moving]);
   });
 
-const displayOf = (atoms: readonly Atom[]): string =>
-  atoms.map((atom) => (atom.kind === "literal" ? atom.text : atom.lastResolvedDisplay)).join("");
+const displayOf = (atoms: readonly Atom[]): string => atoms.map(displayOfAtom).join("");
 
 const spliced = (op: Extract<SlideDeckOp, { op: "text" }>, atom: Atom): Atom => {
   if (atom.kind !== "literal") throw new Error(`Atom ${atom.id} is not a literal.`);

@@ -4,8 +4,16 @@ import type {
   MarkEnd
 } from "$representation/data/types/content/content-block";
 
+/**
+ * A template atom shows its parameter's name in braces, so a hole reads as one
+ * wherever prose is measured or drawn, and so its width is stable.
+ */
 export const displayOfAtom = (atom: Atom): string =>
-  atom.kind === "literal" ? atom.text : atom.lastResolvedDisplay;
+  atom.kind === "literal"
+    ? atom.text
+    : atom.kind === "template"
+      ? `{${atom.name}}`
+      : atom.lastResolvedDisplay;
 
 export type AtomSegment = {
   readonly atom: Atom;
