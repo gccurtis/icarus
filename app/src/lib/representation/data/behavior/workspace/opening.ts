@@ -67,16 +67,16 @@ export const OPENING: Record<Category, Opening> = {
 
   "document-editor": {
     content: "document-editor.document",
-    context: "document-editor.navigator",
+    context: "document-editor.layout",
     rail: [
-      "document-editor.navigator",
+      "document-editor.layout",
       "document-editor.find",
       "document-editor.styles",
-      "document-editor.layout",
       "document-editor.comments",
       "document-editor.variables",
       "document-editor.templates",
-      "document-editor.prompts"
+      "document-editor.prompts",
+      "document-editor.navigator"
     ]
   },
 

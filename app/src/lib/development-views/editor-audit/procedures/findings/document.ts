@@ -117,7 +117,7 @@ export const DOCUMENT_FINDINGS: readonly Finding[] = [
     title: "Header/footer controls implied a per-page model that did not exist",
     symptom: "A long toggle plus Edit action made repeated page projections look independently editable.",
     cause: "DocumentBody owns one global header and footer; each page projects the same furniture and only the canonical instance is editable.",
-    fix: "Use Add/Remove actions, editable on-page placeholders, and an explicit Applies to all pages note.",
+    fix: "Use compact Add/Remove actions beneath explicit Header and Footer labels, with editable on-page placeholders.",
     acceptance: "Control wording, canvas behavior, and persistence all promise the same document-wide scope.",
     evidence: ["document-editor/context/layout.svelte", "document-editor/procedures/furniture.ts"]
   },

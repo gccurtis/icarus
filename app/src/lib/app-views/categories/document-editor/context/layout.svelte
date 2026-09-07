@@ -126,26 +126,25 @@
 
     <PanelSection title="Header and footer">
       <PanelControlGroup flush>
-        <PanelControlRow label="Header" detail="Repeats on every page">
+        <PanelControlRow label="Header">
           <PanelButton
-            label={body.header === undefined ? "Add header" : "Remove header"}
+            label={body.header === undefined ? "Add" : "Remove"}
+            ariaLabel={body.header === undefined ? "Add header" : "Remove header"}
             tone={body.header === undefined ? "primary" : "danger"}
             title={body.header?.pageNumber === undefined ? undefined : "Removing the header also removes its page numbers"}
             onclick={() => toggleFurniture("header")}
           />
         </PanelControlRow>
-        <PanelControlRow label="Footer" detail="Repeats on every page">
+        <PanelControlRow label="Footer">
           <PanelButton
-            label={body.footer === undefined ? "Add footer" : "Remove footer"}
+            label={body.footer === undefined ? "Add" : "Remove"}
+            ariaLabel={body.footer === undefined ? "Add footer" : "Remove footer"}
             tone={body.footer === undefined ? "primary" : "danger"}
             title={body.footer?.pageNumber === undefined ? undefined : "Removing the footer also removes its page numbers"}
             onclick={() => toggleFurniture("footer")}
           />
         </PanelControlRow>
       </PanelControlGroup>
-      <div class="px-3 pt-1">
-        <span class="text-caption text-ink-muted">Applies to all pages. Edit the visible placeholder on the page.</span>
-      </div>
     </PanelSection>
 
     <PanelSection title="Page numbers">

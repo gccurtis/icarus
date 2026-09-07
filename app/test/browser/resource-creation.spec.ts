@@ -43,6 +43,13 @@ test("Project Overview creates a durable document and a usable one-slide deck", 
 
   const editor = page.locator(".ProseMirror");
   await expect(editor).toBeVisible();
+  const documentContext = page.locator('aside[aria-label="Context"]');
+  await expect(documentContext.getByRole("heading", { name: "Layout" })).toBeVisible();
+  await expect(
+    documentContext
+      .getByRole("navigation", { name: "Context views" })
+      .getByRole("button", { name: "Layout" })
+  ).toHaveAttribute("aria-current", "true");
   await expect(page.locator('.lane[aria-label="Comment threads"]')).toHaveCount(0);
 
   const pageGutters = () =>

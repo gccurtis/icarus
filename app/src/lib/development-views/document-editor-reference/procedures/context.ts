@@ -12,7 +12,7 @@ export const contextReference: AreaReference = {
     "A context view may read the active document, select a structural target, scroll the content surface, and submit native document operations. It does not own the document body, selection semantics, or persistence.",
   owns: [
     "Which context tool is active for the current application category",
-    "Document-wide views: Sections, Find, Styles, Layout, and Comments",
+    "Document-wide views: Layout, Find, Styles, Comments, and Sections",
     "Panel width, collapsed state, rail entry order, and honest placeholders",
     "Navigation intent expressed as structural addresses plus a scroll target"
   ],
@@ -26,7 +26,7 @@ export const contextReference: AreaReference = {
     {
       title: "Real document tools replace static panel mockups",
       before: "Context rows described intended behavior but were not connected to the document model.",
-      now: "Sections, Find, Styles, Layout, and Comments derive from the shared runtime or workspace store and dispatch real operations.",
+      now: "Layout, Find, Styles, Comments, and Sections derive from the shared runtime or workspace store and dispatch real operations.",
       why: "A reference interface is only useful when its displayed state and resulting document mutation agree."
     },
     {

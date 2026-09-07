@@ -24,6 +24,7 @@
    */
   let {
     label,
+    ariaLabel,
     icon: Icon,
     tone = "default",
     disabled = false,
@@ -31,6 +32,8 @@
     onclick
   }: {
     label: string;
+    /** A fuller accessible name when the visible label is intentionally compact. */
+    ariaLabel?: string;
     icon?: Component<{ size?: number | string; "aria-hidden"?: boolean | "true" | "false" }>;
     /** `primary` for the one obvious action; `danger` for a destructive one. */
     tone?: "default" | "primary" | "danger" | "ghost";
@@ -56,7 +59,15 @@
   `xs` is the 24px step: the pointer-target floor, and the only size that leaves
   room for three controls across a panel.
 -->
-<Button {...trace} variant={VARIANT[tone]} size="xs" {disabled} {title} {onclick}>
+<Button
+  {...trace}
+  variant={VARIANT[tone]}
+  size="xs"
+  aria-label={ariaLabel}
+  {disabled}
+  {title}
+  {onclick}
+>
   {#if Icon}
     <Icon aria-hidden="true" />
   {/if}

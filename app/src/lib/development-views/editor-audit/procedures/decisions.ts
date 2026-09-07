@@ -5,14 +5,14 @@ export const DECISIONS: readonly DecisionBrief[] = [
     id: "DEC-01",
     kind: "Product decision",
     question: "What scope should a document header or footer have?",
-    stakes: "This choice changes the represented document model and what Add header or Add footer promises. It is the one layout decision I should not hide inside a visual cleanup.",
+    stakes: "This choice changes the represented document model and what the Header and Footer Add actions promise. It is the one layout decision I should not hide inside a visual cleanup.",
     context: [
       "The current body stores one header and one footer, then projects the same content onto every page. Pagination is derived: editing text can move content from one page to another, so an override attached to physical page 3 can silently move to the wrong material after reflow.",
       "The existing first-page rows hint at a safe variant model, but there is no represented section ownership or arbitrary page override today. I can make the current global behavior clear immediately; richer variants need deliberate schema, operation, migration, and pagination work."
     ],
     recommendation: {
       optionId: "document-wide",
-      rationale: "Ship explicit document-wide Add/Remove controls now, label them Applies to all pages, and treat first-page, odd/even, or section variants as a later represented feature. It matches persisted truth, survives reflow, and leaves a clean extension path."
+      rationale: "Ship compact Add/Remove controls beneath explicit Header and Footer labels, use the repeated on-page furniture to communicate their document-wide scope, and treat first-page, odd/even, or section variants as a later represented feature. It matches persisted truth, survives reflow, and leaves a clean extension path."
     },
     decision: {
       optionId: "document-wide",

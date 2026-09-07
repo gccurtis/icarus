@@ -622,6 +622,20 @@ test("document context panels are operational and compact", async ({ page }) => 
   const context = page.locator('aside[aria-label="Context"]');
   const rail = context.getByRole("navigation", { name: "Context views" });
   expect(await rail.evaluate((node) => getComputedStyle(node).borderInlineStartWidth)).toBe("0px");
+  expect(
+    await rail
+      .getByRole("button")
+      .evaluateAll((buttons) => buttons.map((button) => button.getAttribute("aria-label")))
+  ).toEqual([
+    "Layout",
+    "Find",
+    "Styles",
+    "Comments",
+    "Variables",
+    "Templates",
+    "Prompts",
+    "Sections"
+  ]);
 
   await context.getByRole("button", { name: "Sections", exact: true }).click();
   await expect(context.getByRole("heading", { name: "Sections" })).toBeVisible();
@@ -704,15 +718,19 @@ test("headers and footers edit on the page through the shared editor", async ({ 
 
   const context = page.locator('aside[aria-label="Context"]');
   await context.getByRole("button", { name: "Layout", exact: true }).click();
-  await expect(context.getByText("Applies to all pages. Edit the visible placeholder on the page.", {
-    exact: true
-  })).toBeVisible();
+  await expect(context.getByText(/Applies to all pages|Edit the visible placeholder/)).toHaveCount(0);
   const removeHeader = context.getByRole("button", { name: "Remove header" });
   if (await removeHeader.isVisible()) {
+    await expect(removeHeader).toHaveText("Remove");
     await removeHeader.click();
     await expect(page.locator('[data-furniture="header"]')).toHaveCount(0);
   }
-  await context.getByRole("button", { name: "Add header" }).click();
+  const addHeader = context.getByRole("button", { name: "Add header" });
+  await expect(addHeader).toHaveText("Add");
+  await addHeader.click();
+  await expect(context.getByRole("button", { name: /^(Add|Remove) footer$/ })).toHaveText(
+    /^\s*(Add|Remove)\s*$/
+  );
 
   const canonical = page.locator('[data-furniture="header"]');
   await expect(canonical).toBeVisible();
