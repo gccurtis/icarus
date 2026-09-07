@@ -62,10 +62,10 @@ never its membership.
 **A body asks in two ways, so a variable is answered in two ways.** A prompt's
 scope naming one makes it a `scope`: a group of resources, which always has an
 answer because the whole project is the floor. A template atom in the prose makes
-it a `text`: words, which has no answer until somebody types them. That is the
-only thing that can hold a placement up, and `instantiateTemplate` refuses one
-with the names of what is still empty. A name used both ways is a scope, because
-otherwise the template could never be placed.
+it a `text`: words, filled from the caller, else the variable's own `text`, else
+nothing. That last case is the only thing that can hold a placement up, and
+`instantiateTemplate` refuses it with the names of what is still empty. A name
+used both ways is a scope, because otherwise the template could never be placed.
 
 A variable's `default` is what it selects when the caller says nothing: the
 whole project, kinds, one of the project's named sets, or another variable. A

@@ -64,7 +64,7 @@ export const KINDS: ScopeDoor[] = [
     where: "A template atom in the prose names it",
     opens: "text",
     title: "Words",
-    confirms: "Answered by nobody until somebody types them, which is the only thing that holds a placement up",
+    confirms: "What the caller typed, else the parameter's own default words, else nothing — which is the only thing that holds a placement up",
     writes: "The atom becomes a literal, and the block's display follows"
   }
 ];

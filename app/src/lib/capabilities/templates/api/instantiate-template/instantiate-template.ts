@@ -68,7 +68,12 @@ export const instantiateTemplate = async (input: unknown): Promise<InstantiateTe
     };
   }
 
-  const texts = asked.texts ?? {};
+  /** A text parameter untouched by the caller falls back to its own default words. */
+  const texts: Record<string, string> = { ...asked.texts };
+  for (const variable of variables) {
+    if (kindOf(variable) !== "text" || variable.text === undefined) continue;
+    if (texts[variable.name] === undefined) texts[variable.name] = variable.text;
+  }
   const unfilled = variables
     .filter((variable) => kindOf(variable) === "text")
     .map((variable) => variable.name)

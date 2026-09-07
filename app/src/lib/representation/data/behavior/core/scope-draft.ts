@@ -52,10 +52,28 @@ export const WHOLE_PROJECT: ResourceSet = { include: [{ select: "project" }], ex
 
 export const EMPTY_DRAFT: ScopeDraft = { include: [], exclude: [] };
 
+/**
+ * One term, one row.
+ *
+ * A stored rule may hold several kinds or several resources in one term, which
+ * is the same selection either way. A row that says "Findings, Documents" is one
+ * thing to remove and two things to read, so a draft splits them: what you can
+ * take out is what you put in.
+ */
+const split = (term: AnyTerm): readonly AnyTerm[] => {
+  if (term.select === "kinds" && term.kinds.length > 1) {
+    return term.kinds.map((kind) => ({ select: "kinds", kinds: [kind] }));
+  }
+  if (term.select === "resources" && term.refs.length > 1) {
+    return term.refs.map((ref) => ({ select: "resources", refs: [{ ...ref }] }));
+  }
+  return [term];
+};
+
 export const draftOf = (scope: ScopeDraft | undefined): ScopeDraft =>
   scope === undefined
     ? { include: [...WHOLE_PROJECT.include], exclude: [] }
-    : { include: [...scope.include], exclude: [...scope.exclude] };
+    : { include: scope.include.flatMap(split), exclude: scope.exclude.flatMap(split) };
 
 /** A stable identity for a term, so a draft can say whether it already holds one. */
 export const termKey = (term: AnyTerm): string => {

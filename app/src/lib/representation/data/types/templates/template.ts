@@ -23,7 +23,10 @@ export type TemplateVariable = {
   description?: string;
   /** Absent means `scope`, which is what every variable was before text ones existed. */
   kind?: TemplateVariableKind;
+  /** What a `scope` selects when the caller says nothing. */
   default?: TemplatedResourceSet;
+  /** What a `text` says when the caller says nothing. Absent means it must be filled in. */
+  text?: string;
 };
 
 export type TemplateCell = {

@@ -12,23 +12,28 @@
     <figcaption>Placing a template asks for everything at once</figcaption>
     <div class="modal">
       <header>
-        <b>Insert “Technical glossary”</b>
-        <p>Every parameter this template asks for. Open one to read what it means.</p>
+        <b>Insert “Client status note”</b>
+        <p>Every parameter this template asks for.</p>
       </header>
       <div class="body">
-        <div class="row">
-          <span class="key"><em>▸</em> Source material</span>
-          <span class="value">Default · Documents, Findings</span>
-        </div>
         <div class="row needs">
-          <span class="key"><em>▾</em> Subject line</span>
-          <span class="value outline">Needs input</span>
+          <b>Client name</b>
+          <p class="what">Who this note is addressed to, exactly as they should see it.</p>
+          <div class="field">What client name says here</div>
         </div>
-        <p class="what">The one line at the top that says what this glossary covers.</p>
-        <div class="field">What subject line says here</div>
+        <div class="row">
+          <b>Reporting period</b>
+          <p class="what">The window this note covers, in whatever words the client uses.</p>
+          <div class="field filled">the last four weeks</div>
+        </div>
+        <div class="row">
+          <b>Status evidence</b>
+          <p class="what">The findings and documents this note should be written from.</p>
+          <div class="scope"><span class="tag">Default</span> Findings</div>
+        </div>
       </div>
       <footer>
-        <span class="blocked">Subject line still needs words.</span>
+        <span class="blocked">Client name still needs words.</span>
         <span class="ghost">Cancel</span><span class="primary">Insert</span>
       </footer>
     </div>
@@ -45,7 +50,7 @@
         <div class="tabs"><span>Include <i>1</i></span><span class="on">Exclude <i>0</i></span></div>
         <div class="panes">
           <section class="pane">
-            <b>Add to exclude</b>
+            <b>From</b>
             <div class="sources"><span>Kinds</span><span>Sets</span><span class="on">Resources</span></div>
             <div class="search">Search this project…</div>
             {#each offers as offer (offer.label)}
@@ -57,9 +62,10 @@
             <p class="empty">Nothing is taken back out.</p>
           </section>
         </div>
-        <div class="sentence">Documents, Findings</div>
         <div class="foot">
-          <span class="floor"><span class="add">Whole project</span><span class="ghost">Default</span></span>
+          <span class="floor">
+            <span class="add">Whole project</span><span class="ghost">Default</span><span class="ghost">Clear</span>
+          </span>
           <span class="count"><b>6</b> resources <span class="ghost">Show</span></span>
         </div>
       </div>
@@ -70,27 +76,27 @@
 
 <ul class="notes">
   <li>
-    <b>Every parameter, always.</b> The list is the shape of the thing about to be made, so it is the
-    whole list even when most rows say Default. A row that needs words carries a rule down its left
-    edge until it has some, and the confirm says which one is holding it up.
+    <b>Every parameter, always, and nothing folded away.</b> Each row reads top to bottom: the name,
+    the sentence whoever made the template wrote, and the value. A row with nothing in it carries a
+    rule down its left edge, and the confirm says which one is holding it up.
   </li>
   <li>
-    <b>The description is one press away.</b> A row opens to explain itself, which is where the
-    sentence whoever made the template wrote belongs — rather than under every row at once, where it
-    becomes wallpaper.
+    <b>The value is the control.</b> Text is a field. A scope is a block reading what it selects, with
+    Default or Chosen beside it, which opens the builder when pressed. Nothing here is a menu, and
+    nothing opens a third lid.
   </li>
   <li>
-    <b>The value is the control.</b> A scope's value opens the builder; a text parameter's opens a
-    field under its description. Nothing here is a menu, and nothing opens a third lid.
+    <b>The list scrolls; the modal does not grow.</b> A template with twelve parameters and one with
+    two open the same size, and both panes of the builder are one fixed height, so nothing jumps as
+    somebody clicks between Kinds, Sets and Resources.
   </li>
   <li>
-    <b>Two tabs, not two lists.</b> Every set is a difference, and the side you are not editing is a
-    list you are only reading — which the sentence underneath already says better.
+    <b>One term, one row.</b> A stored rule may hold three kinds in one term; the builder splits them,
+    because what you can take out should be what you put in.
   </li>
   <li>
-    <b>The floor is a button.</b> Whole project is the common answer, and Default puts a parameter
-    back to whatever the template suggested. Both sit under the panes, where a decision about the
-    whole rule belongs.
+    <b>The floor is a button.</b> Whole project is the common answer, Default puts a parameter back to
+    what the template suggested, and Clear empties both sides to start again.
   </li>
 </ul>
 
@@ -124,11 +130,9 @@
   .body { display: grid; gap: .6rem; padding: .9rem; }
 
   .row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: .8rem;
-    padding: .4rem .55rem;
+    display: grid;
+    gap: .3rem;
+    padding: .5rem .55rem;
     border: 1px solid var(--token-border-subtle);
     border-inline-start: 3px solid transparent;
     border-radius: 6px;
@@ -136,24 +140,13 @@
   }
 
   .row.needs { border-inline-start-color: var(--token-color-danger-text); }
+  .row b { font-weight: 650; }
 
-  .key { display: flex; align-items: center; gap: .35rem; font-weight: 650; }
-  .key em { color: var(--token-ink-muted); font-size: 9px; font-style: normal; }
-
-  .value {
-    padding: .1rem .45rem;
-    border-radius: 5px;
-    background: var(--token-surface-work);
-    font-size: 10.5px;
-    white-space: nowrap;
-  }
-
-  .value.outline { border: 1px solid var(--token-border-strong); background: transparent; }
-
-  .what { margin: 0 .55rem; color: var(--token-ink-secondary); font-size: 10.5px; }
+  .what { margin: 0; color: var(--token-ink-secondary); font-size: 10.5px; }
 
   .field,
-  .search {
+  .search,
+  .scope {
     padding: .35rem .5rem;
     border: 1px solid var(--token-border-subtle);
     border-radius: 6px;
@@ -161,7 +154,20 @@
     color: var(--token-ink-muted);
   }
 
-  .field { min-height: 2.4rem; margin: 0 .55rem; }
+  .field { min-height: 2rem; }
+  .field.filled { color: var(--token-ink-primary); }
+  .scope { display: flex; gap: .45rem; align-items: center; background: var(--token-surface-panel); color: var(--token-ink-primary); }
+
+  .tag {
+    padding: 0 .3rem;
+    border-radius: 4px;
+    background: var(--token-color-accent-1-surface);
+    color: var(--token-color-accent-1-text);
+    font-size: 8.5px;
+    font-weight: 750;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+  }
 
   .tabs { display: flex; gap: .5rem; border-bottom: 1px solid var(--token-border-subtle); }
 
@@ -230,14 +236,6 @@
   .offer small { color: var(--token-ink-muted); font-size: 9px; }
 
   .empty { margin: 0; color: var(--token-ink-muted); font-size: 10px; font-style: italic; }
-
-  .sentence {
-    padding: .45rem .55rem;
-    border-inline-start: 2px solid var(--token-color-accent-1-text);
-    border-radius: 0 5px 5px 0;
-    background: var(--token-color-accent-1-surface);
-    font-size: 11px;
-  }
 
   .foot { display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
   .floor { display: flex; gap: .35rem; }

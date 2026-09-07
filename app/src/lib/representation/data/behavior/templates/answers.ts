@@ -32,14 +32,15 @@ export const answerRowsOf = (
   variables.map((variable) => {
     const kind = kindOfVariable(variable);
     if (kind === "text") {
-      const words = texts[variable.name] ?? "";
+      const typed = texts[variable.name];
+      const words = typed ?? variable.text ?? "";
       return {
         key: variable.name,
         label: variable.label,
         ...(variable.description === undefined ? {} : { description: variable.description }),
         kind,
         value: words,
-        answered: words.trim() !== "",
+        answered: typed !== undefined && typed !== (variable.text ?? ""),
         missing: words.trim() === ""
       };
     }
@@ -49,7 +50,8 @@ export const answerRowsOf = (
       label: variable.label,
       ...(variable.description === undefined ? {} : { description: variable.description }),
       kind,
-      value: held === undefined ? `Default · ${ruleWords(variable.default, names)}` : ruleWords(held, names),
+      /** The rule alone; whether it is the template's or the caller's is said beside it. */
+      value: ruleWords(held ?? variable.default, names),
       answered: held !== undefined,
       missing: false
     };

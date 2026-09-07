@@ -355,6 +355,10 @@
     draft = whole ? withWholeProject() : { include: [], exclude: [] };
   };
 
+  const clearScope = () => {
+    draft = { include: [], exclude: [] };
+  };
+
   const busy = $derived(pending !== undefined || body === undefined);
   const scopeBlocked = $derived(
     draft.include.length === 0 ? "Include something, or choose everything in the project." : undefined
@@ -407,14 +411,25 @@
                   disabled={busy}
                   onchange={(next) => changeVariables(withVariableField(template.variables, variable.name, { description: next }))}
                 />
-                <div class="scope">
-                  <PanelButton
-                    label="Default scope"
+                {#if variable.kind === "text"}
+                  <PanelEditableText
+                    value={variable.text ?? ""}
+                    label={`Default words for ${variable.label}`}
+                    placeholder="What it says when nobody says otherwise"
+                    multiline
                     disabled={busy}
-                    title={`${ruleOf(variable.default, setNames)} — change what ${variable.label} selects by default`}
-                    onclick={() => openDefault(variable)}
+                    onchange={(next) => changeVariables(withVariableField(template.variables, variable.name, { text: next }))}
                   />
-                </div>
+                {:else}
+                  <div class="scope">
+                    <PanelButton
+                      label="Default scope"
+                      disabled={busy}
+                      title={`${ruleOf(variable.default, setNames)} — change what ${variable.label} selects by default`}
+                      onclick={() => openDefault(variable)}
+                    />
+                  </div>
+                {/if}
               </article>
             {/each}
           {/if}
@@ -461,7 +476,7 @@
   title={`Insert “${insertFor?.name ?? "the template"}”`}
   description="Every parameter this template asks for. Open one to read what it means."
   confirm="Insert"
-  width="narrow"
+  width="wide"
   blocked={askBlocked}
   onconfirm={confirmInsert}
 >
@@ -489,6 +504,7 @@
     onmode={setMode}
     onadd={addTerm}
     ondrop={dropTerm}
+    onclear={clearScope}
     onreset={resetAnswering}
   />
 </OverlayModal>
@@ -502,7 +518,7 @@
   blocked={scopeBlocked}
   onconfirm={confirmDefault}
 >
-  <ScopeBuilder {...view$} onmode={setMode} onadd={addTerm} ondrop={dropTerm} />
+  <ScopeBuilder {...view$} onmode={setMode} onadd={addTerm} ondrop={dropTerm} onclear={clearScope} />
 </OverlayModal>
 
 <style>

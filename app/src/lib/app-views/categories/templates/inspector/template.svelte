@@ -130,6 +130,10 @@
     draft = whole ? withWholeProject() : { include: [], exclude: [] };
   };
 
+  const clearScope = () => {
+    draft = { include: [], exclude: [] };
+  };
+
   let editingDescription = $state(false);
   let descriptionDraft = $state("");
   let descriptionBase = $state<LibraryTemplateDetail>();
@@ -945,7 +949,7 @@
   title={`Use “${template?.name ?? "the template"}”`}
   description="Every parameter this template asks for. Open one to read what it means."
   confirm="Create"
-  width="narrow"
+  width="wide"
   blocked={askBlocked}
   onconfirm={confirmUse}
 >
@@ -973,6 +977,7 @@
     onmode={setMode}
     onadd={addTerm}
     ondrop={dropTerm}
+    onclear={clearScope}
     onreset={resetAnswering}
   />
 </OverlayModal>
@@ -986,7 +991,7 @@
   blocked={scopeBlocked}
   onconfirm={() => void setDefault()}
 >
-  <ScopeBuilder {...view$} onmode={setMode} onadd={addTerm} ondrop={dropTerm} />
+  <ScopeBuilder {...view$} onmode={setMode} onadd={addTerm} ondrop={dropTerm} onclear={clearScope} />
 </OverlayModal>
 
 <style>

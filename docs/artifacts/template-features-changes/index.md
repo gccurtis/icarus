@@ -1,6 +1,6 @@
 # Template Features Change Set
 
-138 files under app/ against 286cbc8, the commit this branch sits on — 80 created, 58 changed, 0 deleted — +15641 / −1052 lines, measured from committed and working-tree changes when this page was built.
+138 files under app/ against 306e308, the commit this branch sits on — 80 created, 58 changed, 0 deleted — +15967 / −1090 lines, measured from committed and working-tree changes when this page was built.
 
 | Status | File | + | − | Systematic change |
 | --- | --- | --- | --- | --- |
@@ -9,29 +9,29 @@
 | changed | `seed/resourceSets.json` | +17 | −0 | The seeded one-slide template |
 | changed | `seed/slideDecks.json` | +0 | −4 | The seeded one-slide template |
 | changed | `seed/spreadsheets.json` | +0 | −2 | The seeded one-slide template |
-| changed | `seed/templates.json` | +1606 | −204 | The seeded one-slide template |
-| changed | `seed/templateVersions.json` | +164 | −1 | The seeded one-slide template |
+| changed | `seed/templates.json` | +1516 | −242 | The seeded one-slide template |
+| changed | `seed/templateVersions.json` | +497 | −1 | The seeded one-slide template |
 | changed | `src/lib/app-views/categories/document-editor/content/document.svelte` | +15 | −0 | The document editor's Templates panel |
-| new | `src/lib/app-views/categories/document-editor/context/templates.svelte` | +585 | −0 | The document editor's Templates panel |
+| new | `src/lib/app-views/categories/document-editor/context/templates.svelte` | +601 | −0 | The document editor's Templates panel |
 | changed | `src/lib/app-views/categories/document-editor/procedures/projection.ts` | +33 | −8 | The document editor's Templates panel |
 | changed | `src/lib/app-views/categories/document-editor/procedures/schema.ts` | +37 | −3 | The document editor's Templates panel |
-| new | `src/lib/app-views/categories/document-editor/procedures/templating.ts` | +324 | −0 | The document editor's Templates panel |
+| new | `src/lib/app-views/categories/document-editor/procedures/templating.ts` | +327 | −0 | The document editor's Templates panel |
 | new | `src/lib/app-views/categories/document-editor/procedures/test/unit/templating.test.ts` | +167 | −0 | The document editor's Templates panel |
-| new | `src/lib/app-views/categories/project-overview/context/contexts.svelte` | +279 | −0 | Project Overview's Contexts panel |
+| new | `src/lib/app-views/categories/project-overview/context/contexts.svelte` | +283 | −0 | Project Overview's Contexts panel |
 | new | `src/lib/app-views/categories/project-overview/procedures/contexts.ts` | +115 | −0 | Project Overview's Contexts panel |
 | new | `src/lib/app-views/categories/project-overview/procedures/test/unit/contexts.test.ts` | +68 | −0 | Project Overview's Contexts panel |
 | changed | `src/lib/app-views/categories/project-overview/project-overview.md` | +22 | −18 | Project Overview's Contexts panel |
 | changed | `src/lib/app-views/categories/slide-deck-editor/context/comments.svelte` | +6 | −1 | The slide-deck editor's Templates panel |
-| changed | `src/lib/app-views/categories/slide-deck-editor/context/templates.svelte` | +602 | −3 | The slide-deck editor's Templates panel |
+| changed | `src/lib/app-views/categories/slide-deck-editor/context/templates.svelte` | +618 | −3 | The slide-deck editor's Templates panel |
 | changed | `src/lib/app-views/categories/slide-deck-editor/inspector/threads.svelte` | +8 | −1 | The slide-deck editor's Templates panel |
 | changed | `src/lib/app-views/categories/slide-deck-editor/procedures/scene.ts` | +3 | −3 | The slide-deck editor's Templates panel |
-| new | `src/lib/app-views/categories/slide-deck-editor/procedures/templating.ts` | +333 | −0 | The slide-deck editor's Templates panel |
+| new | `src/lib/app-views/categories/slide-deck-editor/procedures/templating.ts` | +336 | −0 | The slide-deck editor's Templates panel |
 | new | `src/lib/app-views/categories/slide-deck-editor/procedures/test/unit/templating.test.ts` | +130 | −0 | The slide-deck editor's Templates panel |
 | changed | `src/lib/app-views/categories/slide-deck-editor/procedures/typing.ts` | +2 | −3 | The slide-deck editor's Templates panel |
 | changed | `src/lib/app-views/categories/slide-deck-editor/slide-deck-editor.md` | +21 | −1 | The slide-deck editor's Templates panel |
 | changed | `src/lib/app-views/categories/templates/content/editor.svelte` | +48 | −17 | The template library, editor door, and inspector |
 | changed | `src/lib/app-views/categories/templates/content/library.svelte` | +23 | −11 | The template library, editor door, and inspector |
-| changed | `src/lib/app-views/categories/templates/inspector/template.svelte` | +266 | −43 | The template library, editor door, and inspector |
+| changed | `src/lib/app-views/categories/templates/inspector/template.svelte` | +271 | −43 | The template library, editor door, and inspector |
 | changed | `src/lib/app-views/categories/templates/procedures/library.svelte.ts` | +165 | −32 | The template library, editor door, and inspector |
 | changed | `src/lib/app-views/categories/templates/procedures/test/unit/library.test.ts` | +16 | −0 | The template library, editor door, and inspector |
 | changed | `src/lib/app-views/categories/templates/templates.md` | +45 | −74 | The template library, editor door, and inspector |
@@ -61,7 +61,7 @@
 | new | `src/lib/capabilities/templates/api/discard-template-stage/discard-template-stage.ts` | +31 | −0 | The templates capability |
 | new | `src/lib/capabilities/templates/api/discard-template-stage/validate-discard-template-stage.ts` | +8 | −0 | The templates capability |
 | changed | `src/lib/capabilities/templates/api/duplicate-template/duplicate-template.ts` | +1 | −0 | The templates capability |
-| changed | `src/lib/capabilities/templates/api/instantiate-template/instantiate-template.ts` | +105 | −46 | The templates capability |
+| changed | `src/lib/capabilities/templates/api/instantiate-template/instantiate-template.ts` | +110 | −46 | The templates capability |
 | changed | `src/lib/capabilities/templates/api/instantiate-template/validate-instantiate-template.ts` | +8 | −3 | The templates capability |
 | new | `src/lib/capabilities/templates/api/open-template-stage/open-template-stage.ts` | +115 | −0 | The templates capability |
 | new | `src/lib/capabilities/templates/api/open-template-stage/validate-open-template-stage.ts` | +8 | −0 | The templates capability |
@@ -73,7 +73,7 @@
 | new | `src/lib/capabilities/templates/api/shared/scopes.ts` | +204 | −0 | The templates capability |
 | new | `src/lib/capabilities/templates/api/shared/stages.ts` | +141 | −0 | The templates capability |
 | changed | `src/lib/capabilities/templates/api/shared/template-rows.ts` | +1 | −0 | The templates capability |
-| changed | `src/lib/capabilities/templates/api/shared/validation.ts` | +184 | −12 | The templates capability |
+| changed | `src/lib/capabilities/templates/api/shared/validation.ts` | +192 | −12 | The templates capability |
 | new | `src/lib/capabilities/templates/api/shared/variables.ts` | +39 | −0 | The templates capability |
 | changed | `src/lib/capabilities/templates/api/update-template/update-template.ts` | +69 | −11 | The templates capability |
 | changed | `src/lib/capabilities/templates/api/update-template/validate-update-template.ts` | +6 | −2 | The templates capability |
@@ -85,13 +85,13 @@
 | changed | `src/lib/capabilities/templates/types/templates.ts` | +113 | −17 | The templates capability |
 | changed | `src/lib/components/authored/panel/panel-section.svelte` | +13 | −1 | The reference pages, and the one shared component they moved |
 | new | `src/lib/components/authored/scope-builder/index.ts` | +9 | −0 | The reference pages, and the one shared component they moved |
-| new | `src/lib/components/authored/scope-builder/scope-builder.svelte` | +454 | −0 | The reference pages, and the one shared component they moved |
+| new | `src/lib/components/authored/scope-builder/scope-builder.svelte` | +455 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/components/authored/template-answers/index.ts` | +8 | −0 | The reference pages, and the one shared component they moved |
-| new | `src/lib/components/authored/template-answers/template-answers.svelte` | +208 | −0 | The reference pages, and the one shared component they moved |
+| new | `src/lib/components/authored/template-answers/template-answers.svelte` | +185 | −0 | The reference pages, and the one shared component they moved |
 | changed | `src/lib/development-views/demo/components/demo-index.svelte` | +3 | −3 | The reference pages, and the one shared component they moved |
 | new | `src/lib/development-views/template-reference/components/changes-page.svelte` | +281 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/development-views/template-reference/components/diagram-binding.svelte` | +168 | −0 | The reference pages, and the one shared component they moved |
-| new | `src/lib/development-views/template-reference/components/diagram-builder.svelte` | +276 | −0 | The reference pages, and the one shared component they moved |
+| new | `src/lib/development-views/template-reference/components/diagram-builder.svelte` | +274 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/development-views/template-reference/components/diagram-difference.svelte` | +128 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/development-views/template-reference/components/diagram-panel.svelte` | +128 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/development-views/template-reference/components/diagram-rows.svelte` | +75 | −0 | The reference pages, and the one shared component they moved |
@@ -103,7 +103,7 @@
 | new | `src/lib/development-views/template-reference/components/reference.css` | +305 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/development-views/template-reference/components/scope-page.svelte` | +467 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/development-views/template-reference/components/system-page.svelte` | +329 | −0 | The reference pages, and the one shared component they moved |
-| new | `src/lib/development-views/template-reference/procedures/changes.ts` | +274 | −0 | The reference pages, and the one shared component they moved |
+| new | `src/lib/development-views/template-reference/procedures/changes.ts` | +286 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/development-views/template-reference/procedures/inventory.ts` | +148 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/development-views/template-reference/procedures/navigation.ts` | +16 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/development-views/template-reference/procedures/scope.ts` | +521 | −0 | The reference pages, and the one shared component they moved |
@@ -115,17 +115,17 @@
 | changed | `src/lib/model/client/workspace-state/test/unit/workspace-state.test.ts` | +23 | −0 | The vocabulary: one table, five functions, one field |
 | changed | `src/lib/representation/data/behavior/content/positions.ts` | +9 | −1 | The vocabulary: one table, five functions, one field |
 | new | `src/lib/representation/data/behavior/core/resource-set.ts` | +45 | −0 | The vocabulary: one table, five functions, one field |
-| new | `src/lib/representation/data/behavior/core/scope-draft.ts` | +421 | −0 | The vocabulary: one table, five functions, one field |
+| new | `src/lib/representation/data/behavior/core/scope-draft.ts` | +439 | −0 | The vocabulary: one table, five functions, one field |
 | new | `src/lib/representation/data/behavior/core/test/unit/resource-set.test.ts` | +46 | −0 | The vocabulary: one table, five functions, one field |
 | new | `src/lib/representation/data/behavior/core/test/unit/scope-draft.test.ts` | +194 | −0 | The vocabulary: one table, five functions, one field |
 | changed | `src/lib/representation/data/behavior/documents/apply-ops.ts` | +2 | −1 | The vocabulary: one table, five functions, one field |
 | changed | `src/lib/representation/data/behavior/slide-decks/apply-ops.ts` | +2 | −2 | The vocabulary: one table, five functions, one field |
-| new | `src/lib/representation/data/behavior/templates/answers.ts` | +60 | −0 | The vocabulary: one table, five functions, one field |
+| new | `src/lib/representation/data/behavior/templates/answers.ts` | +62 | −0 | The vocabulary: one table, five functions, one field |
 | new | `src/lib/representation/data/behavior/templates/deck-of-slide.ts` | +18 | −0 | The vocabulary: one table, five functions, one field |
 | new | `src/lib/representation/data/behavior/templates/fresh-ids.ts` | +71 | −0 | The vocabulary: one table, five functions, one field |
 | new | `src/lib/representation/data/behavior/templates/portable.ts` | +103 | −0 | The vocabulary: one table, five functions, one field |
 | new | `src/lib/representation/data/behavior/templates/scopes.ts` | +216 | −0 | The vocabulary: one table, five functions, one field |
-| new | `src/lib/representation/data/behavior/templates/test/unit/answers.test.ts` | +95 | −0 | The vocabulary: one table, five functions, one field |
+| new | `src/lib/representation/data/behavior/templates/test/unit/answers.test.ts` | +104 | −0 | The vocabulary: one table, five functions, one field |
 | new | `src/lib/representation/data/behavior/templates/test/unit/deck-of-slide.test.ts` | +36 | −0 | The vocabulary: one table, five functions, one field |
 | new | `src/lib/representation/data/behavior/templates/test/unit/fresh-ids.test.ts` | +81 | −0 | The vocabulary: one table, five functions, one field |
 | new | `src/lib/representation/data/behavior/templates/test/unit/portable.test.ts` | +97 | −0 | The vocabulary: one table, five functions, one field |
@@ -133,14 +133,14 @@
 | changed | `src/lib/representation/data/behavior/workspace/opening.ts` | +5 | −1 | The vocabulary: one table, five functions, one field |
 | changed | `src/lib/representation/data/types/content/content-block.ts` | +16 | −1 | The vocabulary: one table, five functions, one field |
 | changed | `src/lib/representation/data/types/core/resource-set.ts` | +16 | −24 | The vocabulary: one table, five functions, one field |
-| changed | `src/lib/representation/data/types/templates/template.ts` | +8 | −26 | The vocabulary: one table, five functions, one field |
+| changed | `src/lib/representation/data/types/templates/template.ts` | +11 | −26 | The vocabulary: one table, five functions, one field |
 | changed | `src/lib/representation/data/types/workspace/tab.ts` | +1 | −0 | The vocabulary: one table, five functions, one field |
 | changed | `src/lib/representation/store/tables.ts` | +23 | −9 | The vocabulary: one table, five functions, one field |
 | changed | `src/routes/app/[project]/reference/templates/+page.svelte` | +11 | −2 | The reference pages, and the one shared component they moved |
 | new | `src/routes/app/[project]/reference/templates/changes/+page.svelte` | +14 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/routes/app/[project]/reference/templates/scope/+page.svelte` | +14 | −0 | The reference pages, and the one shared component they moved |
 | changed | `test/browser/document-editor.spec.ts` | +8 | −1 | Browser evidence |
-| new | `test/browser/template-features.spec.ts` | +274 | −0 | Browser evidence |
+| new | `test/browser/template-features.spec.ts` | +277 | −0 | Browser evidence |
 | new | `test/browser/template-reference.spec.ts` | +115 | −0 | Browser evidence |
 
 ## Outside app/
@@ -149,8 +149,8 @@
 | --- | --- | --- | --- |
 | changed | `docs/artifacts/template-dictionary/index.html` | +297 | −0 |
 | changed | `docs/artifacts/template-dictionary/index.md` | +139 | −0 |
-| changed | `docs/artifacts/template-features-changes/index.html` | +1016 | −0 |
-| changed | `docs/artifacts/template-features-changes/index.md` | +18954 | −0 |
+| changed | `docs/artifacts/template-features-changes/index.html` | +1071 | −0 |
+| changed | `docs/artifacts/template-features-changes/index.md` | +20355 | −0 |
 | changed | `docs/artifacts/template-stage-flow/index.html` | +393 | −0 |
 | changed | `docs/artifacts/template-stage-flow/index.md` | +140 | −0 |
 | changed | `docs/artifacts/template-system-concepts/index.html` | +627 | −0 |
@@ -159,7 +159,7 @@
 | changed | `docs/reference/template-features/02-model.html` | +209 | −0 |
 | changed | `docs/reference/template-features/03-capabilities.html` | +235 | −0 |
 | changed | `docs/reference/template-features/04-panels.html` | +208 | −0 |
-| changed | `docs/reference/template-features/05-changes.html` | +1105 | −0 |
+| changed | `docs/reference/template-features/05-changes.html` | +1160 | −0 |
 | changed | `docs/reference/template-features/build-diffs.mjs` | +242 | −0 |
 | changed | `docs/reference/template-features/index.html` | +167 | −0 |
 | changed | `docs/reference/template-features/reference.css` | +389 | −0 |
@@ -319,10 +319,10 @@
 +};
 ~~~~
 
-### new · `src/lib/representation/data/behavior/core/scope-draft.ts` (+421 / −0)
+### new · `src/lib/representation/data/behavior/core/scope-draft.ts` (+439 / −0)
 
 ~~~~diff
-@@ -0,0 +1,421 @@
+@@ -0,0 +1,439 @@
 +import { kindMatches } from "$representation/data/behavior/core/resource";
 +import type { ResourceKind, ResourceRef } from "$representation/data/types/core/resource";
 +import type {
@@ -377,10 +377,28 @@
 +
 +export const EMPTY_DRAFT: ScopeDraft = { include: [], exclude: [] };
 +
++/**
++ * One term, one row.
++ *
++ * A stored rule may hold several kinds or several resources in one term, which
++ * is the same selection either way. A row that says "Findings, Documents" is one
++ * thing to remove and two things to read, so a draft splits them: what you can
++ * take out is what you put in.
++ */
++const split = (term: AnyTerm): readonly AnyTerm[] => {
++  if (term.select === "kinds" && term.kinds.length > 1) {
++    return term.kinds.map((kind) => ({ select: "kinds", kinds: [kind] }));
++  }
++  if (term.select === "resources" && term.refs.length > 1) {
++    return term.refs.map((ref) => ({ select: "resources", refs: [{ ...ref }] }));
++  }
++  return [term];
++};
++
 +export const draftOf = (scope: ScopeDraft | undefined): ScopeDraft =>
 +  scope === undefined
 +    ? { include: [...WHOLE_PROJECT.include], exclude: [] }
-+    : { include: [...scope.include], exclude: [...scope.exclude] };
++    : { include: scope.include.flatMap(split), exclude: scope.exclude.flatMap(split) };
 +
 +/** A stable identity for a term, so a draft can say whether it already holds one. */
 +export const termKey = (term: AnyTerm): string => {
@@ -1043,10 +1061,10 @@
    if (atom.kind !== "literal") throw new Error(`Atom ${atom.id} is not a literal.`);
 ~~~~
 
-### new · `src/lib/representation/data/behavior/templates/answers.ts` (+60 / −0)
+### new · `src/lib/representation/data/behavior/templates/answers.ts` (+62 / −0)
 
 ~~~~diff
-@@ -0,0 +1,60 @@
+@@ -0,0 +1,62 @@
 +import { ruleWords, type ScopeDraft, type ScopeNames } from "$representation/data/behavior/core/scope-draft";
 +import type { TemplateVariable } from "$representation/data/types/templates/template";
 +
@@ -1081,14 +1099,15 @@
 +  variables.map((variable) => {
 +    const kind = kindOfVariable(variable);
 +    if (kind === "text") {
-+      const words = texts[variable.name] ?? "";
++      const typed = texts[variable.name];
++      const words = typed ?? variable.text ?? "";
 +      return {
 +        key: variable.name,
 +        label: variable.label,
 +        ...(variable.description === undefined ? {} : { description: variable.description }),
 +        kind,
 +        value: words,
-+        answered: words.trim() !== "",
++        answered: typed !== undefined && typed !== (variable.text ?? ""),
 +        missing: words.trim() === ""
 +      };
 +    }
@@ -1098,7 +1117,8 @@
 +      label: variable.label,
 +      ...(variable.description === undefined ? {} : { description: variable.description }),
 +      kind,
-+      value: held === undefined ? `Default · ${ruleWords(variable.default, names)}` : ruleWords(held, names),
++      /** The rule alone; whether it is the template's or the caller's is said beside it. */
++      value: ruleWords(held ?? variable.default, names),
 +      answered: held !== undefined,
 +      missing: false
 +    };
@@ -1541,10 +1561,10 @@
 +};
 ~~~~
 
-### new · `src/lib/representation/data/behavior/templates/test/unit/answers.test.ts` (+95 / −0)
+### new · `src/lib/representation/data/behavior/templates/test/unit/answers.test.ts` (+104 / −0)
 
 ~~~~diff
-@@ -0,0 +1,95 @@
+@@ -0,0 +1,104 @@
 +import { describe, expect, it } from "vitest";
 +
 +import { answerRowsOf, missingIn } from "$representation/data/behavior/templates/answers";
@@ -1618,9 +1638,18 @@
 +  it("gives every parameter a row, and a scope always has a value", () => {
 +    const rows = answerRowsOf(variables, {}, {});
 +    expect(rows.map((row) => row.kind)).toEqual(["scope", "text"]);
-+    expect(rows[0].value).toBe("Default · Findings");
++    expect(rows[0].value).toBe("Findings");
 +    expect(rows[0].missing).toBe(false);
 +    expect(rows[0].answered).toBe(false);
++  });
++
++  it("starts a text parameter at its own default words", () => {
++    const withWords = [{ name: "subject", label: "Subject", kind: "text" as const, text: "Winter" }];
++    const rows = answerRowsOf(withWords, {}, {});
++    expect(rows[0].value).toBe("Winter");
++    expect(rows[0].missing).toBe(false);
++    expect(rows[0].answered).toBe(false);
++    expect(answerRowsOf(withWords, {}, { subject: "Spring" })[0].answered).toBe(true);
 +  });
 +
 +  it("marks a text parameter missing until it has words", () => {
@@ -2104,10 +2133,10 @@
 +  | { kind: "resource"; resourceId: string; variable: string };
 ~~~~
 
-### changed · `src/lib/representation/data/types/templates/template.ts` (+8 / −26)
+### changed · `src/lib/representation/data/types/templates/template.ts` (+11 / −26)
 
 ~~~~diff
-@@ -9,40 +9,31 @@ import type { PageSetup } from "$representation/data/types/spreadsheets/page-set
+@@ -9,40 +9,34 @@ import type { PageSetup } from "$representation/data/types/spreadsheets/page-set
  import type { StyleSet } from "$representation/data/types/spreadsheets/style-set";
  
  /**
@@ -2134,7 +2163,10 @@
    description?: string;
 +  /** Absent means `scope`, which is what every variable was before text ones existed. */
 +  kind?: TemplateVariableKind;
++  /** What a `scope` selects when the caller says nothing. */
    default?: TemplatedResourceSet;
++  /** What a `text` says when the caller says nothing. Absent means it must be filled in. */
++  text?: string;
  };
  
 -/**
@@ -2156,7 +2188,7 @@
  export type TemplateFormatRule = {
    from: string;
    to: string;
-@@ -60,17 +51,8 @@ export type TemplatePrint = {
+@@ -60,17 +54,8 @@ export type TemplatePrint = {
    headings?: boolean;
  };
  
@@ -2678,7 +2710,7 @@
      ...(source.description === undefined ? {} : { description: source.description }),
 ~~~~
 
-### changed · `src/lib/capabilities/templates/api/instantiate-template/instantiate-template.ts` (+105 / −46)
+### changed · `src/lib/capabilities/templates/api/instantiate-template/instantiate-template.ts` (+110 / −46)
 
 ~~~~diff
 @@ -3,19 +3,37 @@ import { serverModel } from "$runtime/server/start.server";
@@ -2724,7 +2756,7 @@
  
  export const instantiateTemplate = async (input: unknown): Promise<InstantiateTemplateResult> => {
    const scope = await requireScope();
-@@ -49,48 +67,105 @@ export const instantiateTemplate = async (input: unknown): Promise<InstantiateTe
+@@ -49,48 +67,110 @@ export const instantiateTemplate = async (input: unknown): Promise<InstantiateTe
        detail: error instanceof Error ? error.message : String(error)
      };
    }
@@ -2740,24 +2772,17 @@
 -      };
 -    }
 +
-+  const texts = asked.texts ?? {};
++  /** A text parameter untouched by the caller falls back to its own default words. */
++  const texts: Record<string, string> = { ...asked.texts };
++  for (const variable of variables) {
++    if (kindOf(variable) !== "text" || variable.text === undefined) continue;
++    if (texts[variable.name] === undefined) texts[variable.name] = variable.text;
++  }
 +  const unfilled = variables
 +    .filter((variable) => kindOf(variable) === "text")
 +    .map((variable) => variable.name)
 +    .filter((name) => texts[name] === undefined || texts[name].trim() === "");
 +  if (unfilled.length > 0) {
-+    return {
-+      accepted: false,
-+      templateId: template._id,
-+      reason: "unsupported-body",
-+      revision: template.revision,
-+      detail: `these need words before the template can be placed: ${unfilled.join(", ")}`
-+    };
-+  }
-+
-+  const answers = asked.answers ?? {};
-+  const unknownSets = unknownSetsInAnswers(store, scope.projectId, answers);
-+  if (unknownSets.length > 0) {
      return {
        accepted: false,
        templateId: template._id,
@@ -2766,6 +2791,18 @@
        revision: template.revision,
 -      detail: "one or more template variables need answers and have no usable default",
 -      variables: resolved.variables
++      detail: `these need words before the template can be placed: ${unfilled.join(", ")}`
++    };
++  }
++
++  const answers = asked.answers ?? {};
++  const unknownSets = unknownSetsInAnswers(store, scope.projectId, answers);
++  if (unknownSets.length > 0) {
++    return {
++      accepted: false,
++      templateId: template._id,
++      reason: "unsupported-body",
++      revision: template.revision,
 +      detail: `this project holds no resource set ${unknownSets.join(", ")}`
      };
    }
@@ -2855,7 +2892,7 @@
      store.create("documentSnapshots", {
        projectId,
        resourceId,
-@@ -113,14 +188,6 @@ export const instantiateTemplate = async (input: unknown): Promise<InstantiateTe
+@@ -113,14 +193,6 @@ export const instantiateTemplate = async (input: unknown): Promise<InstantiateTe
    if (body.resource === "slides") {
      const { resource: _resource, ...slideDeckBody } = body;
      const readyBody = ensureSlideDeckReady(slideDeckBody);
@@ -2870,7 +2907,7 @@
      store.create("slideDeckSnapshots", {
        projectId,
        resourceId,
-@@ -141,14 +208,6 @@ export const instantiateTemplate = async (input: unknown): Promise<InstantiateTe
+@@ -141,14 +213,6 @@ export const instantiateTemplate = async (input: unknown): Promise<InstantiateTe
    }
  
    const materialized = materializeSpreadsheet(body);
@@ -3981,7 +4018,7 @@
    ...(template.description === undefined ? {} : { description: template.description }),
 ~~~~
 
-### changed · `src/lib/capabilities/templates/api/shared/validation.ts` (+184 / −12)
+### changed · `src/lib/capabilities/templates/api/shared/validation.ts` (+192 / −12)
 
 ~~~~diff
 @@ -2,9 +2,14 @@ import type {
@@ -4249,12 +4286,12 @@
    if (!Array.isArray(value)) throw new Error(`templates/${subject}: variables is a list`);
    if (value.length > MAX_TEMPLATE_VARIABLES) {
      throw new Error(
-@@ -1630,10 +1793,16 @@ export const variablesOf = (value: unknown, subject: string): readonly TemplateV
+@@ -1630,10 +1793,24 @@ export const variablesOf = (value: unknown, subject: string): readonly TemplateV
    for (const variable of value) {
      if (
        !isRecord(variable) ||
 -      !hasOnlyKeys(variable, ["name", "label", "description", "default"])
-+      !hasOnlyKeys(variable, ["name", "label", "description", "kind", "default"])
++      !hasOnlyKeys(variable, ["name", "label", "description", "kind", "default", "text"])
      ) {
        throw new Error(`templates/${subject}: a variable has only represented fields`);
      }
@@ -4264,10 +4301,18 @@
 +    if (variable.kind === "text" && variable.default !== undefined) {
 +      throw new Error(`templates/${subject}: a text variable has no default scope`);
 +    }
++    if (variable.text !== undefined) {
++      if (variable.kind !== "text") {
++        throw new Error(`templates/${subject}: only a text variable has default words`);
++      }
++      if (!validText(variable.text, MAX_BLOCK_TEXT_LENGTH, true)) {
++        throw new Error(`templates/${subject}: a variable's default words are text`);
++      }
++    }
      if (!validCanonicalText(variable.name, MAX_VARIABLE_NAME_LENGTH)) {
        throw new Error(`templates/${subject}: every variable has a name`);
      }
-@@ -1648,7 +1817,10 @@ export const variablesOf = (value: unknown, subject: string): readonly TemplateV
+@@ -1648,7 +1825,10 @@ export const variablesOf = (value: unknown, subject: string): readonly TemplateV
      ) {
        throw new Error(`templates/${subject}: a variable description is text`);
      }
@@ -4709,10 +4754,10 @@
 +**A body asks in two ways, so a variable is answered in two ways.** A prompt's
 +scope naming one makes it a `scope`: a group of resources, which always has an
 +answer because the whole project is the floor. A template atom in the prose makes
-+it a `text`: words, which has no answer until somebody types them. That is the
-+only thing that can hold a placement up, and `instantiateTemplate` refuses one
-+with the names of what is still empty. A name used both ways is a scope, because
-+otherwise the template could never be placed.
++it a `text`: words, filled from the caller, else the variable's own `text`, else
++nothing. That last case is the only thing that can hold a placement up, and
++`instantiateTemplate` refuses it with the names of what is still empty. A name
++used both ways is a scope, because otherwise the template could never be placed.
 +
 +A variable's `default` is what it selects when the caller says nothing: the
 +whole project, kinds, one of the project's named sets, or another variable. A
@@ -7607,7 +7652,7 @@
      height: calc(var(--token-spacing-unit) * 16);
 ~~~~
 
-### changed · `src/lib/app-views/categories/templates/inspector/template.svelte` (+266 / −43)
+### changed · `src/lib/app-views/categories/templates/inspector/template.svelte` (+271 / −43)
 
 ~~~~diff
 @@ -4,10 +4,12 @@
@@ -7688,7 +7733,7 @@
    const availableTemplateIds = $derived(
      library.ready ? library.current.templates.map((row) => row.id) : []
    );
-@@ -63,6 +97,38 @@
+@@ -63,6 +97,42 @@
    });
    const template = $derived(detailIn(detailAnswer, now));
    const unavailable = $derived(unavailableTemplateIn(detailAnswer));
@@ -7724,10 +7769,14 @@
 +  const setMode = (whole: boolean) => {
 +    draft = whole ? withWholeProject() : { include: [], exclude: [] };
 +  };
++
++  const clearScope = () => {
++    draft = { include: [], exclude: [] };
++  };
  
    let editingDescription = $state(false);
    let descriptionDraft = $state("");
-@@ -82,7 +148,7 @@
+@@ -82,7 +152,7 @@
    let tagDraft = $state("");
    let activeTemplateId = $state<string>();
    let pending = $state<
@@ -7736,7 +7785,7 @@
    >();
    let actionError = $state<string>();
    let live = true;
-@@ -450,35 +516,114 @@
+@@ -450,35 +520,114 @@
      }
    };
  
@@ -7862,7 +7911,7 @@
      } catch (error) {
        fail(error, originTabId, subject.id);
      } finally {
-@@ -486,9 +631,31 @@
+@@ -486,9 +635,31 @@
      }
    };
  
@@ -7897,7 +7946,7 @@
    };
  </script>
  
-@@ -600,6 +767,17 @@
+@@ -600,6 +771,17 @@
              : "Use template — create an independent project resource"}
            onclick={use}
          ><ExternalLink aria-hidden="true" /></Button>
@@ -7915,7 +7964,7 @@
          <Button
            variant="ghost"
            size="icon-sm"
-@@ -641,20 +819,10 @@
+@@ -641,20 +823,10 @@
              {#each template.variables as variable (variable.id)}
                <details class="variable">
                  <summary>
@@ -7938,7 +7987,7 @@
                    <ChevronDown class="disclosure-icon" size={13} aria-hidden="true" />
                  </summary>
                  <div class="variable-body">
-@@ -684,6 +852,19 @@
+@@ -684,6 +856,19 @@
                    {:else}
                      <p>{variable.description ?? "No description supplied."}</p>
                    {/if}
@@ -7958,7 +8007,7 @@
                  </div>
                </details>
              {/each}
-@@ -759,7 +940,57 @@
+@@ -759,7 +944,58 @@
    {/if}
  </Panel>
  
@@ -7967,7 +8016,7 @@
 +  title={`Use “${template?.name ?? "the template"}”`}
 +  description="Every parameter this template asks for. Open one to read what it means."
 +  confirm="Create"
-+  width="narrow"
++  width="wide"
 +  blocked={askBlocked}
 +  onconfirm={confirmUse}
 +>
@@ -7995,6 +8044,7 @@
 +    onmode={setMode}
 +    onadd={addTerm}
 +    ondrop={dropTerm}
++    onclear={clearScope}
 +    onreset={resetAnswering}
 +  />
 +</OverlayModal>
@@ -8008,7 +8058,7 @@
 +  blocked={scopeBlocked}
 +  onconfirm={() => void setDefault()}
 +>
-+  <ScopeBuilder {...view$} onmode={setMode} onadd={addTerm} ondrop={dropTerm} />
++  <ScopeBuilder {...view$} onmode={setMode} onadd={addTerm} ondrop={dropTerm} onclear={clearScope} />
 +</OverlayModal>
 +
  <style>
@@ -8016,7 +8066,7 @@
    .inspector-stack {
      display: flex;
      flex-direction: column;
-@@ -906,7 +1137,7 @@
+@@ -906,7 +1142,7 @@
  
    .template-actions {
      display: grid;
@@ -8025,7 +8075,7 @@
      align-self: stretch;
      overflow: hidden;
      width: 100%;
-@@ -1034,32 +1265,24 @@
+@@ -1034,32 +1270,24 @@
      min-width: 0;
      align-items: center;
      gap: calc(var(--token-spacing-unit) * 1.5);
@@ -8619,7 +8669,7 @@
 ### changed · `src/lib/app-views/categories/document-editor/content/document.svelte` (+15 / −0)
 
 ~~~~diff
-@@ -836,6 +836,21 @@
+@@ -841,6 +841,21 @@
      color: var(--token-color-danger-text);
    }
  
@@ -8643,10 +8693,10 @@
      text-underline-offset: 0.12em;
 ~~~~
 
-### new · `src/lib/app-views/categories/document-editor/context/templates.svelte` (+585 / −0)
+### new · `src/lib/app-views/categories/document-editor/context/templates.svelte` (+601 / −0)
 
 ~~~~diff
-@@ -0,0 +1,585 @@
+@@ -0,0 +1,601 @@
 +<script lang="ts">
 +  import { onDestroy } from "svelte";
 +
@@ -9004,6 +9054,10 @@
 +    draft = whole ? withWholeProject() : { include: [], exclude: [] };
 +  };
 +
++  const clearScope = () => {
++    draft = { include: [], exclude: [] };
++  };
++
 +  const busy = $derived(pending !== undefined || body === undefined);
 +  const scopeBlocked = $derived(
 +    draft.include.length === 0 ? "Include something, or choose everything in the project." : undefined
@@ -9056,14 +9110,25 @@
 +                  disabled={busy}
 +                  onchange={(next) => changeVariables(withVariableField(template.variables, variable.name, { description: next }))}
 +                />
-+                <div class="scope">
-+                  <PanelButton
-+                    label="Default scope"
++                {#if variable.kind === "text"}
++                  <PanelEditableText
++                    value={variable.text ?? ""}
++                    label={`Default words for ${variable.label}`}
++                    placeholder="What it says when nobody says otherwise"
++                    multiline
 +                    disabled={busy}
-+                    title={`${ruleOf(variable.default, setNames)} — change what ${variable.label} selects by default`}
-+                    onclick={() => openDefault(variable)}
++                    onchange={(next) => changeVariables(withVariableField(template.variables, variable.name, { text: next }))}
 +                  />
-+                </div>
++                {:else}
++                  <div class="scope">
++                    <PanelButton
++                      label="Default scope"
++                      disabled={busy}
++                      title={`${ruleOf(variable.default, setNames)} — change what ${variable.label} selects by default`}
++                      onclick={() => openDefault(variable)}
++                    />
++                  </div>
++                {/if}
 +              </article>
 +            {/each}
 +          {/if}
@@ -9110,7 +9175,7 @@
 +  title={`Insert “${insertFor?.name ?? "the template"}”`}
 +  description="Every parameter this template asks for. Open one to read what it means."
 +  confirm="Insert"
-+  width="narrow"
++  width="wide"
 +  blocked={askBlocked}
 +  onconfirm={confirmInsert}
 +>
@@ -9138,6 +9203,7 @@
 +    onmode={setMode}
 +    onadd={addTerm}
 +    ondrop={dropTerm}
++    onclear={clearScope}
 +    onreset={resetAnswering}
 +  />
 +</OverlayModal>
@@ -9151,7 +9217,7 @@
 +  blocked={scopeBlocked}
 +  onconfirm={confirmDefault}
 +>
-+  <ScopeBuilder {...view$} onmode={setMode} onadd={addTerm} ondrop={dropTerm} />
++  <ScopeBuilder {...view$} onmode={setMode} onadd={addTerm} ondrop={dropTerm} onclear={clearScope} />
 +</OverlayModal>
 +
 +<style>
@@ -9414,10 +9480,10 @@
        ]
 ~~~~
 
-### new · `src/lib/app-views/categories/document-editor/procedures/templating.ts` (+324 / −0)
+### new · `src/lib/app-views/categories/document-editor/procedures/templating.ts` (+327 / −0)
 
 ~~~~diff
-@@ -0,0 +1,324 @@
+@@ -0,0 +1,327 @@
 +import {
 +  readProjectResourceIndex,
 +  type ProjectResourceIndex
@@ -9660,15 +9726,18 @@
 +export const withVariableField = (
 +  variables: readonly ChosenVariable[],
 +  name: string,
-+  change: { label?: string; description?: string; default?: ScopeDraft }
++  change: { label?: string; description?: string; default?: ScopeDraft; text?: string }
 +): readonly ChosenVariable[] =>
 +  variables.map((variable) => {
 +    if (variable.name !== name) return variable;
 +    const next: ChosenVariable = { name: variable.name, label: change.label ?? variable.label };
 +    const description = "description" in change ? change.description : variable.description;
 +    const fallback = "default" in change ? change.default : variable.default;
++    const words = "text" in change ? change.text : variable.text;
++    if (variable.kind !== undefined) next.kind = variable.kind;
 +    if (description !== undefined && description.trim().length > 0) next.description = description.trim();
 +    if (fallback !== undefined) next.default = fallback;
++    if (words !== undefined && words.trim().length > 0) next.text = words;
 +    return next;
 +  });
 +
@@ -9951,10 +10020,10 @@
          placeholder="Write a comment on {subject}…"
 ~~~~
 
-### changed · `src/lib/app-views/categories/slide-deck-editor/context/templates.svelte` (+602 / −3)
+### changed · `src/lib/app-views/categories/slide-deck-editor/context/templates.svelte` (+618 / −3)
 
 ~~~~diff
-@@ -1,8 +1,607 @@
+@@ -1,8 +1,623 @@
  <script lang="ts">
 -  import { Panel, PanelEmpty, PanelNote } from "$authored-components/panel";
 +  import { onDestroy } from "svelte";
@@ -10323,6 +10392,10 @@
 +    draft = whole ? withWholeProject() : { include: [], exclude: [] };
 +  };
 +
++  const clearScope = () => {
++    draft = { include: [], exclude: [] };
++  };
++
 +  const busy = $derived(pending !== undefined || body === undefined);
 +  const unnamed = $derived(nameDraft.trim() === "");
 +  const scopeBlocked = $derived(
@@ -10380,14 +10453,25 @@
 +                  disabled={busy}
 +                  onchange={(next) => changeVariables(withVariableField(template.variables, variable.name, { description: next }))}
 +                />
-+                <div class="scope">
-+                  <PanelButton
-+                    label="Default scope"
++                {#if variable.kind === "text"}
++                  <PanelEditableText
++                    value={variable.text ?? ""}
++                    label={`Default words for ${variable.label}`}
++                    placeholder="What it says when nobody says otherwise"
++                    multiline
 +                    disabled={busy}
-+                    title={`${ruleOf(variable.default, setNames)} — change what ${variable.label} selects by default`}
-+                    onclick={() => openDefault(variable)}
++                    onchange={(next) => changeVariables(withVariableField(template.variables, variable.name, { text: next }))}
 +                  />
-+                </div>
++                {:else}
++                  <div class="scope">
++                    <PanelButton
++                      label="Default scope"
++                      disabled={busy}
++                      title={`${ruleOf(variable.default, setNames)} — change what ${variable.label} selects by default`}
++                      onclick={() => openDefault(variable)}
++                    />
++                  </div>
++                {/if}
 +              </article>
 +            {/each}
 +          {/if}
@@ -10437,7 +10521,7 @@
 +  title={`Insert “${insertFor?.name ?? "the template"}”`}
 +  description="Every parameter this template asks for. Open one to read what it means."
 +  confirm="Insert"
-+  width="narrow"
++  width="wide"
 +  blocked={askBlocked}
 +  onconfirm={confirmInsert}
 +>
@@ -10465,6 +10549,7 @@
 +    onmode={setMode}
 +    onadd={addTerm}
 +    ondrop={dropTerm}
++    onclear={clearScope}
 +    onreset={resetAnswering}
 +  />
 +</OverlayModal>
@@ -10478,7 +10563,7 @@
 +  blocked={scopeBlocked}
 +  onconfirm={confirmDefault}
 +>
-+  <ScopeBuilder {...view$} onmode={setMode} onadd={addTerm} ondrop={dropTerm} />
++  <ScopeBuilder {...view$} onmode={setMode} onadd={addTerm} ondrop={dropTerm} onclear={clearScope} />
 +</OverlayModal>
 +
 +<style>
@@ -10633,10 +10718,10 @@
        cuts.add(offset + length);
 ~~~~
 
-### new · `src/lib/app-views/categories/slide-deck-editor/procedures/templating.ts` (+333 / −0)
+### new · `src/lib/app-views/categories/slide-deck-editor/procedures/templating.ts` (+336 / −0)
 
 ~~~~diff
-@@ -0,0 +1,333 @@
+@@ -0,0 +1,336 @@
 +import {
 +  readProjectResourceIndex,
 +  type ProjectResourceIndex
@@ -10878,15 +10963,18 @@
 +export const withVariableField = (
 +  variables: readonly ChosenVariable[],
 +  name: string,
-+  change: { label?: string; description?: string; default?: ScopeDraft }
++  change: { label?: string; description?: string; default?: ScopeDraft; text?: string }
 +): readonly ChosenVariable[] =>
 +  variables.map((variable) => {
 +    if (variable.name !== name) return variable;
 +    const next: ChosenVariable = { name: variable.name, label: change.label ?? variable.label };
 +    const description = "description" in change ? change.description : variable.description;
 +    const fallback = "default" in change ? change.default : variable.default;
++    const words = "text" in change ? change.text : variable.text;
++    if (variable.kind !== undefined) next.kind = variable.kind;
 +    if (description !== undefined && description.trim().length > 0) next.description = description.trim();
 +    if (fallback !== undefined) next.default = fallback;
++    if (words !== undefined && words.trim().length > 0) next.text = words;
 +    return next;
 +  });
 +
@@ -11169,10 +11257,10 @@
 
 ## Project Overview's Contexts panel
 
-### new · `src/lib/app-views/categories/project-overview/context/contexts.svelte` (+279 / −0)
+### new · `src/lib/app-views/categories/project-overview/context/contexts.svelte` (+283 / −0)
 
 ~~~~diff
-@@ -0,0 +1,279 @@
+@@ -0,0 +1,283 @@
 +<script lang="ts">
 +  import { onDestroy } from "svelte";
 +  import Plus from "@lucide/svelte/icons/plus";
@@ -11309,6 +11397,10 @@
 +    draft = whole ? withWholeProject() : { include: [], exclude: [] };
 +  };
 +
++  const clearScope = () => {
++    draft = { include: [], exclude: [] };
++  };
++
 +  const scopeBlocked = $derived(
 +    draft.include.length === 0 ? "Include something, or choose the whole project." : undefined
 +  );
@@ -11418,7 +11510,7 @@
 +  blocked={scopeBlocked}
 +  onconfirm={confirmBuilder}
 +>
-+  <ScopeBuilder {...view$} onmode={setMode} onadd={addTerm} ondrop={dropTerm} />
++  <ScopeBuilder {...view$} onmode={setMode} onadd={addTerm} ondrop={dropTerm} onclear={clearScope} />
 +</OverlayModal>
 +
 +<style>
@@ -11825,7 +11917,7 @@
      "updatedAt": 1788127200000
 ~~~~
 
-### changed · `seed/templates.json` (+1606 / −204)
+### changed · `seed/templates.json` (+1516 / −242)
 
 ~~~~diff
 @@ -2,23 +2,51 @@
@@ -13538,7 +13630,7 @@
                    "state": "idle"
                  },
                  {
-@@ -863,85 +1693,299 @@
+@@ -863,159 +1693,603 @@
                    "type": "text",
                    "variant": "paragraph",
                    "style": "body",
@@ -13656,21 +13748,24 @@
 +    "lastUsedAt": 1785499200000
    },
    {
-     "_id": "templates:9",
-     "_creationTime": 1780358400000,
+-    "_id": "templates:9",
+-    "_creationTime": 1780358400000,
++    "_id": "templates:11",
++    "_creationTime": 1788000000000,
 +    "projectId": "default",
      "userId": "default-user",
-     "name": "Outage analysis workbook",
-     "description": "A ready-to-calculate reliability workbook for outage duration, customers affected, and customer-minutes interrupted.",
+-    "name": "Outage analysis workbook",
+-    "description": "A ready-to-calculate reliability workbook for outage duration, customers affected, and customer-minutes interrupted.",
 -    "tags": ["Operations", "Analysis", "Reliability"],
++    "name": "Section divider",
++    "description": "One slide that opens a section: a large title over a one-line lead.",
 +    "tags": [
-+      "Operations",
-+      "Analysis",
-+      "Reliability"
++      "Presentation",
++      "Brand"
 +    ],
      "body": {
-       "resource": "spreadsheet",
-       "cells": {
+-      "resource": "spreadsheet",
+-      "cells": {
 -        "A1": { "value": { "kind": "text", "value": "Outage analysis" }, "merge": "F1", "format": { "background": "--token-color-intelligence-surface", "padding": { "x": 10, "y": 8 } } },
 -        "A3": { "value": { "kind": "text", "value": "Event" }, "format": { "background": "--token-surface-secondary" } },
 -        "B3": { "value": { "kind": "text", "value": "Start" }, "format": { "background": "--token-surface-secondary" } },
@@ -13686,511 +13781,22 @@
 -        "F4": { "expression": "D4*E4", "format": { "valueFormat": "#,##0" } },
 -        "A6": { "value": { "kind": "text", "value": "Total customer-minutes" } },
 -        "F6": { "expression": "SUM(F4:F5)", "format": { "valueFormat": "#,##0" } }
-+        "A1": {
-+          "value": {
-+            "kind": "text",
-+            "value": "Outage analysis"
-+          },
-+          "merge": "F1",
-+          "format": {
-+            "background": "--token-color-intelligence-surface",
-+            "padding": {
-+              "x": 10,
-+              "y": 8
-+            }
-+          }
-+        },
-+        "A3": {
-+          "value": {
-+            "kind": "text",
-+            "value": "Event"
-+          },
-+          "format": {
-+            "background": "--token-surface-secondary"
-+          }
-+        },
-+        "B3": {
-+          "value": {
-+            "kind": "text",
-+            "value": "Start"
-+          },
-+          "format": {
-+            "background": "--token-surface-secondary"
-+          }
-+        },
-+        "C3": {
-+          "value": {
-+            "kind": "text",
-+            "value": "End"
-+          },
-+          "format": {
-+            "background": "--token-surface-secondary"
-+          }
-+        },
-+        "D3": {
-+          "value": {
-+            "kind": "text",
-+            "value": "Minutes"
-+          },
-+          "format": {
-+            "background": "--token-surface-secondary"
-+          }
-+        },
-+        "E3": {
-+          "value": {
-+            "kind": "text",
-+            "value": "Customers"
-+          },
-+          "format": {
-+            "background": "--token-surface-secondary"
-+          }
-+        },
-+        "F3": {
-+          "value": {
-+            "kind": "text",
-+            "value": "Customer-minutes"
-+          },
-+          "format": {
-+            "background": "--token-surface-secondary"
-+          }
-+        },
-+        "A4": {
-+          "value": {
-+            "kind": "text",
-+            "value": "Feeder event 01"
-+          }
-+        },
-+        "B4": {
-+          "value": {
-+            "kind": "text",
-+            "value": "08:12"
-+          }
-+        },
-+        "C4": {
-+          "value": {
-+            "kind": "text",
-+            "value": "09:07"
-+          }
-+        },
-+        "D4": {
-+          "value": {
-+            "kind": "number",
-+            "value": 55
-+          },
-+          "format": {
-+            "valueFormat": "0"
-+          }
-+        },
-+        "E4": {
-+          "value": {
-+            "kind": "number",
-+            "value": 1240
-+          },
-+          "format": {
-+            "valueFormat": "#,##0"
-+          }
-+        },
-+        "F4": {
-+          "expression": "D4*E4",
-+          "format": {
-+            "valueFormat": "#,##0"
-+          }
-+        },
-+        "A6": {
-+          "value": {
-+            "kind": "text",
-+            "value": "Total customer-minutes"
-+          }
-+        },
-+        "F6": {
-+          "expression": "SUM(F4:F5)",
-+          "format": {
-+            "valueFormat": "#,##0"
-+          }
-+        }
-+      },
-+      "columnWidths": {
-+        "A": 180,
-+        "B": 100,
-+        "C": 100,
-+        "D": 100,
-+        "E": 120,
-+        "F": 150
-+      },
-+      "rowHeights": {
-+        "1": 38,
-+        "3": 30
-       },
+-      },
 -      "columnWidths": { "A": 180, "B": 100, "C": 100, "D": 100, "E": 120, "F": 150 },
 -      "rowHeights": { "1": 38, "3": 30 },
-       "formatRules": [
+-      "formatRules": [
 -        { "from": "A3", "to": "F3", "style": "header", "format": { "background": "--token-surface-secondary", "border": { "color": "--token-color-active-border", "width": 1, "style": "solid" } } },
 -        { "from": "F4", "to": "F20", "format": { "background": "--token-color-intelligence-surface" } }
-+        {
-+          "from": "A3",
-+          "to": "F3",
-+          "style": "header",
-+          "format": {
-+            "background": "--token-surface-secondary",
-+            "border": {
-+              "color": "--token-color-active-border",
-+              "width": 1,
-+              "style": "solid"
-+            }
-+          }
-+        },
-+        {
-+          "from": "F4",
-+          "to": "F20",
-+          "format": {
-+            "background": "--token-color-intelligence-surface"
-+          }
-+        }
-       ],
-       "frozenRows": 3,
-       "frozenColumns": 1,
-       "print": {
+-      ],
+-      "frozenRows": 3,
+-      "frozenColumns": 1,
+-      "print": {
 -        "page": { "paper": "letter", "orientation": "landscape", "margins": { "top": 0.5, "right": 0.5, "bottom": 0.5, "left": 0.5 } },
 -        "area": { "from": "A1", "to": "F20" },
-+        "page": {
-+          "paper": "letter",
-+          "orientation": "landscape",
-+          "margins": {
-+            "top": 0.5,
-+            "right": 0.5,
-+            "bottom": 0.5,
-+            "left": 0.5
-+          }
-+        },
-+        "area": {
-+          "from": "A1",
-+          "to": "F20"
-+        },
-         "repeatRows": "1:3",
-         "scale": "fit-width",
-         "gridlines": false,
-@@ -950,56 +1994,247 @@
-       "styles": {
-         "defaultKey": "body",
-         "styles": {
--          "body": { "name": "Body", "fontFamily": "IBM Plex Sans", "fontSize": 12, "color": "--token-ink-primary" },
--          "header": { "name": "Header", "fontFamily": "IBM Plex Sans", "fontSize": 11, "fontWeight": 650, "color": "--token-ink-primary" }
-+          "body": {
-+            "name": "Body",
-+            "fontFamily": "IBM Plex Sans",
-+            "fontSize": 12,
-+            "color": "--token-ink-primary"
-+          },
-+          "header": {
-+            "name": "Header",
-+            "fontFamily": "IBM Plex Sans",
-+            "fontSize": 11,
-+            "fontWeight": 650,
-+            "color": "--token-ink-primary"
-+          }
-         }
-       }
-     },
-     "variables": [],
--    "createdBy": { "kind": "user", "userId": "default-user" },
-+    "createdBy": {
-+      "kind": "user",
-+      "userId": "default-user"
-+    },
-     "revision": 3,
--    "updatedAt": 1784385000000
-+    "updatedAt": 1784385000000,
-+    "lastUsedAt": 1784298600000
-   },
-   {
-     "_id": "templates:10",
-     "_creationTime": 1779840000000,
-+    "projectId": "default",
-     "userId": "default-user",
-     "name": "Hardening cost model",
-     "description": "A transparent option model for unit cost, contingency, total investment, and annualized benefit.",
--    "tags": ["Finance", "Planning", "Model"],
-+    "tags": [
-+      "Finance",
-+      "Planning",
-+      "Model"
-+    ],
-     "body": {
-       "resource": "spreadsheet",
-       "cells": {
--        "A1": { "value": { "kind": "text", "value": "Hardening cost model" }, "merge": "E1", "format": { "background": "--token-color-accent-2-surface", "padding": { "x": 10, "y": 8 } } },
--        "A3": { "value": { "kind": "text", "value": "Option" }, "format": { "background": "--token-surface-secondary" } },
--        "B3": { "value": { "kind": "text", "value": "Units" }, "format": { "background": "--token-surface-secondary" } },
--        "C3": { "value": { "kind": "text", "value": "Unit cost" }, "format": { "background": "--token-surface-secondary" } },
--        "D3": { "value": { "kind": "text", "value": "Contingency" }, "format": { "background": "--token-surface-secondary" } },
--        "E3": { "value": { "kind": "text", "value": "Total" }, "format": { "background": "--token-surface-secondary" } },
--        "A4": { "value": { "kind": "text", "value": "Covered conductor" } },
--        "B4": { "value": { "kind": "number", "value": 18 }, "format": { "valueFormat": "0" } },
--        "C4": { "value": { "kind": "number", "value": 142000 }, "format": { "valueFormat": "$#,##0" } },
--        "D4": { "value": { "kind": "number", "value": 0.15 }, "format": { "valueFormat": "0%" } },
--        "E4": { "expression": "B4*C4*(1+D4)", "format": { "valueFormat": "$#,##0" } },
--        "A5": { "value": { "kind": "text", "value": "Underground segment" } },
--        "B5": { "value": { "kind": "number", "value": 4 }, "format": { "valueFormat": "0" } },
--        "C5": { "value": { "kind": "number", "value": 890000 }, "format": { "valueFormat": "$#,##0" } },
--        "D5": { "value": { "kind": "number", "value": 0.2 }, "format": { "valueFormat": "0%" } },
--        "E5": { "expression": "B5*C5*(1+D5)", "format": { "valueFormat": "$#,##0" } },
--        "A7": { "value": { "kind": "text", "value": "Portfolio total" } },
--        "E7": { "expression": "SUM(E4:E6)", "format": { "valueFormat": "$#,##0", "background": "--token-color-accent-2-surface" } }
-+        "A1": {
-+          "value": {
-+            "kind": "text",
-+            "value": "Hardening cost model"
-+          },
-+          "merge": "E1",
-+          "format": {
-+            "background": "--token-color-accent-2-surface",
-+            "padding": {
-+              "x": 10,
-+              "y": 8
-+            }
-+          }
-+        },
-+        "A3": {
-+          "value": {
-+            "kind": "text",
-+            "value": "Option"
-+          },
-+          "format": {
-+            "background": "--token-surface-secondary"
-+          }
-+        },
-+        "B3": {
-+          "value": {
-+            "kind": "text",
-+            "value": "Units"
-+          },
-+          "format": {
-+            "background": "--token-surface-secondary"
-+          }
-+        },
-+        "C3": {
-+          "value": {
-+            "kind": "text",
-+            "value": "Unit cost"
-+          },
-+          "format": {
-+            "background": "--token-surface-secondary"
-+          }
-+        },
-+        "D3": {
-+          "value": {
-+            "kind": "text",
-+            "value": "Contingency"
-+          },
-+          "format": {
-+            "background": "--token-surface-secondary"
-+          }
-+        },
-+        "E3": {
-+          "value": {
-+            "kind": "text",
-+            "value": "Total"
-+          },
-+          "format": {
-+            "background": "--token-surface-secondary"
-+          }
-+        },
-+        "A4": {
-+          "value": {
-+            "kind": "text",
-+            "value": "Covered conductor"
-+          }
-+        },
-+        "B4": {
-+          "value": {
-+            "kind": "number",
-+            "value": 18
-+          },
-+          "format": {
-+            "valueFormat": "0"
-+          }
-+        },
-+        "C4": {
-+          "value": {
-+            "kind": "number",
-+            "value": 142000
-+          },
-+          "format": {
-+            "valueFormat": "$#,##0"
-+          }
-+        },
-+        "D4": {
-+          "value": {
-+            "kind": "number",
-+            "value": 0.15
-+          },
-+          "format": {
-+            "valueFormat": "0%"
-+          }
-+        },
-+        "E4": {
-+          "expression": "B4*C4*(1+D4)",
-+          "format": {
-+            "valueFormat": "$#,##0"
-+          }
-+        },
-+        "A5": {
-+          "value": {
-+            "kind": "text",
-+            "value": "Underground segment"
-+          }
-+        },
-+        "B5": {
-+          "value": {
-+            "kind": "number",
-+            "value": 4
-+          },
-+          "format": {
-+            "valueFormat": "0"
-+          }
-+        },
-+        "C5": {
-+          "value": {
-+            "kind": "number",
-+            "value": 890000
-+          },
-+          "format": {
-+            "valueFormat": "$#,##0"
-+          }
-+        },
-+        "D5": {
-+          "value": {
-+            "kind": "number",
-+            "value": 0.2
-+          },
-+          "format": {
-+            "valueFormat": "0%"
-+          }
-+        },
-+        "E5": {
-+          "expression": "B5*C5*(1+D5)",
-+          "format": {
-+            "valueFormat": "$#,##0"
-+          }
-+        },
-+        "A7": {
-+          "value": {
-+            "kind": "text",
-+            "value": "Portfolio total"
-+          }
-+        },
-+        "E7": {
-+          "expression": "SUM(E4:E6)",
-+          "format": {
-+            "valueFormat": "$#,##0",
-+            "background": "--token-color-accent-2-surface"
-+          }
-+        }
-+      },
-+      "columnWidths": {
-+        "A": 210,
-+        "B": 90,
-+        "C": 120,
-+        "D": 110,
-+        "E": 150
-+      },
-+      "rowHeights": {
-+        "1": 38,
-+        "3": 30
-       },
--      "columnWidths": { "A": 210, "B": 90, "C": 120, "D": 110, "E": 150 },
--      "rowHeights": { "1": 38, "3": 30 },
-       "formatRules": [
--        { "from": "A3", "to": "E3", "style": "header", "format": { "background": "--token-surface-secondary", "border": { "color": "--token-color-active-border", "width": 1, "style": "solid" } } },
--        { "from": "E4", "to": "E20", "format": { "background": "--token-color-accent-2-surface" } }
-+        {
-+          "from": "A3",
-+          "to": "E3",
-+          "style": "header",
-+          "format": {
-+            "background": "--token-surface-secondary",
-+            "border": {
-+              "color": "--token-color-active-border",
-+              "width": 1,
-+              "style": "solid"
-+            }
-+          }
-+        },
-+        {
-+          "from": "E4",
-+          "to": "E20",
-+          "format": {
-+            "background": "--token-color-accent-2-surface"
-+          }
-+        }
-       ],
-       "frozenRows": 3,
-       "frozenColumns": 1,
-       "print": {
--        "page": { "paper": "letter", "orientation": "landscape", "margins": { "top": 0.5, "right": 0.5, "bottom": 0.5, "left": 0.5 } },
--        "area": { "from": "A1", "to": "E20" },
-+        "page": {
-+          "paper": "letter",
-+          "orientation": "landscape",
-+          "margins": {
-+            "top": 0.5,
-+            "right": 0.5,
-+            "bottom": 0.5,
-+            "left": 0.5
-+          }
-+        },
-+        "area": {
-+          "from": "A1",
-+          "to": "E20"
-+        },
-         "repeatRows": "1:3",
-         "scale": "fit-width",
-         "gridlines": false,
-@@ -1008,14 +2243,181 @@
-       "styles": {
-         "defaultKey": "body",
-         "styles": {
--          "body": { "name": "Body", "fontFamily": "IBM Plex Sans", "fontSize": 12, "color": "--token-ink-primary" },
--          "header": { "name": "Header", "fontFamily": "IBM Plex Sans", "fontSize": 11, "fontWeight": 650, "color": "--token-ink-primary" }
-+          "body": {
-+            "name": "Body",
-+            "fontFamily": "IBM Plex Sans",
-+            "fontSize": 12,
-+            "color": "--token-ink-primary"
-+          },
-+          "header": {
-+            "name": "Header",
-+            "fontFamily": "IBM Plex Sans",
-+            "fontSize": 11,
-+            "fontWeight": 650,
-+            "color": "--token-ink-primary"
-+          }
-         }
-       }
-     },
-     "variables": [],
--    "createdBy": { "kind": "user", "userId": "default-user" },
-+    "createdBy": {
-+      "kind": "user",
-+      "userId": "default-user"
-+    },
-     "revision": 5,
--    "updatedAt": 1782306000000
-+    "updatedAt": 1782306000000,
-+    "lastUsedAt": 1782219600000
-+  },
-+  {
-+    "_id": "templates:11",
-+    "_creationTime": 1788000000000,
-+    "projectId": "default",
-+    "userId": "default-user",
-+    "name": "Section divider",
-+    "description": "One slide that opens a section: a large title over a one-line lead.",
-+    "tags": [
-+      "Presentation",
-+      "Brand"
-+    ],
-+    "body": {
+-        "repeatRows": "1:3",
+-        "scale": "fit-width",
+-        "gridlines": false,
+-        "headings": false
 +      "resource": "slides",
 +      "aspectRatio": "16:9",
 +      "theme": {
@@ -14204,10 +13810,12 @@
 +          "muted": "--token-ink-muted"
 +        },
 +        "fontFamily": "IBM Plex Sans"
-+      },
-+      "styles": {
-+        "defaultKey": "body",
-+        "styles": {
+       },
+       "styles": {
+         "defaultKey": "body",
+         "styles": {
+-          "body": { "name": "Body", "fontFamily": "IBM Plex Sans", "fontSize": 12, "color": "--token-ink-primary" },
+-          "header": { "name": "Header", "fontFamily": "IBM Plex Sans", "fontSize": 11, "fontWeight": 650, "color": "--token-ink-primary" }
 +          "title": {
 +            "name": "Title",
 +            "fontSize": 40,
@@ -14221,7 +13829,8 @@
 +            "color": "--token-ink-secondary",
 +            "lineHeight": 1.35
 +          }
-+        }
+         }
+-      }
 +      },
 +      "layouts": [
 +        {
@@ -14322,19 +13931,414 @@
 +        }
 +      ],
 +      "sections": []
-+    },
-+    "variables": [],
+     },
+     "variables": [],
+-    "createdBy": { "kind": "user", "userId": "default-user" },
+-    "revision": 3,
+-    "updatedAt": 1784385000000
 +    "createdBy": {
 +      "kind": "user",
 +      "userId": "default-user"
 +    },
 +    "revision": 1,
 +    "updatedAt": 1788000000000
++  },
++  {
++    "_id": "templates:9",
++    "_creationTime": 1788000000000,
++    "projectId": "default",
++    "userId": "users:1",
++    "name": "Client status note",
++    "description": "A short note to one client about where their work stands.",
++    "tags": [
++      "Operations",
++      "Reporting"
++    ],
++    "body": {
++      "resource": "document",
++      "rows": [
++        {
++          "id": "#csn-row-title",
++          "kind": "blocks",
++          "blocks": [
++            {
++              "id": "#csn-title",
++              "type": "text",
++              "variant": "heading",
++              "level": 1,
++              "style": "title",
++              "atoms": [
++                {
++                  "id": "#csn-title-a",
++                  "kind": "literal",
++                  "text": "Status for "
++                },
++                {
++                  "id": "#csn-title-b",
++                  "kind": "template",
++                  "name": "client_name"
++                }
++              ],
++              "display": "Status for {client_name}",
++              "marks": []
++            }
++          ]
++        },
++        {
++          "id": "#csn-row-period",
++          "kind": "blocks",
++          "blocks": [
++            {
++              "id": "#csn-period",
++              "type": "text",
++              "variant": "paragraph",
++              "atoms": [
++                {
++                  "id": "#csn-period-a",
++                  "kind": "literal",
++                  "text": "Covering "
++                },
++                {
++                  "id": "#csn-period-b",
++                  "kind": "template",
++                  "name": "reporting_period"
++                },
++                {
++                  "id": "#csn-period-c",
++                  "kind": "literal",
++                  "text": "."
++                }
++              ],
++              "display": "Covering {reporting_period}.",
++              "marks": []
++            }
++          ]
++        },
++        {
++          "id": "#csn-row-prompt",
++          "kind": "blocks",
++          "blocks": [
++            {
++              "id": "#csn-prompt",
++              "type": "prompt",
++              "atoms": [
++                {
++                  "id": "#csn-prompt-a",
++                  "kind": "literal",
++                  "text": "Write three paragraphs for "
++                },
++                {
++                  "id": "#csn-prompt-b",
++                  "kind": "template",
++                  "name": "client_name"
++                },
++                {
++                  "id": "#csn-prompt-c",
++                  "kind": "literal",
++                  "text": " on what moved, what is blocked, and what happens next."
++                }
++              ],
++              "display": "Write three paragraphs for {client_name} on what moved, what is blocked, and what happens next.",
++              "marks": [],
++              "scope": {
++                "include": [
++                  {
++                    "select": "variable",
++                    "name": "status_evidence"
++                  }
++                ],
++                "exclude": []
++              },
++              "state": "idle"
++            }
++          ]
++        }
++      ]
++    },
++    "variables": [
++      {
++        "name": "client_name",
++        "label": "Client name",
++        "description": "Who this note is addressed to, exactly as they should see it.",
++        "kind": "text"
++      },
++      {
++        "name": "reporting_period",
++        "label": "Reporting period",
++        "description": "The window this note covers, in whatever words the client uses.",
++        "kind": "text",
++        "text": "the last four weeks"
++      },
++      {
++        "name": "status_evidence",
++        "label": "Status evidence",
++        "description": "The findings and documents this note should be written from.",
++        "default": {
++          "include": [
++            {
++              "select": "kinds",
++              "kinds": [
++                "finding"
++              ]
++            }
++          ],
++          "exclude": []
++        }
++      }
++    ],
++    "createdBy": {
++      "kind": "user",
++      "userId": "users:1"
++    },
++    "revision": 1,
++    "updatedAt": 1788000000000
+   },
+   {
+     "_id": "templates:10",
+-    "_creationTime": 1779840000000,
+-    "userId": "default-user",
+-    "name": "Hardening cost model",
+-    "description": "A transparent option model for unit cost, contingency, total investment, and annualized benefit.",
+-    "tags": ["Finance", "Planning", "Model"],
++    "_creationTime": 1788000000000,
++    "projectId": "default",
++    "userId": "users:1",
++    "name": "Incident one-pager",
++    "description": "One page on a single incident: what happened, what it cost, what changes.",
++    "tags": [
++      "Operations",
++      "Reliability"
++    ],
+     "body": {
+-      "resource": "spreadsheet",
+-      "cells": {
+-        "A1": { "value": { "kind": "text", "value": "Hardening cost model" }, "merge": "E1", "format": { "background": "--token-color-accent-2-surface", "padding": { "x": 10, "y": 8 } } },
+-        "A3": { "value": { "kind": "text", "value": "Option" }, "format": { "background": "--token-surface-secondary" } },
+-        "B3": { "value": { "kind": "text", "value": "Units" }, "format": { "background": "--token-surface-secondary" } },
+-        "C3": { "value": { "kind": "text", "value": "Unit cost" }, "format": { "background": "--token-surface-secondary" } },
+-        "D3": { "value": { "kind": "text", "value": "Contingency" }, "format": { "background": "--token-surface-secondary" } },
+-        "E3": { "value": { "kind": "text", "value": "Total" }, "format": { "background": "--token-surface-secondary" } },
+-        "A4": { "value": { "kind": "text", "value": "Covered conductor" } },
+-        "B4": { "value": { "kind": "number", "value": 18 }, "format": { "valueFormat": "0" } },
+-        "C4": { "value": { "kind": "number", "value": 142000 }, "format": { "valueFormat": "$#,##0" } },
+-        "D4": { "value": { "kind": "number", "value": 0.15 }, "format": { "valueFormat": "0%" } },
+-        "E4": { "expression": "B4*C4*(1+D4)", "format": { "valueFormat": "$#,##0" } },
+-        "A5": { "value": { "kind": "text", "value": "Underground segment" } },
+-        "B5": { "value": { "kind": "number", "value": 4 }, "format": { "valueFormat": "0" } },
+-        "C5": { "value": { "kind": "number", "value": 890000 }, "format": { "valueFormat": "$#,##0" } },
+-        "D5": { "value": { "kind": "number", "value": 0.2 }, "format": { "valueFormat": "0%" } },
+-        "E5": { "expression": "B5*C5*(1+D5)", "format": { "valueFormat": "$#,##0" } },
+-        "A7": { "value": { "kind": "text", "value": "Portfolio total" } },
+-        "E7": { "expression": "SUM(E4:E6)", "format": { "valueFormat": "$#,##0", "background": "--token-color-accent-2-surface" } }
++      "resource": "document",
++      "rows": [
++        {
++          "id": "#iop-row-title",
++          "kind": "blocks",
++          "blocks": [
++            {
++              "id": "#iop-title",
++              "type": "text",
++              "variant": "heading",
++              "level": 1,
++              "style": "title",
++              "atoms": [
++                {
++                  "id": "#iop-title-a",
++                  "kind": "template",
++                  "name": "incident_title"
++                }
++              ],
++              "display": "{incident_title}",
++              "marks": []
++            }
++          ]
++        },
++        {
++          "id": "#iop-row-what",
++          "kind": "blocks",
++          "blocks": [
++            {
++              "id": "#iop-what",
++              "type": "text",
++              "variant": "heading",
++              "level": 2,
++              "style": "heading",
++              "atoms": [
++                {
++                  "id": "#iop-what-a",
++                  "kind": "literal",
++                  "text": "What happened"
++                }
++              ],
++              "display": "What happened",
++              "marks": []
++            }
++          ]
++        },
++        {
++          "id": "#iop-row-what-prompt",
++          "kind": "blocks",
++          "blocks": [
++            {
++              "id": "#iop-what-prompt",
++              "type": "prompt",
++              "atoms": [
++                {
++                  "id": "#iop-what-prompt-a",
++                  "kind": "literal",
++                  "text": "Give the sequence of events, with times, in one paragraph."
++                }
++              ],
++              "display": "Give the sequence of events, with times, in one paragraph.",
++              "marks": [],
++              "scope": {
++                "include": [
++                  {
++                    "select": "variable",
++                    "name": "incident_record"
++                  }
++                ],
++                "exclude": []
++              },
++              "state": "idle"
++            }
++          ]
++        },
++        {
++          "id": "#iop-row-cost",
++          "kind": "blocks",
++          "blocks": [
++            {
++              "id": "#iop-cost",
++              "type": "text",
++              "variant": "heading",
++              "level": 2,
++              "style": "heading",
++              "atoms": [
++                {
++                  "id": "#iop-cost-a",
++                  "kind": "literal",
++                  "text": "What it cost"
++                }
++              ],
++              "display": "What it cost",
++              "marks": []
++            }
++          ]
++        },
++        {
++          "id": "#iop-row-cost-prompt",
++          "kind": "blocks",
++          "blocks": [
++            {
++              "id": "#iop-cost-prompt",
++              "type": "prompt",
++              "atoms": [
++                {
++                  "id": "#iop-cost-prompt-a",
++                  "kind": "literal",
++                  "text": "State the cost, and say which assumption it turns on."
++                }
++              ],
++              "display": "State the cost, and say which assumption it turns on.",
++              "marks": [],
++              "scope": {
++                "include": [
++                  {
++                    "select": "variable",
++                    "name": "cost_models"
++                  }
++                ],
++                "exclude": []
++              },
++              "state": "idle"
++            }
++          ]
++        }
++      ]
++    },
++    "variables": [
++      {
++        "name": "incident_title",
++        "label": "Incident title",
++        "description": "The name this incident is known by, as it should head the page.",
++        "kind": "text"
+       },
+-      "columnWidths": { "A": 210, "B": 90, "C": 120, "D": 110, "E": 150 },
+-      "rowHeights": { "1": 38, "3": 30 },
+-      "formatRules": [
+-        { "from": "A3", "to": "E3", "style": "header", "format": { "background": "--token-surface-secondary", "border": { "color": "--token-color-active-border", "width": 1, "style": "solid" } } },
+-        { "from": "E4", "to": "E20", "format": { "background": "--token-color-accent-2-surface" } }
+-      ],
+-      "frozenRows": 3,
+-      "frozenColumns": 1,
+-      "print": {
+-        "page": { "paper": "letter", "orientation": "landscape", "margins": { "top": 0.5, "right": 0.5, "bottom": 0.5, "left": 0.5 } },
+-        "area": { "from": "A1", "to": "E20" },
+-        "repeatRows": "1:3",
+-        "scale": "fit-width",
+-        "gridlines": false,
+-        "headings": false
++      {
++        "name": "incident_record",
++        "label": "Incident record",
++        "description": "Everything the write-up should be grounded in.",
++        "default": {
++          "include": [
++            {
++              "select": "kinds",
++              "kinds": [
++                "finding"
++              ]
++            },
++            {
++              "select": "kinds",
++              "kinds": [
++                "document"
++              ]
++            }
++          ],
++          "exclude": []
++        }
+       },
+-      "styles": {
+-        "defaultKey": "body",
+-        "styles": {
+-          "body": { "name": "Body", "fontFamily": "IBM Plex Sans", "fontSize": 12, "color": "--token-ink-primary" },
+-          "header": { "name": "Header", "fontFamily": "IBM Plex Sans", "fontSize": 11, "fontWeight": 650, "color": "--token-ink-primary" }
++      {
++        "name": "cost_models",
++        "label": "Cost models",
++        "description": "The spreadsheets that put a number on it.",
++        "default": {
++          "include": [
++            {
++              "select": "kinds",
++              "kinds": [
++                "spreadsheet"
++              ]
++            }
++          ],
++          "exclude": []
+         }
+       }
++    ],
++    "createdBy": {
++      "kind": "user",
++      "userId": "users:1"
+     },
+-    "variables": [],
+-    "createdBy": { "kind": "user", "userId": "default-user" },
+-    "revision": 5,
+-    "updatedAt": 1782306000000
++    "revision": 1,
++    "updatedAt": 1788000000000
    }
  ]
 ~~~~
 
-### changed · `seed/templateVersions.json` (+164 / −1)
+### changed · `seed/templateVersions.json` (+497 / −1)
 
 ~~~~diff
 @@ -459,9 +459,19 @@
@@ -14371,7 +14375,7 @@
        }
      ],
      "at": 1787244300000
-@@ -2195,5 +2211,152 @@
+@@ -2195,5 +2211,485 @@
      },
      "variables": [],
      "at": 1782306000000
@@ -14522,6 +14526,339 @@
 +    },
 +    "variables": [],
 +    "at": 1788000000000
++  },
++  {
++    "_id": "templateVersions:9-1",
++    "_creationTime": 1788000000000,
++    "templateId": "templates:9",
++    "revision": 1,
++    "name": "Client status note",
++    "description": "A short note to one client about where their work stands.",
++    "tags": [
++      "Operations",
++      "Reporting"
++    ],
++    "body": {
++      "resource": "document",
++      "rows": [
++        {
++          "id": "#csn-row-title",
++          "kind": "blocks",
++          "blocks": [
++            {
++              "id": "#csn-title",
++              "type": "text",
++              "variant": "heading",
++              "level": 1,
++              "style": "title",
++              "atoms": [
++                {
++                  "id": "#csn-title-a",
++                  "kind": "literal",
++                  "text": "Status for "
++                },
++                {
++                  "id": "#csn-title-b",
++                  "kind": "template",
++                  "name": "client_name"
++                }
++              ],
++              "display": "Status for {client_name}",
++              "marks": []
++            }
++          ]
++        },
++        {
++          "id": "#csn-row-period",
++          "kind": "blocks",
++          "blocks": [
++            {
++              "id": "#csn-period",
++              "type": "text",
++              "variant": "paragraph",
++              "atoms": [
++                {
++                  "id": "#csn-period-a",
++                  "kind": "literal",
++                  "text": "Covering "
++                },
++                {
++                  "id": "#csn-period-b",
++                  "kind": "template",
++                  "name": "reporting_period"
++                },
++                {
++                  "id": "#csn-period-c",
++                  "kind": "literal",
++                  "text": "."
++                }
++              ],
++              "display": "Covering {reporting_period}.",
++              "marks": []
++            }
++          ]
++        },
++        {
++          "id": "#csn-row-prompt",
++          "kind": "blocks",
++          "blocks": [
++            {
++              "id": "#csn-prompt",
++              "type": "prompt",
++              "atoms": [
++                {
++                  "id": "#csn-prompt-a",
++                  "kind": "literal",
++                  "text": "Write three paragraphs for "
++                },
++                {
++                  "id": "#csn-prompt-b",
++                  "kind": "template",
++                  "name": "client_name"
++                },
++                {
++                  "id": "#csn-prompt-c",
++                  "kind": "literal",
++                  "text": " on what moved, what is blocked, and what happens next."
++                }
++              ],
++              "display": "Write three paragraphs for {client_name} on what moved, what is blocked, and what happens next.",
++              "marks": [],
++              "scope": {
++                "include": [
++                  {
++                    "select": "variable",
++                    "name": "status_evidence"
++                  }
++                ],
++                "exclude": []
++              },
++              "state": "idle"
++            }
++          ]
++        }
++      ]
++    },
++    "variables": [
++      {
++        "name": "client_name",
++        "label": "Client name",
++        "description": "Who this note is addressed to, exactly as they should see it.",
++        "kind": "text"
++      },
++      {
++        "name": "reporting_period",
++        "label": "Reporting period",
++        "description": "The window this note covers, in whatever words the client uses.",
++        "kind": "text",
++        "text": "the last four weeks"
++      },
++      {
++        "name": "status_evidence",
++        "label": "Status evidence",
++        "description": "The findings and documents this note should be written from.",
++        "default": {
++          "include": [
++            {
++              "select": "kinds",
++              "kinds": [
++                "finding"
++              ]
++            }
++          ],
++          "exclude": []
++        }
++      }
++    ],
++    "at": 1788000000000
++  },
++  {
++    "_id": "templateVersions:10-1",
++    "_creationTime": 1788000000000,
++    "templateId": "templates:10",
++    "revision": 1,
++    "name": "Incident one-pager",
++    "description": "One page on a single incident: what happened, what it cost, what changes.",
++    "tags": [
++      "Operations",
++      "Reliability"
++    ],
++    "body": {
++      "resource": "document",
++      "rows": [
++        {
++          "id": "#iop-row-title",
++          "kind": "blocks",
++          "blocks": [
++            {
++              "id": "#iop-title",
++              "type": "text",
++              "variant": "heading",
++              "level": 1,
++              "style": "title",
++              "atoms": [
++                {
++                  "id": "#iop-title-a",
++                  "kind": "template",
++                  "name": "incident_title"
++                }
++              ],
++              "display": "{incident_title}",
++              "marks": []
++            }
++          ]
++        },
++        {
++          "id": "#iop-row-what",
++          "kind": "blocks",
++          "blocks": [
++            {
++              "id": "#iop-what",
++              "type": "text",
++              "variant": "heading",
++              "level": 2,
++              "style": "heading",
++              "atoms": [
++                {
++                  "id": "#iop-what-a",
++                  "kind": "literal",
++                  "text": "What happened"
++                }
++              ],
++              "display": "What happened",
++              "marks": []
++            }
++          ]
++        },
++        {
++          "id": "#iop-row-what-prompt",
++          "kind": "blocks",
++          "blocks": [
++            {
++              "id": "#iop-what-prompt",
++              "type": "prompt",
++              "atoms": [
++                {
++                  "id": "#iop-what-prompt-a",
++                  "kind": "literal",
++                  "text": "Give the sequence of events, with times, in one paragraph."
++                }
++              ],
++              "display": "Give the sequence of events, with times, in one paragraph.",
++              "marks": [],
++              "scope": {
++                "include": [
++                  {
++                    "select": "variable",
++                    "name": "incident_record"
++                  }
++                ],
++                "exclude": []
++              },
++              "state": "idle"
++            }
++          ]
++        },
++        {
++          "id": "#iop-row-cost",
++          "kind": "blocks",
++          "blocks": [
++            {
++              "id": "#iop-cost",
++              "type": "text",
++              "variant": "heading",
++              "level": 2,
++              "style": "heading",
++              "atoms": [
++                {
++                  "id": "#iop-cost-a",
++                  "kind": "literal",
++                  "text": "What it cost"
++                }
++              ],
++              "display": "What it cost",
++              "marks": []
++            }
++          ]
++        },
++        {
++          "id": "#iop-row-cost-prompt",
++          "kind": "blocks",
++          "blocks": [
++            {
++              "id": "#iop-cost-prompt",
++              "type": "prompt",
++              "atoms": [
++                {
++                  "id": "#iop-cost-prompt-a",
++                  "kind": "literal",
++                  "text": "State the cost, and say which assumption it turns on."
++                }
++              ],
++              "display": "State the cost, and say which assumption it turns on.",
++              "marks": [],
++              "scope": {
++                "include": [
++                  {
++                    "select": "variable",
++                    "name": "cost_models"
++                  }
++                ],
++                "exclude": []
++              },
++              "state": "idle"
++            }
++          ]
++        }
++      ]
++    },
++    "variables": [
++      {
++        "name": "incident_title",
++        "label": "Incident title",
++        "description": "The name this incident is known by, as it should head the page.",
++        "kind": "text"
++      },
++      {
++        "name": "incident_record",
++        "label": "Incident record",
++        "description": "Everything the write-up should be grounded in.",
++        "default": {
++          "include": [
++            {
++              "select": "kinds",
++              "kinds": [
++                "finding"
++              ]
++            },
++            {
++              "select": "kinds",
++              "kinds": [
++                "document"
++              ]
++            }
++          ],
++          "exclude": []
++        }
++      },
++      {
++        "name": "cost_models",
++        "label": "Cost models",
++        "description": "The spreadsheets that put a number on it.",
++        "default": {
++          "include": [
++            {
++              "select": "kinds",
++              "kinds": [
++                "spreadsheet"
++              ]
++            }
++          ],
++          "exclude": []
++        }
++      }
++    ],
++    "at": 1788000000000
    }
  ]
 ~~~~
@@ -14531,7 +14868,7 @@
 ### changed · `test/browser/document-editor.spec.ts` (+8 / −1)
 
 ~~~~diff
-@@ -656,10 +656,17 @@ test("document context panels are operational and compact", async ({ page }) =>
+@@ -724,10 +724,17 @@ test("document context panels are operational and compact", async ({ page }) =>
    await expect(context.getByText(/from edge/i)).toHaveCount(0);
    await expect(context.getByRole("button", { name: /Increase|Decrease/ })).toHaveCount(0);
  
@@ -14552,10 +14889,10 @@
  test("document named styles mirror the text formatting inspector without metadata clutter", async ({ page }) => {
 ~~~~
 
-### new · `test/browser/template-features.spec.ts` (+274 / −0)
+### new · `test/browser/template-features.spec.ts` (+277 / −0)
 
 ~~~~diff
-@@ -0,0 +1,274 @@
+@@ -0,0 +1,277 @@
 +import { expect, test, type Locator, type Page, type TestInfo } from "@playwright/test";
 +
 +const unexpected: string[] = [];
@@ -14649,16 +14986,16 @@
 +  const modal = page.getByRole("dialog", { name: "Insert “Technical glossary”" });
 +  await expect(modal).toBeVisible();
 +
-+  // Every parameter is listed, with what it is answered with beside it.
-+  await expect(modal.getByRole("button", { name: "Source material" })).toBeVisible();
-+  await expect(modal.getByRole("button", { name: "Default · Documents, Findings" })).toBeVisible();
++  // Every parameter is listed, with its description and what answers it.
++  await expect(modal.getByText("Source material", { exact: true })).toBeVisible();
++  await expect(modal.getByRole("button", { name: /Documents, Findings/ })).toBeVisible();
 +
 +  // One of them takes words, so Insert is held until it has some.
-+  await expect(modal.getByRole("button", { name: "Needs input" })).toBeVisible();
++  await expect(modal.locator(".answer.missing")).toHaveCount(1);
 +  await modal.getByRole("textbox", { name: "What Subject line says here" }).fill("Winter terms");
-+  await expect(modal.getByRole("button", { name: "Needs input" })).toHaveCount(0);
++  await expect(modal.locator(".answer.missing")).toHaveCount(0);
 +
-+  await modal.getByRole("button", { name: "Default · Documents, Findings" }).click();
++  await modal.getByRole("button", { name: /Documents, Findings/ }).click();
 +  const builder = page.getByRole("dialog", { name: "What Source material selects here" });
 +  await expect(builder).toBeVisible();
 +  await builder.getByRole("button", { name: "Sets", exact: true }).click();
@@ -14670,7 +15007,7 @@
 +  await expect(builder.getByText("Winter filings").first()).toBeVisible();
 +  await builder.getByRole("button", { name: "Use this", exact: true }).click();
 +
-+  await expect(modal.getByRole("button", { name: "Winter filings" })).toBeVisible();
++  await expect(modal.getByRole("button", { name: /Winter filings/ })).toBeVisible();
 +  await modal.getByRole("button", { name: "Insert", exact: true }).click();
 +
 +  await expect(context.getByText("Inserted “Technical glossary”.", { exact: true })).toBeVisible();
@@ -14798,9 +15135,12 @@
 +
 +  const builder = page.getByRole("dialog", { name: "Default scope for Incident evidence" });
 +  await expect(builder).toBeVisible();
-+  await expect(builder.getByText("Findings, Documents, Spreadsheets, minus Interconnect glossary")).toBeVisible();
++
++  // One term, one row: the stored rule's three kinds are three rows, not one.
++  await expect(builder.locator(".term")).toHaveCount(3);
 +
 +  await builder.getByRole("button", { name: /^Exclude/ }).click();
++  await expect(builder.locator(".term")).toHaveCount(1);
 +  await builder.getByRole("button", { name: "Resources", exact: true }).click();
 +  await builder
 +    .locator(".offer")
@@ -14938,8 +15278,8 @@
 +  await page.goto("/app/dev-project/reference/templates/scope", { waitUntil: "networkidle" });
 +
 +  await expect(page.getByRole("heading", { level: 2, name: "The builder" })).toBeVisible();
-+  await expect(page.getByText("Insert “Technical glossary”").first()).toBeVisible();
-+  await expect(page.getByText("Add to exclude", { exact: true })).toBeVisible();
++  await expect(page.getByText("Insert “Client status note”").first()).toBeVisible();
++  await expect(page.getByText("From", { exact: true }).first()).toBeVisible();
 +  await expect(page.getByRole("heading", { level: 2, name: "Two kinds of parameter" })).toBeVisible();
 +
 +  await expect(page.getByRole("heading", { level: 2, name: "Every file it touched" })).toBeVisible();
@@ -15123,10 +15463,10 @@
 +export { default as ScopeBuilder } from "$authored-components/scope-builder/scope-builder.svelte";
 ~~~~
 
-### new · `src/lib/components/authored/scope-builder/scope-builder.svelte` (+454 / −0)
+### new · `src/lib/components/authored/scope-builder/scope-builder.svelte` (+455 / −0)
 
 ~~~~diff
-@@ -0,0 +1,454 @@
+@@ -0,0 +1,455 @@
 +<script lang="ts">
 +  import { Button } from "$vendored-components/button";
 +  import { Input } from "$vendored-components/input";
@@ -15180,7 +15520,6 @@
 +    whole,
 +    include,
 +    exclude,
-+    sentence,
 +    count,
 +    preview = [],
 +    sources = [],
@@ -15189,14 +15528,13 @@
 +    onmode,
 +    onadd,
 +    ondrop,
++    onclear,
 +    onreset
 +  }: {
 +    /** Whether the rule is the floor: everything the project holds. */
 +    whole: boolean;
 +    include: readonly ScopeRow[];
 +    exclude: readonly ScopeRow[];
-+    /** The rule as one sentence, the same one every surface shows afterwards. */
-+    sentence: string;
 +    /** How many resources it selects now. */
 +    count: number;
 +    /** What those resources are, for the list under the count. */
@@ -15209,6 +15547,8 @@
 +    onmode: (whole: boolean) => void;
 +    onadd: (side: ScopeSide, source: string, key: string) => void;
 +    ondrop: (side: ScopeSide, key: string) => void;
++    /** Empty both sides, to start again from nothing. */
++    onclear: () => void;
 +    onreset?: () => void;
 +  } = $props();
 +
@@ -15261,7 +15601,7 @@
 +  <div class="panes">
 +    <section class="pane" aria-label={`Add to ${side === "include" ? "include" : "exclude"}`}>
 +      <header>
-+        <b>Add to {side === "include" ? "include" : "exclude"}</b>
++        <b>From</b>
 +      </header>
 +      <div class="sources" role="group" aria-label="Where to add from">
 +        {#each sources as source (source.key)}
@@ -15349,8 +15689,6 @@
 +    </section>
 +  </div>
 +
-+  <p class="sentence">{sentence}</p>
-+
 +  <div class="foot">
 +    <div class="floor">
 +      <Button
@@ -15374,6 +15712,15 @@
 +          Default
 +        </Button>
 +      {/if}
++      <Button
++        variant="ghost"
++        size="xs"
++        {disabled}
++        title="Empty both sides and start again"
++        onclick={onclear}
++      >
++        Clear
++      </Button>
 +    </div>
 +
 +    <div class="count">
@@ -15443,11 +15790,15 @@
 +    gap: calc(var(--token-spacing-unit) * 2);
 +  }
 +
++  /**
++   * Both panes are one fixed height, so the modal does not jump as somebody
++   * clicks between Kinds, Sets and Resources looking for what they want.
++   */
 +  .pane {
 +    display: flex;
 +    flex-direction: column;
 +    gap: calc(var(--token-spacing-unit) * 1);
-+    min-height: 16rem;
++    height: 21rem;
 +    padding: calc(var(--token-spacing-unit) * 1.5);
 +    border: 1px solid var(--token-border-subtle);
 +    border-radius: var(--token-radius-panel);
@@ -15469,7 +15820,7 @@
 +    display: flex;
 +    flex: 1;
 +    flex-direction: column;
-+    max-height: 16rem;
++    min-height: 0;
 +    overflow-y: auto;
 +  }
 +
@@ -15531,16 +15882,6 @@
 +
 +  .refused { color: var(--token-color-attention-text); }
 +
-+  .sentence {
-+    margin: 0;
-+    padding: calc(var(--token-spacing-unit) * 1.5);
-+    border-inline-start: 2px solid var(--token-color-accent-1-text);
-+    border-radius: 0 var(--token-radius-control) var(--token-radius-control) 0;
-+    background: var(--token-color-accent-1-surface);
-+    color: var(--token-ink-primary);
-+    font-size: var(--token-text-body-sm);
-+  }
-+
 +  .foot {
 +    display: flex;
 +    flex-wrap: wrap;
@@ -15597,29 +15938,31 @@
 +export { default as TemplateAnswers } from "$authored-components/template-answers/template-answers.svelte";
 ~~~~
 
-### new · `src/lib/components/authored/template-answers/template-answers.svelte` (+208 / −0)
+### new · `src/lib/components/authored/template-answers/template-answers.svelte` (+185 / −0)
 
 ~~~~diff
-@@ -0,0 +1,208 @@
+@@ -0,0 +1,185 @@
 +<script lang="ts">
 +  import { Button } from "$vendored-components/button";
 +  import { Textarea } from "$vendored-components/textarea";
 +  import { traceNode } from "$development-components/trace.svelte";
 +
 +  /**
-+   * Every parameter a template asks for, as a key and what it is answered with.
++   * Every parameter a template asks for, as a name, what it means, and what it
++   * is answered with.
 +   *
-+   * **All of them, always.** A template's parameters are the shape of the thing
-+   * you are about to make, so the list is the whole list even when most rows say
-+   * Default. What is missing is the only thing that needs finding, and a row
-+   * that needs words carries a rule down its left edge until it has some.
++   * **All of them, always, and nothing folded away.** A template's parameters are
++   * the shape of the thing you are about to make, so the whole list is on screen
++   * and each row reads top to bottom: the name, the sentence whoever made the
++   * template wrote, and the value. Nothing here is a disclosure, because a hole
++   * you have to open to see is a hole you can forget.
 +   *
-+   * **The description lives one press away.** A row opens to explain itself,
-+   * which is where a sentence written by whoever made the template belongs —
-+   * rather than under every row at once, where it becomes wallpaper.
++   * **The list scrolls; the modal does not grow.** A template with twelve
++   * parameters and one with two open the same size, so nothing jumps.
 +   *
-+   * **The value is the control.** A scope's value opens the builder; a text
-+   * parameter's opens a field under the description. Nothing here is a menu.
++   * **The value is the control.** Text is a field you type in. A scope is a
++   * block reading what it selects, which opens the builder when pressed. A row
++   * with nothing in it carries a rule down its left edge.
 +   */
 +
 +  export type AnswerRow = {
@@ -15657,94 +16000,51 @@
 +    rows: rows.length,
 +    missing: rows.filter((row) => row.missing).length
 +  }));
-+
-+  /**
-+   * The first row that needs words opens itself, once, so what is missing is the
-+   * first thing read. After that the disclosure is whoever is reading it.
-+   */
-+  let open = $state<string | undefined>(undefined);
-+  let started = false;
-+
-+  $effect(() => {
-+    if (started) return;
-+    started = true;
-+    open = rows.find((row) => row.missing)?.key;
-+  });
-+
-+  const toggle = (key: string) => {
-+    open = open === key ? undefined : key;
-+  };
 +</script>
 +
 +<div {...trace} class="answers">
 +  {#each rows as row (row.key)}
-+    <article class="answer" class:missing={row.missing} class:open={open === row.key}>
-+      <div class="head">
-+        <button
-+          type="button"
-+          class="key"
-+          aria-expanded={open === row.key}
-+          {disabled}
-+          onclick={() => toggle(row.key)}
-+        >
-+          <span class="mark" aria-hidden="true">{open === row.key ? "▾" : "▸"}</span>
-+          {row.label}
-+        </button>
-+
-+        {#if row.kind === "scope"}
++    <article class="answer" class:missing={row.missing}>
++      <header>
++        <b>{row.label}</b>
++        {#if row.answered}
 +          <Button
-+            variant={row.answered ? "secondary" : "outline"}
++            variant="ghost"
 +            size="xs"
 +            {disabled}
-+            title={`Choose what ${row.label} selects here`}
-+            onclick={() => onscope(row.key)}
++            title={`Put ${row.label} back to what the template suggests`}
++            onclick={() => onreset(row.key)}
 +          >
-+            {row.value}
-+          </Button>
-+        {:else}
-+          <Button
-+            variant={row.missing ? "outline" : "secondary"}
-+            size="xs"
-+            {disabled}
-+            title={`Write what ${row.label} says here`}
-+            onclick={() => (open = row.key)}
-+          >
-+            {row.missing ? "Needs input" : row.value}
++            Use the default
 +          </Button>
 +        {/if}
-+      </div>
++      </header>
 +
-+      {#if open === row.key}
-+        <div class="body">
-+          <p class="what">
-+            {row.description ?? (row.kind === "text" ? "Words this template asks for." : "What this parameter selects.")}
-+          </p>
++      <p class="what">
++        {row.description ??
++          (row.kind === "text" ? "Words this template asks for." : "What this parameter selects.")}
++      </p>
 +
-+          {#if row.kind === "text"}
-+            <Textarea
-+              value={row.value}
-+              rows={3}
-+              {disabled}
-+              aria-label={`What ${row.label} says here`}
-+              placeholder={`What ${row.label.toLocaleLowerCase()} says here`}
-+              oninput={(event) => ontext(row.key, event.currentTarget.value)}
-+            />
-+          {/if}
-+
-+          {#if row.answered}
-+            <div class="reset">
-+              <Button
-+                variant="ghost"
-+                size="xs"
-+                {disabled}
-+                title={`Put ${row.label} back to what the template suggests`}
-+                onclick={() => onreset(row.key)}
-+              >
-+                Use the default
-+              </Button>
-+            </div>
-+          {/if}
-+        </div>
++      {#if row.kind === "text"}
++        <Textarea
++          value={row.value}
++          rows={2}
++          {disabled}
++          aria-label={`What ${row.label} says here`}
++          placeholder={`What ${row.label.toLocaleLowerCase()} says here`}
++          oninput={(event) => ontext(row.key, event.currentTarget.value)}
++        />
++      {:else}
++        <button
++          type="button"
++          class="scope"
++          {disabled}
++          title={`Choose what ${row.label} selects here`}
++          onclick={() => onscope(row.key)}
++        >
++          <span class="tag">{row.answered ? "Chosen" : "Default"}</span>
++          <span class="rule">{row.value}</span>
++        </button>
 +      {/if}
 +    </article>
 +  {/each}
@@ -15754,11 +16054,17 @@
 +  .answers {
 +    display: flex;
 +    flex-direction: column;
-+    gap: calc(var(--token-spacing-unit) * 1);
++    gap: calc(var(--token-spacing-unit) * 1.5);
++    height: 24rem;
 +    padding: 0 calc(var(--token-spacing-unit) * 3);
++    overflow-y: auto;
 +  }
 +
 +  .answer {
++    display: flex;
++    flex-direction: column;
++    gap: calc(var(--token-spacing-unit) * 1);
++    padding: calc(var(--token-spacing-unit) * 1.5);
 +    border: 1px solid var(--token-border-subtle);
 +    border-inline-start: 3px solid transparent;
 +    border-radius: var(--token-radius-control);
@@ -15766,38 +16072,18 @@
 +  }
 +
 +  .answer.missing { border-inline-start-color: var(--token-color-danger-text); }
-+  .answer.open { background: var(--token-surface-panel); }
 +
-+  .head {
++  header {
 +    display: flex;
 +    align-items: center;
 +    justify-content: space-between;
 +    gap: calc(var(--token-spacing-unit) * 2);
-+    padding: calc(var(--token-spacing-unit) * 1) calc(var(--token-spacing-unit) * 1.5);
 +  }
 +
-+  .key {
-+    display: flex;
-+    align-items: center;
-+    gap: calc(var(--token-spacing-unit) * 1);
-+    min-width: 0;
-+    padding: 0;
-+    border: 0;
-+    background: transparent;
++  header b {
 +    color: var(--token-ink-primary);
 +    font-size: var(--token-text-body-sm);
 +    font-weight: 600;
-+    text-align: start;
-+    cursor: pointer;
-+  }
-+
-+  .mark { color: var(--token-ink-muted); font-size: 10px; }
-+
-+  .body {
-+    display: flex;
-+    flex-direction: column;
-+    gap: calc(var(--token-spacing-unit) * 1);
-+    padding: 0 calc(var(--token-spacing-unit) * 1.5) calc(var(--token-spacing-unit) * 1.5);
 +  }
 +
 +  .what {
@@ -15807,7 +16093,39 @@
 +    line-height: var(--token-text-caption-leading);
 +  }
 +
-+  .reset { display: flex; }
++  /* The rule reads to four lines, then scrolls, so one long scope cannot own the modal. */
++  .scope {
++    display: flex;
++    gap: calc(var(--token-spacing-unit) * 1.5);
++    align-items: flex-start;
++    max-height: 5.5rem;
++    padding: calc(var(--token-spacing-unit) * 1) calc(var(--token-spacing-unit) * 1.5);
++    overflow-y: auto;
++    border: 1px solid var(--token-border-subtle);
++    border-radius: var(--token-radius-control);
++    background: var(--token-surface-panel);
++    color: var(--token-ink-primary);
++    font-size: var(--token-text-body-sm);
++    line-height: var(--token-text-body-sm-leading);
++    text-align: start;
++    cursor: pointer;
++  }
++
++  .scope:hover { border-color: var(--token-border-strong); background: var(--token-surface-work); }
++
++  .tag {
++    flex: none;
++    padding: 0 calc(var(--token-spacing-unit) * 1);
++    border-radius: var(--token-radius-control);
++    background: var(--token-color-accent-1-surface);
++    color: var(--token-color-accent-1-text);
++    font-size: 10px;
++    font-weight: 700;
++    letter-spacing: .04em;
++    text-transform: uppercase;
++  }
++
++  .rule { min-width: 0; }
 +</style>
 ~~~~
 
@@ -15885,7 +16203,7 @@
 +          <div><dt>Created</dt><dd>{made}</dd></div>
 +          <div><dt>Changed</dt><dd>{changed}</dd></div>
 +          <div><dt>Lines</dt><dd>+{added.toLocaleString()} / −{deleted.toLocaleString()}</dd></div>
-+          <div><dt>Committed</dt><dd>One commit, rebased onto main</dd></div>
++          <div><dt>Committed</dt><dd>Four commits, rebased onto main</dd></div>
 +        </dl>
 +      </div>
 +    </header>
@@ -16063,8 +16381,8 @@
 +      <div class="tref-section-head">
 +        <div><span class="tref-kicker">Already done</span><h2>Rebased onto main</h2></div>
 +        <p>
-+          One commit on <code>work/template-features</code>, sitting directly on main's head. Everything on
-+          this page is measured from there, so the numbers say what this branch adds and nothing else.
++          Four commits on <code>work/template-features</code>, sitting directly on main's head. Everything
++          on this page is measured from there, so the numbers say what this branch adds and nothing else.
 +        </p>
 +      </div>
 +
@@ -16075,11 +16393,11 @@
 +        </article>
 +        <article class="tref-card">
 +          <h3>What main brought</h3>
-+          <p>{MERGE.commits} commits and {MERGE.mainFiles} files since the original branch point: editor stabilization, the editor audit, and the withdrawal of header and footer authoring.</p>
++          <p>{MERGE.commits} commits and {MERGE.mainFiles} files since the original branch point: editor stabilization, the editor audit, the withdrawal of header and footer authoring, and a pass over the editors' controls and inspectors.</p>
 +        </article>
 +        <article class="tref-card">
 +          <h3>Files both sides touched</h3>
-+          <p>{MERGE.overlap.length} of them, and {MERGE.conflicts.length} conflicted. The other {app.length - MERGE.overlap.length} files this branch touches could not.</p>
++          <p>{MERGE.overlap.length} of them, and {MERGE.conflicts.length} ever conflicted. The other {app.length - MERGE.overlap.length} files this branch touches could not.</p>
 +        </article>
 +      </div>
 +
@@ -16095,11 +16413,11 @@
 +      </div>
 +
 +      <div class="tref-note success">
-+        <h4>The other nine merged without a decision</h4>
++        <h4>The rest merged without a decision</h4>
 +        <p>
-+          {MERGE.overlap.filter((path) => !MERGE.conflicts.some((row) => path.endsWith(row.path))).join(", ")}
-+          — both sides edited them, but not the same lines. Every check was re-run afterwards, and the deck
-+          selection case that had been failing since the branch was cut now passes, because main fixed it.
++          {MERGE.overlap.length - MERGE.conflicts.length} of the {MERGE.overlap.length} were edited on both
++          sides but never on the same lines, and the last two rebases replayed all four commits with nothing
++          to reconcile at all. Every check was re-run afterwards.
 +        </p>
 +      </div>
 +    </section>
@@ -16292,10 +16610,10 @@
 +</style>
 ~~~~
 
-### new · `src/lib/development-views/template-reference/components/diagram-builder.svelte` (+276 / −0)
+### new · `src/lib/development-views/template-reference/components/diagram-builder.svelte` (+274 / −0)
 
 ~~~~diff
-@@ -0,0 +1,276 @@
+@@ -0,0 +1,274 @@
 +<script lang="ts">
 +  const offers = [
 +    { label: "Winter readiness brief", note: "document" },
@@ -16310,23 +16628,28 @@
 +    <figcaption>Placing a template asks for everything at once</figcaption>
 +    <div class="modal">
 +      <header>
-+        <b>Insert “Technical glossary”</b>
-+        <p>Every parameter this template asks for. Open one to read what it means.</p>
++        <b>Insert “Client status note”</b>
++        <p>Every parameter this template asks for.</p>
 +      </header>
 +      <div class="body">
-+        <div class="row">
-+          <span class="key"><em>▸</em> Source material</span>
-+          <span class="value">Default · Documents, Findings</span>
-+        </div>
 +        <div class="row needs">
-+          <span class="key"><em>▾</em> Subject line</span>
-+          <span class="value outline">Needs input</span>
++          <b>Client name</b>
++          <p class="what">Who this note is addressed to, exactly as they should see it.</p>
++          <div class="field">What client name says here</div>
 +        </div>
-+        <p class="what">The one line at the top that says what this glossary covers.</p>
-+        <div class="field">What subject line says here</div>
++        <div class="row">
++          <b>Reporting period</b>
++          <p class="what">The window this note covers, in whatever words the client uses.</p>
++          <div class="field filled">the last four weeks</div>
++        </div>
++        <div class="row">
++          <b>Status evidence</b>
++          <p class="what">The findings and documents this note should be written from.</p>
++          <div class="scope"><span class="tag">Default</span> Findings</div>
++        </div>
 +      </div>
 +      <footer>
-+        <span class="blocked">Subject line still needs words.</span>
++        <span class="blocked">Client name still needs words.</span>
 +        <span class="ghost">Cancel</span><span class="primary">Insert</span>
 +      </footer>
 +    </div>
@@ -16343,7 +16666,7 @@
 +        <div class="tabs"><span>Include <i>1</i></span><span class="on">Exclude <i>0</i></span></div>
 +        <div class="panes">
 +          <section class="pane">
-+            <b>Add to exclude</b>
++            <b>From</b>
 +            <div class="sources"><span>Kinds</span><span>Sets</span><span class="on">Resources</span></div>
 +            <div class="search">Search this project…</div>
 +            {#each offers as offer (offer.label)}
@@ -16355,9 +16678,10 @@
 +            <p class="empty">Nothing is taken back out.</p>
 +          </section>
 +        </div>
-+        <div class="sentence">Documents, Findings</div>
 +        <div class="foot">
-+          <span class="floor"><span class="add">Whole project</span><span class="ghost">Default</span></span>
++          <span class="floor">
++            <span class="add">Whole project</span><span class="ghost">Default</span><span class="ghost">Clear</span>
++          </span>
 +          <span class="count"><b>6</b> resources <span class="ghost">Show</span></span>
 +        </div>
 +      </div>
@@ -16368,27 +16692,27 @@
 +
 +<ul class="notes">
 +  <li>
-+    <b>Every parameter, always.</b> The list is the shape of the thing about to be made, so it is the
-+    whole list even when most rows say Default. A row that needs words carries a rule down its left
-+    edge until it has some, and the confirm says which one is holding it up.
++    <b>Every parameter, always, and nothing folded away.</b> Each row reads top to bottom: the name,
++    the sentence whoever made the template wrote, and the value. A row with nothing in it carries a
++    rule down its left edge, and the confirm says which one is holding it up.
 +  </li>
 +  <li>
-+    <b>The description is one press away.</b> A row opens to explain itself, which is where the
-+    sentence whoever made the template wrote belongs — rather than under every row at once, where it
-+    becomes wallpaper.
++    <b>The value is the control.</b> Text is a field. A scope is a block reading what it selects, with
++    Default or Chosen beside it, which opens the builder when pressed. Nothing here is a menu, and
++    nothing opens a third lid.
 +  </li>
 +  <li>
-+    <b>The value is the control.</b> A scope's value opens the builder; a text parameter's opens a
-+    field under its description. Nothing here is a menu, and nothing opens a third lid.
++    <b>The list scrolls; the modal does not grow.</b> A template with twelve parameters and one with
++    two open the same size, and both panes of the builder are one fixed height, so nothing jumps as
++    somebody clicks between Kinds, Sets and Resources.
 +  </li>
 +  <li>
-+    <b>Two tabs, not two lists.</b> Every set is a difference, and the side you are not editing is a
-+    list you are only reading — which the sentence underneath already says better.
++    <b>One term, one row.</b> A stored rule may hold three kinds in one term; the builder splits them,
++    because what you can take out should be what you put in.
 +  </li>
 +  <li>
-+    <b>The floor is a button.</b> Whole project is the common answer, and Default puts a parameter
-+    back to whatever the template suggested. Both sit under the panes, where a decision about the
-+    whole rule belongs.
++    <b>The floor is a button.</b> Whole project is the common answer, Default puts a parameter back to
++    what the template suggested, and Clear empties both sides to start again.
 +  </li>
 +</ul>
 +
@@ -16422,11 +16746,9 @@
 +  .body { display: grid; gap: .6rem; padding: .9rem; }
 +
 +  .row {
-+    display: flex;
-+    align-items: center;
-+    justify-content: space-between;
-+    gap: .8rem;
-+    padding: .4rem .55rem;
++    display: grid;
++    gap: .3rem;
++    padding: .5rem .55rem;
 +    border: 1px solid var(--token-border-subtle);
 +    border-inline-start: 3px solid transparent;
 +    border-radius: 6px;
@@ -16434,24 +16756,13 @@
 +  }
 +
 +  .row.needs { border-inline-start-color: var(--token-color-danger-text); }
++  .row b { font-weight: 650; }
 +
-+  .key { display: flex; align-items: center; gap: .35rem; font-weight: 650; }
-+  .key em { color: var(--token-ink-muted); font-size: 9px; font-style: normal; }
-+
-+  .value {
-+    padding: .1rem .45rem;
-+    border-radius: 5px;
-+    background: var(--token-surface-work);
-+    font-size: 10.5px;
-+    white-space: nowrap;
-+  }
-+
-+  .value.outline { border: 1px solid var(--token-border-strong); background: transparent; }
-+
-+  .what { margin: 0 .55rem; color: var(--token-ink-secondary); font-size: 10.5px; }
++  .what { margin: 0; color: var(--token-ink-secondary); font-size: 10.5px; }
 +
 +  .field,
-+  .search {
++  .search,
++  .scope {
 +    padding: .35rem .5rem;
 +    border: 1px solid var(--token-border-subtle);
 +    border-radius: 6px;
@@ -16459,7 +16770,20 @@
 +    color: var(--token-ink-muted);
 +  }
 +
-+  .field { min-height: 2.4rem; margin: 0 .55rem; }
++  .field { min-height: 2rem; }
++  .field.filled { color: var(--token-ink-primary); }
++  .scope { display: flex; gap: .45rem; align-items: center; background: var(--token-surface-panel); color: var(--token-ink-primary); }
++
++  .tag {
++    padding: 0 .3rem;
++    border-radius: 4px;
++    background: var(--token-color-accent-1-surface);
++    color: var(--token-color-accent-1-text);
++    font-size: 8.5px;
++    font-weight: 750;
++    letter-spacing: .06em;
++    text-transform: uppercase;
++  }
 +
 +  .tabs { display: flex; gap: .5rem; border-bottom: 1px solid var(--token-border-subtle); }
 +
@@ -16528,14 +16852,6 @@
 +  .offer small { color: var(--token-ink-muted); font-size: 9px; }
 +
 +  .empty { margin: 0; color: var(--token-ink-muted); font-size: 10px; font-style: italic; }
-+
-+  .sentence {
-+    padding: .45rem .55rem;
-+    border-inline-start: 2px solid var(--token-color-accent-1-text);
-+    border-radius: 0 5px 5px 0;
-+    background: var(--token-color-accent-1-surface);
-+    font-size: 11px;
-+  }
 +
 +  .foot { display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
 +  .floor { display: flex; gap: .35rem; }
@@ -18605,10 +18921,10 @@
 +</div>
 ~~~~
 
-### new · `src/lib/development-views/template-reference/procedures/changes.ts` (+274 / −0)
+### new · `src/lib/development-views/template-reference/procedures/changes.ts` (+286 / −0)
 
 ~~~~diff
-@@ -0,0 +1,274 @@
+@@ -0,0 +1,286 @@
 +import type { Decision, OpenItem, SystematicChange, Verification } from "$development-views/template-reference/types";
 +
 +export const SYSTEMATIC: SystematicChange[] = [
@@ -18784,14 +19100,14 @@
 +];
 +
 +export const VERIFICATION: Verification[] = [
-+  { check: "Types", command: "pnpm typecheck", result: "0 errors, 0 warnings across 2,505 files", clean: true },
++  { check: "Types", command: "pnpm typecheck", result: "0 errors, 0 warnings across 2,508 files", clean: true },
 +  { check: "Structure", command: "pnpm lint", result: "56 checks, 56 clean", clean: true },
-+  { check: "Unit", command: "pnpm test", result: "909 tests in 95 files", clean: true },
++  { check: "Unit", command: "pnpm test", result: "911 tests in 95 files", clean: true },
 +  { check: "Category keys", command: "pnpm category-keys -- --check", result: "10 categories and 13 content views in step", clean: true },
 +  {
 +    check: "Browser",
 +    command: "pnpm test:browser, from a clean seed",
-+    result: "43 of 43, after the rebase onto main. The deck selection case that had failed since the branch was cut is fixed on main.",
++    result: "46 of 46, re-run after the rebase onto main. Nothing on the branch had to move to keep them passing.",
 +    clean: true
 +  }
 +];
@@ -18831,21 +19147,33 @@
 +];
 +
 +export const MERGE = {
-+  base: "286cbc8",
-+  commits: 11,
-+  mainFiles: 130,
++  base: "306e308",
++  commits: 22,
++  mainFiles: 233,
 +  overlap: [
 +    "app/seed/templates.json",
 +    "app/seed/templateVersions.json",
 +    "app/src/lib/app-views/categories/document-editor/content/document.svelte",
++    "app/src/lib/app-views/categories/document-editor/procedures/projection.ts",
 +    "app/src/lib/app-views/categories/document-editor/procedures/schema.ts",
 +    "app/src/lib/app-views/categories/slide-deck-editor/context/comments.svelte",
++    "app/src/lib/app-views/categories/slide-deck-editor/context/templates.svelte",
 +    "app/src/lib/app-views/categories/slide-deck-editor/inspector/threads.svelte",
++    "app/src/lib/app-views/categories/slide-deck-editor/procedures/scene.ts",
++    "app/src/lib/app-views/categories/slide-deck-editor/procedures/typing.ts",
 +    "app/src/lib/app-views/categories/slide-deck-editor/slide-deck-editor.md",
++    "app/src/lib/capabilities/comments/api/start-thread/start-thread.ts",
++    "app/src/lib/capabilities/comments/comments.md",
++    "app/src/lib/capabilities/comments/test/unit/comments.test.ts",
 +    "app/src/lib/capabilities/templates/api/instantiate-template/instantiate-template.ts",
 +    "app/src/lib/capabilities/templates/api/shared/validation.ts",
 +    "app/src/lib/capabilities/templates/test/unit/templates.test.ts",
++    "app/src/lib/development-views/demo/components/demo-index.svelte",
++    "app/src/lib/model/client/workspace-state/test/unit/workspace-state.test.ts",
++    "app/src/lib/representation/data/behavior/content/positions.ts",
++    "app/src/lib/representation/data/behavior/slide-decks/apply-ops.ts",
 +    "app/src/lib/representation/data/behavior/workspace/opening.ts",
++    "app/src/lib/representation/data/types/workspace/tab.ts",
 +    "app/test/browser/document-editor.spec.ts"
 +  ],
 +  conflicts: [
@@ -18893,9 +19221,9 @@
 +
 +/**
 + * Generated by scripts/generate-template-reference-inventory.mjs.
-+ * Comparison: 286cbc8 (branch point) → worktree.
++ * Comparison: 306e308 (branch point) → worktree.
 + */
-+export const BASELINE = "286cbc8";
++export const BASELINE = "306e308";
 +
 +export const FILES: FileRecord[] = [
 +  {"path":"app/scripts/generate-template-reference-inventory.mjs","status":"A","area":"cross-cutting","kind":"configuration","current":114,"base":0,"added":114,"deleted":0},
@@ -18903,29 +19231,29 @@
 +  {"path":"app/seed/resourceSets.json","status":"M","area":"evidence","kind":"fixture","current":46,"base":29,"added":17,"deleted":0},
 +  {"path":"app/seed/slideDecks.json","status":"M","area":"evidence","kind":"fixture","current":38,"base":42,"added":0,"deleted":4},
 +  {"path":"app/seed/spreadsheets.json","status":"M","area":"evidence","kind":"fixture","current":20,"base":22,"added":0,"deleted":2},
-+  {"path":"app/seed/templates.json","status":"M","area":"evidence","kind":"fixture","current":2423,"base":1021,"added":1606,"deleted":204},
-+  {"path":"app/seed/templateVersions.json","status":"M","area":"evidence","kind":"fixture","current":2362,"base":2199,"added":164,"deleted":1},
-+  {"path":"app/src/lib/app-views/categories/document-editor/content/document.svelte","status":"M","area":"editors","kind":"production","current":902,"base":887,"added":15,"deleted":0},
-+  {"path":"app/src/lib/app-views/categories/document-editor/context/templates.svelte","status":"A","area":"editors","kind":"production","current":585,"base":0,"added":585,"deleted":0},
++  {"path":"app/seed/templates.json","status":"M","area":"evidence","kind":"fixture","current":2295,"base":1021,"added":1516,"deleted":242},
++  {"path":"app/seed/templateVersions.json","status":"M","area":"evidence","kind":"fixture","current":2695,"base":2199,"added":497,"deleted":1},
++  {"path":"app/src/lib/app-views/categories/document-editor/content/document.svelte","status":"M","area":"editors","kind":"production","current":907,"base":892,"added":15,"deleted":0},
++  {"path":"app/src/lib/app-views/categories/document-editor/context/templates.svelte","status":"A","area":"editors","kind":"production","current":601,"base":0,"added":601,"deleted":0},
 +  {"path":"app/src/lib/app-views/categories/document-editor/procedures/projection.ts","status":"M","area":"editors","kind":"production","current":729,"base":704,"added":33,"deleted":8},
 +  {"path":"app/src/lib/app-views/categories/document-editor/procedures/schema.ts","status":"M","area":"editors","kind":"production","current":255,"base":221,"added":37,"deleted":3},
-+  {"path":"app/src/lib/app-views/categories/document-editor/procedures/templating.ts","status":"A","area":"editors","kind":"production","current":324,"base":0,"added":324,"deleted":0},
++  {"path":"app/src/lib/app-views/categories/document-editor/procedures/templating.ts","status":"A","area":"editors","kind":"production","current":327,"base":0,"added":327,"deleted":0},
 +  {"path":"app/src/lib/app-views/categories/document-editor/procedures/test/unit/templating.test.ts","status":"A","area":"editors","kind":"test","current":167,"base":0,"added":167,"deleted":0},
-+  {"path":"app/src/lib/app-views/categories/project-overview/context/contexts.svelte","status":"A","area":"contexts","kind":"production","current":279,"base":0,"added":279,"deleted":0},
++  {"path":"app/src/lib/app-views/categories/project-overview/context/contexts.svelte","status":"A","area":"contexts","kind":"production","current":283,"base":0,"added":283,"deleted":0},
 +  {"path":"app/src/lib/app-views/categories/project-overview/procedures/contexts.ts","status":"A","area":"contexts","kind":"production","current":115,"base":0,"added":115,"deleted":0},
 +  {"path":"app/src/lib/app-views/categories/project-overview/procedures/test/unit/contexts.test.ts","status":"A","area":"contexts","kind":"test","current":68,"base":0,"added":68,"deleted":0},
 +  {"path":"app/src/lib/app-views/categories/project-overview/project-overview.md","status":"M","area":"contexts","kind":"documentation","current":622,"base":618,"added":22,"deleted":18},
 +  {"path":"app/src/lib/app-views/categories/slide-deck-editor/context/comments.svelte","status":"M","area":"editors","kind":"production","current":175,"base":170,"added":6,"deleted":1},
-+  {"path":"app/src/lib/app-views/categories/slide-deck-editor/context/templates.svelte","status":"M","area":"editors","kind":"production","current":607,"base":8,"added":602,"deleted":3},
++  {"path":"app/src/lib/app-views/categories/slide-deck-editor/context/templates.svelte","status":"M","area":"editors","kind":"production","current":623,"base":8,"added":618,"deleted":3},
 +  {"path":"app/src/lib/app-views/categories/slide-deck-editor/inspector/threads.svelte","status":"M","area":"editors","kind":"production","current":151,"base":144,"added":8,"deleted":1},
 +  {"path":"app/src/lib/app-views/categories/slide-deck-editor/procedures/scene.ts","status":"M","area":"editors","kind":"production","current":326,"base":326,"added":3,"deleted":3},
-+  {"path":"app/src/lib/app-views/categories/slide-deck-editor/procedures/templating.ts","status":"A","area":"editors","kind":"production","current":333,"base":0,"added":333,"deleted":0},
++  {"path":"app/src/lib/app-views/categories/slide-deck-editor/procedures/templating.ts","status":"A","area":"editors","kind":"production","current":336,"base":0,"added":336,"deleted":0},
 +  {"path":"app/src/lib/app-views/categories/slide-deck-editor/procedures/test/unit/templating.test.ts","status":"A","area":"editors","kind":"test","current":130,"base":0,"added":130,"deleted":0},
 +  {"path":"app/src/lib/app-views/categories/slide-deck-editor/procedures/typing.ts","status":"M","area":"editors","kind":"production","current":198,"base":199,"added":2,"deleted":3},
-+  {"path":"app/src/lib/app-views/categories/slide-deck-editor/slide-deck-editor.md","status":"M","area":"editors","kind":"documentation","current":241,"base":221,"added":21,"deleted":1},
++  {"path":"app/src/lib/app-views/categories/slide-deck-editor/slide-deck-editor.md","status":"M","area":"editors","kind":"documentation","current":245,"base":225,"added":21,"deleted":1},
 +  {"path":"app/src/lib/app-views/categories/templates/content/editor.svelte","status":"M","area":"library","kind":"production","current":81,"base":50,"added":48,"deleted":17},
 +  {"path":"app/src/lib/app-views/categories/templates/content/library.svelte","status":"M","area":"library","kind":"production","current":555,"base":543,"added":23,"deleted":11},
-+  {"path":"app/src/lib/app-views/categories/templates/inspector/template.svelte","status":"M","area":"library","kind":"production","current":1408,"base":1185,"added":266,"deleted":43},
++  {"path":"app/src/lib/app-views/categories/templates/inspector/template.svelte","status":"M","area":"library","kind":"production","current":1413,"base":1185,"added":271,"deleted":43},
 +  {"path":"app/src/lib/app-views/categories/templates/procedures/library.svelte.ts","status":"M","area":"library","kind":"production","current":489,"base":356,"added":165,"deleted":32},
 +  {"path":"app/src/lib/app-views/categories/templates/procedures/test/unit/library.test.ts","status":"M","area":"library","kind":"test","current":41,"base":25,"added":16,"deleted":0},
 +  {"path":"app/src/lib/app-views/categories/templates/templates.md","status":"M","area":"library","kind":"documentation","current":80,"base":109,"added":45,"deleted":74},
@@ -18955,7 +19283,7 @@
 +  {"path":"app/src/lib/capabilities/templates/api/discard-template-stage/discard-template-stage.ts","status":"A","area":"templates","kind":"production","current":31,"base":0,"added":31,"deleted":0},
 +  {"path":"app/src/lib/capabilities/templates/api/discard-template-stage/validate-discard-template-stage.ts","status":"A","area":"templates","kind":"production","current":8,"base":0,"added":8,"deleted":0},
 +  {"path":"app/src/lib/capabilities/templates/api/duplicate-template/duplicate-template.ts","status":"M","area":"templates","kind":"production","current":73,"base":72,"added":1,"deleted":0},
-+  {"path":"app/src/lib/capabilities/templates/api/instantiate-template/instantiate-template.ts","status":"M","area":"templates","kind":"production","current":232,"base":173,"added":105,"deleted":46},
++  {"path":"app/src/lib/capabilities/templates/api/instantiate-template/instantiate-template.ts","status":"M","area":"templates","kind":"production","current":237,"base":173,"added":110,"deleted":46},
 +  {"path":"app/src/lib/capabilities/templates/api/instantiate-template/validate-instantiate-template.ts","status":"M","area":"templates","kind":"production","current":22,"base":17,"added":8,"deleted":3},
 +  {"path":"app/src/lib/capabilities/templates/api/open-template-stage/open-template-stage.ts","status":"A","area":"templates","kind":"production","current":115,"base":0,"added":115,"deleted":0},
 +  {"path":"app/src/lib/capabilities/templates/api/open-template-stage/validate-open-template-stage.ts","status":"A","area":"templates","kind":"production","current":8,"base":0,"added":8,"deleted":0},
@@ -18967,7 +19295,7 @@
 +  {"path":"app/src/lib/capabilities/templates/api/shared/scopes.ts","status":"A","area":"templates","kind":"production","current":204,"base":0,"added":204,"deleted":0},
 +  {"path":"app/src/lib/capabilities/templates/api/shared/stages.ts","status":"A","area":"templates","kind":"production","current":141,"base":0,"added":141,"deleted":0},
 +  {"path":"app/src/lib/capabilities/templates/api/shared/template-rows.ts","status":"M","area":"templates","kind":"production","current":37,"base":36,"added":1,"deleted":0},
-+  {"path":"app/src/lib/capabilities/templates/api/shared/validation.ts","status":"M","area":"templates","kind":"production","current":1859,"base":1687,"added":184,"deleted":12},
++  {"path":"app/src/lib/capabilities/templates/api/shared/validation.ts","status":"M","area":"templates","kind":"production","current":1867,"base":1687,"added":192,"deleted":12},
 +  {"path":"app/src/lib/capabilities/templates/api/shared/variables.ts","status":"A","area":"templates","kind":"production","current":39,"base":0,"added":39,"deleted":0},
 +  {"path":"app/src/lib/capabilities/templates/api/update-template/update-template.ts","status":"M","area":"templates","kind":"production","current":171,"base":113,"added":69,"deleted":11},
 +  {"path":"app/src/lib/capabilities/templates/api/update-template/validate-update-template.ts","status":"M","area":"templates","kind":"production","current":65,"base":61,"added":6,"deleted":2},
@@ -18979,13 +19307,13 @@
 +  {"path":"app/src/lib/capabilities/templates/types/templates.ts","status":"M","area":"templates","kind":"production","current":252,"base":156,"added":113,"deleted":17},
 +  {"path":"app/src/lib/components/authored/panel/panel-section.svelte","status":"M","area":"cross-cutting","kind":"production","current":126,"base":114,"added":13,"deleted":1},
 +  {"path":"app/src/lib/components/authored/scope-builder/index.ts","status":"A","area":"cross-cutting","kind":"production","current":9,"base":0,"added":9,"deleted":0},
-+  {"path":"app/src/lib/components/authored/scope-builder/scope-builder.svelte","status":"A","area":"cross-cutting","kind":"production","current":454,"base":0,"added":454,"deleted":0},
++  {"path":"app/src/lib/components/authored/scope-builder/scope-builder.svelte","status":"A","area":"cross-cutting","kind":"production","current":455,"base":0,"added":455,"deleted":0},
 +  {"path":"app/src/lib/components/authored/template-answers/index.ts","status":"A","area":"cross-cutting","kind":"production","current":8,"base":0,"added":8,"deleted":0},
-+  {"path":"app/src/lib/components/authored/template-answers/template-answers.svelte","status":"A","area":"cross-cutting","kind":"production","current":208,"base":0,"added":208,"deleted":0},
++  {"path":"app/src/lib/components/authored/template-answers/template-answers.svelte","status":"A","area":"cross-cutting","kind":"production","current":185,"base":0,"added":185,"deleted":0},
 +  {"path":"app/src/lib/development-views/demo/components/demo-index.svelte","status":"M","area":"cross-cutting","kind":"production","current":100,"base":100,"added":3,"deleted":3},
 +  {"path":"app/src/lib/development-views/template-reference/components/changes-page.svelte","status":"A","area":"reference","kind":"reference","current":281,"base":0,"added":281,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/components/diagram-binding.svelte","status":"A","area":"reference","kind":"reference","current":168,"base":0,"added":168,"deleted":0},
-+  {"path":"app/src/lib/development-views/template-reference/components/diagram-builder.svelte","status":"A","area":"reference","kind":"reference","current":276,"base":0,"added":276,"deleted":0},
++  {"path":"app/src/lib/development-views/template-reference/components/diagram-builder.svelte","status":"A","area":"reference","kind":"reference","current":274,"base":0,"added":274,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/components/diagram-difference.svelte","status":"A","area":"reference","kind":"reference","current":128,"base":0,"added":128,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/components/diagram-panel.svelte","status":"A","area":"reference","kind":"reference","current":128,"base":0,"added":128,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/components/diagram-rows.svelte","status":"A","area":"reference","kind":"reference","current":75,"base":0,"added":75,"deleted":0},
@@ -18997,8 +19325,8 @@
 +  {"path":"app/src/lib/development-views/template-reference/components/reference.css","status":"A","area":"reference","kind":"reference","current":305,"base":0,"added":305,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/components/scope-page.svelte","status":"A","area":"reference","kind":"reference","current":467,"base":0,"added":467,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/components/system-page.svelte","status":"A","area":"reference","kind":"reference","current":329,"base":0,"added":329,"deleted":0},
-+  {"path":"app/src/lib/development-views/template-reference/procedures/changes.ts","status":"A","area":"reference","kind":"reference","current":274,"base":0,"added":274,"deleted":0},
-+  {"path":"app/src/lib/development-views/template-reference/procedures/inventory.ts","status":"A","area":"reference","kind":"reference","current":137,"base":0,"added":137,"deleted":0},
++  {"path":"app/src/lib/development-views/template-reference/procedures/changes.ts","status":"A","area":"reference","kind":"reference","current":286,"base":0,"added":286,"deleted":0},
++  {"path":"app/src/lib/development-views/template-reference/procedures/inventory.ts","status":"A","area":"reference","kind":"reference","current":148,"base":0,"added":148,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/procedures/navigation.ts","status":"A","area":"reference","kind":"reference","current":16,"base":0,"added":16,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/procedures/scope.ts","status":"A","area":"reference","kind":"reference","current":521,"base":0,"added":521,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/procedures/system.ts","status":"A","area":"reference","kind":"reference","current":223,"base":0,"added":223,"deleted":0},
@@ -19009,17 +19337,17 @@
 +  {"path":"app/src/lib/model/client/workspace-state/test/unit/workspace-state.test.ts","status":"M","area":"vocabulary","kind":"test","current":1096,"base":1073,"added":23,"deleted":0},
 +  {"path":"app/src/lib/representation/data/behavior/content/positions.ts","status":"M","area":"vocabulary","kind":"production","current":76,"base":68,"added":9,"deleted":1},
 +  {"path":"app/src/lib/representation/data/behavior/core/resource-set.ts","status":"A","area":"vocabulary","kind":"production","current":45,"base":0,"added":45,"deleted":0},
-+  {"path":"app/src/lib/representation/data/behavior/core/scope-draft.ts","status":"A","area":"vocabulary","kind":"production","current":421,"base":0,"added":421,"deleted":0},
++  {"path":"app/src/lib/representation/data/behavior/core/scope-draft.ts","status":"A","area":"vocabulary","kind":"production","current":439,"base":0,"added":439,"deleted":0},
 +  {"path":"app/src/lib/representation/data/behavior/core/test/unit/resource-set.test.ts","status":"A","area":"vocabulary","kind":"test","current":46,"base":0,"added":46,"deleted":0},
 +  {"path":"app/src/lib/representation/data/behavior/core/test/unit/scope-draft.test.ts","status":"A","area":"vocabulary","kind":"test","current":194,"base":0,"added":194,"deleted":0},
 +  {"path":"app/src/lib/representation/data/behavior/documents/apply-ops.ts","status":"M","area":"vocabulary","kind":"production","current":463,"base":462,"added":2,"deleted":1},
 +  {"path":"app/src/lib/representation/data/behavior/slide-decks/apply-ops.ts","status":"M","area":"vocabulary","kind":"production","current":322,"base":322,"added":2,"deleted":2},
-+  {"path":"app/src/lib/representation/data/behavior/templates/answers.ts","status":"A","area":"vocabulary","kind":"production","current":60,"base":0,"added":60,"deleted":0},
++  {"path":"app/src/lib/representation/data/behavior/templates/answers.ts","status":"A","area":"vocabulary","kind":"production","current":62,"base":0,"added":62,"deleted":0},
 +  {"path":"app/src/lib/representation/data/behavior/templates/deck-of-slide.ts","status":"A","area":"vocabulary","kind":"production","current":18,"base":0,"added":18,"deleted":0},
 +  {"path":"app/src/lib/representation/data/behavior/templates/fresh-ids.ts","status":"A","area":"vocabulary","kind":"production","current":71,"base":0,"added":71,"deleted":0},
 +  {"path":"app/src/lib/representation/data/behavior/templates/portable.ts","status":"A","area":"vocabulary","kind":"production","current":103,"base":0,"added":103,"deleted":0},
 +  {"path":"app/src/lib/representation/data/behavior/templates/scopes.ts","status":"A","area":"vocabulary","kind":"production","current":216,"base":0,"added":216,"deleted":0},
-+  {"path":"app/src/lib/representation/data/behavior/templates/test/unit/answers.test.ts","status":"A","area":"vocabulary","kind":"test","current":95,"base":0,"added":95,"deleted":0},
++  {"path":"app/src/lib/representation/data/behavior/templates/test/unit/answers.test.ts","status":"A","area":"vocabulary","kind":"test","current":104,"base":0,"added":104,"deleted":0},
 +  {"path":"app/src/lib/representation/data/behavior/templates/test/unit/deck-of-slide.test.ts","status":"A","area":"vocabulary","kind":"test","current":36,"base":0,"added":36,"deleted":0},
 +  {"path":"app/src/lib/representation/data/behavior/templates/test/unit/fresh-ids.test.ts","status":"A","area":"vocabulary","kind":"test","current":81,"base":0,"added":81,"deleted":0},
 +  {"path":"app/src/lib/representation/data/behavior/templates/test/unit/portable.test.ts","status":"A","area":"vocabulary","kind":"test","current":97,"base":0,"added":97,"deleted":0},
@@ -19027,14 +19355,14 @@
 +  {"path":"app/src/lib/representation/data/behavior/workspace/opening.ts","status":"M","area":"vocabulary","kind":"production","current":168,"base":164,"added":5,"deleted":1},
 +  {"path":"app/src/lib/representation/data/types/content/content-block.ts","status":"M","area":"vocabulary","kind":"production","current":145,"base":130,"added":16,"deleted":1},
 +  {"path":"app/src/lib/representation/data/types/core/resource-set.ts","status":"M","area":"vocabulary","kind":"production","current":32,"base":40,"added":16,"deleted":24},
-+  {"path":"app/src/lib/representation/data/types/templates/template.ts","status":"M","area":"vocabulary","kind":"production","current":68,"base":86,"added":8,"deleted":26},
++  {"path":"app/src/lib/representation/data/types/templates/template.ts","status":"M","area":"vocabulary","kind":"production","current":71,"base":86,"added":11,"deleted":26},
 +  {"path":"app/src/lib/representation/data/types/workspace/tab.ts","status":"M","area":"vocabulary","kind":"production","current":55,"base":54,"added":1,"deleted":0},
 +  {"path":"app/src/lib/representation/store/tables.ts","status":"M","area":"vocabulary","kind":"production","current":645,"base":631,"added":23,"deleted":9},
 +  {"path":"app/src/routes/app/[project]/reference/templates/+page.svelte","status":"M","area":"reference","kind":"reference","current":14,"base":5,"added":11,"deleted":2},
 +  {"path":"app/src/routes/app/[project]/reference/templates/changes/+page.svelte","status":"A","area":"reference","kind":"reference","current":14,"base":0,"added":14,"deleted":0},
 +  {"path":"app/src/routes/app/[project]/reference/templates/scope/+page.svelte","status":"A","area":"reference","kind":"reference","current":14,"base":0,"added":14,"deleted":0},
-+  {"path":"app/test/browser/document-editor.spec.ts","status":"M","area":"evidence","kind":"test","current":742,"base":735,"added":8,"deleted":1},
-+  {"path":"app/test/browser/template-features.spec.ts","status":"A","area":"evidence","kind":"test","current":274,"base":0,"added":274,"deleted":0},
++  {"path":"app/test/browser/document-editor.spec.ts","status":"M","area":"evidence","kind":"test","current":830,"base":823,"added":8,"deleted":1},
++  {"path":"app/test/browser/template-features.spec.ts","status":"A","area":"evidence","kind":"test","current":277,"base":0,"added":277,"deleted":0},
 +  {"path":"app/test/browser/template-reference.spec.ts","status":"A","area":"evidence","kind":"test","current":115,"base":0,"added":115,"deleted":0}
 +];
 ~~~~
@@ -19131,7 +19459,7 @@
 +    where: "A template atom in the prose names it",
 +    opens: "text",
 +    title: "Words",
-+    confirms: "Answered by nobody until somebody types them, which is the only thing that holds a placement up",
++    confirms: "What the caller typed, else the parameter's own default words, else nothing — which is the only thing that holds a placement up",
 +    writes: "The atom becomes a literal, and the block's display follows"
 +  }
 +];

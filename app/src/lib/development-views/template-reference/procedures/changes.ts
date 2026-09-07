@@ -173,14 +173,14 @@ export const DECISIONS: Decision[] = [
 ];
 
 export const VERIFICATION: Verification[] = [
-  { check: "Types", command: "pnpm typecheck", result: "0 errors, 0 warnings across 2,505 files", clean: true },
+  { check: "Types", command: "pnpm typecheck", result: "0 errors, 0 warnings across 2,508 files", clean: true },
   { check: "Structure", command: "pnpm lint", result: "56 checks, 56 clean", clean: true },
-  { check: "Unit", command: "pnpm test", result: "909 tests in 95 files", clean: true },
+  { check: "Unit", command: "pnpm test", result: "911 tests in 95 files", clean: true },
   { check: "Category keys", command: "pnpm category-keys -- --check", result: "10 categories and 13 content views in step", clean: true },
   {
     check: "Browser",
     command: "pnpm test:browser, from a clean seed",
-    result: "43 of 43, after the rebase onto main. The deck selection case that had failed since the branch was cut is fixed on main.",
+    result: "46 of 46, re-run after the rebase onto main. Nothing on the branch had to move to keep them passing.",
     clean: true
   }
 ];
@@ -220,21 +220,33 @@ export const OPEN: OpenItem[] = [
 ];
 
 export const MERGE = {
-  base: "286cbc8",
-  commits: 11,
-  mainFiles: 130,
+  base: "306e308",
+  commits: 22,
+  mainFiles: 233,
   overlap: [
     "app/seed/templates.json",
     "app/seed/templateVersions.json",
     "app/src/lib/app-views/categories/document-editor/content/document.svelte",
+    "app/src/lib/app-views/categories/document-editor/procedures/projection.ts",
     "app/src/lib/app-views/categories/document-editor/procedures/schema.ts",
     "app/src/lib/app-views/categories/slide-deck-editor/context/comments.svelte",
+    "app/src/lib/app-views/categories/slide-deck-editor/context/templates.svelte",
     "app/src/lib/app-views/categories/slide-deck-editor/inspector/threads.svelte",
+    "app/src/lib/app-views/categories/slide-deck-editor/procedures/scene.ts",
+    "app/src/lib/app-views/categories/slide-deck-editor/procedures/typing.ts",
     "app/src/lib/app-views/categories/slide-deck-editor/slide-deck-editor.md",
+    "app/src/lib/capabilities/comments/api/start-thread/start-thread.ts",
+    "app/src/lib/capabilities/comments/comments.md",
+    "app/src/lib/capabilities/comments/test/unit/comments.test.ts",
     "app/src/lib/capabilities/templates/api/instantiate-template/instantiate-template.ts",
     "app/src/lib/capabilities/templates/api/shared/validation.ts",
     "app/src/lib/capabilities/templates/test/unit/templates.test.ts",
+    "app/src/lib/development-views/demo/components/demo-index.svelte",
+    "app/src/lib/model/client/workspace-state/test/unit/workspace-state.test.ts",
+    "app/src/lib/representation/data/behavior/content/positions.ts",
+    "app/src/lib/representation/data/behavior/slide-decks/apply-ops.ts",
     "app/src/lib/representation/data/behavior/workspace/opening.ts",
+    "app/src/lib/representation/data/types/workspace/tab.ts",
     "app/test/browser/document-editor.spec.ts"
   ],
   conflicts: [

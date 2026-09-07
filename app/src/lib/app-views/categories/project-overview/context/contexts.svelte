@@ -134,6 +134,10 @@
     draft = whole ? withWholeProject() : { include: [], exclude: [] };
   };
 
+  const clearScope = () => {
+    draft = { include: [], exclude: [] };
+  };
+
   const scopeBlocked = $derived(
     draft.include.length === 0 ? "Include something, or choose the whole project." : undefined
   );
@@ -243,7 +247,7 @@
   blocked={scopeBlocked}
   onconfirm={confirmBuilder}
 >
-  <ScopeBuilder {...view$} onmode={setMode} onadd={addTerm} ondrop={dropTerm} />
+  <ScopeBuilder {...view$} onmode={setMode} onadd={addTerm} ondrop={dropTerm} onclear={clearScope} />
 </OverlayModal>
 
 <style>

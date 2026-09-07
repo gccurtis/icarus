@@ -91,16 +91,16 @@ test("inserting a template into a document asks for each variable, shows its def
   const modal = page.getByRole("dialog", { name: "Insert “Technical glossary”" });
   await expect(modal).toBeVisible();
 
-  // Every parameter is listed, with what it is answered with beside it.
-  await expect(modal.getByRole("button", { name: "Source material" })).toBeVisible();
-  await expect(modal.getByRole("button", { name: "Default · Documents, Findings" })).toBeVisible();
+  // Every parameter is listed, with its description and what answers it.
+  await expect(modal.getByText("Source material", { exact: true })).toBeVisible();
+  await expect(modal.getByRole("button", { name: /Documents, Findings/ })).toBeVisible();
 
   // One of them takes words, so Insert is held until it has some.
-  await expect(modal.getByRole("button", { name: "Needs input" })).toBeVisible();
+  await expect(modal.locator(".answer.missing")).toHaveCount(1);
   await modal.getByRole("textbox", { name: "What Subject line says here" }).fill("Winter terms");
-  await expect(modal.getByRole("button", { name: "Needs input" })).toHaveCount(0);
+  await expect(modal.locator(".answer.missing")).toHaveCount(0);
 
-  await modal.getByRole("button", { name: "Default · Documents, Findings" }).click();
+  await modal.getByRole("button", { name: /Documents, Findings/ }).click();
   const builder = page.getByRole("dialog", { name: "What Source material selects here" });
   await expect(builder).toBeVisible();
   await builder.getByRole("button", { name: "Sets", exact: true }).click();
@@ -112,7 +112,7 @@ test("inserting a template into a document asks for each variable, shows its def
   await expect(builder.getByText("Winter filings").first()).toBeVisible();
   await builder.getByRole("button", { name: "Use this", exact: true }).click();
 
-  await expect(modal.getByRole("button", { name: "Winter filings" })).toBeVisible();
+  await expect(modal.getByRole("button", { name: /Winter filings/ })).toBeVisible();
   await modal.getByRole("button", { name: "Insert", exact: true }).click();
 
   await expect(context.getByText("Inserted “Technical glossary”.", { exact: true })).toBeVisible();
@@ -240,9 +240,12 @@ test("a variable's default is built with an exclusion, stored, and read back as 
 
   const builder = page.getByRole("dialog", { name: "Default scope for Incident evidence" });
   await expect(builder).toBeVisible();
-  await expect(builder.getByText("Findings, Documents, Spreadsheets, minus Interconnect glossary")).toBeVisible();
+
+  // One term, one row: the stored rule's three kinds are three rows, not one.
+  await expect(builder.locator(".term")).toHaveCount(3);
 
   await builder.getByRole("button", { name: /^Exclude/ }).click();
+  await expect(builder.locator(".term")).toHaveCount(1);
   await builder.getByRole("button", { name: "Resources", exact: true }).click();
   await builder
     .locator(".offer")

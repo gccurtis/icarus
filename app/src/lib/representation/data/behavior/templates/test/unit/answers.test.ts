@@ -71,9 +71,18 @@ describe("what placing a template asks for", () => {
   it("gives every parameter a row, and a scope always has a value", () => {
     const rows = answerRowsOf(variables, {}, {});
     expect(rows.map((row) => row.kind)).toEqual(["scope", "text"]);
-    expect(rows[0].value).toBe("Default · Findings");
+    expect(rows[0].value).toBe("Findings");
     expect(rows[0].missing).toBe(false);
     expect(rows[0].answered).toBe(false);
+  });
+
+  it("starts a text parameter at its own default words", () => {
+    const withWords = [{ name: "subject", label: "Subject", kind: "text" as const, text: "Winter" }];
+    const rows = answerRowsOf(withWords, {}, {});
+    expect(rows[0].value).toBe("Winter");
+    expect(rows[0].missing).toBe(false);
+    expect(rows[0].answered).toBe(false);
+    expect(answerRowsOf(withWords, {}, { subject: "Spring" })[0].answered).toBe(true);
   });
 
   it("marks a text parameter missing until it has words", () => {

@@ -4,19 +4,21 @@
   import { traceNode } from "$development-components/trace.svelte";
 
   /**
-   * Every parameter a template asks for, as a key and what it is answered with.
+   * Every parameter a template asks for, as a name, what it means, and what it
+   * is answered with.
    *
-   * **All of them, always.** A template's parameters are the shape of the thing
-   * you are about to make, so the list is the whole list even when most rows say
-   * Default. What is missing is the only thing that needs finding, and a row
-   * that needs words carries a rule down its left edge until it has some.
+   * **All of them, always, and nothing folded away.** A template's parameters are
+   * the shape of the thing you are about to make, so the whole list is on screen
+   * and each row reads top to bottom: the name, the sentence whoever made the
+   * template wrote, and the value. Nothing here is a disclosure, because a hole
+   * you have to open to see is a hole you can forget.
    *
-   * **The description lives one press away.** A row opens to explain itself,
-   * which is where a sentence written by whoever made the template belongs —
-   * rather than under every row at once, where it becomes wallpaper.
+   * **The list scrolls; the modal does not grow.** A template with twelve
+   * parameters and one with two open the same size, so nothing jumps.
    *
-   * **The value is the control.** A scope's value opens the builder; a text
-   * parameter's opens a field under the description. Nothing here is a menu.
+   * **The value is the control.** Text is a field you type in. A scope is a
+   * block reading what it selects, which opens the builder when pressed. A row
+   * with nothing in it carries a rule down its left edge.
    */
 
   export type AnswerRow = {
@@ -54,94 +56,51 @@
     rows: rows.length,
     missing: rows.filter((row) => row.missing).length
   }));
-
-  /**
-   * The first row that needs words opens itself, once, so what is missing is the
-   * first thing read. After that the disclosure is whoever is reading it.
-   */
-  let open = $state<string | undefined>(undefined);
-  let started = false;
-
-  $effect(() => {
-    if (started) return;
-    started = true;
-    open = rows.find((row) => row.missing)?.key;
-  });
-
-  const toggle = (key: string) => {
-    open = open === key ? undefined : key;
-  };
 </script>
 
 <div {...trace} class="answers">
   {#each rows as row (row.key)}
-    <article class="answer" class:missing={row.missing} class:open={open === row.key}>
-      <div class="head">
-        <button
-          type="button"
-          class="key"
-          aria-expanded={open === row.key}
-          {disabled}
-          onclick={() => toggle(row.key)}
-        >
-          <span class="mark" aria-hidden="true">{open === row.key ? "▾" : "▸"}</span>
-          {row.label}
-        </button>
-
-        {#if row.kind === "scope"}
+    <article class="answer" class:missing={row.missing}>
+      <header>
+        <b>{row.label}</b>
+        {#if row.answered}
           <Button
-            variant={row.answered ? "secondary" : "outline"}
+            variant="ghost"
             size="xs"
             {disabled}
-            title={`Choose what ${row.label} selects here`}
-            onclick={() => onscope(row.key)}
+            title={`Put ${row.label} back to what the template suggests`}
+            onclick={() => onreset(row.key)}
           >
-            {row.value}
-          </Button>
-        {:else}
-          <Button
-            variant={row.missing ? "outline" : "secondary"}
-            size="xs"
-            {disabled}
-            title={`Write what ${row.label} says here`}
-            onclick={() => (open = row.key)}
-          >
-            {row.missing ? "Needs input" : row.value}
+            Use the default
           </Button>
         {/if}
-      </div>
+      </header>
 
-      {#if open === row.key}
-        <div class="body">
-          <p class="what">
-            {row.description ?? (row.kind === "text" ? "Words this template asks for." : "What this parameter selects.")}
-          </p>
+      <p class="what">
+        {row.description ??
+          (row.kind === "text" ? "Words this template asks for." : "What this parameter selects.")}
+      </p>
 
-          {#if row.kind === "text"}
-            <Textarea
-              value={row.value}
-              rows={3}
-              {disabled}
-              aria-label={`What ${row.label} says here`}
-              placeholder={`What ${row.label.toLocaleLowerCase()} says here`}
-              oninput={(event) => ontext(row.key, event.currentTarget.value)}
-            />
-          {/if}
-
-          {#if row.answered}
-            <div class="reset">
-              <Button
-                variant="ghost"
-                size="xs"
-                {disabled}
-                title={`Put ${row.label} back to what the template suggests`}
-                onclick={() => onreset(row.key)}
-              >
-                Use the default
-              </Button>
-            </div>
-          {/if}
-        </div>
+      {#if row.kind === "text"}
+        <Textarea
+          value={row.value}
+          rows={2}
+          {disabled}
+          aria-label={`What ${row.label} says here`}
+          placeholder={`What ${row.label.toLocaleLowerCase()} says here`}
+          oninput={(event) => ontext(row.key, event.currentTarget.value)}
+        />
+      {:else}
+        <button
+          type="button"
+          class="scope"
+          {disabled}
+          title={`Choose what ${row.label} selects here`}
+          onclick={() => onscope(row.key)}
+        >
+          <span class="tag">{row.answered ? "Chosen" : "Default"}</span>
+          <span class="rule">{row.value}</span>
+        </button>
       {/if}
     </article>
   {/each}
@@ -151,11 +110,17 @@
   .answers {
     display: flex;
     flex-direction: column;
-    gap: calc(var(--token-spacing-unit) * 1);
+    gap: calc(var(--token-spacing-unit) * 1.5);
+    height: 24rem;
     padding: 0 calc(var(--token-spacing-unit) * 3);
+    overflow-y: auto;
   }
 
   .answer {
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--token-spacing-unit) * 1);
+    padding: calc(var(--token-spacing-unit) * 1.5);
     border: 1px solid var(--token-border-subtle);
     border-inline-start: 3px solid transparent;
     border-radius: var(--token-radius-control);
@@ -163,38 +128,18 @@
   }
 
   .answer.missing { border-inline-start-color: var(--token-color-danger-text); }
-  .answer.open { background: var(--token-surface-panel); }
 
-  .head {
+  header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: calc(var(--token-spacing-unit) * 2);
-    padding: calc(var(--token-spacing-unit) * 1) calc(var(--token-spacing-unit) * 1.5);
   }
 
-  .key {
-    display: flex;
-    align-items: center;
-    gap: calc(var(--token-spacing-unit) * 1);
-    min-width: 0;
-    padding: 0;
-    border: 0;
-    background: transparent;
+  header b {
     color: var(--token-ink-primary);
     font-size: var(--token-text-body-sm);
     font-weight: 600;
-    text-align: start;
-    cursor: pointer;
-  }
-
-  .mark { color: var(--token-ink-muted); font-size: 10px; }
-
-  .body {
-    display: flex;
-    flex-direction: column;
-    gap: calc(var(--token-spacing-unit) * 1);
-    padding: 0 calc(var(--token-spacing-unit) * 1.5) calc(var(--token-spacing-unit) * 1.5);
   }
 
   .what {
@@ -204,5 +149,37 @@
     line-height: var(--token-text-caption-leading);
   }
 
-  .reset { display: flex; }
+  /* The rule reads to four lines, then scrolls, so one long scope cannot own the modal. */
+  .scope {
+    display: flex;
+    gap: calc(var(--token-spacing-unit) * 1.5);
+    align-items: flex-start;
+    max-height: 5.5rem;
+    padding: calc(var(--token-spacing-unit) * 1) calc(var(--token-spacing-unit) * 1.5);
+    overflow-y: auto;
+    border: 1px solid var(--token-border-subtle);
+    border-radius: var(--token-radius-control);
+    background: var(--token-surface-panel);
+    color: var(--token-ink-primary);
+    font-size: var(--token-text-body-sm);
+    line-height: var(--token-text-body-sm-leading);
+    text-align: start;
+    cursor: pointer;
+  }
+
+  .scope:hover { border-color: var(--token-border-strong); background: var(--token-surface-work); }
+
+  .tag {
+    flex: none;
+    padding: 0 calc(var(--token-spacing-unit) * 1);
+    border-radius: var(--token-radius-control);
+    background: var(--token-color-accent-1-surface);
+    color: var(--token-color-accent-1-text);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+  }
+
+  .rule { min-width: 0; }
 </style>

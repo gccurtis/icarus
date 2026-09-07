@@ -239,15 +239,18 @@ export type ChosenVariable = Omit<TemplateVariable, "default"> & { default?: Sco
 export const withVariableField = (
   variables: readonly ChosenVariable[],
   name: string,
-  change: { label?: string; description?: string; default?: ScopeDraft }
+  change: { label?: string; description?: string; default?: ScopeDraft; text?: string }
 ): readonly ChosenVariable[] =>
   variables.map((variable) => {
     if (variable.name !== name) return variable;
     const next: ChosenVariable = { name: variable.name, label: change.label ?? variable.label };
     const description = "description" in change ? change.description : variable.description;
     const fallback = "default" in change ? change.default : variable.default;
+    const words = "text" in change ? change.text : variable.text;
+    if (variable.kind !== undefined) next.kind = variable.kind;
     if (description !== undefined && description.trim().length > 0) next.description = description.trim();
     if (fallback !== undefined) next.default = fallback;
+    if (words !== undefined && words.trim().length > 0) next.text = words;
     return next;
   });
 

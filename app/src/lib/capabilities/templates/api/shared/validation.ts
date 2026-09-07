@@ -1793,7 +1793,7 @@ export const variablesOf = (
   for (const variable of value) {
     if (
       !isRecord(variable) ||
-      !hasOnlyKeys(variable, ["name", "label", "description", "kind", "default"])
+      !hasOnlyKeys(variable, ["name", "label", "description", "kind", "default", "text"])
     ) {
       throw new Error(`templates/${subject}: a variable has only represented fields`);
     }
@@ -1802,6 +1802,14 @@ export const variablesOf = (
     }
     if (variable.kind === "text" && variable.default !== undefined) {
       throw new Error(`templates/${subject}: a text variable has no default scope`);
+    }
+    if (variable.text !== undefined) {
+      if (variable.kind !== "text") {
+        throw new Error(`templates/${subject}: only a text variable has default words`);
+      }
+      if (!validText(variable.text, MAX_BLOCK_TEXT_LENGTH, true)) {
+        throw new Error(`templates/${subject}: a variable's default words are text`);
+      }
     }
     if (!validCanonicalText(variable.name, MAX_VARIABLE_NAME_LENGTH)) {
       throw new Error(`templates/${subject}: every variable has a name`);

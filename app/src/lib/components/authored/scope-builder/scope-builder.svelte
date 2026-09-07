@@ -51,7 +51,6 @@
     whole,
     include,
     exclude,
-    sentence,
     count,
     preview = [],
     sources = [],
@@ -60,14 +59,13 @@
     onmode,
     onadd,
     ondrop,
+    onclear,
     onreset
   }: {
     /** Whether the rule is the floor: everything the project holds. */
     whole: boolean;
     include: readonly ScopeRow[];
     exclude: readonly ScopeRow[];
-    /** The rule as one sentence, the same one every surface shows afterwards. */
-    sentence: string;
     /** How many resources it selects now. */
     count: number;
     /** What those resources are, for the list under the count. */
@@ -80,6 +78,8 @@
     onmode: (whole: boolean) => void;
     onadd: (side: ScopeSide, source: string, key: string) => void;
     ondrop: (side: ScopeSide, key: string) => void;
+    /** Empty both sides, to start again from nothing. */
+    onclear: () => void;
     onreset?: () => void;
   } = $props();
 
@@ -132,7 +132,7 @@
   <div class="panes">
     <section class="pane" aria-label={`Add to ${side === "include" ? "include" : "exclude"}`}>
       <header>
-        <b>Add to {side === "include" ? "include" : "exclude"}</b>
+        <b>From</b>
       </header>
       <div class="sources" role="group" aria-label="Where to add from">
         {#each sources as source (source.key)}
@@ -220,8 +220,6 @@
     </section>
   </div>
 
-  <p class="sentence">{sentence}</p>
-
   <div class="foot">
     <div class="floor">
       <Button
@@ -245,6 +243,15 @@
           Default
         </Button>
       {/if}
+      <Button
+        variant="ghost"
+        size="xs"
+        {disabled}
+        title="Empty both sides and start again"
+        onclick={onclear}
+      >
+        Clear
+      </Button>
     </div>
 
     <div class="count">
@@ -314,11 +321,15 @@
     gap: calc(var(--token-spacing-unit) * 2);
   }
 
+  /**
+   * Both panes are one fixed height, so the modal does not jump as somebody
+   * clicks between Kinds, Sets and Resources looking for what they want.
+   */
   .pane {
     display: flex;
     flex-direction: column;
     gap: calc(var(--token-spacing-unit) * 1);
-    min-height: 16rem;
+    height: 21rem;
     padding: calc(var(--token-spacing-unit) * 1.5);
     border: 1px solid var(--token-border-subtle);
     border-radius: var(--token-radius-panel);
@@ -340,7 +351,7 @@
     display: flex;
     flex: 1;
     flex-direction: column;
-    max-height: 16rem;
+    min-height: 0;
     overflow-y: auto;
   }
 
@@ -401,16 +412,6 @@
   }
 
   .refused { color: var(--token-color-attention-text); }
-
-  .sentence {
-    margin: 0;
-    padding: calc(var(--token-spacing-unit) * 1.5);
-    border-inline-start: 2px solid var(--token-color-accent-1-text);
-    border-radius: 0 var(--token-radius-control) var(--token-radius-control) 0;
-    background: var(--token-color-accent-1-surface);
-    color: var(--token-ink-primary);
-    font-size: var(--token-text-body-sm);
-  }
 
   .foot {
     display: flex;

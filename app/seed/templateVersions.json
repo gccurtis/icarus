@@ -2358,5 +2358,338 @@
     },
     "variables": [],
     "at": 1788000000000
+  },
+  {
+    "_id": "templateVersions:9-1",
+    "_creationTime": 1788000000000,
+    "templateId": "templates:9",
+    "revision": 1,
+    "name": "Client status note",
+    "description": "A short note to one client about where their work stands.",
+    "tags": [
+      "Operations",
+      "Reporting"
+    ],
+    "body": {
+      "resource": "document",
+      "rows": [
+        {
+          "id": "#csn-row-title",
+          "kind": "blocks",
+          "blocks": [
+            {
+              "id": "#csn-title",
+              "type": "text",
+              "variant": "heading",
+              "level": 1,
+              "style": "title",
+              "atoms": [
+                {
+                  "id": "#csn-title-a",
+                  "kind": "literal",
+                  "text": "Status for "
+                },
+                {
+                  "id": "#csn-title-b",
+                  "kind": "template",
+                  "name": "client_name"
+                }
+              ],
+              "display": "Status for {client_name}",
+              "marks": []
+            }
+          ]
+        },
+        {
+          "id": "#csn-row-period",
+          "kind": "blocks",
+          "blocks": [
+            {
+              "id": "#csn-period",
+              "type": "text",
+              "variant": "paragraph",
+              "atoms": [
+                {
+                  "id": "#csn-period-a",
+                  "kind": "literal",
+                  "text": "Covering "
+                },
+                {
+                  "id": "#csn-period-b",
+                  "kind": "template",
+                  "name": "reporting_period"
+                },
+                {
+                  "id": "#csn-period-c",
+                  "kind": "literal",
+                  "text": "."
+                }
+              ],
+              "display": "Covering {reporting_period}.",
+              "marks": []
+            }
+          ]
+        },
+        {
+          "id": "#csn-row-prompt",
+          "kind": "blocks",
+          "blocks": [
+            {
+              "id": "#csn-prompt",
+              "type": "prompt",
+              "atoms": [
+                {
+                  "id": "#csn-prompt-a",
+                  "kind": "literal",
+                  "text": "Write three paragraphs for "
+                },
+                {
+                  "id": "#csn-prompt-b",
+                  "kind": "template",
+                  "name": "client_name"
+                },
+                {
+                  "id": "#csn-prompt-c",
+                  "kind": "literal",
+                  "text": " on what moved, what is blocked, and what happens next."
+                }
+              ],
+              "display": "Write three paragraphs for {client_name} on what moved, what is blocked, and what happens next.",
+              "marks": [],
+              "scope": {
+                "include": [
+                  {
+                    "select": "variable",
+                    "name": "status_evidence"
+                  }
+                ],
+                "exclude": []
+              },
+              "state": "idle"
+            }
+          ]
+        }
+      ]
+    },
+    "variables": [
+      {
+        "name": "client_name",
+        "label": "Client name",
+        "description": "Who this note is addressed to, exactly as they should see it.",
+        "kind": "text"
+      },
+      {
+        "name": "reporting_period",
+        "label": "Reporting period",
+        "description": "The window this note covers, in whatever words the client uses.",
+        "kind": "text",
+        "text": "the last four weeks"
+      },
+      {
+        "name": "status_evidence",
+        "label": "Status evidence",
+        "description": "The findings and documents this note should be written from.",
+        "default": {
+          "include": [
+            {
+              "select": "kinds",
+              "kinds": [
+                "finding"
+              ]
+            }
+          ],
+          "exclude": []
+        }
+      }
+    ],
+    "at": 1788000000000
+  },
+  {
+    "_id": "templateVersions:10-1",
+    "_creationTime": 1788000000000,
+    "templateId": "templates:10",
+    "revision": 1,
+    "name": "Incident one-pager",
+    "description": "One page on a single incident: what happened, what it cost, what changes.",
+    "tags": [
+      "Operations",
+      "Reliability"
+    ],
+    "body": {
+      "resource": "document",
+      "rows": [
+        {
+          "id": "#iop-row-title",
+          "kind": "blocks",
+          "blocks": [
+            {
+              "id": "#iop-title",
+              "type": "text",
+              "variant": "heading",
+              "level": 1,
+              "style": "title",
+              "atoms": [
+                {
+                  "id": "#iop-title-a",
+                  "kind": "template",
+                  "name": "incident_title"
+                }
+              ],
+              "display": "{incident_title}",
+              "marks": []
+            }
+          ]
+        },
+        {
+          "id": "#iop-row-what",
+          "kind": "blocks",
+          "blocks": [
+            {
+              "id": "#iop-what",
+              "type": "text",
+              "variant": "heading",
+              "level": 2,
+              "style": "heading",
+              "atoms": [
+                {
+                  "id": "#iop-what-a",
+                  "kind": "literal",
+                  "text": "What happened"
+                }
+              ],
+              "display": "What happened",
+              "marks": []
+            }
+          ]
+        },
+        {
+          "id": "#iop-row-what-prompt",
+          "kind": "blocks",
+          "blocks": [
+            {
+              "id": "#iop-what-prompt",
+              "type": "prompt",
+              "atoms": [
+                {
+                  "id": "#iop-what-prompt-a",
+                  "kind": "literal",
+                  "text": "Give the sequence of events, with times, in one paragraph."
+                }
+              ],
+              "display": "Give the sequence of events, with times, in one paragraph.",
+              "marks": [],
+              "scope": {
+                "include": [
+                  {
+                    "select": "variable",
+                    "name": "incident_record"
+                  }
+                ],
+                "exclude": []
+              },
+              "state": "idle"
+            }
+          ]
+        },
+        {
+          "id": "#iop-row-cost",
+          "kind": "blocks",
+          "blocks": [
+            {
+              "id": "#iop-cost",
+              "type": "text",
+              "variant": "heading",
+              "level": 2,
+              "style": "heading",
+              "atoms": [
+                {
+                  "id": "#iop-cost-a",
+                  "kind": "literal",
+                  "text": "What it cost"
+                }
+              ],
+              "display": "What it cost",
+              "marks": []
+            }
+          ]
+        },
+        {
+          "id": "#iop-row-cost-prompt",
+          "kind": "blocks",
+          "blocks": [
+            {
+              "id": "#iop-cost-prompt",
+              "type": "prompt",
+              "atoms": [
+                {
+                  "id": "#iop-cost-prompt-a",
+                  "kind": "literal",
+                  "text": "State the cost, and say which assumption it turns on."
+                }
+              ],
+              "display": "State the cost, and say which assumption it turns on.",
+              "marks": [],
+              "scope": {
+                "include": [
+                  {
+                    "select": "variable",
+                    "name": "cost_models"
+                  }
+                ],
+                "exclude": []
+              },
+              "state": "idle"
+            }
+          ]
+        }
+      ]
+    },
+    "variables": [
+      {
+        "name": "incident_title",
+        "label": "Incident title",
+        "description": "The name this incident is known by, as it should head the page.",
+        "kind": "text"
+      },
+      {
+        "name": "incident_record",
+        "label": "Incident record",
+        "description": "Everything the write-up should be grounded in.",
+        "default": {
+          "include": [
+            {
+              "select": "kinds",
+              "kinds": [
+                "finding"
+              ]
+            },
+            {
+              "select": "kinds",
+              "kinds": [
+                "document"
+              ]
+            }
+          ],
+          "exclude": []
+        }
+      },
+      {
+        "name": "cost_models",
+        "label": "Cost models",
+        "description": "The spreadsheets that put a number on it.",
+        "default": {
+          "include": [
+            {
+              "select": "kinds",
+              "kinds": [
+                "spreadsheet"
+              ]
+            }
+          ],
+          "exclude": []
+        }
+      }
+    ],
+    "at": 1788000000000
   }
 ]

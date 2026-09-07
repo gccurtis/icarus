@@ -48,7 +48,7 @@
           <div><dt>Created</dt><dd>{made}</dd></div>
           <div><dt>Changed</dt><dd>{changed}</dd></div>
           <div><dt>Lines</dt><dd>+{added.toLocaleString()} / −{deleted.toLocaleString()}</dd></div>
-          <div><dt>Committed</dt><dd>One commit, rebased onto main</dd></div>
+          <div><dt>Committed</dt><dd>Four commits, rebased onto main</dd></div>
         </dl>
       </div>
     </header>
@@ -226,8 +226,8 @@
       <div class="tref-section-head">
         <div><span class="tref-kicker">Already done</span><h2>Rebased onto main</h2></div>
         <p>
-          One commit on <code>work/template-features</code>, sitting directly on main's head. Everything on
-          this page is measured from there, so the numbers say what this branch adds and nothing else.
+          Four commits on <code>work/template-features</code>, sitting directly on main's head. Everything
+          on this page is measured from there, so the numbers say what this branch adds and nothing else.
         </p>
       </div>
 
@@ -238,11 +238,11 @@
         </article>
         <article class="tref-card">
           <h3>What main brought</h3>
-          <p>{MERGE.commits} commits and {MERGE.mainFiles} files since the original branch point: editor stabilization, the editor audit, and the withdrawal of header and footer authoring.</p>
+          <p>{MERGE.commits} commits and {MERGE.mainFiles} files since the original branch point: editor stabilization, the editor audit, the withdrawal of header and footer authoring, and a pass over the editors' controls and inspectors.</p>
         </article>
         <article class="tref-card">
           <h3>Files both sides touched</h3>
-          <p>{MERGE.overlap.length} of them, and {MERGE.conflicts.length} conflicted. The other {app.length - MERGE.overlap.length} files this branch touches could not.</p>
+          <p>{MERGE.overlap.length} of them, and {MERGE.conflicts.length} ever conflicted. The other {app.length - MERGE.overlap.length} files this branch touches could not.</p>
         </article>
       </div>
 
@@ -258,11 +258,11 @@
       </div>
 
       <div class="tref-note success">
-        <h4>The other nine merged without a decision</h4>
+        <h4>The rest merged without a decision</h4>
         <p>
-          {MERGE.overlap.filter((path) => !MERGE.conflicts.some((row) => path.endsWith(row.path))).join(", ")}
-          — both sides edited them, but not the same lines. Every check was re-run afterwards, and the deck
-          selection case that had been failing since the branch was cut now passes, because main fixed it.
+          {MERGE.overlap.length - MERGE.conflicts.length} of the {MERGE.overlap.length} were edited on both
+          sides but never on the same lines, and the last two rebases replayed all four commits with nothing
+          to reconcile at all. Every check was re-run afterwards.
         </p>
       </div>
     </section>
