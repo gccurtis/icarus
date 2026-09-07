@@ -34,7 +34,7 @@
     "aria-hidden"?: boolean | "true" | "false";
   }>;
 
-  type MaterialKind = "csv" | "table" | "image" | "code";
+  type MaterialKind = "csv" | "table" | "chart" | "image" | "code";
   type Material = {
     id: MaterialKind;
     label: string;
@@ -56,7 +56,7 @@
       label: "RAW CSV",
       name: "Field incidents",
       icon: FileSpreadsheet,
-      origin: "externalFile::csv · sha256:82c…",
+      origin: "externalFile::data · sha256:82c…",
       profile: ["14,208 rows", "12 columns", "2022-01 → 2025-12", "region · severity · response_minutes"],
       context: ["uploaded as field-incidents.csv", "referenced by Operations review", "no user description yet"],
       summary:
@@ -95,25 +95,46 @@
       name: "North station installation",
       icon: Image,
       origin: "externalFiles:image-03 · sha256:9bf…",
-      profile: ["2048 × 1365", "image/jpeg", "3 placements", "alt: field installation"],
-      context: ["caption from document block", "slide-07 placement context", "user description is optional"],
+      profile: ["2048 × 1365", "image/jpeg", "sha256:9bf…", "3 placements"],
+      context: ["alt: field installation", "caption from document block", "slide-07 placement context"],
       summary:
         "Field photograph of a north-station equipment installation, with temporary barriers visible around the active work area.",
       facets: [
-        { name: "identity", provenance: "name + alt + media type", state: "exact" },
-        { name: "generated", provenance: "original pixels + placement context", state: "inferred" },
+        { name: "identity", provenance: "asset name + kind", state: "exact" },
+        { name: "profile", provenance: "hash + media metadata", state: "exact" },
+        { name: "authored", provenance: "alt + caption · contributor-scoped", state: "authored" },
+        { name: "generated", provenance: "pixels + context · contributor-scoped", state: "inferred" },
         { name: "native visual", provenance: "Jina v4 image vector", state: "native" }
       ],
       reader: "read_image",
-      evidence: "original pixels or exact crop",
-      granularity: "one asset descriptor by hash; placement facets retain local context"
+      evidence: "content-addressed pixels + optional crop coordinates",
+      granularity: "one asset identity by hash; contextual facets retain every contributing resource ref"
+    },
+    {
+      id: "chart",
+      label: "NATIVE CHART",
+      name: "Quarterly readiness",
+      icon: ChartNoAxesColumn,
+      origin: "slides:deck-04 · slide-07 · chart-02",
+      profile: ["bar chart", "Revenue + Cost series", "native JSON spec", "60k read ceiling"],
+      context: ["slide title and narrative", "speaker notes", "shape and slide placement"],
+      summary:
+        "Quarterly readiness chart comparing named native series in the context of the field-retrofit recommendation.",
+      facets: [
+        { name: "identity", provenance: "name + kind", state: "exact" },
+        { name: "profile", provenance: "chart type + series + labels", state: "exact" },
+        { name: "generated", provenance: "profile + slide context", state: "inferred" }
+      ],
+      reader: "read_chart",
+      evidence: "selected native series and specification",
+      granularity: "one chart material per native chart element"
     },
     {
       id: "code",
       label: "CODE FILE",
       name: "pricing-engine.ts",
       icon: FileCode2,
-      origin: "externalFile::code · sha256:3ad…",
+      origin: "externalFile::text · sha256:3ad…",
       profile: ["TypeScript", "18 exported symbols", "imports money + tax", "642 lines"],
       context: ["repository-relative name", "symbol outline", "incoming references are a future enrichment"],
       summary:
@@ -138,43 +159,43 @@
   const PIPELINE = [
     {
       number: "01",
-      name: "inventoryMaterialParts",
-      status: "target",
+      name: "readMaterialInventoryFor",
+      status: "live",
       icon: PackageSearch,
-      text: "Resource adapters enumerate first-class tables, charts, images, datasets, and code files without generating prose."
+      text: "projectResource and readMaterialInventoryFor enumerate tables, charts, images, datasets, and code without generating prose."
     },
     {
       number: "02",
-      name: "profileMaterial",
-      status: "target",
+      name: "profileTable / Csv / …",
+      status: "live",
       icon: ChartNoAxesColumn,
-      text: "Deterministic adapters derive shape, headers, types, dimensions, symbols, hashes, and bounded statistics."
+      text: "profileTable, profileCsv, profileChart, profileImage, and profileCode derive bounded deterministic structure."
     },
     {
       number: "03",
-      name: "assembleMaterialContext",
-      status: "target",
+      name: "normalizeMaterials",
+      status: "live",
       icon: Layers3,
-      text: "Captions, nearby text, slide notes, placement, resource title, and user description form a bounded context envelope."
+      text: "Bounded placement contexts merge for shared assets; contributor refs are sorted, hashed, and persisted on contextual facets."
     },
     {
       number: "04",
       name: "describeMaterial",
-      status: "target",
+      status: "live",
       icon: Sparkles,
       text: "Structured intelligence records purpose, entities, measures, coverage, and uncertainty; image summaries require vision over original pixels."
     },
     {
       number: "05",
       name: "embedMaterialFacets",
-      status: "extended",
+      status: "live",
       icon: Binary,
       text: "Text facets use the existing passage embedding; image assets can add a native visual vector in the same Jina space."
     },
     {
       number: "06",
-      name: "publishMaterialRevision",
-      status: "target",
+      name: "publishSemanticMaterials",
+      status: "live",
       icon: ShieldCheck,
       text: "Publish only if source revision or content hash still matches; stale work never replaces the current descriptor."
     }
@@ -221,6 +242,20 @@
       claim: "The descriptor establishes relevance; the cell range establishes the comparison."
     },
     {
+      id: "chart",
+      label: "RELEVANT CHART",
+      question: "Which chart contains the regional revenue series?",
+      match: "Quarterly readiness",
+      facet: "deterministic series profile + slide context",
+      confidence: "INTERPRETED MATCH",
+      route: [
+        { tool: "retrieve_materials", role: "material", note: "find chart meaning" },
+        { tool: "inspect_slide", role: "material", note: "understand placement" },
+        { tool: "read_chart", role: "native", note: "isolate named series" }
+      ],
+      claim: "The profile routes the agent; the selected native chart series supports the value claim."
+    },
+    {
       id: "image",
       label: "RELEVANT IMAGE",
       question: "Is there a field image showing temporary safety barriers?",
@@ -253,24 +288,21 @@
   let activeQueryId = $state<MaterialKind>("csv");
   const activeQuery = $derived(QUERIES.find((query) => query.id === activeQueryId) ?? QUERIES[0]);
 
-  const MATERIAL_SCHEMA = `type SemanticMaterial = {
-  id: Id<"semanticMaterials">;
+  const MATERIAL_SCHEMA = `type SemanticMaterialFields = {
   projectId: Id<"projects">;
   kind: "table" | "csv" | "chart" | "image" | "code";
-  name: string;                 // never requires a filename
-  source: MaterialSource;       // resource locator or external file
-  revision: number | { hash: string };
-  profile: MaterialProfile;     // deterministic
-  userDescription?: string;     // preserved independently
-  descriptor?: {
-    summary: string;
-    model: string;
-    promptVersion: string;
-    inputHash: string;
-    coverage: MaterialCoverage;
-    generatedAt: number;
-  };
+  identityKey: string;
+  name: string;
+  source: MaterialSource;
+  profile: MaterialProfile;
+  profileHash: string;
+  contextHash: string;
+  revisionKey: string;
+  userDescription?: string;
+  descriptor?: GeneratedMaterialDescriptor;
   state: "profiled" | "describing" | "ready" | "stale" | "error";
+  error?: string;
+  updatedAt: number;
 };`;
 
   const OBJECT_SCHEMA = `type SemanticObjectTarget =
@@ -281,9 +313,12 @@
     }
   | {
       lane: "material";
-      materialId: Id<"semanticMaterials">;
+      semanticMaterialId: Id<"semanticMaterials">;
       facet: "identity" | "profile" | "authored" |
              "generated" | "nativeVisual";
+      facetText?: string;
+      inputHash: string;
+      scopeRefs?: ResourceRef[]; // authored/generated contributors
     };
 
 // One embedding space, separate lane indexes.
@@ -302,33 +337,30 @@
     name: string;
     profile: MaterialProfileDigest;
     description?: MaterialDescription;
-    matchedFacets: MaterialFacet[];
+    matchedFacets: MaterialFacetKind[];
     source: MaterialSourceSnapshot;
-    freshness: "current";
     score: number;
   }];
 }`;
 
-  const TARGET_DIRECTORY = `capabilities/semantic-overlay/
-├── projection/                 exact text lane
-│   ├── resources/document.ts
-│   ├── resources/slide-deck.ts
-│   └── content/text.ts
-├── materials/                  interpreted material lane
-│   ├── inventory/
-│   │   ├── document.ts
-│   │   ├── slide-deck.ts
-│   │   ├── spreadsheet.ts
-│   │   └── external-file.ts
-│   ├── profile/
-│   │   ├── table.ts  csv.ts  chart.ts
-│   │   ├── image.ts  code.ts
-│   ├── describe-material.ts
-│   ├── embed-material-facets.ts
-│   └── publish-material-revision.ts
-└── query/
-    ├── retrieve-text.ts
-    └── retrieve-materials.ts`;
+  const LIVE_DIRECTORY = `representation/data/behavior/semantic/
+├── projection/
+│   ├── project-resource.ts
+│   ├── writer.ts
+│   └── resources/{document,slide-deck}.ts
+└── materials/
+    ├── profile.ts  csv.ts  code.ts
+    ├── external-file.ts
+    └── spreadsheet.ts
+
+capabilities/semantic-overlay/api/
+├── query-semantic-materials/
+└── shared/
+    ├── material-resource.ts
+    ├── material-sync.ts
+    ├── material-description.ts
+    ├── material-facets.ts
+    └── material-publication.ts`;
 
   const IMPLEMENTATION = [
     {
@@ -341,31 +373,37 @@
       status: "live",
       path: "representation/data/types/external/file.ts + store/tables.ts",
       symbols: "FileSubkind · ExternalFileFields",
-      note: "Files already have name, media type, storage ID, hash, and origin; subkind is not persisted yet."
+      note: "Files persist name, media type, subkind, storage ID, hash, and origin; legacy rows use deterministic fallback classification."
     },
     {
-      status: "extended",
+      status: "live",
       path: "model/server/embedding",
       symbols: "EmbeddingModel · jina-embeddings-v4",
-      note: "Text operations are live. Add a typed image operation without changing vector space."
+      note: "Typed text, query, passage, batch-passage, token-field, and native image operations share one recorded vector space."
     },
     {
-      status: "target",
+      status: "live",
       path: "representation/data/types/semantic/material.ts",
-      symbols: "SemanticMaterial · MaterialProfile · MaterialFacet",
-      note: "Give every material identity, authority, profile, descriptions, freshness, and provenance."
+      symbols: "SemanticMaterial · MaterialProfile · SemanticMaterialFacet.scopeRefs",
+      note: "Every material carries native authority and hashes; contextual facets also carry every contributing resource ref."
     },
     {
-      status: "target",
-      path: "capabilities/semantic-overlay/materials",
+      status: "live",
+      path: "capabilities/semantic-overlay/api/shared/material-*",
       symbols: "inventory · profile · describe · embed · publish",
-      note: "A separate incremental pipeline keeps expensive interpretation out of resource saves."
+      note: "A separately queued pipeline keeps native reads and expensive interpretation out of resource saves."
     },
     {
-      status: "target",
-      path: "capabilities/derived-output/api/shared/tools",
+      status: "live",
+      path: "capabilities/derived-output/api/shared/resource-reading.ts",
       symbols: "retrieve_materials · inspect_* · read_csv · read_code",
-      note: "Discovery and exact reads remain specialized, bounded, and scope-injected."
+      note: "All sixteen discovery, traversal, context, and evidence tools are bounded and scope-injected."
+    },
+    {
+      status: "deferred",
+      path: "deployment adapters",
+      symbols: "object store · slide renderer · streaming partitions",
+      note: "These named seams are intentionally not presented as live production infrastructure."
     }
   ] as const;
 
@@ -374,6 +412,7 @@
     ["Inventory broadly", "Register every first-class material cheaply. Generate deeper descriptors according to size, type, reuse, and demand."],
     ["Facets stay separate", "Name, deterministic profile, user description, generated summary, and native visual vector retain distinct provenance."],
     ["Hash once, place many", "Deduplicate an image or external file by content hash while retaining resource-specific placement context."],
+    ["Context cannot widen scope", "Safe asset facets need one in-set source or placement; aggregate authored/generated facets require every contributor in-set."],
     ["Extraction is upstream", "Only call something a table after a deterministic extractor or user confirmation creates native structure."],
     ["Prompt output is excluded", "Generated Prompt Block responses never become source material or contextual input for this pipeline."]
   ] as const;
@@ -383,7 +422,7 @@
   <title>Semantic material layer — Icarus</title>
   <meta
     name="description"
-    content="The goal-state pipeline for discovering tables, CSV data, images, charts, and code through semantic material descriptors while retaining native evidence."
+    content="The implemented pipeline for discovering tables, CSV data, images, charts, and code through semantic material descriptors while retaining native evidence."
   />
 </svelte:head>
 
@@ -412,7 +451,7 @@
   <main>
     <section class="hero">
       <div class="hero-copy">
-        <div class="eyebrow"><Network size={15} aria-hidden="true" /> GOAL STATE / MULTIMODAL DISCOVERY</div>
+        <div class="eyebrow"><Network size={15} aria-hidden="true" /> LIVE ARCHITECTURE / MULTIMODAL DISCOVERY</div>
         <h1>Search the <em>meaning.</em><br />Read the source.</h1>
         <p>
           Tables, CSV files, images, charts, and code need semantic handles before an agent knows
@@ -421,7 +460,7 @@
         </p>
         <div class="hero-status">
           <span class="status-live">LIVE · exact text lane</span>
-          <span class="status-target">TARGET · material lane</span>
+          <span class="status-live">LIVE · material lane</span>
         </div>
       </div>
 
@@ -478,7 +517,7 @@
       <header class="section-heading compact-heading">
         <div><span>02 / MATERIAL ANATOMY</span><h2>One identity.<br />Several honest facets.</h2></div>
         <p>
-          Select a material to inspect the same target contract across raw files and authored
+          Select a material to inspect the same live contract across raw files and authored
           content. Facets remain separate so retrieval can report what actually matched.
         </p>
       </header>
@@ -593,12 +632,25 @@
             <dl><div><dt>objects</dt><dd>source spans</dd></div><div><dt>query</dt><dd><code>retrieve</code></dd></div><div><dt>result</dt><dd>verbatim evidence</dd></div></dl>
           </article>
           <article class="material-index">
-            <header><Sparkles size={20} aria-hidden="true" /><div><span>INDEX LANE · MATERIAL</span><strong>grouped material facets</strong></div><small>TARGET</small></header>
+            <header><Sparkles size={20} aria-hidden="true" /><div><span>INDEX LANE · MATERIAL</span><strong>grouped material facets</strong></div><small>LIVE</small></header>
             <div class="index-nodes"><b></b><b></b><b></b><b></b><b></b><b></b><b></b></div>
             <dl><div><dt>objects</dt><dd>profile / summary / visual facets</dd></div><div><dt>query</dt><dd><code>retrieve_materials</code></dd></div><div><dt>result</dt><dd>interpreted evidence</dd></div></dl>
           </article>
         </div>
         <div class="scope-floor"><ShieldCheck size={17} aria-hidden="true" /><span>Both lanes enforce the same project scope, Resource Set eligibility, vector dimensions, and attempt budget.</span></div>
+        <div class="facet-scope-gate" aria-label="Shared material facet scope rules">
+          <article class="safe-facets">
+            <Fingerprint size={19} aria-hidden="true" />
+            <div><span>SAFE ASSET FACETS</span><strong>identity · profile · native visual</strong><small>eligible through any in-set source or placement</small></div>
+            <code>ANY(source, placement) ∈ set</code>
+          </article>
+          <div class="scope-divider"><span>ONE IDENTITY</span><i></i><strong>FACET GATE</strong><i></i></div>
+          <article class="contextual-facets">
+            <Layers3 size={19} aria-hidden="true" />
+            <div><span>AGGREGATE CONTEXT</span><strong>authored · generated</strong><small>every contributing ref is persisted as scopeRefs</small></div>
+            <code>ALL(scopeRefs) ∈ set</code>
+          </article>
+        </div>
       </div>
     </section>
 
@@ -650,7 +702,7 @@
 
       <div class="evidence-ruler">
         <article class="distance-zero"><span>00</span><FileText size={21} aria-hidden="true" /><strong>VERBATIM TEXT</strong><p>Exact source range; directly quotable.</p><code>retrieve · read_text · read_code</code></article>
-        <article class="distance-one"><span>01</span><Table2 size={21} aria-hidden="true" /><strong>NATIVE MATERIAL</strong><p>Exact cells, series, rows, or pixels; the response interprets them.</p><code>read_table · read_csv · read_chart · read_image</code></article>
+        <article class="distance-one"><span>01</span><Table2 size={21} aria-hidden="true" /><strong>NATIVE MATERIAL</strong><p>Bounded cells, series, rows, or content-addressed pixels; the response interprets them.</p><code>read_table · read_csv · read_chart · read_image</code></article>
         <article class="distance-two"><span>02</span><Sparkles size={21} aria-hidden="true" /><strong>DERIVED DESCRIPTOR</strong><p>Model-generated meaning with source, inputs, model, and prompt version attached.</p><code>retrieve_materials</code></article>
         <article class="distance-three"><span>—</span><Eye size={21} aria-hidden="true" /><strong>SUPPORTING CONTEXT</strong><p>Placement, ordering, manifest, or composite rendering; never selectable as evidence.</p><code>list_* · inspect_* · view_*</code></article>
       </div>
@@ -672,13 +724,13 @@
 
       <div class="schema-wall">
         <article><header><Database size={18} aria-hidden="true" /><span>MATERIAL RECORD</span></header><pre><code>{MATERIAL_SCHEMA}</code></pre></article>
-        <article><header><Network size={18} aria-hidden="true" /><span>INDEX TARGET</span></header><pre><code>{OBJECT_SCHEMA}</code></pre></article>
+        <article><header><Network size={18} aria-hidden="true" /><span>INDEX CONTRACT</span></header><pre><code>{OBJECT_SCHEMA}</code></pre></article>
         <article><header><Search size={18} aria-hidden="true" /><span>RETRIEVAL TOOL</span></header><pre><code>{RETRIEVE_SCHEMA}</code></pre></article>
-        <article><header><Braces size={18} aria-hidden="true" /><span>TARGET DIRECTORY</span></header><pre><code>{TARGET_DIRECTORY}</code></pre></article>
+        <article><header><Braces size={18} aria-hidden="true" /><span>LIVE DIRECTORY</span></header><pre><code>{LIVE_DIRECTORY}</code></pre></article>
       </div>
 
       <div class="implementation-ledger">
-        <header><span>CHANGE SURFACE</span><strong>What exists and what must move</strong></header>
+        <header><span>CHANGE SURFACE</span><strong>What runs and what remains adapter work</strong></header>
         {#each IMPLEMENTATION as item (item.path)}
           <article>
             <small class="status-{item.status}">{item.status}</small>
@@ -699,7 +751,7 @@
       </div>
       <div class="final-call">
         <div><Check size={25} aria-hidden="true" /></div>
-        <section><span>PROPOSED ALIGNMENT</span><h2>Semantic descriptors make materials findable. Native readers keep answers honest.</h2><p>The next implementation slice should establish the material record and inventory/profile pipeline before adding generation or image embeddings.</p></section>
+        <section><span>IMPLEMENTED ALIGNMENT</span><h2>Semantic descriptors make materials findable. Native readers keep answers honest.</h2><p>The full vertical slice now runs; the next work is deployment hardening, production rendering/uploads, and partitioned large-file adapters.</p></section>
         <a href="/demo/semantic-overlay/resource-reading">Return to resource reading <ArrowRight size={15} aria-hidden="true" /></a>
       </div>
     </section>
@@ -707,7 +759,7 @@
 
   <footer class="page-footer">
     <span>SEMANTIC OVERLAY / MATERIAL LAYER</span>
-    <span>goal-state architecture · no production pipeline mutation on this page</span>
+    <span>live architecture · executable contracts with named deferred adapters</span>
   </footer>
 </div>
 
@@ -777,6 +829,7 @@
   .status-live { border-color: var(--native-border) !important; background: var(--native-surface); color: var(--native); }
   .status-target { border-color: var(--material-border) !important; background: var(--material-surface); color: var(--material); }
   .status-extended { border-color: var(--attention-border) !important; background: var(--attention-surface); color: var(--attention); }
+  .status-deferred { border-color: var(--attention-border) !important; background: var(--attention-surface); color: var(--attention); }
 
   .hero-machine { padding: 1rem; border: 1px solid var(--line-strong); background: color-mix(in srgb, var(--raised) 93%, transparent); box-shadow: 1rem 1rem 0 color-mix(in srgb, var(--material) 7%, transparent); }
   .query-beam { gap: 0.7rem; padding: 1rem; border: 1px solid var(--line); background: var(--panel); }
@@ -828,7 +881,7 @@
   .claim-policy strong { display: block; margin-top: 0.3rem; font-size: 0.83rem; }
   .claim-policy > code { color: var(--material); font-size: 0.68rem; }
 
-  .material-tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; border: 1px solid var(--line-strong); background: var(--line); }
+  .material-tabs { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1px; border: 1px solid var(--line-strong); background: var(--line); }
   .material-tabs button { min-width: 0; gap: 0.65rem; min-height: 5rem; padding: 1rem; border: 0; background: var(--raised); color: var(--muted); text-align: left; cursor: pointer; }
   .material-tabs button span { color: var(--secondary); font: 0.56rem var(--token-font-mono); letter-spacing: 0.08em; }
   .material-tabs button small { min-width: 0; margin-left: auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.59rem; }
@@ -919,8 +972,23 @@
   .lane-columns dd { margin: 0.3rem 0 0; color: var(--secondary); font-size: 0.62rem; }
   .scope-floor { justify-content: center; gap: 0.55rem; margin-top: 1rem; padding: 0.85rem; border: 1px dashed var(--line-strong); color: var(--secondary); font-size: 0.62rem; text-align: center; }
   .scope-floor > :global(svg) { color: var(--native); }
+  .facet-scope-gate { display: grid; grid-template-columns: 1fr 7rem 1fr; align-items: stretch; margin-top: 0.75rem; }
+  .facet-scope-gate article { display: grid; grid-template-columns: auto 1fr; gap: 0.35rem 0.75rem; align-items: start; padding: 1.15rem; border: 1px solid; background: var(--panel); }
+  .facet-scope-gate article > :global(svg) { grid-row: 1 / 3; margin-top: 0.1rem; }
+  .facet-scope-gate article span { font: 0.5rem var(--token-font-mono); letter-spacing: 0.09em; }
+  .facet-scope-gate article strong { display: block; margin-top: 0.25rem; font: 400 0.95rem var(--token-font-reading); }
+  .facet-scope-gate article small { display: block; margin-top: 0.3rem; color: var(--muted); font-size: 0.58rem; line-height: 1.4; }
+  .facet-scope-gate article > code { grid-column: 2; margin-top: 0.8rem; font-size: 0.59rem; overflow-wrap: anywhere; }
+  .safe-facets { border-color: var(--native-border) !important; }
+  .safe-facets > :global(svg), .safe-facets span, .safe-facets > code { color: var(--native); }
+  .contextual-facets { border-color: var(--material-border) !important; background: var(--material-surface) !important; }
+  .contextual-facets > :global(svg), .contextual-facets span, .contextual-facets > code { color: var(--material); }
+  .scope-divider { display: grid; place-items: center; align-content: center; gap: 0.45rem; color: var(--muted); text-align: center; }
+  .scope-divider span, .scope-divider strong { font: 0.47rem var(--token-font-mono); letter-spacing: 0.08em; }
+  .scope-divider strong { color: var(--material); }
+  .scope-divider i { width: 1px; height: 1.25rem; background: var(--line-strong); }
 
-  .query-tabs { display: grid; grid-template-columns: repeat(4, 1fr); border: 1px solid var(--line-strong); background: var(--line); gap: 1px; }
+  .query-tabs { display: grid; grid-template-columns: repeat(5, 1fr); border: 1px solid var(--line-strong); background: var(--line); gap: 1px; }
   .query-tabs button { min-height: 7rem; padding: 1rem; border: 0; background: var(--raised); color: var(--muted); text-align: left; cursor: pointer; }
   .query-tabs button span { display: block; color: var(--secondary); font: 0.54rem var(--token-font-mono); letter-spacing: 0.08em; }
   .query-tabs button small { display: block; margin-top: 1.2rem; font-size: 0.64rem; line-height: 1.4; }
@@ -1038,6 +1106,9 @@
     .context-row ul { grid-template-columns: 1fr; }
     .pipeline-rails { grid-template-columns: 1fr; }
     .lane-columns dl { grid-template-columns: 1fr; }
+    .facet-scope-gate { grid-template-columns: 1fr; gap: 0.5rem; }
+    .scope-divider { display: flex; justify-content: center; min-height: 2.5rem; }
+    .scope-divider i { width: 1.5rem; height: 1px; }
     .query-console { grid-template-columns: 1fr; }
     .console-arrow { transform: rotate(90deg); justify-self: center; }
     .evidence-ruler { grid-template-columns: 1fr 1fr; }

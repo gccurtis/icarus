@@ -36,18 +36,16 @@
       name: "read_selection",
       role: "selected focus",
       icon: MousePointer2,
-      decision: "TARGET",
+      decision: "LIVE",
       when: "The run envelope says the user has an active selection. This is the first call so the agent can anchor its work around that focus.",
       input: `{
   // no model-authored coordinates
 }`,
       output: `{
-  selection: null | {
-    evidenceId: "evidence-1",
-    source: { ref, revision, encoding },
-    span: { from, to, text },
-    locator: ResourceLocator
-  }
+  evidenceId: "evidence-1",
+  source: { ref, revision, contentHash? },
+  span: { from, to, text },
+  locators: SemanticLocatorSpan[]
 }`,
       rules: [
         "The application resolves the current selection against the authoritative resource; the model never supplies a range.",
@@ -61,27 +59,21 @@
       name: "find_resources",
       role: "navigation",
       icon: FileSearch,
-      decision: "NEXT",
+      decision: "LIVE",
       when: "The task names a resource ambiguously, asks for broad coverage, or needs an exact ref before reading.",
       input: `{
   query?: string;
   kinds?: ResourceKind[];
-  cursor?: string;
-  limit?: number; // default 20, max 50
+  cursor?: number;
+  limit?: number; // default 50, max 100
 }`,
       output: `{
-  resources: [{
-    resourceHandle: "resource-3",
-    ref: { kind, id },
-    title: string,
-    revision: number,
-    updatedAt: number
-  }],
-  nextCursor?: string
+  items: [{ ref: { kind, id }, name: string }],
+  nextCursor: number | null
 }`,
       rules: [
         "Project authority and Derived Output scope are injected server-side.",
-        "Returns metadata and opaque handles, never complete represented rows.",
+        "Returns metadata refs, never complete represented rows.",
         "Navigation does not mint factual evidence; read or retrieve the content before citing it."
       ]
     },
@@ -100,7 +92,6 @@
       output: `{
   hits: [{
     evidenceId: "evidence-4",
-    resourceHandle: "resource-3",
     source: { ref, revision, encoding },
     span: { from, to, text },
     locators?: SemanticLocatorSpan[],
@@ -129,7 +120,7 @@
     focus --> registry["issue evidence IDs<br/>inside attempt registry"]:::evidence
     retrieve --> registry
     registry --> agent["IntelligenceModel.completeWithTools"]:::agent
-    registry --> decide{"Enough grounded context?"}:::decision
+    agent --> decide{"Enough grounded context?"}:::decision
     decide -- "no · resource unknown" --> find["find_resources"]:::tool
     decide -- "no · need more meaning" --> retrieveMore["retrieve"]:::tool
     decide -- "no · need non-prose material" --> material["retrieve_materials"]:::tool
@@ -162,22 +153,17 @@
 
   const SYSTEM_PROMPT = DERIVED_OUTPUT_SYSTEM_PROMPT;
 
-  const TASK_ENVELOPE = `CURRENT EXECUTABLE SHAPE
+  const TASK_ENVELOPE = `CURRENT RUN SHAPE
 Task: At what frequency does the fictional Atlas beacon emit?
+
+Originating resource for navigation only: document:atlas-brief
 
 Previous response for stylistic continuity only
 (never factual evidence): …
 
-TARGET RUN ENVELOPE
-{
-  "task": "…",
-  "hasSelection": true,
-  "previousResponse": "…",
-  "responseContract": { "kind": "text", "maxChars": 2400 }
-}
-
 Selection text and coordinates are deliberately absent.
-The agent obtains them from read_selection.`;
+When selection exists, the runtime forces read_selection first;
+otherwise it forces retrieve.`;
 
   const OUTPUT_SCHEMA = `type SynthesisDecision = {
   status: "answered" | "insufficient";
@@ -229,7 +215,7 @@ type TemplatedDerivedDecision = {
       name: "Resource text projection + locator map",
       status: "built",
       icon: ListTree,
-      gap: "Document blocks, slide elements, groups, tables, captions, and notes now share one UTF-16 projection; specialized traversal and reader adapters remain.",
+      gap: "Document/deck traversal, hard boundaries, nested material inventory, and external hash-pinned text are implemented.",
       unlocks: "ingestion, direct read, selected text, citations, and later highlights"
     },
     {
@@ -243,9 +229,9 @@ type TemplatedDerivedDecision = {
     {
       priority: "P0",
       name: "Evidence tool gateway",
-      status: "partial",
+      status: "built",
       icon: Fingerprint,
-      gap: "Retrieve can issue IDs, but selected focus, resource handles, typed read_* tools, shared budgets, and one registry policy need a common owner.",
+      gap: "One attempt registry now owns exact, descriptor, structured, code, and visual IDs across all sixteen tools.",
       unlocks: "unforgeable provenance and consistent limits across every tool"
     },
     {
@@ -277,7 +263,7 @@ type TemplatedDerivedDecision = {
   const BUDGETS = [
     { label: "tool rounds", value: "8", note: "configured hard maximum; first retrieve is forced" },
     { label: "retrieve top K", value: "8", note: "default; model may request up to 20" },
-    { label: "text read", value: "12k", note: "characters per call; typed readers own other bounds" },
+    { label: "text read", value: "20k", note: "UTF-16 units per call; typed readers own other bounds" },
     { label: "source retries", value: "2", note: "new registry each time evidence changes" }
   ];
 
@@ -319,9 +305,9 @@ type TemplatedDerivedDecision = {
         <div class="eyebrow"><Bot size={14} aria-hidden="true" /> RUNTIME CONTRACT / GROUNDED SYNTHESIS</div>
         <h1>The agent gets<br /><em>handles, not trust.</em></h1>
         <p>
-          The running agent retrieves semantic evidence through one bounded tool and returns either
-          one answer or named grounded variables. This page also shows the deliberately deferred
-          discovery plus the specialized resource-reading tools that complete the target runtime.
+          The running agent retrieves semantic evidence through a bounded sixteen-tool grammar and
+          returns either one answer or named grounded variables. Exact text, interpreted discovery,
+          direct resource reads, and supporting context retain distinct authority.
         </p>
       </div>
 
@@ -336,9 +322,9 @@ type TemplatedDerivedDecision = {
       <header class="section-heading">
         <div><span>01 / CONTEXT ASSEMBLY</span><h2>Stable law.<br />Variable case file.</h2></div>
         <p>
-          The executable instruction below is imported from the capability itself. The target runtime
-          adds tool policy through its actual schemas and sends only task facts, continuity, and a
-          selection-presence flag per run.
+          The executable instruction below is imported from the capability itself. Live tool policy
+          arrives through actual schemas; task facts, continuity, and selection presence remain
+          per-run data.
         </p>
       </header>
 
@@ -359,7 +345,7 @@ type TemplatedDerivedDecision = {
       <div class="selection-decision">
         <div class="selection-target"><MousePointer2 size={23} aria-hidden="true" /><span></span></div>
         <div>
-          <span>SELECTED TEXT / TARGET TOOL</span>
+          <span>SELECTED TEXT / LIVE TOOL</span>
           <h3>Read selection through its own evidence tool.</h3>
           <p>
             The run says only <code>hasSelection: true</code>. Its first call to
@@ -381,9 +367,9 @@ type TemplatedDerivedDecision = {
       <header class="section-heading">
         <div><span>02 / CONTROL LOOP</span><h2>One agent.<br />A bounded tool grammar.</h2></div>
         <p>
-          Today, retrieval is the forced first action and the only executable tool. The target loop
-          conditionally starts with selection, then uses exact-text or interpreted-material
-          discovery, contextual traversal, and specialized authoritative readers inside one attempt.
+          The live loop starts with selection when present and exact retrieval otherwise. It can then
+          use interpreted-material discovery, contextual traversal, and specialized authoritative
+          readers inside one attempt.
         </p>
       </header>
 
@@ -392,7 +378,7 @@ type TemplatedDerivedDecision = {
         <MermaidDiagram
           source={AGENT_LOOP}
           label="Bounded Derived Output agent control loop with selection, discovery, retrieval, contextual traversal, and specialized evidence readers"
-          caption="Exact-text retrieve and its retry-local evidence registry are live. Material retrieval, selection, discovery, contextual traversal, and typed readers are explicit target extensions."
+          caption="All branches shown are live inside one retry-local evidence registry. Orientation calls remain non-citable; retrieve and read calls issue typed evidence."
           minHeight="48rem"
         />
       </div>
@@ -494,8 +480,9 @@ type TemplatedDerivedDecision = {
       <header class="section-heading">
         <div><span>05 / SYSTEM GAPS</span><h2>What makes this<br />fast in production.</h2></div>
         <p>
-          Projection and semantic queue rows now exist. The remaining production gaps are an
-          always-on worker host, cross-table transactions, bounded traversal/read tools, and joined evaluation telemetry.
+          Projection, both semantic queues, and bounded traversal/read tools now exist. The remaining
+          production gaps are an always-on worker host, cross-table transactions, delta indexing,
+          production rendering/uploads, and joined evaluation telemetry.
         </p>
       </header>
 
@@ -526,13 +513,13 @@ type TemplatedDerivedDecision = {
     <section class="verdict">
       <div class="verdict-icon"><Sparkles size={26} aria-hidden="true" /></div>
       <div>
-        <span>RECOMMENDED FIRST VERTICAL SLICE</span>
+        <span>IMPLEMENTED VERTICAL SLICE</span>
         <h2>Retrieve directly. Read selectively. Cite everything used.</h2>
         <p>
-          Keep the implemented projector, coalesced semantic queue, one-agent structured-output
-          loop, and value API. The generic <code>read</code> sketch on this page is refined into
-          explicit traversal, context, and evidentiary readers on the resource-reading page. A
-          separate planner, raw JSON tool, and output-history table remain deferred.
+          The projector, coalesced exact/material queues, one-agent structured-output loop, value
+          API, and explicit traversal/context/evidence readers now work together. A durable derived
+          queue, production slide renderer, object-store upload adapter, and output-history table
+          remain independent follow-up work.
         </p>
       </div>
       <a href="/demo/semantic-overlay/resource-reading">Open resource reading <ArrowRight size={16} aria-hidden="true" /></a>
@@ -541,7 +528,7 @@ type TemplatedDerivedDecision = {
 
   <footer class="page-footer">
     <span>DERIVED OUTPUT / AGENT RUNTIME</span>
-    <span>live retrieve · target selection/discovery/resource reading · evidence · scale</span>
+    <span>live retrieval · selection · material discovery · resource reading · evidence</span>
   </footer>
 </div>
 
@@ -859,7 +846,6 @@ type TemplatedDerivedDecision = {
   .verdict > div > span { color: var(--mint); font-size: 0.58rem; }
   .verdict h2 { margin: 0.45rem 0; font-family: var(--token-font-serif); font-size: clamp(1.8rem, 3.5vw, 3rem); font-weight: 400; line-height: 1.02; }
   .verdict p { max-width: 74ch; margin: 0; color: #a9c3c2; font-size: 0.78rem; line-height: 1.55; }
-  .verdict code { color: var(--mint); }
   .verdict a { gap: 0.5rem; padding: 0.75rem 1rem; border: 1px solid var(--mint); color: var(--mint); font-size: 0.72rem; text-decoration: none; white-space: nowrap; }
 
   .page-footer { justify-content: space-between; padding: 1.5rem 0 3rem; color: var(--muted); font-size: 0.57rem; }

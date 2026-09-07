@@ -15,7 +15,7 @@ export const nonblank = (value: unknown, message: string): string => {
 export const derivedOutputId = (value: unknown): Id<"derivedOutputs"> =>
   nonblank(value, "derived output id must not be blank") as Id<"derivedOutputs">;
 
-const resource = (value: unknown): ResourceRef => {
+export const resourceRef = (value: unknown): ResourceRef => {
   const candidate = inputRecord(value, "derived output resource refs must be objects");
   return {
     kind: nonblank(candidate.kind, "derived output resource kind must not be blank"),
@@ -37,7 +37,7 @@ const term = (value: unknown): SetTerm => {
   }
   if (candidate.select === "resources") {
     if (!Array.isArray(candidate.refs)) throw new Error("derived output resources must be an array");
-    return { select: "resources", refs: candidate.refs.map(resource) };
+    return { select: "resources", refs: candidate.refs.map(resourceRef) };
   }
   if (candidate.select === "set") {
     return {

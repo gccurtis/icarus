@@ -48,12 +48,12 @@
     },
     {
       order: "02",
-      name: "enqueueSemanticSyncFor",
+      name: "enqueueSemanticSync",
       owner: "semantic-overlay capability",
       status: "new",
       input: "{ ref, revision: N }",
-      output: "coalesced sync job",
-      note: "Writes a persisted coalescing job immediately after the leader. Cross-table atomicity awaits a transactional store."
+      output: "coalesced exact + material jobs",
+      note: "Canonicalizes the ref, then writes exact and/or material jobs without opening the resource or native bytes. Cross-table atomicity awaits a transactional store."
     },
     {
       order: "03",
@@ -62,7 +62,7 @@
       status: "new",
       input: "{ force?, limit? }",
       output: "discovery + bounded batch report",
-      note: "Enumerates document and deck leaders, coalesces jobs, then runs one bounded batch through the same worker path."
+      note: "Enumerates document, deck, and spreadsheet leaders plus external files, coalesces both lanes, then runs one bounded batch through the same worker path."
     },
     {
       order: "04",
@@ -70,26 +70,26 @@
       owner: "semantic worker entry",
       status: "new",
       input: "{ limit?, ref? }",
-      output: "processed jobs + remaining count",
-      note: "Claims one bounded project batch; an always-on deployment host will invoke this same procedure."
+      output: "exact + material results and remaining counts",
+      note: "Claims bounded project batches for both lanes; an always-on deployment host will invoke this same procedure."
     },
     {
       order: "05",
-      name: "syncSemanticResource",
+      name: "syncSemanticResourceFor / syncSemanticMaterialsFor",
       owner: "semantic worker",
       status: "new",
       input: "{ ref, force? } over latest leader",
-      output: "published generation or no-op",
-      note: "The idempotent orchestration boundary. It rechecks authoritative text after provider work and refuses stale publication."
+      output: "lane publication, no-op, or superseded",
+      note: "Independent idempotent orchestrators recheck exact projection or material inventory after provider work and refuse stale publication."
     },
     {
       order: "06",
-      name: "readSemanticResource",
+      name: "projectResource / readMaterialInventoryFor",
       owner: "resource projection",
       status: "new",
       input: "{ ref }",
-      output: "SemanticResourceProjection",
-      note: "Documents and decks flatten to canonical UTF-16 text plus locator spans; prompt blocks are excluded to prevent evidence loops."
+      output: "exact projection + MaterialSeed[]",
+      note: "Resource traversal emits canonical UTF-16 text, locators, hard boundaries, and first-class material seeds; prompt blocks are excluded from both."
     },
     {
       order: "07",
@@ -143,7 +143,52 @@
       status: "new",
       input: "next active object set",
       output: "complete replacement + commit / rollback",
-      note: "This pass stages a full recursive replacement before source publication. Delta indexing remains the scale-up seam."
+      note: "Stages the exact-lane recursive replacement before source publication. Delta indexing remains the scale-up seam."
+    },
+    {
+      order: "13",
+      name: "normalizeMaterials + profile*",
+      owner: "semantic material behavior",
+      status: "new",
+      input: "MaterialSeed[] + prior placements",
+      output: "deduplicated, bounded native profiles",
+      note: "Shared assets collapse by identity while each document/slide placement keeps its own locator and context."
+    },
+    {
+      order: "14",
+      name: "describeMaterial",
+      owner: "semantic-overlay capability",
+      status: "new",
+      input: "bounded profile + authored context + optional pixels",
+      output: "versioned structured descriptor",
+      note: "Generation is selective and content-addressed; failure does not block deterministic facets."
+    },
+    {
+      order: "15",
+      name: "embedMaterialFacets",
+      owner: "embedding model",
+      status: "new",
+      input: "separate identity/profile/authored/generated/visual inputs",
+      output: "facet vectors + hashes",
+      note: "Text facets use passage embeddings; original images may add a native visual vector in the same space."
+    },
+    {
+      order: "16",
+      name: "publishSemanticMaterials",
+      owner: "semantic-overlay capability",
+      status: "new",
+      input: "prepared materials + placements",
+      output: "materials, facets, placements, history, generation N+1",
+      note: "Rechecks the complete inventory signature and publishes only current revision/hash authority."
+    },
+    {
+      order: "17",
+      name: "stageSemanticIndex(lane: material)",
+      owner: "semantic index",
+      status: "new",
+      input: "next material facet set",
+      output: "independent material roots",
+      note: "The material tree never changes exact-text neighborhoods even though both lanes share one embedding space."
     }
   ];
 
@@ -195,21 +240,21 @@
     },
     {
       order: "06",
-      name: "buildDerivedRunContext",
+      name: "userPrompt / templateUserPrompt",
       owner: "derived-output capability",
-      status: "deferred",
+      status: "new",
       input: "definition + hasSelection + prior response",
       output: "system prompt + task envelope + budgets",
-      note: "The envelope carries only a selection-presence flag. The target read_selection tool returns selected text as registered, untrusted evidence."
+      note: "The envelope excludes selected content. When present, live read_selection returns its current authoritative range as registered evidence."
     },
     {
       order: "07",
       name: "synthesize",
       owner: "derived-output capability",
-      status: "extend",
-      input: "DerivedOutput + intelligence + retrieve",
+      status: "new",
+      input: "DerivedOutput + intelligence + sixteen tools",
       output: "SynthesisDecision + issued evidence",
-      note: "Keep the bounded structured-output loop; add selection, discovery, interpreted material retrieval, traversal, contextual view, and typed evidentiary readers beside exact-text retrieve."
+      note: "Runs selection, discovery, interpreted material retrieval, traversal, contextual view, and typed native readers inside one bounded structured-output loop."
     },
     {
       order: "08",
@@ -222,15 +267,24 @@
     },
     {
       order: "09",
-      name: "resource reading tool family",
-      owner: "project-resource capability",
-      status: "deferred",
-      input: "scoped resource/content handles + bounded typed request",
-      output: "navigation/context or typed evidence",
-      note: "find/list/inspect/view orient without evidence; retrieve_materials issues interpreted descriptor evidence; read_text/read_table/read_chart/read_image/read_csv/read_code use direct project-resource paths and mint native evidence IDs."
+      name: "querySemanticMaterials",
+      owner: "semantic-overlay capability",
+      status: "new",
+      input: "query + kinds? + ResourceSet + topK",
+      output: "distinct grouped MaterialHit[] + diagnostics",
+      note: "retrieve_materials delegates here; current facet hits group by material while retaining exactly which facets matched."
     },
     {
       order: "10",
+      name: "createResourceReadingSession",
+      owner: "project-resource capability",
+      status: "new",
+      input: "scoped resource/content handles + bounded typed request",
+      output: "navigation/context or typed evidence",
+      note: "find/list/inspect/view orient without evidence; read_text/read_table/read_chart/read_image/read_csv/read_code use direct project-resource paths and mint typed evidence IDs."
+    },
+    {
+      order: "11",
       name: "resolveEvidenceSelections",
       owner: "derived-output behavior",
       status: "new",
@@ -239,16 +293,16 @@
       note: "Only application-issued IDs resolve. Touching citations across tool calls consolidate while retaining every evidence use; the model never authors provenance."
     },
     {
-      order: "11",
-      name: "changedSemanticSources",
+      order: "12",
+      name: "changedSemanticSources / changedSemanticMaterials",
       owner: "semantic behavior",
       status: "existing",
-      input: "citations + active sources",
-      output: "changed source snapshots",
-      note: "Grounded answers watch selected sources; citation-free negative results instead watch the searched overlay generation."
+      input: "citations + active sources/materials",
+      output: "changed authority snapshots",
+      note: "Grounded answers watch selected revisions, hashes, profiles, contexts, and placements; citation-free negative results watch the searched overlay generation."
     },
     {
-      order: "12",
+      order: "13",
       name: "responseBlock + writeOutput",
       owner: "derived-output capability",
       status: "existing",
@@ -257,7 +311,7 @@
       note: "Publish response, citations, queries, and revision together. No separate artifact table is needed for the first pass."
     },
     {
-      order: "13",
+      order: "14",
       name: "syncPromptBlockOps",
       owner: "document editor",
       status: "new",
@@ -316,8 +370,8 @@
   ];
 
   const GROUPS: { id: FunctionGroup; label: string; detail: string; icon: typeof Layers3 }[] = [
-    { id: "ingestion", label: "Resource → overlay", detail: "12 calls", icon: Layers3 },
-    { id: "generation", label: "Prompt → response", detail: "13 calls", icon: Sparkles },
+    { id: "ingestion", label: "Resource → overlay", detail: "17 calls", icon: Layers3 },
+    { id: "generation", label: "Prompt → response", detail: "14 calls", icon: Sparkles },
     { id: "reading", label: "ID → rendered value", detail: "5 calls", icon: KeyRound }
   ];
 
@@ -333,35 +387,33 @@
   const INGEST_DIAGRAM = `flowchart TB
     subgraph ENTRY["TWO ENTRY POINTS"]
       direction LR
-      edit["Document or deck edit"]:::surface --> commit["commit accepted<br/>revision N"]:::existing
-      commit -. "respond now" .-> ui["UI is free"]:::quiet
-      commit --> enqueue["enqueueSemanticSyncFor<br/>ref + revision N"]:::new
-      seed["seed manifest /<br/>backfill command"]:::surface --> enumerate["backfillSemanticOverlay"]:::new
-      enumerate --> enqueue
+      edit["accepted document / deck revision"]:::surface --> enqueue["enqueueSemanticSync<br/>exact + material jobs"]:::new
+      edit -. "respond now" .-> ui["UI is free"]:::quiet
+      seed["seed / migration"]:::surface --> backfill["backfillSemanticOverlay"]:::new
+      backfill --> enqueue
     end
 
-    subgraph CLAIM["CLAIM + PROJECT AUTHORITATIVE TEXT"]
+    enqueue --> claim["processSemanticSyncQueueFor<br/>bounded lane batches"]:::new
+    claim --> project["projectResource / readMaterialInventoryFor<br/>one authoritative walk"]:::new
+
+    subgraph EXACT["EXACT TEXT LANE"]
       direction LR
-      claim["processSemanticSyncQueue<br/>claim coalesced job"]:::new --> sync["syncSemanticResource<br/>latest authoritative revision"]:::new
-      sync --> project["readSemanticResource<br/>text + locator map"]:::new
-      project --> token["EmbeddingModel<br/>.tokenField"]:::existing
+      token["tokenField"]:::existing --> prepare["prepareTranslation"]:::existing
+      prepare --> spans["windowedPassages"]:::existing
+      spans --> publishText["publishSemanticTranslation<br/>stage text index"]:::new
     end
 
-    subgraph CORE["DETERMINISTIC TRANSLATION"]
+    subgraph MATERIAL["SEMANTIC MATERIAL LANE"]
       direction LR
-      prepare["prepareTranslation<br/>align + segment"]:::existing --> spans["EmbeddingModel<br/>.windowedPassages"]:::existing
-      spans --> complete["completeTranslation<br/>spans + vectors"]:::existing
+      profile["normalize + profile"]:::existing --> describe["describeMaterial"]:::new
+      describe --> facets["embedMaterialFacets"]:::new
+      facets --> publishMaterial["publishSemanticMaterials<br/>stage material index"]:::new
     end
 
-    subgraph SETTLE["GUARDED PUBLICATION"]
-      direction LR
-      publish["publishSemanticTranslation<br/>source + objects + history"]:::new --> index["stageSemanticIndex<br/>full replacement tree"]:::new
-      index --> ready["queryable generation<br/>N + 1"]:::done
-    end
-
-    enqueue --> claim
-    token --> prepare
-    complete --> publish
+    project --> token
+    project --> profile
+    publishText --> ready["queryable generation<br/>two independent roots"]:::done
+    publishMaterial --> ready
 
     classDef surface fill:#172232,color:#fff,stroke:#172232,stroke-width:2px;
     classDef existing fill:#e7f3ef,color:#17352f,stroke:#347f78,stroke-width:2px;
@@ -396,8 +448,10 @@
     DO->>R: claim state + snapshot definition
     DO->>A: synthesize(run context, tools, schema)
     loop bounded tool rounds
-      A->>SO: retrieve(query, scope, topK)
-      SO-->>A: spans + attempt-local evidence IDs
+      A->>SO: retrieve or retrieve_materials(query, scope, topK)
+      SO-->>A: exact spans or material handles + evidence IDs
+      A->>R: optional find/list/inspect/view or bounded read_*
+      R-->>A: context without IDs or native values with evidence IDs
     end
     A-->>DO: response + selected evidence IDs
     DO->>DO: resolve IDs + recheck cited revisions
@@ -447,9 +501,21 @@ readDerivedOutputValue({ derivedOutputId })
     },
     {
       table: "semanticObjects",
-      key: "semanticSourceId + exact span",
-      owns: "active source text spans and dense vectors",
+      key: "lane + source span or material facet",
+      owns: "active exact spans or separately provenanced material facets and vectors",
       never: "document- or slide-specific structure"
+    },
+    {
+      table: "semanticMaterials + placements",
+      key: "identity/revision key + resource locator",
+      owns: "native source snapshot, bounded profile, descriptor hashes, and every current placement",
+      never: "unbounded file bytes or generated claims disguised as exact text"
+    },
+    {
+      table: "semanticSyncJobs + semanticMaterialJobs",
+      key: "project + canonical ref",
+      owns: "coalesced requested revision, attempts, state, and bounded failure",
+      never: "resource bodies, native bytes, or provider credentials"
     },
     {
       table: "derivedOutputs",
@@ -623,7 +689,7 @@ readDerivedOutputValue({ derivedOutputId })
           <ol>
             <li><span>1</span><code>submitDocumentChanges</code> or <code>submitSlideDeckChanges</code></li>
             <li><span>2</span>persist leader revision <strong>N</strong></li>
-            <li><span>3</span><code>enqueueSemanticSyncFor(ref, N)</code> in the persisted queue</li>
+            <li><span>3</span><code>enqueueSemanticSync(ref)</code> creates the applicable exact/material jobs</li>
             <li><span>4</span>return success to the editor immediately</li>
           </ol>
           <footer>Also used by imports, connectors, templates, and any future text-bearing resource mutation.</footer>
@@ -638,7 +704,7 @@ readDerivedOutputValue({ derivedOutputId })
           <ol>
             <li><span>1</span><code>{"backfillSemanticOverlay({ force?, limit? })"}</code></li>
             <li><span>2</span>enumerate authoritative resource refs and revisions</li>
-            <li><span>3</span><code>enqueueSemanticSyncFor(ref, N)</code> for each item</li>
+            <li><span>3</span>enqueue the applicable exact/material jobs for each item</li>
             <li><span>4</span>report discovered, queued, processed, and remaining work</li>
           </ol>
           <footer>Revision idempotency makes repeated seed runs safe; <code>force</code> intentionally rebuilds the same revision.</footer>
@@ -653,7 +719,7 @@ readDerivedOutputValue({ derivedOutputId })
       <div class="convergence-strip">
         <span><Network size={17} aria-hidden="true" /> SHARED NEXT CALL</span>
         <code>{"processSemanticSyncQueue({ ref?, limit? })"}</code>
-        <p>claim latest → read authoritative snapshot → project exact text → translate → publish → index</p>
+        <p>claim latest → project exact text + material inventory → translate/profile → guard → publish two lane indexes</p>
       </div>
     </section>
 
@@ -671,7 +737,7 @@ readDerivedOutputValue({ derivedOutputId })
         <MermaidDiagram
           source={INGEST_DIAGRAM}
           label="Normal and development resource ingestion paths converging on the Semantic Overlay worker"
-          caption="The editor receives success after enqueueSemanticSyncFor. Provider work begins when a worker invokes processSemanticSyncQueue."
+          caption="The editor receives success after enqueueSemanticSync. Provider work begins when a worker invokes processSemanticSyncQueueFor for both lanes."
           minHeight="34rem"
         />
       </div>
@@ -684,7 +750,7 @@ readDerivedOutputValue({ derivedOutputId })
           <p>
             <code>readSemanticResource</code> returns one canonical string plus a locator map from
             text ranges back to blocks, slides, notes, and shapes. Translation consumes only the
-            string. The target resource walk also emits first-class material seeds into a separate
+            string. The same live resource walk emits first-class material seeds into a separate
             profiling and description pipeline; those generated descriptors never enter ordinary
             text retrieval. <a href="/demo/semantic-overlay/material-layer">Open the material-layer contract ↗</a>
           </p>
@@ -692,6 +758,8 @@ readDerivedOutputValue({ derivedOutputId })
         <pre><code>{`type SemanticResourceProjection = SemanticSourceInput & {
   encoding: "utf-16";
   locators: SemanticLocatorSpan[];
+  hardBoundaries: number[];
+  contentHash?: string;
 };`}</code></pre>
       </div>
     </section>

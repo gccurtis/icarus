@@ -3,6 +3,7 @@ import { describe, it } from "vitest";
 
 import { createIntelligence } from "$model/server/intelligence/constructor";
 import { defineIntelligence } from "$model/server/intelligence/definition";
+import { intelligenceToolOutput } from "$model/server/intelligence/types";
 
 const response = (value: unknown, status = 200): Response =>
   new Response(JSON.stringify(value), {
@@ -106,6 +107,61 @@ describe("OpenRouter intelligence", () => {
     });
     assert.deepEqual(result.toolCalls, [
       { id: "call-1", name: "retrieve", input: { query: "launch" }, ok: true }
+    ]);
+  });
+
+  it("carries original visuals in user input and after an ordered tool response", async () => {
+    const payloads: Record<string, unknown>[] = [];
+    const replies = [
+      turn({
+        content: null,
+        tool_calls: [{
+          id: "call-image",
+          type: "function",
+          function: { name: "retrieve", arguments: '{"query":"diagram"}' }
+        }]
+      }),
+      turn({ content: "I inspected the original pixels.", tool_calls: [] })
+    ];
+    const intelligence = defineIntelligence(input(async (_url, init) => {
+      payloads.push(JSON.parse(String(init?.body)) as Record<string, unknown>);
+      return response(replies.shift());
+    }));
+
+    await intelligence.completeWithTools({
+      system: "Use original visual content.",
+      user: {
+        text: "Inspect the selected diagram.",
+        images: [{ kind: "url", url: "https://example.test/selection.png" }]
+      },
+      tools: [tool(async () => intelligenceToolOutput(
+        { evidenceId: "evidence-visual" },
+        [{ kind: "bytes", mediaType: "image/png", base64: "aW1hZ2U=" }]
+      ))]
+    });
+
+    const firstMessages = payloads[0].messages as Array<{ role: string; content: unknown }>;
+    assert.deepEqual(firstMessages[1], {
+      role: "user",
+      content: [
+        { type: "text", text: "Inspect the selected diagram." },
+        { type: "image_url", image_url: { url: "https://example.test/selection.png" } }
+      ]
+    });
+    const secondMessages = payloads[1].messages as Array<{ role: string; content: unknown; tool_call_id?: string }>;
+    assert.deepEqual(secondMessages.slice(-2), [
+      {
+        role: "tool",
+        tool_call_id: "call-image",
+        content: '{"ok":true,"value":{"evidenceId":"evidence-visual"}}'
+      },
+      {
+        role: "user",
+        content: [
+          { type: "text", text: "Original visual content returned by retrieve (call-image)." },
+          { type: "image_url", image_url: { url: "data:image/png;base64,aW1hZ2U=" } }
+        ]
+      }
     ]);
   });
 

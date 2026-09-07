@@ -96,7 +96,7 @@ test("the resource-reading page separates orientation from evidence", async ({ p
   await view.click();
   await expect(view).toHaveAttribute("aria-selected", "true");
   await expect(page.locator("#tool-contract")).toContainText("ORIENTATION ONLY");
-  await expect(page.locator("#tool-contract")).toContainText("deliberately no evidenceId");
+  await expect(page.locator("#tool-contract")).toContainText("deliberately returns no evidenceId");
 
   const image = page.getByRole("tab", { name: /read_image/ });
   await image.click();
@@ -134,6 +134,8 @@ test("the semantic material page separates discovery summaries from native autho
   await expect(page.locator("#material-specimen")).toContainText("North station installation");
   await expect(page.locator("#material-specimen")).toContainText("Jina v4 image vector");
   await expect(page.locator("#material-specimen")).toContainText("read_image");
+  await expect(page.locator(".facet-scope-gate")).toContainText("ANY(source, placement) ∈ set");
+  await expect(page.locator(".facet-scope-gate")).toContainText("ALL(scopeRefs) ∈ set");
 
   await page.getByRole("tab", { name: /RELEVANT CODE/ }).click();
   await expect(page.locator(".query-console")).toContainText("pricing-engine.ts");

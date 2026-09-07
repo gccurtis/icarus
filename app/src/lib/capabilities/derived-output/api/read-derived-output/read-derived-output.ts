@@ -1,12 +1,13 @@
 import { requireScope } from "$runtime/server/scope.server";
 import { serverModel } from "$runtime/server/start.server";
-import { changedSemanticSources } from "$representation/data/behavior/semantic/citation";
+import { changedSemanticMaterials, changedSemanticSources } from "$representation/data/behavior/semantic/citation";
 import type { Id } from "$representation/data/types/core/id";
 
 import type { ReadDerivedOutputResult } from "$capabilities/derived-output/types/read-derived-output";
 import { validateReadDerivedOutput } from "$capabilities/derived-output/api/read-derived-output/validate-read-derived-output";
 import {
   activeSources,
+  activeMaterials,
   currentGeneration,
   outputOf
 } from "$capabilities/derived-output/api/shared/rows";
@@ -31,6 +32,10 @@ export const readDerivedOutput = async (input: unknown): Promise<ReadDerivedOutp
     output.evidence,
     activeSources(model.store, projectId)
   );
+  const changedMaterials = changedSemanticMaterials(
+    output.evidence,
+    activeMaterials(model.store, projectId)
+  );
   const negativeResultChanged =
     output.state === "fresh" &&
     output.evidence.length === 0 &&
@@ -39,9 +44,10 @@ export const readDerivedOutput = async (input: unknown): Promise<ReadDerivedOutp
   return {
     output,
     effectiveState:
-      output.state === "fresh" && (changedSources.length > 0 || negativeResultChanged)
+      output.state === "fresh" && (changedSources.length > 0 || changedMaterials.length > 0 || negativeResultChanged)
         ? "stale"
         : output.state,
-    changedSources
+    changedSources,
+    changedMaterials
   };
 };

@@ -1,5 +1,11 @@
 import type { Id } from "$representation/data/types/core/id";
+import type { ResourceRef } from "$representation/data/types/core/resource";
 import type { ResourceSet } from "$representation/data/types/core/resource-set";
+import type {
+  MaterialFacetKind,
+  MaterialHit,
+  MaterialKind
+} from "$representation/data/types/semantic/material";
 import type { SemanticSpan } from "$representation/data/types/semantic/overlay";
 import type {
   SemanticLocatorSpan,
@@ -25,6 +31,15 @@ export type SemanticQueryInput = {
   topK: number;
 };
 
+export type SemanticIndexLane = "text" | "material";
+
+export type MaterialQueryInput = {
+  text: string;
+  scope?: ResourceSet;
+  kinds?: MaterialKind[];
+  topK: number;
+};
+
 /** A retrieval value; several IDs indicate that overlapping objects were coalesced. */
 export type SemanticHit = {
   semanticObjectIds: Id<"semanticObjects">[];
@@ -32,6 +47,8 @@ export type SemanticHit = {
   span: SemanticSpan;
   /** Projected resource locations intersecting this exact text span, when available. */
   locators?: SemanticLocatorSpan[];
+  /** Out-of-band partition (for example a slide) that consolidation may not cross. */
+  partition?: string;
   score: number;
   overlayGeneration: number;
 };
@@ -61,6 +78,20 @@ export type RecursiveIndexBuild = {
 export type SearchableSemanticObject = IndexableSemanticObject & {
   source: SemanticSourceSnapshot;
   span: SemanticSpan;
+  partition?: string;
+};
+
+export type SearchableMaterialObject = IndexableSemanticObject & {
+  materialId: Id<"semanticMaterials">;
+  facet: MaterialFacetKind;
+  facetText?: string;
+  inputHash: string;
+  scopeRefs?: ResourceRef[];
+};
+
+export type ScoredSemanticObject = {
+  id: Id<"semanticObjects">;
+  score: number;
 };
 
 /** The persisted shape consumed by traversal, independent of store rows. */
@@ -83,6 +114,16 @@ export type RecursiveQueryResult = {
   diagnostics: RecursiveQueryDiagnostics;
 };
 
+export type RecursiveObjectQueryResult = {
+  objects: ScoredSemanticObject[];
+  diagnostics: RecursiveQueryDiagnostics;
+};
+
+export type MaterialQueryResult = {
+  hits: MaterialHit[];
+  diagnostics: RecursiveQueryDiagnostics;
+};
+
 export type RecursiveQueryInput = {
   queryVector: number[];
   rootNodeIds: Id<"semanticIndexNodes">[];
@@ -92,4 +133,14 @@ export type RecursiveQueryInput = {
   topK: number;
   configuration: RecursiveIndexConfiguration;
   overlayGeneration: number;
+};
+
+export type RecursiveObjectQueryInput = {
+  queryVector: number[];
+  rootNodeIds: Id<"semanticIndexNodes">[];
+  nodes: SearchableSemanticIndexNode[];
+  objects: IndexableSemanticObject[];
+  eligibleObjectIds?: Id<"semanticObjects">[];
+  topK: number;
+  configuration: RecursiveIndexConfiguration;
 };

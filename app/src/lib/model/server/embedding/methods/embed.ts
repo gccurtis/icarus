@@ -5,6 +5,7 @@ import type {
 import {
   EmbeddingServiceError,
   type EmbeddingResult,
+  type ImageEmbeddingInput,
   type EmbeddingState
 } from "$model/server/embedding/types";
 import {
@@ -147,6 +148,45 @@ export const embedPassage = async (
 ): Promise<EmbeddingResult<number[]>> => {
   const result = await dense(state, [text], "retrieval.passage", "passageVector", false);
   return { value: result.value[0], usage: result.usage };
+};
+
+export const embedPassages = (
+  state: EmbeddingState,
+  texts: readonly string[]
+): Promise<EmbeddingResult<number[][]>> =>
+  dense(state, texts, "retrieval.passage", "passageVectors", false);
+
+/** Native image vector. Jina v4 accepts a URL or raw base64 under an image input object. */
+export const embedImage = async (
+  state: EmbeddingState,
+  input: ImageEmbeddingInput
+): Promise<EmbeddingResult<number[]>> => {
+  const image = input.kind === "url" ? input.url.trim() : input.base64.trim();
+  if (!image) throw new Error("image embedding input must not be blank");
+  if (input.kind === "url") {
+    let parsed: URL;
+    try {
+      parsed = new URL(image);
+    } catch {
+      throw new Error("image embedding URL must be absolute");
+    }
+    if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+      throw new Error("image embedding URL must use HTTP or HTTPS");
+    }
+  }
+  const response = await requestJina(state, {
+    model: state.model,
+    input: [{ image }],
+    task: "retrieval.passage",
+    dimensions: state.dimensions,
+    embedding_type: "float",
+    truncate: false
+  });
+  const [row] = orderedData(response, 1);
+  return {
+    value: finiteVector(row.embedding, state.dimensions),
+    usage: usage(state, response, "imageVector", 1)
+  };
 };
 
 /** A query is embedded on the asymmetric query side of the same vector space. */

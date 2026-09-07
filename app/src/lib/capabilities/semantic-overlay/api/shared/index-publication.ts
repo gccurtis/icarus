@@ -4,6 +4,7 @@ import { buildRecursiveIndex } from "$representation/data/behavior/semantic/recu
 import type { Id } from "$representation/data/types/core/id";
 import type {
   IndexableSemanticObject,
+  SemanticIndexLane,
   SemanticIndexNodeDraft
 } from "$representation/data/types/semantic/index";
 import { semanticIndexConfiguration } from "$capabilities/semantic-overlay/api/shared/configuration";
@@ -24,7 +25,8 @@ export const stageSemanticIndex = (
   model: ServerModel,
   projectId: Id<"projects">,
   overlay: TableRow<"semanticOverlays">,
-  objects: readonly IndexableSemanticObject[]
+  objects: readonly IndexableSemanticObject[],
+  lane: SemanticIndexLane = "text"
 ): StagedSemanticIndex => {
   const configuration = semanticIndexConfiguration(model.configuration);
   const build = buildRecursiveIndex(objects, configuration);
@@ -32,7 +34,7 @@ export const stageSemanticIndex = (
     build.nodes.map((node) => [node.key, node])
   );
   const oldIndexes = rowsOf(model.store, "semanticIndexes").filter(
-    (row) => row.projectId === projectId
+    (row) => row.projectId === projectId && (row.lane ?? "text") === lane
   );
   const oldIndexIds = new Set(oldIndexes.map((index) => index._id));
   const oldNodes = rowsOf(model.store, "semanticIndexNodes").filter((node) =>
@@ -42,6 +44,7 @@ export const stageSemanticIndex = (
     projectId,
     semanticOverlayId: overlay._id,
     method: "recursiveClustering",
+    lane,
     rootNodeIds: [],
     configuration,
     updatedAt: Date.now()

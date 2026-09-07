@@ -8,6 +8,8 @@ import { rowsOf } from "$capabilities/semantic-overlay/api/shared/rows";
 import { sameResourceRef } from "$capabilities/semantic-overlay/api/shared/resource-ref";
 import type { RebuildSemanticIndexResult } from "$capabilities/semantic-overlay/types/rebuild-semantic-index";
 
+type TextObjectRow = Extract<TableRow<"semanticObjects">, { lane: "text" }>;
+
 type PublicationResult =
   | {
       readonly outcome: "current" | "superseded";
@@ -26,7 +28,7 @@ const sameSpace = (left: EmbeddingSpace, right: EmbeddingSpace): boolean =>
   left.model === right.model &&
   left.dimensions === right.dimensions;
 
-const overlayFor = (
+export const ensureSemanticOverlay = (
   model: ServerModel,
   projectId: Id<"projects">
 ): TableRow<"semanticOverlays"> => {
@@ -66,7 +68,7 @@ export const publishSemanticTranslation = (
   translation: TranslationResult,
   force = false
 ): PublicationResult => {
-  const overlay = overlayFor(model, projectId);
+  const overlay = ensureSemanticOverlay(model, projectId);
   const matches = rowsOf(model.store, "semanticSources").filter(
     (row) => row.projectId === projectId && sameResourceRef(row.ref, translation.source.ref)
   );
@@ -74,11 +76,16 @@ export const publishSemanticTranslation = (
     throw new Error("A resource has more than one active semantic source");
   }
   const previous = matches[0];
-  const previousObjects =
+  const previousObjects: TextObjectRow[] =
     previous === undefined
       ? []
-      : rowsOf(model.store, "semanticObjects").filter(
-          (row) => row.projectId === projectId && row.semanticSourceId === previous._id
+      : rowsOf(model.store, "semanticObjects").flatMap((row): TextObjectRow[] =>
+          row.projectId === projectId &&
+          (row.lane ?? "text") === "text" &&
+          "semanticSourceId" in row &&
+          row.semanticSourceId === previous._id
+            ? [row as TextObjectRow]
+            : []
         );
   if (previous !== undefined && previous.revision > translation.source.revision) {
     return {
@@ -90,7 +97,8 @@ export const publishSemanticTranslation = (
   if (
     !force &&
     previous !== undefined &&
-    previous.revision === translation.source.revision
+    previous.revision === translation.source.revision &&
+    previous.contentHash === translation.source.contentHash
   ) {
     return {
       outcome: "current",
@@ -104,10 +112,16 @@ export const publishSemanticTranslation = (
     projectId,
     ref: translation.source.ref,
     revision: translation.source.revision,
+    ...(translation.source.contentHash === undefined
+      ? {}
+      : { contentHash: translation.source.contentHash }),
     encoding: translation.source.encoding,
     ...(translation.source.locators === undefined
       ? {}
       : { locators: translation.source.locators }),
+    ...(translation.source.hardBoundaries === undefined
+      ? {}
+      : { hardBoundaries: translation.source.hardBoundaries }),
     updatedAt: at
   });
   const objectIds = model.store.createMany(
@@ -115,18 +129,24 @@ export const publishSemanticTranslation = (
     translation.objects.map((object) => ({
       projectId,
       semanticSourceId: sourceId,
+      lane: "text",
       span: object.span,
       vector: object.vector
     }))
   );
   const previousObjectIds = new Set(previousObjects.map((object) => object._id));
   const candidateObjects = rowsOf(model.store, "semanticObjects")
-    .filter((row) => row.projectId === projectId && !previousObjectIds.has(row._id))
+    .filter(
+      (row) =>
+        row.projectId === projectId &&
+        (row.lane ?? "text") === "text" &&
+        !previousObjectIds.has(row._id)
+    )
     .map((row) => ({ id: row._id, vector: row.vector }));
 
   let staged;
   try {
-    staged = stageSemanticIndex(model, projectId, overlay, candidateObjects);
+    staged = stageSemanticIndex(model, projectId, overlay, candidateObjects, "text");
   } catch (error) {
     model.store.removeRows("semanticObjects", objectIds);
     model.store.removeRows("semanticSources", [sourceId]);
@@ -141,9 +161,11 @@ export const publishSemanticTranslation = (
         projectId,
         retiredGeneration: generation,
         object: {
+          lane: "text",
           source: {
             ref: previous.ref,
             revision: previous.revision,
+            ...(previous.contentHash === undefined ? {} : { contentHash: previous.contentHash }),
             encoding: previous.encoding
           },
           span: object.span,

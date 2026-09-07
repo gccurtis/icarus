@@ -18,7 +18,30 @@ const validateSource = (source: SemanticSourceInput): void => {
     throw new Error("Semantic source revision must be a non-negative integer");
   }
   if (!source.text.trim()) throw new Error("Semantic source text must contain content");
+  const length = coordinateLength(source.text, source.encoding);
+  if (
+    source.hardBoundaries !== undefined &&
+    source.hardBoundaries.some(
+      (boundary, index) =>
+        !Number.isInteger(boundary) ||
+        boundary <= 0 ||
+        boundary >= length ||
+        (index > 0 && boundary <= source.hardBoundaries![index - 1])
+    )
+  ) {
+    throw new Error("Semantic hard boundaries must be sorted, unique, and inside the source");
+  }
 };
+
+const splitAtHardBoundaries = (
+  coordinates: readonly { from: number; to: number }[],
+  boundaries: readonly number[]
+): { from: number; to: number }[] =>
+  coordinates.flatMap(({ from, to }) => {
+    const cuts = boundaries.filter((boundary) => from < boundary && boundary < to);
+    const points = [from, ...cuts, to];
+    return points.slice(0, -1).map((start, index) => ({ from: start, to: points[index + 1] }));
+  });
 
 /**
  * Complete all deterministic work between the boundary-vector response and the
@@ -32,11 +55,12 @@ export const prepareTranslation = (
   validateSource(source);
   const aligned = alignTokenField(source, field);
   const { ranges } = segmentAlignedField(aligned, configuration);
-  const coordinates = ranges.map((range) => {
+  const segmented = ranges.map((range) => {
     const from = aligned.spans[range.fromSpan].from;
     const to = aligned.spans[range.toSpan - 1].to;
     return { from, to };
   });
+  const coordinates = splitAtHardBoundaries(segmented, source.hardBoundaries ?? []);
   const texts = slicesByCoordinates(source.text, source.encoding, coordinates);
   const spans = coordinates.map(({ from, to }, index) => ({ from, to, text: texts[index] }));
   if (spans[0]?.from !== 0 || spans[spans.length - 1]?.to !== coordinateLength(source.text, source.encoding)) {

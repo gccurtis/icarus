@@ -30,13 +30,14 @@ export const rebuildSemanticIndex = async (
   }
 
   const objects = rowsOf(model.store, "semanticObjects").filter(
-    (row) => row.projectId === projectId
+    (row) => row.projectId === projectId && (row.lane ?? "text") === "text"
   );
   const staged = stageSemanticIndex(
     model,
     projectId,
     overlay,
     objects.map((object) => ({ id: object._id, vector: object.vector })),
+    "text"
   );
   staged.commit();
   model.observability.logger.info("semanticOverlay.index.rebuilt", {

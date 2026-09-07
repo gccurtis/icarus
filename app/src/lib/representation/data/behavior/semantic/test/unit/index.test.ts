@@ -400,6 +400,50 @@ test("touching objects coalesce before topK without splitting a word", () => {
   ]);
 });
 
+test("touching objects in different hard partitions never coalesce", () => {
+  const source = {
+    ref: { kind: "slides", id: "slideDecks:partitioned" },
+    revision: 2,
+    encoding: "utf-16" as const
+  };
+  const first: SearchableSemanticObject = {
+    id: id(21),
+    vector: [1, 0],
+    source,
+    partition: "partition:1",
+    span: { from: 0, to: 5, text: "First" }
+  };
+  const second: SearchableSemanticObject = {
+    id: id(22),
+    vector: [0.9, 0.1],
+    source,
+    partition: "partition:2",
+    span: { from: 5, to: 13, text: "\n\nSecond" }
+  };
+
+  expect(coalesceSemanticHits([
+    { object: first, score: 1 },
+    { object: second, score: 0.9 }
+  ], 3)).toEqual([
+    {
+      semanticObjectIds: [first.id],
+      source,
+      span: first.span,
+      partition: "partition:1",
+      score: 1,
+      overlayGeneration: 3
+    },
+    {
+      semanticObjectIds: [second.id],
+      source,
+      span: second.span,
+      partition: "partition:2",
+      score: 0.9,
+      overlayGeneration: 3
+    }
+  ]);
+});
+
 test("resource scope treats an empty include as project-wide and exclusion wins", () => {
   const ref = { kind: "externalFile::pdf", id: "externalFiles:1" };
   const all: ResourceSet = { include: [], exclude: [] };

@@ -20,7 +20,7 @@ import type {
   ConnectorConfiguration,
   ConnectorCredential,
 } from "$representation/data/types/external/connector";
-import type { ExternalFileOrigin } from "$representation/data/types/external/file";
+import type { ExternalFileOrigin, FileSubkind } from "$representation/data/types/external/file";
 import type { FindingSource } from "$representation/data/types/investigation/finding";
 import type {
   HypothesisAssessment,
@@ -46,6 +46,14 @@ import type {
   SemanticLocatorSpan
 } from "$representation/data/types/semantic/source";
 import type { SemanticSyncJobState } from "$representation/data/types/semantic/sync";
+import type {
+  MaterialFacetKind,
+  SemanticMaterialFields,
+  SemanticMaterialHistoryFields,
+  SemanticMaterialJobFields,
+  SemanticMaterialPlacementFields
+} from "$representation/data/types/semantic/material";
+import type { SemanticIndexLane } from "$representation/data/types/semantic/index";
 import type { DocumentBody } from "$representation/data/types/documents/body";
 import type { DocumentOp } from "$representation/data/types/documents/op";
 import type {
@@ -224,8 +232,10 @@ export type SemanticSourceFields = {
   projectId: Id<"projects">;
   ref: ResourceRef;
   revision: number;
+  contentHash?: string;
   encoding: SemanticEncoding;
   locators?: SemanticLocatorSpan[];
+  hardBoundaries?: number[];
   updatedAt: number;
 };
 export type SemanticSource = Row<"semanticSources"> & SemanticSourceFields;
@@ -246,10 +256,22 @@ export type SemanticSyncJob = Row<"semanticSyncJobs"> & SemanticSyncJobFields;
 
 export type SemanticObjectFields = {
   projectId: Id<"projects">;
-  semanticSourceId: Id<"semanticSources">;
-  span: SemanticSpan;
   vector: number[];
-};
+} & (
+  | {
+      lane: "text";
+      semanticSourceId: Id<"semanticSources">;
+      span: SemanticSpan;
+    }
+  | {
+      lane: "material";
+      semanticMaterialId: Id<"semanticMaterials">;
+      facet: MaterialFacetKind;
+      facetText?: string;
+      inputHash: string;
+      scopeRefs?: ResourceRef[];
+    }
+);
 export type SemanticObject = Row<"semanticObjects"> & SemanticObjectFields;
 
 export type SemanticObjectHistoryFields = {
@@ -264,6 +286,7 @@ export type SemanticIndexFields = {
   projectId: Id<"projects">;
   semanticOverlayId: Id<"semanticOverlays">;
   method: "recursiveClustering";
+  lane: SemanticIndexLane;
   rootNodeIds: Id<"semanticIndexNodes">[];
   configuration: RecursiveIndexConfiguration;
   updatedAt: number;
@@ -278,6 +301,11 @@ export type SemanticIndexNodeFields = {
   children: SemanticIndexChildren;
 };
 export type SemanticIndexNode = Row<"semanticIndexNodes"> & SemanticIndexNodeFields;
+
+export type SemanticMaterial = Row<"semanticMaterials"> & SemanticMaterialFields;
+export type SemanticMaterialPlacement = Row<"semanticMaterialPlacements"> & SemanticMaterialPlacementFields;
+export type SemanticMaterialJob = Row<"semanticMaterialJobs"> & SemanticMaterialJobFields;
+export type SemanticMaterialHistory = Row<"semanticMaterialHistory"> & SemanticMaterialHistoryFields;
 
 export type DerivedOutputFields = SemanticDerivedOutputFields;
 export type DerivedOutput = SemanticDerivedOutput;
@@ -391,6 +419,7 @@ export type ExternalFileFields = {
   projectId: Id<"projects">;
   name: string;
   mediaType: string;
+  subkind: FileSubkind;
   storageId: Id<"_storage">;
   hash: string;
   origin: ExternalFileOrigin;
@@ -564,6 +593,10 @@ export const TABLE_NAMES = [
   "resourceSets",
   "semanticIndexes",
   "semanticIndexNodes",
+  "semanticMaterialHistory",
+  "semanticMaterialJobs",
+  "semanticMaterialPlacements",
+  "semanticMaterials",
   "semanticObjectHistory",
   "semanticObjects",
   "semanticOverlays",
@@ -612,6 +645,10 @@ export type TableFields = {
   resourceSets: NamedResourceSetFields;
   semanticIndexes: SemanticIndexFields;
   semanticIndexNodes: SemanticIndexNodeFields;
+  semanticMaterialHistory: SemanticMaterialHistoryFields;
+  semanticMaterialJobs: SemanticMaterialJobFields;
+  semanticMaterialPlacements: SemanticMaterialPlacementFields;
+  semanticMaterials: SemanticMaterialFields;
   semanticObjectHistory: SemanticObjectHistoryFields;
   semanticObjects: SemanticObjectFields;
   semanticOverlays: SemanticOverlayFields;

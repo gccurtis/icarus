@@ -28,6 +28,9 @@
   } from "$app-views/categories/document-editor/procedures/prompt-blocks";
   import { rowsOf, tableQuery } from "$app-views/categories/document-editor/procedures/store";
   import { workspaceState, type DocumentRuntime } from "$model/client/workspace-state";
+  import type { ResourceRef } from "$representation/data/types/core/resource";
+  import type { SemanticCitation } from "$representation/data/types/semantic/derived-output";
+  import { fileSubkindFor } from "$representation/data/behavior/external/file";
   import { onMount } from "svelte";
 
   let {
@@ -58,6 +61,8 @@
   const detailQuery = readDerivedOutput({ derivedOutputId: outputId });
   const documentsQuery = tableQuery("documents");
   const slideDecksQuery = tableQuery("slideDecks");
+  const spreadsheetsQuery = tableQuery("spreadsheets");
+  const externalFilesQuery = tableQuery("externalFiles");
 
   let running = $state(false);
   let actionError = $state<string>();
@@ -77,6 +82,11 @@
     detailQuery.error === undefined ? undefined : String(detailQuery.error)
   );
   const shownError = $derived(actionError ?? output?.error ?? queryError);
+  const effectiveState = $derived(detail?.effectiveState ?? output?.state ?? "idle");
+  const shownState = $derived(
+    definitionChanged || responseChanged ? "stale" : effectiveState
+  );
+  const refreshRequired = $derived(shownState !== "fresh");
   const sourceTitles = $derived.by(() => {
     const titles = new Map<string, string>();
     for (const document of rowsOf(documentsQuery, "documents")) {
@@ -84,6 +94,15 @@
     }
     for (const deck of rowsOf(slideDecksQuery, "slideDecks")) {
       titles.set(`slides:${deck._id}`, deck.title);
+    }
+    for (const sheet of rowsOf(spreadsheetsQuery, "spreadsheets")) {
+      titles.set(`spreadsheet:${sheet._id}`, sheet.title);
+    }
+    for (const file of rowsOf(externalFilesQuery, "externalFiles")) {
+      titles.set(
+        `externalFile::${file.subkind ?? fileSubkindFor(file.mediaType, file.name)}:${file._id}`,
+        file.name
+      );
     }
     return titles;
   });
@@ -163,7 +182,9 @@
 
       const queue = await processSemanticSyncQueue({ limit: 50 });
       const failed = queue.processed.find((job) => job.error !== undefined);
+      const failedMaterial = queue.materials.processed.find((job) => job.error !== undefined);
       if (failed?.error !== undefined) throw new Error(failed.error);
+      if (failedMaterial?.error !== undefined) throw new Error(failedMaterial.error);
 
       const refreshed = await refreshDerivedOutput({
         derivedOutputId: outputId
@@ -189,9 +210,39 @@
   const sourceTitle = (kind: string, id: string): string =>
     sourceTitles.get(`${kind}:${id}`) ?? "Open source";
 
+  const citationRef = (citation: SemanticCitation): ResourceRef =>
+    "span" in citation
+      ? citation.source.ref
+      : citation.material.placement?.ref ?? citation.material.source.ref;
+
+  const citationKey = (citation: SemanticCitation): string => {
+    if ("span" in citation) {
+      return `text:${citation.source.ref.kind}:${citation.source.ref.id}:${citation.span.from}`;
+    }
+    return `${citation.evidenceKind}:${citation.material.materialId}:${JSON.stringify("facet" in citation ? citation.facet : citation.selection)}`;
+  };
+
+  const citationLabel = (citation: SemanticCitation): string => {
+    if ("span" in citation) return citation.span.text;
+    if (citation.evidenceKind === "descriptor") return citation.text;
+    if (citation.evidenceKind === "visual") return `Original image${citation.selection.kind === "image" && citation.selection.crop !== undefined ? " crop" : ""}`;
+    if (citation.evidenceKind === "code") return String(citation.value);
+    const value = JSON.stringify(citation.value);
+    return value.length > 800 ? `${value.slice(0, 797)}…` : value;
+  };
+
+  const citationKind = (citation: SemanticCitation): string => {
+    if ("span" in citation) return "Exact text";
+    if (citation.evidenceKind === "descriptor") return "Interpreted summary";
+    if (citation.evidenceKind === "visual") return "Visual evidence";
+    if (citation.evidenceKind === "code") return "Exact code";
+    return "Structured evidence";
+  };
+
   const openSource = (kind: string, id: string) => {
     if (kind === "document") view.open({ category: "document-editor", resourceId: id });
     else if (kind === "slides") view.open({ category: "slide-deck-editor", resourceId: id });
+    else if (kind === "spreadsheet") view.open({ category: "spreadsheet-editor", resourceId: id });
   };
 </script>
 
@@ -222,6 +273,11 @@
       <small>Saved Resource Set selection is a later control.</small>
     </div>
 
+    <div class="freshness" data-state={shownState}>
+      <span>Response</span>
+      <strong>{shownState}</strong>
+    </div>
+
   </div>
 
   {#if shownError !== undefined}
@@ -234,7 +290,7 @@
     <Button
       variant="outline"
       size="xs"
-      disabled={running || promptDraft.trim().length === 0}
+      disabled={running || promptDraft.trim().length === 0 || !refreshRequired}
       title="Refresh from project sources"
       onclick={generate}
     >
@@ -250,14 +306,16 @@
   {#if output.evidence.length > 0}
     <PanelSection title="Evidence" open chevron="end">
       <div class="evidence">
-        {#each output.evidence as citation (`${citation.source.ref.kind}:${citation.source.ref.id}:${citation.span.from}`)}
+        {#each output.evidence as citation (citationKey(citation))}
+          {@const ref = citationRef(citation)}
           <article>
-            <q>{citation.span.text}</q>
+            <small>{citationKind(citation)}</small>
+            <q>{citationLabel(citation)}</q>
             <button
               type="button"
               class="source-link"
-              onclick={() => openSource(citation.source.ref.kind, citation.source.ref.id)}
-            >{sourceTitle(citation.source.ref.kind, citation.source.ref.id)}</button>
+              onclick={() => openSource(ref.kind, ref.id)}
+            >{sourceTitle(ref.kind, ref.id)}</button>
           </article>
         {/each}
       </div>
@@ -298,6 +356,26 @@
     border-radius: var(--token-radius-control);
   }
 
+  .freshness {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: calc(var(--token-spacing-unit) * 2);
+    color: var(--token-ink-muted);
+    font-size: var(--token-text-caption);
+  }
+
+  .freshness strong {
+    color: var(--token-color-attention-text);
+    font-size: inherit;
+    font-weight: 600;
+    text-transform: capitalize;
+  }
+
+  .freshness[data-state="fresh"] strong {
+    color: var(--token-color-success-text);
+  }
+
   .scope strong {
     color: var(--token-ink-primary);
     font-size: var(--token-text-caption);
@@ -330,6 +408,14 @@
     color: var(--token-ink-secondary);
     font-size: var(--token-text-caption);
     line-height: var(--token-text-caption-leading);
+  }
+
+  .evidence small {
+    color: var(--token-ink-muted);
+    font-size: 0.625rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
   }
 
   .source-link {

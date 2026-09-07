@@ -6,7 +6,7 @@ import type { SemanticResourceProjection } from "$representation/data/types/sema
 import type { TranslationResult } from "$representation/data/types/semantic/translation";
 import { semanticTranslationConfiguration } from "$capabilities/semantic-overlay/api/shared/configuration";
 import { publishSemanticTranslation } from "$capabilities/semantic-overlay/api/shared/publication";
-import { readSemanticResourceFor } from "$capabilities/semantic-overlay/api/shared/resource";
+import { readSemanticResourceForModel } from "$capabilities/semantic-overlay/api/shared/resource";
 import { sameResourceRef } from "$capabilities/semantic-overlay/api/shared/resource-ref";
 import { rowsOf } from "$capabilities/semantic-overlay/api/shared/rows";
 import type { SyncSemanticResourceResult } from "$capabilities/semantic-overlay/types/sync-semantic-resource";
@@ -19,7 +19,10 @@ const currentResult = (
   const source = rowsOf(model.store, "semanticSources").find(
     (row) => row.projectId === projectId && sameResourceRef(row.ref, projection.ref)
   );
-  if (source?.revision !== projection.revision) return undefined;
+  if (
+    source?.revision !== projection.revision ||
+    source.contentHash !== projection.contentHash
+  ) return undefined;
   const overlay = rowsOf(model.store, "semanticOverlays")
     .filter((row) => row.projectId === projectId)
     .sort((left, right) => right.generation - left.generation)[0];
@@ -29,7 +32,11 @@ const currentResult = (
     revision: projection.revision,
     overlayGeneration: overlay?.generation ?? 0,
     objectCount: rowsOf(model.store, "semanticObjects").filter(
-      (row) => row.projectId === projectId && row.semanticSourceId === source._id
+      (row) =>
+        row.projectId === projectId &&
+        (row.lane ?? "text") === "text" &&
+        "semanticSourceId" in row &&
+        row.semanticSourceId === source._id
     ).length,
     usage: []
   };
@@ -41,8 +48,10 @@ const sameProjection = (
 ): boolean =>
   left !== undefined &&
   left.revision === right.revision &&
+  left.contentHash === right.contentHash &&
   left.text === right.text &&
-  left.encoding === right.encoding;
+  left.encoding === right.encoding &&
+  JSON.stringify(left.hardBoundaries) === JSON.stringify(right.hardBoundaries);
 
 /** Internal worker seam: identity has already been resolved by the caller. */
 export const syncSemanticResourceFor = async (
@@ -51,7 +60,7 @@ export const syncSemanticResourceFor = async (
   ref: ResourceRef,
   force = false
 ): Promise<SyncSemanticResourceResult> => {
-  const projection = readSemanticResourceFor(model.store, projectId, ref);
+  const projection = await readSemanticResourceForModel(model, projectId, ref);
   if (projection === undefined) return { outcome: "missing", ref };
   const current = currentResult(model, projectId, projection);
   if (!force && current !== undefined) return current;
@@ -75,14 +84,14 @@ export const syncSemanticResourceFor = async (
     ]);
   }
 
-  const latest = readSemanticResourceFor(model.store, projectId, ref);
+  const latest = await readSemanticResourceForModel(model, projectId, ref);
   if (!sameProjection(latest, projection)) {
     const overlay = rowsOf(model.store, "semanticOverlays")
       .filter((row) => row.projectId === projectId)
       .sort((left, right) => right.generation - left.generation)[0];
     return {
       outcome: "superseded",
-      ref,
+      ref: projection.ref,
       revision: latest?.revision ?? projection.revision,
       overlayGeneration: overlay?.generation ?? 0,
       objectCount: 0,
@@ -93,7 +102,7 @@ export const syncSemanticResourceFor = async (
   const published = publishSemanticTranslation(model, projectId, translation, force);
   model.observability.logger.info("semanticOverlay.resourceSynced", {
     projectId,
-    ref,
+    ref: projection.ref,
     revision: projection.revision,
     outcome: published.outcome,
     generation: published.overlayGeneration,
@@ -102,7 +111,7 @@ export const syncSemanticResourceFor = async (
   if (published.outcome === "published") {
     return {
       outcome: "published",
-      ref,
+      ref: projection.ref,
       revision: projection.revision,
       overlayGeneration: published.overlayGeneration,
       objectCount: published.objectCount,
@@ -112,7 +121,7 @@ export const syncSemanticResourceFor = async (
   }
   return {
     outcome: published.outcome,
-    ref,
+    ref: projection.ref,
     revision: projection.revision,
     overlayGeneration: published.overlayGeneration,
     objectCount: published.objectCount,

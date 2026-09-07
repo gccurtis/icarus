@@ -9,6 +9,8 @@ import type { Id } from "$representation/data/types/core/id";
 import type {
   RecursiveQueryInput,
   RecursiveQueryResult,
+  RecursiveObjectQueryInput,
+  RecursiveObjectQueryResult,
   SearchableSemanticIndexNode,
   SearchableSemanticObject,
   SemanticHit
@@ -39,7 +41,9 @@ const sourceKey = (object: SearchableSemanticObject): string =>
     object.source.ref.kind,
     object.source.ref.id,
     object.source.revision,
-    object.source.encoding
+    object.source.contentHash ?? null,
+    object.source.encoding,
+    object.partition ?? null
   ]);
 
 const compareText = (left: string, right: string): number =>
@@ -86,6 +90,7 @@ const mergedHit = (
     semanticObjectIds: ordered.map((entry) => entry.object.id),
     source: first.object.source,
     span: { from, to, text },
+    ...(first.object.partition === undefined ? {} : { partition: first.object.partition }),
     score,
     overlayGeneration
   };
@@ -164,6 +169,95 @@ const pop = (heap: FrontierItem[]): FrontierItem | undefined => {
     parent = best;
   }
   return first;
+};
+
+/** Generic best-first traversal used by non-span lanes such as material facets. */
+export const searchRecursiveObjects = (
+  input: RecursiveObjectQueryInput
+): RecursiveObjectQueryResult => {
+  validateRecursiveIndexConfiguration(input.configuration);
+  if (!Number.isInteger(input.topK) || input.topK < 1) {
+    throw new Error("semantic query topK must be positive");
+  }
+  const query = normalizeVector(input.queryVector, "semantic query vector");
+  const objects = new Map(input.objects.map((object) => [object.id, object]));
+  if (objects.size !== input.objects.length) throw new Error("duplicate semantic object id");
+  const nodes = new Map(input.nodes.map((node) => [node.id, node]));
+  if (nodes.size !== input.nodes.length) throw new Error("duplicate semantic index node id");
+  const eligible = new Set(input.eligibleObjectIds ?? [...objects.keys()]);
+  for (const id of eligible) if (!objects.has(id)) throw new Error(`semantic scope names missing object '${id}'`);
+  const candidateTarget = Math.min(
+    eligible.size,
+    Math.max(input.topK, input.topK * input.configuration.candidateMultiplier)
+  );
+  if (eligible.size === 0) {
+    return {
+      objects: [],
+      diagnostics: {
+        eligibleObjects: 0,
+        candidateTarget: 0,
+        visitedNodes: 0,
+        evaluatedObjects: 0,
+        exhausted: true
+      }
+    };
+  }
+  const nodeScore = (node: SearchableSemanticIndexNode): number => {
+    validateVector(node.centroidVector, query.length, `node '${node.id}' centroid`);
+    return dotProduct(query, normalizeVector(node.centroidVector));
+  };
+  const frontier: FrontierItem[] = [];
+  const enqueued = new Set<Id<"semanticIndexNodes">>();
+  for (const id of input.rootNodeIds) {
+    const node = nodes.get(id);
+    if (node === undefined) throw new Error(`semantic index names missing root '${id}'`);
+    enqueued.add(id);
+    push(frontier, { id, score: nodeScore(node) });
+  }
+  if (frontier.length === 0) throw new Error("a non-empty Semantic Overlay index requires roots");
+  const candidates = new Set<Id<"semanticObjects">>();
+  const expanded = new Set<Id<"semanticIndexNodes">>();
+  let visitedNodes = 0;
+  while (frontier.length > 0 && candidates.size < candidateTarget) {
+    const next = pop(frontier);
+    if (next === undefined) break;
+    if (expanded.has(next.id)) throw new Error(`semantic index revisits node '${next.id}'`);
+    expanded.add(next.id);
+    const node = nodes.get(next.id);
+    if (node === undefined) throw new Error(`semantic index names missing node '${next.id}'`);
+    visitedNodes += 1;
+    if (node.children.kind === "objects") {
+      for (const id of node.children.ids) {
+        if (!objects.has(id)) throw new Error(`semantic index names missing object '${id}'`);
+        if (eligible.has(id)) candidates.add(id);
+      }
+    } else {
+      for (const id of node.children.ids) {
+        if (enqueued.has(id)) throw new Error(`semantic index revisits node '${id}'`);
+        const child = nodes.get(id);
+        if (child === undefined) throw new Error(`semantic index names missing node '${id}'`);
+        enqueued.add(id);
+        push(frontier, { id, score: nodeScore(child) });
+      }
+    }
+  }
+  const found = [...candidates]
+    .map((id) => {
+      const object = objects.get(id)!;
+      validateVector(object.vector, query.length, `object '${id}' vector`);
+      return { id, score: dotProduct(query, normalizeVector(object.vector)) };
+    })
+    .sort((left, right) => right.score - left.score || left.id.localeCompare(right.id));
+  return {
+    objects: found,
+    diagnostics: {
+      eligibleObjects: eligible.size,
+      candidateTarget,
+      visitedNodes,
+      evaluatedObjects: found.length,
+      exhausted: found.length === eligible.size || frontier.length === 0
+    }
+  };
 };
 
 const scoredObjects = (

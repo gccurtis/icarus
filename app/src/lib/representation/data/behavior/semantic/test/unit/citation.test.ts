@@ -4,7 +4,7 @@ import {
   changedSemanticSources,
   coalesceSemanticCitations
 } from "$representation/data/behavior/semantic/citation";
-import type { SemanticCitation } from "$representation/data/types/semantic/derived-output";
+import type { SemanticTextCitation } from "$representation/data/types/semantic/derived-output";
 
 const citation = (
   from: number,
@@ -12,7 +12,7 @@ const citation = (
   text: string,
   generation = 4,
   evidenceId = `evidence-${from}-${to}-${generation}`
-): SemanticCitation => ({
+): SemanticTextCitation => ({
   selections: [{ evidenceId, use: `Supports ${text}` }],
   source: { ref: { kind: "document", id: "brief" }, revision: 7, encoding: "utf-16" },
   span: { from, to, text },
@@ -59,6 +59,13 @@ describe("semantic citations", () => {
     ]);
   });
 
+  it("preserves hard partitions when citations from different slide reads touch", () => {
+    expect(coalesceSemanticCitations([
+      { ...citation(0, 5, "First"), partition: "partition:1" },
+      { ...citation(5, 13, "\n\nSecond"), partition: "partition:2" }
+    ])).toHaveLength(2);
+  });
+
   it("marks only cited source revisions as changed", () => {
     const used = citation(0, 5, "alpha");
     expect(
@@ -74,6 +81,23 @@ describe("semantic citations", () => {
         { ref: { kind: "document", id: "unrelated" }, revision: 100, encoding: "utf-16" }
       ])
     ).toEqual([used.source]);
+  });
+
+  it("treats an immutable external text hash as part of source freshness", () => {
+    const used: SemanticTextCitation = {
+      ...citation(0, 5, "alpha"),
+      source: {
+        ref: { kind: "externalFile::text", id: "externalFiles:notes" },
+        revision: 0,
+        contentHash: "a".repeat(64),
+        encoding: "utf-16"
+      }
+    };
+
+    expect(changedSemanticSources([used], [{
+      ...used.source,
+      contentHash: "b".repeat(64)
+    }])).toEqual([used.source]);
   });
 
   it("rejects citations whose text and coordinate system disagree", () => {

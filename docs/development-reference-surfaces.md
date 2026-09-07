@@ -26,9 +26,9 @@ by the kind of understanding they need to create.
 | Surface | Question | Visual grammar | Proof level |
 | --- | --- | --- | --- |
 | Procedure flow | What calls what, from an authored resource to an editable generated block? | converging entry paths, call graphs, sequence, state machine, callable ledger | exact symbols and current/deferred status |
-| Agent runtime | What does the agent know, what may it call, and how does evidence become durable? | context stack, control loop, interactive tool console, evidence chain, infrastructure priorities | executable system prompt imported from the capability; target tools labeled as target |
-| Resource reading | How does the agent traverse a document or deck, understand a slide, and obtain typed evidence? | authority grammar, interactive tool field, task routes, slide anatomy, evidence spectrum, projection seam | live `retrieve` and projector facts separated from proposed specialized tools and target files |
-| Semantic material | How do tables, CSV data, images, charts, and code become semantically discoverable without replacing their native authority? | two-lane retrieval machine, interactive material record, processing track, evidence-distance ruler, target schema wall | current content/file/embedding facts separated from the proposed material registry and pipeline |
+| Agent runtime | What does the agent know, what may it call, and how does evidence become durable? | context stack, control loop, interactive tool console, evidence chain, infrastructure priorities | executable system prompt and complete live tool grammar imported from the capability |
+| Resource reading | How does the agent traverse a document or deck, understand a slide, and obtain typed evidence? | authority grammar, interactive tool field, task routes, slide anatomy, evidence spectrum, projection seam | live orientation/evidence tools with current bounds and named renderer/upload limitations |
+| Semantic material | How do tables, CSV data, images, charts, and code become semantically discoverable without replacing their native authority? | two-lane retrieval machine, interactive material record, processing track, evidence-distance ruler, schema wall | live registry, profiles, descriptors, image vectors, queues, index lane, retrieval, and readers |
 | Live proof | Does the vertical slice really work? | two-input laboratory, execution rail, stored result, evidence record | real project store, real resource write, real embedding/index query, real structured generation, real value read |
 
 The pages link to one another, but each can stand on its own. Reusing navigation,
@@ -50,9 +50,10 @@ For every behavior shown on the pages, classify it as:
 
 The status must describe the code at review time. A good design that is not
 implemented is still `deferred`. An executable prototype is not called a
-production worker. This is why the pages say that `retrieve` is live while
-`read_selection`, `find_resources`, the traversal/context tools, and the typed
-`read_*` tools are targets.
+production worker. The current pages mark all sixteen agent tools and both
+Semantic Overlay lanes as live, while separately naming the always-on worker,
+transactional outbox, production slide renderer, content-addressed upload
+adapter, and large-file partitioning as deferred.
 
 Use exact function, message, table, and field names wherever a reader will need
 to find code. Prose may explain a boundary, but should not replace its callable
@@ -180,13 +181,13 @@ document. It can navigate and inspect; it does not create.
 
 ### Agent evidence boundaries
 
-The first agent page used one generic target `read` contract to establish the
-direct-resource authority boundary. Resource-reading design refined that sketch
-into several narrow tools. Their names now carry a stable grammar:
+The first agent page used one generic `read` sketch to establish the
+direct-resource authority boundary. Resource-reading design refined and
+implemented it as several narrow tools. Their names carry a stable grammar:
 
 - `find_*`, `list_*`, `inspect_*`, and `view_*` orient the agent and never mint
   evidence IDs;
-- `retrieve`, the target `retrieve_materials`, and every `read_*` tool return
+- `retrieve`, `retrieve_materials`, and every `read_*` tool return
   source-backed material and mint evidence IDs;
 - `retrieve` queries the exact-text Semantic Overlay lane,
   `retrieve_materials` queries the interpreted-material lane, and every
@@ -203,18 +204,22 @@ into several narrow tools. Their names now carry a stable grammar:
 | `inspect_slide` | contextual structure | list typed items, bounds, text ranges, and content handles | no evidence ID |
 | `inspect_dataset` | contextual structure | list bounded sheets, tables, partitions, columns, and native-read handles | no evidence ID |
 | `inspect_code` | contextual structure | list parser-derived symbols and exact source ranges | no evidence ID |
-| `view_slide` | contextual rendering | let the agent understand the composite slide | explicitly non-citable; no evidence ID |
+| `view_slide` | contextual rendering | inspect the current schematic spatial view | explicitly non-citable; no evidence ID |
 | `read_text` | authoritative resource | read a bounded block, shape, note, or range | exact text evidence |
 | `read_table` | authoritative resource | read native cells and relationships | structured evidence |
 | `read_chart` | authoritative resource | read native axes, series, labels, and values | structured evidence |
-| `read_image` | authoritative resource | read original image pixels or an exact crop | visual evidence |
+| `read_image` | authoritative resource | read content-addressed original pixels and optionally bind crop coordinates | visual evidence |
 | `read_csv` | authoritative external file | read bounded rows and columns | structured evidence |
 | `read_code` | authoritative external file | read exact line or symbol ranges | verbatim code evidence |
 
-The distinction between `view_slide` and `read_image` is deliberate. A rendered
-slide helps the agent understand association, layout, and hierarchy, but it is a
-composite supporting view and cannot be selected in the final evidence array.
-The original image content item returned by `read_image` is visual evidence.
+The distinction between `view_slide` and `read_image` is deliberate. The live
+`view_slide` adapter is a schematic SVG for association, layout, and hierarchy;
+it is not a production-fidelity render and cannot be selected in the final
+evidence array. The content-addressed original image returned by `read_image`
+is visual evidence. URL-backed images must first be imported because a mutable
+remote URL cannot anchor a durable citation. Crop coordinates are currently
+validated and stored while the original raster is sent; server-side raster
+cropping remains deferred.
 Likewise, native chart data from `read_chart` is preferred to reconstructing a
 chart from pixels.
 
@@ -228,7 +233,7 @@ When the question requires more context, `inspect_slide`, `inspect_dataset`, or
 corresponding view or evidentiary reader.
 
 When a selection exists, the run envelope carries `hasSelection: true`, not the
-selected text. The target loop first calls `read_selection`; the application
+selected text. The live loop forces `read_selection` first; the application
 resolves the current authoritative range and registers it. This gives the agent
 an explicit focus and makes that focus citable without placing mutable source
 content in the stable instruction.
@@ -266,39 +271,44 @@ treating contextual slide renders as evidence.
 
 ### Resource projection seam
 
-The current live projector is
-`app/src/lib/representation/data/behavior/semantic/resource-text.ts`. It already
-uses one UTF-16 coordinate space, joins projected units with blank lines,
-retains document/slide locators, omits synthetic labels such as `Slide 1`, and
-excludes Prompt Blocks. It also projects table-cell text and image alt/caption
-text; chart elements remain excluded.
+The live projector is rooted at
+`app/src/lib/representation/data/behavior/semantic/projection/project-resource.ts`.
+`resource-text.ts` is now a compatibility facade over its exact output. The
+projector uses one UTF-16 coordinate space, joins actual text units with blank
+lines, retains document/slide locators, records hard slide boundaries out of
+band, omits synthetic labels such as `Slide 1`, and excludes Prompt Blocks.
+It projects authored table header labels and image alt/caption text, while raw
+table bodies, chart values, and pixels remain native material.
 
-The target refactor makes the extension point obvious without changing the
-Semantic Overlay input contract:
+The implemented extension point is:
 
 ```text
 representation/data/behavior/semantic/projection/
 ├── contract.ts
 ├── writer.ts
 ├── project-resource.ts
-├── resources/
-│   ├── document.ts
-│   └── slide-deck.ts
-└── content/
-    ├── text.ts
-    ├── formula.ts
-    ├── authored-labels.ts
-    └── material-seed.ts
+├── shared.ts
+└── resources/
+    ├── document.ts
+    └── slide-deck.ts
 ```
 
-Resource adapters determine traversal and locators. Shared content projectors
-determine what narrative content contributes to the exact text lane. The same
-resource walk also emits a first-class inventory of tables, charts, images, and
-other materials into a separate asynchronous pipeline. The target projection
-gains out-of-band hard slide boundaries: the deck retains one coordinate space,
-while translation and citation consolidation may not create a span crossing
-from one slide into the next. The boundary is metadata, not an indexed
-`Slide 1` token.
+Resource adapters determine traversal and locators. Shared content rules decide
+what narrative content contributes to the exact text lane. The same resource
+walk emits first-class tables, charts, and images into the independently queued
+material pipeline. The deck retains one coordinate space, while translation,
+direct reads, and citation consolidation cannot cross an out-of-band slide
+boundary. External UTF-8 text uses the same exact contract with an immutable
+`contentHash`; CSV, code, image, and spreadsheet adapters join the material
+pipeline through `readMaterialInventoryFor`.
+
+Shared native assets are global identities, but their aggregate context is not
+global authority. The material page now exposes the facet gate explicitly:
+identity/profile/native-visual facets can be discovered through any in-set
+source or placement, while authored/generated facets persist `scopeRefs` and
+require every contributor in the active Resource Set. This distinction emerged
+from implementation review; without it, deduplicating one image used in two
+resources could leak neighboring text from the excluded resource.
 
 The complete material identity, profiling, description, facet, two-lane index,
 freshness, tool, evidence-distance, and migration design lives in

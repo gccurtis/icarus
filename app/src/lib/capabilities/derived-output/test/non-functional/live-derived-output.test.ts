@@ -92,7 +92,7 @@ test.runIf(live)("real Jina retrieval grounds a real OpenRouter tool loop", asyn
   expect(result.queries.length).toBeGreaterThan(0);
   expect(result.status).toBe("answered");
   expect(result.toolCalls).toBeGreaterThanOrEqual(1);
-  expect(result.evidence.some((citation) => citation.span.text.includes("Mira Chen"))).toBe(true);
+  expect(result.evidence.some((citation) => "span" in citation && citation.span.text.includes("Mira Chen"))).toBe(true);
   expect(result.evidence.every((citation) => citation.selections.length > 0)).toBe(true);
   expect(result.text).toMatch(/Tuesday/i);
   expect(result.text).toMatch(/14:00 UTC/i);

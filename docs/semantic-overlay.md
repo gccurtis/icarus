@@ -1,173 +1,209 @@
-# Semantic Overlay working notes
+# Semantic Overlay
 
-Status: implemented contracts and explicit follow-up work, 2026-09-04.
+Status: implemented two-lane architecture, 2026-09-07.
 
-The executable code remains authoritative. This document distinguishes current
-behavior from accepted target behavior so that an unfinished item is not read as
-already implemented.
+The Semantic Overlay is the project-scoped bridge from authoritative resources
+to semantic discovery. It has two independent index lanes:
 
-## Source boundary
+- `text`: exact authored UTF-16 spans, queried by `retrieve`;
+- `material`: separately provenanced facets for tables, CSV data, charts,
+  images, code, and spreadsheets, queried by `retrieve_materials`.
 
-A Semantic Overlay is project-scoped. Embedding context never crosses from one
-semantic source into another.
+The material lane is documented in detail in
+`docs/semantic-material-layer.md`. This page records the common lifecycle and
+the exact-text contract that Derived Output depends on.
 
-A source is identified by its resource reference, revision, and text encoding.
-The translation operation may receive its content in one of two runtime forms:
+## Invariants
 
-- complete text already resident in memory;
-- a reader that yields source-local text windows for content that should not be
-  materialized all at once.
+1. A source never crosses a project boundary.
+2. An editable source is pinned to a leader revision; external text is pinned
+   to a content hash.
+3. Translation consumes a canonical string, never editor JSON.
+4. Stored spans use absolute coordinates in that source and retain encoding.
+5. A synthetic structural label is never inserted merely to aid retrieval.
+6. Prompt Block output never re-enters either semantic lane.
+7. Text and material trees have separate roots even though they share an
+   embedding space.
+8. Work must re-read current authority before publication; late work loses.
+9. Stale objects remain resolvable until a successor tree is committed but are
+   ineligible for search.
+10. A citation is stored by value; active object IDs are not durable evidence.
+11. Deduplicating a shared material never widens scope: aggregate contextual
+    facets carry every contributor ref and require all contributors in-set.
 
-The reader is runtime input. It is not part of the stored semantic source or
-semantic object contract. Every produced span still uses absolute coordinates
-in the original source and carries the source encoding.
+## Source projection
 
-## Embedding modes
-
-Three separate modes are required. Their names should remain explicit at the
-embedding-model boundary rather than being selected through an ambiguous
-boolean at distant call sites.
-
-### Windowed semantic translation
-
-This is the normal text path and its provider/algorithm primitives exist now:
-
-1. Give one complete source, or one source-local context window, to Jina v4 as
-   a contextual token multivector field.
-2. Align returned token labels to exact source coordinates.
-3. Apply distance-discounted-attraction segmentation without another provider
-   call.
-4. Slice the selected spans exactly from that same source.
-5. Send those span texts together with `retrieval.passage` and
-   `late_chunking: true`.
-6. Store one dense vector and exact source span per semantic object.
-
-Late chunking applies only within the current source or source window. Segments
-from different sources must never share one late-chunking request.
-
-Current limitation: `truncate: false` deliberately fails when a source exceeds
-the provider context limit. `syncSemanticResource` now orchestrates and persists
-the complete flow for document and slide-deck projections; source-local window
-planning remains required for inputs beyond the provider context.
-
-### Complete passage embedding
-
-Some sources should become one vector without segmentation or windowing:
-
-```text
-input = [complete source text]
-task = retrieval.passage
-late_chunking = false
-result = one dense vector
-```
-
-The public embedding port now exposes `passage(text)`, which returns one vector,
-and names the contextual operation `windowedPassages(spans)`. A complete-source
-translation caller can use the former to produce one semantic object whose span
-covers that source. That translation/persistence orchestration is still future
-work.
-
-### Query embedding
-
-Queries remain a distinct asymmetric operation:
-
-```text
-input = [query text]
-task = retrieval.query
-late_chunking = false
-result = one dense vector
-```
-
-Query embedding must use the same provider, model, and dimensions as stored
-semantic objects.
-
-## Very large sources
-
-Add source-local window planning when large inputs need support. This is not a
-request to combine or continuously rechunk the project corpus.
-
-The planner must:
-
-- measure the provider's token context rather than infer capacity from code
-  units;
-- create overlapping context windows within one source;
-- support both an in-memory string and a reader;
-- retain a global coordinate base for every window;
-- assign an ownership/core region so overlapping windows do not publish the
-  same source span twice;
-- run token alignment and segmentation inside each context window;
-- translate local boundaries back to absolute source coordinates;
-- late-chunk only the finalized spans belonging to that source window;
-- fail rather than silently truncate or lose uncovered source text.
-
-Open design work: choose overlap size, reconcile a semantic segment crossing a
-window ownership boundary, expose model context limits through configuration,
-and define retry/checkpoint behavior for a reader that fails partway through.
-
-## Recursive index
-
-### Current construction
-
-The index is divisive hierarchical spherical k-means:
-
-1. Normalize every semantic-object vector.
-2. Partition the complete corpus into a forest of roots.
-3. Compute every node centroid from all original object vectors below that
-   node, not by equally averaging child centroids.
-4. Re-run spherical k-means only inside a partition that exceeds `leafSize`.
-5. Stop each partition independently once it fits in a leaf.
-
-Every object belongs to exactly one child at a partition. This is a neighborhood
-hierarchy, not an onion around one center: roots choose the broad neighborhood
-(the suburb), child nodes repartition only that neighborhood (the block), and
-leaves hold its local objects (the houses). A small outlier neighborhood can
-remain a leaf while a larger neighborhood continues to split. Every node's
-normalized centroid summarizes all original descendant vectors; its ancestry
-records nested membership, while centroid similarity remains a routing score
-rather than a formal upper bound on every descendant.
-
-### Current query
-
-All roots enter one max-priority frontier. The highest query-to-centroid score
-is popped next:
-
-- an internal node adds all child nodes back to the frontier;
-- a leaf adds its eligible semantic objects to the candidate set;
-- lower-scoring branches remain in the frontier for possible later expansion;
-- after oversampling, candidate objects receive exact cosine scores;
-- overlapping or exactly adjacent spans from the same source snapshot coalesce
-  before final top-k selection.
-
-`candidateMultiplier` is primarily an approximate-recall cushion. It also
-ensures coalescence is less likely to leave fewer than top-k distinct hits; if
-coalescence still does so, the search expands its candidate target again.
-
-The frontier is not currently memory-bounded. Future work may add a deterministic
-beam or `maxFrontierNodes` limit, but eviction must be visible in diagnostics
-because discarding a low-scoring centroid can discard a high-scoring descendant.
-
-## Derived Output evidence contract
-
-### Implemented contract
-
-Remove the separate opaque-handle `read` step. Retrieval should return the
-similar source content immediately, while application code assigns every
-returned hit an attempt-local evidence ID:
+`projectResource` performs one authoritative document/deck walk and returns:
 
 ```ts
-type RetrievedEvidence = {
-  evidenceId: string;
-  source: SemanticSourceSnapshot;
-  span: SemanticSpan;
-  locators?: SemanticLocatorSpan[];
-  score: number;
-  overlayGeneration: number;
+type ProjectSemanticProjection = {
+  exact: SemanticResourceProjection;
+  materials: MaterialSeed[];
+};
+
+type SemanticResourceProjection = {
+  ref: ResourceRef;
+  revision: number;
+  contentHash?: string;
+  encoding: "utf-16";
+  text: string;
+  locators: SemanticLocatorSpan[];
+  hardBoundaries: number[];
 };
 ```
 
-The registry behind each ID remains application-owned. The model may issue
-several retrievals and then returns a strict structured decision that selects
-only evidence IDs it actually used:
+Documents traverse header, first-page header, body, footer, and first-page
+footer in deterministic block order. Slide decks traverse visible slides,
+frame-ordered elements/groups, and notes. A slide boundary is recorded as an
+out-of-band coordinate and is never embedded as `Slide 1` text.
+
+The exact lane contains narrative text, formulas' authored display values,
+image alt/caption text, and authored table header rows. Native table bodies,
+charts, image pixels, and spreadsheets use the material lane. Prompt Blocks are
+excluded everywhere.
+
+`resource-text.ts` remains only a compatibility facade over
+`projectResource(input).exact`; traversal lives under
+`representation/data/behavior/semantic/projection/`.
+
+### External exact text
+
+`readSemanticResourceForModel` supports canonical
+`externalFile::text` sources. It reads through `MaterialContentModel`, requires
+valid UTF-8, rejects content over 5 MB, and stores the external file hash in the
+source snapshot. A code file can therefore be both exact text and a code
+material; CSV/image/data files do not enter exact retrieval.
+
+## Entry points
+
+The normal path begins only after a document/deck leader write is accepted:
+
+```text
+submitDocumentChanges / submitSlideDeckChanges / createProjectResource
+  → enqueueSemanticSync({ ref })
+      → enqueueSemanticSyncFor(ref, revision)       exact when supported
+      → enqueueMaterialSyncFor(ref, revision)       material inventory
+```
+
+The public procedure derives project scope from the request and canonicalizes
+external-file aliases. Enqueueing is revision-only: it does not walk the body,
+read native bytes, or call a provider.
+
+`backfillSemanticOverlay` is the development/migration path. It enumerates all
+document, deck, and spreadsheet leaders plus external files, enqueues the same
+job shapes, and drains one bounded batch. It is safe to call repeatedly because
+jobs coalesce and synchronization is idempotent unless `force` is requested.
+
+## Exact translation
+
+`syncSemanticResourceFor` performs the full exact flow:
+
+1. read the current canonical projection;
+2. return `current` when source identity, revision/hash, text, boundaries,
+   locators, index, and embedding space already match;
+3. request a contextual token field with `EmbeddingModel.tokenField`;
+4. align provider labels exactly to source coordinates;
+5. run deterministic distance-discounted-attraction segmentation;
+6. reject a segment that crosses a hard boundary;
+7. embed finalized source-local spans together through
+   `EmbeddingModel.windowedPassages` with late chunking;
+8. re-read the authoritative projection after provider work;
+9. return `superseded` if revision, hash, text, boundaries, or locators changed;
+10. stage a complete successor text index, publish source/objects/history, then
+    commit the new roots and overlay generation.
+
+Text is never silently truncated. The current full-source token operation fails
+when provider context is exceeded. Provider-token-aware source-window planning
+is deferred and must preserve global coordinates and complete coverage.
+
+## Embedding operations
+
+The model boundary exposes distinct operations rather than a distant boolean:
+
+- `tokenField(text)`: contextual token multivectors for semantic translation;
+- `windowedPassages(texts)`: source-local late-chunked passage vectors;
+- `passage(text)`: one independent complete-passage vector;
+- `passages(texts)`: independent vectors for material text facets;
+- `image(input)`: one native image vector in the same passage space;
+- `query(text)`: asymmetric query vector.
+
+Every active index records provider, model, and dimensions. A query fails
+closed when the configured embedding space differs from the active overlay.
+
+## Recursive indexes
+
+Each lane owns a divisive hierarchical spherical k-means forest:
+
+1. normalize object vectors;
+2. partition roots;
+3. recursively partition only groups larger than `leafSize`;
+4. derive every centroid from all original descendant vectors;
+5. stop each branch independently.
+
+`stageSemanticIndex` writes a complete candidate tree while the previous tree
+remains queryable. Its caller either commits, removing the predecessor, or
+rolls back all staged rows. An empty lane still has a valid empty index record.
+
+Query traversal places all roots on one max-priority frontier. It expands the
+best centroid first, evaluates exact cosine similarity at reached leaves, and
+uses `candidateMultiplier` as an approximate-recall cushion. Eligibility is
+passed into traversal before candidates are chosen; it is not a post-filter on
+a mixed tree.
+
+The frontier is not yet memory-bounded, and publication rebuilds the whole lane
+tree. A delta tier/compaction strategy is future scale work.
+
+## Exact query and span consolidation
+
+`querySemanticOverlay`:
+
+1. validates text, `topK`, and optional `ResourceSet`;
+2. resolves current source snapshots by leader revision or external hash;
+3. selects only text-lane objects owned by those snapshots and allowed by the
+   set;
+4. embeds the query;
+5. traverses the active text tree;
+6. scores candidates exactly;
+7. unions overlapping or exactly adjacent spans from the same source snapshot
+   and hard-boundary partition;
+8. attaches intersecting locator spans;
+9. applies final `topK` and returns diagnostics/usage.
+
+Consolidation happens again after an agent selects evidence IDs across multiple
+tool calls. That second pass joins repeated/overlapping selections while
+retaining every ID and model-authored `use` annotation. Spans never merge across
+resource, revision, content hash, encoding, partition, or overlay generation.
+
+## Material query
+
+`querySemanticMaterials` uses the active material tree, current material and
+placement checks, optional kind filter, and the same Resource Set evaluator.
+It overfetches up to five facets per requested hit, groups by material, and
+returns distinct current materials with matched-facet provenance.
+
+For a shared material, safe identity/profile/native-visual facets may remain
+eligible through any in-scope source or placement. Aggregate `authored` and
+`generated` facets are eligible only when every persisted `scopeRefs`
+contributor is inside the explicit Resource Set. Contextual rows from before
+that provenance field fail closed for scoped searches until backfill republishes
+them. This prevents deduplication from leaking a caption, note, or neighboring
+passage from another resource.
+
+It never returns exact text objects. `querySemanticOverlay` never returns
+material objects. The two query contracts are intentionally separate.
+
+## Derived Output evidence contract
+
+`synthesize` creates an attempt-local registry. The model receives sixteen
+bounded tools:
+
+- `retrieve` and `retrieve_materials` query the two overlay lanes;
+- `read_selection` and `read_*` open authoritative resources and issue evidence
+  IDs;
+- `find_resources`, `list_*`, `inspect_*`, and `view_slide` orient without
+  issuing evidence.
+
+The structured result is:
 
 ```ts
 type SynthesisDecision = {
@@ -177,131 +213,73 @@ type SynthesisDecision = {
 };
 ```
 
-The `use` value explains the evidence's role; it is model-authored
-annotation, not provenance. The application should not require the model to
-invent exact quote offsets inside a retrieved span. When the source projection
-has structural locators, retrieval carries the overlapping locator spans and
-the selected citation copies them by value for later editor highlighting.
+For `answered`, at least one unique, issued ID is required. For `insufficient`,
+application code discards provider prose and publishes a fixed coded response.
+The application resolves IDs, rechecks sources/materials, and stores exact,
+structured, visual, code, or descriptor citations by value.
 
-Span consolidation occurs at two boundaries. Each Semantic Overlay query
-unions overlapping or exactly adjacent candidate spans before applying final
-`topK`, so one retrieval does not expose chunk seams as duplicate evidence.
-After the model selects evidence, citation resolution applies the same union to
-the selected spans from every tool call. This second pass covers repeated
-retrievals while preserving every selected evidence ID and its use annotation.
-Spans never merge across a source, revision, encoding, or overlay-generation
-boundary.
+When a user selection exists, `read_selection` is forced as the first tool.
+Otherwise `retrieve` is forced first. Selection content is not spliced into the
+stable system prompt.
 
-Before publication, application code must verify that:
+## Derived Output freshness
 
-- every selected ID was issued during this attempt;
-- an answered result selects at least one evidence item;
-- selected hits resolve to valid stored-by-value citations;
-- selected citations still match the active source revision and encoding;
-- the Derived Output definition was not superseded during synthesis.
+Freshness is computed on pull and immediately before write:
 
-Only selected evidence needs source-revision preflight. If selected evidence
-changed during synthesis, discard the attempt and retry within the configured
-bound. An insufficient result or an answered result with blank, duplicate, or
-unissued evidence must not publish unsupported prose. The application instead
-publishes its fixed, explicit insufficient-evidence response. Malformed provider
-JSON is a bounded synthesis failure and also never publishes provider prose.
+- exact citations watch their selected revision or external content hash;
+- native/descriptor citations watch material revision/profile/context plus any
+  selected placement revision;
+- an unrelated source change does not stale an answer;
+- a citation-free negative result watches the overlay generation it searched;
+- a user-edited response clears grounding metadata and becomes ungrounded
+  continuity for the next refresh;
+- a fresh response with unchanged evidence makes refresh a zero-provider-call
+  `current` no-op;
+- source churn retries with a new registry up to the configured bound;
+- provider or repeated churn failure preserves the last good response.
 
-## Derived Output lifecycle
+## Prompt Blocks
 
-Keep the Semantic Overlay and Derived Output lifecycles independent:
+Documents expose Derived Output through a normal editable Prompt Block:
 
-- overlay source changes translate and advance overlay generation;
-- reading a Derived Output computes freshness from its cited source revisions;
-- an unrelated overlay generation change does not stale the response;
-- an insufficient-evidence response has no citations, so it becomes stale when
-  the overlay advances beyond the generation it searched;
-- refresh validates only selected cited sources before publication;
-- provider failure or repeated source churn preserves the last good response;
-- a scheduled interval may perform the same pull-based freshness read later;
-  source updates should not fan out writes over all Derived Outputs.
+1. convert an empty line with the ordinary Block selector;
+2. configure prompt and Resource Set in the Prompt inspector;
+3. create/link the Derived Output;
+4. drain one bounded semantic batch and refresh;
+5. copy response text into the block while preserving editor-owned mark ranges;
+6. reopen settings through the star in the pasteboard gutter;
+7. follow source titles in the evidence list back to resources.
 
-The public update operation accepts a user edit to `lastResponse`. The edit is
-normalized to the current single-paragraph content shape, advances
-`lastRevision`, clears evidence and generation metadata that cannot safely be
-claimed for edited prose, and marks the row stale. On refresh it becomes the
-continuity example supplied to the agent so wording and organization can remain
-stable. It is context, never factual evidence.
+The Prompts context rail only indexes existing blocks. It does not create them.
+Prompt text/output stays text-only; marks and presentation never enter the
+semantic or Derived Output capability.
 
-Templated Derived Outputs are also implemented. A definition contains named
-variable prompts, an output template, and an optional style-only example. The
-provider returns a structured array of variable values and evidence selections;
-the application validates exact names and grounding, stores the resolutions,
-and renders the final text itself.
+## Persistence and deployment boundary
 
-Documents now expose that lifecycle through a simple Prompt Block. An empty line
-converts through the ordinary Block selector, then the Prompt inspector creates
-and links the Derived Output, processes up to 50 pending semantic-sync jobs, and
-refreshes it in the same user request. The published answer is synchronized into
-the block's normal editable text, so it remains selectable, formattable, and
-editable; the document editor preserves its own absolute mark ranges and the
-Derived Output remains text-only. A small star in the pasteboard gutter reopens
-settings. An inline edit becomes exact ungrounded continuity on the next refresh.
-The Prompts rail is only an index of blocks in the current document. Queued
-Derived Output execution and non-document placement adapters remain separate
-scale-up work.
+The JSON store has durable source/object/index/history rows and separate exact
+and material job tables. It does not provide a cross-table transaction between
+an accepted leader and its outbox enqueue, and this repository has no always-on
+worker host. The current writes are adjacent, workers are explicitly callable,
+and every publication has supersession guards. A production deployment still
+needs transactional outbox semantics, leases/recovery, retry policy, and an
+always-on host.
 
-## Resource publication
+## Primary code map
 
-Document and slide-deck leader snapshots now project through one canonical
-UTF-16 text seam. The projection stores locator spans back to titles, document
-blocks, slide elements, groups, tables, captions, and speaker notes. Hidden
-slides and prompt blocks are excluded. Slide numbers are not injected as
-synthetic text. The current `resource-text.ts` writer uses blank-line separators;
-the accepted target adds out-of-band hard slide boundaries so translation and
-citation coalescence cannot bridge two slides while the deck retains one global
-coordinate space.
+```text
+representation/data/behavior/semantic/
+  projection/ · translation.ts · recursive-index.ts · query.ts · citation.ts
 
-The target projection layout separates resource traversal from exact narrative
-projection and first-class material inventory. Document and slide-deck adapters
-own ordering and locators. Narrative text continues into the exact-text lane;
-tables, CSV data, charts, images, and code enter the independent semantic
-material pipeline. The current behavior already shares a content-block walk,
-projects nested table text plus image alt/caption text, and excludes prompt
-content. The target stops relying on flattened raw rows for discovery: native
-material receives a deterministic profile, optional authored/generated
-descriptions, and specialized direct readers.
+capabilities/semantic-overlay/api/
+  enqueue-semantic-sync/ · process-semantic-sync-queue/
+  query-semantic-overlay/ · query-semantic-materials/
+  shared/{sync,publication,index-publication,freshness,material-*}.ts
 
-The material lane shares project scope and embedding dimensions with text but
-uses separate recursive-index roots. `retrieve` therefore remains exact-text
-only. Target `retrieve_materials` returns explicitly interpreted, source-bound
-descriptor evidence. Exact numerical, code, chart, or visual claims still use
-`read_csv`, `read_code`, `read_table`, `read_chart`, or `read_image`. Jina v4 can
-add native image vectors in the shared vector space after the currently
-string-only adapter gains a typed image operation. The complete target is in
-`docs/semantic-material-layer.md`.
+capabilities/derived-output/api/shared/
+  agent-instructions.ts · synthesis.ts · resource-reading.ts · rows.ts
+```
 
-Accepted resource changes coalesce by resource and requested revision in
-`semanticSyncJobs`. The bounded worker embeds the latest projection, checks that
-the revision/text remain current after provider calls, stages a complete
-replacement recursive index, archives retired object values, and advances the
-overlay generation without an asynchronous publication gap.
-
-The current JSON store cannot transact a resource leader and queue row across
-files, and this repository has no always-on worker host. Those are deployment
-infrastructure gaps rather than missing procedure contracts.
-
-## Follow-up sequence
-
-1. Add a transactional resource-write/outbox boundary and always-on worker host.
-2. Add source-local large-text and reader window planning.
-3. Add semantic material identity plus document/deck inventory and deterministic
-   profiles without changing current retrieval behavior.
-4. Add the bounded resource-reading tool grammar: `find_*`, `list_*`,
-   `inspect_*`, and `view_*` orient without evidence IDs; exact-text `retrieve`,
-   interpreted `retrieve_materials`, and typed `read_*` tools mint evidence.
-   Every `read_*` tool goes directly to authoritative project resources;
-   `view_slide` is contextual and non-citable.
-5. Add descriptor generation, separate material index roots, CSV/code adapters,
-   and native Jina image embeddings according to
-   `docs/semantic-material-layer.md`.
-6. Add an optional bounded query frontier with truncation diagnostics and recall
-   tests.
-
-The development-reference method and the visual/executable proof for this flow
-are documented in `docs/development-reference-surfaces.md`.
+The visual procedure flow is served at
+`/demo/semantic-overlay/derived-output-flow`. The agent runtime, resource tools,
+material layer, and executable proof are neighboring pages under the same demo
+route family.

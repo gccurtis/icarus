@@ -101,6 +101,31 @@ test("query vectors use retrieval.query without late chunking", async () => {
   await assert.rejects(() => embedding.query("   "), /must not be blank/);
 });
 
+test("images use a typed multimodal input in the shared passage space", async () => {
+  let payload: Record<string, unknown> | undefined;
+  const embedding = defineEmbedding(
+    input(async (_url, init) => {
+      payload = JSON.parse(String(init?.body));
+      return response({ data: [{ index: 0, embedding: [0, 1, 0] }], usage: {} });
+    })
+  );
+
+  const result = await embedding.image({ kind: "url", url: "https://example.test/chart.png" });
+
+  assert.deepEqual(payload, {
+    model: "jina-embeddings-v4",
+    input: [{ image: "https://example.test/chart.png" }],
+    task: "retrieval.passage",
+    dimensions: 3,
+    embedding_type: "float",
+    truncate: false
+  });
+  assert.deepEqual(result.value, [0, 1, 0]);
+  assert.equal(result.usage.operation, "imageVector");
+  await assert.rejects(() => embedding.image({ kind: "url", url: "file:///tmp/x.png" }), /HTTP or HTTPS/);
+  await assert.rejects(() => embedding.image({ kind: "bytes", base64: "" }), /must not be blank/);
+});
+
 test("token fields request v4 multivectors and matching labels", async () => {
   let payload: Record<string, unknown> | undefined;
   const embedding = defineEmbedding(

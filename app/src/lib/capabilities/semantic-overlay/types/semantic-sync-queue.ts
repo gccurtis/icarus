@@ -2,6 +2,7 @@ import type { Id } from "$representation/data/types/core/id";
 import type { ResourceRef } from "$representation/data/types/core/resource";
 import type { SemanticSyncJobState } from "$representation/data/types/semantic/sync";
 import type { SyncSemanticResourceResult } from "$capabilities/semantic-overlay/types/sync-semantic-resource";
+import type { ProcessSemanticMaterialQueueResult } from "$capabilities/semantic-overlay/types/material-sync";
 
 export type { SemanticSyncJobState };
 
@@ -20,6 +21,7 @@ export type ProcessedSemanticSyncJob = {
 export type ProcessSemanticSyncQueueResult = {
   readonly processed: readonly ProcessedSemanticSyncJob[];
   readonly remaining: number;
+  readonly materials: ProcessSemanticMaterialQueueResult;
 };
 
 export type BackfillSemanticOverlayInput = {
@@ -30,5 +32,6 @@ export type BackfillSemanticOverlayInput = {
 export type BackfillSemanticOverlayResult = {
   readonly discovered: number;
   readonly queued: number;
+  readonly materialQueued: number;
   readonly queue: ProcessSemanticSyncQueueResult;
 };

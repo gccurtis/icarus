@@ -1,5 +1,6 @@
 import type {
   IntelligenceInput,
+  IntelligenceImage,
   IntelligenceResult,
   IntelligenceState,
   IntelligenceToolCall,
@@ -14,9 +15,14 @@ type WireToolCall = {
 };
 
 type WireMessage =
-  | { role: "system" | "user"; content: string }
+  | { role: "system"; content: string }
+  | { role: "user"; content: string | WireContent[] }
   | { role: "assistant"; content: string | null; tool_calls: WireToolCall[] }
   | { role: "tool"; tool_call_id: string; content: string };
+
+type WireContent =
+  | { type: "text"; text: string }
+  | { type: "image_url"; image_url: { url: string } };
 
 type ProviderTurn = {
   content: string | null;
@@ -122,6 +128,37 @@ const serialize = (value: unknown): string => {
   }
 };
 
+const imageUrl = (image: IntelligenceImage): string =>
+  image.kind === "url"
+    ? image.url
+    : `data:${image.mediaType};base64,${image.base64}`;
+
+const userContent = (
+  value: IntelligenceInput<unknown>["user"]
+): string | WireContent[] => typeof value === "string"
+  ? value
+  : [
+      { type: "text" as const, text: value.text },
+      ...value.images.map((image) => ({
+        type: "image_url" as const,
+        image_url: { url: imageUrl(image) }
+      }))
+    ];
+
+const toolOutput = (value: unknown): { value: unknown; images: readonly IntelligenceImage[] } => {
+  if (
+    value !== null &&
+    typeof value === "object" &&
+    !Array.isArray(value) &&
+    (value as { kind?: unknown }).kind === "intelligenceToolOutput" &&
+    Array.isArray((value as { images?: unknown }).images)
+  ) {
+    const output = value as { value: unknown; images: readonly IntelligenceImage[] };
+    return { value: output.value, images: output.images };
+  }
+  return { value, images: [] };
+};
+
 const addUsage = (
   total: IntelligenceUsage,
   next: ProviderTurn["usage"]
@@ -156,19 +193,23 @@ const invoke = async (
       body: JSON.stringify({
         model: state.model,
         messages,
-        tools: input.tools.map((tool) => ({
-          type: "function",
-          function: {
-            name: tool.name,
-            description: tool.description,
-            parameters: tool.inputSchema
-          }
-        })),
-        tool_choice:
-          firstTool === undefined
-            ? "auto"
-            : { type: "function", function: { name: firstTool } },
-        parallel_tool_calls: false,
+        ...(input.tools.length === 0
+          ? {}
+          : {
+              tools: input.tools.map((tool) => ({
+                type: "function",
+                function: {
+                  name: tool.name,
+                  description: tool.description,
+                  parameters: tool.inputSchema
+                }
+              })),
+              tool_choice:
+                firstTool === undefined
+                  ? "auto"
+                  : { type: "function", function: { name: firstTool } },
+              parallel_tool_calls: false
+            }),
         max_tokens: state.maxOutputTokens,
         reasoning: { effort: state.reasoningEffort },
         ...(input.output === undefined
@@ -217,7 +258,8 @@ export const runAgent = async <Value = string>(
   state: IntelligenceState,
   input: IntelligenceInput<Value>
 ): Promise<IntelligenceResult<Value>> => {
-  if (!input.system.trim() || !input.user.trim()) {
+  const userText = typeof input.user === "string" ? input.user : input.user.text;
+  if (!input.system.trim() || !userText.trim()) {
     throw new IntelligenceServiceError("Intelligence prompts must not be blank");
   }
   const tools = new Map(input.tools.map((tool) => [tool.name, tool]));
@@ -233,7 +275,7 @@ export const runAgent = async <Value = string>(
 
   const messages: WireMessage[] = [
     { role: "system", content: input.system },
-    { role: "user", content: input.user }
+    { role: "user", content: userContent(input.user) }
   ];
   const calls: IntelligenceToolCall[] = [];
   let usage: IntelligenceUsage = {
@@ -280,6 +322,7 @@ export const runAgent = async <Value = string>(
       const parsed = parsedInput(call);
       const tool = tools.get(call.function.name);
       let output: unknown;
+      let images: readonly IntelligenceImage[] = [];
       let ok = false;
       if (!parsed.ok) {
         output = { ok: false, error: parsed.error };
@@ -287,7 +330,9 @@ export const runAgent = async <Value = string>(
         output = { ok: false, error: `Unknown tool '${call.function.name}'` };
       } else {
         try {
-          output = { ok: true, value: await tool.execute(parsed.value) };
+          const executed = toolOutput(await tool.execute(parsed.value));
+          output = { ok: true, value: executed.value };
+          images = executed.images;
           ok = true;
         } catch (error) {
           output = { ok: false, error: safeError(error) };
@@ -300,6 +345,18 @@ export const runAgent = async <Value = string>(
         ok
       });
       messages.push({ role: "tool", tool_call_id: call.id, content: serialize(output) });
+      if (images.length > 0) {
+        messages.push({
+          role: "user",
+          content: [
+            { type: "text", text: `Original visual content returned by ${call.function.name} (${call.id}).` },
+            ...images.map((image) => ({
+              type: "image_url" as const,
+              image_url: { url: imageUrl(image) }
+            }))
+          ]
+        });
+      }
     }
   }
 

@@ -13,6 +13,11 @@ representation:
   store:
     directory: data
 
+  # Content-addressed native bytes used by material profilers/readers. A future
+  # uploaded-object-store adapter replaces this model port without API changes.
+  materials:
+    directory: data/materials
+
   domains:
     agents: [content, core]
     collaboration: [core]
@@ -23,7 +28,7 @@ representation:
     external: [core]
     formulas: [content, core]
     investigation: [core]
-    semantic: [content, core, documents, slide-decks]
+    semantic: [content, core, documents, external, slide-decks, spreadsheets]
     slide-decks: [content, core]
     spreadsheets: [content, core, formulas]
     templates: [content, core, documents, slide-decks, spreadsheets]

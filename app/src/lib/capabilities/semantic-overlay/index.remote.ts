@@ -6,6 +6,7 @@ import { syncSemanticResource as syncSemanticResourceProcedure } from "$capabili
 import { processSemanticSyncQueue as processSemanticSyncQueueProcedure } from "$capabilities/semantic-overlay/api/process-semantic-sync-queue/process-semantic-sync-queue";
 import { backfillSemanticOverlay as backfillSemanticOverlayProcedure } from "$capabilities/semantic-overlay/api/backfill-semantic-overlay/backfill-semantic-overlay";
 import { enqueueSemanticSync as enqueueSemanticSyncProcedure } from "$capabilities/semantic-overlay/api/enqueue-semantic-sync/enqueue-semantic-sync";
+import { querySemanticMaterials as querySemanticMaterialsProcedure } from "$capabilities/semantic-overlay/api/query-semantic-materials/query-semantic-materials";
 
 export const querySemanticOverlay = query("unchecked", querySemanticOverlayProcedure);
 export const rebuildSemanticIndex = command("unchecked", rebuildSemanticIndexProcedure);
@@ -14,6 +15,7 @@ export const syncSemanticResource = command("unchecked", syncSemanticResourcePro
 export const processSemanticSyncQueue = command("unchecked", processSemanticSyncQueueProcedure);
 export const backfillSemanticOverlay = command("unchecked", backfillSemanticOverlayProcedure);
 export const enqueueSemanticSync = command("unchecked", enqueueSemanticSyncProcedure);
+export const querySemanticMaterials = query("unchecked", querySemanticMaterialsProcedure);
 
 export type {
   QuerySemanticOverlayInput,
@@ -41,3 +43,7 @@ export type {
   EnqueueSemanticSyncInput,
   EnqueueSemanticSyncResult
 } from "$capabilities/semantic-overlay/types/enqueue-semantic-sync";
+export type {
+  QuerySemanticMaterialsInput,
+  QuerySemanticMaterialsResult
+} from "$capabilities/semantic-overlay/types/query-semantic-materials";

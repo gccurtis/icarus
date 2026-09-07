@@ -6,6 +6,8 @@ import { rowsOf } from "$capabilities/semantic-overlay/api/shared/rows";
 import { processSemanticSyncQueueFor } from "$capabilities/semantic-overlay/api/shared/queue-processor";
 import { validateBackfillSemanticOverlay } from "$capabilities/semantic-overlay/api/backfill-semantic-overlay/validate-backfill-semantic-overlay";
 import type { BackfillSemanticOverlayResult } from "$capabilities/semantic-overlay/types/semantic-sync-queue";
+import { enqueueMaterialSyncFor } from "$capabilities/semantic-overlay/api/shared/material-queue";
+import { fileSubkindFor } from "$representation/data/behavior/external/file";
 
 /** Development/migration entry point: coalesce every leader revision, then drain a batch. */
 export const backfillSemanticOverlay = async (
@@ -27,15 +29,40 @@ export const backfillSemanticOverlay = async (
       .map((row) => ({
         ref: { kind: "slides", id: row.resourceId } as const,
         revision: row.revision
+      })),
+    ...rowsOf(model.store, "spreadsheetSnapshots")
+      .filter((row) => row.projectId === projectId && row.role === "leader")
+      .map((row) => ({
+        ref: { kind: "spreadsheet", id: row.resourceId } as const,
+        revision: row.revision
+      })),
+    ...rowsOf(model.store, "externalFiles")
+      .filter((row) => row.projectId === projectId)
+      .map((row) => ({
+        ref: {
+          kind: `externalFile::${row.subkind ?? fileSubkindFor(row.mediaType, row.name)}`,
+          id: row._id
+        },
+        revision: 0
       }))
   ];
 
   for (const resource of refs) {
-    enqueueSemanticSyncFor(model, projectId, resource.ref, resource.revision, asked.force);
+    if (
+      resource.ref.kind === "document" ||
+      resource.ref.kind === "slides" ||
+      resource.ref.kind === "externalFile::text"
+    ) {
+      enqueueSemanticSyncFor(model, projectId, resource.ref, resource.revision, asked.force);
+    }
+    enqueueMaterialSyncFor(model, projectId, resource.ref, resource.revision, asked.force);
   }
   return {
     discovered: refs.length,
     queued: rowsOf(model.store, "semanticSyncJobs").filter(
+      (row) => row.projectId === projectId && row.state === "queued"
+    ).length,
+    materialQueued: rowsOf(model.store, "semanticMaterialJobs").filter(
       (row) => row.projectId === projectId && row.state === "queued"
     ).length,
     queue: await processSemanticSyncQueueFor(model, projectId, asked.limit)

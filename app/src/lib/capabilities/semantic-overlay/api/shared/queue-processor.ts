@@ -7,6 +7,7 @@ import type {
   ProcessSemanticSyncQueueResult,
   ProcessedSemanticSyncJob
 } from "$capabilities/semantic-overlay/types/semantic-sync-queue";
+import { processSemanticMaterialQueueFor } from "$capabilities/semantic-overlay/api/shared/material-queue-processor";
 
 const safeFailure = (error: unknown): string =>
   (error instanceof Error ? error.message : "Semantic resource sync failed")
@@ -77,6 +78,7 @@ export const processSemanticSyncQueueFor = async (
   const remaining = rowsOf(model.store, "semanticSyncJobs").filter(
     (row) => row.projectId === projectId && row.state === "queued"
   ).length;
+  const materials = await processSemanticMaterialQueueFor(model, projectId, limit, ref);
   model.observability.logger.info("semanticOverlay.syncQueueProcessed", {
     projectId,
     claimed: claimed.length,
@@ -84,5 +86,5 @@ export const processSemanticSyncQueueFor = async (
     failed: processed.filter((entry) => entry.error !== undefined).length,
     remaining
   });
-  return { processed, remaining };
+  return { processed, remaining, materials };
 };

@@ -1,5 +1,24 @@
 export type JsonSchema = Readonly<Record<string, unknown>>;
 
+export type IntelligenceImage =
+  | { readonly kind: "url"; readonly url: string }
+  | { readonly kind: "bytes"; readonly base64: string; readonly mediaType: string };
+
+export type IntelligenceUserInput =
+  | string
+  | { readonly text: string; readonly images: readonly IntelligenceImage[] };
+
+export type IntelligenceToolOutput = {
+  readonly kind: "intelligenceToolOutput";
+  readonly value: unknown;
+  readonly images: readonly IntelligenceImage[];
+};
+
+export const intelligenceToolOutput = (
+  value: unknown,
+  images: readonly IntelligenceImage[] = []
+): IntelligenceToolOutput => ({ kind: "intelligenceToolOutput", value, images });
+
 /** A function the model may ask the application to execute. */
 export type IntelligenceTool = {
   readonly name: string;
@@ -18,7 +37,7 @@ export type IntelligenceStructuredOutput<Value> = {
 
 export type IntelligenceInput<Value = string> = {
   readonly system: string;
-  readonly user: string;
+  readonly user: IntelligenceUserInput;
   readonly tools: readonly IntelligenceTool[];
   /** Forces one named tool on the first provider turn; later turns remain automatic. */
   readonly firstTool?: string;

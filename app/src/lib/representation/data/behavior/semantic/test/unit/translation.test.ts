@@ -190,4 +190,21 @@ describe("provider-free translation boundary", () => {
     expect(result.objects.map((object) => object.span)).toEqual(prepared.spans);
     expect(result.objects.every((object) => object.vector.length === 2)).toBe(true);
   });
+
+  it("splits otherwise continuous semantic spans at out-of-band slide boundaries", () => {
+    const input: SemanticSourceInput = {
+      ...source("Title\n\nFirst\n\nSecond"),
+      hardBoundaries: [5, 12]
+    };
+    const prepared = prepareTranslation(input, {
+      labels: ["Pass", "age", ":", input.text],
+      vectors: [[0, 0], [0, 0], [0, 0], [1, 0]]
+    }, configuration({ maxTokens: 320, changeThreshold: 2 }));
+
+    expect(prepared.spans).toEqual([
+      { from: 0, to: 5, text: "Title" },
+      { from: 5, to: 12, text: "\n\nFirst" },
+      { from: 12, to: 20, text: "\n\nSecond" }
+    ]);
+  });
 });

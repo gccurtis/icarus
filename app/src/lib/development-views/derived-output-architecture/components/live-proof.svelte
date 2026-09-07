@@ -260,8 +260,13 @@
           <h3>Evidence copied by value</h3>
           {#each result.evidence as citation}
             <div>
-              <span>{citation.source.ref.kind} · rev {citation.source.revision}{citation.locators?.length ? ` · ${citation.locators.map((entry) => entry.locator.kind).join(" + ")}` : ""}</span>
-              <p>{citation.span.text}</p>
+              {#if "span" in citation}
+                <span>{citation.source.ref.kind} · rev {citation.source.revision}{citation.locators?.length ? ` · ${citation.locators.map((entry) => entry.locator.kind).join(" + ")}` : ""}</span>
+                <p>{citation.span.text}</p>
+              {:else}
+                <span>{citation.material.kind} · {citation.evidenceKind}</span>
+                <p>{citation.evidenceKind === "descriptor" ? citation.text : JSON.stringify(citation.value)}</p>
+              {/if}
               <small>{citation.selections.map((selection) => `${selection.evidenceId} — ${selection.use}`).join(" · ")}</small>
             </div>
           {/each}

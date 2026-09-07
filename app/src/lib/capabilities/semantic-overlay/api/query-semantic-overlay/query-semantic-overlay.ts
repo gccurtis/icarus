@@ -1,11 +1,13 @@
 import { requireScope } from "$runtime/server/scope.server";
 import { serverModel } from "$runtime/server/start.server";
+import type { TableRow } from "$model/server/store/index.server";
 import { searchRecursiveIndex } from "$representation/data/behavior/semantic/query";
 import { resourceInScope } from "$representation/data/behavior/semantic/scope";
 import type { Id } from "$representation/data/types/core/id";
 import type { SearchableSemanticObject } from "$representation/data/types/semantic/index";
 import { currentOverlay } from "$capabilities/semantic-overlay/api/shared/overlay";
 import { rowsOf } from "$capabilities/semantic-overlay/api/shared/rows";
+import { semanticSourceIsCurrent } from "$capabilities/semantic-overlay/api/shared/freshness";
 import { validateQuerySemanticOverlay } from "$capabilities/semantic-overlay/api/query-semantic-overlay/validate-query-semantic-overlay";
 import type { QuerySemanticOverlayResult } from "$capabilities/semantic-overlay/types/query-semantic-overlay";
 
@@ -20,9 +22,18 @@ const sameSpace = (
 const sourceKey = (source: {
   ref: { kind: string; id: string };
   revision: number;
+  contentHash?: string;
   encoding: string;
 }): string =>
-  JSON.stringify([source.ref.kind, source.ref.id, source.revision, source.encoding]);
+  JSON.stringify([
+    source.ref.kind,
+    source.ref.id,
+    source.revision,
+    source.contentHash ?? null,
+    source.encoding
+  ]);
+
+type TextObjectRow = Extract<TableRow<"semanticObjects">, { lane: "text" }>;
 
 /** Embeds one query, traverses the current tree, and returns citation-ready values. */
 export const querySemanticOverlay = async (
@@ -42,23 +53,40 @@ export const querySemanticOverlay = async (
     (row) => row.projectId === projectId
   );
   const sources = new Map(sourceRows.map((source) => [source._id, source]));
+  const activeSourceIds = new Set(sourceRows.flatMap((source) =>
+    semanticSourceIsCurrent(model.store, projectId, source)
+      ? [source._id]
+      : []
+  ));
+  const activeObjectIds = new Set<Id<"semanticObjects">>();
   const objects: SearchableSemanticObject[] = rowsOf(model.store, "semanticObjects")
-    .filter((row) => row.projectId === projectId)
-    .map((object) => {
+    .flatMap((row): TextObjectRow[] =>
+      row.projectId === projectId && (row.lane ?? "text") === "text" && "semanticSourceId" in row && "span" in row
+        ? [row as TextObjectRow]
+        : []
+    )
+    .flatMap((object): SearchableSemanticObject[] => {
       const source = sources.get(object.semanticSourceId);
       if (source === undefined) {
-        throw new Error(`semantic object '${object._id}' has no active source`);
+        throw new Error(`semantic object '${object._id}' has no source`);
       }
-      return {
+      if (activeSourceIds.has(source._id)) activeObjectIds.add(object._id);
+      return [{
         id: object._id,
         vector: object.vector,
         span: object.span,
         source: {
           ref: source.ref,
           revision: source.revision,
+          ...(source.contentHash === undefined ? {} : { contentHash: source.contentHash }),
           encoding: source.encoding
-        }
-      };
+        },
+        ...(source.hardBoundaries === undefined || source.hardBoundaries.length === 0
+          ? {}
+          : {
+              partition: `partition:${source.hardBoundaries.filter((boundary) => boundary <= object.span.from).length}`
+            })
+      }];
     });
 
   const namedSets = new Map(
@@ -66,12 +94,13 @@ export const querySemanticOverlay = async (
       .filter((row) => row.projectId === projectId)
       .map((row) => [row._id, row.set])
   );
-  const eligible =
-    asked.scope === undefined
-      ? objects
-      : objects.filter((object) =>
-          resourceInScope(object.source.ref, asked.scope!, (id) => namedSets.get(id))
-        );
+  // Keep every indexed object resolvable for tree integrity, but make stale
+  // resource revisions ineligible before traversal.
+  const eligible = objects.filter((object) => {
+    if (!activeObjectIds.has(object.id)) return false;
+    return asked.scope === undefined ||
+      resourceInScope(object.source.ref, asked.scope, (id) => namedSets.get(id));
+  });
 
   if (eligible.length === 0) {
     return {
@@ -94,6 +123,7 @@ export const querySemanticOverlay = async (
         row.projectId === projectId &&
         row.semanticOverlayId === overlay._id &&
         row.method === "recursiveClustering" &&
+        (row.lane ?? "text") === "text" &&
         row.rootNodeIds.length > 0
     )
     .sort((left, right) => right._creationTime - left._creationTime)[0];

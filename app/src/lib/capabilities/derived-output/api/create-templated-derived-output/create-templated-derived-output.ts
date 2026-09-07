@@ -18,6 +18,7 @@ export const createTemplatedDerivedOutput = async (
     projectId,
     prompt: asked.template.output,
     template: asked.template,
+    ...(asked.origin === undefined ? {} : { origin: asked.origin }),
     ...(asked.scope === undefined ? {} : { scope: asked.scope }),
     queries: [],
     evidence: [],

@@ -21,7 +21,8 @@ export type SemanticLocator =
       elementPath: string[];
       blockPath: string[];
     }
-  | { kind: "slideNote"; slideId: string; blockPath: string[] };
+  | { kind: "slideNote"; slideId: string; blockPath: string[] }
+  | { kind: "externalFileContent" };
 
 /** A half-open range in projected UTF-16 text that can be read from the source again. */
 export type SemanticLocatorSpan = {
@@ -34,21 +35,27 @@ export type SemanticLocatorSpan = {
 export type SemanticSourceInput = {
   ref: ResourceRef;
   revision: number;
+  /** Immutable native-content identity for sources that do not use numeric revisions. */
+  contentHash?: string;
   text: string;
   encoding: SemanticEncoding;
   /** Optional at the algorithm seam; authoritative resource projection always supplies it. */
   locators?: SemanticLocatorSpan[];
+  /** Out-of-band offsets that semantic spans may touch but never cross. */
+  hardBoundaries?: number[];
 };
 
 /** The canonical, revisioned text view consumed by semantic translation. */
 export type SemanticResourceProjection = SemanticSourceInput & {
   encoding: "utf-16";
   locators: SemanticLocatorSpan[];
+  hardBoundaries: number[];
 };
 
 /** A self-contained source reference that remains meaningful after replacement. */
 export type SemanticSourceSnapshot = {
   ref: ResourceRef;
   revision: number;
+  contentHash?: string;
   encoding: SemanticEncoding;
 };

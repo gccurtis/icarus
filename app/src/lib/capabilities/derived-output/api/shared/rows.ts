@@ -2,6 +2,9 @@ import type { StoreModel, TableName, TableRow } from "$model/server/store/index.
 import type { TextBlock } from "$representation/data/types/content/content-block";
 import type { Id } from "$representation/data/types/core/id";
 import type { DerivedOutputFields } from "$representation/data/types/semantic/derived-output";
+import type { SemanticSourceSnapshot } from "$representation/data/types/semantic/source";
+import { fileSubkindFor } from "$representation/data/behavior/external/file";
+import { materialRecordIsCurrent } from "$capabilities/semantic-overlay";
 
 export const rowsOf = <T extends TableName>(
   store: StoreModel,
@@ -61,14 +64,75 @@ export const responseBlock = (
 export const activeSources = (
   store: StoreModel,
   projectId: Id<"projects">
-) =>
-  rowsOf(store, "semanticSources")
-    .filter((source) => source.projectId === projectId)
-    .map((source) => ({
-      ref: source.ref,
-      revision: source.revision,
-      encoding: source.encoding
+) => {
+  const active = new Map<string, SemanticSourceSnapshot>(
+    rowsOf(store, "semanticSources")
+      .filter((source) => source.projectId === projectId)
+      .map((source) => [`${source.ref.kind}\u0000${source.ref.id}`, {
+        ref: source.ref,
+        revision: source.revision,
+        ...(source.contentHash === undefined ? {} : { contentHash: source.contentHash }),
+        encoding: source.encoding
+      }] as const)
+  );
+  const documents = new Set(
+    rowsOf(store, "documents")
+      .filter((row) => row.projectId === projectId)
+      .map((row) => row._id)
+  );
+  for (const snapshot of rowsOf(store, "documentSnapshots")) {
+    if (snapshot.projectId !== projectId || snapshot.role !== "leader" || !documents.has(snapshot.resourceId)) continue;
+    const ref = { kind: "document", id: snapshot.resourceId };
+    active.set(`${ref.kind}\u0000${ref.id}`, { ref, revision: snapshot.revision, encoding: "utf-16" });
+  }
+  const decks = new Set(
+    rowsOf(store, "slideDecks")
+      .filter((row) => row.projectId === projectId)
+      .map((row) => row._id)
+  );
+  for (const snapshot of rowsOf(store, "slideDeckSnapshots")) {
+    if (snapshot.projectId !== projectId || snapshot.role !== "leader" || !decks.has(snapshot.resourceId)) continue;
+    const ref = { kind: "slides", id: snapshot.resourceId };
+    active.set(`${ref.kind}\u0000${ref.id}`, { ref, revision: snapshot.revision, encoding: "utf-16" });
+  }
+  for (const file of rowsOf(store, "externalFiles")) {
+    if (file.projectId !== projectId) continue;
+    const subkind = file.subkind ?? fileSubkindFor(file.mediaType, file.name);
+    if (subkind !== "text") continue;
+    const ref = { kind: "externalFile::text", id: file._id };
+    active.set(`${ref.kind}\u0000${ref.id}`, {
+      ref,
+      revision: 0,
+      contentHash: file.hash,
+      encoding: "utf-16"
+    });
+  }
+  return [...active.values()];
+};
+
+export const activeMaterials = (
+  store: StoreModel,
+  projectId: Id<"projects">
+) => {
+  const placements = rowsOf(store, "semanticMaterialPlacements").filter(
+    (placement) => placement.projectId === projectId
+  );
+  return rowsOf(store, "semanticMaterials")
+    .filter((material) =>
+      material.projectId === projectId &&
+      material.state === "ready" &&
+      materialRecordIsCurrent(store, projectId, material, placements)
+    )
+    .map((material) => ({
+    materialId: material._id,
+    kind: material.kind,
+    name: material.name,
+    source: material.source,
+    profileHash: material.profileHash,
+    contextHash: material.contextHash,
+    revisionKey: material.revisionKey
     }));
+};
 
 export const currentGeneration = (
   store: StoreModel,

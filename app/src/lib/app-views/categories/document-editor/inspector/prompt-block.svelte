@@ -80,7 +80,7 @@
   const create = async () => {
     const currentRuntime = runtime;
     const promptText = promptDraft.trim();
-    if (currentRuntime === undefined || promptText.length === 0 || phase !== undefined) return;
+    if (currentRuntime === undefined || documentId === undefined || promptText.length === 0 || phase !== undefined) return;
     const previous = currentPrompt().display;
 
     phase = "creating";
@@ -88,7 +88,10 @@
     let derivedOutputId: Id<"derivedOutputs"> | undefined;
 
     try {
-      const created = await createDerivedOutput({ prompt: promptText });
+      const created = await createDerivedOutput({
+        prompt: promptText,
+        origin: { kind: "document", id: documentId }
+      });
       derivedOutputId = created._id;
       const seeded =
         previous.length === 0
@@ -113,7 +116,9 @@
       phase = "indexing";
       const queue = await processSemanticSyncQueue({ limit: 50 });
       const failed = queue.processed.find((job) => job.error !== undefined);
+      const failedMaterial = queue.materials.processed.find((job) => job.error !== undefined);
       if (failed?.error !== undefined) throw new Error(failed.error);
+      if (failedMaterial?.error !== undefined) throw new Error(failedMaterial.error);
 
       phase = "generating";
       const refreshed = await refreshDerivedOutput({ derivedOutputId: created._id });

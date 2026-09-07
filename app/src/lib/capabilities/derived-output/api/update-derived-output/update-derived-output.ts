@@ -32,9 +32,10 @@ export const updateDerivedOutput = async (input: unknown): Promise<UpdateDerived
     throw new Error("A generating derived output cannot be edited");
   }
 
+  const nextScope = asked.scope ?? output.scope;
   const sameDefinition =
     output.prompt === asked.prompt &&
-    JSON.stringify(output.scope) === JSON.stringify(asked.scope);
+    JSON.stringify(output.scope) === JSON.stringify(nextScope);
   const responseChanged =
     asked.lastResponse !== undefined &&
     (asked.lastResponse === null
@@ -51,7 +52,7 @@ export const updateDerivedOutput = async (input: unknown): Promise<UpdateDerived
 
   return writeOutput(model.store, output, {
     prompt: asked.prompt,
-    scope: asked.scope,
+    scope: nextScope,
     ...(!responseChanged
       ? {}
       : {

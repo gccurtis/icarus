@@ -31,7 +31,7 @@
   }>;
 
   type Authority = "navigation" | "context" | "evidence";
-  type Status = "live" | "target";
+  type Status = "live";
   type Tool = {
     id: string;
     name: string;
@@ -52,30 +52,25 @@
       name: "find_resources",
       group: "discover",
       authority: "navigation",
-      status: "target",
+      status: "live",
       icon: FileSearch,
       summary: "Locate project resources without reading their factual content.",
       when: "The task names a resource ambiguously or needs a bounded project inventory.",
       input: `{
   query?: string;
-  kinds?: ResourceKind[];
-  cursor?: string;
-  limit?: number;
+  kinds?: string[];       // max 20
+  cursor?: number;        // default 0
+  limit?: number;         // default 50, max 100
 }`,
       output: `{
-  resources: [{
-    resourceHandle: string;
-    kind: ResourceKind;
-    title: string;
-    revision: number;
-  }];
-  nextCursor?: string;
+  items: [{ ref: { kind, id }, name: string }];
+  nextCursor: number | null;
   // no evidenceId
 }`,
       rules: [
         "Project scope and Resource Set are injected by the application.",
         "Metadata may guide the next call but may not support a factual claim.",
-        "A resourceHandle is authority to navigate within scope, not evidence."
+        "A returned ref is authority to navigate within scope, not evidence."
       ]
     },
     {
@@ -96,13 +91,14 @@
     evidenceId: string;
     source: { ref, revision, encoding };
     span: { from, to, text };
-    locators?: ResourceLocatorSpan[];
-    resourceHandle: string;
+    locators?: SemanticLocatorSpan[];
+    partition?: string;
     score: number;
+    overlayGeneration: number;
   }];
 }`,
       rules: [
-        "This is the only live query tool and it searches the exact-text Semantic Overlay lane.",
+        "This is the only exact-text query tool; retrieve_materials owns the separate material lane.",
         "Every returned hit is already exact, citable text and receives an evidence ID.",
         "The hit says where the text lives; it does not preload a resource inventory."
       ]
@@ -112,7 +108,7 @@
       name: "retrieve_materials",
       group: "discover",
       authority: "evidence",
-      status: "target",
+      status: "live",
       icon: Sparkles,
       summary: "Search interpreted descriptions of tables, CSV data, charts, images, and code.",
       when: "The question asks whether a relevant non-prose material exists or where to inspect it.",
@@ -130,16 +126,17 @@
     name: string;
     profile: MaterialProfileDigest;
     description?: MaterialDescription;
-    matchedFacets: MaterialFacet[];
+    matchedFacets: MaterialFacetKind[];
     source: MaterialSourceSnapshot;
-    freshness: "current";
+    placement?: MaterialPlacementSnapshot;
     score: number;
   }];
 }`,
       rules: [
         "Searches a separate material index; ordinary retrieve continues to return exact text only.",
         "A hit may support a broad relevance claim, but exact values or depicted details require the matching native read_* tool.",
-        "Generated summary, deterministic profile, user description, and native visual vector keep distinct provenance."
+        "Generated summary, deterministic profile, user description, and native visual vector keep distinct provenance.",
+        "For shared assets, authored/generated facets require every contributor in the Resource Set; safe asset facets need one in-scope source or placement."
       ]
     },
     {
@@ -147,7 +144,7 @@
       name: "read_selection",
       group: "traverse",
       authority: "evidence",
-      status: "target",
+      status: "live",
       icon: MousePointer2,
       summary: "Resolve the user's current selection as authoritative evidence.",
       when: "The run envelope says that a selection exists; the agent calls this first.",
@@ -155,13 +152,10 @@
   // no model-authored IDs or ranges
 }`,
       output: `{
-  selection: null | {
-    evidenceId: string;
-    kind: "text";
-    source: { ref, revision, encoding };
-    span: { from, to, text };
-    locator: ResourceLocator;
-  };
+  evidenceId: string;
+  source: { ref, revision, contentHash? };
+  span: { from, to, text };
+  locators: SemanticLocatorSpan[];
 }`,
       rules: [
         "The application resolves selection state against the current authoritative resource.",
@@ -174,30 +168,32 @@
       name: "list_document_blocks",
       group: "traverse",
       authority: "navigation",
-      status: "target",
+      status: "live",
       icon: ListTree,
       summary: "Traverse document order through bounded block handles.",
       when: "The agent needs neighboring blocks, headers, footers, or a document outline.",
       input: `{
-  resourceHandle: string;
-  area?: "body" | "header" | "footer";
-  cursor?: string;
-  limit?: number;
+  resourceId: string;
+  area?: "body" | "header" | "firstPageHeader" |
+         "footer" | "firstPageFooter";
+  cursor?: number;
+  limit?: number; // max 100
 }`,
       output: `{
-  blocks: [{
-    blockHandle: string;
-    kind: ContentKind;
-    order: number;
-    textRange?: { from, to };
-    childCount?: number;
+  area: DocumentArea;
+  revision: number;
+  items: [{
+    rowId: string;
+    blockPath: string[];
+    type: ContentKind;
+    ranges: { from, to }[];
   }];
-  nextCursor?: string;
+  nextCursor: number | null;
   // no factual payload, no evidenceId
 }`,
       rules: [
-        "Returns topology and handles, not block text or raw represented rows.",
-        "The agent follows a handle with the matching read_* tool.",
+        "Returns recursive block paths and exact projection ranges, not block text or raw represented rows.",
+        "The agent follows a range with read_text or discovers a material handle separately.",
         "Pagination prevents an accidental whole-document JSON dump."
       ]
     },
@@ -206,31 +202,24 @@
       name: "list_deck_slides",
       group: "traverse",
       authority: "navigation",
-      status: "target",
+      status: "live",
       icon: Presentation,
       summary: "Traverse slide order and obtain neighboring slide handles.",
       when: "The agent needs the previous, current, or next slide around a known locator.",
       input: `{
-  resourceHandle: string;
-  aroundSlideId?: string;
-  before?: number;
-  after?: number;
-  cursor?: string;
+  resourceId: string;
+  cursor?: number;
+  limit?: number; // max 100
 }`,
       output: `{
-  slides: [{
-    slideHandle: string;
-    slideId: string;
-    order: number;
-    hidden: boolean;
-  }];
-  nextCursor?: string;
+  items: [{ slideId: string, position: number }];
+  nextCursor: number | null;
   // no evidenceId
 }`,
       rules: [
-        "Order and opaque handles orient the agent; slide contents remain unread.",
-        "A retrieved slide locator can seed aroundSlideId without a title token in the index.",
-        "Hidden-slide policy is application-owned and explicit."
+        "Order and stable slide IDs orient the agent; slide contents remain unread.",
+        "A retrieved locator supplies the slide ID without a synthetic title token in the index.",
+        "Hidden slides are omitted from this live traversal."
       ]
     },
     {
@@ -238,29 +227,35 @@
       name: "inspect_slide",
       group: "traverse",
       authority: "context",
-      status: "target",
+      status: "live",
       icon: PanelsTopLeft,
       summary: "List the typed parts of one slide and map spans to shapes.",
       when: "Retrieved text suggests that visual, tabular, or chart context may matter.",
       input: `{
-  slideHandle: string;
+  resourceId: string;
+  slideId: string;
 }`,
       output: `{
   slideId: string;
+  revision: number;
   items: [{
-    contentHandle: string;
-    shapeId: string;
-    kind: "text" | "table" | "chart" | "image";
-    bounds: { x, y, width, height };
-    textRange?: { from, to };
+    id: string;
+    elementPath: string[];
+    type: SlideContentKind;
+    frame: { x, y, width, height };
+    ranges: { from, to, blockPath? }[];
+    materials: [{ materialHandle, kind, name, locator }];
   }];
-  visualHandle: string;
+  backgroundMaterials: MaterialEntry[];
+  notes: [{ blockPath, type, ranges }];
+  view: { tool: "view_slide", kind: "schematic", citable: false };
   // no evidenceId
 }`,
       rules: [
-        "The manifest exposes kinds, placement, ranges, and handles—not factual values.",
-        "A contentHandle routes to read_text, read_table, read_chart, or read_image.",
-        "The visualHandle routes to view_slide for orientation only."
+        "The manifest exposes kinds, placement, exact ranges, and every current material handle—not factual values.",
+        "Nested group frames are composed into absolute normalized slide coordinates before they are returned.",
+        "Ranges route to read_text; material handles route to read_table, read_chart, or read_image.",
+        "resourceId plus slideId routes to the non-citable schematic view."
       ]
     },
     {
@@ -268,30 +263,28 @@
       name: "inspect_dataset",
       group: "traverse",
       authority: "context",
-      status: "target",
+      status: "live",
       icon: FileSpreadsheet,
       summary: "Expose a bounded dataset outline without returning its factual rows.",
       when: "A material hit identifies a CSV, spreadsheet, or large table and the agent must choose a native selection.",
       input: `{
   materialHandle: string;
-  cursor?: string;
-  limit?: number;
 }`,
       output: `{
-  parts: [{
-    partHandle: string;
-    kind: "sheet" | "table" | "partition";
-    name: string;
-    rowRange?: { from, to };
-    columns: [{ id: string; name: string; inferredType: string }];
-  }];
-  nextCursor?: string;
+  name: string;
+  kind: "table" | "csv";
+  shape: { rows, columns, headers };
+  columns: [{ name, inferredType, nullCount, distinctCount? }];
+  coverage: { sampledRows, truncated };
+  warnings: string[];
+  reader: "read_table" | "read_csv";
+  materialHandle: string;
   // no row values, no evidenceId
 }`,
       rules: [
-        "Returns topology, schema, and handles; native values remain unread.",
-        "A partHandle and bounded row/column request route to read_csv or read_table.",
-        "Large datasets expose deterministic partitions rather than an unlimited outline."
+        "Returns bounded shape, schema, coverage, and warnings; native values remain unread.",
+        "The same attempt-local handle routes to read_csv or read_table.",
+        "Partitioned large-dataset inspection is a named follow-up, not implied by this response."
       ]
     },
     {
@@ -299,32 +292,29 @@
       name: "inspect_code",
       group: "traverse",
       authority: "context",
-      status: "target",
+      status: "live",
       icon: FileCode2,
       summary: "Expose a code file's symbol and range outline without source text.",
       when: "A code material hit identifies a file and the agent must choose the exact implementation to read.",
       input: `{
   materialHandle: string;
-  query?: string;
-  cursor?: string;
-  limit?: number;
 }`,
       output: `{
+  name: string;
   language: string;
+  lines: number;
   symbols: [{
-    symbolHandle: string;
     kind: string;
     name: string;
-    range: { fromLine, toLine };
+    fromLine: number;
+    toLine: number;
   }];
-  parserStatus: "parsed" | "fallback";
-  nextCursor?: string;
   // no source text, no evidenceId
 }`,
       rules: [
-        "A parser-derived outline or explicit fallback is orientation, not evidence.",
-        "The symbolHandle routes to read_code for exact source lines.",
-        "Query, pagination, and file-size limits keep repository navigation bounded."
+        "The bounded-regex outline is orientation, not evidence or AST precision.",
+        "Its line ranges route to read_code for exact source lines.",
+        "Profiles stop at configured byte, line, and symbol limits and report truncation."
       ]
     },
     {
@@ -332,30 +322,28 @@
       name: "view_slide",
       group: "orient",
       authority: "context",
-      status: "target",
+      status: "live",
       icon: Eye,
-      summary: "Render the composite slide so the agent can understand layout.",
+      summary: "Render a schematic slide layout so the agent can understand spatial relationships.",
       when: "Spatial association, grouping, overlap, or visual hierarchy helps interpret evidence.",
       input: `{
-  visualHandle: string;
-  maxWidth?: number;
+  resourceId: string;
+  slideId: string;
 }`,
       output: `{
-  view: {
-    kind: "slide-render";
-    revision: number;
-    mimeType: "image/png";
-    width: number;
-    height: number;
-    content: ImageContent;
+  kind: "intelligenceToolOutput";
+  value: {
+    slideId: string;
+    viewKind: "schematic";
+    supportingContext: true;
   };
-  citable: false;
-  // deliberately no evidenceId
+  images: [{ kind: "bytes", mediaType: "image/svg+xml", base64 }];
 }`,
       rules: [
-        "View means orient: the composite rendering never enters the evidence registry.",
+        "View means orient: the schematic rendering deliberately returns no evidenceId and never enters the evidence registry.",
+        "The live view composes nested groups, rotation, and the normalized deck aspect ratio.",
         "A claim still cites the underlying text, table, chart, or original image.",
-        "The view may guide association but cannot replace a missing authoritative read."
+        "This is not the production slide renderer; that adapter remains explicit follow-up work."
       ]
     },
     {
@@ -363,31 +351,25 @@
       name: "read_text",
       group: "read",
       authority: "evidence",
-      status: "target",
+      status: "live",
       icon: FileText,
       summary: "Read an exact authoritative text range from a resource or content handle.",
       when: "The agent needs a known block, shape, note, or bounded context around a hit.",
       input: `{
-  contentHandle?: string;
-  resourceHandle?: string;
-  range?: { from, to };
-  beforeChars?: number;
-  afterChars?: number;
-  maxChars?: number;
+  kind: string;
+  resourceId: string;
+  from: number;
+  to: number; // maximum 20,000 UTF-16 units
 }`,
       output: `{
-  chunks: [{
-    evidenceId: string;
-    kind: "text";
-    source: { ref, revision, encoding };
-    span: { from, to, text };
-    locators: ResourceLocatorSpan[];
-  }];
-  truncated: boolean;
+  evidenceId: string;
+  source: { ref, revision, contentHash? };
+  span: { from, to, text };
+  locators: SemanticLocatorSpan[];
 }`,
       rules: [
         "Reads the authoritative project resource directly; it never queries the overlay.",
-        "Ranges are exact, bounded, and returned with their source revision.",
+        "Ranges are exact, bounded, returned with revision/hash, and may not cross a slide boundary.",
         "Overlapping or touching selected text citations consolidate by source snapshot."
       ]
     },
@@ -396,30 +378,27 @@
       name: "read_table",
       group: "read",
       authority: "evidence",
-      status: "target",
+      status: "live",
       icon: TableIcon,
       summary: "Read native cells and their row/column relationships.",
       when: "The agent needs values whose meaning depends on table structure.",
       input: `{
-  contentHandle: string;
-  rowRange?: { from, to };
-  columnRange?: { from, to };
-  cursor?: string;
+  materialHandle: string;
+  rowFrom?: number;
+  rowTo?: number;       // exclusive, at most 100 rows
+  columnFrom?: number;
+  columnTo?: number;    // exclusive, at most 50 columns
 }`,
       output: `{
   evidenceId: string;
-  kind: "structured";
-  source: { ref, revision };
-  table: {
-    cells: NativeCell[];
-    selection: CellRange;
-  };
-  nextCursor?: string;
+  rowFrom: number; rowTo: number;
+  columnFrom: number; columnTo: number;
+  rows: string[][];
 }`,
       rules: [
         "The payload preserves native cells instead of flattening relationships into prose.",
         "The source values are exact; the claim drawn from their structure is interpretive.",
-        "Large tables paginate while one evidence record identifies the selected cell range."
+        "Each bounded call stores its exact row/column index selection in one evidence record."
       ]
     },
     {
@@ -427,28 +406,23 @@
       name: "read_chart",
       group: "read",
       authority: "evidence",
-      status: "target",
+      status: "live",
       icon: ChartColumn,
       summary: "Read native chart series, axes, labels, and values.",
       when: "The agent needs what a chart encodes rather than how its pixels happen to look.",
       input: `{
-  contentHandle: string;
-  seriesIds?: string[];
+  materialHandle: string;
+  series?: string[]; // max 50
 }`,
       output: `{
   evidenceId: string;
-  kind: "structured";
-  source: { ref, revision };
-  chart: {
-    chartType: string;
-    axes: NativeAxis[];
-    series: NativeSeries[];
-  };
+  series: string[];
+  spec: NativeChartSpec; // selected series only
 }`,
       rules: [
         "Native chart data is preferred to OCR or vision reconstruction.",
-        "Shape, slide, and chart IDs preserve the context that gives the values meaning.",
-        "The visual slide may help interpretation, but read_chart supplies the evidence."
+        "A requested subset must exist and be isolatable from the native specification.",
+        "The response is capped at 60,000 serialized characters; view_slide remains context only."
       ]
     },
     {
@@ -456,30 +430,28 @@
       name: "read_image",
       group: "read",
       authority: "evidence",
-      status: "target",
+      status: "live",
       icon: Image,
-      summary: "Read the original image asset as visual evidence.",
+      summary: "Read a content-addressed original image asset as visual evidence.",
       when: "The claim concerns what is actually depicted in an image content item.",
       input: `{
-  contentHandle: string;
+  materialHandle: string;
   crop?: { x, y, width, height };
-  maxPixels?: number;
 }`,
       output: `{
-  evidenceId: string;
-  kind: "visual";
-  source: { ref, revision };
-  image: {
-    contentId: string;
+  kind: "intelligenceToolOutput";
+  value: {
+    evidenceId: string;
     assetHash: string;
-    bounds?: Rect;
-    content: ImageContent;
+    mediaType?: string;
+    crop: Rect | null;
   };
+  images: [{ kind: "bytes", base64, mediaType }];
 }`,
       rules: [
-        "The original project image or an exact crop is the durable source—not a generated caption.",
+        "The original project image is the durable source—not a generated caption or mutable URL.",
         "The pixels are authoritative; the factual description inferred from them remains interpretive.",
-        "A visual citation can render as a thumbnail linked back to its resource and content item."
+        "Crop coordinates are validated and bound to evidence; the original raster is currently supplied until server-side cropping lands."
       ]
     },
     {
@@ -487,33 +459,24 @@
       name: "read_csv",
       group: "read",
       authority: "evidence",
-      status: "target",
+      status: "live",
       icon: FileSpreadsheet,
       summary: "Read a bounded native row and column selection from a raw CSV file.",
       when: "The answer needs exact values from a CSV material rather than its semantic descriptor.",
       input: `{
-  partHandle: string;
-  rows: { from: number; to: number };
-  columnIds?: string[];
-  cursor?: string;
+  materialHandle: string;
+  rows: number[];      // explicit data-row indexes, max 100
+  columns: string[];   // header names, max 50
 }`,
       output: `{
   evidenceId: string;
-  kind: "structured";
-  source: { fileId, hash, mediaType };
-  selection: {
-    header: NativeCell[];
-    rows: NativeCell[][];
-    rowRange: { from, to };
-    columnIds: string[];
-  };
-  parseDiagnostics: ParseDiagnostic[];
-  nextCursor?: string;
+  headers: string[];
+  rows: [{ row: number, values: string[] }];
 }`,
       rules: [
         "The immutable file hash and exact native selection anchor the evidence.",
-        "Parsing preserves quoted delimiters, encoding diagnostics, and original row positions.",
-        "Row, column, byte, and response limits are enforced before values reach the model."
+        "The bounded parser preserves quoted delimiters/newlines and reports malformed or truncated profiles.",
+        "Current limits are 5 MB, 20,000 rows, 256 columns, and 200,000 cells before per-read bounds."
       ]
     },
     {
@@ -521,31 +484,26 @@
       name: "read_code",
       group: "read",
       authority: "evidence",
-      status: "target",
+      status: "live",
       icon: FileCode2,
       summary: "Read exact source lines or one known code symbol.",
       when: "The answer makes a claim about implementation, declaration, or behavior in a code file.",
       input: `{
-  symbolHandle?: string;
-  materialHandle?: string;
-  range?: { fromLine: number; toLine: number };
-  beforeLines?: number;
-  afterLines?: number;
+  materialHandle: string;
+  fromLine: number;
+  toLine: number; // inclusive, at most 500 lines
 }`,
       output: `{
-  chunks: [{
-    evidenceId: string;
-    kind: "text";
-    source: { fileId, hash, language };
-    range: { fromLine, toLine };
-    text: string;
-  }];
-  truncated: boolean;
+  evidenceId: string;
+  language: string;
+  fromLine: number;
+  toLine: number;
+  text: string;
 }`,
       rules: [
         "Returns verbatim code from the authoritative file; it never reads a generated summary.",
         "Exact line ranges and immutable file hash survive into the citation record.",
-        "A bounded neighborhood can expand a symbol without exposing the whole repository file."
+        "The caller chooses an inclusive line range from inspect_code's bounded outline."
       ]
     }
   ];
@@ -584,7 +542,7 @@
         { tool: "view_slide", authority: "context", note: "confirm visual association" }
       ],
       evidence: ["text · span 418–502", "structured · chart-02 / series-ready"],
-      context: ["slide manifest", "composite slide rendering"]
+      context: ["slide manifest", "schematic slide view"]
     },
     {
       id: "image",
@@ -598,7 +556,7 @@
         { tool: "view_slide", authority: "context", note: "understand placement" }
       ],
       evidence: ["text · caption span", "visual · image-03 / asset hash"],
-      context: ["shape inventory", "composite slide rendering"]
+      context: ["shape inventory", "schematic slide view"]
     },
     {
       id: "neighbors",
@@ -667,17 +625,20 @@
   );
 
   const DIRECTORY = `representation/data/behavior/semantic/projection/
-├── contract.ts                 ProjectionPart · hard boundaries
+├── contract.ts                 exact + material output
 ├── writer.ts                   one UTF-16 coordinate space
 ├── project-resource.ts         resource-kind dispatcher
+├── shared.ts                   authored labels + ordering
 ├── resources/
 │   ├── document.ts             document traversal only
 │   └── slide-deck.ts           slide + shape traversal only
-└── content/
-    ├── text.ts                 narrative display text
-    ├── formula.ts              authored display text
-    ├── authored-labels.ts      bounded labels + captions
-    └── material-seed.ts        table/chart/image identity`;
+
+representation/data/behavior/semantic/materials/
+├── profile.ts                  table/chart/image
+├── csv.ts                      bounded parser + profile
+├── code.ts                     bounded structural profile
+├── spreadsheet.ts              native sheet inventory
+└── external-file.ts            file-kind adapter`;
 
   const PROJECTION_CONTRACT = `type ProjectedResource = {
   exact: {
@@ -686,7 +647,7 @@
     encoding: "utf-16";
     text: string;
     locators: SemanticLocatorSpan[];
-    hardBoundaries: HardBoundary[];
+    hardBoundaries: number[];
   };
   materials: MaterialSeed[];
 };
@@ -701,7 +662,7 @@
   <title>Resource reading and evidence — Icarus</title>
   <meta
     name="description"
-    content="The proposed resource traversal, specialized read tools, evidence kinds, slide context, and semantic projection seam for Derived Output."
+    content="The implemented resource traversal, specialized read tools, evidence kinds, slide context, and semantic projection seam for Derived Output."
   />
 </svelte:head>
 
@@ -730,7 +691,7 @@
   <main>
     <section class="hero">
       <div class="hero-copy">
-        <div class="eyebrow"><BookOpen size={15} aria-hidden="true" /> TARGET CONTRACT / RESOURCE AUTHORITY</div>
+        <div class="eyebrow"><BookOpen size={15} aria-hidden="true" /> LIVE CONTRACT / RESOURCE AUTHORITY</div>
         <h1><span>Read</span> means cite.</h1>
         <p>
           Give the agent several narrow doors whose names declare their authority. Find, list,
@@ -738,8 +699,8 @@
           and therefore mint evidence IDs—with the evidence kind stating whether it is exact or interpreted.
         </p>
         <div class="hero-status">
-          <span class="status-live">LIVE · retrieve</span>
-          <span class="status-target">TARGET · specialized resource tools</span>
+          <span class="status-live">LIVE · two retrieval lanes</span>
+          <span class="status-live">LIVE · specialized resource tools</span>
         </div>
       </div>
 
@@ -782,7 +743,7 @@
 
       <div class="grammar-note">
         <Check size={17} aria-hidden="true" />
-        <p><strong><code>view_slide</code> replaces “read visual slide.”</strong> The name prevents a composite screenshot from sounding citable. <code>read_image</code> is the evidentiary visual tool because it returns the original content item.</p>
+        <p><strong><code>view_slide</code> replaces “read visual slide.”</strong> Its current schematic SVG is explicitly context, not evidence or a production render. <code>read_image</code> is evidentiary only when it returns content-addressed original pixels.</p>
       </div>
 
       <a class="material-expansion" href="/demo/semantic-overlay/material-layer">
@@ -795,10 +756,10 @@
     <section id="tools" class="section tools-section">
       <header class="section-heading compact-heading">
         <div><span>02 / SPECIALIZED TOOL FIELD</span><h2>The output shape chooses the door.</h2></div>
-        <p>Choose a tool to inspect its bounded target contract. Status is textual; color only reinforces authority and implementation state.</p>
+        <p>Choose a tool to inspect its bounded live contract. Status is textual; color only reinforces authority and implementation state.</p>
       </header>
 
-      <div class="tool-field" role="tablist" aria-label="Proposed resource tools">
+      <div class="tool-field" role="tablist" aria-label="Implemented resource tools">
         {#each GROUPS as group (group.id)}
           <section class="tool-group">
             <header><span>{group.label}</span><small>{group.note}</small></header>
@@ -903,7 +864,7 @@
 
       <div class="slide-lab">
         <div class="slide-column">
-          <div class="view-ribbon"><Eye size={14} aria-hidden="true" /><code>view_slide</code><span>COMPOSITE CONTEXT · NO EVIDENCE ID</span></div>
+      <div class="view-ribbon"><Eye size={14} aria-hidden="true" /><code>view_slide</code><span>SCHEMATIC CONTEXT · NO EVIDENCE ID</span></div>
           <div class="mock-slide" aria-label="Illustrative slide containing text, a chart, and an image">
             <div class="slide-grid" aria-hidden="true"></div>
             <button class:active={activeSpecimenId === "text"} onclick={() => (activeSpecimenId = "text")} class="slide-title">
@@ -938,7 +899,7 @@
             <p>{activeSpecimen.result}</p>
             <div><BookOpen size={15} aria-hidden="true" /> {activeSpecimen.evidence} <ArrowRight size={14} aria-hidden="true" /> evidence ID</div>
           </div>
-          <p class="slide-rule">The slide rendering helps the agent associate these parts. It cannot be selected in the final evidence array.</p>
+          <p class="slide-rule">The schematic helps the agent associate these parts. It is not a production render and cannot be selected in the final evidence array.</p>
         </div>
       </div>
     </section>
@@ -966,12 +927,12 @@
         </article>
         <article class="visual-evidence">
           <header><Image size={20} aria-hidden="true" /><span>VISUAL EVIDENCE</span><small>INTERPRETED</small></header>
-          <div class="visual-swatch"><div class="image-scene" aria-hidden="true"><span></span><i></i><b></b></div><code>asset sha256:9bf…</code></div>
+          <div class="visual-swatch"><div class="image-scene" aria-hidden="true"><span></span><i></i><b></b></div><code>content-addressed sha256:9bf…</code></div>
           <dl><div><dt>stores</dt><dd>source · content ID · asset hash · crop bounds</dd></div><div><dt>reader</dt><dd><code>read_image</code></dd></div></dl>
         </article>
         <article class="context-card">
           <header><Eye size={20} aria-hidden="true" /><span>SUPPORTING CONTEXT</span><small>NOT EVIDENCE</small></header>
-          <p>Slide render, resource order, item manifest, and shape placement.</p>
+          <p>Schematic slide view, resource order, item manifest, and shape placement.</p>
           <dl><div><dt>lifetime</dt><dd>one attempt · optional telemetry</dd></div><div><dt>tools</dt><dd><code>find*</code> · <code>list*</code> · <code>inspect*</code> · <code>view*</code></dd></div></dl>
         </article>
       </div>
@@ -1000,11 +961,11 @@
       </header>
 
       <div class="projection-now">
-        <div><span>CURRENT · LIVE</span><code>representation/data/behavior/semantic/resource-text.ts</code></div>
+        <div><span>CURRENT · LIVE</span><code>representation/data/behavior/semantic/projection/project-resource.ts</code></div>
         <p>
-          One file currently contains document traversal, slide traversal, the shared block walk,
-          and the writer. It already emits no synthetic slide-number labels, excludes Prompt Blocks,
-          indexes image alt/caption text, and walks table cell text.
+          Resource-specific adapters now own document and slide traversal; one writer emits exact
+          text, locators, and hard boundaries while that same walk inventories first-class material.
+          The old resource-text file is only a compatibility facade.
         </p>
       </div>
 
@@ -1016,10 +977,10 @@
         <div class="projection-arrow"><span></span><ArrowRight size={19} aria-hidden="true" /><span></span></div>
         <div class="content-core">
           <header><Layers3 size={20} aria-hidden="true" /><span>SHARED CONTENT ADAPTERS</span></header>
-          <div><code>text.ts</code><small>narrative display</small></div>
-          <div><code>formula.ts</code><small>authored display</small></div>
-          <div><code>authored-labels.ts</code><small>captions + labels</small></div>
-          <div><code>material-seed.ts</code><small>native identity only</small></div>
+          <div><code>shared.ts</code><small>authored labels + ordering</small></div>
+          <div><code>profile.ts</code><small>table / chart / image shape</small></div>
+          <div><code>csv.ts · code.ts</code><small>external native profiles</small></div>
+          <div><code>spreadsheet.ts</code><small>ordered native cells</small></div>
           <p><code>prompt</code> is always excluded from semantic projection.</p>
         </div>
         <div class="projection-arrow"><span></span><ArrowRight size={19} aria-hidden="true" /><span></span></div>
@@ -1032,14 +993,14 @@
       <div class="material-fork">
         <div><Layers3 size={18} aria-hidden="true" /><span>SAME RESOURCE WALK</span><strong>inventory tables · charts · images</strong></div>
         <ArrowRight size={18} aria-hidden="true" />
-        <div><Sparkles size={18} aria-hidden="true" /><span>SEPARATE TARGET</span><strong>SemanticMaterial[]</strong></div>
+        <div><Sparkles size={18} aria-hidden="true" /><span>SEPARATE LIVE LANE</span><strong>SemanticMaterial[]</strong></div>
         <ArrowRight size={18} aria-hidden="true" />
         <a href="/demo/semantic-overlay/material-layer">Open the material pipeline</a>
       </div>
 
       <div class="contract-pair">
-        <article><header><span>TARGET DIRECTORY</span><small>one obvious extension point</small></header><pre><code>{DIRECTORY}</code></pre></article>
-        <article><header><span>TARGET MESSAGE</span><small>structure remains out of band</small></header><pre><code>{PROJECTION_CONTRACT}</code></pre></article>
+        <article><header><span>LIVE DIRECTORY</span><small>one obvious extension point</small></header><pre><code>{DIRECTORY}</code></pre></article>
+        <article><header><span>LIVE MESSAGE</span><small>structure remains out of band</small></header><pre><code>{PROJECTION_CONTRACT}</code></pre></article>
       </div>
 
       <div class="boundary-rule">
@@ -1051,11 +1012,11 @@
     <section class="decision-card">
       <div class="decision-mark"><Check size={27} aria-hidden="true" /></div>
       <div>
-        <span>PROPOSED ALIGNMENT</span>
+        <span>IMPLEMENTED ALIGNMENT</span>
         <h2>Use context to choose. Use evidence to claim.</h2>
         <p>
           Keep retrieval lean. Inspect resource structure only when the question requires it. View
-          the composite slide only to understand relationships. Then read the exact text, native
+          the schematic slide only to understand relationships. Then read the exact text, native
           structure, or original image that the response will cite.
         </p>
       </div>
@@ -1065,7 +1026,7 @@
 
   <footer class="page-footer">
     <span>DERIVED OUTPUT / RESOURCE READING</span>
-    <span>target architecture · no production tool mutation on this page</span>
+    <span>live architecture · authoritative tools with explicit fidelity limits</span>
   </footer>
 </div>
 

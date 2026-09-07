@@ -1,4 +1,4 @@
-import { semanticResourceRef } from "$capabilities/semantic-overlay/api/shared/resource-ref";
+import { semanticIngestibleResourceRef } from "$capabilities/semantic-overlay/api/shared/resource-ref";
 import type { EnqueueSemanticSyncInput } from "$capabilities/semantic-overlay/types/enqueue-semantic-sync";
 
 export const validateEnqueueSemanticSync = (input: unknown): EnqueueSemanticSyncInput => {
@@ -10,5 +10,5 @@ export const validateEnqueueSemanticSync = (input: unknown): EnqueueSemanticSync
   if (unexpected !== undefined) {
     throw new Error(`enqueueSemanticSync input has unexpected field '${unexpected}'`);
   }
-  return { ref: semanticResourceRef(candidate.ref) };
+  return { ref: semanticIngestibleResourceRef(candidate.ref) };
 };

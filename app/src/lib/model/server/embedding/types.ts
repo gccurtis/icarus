@@ -9,6 +9,10 @@ export type EmbeddingResult<Value> = {
   readonly usage: ProviderUsage;
 };
 
+export type ImageEmbeddingInput =
+  | { readonly kind: "url"; readonly url: string }
+  | { readonly kind: "bytes"; readonly base64: string; readonly mediaType?: string };
+
 /** The process-wide embedding port. Credentials never cross this boundary. */
 export interface EmbeddingModel {
   readonly space: EmbeddingSpace;
@@ -17,6 +21,10 @@ export interface EmbeddingModel {
   windowedPassages(texts: readonly string[]): Promise<EmbeddingResult<number[][]>>;
   /** One non-contextual vector for one complete passage. */
   passage(text: string): Promise<EmbeddingResult<number[]>>;
+  /** Independent non-contextual vectors for unrelated complete passages. */
+  passages(texts: readonly string[]): Promise<EmbeddingResult<number[][]>>;
+  /** One original image in the same retrieval.passage vector space as text. */
+  image(input: ImageEmbeddingInput): Promise<EmbeddingResult<number[]>>;
   query(text: string): Promise<EmbeddingResult<number[]>>;
 }
 

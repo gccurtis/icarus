@@ -1,9 +1,9 @@
 import { requireScope } from "$runtime/server/scope.server";
 import { serverModel } from "$runtime/server/start.server";
-import { changedSemanticSources } from "$representation/data/behavior/semantic/citation";
+import { changedSemanticMaterials, changedSemanticSources } from "$representation/data/behavior/semantic/citation";
 import type { Id } from "$representation/data/types/core/id";
 import type { DerivedOutput } from "$representation/data/types/semantic/derived-output";
-import { querySemanticOverlay } from "$capabilities/semantic-overlay/index.remote";
+import { querySemanticMaterials, querySemanticOverlay } from "$capabilities/semantic-overlay/index.remote";
 
 import type {
   DerivedSynthesisUsage,
@@ -12,6 +12,7 @@ import type {
 import { validateRefreshDerivedOutput } from "$capabilities/derived-output/api/refresh-derived-output/validate-refresh-derived-output";
 import {
   activeSources,
+  activeMaterials,
   currentGeneration,
   outputOf,
   responseBlock,
@@ -71,7 +72,8 @@ const sameDefinition = (left: DerivedOutput, right: DerivedOutput): boolean =>
   left.updatedAt === right.updatedAt &&
   left.prompt === right.prompt &&
   JSON.stringify(left.template) === JSON.stringify(right.template) &&
-  JSON.stringify(left.scope) === JSON.stringify(right.scope);
+  JSON.stringify(left.scope) === JSON.stringify(right.scope) &&
+  JSON.stringify(left.origin) === JSON.stringify(right.origin);
 
 const safeFailure = (error: unknown): string =>
   (error instanceof Error ? error.message : "Derived output refresh failed")
@@ -89,6 +91,34 @@ export const refreshDerivedOutput = async (input: unknown): Promise<RefreshDeriv
   if (original === undefined) return null;
   if (original.state === "generating") {
     throw new Error("This derived output is already generating");
+  }
+
+  if (original.state === "fresh" && asked.selection === undefined) {
+    const changedSources = changedSemanticSources(
+      original.evidence,
+      activeSources(model.store, projectId)
+    );
+    const changedMaterials = changedSemanticMaterials(
+      original.evidence,
+      activeMaterials(model.store, projectId)
+    );
+    const generation = currentGeneration(model.store, projectId);
+    const negativeResultChanged =
+      original.evidence.length === 0 &&
+      original.lastGeneration !== generation;
+    if (
+      changedSources.length === 0 &&
+      changedMaterials.length === 0 &&
+      !negativeResultChanged
+    ) {
+      return {
+        outcome: "current",
+        output: original,
+        attempts: 0,
+        toolCalls: 0,
+        usage: emptyUsage()
+      };
+    }
   }
 
   const maxRetries = configuredInteger("intelligence.agent.maxSourceRetries", {
@@ -114,7 +144,12 @@ export const refreshDerivedOutput = async (input: unknown): Promise<RefreshDeriv
         output: original,
         intelligence: model.intelligence,
         defaultTopK,
-        query: async (query) => await querySemanticOverlay(query)
+        query: async (query) => await querySemanticOverlay(query),
+        reading: {
+          model,
+          ...(asked.selection === undefined ? {} : { selection: asked.selection }),
+          queryMaterials: async (query) => await querySemanticMaterials(query)
+        }
       });
       usage = addAttemptUsage(usage, attempt);
       toolCalls += attempt.toolCalls;
@@ -134,12 +169,16 @@ export const refreshDerivedOutput = async (input: unknown): Promise<RefreshDeriv
         attempt.evidence,
         activeSources(model.store, projectId)
       );
+      const changedMaterials = changedSemanticMaterials(
+        attempt.evidence,
+        activeMaterials(model.store, projectId)
+      );
       const generation = currentGeneration(model.store, projectId);
       const unstableNegativeResult =
         attempt.evidence.length === 0 &&
         (attempt.overlayGenerations.length === 0 ||
           attempt.overlayGenerations.some((observed) => observed !== generation));
-      if (changed.length > 0 || unstableNegativeResult) {
+      if (changed.length > 0 || changedMaterials.length > 0 || unstableNegativeResult) {
         if (attempts <= maxRetries) continue;
         const failed = writeOutput(model.store, current, {
           state: "error",
