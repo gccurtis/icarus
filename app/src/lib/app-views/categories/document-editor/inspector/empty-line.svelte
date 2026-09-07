@@ -3,11 +3,8 @@
     Panel,
     PanelBodyStyle,
     PanelCrumbs,
-    PanelField,
-    PanelFields,
     PanelInlineStyle,
     PanelNote,
-    PanelSection,
     PanelSelect
   } from "$authored-components/panel";
   import {
@@ -15,7 +12,6 @@
     blockTypeOps,
     formatOps,
     kindOf,
-    placementOf,
     resolvedOf,
     type BlockKind,
     type HorizontalAlignment
@@ -23,7 +19,6 @@
   import { FILLS, INKS, orClear, orNone } from "$app-views/categories/document-editor/procedures/colours";
   import { addressOf } from "$app-views/categories/document-editor/procedures/inspecting";
   import { STYLES, blockOf, type MarkStyle } from "$app-views/categories/document-editor/procedures/marks";
-  import { DEFAULT_PAGE_SETUP, layoutMetrics } from "$app-views/categories/document-editor/procedures/page-setup";
   import {
     applyStyleOps,
     ensureStylesOps,
@@ -50,10 +45,6 @@
 
   const set = $derived(styleSetOf(body));
   const resolved = $derived(body === undefined || block === undefined ? undefined : resolvedOf(body, block));
-  const metrics = $derived(layoutMetrics(body?.pageSetup ?? DEFAULT_PAGE_SETUP));
-  const placement = $derived(
-    body === undefined || block === undefined ? undefined : placementOf(body, block.id, metrics)
-  );
 
   let pendingStyles = $state<string[]>([]);
   let pendingInk = $state("");
@@ -184,15 +175,6 @@
         onalignment={setAlign}
         onchange={(field, next) => setFormat({ [field]: next })}
       />
-
-      {#if placement !== undefined}
-        <PanelSection title="Placement" chevron="end">
-          <PanelFields>
-            <PanelField label="Page" mono stacked>{placement.page}</PanelField>
-            <PanelField label="In row" mono stacked>{placement.index} of {placement.of}</PanelField>
-          </PanelFields>
-        </PanelSection>
-      {/if}
     </div>
   {/if}
 </Panel>

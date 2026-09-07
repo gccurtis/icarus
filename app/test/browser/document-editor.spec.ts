@@ -520,6 +520,13 @@ test("quote Enter creates a normal body paragraph without ornamental quote chrom
   await quote.click({ position: { x: Math.max(1, box.width - 4), y: Math.max(1, box.height - 4) } });
   await page.keyboard.press("End");
   await page.keyboard.press("Enter");
+
+  const emptyLine = page.locator(
+    'aside[aria-label="Inspector"][data-inspected="document-editor.empty-line"]'
+  );
+  await expect(emptyLine.getByRole("heading", { name: "Empty line" })).toBeVisible();
+  await expect(emptyLine.getByText("Placement", { exact: true })).toHaveCount(0);
+
   await page.keyboard.type("Body after quote");
 
   const next = page.locator(".document-block").filter({ hasText: "Body after quote" }).last();
