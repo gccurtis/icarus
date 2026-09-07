@@ -6,6 +6,7 @@
   import FlaskConical from "@lucide/svelte/icons/flask-conical";
   import Library from "@lucide/svelte/icons/library";
   import MessagesSquare from "@lucide/svelte/icons/messages-square";
+  import ScanEye from "@lucide/svelte/icons/scan-eye";
   import Shapes from "@lucide/svelte/icons/shapes";
   import Workflow from "@lucide/svelte/icons/workflow";
 
@@ -47,6 +48,14 @@
       icon: FlaskConical,
       about:
         "The real vertical slice: create a document, publish its Semantic Overlay, generate a grounded direct or named-variable output, and inspect copied evidence."
+    },
+    {
+      href: "/demo/semantic-overlay/resource-reading",
+      title: "Resource reading and evidence",
+      sub: "Several narrow tools; one explicit authority grammar",
+      icon: ScanEye,
+      about:
+        "The proposed traversal, contextual slide view, specialized evidence readers, evidence kinds, and shared document/deck projection seam."
     },
     {
       href: "/demo/document-editor-reference",

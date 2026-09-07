@@ -2,7 +2,6 @@
   import ArrowLeft from "@lucide/svelte/icons/arrow-left";
   import ArrowRight from "@lucide/svelte/icons/arrow-right";
   import Binary from "@lucide/svelte/icons/binary";
-  import BookOpen from "@lucide/svelte/icons/book-open";
   import Bot from "@lucide/svelte/icons/bot";
   import Box from "@lucide/svelte/icons/box";
   import Braces from "@lucide/svelte/icons/braces";
@@ -10,7 +9,6 @@
   import ChevronRight from "@lucide/svelte/icons/chevron-right";
   import CircleDot from "@lucide/svelte/icons/circle-dot";
   import Database from "@lucide/svelte/icons/database";
-  import Eye from "@lucide/svelte/icons/eye";
   import FileSearch from "@lucide/svelte/icons/file-search";
   import Fingerprint from "@lucide/svelte/icons/fingerprint";
   import Gauge from "@lucide/svelte/icons/gauge";
@@ -20,7 +18,6 @@
   import LockKeyhole from "@lucide/svelte/icons/lock-keyhole";
   import MousePointer2 from "@lucide/svelte/icons/mouse-pointer-2";
   import Network from "@lucide/svelte/icons/network";
-  import ScanSearch from "@lucide/svelte/icons/scan-search";
   import Search from "@lucide/svelte/icons/search";
   import ShieldCheck from "@lucide/svelte/icons/shield-check";
   import Sparkles from "@lucide/svelte/icons/sparkles";
@@ -30,7 +27,7 @@
   import { DERIVED_OUTPUT_SYSTEM_PROMPT } from "$capabilities/derived-output/index";
   import MermaidDiagram from "$development-views/derived-output-architecture/components/mermaid-diagram.svelte";
 
-  type ToolId = "selection" | "find" | "retrieve" | "read";
+  type ToolId = "selection" | "find" | "retrieve";
 
   const TOOLS = [
     {
@@ -118,46 +115,6 @@
         "Exact hit text is already citation-ready, so the normal path needs no redundant read.",
         "After selection, touching citations from repeated tool calls consolidate again without losing their evidence uses."
       ]
-    },
-    {
-      id: "read" as const,
-      number: "04",
-      name: "read",
-      role: "authoritative context",
-      icon: BookOpen,
-      decision: "NEXT",
-      when: "The agent needs authoritative project content: a known range, context before or after a retrieved span, an outline, or bounded structure.",
-      input: `{
-  resourceHandle: string;
-  view: "text" | "outline" | "structure";
-  range?: {
-    from: number;
-    to: number;
-    beforeChars?: number;
-    afterChars?: number;
-  };
-  locator?: ResourceLocator;
-  cursor?: string;
-  maxChars?: number; // bounded server-side
-}`,
-      output: `{
-  chunks: [{
-    evidenceId: "evidence-7",
-    source: { ref, revision, encoding },
-    span: { from, to, text },
-    locator?: ResourceLocator,
-    text: string,
-    structure?: SafeStructure
-  }],
-  nextCursor?: string,
-  truncated: boolean
-}`,
-      rules: [
-        "Reads the current authoritative project resource through its resource adapter. It never calls or queries the Semantic Overlay.",
-        "A retrieve hit's source range can be expanded explicitly with beforeChars and afterChars; returned spans always state their exact range.",
-        "Structure is allowlisted and paginated—never a raw store path or an unlimited document JSON dump.",
-        "Every returned factual chunk is registered before it reaches the model."
-      ]
     }
   ];
 
@@ -175,8 +132,10 @@
     registry --> decide{"Enough grounded context?"}:::decision
     decide -- "no · resource unknown" --> find["find_resources"]:::tool
     decide -- "no · need more meaning" --> retrieveMore["retrieve"]:::tool
-    decide -- "no · need neighborhood / structure" --> read["read"]:::tool
+    decide -- "no · need orientation" --> orient["list_* / inspect_* / view_*"]:::context
+    decide -- "no · need source material" --> read["read_text / table / chart / image"]:::tool
     find --> agent
+    orient --> agent
     retrieveMore --> registry
     read --> registry
     decide -- yes --> structured["SynthesisDecision<br/>response + selected IDs"]:::answer
@@ -193,6 +152,7 @@
     classDef evidence fill:#201f35,color:#f6ebe2,stroke:#b397e6,stroke-width:2px;
     classDef decision fill:#142538,color:#eef7f3,stroke:#ec8f6b,stroke-width:2px;
     classDef tool fill:#173542,color:#eef7f3,stroke:#4ed9b1,stroke-width:2px;
+    classDef context fill:#3a2c18,color:#fff3df,stroke:#d7a34b,stroke-width:2px,stroke-dasharray: 4 3;
     classDef answer fill:#2b2945,color:#f5efff,stroke:#b397e6,stroke-width:2px;
     classDef warn fill:#3a231f,color:#fff3eb,stroke:#ec8f6b,stroke-width:2px;
     classDef done fill:#4ed9b1,color:#071711,stroke:#4ed9b1,stroke-width:2px;
@@ -267,7 +227,7 @@ type TemplatedDerivedDecision = {
       name: "Resource text projection + locator map",
       status: "built",
       icon: ListTree,
-      gap: "Document blocks, slide elements, groups, tables, captions, and notes now share one UTF-16 projection; bounded structural read views remain.",
+      gap: "Document blocks, slide elements, groups, tables, captions, and notes now share one UTF-16 projection; specialized traversal and reader adapters remain.",
       unlocks: "ingestion, direct read, selected text, citations, and later highlights"
     },
     {
@@ -283,7 +243,7 @@ type TemplatedDerivedDecision = {
       name: "Evidence tool gateway",
       status: "partial",
       icon: Fingerprint,
-      gap: "Retrieve can issue IDs, but read, selected focus, resource handles, shared budgets, and one registry policy need a common owner.",
+      gap: "Retrieve can issue IDs, but selected focus, resource handles, typed read_* tools, shared budgets, and one registry policy need a common owner.",
       unlocks: "unforgeable provenance and consistent limits across every tool"
     },
     {
@@ -315,30 +275,10 @@ type TemplatedDerivedDecision = {
   const BUDGETS = [
     { label: "tool rounds", value: "8", note: "configured hard maximum; first retrieve is forced" },
     { label: "retrieve top K", value: "8", note: "default; model may request up to 20" },
-    { label: "read page", value: "12k", note: "characters per call; cursor for more" },
+    { label: "text read", value: "12k", note: "characters per call; typed readers own other bounds" },
     { label: "source retries", value: "2", note: "new registry each time evidence changes" }
   ];
 
-  const READ_VIEWS = [
-    {
-      view: "text",
-      icon: FileSearch,
-      returns: "canonical text chunks + locators",
-      use: "fact synthesis and nearby context"
-    },
-    {
-      view: "outline",
-      icon: ListTree,
-      returns: "headings, slides, notes and child locators",
-      use: "navigate a large resource cheaply"
-    },
-    {
-      view: "structure",
-      icon: Braces,
-      returns: "allowlisted block or shape projection",
-      use: "layout-aware tasks without raw store JSON"
-    }
-  ];
 </script>
 
 <svelte:head>
@@ -363,6 +303,7 @@ type TemplatedDerivedDecision = {
       <a href="#tools">tools</a>
       <a href="#evidence">evidence</a>
       <a href="#infrastructure">infrastructure</a>
+      <a href="/demo/semantic-overlay/resource-reading">resource reading</a>
       <a href="/demo/semantic-overlay/derived-output-live">live proof</a>
       <a class="flow-link" href="/demo/semantic-overlay/derived-output-flow"><ArrowLeft size={13} aria-hidden="true" /> procedure flow</a>
     </nav>
@@ -377,7 +318,7 @@ type TemplatedDerivedDecision = {
         <p>
           The running agent retrieves semantic evidence through one bounded tool and returns either
           one answer or named grounded variables. This page also shows the deliberately deferred
-          discovery and structural-read tools that complete the target runtime.
+          discovery plus the specialized resource-reading tools that complete the target runtime.
         </p>
       </div>
 
@@ -435,11 +376,11 @@ type TemplatedDerivedDecision = {
 
     <section id="loop" class="section loop-section">
       <header class="section-heading">
-        <div><span>02 / CONTROL LOOP</span><h2>One agent.<br />Four bounded doors.</h2></div>
+        <div><span>02 / CONTROL LOOP</span><h2>One agent.<br />A bounded tool grammar.</h2></div>
         <p>
           Today, retrieval is the forced first action and the only executable tool. The target loop
-          conditionally starts with selection, then uses discovery, Semantic Overlay retrieval, and
-          direct resource reading inside one evidence registry.
+          conditionally starts with selection, then uses discovery, contextual traversal, and
+          specialized authoritative readers inside one attempt.
         </p>
       </header>
 
@@ -447,8 +388,8 @@ type TemplatedDerivedDecision = {
         <div class="diagram-label"><span>CONTROL / AGENT-01</span><small>attempt-local evidence registry</small></div>
         <MermaidDiagram
           source={AGENT_LOOP}
-          label="Bounded Derived Output agent control loop with selection, find, retrieve, and read tools"
-          caption="Target four-tool loop: retrieve and its retry-local evidence registry are live; read_selection, find_resources, and read remain explicit extensions."
+          label="Bounded Derived Output agent control loop with selection, discovery, retrieval, contextual traversal, and specialized evidence readers"
+          caption="Retrieve and its retry-local evidence registry are live. Selection, discovery, contextual traversal, and typed readers are explicit target extensions."
           minHeight="48rem"
         />
       </div>
@@ -463,10 +404,11 @@ type TemplatedDerivedDecision = {
 
     <section id="tools" class="section tools-section">
       <header class="section-heading">
-        <div><span>03 / TOOL SURFACE</span><h2>Small tools,<br />sharp contracts.</h2></div>
+        <div><span>03 / CORE TOOL SURFACE</span><h2>Three anchors.<br />Then typed doors.</h2></div>
         <p>
-          The model gets no generic store read and no caller-supplied project ID. Each tool performs
-          one scoped task, returns bounded projections, and either mints trusted evidence or explicitly does not.
+          These are the common entry tools. The resource-reading contract expands the old generic
+          read sketch into explicit list, inspect, view, and read_* operations whose names declare
+          whether they mint evidence.
         </p>
       </header>
 
@@ -504,28 +446,11 @@ type TemplatedDerivedDecision = {
         </article>
       </div>
 
-      <div class="read-model">
-        <div class="read-source">
-          <Braces class="read-source-icon" size={22} aria-hidden="true" />
-          <span>RESOURCE SNAPSHOT</span>
-          <strong>document or slide JSON</strong>
-          <small>authoritative, never sent wholesale</small>
-        </div>
-        <ArrowRight class="read-model-arrow" size={20} aria-hidden="true" />
-        <div class="projector">
-          <ScanSearch class="projection-icon" size={22} aria-hidden="true" />
-          <span>readProjectResource</span>
-          <strong>resource adapter + locator map</strong>
-          <small>direct authority path · no overlay call</small>
-        </div>
-        <ArrowRight class="read-model-arrow" size={20} aria-hidden="true" />
-        <div class="view-stack">
-          {#each READ_VIEWS as view (view.view)}
-            {@const ViewIcon = view.icon}
-            <article><ViewIcon class="read-view-icon" size={17} aria-hidden="true" /><div><code>{view.view}</code><span>{view.returns}</span><small>{view.use}</small></div></article>
-          {/each}
-        </div>
-      </div>
+      <a class="reading-expansion" href="/demo/semantic-overlay/resource-reading">
+        <Layers3 size={23} aria-hidden="true" />
+        <div><span>RESOURCE-READING CONTRACT</span><strong>Find and view orient. Retrieve and read cite.</strong><small>Inspect eleven exact tool contracts, four task routes, slide anatomy, evidence kinds, and the document/deck projection seam.</small></div>
+        <ArrowRight size={19} aria-hidden="true" />
+      </a>
     </section>
 
     <section id="evidence" class="section evidence-section">
@@ -567,7 +492,7 @@ type TemplatedDerivedDecision = {
         <div><span>05 / SYSTEM GAPS</span><h2>What makes this<br />fast in production.</h2></div>
         <p>
           Projection and semantic queue rows now exist. The remaining production gaps are an
-          always-on worker host, cross-table transactions, bounded read/discovery, and joined evaluation telemetry.
+          always-on worker host, cross-table transactions, bounded traversal/read tools, and joined evaluation telemetry.
         </p>
       </header>
 
@@ -602,18 +527,18 @@ type TemplatedDerivedDecision = {
         <h2>Retrieve directly. Read selectively. Cite everything used.</h2>
         <p>
           Keep the implemented projector, coalesced semantic queue, one-agent structured-output
-          loop, and value API. Next add an always-on worker plus <code>read_selection</code>,
-          <code>find_resources</code>, and bounded <code>read</code>. A separate planner, raw JSON tool,
-          and output-history table remain deferred.
+          loop, and value API. The generic <code>read</code> sketch on this page is refined into
+          explicit traversal, context, and evidentiary readers on the resource-reading page. A
+          separate planner, raw JSON tool, and output-history table remain deferred.
         </p>
       </div>
-      <a href="/demo/semantic-overlay/derived-output-live">Run the implementation <ArrowRight size={16} aria-hidden="true" /></a>
+      <a href="/demo/semantic-overlay/resource-reading">Open resource reading <ArrowRight size={16} aria-hidden="true" /></a>
     </section>
   </main>
 
   <footer class="page-footer">
     <span>DERIVED OUTPUT / AGENT RUNTIME</span>
-    <span>live retrieve · target selection/read/discovery · evidence · scale</span>
+    <span>live retrieve · target selection/discovery/resource reading · evidence · scale</span>
   </footer>
 </div>
 
@@ -665,8 +590,7 @@ type TemplatedDerivedDecision = {
   }
 
   :global(html[data-appearance="helios"]) .hero-copy > p,
-  :global(html[data-appearance="helios"]) .tool-detail li,
-  :global(html[data-appearance="helios"]) .view-stack span {
+  :global(html[data-appearance="helios"]) .tool-detail li {
     color: #465462;
   }
 
@@ -694,7 +618,7 @@ type TemplatedDerivedDecision = {
 
   :global(html[data-appearance="helios"]) .diagram-label,
   :global(html[data-appearance="helios"]) .schema-pair > div,
-  :global(html[data-appearance="helios"]) .read-model,
+  :global(html[data-appearance="helios"]) .reading-expansion,
   :global(html[data-appearance="helios"]) .evidence-line article > code,
   :global(html[data-appearance="helios"]) .performance-path {
     background: #ece7dc;
@@ -740,8 +664,8 @@ type TemplatedDerivedDecision = {
 
   .brand, .local-nav nav, .flow-link, .eyebrow, .context-stack article header,
   .selection-target, .diagram-label, .budget-title, .tool-rail button,
-  .tool-detail > header, .tool-detail li, .read-source, .projector,
-  .view-stack article, .evidence-line article header, .output-schema header,
+  .tool-detail > header, .tool-detail li, .reading-expansion,
+  .evidence-line article header, .output-schema header,
   .infra-grid article header, .performance-path, .verdict, .verdict a, .page-footer {
     display: flex;
     align-items: center;
@@ -877,20 +801,11 @@ type TemplatedDerivedDecision = {
   .tool-detail li { gap: 0.55rem; color: #b8c5cd; font-size: 0.71rem; line-height: 1.45; }
   .tool-detail li :global(.tool-check) { flex: 0 0 auto; color: var(--mint); }
 
-  .read-model { display: grid; grid-template-columns: minmax(12rem, 0.6fr) auto minmax(13rem, 0.7fr) auto minmax(19rem, 1fr); gap: 1rem; align-items: center; margin-top: 1.5rem; padding: 1.3rem; border: 1px solid var(--line); background: #0b1724; }
-  .read-source, .projector { align-items: flex-start; flex-direction: column; min-height: 8rem; padding: 1rem; border: 1px solid var(--line); }
-  .read-source :global(.read-source-icon), .projector :global(.projection-icon) { margin-bottom: auto; color: var(--violet); }
-  .read-source span, .projector span { color: var(--blue); font-family: var(--token-font-mono); font-size: 0.54rem; letter-spacing: 0.08em; }
-  .read-source strong, .projector strong { margin-top: 0.28rem; font-family: var(--token-font-serif); font-size: 1.05rem; font-weight: 400; }
-  .read-source small, .projector small { margin-top: 0.35rem; color: var(--muted); font-size: 0.61rem; }
-  .read-model > :global(.read-model-arrow) { color: var(--mint); }
-  .view-stack { display: grid; gap: 0.45rem; }
-  .view-stack article { gap: 0.7rem; padding: 0.7rem; border: 1px solid var(--line); background: var(--panel); }
-  .view-stack article > :global(.read-view-icon) { flex: 0 0 auto; color: var(--mint); }
-  .view-stack article div { display: grid; grid-template-columns: auto 1fr; gap: 0.2rem 0.7rem; width: 100%; }
-  .view-stack code { color: var(--mint); font-size: 0.68rem; }
-  .view-stack span { color: #c7d3d8; font-size: 0.66rem; }
-  .view-stack small { grid-column: 1 / -1; color: var(--muted); font-size: 0.57rem; }
+  .reading-expansion { gap: 1rem; margin-top: 1.5rem; padding: 1.2rem; border: 1px solid var(--mint); background: #0b1724; color: var(--mint); text-decoration: none; }
+  .reading-expansion > div { min-width: 0; flex: 1; }
+  .reading-expansion span { color: var(--mint); font-family: var(--token-font-mono); font-size: 0.54rem; letter-spacing: 0.09em; }
+  .reading-expansion strong { display: block; margin: 0.35rem 0; color: var(--ink); font-family: var(--token-font-serif); font-size: 1.2rem; font-weight: 400; }
+  .reading-expansion small { display: block; color: var(--muted); font-size: 0.64rem; line-height: 1.45; }
 
   .evidence-line { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr; gap: 0.8rem; align-items: center; }
   .evidence-line > :global(.evidence-arrow) { color: var(--mint); }
@@ -974,8 +889,6 @@ type TemplatedDerivedDecision = {
     .budget-strip, .schema-pair, .infra-grid { grid-template-columns: 1fr; }
     .budget-title { grid-column: auto; }
     .tool-rail { border-right: 0; border-bottom: 1px solid var(--line); }
-    .read-model { grid-template-columns: 1fr; }
-    .read-model > :global(.read-model-arrow) { transform: rotate(90deg); margin-inline: auto; }
     .evidence-line { grid-template-columns: 1fr; }
     .evidence-line > :global(.evidence-arrow) { margin: 0 auto; transform: rotate(90deg); }
     .performance-path { display: grid; grid-template-columns: 1fr; }

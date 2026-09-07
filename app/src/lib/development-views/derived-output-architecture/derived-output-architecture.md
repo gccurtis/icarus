@@ -1,11 +1,14 @@
 # Derived Output architecture development views
 
-Three purpose-built pages communicate and exercise the system from different angles.
+Four purpose-built pages communicate and exercise the system from different angles.
 
 - `components/procedure-flow.svelte` follows authoritative resource text into the Semantic
   Overlay, then follows a Prompt Block through generation and ID-based reading.
 - `components/agent-runtime.svelte` specifies the run envelope, tool contracts, evidence
   registry, selected-text treatment, safety boundaries, and scaling seams.
+- `components/resource-reading.svelte` refines direct reading into a specialized tool
+  grammar, separates evidence-producing reads from contextual traversal, and maps the
+  shared document/deck projection seam.
 - `components/live-proof.svelte` creates a real document, drains its semantic
   job, runs direct-prompt or named-variable synthesis, and displays the value
   API plus copied evidence.
@@ -20,9 +23,11 @@ The procedure page is now an implementation map: green marks inherited code,
 orange marks code landed on this branch, blue marks an extended boundary, and
 gray marks explicit follow-ups such as the deck adapter, durable generation
 queue, selected-text focus, and read tools. The agent page keeps target
-`read_selection`, `find_resources`, and direct resource `read` contracts visible
-while labeling the current single `retrieve` tool accurately. `retrieve` is the
-only Semantic Overlay query; `read` never touches the overlay.
+`read_selection` and `find_resources` contracts beside the current single
+`retrieve` tool. The resource-reading page supersedes the earlier generic target
+`read` sketch with explicit `read_text`,
+`read_table`, `read_chart`, and `read_image` tools. `retrieve` remains the only
+Semantic Overlay query; every `read_*` tool uses the authoritative resource path.
 
 The full construction method, visual rationale, theme contract, failure found by
 the live proof, and review checklist live in

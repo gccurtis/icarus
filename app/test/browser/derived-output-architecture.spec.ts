@@ -64,7 +64,7 @@ test("the procedure page renders all three diagrams and switches its callable sp
   await page.screenshot({ path: "/tmp/derived-output-flow.png", fullPage: true });
 });
 
-test("the agent page renders its loop and exposes every tool contract", async ({ page }) => {
+test("the agent page renders its loop and exposes every core tool contract", async ({ page }) => {
   await page.goto("/demo/semantic-overlay/agent-runtime", { waitUntil: "networkidle" });
 
   await expect(page.getByRole("heading", { level: 1 })).toContainText("The agent gets");
@@ -80,11 +80,37 @@ test("the agent page renders its loop and exposes every tool contract", async ({
   await selection.click();
   await expect(page.locator(".tool-detail")).toContainText("does not query the Semantic Overlay");
 
-  const read = page.getByRole("tab", { name: /^04 read/ });
-  await read.click();
-  await expect(page.locator(".tool-detail")).toContainText("allowlisted and paginated");
-  await expect(page.locator(".tool-detail")).toContainText("never calls or queries the Semantic Overlay");
+  await expect(page.getByRole("link", { name: /Find and view orient/ })).toHaveAttribute(
+    "href",
+    "/demo/semantic-overlay/resource-reading"
+  );
   await page.screenshot({ path: "/tmp/derived-output-agent-runtime.png", fullPage: true });
+});
+
+test("the resource-reading page separates orientation from evidence", async ({ page }) => {
+  await page.goto("/demo/semantic-overlay/resource-reading", { waitUntil: "networkidle" });
+
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("Read means cite");
+
+  const view = page.getByRole("tab", { name: /view_slide/ });
+  await view.click();
+  await expect(view).toHaveAttribute("aria-selected", "true");
+  await expect(page.locator("#tool-contract")).toContainText("ORIENTATION ONLY");
+  await expect(page.locator("#tool-contract")).toContainText("deliberately no evidenceId");
+
+  const image = page.getByRole("tab", { name: /read_image/ });
+  await image.click();
+  await expect(page.locator("#tool-contract")).toContainText("ISSUES EVIDENCE");
+  await expect(page.locator("#tool-contract")).toContainText("original project image");
+
+  await page.getByRole("tab", { name: /IMAGE \/ PIXELS ARE SOURCE/ }).click();
+  await expect(page.locator(".route-ledger")).toContainText("visual · image-03");
+  await expect(page.locator(".route-ledger")).toContainText("not selectable");
+
+  await page.getByRole("button", { name: "Select image-03" }).click();
+  await expect(page.locator(".next-call")).toContainText("read_image");
+  await expect(page.locator(".next-call")).toContainText("visual evidence");
+  await page.screenshot({ path: "/tmp/derived-output-resource-reading.png", fullPage: true });
 });
 
 test("the live proof exposes direct and named-variable generation", async ({ page }) => {
@@ -236,6 +262,7 @@ test("architecture surfaces follow Helios and Selene", async ({ page }) => {
   for (const route of [
     "/demo/semantic-overlay/derived-output-flow",
     "/demo/semantic-overlay/agent-runtime",
+    "/demo/semantic-overlay/resource-reading",
     "/demo/semantic-overlay/derived-output-live"
   ]) {
     await page.goto(route, { waitUntil: "networkidle" });
@@ -246,8 +273,11 @@ test("architecture surfaces follow Helios and Selene", async ({ page }) => {
     if (await toHelios.isVisible()) await toHelios.click();
     else await page.evaluate(() => (document.documentElement.dataset.appearance = "helios"));
     await expect(root).toHaveAttribute("data-appearance", "helios");
-    const surface = page.locator(".flow-page, .runtime-page, .proof-shell").first();
+    const surface = page.locator(".flow-page, .runtime-page, .reading-page, .proof-shell").first();
     const day = await surface.evaluate((node) => getComputedStyle(node).backgroundColor);
+    if (route === "/demo/semantic-overlay/resource-reading") {
+      await page.screenshot({ path: "/tmp/derived-output-resource-reading-helios.png", fullPage: true });
+    }
 
     const toSelene = page.getByRole("button", {
       name: /^(Selene|Switch to Celestial Selene)$/
@@ -257,17 +287,23 @@ test("architecture surfaces follow Helios and Selene", async ({ page }) => {
     await expect(root).toHaveAttribute("data-appearance", "selene");
     const night = await surface.evaluate((node) => getComputedStyle(node).backgroundColor);
     expect(night, `${route} should change its ground with appearance`).not.toBe(day);
+    if (route === "/demo/semantic-overlay/resource-reading") {
+      await page.screenshot({ path: "/tmp/derived-output-resource-reading-selene.png", fullPage: true });
+    }
   }
 });
 
-test("both pages contain page-level overflow at narrow width only inside intentional diagrams", async ({ page }) => {
+test("architecture pages contain narrow overflow only inside intentional diagrams", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   for (const route of [
     "/demo/semantic-overlay/derived-output-flow",
-    "/demo/semantic-overlay/agent-runtime"
+    "/demo/semantic-overlay/agent-runtime",
+    "/demo/semantic-overlay/resource-reading"
   ]) {
     await page.goto(route, { waitUntil: "networkidle" });
-    await expect(page.locator(".mermaid-output svg").first()).toBeVisible({ timeout: 20_000 });
+    if (route !== "/demo/semantic-overlay/resource-reading") {
+      await expect(page.locator(".mermaid-output svg").first()).toBeVisible({ timeout: 20_000 });
+    }
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= document.documentElement.clientWidth

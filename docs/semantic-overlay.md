@@ -251,7 +251,20 @@ scale-up work.
 Document and slide-deck leader snapshots now project through one canonical
 UTF-16 text seam. The projection stores locator spans back to titles, document
 blocks, slide elements, groups, tables, captions, and speaker notes. Hidden
-slides and prompt blocks are excluded.
+slides and prompt blocks are excluded. Slide numbers are not injected as
+synthetic text. The current `resource-text.ts` writer uses blank-line separators;
+the accepted target adds out-of-band hard slide boundaries so translation and
+citation coalescence cannot bridge two slides while the deck retains one global
+coordinate space.
+
+The target projection layout separates resource traversal from shared content
+projection under `behavior/semantic/projection/`: document and slide-deck
+adapters own ordering and locators, while text, table, chart, and image modules
+own their content-specific contribution. The current behavior already shares a
+content-block walk, projects nested table text plus image alt/caption text, and
+excludes prompt content. Native chart data is the next structured projection;
+original image pixels remain an authoritative direct-read concern rather than
+text sent to the embedding provider.
 
 Accepted resource changes coalesce by resource and requested revision in
 `semanticSyncJobs`. The bounded worker embeds the latest projection, checks that
@@ -267,9 +280,11 @@ infrastructure gaps rather than missing procedure contracts.
 
 1. Add a transactional resource-write/outbox boundary and always-on worker host.
 2. Add source-local large-text and reader window planning.
-3. Add bounded `read_selection`, `find_resources`, and authoritative `read`
-   evidence tools. Only `retrieve` queries the Semantic Overlay; selection and
-   read go directly to project resources.
+3. Add the bounded resource-reading tool grammar: `find_*`, `list_*`,
+   `inspect_*`, and `view_*` orient without evidence IDs; `retrieve` and typed
+   `read_*` tools mint evidence. Only `retrieve` queries the Semantic Overlay.
+   `read_text`, `read_table`, `read_chart`, and `read_image` go directly to
+   authoritative project resources; `view_slide` is contextual and non-citable.
 4. Add an optional bounded query frontier with truncation diagnostics and recall
    tests.
 

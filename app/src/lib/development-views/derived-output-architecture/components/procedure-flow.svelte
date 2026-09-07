@@ -209,7 +209,7 @@
       status: "extend",
       input: "DerivedOutput + intelligence + retrieve",
       output: "SynthesisDecision + issued evidence",
-      note: "Keep the bounded structured-output loop; add read_selection, find_resources, and direct read beside the existing retrieve tool."
+      note: "Keep the bounded structured-output loop; add selection, discovery, traversal, contextual view, and typed evidentiary readers beside retrieve."
     },
     {
       order: "08",
@@ -222,12 +222,12 @@
     },
     {
       order: "09",
-      name: "readProjectResource",
+      name: "resource reading tool family",
       owner: "project-resource capability",
       status: "deferred",
-      input: "handle + view + range/window + cursor",
-      output: "authoritative ranged chunks + evidence IDs",
-      note: "The future read tool calls this direct project-resource path. It never calls or queries the Semantic Overlay; retrieve is the only overlay tool."
+      input: "scoped resource/content handles + bounded typed request",
+      output: "navigation/context or typed evidence",
+      note: "find/list/inspect/view orient without evidence; read_text/read_table/read_chart/read_image use direct project-resource paths and mint evidence IDs."
     },
     {
       order: "10",
