@@ -3,7 +3,7 @@ export type ReferencePage = { slug: "system" | "changes" | "scope"; index: strin
 export const PAGES: ReferencePage[] = [
   { slug: "system", index: "01", label: "How templates work", sub: "The model, the verbs, the panels" },
   { slug: "changes", index: "02", label: "What changed", sub: "Every file, decision and check" },
-  { slug: "scope", index: "03", label: "What a variable selects", sub: "The scope builder, and what it costs" }
+  { slug: "scope", index: "03", label: "What a variable selects", sub: "The scope builder, and what it cost" }
 ];
 
 const PATHS: Record<ReferencePage["slug"], string> = {

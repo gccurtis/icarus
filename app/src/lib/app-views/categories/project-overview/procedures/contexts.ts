@@ -6,6 +6,14 @@ import {
   type ReadResourceSetsResult,
   type ResourceSetItem
 } from "$capabilities/resource-sets/index.remote";
+import {
+  readProjectResourceIndex,
+  type ProjectResourceIndex
+} from "$capabilities/project-resources/index.remote";
+import type {
+  ScopeNames,
+  ScopeOffering
+} from "$representation/data/behavior/core/scope-draft";
 import type { ResourceSet } from "$representation/data/types/core/resource-set";
 import type { WorkspaceStateModel } from "$model/client/workspace-state";
 
@@ -17,81 +25,48 @@ export const resourceSets = () => readResourceSets();
 export const setsIn = (answer: ReadResourceSetsResult | undefined): readonly ResourceSetItem[] =>
   answer?.sets ?? [];
 
-export const KINDS = [
-  { kind: "document", label: "Documents" },
-  { kind: "slides", label: "Slide decks" },
-  { kind: "spreadsheet", label: "Spreadsheets" },
-  { kind: "finding", label: "Findings" },
-  { kind: "research", label: "Research threads" }
-] as const;
+export {
+  PROJECT_KINDS as KINDS,
+  builderView,
+  draftOf,
+  isWholeProject,
+  narrowed,
+  ruleWords as ruleOf,
+  termFor,
+  withTerm,
+  withWholeProject,
+  withoutTerm,
+  type OfferSource,
+  type ScopeDraft,
+  type ScopeNames,
+  type ScopeSide
+} from "$representation/data/behavior/core/scope-draft";
 
-const KIND_LABEL: Record<string, string> = Object.fromEntries(
-  KINDS.map((entry) => [entry.kind, entry.label])
-);
+/** What the builder is handed here: the other named sets, and the project. */
+export const offeringOf = (
+  sets: readonly ResourceSetItem[],
+  resources: readonly { readonly id: string; readonly kind: string; readonly name: string }[],
+  self?: string
+): ScopeOffering => ({
+  sets: sets.filter((set) => set.id !== self).map((set) => ({ id: set.id, name: set.name, set: set.set })),
+  resources,
+  ...(self === undefined ? {} : { self })
+});
 
-export const emptySet = (): ResourceSet => ({ include: [], exclude: [] });
+export const scopeNamesOf = (
+  sets: readonly ResourceSetItem[],
+  resources: readonly { readonly id: string; readonly name: string }[]
+): ScopeNames => ({
+  sets: new Map(sets.map((set) => [set.id, set.name])),
+  resources: new Map(resources.map((resource) => [resource.id, resource.name]))
+});
 
-export const kindsOf = (set: ResourceSet): readonly string[] =>
-  set.include.flatMap((term) => (term.select === "kinds" ? term.kinds : []));
+export const projectResources = () => readProjectResourceIndex();
 
-export const isWholeProject = (set: ResourceSet): boolean =>
-  set.include.some((term) => term.select === "project");
-
-const termWords = (
-  terms: ResourceSet["include"],
-  names: ReadonlyMap<string, string>
-): readonly string[] =>
-  terms.map((term) =>
-    term.select === "project"
-      ? "everything in the project"
-      : term.select === "kinds"
-        ? term.kinds.map((kind) => KIND_LABEL[kind] ?? kind).join(", ")
-        : term.select === "resources"
-          ? `${term.refs.length} named ${term.refs.length === 1 ? "resource" : "resources"}`
-          : (names.get(term.setId) ?? "another set")
-  );
-
-export const ruleOf = (set: ResourceSet, names: ReadonlyMap<string, string> = new Map()): string => {
-  const included = termWords(set.include, names);
-  if (included.length === 0) return "Selects nothing";
-  const sentence = included.join(" and ");
-  const capitalised = sentence.charAt(0).toUpperCase() + sentence.slice(1);
-  const excluded = termWords(set.exclude, names);
-  return excluded.length === 0 ? capitalised : `${capitalised}, minus ${excluded.join(", ")}`;
-};
-
-export const namesOf = (sets: readonly ResourceSetItem[]): ReadonlyMap<string, string> =>
-  new Map(sets.map((set) => [set.id, set.name]));
-
-export const withWholeProject = (set: ResourceSet, on: boolean): ResourceSet => {
-  const kept = set.include.filter((term) => term.select !== "project");
-  return { include: on ? [{ select: "project" }, ...kept] : kept, exclude: set.exclude };
-};
-
-export const withKind = (set: ResourceSet, kind: string, on: boolean): ResourceSet => {
-  const kinds = kindsOf(set).filter((held) => held !== kind);
-  if (on) kinds.push(kind);
-  const others = set.include.filter((term) => term.select !== "kinds");
-  return {
-    include: kinds.length === 0 ? others : [...others, { select: "kinds", kinds }],
-    exclude: set.exclude
-  };
-};
-
-export const withExcludedKind = (set: ResourceSet, kind: string, on: boolean): ResourceSet => {
-  const kinds = set.exclude
-    .flatMap((term) => (term.select === "kinds" ? term.kinds : []))
-    .filter((held) => held !== kind);
-  if (on) kinds.push(kind);
-  const others = set.exclude.filter((term) => term.select !== "kinds");
-  return {
-    include: set.include,
-    exclude: kinds.length === 0 ? others : [...others, { select: "kinds", kinds }]
-  };
-};
-
-export const excludedKindsOf = (set: ResourceSet): readonly string[] =>
-  set.exclude.flatMap((term) => (term.select === "kinds" ? term.kinds : []));
+export const resourcesIn = (
+  answer: ProjectResourceIndex | undefined
+): readonly { readonly id: string; readonly kind: string; readonly name: string }[] =>
+  (answer?.resources ?? []).map((item) => ({ id: item.id, kind: item.kind, name: item.name }));
 
 export const nextSetName = (sets: readonly ResourceSetItem[]): string => {
   const taken = new Set(sets.map((set) => set.name.toLocaleLowerCase()));

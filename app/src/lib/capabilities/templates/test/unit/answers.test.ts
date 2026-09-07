@@ -29,8 +29,11 @@ const model = vi.hoisted(() => ({
           ? { ...(value as Record<string, unknown>), _id: id, _creationTime: rows[index]._creationTime }
           : { ...rows[index], [fields[0]]: value };
     },
-    remove: () => {
-      throw new Error("not expected");
+    remove: (path: string) => {
+      const [table, id] = path.split(".");
+      const rows = model.tables[table] ?? [];
+      const index = rows.findIndex((row) => row._id === id);
+      if (index >= 0) rows.splice(index, 1);
     },
     removeRows: () => {},
     removeFieldFromRows: () => {}
@@ -327,5 +330,162 @@ describe("a template from a live resource", () => {
       () => createTemplateFromResource({ target: "document", resourceId: "documents:1", name: "x", slideId: "s1" }),
       /only a deck template names a slide/
     );
+  });
+});
+
+describe("a rule that cannot be said inline becomes a row", () => {
+  const excluding = {
+    include: [{ select: "project" }],
+    exclude: [{ select: "kinds", kinds: ["slides"] }]
+  };
+
+  test("a default that excludes something is stored, and the variable holds one term", async () => {
+    const result = await updateTemplate({
+      templateId: "templates:1",
+      baseRevision: 1,
+      patch: { variables: [{ name: "evidence", label: "Evidence", default: excluding }] }
+    });
+    assert.ok(result.accepted);
+
+    const bound = model.tables.resourceSets.filter((set) => set.boundTo !== undefined);
+    assert.equal(bound.length, 1);
+    assert.deepEqual(bound[0].boundTo, {
+      kind: "variable",
+      templateId: "templates:1",
+      variable: "evidence"
+    });
+    assert.equal(bound[0].name, undefined);
+    assert.deepEqual(bound[0].set, excluding);
+    assert.deepEqual(model.tables.templates[0].variables, [
+      {
+        name: "evidence",
+        label: "Evidence",
+        default: { include: [{ select: "set", setId: bound[0]._id }], exclude: [] }
+      }
+    ]);
+  });
+
+  test("a rule that can be said inline writes nothing, and clears a row it had", async () => {
+    await updateTemplate({
+      templateId: "templates:1",
+      baseRevision: 1,
+      patch: { variables: [{ name: "evidence", label: "Evidence", default: excluding }] }
+    });
+    const result = await updateTemplate({
+      templateId: "templates:1",
+      baseRevision: 2,
+      patch: {
+        variables: [
+          {
+            name: "evidence",
+            label: "Evidence",
+            default: { include: [{ select: "kinds", kinds: ["finding"] }], exclude: [] }
+          }
+        ]
+      }
+    });
+    assert.ok(result.accepted);
+    assert.equal(model.tables.resourceSets.filter((set) => set.boundTo !== undefined).length, 0);
+  });
+
+  test("the same variable rewrites its own row rather than piling them up", async () => {
+    await updateTemplate({
+      templateId: "templates:1",
+      baseRevision: 1,
+      patch: { variables: [{ name: "evidence", label: "Evidence", default: excluding }] }
+    });
+    const first = model.tables.resourceSets.find((set) => set.boundTo !== undefined);
+    await updateTemplate({
+      templateId: "templates:1",
+      baseRevision: 2,
+      patch: {
+        variables: [
+          {
+            name: "evidence",
+            label: "Evidence",
+            default: {
+              include: [{ select: "project" }],
+              exclude: [{ select: "kinds", kinds: ["document"] }]
+            }
+          }
+        ]
+      }
+    });
+    const bound = model.tables.resourceSets.filter((set) => set.boundTo !== undefined);
+    assert.equal(bound.length, 1);
+    assert.equal(bound[0]._id, first?._id);
+    assert.equal(bound[0].revision, 2);
+  });
+
+  test("a default may name particular resources, which a template cannot say itself", async () => {
+    const result = await updateTemplate({
+      templateId: "templates:1",
+      baseRevision: 1,
+      patch: {
+        variables: [
+          {
+            name: "evidence",
+            label: "Evidence",
+            default: {
+              include: [{ select: "resources", refs: [{ kind: "document", id: "documents:9" }] }],
+              exclude: []
+            }
+          }
+        ]
+      }
+    });
+    assert.ok(result.accepted);
+    const bound = model.tables.resourceSets.find((set) => set.boundTo !== undefined);
+    assert.deepEqual(bound?.set, {
+      include: [{ select: "resources", refs: [{ kind: "document", id: "documents:9" }] }],
+      exclude: []
+    });
+  });
+
+  test("an answer that excludes something resolves, because it became one term", async () => {
+    const placed = await instantiateTemplate({
+      templateId: "templates:1",
+      answers: { evidence: excluding }
+    });
+    assert.ok(placed.accepted);
+    const bound = model.tables.resourceSets.filter((set) => set.boundTo !== undefined);
+    assert.equal(bound.length, 1);
+    assert.deepEqual(bound[0].boundTo, {
+      kind: "resource",
+      resourceId: placed.resourceId,
+      variable: "evidence"
+    });
+    assert.deepEqual(scopeOf(model.tables.documentSnapshots[0]), {
+      include: [{ select: "set", setId: bound[0]._id }],
+      exclude: []
+    });
+  });
+
+  test("a default naming a set from another project is refused", async () => {
+    model.tables.resourceSets.push(
+      row("resourceSets", "9", {
+        projectId: "other",
+        name: "Elsewhere",
+        set: { include: [], exclude: [] },
+        createdBy: { kind: "user", userId: "u" },
+        revision: 1,
+        updatedAt: 1
+      })
+    );
+    const result = await updateTemplate({
+      templateId: "templates:1",
+      baseRevision: 1,
+      patch: {
+        variables: [
+          {
+            name: "evidence",
+            label: "Evidence",
+            default: { include: [{ select: "set", setId: "resourceSets:9" }], exclude: [] }
+          }
+        ]
+      }
+    });
+    assert.equal(result.accepted, false);
+    assert.equal(result.accepted === false && result.reason, "unsupported-body");
   });
 });

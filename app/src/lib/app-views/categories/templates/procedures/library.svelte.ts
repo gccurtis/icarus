@@ -15,18 +15,22 @@ import {
   type TemplateUnavailable,
   type TemplateTarget as StoredTemplateTarget
 } from "$capabilities/templates/index.remote";
-import { readProjectResourceIndex } from "$capabilities/project-resources/index.remote";
+import {
+  readProjectResourceIndex,
+  type ProjectResourceIndex
+} from "$capabilities/project-resources/index.remote";
 import {
   readResourceSets,
   type ReadResourceSetsResult,
   type ResourceSetItem
 } from "$capabilities/resource-sets/index.remote";
 import { asId } from "$representation/data/behavior/core/id";
-import type {
-  ResourceSet,
-  TemplatedResourceSet,
-  TemplatedTerm
-} from "$representation/data/types/core/resource-set";
+import {
+  narrowed,
+  type ScopeDraft,
+  type ScopeNames,
+  type ScopeOffering
+} from "$representation/data/behavior/core/scope-draft";
 import type { TemplateVariable as StoredTemplateVariable } from "$representation/data/types/templates/template";
 import type { Category, WorkspaceStateModel } from "$model/client/workspace-state";
 
@@ -230,112 +234,71 @@ export const nextTemplateName = (
   return `${base} ${suffix}`;
 };
 
-export const KINDS = [
-  { kind: "document", label: "Documents" },
-  { kind: "slides", label: "Slide decks" },
-  { kind: "spreadsheet", label: "Spreadsheets" },
-  { kind: "finding", label: "Findings" },
-  { kind: "research", label: "Research threads" }
-] as const;
-
-const KIND_LABEL: Record<string, string> = Object.fromEntries(
-  KINDS.map((entry) => [entry.kind, entry.label])
-);
+export {
+  PROJECT_KINDS as KINDS,
+  builderView,
+  draftOf,
+  isWholeProject,
+  narrowed,
+  needsRow,
+  ruleWords as ruleOf,
+  termFor,
+  withTerm,
+  withWholeProject,
+  withoutTerm,
+  type OfferSource,
+  type ScopeDraft,
+  type ScopeNames,
+  type ScopeSide
+} from "$representation/data/behavior/core/scope-draft";
 
 export const resourceSets = () => readResourceSets();
 
 export const setsIn = (answer: ReadResourceSetsResult | undefined): readonly ResourceSetItem[] =>
   answer?.sets ?? [];
 
-export const namesOf = (sets: readonly ResourceSetItem[]): ReadonlyMap<string, string> =>
-  new Map(sets.map((set) => [set.id, set.name]));
+export const projectResources = () => readProjectResourceIndex();
 
-export const kindsOf = (rule: TemplatedResourceSet | undefined): readonly string[] =>
-  (rule?.include ?? []).flatMap((term) => (term.select === "kinds" ? term.kinds : []));
+export const resourcesIn = (
+  answer: ProjectResourceIndex | undefined
+): readonly { readonly id: string; readonly kind: string; readonly name: string }[] =>
+  (answer?.resources ?? []).map((item) => ({ id: item.id, kind: item.kind, name: item.name }));
 
-export const setIdsOf = (rule: TemplatedResourceSet | undefined): readonly string[] =>
-  (rule?.include ?? []).flatMap((term) => (term.select === "set" ? [term.setId] : []));
+/** What the builder and every sentence read a set or a resource by. */
+export const scopeNamesOf = (
+  sets: readonly ResourceSetItem[],
+  resources: readonly { readonly id: string; readonly name: string }[]
+): ScopeNames => ({
+  sets: new Map(sets.map((set) => [set.id, set.name])),
+  resources: new Map(resources.map((resource) => [resource.id, resource.name]))
+});
 
-export const isWholeProject = (rule: TemplatedResourceSet | undefined): boolean =>
-  rule === undefined || rule.include.some((term) => term.select === "project");
+/** What the builder is handed for a variable's default, or for an answer. */
+export const offeringOf = (
+  sets: readonly ResourceSetItem[],
+  resources: readonly { readonly id: string; readonly kind: string; readonly name: string }[]
+): ScopeOffering => ({
+  sets: sets.map((set) => ({ id: set.id, name: set.name, set: set.set })),
+  resources
+});
 
-const termWords = (
-  terms: readonly TemplatedTerm[],
-  names: ReadonlyMap<string, string>
-): readonly string[] =>
-  terms.map((term) =>
-    term.select === "project"
-      ? "everything in the project"
-      : term.select === "kinds"
-        ? term.kinds.map((kind) => KIND_LABEL[kind] ?? kind).join(", ")
-        : term.select === "set"
-          ? (names.get(term.setId) ?? "a set that no longer exists")
-          : `whatever ${term.name} holds`
-  );
-
-export const ruleOf = (
-  rule: TemplatedResourceSet | undefined,
-  names: ReadonlyMap<string, string> = new Map()
-): string => {
-  if (rule === undefined) return "Everything in the project";
-  if (rule.include.length === 0) return "Nothing";
-  const words = termWords(rule.include, names).join(" and ");
-  const included = isWholeProject(rule)
-    ? "Everything in the project"
-    : words.charAt(0).toUpperCase() + words.slice(1);
-  const excluded = termWords(rule.exclude, names);
-  return excluded.length === 0 ? included : `${included}, minus ${excluded.join(", ")}`;
-};
-
-export const ruleFrom = (
-  whole: boolean,
-  kinds: readonly string[],
-  setIds: readonly string[] = []
-): TemplatedResourceSet => {
-  if (whole) return { include: [{ select: "project" }], exclude: [] };
-  const include: TemplatedTerm[] = [];
-  if (kinds.length > 0) include.push({ select: "kinds", kinds: [...kinds] as never[] });
-  for (const setId of setIds) include.push({ select: "set", setId: asId<"resourceSets">(setId) });
-  return { include, exclude: [] };
-};
-
-export const DEFAULT_ANSWER = "default";
-
-export type AnswerOption = { readonly value: string; readonly label: string };
-
-export const answerOptions = (
-  variable: StoredTemplateVariable,
-  sets: readonly ResourceSetItem[]
-): readonly AnswerOption[] => [
-  { value: DEFAULT_ANSWER, label: `Default · ${ruleOf(variable.default, namesOf(sets))}` },
-  { value: "project", label: "Everything in the project" },
-  ...KINDS.map((entry) => ({ value: `kind:${entry.kind}`, label: `Only ${entry.label.toLocaleLowerCase()}` })),
-  ...sets.map((set) => ({ value: `set:${set.id}`, label: set.name }))
-];
-
-export const answerFrom = (choice: string): ResourceSet | undefined => {
-  if (choice === "project") return { include: [{ select: "project" }], exclude: [] };
-  if (choice.startsWith("kind:")) {
-    return { include: [{ select: "kinds", kinds: [choice.slice("kind:".length)] as never[] }], exclude: [] };
-  }
-  if (choice.startsWith("set:")) {
-    return { include: [{ select: "set", setId: asId<"resourceSets">(choice.slice("set:".length)) }], exclude: [] };
-  }
-  return undefined;
-};
-
-export const answersFrom = (choices: Readonly<Record<string, string>>): TemplateAnswers =>
+/**
+ * The answers a caller chose, as rules.
+ *
+ * A variable nobody touched is absent, which is what makes the template's own
+ * default apply. Everything present is sent as built; the server decides
+ * whether it needs a row.
+ */
+export const answersFrom = (
+  choices: Readonly<Record<string, ScopeDraft | undefined>>
+): TemplateAnswers =>
   Object.fromEntries(
-    Object.entries(choices).flatMap(([name, choice]) => {
-      const answer = answerFrom(choice);
-      return answer === undefined ? [] : [[name, answer] as const];
+    Object.entries(choices).flatMap(([name, draft]) => {
+      if (draft === undefined) return [];
+      const rule = narrowed(draft);
+      return rule === undefined ? [] : [[name, rule] as const];
     })
   );
-
-export const defaultChoices = (
-  variables: readonly StoredTemplateVariable[]
-): Record<string, string> =>
-  Object.fromEntries(variables.map((variable) => [variable.name, DEFAULT_ANSWER]));
 
 export const inspectTemplate = (view: WorkspaceStateModel, templateId: string): void => {
   view.open({ category: "templates", focus: templateId });
@@ -446,7 +409,7 @@ export const updateTemplateVariableDefault = (
   view: WorkspaceStateModel,
   row: LibraryTemplateDetail,
   variableName: string,
-  rule: TemplatedResourceSet
+  rule: ScopeDraft
 ) => {
   const variables = row.variables.map(({ id: _id, ...variable }) =>
     variable.name === variableName ? { ...variable, default: rule } : variable

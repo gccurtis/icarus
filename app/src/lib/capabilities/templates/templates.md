@@ -67,6 +67,20 @@ resource set, and a named set it points at is checked to exist before anything
 is written. A body naming a variable the template does not declare is refused
 rather than guessed at.
 
+**A rule that cannot be said inline is stored, and what points at it is one
+term.** Both a default and an answer arrive as whatever somebody built, which
+may exclude things and may name particular resources — neither of which the
+templated vocabulary holds. `normalizeScope` writes those as a `resourceSets`
+row bound to the variable that owns them, and the default or answer becomes a
+single `set` term naming it. That is not bookkeeping: resolving a template
+substitutes a variable term for what fills it, on either side of a prompt's
+scope, and one term for a difference cannot be expressed on the excluding side.
+A rule that is only the project, kinds or named sets is kept inline and writes
+nothing. Reading a template back expands a bound default into the rule it holds,
+so a builder opens on what was built; a named set is left as the named set
+somebody chose. The rows go when their owner does: a template removed, a
+variable dropped, a working copy discarded.
+
 `updateTemplate` still takes a whole variable list, because that is how a
 description or a default is written, and it refuses with `variable-in-use` while
 the body still names a variable the list drops.

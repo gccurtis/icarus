@@ -1729,7 +1729,29 @@ const validTemplatedSet = (value: unknown): boolean =>
   value.exclude.length <= MAX_TEMPLATE_TERMS_PER_SIDE &&
   value.exclude.every(validTerm);
 
-export const variablesOf = (value: unknown, subject: string): readonly TemplateVariable[] => {
+/**
+ * A rule somebody just built, before it is normalised.
+ *
+ * It may exclude things and it may name particular resources, neither of which a
+ * stored default can carry. Both become one `set` term naming a bound row, which
+ * is why the wire shape is wider than the stored one.
+ */
+const validChosenSet = (value: unknown): boolean =>
+  isRecord(value) &&
+  hasOnlyKeys(value, ["include", "exclude"]) &&
+  Object.keys(value).length === 2 &&
+  Array.isArray(value.include) &&
+  value.include.length <= MAX_TEMPLATE_TERMS_PER_SIDE &&
+  value.include.every((term) => validTerm(term) || validSetTerm(term)) &&
+  Array.isArray(value.exclude) &&
+  value.exclude.length <= MAX_TEMPLATE_TERMS_PER_SIDE &&
+  value.exclude.every((term) => validTerm(term) || validSetTerm(term));
+
+export const variablesOf = (
+  value: unknown,
+  subject: string,
+  chosen = false
+): readonly TemplateVariable[] => {
   if (!Array.isArray(value)) throw new Error(`templates/${subject}: variables is a list`);
   if (value.length > MAX_TEMPLATE_VARIABLES) {
     throw new Error(
@@ -1759,7 +1781,10 @@ export const variablesOf = (value: unknown, subject: string): readonly TemplateV
     ) {
       throw new Error(`templates/${subject}: a variable description is text`);
     }
-    if (variable.default !== undefined && !validTemplatedSet(variable.default)) {
+    if (
+      variable.default !== undefined &&
+      !(chosen ? validChosenSet(variable.default) : validTemplatedSet(variable.default))
+    ) {
       throw new Error(`templates/${subject}: a variable default is a templated resource set`);
     }
     const key = variable.name.toLocaleLowerCase();

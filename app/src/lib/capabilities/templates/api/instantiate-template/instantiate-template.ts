@@ -13,29 +13,22 @@ import {
   reportableRevision,
   visibleTemplate
 } from "$capabilities/templates/api/shared/projection";
-import { recordsIn } from "$capabilities/templates/api/shared/store";
+import { normalizeScope, unknownSetsIn } from "$capabilities/templates/api/shared/scopes";
 import type {
   InstantiateTemplateResult,
   TemplateAnswers
 } from "$capabilities/templates/types/templates";
 
-const unknownSetsIn = (
+const unknownSetsInAnswers = (
   store: ReturnType<typeof serverModel>["store"],
   projectId: string,
   answers: TemplateAnswers
 ): readonly string[] => {
-  const held = new Set(
-    recordsIn(store, "resourceSets")
-      .filter((row) => row.projectId === projectId && typeof row._id === "string")
-      .map((row) => row._id as string)
-  );
-  const named = new Set<string>();
+  const missing = new Set<string>();
   for (const answer of Object.values(answers)) {
-    for (const term of [...answer.include, ...answer.exclude]) {
-      if (term.select === "set") named.add(term.setId);
-    }
+    for (const id of unknownSetsIn(store, projectId, answer)) missing.add(id);
   }
-  return [...named].filter((id) => !held.has(id)).sort();
+  return [...missing].sort();
 };
 
 export const instantiateTemplate = async (input: unknown): Promise<InstantiateTemplateResult> => {
@@ -72,7 +65,7 @@ export const instantiateTemplate = async (input: unknown): Promise<InstantiateTe
   }
 
   const answers = asked.answers ?? {};
-  const unknownSets = unknownSetsIn(store, scope.projectId, answers);
+  const unknownSets = unknownSetsInAnswers(store, scope.projectId, answers);
   if (unknownSets.length > 0) {
     return {
       accepted: false,
@@ -82,8 +75,52 @@ export const instantiateTemplate = async (input: unknown): Promise<InstantiateTe
       detail: `this project holds no resource set ${unknownSets.join(", ")}`
     };
   }
-  const resolved = resolveTemplateScopes(body, variables, answers);
+
+  const projectId = asId<"projects">(scope.projectId);
+  const actor = { kind: "user" as const, userId: asId<"users">(scope.userId) };
+  const at = Date.now();
+  const title = asked.name ?? template.name;
+
+  /**
+   * The resource is minted before its scopes are resolved, because an answer
+   * that excludes anything is stored as a row and that row is owned by the
+   * resource this call makes. Nothing else is written until resolution
+   * succeeds, and the rollback undoes exactly what was.
+   */
+  const table =
+    body.resource === "document" ? "documents" : body.resource === "slides" ? "slideDecks" : "spreadsheets";
+  const resourceId = store.create(table, {
+    projectId,
+    title,
+    createdBy: actor,
+    updatedBy: { ...actor },
+    updatedAt: at
+  });
+
+  const written: string[] = [];
+  const answered: Record<string, TemplateAnswers[string]> = {};
+  for (const [name, rule] of Object.entries(answers)) {
+    const term = normalizeScope(
+      store,
+      scope.projectId,
+      actor,
+      { kind: "resource", resourceId, variable: name },
+      rule,
+      at
+    );
+    if (term === undefined) continue;
+    if (term.setId !== undefined) written.push(term.setId);
+    answered[name] = term.term as TemplateAnswers[string];
+  }
+
+  const rollback = () => {
+    for (const setId of written) store.remove(`resourceSets.${setId}`);
+    store.remove(`${table}.${resourceId}`);
+  };
+
+  const resolved = resolveTemplateScopes(body, variables, answered);
   if (!resolved.accepted) {
+    rollback();
     return {
       accepted: false,
       templateId: template._id,
@@ -93,6 +130,7 @@ export const instantiateTemplate = async (input: unknown): Promise<InstantiateTe
     };
   }
   if (resolved.undeclared.length > 0) {
+    rollback();
     return {
       accepted: false,
       templateId: template._id,
@@ -102,11 +140,6 @@ export const instantiateTemplate = async (input: unknown): Promise<InstantiateTe
     };
   }
   body = resolved.body;
-
-  const projectId = asId<"projects">(scope.projectId);
-  const actor = { kind: "user" as const, userId: asId<"users">(scope.userId) };
-  const at = Date.now();
-  const title = asked.name ?? template.name;
   store.update(`templates.${template._id}.lastUsedAt`, at);
 
   if (body.resource === "document") {
@@ -114,13 +147,6 @@ export const instantiateTemplate = async (input: unknown): Promise<InstantiateTe
     const readyBody = documentBody.styles === undefined
       ? documentBody
       : { ...documentBody, styles: normalizeDocumentStyleSet(documentBody.styles) };
-    const resourceId = store.create("documents", {
-      projectId,
-      title,
-      createdBy: actor,
-      updatedBy: { ...actor },
-      updatedAt: at
-    });
     store.create("documentSnapshots", {
       projectId,
       resourceId,
@@ -143,13 +169,6 @@ export const instantiateTemplate = async (input: unknown): Promise<InstantiateTe
   if (body.resource === "slides") {
     const { resource: _resource, ...slideDeckBody } = body;
     const readyBody = ensureSlideDeckReady(slideDeckBody);
-    const resourceId = store.create("slideDecks", {
-      projectId,
-      title,
-      createdBy: actor,
-      updatedBy: { ...actor },
-      updatedAt: at
-    });
     store.create("slideDeckSnapshots", {
       projectId,
       resourceId,
@@ -170,13 +189,6 @@ export const instantiateTemplate = async (input: unknown): Promise<InstantiateTe
   }
 
   const materialized = materializeSpreadsheet(body);
-  const resourceId = store.create("spreadsheets", {
-    projectId,
-    title,
-    createdBy: actor,
-    updatedBy: { ...actor },
-    updatedAt: at
-  });
   store.create("spreadsheetSnapshots", {
     projectId,
     resourceId,

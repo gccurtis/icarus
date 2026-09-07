@@ -41,13 +41,13 @@
   <main class="tref-page">
     <header class="tref-mast">
       <div>
-        <span class="tref-kicker">03 · The plan</span>
+        <span class="tref-kicker">03 · Scope</span>
         <h1>What a variable selects</h1>
         <p class="tref-lede">
-          A variable is a hole. What fills it is a group of resources, and today that group can only be
-          said in the crudest terms: everything, or some kinds, or one of the project's named sets. This
-          page is the design for saying it properly, and the list of everything it touches. None of it is
-          built.
+          A variable is a hole. What fills it is a group of resources, and until this work that group
+          could only be said in the crudest terms: everything, or some kinds, or one of the project's
+          named sets. It can now be built term by term, excluded from, and pointed at particular
+          resources. This page is how it works and every file it touched.
         </p>
       </div>
       <div class="tref-facts">
@@ -70,7 +70,7 @@
       <a href="#doors">Where it opens</a>
       <a href="#lifecycle">What gets written</a>
       <a href="#rules">Rules and refusals</a>
-      <a href="#work">Every file it touches</a>
+      <a href="#work">Every file it touched</a>
       <a href="#forks">Eight decisions</a>
       <a href="#missing">What is still missing</a>
     </nav>
@@ -94,15 +94,16 @@
       </p>
 
       <div class="tref-note">
-        <h4>Which means, today, no exclusions anywhere</h4>
+        <h4>Which meant, before this, no exclusions anywhere</h4>
         <p>
-          Neither a variable's default nor an answer given at Insert may exclude anything. The builder this
-          page describes is mostly about excluding things, so it would refuse on its first use.
+          Neither a variable's default nor an answer given at Insert could exclude anything. A builder
+          mostly about excluding things would have refused on its first use.
         </p>
         <p>
           A stored row fixes it exactly. The difference lives <b>inside</b> the row; the default and the
           answer hold <b>one</b> term naming it; substitution stays one-for-one and flips sides cleanly.
-          The row is not bookkeeping. It is what makes the feature expressible.
+          The row is not bookkeeping. It is what makes the feature expressible, and the resolver's refusal
+          is left exactly where it was, now unreachable from either door.
         </p>
       </div>
 
@@ -163,8 +164,8 @@
       <figure class="tref-figure">
         <DiagramDifference />
         <figcaption>
-          <b>Nothing here is new.</b> This is what <code>resolveResourceSet</code> already does, cycle guard
-          and all. The gap is that no surface in the product can build the left-hand side.
+          <b>Nothing here is new.</b> This is what <code>resolveResourceSet</code> already did, cycle guard
+          and all. What was missing was any surface that could build the left-hand side.
         </figcaption>
       </figure>
     </section>
@@ -198,10 +199,11 @@
 
     <section class="tref-section" id="builder">
       <div class="tref-section-head">
-        <div><span class="tref-kicker">The thing to build</span><h2>The builder</h2></div>
+        <div><span class="tref-kicker">The thing itself</span><h2>The builder</h2></div>
         <p>
           One modal. It edits a rule and knows nothing about templates, variables, or which of its four
-          callers opened it.
+          callers opened it. The mock below is what shipped, drawn rather than screenshotted so it stays
+          readable at any width.
         </p>
       </div>
 
@@ -298,7 +300,7 @@
 
     <section class="tref-section" id="work">
       <div class="tref-section-head">
-        <div><span class="tref-kicker">The estimate</span><h2>Every file this touches</h2></div>
+        <div><span class="tref-kicker">What it cost</span><h2>Every file it touched</h2></div>
         <p>
           {WORK.length} entries across {areas.length} areas: {newFiles} new and {changedFiles} changed. Paths
           are relative to <code>app/src/lib</code> unless they say otherwise. A trailing slash is a
@@ -340,10 +342,10 @@
 
     <section class="tref-section" id="forks">
       <div class="tref-section-head">
-        <div><span class="tref-kicker">Yours to settle</span><h2>Eight decisions, each with a recommendation</h2></div>
+        <div><span class="tref-kicker">Settled</span><h2>Eight decisions, and how each landed</h2></div>
         <p>
-          None of these is settled. Each says what I would do, why, and what the other way costs — so a
-          one-line answer per number is enough to start.
+          Each was open when this was a plan. Three of them landed somewhere other than where the plan
+          expected, and those are the ones worth reading.
         </p>
       </div>
 
@@ -354,7 +356,7 @@
             <h3>{fork.question}</h3>
             <p>{fork.because}</p>
           </div>
-          <div class="state after"><span>Recommended</span>{fork.recommended}</div>
+          <div class="state after"><span>Built</span>{fork.recommended}</div>
           <div class="state before"><span>Otherwise</span>{fork.alternative}<em>{fork.cost}</em></div>
         </article>
       {/each}

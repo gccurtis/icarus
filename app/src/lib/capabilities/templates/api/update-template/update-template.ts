@@ -1,5 +1,6 @@
 import { requireScope } from "$runtime/server/scope.server";
 import { serverModel } from "$runtime/server/start.server";
+import { asId } from "$representation/data/behavior/core/id";
 import { variableNamesIn } from "$representation/data/behavior/templates/scopes";
 
 import {
@@ -7,6 +8,11 @@ import {
   reportableRevision,
   visibleTemplate
 } from "$capabilities/templates/api/shared/projection";
+import {
+  normalizeScope,
+  removeRowsBoundTo,
+  unknownSetsIn
+} from "$capabilities/templates/api/shared/scopes";
 import { stagesIn } from "$capabilities/templates/api/shared/stages";
 import type { RowFields } from "$capabilities/templates/api/shared/store";
 import { writeTemplateVersion } from "$capabilities/templates/api/shared/template-rows";
@@ -64,6 +70,8 @@ export const updateTemplate = async (input: unknown): Promise<UpdateTemplateResu
     asked.patch.description === null
       ? undefined
       : (asked.patch.description ?? template.description);
+  const at = Date.now();
+  const actor = { kind: "user" as const, userId: asId<"users">(scope.userId) };
   let variables = [...(asked.patch.variables ?? template.variables)];
   if (asked.patch.variables !== undefined) {
     const declared = new Set(variables.map((variable) => variable.name));
@@ -77,6 +85,46 @@ export const updateTemplate = async (input: unknown): Promise<UpdateTemplateResu
         detail: `the body still names ${orphaned.join(", ")}`
       };
     }
+    for (const variable of variables) {
+      const missing = unknownSetsIn(
+        store,
+        scope.projectId,
+        variable.default ?? { include: [], exclude: [] }
+      );
+      if (missing.length > 0) {
+        return {
+          accepted: false,
+          templateId: asked.templateId,
+          reason: "unsupported-body",
+          revision: template.revision,
+          detail: `no set in this project has id ${missing.join(", ")}`
+        };
+      }
+    }
+    for (const held of template.variables) {
+      if (variables.some((variable) => variable.name === held.name)) continue;
+      removeRowsBoundTo(store, scope.projectId, {
+        kind: "variable",
+        templateId: template._id,
+        variable: held.name
+      });
+    }
+    variables = variables.map((variable) => {
+      const written = normalizeScope(
+        store,
+        scope.projectId,
+        actor,
+        { kind: "variable", templateId: template._id, variable: variable.name },
+        variable.default,
+        at
+      );
+      return {
+        name: variable.name,
+        label: variable.label,
+        ...(variable.description === undefined ? {} : { description: variable.description }),
+        ...(written === undefined ? {} : { default: written.term })
+      };
+    });
   }
   if (asked.patch.variableDescription !== undefined) {
     const variable = asked.patch.variableDescription;
@@ -100,7 +148,6 @@ export const updateTemplate = async (input: unknown): Promise<UpdateTemplateResu
           }
     );
   }
-  const at = Date.now();
   const fields: RowFields<"templates"> = {
     projectId: template.projectId,
     userId: template.userId,

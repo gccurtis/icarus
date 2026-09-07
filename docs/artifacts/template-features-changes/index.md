@@ -1,35 +1,36 @@
 # Template Features Change Set
 
-121 files under app/ against 286cbc8, the commit this branch sits on — 71 created, 50 changed, 0 deleted — +11685 / −808 lines, measured from committed and working-tree changes when this page was built.
+127 files under app/ against 286cbc8, the commit this branch sits on — 76 created, 51 changed, 0 deleted — +14832 / −1031 lines, measured from committed and working-tree changes when this page was built.
 
 | Status | File | + | − | Systematic change |
 | --- | --- | --- | --- | --- |
 | new | `scripts/generate-template-reference-inventory.mjs` | +114 | −0 | The reference pages, and the one shared component they moved |
 | changed | `seed/documents.json` | +0 | −4 | The seeded one-slide template |
+| changed | `seed/resourceSets.json` | +17 | −0 | The seeded one-slide template |
 | changed | `seed/slideDecks.json` | +0 | −4 | The seeded one-slide template |
 | changed | `seed/spreadsheets.json` | +0 | −2 | The seeded one-slide template |
-| changed | `seed/templates.json` | +118 | −10 | The seeded one-slide template |
+| changed | `seed/templates.json` | +1589 | −203 | The seeded one-slide template |
 | changed | `seed/templateVersions.json` | +86 | −0 | The seeded one-slide template |
 | changed | `src/lib/app-views/categories/document-editor/content/document.svelte` | +5 | −0 | The document editor's Templates panel |
-| new | `src/lib/app-views/categories/document-editor/context/templates.svelte` | +578 | −0 | The document editor's Templates panel |
+| new | `src/lib/app-views/categories/document-editor/context/templates.svelte` | +610 | −0 | The document editor's Templates panel |
 | changed | `src/lib/app-views/categories/document-editor/procedures/schema.ts` | +11 | −3 | The document editor's Templates panel |
-| new | `src/lib/app-views/categories/document-editor/procedures/templating.ts` | +328 | −0 | The document editor's Templates panel |
-| new | `src/lib/app-views/categories/document-editor/procedures/test/unit/templating.test.ts` | +176 | −0 | The document editor's Templates panel |
-| new | `src/lib/app-views/categories/project-overview/context/contexts.svelte` | +255 | −0 | Project Overview's Contexts panel |
-| new | `src/lib/app-views/categories/project-overview/procedures/contexts.ts` | +140 | −0 | Project Overview's Contexts panel |
-| new | `src/lib/app-views/categories/project-overview/procedures/test/unit/contexts.test.ts` | +57 | −0 | Project Overview's Contexts panel |
+| new | `src/lib/app-views/categories/document-editor/procedures/templating.ts` | +302 | −0 | The document editor's Templates panel |
+| new | `src/lib/app-views/categories/document-editor/procedures/test/unit/templating.test.ts` | +167 | −0 | The document editor's Templates panel |
+| new | `src/lib/app-views/categories/project-overview/context/contexts.svelte` | +279 | −0 | Project Overview's Contexts panel |
+| new | `src/lib/app-views/categories/project-overview/procedures/contexts.ts` | +115 | −0 | Project Overview's Contexts panel |
+| new | `src/lib/app-views/categories/project-overview/procedures/test/unit/contexts.test.ts` | +68 | −0 | Project Overview's Contexts panel |
 | changed | `src/lib/app-views/categories/project-overview/project-overview.md` | +22 | −18 | Project Overview's Contexts panel |
 | changed | `src/lib/app-views/categories/slide-deck-editor/context/comments.svelte` | +6 | −1 | The slide-deck editor's Templates panel |
-| changed | `src/lib/app-views/categories/slide-deck-editor/context/templates.svelte` | +593 | −3 | The slide-deck editor's Templates panel |
+| changed | `src/lib/app-views/categories/slide-deck-editor/context/templates.svelte` | +627 | −3 | The slide-deck editor's Templates panel |
 | changed | `src/lib/app-views/categories/slide-deck-editor/inspector/threads.svelte` | +8 | −1 | The slide-deck editor's Templates panel |
-| new | `src/lib/app-views/categories/slide-deck-editor/procedures/templating.ts` | +337 | −0 | The slide-deck editor's Templates panel |
+| new | `src/lib/app-views/categories/slide-deck-editor/procedures/templating.ts` | +311 | −0 | The slide-deck editor's Templates panel |
 | new | `src/lib/app-views/categories/slide-deck-editor/procedures/test/unit/templating.test.ts` | +130 | −0 | The slide-deck editor's Templates panel |
 | changed | `src/lib/app-views/categories/slide-deck-editor/slide-deck-editor.md` | +21 | −1 | The slide-deck editor's Templates panel |
 | changed | `src/lib/app-views/categories/templates/content/editor.svelte` | +48 | −17 | The template library, editor door, and inspector |
 | changed | `src/lib/app-views/categories/templates/content/library.svelte` | +23 | −11 | The template library, editor door, and inspector |
-| changed | `src/lib/app-views/categories/templates/inspector/template.svelte` | +261 | −44 | The template library, editor door, and inspector |
-| changed | `src/lib/app-views/categories/templates/procedures/library.svelte.ts` | +183 | −31 | The template library, editor door, and inspector |
-| changed | `src/lib/app-views/categories/templates/procedures/test/unit/library.test.ts` | +24 | −0 | The template library, editor door, and inspector |
+| changed | `src/lib/app-views/categories/templates/inspector/template.svelte` | +298 | −43 | The template library, editor door, and inspector |
+| changed | `src/lib/app-views/categories/templates/procedures/library.svelte.ts` | +147 | −32 | The template library, editor door, and inspector |
+| changed | `src/lib/app-views/categories/templates/procedures/test/unit/library.test.ts` | +16 | −0 | The template library, editor door, and inspector |
 | changed | `src/lib/app-views/categories/templates/templates.md` | +45 | −74 | The template library, editor door, and inspector |
 | changed | `src/lib/capabilities/comments/api/start-thread/start-thread.ts` | +8 | −0 | What the other capabilities changed |
 | changed | `src/lib/capabilities/comments/comments.md` | +4 | −0 | What the other capabilities changed |
@@ -40,12 +41,12 @@
 | new | `src/lib/capabilities/resource-sets/api/read-resource-sets/read-resource-sets.ts` | +10 | −0 | The resource-sets capability |
 | new | `src/lib/capabilities/resource-sets/api/remove-resource-set/remove-resource-set.ts` | +74 | −0 | The resource-sets capability |
 | new | `src/lib/capabilities/resource-sets/api/remove-resource-set/validate-remove-resource-set.ts` | +16 | −0 | The resource-sets capability |
-| new | `src/lib/capabilities/resource-sets/api/shared/projection.ts` | +214 | −0 | The resource-sets capability |
-| new | `src/lib/capabilities/resource-sets/api/shared/validation.ts` | +133 | −0 | The resource-sets capability |
+| new | `src/lib/capabilities/resource-sets/api/shared/projection.ts` | +220 | −0 | The resource-sets capability |
+| new | `src/lib/capabilities/resource-sets/api/shared/validation.ts` | +172 | −0 | The resource-sets capability |
 | new | `src/lib/capabilities/resource-sets/api/update-resource-set/update-resource-set.ts` | +72 | −0 | The resource-sets capability |
 | new | `src/lib/capabilities/resource-sets/api/update-resource-set/validate-update-resource-set.ts` | +41 | −0 | The resource-sets capability |
 | new | `src/lib/capabilities/resource-sets/index.remote.ts` | +39 | −0 | The resource-sets capability |
-| new | `src/lib/capabilities/resource-sets/resource-sets.md` | +20 | −0 | The resource-sets capability |
+| new | `src/lib/capabilities/resource-sets/resource-sets.md` | +27 | −0 | The resource-sets capability |
 | new | `src/lib/capabilities/resource-sets/test/unit/resource-sets.test.ts` | +230 | −0 | The resource-sets capability |
 | new | `src/lib/capabilities/resource-sets/types/resource-sets.ts` | +72 | −0 | The resource-sets capability |
 | changed | `src/lib/capabilities/store/store.md` | +1 | −2 | What the other capabilities changed |
@@ -57,28 +58,31 @@
 | new | `src/lib/capabilities/templates/api/discard-template-stage/discard-template-stage.ts` | +31 | −0 | The templates capability |
 | new | `src/lib/capabilities/templates/api/discard-template-stage/validate-discard-template-stage.ts` | +8 | −0 | The templates capability |
 | changed | `src/lib/capabilities/templates/api/duplicate-template/duplicate-template.ts` | +1 | −0 | The templates capability |
-| changed | `src/lib/capabilities/templates/api/instantiate-template/instantiate-template.ts` | +51 | −23 | The templates capability |
+| changed | `src/lib/capabilities/templates/api/instantiate-template/instantiate-template.ts` | +86 | −46 | The templates capability |
 | changed | `src/lib/capabilities/templates/api/instantiate-template/validate-instantiate-template.ts` | +5 | −2 | The templates capability |
 | new | `src/lib/capabilities/templates/api/open-template-stage/open-template-stage.ts` | +115 | −0 | The templates capability |
 | new | `src/lib/capabilities/templates/api/open-template-stage/validate-open-template-stage.ts` | +8 | −0 | The templates capability |
 | new | `src/lib/capabilities/templates/api/read-resource-template/read-resource-template.ts` | +48 | −0 | The templates capability |
 | new | `src/lib/capabilities/templates/api/read-resource-template/validate-read-resource-template.ts` | +8 | −0 | The templates capability |
-| changed | `src/lib/capabilities/templates/api/remove-template/remove-template.ts` | +3 | −69 | The templates capability |
+| changed | `src/lib/capabilities/templates/api/remove-template/remove-template.ts` | +10 | −68 | The templates capability |
 | changed | `src/lib/capabilities/templates/api/shared/bodies.ts` | +17 | −171 | The templates capability |
-| changed | `src/lib/capabilities/templates/api/shared/projection.ts` | +19 | −45 | The templates capability |
-| new | `src/lib/capabilities/templates/api/shared/stages.ts` | +137 | −0 | The templates capability |
+| changed | `src/lib/capabilities/templates/api/shared/projection.ts` | +30 | −45 | The templates capability |
+| new | `src/lib/capabilities/templates/api/shared/scopes.ts` | +204 | −0 | The templates capability |
+| new | `src/lib/capabilities/templates/api/shared/stages.ts` | +141 | −0 | The templates capability |
 | changed | `src/lib/capabilities/templates/api/shared/template-rows.ts` | +1 | −0 | The templates capability |
-| changed | `src/lib/capabilities/templates/api/shared/validation.ts` | +119 | −8 | The templates capability |
+| changed | `src/lib/capabilities/templates/api/shared/validation.ts` | +146 | −10 | The templates capability |
 | new | `src/lib/capabilities/templates/api/shared/variables.ts` | +15 | −0 | The templates capability |
-| changed | `src/lib/capabilities/templates/api/update-template/update-template.ts` | +21 | −10 | The templates capability |
+| changed | `src/lib/capabilities/templates/api/update-template/update-template.ts` | +69 | −11 | The templates capability |
 | changed | `src/lib/capabilities/templates/api/update-template/validate-update-template.ts` | +6 | −2 | The templates capability |
 | changed | `src/lib/capabilities/templates/index.remote.ts` | +57 | −6 | The templates capability |
-| changed | `src/lib/capabilities/templates/templates.md` | +102 | −64 | The templates capability |
-| new | `src/lib/capabilities/templates/test/unit/answers.test.ts` | +331 | −0 | The templates capability |
+| changed | `src/lib/capabilities/templates/templates.md` | +116 | −64 | The templates capability |
+| new | `src/lib/capabilities/templates/test/unit/answers.test.ts` | +491 | −0 | The templates capability |
 | new | `src/lib/capabilities/templates/test/unit/stages.test.ts` | +377 | −0 | The templates capability |
 | changed | `src/lib/capabilities/templates/test/unit/templates.test.ts` | +57 | −90 | The templates capability |
 | changed | `src/lib/capabilities/templates/types/templates.ts` | +109 | −17 | The templates capability |
 | changed | `src/lib/components/authored/panel/panel-section.svelte` | +13 | −1 | The reference pages, and the one shared component they moved |
+| new | `src/lib/components/authored/scope-builder/index.ts` | +9 | −0 | The reference pages, and the one shared component they moved |
+| new | `src/lib/components/authored/scope-builder/scope-builder.svelte` | +418 | −0 | The reference pages, and the one shared component they moved |
 | changed | `src/lib/development-views/demo/components/demo-index.svelte` | +3 | −3 | The reference pages, and the one shared component they moved |
 | new | `src/lib/development-views/template-reference/components/changes-page.svelte` | +281 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/development-views/template-reference/components/diagram-binding.svelte` | +168 | −0 | The reference pages, and the one shared component they moved |
@@ -92,12 +96,12 @@
 | new | `src/lib/development-views/template-reference/components/file-ledger.svelte` | +138 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/development-views/template-reference/components/reference-header.svelte` | +166 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/development-views/template-reference/components/reference.css` | +305 | −0 | The reference pages, and the one shared component they moved |
-| new | `src/lib/development-views/template-reference/components/scope-page.svelte` | +423 | −0 | The reference pages, and the one shared component they moved |
+| new | `src/lib/development-views/template-reference/components/scope-page.svelte` | +425 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/development-views/template-reference/components/system-page.svelte` | +329 | −0 | The reference pages, and the one shared component they moved |
-| new | `src/lib/development-views/template-reference/procedures/changes.ts` | +256 | −0 | The reference pages, and the one shared component they moved |
-| new | `src/lib/development-views/template-reference/procedures/inventory.ts` | +131 | −0 | The reference pages, and the one shared component they moved |
+| new | `src/lib/development-views/template-reference/procedures/changes.ts` | +265 | −0 | The reference pages, and the one shared component they moved |
+| new | `src/lib/development-views/template-reference/procedures/inventory.ts` | +137 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/development-views/template-reference/procedures/navigation.ts` | +16 | −0 | The reference pages, and the one shared component they moved |
-| new | `src/lib/development-views/template-reference/procedures/scope.ts` | +570 | −0 | The reference pages, and the one shared component they moved |
+| new | `src/lib/development-views/template-reference/procedures/scope.ts` | +504 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/development-views/template-reference/procedures/system.ts` | +223 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/development-views/template-reference/template-reference.svelte` | +5 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/development-views/template-reference/types.ts` | +129 | −0 | The reference pages, and the one shared component they moved |
@@ -105,7 +109,9 @@
 | changed | `src/lib/model/client/workspace-state/methods/shared/mint-view.ts` | +5 | −1 | The vocabulary: one table, five functions, one field |
 | changed | `src/lib/model/client/workspace-state/test/unit/workspace-state.test.ts` | +23 | −0 | The vocabulary: one table, five functions, one field |
 | new | `src/lib/representation/data/behavior/core/resource-set.ts` | +45 | −0 | The vocabulary: one table, five functions, one field |
+| new | `src/lib/representation/data/behavior/core/scope-draft.ts` | +421 | −0 | The vocabulary: one table, five functions, one field |
 | new | `src/lib/representation/data/behavior/core/test/unit/resource-set.test.ts` | +46 | −0 | The vocabulary: one table, five functions, one field |
+| new | `src/lib/representation/data/behavior/core/test/unit/scope-draft.test.ts` | +194 | −0 | The vocabulary: one table, five functions, one field |
 | new | `src/lib/representation/data/behavior/templates/deck-of-slide.ts` | +18 | −0 | The vocabulary: one table, five functions, one field |
 | new | `src/lib/representation/data/behavior/templates/fresh-ids.ts` | +71 | −0 | The vocabulary: one table, five functions, one field |
 | new | `src/lib/representation/data/behavior/templates/portable.ts` | +103 | −0 | The vocabulary: one table, five functions, one field |
@@ -115,15 +121,15 @@
 | new | `src/lib/representation/data/behavior/templates/test/unit/portable.test.ts` | +97 | −0 | The vocabulary: one table, five functions, one field |
 | new | `src/lib/representation/data/behavior/templates/test/unit/scopes.test.ts` | +109 | −0 | The vocabulary: one table, five functions, one field |
 | changed | `src/lib/representation/data/behavior/workspace/opening.ts` | +5 | −1 | The vocabulary: one table, five functions, one field |
-| changed | `src/lib/representation/data/types/core/resource-set.ts` | +4 | −24 | The vocabulary: one table, five functions, one field |
+| changed | `src/lib/representation/data/types/core/resource-set.ts` | +16 | −24 | The vocabulary: one table, five functions, one field |
 | changed | `src/lib/representation/data/types/templates/template.ts` | +0 | −29 | The vocabulary: one table, five functions, one field |
 | changed | `src/lib/representation/data/types/workspace/tab.ts` | +1 | −0 | The vocabulary: one table, five functions, one field |
-| changed | `src/lib/representation/store/tables.ts` | +15 | −4 | The vocabulary: one table, five functions, one field |
+| changed | `src/lib/representation/store/tables.ts` | +23 | −9 | The vocabulary: one table, five functions, one field |
 | changed | `src/routes/app/[project]/reference/templates/+page.svelte` | +11 | −2 | The reference pages, and the one shared component they moved |
 | new | `src/routes/app/[project]/reference/templates/changes/+page.svelte` | +14 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/routes/app/[project]/reference/templates/scope/+page.svelte` | +14 | −0 | The reference pages, and the one shared component they moved |
 | changed | `test/browser/document-editor.spec.ts` | +8 | −1 | Browser evidence |
-| new | `test/browser/template-features.spec.ts` | +194 | −0 | Browser evidence |
+| new | `test/browser/template-features.spec.ts` | +270 | −0 | Browser evidence |
 | new | `test/browser/template-reference.spec.ts` | +114 | −0 | Browser evidence |
 
 ## Outside app/
@@ -132,8 +138,8 @@
 | --- | --- | --- | --- |
 | changed | `docs/artifacts/template-dictionary/index.html` | +297 | −0 |
 | changed | `docs/artifacts/template-dictionary/index.md` | +139 | −0 |
-| changed | `docs/artifacts/template-features-changes/index.html` | +986 | −0 |
-| changed | `docs/artifacts/template-features-changes/index.md` | +14915 | −0 |
+| changed | `docs/artifacts/template-features-changes/index.html` | +1016 | −0 |
+| changed | `docs/artifacts/template-features-changes/index.md` | +18953 | −0 |
 | changed | `docs/artifacts/template-stage-flow/index.html` | +393 | −0 |
 | changed | `docs/artifacts/template-stage-flow/index.md` | +140 | −0 |
 | changed | `docs/artifacts/template-system-concepts/index.html` | +627 | −0 |
@@ -142,11 +148,11 @@
 | changed | `docs/reference/template-features/02-model.html` | +209 | −0 |
 | changed | `docs/reference/template-features/03-capabilities.html` | +235 | −0 |
 | changed | `docs/reference/template-features/04-panels.html` | +208 | −0 |
-| changed | `docs/reference/template-features/05-changes.html` | +1075 | −0 |
+| changed | `docs/reference/template-features/05-changes.html` | +1105 | −0 |
 | changed | `docs/reference/template-features/build-diffs.mjs` | +242 | −0 |
 | changed | `docs/reference/template-features/index.html` | +167 | −0 |
 | changed | `docs/reference/template-features/reference.css` | +389 | −0 |
-| changed | `docs/superpowers/specs/2026-09-06-template-features-design.md` | +227 | −0 |
+| changed | `docs/superpowers/specs/2026-09-06-template-features-design.md` | +239 | −0 |
 
 ## The vocabulary: one table, five functions, one field
 
@@ -279,6 +285,433 @@
 +};
 ~~~~
 
+### new · `src/lib/representation/data/behavior/core/scope-draft.ts` (+421 / −0)
+
+~~~~diff
+@@ -0,0 +1,421 @@
++import { kindMatches } from "$representation/data/behavior/core/resource";
++import type { ResourceKind, ResourceRef } from "$representation/data/types/core/resource";
++import type {
++  ResourceSet,
++  SetTerm,
++  TemplatedResourceSet,
++  TemplatedTerm
++} from "$representation/data/types/core/resource-set";
++
++/**
++ * A scope while somebody is building it, and the words for the one they built.
++ *
++ * Every surface that offers a scope reads this: both editors' Templates panels,
++ * the library inspector, and the Contexts panel. Before it existed the same
++ * arithmetic and the same sentence were written out four times, and the fourth
++ * had already drifted.
++ *
++ * A draft is the widest shape either union can hold, so one component can edit a
++ * template's default and a project's own set without knowing which it has.
++ * `narrowed` and `templated` are the two doors back out.
++ */
++
++export type AnyTerm = SetTerm | TemplatedTerm;
++
++export type ScopeSide = "include" | "exclude";
++
++export type ScopeDraft = {
++  readonly include: readonly AnyTerm[];
++  readonly exclude: readonly AnyTerm[];
++};
++
++export type KindOption = { readonly kind: ResourceKind; readonly label: string };
++
++/**
++ * The kinds a project's catalogue reports, with the words for them.
++ *
++ * `ResourceKind` is an open prefix-matched string, so this is the offer list
++ * rather than the vocabulary: naming `externalFile` here would still match every
++ * subkind under it.
++ */
++export const PROJECT_KINDS: readonly KindOption[] = [
++  { kind: "document", label: "Documents" },
++  { kind: "slides", label: "Slide decks" },
++  { kind: "spreadsheet", label: "Spreadsheets" },
++  { kind: "finding", label: "Findings" },
++  { kind: "research", label: "Research threads" }
++];
++
++const KIND_LABEL = new Map(PROJECT_KINDS.map((entry) => [entry.kind, entry.label]));
++
++export const WHOLE_PROJECT: ResourceSet = { include: [{ select: "project" }], exclude: [] };
++
++export const EMPTY_DRAFT: ScopeDraft = { include: [], exclude: [] };
++
++export const draftOf = (scope: ScopeDraft | undefined): ScopeDraft =>
++  scope === undefined
++    ? { include: [...WHOLE_PROJECT.include], exclude: [] }
++    : { include: [...scope.include], exclude: [...scope.exclude] };
++
++/** A stable identity for a term, so a draft can say whether it already holds one. */
++export const termKey = (term: AnyTerm): string => {
++  if (term.select === "project") return "project";
++  if (term.select === "kinds") return `kinds:${[...term.kinds].sort().join(",")}`;
++  if (term.select === "set") return `set:${term.setId}`;
++  if (term.select === "variable") return `variable:${term.name}`;
++  return `resources:${term.refs.map((ref) => `${ref.kind}/${ref.id}`).sort().join(",")}`;
++};
++
++export const isWholeProject = (scope: ScopeDraft): boolean =>
++  scope.exclude.length === 0 &&
++  scope.include.length === 1 &&
++  scope.include[0].select === "project";
++
++export const isEmpty = (scope: ScopeDraft): boolean => scope.include.length === 0;
++
++export const holds = (scope: ScopeDraft, side: ScopeSide, term: AnyTerm): boolean =>
++  scope[side].some((held) => termKey(held) === termKey(term));
++
++/** Anywhere in the draft, which is what an offer list needs to grey a row out. */
++export const heldAnywhere = (scope: ScopeDraft, term: AnyTerm): ScopeSide | undefined => {
++  if (holds(scope, "include", term)) return "include";
++  if (holds(scope, "exclude", term)) return "exclude";
++  return undefined;
++};
++
++/**
++ * Adding the whole project replaces the include list, because everything else on
++ * that side is already inside it and leaving it there reads as a contradiction.
++ */
++export const withTerm = (scope: ScopeDraft, side: ScopeSide, term: AnyTerm): ScopeDraft => {
++  if (holds(scope, side, term)) return scope;
++  if (side === "include" && term.select === "project") return { include: [term], exclude: scope.exclude };
++  const kept = side === "include" ? scope.include.filter((held) => held.select !== "project") : scope[side];
++  return side === "include"
++    ? { include: [...kept, term], exclude: scope.exclude }
++    : { include: scope.include, exclude: [...scope.exclude, term] };
++};
++
++export const withoutTerm = (scope: ScopeDraft, side: ScopeSide, key: string): ScopeDraft => ({
++  include: side === "include" ? scope.include.filter((term) => termKey(term) !== key) : scope.include,
++  exclude: side === "exclude" ? scope.exclude.filter((term) => termKey(term) !== key) : scope.exclude
++});
++
++/** The draft with everything cleared back to the floor. */
++export const withWholeProject = (): ScopeDraft => draftOf(undefined);
++
++const isSetTerm = (term: AnyTerm): term is SetTerm => term.select !== "variable";
++
++const isTemplatedTerm = (term: AnyTerm): term is TemplatedTerm => term.select !== "resources";
++
++/** The draft as a concrete set, or undefined when it names a variable. */
++export const narrowed = (scope: ScopeDraft): ResourceSet | undefined =>
++  scope.include.every(isSetTerm) && scope.exclude.every(isSetTerm)
++    ? {
++        include: scope.include.filter(isSetTerm).map((term) => ({ ...term })),
++        exclude: scope.exclude.filter(isSetTerm).map((term) => ({ ...term }))
++      }
++    : undefined;
++
++/** The draft as a templated set, or undefined when it names particular resources. */
++export const templated = (scope: ScopeDraft): TemplatedResourceSet | undefined =>
++  scope.include.every(isTemplatedTerm) && scope.exclude.every(isTemplatedTerm)
++    ? {
++        include: scope.include.filter(isTemplatedTerm).map((term) => ({ ...term })),
++        exclude: scope.exclude.filter(isTemplatedTerm).map((term) => ({ ...term }))
++      }
++    : undefined;
++
++/**
++ * Whether saying this rule needs a row of its own.
++ *
++ * A variable term is substituted for whatever fills it, and substituting one
++ * term for a difference cannot be expressed on the excluding side. So a rule
++ * that excludes anything, or that names particular resources, is stored once and
++ * referred to by a single `set` term. Everything else is said inline, which is
++ * the common case and keeps the table free of rows that say `project`.
++ */
++export const needsRow = (scope: ScopeDraft): boolean =>
++  scope.exclude.length > 0 || scope.include.some((term) => term.select === "resources");
++
++/** Which set ids a scope reaches, following stored sets, so a cycle can be refused. */
++export const reaches = (
++  scope: ScopeDraft,
++  sets: ReadonlyMap<string, ResourceSet>,
++  seen: ReadonlySet<string> = new Set()
++): ReadonlySet<string> => {
++  const found = new Set<string>(seen);
++  for (const term of [...scope.include, ...scope.exclude]) {
++    if (term.select !== "set" || found.has(term.setId)) continue;
++    found.add(term.setId);
++    const held = sets.get(term.setId);
++    if (held === undefined) continue;
++    for (const id of reaches(held, sets, found)) found.add(id);
++  }
++  return found;
++};
++
++/** Whether adding this set to that scope would close a loop, and which set closes it. */
++export const closesLoop = (
++  scope: ScopeDraft,
++  setId: string,
++  sets: ReadonlyMap<string, ResourceSet>,
++  self?: string
++): boolean => {
++  if (self !== undefined && setId === self) return true;
++  if (self === undefined) return false;
++  const held = sets.get(setId);
++  return held !== undefined && reaches(held, sets).has(self);
++};
++
++export type ScopeNames = {
++  /** A stored set's name, by id. A bound row has none, and reads as its own rule. */
++  readonly sets?: ReadonlyMap<string, string>;
++  /** A resource's title, by id, for a term that names particular ones. */
++  readonly resources?: ReadonlyMap<string, string>;
++};
++
++const countWords = (count: number, one: string, many: string): string =>
++  `${count} ${count === 1 ? one : many}`;
++
++export const termWords = (term: AnyTerm, names: ScopeNames = {}): string => {
++  if (term.select === "project") return "everything in the project";
++  if (term.select === "kinds") {
++    return term.kinds.map((kind) => KIND_LABEL.get(kind) ?? kind).join(", ");
++  }
++  if (term.select === "set") {
++    return names.sets?.get(term.setId) ?? "a chosen group";
++  }
++  if (term.select === "variable") return `whatever ${term.name} holds`;
++  if (term.refs.length === 1) {
++    const held = names.resources?.get(term.refs[0].id);
++    return held ?? "one chosen resource";
++  }
++  return countWords(term.refs.length, "chosen resource", "chosen resources");
++};
++
++const listWords = (terms: readonly AnyTerm[], names: ScopeNames): string => {
++  const words = terms.map((term) => termWords(term, names));
++  if (words.length <= 1) return words.join("");
++  return `${words.slice(0, -1).join(", ")} and ${words[words.length - 1]}`;
++};
++
++const capitalized = (words: string): string => words.charAt(0).toUpperCase() + words.slice(1);
++
++/** One rule, read as a sentence. Every surface that shows a scope shows this. */
++export const ruleWords = (scope: ScopeDraft | undefined, names: ScopeNames = {}): string => {
++  if (scope === undefined) return "Everything in the project";
++  if (scope.include.length === 0) return "Nothing";
++  const included = isWholeProject(scope)
++    ? "Everything in the project"
++    : capitalized(listWords(scope.include, names));
++  if (scope.exclude.length === 0) return included;
++  return `${included}, minus ${listWords(scope.exclude, names)}`;
++};
++
++/**
++ * The draft as rows and offers, which is all a component may be handed.
++ *
++ * Nothing under `components/` may reach this tree, so the arithmetic and the
++ * words are done here and the builder is given the result. That is also what
++ * keeps the four surfaces saying the same thing: they all call these.
++ */
++
++export type ScopeRow = { readonly key: string; readonly kind: string; readonly words: string };
++
++export type ScopeOffer = {
++  readonly key: string;
++  readonly label: string;
++  readonly note?: string;
++  readonly held?: ScopeSide;
++  readonly refused?: string;
++};
++
++export type OfferSource = "kinds" | "sets" | "resources";
++
++export const rowsOf = (
++  scope: ScopeDraft,
++  side: ScopeSide,
++  names: ScopeNames = {}
++): readonly ScopeRow[] =>
++  scope[side].map((term) => ({
++    key: termKey(term),
++    kind: term.select,
++    words: termWords(term, names)
++  }));
++
++/** A resource is offered under one key, because a term needs its kind as well. */
++export const resourceKey = (ref: ResourceRef): string => `${ref.kind}/${ref.id}`;
++
++/** The term an offer stands for, so a callback can name a key rather than a shape. */
++export const termFor = (source: OfferSource, key: string): AnyTerm | undefined => {
++  if (source === "kinds") return { select: "kinds", kinds: [key] };
++  if (source === "sets") return { select: "set", setId: key as never };
++  const cut = key.indexOf("/");
++  if (cut <= 0) return undefined;
++  return { select: "resources", refs: [{ kind: key.slice(0, cut), id: key.slice(cut + 1) }] };
++};
++
++const offer = (scope: ScopeDraft, key: string, label: string, note: string | undefined, term: AnyTerm, refused?: string): ScopeOffer => {
++  const held = heldAnywhere(scope, term);
++  return {
++    key,
++    label,
++    ...(note === undefined ? {} : { note }),
++    ...(held === undefined ? {} : { held }),
++    ...(refused === undefined ? {} : { refused })
++  };
++};
++
++export const kindOffers = (scope: ScopeDraft): readonly ScopeOffer[] =>
++  PROJECT_KINDS.map((entry) =>
++    offer(scope, entry.kind, entry.label, undefined, { select: "kinds", kinds: [entry.kind] })
++  );
++
++export const setOffers = (
++  scope: ScopeDraft,
++  sets: readonly { readonly id: string; readonly name: string }[],
++  known: ReadonlyMap<string, ResourceSet>,
++  self?: string
++): readonly ScopeOffer[] =>
++  sets.map((entry) =>
++    offer(
++      scope,
++      entry.id,
++      entry.name,
++      "set",
++      { select: "set", setId: entry.id as never },
++      closesLoop(scope, entry.id, known, self) ? "This set already reaches the one being edited" : undefined
++    )
++  );
++
++export const resourceOffers = (
++  scope: ScopeDraft,
++  resources: readonly { readonly id: string; readonly kind: string; readonly name: string }[]
++): readonly ScopeOffer[] =>
++  resources.map((entry) =>
++    offer(scope, resourceKey(entry), entry.name, entry.kind, {
++      select: "resources",
++      refs: [{ kind: entry.kind, id: entry.id }]
++    })
++  );
++
++export type ScopeOffering = {
++  /** The project's own named sets. */
++  readonly sets?: readonly { readonly id: string; readonly name: string; readonly set: ResourceSet }[];
++  /** Everything the project holds, for the count and for naming one directly. */
++  readonly resources?: readonly { readonly id: string; readonly kind: string; readonly name: string }[];
++  /** The set being edited, when one is, so it cannot be put inside itself. */
++  readonly self?: string;
++};
++
++export type ScopeView = {
++  readonly whole: boolean;
++  readonly include: readonly ScopeRow[];
++  readonly exclude: readonly ScopeRow[];
++  readonly sentence: string;
++  readonly count: number;
++  readonly preview: readonly { readonly key: string; readonly label: string; readonly note: string }[];
++  readonly sources: readonly {
++    readonly key: OfferSource;
++    readonly label: string;
++    readonly placeholder?: string;
++    readonly offers: readonly ScopeOffer[];
++  }[];
++};
++
++/**
++ * Everything the builder needs to draw, from a draft and what the project holds.
++ *
++ * The four surfaces that open a builder call this and pass the result straight
++ * through, which is what keeps them saying the same words in the same order.
++ */
++export const builderView = (scope: ScopeDraft, offering: ScopeOffering = {}): ScopeView => {
++  const sets = offering.sets ?? [];
++  const resources = offering.resources ?? [];
++  const known = new Map(sets.map((entry) => [entry.id, entry.set]));
++  const names: ScopeNames = {
++    sets: new Map(sets.map((entry) => [entry.id, entry.name])),
++    resources: new Map(resources.map((entry) => [entry.id, entry.name]))
++  };
++  const catalogue = resources.map((entry) => ({ kind: entry.kind, id: entry.id }));
++  const selected = selectedBy(scope, catalogue, known);
++  const titles = new Map(resources.map((entry) => [entry.id, entry]));
++
++  return {
++    whole: isWholeProject(scope),
++    include: rowsOf(scope, "include", names),
++    exclude: rowsOf(scope, "exclude", names),
++    sentence: ruleWords(scope, names),
++    count: selected.length,
++    preview: selected.slice(0, 40).map((ref) => ({
++      key: resourceKey(ref),
++      label: titles.get(ref.id)?.name ?? ref.id,
++      note: ref.kind
++    })),
++    sources: [
++      { key: "kinds", label: "Kinds", offers: kindOffers(scope) },
++      {
++        key: "sets",
++        label: "Sets",
++        placeholder: "Search sets…",
++        offers: setOffers(scope, sets, known, offering.self)
++      },
++      {
++        key: "resources",
++        label: "Resources",
++        placeholder: "Search this project…",
++        offers: resourceOffers(scope, resources)
++      }
++    ]
++  };
++};
++
++/**
++ * What a draft selects right now, resolved against the project's catalogue.
++ *
++ * A variable term contributes nothing, because what fills it is not known here.
++ * The count is the point of the builder: a rule with no number beside it is a
++ * guess.
++ */
++export const selectedBy = (
++  scope: ScopeDraft,
++  catalogue: readonly ResourceRef[],
++  sets: ReadonlyMap<string, ResourceSet>
++): readonly ResourceRef[] => {
++  const keyOf = (ref: ResourceRef) => `${ref.kind} ${ref.id}`;
++  const known = new Map(catalogue.map((ref) => [keyOf(ref), ref]));
++
++  const ofTerm = (term: AnyTerm, seen: ReadonlySet<string>): readonly ResourceRef[] => {
++    if (term.select === "project") return catalogue;
++    if (term.select === "variable") return [];
++    if (term.select === "kinds") {
++      return catalogue.filter((ref) => term.kinds.some((kind) => kindMatches(kind, ref.kind)));
++    }
++    if (term.select === "resources") {
++      return term.refs.flatMap((ref) => {
++        const held = known.get(keyOf(ref));
++        return held === undefined ? [] : [held];
++      });
++    }
++    if (seen.has(term.setId)) return [];
++    const held = sets.get(term.setId);
++    return held === undefined ? [] : ofScope(held, new Set([...seen, term.setId]));
++  };
++
++  const union = (terms: readonly AnyTerm[], seen: ReadonlySet<string>): Map<string, ResourceRef> => {
++    const found = new Map<string, ResourceRef>();
++    for (const term of terms) {
++      for (const ref of ofTerm(term, seen)) found.set(keyOf(ref), ref);
++    }
++    return found;
++  };
++
++  const ofScope = (held: ScopeDraft, seen: ReadonlySet<string>): readonly ResourceRef[] => {
++    const included = union(held.include, seen);
++    const excluded = union(held.exclude, seen);
++    return [...included].filter(([key]) => !excluded.has(key)).map(([, ref]) => ref);
++  };
++
++  return ofScope(scope, new Set());
++};
+~~~~
+
 ### new · `src/lib/representation/data/behavior/core/test/unit/resource-set.test.ts` (+46 / −0)
 
 ~~~~diff
@@ -327,6 +760,206 @@
 +
 +  it("selects nothing from an empty include", () => {
 +    expect(resolveResourceSet({ include: [], exclude: [] }, catalogue)).toEqual([]);
++  });
++});
+~~~~
+
+### new · `src/lib/representation/data/behavior/core/test/unit/scope-draft.test.ts` (+194 / −0)
+
+~~~~diff
+@@ -0,0 +1,194 @@
++import { describe, expect, it } from "vitest";
++
++import type { ResourceSet } from "$representation/data/types/core/resource-set";
++import {
++  builderView,
++  closesLoop,
++  draftOf,
++  heldAnywhere,
++  isWholeProject,
++  needsRow,
++  narrowed,
++  ruleWords,
++  selectedBy,
++  templated,
++  termFor,
++  termKey,
++  withTerm,
++  withWholeProject,
++  withoutTerm,
++  type AnyTerm,
++  type ScopeDraft
++} from "$representation/data/behavior/core/scope-draft";
++
++const resources = [
++  { id: "documents:1", kind: "document", name: "Winter readiness brief" },
++  { id: "documents:2", kind: "document", name: "Decision memo" },
++  { id: "slideDecks:1", kind: "slides", name: "Board review" },
++  { id: "findings:1", kind: "finding", name: "Pump housing" }
++];
++
++const catalogue = resources.map((entry) => ({ kind: entry.kind, id: entry.id }));
++
++const named = new Map<string, ResourceSet>([
++  ["resourceSets:1", { include: [{ select: "kinds", kinds: ["document"] }], exclude: [] }],
++  ["resourceSets:2", { include: [{ select: "set", setId: "resourceSets:1" as never }], exclude: [] }]
++]);
++
++describe("a draft", () => {
++  it("starts at the floor and says so", () => {
++    const draft = draftOf(undefined);
++    expect(isWholeProject(draft)).toBe(true);
++    expect(ruleWords(draft)).toBe("Everything in the project");
++    expect(needsRow(draft)).toBe(false);
++  });
++
++  it("replaces the include list when the whole project is added", () => {
++    const narrow: ScopeDraft = { include: [{ select: "kinds", kinds: ["document"] }], exclude: [] };
++    const widened = withTerm(narrow, "include", { select: "project" });
++    expect(widened.include).toHaveLength(1);
++    expect(isWholeProject(widened)).toBe(true);
++  });
++
++  it("drops the whole project when something narrower is added beside it", () => {
++    const narrowed = withTerm(withWholeProject(), "include", { select: "kinds", kinds: ["slides"] });
++    expect(narrowed.include).toHaveLength(1);
++    expect(ruleWords(narrowed)).toBe("Slide decks");
++  });
++
++  it("never holds the same term twice, and removes by key", () => {
++    const term: AnyTerm = { select: "kinds", kinds: ["document"] };
++    const once = withTerm({ include: [], exclude: [] }, "include", term);
++    expect(withTerm(once, "include", term).include).toHaveLength(1);
++    expect(heldAnywhere(once, term)).toBe("include");
++    expect(withoutTerm(once, "include", termKey(term)).include).toHaveLength(0);
++  });
++
++  it("reads a difference as one sentence", () => {
++    const draft: ScopeDraft = {
++      include: [
++        { select: "kinds", kinds: ["document"] },
++        { select: "set", setId: "resourceSets:1" as never }
++      ],
++      exclude: [{ select: "resources", refs: [{ kind: "document", id: "documents:2" }] }]
++    };
++    expect(
++      ruleWords(draft, {
++        sets: new Map([["resourceSets:1", "Winter filings"]]),
++        resources: new Map([["documents:2", "Decision memo"]])
++      })
++    ).toBe("Documents and Winter filings, minus Decision memo");
++  });
++
++  it("says nothing when nothing is included", () => {
++    expect(ruleWords({ include: [], exclude: [] })).toBe("Nothing");
++  });
++});
++
++describe("whether a rule needs a row", () => {
++  it("does not for the project, for kinds, or for named sets", () => {
++    expect(needsRow({ include: [{ select: "project" }], exclude: [] })).toBe(false);
++    expect(needsRow({ include: [{ select: "kinds", kinds: ["document"] }], exclude: [] })).toBe(false);
++    expect(needsRow({ include: [{ select: "set", setId: "resourceSets:1" as never }], exclude: [] })).toBe(false);
++  });
++
++  it("does for anything excluded, because a difference cannot be substituted", () => {
++    expect(
++      needsRow({
++        include: [{ select: "project" }],
++        exclude: [{ select: "kinds", kinds: ["slides"] }]
++      })
++    ).toBe(true);
++  });
++
++  it("does for a particular resource, which a template cannot name", () => {
++    expect(
++      needsRow({
++        include: [{ select: "resources", refs: [{ kind: "document", id: "documents:1" }] }],
++        exclude: []
++      })
++    ).toBe(true);
++  });
++});
++
++describe("the two doors out of a draft", () => {
++  it("narrows to a concrete set when nothing names a variable", () => {
++    const draft: ScopeDraft = {
++      include: [{ select: "resources", refs: [{ kind: "document", id: "documents:1" }] }],
++      exclude: []
++    };
++    expect(narrowed(draft)).not.toBeUndefined();
++    expect(templated(draft)).toBeUndefined();
++  });
++
++  it("stays templated when nothing names a resource", () => {
++    const draft: ScopeDraft = { include: [{ select: "variable", name: "source_material" }], exclude: [] };
++    expect(templated(draft)).not.toBeUndefined();
++    expect(narrowed(draft)).toBeUndefined();
++  });
++});
++
++describe("cycles", () => {
++  it("refuses a set that is the one being edited", () => {
++    expect(closesLoop({ include: [], exclude: [] }, "resourceSets:1", named, "resourceSets:1")).toBe(true);
++  });
++
++  it("refuses a set that already reaches the one being edited", () => {
++    expect(closesLoop({ include: [], exclude: [] }, "resourceSets:2", named, "resourceSets:1")).toBe(true);
++  });
++
++  it("allows one that does not", () => {
++    expect(closesLoop({ include: [], exclude: [] }, "resourceSets:1", named, "resourceSets:9")).toBe(false);
++  });
++});
++
++describe("what a draft selects", () => {
++  it("counts the difference against the catalogue", () => {
++    const draft: ScopeDraft = {
++      include: [{ select: "project" }],
++      exclude: [{ select: "kinds", kinds: ["slides"] }]
++    };
++    expect(selectedBy(draft, catalogue, named).map((ref) => ref.id)).toEqual([
++      "documents:1",
++      "documents:2",
++      "findings:1"
++    ]);
++  });
++
++  it("counts a variable term as nothing, because what fills it is not known here", () => {
++    const draft: ScopeDraft = { include: [{ select: "variable", name: "source" }], exclude: [] };
++    expect(selectedBy(draft, catalogue, named)).toHaveLength(0);
++  });
++});
++
++describe("the builder's view", () => {
++  it("hands over rows, a sentence, a count and three sources", () => {
++    const draft: ScopeDraft = {
++      include: [{ select: "kinds", kinds: ["document"] }],
++      exclude: [{ select: "resources", refs: [{ kind: "document", id: "documents:2" }] }]
++    };
++    const view = builderView(draft, { resources, sets: [] });
++    expect(view.whole).toBe(false);
++    expect(view.include).toHaveLength(1);
++    expect(view.exclude[0].words).toBe("Decision memo");
++    expect(view.sentence).toBe("Documents, minus Decision memo");
++    expect(view.count).toBe(1);
++    expect(view.sources.map((source) => source.key)).toEqual(["kinds", "sets", "resources"]);
++  });
++
++  it("marks what the draft already holds, so nothing is offered twice", () => {
++    const draft: ScopeDraft = { include: [{ select: "kinds", kinds: ["document"] }], exclude: [] };
++    const kinds = builderView(draft, { resources }).sources[0];
++    expect(kinds.offers.find((offer) => offer.key === "document")?.held).toBe("include");
++    expect(kinds.offers.find((offer) => offer.key === "slides")?.held).toBeUndefined();
++  });
++
++  it("turns an offer key back into the term it stands for", () => {
++    expect(termFor("kinds", "document")).toEqual({ select: "kinds", kinds: ["document"] });
++    expect(termFor("sets", "resourceSets:1")).toEqual({ select: "set", setId: "resourceSets:1" });
++    expect(termFor("resources", "document/documents:1")).toEqual({
++      select: "resources",
++      refs: [{ kind: "document", id: "documents:1" }]
++    });
 +  });
 +});
 ~~~~
@@ -1087,10 +1720,10 @@
      frame: { ...STARTING_FRAME },
 ~~~~
 
-### changed · `src/lib/representation/data/types/core/resource-set.ts` (+4 / −24)
+### changed · `src/lib/representation/data/types/core/resource-set.ts` (+16 / −24)
 
 ~~~~diff
-@@ -1,40 +1,20 @@
+@@ -1,40 +1,32 @@
  import type { Id } from "$representation/data/types/core/id";
  import type { ResourceKind, ResourceRef } from "$representation/data/types/core/resource";
  
@@ -1135,6 +1768,18 @@
  
 -/** The same, as a template carries it between projects. */
  export type TemplatedResourceSet = { include: TemplatedTerm[]; exclude: TemplatedTerm[] };
++
++/**
++ * What a stored set exists for, when it exists for one thing.
++ *
++ * A row with a name is a project subject: people make it, list it, and reuse it.
++ * A row with an owner is a value something else holds, written because the rule
++ * could not be said inline. It is never listed and never named, and it goes when
++ * its owner goes.
++ */
++export type BoundTo =
++  | { kind: "variable"; templateId: Id<"templates">; variable: string }
++  | { kind: "resource"; resourceId: string; variable: string };
 ~~~~
 
 ### changed · `src/lib/representation/data/types/templates/template.ts` (+0 / −29)
@@ -1215,9 +1860,18 @@
  };
 ~~~~
 
-### changed · `src/lib/representation/store/tables.ts` (+15 / −4)
+### changed · `src/lib/representation/store/tables.ts` (+23 / −9)
 
 ~~~~diff
+@@ -15,7 +15,7 @@ import type { MembershipRole } from "$representation/data/types/core/access";
+ import type { Actor } from "$representation/data/types/core/actor";
+ import type { Id, Row } from "$representation/data/types/core/id";
+ import type { ResourceRef } from "$representation/data/types/core/resource";
+-import type { ResourceSet } from "$representation/data/types/core/resource-set";
++import type { BoundTo, ResourceSet } from "$representation/data/types/core/resource-set";
+ import type { BackReferenceTargetKind } from "$representation/data/types/data/back-reference";
+ import type { FormulaUse } from "$representation/data/types/data/formula-use";
+ import type {
 @@ -169,7 +169,6 @@ export type SpreadsheetChangeSet = Row<"spreadsheetChangeSets"> & SpreadsheetCha
  export type DocumentFields = {
    projectId: Id<"projects">;
@@ -1261,12 +1915,14 @@
  };
  export type Template = Row<"templates"> & TemplateFields;
  
-@@ -365,6 +363,17 @@ export type TemplateVersionFields = {
+@@ -365,16 +363,30 @@ export type TemplateVersionFields = {
  };
  export type TemplateVersion = Row<"templateVersions"> & TemplateVersionFields;
  
+-export type NamedResourceSetFields = {
 +export type TemplateStageFields = {
-+  projectId: Id<"projects">;
+   projectId: Id<"projects">;
+-  name: string;
 +  templateId: Id<"templates">;
 +  templateRevision: number;
 +  target: Exclude<TemplateBody["resource"], "spreadsheet">;
@@ -1276,10 +1932,24 @@
 +};
 +export type TemplateStage = Row<"templateStages"> & TemplateStageFields;
 +
- export type NamedResourceSetFields = {
++export type ResourceSetFields = {
++  projectId: Id<"projects">;
++  /** Present on a project's own sets. Absent on a row bound to one variable or one resource. */
++  name?: string;
+   description?: string;
++  /** Present on a bound row, and never together with a name. */
++  boundTo?: BoundTo;
+   set: ResourceSet;
+   createdBy: Actor;
+   revision: number;
+   updatedAt: number;
+ };
+-export type NamedResourceSet = Row<"resourceSets"> & NamedResourceSetFields;
++export type StoredResourceSet = Row<"resourceSets"> & ResourceSetFields;
+ 
+ export type ConnectorFields = {
    projectId: Id<"projects">;
-   name: string;
-@@ -572,6 +581,7 @@ export const TABLE_NAMES = [
+@@ -572,6 +584,7 @@ export const TABLE_NAMES = [
    "spreadsheets",
    "spreadsheetSnapshots",
    "templates",
@@ -1287,7 +1957,16 @@
    "templateVersions",
    "threadParts",
    "threads",
-@@ -619,6 +629,7 @@ export type TableFields = {
+@@ -604,7 +617,7 @@ export type TableFields = {
+   projects: ProjectFields;
+   questions: QuestionFields;
+   researchThreads: ResearchThreadFields;
+-  resourceSets: NamedResourceSetFields;
++  resourceSets: ResourceSetFields;
+   semanticIndexes: SemanticIndexFields;
+   semanticIndexNodes: SemanticIndexNodeFields;
+   semanticObjectHistory: SemanticObjectHistoryFields;
+@@ -619,6 +632,7 @@ export type TableFields = {
    spreadsheets: SpreadsheetFields;
    spreadsheetSnapshots: SpreadsheetSnapshotFields;
    templates: TemplateFields;
@@ -1670,10 +2349,10 @@
      ...(source.description === undefined ? {} : { description: source.description }),
 ~~~~
 
-### changed · `src/lib/capabilities/templates/api/instantiate-template/instantiate-template.ts` (+51 / −23)
+### changed · `src/lib/capabilities/templates/api/instantiate-template/instantiate-template.ts` (+86 / −46)
 
 ~~~~diff
-@@ -3,19 +3,40 @@ import { serverModel } from "$runtime/server/start.server";
+@@ -3,19 +3,33 @@ import { serverModel } from "$runtime/server/start.server";
  import { asId } from "$representation/data/behavior/core/id";
  import { normalizeDocumentStyleSet } from "$representation/data/behavior/documents/typography";
  import { ensureSlideDeckReady } from "$representation/data/behavior/slide-decks/normalize";
@@ -1692,52 +2371,32 @@
    visibleTemplate
  } from "$capabilities/templates/api/shared/projection";
 -import type { InstantiateTemplateResult } from "$capabilities/templates/types/templates";
-+import { recordsIn } from "$capabilities/templates/api/shared/store";
++import { normalizeScope, unknownSetsIn } from "$capabilities/templates/api/shared/scopes";
 +import type {
 +  InstantiateTemplateResult,
 +  TemplateAnswers
 +} from "$capabilities/templates/types/templates";
 +
-+const unknownSetsIn = (
++const unknownSetsInAnswers = (
 +  store: ReturnType<typeof serverModel>["store"],
 +  projectId: string,
 +  answers: TemplateAnswers
 +): readonly string[] => {
-+  const held = new Set(
-+    recordsIn(store, "resourceSets")
-+      .filter((row) => row.projectId === projectId && typeof row._id === "string")
-+      .map((row) => row._id as string)
-+  );
-+  const named = new Set<string>();
++  const missing = new Set<string>();
 +  for (const answer of Object.values(answers)) {
-+    for (const term of [...answer.include, ...answer.exclude]) {
-+      if (term.select === "set") named.add(term.setId);
-+    }
++    for (const id of unknownSetsIn(store, projectId, answer)) missing.add(id);
 +  }
-+  return [...named].filter((id) => !held.has(id)).sort();
++  return [...missing].sort();
 +};
  
  export const instantiateTemplate = async (input: unknown): Promise<InstantiateTemplateResult> => {
    const scope = await requireScope();
-@@ -49,24 +70,35 @@ export const instantiateTemplate = async (input: unknown): Promise<InstantiateTe
+@@ -49,48 +63,90 @@ export const instantiateTemplate = async (input: unknown): Promise<InstantiateTe
        detail: error instanceof Error ? error.message : String(error)
      };
    }
 -  const resolved = resolveTemplateDefaults(body, variables);
-+
-+  const answers = asked.answers ?? {};
-+  const unknownSets = unknownSetsIn(store, scope.projectId, answers);
-+  if (unknownSets.length > 0) {
-+    return {
-+      accepted: false,
-+      templateId: template._id,
-+      reason: "unsupported-body",
-+      revision: template.revision,
-+      detail: `this project holds no resource set ${unknownSets.join(", ")}`
-+    };
-+  }
-+  const resolved = resolveTemplateScopes(body, variables, answers);
-   if (!resolved.accepted) {
+-  if (!resolved.accepted) {
 -    if (resolved.reason === "unsupported-body") {
 -      return {
 -        accepted: false,
@@ -1747,62 +2406,137 @@
 -        detail: resolved.detail
 -      };
 -    }
++
++  const answers = asked.answers ?? {};
++  const unknownSets = unknownSetsInAnswers(store, scope.projectId, answers);
++  if (unknownSets.length > 0) {
      return {
        accepted: false,
        templateId: template._id,
 -      reason: "variables-required",
++      reason: "unsupported-body",
+       revision: template.revision,
+-      detail: "one or more template variables need answers and have no usable default",
+-      variables: resolved.variables
++      detail: `this project holds no resource set ${unknownSets.join(", ")}`
+     };
+   }
+-  body = resolved.body;
+ 
+   const projectId = asId<"projects">(scope.projectId);
+   const actor = { kind: "user" as const, userId: asId<"users">(scope.userId) };
+   const at = Date.now();
+   const title = asked.name ?? template.name;
+ 
++  /**
++   * The resource is minted before its scopes are resolved, because an answer
++   * that excludes anything is stored as a row and that row is owned by the
++   * resource this call makes. Nothing else is written until resolution
++   * succeeds, and the rollback undoes exactly what was.
++   */
++  const table =
++    body.resource === "document" ? "documents" : body.resource === "slides" ? "slideDecks" : "spreadsheets";
++  const resourceId = store.create(table, {
++    projectId,
++    title,
++    createdBy: actor,
++    updatedBy: { ...actor },
++    updatedAt: at
++  });
++
++  const written: string[] = [];
++  const answered: Record<string, TemplateAnswers[string]> = {};
++  for (const [name, rule] of Object.entries(answers)) {
++    const term = normalizeScope(
++      store,
++      scope.projectId,
++      actor,
++      { kind: "resource", resourceId, variable: name },
++      rule,
++      at
++    );
++    if (term === undefined) continue;
++    if (term.setId !== undefined) written.push(term.setId);
++    answered[name] = term.term as TemplateAnswers[string];
++  }
++
++  const rollback = () => {
++    for (const setId of written) store.remove(`resourceSets.${setId}`);
++    store.remove(`${table}.${resourceId}`);
++  };
++
++  const resolved = resolveTemplateScopes(body, variables, answered);
++  if (!resolved.accepted) {
++    rollback();
++    return {
++      accepted: false,
++      templateId: template._id,
 +      reason: resolved.reason,
 +      revision: template.revision,
 +      detail: resolved.detail
 +    };
 +  }
 +  if (resolved.undeclared.length > 0) {
++    rollback();
 +    return {
 +      accepted: false,
 +      templateId: template._id,
 +      reason: "unsupported-body",
-       revision: template.revision,
--      detail: "one or more template variables need answers and have no usable default",
--      variables: resolved.variables
++      revision: template.revision,
 +      detail: `the body names a variable the template does not declare: ${resolved.undeclared.join(", ")}`
-     };
-   }
-   body = resolved.body;
-@@ -75,6 +107,7 @@ export const instantiateTemplate = async (input: unknown): Promise<InstantiateTe
-   const actor = { kind: "user" as const, userId: asId<"users">(scope.userId) };
-   const at = Date.now();
-   const title = asked.name ?? template.name;
++    };
++  }
++  body = resolved.body;
 +  store.update(`templates.${template._id}.lastUsedAt`, at);
- 
++
    if (body.resource === "document") {
      const { resource: _resource, ...documentBody } = body;
-@@ -84,10 +117,7 @@ export const instantiateTemplate = async (input: unknown): Promise<InstantiateTe
-     const resourceId = store.create("documents", {
-       projectId,
-       title,
+     const readyBody = documentBody.styles === undefined
+       ? documentBody
+       : { ...documentBody, styles: normalizeDocumentStyleSet(documentBody.styles) };
+-    const resourceId = store.create("documents", {
+-      projectId,
+-      title,
 -      templateId: template._id,
-       createdBy: actor,
+-      createdBy: actor,
 -      // The file store requires a tree rather than a graph: two properties may
 -      // not share one object reference even when JSON could stringify it.
-       updatedBy: { ...actor },
-       updatedAt: at
-     });
-@@ -116,7 +146,6 @@ export const instantiateTemplate = async (input: unknown): Promise<InstantiateTe
-     const resourceId = store.create("slideDecks", {
+-      updatedBy: { ...actor },
+-      updatedAt: at
+-    });
+     store.create("documentSnapshots", {
        projectId,
-       title,
+       resourceId,
+@@ -113,14 +169,6 @@ export const instantiateTemplate = async (input: unknown): Promise<InstantiateTe
+   if (body.resource === "slides") {
+     const { resource: _resource, ...slideDeckBody } = body;
+     const readyBody = ensureSlideDeckReady(slideDeckBody);
+-    const resourceId = store.create("slideDecks", {
+-      projectId,
+-      title,
 -      templateId: template._id,
-       createdBy: actor,
-       updatedBy: { ...actor },
-       updatedAt: at
-@@ -144,7 +173,6 @@ export const instantiateTemplate = async (input: unknown): Promise<InstantiateTe
-   const resourceId = store.create("spreadsheets", {
-     projectId,
-     title,
+-      createdBy: actor,
+-      updatedBy: { ...actor },
+-      updatedAt: at
+-    });
+     store.create("slideDeckSnapshots", {
+       projectId,
+       resourceId,
+@@ -141,14 +189,6 @@ export const instantiateTemplate = async (input: unknown): Promise<InstantiateTe
+   }
+ 
+   const materialized = materializeSpreadsheet(body);
+-  const resourceId = store.create("spreadsheets", {
+-    projectId,
+-    title,
 -    templateId: template._id,
-     createdBy: actor,
-     updatedBy: { ...actor },
-     updatedAt: at
+-    createdBy: actor,
+-    updatedBy: { ...actor },
+-    updatedAt: at
+-  });
+   store.create("spreadsheetSnapshots", {
+     projectId,
+     resourceId,
 ~~~~
 
 ### changed · `src/lib/capabilities/templates/api/instantiate-template/validate-instantiate-template.ts` (+5 / −2)
@@ -2035,18 +2769,19 @@
 +};
 ~~~~
 
-### changed · `src/lib/capabilities/templates/api/remove-template/remove-template.ts` (+3 / −69)
+### changed · `src/lib/capabilities/templates/api/remove-template/remove-template.ts` (+10 / −68)
 
 ~~~~diff
-@@ -7,6 +7,7 @@ import {
+@@ -7,6 +7,8 @@ import {
    reportableRevision,
    visibleTemplate
  } from "$capabilities/templates/api/shared/projection";
++import { removeRowsBoundTo } from "$capabilities/templates/api/shared/scopes";
 +import { removeStage, stagesIn } from "$capabilities/templates/api/shared/stages";
  import {
    canonicalRowId,
    recordsIn
-@@ -30,15 +31,6 @@ export const removeTemplate = async (input: unknown): Promise<RemoveTemplateResu
+@@ -30,15 +32,6 @@ export const removeTemplate = async (input: unknown): Promise<RemoveTemplateResu
      };
    }
    const stored = found.template;
@@ -2062,7 +2797,7 @@
    if (stored.revision !== asked.baseRevision) {
      return {
        accepted: false,
-@@ -62,59 +54,7 @@ export const removeTemplate = async (input: unknown): Promise<RemoveTemplateResu
+@@ -62,59 +55,7 @@ export const removeTemplate = async (input: unknown): Promise<RemoveTemplateResu
      };
    }
  
@@ -2123,7 +2858,7 @@
  
    const versions = recordsIn(store, "templateVersions");
    const versionClaimants = new Map<string, number>();
-@@ -147,13 +87,7 @@ export const removeTemplate = async (input: unknown): Promise<RemoveTemplateResu
+@@ -147,12 +88,13 @@ export const removeTemplate = async (input: unknown): Promise<RemoveTemplateResu
      versionIds.push(id);
    }
  
@@ -2133,11 +2868,16 @@
 -      (detach.get(table) ?? []).map((id) => asId<typeof table>(id)),
 -      "templateId"
 -    );
--  }
 +  for (const stage of stages) removeStage(store, stage);
++  for (const variable of template.variables) {
++    removeRowsBoundTo(store, scope.projectId, {
++      kind: "variable",
++      templateId: template._id,
++      variable: variable.name
++    });
+   }
    store.removeRows(
      "templateVersions",
-     versionIds.map((id) => asId<"templateVersions">(id))
 ~~~~
 
 ### changed · `src/lib/capabilities/templates/api/shared/bodies.ts` (+17 / −171)
@@ -2358,10 +3098,18 @@
  export type MaterializedSpreadsheet = {
 ~~~~
 
-### changed · `src/lib/capabilities/templates/api/shared/projection.ts` (+19 / −45)
+### changed · `src/lib/capabilities/templates/api/shared/projection.ts` (+30 / −45)
 
 ~~~~diff
-@@ -74,10 +74,10 @@ const actorOf = (value: unknown, subject: string): Actor => {
+@@ -2,6 +2,7 @@ import type { StoreModel, TableRow } from "$model/server/store/index.server";
+ import type { Scope } from "$runtime/server/scope.server";
+ import type { Actor } from "$representation/data/types/core/actor";
+ 
++import { expandedScope } from "$capabilities/templates/api/shared/scopes";
+ import {
+   canonicalRowId,
+   recordsIn
+@@ -74,10 +75,10 @@ const actorOf = (value: unknown, subject: string): Actor => {
    throw new Error(`templates/${subject}: createdBy is a represented actor`);
  };
  
@@ -2373,7 +3121,7 @@
    requiredId(template.userId, subject, "owner id");
    if (!Number.isFinite(template._creationTime) || template._creationTime < 0) {
      throw new Error(`templates/${subject}: creation time is finite`);
-@@ -88,6 +88,12 @@ export const admitStoredTemplate = (template: Template): Template => {
+@@ -88,6 +89,12 @@ export const admitStoredTemplate = (template: Template): Template => {
    if (!Number.isFinite(template.updatedAt) || template.updatedAt < 0) {
      throw new Error(`templates/${subject}: updated time is finite`);
    }
@@ -2386,7 +3134,7 @@
  
    const name = nameOf(template.name, subject);
    const description =
-@@ -116,7 +122,7 @@ export const visibleTemplate = (
+@@ -116,7 +123,7 @@ export const visibleTemplate = (
    templateId: string
  ): TemplateLookup => {
    const matching = recordsIn(store, "templates").filter((row) => row._id === templateId);
@@ -2395,7 +3143,7 @@
    if (visible.length === 0) return { kind: "missing" };
    if (matching.length !== 1 || visible.length !== 1) {
      return {
-@@ -168,30 +174,6 @@ const actorName = (store: StoreModel, scope: Scope, actor: Actor): string => {
+@@ -168,30 +175,6 @@ const actorName = (store: StoreModel, scope: Scope, actor: Actor): string => {
    return title === undefined ? "An agent" : `Agent · ${title}`;
  };
  
@@ -2426,7 +3174,7 @@
  export const projectLibrary = (
    store: StoreModel,
    scope: Scope
-@@ -199,7 +181,6 @@ export const projectLibrary = (
+@@ -199,7 +182,6 @@ export const projectLibrary = (
    readonly templates: readonly TemplateLibraryItem[];
    readonly unavailable: readonly TemplateUnavailable[];
  } => {
@@ -2434,7 +3182,7 @@
    const templates: TemplateLibraryItem[] = [];
    const unavailable: TemplateUnavailable[] = [];
    const rows = recordsIn(store, "templates");
-@@ -208,7 +189,7 @@ export const projectLibrary = (
+@@ -208,7 +190,7 @@ export const projectLibrary = (
      const id = canonicalRowId(row._id, "templates");
      if (id !== undefined) idCounts.set(id, (idCounts.get(id) ?? 0) + 1);
    }
@@ -2443,7 +3191,7 @@
    for (const [index, row] of visible.entries()) {
      const id = canonicalRowId(row._id, "templates");
      const reportId =
-@@ -227,7 +208,7 @@ export const projectLibrary = (
+@@ -227,7 +209,7 @@ export const projectLibrary = (
      try {
        const stored = row as unknown as Template;
        const template = admitStoredTemplate(stored);
@@ -2452,7 +3200,7 @@
      } catch (error) {
        unavailable.push({
          unavailable: true,
-@@ -243,24 +224,19 @@ export const projectLibrary = (
+@@ -243,24 +225,19 @@ export const projectLibrary = (
    return { templates, unavailable };
  };
  
@@ -2480,7 +3228,7 @@
      canEdit: true,
      canDelete: true
    };
-@@ -272,12 +248,10 @@ export const detailOf = (
+@@ -272,12 +249,20 @@ export const detailOf = (
    template: Template
  ): TemplateDetail => {
    const admitted = admitStoredTemplate(template);
@@ -2496,21 +3244,242 @@
 +  return {
 +    ...item,
 +    body: admitted.body,
-+    variables: admitted.variables
++    /**
++     * A default naming a bound row is read back as the rule it holds, because
++     * that row is the variable's value rather than a set anyone chose. A named
++     * set stays a named set.
++     */
++    variables: admitted.variables.map((variable) => {
++      const expanded = expandedScope(store, scope.projectId, variable.default);
++      return expanded === undefined
++        ? variable
++        : { ...variable, default: expanded };
++    })
 +  };
  };
 ~~~~
 
-### new · `src/lib/capabilities/templates/api/shared/stages.ts` (+137 / −0)
+### new · `src/lib/capabilities/templates/api/shared/scopes.ts` (+204 / −0)
 
 ~~~~diff
-@@ -0,0 +1,137 @@
+@@ -0,0 +1,204 @@
++import type { StoreModel } from "$model/server/store/index.server";
++import { asId } from "$representation/data/behavior/core/id";
++import { needsRow, ruleWords } from "$representation/data/behavior/core/scope-draft";
++import type { Actor } from "$representation/data/types/core/actor";
++import type {
++  BoundTo,
++  ResourceSet,
++  TemplatedResourceSet
++} from "$representation/data/types/core/resource-set";
++
++import { recordsIn } from "$capabilities/templates/api/shared/store";
++
++/**
++ * A chosen rule becomes a term, and a row only when it has to.
++ *
++ * Four surfaces choose a scope: a variable's default from either editor's panel
++ * or from the library inspector, and an answer given while placing a template.
++ * All four send the rule they built and none of them writes anything, because
++ * the normalisation is the same every time and a client-side write would put a
++ * second round trip in front of a save that can then half-fail.
++ *
++ * **A rule that excludes anything, or names particular resources, is stored.**
++ * Resolving a template substitutes a variable term for what fills it, and a
++ * variable term may sit on either side of a prompt's scope. One term for one
++ * term works on both sides; one term for a difference does not. So the
++ * difference lives inside a row and what points at it is a single `set` term.
++ * Everything else is said inline, which is the common case.
++ */
++
++export type ScopeOwner = BoundTo;
++
++const named = (store: StoreModel, projectId: string): ReadonlySet<string> =>
++  new Set(
++    recordsIn(store, "resourceSets")
++      .filter(
++        (row) => row.projectId === projectId && typeof row._id === "string" && row.name !== undefined
++      )
++      .map((row) => row._id as string)
++  );
++
++const sameOwner = (held: unknown, owner: ScopeOwner): boolean => {
++  if (held === null || typeof held !== "object") return false;
++  const record = held as Record<string, unknown>;
++  if (owner.kind === "variable") {
++    return (
++      record.kind === "variable" &&
++      record.templateId === owner.templateId &&
++      record.variable === owner.variable
++    );
++  }
++  return (
++    record.kind === "resource" &&
++    record.resourceId === owner.resourceId &&
++    record.variable === owner.variable
++  );
++};
++
++/** Every row bound to one resource, whichever variable it answered. */
++export const rowsOfResource = (
++  store: StoreModel,
++  projectId: string,
++  resourceId: string
++): readonly string[] =>
++  recordsIn(store, "resourceSets")
++    .filter((row) => {
++      if (row.projectId !== projectId || typeof row._id !== "string") return false;
++      const held = row.boundTo;
++      return (
++        held !== null &&
++        typeof held === "object" &&
++        (held as Record<string, unknown>).kind === "resource" &&
++        (held as Record<string, unknown>).resourceId === resourceId
++      );
++    })
++    .map((row) => row._id as string);
++
++/** The bound rows an owner holds, newest last, so a rewrite can reuse the first. */
++export const rowsBoundTo = (
++  store: StoreModel,
++  projectId: string,
++  owner: ScopeOwner
++): readonly string[] =>
++  recordsIn(store, "resourceSets")
++    .filter(
++      (row) =>
++        row.projectId === projectId &&
++        typeof row._id === "string" &&
++        sameOwner(row.boundTo, owner)
++    )
++    .map((row) => row._id as string);
++
++export const removeRowsBoundTo = (
++  store: StoreModel,
++  projectId: string,
++  owner: ScopeOwner
++): number => {
++  const held = rowsBoundTo(store, projectId, owner);
++  for (const setId of held) store.remove(`resourceSets.${setId}`);
++  return held.length;
++};
++
++/** Every set term in a rule that the project does not hold. */
++export const unknownSetsIn = (
++  store: StoreModel,
++  projectId: string,
++  scope: { include: readonly { select: string }[]; exclude: readonly { select: string }[] }
++): readonly string[] => {
++  const held = new Set(
++    recordsIn(store, "resourceSets")
++      .filter((row) => row.projectId === projectId && typeof row._id === "string")
++      .map((row) => row._id as string)
++  );
++  const missing: string[] = [];
++  for (const term of [...scope.include, ...scope.exclude]) {
++    const setId = (term as { setId?: unknown }).setId;
++    if (term.select !== "set" || typeof setId !== "string") continue;
++    if (!held.has(setId) && !missing.includes(setId)) missing.push(setId);
++  }
++  return missing;
++};
++
++type Written = { readonly term: TemplatedResourceSet; readonly setId?: string };
++
++/**
++ * The rule as a templated set, writing or rewriting the owner's row when the
++ * rule cannot be said inline, and clearing the row when it can.
++ */
++export const normalizeScope = (
++  store: StoreModel,
++  projectId: string,
++  actor: Actor,
++  owner: ScopeOwner,
++  rule: ResourceSet | TemplatedResourceSet | undefined,
++  at: number
++): Written | undefined => {
++  if (rule === undefined) {
++    removeRowsBoundTo(store, projectId, owner);
++    return undefined;
++  }
++
++  const held = rowsBoundTo(store, projectId, owner);
++
++  if (!needsRow(rule)) {
++    for (const setId of held) store.remove(`resourceSets.${setId}`);
++    return { term: rule as TemplatedResourceSet };
++  }
++
++  const [first, ...extra] = held;
++  for (const setId of extra) store.remove(`resourceSets.${setId}`);
++
++  if (first !== undefined) {
++    const row = recordsIn(store, "resourceSets").find((candidate) => candidate._id === first);
++    const revision = typeof row?.revision === "number" ? row.revision : 1;
++    store.update(`resourceSets.${first}.set`, rule);
++    store.update(`resourceSets.${first}.revision`, revision + 1);
++    store.update(`resourceSets.${first}.updatedAt`, at);
++    return {
++      term: { include: [{ select: "set", setId: asId<"resourceSets">(first) }], exclude: [] },
++      setId: first
++    };
++  }
++
++  const setId = store.create("resourceSets", {
++    projectId: asId<"projects">(projectId),
++    boundTo: owner,
++    set: rule as ResourceSet,
++    createdBy: actor,
++    revision: 1,
++    updatedAt: at
++  });
++  return {
++    term: { include: [{ select: "set", setId: asId<"resourceSets">(setId) }], exclude: [] },
++    setId
++  };
++};
++
++/**
++ * A stored default read back as the rule somebody built.
++ *
++ * A term naming a bound row is expanded, because that row is this variable's
++ * value rather than a set anyone chose. A term naming one of the project's own
++ * sets is left alone, because choosing it was the point.
++ */
++export const expandedScope = (
++  store: StoreModel,
++  projectId: string,
++  scope: TemplatedResourceSet | undefined
++): TemplatedResourceSet | undefined => {
++  if (scope === undefined) return undefined;
++  if (scope.exclude.length > 0 || scope.include.length !== 1) return scope;
++  const term = scope.include[0];
++  if (term.select !== "set" || named(store, projectId).has(term.setId)) return scope;
++  const row = recordsIn(store, "resourceSets").find(
++    (candidate) => candidate._id === term.setId && candidate.projectId === projectId
++  );
++  const rule = row?.set;
++  if (rule === null || typeof rule !== "object" || Array.isArray(rule)) return scope;
++  const held = rule as { include?: unknown; exclude?: unknown };
++  if (!Array.isArray(held.include) || !Array.isArray(held.exclude)) return scope;
++  return held as unknown as TemplatedResourceSet;
++};
++
++/** What a rule says, for a refusal that has to name it. */
++export const scopeWords = (scope: TemplatedResourceSet | ResourceSet): string => ruleWords(scope);
+~~~~
+
+### new · `src/lib/capabilities/templates/api/shared/stages.ts` (+141 / −0)
+
+~~~~diff
+@@ -0,0 +1,141 @@
 +import type { StoreModel, TableName, TableRow } from "$model/server/store/index.server";
 +import { asId } from "$representation/data/behavior/core/id";
 +import type { Id } from "$representation/data/types/core/id";
 +import type { DocumentBody } from "$representation/data/types/documents/body";
 +import type { SlideDeckBody } from "$representation/data/types/slide-decks/body";
 +
++import { rowsOfResource } from "$capabilities/templates/api/shared/scopes";
 +import { canonicalRowId, recordsIn } from "$capabilities/templates/api/shared/store";
 +import type { TemplateStageTarget } from "$capabilities/templates/types/templates";
 +
@@ -2637,6 +3606,9 @@
 +      snapshots
 +    )
 +  );
++  for (const setId of rowsOfResource(store, stage.projectId, stage.resourceId)) {
++    store.remove(`resourceSets.${setId}`);
++  }
 +  if (recordsIn(store, table).some((row) => row._id === stage.resourceId)) {
 +    store.remove(`${table}.${stage.resourceId}`);
 +  }
@@ -2657,7 +3629,7 @@
    ...(template.description === undefined ? {} : { description: template.description }),
 ~~~~
 
-### changed · `src/lib/capabilities/templates/api/shared/validation.ts` (+119 / −8)
+### changed · `src/lib/capabilities/templates/api/shared/validation.ts` (+146 / −10)
 
 ~~~~diff
 @@ -2,9 +2,14 @@ import type {
@@ -2848,6 +3820,49 @@
    if (
      value.select !== "kinds" ||
      !hasOnlyKeys(value, ["select", "kinds"]) ||
+@@ -1618,7 +1729,29 @@ const validTemplatedSet = (value: unknown): boolean =>
+   value.exclude.length <= MAX_TEMPLATE_TERMS_PER_SIDE &&
+   value.exclude.every(validTerm);
+ 
+-export const variablesOf = (value: unknown, subject: string): readonly TemplateVariable[] => {
++/**
++ * A rule somebody just built, before it is normalised.
++ *
++ * It may exclude things and it may name particular resources, neither of which a
++ * stored default can carry. Both become one `set` term naming a bound row, which
++ * is why the wire shape is wider than the stored one.
++ */
++const validChosenSet = (value: unknown): boolean =>
++  isRecord(value) &&
++  hasOnlyKeys(value, ["include", "exclude"]) &&
++  Object.keys(value).length === 2 &&
++  Array.isArray(value.include) &&
++  value.include.length <= MAX_TEMPLATE_TERMS_PER_SIDE &&
++  value.include.every((term) => validTerm(term) || validSetTerm(term)) &&
++  Array.isArray(value.exclude) &&
++  value.exclude.length <= MAX_TEMPLATE_TERMS_PER_SIDE &&
++  value.exclude.every((term) => validTerm(term) || validSetTerm(term));
++
++export const variablesOf = (
++  value: unknown,
++  subject: string,
++  chosen = false
++): readonly TemplateVariable[] => {
+   if (!Array.isArray(value)) throw new Error(`templates/${subject}: variables is a list`);
+   if (value.length > MAX_TEMPLATE_VARIABLES) {
+     throw new Error(
+@@ -1648,7 +1781,10 @@ export const variablesOf = (value: unknown, subject: string): readonly TemplateV
+     ) {
+       throw new Error(`templates/${subject}: a variable description is text`);
+     }
+-    if (variable.default !== undefined && !validTemplatedSet(variable.default)) {
++    if (
++      variable.default !== undefined &&
++      !(chosen ? validChosenSet(variable.default) : validTemplatedSet(variable.default))
++    ) {
+       throw new Error(`templates/${subject}: a variable default is a templated resource set`);
+     }
+     const key = variable.name.toLocaleLowerCase();
 ~~~~
 
 ### new · `src/lib/capabilities/templates/api/shared/variables.ts` (+15 / −0)
@@ -2871,12 +3886,13 @@
 +};
 ~~~~
 
-### changed · `src/lib/capabilities/templates/api/update-template/update-template.ts` (+21 / −10)
+### changed · `src/lib/capabilities/templates/api/update-template/update-template.ts` (+69 / −11)
 
 ~~~~diff
-@@ -1,11 +1,13 @@
+@@ -1,11 +1,19 @@
  import { requireScope } from "$runtime/server/scope.server";
  import { serverModel } from "$runtime/server/start.server";
++import { asId } from "$representation/data/behavior/core/id";
 +import { variableNamesIn } from "$representation/data/behavior/templates/scopes";
  
  import {
@@ -2884,11 +3900,16 @@
    reportableRevision,
    visibleTemplate
  } from "$capabilities/templates/api/shared/projection";
++import {
++  normalizeScope,
++  removeRowsBoundTo,
++  unknownSetsIn
++} from "$capabilities/templates/api/shared/scopes";
 +import { stagesIn } from "$capabilities/templates/api/shared/stages";
  import type { RowFields } from "$capabilities/templates/api/shared/store";
  import { writeTemplateVersion } from "$capabilities/templates/api/shared/template-rows";
  import { validateUpdateTemplate } from "$capabilities/templates/api/update-template/validate-update-template";
-@@ -27,15 +29,6 @@ export const updateTemplate = async (input: unknown): Promise<UpdateTemplateResu
+@@ -27,15 +35,6 @@ export const updateTemplate = async (input: unknown): Promise<UpdateTemplateResu
      };
    }
    const stored = found.template;
@@ -2904,11 +3925,13 @@
    if (stored.revision !== asked.baseRevision) {
      return {
        accepted: false,
-@@ -71,7 +64,20 @@ export const updateTemplate = async (input: unknown): Promise<UpdateTemplateResu
+@@ -71,7 +70,62 @@ export const updateTemplate = async (input: unknown): Promise<UpdateTemplateResu
      asked.patch.description === null
        ? undefined
        : (asked.patch.description ?? template.description);
 -  let variables = [...template.variables];
++  const at = Date.now();
++  const actor = { kind: "user" as const, userId: asId<"users">(scope.userId) };
 +  let variables = [...(asked.patch.variables ?? template.variables)];
 +  if (asked.patch.variables !== undefined) {
 +    const declared = new Set(variables.map((variable) => variable.name));
@@ -2922,19 +3945,61 @@
 +        detail: `the body still names ${orphaned.join(", ")}`
 +      };
 +    }
++    for (const variable of variables) {
++      const missing = unknownSetsIn(
++        store,
++        scope.projectId,
++        variable.default ?? { include: [], exclude: [] }
++      );
++      if (missing.length > 0) {
++        return {
++          accepted: false,
++          templateId: asked.templateId,
++          reason: "unsupported-body",
++          revision: template.revision,
++          detail: `no set in this project has id ${missing.join(", ")}`
++        };
++      }
++    }
++    for (const held of template.variables) {
++      if (variables.some((variable) => variable.name === held.name)) continue;
++      removeRowsBoundTo(store, scope.projectId, {
++        kind: "variable",
++        templateId: template._id,
++        variable: held.name
++      });
++    }
++    variables = variables.map((variable) => {
++      const written = normalizeScope(
++        store,
++        scope.projectId,
++        actor,
++        { kind: "variable", templateId: template._id, variable: variable.name },
++        variable.default,
++        at
++      );
++      return {
++        name: variable.name,
++        label: variable.label,
++        ...(variable.description === undefined ? {} : { description: variable.description }),
++        ...(written === undefined ? {} : { default: written.term })
++      };
++    });
 +  }
    if (asked.patch.variableDescription !== undefined) {
      const variable = asked.patch.variableDescription;
      if (!variables.some((candidate) => candidate.name === variable.name)) {
-@@ -96,6 +102,7 @@ export const updateTemplate = async (input: unknown): Promise<UpdateTemplateResu
+@@ -94,8 +148,8 @@ export const updateTemplate = async (input: unknown): Promise<UpdateTemplateResu
+           }
+     );
    }
-   const at = Date.now();
+-  const at = Date.now();
    const fields: RowFields<"templates"> = {
 +    projectId: template.projectId,
      userId: template.userId,
      name: asked.patch.name ?? template.name,
      ...(description === undefined ? {} : { description }),
-@@ -108,6 +115,10 @@ export const updateTemplate = async (input: unknown): Promise<UpdateTemplateResu
+@@ -108,6 +162,10 @@ export const updateTemplate = async (input: unknown): Promise<UpdateTemplateResu
    };
    store.update(`templates.${template._id}`, fields);
    writeTemplateVersion(store, template._id, fields, at);
@@ -2974,7 +4039,7 @@
        : {}),
      ...(has(incoming, "tags") ? { tags: tagsOf(incoming.tags, "update-template") } : {}),
 +    ...(has(incoming, "variables")
-+      ? { variables: variablesOf(incoming.variables, "update-template") }
++      ? { variables: variablesOf(incoming.variables, "update-template", true) }
 +      : {}),
      ...(variableDescription === undefined
        ? {}
@@ -3096,10 +4161,10 @@
    UpdateTemplateResult
 ~~~~
 
-### changed · `src/lib/capabilities/templates/templates.md` (+102 / −64)
+### changed · `src/lib/capabilities/templates/templates.md` (+116 / −64)
 
 ~~~~diff
-@@ -1,57 +1,103 @@
+@@ -1,57 +1,117 @@
  # templates
  
 -The project-facing template library, with its mutations and the crossing that
@@ -3208,6 +4273,20 @@
 +is written. A body naming a variable the template does not declare is refused
 +rather than guessed at.
 +
++**A rule that cannot be said inline is stored, and what points at it is one
++term.** Both a default and an answer arrive as whatever somebody built, which
++may exclude things and may name particular resources — neither of which the
++templated vocabulary holds. `normalizeScope` writes those as a `resourceSets`
++row bound to the variable that owns them, and the default or answer becomes a
++single `set` term naming it. That is not bookkeeping: resolving a template
++substitutes a variable term for what fills it, on either side of a prompt's
++scope, and one term for a difference cannot be expressed on the excluding side.
++A rule that is only the project, kinds or named sets is kept inline and writes
++nothing. Reading a template back expands a bound default into the rule it holds,
++so a builder opens on what was built; a named set is left as the named set
++somebody chose. The rows go when their owner does: a template removed, a
++variable dropped, a working copy discarded.
++
 +`updateTemplate` still takes a whole variable list, because that is how a
 +description or a default is written, and it refuses with `variable-in-use` while
 +the body still names a variable the list drops.
@@ -3249,7 +4328,7 @@
  
  Every stored row is re-admitted before projection or mutation. A malformed
  legacy row is quarantined from the list, reported as unavailable on direct read,
-@@ -62,19 +108,12 @@ therefore cannot crash the rest of the library or be copied into new history.
+@@ -62,19 +122,12 @@ therefore cannot crash the rest of the library or be copied into new history.
  
  Instantiation writes normal resource rows, not a private template-editor data
  model. Documents and decks receive their represented body as a leader snapshot.
@@ -3275,7 +4354,7 @@
  
  ## Persistence boundary
  
-@@ -84,8 +123,7 @@ then updates live memory. This removes phantom state after a failed write and
+@@ -84,8 +137,7 @@ then updates live memory. This removes phantom state after a failed write and
  bounds collection creation/removal to one table persistence operation.
  
  It is not yet a transaction across table files. Template/version writes,
@@ -3290,10 +4369,10 @@
 +needs a represented transaction or explicit recovery contract.
 ~~~~
 
-### new · `src/lib/capabilities/templates/test/unit/answers.test.ts` (+331 / −0)
+### new · `src/lib/capabilities/templates/test/unit/answers.test.ts` (+491 / −0)
 
 ~~~~diff
-@@ -0,0 +1,331 @@
+@@ -0,0 +1,491 @@
 +import assert from "node:assert/strict";
 +import { beforeEach, describe, test, vi } from "vitest";
 +
@@ -3325,8 +4404,11 @@
 +          ? { ...(value as Record<string, unknown>), _id: id, _creationTime: rows[index]._creationTime }
 +          : { ...rows[index], [fields[0]]: value };
 +    },
-+    remove: () => {
-+      throw new Error("not expected");
++    remove: (path: string) => {
++      const [table, id] = path.split(".");
++      const rows = model.tables[table] ?? [];
++      const index = rows.findIndex((row) => row._id === id);
++      if (index >= 0) rows.splice(index, 1);
 +    },
 +    removeRows: () => {},
 +    removeFieldFromRows: () => {}
@@ -3623,6 +4705,163 @@
 +      () => createTemplateFromResource({ target: "document", resourceId: "documents:1", name: "x", slideId: "s1" }),
 +      /only a deck template names a slide/
 +    );
++  });
++});
++
++describe("a rule that cannot be said inline becomes a row", () => {
++  const excluding = {
++    include: [{ select: "project" }],
++    exclude: [{ select: "kinds", kinds: ["slides"] }]
++  };
++
++  test("a default that excludes something is stored, and the variable holds one term", async () => {
++    const result = await updateTemplate({
++      templateId: "templates:1",
++      baseRevision: 1,
++      patch: { variables: [{ name: "evidence", label: "Evidence", default: excluding }] }
++    });
++    assert.ok(result.accepted);
++
++    const bound = model.tables.resourceSets.filter((set) => set.boundTo !== undefined);
++    assert.equal(bound.length, 1);
++    assert.deepEqual(bound[0].boundTo, {
++      kind: "variable",
++      templateId: "templates:1",
++      variable: "evidence"
++    });
++    assert.equal(bound[0].name, undefined);
++    assert.deepEqual(bound[0].set, excluding);
++    assert.deepEqual(model.tables.templates[0].variables, [
++      {
++        name: "evidence",
++        label: "Evidence",
++        default: { include: [{ select: "set", setId: bound[0]._id }], exclude: [] }
++      }
++    ]);
++  });
++
++  test("a rule that can be said inline writes nothing, and clears a row it had", async () => {
++    await updateTemplate({
++      templateId: "templates:1",
++      baseRevision: 1,
++      patch: { variables: [{ name: "evidence", label: "Evidence", default: excluding }] }
++    });
++    const result = await updateTemplate({
++      templateId: "templates:1",
++      baseRevision: 2,
++      patch: {
++        variables: [
++          {
++            name: "evidence",
++            label: "Evidence",
++            default: { include: [{ select: "kinds", kinds: ["finding"] }], exclude: [] }
++          }
++        ]
++      }
++    });
++    assert.ok(result.accepted);
++    assert.equal(model.tables.resourceSets.filter((set) => set.boundTo !== undefined).length, 0);
++  });
++
++  test("the same variable rewrites its own row rather than piling them up", async () => {
++    await updateTemplate({
++      templateId: "templates:1",
++      baseRevision: 1,
++      patch: { variables: [{ name: "evidence", label: "Evidence", default: excluding }] }
++    });
++    const first = model.tables.resourceSets.find((set) => set.boundTo !== undefined);
++    await updateTemplate({
++      templateId: "templates:1",
++      baseRevision: 2,
++      patch: {
++        variables: [
++          {
++            name: "evidence",
++            label: "Evidence",
++            default: {
++              include: [{ select: "project" }],
++              exclude: [{ select: "kinds", kinds: ["document"] }]
++            }
++          }
++        ]
++      }
++    });
++    const bound = model.tables.resourceSets.filter((set) => set.boundTo !== undefined);
++    assert.equal(bound.length, 1);
++    assert.equal(bound[0]._id, first?._id);
++    assert.equal(bound[0].revision, 2);
++  });
++
++  test("a default may name particular resources, which a template cannot say itself", async () => {
++    const result = await updateTemplate({
++      templateId: "templates:1",
++      baseRevision: 1,
++      patch: {
++        variables: [
++          {
++            name: "evidence",
++            label: "Evidence",
++            default: {
++              include: [{ select: "resources", refs: [{ kind: "document", id: "documents:9" }] }],
++              exclude: []
++            }
++          }
++        ]
++      }
++    });
++    assert.ok(result.accepted);
++    const bound = model.tables.resourceSets.find((set) => set.boundTo !== undefined);
++    assert.deepEqual(bound?.set, {
++      include: [{ select: "resources", refs: [{ kind: "document", id: "documents:9" }] }],
++      exclude: []
++    });
++  });
++
++  test("an answer that excludes something resolves, because it became one term", async () => {
++    const placed = await instantiateTemplate({
++      templateId: "templates:1",
++      answers: { evidence: excluding }
++    });
++    assert.ok(placed.accepted);
++    const bound = model.tables.resourceSets.filter((set) => set.boundTo !== undefined);
++    assert.equal(bound.length, 1);
++    assert.deepEqual(bound[0].boundTo, {
++      kind: "resource",
++      resourceId: placed.resourceId,
++      variable: "evidence"
++    });
++    assert.deepEqual(scopeOf(model.tables.documentSnapshots[0]), {
++      include: [{ select: "set", setId: bound[0]._id }],
++      exclude: []
++    });
++  });
++
++  test("a default naming a set from another project is refused", async () => {
++    model.tables.resourceSets.push(
++      row("resourceSets", "9", {
++        projectId: "other",
++        name: "Elsewhere",
++        set: { include: [], exclude: [] },
++        createdBy: { kind: "user", userId: "u" },
++        revision: 1,
++        updatedAt: 1
++      })
++    );
++    const result = await updateTemplate({
++      templateId: "templates:1",
++      baseRevision: 1,
++      patch: {
++        variables: [
++          {
++            name: "evidence",
++            label: "Evidence",
++            default: { include: [{ select: "set", setId: "resourceSets:9" }], exclude: [] }
++          }
++        ]
++      }
++    });
++    assert.equal(result.accepted, false);
++    assert.equal(result.accepted === false && result.reason, "unsupported-body");
 +  });
 +});
 ~~~~
@@ -4666,10 +5905,10 @@
 +};
 ~~~~
 
-### new · `src/lib/capabilities/resource-sets/api/shared/projection.ts` (+214 / −0)
+### new · `src/lib/capabilities/resource-sets/api/shared/projection.ts` (+220 / −0)
 
 ~~~~diff
-@@ -0,0 +1,214 @@
+@@ -0,0 +1,220 @@
 +import type { StoreModel, TableName, TableRow } from "$model/server/store/index.server";
 +import type { Scope } from "$runtime/server/scope.server";
 +import { resolveResourceSet } from "$representation/data/behavior/core/resource-set";
@@ -4678,6 +5917,7 @@
 +import type { ResourceSet } from "$representation/data/types/core/resource-set";
 +
 +import {
++  boundToOf,
 +  descriptionOf,
 +  nameOf,
 +  resourceSetOf,
@@ -4746,10 +5986,14 @@
 +  if (!Number.isFinite(row.updatedAt) || row.updatedAt < 0) {
 +    throw new Error(`resource-sets/${subject}: updated time is finite`);
 +  }
++  if ((row.name === undefined) === (row.boundTo === undefined)) {
++    throw new Error(`resource-sets/${subject}: a row carries a name or an owner, never both or neither`);
++  }
 +  const description = row.description === undefined ? undefined : descriptionOf(row.description, subject);
 +  return {
 +    ...row,
-+    name: nameOf(row.name, subject),
++    ...(row.name === undefined ? {} : { name: nameOf(row.name, subject) }),
++    ...(row.boundTo === undefined ? {} : { boundTo: boundToOf(row.boundTo, subject) }),
 +    ...(description === undefined ? {} : { description }),
 +    set: resourceSetOf(row.set, subject),
 +    createdBy: actorOf(row.createdBy, subject)
@@ -4842,7 +6086,7 @@
 +  sets: ReadonlyMap<string, ResourceSet>
 +): ResourceSetItem => ({
 +  id: set._id,
-+  name: set.name,
++  name: set.name ?? "",
 +  ...(set.description === undefined ? {} : { description: set.description }),
 +  set: set.set,
 +  createdByName: actorName(store, scope, set.createdBy),
@@ -4866,6 +6110,7 @@
 +  }
 +  for (const [index, row] of rows.entries()) {
 +    if (row.projectId !== scope.projectId) continue;
++    if (row.name === undefined) continue;
 +    const reportId = typeof row._id === "string" && row._id.length <= 500 ? row._id : `resourceSets:invalid-${index + 1}`;
 +    if (typeof row._id === "string" && (claims.get(row._id) ?? 0) > 1) {
 +      unavailable.push({ setId: reportId, reason: "corrupt", detail: "more than one stored row claims this set id" });
@@ -4886,12 +6131,12 @@
 +};
 ~~~~
 
-### new · `src/lib/capabilities/resource-sets/api/shared/validation.ts` (+133 / −0)
+### new · `src/lib/capabilities/resource-sets/api/shared/validation.ts` (+172 / −0)
 
 ~~~~diff
-@@ -0,0 +1,133 @@
+@@ -0,0 +1,172 @@
 +import { asId } from "$representation/data/behavior/core/id";
-+import type { ResourceSet, SetTerm } from "$representation/data/types/core/resource-set";
++import type { BoundTo, ResourceSet, SetTerm } from "$representation/data/types/core/resource-set";
 +
 +type Fields = Record<string, unknown>;
 +
@@ -4950,6 +6195,45 @@
 +  const name = value.trim();
 +  if (name.length > 160) throw new Error(`resource-sets/${subject}: name is at most 160 characters`);
 +  return name;
++};
++
++/**
++ * What owns a bound row.
++ *
++ * A row carries a name or an owner and never both: naming is the whole
++ * difference between a project's own set and a value something else holds.
++ */
++export const boundToOf = (value: unknown, subject: string): BoundTo => {
++  if (!isRecord(value)) throw new Error(`resource-sets/${subject}: boundTo is an object`);
++  if (value.kind === "variable") {
++    if (
++      Object.keys(value).length !== 3 ||
++      !canonicalText(value.templateId, MAX_IDENTIFIER_LENGTH) ||
++      !canonicalText(value.variable, MAX_KIND_LENGTH)
++    ) {
++      throw new Error(`resource-sets/${subject}: a variable owner names a template and a variable`);
++    }
++    return {
++      kind: "variable",
++      templateId: asId<"templates">(value.templateId as string),
++      variable: value.variable as string
++    };
++  }
++  if (value.kind === "resource") {
++    if (
++      Object.keys(value).length !== 3 ||
++      !canonicalText(value.resourceId, MAX_IDENTIFIER_LENGTH) ||
++      !canonicalText(value.variable, MAX_KIND_LENGTH)
++    ) {
++      throw new Error(`resource-sets/${subject}: a resource owner names one resource and a variable`);
++    }
++    return {
++      kind: "resource",
++      resourceId: value.resourceId as string,
++      variable: value.variable as string
++    };
++  }
++  throw new Error(`resource-sets/${subject}: an owner is a variable or a resource`);
 +};
 +
 +export const descriptionOf = (value: unknown, subject: string): string => {
@@ -5195,17 +6479,17 @@
 +} from "$capabilities/resource-sets/types/resource-sets";
 ~~~~
 
-### new · `src/lib/capabilities/resource-sets/resource-sets.md` (+20 / −0)
+### new · `src/lib/capabilities/resource-sets/resource-sets.md` (+27 / −0)
 
 ~~~~diff
-@@ -0,0 +1,20 @@
+@@ -0,0 +1,27 @@
 +# resource-sets
 +
-+The project's named resource sets: the scopes a prompt looks things up in.
++The project's resource sets: the scopes a prompt looks things up in.
 +
 +| procedure | answers |
 +| --- | --- |
-+| `readResourceSets` | Every valid set in the scoped project, with its creator's name and how many resources it selects now, plus quarantined invalid rows |
++| `readResourceSets` | Every valid **named** set in the scoped project, with its creator's name and how many resources it selects now, plus quarantined invalid rows |
 +| `createResourceSet` | A set from a name, an optional description, and an include and exclude list |
 +| `updateResourceSet` | A compare-and-swap change to name, description, or the set itself |
 +| `removeResourceSet` | A compare-and-swap delete, refused while another set or a template variable's default in this project still names it |
@@ -5215,6 +6499,13 @@
 +count each set reports is resolved when it is read, over the documents, decks,
 +spreadsheets, findings and research threads the project holds — never stored,
 +so it cannot go stale. A template's staged copy is left out of that catalogue.
++
++**A row carries a name or an owner, and never both or neither.** A named row is
++a project subject: people make it here, it is listed here, and every builder
++offers it. A row with `boundTo` instead is a value something else holds, written
++because the rule could not be said inline — it is never listed, never named, and
++goes when its owner goes. These procedures only ever make and change named rows;
++the bound ones belong to whichever capability owns the thing that points at them.
 +
 +Every stored row is re-admitted before projection or mutation. A malformed row
 +is quarantined from the list and refused by update and remove, so one corrupt
@@ -5863,10 +7154,10 @@
      height: calc(var(--token-spacing-unit) * 16);
 ~~~~
 
-### changed · `src/lib/app-views/categories/templates/inspector/template.svelte` (+261 / −44)
+### changed · `src/lib/app-views/categories/templates/inspector/template.svelte` (+298 / −43)
 
 ~~~~diff
-@@ -4,36 +4,57 @@
+@@ -4,10 +4,12 @@
    import ChevronDown from "@lucide/svelte/icons/chevron-down";
    import Copy from "@lucide/svelte/icons/copy";
    import ExternalLink from "@lucide/svelte/icons/external-link";
@@ -5879,82 +7170,101 @@
    import {
      Panel,
      PanelBanner,
-     PanelChip,
+@@ -15,25 +17,47 @@
      PanelEmpty,
--    PanelSkeleton
-+    PanelSelect,
-+    PanelSkeleton,
-+    PanelToggle
+     PanelSkeleton
    } from "$authored-components/panel";
++  import { ScopeBuilder } from "$authored-components/scope-builder";
    import { Button } from "$vendored-components/button";
    import { Input } from "$vendored-components/input";
    import { Textarea } from "$vendored-components/textarea";
    import {
-+    DEFAULT_ANSWER,
 +    EDITOR_CATEGORY,
-+    KINDS,
-+    answerOptions,
 +    answersFrom,
-+    defaultChoices,
++    builderView,
      detailIn,
++    draftOf,
      duplicateTemplate,
 +    editTemplate,
      emptyTemplateInspectorTitle,
      inspectTemplate,
      instantiateTemplate,
-+    isWholeProject,
-+    kindsOf,
-+    namesOf,
++    offeringOf,
++    projectResources,
      removeTemplate,
 +    resourceSets,
-+    ruleFrom,
++    resourcesIn,
 +    ruleOf,
++    scopeNamesOf,
      selectedTemplateIdIn,
-+    setIdsOf,
 +    setsIn,
      templateDetail,
      templateLibrary,
++    termFor,
      unavailableTemplateIn,
      updateTemplateDescription,
      updateTemplateName,
      updateTemplateTags,
 +    updateTemplateVariableDefault,
      updateTemplateVariableDescription,
++    withTerm,
++    withWholeProject,
++    withoutTerm,
      type LibraryTemplateDetail,
++    type OfferSource,
++    type ScopeDraft,
++    type ScopeSide,
 +    type TemplateAnswers,
      type TemplateVariable
    } from "$app-views/categories/templates/procedures/library.svelte";
    import { workspaceState } from "$model/client/workspace-state";
-@@ -43,6 +64,9 @@
+@@ -43,6 +67,12 @@
      view.selection?.kind === "template" ? view.selection.id : undefined
    );
    const library = templateLibrary();
 +  const sets = resourceSets();
++  const index = projectResources();
 +  const setItems = $derived(setsIn(sets.ready ? sets.current : undefined));
-+  const setNames = $derived(namesOf(setItems));
++  const catalogue = $derived(resourcesIn(index.ready ? index.current : undefined));
++  const setNames = $derived(scopeNamesOf(setItems, catalogue));
++  const offering = $derived(offeringOf(setItems, catalogue));
    const availableTemplateIds = $derived(
      library.ready ? library.current.templates.map((row) => row.id) : []
    );
-@@ -63,6 +87,18 @@
+@@ -63,6 +93,32 @@
    });
    const template = $derived(detailIn(detailAnswer, now));
    const unavailable = $derived(unavailableTemplateIn(detailAnswer));
 +  let defaultFor = $state<TemplateVariable | undefined>(undefined);
 +  let defaultOpen = $state(false);
-+  let draftWhole = $state(true);
-+  let draftKinds = $state<string[]>([]);
-+  let draftSets = $state<string[]>([]);
++  let draft = $state<ScopeDraft>(draftOf(undefined));
 +  let useOpen = $state(false);
-+  let useChoices = $state<Record<string, string>>({});
-+  const defaultBlocked = $derived(
-+    !draftWhole && draftKinds.length === 0 && draftSets.length === 0
-+      ? "Pick everything, or at least one kind or set."
-+      : undefined
++  let answerOpen = $state(false);
++  let useChoices = $state<Record<string, ScopeDraft | undefined>>({});
++  let answering = $state<TemplateVariable | undefined>(undefined);
++  const scopeBlocked = $derived(
++    draft.include.length === 0 ? "Include something, or choose everything in the project." : undefined
 +  );
++
++  /** Every builder edits this one draft, because only one is ever open. */
++  const view$ = $derived(builderView(draft, offering));
++
++  const addTerm = (side: ScopeSide, source: string, key: string) => {
++    const term = termFor(source as OfferSource, key);
++    if (term !== undefined) draft = withTerm(draft, side, term);
++  };
++
++  const dropTerm = (side: ScopeSide, key: string) => {
++    draft = withoutTerm(draft, side, key);
++  };
++
++  const setMode = (whole: boolean) => {
++    draft = whole ? withWholeProject() : { include: [], exclude: [] };
++  };
  
    let editingDescription = $state(false);
    let descriptionDraft = $state("");
-@@ -82,7 +118,7 @@
+@@ -82,7 +138,7 @@
    let tagDraft = $state("");
    let activeTemplateId = $state<string>();
    let pending = $state<
@@ -5963,7 +7273,7 @@
    >();
    let actionError = $state<string>();
    let live = true;
-@@ -450,35 +486,64 @@
+@@ -450,35 +506,94 @@
      }
    };
  
@@ -5982,11 +7292,41 @@
 +      void instantiate({});
 +      return;
 +    }
-+    useChoices = defaultChoices(template.variables);
++    useChoices = {};
++    answering = undefined;
 +    useOpen = true;
 +  };
 +
 +  const confirmUse = () => void instantiate(answersFrom(useChoices));
++
++  /**
++   * The builder is its own modal rather than a second face of the ask modal.
++   * Swapping one modal's title, body and confirm while it is open replaces the
++   * footer under the pointer, and the press lands on a button that has gone.
++   */
++  const openAnswer = (variable: TemplateVariable) => {
++    answering = variable;
++    draft = draftOf(useChoices[variable.name] ?? variable.default);
++    useOpen = false;
++    answerOpen = true;
++  };
++
++  const confirmAnswer = () => {
++    if (answering !== undefined) useChoices = { ...useChoices, [answering.name]: draft };
++    answering = undefined;
++    answerOpen = false;
++    useOpen = true;
++  };
++
++  const cancelAnswer = () => {
++    answering = undefined;
++    useOpen = true;
++  };
++
++  const clearAnswer = (variable: TemplateVariable) => {
++    const { [variable.name]: _dropped, ...rest } = useChoices;
++    useChoices = rest;
++  };
 +
 +  const instantiate = async (answers: TemplateAnswers) => {
 +    if (template === undefined || pending !== undefined) return;
@@ -6039,7 +7379,7 @@
      } catch (error) {
        fail(error, originTabId, subject.id);
      } finally {
-@@ -486,9 +551,45 @@
+@@ -486,9 +601,31 @@
      }
    };
  
@@ -6049,22 +7389,8 @@
 +  const openDefault = (variable: TemplateVariable) => {
 +    if (template === undefined || !template.canEdit || pending !== undefined) return;
 +    defaultFor = variable;
-+    draftWhole = isWholeProject(variable.default);
-+    draftKinds = [...kindsOf(variable.default)];
-+    draftSets = [...setIdsOf(variable.default)];
++    draft = draftOf(variable.default);
 +    defaultOpen = true;
-+  };
-+
-+  const toggleKind = (kind: string, on: boolean) => {
-+    draftKinds = on
-+      ? [...draftKinds.filter((held) => held !== kind), kind]
-+      : draftKinds.filter((held) => held !== kind);
-+  };
-+
-+  const toggleSet = (setId: string, on: boolean) => {
-+    draftSets = on
-+      ? [...draftSets.filter((held) => held !== setId), setId]
-+      : draftSets.filter((held) => held !== setId);
 +  };
 +
 +  const setDefault = async () => {
@@ -6072,7 +7398,7 @@
 +    if (template === undefined || variable === undefined || pending !== undefined) return;
 +    const subject = template;
 +    const originTabId = view.activeId;
-+    const rule = ruleFrom(draftWhole, draftKinds, draftSets);
++    const rule = draft;
 +
 +    pending = "default";
 +    actionError = undefined;
@@ -6088,7 +7414,7 @@
    };
  </script>
  
-@@ -600,6 +701,17 @@
+@@ -600,6 +737,17 @@
              : "Use template — create an independent project resource"}
            onclick={use}
          ><ExternalLink aria-hidden="true" /></Button>
@@ -6106,7 +7432,7 @@
          <Button
            variant="ghost"
            size="icon-sm"
-@@ -641,20 +753,10 @@
+@@ -641,20 +789,10 @@
              {#each template.variables as variable (variable.id)}
                <details class="variable">
                  <summary>
@@ -6129,7 +7455,7 @@
                    <ChevronDown class="disclosure-icon" size={13} aria-hidden="true" />
                  </summary>
                  <div class="variable-body">
-@@ -684,6 +786,19 @@
+@@ -684,6 +822,19 @@
                    {:else}
                      <p>{variable.description ?? "No description supplied."}</p>
                    {/if}
@@ -6149,14 +7475,14 @@
                  </div>
                </details>
              {/each}
-@@ -759,7 +874,117 @@
+@@ -759,7 +910,119 @@
    {/if}
  </Panel>
  
 +<OverlayModal
 +  bind:open={useOpen}
 +  title={`Use “${template?.name ?? "the template"}”`}
-+  description="What each variable selects in the new resource. The default is what the template suggests."
++  description="What each variable selects in the new resource. Untouched, each uses the template's own default."
 +  confirm="Create"
 +  width="narrow"
 +  onconfirm={confirmUse}
@@ -6168,61 +7494,68 @@
 +        {#if variable.description}
 +          <span class="answer-help">{variable.description}</span>
 +        {/if}
-+        <PanelSelect
-+          label={`Answer for ${variable.label}`}
-+          value={useChoices[variable.name] ?? DEFAULT_ANSWER}
-+          options={answerOptions(variable, setItems)}
-+          onchange={(next) => (useChoices = { ...useChoices, [variable.name]: next })}
-+        />
++        <span class="answer-rule">
++          {useChoices[variable.name] === undefined ? "Default · " : ""}{ruleOf(
++            useChoices[variable.name] ?? variable.default,
++            setNames
++          )}
++        </span>
++        <span class="answer-actions">
++          <Button
++            variant="outline"
++            size="xs"
++            title={`Choose what ${variable.label} selects here`}
++            onclick={() => openAnswer(variable)}
++          >
++            Change
++          </Button>
++          {#if useChoices[variable.name] !== undefined}
++            <Button
++              variant="ghost"
++              size="xs"
++              title={`Put ${variable.label} back to the template's own default`}
++              onclick={() => clearAnswer(variable)}
++            >
++              Use the default
++            </Button>
++          {/if}
++        </span>
 +      </div>
 +    {/each}
 +  </div>
 +</OverlayModal>
 +
 +<OverlayModal
++  bind:open={answerOpen}
++  title={`What ${answering?.label ?? "the variable"} selects here`}
++  description="For the new resource only. Nothing here changes the template."
++  confirm="Use this"
++  width="narrow"
++  blocked={scopeBlocked}
++  onconfirm={confirmAnswer}
++  oncancel={cancelAnswer}
++>
++  <ScopeBuilder {...view$} onmode={setMode} onadd={addTerm} ondrop={dropTerm} />
++</OverlayModal>
++
++<OverlayModal
 +  bind:open={defaultOpen}
 +  title={`Default scope for ${defaultFor?.label ?? "the variable"}`}
-+  description="What the variable selects until whoever inserts the template says otherwise."
++  description="What the variable selects until whoever places the template says otherwise."
 +  confirm="Set the default scope"
 +  width="narrow"
-+  blocked={defaultBlocked}
++  blocked={scopeBlocked}
 +  onconfirm={() => void setDefault()}
 +>
-+  <div class="choices">
-+    <label class="choice">
-+      <PanelToggle label="Everything in the project" checked={draftWhole} onchange={(on) => (draftWhole = on)} />
-+      <span>Everything in the project</span>
-+    </label>
-+    <p class="or">Or only these kinds</p>
-+    {#each KINDS as entry (entry.kind)}
-+      <label class="choice">
-+        <PanelToggle label={entry.label} checked={draftKinds.includes(entry.kind)} disabled={draftWhole} onchange={(on) => toggleKind(entry.kind, on)} />
-+        <span class:muted={draftWhole}>{entry.label}</span>
-+      </label>
-+    {/each}
-+    {#if setItems.length > 0}
-+      <p class="or">Or these sets</p>
-+      {#each setItems as set (set.id)}
-+        <label class="choice">
-+          <PanelToggle label={set.name} checked={draftSets.includes(set.id)} disabled={draftWhole} onchange={(on) => toggleSet(set.id, on)} />
-+          <span class:muted={draftWhole}>{set.name}</span>
-+        </label>
-+      {/each}
-+    {/if}
-+  </div>
++  <ScopeBuilder {...view$} onmode={setMode} onadd={addTerm} ondrop={dropTerm} />
 +</OverlayModal>
 +
  <style>
-+  .choices,
 +  .answers {
 +    display: flex;
 +    flex-direction: column;
-+    gap: calc(var(--token-spacing-unit) * 1.5);
-+    padding: 0 calc(var(--token-spacing-unit) * 3);
-+  }
-+
-+  .answers {
 +    gap: calc(var(--token-spacing-unit) * 3);
++    padding: 0 calc(var(--token-spacing-unit) * 3);
 +  }
 +
 +  .answer {
@@ -6244,30 +7577,25 @@
 +    line-height: var(--token-text-caption-leading);
 +  }
 +
-+  .choice {
-+    display: flex;
-+    align-items: center;
-+    gap: calc(var(--token-spacing-unit) * 2);
++  .answer-rule {
++    padding: calc(var(--token-spacing-unit) * 1) calc(var(--token-spacing-unit) * 1.5);
++    border-inline-start: 2px solid var(--token-color-accent-1-text);
++    border-radius: 0 var(--token-radius-control) var(--token-radius-control) 0;
++    background: var(--token-color-accent-1-surface);
 +    color: var(--token-ink-primary);
 +    font-size: var(--token-text-body-sm);
 +    line-height: var(--token-text-body-sm-leading);
 +  }
 +
-+  .muted {
-+    color: var(--token-ink-muted);
-+  }
-+
-+  .or {
-+    margin: calc(var(--token-spacing-unit) * 1) 0 0;
-+    color: var(--token-ink-muted);
-+    font-size: var(--token-text-caption);
-+    line-height: var(--token-text-caption-leading);
++  .answer-actions {
++    display: flex;
++    gap: calc(var(--token-spacing-unit) * 1);
 +  }
 +
    .inspector-stack {
      display: flex;
      flex-direction: column;
-@@ -906,7 +1131,7 @@
+@@ -906,7 +1169,7 @@
  
    .template-actions {
      display: grid;
@@ -6276,7 +7604,7 @@
      align-self: stretch;
      overflow: hidden;
      width: 100%;
-@@ -1034,32 +1259,24 @@
+@@ -1034,32 +1297,24 @@
      min-width: 0;
      align-items: center;
      gap: calc(var(--token-spacing-unit) * 1.5);
@@ -6318,10 +7646,10 @@
      color: var(--token-ink-muted);
 ~~~~
 
-### changed · `src/lib/app-views/categories/templates/procedures/library.svelte.ts` (+183 / −31)
+### changed · `src/lib/app-views/categories/templates/procedures/library.svelte.ts` (+147 / −32)
 
 ~~~~diff
-@@ -2,33 +2,44 @@ import {
+@@ -2,33 +2,48 @@ import {
    createTemplate as createTemplateRemote,
    duplicateTemplate as duplicateTemplateRemote,
    instantiateTemplate as instantiateTemplateRemote,
@@ -6338,19 +7666,24 @@
    type TemplateUnavailable,
    type TemplateTarget as StoredTemplateTarget
  } from "$capabilities/templates/index.remote";
- import { readProjectResourceIndex } from "$capabilities/project-resources/index.remote";
+-import { readProjectResourceIndex } from "$capabilities/project-resources/index.remote";
 -import type { WorkspaceStateModel } from "$model/client/workspace-state";
++import {
++  readProjectResourceIndex,
++  type ProjectResourceIndex
++} from "$capabilities/project-resources/index.remote";
 +import {
 +  readResourceSets,
 +  type ReadResourceSetsResult,
 +  type ResourceSetItem
 +} from "$capabilities/resource-sets/index.remote";
 +import { asId } from "$representation/data/behavior/core/id";
-+import type {
-+  ResourceSet,
-+  TemplatedResourceSet,
-+  TemplatedTerm
-+} from "$representation/data/types/core/resource-set";
++import {
++  narrowed,
++  type ScopeDraft,
++  type ScopeNames,
++  type ScopeOffering
++} from "$representation/data/behavior/core/scope-draft";
 +import type { TemplateVariable as StoredTemplateVariable } from "$representation/data/types/templates/template";
 +import type { Category, WorkspaceStateModel } from "$model/client/workspace-state";
 +
@@ -6373,7 +7706,7 @@
  export type LibraryTemplate = {
    readonly id: string;
    readonly name: string;
-@@ -72,6 +83,16 @@ const TARGET_VALUE: Record<TemplateTarget, StoredTemplateTarget> = {
+@@ -72,6 +87,16 @@ const TARGET_VALUE: Record<TemplateTarget, StoredTemplateTarget> = {
    Spreadsheet: "spreadsheet"
  };
  
@@ -6390,7 +7723,7 @@
  const SCOPE_LABEL = {
    project: "Project",
    personal: "Personal"
-@@ -81,7 +102,6 @@ const MINUTE = 60_000;
+@@ -81,7 +106,6 @@ const MINUTE = 60_000;
  const HOUR = 60 * MINUTE;
  const DAY = 24 * HOUR;
  
@@ -6398,7 +7731,7 @@
  export const relativeTime = (at: number, now: number): string => {
    const gap = Math.max(0, now - at);
    if (gap < MINUTE) return "just now";
-@@ -120,31 +140,25 @@ const project = (row: TemplateLibraryItem, now: number): LibraryTemplate => ({
+@@ -120,31 +144,25 @@ const project = (row: TemplateLibraryItem, now: number): LibraryTemplate => ({
    canDelete: row.canDelete
  });
  
@@ -6430,7 +7763,7 @@
  export const detailIn = (
    answer: ReadTemplateResult | undefined,
    now: number
-@@ -161,13 +175,11 @@ export const detailIn = (
+@@ -161,13 +179,11 @@ export const detailIn = (
    };
  };
  
@@ -6444,7 +7777,7 @@
  export const recentTemplatesIn = (
    rows: readonly LibraryTemplate[],
    limit = 10
-@@ -184,7 +196,6 @@ export const recentTemplatesIn = (
+@@ -184,7 +200,6 @@ export const recentTemplatesIn = (
      .toSorted((a, b) => b.lastUsedAt - a.lastUsedAt)
      .slice(0, Math.max(0, limit));
  
@@ -6452,7 +7785,7 @@
  export const templateLibrarySummaryIn = (
    rows: readonly LibraryTemplate[]
  ): TemplateLibrarySummary => {
-@@ -208,7 +219,6 @@ const defaultName = (target: TemplateTarget): string =>
+@@ -208,7 +223,6 @@ const defaultName = (target: TemplateTarget): string =>
      Spreadsheet: "Untitled spreadsheet template"
    })[target];
  
@@ -6460,117 +7793,76 @@
  export const nextTemplateName = (
    target: TemplateTarget,
    rows: readonly LibraryTemplate[]
-@@ -220,13 +230,118 @@ export const nextTemplateName = (
+@@ -220,13 +234,77 @@ export const nextTemplateName = (
    return `${base} ${suffix}`;
  };
  
 -/** Keep a singleton Template tab's durable focus and transient inspector selection aligned. */
-+export const KINDS = [
-+  { kind: "document", label: "Documents" },
-+  { kind: "slides", label: "Slide decks" },
-+  { kind: "spreadsheet", label: "Spreadsheets" },
-+  { kind: "finding", label: "Findings" },
-+  { kind: "research", label: "Research threads" }
-+] as const;
-+
-+const KIND_LABEL: Record<string, string> = Object.fromEntries(
-+  KINDS.map((entry) => [entry.kind, entry.label])
-+);
++export {
++  PROJECT_KINDS as KINDS,
++  builderView,
++  draftOf,
++  isWholeProject,
++  narrowed,
++  needsRow,
++  ruleWords as ruleOf,
++  termFor,
++  withTerm,
++  withWholeProject,
++  withoutTerm,
++  type OfferSource,
++  type ScopeDraft,
++  type ScopeNames,
++  type ScopeSide
++} from "$representation/data/behavior/core/scope-draft";
 +
 +export const resourceSets = () => readResourceSets();
 +
 +export const setsIn = (answer: ReadResourceSetsResult | undefined): readonly ResourceSetItem[] =>
 +  answer?.sets ?? [];
 +
-+export const namesOf = (sets: readonly ResourceSetItem[]): ReadonlyMap<string, string> =>
-+  new Map(sets.map((set) => [set.id, set.name]));
++export const projectResources = () => readProjectResourceIndex();
 +
-+export const kindsOf = (rule: TemplatedResourceSet | undefined): readonly string[] =>
-+  (rule?.include ?? []).flatMap((term) => (term.select === "kinds" ? term.kinds : []));
++export const resourcesIn = (
++  answer: ProjectResourceIndex | undefined
++): readonly { readonly id: string; readonly kind: string; readonly name: string }[] =>
++  (answer?.resources ?? []).map((item) => ({ id: item.id, kind: item.kind, name: item.name }));
 +
-+export const setIdsOf = (rule: TemplatedResourceSet | undefined): readonly string[] =>
-+  (rule?.include ?? []).flatMap((term) => (term.select === "set" ? [term.setId] : []));
++/** What the builder and every sentence read a set or a resource by. */
++export const scopeNamesOf = (
++  sets: readonly ResourceSetItem[],
++  resources: readonly { readonly id: string; readonly name: string }[]
++): ScopeNames => ({
++  sets: new Map(sets.map((set) => [set.id, set.name])),
++  resources: new Map(resources.map((resource) => [resource.id, resource.name]))
++});
 +
-+export const isWholeProject = (rule: TemplatedResourceSet | undefined): boolean =>
-+  rule === undefined || rule.include.some((term) => term.select === "project");
++/** What the builder is handed for a variable's default, or for an answer. */
++export const offeringOf = (
++  sets: readonly ResourceSetItem[],
++  resources: readonly { readonly id: string; readonly kind: string; readonly name: string }[]
++): ScopeOffering => ({
++  sets: sets.map((set) => ({ id: set.id, name: set.name, set: set.set })),
++  resources
++});
 +
-+const termWords = (
-+  terms: readonly TemplatedTerm[],
-+  names: ReadonlyMap<string, string>
-+): readonly string[] =>
-+  terms.map((term) =>
-+    term.select === "project"
-+      ? "everything in the project"
-+      : term.select === "kinds"
-+        ? term.kinds.map((kind) => KIND_LABEL[kind] ?? kind).join(", ")
-+        : term.select === "set"
-+          ? (names.get(term.setId) ?? "a set that no longer exists")
-+          : `whatever ${term.name} holds`
-+  );
-+
-+export const ruleOf = (
-+  rule: TemplatedResourceSet | undefined,
-+  names: ReadonlyMap<string, string> = new Map()
-+): string => {
-+  if (rule === undefined) return "Everything in the project";
-+  if (rule.include.length === 0) return "Nothing";
-+  const words = termWords(rule.include, names).join(" and ");
-+  const included = isWholeProject(rule)
-+    ? "Everything in the project"
-+    : words.charAt(0).toUpperCase() + words.slice(1);
-+  const excluded = termWords(rule.exclude, names);
-+  return excluded.length === 0 ? included : `${included}, minus ${excluded.join(", ")}`;
-+};
-+
-+export const ruleFrom = (
-+  whole: boolean,
-+  kinds: readonly string[],
-+  setIds: readonly string[] = []
-+): TemplatedResourceSet => {
-+  if (whole) return { include: [{ select: "project" }], exclude: [] };
-+  const include: TemplatedTerm[] = [];
-+  if (kinds.length > 0) include.push({ select: "kinds", kinds: [...kinds] as never[] });
-+  for (const setId of setIds) include.push({ select: "set", setId: asId<"resourceSets">(setId) });
-+  return { include, exclude: [] };
-+};
-+
-+export const DEFAULT_ANSWER = "default";
-+
-+export type AnswerOption = { readonly value: string; readonly label: string };
-+
-+export const answerOptions = (
-+  variable: StoredTemplateVariable,
-+  sets: readonly ResourceSetItem[]
-+): readonly AnswerOption[] => [
-+  { value: DEFAULT_ANSWER, label: `Default · ${ruleOf(variable.default, namesOf(sets))}` },
-+  { value: "project", label: "Everything in the project" },
-+  ...KINDS.map((entry) => ({ value: `kind:${entry.kind}`, label: `Only ${entry.label.toLocaleLowerCase()}` })),
-+  ...sets.map((set) => ({ value: `set:${set.id}`, label: set.name }))
-+];
-+
-+export const answerFrom = (choice: string): ResourceSet | undefined => {
-+  if (choice === "project") return { include: [{ select: "project" }], exclude: [] };
-+  if (choice.startsWith("kind:")) {
-+    return { include: [{ select: "kinds", kinds: [choice.slice("kind:".length)] as never[] }], exclude: [] };
-+  }
-+  if (choice.startsWith("set:")) {
-+    return { include: [{ select: "set", setId: asId<"resourceSets">(choice.slice("set:".length)) }], exclude: [] };
-+  }
-+  return undefined;
-+};
-+
-+export const answersFrom = (choices: Readonly<Record<string, string>>): TemplateAnswers =>
++/**
++ * The answers a caller chose, as rules.
++ *
++ * A variable nobody touched is absent, which is what makes the template's own
++ * default apply. Everything present is sent as built; the server decides
++ * whether it needs a row.
++ */
++export const answersFrom = (
++  choices: Readonly<Record<string, ScopeDraft | undefined>>
++): TemplateAnswers =>
 +  Object.fromEntries(
-+    Object.entries(choices).flatMap(([name, choice]) => {
-+      const answer = answerFrom(choice);
-+      return answer === undefined ? [] : [[name, answer] as const];
++    Object.entries(choices).flatMap(([name, draft]) => {
++      if (draft === undefined) return [];
++      const rule = narrowed(draft);
++      return rule === undefined ? [] : [[name, rule] as const];
 +    })
 +  );
-+
-+export const defaultChoices = (
-+  variables: readonly StoredTemplateVariable[]
-+): Record<string, string> =>
-+  Object.fromEntries(variables.map((variable) => [variable.name, DEFAULT_ANSWER]));
 +
  export const inspectTemplate = (view: WorkspaceStateModel, templateId: string): void => {
    view.open({ category: "templates", focus: templateId });
@@ -6581,7 +7873,7 @@
  export const createTemplate = (
    view: WorkspaceStateModel,
    target: TemplateTarget,
-@@ -241,7 +356,6 @@ export const createTemplate = (
+@@ -241,7 +319,6 @@ export const createTemplate = (
    );
  };
  
@@ -6589,7 +7881,7 @@
  export const updateTemplateName = (
    view: WorkspaceStateModel,
    row: LibraryTemplateDetail,
-@@ -259,7 +373,6 @@ export const updateTemplateName = (
+@@ -259,7 +336,6 @@ export const updateTemplateName = (
    );
  };
  
@@ -6597,7 +7889,7 @@
  export const updateTemplateDescription = (
    view: WorkspaceStateModel,
    row: LibraryTemplateDetail,
-@@ -285,7 +398,6 @@ export const updateTemplateDescription = (
+@@ -285,7 +361,6 @@ export const updateTemplateDescription = (
    );
  };
  
@@ -6605,7 +7897,7 @@
  export const updateTemplateVariableDescription = (
    view: WorkspaceStateModel,
    row: LibraryTemplateDetail,
-@@ -315,7 +427,6 @@ export const updateTemplateVariableDescription = (
+@@ -315,7 +390,6 @@ export const updateTemplateVariableDescription = (
    );
  };
  
@@ -6613,7 +7905,7 @@
  export const updateTemplateTags = (
    view: WorkspaceStateModel,
    row: LibraryTemplateDetail,
-@@ -331,13 +442,31 @@ export const updateTemplateTags = (
+@@ -331,13 +405,31 @@ export const updateTemplateTags = (
        }).updates(readTemplateLibrary, readTemplate({ templateId: row.id }))
    );
  
@@ -6622,7 +7914,7 @@
 +  view: WorkspaceStateModel,
 +  row: LibraryTemplateDetail,
 +  variableName: string,
-+  rule: TemplatedResourceSet
++  rule: ScopeDraft
 +) => {
 +  const variables = row.variables.map(({ id: _id, ...variable }) =>
 +    variable.name === variableName ? { ...variable, default: rule } : variable
@@ -6647,7 +7939,7 @@
  export const removeTemplate = (view: WorkspaceStateModel, row: LibraryTemplateDetail) =>
    view.singleFlight(["template", view.project, row.id, "remove", row.revision], () =>
      removeTemplateRemote({ templateId: row.id, baseRevision: row.revision }).updates(
-@@ -346,11 +475,34 @@ export const removeTemplate = (view: WorkspaceStateModel, row: LibraryTemplateDe
+@@ -346,11 +438,34 @@ export const removeTemplate = (view: WorkspaceStateModel, row: LibraryTemplateDe
      )
    );
  
@@ -6689,41 +7981,33 @@
 +};
 ~~~~
 
-### changed · `src/lib/app-views/categories/templates/procedures/test/unit/library.test.ts` (+24 / −0)
+### changed · `src/lib/app-views/categories/templates/procedures/test/unit/library.test.ts` (+16 / −0)
 
 ~~~~diff
-@@ -1,12 +1,36 @@
+@@ -1,12 +1,28 @@
  import { describe, expect, it } from "vitest";
  
  import {
-+  answerOptions,
 +  answersFrom,
-+  defaultChoices,
    emptyTemplateInspectorTitle,
 +  ruleOf,
++  scopeNamesOf,
    selectedTemplateIdIn,
    templateDetail
  } from "$app-views/categories/templates/procedures/library.svelte";
  
  describe("template library view procedures", () => {
-+  it("asks for each variable with its default first and turns the choices into answers", () => {
-+    const variable = {
-+      name: "evidence",
-+      label: "Evidence",
-+      default: { include: [{ select: "set" as const, setId: "resourceSets:1" as never }], exclude: [] }
-+    };
++  it("reads a default in the shared words and sends an answer as the rule it is", () => {
++    const rule = { include: [{ select: "set" as const, setId: "resourceSets:1" as never }], exclude: [] };
 +    const sets = [
 +      { id: "resourceSets:1", name: "Winter filings", set: { include: [], exclude: [] }, createdByName: "Uma", revision: 1, updatedAt: 1, resolves: 2 }
 +    ];
-+    const options = answerOptions(variable, sets);
-+    expect(options[0]).toEqual({ value: "default", label: "Default · Winter filings" });
-+    expect(options.at(-1)).toEqual({ value: "set:resourceSets:1", label: "Winter filings" });
-+    expect(ruleOf(variable.default)).toBe("A set that no longer exists");
-+    expect(defaultChoices([variable])).toEqual({ evidence: "default" });
-+    expect(answersFrom({ evidence: "default" })).toEqual({});
-+    expect(answersFrom({ evidence: "kind:finding" })).toEqual({
-+      evidence: { include: [{ select: "kinds", kinds: ["finding"] }], exclude: [] }
-+    });
++    expect(ruleOf(rule, scopeNamesOf(sets, []))).toBe("Winter filings");
++    expect(ruleOf(rule)).toBe("A chosen group");
++    expect(answersFrom({ evidence: undefined })).toEqual({});
++    expect(
++      answersFrom({ evidence: { include: [{ select: "kinds", kinds: ["finding"] }], exclude: [] } })
++    ).toEqual({ evidence: { include: [{ select: "kinds", kinds: ["finding"] }], exclude: [] } });
 +  });
 +
    it("does not issue a detail read when no template is selected", () => {
@@ -6910,10 +8194,10 @@
      text-underline-offset: 0.12em;
 ~~~~
 
-### new · `src/lib/app-views/categories/document-editor/context/templates.svelte` (+578 / −0)
+### new · `src/lib/app-views/categories/document-editor/context/templates.svelte` (+610 / −0)
 
 ~~~~diff
-@@ -0,0 +1,578 @@
+@@ -0,0 +1,610 @@
 +<script lang="ts">
 +  import { onDestroy } from "svelte";
 +
@@ -6929,40 +8213,44 @@
 +    PanelNote,
 +    PanelRow,
 +    PanelSearch,
-+    PanelSection,
-+    PanelSelect,
-+    PanelToggle
++    PanelSection
 +  } from "$authored-components/panel";
++  import { ScopeBuilder } from "$authored-components/scope-builder";
 +  import { rowsIn } from "$app-views/categories/document-editor/procedures/store";
 +  import {
-+    DEFAULT_ANSWER,
-+    KINDS,
-+    answerOptions,
 +    answersFrom,
++    builderView,
 +    commitStage,
 +    currentRowId,
-+    defaultChoices,
 +    detailIn,
 +    discardStage,
 +    documentTemplatesIn,
++    draftOf,
 +    insertionOf,
-+    isWholeProject,
-+    kindsOf,
 +    mergedVariables,
-+    namesOf,
++    offeringOf,
 +    openStage,
++    projectResources,
 +    resourceSets,
 +    resourceTemplate,
-+    ruleFrom,
++    resourcesIn,
 +    ruleOf,
 +    saveAsTemplate,
-+    setIdsOf,
++    scopeNamesOf,
 +    setsIn,
 +    stageIn,
 +    templateDetail,
 +    templateLibrary,
++    termFor,
 +    updateVariables,
++    withTerm,
 +    withVariableField,
++    withWholeProject,
++    withoutTerm,
++    type ChosenVariable,
++    type OfferSource,
++    type ScopeDraft,
++    type ScopeSide,
 +    type TemplateAnswers,
 +    type TemplateDetail,
 +    type TemplateLibraryItem,
@@ -6990,8 +8278,11 @@
 +
 +  const library = templateLibrary();
 +  const sets = resourceSets();
++  const index = projectResources();
 +  const setItems = $derived(setsIn(sets.ready ? sets.current : undefined));
-+  const setNames = $derived(namesOf(setItems));
++  const catalogue = $derived(resourcesIn(index.ready ? index.current : undefined));
++  const setNames = $derived(scopeNamesOf(setItems, catalogue));
++  const offering = $derived(offeringOf(setItems, catalogue));
 +  const resourceQuery = $derived(documentId === undefined ? undefined : resourceTemplate(documentId));
 +  const resource = $derived(resourceQuery?.ready ? resourceQuery.current : undefined);
 +  const stage = $derived(stageIn(resource));
@@ -7007,12 +8298,12 @@
 +  let notice = $state<readonly string[]>([]);
 +  let defaultFor = $state<TemplateVariable | undefined>(undefined);
 +  let defaultOpen = $state(false);
-+  let draftWhole = $state(true);
-+  let draftKinds = $state<string[]>([]);
-+  let draftSets = $state<string[]>([]);
++  let draft = $state<ScopeDraft>(draftOf(undefined));
 +  let insertFor = $state<TemplateDetail | undefined>(undefined);
 +  let insertOpen = $state(false);
-+  let choices = $state<Record<string, string>>({});
++  let answerOpen = $state(false);
++  let choices = $state<Record<string, ScopeDraft | undefined>>({});
++  let answering = $state<TemplateVariable | undefined>(undefined);
 +
 +  const shown = $derived(
 +    templates.filter((item) => item.name.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()))
@@ -7152,7 +8443,8 @@
 +      }
 +      if (stage === undefined && detail.variables.length > 0) {
 +        insertFor = detail;
-+        choices = defaultChoices(detail.variables);
++        choices = {};
++        answering = undefined;
 +        insertOpen = true;
 +        return;
 +      }
@@ -7165,7 +8457,7 @@
 +    void run(`place:${detail.id}`, () => place(detail, answersFrom(choices)));
 +  };
 +
-+  const changeVariables = (next: readonly TemplateVariable[]) =>
++  const changeVariables = (next: readonly ChosenVariable[]) =>
 +    run("variables", async () => {
 +      if (template === undefined) return;
 +      const result = await updateVariables(view, template, next, documentId);
@@ -7174,38 +8466,65 @@
 +
 +  const openDefault = (variable: TemplateVariable) => {
 +    defaultFor = variable;
-+    draftWhole = isWholeProject(variable.default);
-+    draftKinds = [...kindsOf(variable.default)];
-+    draftSets = [...setIdsOf(variable.default)];
++    draft = draftOf(variable.default);
 +    defaultOpen = true;
-+  };
-+
-+  const toggleKind = (kind: string, on: boolean) => {
-+    draftKinds = on
-+      ? [...draftKinds.filter((held) => held !== kind), kind]
-+      : draftKinds.filter((held) => held !== kind);
-+  };
-+
-+  const toggleSet = (setId: string, on: boolean) => {
-+    draftSets = on
-+      ? [...draftSets.filter((held) => held !== setId), setId]
-+      : draftSets.filter((held) => held !== setId);
 +  };
 +
 +  const confirmDefault = () => {
 +    if (template === undefined || defaultFor === undefined) return;
 +    void changeVariables(
-+      withVariableField(template.variables, defaultFor.name, {
-+        default: ruleFrom(draftWhole, draftKinds, draftSets)
-+      })
++      withVariableField(template.variables, defaultFor.name, { default: draft })
 +    );
 +  };
 +
++  /**
++   * The builder is its own modal rather than a second face of the ask modal.
++   * Swapping one modal's title, body and confirm while it is open replaces the
++   * footer under the pointer, and the press lands on a button that has gone.
++   */
++  const openAnswer = (variable: TemplateVariable) => {
++    answering = variable;
++    draft = draftOf(choices[variable.name] ?? variable.default);
++    insertOpen = false;
++    answerOpen = true;
++  };
++
++  const confirmAnswer = () => {
++    if (answering !== undefined) choices = { ...choices, [answering.name]: draft };
++    answering = undefined;
++    answerOpen = false;
++    insertOpen = true;
++  };
++
++  const cancelAnswer = () => {
++    answering = undefined;
++    insertOpen = true;
++  };
++
++  const clearAnswer = (variable: TemplateVariable) => {
++    const { [variable.name]: _dropped, ...rest } = choices;
++    choices = rest;
++  };
++
++  /** Every builder edits this one draft, because only one is ever open. */
++  const view$ = $derived(builderView(draft, offering));
++
++  const addTerm = (side: ScopeSide, source: string, key: string) => {
++    const term = termFor(source as OfferSource, key);
++    if (term !== undefined) draft = withTerm(draft, side, term);
++  };
++
++  const dropTerm = (side: ScopeSide, key: string) => {
++    draft = withoutTerm(draft, side, key);
++  };
++
++  const setMode = (whole: boolean) => {
++    draft = whole ? withWholeProject() : { include: [], exclude: [] };
++  };
++
 +  const busy = $derived(pending !== undefined || body === undefined);
-+  const defaultBlocked = $derived(
-+    !draftWhole && draftKinds.length === 0 && draftSets.length === 0
-+      ? "Pick everything, or at least one kind or set."
-+      : undefined
++  const scopeBlocked = $derived(
++    draft.include.length === 0 ? "Include something, or choose everything in the project." : undefined
 +  );
 +</script>
 +
@@ -7307,7 +8626,7 @@
 +<OverlayModal
 +  bind:open={insertOpen}
 +  title={`Insert “${insertFor?.name ?? "the template"}”`}
-+  description="What each variable selects in this document. The default is what the template suggests."
++  description="What each variable selects in this document. Untouched, each uses the template's own default."
 +  confirm="Insert"
 +  width="narrow"
 +  onconfirm={confirmInsert}
@@ -7319,61 +8638,63 @@
 +        {#if variable.description}
 +          <span class="answer-help">{variable.description}</span>
 +        {/if}
-+        <PanelSelect
-+          label={`Answer for ${variable.label}`}
-+          value={choices[variable.name] ?? DEFAULT_ANSWER}
-+          options={answerOptions(variable, setItems)}
-+          onchange={(next) => (choices = { ...choices, [variable.name]: next })}
-+        />
++        <span class="answer-rule">
++          {choices[variable.name] === undefined ? "Default · " : ""}{ruleOf(
++            choices[variable.name] ?? variable.default,
++            setNames
++          )}
++        </span>
++        <span class="answer-actions">
++          <PanelButton
++            label="Change"
++            title={`Choose what ${variable.label} selects here`}
++            onclick={() => openAnswer(variable)}
++          />
++          {#if choices[variable.name] !== undefined}
++            <PanelButton
++              label="Use the default"
++              tone="ghost"
++              title={`Put ${variable.label} back to the template's own default`}
++              onclick={() => clearAnswer(variable)}
++            />
++          {/if}
++        </span>
 +      </div>
 +    {/each}
 +  </div>
 +</OverlayModal>
 +
 +<OverlayModal
++  bind:open={answerOpen}
++  title={`What ${answering?.label ?? "the variable"} selects here`}
++  description="For this copy only. Nothing here changes the template."
++  confirm="Use this"
++  width="narrow"
++  blocked={scopeBlocked}
++  onconfirm={confirmAnswer}
++  oncancel={cancelAnswer}
++>
++  <ScopeBuilder {...view$} onmode={setMode} onadd={addTerm} ondrop={dropTerm} />
++</OverlayModal>
++
++<OverlayModal
 +  bind:open={defaultOpen}
 +  title={`Default scope for ${defaultFor?.label ?? "the variable"}`}
-+  description="What the variable selects until whoever inserts the template says otherwise."
++  description="What the variable selects until whoever places the template says otherwise."
 +  confirm="Set the default scope"
 +  width="narrow"
-+  blocked={defaultBlocked}
++  blocked={scopeBlocked}
 +  onconfirm={confirmDefault}
 +>
-+  <div class="choices">
-+    <label class="choice">
-+      <PanelToggle label="Everything in the project" checked={draftWhole} onchange={(on) => (draftWhole = on)} />
-+      <span>Everything in the project</span>
-+    </label>
-+    <p class="or">Or only these kinds</p>
-+    {#each KINDS as entry (entry.kind)}
-+      <label class="choice">
-+        <PanelToggle label={entry.label} checked={draftKinds.includes(entry.kind)} disabled={draftWhole} onchange={(on) => toggleKind(entry.kind, on)} />
-+        <span class:muted={draftWhole}>{entry.label}</span>
-+      </label>
-+    {/each}
-+    {#if setItems.length > 0}
-+      <p class="or">Or these sets</p>
-+      {#each setItems as set (set.id)}
-+        <label class="choice">
-+          <PanelToggle label={set.name} checked={draftSets.includes(set.id)} disabled={draftWhole} onchange={(on) => toggleSet(set.id, on)} />
-+          <span class:muted={draftWhole}>{set.name}</span>
-+        </label>
-+      {/each}
-+    {/if}
-+  </div>
++  <ScopeBuilder {...view$} onmode={setMode} onadd={addTerm} ondrop={dropTerm} />
 +</OverlayModal>
 +
 +<style>
-+  .choices,
 +  .answers {
 +    display: flex;
 +    flex-direction: column;
-+    gap: calc(var(--token-spacing-unit) * 1.5);
-+    padding: 0 calc(var(--token-spacing-unit) * 3);
-+  }
-+
-+  .answers {
 +    gap: calc(var(--token-spacing-unit) * 3);
++    padding: 0 calc(var(--token-spacing-unit) * 3);
 +  }
 +
 +  .answer {
@@ -7395,24 +8716,19 @@
 +    line-height: var(--token-text-caption-leading);
 +  }
 +
-+  .choice {
-+    display: flex;
-+    align-items: center;
-+    gap: calc(var(--token-spacing-unit) * 2);
++  .answer-rule {
++    padding: calc(var(--token-spacing-unit) * 1) calc(var(--token-spacing-unit) * 1.5);
++    border-inline-start: 2px solid var(--token-color-accent-1-text);
++    border-radius: 0 var(--token-radius-control) var(--token-radius-control) 0;
++    background: var(--token-color-accent-1-surface);
 +    color: var(--token-ink-primary);
 +    font-size: var(--token-text-body-sm);
 +    line-height: var(--token-text-body-sm-leading);
 +  }
 +
-+  .muted {
-+    color: var(--token-ink-muted);
-+  }
-+
-+  .or {
-+    margin: calc(var(--token-spacing-unit) * 1) 0 0;
-+    color: var(--token-ink-muted);
-+    font-size: var(--token-text-caption);
-+    line-height: var(--token-text-caption-leading);
++  .answer-actions {
++    display: flex;
++    gap: calc(var(--token-spacing-unit) * 1);
 +  }
 +
 +  .notice {
@@ -7535,10 +8851,14 @@
        ]
 ~~~~
 
-### new · `src/lib/app-views/categories/document-editor/procedures/templating.ts` (+328 / −0)
+### new · `src/lib/app-views/categories/document-editor/procedures/templating.ts` (+302 / −0)
 
 ~~~~diff
-@@ -0,0 +1,328 @@
+@@ -0,0 +1,302 @@
++import {
++  readProjectResourceIndex,
++  type ProjectResourceIndex
++} from "$capabilities/project-resources/index.remote";
 +import {
 +  readResourceSets,
 +  type ReadResourceSetsResult,
@@ -7562,13 +8882,15 @@
 +  type TemplateLibraryItem
 +} from "$capabilities/templates/index.remote";
 +import { asId } from "$representation/data/behavior/core/id";
++import {
++  narrowed,
++  type ScopeDraft,
++  type ScopeNames,
++  type ScopeOffering
++} from "$representation/data/behavior/core/scope-draft";
 +import { withFreshIds, type IdHint } from "$representation/data/behavior/templates/fresh-ids";
 +import { resolveTemplateScopes } from "$representation/data/behavior/templates/scopes";
-+import type {
-+  ResourceSet,
-+  TemplatedResourceSet,
-+  TemplatedTerm
-+} from "$representation/data/types/core/resource-set";
++import type { TemplatedResourceSet } from "$representation/data/types/core/resource-set";
 +import type { DocumentBody, DocumentRow } from "$representation/data/types/documents/body";
 +import type { DocumentOp } from "$representation/data/types/documents/op";
 +import type { TemplateVariable } from "$representation/data/types/templates/template";
@@ -7587,110 +8909,71 @@
 +export type { TemplatedResourceSet } from "$representation/data/types/core/resource-set";
 +export type { TemplateVariable } from "$representation/data/types/templates/template";
 +
-+export const KINDS = [
-+  { kind: "document", label: "Documents" },
-+  { kind: "slides", label: "Slide decks" },
-+  { kind: "spreadsheet", label: "Spreadsheets" },
-+  { kind: "finding", label: "Findings" },
-+  { kind: "research", label: "Research threads" }
-+] as const;
-+
-+const KIND_LABEL: Record<string, string> = Object.fromEntries(
-+  KINDS.map((entry) => [entry.kind, entry.label])
-+);
++export {
++  PROJECT_KINDS as KINDS,
++  builderView,
++  draftOf,
++  isWholeProject,
++  narrowed,
++  needsRow,
++  ruleWords as ruleOf,
++  termFor,
++  withTerm,
++  withWholeProject,
++  withoutTerm,
++  type OfferSource,
++  type ScopeDraft,
++  type ScopeNames,
++  type ScopeSide
++} from "$representation/data/behavior/core/scope-draft";
 +
 +export const resourceSets = () => readResourceSets();
 +
 +export const setsIn = (answer: ReadResourceSetsResult | undefined): readonly ResourceSetItem[] =>
 +  answer?.sets ?? [];
 +
-+export const namesOf = (sets: readonly ResourceSetItem[]): ReadonlyMap<string, string> =>
-+  new Map(sets.map((set) => [set.id, set.name]));
++export const projectResources = () => readProjectResourceIndex();
 +
-+export const kindsOf = (rule: TemplatedResourceSet | undefined): readonly string[] =>
-+  (rule?.include ?? []).flatMap((term) => (term.select === "kinds" ? term.kinds : []));
++export const resourcesIn = (
++  answer: ProjectResourceIndex | undefined
++): readonly { readonly id: string; readonly kind: string; readonly name: string }[] =>
++  (answer?.resources ?? []).map((item) => ({ id: item.id, kind: item.kind, name: item.name }));
 +
-+export const setIdsOf = (rule: TemplatedResourceSet | undefined): readonly string[] =>
-+  (rule?.include ?? []).flatMap((term) => (term.select === "set" ? [term.setId] : []));
++/** What the builder and every sentence read a set or a resource by. */
++export const scopeNamesOf = (
++  sets: readonly ResourceSetItem[],
++  resources: readonly { readonly id: string; readonly name: string }[]
++): ScopeNames => ({
++  sets: new Map(sets.map((set) => [set.id, set.name])),
++  resources: new Map(resources.map((resource) => [resource.id, resource.name]))
++});
 +
-+export const isWholeProject = (rule: TemplatedResourceSet | undefined): boolean =>
-+  rule === undefined || rule.include.some((term) => term.select === "project");
++/** What the builder is handed for a variable's default, or for an answer. */
++export const offeringOf = (
++  sets: readonly ResourceSetItem[],
++  resources: readonly { readonly id: string; readonly kind: string; readonly name: string }[]
++): ScopeOffering => ({
++  sets: sets.map((set) => ({ id: set.id, name: set.name, set: set.set })),
++  resources
++});
 +
-+const termWords = (
-+  terms: readonly TemplatedTerm[],
-+  names: ReadonlyMap<string, string>
-+): readonly string[] =>
-+  terms.map((term) =>
-+    term.select === "project"
-+      ? "everything in the project"
-+      : term.select === "kinds"
-+        ? term.kinds.map((kind) => KIND_LABEL[kind] ?? kind).join(", ")
-+        : term.select === "set"
-+          ? (names.get(term.setId) ?? "a set that no longer exists")
-+          : `whatever ${term.name} holds`
-+  );
-+
-+export const ruleOf = (
-+  rule: TemplatedResourceSet | undefined,
-+  names: ReadonlyMap<string, string> = new Map()
-+): string => {
-+  if (rule === undefined) return "Everything in the project";
-+  if (rule.include.length === 0) return "Nothing";
-+  const words = termWords(rule.include, names).join(" and ");
-+  const included = isWholeProject(rule)
-+    ? "Everything in the project"
-+    : words.charAt(0).toUpperCase() + words.slice(1);
-+  const excluded = termWords(rule.exclude, names);
-+  return excluded.length === 0 ? included : `${included}, minus ${excluded.join(", ")}`;
-+};
-+
-+export const ruleFrom = (
-+  whole: boolean,
-+  kinds: readonly string[],
-+  setIds: readonly string[] = []
-+): TemplatedResourceSet => {
-+  if (whole) return { include: [{ select: "project" }], exclude: [] };
-+  const include: TemplatedTerm[] = [];
-+  if (kinds.length > 0) include.push({ select: "kinds", kinds: [...kinds] as never[] });
-+  for (const setId of setIds) include.push({ select: "set", setId: asId<"resourceSets">(setId) });
-+  return { include, exclude: [] };
-+};
-+
-+export const DEFAULT_ANSWER = "default";
-+
-+export type AnswerOption = { readonly value: string; readonly label: string };
-+
-+export const answerOptions = (
-+  variable: TemplateVariable,
-+  sets: readonly ResourceSetItem[]
-+): readonly AnswerOption[] => [
-+  { value: DEFAULT_ANSWER, label: `Default · ${ruleOf(variable.default, namesOf(sets))}` },
-+  { value: "project", label: "Everything in the project" },
-+  ...KINDS.map((entry) => ({ value: `kind:${entry.kind}`, label: `Only ${entry.label.toLocaleLowerCase()}` })),
-+  ...sets.map((set) => ({ value: `set:${set.id}`, label: set.name }))
-+];
-+
-+export const answerFrom = (choice: string): ResourceSet | undefined => {
-+  if (choice === "project") return { include: [{ select: "project" }], exclude: [] };
-+  if (choice.startsWith("kind:")) {
-+    return { include: [{ select: "kinds", kinds: [choice.slice("kind:".length)] as never[] }], exclude: [] };
-+  }
-+  if (choice.startsWith("set:")) {
-+    return { include: [{ select: "set", setId: asId<"resourceSets">(choice.slice("set:".length)) }], exclude: [] };
-+  }
-+  return undefined;
-+};
-+
-+export const answersFrom = (choices: Readonly<Record<string, string>>): TemplateAnswers =>
++/**
++ * The answers a caller chose, as rules.
++ *
++ * A variable nobody touched is absent, which is what makes the template's own
++ * default apply. Everything present is sent as built; the server decides
++ * whether it needs a row.
++ */
++export const answersFrom = (
++  choices: Readonly<Record<string, ScopeDraft | undefined>>
++): TemplateAnswers =>
 +  Object.fromEntries(
-+    Object.entries(choices).flatMap(([name, choice]) => {
-+      const answer = answerFrom(choice);
-+      return answer === undefined ? [] : [[name, answer] as const];
++    Object.entries(choices).flatMap(([name, draft]) => {
++      if (draft === undefined) return [];
++      const rule = narrowed(draft);
++      return rule === undefined ? [] : [[name, rule] as const];
 +    })
 +  );
-+
-+export const defaultChoices = (variables: readonly TemplateVariable[]): Record<string, string> =>
-+  Object.fromEntries(variables.map((variable) => [variable.name, DEFAULT_ANSWER]));
 +
 +export const resourceTemplate = (resourceId: string) => readResourceTemplate({ resourceId });
 +export const templateLibrary = () => readTemplateLibrary();
@@ -7782,14 +9065,21 @@
 +  return { ops, firstBlockId: firstBlockIn(rows) };
 +};
 +
++/**
++ * A variable as the client sends it, which is wider than one as it is stored: a
++ * chosen rule may exclude things and may name particular resources, and the
++ * server turns either into a row before it lands.
++ */
++export type ChosenVariable = Omit<TemplateVariable, "default"> & { default?: ScopeDraft };
++
 +export const withVariableField = (
-+  variables: readonly TemplateVariable[],
++  variables: readonly ChosenVariable[],
 +  name: string,
-+  change: Partial<Pick<TemplateVariable, "label" | "description" | "default">>
-+): readonly TemplateVariable[] =>
++  change: { label?: string; description?: string; default?: ScopeDraft }
++): readonly ChosenVariable[] =>
 +  variables.map((variable) => {
 +    if (variable.name !== name) return variable;
-+    const next: TemplateVariable = { name: variable.name, label: change.label ?? variable.label };
++    const next: ChosenVariable = { name: variable.name, label: change.label ?? variable.label };
 +    const description = "description" in change ? change.description : variable.description;
 +    const fallback = "default" in change ? change.default : variable.default;
 +    if (description !== undefined && description.trim().length > 0) next.description = description.trim();
@@ -7798,9 +9088,9 @@
 +  });
 +
 +export const mergedVariables = (
-+  held: readonly TemplateVariable[],
-+  inserted: readonly TemplateVariable[]
-+): readonly TemplateVariable[] => {
++  held: readonly ChosenVariable[],
++  inserted: readonly ChosenVariable[]
++): readonly ChosenVariable[] => {
 +  const names = new Set(held.map((variable) => variable.name));
 +  return [...held, ...inserted.filter((variable) => !names.has(variable.name))];
 +};
@@ -7851,7 +9141,7 @@
 +export const updateVariables = (
 +  view: WorkspaceStateModel,
 +  template: { readonly id: string; readonly revision: number },
-+  variables: readonly TemplateVariable[],
++  variables: readonly ChosenVariable[],
 +  resourceId?: string
 +) =>
 +  view.singleFlight(
@@ -7869,28 +9159,23 @@
 +  );
 ~~~~
 
-### new · `src/lib/app-views/categories/document-editor/procedures/test/unit/templating.test.ts` (+176 / −0)
+### new · `src/lib/app-views/categories/document-editor/procedures/test/unit/templating.test.ts` (+167 / −0)
 
 ~~~~diff
-@@ -0,0 +1,176 @@
+@@ -0,0 +1,167 @@
 +import assert from "node:assert/strict";
 +import { test } from "vitest";
 +import type { DocumentBody } from "$representation/data/types/documents/body";
 +import { applyOps, invertAll } from "$representation/data/behavior/documents/apply-ops";
 +import type { TemplateDetail } from "$capabilities/templates/index.remote";
 +import {
-+  answerFrom,
-+  answerOptions,
 +  answersFrom,
 +  currentRowId,
-+  defaultChoices,
++  draftOf,
 +  insertionOf,
 +  isWholeProject,
-+  kindsOf,
 +  mergedVariables,
-+  ruleFrom,
 +  ruleOf,
-+  setIdsOf,
 +  withVariableField
 +} from "$app-views/categories/document-editor/procedures/templating";
 +
@@ -8001,53 +9286,49 @@
 +  assert.deepEqual(merged[0], declared[0]);
 +});
 +
-+test("a default is read as prose and built from the modal's two choices", () => {
++test("a default is read as prose, in the words every surface uses", () => {
 +  assert.equal(ruleOf(undefined), "Everything in the project");
-+  assert.equal(isWholeProject(undefined), true);
-+  assert.deepEqual(kindsOf(undefined), []);
++  assert.equal(isWholeProject(draftOf(undefined)), true);
 +  assert.equal(ruleOf({ include: [{ select: "kinds", kinds: ["finding", "document"] }], exclude: [] }), "Findings, Documents");
 +  assert.equal(
 +    ruleOf({ include: [{ select: "project" }], exclude: [{ select: "kinds", kinds: ["slides"] }] }),
 +    "Everything in the project, minus Slide decks"
 +  );
 +  assert.equal(ruleOf({ include: [], exclude: [] }), "Nothing");
-+  assert.deepEqual(ruleFrom(true, ["finding"]), { include: [{ select: "project" }], exclude: [] });
-+  assert.deepEqual(ruleFrom(false, ["finding", "document"]), {
-+    include: [{ select: "kinds", kinds: ["finding", "document"] }],
-+    exclude: []
-+  });
-+  assert.deepEqual(kindsOf(ruleFrom(false, ["research"])), ["research"]);
 +
-+  const names = new Map([["resourceSets:1", "Winter filings"]]);
-+  const named = ruleFrom(false, [], ["resourceSets:1"]);
-+  assert.deepEqual(named, { include: [{ select: "set", setId: "resourceSets:1" }], exclude: [] });
-+  assert.deepEqual(setIdsOf(named), ["resourceSets:1"]);
++  const names = { sets: new Map([["resourceSets:1", "Winter filings"]]) };
++  const named = { include: [{ select: "set" as const, setId: "resourceSets:1" as never }], exclude: [] };
 +  assert.equal(ruleOf(named, names), "Winter filings");
-+  assert.equal(ruleOf(named), "A set that no longer exists");
-+  assert.equal(ruleOf(ruleFrom(false, ["finding"], ["resourceSets:1"]), names), "Findings and Winter filings");
++  assert.equal(ruleOf(named), "A chosen group");
 +});
 +
-+test("inserting asks for each variable, offers the default first, and resolves the answers", () => {
-+  const sets = [
-+    { id: "resourceSets:1", name: "Winter filings", set: { include: [], exclude: [] }, createdByName: "Uma", revision: 1, updatedAt: 1, resolves: 3 }
-+  ];
-+  const options = answerOptions(template.variables[0], sets);
-+  assert.equal(options[0].value, "default");
-+  assert.equal(options[0].label, "Default · Findings");
-+  assert.deepEqual(options.slice(1, 3).map((option) => option.label), ["Everything in the project", "Only documents"]);
-+  assert.deepEqual(options.at(-1), { value: "set:resourceSets:1", label: "Winter filings" });
++test("an answer is a rule the caller built, and a variable nobody touched is absent", () => {
++  assert.deepEqual(answersFrom({ evidence: undefined }), {});
 +
-+  assert.deepEqual(defaultChoices(template.variables), { evidence: "default" });
-+  assert.equal(answerFrom("default"), undefined);
-+  assert.deepEqual(answerFrom("kind:finding"), { include: [{ select: "kinds", kinds: ["finding"] }], exclude: [] });
-+  assert.deepEqual(answersFrom({ evidence: "default" }), {});
++  const answers = answersFrom({
++    evidence: { include: [{ select: "set", setId: "resourceSets:1" as never }], exclude: [] }
++  });
++  assert.deepEqual(answers, {
++    evidence: { include: [{ select: "set", setId: "resourceSets:1" }], exclude: [] }
++  });
 +
-+  const answers = answersFrom({ evidence: "set:resourceSets:1" });
 +  const insertion = insertionOf(held, template, "r2", "resolve", answers);
 +  const after = applyOps(held, insertion.ops);
 +  const row = after.rows[3];
 +  if (row.kind !== "blocks" || row.blocks[0].type !== "prompt") throw new Error("prompt expected");
 +  assert.deepEqual(row.blocks[0].scope, { include: [{ select: "set", setId: "resourceSets:1" }], exclude: [] });
++});
++
++test("a rule that excludes anything is sent as built, for the server to store", () => {
++  const answers = answersFrom({
++    evidence: {
++      include: [{ select: "project" }],
++      exclude: [{ select: "resources", refs: [{ kind: "document", id: "documents:2" }] }]
++    }
++  });
++  assert.deepEqual(answers.evidence.exclude, [
++    { select: "resources", refs: [{ kind: "document", id: "documents:2" }] }
++  ]);
 +});
 ~~~~
 
@@ -8085,10 +9366,10 @@
          placeholder="Write a comment on {subject}…"
 ~~~~
 
-### changed · `src/lib/app-views/categories/slide-deck-editor/context/templates.svelte` (+593 / −3)
+### changed · `src/lib/app-views/categories/slide-deck-editor/context/templates.svelte` (+627 / −3)
 
 ~~~~diff
-@@ -1,8 +1,598 @@
+@@ -1,8 +1,632 @@
  <script lang="ts">
 -  import { Panel, PanelEmpty, PanelNote } from "$authored-components/panel";
 +  import { onDestroy } from "svelte";
@@ -8105,40 +9386,44 @@
 +    PanelNote,
 +    PanelRow,
 +    PanelSearch,
-+    PanelSection,
-+    PanelSelect,
-+    PanelToggle
++    PanelSection
 +  } from "$authored-components/panel";
++  import { ScopeBuilder } from "$authored-components/scope-builder";
 +  import { slideIndexOf } from "$app-views/categories/slide-deck-editor/procedures/deck";
 +  import { slideSignal } from "$app-views/categories/slide-deck-editor/procedures/selecting";
 +  import {
-+    DEFAULT_ANSWER,
-+    KINDS,
-+    answerOptions,
 +    answersFrom,
++    builderView,
 +    commitStage,
 +    deckTemplatesIn,
-+    defaultChoices,
 +    detailIn,
 +    discardStage,
++    draftOf,
 +    insertionOf,
-+    isWholeProject,
-+    kindsOf,
 +    mergedVariables,
-+    namesOf,
++    offeringOf,
 +    openStage,
++    projectResources,
 +    resourceSets,
 +    resourceTemplate,
-+    ruleFrom,
++    resourcesIn,
 +    ruleOf,
 +    saveAsTemplate,
-+    setIdsOf,
++    scopeNamesOf,
 +    setsIn,
 +    stageIn,
 +    templateDetail,
 +    templateLibrary,
++    termFor,
 +    updateVariables,
++    withTerm,
 +    withVariableField,
++    withWholeProject,
++    withoutTerm,
++    type ChosenVariable,
++    type OfferSource,
++    type ScopeDraft,
++    type ScopeSide,
 +    type TemplateAnswers,
 +    type TemplateDetail,
 +    type TemplateLibraryItem,
@@ -8171,8 +9456,11 @@
 +
 +  const library = templateLibrary();
 +  const sets = resourceSets();
++  const index = projectResources();
 +  const setItems = $derived(setsIn(sets.ready ? sets.current : undefined));
-+  const setNames = $derived(namesOf(setItems));
++  const catalogue = $derived(resourcesIn(index.ready ? index.current : undefined));
++  const setNames = $derived(scopeNamesOf(setItems, catalogue));
++  const offering = $derived(offeringOf(setItems, catalogue));
 +  const resourceQuery = $derived(deckId === undefined ? undefined : resourceTemplate(deckId));
 +  const resource = $derived(resourceQuery?.ready ? resourceQuery.current : undefined);
 +  const stage = $derived(stageIn(resource));
@@ -8188,12 +9476,12 @@
 +  let notice = $state<readonly string[]>([]);
 +  let defaultFor = $state<TemplateVariable | undefined>(undefined);
 +  let defaultOpen = $state(false);
-+  let draftWhole = $state(true);
-+  let draftKinds = $state<string[]>([]);
-+  let draftSets = $state<string[]>([]);
++  let draft = $state<ScopeDraft>(draftOf(undefined));
 +  let insertFor = $state<TemplateDetail | undefined>(undefined);
 +  let insertOpen = $state(false);
-+  let choices = $state<Record<string, string>>({});
++  let answerOpen = $state(false);
++  let choices = $state<Record<string, ScopeDraft | undefined>>({});
++  let answering = $state<TemplateVariable | undefined>(undefined);
 +
 +  const shown = $derived(
 +    templates.filter((item) => item.name.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()))
@@ -8339,7 +9627,8 @@
 +      }
 +      if (stage === undefined && detail.variables.length > 0) {
 +        insertFor = detail;
-+        choices = defaultChoices(detail.variables);
++        choices = {};
++        answering = undefined;
 +        insertOpen = true;
 +        return;
 +      }
@@ -8352,7 +9641,7 @@
 +    void run(`place:${detail.id}`, () => place(detail, answersFrom(choices)));
 +  };
 +
-+  const changeVariables = (next: readonly TemplateVariable[]) =>
++  const changeVariables = (next: readonly ChosenVariable[]) =>
 +    run("variables", async () => {
 +      if (template === undefined) return;
 +      const result = await updateVariables(view, template, next, deckId);
@@ -8361,38 +9650,67 @@
 +
 +  const openDefault = (variable: TemplateVariable) => {
 +    defaultFor = variable;
-+    draftWhole = isWholeProject(variable.default);
-+    draftKinds = [...kindsOf(variable.default)];
-+    draftSets = [...setIdsOf(variable.default)];
++    draft = draftOf(variable.default);
 +    defaultOpen = true;
-+  };
-+
-+  const toggleKind = (kind: string, on: boolean) => {
-+    draftKinds = on
-+      ? [...draftKinds.filter((held) => held !== kind), kind]
-+      : draftKinds.filter((held) => held !== kind);
-+  };
-+
-+  const toggleSet = (setId: string, on: boolean) => {
-+    draftSets = on
-+      ? [...draftSets.filter((held) => held !== setId), setId]
-+      : draftSets.filter((held) => held !== setId);
 +  };
 +
 +  const confirmDefault = () => {
 +    if (template === undefined || defaultFor === undefined) return;
 +    void changeVariables(
-+      withVariableField(template.variables, defaultFor.name, {
-+        default: ruleFrom(draftWhole, draftKinds, draftSets)
-+      })
++      withVariableField(template.variables, defaultFor.name, { default: draft })
 +    );
++  };
++
++  /**
++   * The builder is its own modal rather than a second face of the ask modal.
++   * Swapping one modal's title, body and confirm while it is open replaces the
++   * footer under the pointer, and the press lands on a button that has gone.
++   */
++  const openAnswer = (variable: TemplateVariable) => {
++    answering = variable;
++    draft = draftOf(choices[variable.name] ?? variable.default);
++    insertOpen = false;
++    answerOpen = true;
++  };
++
++  const confirmAnswer = () => {
++    if (answering !== undefined) choices = { ...choices, [answering.name]: draft };
++    answering = undefined;
++    answerOpen = false;
++    insertOpen = true;
++  };
++
++  const cancelAnswer = () => {
++    answering = undefined;
++    insertOpen = true;
++  };
++
++  const clearAnswer = (variable: TemplateVariable) => {
++    const { [variable.name]: _dropped, ...rest } = choices;
++    choices = rest;
++  };
++
++  /** Every builder edits this one draft, because only one is ever open. */
++  const view$ = $derived(builderView(draft, offering));
++
++  const addTerm = (side: ScopeSide, source: string, key: string) => {
++    const term = termFor(source as OfferSource, key);
++    if (term !== undefined) draft = withTerm(draft, side, term);
++  };
++
++  const dropTerm = (side: ScopeSide, key: string) => {
++    draft = withoutTerm(draft, side, key);
++  };
++
++  const setMode = (whole: boolean) => {
++    draft = whole ? withWholeProject() : { include: [], exclude: [] };
 +  };
 +
 +  const busy = $derived(pending !== undefined || body === undefined);
 +  const unnamed = $derived(nameDraft.trim() === "");
-+  const defaultBlocked = $derived(
-+    !draftWhole && draftKinds.length === 0 && draftSets.length === 0
-+      ? "Pick everything, or at least one kind or set."
++  const scopeBlocked = $derived(
++    draft.include.length === 0
++      ? "Include something, or choose everything in the project."
 +      : undefined
 +  );
  </script>
@@ -8500,7 +9818,7 @@
 +<OverlayModal
 +  bind:open={insertOpen}
 +  title={`Insert “${insertFor?.name ?? "the template"}”`}
-+  description="What each variable selects in this deck. The default is what the template suggests."
++  description="What each variable selects in this deck. Untouched, each uses the template's own default."
 +  confirm="Insert"
 +  width="narrow"
 +  onconfirm={confirmInsert}
@@ -8512,61 +9830,63 @@
 +        {#if variable.description}
 +          <span class="answer-help">{variable.description}</span>
 +        {/if}
-+        <PanelSelect
-+          label={`Answer for ${variable.label}`}
-+          value={choices[variable.name] ?? DEFAULT_ANSWER}
-+          options={answerOptions(variable, setItems)}
-+          onchange={(next) => (choices = { ...choices, [variable.name]: next })}
-+        />
++        <span class="answer-rule">
++          {choices[variable.name] === undefined ? "Default · " : ""}{ruleOf(
++            choices[variable.name] ?? variable.default,
++            setNames
++          )}
++        </span>
++        <span class="answer-actions">
++          <PanelButton
++            label="Change"
++            title={`Choose what ${variable.label} selects here`}
++            onclick={() => openAnswer(variable)}
++          />
++          {#if choices[variable.name] !== undefined}
++            <PanelButton
++              label="Use the default"
++              tone="ghost"
++              title={`Put ${variable.label} back to the template's own default`}
++              onclick={() => clearAnswer(variable)}
++            />
++          {/if}
++        </span>
 +      </div>
 +    {/each}
 +  </div>
 +</OverlayModal>
 +
 +<OverlayModal
++  bind:open={answerOpen}
++  title={`What ${answering?.label ?? "the variable"} selects here`}
++  description="For this copy only. Nothing here changes the template."
++  confirm="Use this"
++  width="narrow"
++  blocked={scopeBlocked}
++  onconfirm={confirmAnswer}
++  oncancel={cancelAnswer}
++>
++  <ScopeBuilder {...view$} onmode={setMode} onadd={addTerm} ondrop={dropTerm} />
++</OverlayModal>
++
++<OverlayModal
 +  bind:open={defaultOpen}
 +  title={`Default scope for ${defaultFor?.label ?? "the variable"}`}
-+  description="What the variable selects until whoever inserts the template says otherwise."
++  description="What the variable selects until whoever places the template says otherwise."
 +  confirm="Set the default scope"
 +  width="narrow"
-+  blocked={defaultBlocked}
++  blocked={scopeBlocked}
 +  onconfirm={confirmDefault}
 +>
-+  <div class="choices">
-+    <label class="choice">
-+      <PanelToggle label="Everything in the project" checked={draftWhole} onchange={(on) => (draftWhole = on)} />
-+      <span>Everything in the project</span>
-+    </label>
-+    <p class="or">Or only these kinds</p>
-+    {#each KINDS as entry (entry.kind)}
-+      <label class="choice">
-+        <PanelToggle label={entry.label} checked={draftKinds.includes(entry.kind)} disabled={draftWhole} onchange={(on) => toggleKind(entry.kind, on)} />
-+        <span class:muted={draftWhole}>{entry.label}</span>
-+      </label>
-+    {/each}
-+    {#if setItems.length > 0}
-+      <p class="or">Or these sets</p>
-+      {#each setItems as set (set.id)}
-+        <label class="choice">
-+          <PanelToggle label={set.name} checked={draftSets.includes(set.id)} disabled={draftWhole} onchange={(on) => toggleSet(set.id, on)} />
-+          <span class:muted={draftWhole}>{set.name}</span>
-+        </label>
-+      {/each}
-+    {/if}
-+  </div>
++  <ScopeBuilder {...view$} onmode={setMode} onadd={addTerm} ondrop={dropTerm} />
 +</OverlayModal>
 +
 +<style>
-+  .choices,
 +  .answers {
 +    display: flex;
 +    flex-direction: column;
-+    gap: calc(var(--token-spacing-unit) * 1.5);
-+    padding: 0 calc(var(--token-spacing-unit) * 3);
-+  }
-+
-+  .answers {
 +    gap: calc(var(--token-spacing-unit) * 3);
++    padding: 0 calc(var(--token-spacing-unit) * 3);
 +  }
 +
 +  .answer {
@@ -8588,24 +9908,19 @@
 +    line-height: var(--token-text-caption-leading);
 +  }
 +
-+  .choice {
-+    display: flex;
-+    align-items: center;
-+    gap: calc(var(--token-spacing-unit) * 2);
++  .answer-rule {
++    padding: calc(var(--token-spacing-unit) * 1) calc(var(--token-spacing-unit) * 1.5);
++    border-inline-start: 2px solid var(--token-color-accent-1-text);
++    border-radius: 0 var(--token-radius-control) var(--token-radius-control) 0;
++    background: var(--token-color-accent-1-surface);
 +    color: var(--token-ink-primary);
 +    font-size: var(--token-text-body-sm);
 +    line-height: var(--token-text-body-sm-leading);
 +  }
 +
-+  .muted {
-+    color: var(--token-ink-muted);
-+  }
-+
-+  .or {
-+    margin: calc(var(--token-spacing-unit) * 1) 0 0;
-+    color: var(--token-ink-muted);
-+    font-size: var(--token-text-caption);
-+    line-height: var(--token-text-caption-leading);
++  .answer-actions {
++    display: flex;
++    gap: calc(var(--token-spacing-unit) * 1);
 +  }
 +
 +  .notice {
@@ -8733,10 +10048,14 @@
      <div class="text-ink-secondary flex items-center gap-1.5 px-3 py-1.5 text-start">
 ~~~~
 
-### new · `src/lib/app-views/categories/slide-deck-editor/procedures/templating.ts` (+337 / −0)
+### new · `src/lib/app-views/categories/slide-deck-editor/procedures/templating.ts` (+311 / −0)
 
 ~~~~diff
-@@ -0,0 +1,337 @@
+@@ -0,0 +1,311 @@
++import {
++  readProjectResourceIndex,
++  type ProjectResourceIndex
++} from "$capabilities/project-resources/index.remote";
 +import {
 +  readResourceSets,
 +  type ReadResourceSetsResult,
@@ -8760,14 +10079,16 @@
 +  type TemplateLibraryItem
 +} from "$capabilities/templates/index.remote";
 +import { asId } from "$representation/data/behavior/core/id";
++import {
++  narrowed,
++  type ScopeDraft,
++  type ScopeNames,
++  type ScopeOffering
++} from "$representation/data/behavior/core/scope-draft";
 +import { applyOps } from "$representation/data/behavior/slide-decks/apply-ops";
 +import { withFreshIds, type IdHint } from "$representation/data/behavior/templates/fresh-ids";
 +import { resolveTemplateScopes } from "$representation/data/behavior/templates/scopes";
-+import type {
-+  ResourceSet,
-+  TemplatedResourceSet,
-+  TemplatedTerm
-+} from "$representation/data/types/core/resource-set";
++import type { TemplatedResourceSet } from "$representation/data/types/core/resource-set";
 +import type { SlideDeckBody, SlideLayout } from "$representation/data/types/slide-decks/body";
 +import type { SlideDeckOp } from "$representation/data/types/slide-decks/op";
 +import type { TemplateVariable } from "$representation/data/types/templates/template";
@@ -8784,110 +10105,71 @@
 +export type { TemplatedResourceSet } from "$representation/data/types/core/resource-set";
 +export type { TemplateVariable } from "$representation/data/types/templates/template";
 +
-+export const KINDS = [
-+  { kind: "document", label: "Documents" },
-+  { kind: "slides", label: "Slide decks" },
-+  { kind: "spreadsheet", label: "Spreadsheets" },
-+  { kind: "finding", label: "Findings" },
-+  { kind: "research", label: "Research threads" }
-+] as const;
-+
-+const KIND_LABEL: Record<string, string> = Object.fromEntries(
-+  KINDS.map((entry) => [entry.kind, entry.label])
-+);
++export {
++  PROJECT_KINDS as KINDS,
++  builderView,
++  draftOf,
++  isWholeProject,
++  narrowed,
++  needsRow,
++  ruleWords as ruleOf,
++  termFor,
++  withTerm,
++  withWholeProject,
++  withoutTerm,
++  type OfferSource,
++  type ScopeDraft,
++  type ScopeNames,
++  type ScopeSide
++} from "$representation/data/behavior/core/scope-draft";
 +
 +export const resourceSets = () => readResourceSets();
 +
 +export const setsIn = (answer: ReadResourceSetsResult | undefined): readonly ResourceSetItem[] =>
 +  answer?.sets ?? [];
 +
-+export const namesOf = (sets: readonly ResourceSetItem[]): ReadonlyMap<string, string> =>
-+  new Map(sets.map((set) => [set.id, set.name]));
++export const projectResources = () => readProjectResourceIndex();
 +
-+export const kindsOf = (rule: TemplatedResourceSet | undefined): readonly string[] =>
-+  (rule?.include ?? []).flatMap((term) => (term.select === "kinds" ? term.kinds : []));
++export const resourcesIn = (
++  answer: ProjectResourceIndex | undefined
++): readonly { readonly id: string; readonly kind: string; readonly name: string }[] =>
++  (answer?.resources ?? []).map((item) => ({ id: item.id, kind: item.kind, name: item.name }));
 +
-+export const setIdsOf = (rule: TemplatedResourceSet | undefined): readonly string[] =>
-+  (rule?.include ?? []).flatMap((term) => (term.select === "set" ? [term.setId] : []));
++/** What the builder and every sentence read a set or a resource by. */
++export const scopeNamesOf = (
++  sets: readonly ResourceSetItem[],
++  resources: readonly { readonly id: string; readonly name: string }[]
++): ScopeNames => ({
++  sets: new Map(sets.map((set) => [set.id, set.name])),
++  resources: new Map(resources.map((resource) => [resource.id, resource.name]))
++});
 +
-+export const isWholeProject = (rule: TemplatedResourceSet | undefined): boolean =>
-+  rule === undefined || rule.include.some((term) => term.select === "project");
++/** What the builder is handed for a variable's default, or for an answer. */
++export const offeringOf = (
++  sets: readonly ResourceSetItem[],
++  resources: readonly { readonly id: string; readonly kind: string; readonly name: string }[]
++): ScopeOffering => ({
++  sets: sets.map((set) => ({ id: set.id, name: set.name, set: set.set })),
++  resources
++});
 +
-+const termWords = (
-+  terms: readonly TemplatedTerm[],
-+  names: ReadonlyMap<string, string>
-+): readonly string[] =>
-+  terms.map((term) =>
-+    term.select === "project"
-+      ? "everything in the project"
-+      : term.select === "kinds"
-+        ? term.kinds.map((kind) => KIND_LABEL[kind] ?? kind).join(", ")
-+        : term.select === "set"
-+          ? (names.get(term.setId) ?? "a set that no longer exists")
-+          : `whatever ${term.name} holds`
-+  );
-+
-+export const ruleOf = (
-+  rule: TemplatedResourceSet | undefined,
-+  names: ReadonlyMap<string, string> = new Map()
-+): string => {
-+  if (rule === undefined) return "Everything in the project";
-+  if (rule.include.length === 0) return "Nothing";
-+  const words = termWords(rule.include, names).join(" and ");
-+  const included = isWholeProject(rule)
-+    ? "Everything in the project"
-+    : words.charAt(0).toUpperCase() + words.slice(1);
-+  const excluded = termWords(rule.exclude, names);
-+  return excluded.length === 0 ? included : `${included}, minus ${excluded.join(", ")}`;
-+};
-+
-+export const ruleFrom = (
-+  whole: boolean,
-+  kinds: readonly string[],
-+  setIds: readonly string[] = []
-+): TemplatedResourceSet => {
-+  if (whole) return { include: [{ select: "project" }], exclude: [] };
-+  const include: TemplatedTerm[] = [];
-+  if (kinds.length > 0) include.push({ select: "kinds", kinds: [...kinds] as never[] });
-+  for (const setId of setIds) include.push({ select: "set", setId: asId<"resourceSets">(setId) });
-+  return { include, exclude: [] };
-+};
-+
-+export const DEFAULT_ANSWER = "default";
-+
-+export type AnswerOption = { readonly value: string; readonly label: string };
-+
-+export const answerOptions = (
-+  variable: TemplateVariable,
-+  sets: readonly ResourceSetItem[]
-+): readonly AnswerOption[] => [
-+  { value: DEFAULT_ANSWER, label: `Default · ${ruleOf(variable.default, namesOf(sets))}` },
-+  { value: "project", label: "Everything in the project" },
-+  ...KINDS.map((entry) => ({ value: `kind:${entry.kind}`, label: `Only ${entry.label.toLocaleLowerCase()}` })),
-+  ...sets.map((set) => ({ value: `set:${set.id}`, label: set.name }))
-+];
-+
-+export const answerFrom = (choice: string): ResourceSet | undefined => {
-+  if (choice === "project") return { include: [{ select: "project" }], exclude: [] };
-+  if (choice.startsWith("kind:")) {
-+    return { include: [{ select: "kinds", kinds: [choice.slice("kind:".length)] as never[] }], exclude: [] };
-+  }
-+  if (choice.startsWith("set:")) {
-+    return { include: [{ select: "set", setId: asId<"resourceSets">(choice.slice("set:".length)) }], exclude: [] };
-+  }
-+  return undefined;
-+};
-+
-+export const answersFrom = (choices: Readonly<Record<string, string>>): TemplateAnswers =>
++/**
++ * The answers a caller chose, as rules.
++ *
++ * A variable nobody touched is absent, which is what makes the template's own
++ * default apply. Everything present is sent as built; the server decides
++ * whether it needs a row.
++ */
++export const answersFrom = (
++  choices: Readonly<Record<string, ScopeDraft | undefined>>
++): TemplateAnswers =>
 +  Object.fromEntries(
-+    Object.entries(choices).flatMap(([name, choice]) => {
-+      const answer = answerFrom(choice);
-+      return answer === undefined ? [] : [[name, answer] as const];
++    Object.entries(choices).flatMap(([name, draft]) => {
++      if (draft === undefined) return [];
++      const rule = narrowed(draft);
++      return rule === undefined ? [] : [[name, rule] as const];
 +    })
 +  );
-+
-+export const defaultChoices = (variables: readonly TemplateVariable[]): Record<string, string> =>
-+  Object.fromEntries(variables.map((variable) => [variable.name, DEFAULT_ANSWER]));
 +
 +export const resourceTemplate = (resourceId: string) => readResourceTemplate({ resourceId });
 +export const templateLibrary = () => readTemplateLibrary();
@@ -8979,14 +10261,21 @@
 +  return { body: applyOps(body, ops), ops, firstSlideId: fresh.slides[0]?.id };
 +};
 +
++/**
++ * A variable as the client sends it, which is wider than one as it is stored: a
++ * chosen rule may exclude things and may name particular resources, and the
++ * server turns either into a row before it lands.
++ */
++export type ChosenVariable = Omit<TemplateVariable, "default"> & { default?: ScopeDraft };
++
 +export const withVariableField = (
-+  variables: readonly TemplateVariable[],
++  variables: readonly ChosenVariable[],
 +  name: string,
-+  change: Partial<Pick<TemplateVariable, "label" | "description" | "default">>
-+): readonly TemplateVariable[] =>
++  change: { label?: string; description?: string; default?: ScopeDraft }
++): readonly ChosenVariable[] =>
 +  variables.map((variable) => {
 +    if (variable.name !== name) return variable;
-+    const next: TemplateVariable = { name: variable.name, label: change.label ?? variable.label };
++    const next: ChosenVariable = { name: variable.name, label: change.label ?? variable.label };
 +    const description = "description" in change ? change.description : variable.description;
 +    const fallback = "default" in change ? change.default : variable.default;
 +    if (description !== undefined && description.trim().length > 0) next.description = description.trim();
@@ -8995,9 +10284,9 @@
 +  });
 +
 +export const mergedVariables = (
-+  held: readonly TemplateVariable[],
-+  inserted: readonly TemplateVariable[]
-+): readonly TemplateVariable[] => {
++  held: readonly ChosenVariable[],
++  inserted: readonly ChosenVariable[]
++): readonly ChosenVariable[] => {
 +  const names = new Set(held.map((variable) => variable.name));
 +  return [...held, ...inserted.filter((variable) => !names.has(variable.name))];
 +};
@@ -9058,7 +10347,7 @@
 +export const updateVariables = (
 +  view: WorkspaceStateModel,
 +  template: { readonly id: string; readonly revision: number },
-+  variables: readonly TemplateVariable[],
++  variables: readonly ChosenVariable[],
 +  resourceId?: string
 +) =>
 +  view.singleFlight(
@@ -9255,15 +10544,16 @@
 
 ## Project Overview's Contexts panel
 
-### new · `src/lib/app-views/categories/project-overview/context/contexts.svelte` (+255 / −0)
+### new · `src/lib/app-views/categories/project-overview/context/contexts.svelte` (+279 / −0)
 
 ~~~~diff
-@@ -0,0 +1,255 @@
+@@ -0,0 +1,279 @@
 +<script lang="ts">
 +  import { onDestroy } from "svelte";
 +  import Plus from "@lucide/svelte/icons/plus";
 +  import Target from "@lucide/svelte/icons/target";
 +
++  import { OverlayModal } from "$authored-components/overlay";
 +  import {
 +    Panel,
 +    PanelBanner,
@@ -9275,30 +10565,34 @@
 +    PanelInput,
 +    PanelNote,
 +    PanelSearch,
-+    PanelSection,
-+    PanelToggle
++    PanelSection
 +  } from "$authored-components/panel";
++  import { ScopeBuilder } from "$authored-components/scope-builder";
 +  import {
-+    KINDS,
++    builderView,
 +    changeSet,
 +    createSet,
 +    describeSet,
-+    emptySet,
-+    excludedKindsOf,
-+    isWholeProject,
-+    kindsOf,
-+    namesOf,
++    draftOf,
++    narrowed,
 +    nextSetName,
++    offeringOf,
++    projectResources,
 +    removeSet,
 +    renameSet,
 +    resourceSets,
++    resourcesIn,
 +    ruleOf,
++    scopeNamesOf,
 +    setsIn,
-+    withExcludedKind,
-+    withKind,
++    termFor,
++    withTerm,
 +    withWholeProject,
-+    type ResourceSet,
-+    type ResourceSetItem
++    withoutTerm,
++    type OfferSource,
++    type ResourceSetItem,
++    type ScopeDraft,
++    type ScopeSide
 +  } from "$app-views/categories/project-overview/procedures/contexts";
 +  import { workspaceState } from "$model/client/workspace-state";
 +
@@ -9309,13 +10603,17 @@
 +  });
 +
 +  const answer = resourceSets();
++  const index = projectResources();
 +  const sets = $derived(setsIn(answer.ready ? answer.current : undefined));
-+  const names = $derived(namesOf(sets));
++  const catalogue = $derived(resourcesIn(index.ready ? index.current : undefined));
++  const names = $derived(scopeNamesOf(sets, catalogue));
 +
 +  let query = $state("");
 +  let creating = $state(false);
 +  let nameDraft = $state("");
-+  let draft = $state<ResourceSet>(emptySet());
++  let draft = $state<ScopeDraft>(withWholeProject());
++  let editing = $state<ResourceSetItem | undefined>(undefined);
++  let builderOpen = $state(false);
 +  let pending = $state<string | undefined>(undefined);
 +  let actionError = $state<string | undefined>(undefined);
 +
@@ -9339,19 +10637,56 @@
 +
 +  const create = () =>
 +    run("create", async () => {
++      const rule = narrowed(draft);
++      if (rule === undefined) return;
 +      const name = nameDraft.trim() || nextSetName(sets);
-+      await createSet(view, name, draft);
++      await createSet(view, name, rule);
 +      if (!live) return;
 +      creating = false;
 +      nameDraft = "";
-+      draft = emptySet();
++      draft = withWholeProject();
 +    });
 +
-+  const change = (item: ResourceSetItem, next: ResourceSet) =>
++  const change = (item: ResourceSetItem) =>
 +    run(`change:${item.id}`, async () => {
-+      const result = await changeSet(view, item, next);
++      const rule = narrowed(draft);
++      if (rule === undefined) return;
++      const result = await changeSet(view, item, rule);
 +      if (live && !result.accepted) actionError = result.detail;
 +    });
++
++  /** One builder, opened either on the set being made or on one that exists. */
++  const openBuilder = (item?: ResourceSetItem) => {
++    editing = item;
++    draft = draftOf(item?.set ?? draft);
++    builderOpen = true;
++  };
++
++  const confirmBuilder = () => {
++    const item = editing;
++    if (item !== undefined) void change(item);
++    editing = undefined;
++  };
++
++  const offering = $derived(offeringOf(sets, catalogue, editing?.id));
++  const view$ = $derived(builderView(draft, offering));
++
++  const addTerm = (side: ScopeSide, source: string, key: string) => {
++    const term = termFor(source as OfferSource, key);
++    if (term !== undefined) draft = withTerm(draft, side, term);
++  };
++
++  const dropTerm = (side: ScopeSide, key: string) => {
++    draft = withoutTerm(draft, side, key);
++  };
++
++  const setMode = (whole: boolean) => {
++    draft = whole ? withWholeProject() : { include: [], exclude: [] };
++  };
++
++  const scopeBlocked = $derived(
++    draft.include.length === 0 ? "Include something, or choose the whole project." : undefined
++  );
 +
 +  const rename = (item: ResourceSetItem, name: string) =>
 +    run(`rename:${item.id}`, async () => {
@@ -9378,30 +10713,6 @@
 +    set.resolves === 0 ? "matches nothing" : `${set.resolves} ${set.resolves === 1 ? "resource" : "resources"}`;
 +</script>
 +
-+{#snippet rule(set: ResourceSet, onchange: (next: ResourceSet) => void)}
-+  <div class="rule">
-+    <label class="toggle">
-+      <PanelToggle label="Whole project" checked={isWholeProject(set)} disabled={busy} onchange={(on) => onchange(withWholeProject(set, on))} />
-+      <span>Whole project</span>
-+    </label>
-+    {#each KINDS as entry (entry.kind)}
-+      <label class="toggle">
-+        <PanelToggle label={entry.label} checked={kindsOf(set).includes(entry.kind)} disabled={busy} onchange={(on) => onchange(withKind(set, entry.kind, on))} />
-+        <span>{entry.label}</span>
-+      </label>
-+    {/each}
-+  </div>
-+  <p class="minus">Minus</p>
-+  <div class="rule">
-+    {#each KINDS as entry (entry.kind)}
-+      <label class="toggle">
-+        <PanelToggle label={`Exclude ${entry.label}`} checked={excludedKindsOf(set).includes(entry.kind)} disabled={busy} onchange={(on) => onchange(withExcludedKind(set, entry.kind, on))} />
-+        <span>{entry.label}</span>
-+      </label>
-+    {/each}
-+  </div>
-+{/snippet}
-+
 +<Panel title="Contexts">
 +  {#snippet actions()}
 +    <PanelButton label="New set" icon={Plus} tone={creating ? "default" : "primary"} disabled={busy} onclick={() => (creating = !creating)} />
@@ -9417,8 +10728,15 @@
 +        <PanelInput label="Set name" placeholder={nextSetName(sets)} flush bind:value={nameDraft} onenter={create} />
 +        <PanelButton label="Create" tone="primary" disabled={busy} onclick={create} />
 +      </div>
-+      {@render rule(draft, (next) => (draft = next))}
-+      <PanelNote>{ruleOf(draft, names)}.</PanelNote>
++      <div class="rule">
++        <PanelNote>{ruleOf(draft, names)}.</PanelNote>
++        <PanelButton
++          label="Choose what it selects"
++          disabled={busy}
++          title="Open the builder on this set"
++          onclick={() => openBuilder()}
++        />
++      </div>
 +    </PanelSection>
 +  {/if}
 +
@@ -9449,8 +10767,13 @@
 +            {#if set.resolves === 0}
 +              <PanelNote tone="gap">A set that matches nothing widens a prompt to the whole project rather than narrowing it to nothing.</PanelNote>
 +            {/if}
-+            {@render rule(set.set, (next) => change(set, next))}
 +            <div class="remove">
++              <PanelButton
++                label="Change what it selects"
++                disabled={busy}
++                title={`Open the builder on “${set.name}”`}
++                onclick={() => openBuilder(set)}
++              />
 +              <PanelButton label="Delete set" tone="danger" disabled={busy} title={`Delete “${set.name}” — refused while another set or a template still names it`} onclick={() => remove(set)} />
 +            </div>
 +          </PanelSection>
@@ -9460,6 +10783,18 @@
 +  {/if}
 +  <PanelNote>Counts are resolved when this panel reads, never stored. <Target size={12} aria-hidden="true" /></PanelNote>
 +</Panel>
++
++<OverlayModal
++  bind:open={builderOpen}
++  title={editing === undefined ? "A set of resources" : `What “${editing.name}” selects`}
++  description="A set is a rule, resolved when it is read. Everything a prompt or a template variable can be answered with is built here."
++  confirm={editing === undefined ? "Use this" : "Save"}
++  width="narrow"
++  blocked={scopeBlocked}
++  onconfirm={confirmBuilder}
++>
++  <ScopeBuilder {...view$} onmode={setMode} onadd={addTerm} ondrop={dropTerm} />
++</OverlayModal>
 +
 +<style>
 +  .add {
@@ -9479,47 +10814,25 @@
 +  }
 +
 +  .rule {
-+    display: grid;
-+    grid-template-columns: 1fr 1fr;
-+    gap: calc(var(--token-spacing-unit) * 1) calc(var(--token-spacing-unit) * 2);
-+    margin: calc(var(--token-spacing-unit) * 2) 0;
-+  }
-+
-+  .minus {
-+    margin: 0;
-+    color: var(--token-ink-muted);
-+    font-size: var(--token-text-caption);
-+    line-height: var(--token-text-caption-leading);
-+    font-weight: 500;
-+  }
-+
-+  .toggle {
 +    display: flex;
-+    min-width: 0;
-+    align-items: center;
-+    gap: calc(var(--token-spacing-unit) * 1.5);
-+    color: var(--token-ink-secondary);
-+    font-size: var(--token-text-caption);
-+    line-height: var(--token-text-caption-leading);
-+  }
-+
-+  .toggle span {
-+    overflow: hidden;
-+    text-overflow: ellipsis;
-+    white-space: nowrap;
++    flex-direction: column;
++    align-items: flex-start;
++    gap: calc(var(--token-spacing-unit) * 1);
++    margin: calc(var(--token-spacing-unit) * 2) 0;
 +  }
 +
 +  .remove {
 +    display: flex;
++    gap: calc(var(--token-spacing-unit) * 1);
 +    margin-top: calc(var(--token-spacing-unit) * 2);
 +  }
 +</style>
 ~~~~
 
-### new · `src/lib/app-views/categories/project-overview/procedures/contexts.ts` (+140 / −0)
+### new · `src/lib/app-views/categories/project-overview/procedures/contexts.ts` (+115 / −0)
 
 ~~~~diff
-@@ -0,0 +1,140 @@
+@@ -0,0 +1,115 @@
 +import {
 +  createResourceSet as createResourceSetRemote,
 +  readResourceSets,
@@ -9528,6 +10841,14 @@
 +  type ReadResourceSetsResult,
 +  type ResourceSetItem
 +} from "$capabilities/resource-sets/index.remote";
++import {
++  readProjectResourceIndex,
++  type ProjectResourceIndex
++} from "$capabilities/project-resources/index.remote";
++import type {
++  ScopeNames,
++  ScopeOffering
++} from "$representation/data/behavior/core/scope-draft";
 +import type { ResourceSet } from "$representation/data/types/core/resource-set";
 +import type { WorkspaceStateModel } from "$model/client/workspace-state";
 +
@@ -9539,81 +10860,48 @@
 +export const setsIn = (answer: ReadResourceSetsResult | undefined): readonly ResourceSetItem[] =>
 +  answer?.sets ?? [];
 +
-+export const KINDS = [
-+  { kind: "document", label: "Documents" },
-+  { kind: "slides", label: "Slide decks" },
-+  { kind: "spreadsheet", label: "Spreadsheets" },
-+  { kind: "finding", label: "Findings" },
-+  { kind: "research", label: "Research threads" }
-+] as const;
++export {
++  PROJECT_KINDS as KINDS,
++  builderView,
++  draftOf,
++  isWholeProject,
++  narrowed,
++  ruleWords as ruleOf,
++  termFor,
++  withTerm,
++  withWholeProject,
++  withoutTerm,
++  type OfferSource,
++  type ScopeDraft,
++  type ScopeNames,
++  type ScopeSide
++} from "$representation/data/behavior/core/scope-draft";
 +
-+const KIND_LABEL: Record<string, string> = Object.fromEntries(
-+  KINDS.map((entry) => [entry.kind, entry.label])
-+);
++/** What the builder is handed here: the other named sets, and the project. */
++export const offeringOf = (
++  sets: readonly ResourceSetItem[],
++  resources: readonly { readonly id: string; readonly kind: string; readonly name: string }[],
++  self?: string
++): ScopeOffering => ({
++  sets: sets.filter((set) => set.id !== self).map((set) => ({ id: set.id, name: set.name, set: set.set })),
++  resources,
++  ...(self === undefined ? {} : { self })
++});
 +
-+export const emptySet = (): ResourceSet => ({ include: [], exclude: [] });
++export const scopeNamesOf = (
++  sets: readonly ResourceSetItem[],
++  resources: readonly { readonly id: string; readonly name: string }[]
++): ScopeNames => ({
++  sets: new Map(sets.map((set) => [set.id, set.name])),
++  resources: new Map(resources.map((resource) => [resource.id, resource.name]))
++});
 +
-+export const kindsOf = (set: ResourceSet): readonly string[] =>
-+  set.include.flatMap((term) => (term.select === "kinds" ? term.kinds : []));
++export const projectResources = () => readProjectResourceIndex();
 +
-+export const isWholeProject = (set: ResourceSet): boolean =>
-+  set.include.some((term) => term.select === "project");
-+
-+const termWords = (
-+  terms: ResourceSet["include"],
-+  names: ReadonlyMap<string, string>
-+): readonly string[] =>
-+  terms.map((term) =>
-+    term.select === "project"
-+      ? "everything in the project"
-+      : term.select === "kinds"
-+        ? term.kinds.map((kind) => KIND_LABEL[kind] ?? kind).join(", ")
-+        : term.select === "resources"
-+          ? `${term.refs.length} named ${term.refs.length === 1 ? "resource" : "resources"}`
-+          : (names.get(term.setId) ?? "another set")
-+  );
-+
-+export const ruleOf = (set: ResourceSet, names: ReadonlyMap<string, string> = new Map()): string => {
-+  const included = termWords(set.include, names);
-+  if (included.length === 0) return "Selects nothing";
-+  const sentence = included.join(" and ");
-+  const capitalised = sentence.charAt(0).toUpperCase() + sentence.slice(1);
-+  const excluded = termWords(set.exclude, names);
-+  return excluded.length === 0 ? capitalised : `${capitalised}, minus ${excluded.join(", ")}`;
-+};
-+
-+export const namesOf = (sets: readonly ResourceSetItem[]): ReadonlyMap<string, string> =>
-+  new Map(sets.map((set) => [set.id, set.name]));
-+
-+export const withWholeProject = (set: ResourceSet, on: boolean): ResourceSet => {
-+  const kept = set.include.filter((term) => term.select !== "project");
-+  return { include: on ? [{ select: "project" }, ...kept] : kept, exclude: set.exclude };
-+};
-+
-+export const withKind = (set: ResourceSet, kind: string, on: boolean): ResourceSet => {
-+  const kinds = kindsOf(set).filter((held) => held !== kind);
-+  if (on) kinds.push(kind);
-+  const others = set.include.filter((term) => term.select !== "kinds");
-+  return {
-+    include: kinds.length === 0 ? others : [...others, { select: "kinds", kinds }],
-+    exclude: set.exclude
-+  };
-+};
-+
-+export const withExcludedKind = (set: ResourceSet, kind: string, on: boolean): ResourceSet => {
-+  const kinds = set.exclude
-+    .flatMap((term) => (term.select === "kinds" ? term.kinds : []))
-+    .filter((held) => held !== kind);
-+  if (on) kinds.push(kind);
-+  const others = set.exclude.filter((term) => term.select !== "kinds");
-+  return {
-+    include: set.include,
-+    exclude: kinds.length === 0 ? others : [...others, { select: "kinds", kinds }]
-+  };
-+};
-+
-+export const excludedKindsOf = (set: ResourceSet): readonly string[] =>
-+  set.exclude.flatMap((term) => (term.select === "kinds" ? term.kinds : []));
++export const resourcesIn = (
++  answer: ProjectResourceIndex | undefined
++): readonly { readonly id: string; readonly kind: string; readonly name: string }[] =>
++  (answer?.resources ?? []).map((item) => ({ id: item.id, kind: item.kind, name: item.name }));
 +
 +export const nextSetName = (sets: readonly ResourceSetItem[]): string => {
 +  const taken = new Set(sets.map((set) => set.name.toLocaleLowerCase()));
@@ -9662,28 +10950,41 @@
 +  );
 ~~~~
 
-### new · `src/lib/app-views/categories/project-overview/procedures/test/unit/contexts.test.ts` (+57 / −0)
+### new · `src/lib/app-views/categories/project-overview/procedures/test/unit/contexts.test.ts` (+68 / −0)
 
 ~~~~diff
-@@ -0,0 +1,57 @@
+@@ -0,0 +1,68 @@
 +import { describe, expect, it } from "vitest";
 +
 +import {
-+  emptySet,
-+  excludedKindsOf,
 +  isWholeProject,
-+  kindsOf,
 +  nextSetName,
 +  ruleOf,
-+  withExcludedKind,
-+  withKind,
-+  withWholeProject
++  scopeNamesOf,
++  withTerm,
++  withWholeProject,
++  withoutTerm
 +} from "$app-views/categories/project-overview/procedures/contexts";
 +
++const emptySet = () => ({ include: [], exclude: [] });
++
 +describe("resource set rules", () => {
-+  it("reads a rule as a sentence, naming sets it reaches", () => {
-+    const names = new Map([["resourceSets:2", "Field evidence"]]);
-+    expect(ruleOf(emptySet())).toBe("Selects nothing");
++  it("reads a rule as a sentence, naming sets and resources it reaches", () => {
++    const names = scopeNamesOf(
++      [
++        {
++          id: "resourceSets:2",
++          name: "Field evidence",
++          set: emptySet(),
++          createdByName: "x",
++          revision: 1,
++          updatedAt: 1,
++          resolves: 0
++        }
++      ],
++      [{ id: "documents:1", name: "Winter readiness brief" }]
++    );
++    expect(ruleOf(emptySet())).toBe("Nothing");
 +    expect(ruleOf({ include: [{ select: "project" }], exclude: [{ select: "kinds", kinds: ["slides"] }] })).toBe(
 +      "Everything in the project, minus Slide decks"
 +    );
@@ -9699,19 +11000,17 @@
 +        },
 +        names
 +      )
-+    ).toBe("Documents, Findings and Field evidence and 1 named resource");
++    ).toBe("Documents, Findings, Field evidence and Winter readiness brief");
 +  });
 +
-+  it("builds and unbuilds a rule from toggles", () => {
-+    const findings = withKind(emptySet(), "finding", true);
-+    expect(kindsOf(findings)).toEqual(["finding"]);
-+    const wide = withWholeProject(findings, true);
-+    expect(isWholeProject(wide)).toBe(true);
-+    expect(withWholeProject(wide, false)).toEqual(findings);
-+    expect(withKind(findings, "finding", false)).toEqual(emptySet());
-+    const narrowed = withExcludedKind(wide, "slides", true);
-+    expect(excludedKindsOf(narrowed)).toEqual(["slides"]);
-+    expect(withExcludedKind(narrowed, "slides", false)).toEqual(wide);
++  it("builds and unbuilds a rule one term at a time", () => {
++    const findings = withTerm(emptySet(), "include", { select: "kinds", kinds: ["finding"] });
++    expect(ruleOf(findings)).toBe("Findings");
++    expect(isWholeProject(withWholeProject())).toBe(true);
++    expect(withoutTerm(findings, "include", "kinds:finding")).toEqual(emptySet());
++    const narrowed = withTerm(withWholeProject(), "exclude", { select: "kinds", kinds: ["slides"] });
++    expect(ruleOf(narrowed)).toBe("Everything in the project, minus Slide decks");
++    expect(withoutTerm(narrowed, "exclude", "kinds:slides")).toEqual(withWholeProject());
 +  });
 +
 +  it("names a new set after the ones that exist", () => {
@@ -9815,6 +11114,34 @@
      "updatedAt": 1788460800000
 ~~~~
 
+### changed · `seed/resourceSets.json` (+17 / −0)
+
+~~~~diff
+@@ -25,5 +25,22 @@
+     "createdBy": { "kind": "user", "userId": "users:4" },
+     "revision": 1,
+     "updatedAt": 1787004000000
++  },
++  {
++    "_id": "resourceSets:3",
++    "_creationTime": 1787000000000,
++    "projectId": "default",
++    "boundTo": {
++      "kind": "variable",
++      "templateId": "templates:1",
++      "variable": "incident_evidence"
++    },
++    "set": {
++      "include": [{ "select": "kinds", "kinds": ["finding", "document", "spreadsheet"] }],
++      "exclude": [{ "select": "resources", "refs": [{ "kind": "document", "id": "documents:3" }] }]
++    },
++    "createdBy": { "kind": "user", "userId": "users:1" },
++    "revision": 1,
++    "updatedAt": 1787004000000
+   }
+ ]
+~~~~
+
 ### changed · `seed/slideDecks.json` (+0 / −4)
 
 ~~~~diff
@@ -9873,10 +11200,10 @@
      "updatedAt": 1788127200000
 ~~~~
 
-### changed · `seed/templates.json` (+118 / −10)
+### changed · `seed/templates.json` (+1589 / −203)
 
 ~~~~diff
-@@ -2,6 +2,7 @@
+@@ -2,23 +2,51 @@
    {
      "_id": "templates:1",
      "_creationTime": 1777636800000,
@@ -9884,9 +11211,179 @@
      "userId": "default-user",
      "name": "Incident write-up",
      "description": "A calm, evidence-led retrospective for cause, impact, response, and corrective action.",
-@@ -102,11 +103,13 @@
+-    "tags": ["Incident response", "Operations", "Review"],
++    "tags": [
++      "Incident response",
++      "Operations",
++      "Review"
++    ],
+     "body": {
+       "resource": "document",
+       "pageSetup": {
+         "paper": "letter",
+         "orientation": "portrait",
+-        "margins": { "top": 0.8, "right": 0.85, "bottom": 0.8, "left": 0.85 }
++        "margins": {
++          "top": 0.8,
++          "right": 0.85,
++          "bottom": 0.8,
++          "left": 0.85
++        }
+       },
+       "styles": {
+         "defaultKey": "body",
+         "styles": {
+-          "title": { "name": "Title", "fontSize": 30, "bold": true, "color": "--token-ink-primary", "spaceAfter": 14 },
+-          "heading": { "name": "Heading", "fontSize": 16, "bold": true, "color": "--token-ink-primary", "spaceBefore": 16, "spaceAfter": 6 },
+-          "body": { "name": "Body", "fontSize": 11, "color": "--token-ink-secondary", "lineHeight": 16.5 }
++          "title": {
++            "name": "Title",
++            "fontSize": 30,
++            "bold": true,
++            "color": "--token-ink-primary",
++            "spaceAfter": 14
++          },
++          "heading": {
++            "name": "Heading",
++            "fontSize": 16,
++            "bold": true,
++            "color": "--token-ink-primary",
++            "spaceBefore": 16,
++            "spaceAfter": 6
++          },
++          "body": {
++            "name": "Body",
++            "fontSize": 11,
++            "color": "--token-ink-secondary",
++            "lineHeight": 16.5
++          }
+         }
+       },
+       "rows": [
+@@ -32,7 +60,13 @@
+               "variant": "heading",
+               "level": 1,
+               "style": "title",
+-              "atoms": [{ "id": "#tiw-title-a", "kind": "literal", "text": "Incident write-up" }],
++              "atoms": [
++                {
++                  "id": "#tiw-title-a",
++                  "kind": "literal",
++                  "text": "Incident write-up"
++                }
++              ],
+               "display": "Incident write-up",
+               "marks": []
+             }
+@@ -48,21 +82,44 @@
+               "variant": "heading",
+               "level": 2,
+               "style": "heading",
+-              "atoms": [{ "id": "#tiw-summary-heading-a", "kind": "literal", "text": "Executive summary" }],
++              "atoms": [
++                {
++                  "id": "#tiw-summary-heading-a",
++                  "kind": "literal",
++                  "text": "Executive summary"
++                }
++              ],
+               "display": "Executive summary",
+               "marks": []
+             },
+             {
+               "id": "#tiw-summary",
+               "type": "prompt",
+-              "atoms": [{ "id": "#tiw-summary-a", "kind": "literal", "text": "Summarize what happened, the customer impact, and the current operating state." }],
++              "atoms": [
++                {
++                  "id": "#tiw-summary-a",
++                  "kind": "literal",
++                  "text": "Summarize what happened, the customer impact, and the current operating state."
++                }
++              ],
+               "display": "Summarize what happened, the customer impact, and the current operating state.",
+               "marks": [],
+-              "scope": { "include": [{ "select": "variable", "name": "incident_evidence" }], "exclude": [] },
++              "scope": {
++                "include": [
++                  {
++                    "select": "variable",
++                    "name": "incident_evidence"
++                  }
++                ],
++                "exclude": []
++              },
+               "state": "idle"
+             }
+           ],
+-          "proportions": [0.3, 0.7]
++          "proportions": [
++            0.3,
++            0.7
++          ]
+         },
+         {
+           "id": "#tiw-row-actions",
+@@ -74,7 +131,13 @@
+               "variant": "heading",
+               "level": 2,
+               "style": "heading",
+-              "atoms": [{ "id": "#tiw-actions-heading-a", "kind": "literal", "text": "Corrective actions" }],
++              "atoms": [
++                {
++                  "id": "#tiw-actions-heading-a",
++                  "kind": "literal",
++                  "text": "Corrective actions"
++                }
++              ],
+               "display": "Corrective actions",
+               "marks": []
+             },
+@@ -83,12 +146,21 @@
+               "type": "text",
+               "variant": "paragraph",
+               "style": "body",
+-              "atoms": [{ "id": "#tiw-actions-a", "kind": "literal", "text": "Name the owner, due date, and verification evidence for each action." }],
++              "atoms": [
++                {
++                  "id": "#tiw-actions-a",
++                  "kind": "literal",
++                  "text": "Name the owner, due date, and verification evidence for each action."
++                }
++              ],
+               "display": "Name the owner, due date, and verification evidence for each action.",
+               "marks": []
+             }
+           ],
+-          "proportions": [0.3, 0.7]
++          "proportions": [
++            0.3,
++            0.7
++          ]
+         }
+       ]
+     },
+@@ -97,33 +169,75 @@
+         "name": "incident_evidence",
+         "label": "Incident evidence",
+         "description": "Findings, documents, and operating models that establish the incident timeline.",
+-        "default": { "include": [{ "select": "kinds", "kinds": ["finding", "document", "spreadsheet"] }], "exclude": [] }
++        "default": {
++          "include": [
++            {
++              "select": "set",
++              "setId": "resourceSets:3"
++            }
++          ],
++          "exclude": []
++        }
+       }
      ],
-     "createdBy": { "kind": "user", "userId": "default-user" },
+-    "createdBy": { "kind": "user", "userId": "default-user" },
++    "createdBy": {
++      "kind": "user",
++      "userId": "default-user"
++    },
      "revision": 6,
 -    "updatedAt": 1788351300000
 +    "updatedAt": 1788351300000,
@@ -9899,9 +11396,207 @@
      "userId": "default-user",
      "name": "Operational readiness brief",
      "description": "A decision-ready brief for expected conditions, exposure, mitigations, and remaining operating gaps.",
-@@ -213,11 +216,13 @@
+-    "tags": ["Operations", "Planning", "Project standard"],
++    "tags": [
++      "Operations",
++      "Planning",
++      "Project standard"
++    ],
+     "body": {
+       "resource": "document",
+       "pageSetup": {
+         "paper": "letter",
+         "orientation": "portrait",
+-        "margins": { "top": 1, "right": 1, "bottom": 1, "left": 1 }
++        "margins": {
++          "top": 1,
++          "right": 1,
++          "bottom": 1,
++          "left": 1
++        }
+       },
+       "styles": {
+         "defaultKey": "body",
+         "styles": {
+-          "title": { "name": "Brief title", "fontSize": 24, "bold": true, "horizontalAlignment": "center", "color": "--token-ink-primary", "spaceAfter": 18 },
+-          "heading": { "name": "Section", "fontSize": 14, "bold": true, "color": "--token-ink-primary", "spaceBefore": 14, "spaceAfter": 6 },
+-          "body": { "name": "Brief body", "fontSize": 11, "color": "--token-ink-secondary", "lineHeight": 17.05, "horizontalAlignment": "justify" }
++          "title": {
++            "name": "Brief title",
++            "fontSize": 24,
++            "bold": true,
++            "horizontalAlignment": "center",
++            "color": "--token-ink-primary",
++            "spaceAfter": 18
++          },
++          "heading": {
++            "name": "Section",
++            "fontSize": 14,
++            "bold": true,
++            "color": "--token-ink-primary",
++            "spaceBefore": 14,
++            "spaceAfter": 6
++          },
++          "body": {
++            "name": "Brief body",
++            "fontSize": 11,
++            "color": "--token-ink-secondary",
++            "lineHeight": 17.05,
++            "horizontalAlignment": "justify"
++          }
+         }
+       },
+       "rows": [
+@@ -137,7 +251,13 @@
+               "variant": "heading",
+               "level": 1,
+               "style": "title",
+-              "atoms": [{ "id": "#trf-title-a", "kind": "literal", "text": "Operational readiness brief" }],
++              "atoms": [
++                {
++                  "id": "#trf-title-a",
++                  "kind": "literal",
++                  "text": "Operational readiness brief"
++                }
++              ],
+               "display": "Operational readiness brief",
+               "marks": []
+             }
+@@ -153,21 +273,44 @@
+               "variant": "heading",
+               "level": 2,
+               "style": "heading",
+-              "atoms": [{ "id": "#trf-position-heading-a", "kind": "literal", "text": "Expected conditions and exposure" }],
++              "atoms": [
++                {
++                  "id": "#trf-position-heading-a",
++                  "kind": "literal",
++                  "text": "Expected conditions and exposure"
++                }
++              ],
+               "display": "Expected conditions and exposure",
+               "marks": []
+             },
+             {
+               "id": "#trf-position",
+               "type": "prompt",
+-              "atoms": [{ "id": "#trf-position-a", "kind": "literal", "text": "Summarize the expected operating conditions, binding constraints, and consequences if the forecast is exceeded." }],
++              "atoms": [
++                {
++                  "id": "#trf-position-a",
++                  "kind": "literal",
++                  "text": "Summarize the expected operating conditions, binding constraints, and consequences if the forecast is exceeded."
++                }
++              ],
+               "display": "Summarize the expected operating conditions, binding constraints, and consequences if the forecast is exceeded.",
+               "marks": [],
+-              "scope": { "include": [{ "select": "variable", "name": "readiness_record" }], "exclude": [] },
++              "scope": {
++                "include": [
++                  {
++                    "select": "variable",
++                    "name": "readiness_record"
++                  }
++                ],
++                "exclude": []
++              },
+               "state": "idle"
+             }
+           ],
+-          "proportions": [0.32, 0.68]
++          "proportions": [
++            0.32,
++            0.68
++          ]
+         },
+         {
+           "id": "#trf-row-support",
+@@ -179,21 +322,44 @@
+               "variant": "heading",
+               "level": 2,
+               "style": "heading",
+-              "atoms": [{ "id": "#trf-support-heading-a", "kind": "literal", "text": "Mitigations, commitments, and gaps" }],
++              "atoms": [
++                {
++                  "id": "#trf-support-heading-a",
++                  "kind": "literal",
++                  "text": "Mitigations, commitments, and gaps"
++                }
++              ],
+               "display": "Mitigations, commitments, and gaps",
+               "marks": []
+             },
+             {
+               "id": "#trf-support",
+               "type": "prompt",
+-              "atoms": [{ "id": "#trf-support-a", "kind": "literal", "text": "Separate committed mitigations from residual gaps, then state the owner and decision date for each open action." }],
++              "atoms": [
++                {
++                  "id": "#trf-support-a",
++                  "kind": "literal",
++                  "text": "Separate committed mitigations from residual gaps, then state the owner and decision date for each open action."
++                }
++              ],
+               "display": "Separate committed mitigations from residual gaps, then state the owner and decision date for each open action.",
+               "marks": [],
+-              "scope": { "include": [{ "select": "variable", "name": "supporting_findings" }], "exclude": [] },
++              "scope": {
++                "include": [
++                  {
++                    "select": "variable",
++                    "name": "supporting_findings"
++                  }
++                ],
++                "exclude": []
++              },
+               "state": "idle"
+             }
+           ],
+-          "proportions": [0.32, 0.68]
++          "proportions": [
++            0.32,
++            0.68
++          ]
+         }
+       ]
+     },
+@@ -202,39 +368,87 @@
+         "name": "readiness_record",
+         "label": "Readiness record",
+         "description": "The forecasts, plans, and operating material that define the readiness posture.",
+-        "default": { "include": [{ "select": "project" }], "exclude": [] }
++        "default": {
++          "include": [
++            {
++              "select": "project"
++            }
++          ],
++          "exclude": []
++        }
+       },
+       {
+         "name": "supporting_findings",
+         "label": "Supporting findings",
+         "description": "Accepted findings that establish constraints, mitigations, and residual gaps.",
+-        "default": { "include": [{ "select": "kinds", "kinds": ["finding"] }], "exclude": [] }
++        "default": {
++          "include": [
++            {
++              "select": "kinds",
++              "kinds": [
++                "finding"
++              ]
++            }
++          ],
++          "exclude": []
++        }
+       }
      ],
-     "createdBy": { "kind": "user", "userId": "default-user" },
+-    "createdBy": { "kind": "user", "userId": "default-user" },
++    "createdBy": {
++      "kind": "user",
++      "userId": "default-user"
++    },
      "revision": 8,
 -    "updatedAt": 1788111000000
 +    "updatedAt": 1788111000000,
@@ -9914,9 +11609,173 @@
      "userId": "default-user",
      "name": "Technical glossary",
      "description": "A maintained glossary for project terminology, acronyms, definitions, and source notes.",
-@@ -317,11 +322,13 @@
+-    "tags": ["Reference", "Onboarding", "Documentation"],
++    "tags": [
++      "Reference",
++      "Onboarding",
++      "Documentation"
++    ],
+     "body": {
+       "resource": "document",
+       "pageSetup": {
+         "paper": "a4",
+         "orientation": "portrait",
+-        "margins": { "top": 0.75, "right": 0.75, "bottom": 0.75, "left": 0.75 }
++        "margins": {
++          "top": 0.75,
++          "right": 0.75,
++          "bottom": 0.75,
++          "left": 0.75
++        }
+       },
+       "styles": {
+         "defaultKey": "definition",
+         "styles": {
+-          "title": { "name": "Title", "fontSize": 28, "bold": true, "color": "--token-ink-primary", "spaceAfter": 12 },
+-          "term": { "name": "Term", "fontSize": 13, "bold": true, "color": "--token-color-accent-1-text", "spaceBefore": 10 },
+-          "definition": { "name": "Definition", "fontSize": 10.5, "color": "--token-ink-secondary", "lineHeight": 15.23 }
++          "title": {
++            "name": "Title",
++            "fontSize": 28,
++            "bold": true,
++            "color": "--token-ink-primary",
++            "spaceAfter": 12
++          },
++          "term": {
++            "name": "Term",
++            "fontSize": 13,
++            "bold": true,
++            "color": "--token-color-accent-1-text",
++            "spaceBefore": 10
++          },
++          "definition": {
++            "name": "Definition",
++            "fontSize": 10.5,
++            "color": "--token-ink-secondary",
++            "lineHeight": 15.23
++          }
+         }
+       },
+       "rows": [
+@@ -248,7 +462,13 @@
+               "variant": "heading",
+               "level": 1,
+               "style": "title",
+-              "atoms": [{ "id": "#ttg-title-a", "kind": "literal", "text": "Technical glossary" }],
++              "atoms": [
++                {
++                  "id": "#ttg-title-a",
++                  "kind": "literal",
++                  "text": "Technical glossary"
++                }
++              ],
+               "display": "Technical glossary",
+               "marks": []
+             }
+@@ -264,7 +484,13 @@
+               "variant": "heading",
+               "level": 2,
+               "style": "term",
+-              "atoms": [{ "id": "#ttg-term-a", "kind": "literal", "text": "Term or acronym" }],
++              "atoms": [
++                {
++                  "id": "#ttg-term-a",
++                  "kind": "literal",
++                  "text": "Term or acronym"
++                }
++              ],
+               "display": "Term or acronym",
+               "marks": []
+             },
+@@ -273,12 +499,21 @@
+               "type": "text",
+               "variant": "paragraph",
+               "style": "definition",
+-              "atoms": [{ "id": "#ttg-definition-a", "kind": "literal", "text": "Plain-language definition, operational meaning, and source note." }],
++              "atoms": [
++                {
++                  "id": "#ttg-definition-a",
++                  "kind": "literal",
++                  "text": "Plain-language definition, operational meaning, and source note."
++                }
++              ],
+               "display": "Plain-language definition, operational meaning, and source note.",
+               "marks": []
+             }
+           ],
+-          "proportions": [0.28, 0.72]
++          "proportions": [
++            0.28,
++            0.72
++          ]
+         },
+         {
+           "id": "#ttg-row-review",
+@@ -290,17 +525,37 @@
+               "variant": "heading",
+               "level": 2,
+               "style": "term",
+-              "atoms": [{ "id": "#ttg-review-heading-a", "kind": "literal", "text": "Consistency review" }],
++              "atoms": [
++                {
++                  "id": "#ttg-review-heading-a",
++                  "kind": "literal",
++                  "text": "Consistency review"
++                }
++              ],
+               "display": "Consistency review",
+               "marks": []
+             },
+             {
+               "id": "#ttg-review",
+               "type": "prompt",
+-              "atoms": [{ "id": "#ttg-review-a", "kind": "literal", "text": "Identify terms used inconsistently across the selected source material." }],
++              "atoms": [
++                {
++                  "id": "#ttg-review-a",
++                  "kind": "literal",
++                  "text": "Identify terms used inconsistently across the selected source material."
++                }
++              ],
+               "display": "Identify terms used inconsistently across the selected source material.",
+               "marks": [],
+-              "scope": { "include": [{ "select": "variable", "name": "source_material" }], "exclude": [] },
++              "scope": {
++                "include": [
++                  {
++                    "select": "variable",
++                    "name": "source_material"
++                  }
++                ],
++                "exclude": []
++              },
+               "state": "idle"
+             }
+           ]
+@@ -312,34 +567,83 @@
+         "name": "source_material",
+         "label": "Source material",
+         "description": "Documents and findings whose terminology should be normalized.",
+-        "default": { "include": [{ "select": "kinds", "kinds": ["document", "finding"] }], "exclude": [] }
++        "default": {
++          "include": [
++            {
++              "select": "kinds",
++              "kinds": [
++                "document",
++                "finding"
++              ]
++            }
++          ],
++          "exclude": []
++        }
+       }
      ],
-     "createdBy": { "kind": "user", "userId": "default-user" },
+-    "createdBy": { "kind": "user", "userId": "default-user" },
++    "createdBy": {
++      "kind": "user",
++      "userId": "default-user"
++    },
      "revision": 3,
 -    "updatedAt": 1787244300000
 +    "updatedAt": 1787244300000,
@@ -9929,9 +11788,246 @@
      "userId": "default-user",
      "name": "Decision memo",
      "description": "A concise decision record that compares alternatives, evidence, trade-offs, and the recommended path.",
-@@ -445,11 +452,13 @@
+-    "tags": ["Decision", "Leadership", "Planning"],
++    "tags": [
++      "Decision",
++      "Leadership",
++      "Planning"
++    ],
+     "body": {
+       "resource": "document",
+       "pageSetup": {
+         "paper": "letter",
+         "orientation": "portrait",
+-        "margins": { "top": 0.7, "right": 0.8, "bottom": 0.7, "left": 0.8 }
++        "margins": {
++          "top": 0.7,
++          "right": 0.8,
++          "bottom": 0.7,
++          "left": 0.8
++        }
+       },
+       "styles": {
+         "defaultKey": "body",
+         "styles": {
+-          "title": { "name": "Title", "fontSize": 29, "bold": true, "color": "--token-ink-primary", "spaceAfter": 12 },
+-          "heading": { "name": "Heading", "fontSize": 15, "bold": true, "color": "--token-ink-primary", "spaceBefore": 14, "spaceAfter": 5 },
+-          "body": { "name": "Body", "fontSize": 11, "color": "--token-ink-secondary", "lineHeight": 16.5 },
+-          "callout": { "name": "Recommendation", "fontSize": 12, "bold": true, "background": "--token-color-active-surface", "color": "--token-color-active-text" }
++          "title": {
++            "name": "Title",
++            "fontSize": 29,
++            "bold": true,
++            "color": "--token-ink-primary",
++            "spaceAfter": 12
++          },
++          "heading": {
++            "name": "Heading",
++            "fontSize": 15,
++            "bold": true,
++            "color": "--token-ink-primary",
++            "spaceBefore": 14,
++            "spaceAfter": 5
++          },
++          "body": {
++            "name": "Body",
++            "fontSize": 11,
++            "color": "--token-ink-secondary",
++            "lineHeight": 16.5
++          },
++          "callout": {
++            "name": "Recommendation",
++            "fontSize": 12,
++            "bold": true,
++            "background": "--token-color-active-surface",
++            "color": "--token-color-active-text"
++          }
+         }
+       },
+       "rows": [
+@@ -353,7 +657,13 @@
+               "variant": "heading",
+               "level": 1,
+               "style": "title",
+-              "atoms": [{ "id": "#tdm-title-a", "kind": "literal", "text": "Decision memo" }],
++              "atoms": [
++                {
++                  "id": "#tdm-title-a",
++                  "kind": "literal",
++                  "text": "Decision memo"
++                }
++              ],
+               "display": "Decision memo",
+               "marks": []
+             }
+@@ -369,21 +679,44 @@
+               "variant": "heading",
+               "level": 2,
+               "style": "heading",
+-              "atoms": [{ "id": "#tdm-context-heading-a", "kind": "literal", "text": "Decision context" }],
++              "atoms": [
++                {
++                  "id": "#tdm-context-heading-a",
++                  "kind": "literal",
++                  "text": "Decision context"
++                }
++              ],
+               "display": "Decision context",
+               "marks": []
+             },
+             {
+               "id": "#tdm-context",
+               "type": "prompt",
+-              "atoms": [{ "id": "#tdm-context-a", "kind": "literal", "text": "Explain the decision, its urgency, and the evidence that constrains it." }],
++              "atoms": [
++                {
++                  "id": "#tdm-context-a",
++                  "kind": "literal",
++                  "text": "Explain the decision, its urgency, and the evidence that constrains it."
++                }
++              ],
+               "display": "Explain the decision, its urgency, and the evidence that constrains it.",
+               "marks": [],
+-              "scope": { "include": [{ "select": "variable", "name": "decision_evidence" }], "exclude": [] },
++              "scope": {
++                "include": [
++                  {
++                    "select": "variable",
++                    "name": "decision_evidence"
++                  }
++                ],
++                "exclude": []
++              },
+               "state": "idle"
+             }
+           ],
+-          "proportions": [0.3, 0.7]
++          "proportions": [
++            0.3,
++            0.7
++          ]
+         },
+         {
+           "id": "#tdm-row-options",
+@@ -395,21 +728,44 @@
+               "variant": "heading",
+               "level": 2,
+               "style": "heading",
+-              "atoms": [{ "id": "#tdm-options-heading-a", "kind": "literal", "text": "Alternatives and economics" }],
++              "atoms": [
++                {
++                  "id": "#tdm-options-heading-a",
++                  "kind": "literal",
++                  "text": "Alternatives and economics"
++                }
++              ],
+               "display": "Alternatives and economics",
+               "marks": []
+             },
+             {
+               "id": "#tdm-options",
+               "type": "prompt",
+-              "atoms": [{ "id": "#tdm-options-a", "kind": "literal", "text": "Compare feasible alternatives, total cost, reversibility, and delivery risk." }],
++              "atoms": [
++                {
++                  "id": "#tdm-options-a",
++                  "kind": "literal",
++                  "text": "Compare feasible alternatives, total cost, reversibility, and delivery risk."
++                }
++              ],
+               "display": "Compare feasible alternatives, total cost, reversibility, and delivery risk.",
+               "marks": [],
+-              "scope": { "include": [{ "select": "variable", "name": "cost_models" }], "exclude": [] },
++              "scope": {
++                "include": [
++                  {
++                    "select": "variable",
++                    "name": "cost_models"
++                  }
++                ],
++                "exclude": []
++              },
+               "state": "idle"
+             }
+           ],
+-          "proportions": [0.3, 0.7]
++          "proportions": [
++            0.3,
++            0.7
++          ]
+         },
+         {
+           "id": "#tdm-row-recommendation",
+@@ -420,10 +776,26 @@
+               "type": "text",
+               "variant": "paragraph",
+               "style": "callout",
+-              "atoms": [{ "id": "#tdm-recommendation-a", "kind": "literal", "text": "Recommendation: state the path, owner, decision date, and next irreversible step." }],
++              "atoms": [
++                {
++                  "id": "#tdm-recommendation-a",
++                  "kind": "literal",
++                  "text": "Recommendation: state the path, owner, decision date, and next irreversible step."
++                }
++              ],
+               "display": "Recommendation: state the path, owner, decision date, and next irreversible step.",
+               "marks": [],
+-              "format": { "padding": { "x": 12, "y": 10 }, "border": { "color": "--token-color-active-border", "width": 1, "style": "solid" } }
++              "format": {
++                "padding": {
++                  "x": 12,
++                  "y": 10
++                },
++                "border": {
++                  "color": "--token-color-active-border",
++                  "width": 1,
++                  "style": "solid"
++                }
++              }
+             }
+           ]
+         }
+@@ -434,31 +806,64 @@
+         "name": "decision_evidence",
+         "label": "Decision evidence",
+         "description": "The findings and documents that establish why a decision is required.",
+-        "default": { "include": [{ "select": "kinds", "kinds": ["finding", "document"] }], "exclude": [] }
++        "default": {
++          "include": [
++            {
++              "select": "kinds",
++              "kinds": [
++                "finding",
++                "document"
++              ]
++            }
++          ],
++          "exclude": []
++        }
+       },
+       {
+         "name": "cost_models",
+         "label": "Cost models",
+         "description": "The spreadsheets used to compare alternatives and delivery economics.",
+-        "default": { "include": [{ "select": "kinds", "kinds": ["spreadsheet"] }], "exclude": [] }
++        "default": {
++          "include": [
++            {
++              "select": "kinds",
++              "kinds": [
++                "spreadsheet"
++              ]
++            }
++          ],
++          "exclude": []
++        }
+       }
      ],
-     "createdBy": { "kind": "user", "userId": "default-user" },
+-    "createdBy": { "kind": "user", "userId": "default-user" },
++    "createdBy": {
++      "kind": "user",
++      "userId": "default-user"
++    },
      "revision": 4,
 -    "updatedAt": 1788448800000
 +    "updatedAt": 1788448800000,
@@ -9944,9 +12040,244 @@
      "userId": "default-user",
      "name": "Board review",
      "description": "A disciplined board narrative for performance, risk, decisions, and the next horizon.",
-@@ -561,11 +570,13 @@
+-    "tags": ["Leadership", "Board", "Project standard"],
++    "tags": [
++      "Leadership",
++      "Board",
++      "Project standard"
++    ],
+     "body": {
+       "resource": "slides",
+       "aspectRatio": "16:9",
+       "theme": {
+-        "background": { "kind": "color", "color": "--token-surface-primary" },
++        "background": {
++          "kind": "color",
++          "color": "--token-surface-primary"
++        },
+         "colors": {
+           "text": "--token-ink-primary",
+           "accent": "--token-color-accent-1-fill",
+@@ -469,10 +874,32 @@
+       "styles": {
+         "defaultKey": "body",
+         "styles": {
+-          "eyebrow": { "name": "Eyebrow", "fontSize": 13, "fontWeight": 600, "color": "--token-color-accent-1-fill", "spaceAfter": 10 },
+-          "title": { "name": "Title", "fontSize": 32, "fontWeight": 600, "color": "--token-ink-primary", "lineHeight": 1.08 },
+-          "body": { "name": "Body", "fontSize": 18, "color": "--token-ink-secondary", "lineHeight": 1.35 },
+-          "metric": { "name": "Metric", "fontSize": 28, "fontWeight": 600, "color": "--token-ink-primary" }
++          "eyebrow": {
++            "name": "Eyebrow",
++            "fontSize": 13,
++            "fontWeight": 600,
++            "color": "--token-color-accent-1-fill",
++            "spaceAfter": 10
++          },
++          "title": {
++            "name": "Title",
++            "fontSize": 32,
++            "fontWeight": 600,
++            "color": "--token-ink-primary",
++            "lineHeight": 1.08
++          },
++          "body": {
++            "name": "Body",
++            "fontSize": 18,
++            "color": "--token-ink-secondary",
++            "lineHeight": 1.35
++          },
++          "metric": {
++            "name": "Metric",
++            "fontSize": 28,
++            "fontWeight": 600,
++            "color": "--token-ink-primary"
++          }
+         }
+       },
+       "layouts": [
+@@ -481,8 +908,26 @@
+           "name": "Board brief",
+           "locked": [],
+           "placeholders": [
+-            { "role": "title", "frame": { "x": 0.07, "y": 0.1, "width": 0.86, "height": 0.18 }, "styleKey": "title" },
+-            { "role": "body", "frame": { "x": 0.07, "y": 0.35, "width": 0.86, "height": 0.52 }, "styleKey": "body" }
++            {
++              "role": "title",
++              "frame": {
++                "x": 0.07,
++                "y": 0.1,
++                "width": 0.86,
++                "height": 0.18
++              },
++              "styleKey": "title"
++            },
++            {
++              "role": "body",
++              "frame": {
++                "x": 0.07,
++                "y": 0.35,
++                "width": 0.86,
++                "height": 0.52
++              },
++              "styleKey": "body"
++            }
+           ]
+         }
+       ],
+@@ -493,7 +938,12 @@
+           "elements": [
+             {
+               "id": "#tboard-title-element",
+-              "frame": { "x": 0.07, "y": 0.1, "width": 0.86, "height": 0.18 },
++              "frame": {
++                "x": 0.07,
++                "y": 0.1,
++                "width": 0.86,
++                "height": 0.18
++              },
+               "blocks": [
+                 {
+                   "id": "#tboard-title",
+@@ -501,7 +951,13 @@
+                   "variant": "heading",
+                   "level": 1,
+                   "style": "title",
+-                  "atoms": [{ "id": "#tboard-title-a", "kind": "literal", "text": "Board review · operating performance" }],
++                  "atoms": [
++                    {
++                      "id": "#tboard-title-a",
++                      "kind": "literal",
++                      "text": "Board review · operating performance"
++                    }
++                  ],
+                   "display": "Board review · operating performance",
+                   "marks": []
+                 }
+@@ -511,30 +967,65 @@
+             },
+             {
+               "id": "#tboard-body-element",
+-              "frame": { "x": 0.07, "y": 0.35, "width": 0.86, "height": 0.52 },
++              "frame": {
++                "x": 0.07,
++                "y": 0.35,
++                "width": 0.86,
++                "height": 0.52
++              },
+               "blocks": [
+                 {
+                   "id": "#tboard-example",
+                   "type": "text",
+                   "variant": "paragraph",
+                   "style": "body",
+-                  "atoms": [{ "id": "#tboard-example-a", "kind": "literal", "text": "Performance is stable, but winter resilience depends on approving the accelerated transformer replacement this quarter." }],
++                  "atoms": [
++                    {
++                      "id": "#tboard-example-a",
++                      "kind": "literal",
++                      "text": "Performance is stable, but winter resilience depends on approving the accelerated transformer replacement this quarter."
++                    }
++                  ],
+                   "display": "Performance is stable, but winter resilience depends on approving the accelerated transformer replacement this quarter.",
+                   "marks": []
+                 },
+                 {
+                   "id": "#tboard-prompt",
+                   "type": "prompt",
+-                  "atoms": [{ "id": "#tboard-prompt-a", "kind": "literal", "text": "Synthesize the period into three outcomes, two material risks, and the decisions required from the board." }],
++                  "atoms": [
++                    {
++                      "id": "#tboard-prompt-a",
++                      "kind": "literal",
++                      "text": "Synthesize the period into three outcomes, two material risks, and the decisions required from the board."
++                    }
++                  ],
+                   "display": "Synthesize the period into three outcomes, two material risks, and the decisions required from the board.",
+                   "marks": [],
+-                  "scope": { "include": [{ "select": "variable", "name": "board_evidence" }], "exclude": [] },
++                  "scope": {
++                    "include": [
++                      {
++                        "select": "variable",
++                        "name": "board_evidence"
++                      }
++                    ],
++                    "exclude": []
++                  },
+                   "state": "idle"
+                 }
+               ],
+               "overflow": "shrink",
+               "fromPlaceholder": "body",
+-              "format": { "padding": { "x": 18, "y": 16 }, "border": { "color": "--token-color-active-border", "width": 1, "style": "solid" } }
++              "format": {
++                "padding": {
++                  "x": 18,
++                  "y": 16
++                },
++                "border": {
++                  "color": "--token-color-active-border",
++                  "width": 1,
++                  "style": "solid"
++                }
++              }
+             }
+           ],
+           "notes": [
+@@ -542,39 +1033,76 @@
+               "id": "#tboard-notes",
+               "type": "text",
+               "variant": "paragraph",
+-              "atoms": [{ "id": "#tboard-notes-a", "kind": "literal", "text": "Lead with the decision, then use operating evidence to explain it." }],
++              "atoms": [
++                {
++                  "id": "#tboard-notes-a",
++                  "kind": "literal",
++                  "text": "Lead with the decision, then use operating evidence to explain it."
++                }
++              ],
+               "display": "Lead with the decision, then use operating evidence to explain it.",
+               "marks": []
+             }
+           ]
+         }
+       ],
+-      "sections": [{ "id": "#tboard-section", "name": "Board narrative", "firstSlideId": "#tboard-opening" }]
++      "sections": [
++        {
++          "id": "#tboard-section",
++          "name": "Board narrative",
++          "firstSlideId": "#tboard-opening"
++        }
++      ]
+     },
+     "variables": [
+       {
+         "name": "board_evidence",
+         "label": "Board evidence",
+         "description": "The findings, analyses, and project material that ground the board narrative.",
+-        "default": { "include": [{ "select": "kinds", "kinds": ["finding", "analysis", "document", "spreadsheet"] }], "exclude": [] }
++        "default": {
++          "include": [
++            {
++              "select": "kinds",
++              "kinds": [
++                "finding",
++                "analysis",
++                "document",
++                "spreadsheet"
++              ]
++            }
++          ],
++          "exclude": []
++        }
+       }
      ],
-     "createdBy": { "kind": "user", "userId": "default-user" },
+-    "createdBy": { "kind": "user", "userId": "default-user" },
++    "createdBy": {
++      "kind": "user",
++      "userId": "default-user"
++    },
      "revision": 5,
 -    "updatedAt": 1787839200000
 +    "updatedAt": 1787839200000,
@@ -9959,9 +12290,214 @@
      "userId": "default-user",
      "name": "Field team briefing",
      "description": "A shift-ready briefing for objectives, hazards, controls, and handoffs.",
-@@ -667,11 +678,13 @@
+-    "tags": ["Operations", "Safety", "Briefing"],
++    "tags": [
++      "Operations",
++      "Safety",
++      "Briefing"
++    ],
+     "body": {
+       "resource": "slides",
+       "aspectRatio": "16:9",
+       "theme": {
+-        "background": { "kind": "color", "color": "--token-surface-primary" },
++        "background": {
++          "kind": "color",
++          "color": "--token-surface-primary"
++        },
+         "colors": {
+           "text": "--token-ink-primary",
+           "accent": "--token-color-attention-fill",
+@@ -585,9 +1113,25 @@
+       "styles": {
+         "defaultKey": "body",
+         "styles": {
+-          "title": { "name": "Title", "fontSize": 34, "fontWeight": 650, "color": "--token-ink-primary", "lineHeight": 1.05 },
+-          "body": { "name": "Body", "fontSize": 19, "color": "--token-ink-secondary", "lineHeight": 1.35 },
+-          "warning": { "name": "Warning", "fontSize": 19, "fontWeight": 600, "color": "--token-color-attention-text" }
++          "title": {
++            "name": "Title",
++            "fontSize": 34,
++            "fontWeight": 650,
++            "color": "--token-ink-primary",
++            "lineHeight": 1.05
++          },
++          "body": {
++            "name": "Body",
++            "fontSize": 19,
++            "color": "--token-ink-secondary",
++            "lineHeight": 1.35
++          },
++          "warning": {
++            "name": "Warning",
++            "fontSize": 19,
++            "fontWeight": 600,
++            "color": "--token-color-attention-text"
++          }
+         }
+       },
+       "layouts": [
+@@ -596,8 +1140,26 @@
+           "name": "Field plan",
+           "locked": [],
+           "placeholders": [
+-            { "role": "title", "frame": { "x": 0.06, "y": 0.08, "width": 0.88, "height": 0.18 }, "styleKey": "title" },
+-            { "role": "body", "frame": { "x": 0.06, "y": 0.31, "width": 0.88, "height": 0.59 }, "styleKey": "body" }
++            {
++              "role": "title",
++              "frame": {
++                "x": 0.06,
++                "y": 0.08,
++                "width": 0.88,
++                "height": 0.18
++              },
++              "styleKey": "title"
++            },
++            {
++              "role": "body",
++              "frame": {
++                "x": 0.06,
++                "y": 0.31,
++                "width": 0.88,
++                "height": 0.59
++              },
++              "styleKey": "body"
++            }
+           ]
+         }
+       ],
+@@ -608,7 +1170,12 @@
+           "elements": [
+             {
+               "id": "#tfield-title-element",
+-              "frame": { "x": 0.06, "y": 0.08, "width": 0.88, "height": 0.18 },
++              "frame": {
++                "x": 0.06,
++                "y": 0.08,
++                "width": 0.88,
++                "height": 0.18
++              },
+               "blocks": [
+                 {
+                   "id": "#tfield-title",
+@@ -616,7 +1183,13 @@
+                   "variant": "heading",
+                   "level": 1,
+                   "style": "title",
+-                  "atoms": [{ "id": "#tfield-title-a", "kind": "literal", "text": "Today’s objective, controls, and stop conditions" }],
++                  "atoms": [
++                    {
++                      "id": "#tfield-title-a",
++                      "kind": "literal",
++                      "text": "Today’s objective, controls, and stop conditions"
++                    }
++                  ],
+                   "display": "Today’s objective, controls, and stop conditions",
+                   "marks": []
+                 }
+@@ -626,61 +1199,121 @@
+             },
+             {
+               "id": "#tfield-body-element",
+-              "frame": { "x": 0.06, "y": 0.31, "width": 0.88, "height": 0.59 },
++              "frame": {
++                "x": 0.06,
++                "y": 0.31,
++                "width": 0.88,
++                "height": 0.59
++              },
+               "blocks": [
+                 {
+                   "id": "#tfield-example",
+                   "type": "text",
+                   "variant": "paragraph",
+                   "style": "warning",
+-                  "atoms": [{ "id": "#tfield-example-a", "kind": "literal", "text": "Objective: isolate and inspect Transformer Bank 2. Stop work on unexpected pressure, gas, or protection indications." }],
++                  "atoms": [
++                    {
++                      "id": "#tfield-example-a",
++                      "kind": "literal",
++                      "text": "Objective: isolate and inspect Transformer Bank 2. Stop work on unexpected pressure, gas, or protection indications."
++                    }
++                  ],
+                   "display": "Objective: isolate and inspect Transformer Bank 2. Stop work on unexpected pressure, gas, or protection indications.",
+                   "marks": []
+                 },
+                 {
+                   "id": "#tfield-prompt",
+                   "type": "prompt",
+-                  "atoms": [{ "id": "#tfield-prompt-a", "kind": "literal", "text": "Turn the work package into a field-ready brief: sequence, hazards, controls, hold points, owners, and handoff criteria." }],
++                  "atoms": [
++                    {
++                      "id": "#tfield-prompt-a",
++                      "kind": "literal",
++                      "text": "Turn the work package into a field-ready brief: sequence, hazards, controls, hold points, owners, and handoff criteria."
++                    }
++                  ],
+                   "display": "Turn the work package into a field-ready brief: sequence, hazards, controls, hold points, owners, and handoff criteria.",
+                   "marks": [],
+-                  "scope": { "include": [{ "select": "variable", "name": "field_record" }], "exclude": [] },
++                  "scope": {
++                    "include": [
++                      {
++                        "select": "variable",
++                        "name": "field_record"
++                      }
++                    ],
++                    "exclude": []
++                  },
+                   "state": "idle"
+                 }
+               ],
+               "overflow": "shrink",
+               "fromPlaceholder": "body",
+-              "format": { "background": "--token-color-attention-surface", "padding": { "x": 18, "y": 16 } }
++              "format": {
++                "background": "--token-color-attention-surface",
++                "padding": {
++                  "x": 18,
++                  "y": 16
++                }
++              }
+             }
+           ],
+           "notes": []
+         }
+       ],
+-      "sections": [{ "id": "#tfield-section", "name": "Shift brief", "firstSlideId": "#tfield-plan" }]
++      "sections": [
++        {
++          "id": "#tfield-section",
++          "name": "Shift brief",
++          "firstSlideId": "#tfield-plan"
++        }
++      ]
+     },
+     "variables": [
+       {
+         "name": "field_record",
+         "label": "Field work record",
+         "description": "The documents and findings the crew needs for this shift.",
+-        "default": { "include": [{ "select": "kinds", "kinds": ["document", "finding"] }], "exclude": [] }
++        "default": {
++          "include": [
++            {
++              "select": "kinds",
++              "kinds": [
++                "document",
++                "finding"
++              ]
++            }
++          ],
++          "exclude": []
++        }
+       }
      ],
-     "createdBy": { "kind": "user", "userId": "default-user" },
+-    "createdBy": { "kind": "user", "userId": "default-user" },
++    "createdBy": {
++      "kind": "user",
++      "userId": "default-user"
++    },
      "revision": 3,
 -    "updatedAt": 1786541400000
 +    "updatedAt": 1786541400000,
@@ -9974,9 +12510,220 @@
      "userId": "default-user",
      "name": "Executive update",
      "description": "A concise portfolio update that leads with trajectory, exceptions, and asks.",
-@@ -773,11 +786,13 @@
+-    "tags": ["Leadership", "Executive", "Briefing"],
++    "tags": [
++      "Leadership",
++      "Executive",
++      "Briefing"
++    ],
+     "body": {
+       "resource": "slides",
+       "aspectRatio": "16:9",
+       "theme": {
+-        "background": { "kind": "color", "color": "--token-surface-primary" },
++        "background": {
++          "kind": "color",
++          "color": "--token-surface-primary"
++        },
+         "colors": {
+           "text": "--token-ink-primary",
+           "accent": "--token-color-intelligence-fill",
+@@ -691,9 +1324,25 @@
+       "styles": {
+         "defaultKey": "body",
+         "styles": {
+-          "kicker": { "name": "Kicker", "fontSize": 12, "fontWeight": 650, "color": "--token-color-intelligence-fill" },
+-          "title": { "name": "Title", "fontSize": 36, "fontWeight": 600, "color": "--token-ink-primary", "lineHeight": 1.05 },
+-          "body": { "name": "Body", "fontSize": 18, "color": "--token-ink-secondary", "lineHeight": 1.4 }
++          "kicker": {
++            "name": "Kicker",
++            "fontSize": 12,
++            "fontWeight": 650,
++            "color": "--token-color-intelligence-fill"
++          },
++          "title": {
++            "name": "Title",
++            "fontSize": 36,
++            "fontWeight": 600,
++            "color": "--token-ink-primary",
++            "lineHeight": 1.05
++          },
++          "body": {
++            "name": "Body",
++            "fontSize": 18,
++            "color": "--token-ink-secondary",
++            "lineHeight": 1.4
++          }
+         }
+       },
+       "layouts": [
+@@ -702,8 +1351,26 @@
+           "name": "Executive summary",
+           "locked": [],
+           "placeholders": [
+-            { "role": "title", "frame": { "x": 0.08, "y": 0.1, "width": 0.84, "height": 0.2 }, "styleKey": "title" },
+-            { "role": "body", "frame": { "x": 0.08, "y": 0.38, "width": 0.84, "height": 0.48 }, "styleKey": "body" }
++            {
++              "role": "title",
++              "frame": {
++                "x": 0.08,
++                "y": 0.1,
++                "width": 0.84,
++                "height": 0.2
++              },
++              "styleKey": "title"
++            },
++            {
++              "role": "body",
++              "frame": {
++                "x": 0.08,
++                "y": 0.38,
++                "width": 0.84,
++                "height": 0.48
++              },
++              "styleKey": "body"
++            }
+           ]
+         }
+       ],
+@@ -714,7 +1381,12 @@
+           "elements": [
+             {
+               "id": "#texec-title-element",
+-              "frame": { "x": 0.08, "y": 0.1, "width": 0.84, "height": 0.2 },
++              "frame": {
++                "x": 0.08,
++                "y": 0.1,
++                "width": 0.84,
++                "height": 0.2
++              },
+               "blocks": [
+                 {
+                   "id": "#texec-title",
+@@ -722,7 +1394,13 @@
+                   "variant": "heading",
+                   "level": 1,
+                   "style": "title",
+-                  "atoms": [{ "id": "#texec-title-a", "kind": "literal", "text": "Portfolio trajectory · decisions this week" }],
++                  "atoms": [
++                    {
++                      "id": "#texec-title-a",
++                      "kind": "literal",
++                      "text": "Portfolio trajectory · decisions this week"
++                    }
++                  ],
+                   "display": "Portfolio trajectory · decisions this week",
+                   "marks": []
+                 }
+@@ -732,61 +1410,127 @@
+             },
+             {
+               "id": "#texec-body-element",
+-              "frame": { "x": 0.08, "y": 0.38, "width": 0.84, "height": 0.48 },
++              "frame": {
++                "x": 0.08,
++                "y": 0.38,
++                "width": 0.84,
++                "height": 0.48
++              },
+               "blocks": [
+                 {
+                   "id": "#texec-example",
+                   "type": "text",
+                   "variant": "paragraph",
+                   "style": "body",
+-                  "atoms": [{ "id": "#texec-example-a", "kind": "literal", "text": "On plan overall · Transformer procurement at risk · Replacement-window approval due Friday" }],
++                  "atoms": [
++                    {
++                      "id": "#texec-example-a",
++                      "kind": "literal",
++                      "text": "On plan overall · Transformer procurement at risk · Replacement-window approval due Friday"
++                    }
++                  ],
+                   "display": "On plan overall · Transformer procurement at risk · Replacement-window approval due Friday",
+                   "marks": []
+                 },
+                 {
+                   "id": "#texec-prompt",
+                   "type": "prompt",
+-                  "atoms": [{ "id": "#texec-prompt-a", "kind": "literal", "text": "Summarize trajectory, meaningful changes since the last update, the top two exceptions, and decisions due in the next seven days." }],
++                  "atoms": [
++                    {
++                      "id": "#texec-prompt-a",
++                      "kind": "literal",
++                      "text": "Summarize trajectory, meaningful changes since the last update, the top two exceptions, and decisions due in the next seven days."
++                    }
++                  ],
+                   "display": "Summarize trajectory, meaningful changes since the last update, the top two exceptions, and decisions due in the next seven days.",
+                   "marks": [],
+-                  "scope": { "include": [{ "select": "variable", "name": "portfolio_record" }], "exclude": [] },
++                  "scope": {
++                    "include": [
++                      {
++                        "select": "variable",
++                        "name": "portfolio_record"
++                      }
++                    ],
++                    "exclude": []
++                  },
+                   "state": "idle"
+                 }
+               ],
+               "overflow": "shrink",
+               "fromPlaceholder": "body",
+-              "format": { "padding": { "x": 18, "y": 16 }, "border": { "color": "--token-color-intelligence-border", "width": 1, "style": "solid" } }
++              "format": {
++                "padding": {
++                  "x": 18,
++                  "y": 16
++                },
++                "border": {
++                  "color": "--token-color-intelligence-border",
++                  "width": 1,
++                  "style": "solid"
++                }
++              }
+             }
+           ],
+           "notes": []
+         }
+       ],
+-      "sections": [{ "id": "#texec-section", "name": "Executive summary", "firstSlideId": "#texec-summary" }]
++      "sections": [
++        {
++          "id": "#texec-section",
++          "name": "Executive summary",
++          "firstSlideId": "#texec-summary"
++        }
++      ]
+     },
+     "variables": [
+       {
+         "name": "portfolio_record",
+         "label": "Portfolio record",
+         "description": "The project findings, analyses, and status material that should shape this update.",
+-        "default": { "include": [{ "select": "kinds", "kinds": ["finding", "analysis", "document", "spreadsheet"] }], "exclude": [] }
++        "default": {
++          "include": [
++            {
++              "select": "kinds",
++              "kinds": [
++                "finding",
++                "analysis",
++                "document",
++                "spreadsheet"
++              ]
++            }
++          ],
++          "exclude": []
++        }
+       }
      ],
-     "createdBy": { "kind": "user", "userId": "default-user" },
+-    "createdBy": { "kind": "user", "userId": "default-user" },
++    "createdBy": {
++      "kind": "user",
++      "userId": "default-user"
++    },
      "revision": 2,
 -    "updatedAt": 1788528000000
 +    "updatedAt": 1788528000000,
@@ -9989,9 +12736,277 @@
      "userId": "default-user",
      "name": "Options assessment",
      "description": "A decision-oriented comparison of viable paths, economics, tradeoffs, and reversibility.",
-@@ -903,11 +918,13 @@
+-    "tags": ["Planning", "Options", "Review"],
++    "tags": [
++      "Planning",
++      "Options",
++      "Review"
++    ],
+     "body": {
+       "resource": "slides",
+       "aspectRatio": "16:9",
+       "theme": {
+-        "background": { "kind": "color", "color": "--token-surface-primary" },
++        "background": {
++          "kind": "color",
++          "color": "--token-surface-primary"
++        },
+         "colors": {
+           "text": "--token-ink-primary",
+           "accent": "--token-color-accent-2-fill",
+@@ -797,9 +1541,25 @@
+       "styles": {
+         "defaultKey": "body",
+         "styles": {
+-          "title": { "name": "Title", "fontSize": 34, "fontWeight": 600, "color": "--token-ink-primary", "lineHeight": 1.05 },
+-          "body": { "name": "Body", "fontSize": 18, "color": "--token-ink-secondary", "lineHeight": 1.35 },
+-          "label": { "name": "Label", "fontSize": 13, "fontWeight": 650, "color": "--token-color-accent-2-fill" }
++          "title": {
++            "name": "Title",
++            "fontSize": 34,
++            "fontWeight": 600,
++            "color": "--token-ink-primary",
++            "lineHeight": 1.05
++          },
++          "body": {
++            "name": "Body",
++            "fontSize": 18,
++            "color": "--token-ink-secondary",
++            "lineHeight": 1.35
++          },
++          "label": {
++            "name": "Label",
++            "fontSize": 13,
++            "fontWeight": 650,
++            "color": "--token-color-accent-2-fill"
++          }
+         }
+       },
+       "layouts": [
+@@ -808,8 +1568,26 @@
+           "name": "Option frame",
+           "locked": [],
+           "placeholders": [
+-            { "role": "title", "frame": { "x": 0.07, "y": 0.08, "width": 0.86, "height": 0.18 }, "styleKey": "title" },
+-            { "role": "body", "frame": { "x": 0.07, "y": 0.33, "width": 0.86, "height": 0.57 }, "styleKey": "body" }
++            {
++              "role": "title",
++              "frame": {
++                "x": 0.07,
++                "y": 0.08,
++                "width": 0.86,
++                "height": 0.18
++              },
++              "styleKey": "title"
++            },
++            {
++              "role": "body",
++              "frame": {
++                "x": 0.07,
++                "y": 0.33,
++                "width": 0.86,
++                "height": 0.57
++              },
++              "styleKey": "body"
++            }
+           ]
+         }
+       ],
+@@ -820,7 +1598,12 @@
+           "elements": [
+             {
+               "id": "#toptions-title-element",
+-              "frame": { "x": 0.07, "y": 0.08, "width": 0.86, "height": 0.18 },
++              "frame": {
++                "x": 0.07,
++                "y": 0.08,
++                "width": 0.86,
++                "height": 0.18
++              },
+               "blocks": [
+                 {
+                   "id": "#toptions-title",
+@@ -828,7 +1611,13 @@
+                   "variant": "heading",
+                   "level": 1,
+                   "style": "title",
+-                  "atoms": [{ "id": "#toptions-title-a", "kind": "literal", "text": "Options assessment · choose a path" }],
++                  "atoms": [
++                    {
++                      "id": "#toptions-title-a",
++                      "kind": "literal",
++                      "text": "Options assessment · choose a path"
++                    }
++                  ],
+                   "display": "Options assessment · choose a path",
+                   "marks": []
+                 }
+@@ -838,24 +1627,49 @@
+             },
+             {
+               "id": "#toptions-body-element",
+-              "frame": { "x": 0.07, "y": 0.33, "width": 0.86, "height": 0.57 },
++              "frame": {
++                "x": 0.07,
++                "y": 0.33,
++                "width": 0.86,
++                "height": 0.57
++              },
+               "blocks": [
+                 {
+                   "id": "#toptions-evidence-example",
+                   "type": "text",
+                   "variant": "paragraph",
+                   "style": "body",
+-                  "atoms": [{ "id": "#toptions-evidence-example-a", "kind": "literal", "text": "Viable paths: covered conductor, selective undergrounding, and targeted rebuild." }],
++                  "atoms": [
++                    {
++                      "id": "#toptions-evidence-example-a",
++                      "kind": "literal",
++                      "text": "Viable paths: covered conductor, selective undergrounding, and targeted rebuild."
++                    }
++                  ],
+                   "display": "Viable paths: covered conductor, selective undergrounding, and targeted rebuild.",
+                   "marks": []
+                 },
+                 {
+                   "id": "#toptions-evidence-prompt",
+                   "type": "prompt",
+-                  "atoms": [{ "id": "#toptions-evidence-a", "kind": "literal", "text": "Frame the viable options against outcomes, delivery risk, constraints, and reversibility." }],
++                  "atoms": [
++                    {
++                      "id": "#toptions-evidence-a",
++                      "kind": "literal",
++                      "text": "Frame the viable options against outcomes, delivery risk, constraints, and reversibility."
++                    }
++                  ],
+                   "display": "Frame the viable options against outcomes, delivery risk, constraints, and reversibility.",
+                   "marks": [],
+-                  "scope": { "include": [{ "select": "variable", "name": "option_evidence" }], "exclude": [] },
++                  "scope": {
++                    "include": [
++                      {
++                        "select": "variable",
++                        "name": "option_evidence"
++                      }
++                    ],
++                    "exclude": []
++                  },
+                   "state": "idle"
+                 },
+                 {
+@@ -863,85 +1677,299 @@
+                   "type": "text",
+                   "variant": "paragraph",
+                   "style": "body",
+-                  "atoms": [{ "id": "#toptions-model-example-a", "kind": "literal", "text": "Decision lens: lifecycle cost, delivery sensitivity, risk reduction, and reversibility." }],
++                  "atoms": [
++                    {
++                      "id": "#toptions-model-example-a",
++                      "kind": "literal",
++                      "text": "Decision lens: lifecycle cost, delivery sensitivity, risk reduction, and reversibility."
++                    }
++                  ],
+                   "display": "Decision lens: lifecycle cost, delivery sensitivity, risk reduction, and reversibility.",
+                   "marks": []
+                 },
+                 {
+                   "id": "#toptions-model-prompt",
+                   "type": "prompt",
+-                  "atoms": [{ "id": "#toptions-model-a", "kind": "literal", "text": "Compare lifecycle cost, schedule sensitivity, and the assumptions that could reverse the recommendation." }],
++                  "atoms": [
++                    {
++                      "id": "#toptions-model-a",
++                      "kind": "literal",
++                      "text": "Compare lifecycle cost, schedule sensitivity, and the assumptions that could reverse the recommendation."
++                    }
++                  ],
+                   "display": "Compare lifecycle cost, schedule sensitivity, and the assumptions that could reverse the recommendation.",
+                   "marks": [],
+-                  "scope": { "include": [{ "select": "variable", "name": "option_models" }], "exclude": [] },
++                  "scope": {
++                    "include": [
++                      {
++                        "select": "variable",
++                        "name": "option_models"
++                      }
++                    ],
++                    "exclude": []
++                  },
+                   "state": "idle"
+                 }
+               ],
+               "overflow": "shrink",
+               "fromPlaceholder": "body",
+-              "format": { "padding": { "x": 18, "y": 16 }, "border": { "color": "--token-color-active-border", "width": 1, "style": "solid" } }
++              "format": {
++                "padding": {
++                  "x": 18,
++                  "y": 16
++                },
++                "border": {
++                  "color": "--token-color-active-border",
++                  "width": 1,
++                  "style": "solid"
++                }
++              }
+             }
+           ],
+           "notes": []
+         }
+       ],
+-      "sections": [{ "id": "#toptions-section", "name": "Assessment", "firstSlideId": "#toptions-frame" }]
++      "sections": [
++        {
++          "id": "#toptions-section",
++          "name": "Assessment",
++          "firstSlideId": "#toptions-frame"
++        }
++      ]
+     },
+     "variables": [
+       {
+         "name": "option_evidence",
+         "label": "Option evidence",
+         "description": "The findings and documents that establish feasible choices and constraints.",
+-        "default": { "include": [{ "select": "kinds", "kinds": ["finding", "document"] }], "exclude": [] }
++        "default": {
++          "include": [
++            {
++              "select": "kinds",
++              "kinds": [
++                "finding",
++                "document"
++              ]
++            }
++          ],
++          "exclude": []
++        }
+       },
+       {
+         "name": "option_models",
+         "label": "Option models",
+         "description": "The analyses and spreadsheets that quantify economics and sensitivity.",
+-        "default": { "include": [{ "select": "kinds", "kinds": ["analysis", "spreadsheet"] }], "exclude": [] }
++        "default": {
++          "include": [
++            {
++              "select": "kinds",
++              "kinds": [
++                "analysis",
++                "spreadsheet"
++              ]
++            }
++          ],
++          "exclude": []
++        }
+       }
      ],
-     "createdBy": { "kind": "user", "userId": "default-user" },
+-    "createdBy": { "kind": "user", "userId": "default-user" },
++    "createdBy": {
++      "kind": "user",
++      "userId": "default-user"
++    },
      "revision": 4,
 -    "updatedAt": 1785585600000
 +    "updatedAt": 1785585600000,
@@ -10004,9 +13019,241 @@
      "userId": "default-user",
      "name": "Outage analysis workbook",
      "description": "A ready-to-calculate reliability workbook for outage duration, customers affected, and customer-minutes interrupted.",
-@@ -958,11 +975,13 @@
+-    "tags": ["Operations", "Analysis", "Reliability"],
++    "tags": [
++      "Operations",
++      "Analysis",
++      "Reliability"
++    ],
+     "body": {
+       "resource": "spreadsheet",
+       "cells": {
+-        "A1": { "value": { "kind": "text", "value": "Outage analysis" }, "merge": "F1", "format": { "background": "--token-color-intelligence-surface", "padding": { "x": 10, "y": 8 } } },
+-        "A3": { "value": { "kind": "text", "value": "Event" }, "format": { "background": "--token-surface-secondary" } },
+-        "B3": { "value": { "kind": "text", "value": "Start" }, "format": { "background": "--token-surface-secondary" } },
+-        "C3": { "value": { "kind": "text", "value": "End" }, "format": { "background": "--token-surface-secondary" } },
+-        "D3": { "value": { "kind": "text", "value": "Minutes" }, "format": { "background": "--token-surface-secondary" } },
+-        "E3": { "value": { "kind": "text", "value": "Customers" }, "format": { "background": "--token-surface-secondary" } },
+-        "F3": { "value": { "kind": "text", "value": "Customer-minutes" }, "format": { "background": "--token-surface-secondary" } },
+-        "A4": { "value": { "kind": "text", "value": "Feeder event 01" } },
+-        "B4": { "value": { "kind": "text", "value": "08:12" } },
+-        "C4": { "value": { "kind": "text", "value": "09:07" } },
+-        "D4": { "value": { "kind": "number", "value": 55 }, "format": { "valueFormat": "0" } },
+-        "E4": { "value": { "kind": "number", "value": 1240 }, "format": { "valueFormat": "#,##0" } },
+-        "F4": { "expression": "D4*E4", "format": { "valueFormat": "#,##0" } },
+-        "A6": { "value": { "kind": "text", "value": "Total customer-minutes" } },
+-        "F6": { "expression": "SUM(F4:F5)", "format": { "valueFormat": "#,##0" } }
++        "A1": {
++          "value": {
++            "kind": "text",
++            "value": "Outage analysis"
++          },
++          "merge": "F1",
++          "format": {
++            "background": "--token-color-intelligence-surface",
++            "padding": {
++              "x": 10,
++              "y": 8
++            }
++          }
++        },
++        "A3": {
++          "value": {
++            "kind": "text",
++            "value": "Event"
++          },
++          "format": {
++            "background": "--token-surface-secondary"
++          }
++        },
++        "B3": {
++          "value": {
++            "kind": "text",
++            "value": "Start"
++          },
++          "format": {
++            "background": "--token-surface-secondary"
++          }
++        },
++        "C3": {
++          "value": {
++            "kind": "text",
++            "value": "End"
++          },
++          "format": {
++            "background": "--token-surface-secondary"
++          }
++        },
++        "D3": {
++          "value": {
++            "kind": "text",
++            "value": "Minutes"
++          },
++          "format": {
++            "background": "--token-surface-secondary"
++          }
++        },
++        "E3": {
++          "value": {
++            "kind": "text",
++            "value": "Customers"
++          },
++          "format": {
++            "background": "--token-surface-secondary"
++          }
++        },
++        "F3": {
++          "value": {
++            "kind": "text",
++            "value": "Customer-minutes"
++          },
++          "format": {
++            "background": "--token-surface-secondary"
++          }
++        },
++        "A4": {
++          "value": {
++            "kind": "text",
++            "value": "Feeder event 01"
++          }
++        },
++        "B4": {
++          "value": {
++            "kind": "text",
++            "value": "08:12"
++          }
++        },
++        "C4": {
++          "value": {
++            "kind": "text",
++            "value": "09:07"
++          }
++        },
++        "D4": {
++          "value": {
++            "kind": "number",
++            "value": 55
++          },
++          "format": {
++            "valueFormat": "0"
++          }
++        },
++        "E4": {
++          "value": {
++            "kind": "number",
++            "value": 1240
++          },
++          "format": {
++            "valueFormat": "#,##0"
++          }
++        },
++        "F4": {
++          "expression": "D4*E4",
++          "format": {
++            "valueFormat": "#,##0"
++          }
++        },
++        "A6": {
++          "value": {
++            "kind": "text",
++            "value": "Total customer-minutes"
++          }
++        },
++        "F6": {
++          "expression": "SUM(F4:F5)",
++          "format": {
++            "valueFormat": "#,##0"
++          }
++        }
++      },
++      "columnWidths": {
++        "A": 180,
++        "B": 100,
++        "C": 100,
++        "D": 100,
++        "E": 120,
++        "F": 150
++      },
++      "rowHeights": {
++        "1": 38,
++        "3": 30
+       },
+-      "columnWidths": { "A": 180, "B": 100, "C": 100, "D": 100, "E": 120, "F": 150 },
+-      "rowHeights": { "1": 38, "3": 30 },
+       "formatRules": [
+-        { "from": "A3", "to": "F3", "style": "header", "format": { "background": "--token-surface-secondary", "border": { "color": "--token-color-active-border", "width": 1, "style": "solid" } } },
+-        { "from": "F4", "to": "F20", "format": { "background": "--token-color-intelligence-surface" } }
++        {
++          "from": "A3",
++          "to": "F3",
++          "style": "header",
++          "format": {
++            "background": "--token-surface-secondary",
++            "border": {
++              "color": "--token-color-active-border",
++              "width": 1,
++              "style": "solid"
++            }
++          }
++        },
++        {
++          "from": "F4",
++          "to": "F20",
++          "format": {
++            "background": "--token-color-intelligence-surface"
++          }
++        }
+       ],
+       "frozenRows": 3,
+       "frozenColumns": 1,
+       "print": {
+-        "page": { "paper": "letter", "orientation": "landscape", "margins": { "top": 0.5, "right": 0.5, "bottom": 0.5, "left": 0.5 } },
+-        "area": { "from": "A1", "to": "F20" },
++        "page": {
++          "paper": "letter",
++          "orientation": "landscape",
++          "margins": {
++            "top": 0.5,
++            "right": 0.5,
++            "bottom": 0.5,
++            "left": 0.5
++          }
++        },
++        "area": {
++          "from": "A1",
++          "to": "F20"
++        },
+         "repeatRows": "1:3",
+         "scale": "fit-width",
+         "gridlines": false,
+@@ -950,56 +1978,247 @@
+       "styles": {
+         "defaultKey": "body",
+         "styles": {
+-          "body": { "name": "Body", "fontFamily": "IBM Plex Sans", "fontSize": 12, "color": "--token-ink-primary" },
+-          "header": { "name": "Header", "fontFamily": "IBM Plex Sans", "fontSize": 11, "fontWeight": 650, "color": "--token-ink-primary" }
++          "body": {
++            "name": "Body",
++            "fontFamily": "IBM Plex Sans",
++            "fontSize": 12,
++            "color": "--token-ink-primary"
++          },
++          "header": {
++            "name": "Header",
++            "fontFamily": "IBM Plex Sans",
++            "fontSize": 11,
++            "fontWeight": 650,
++            "color": "--token-ink-primary"
++          }
+         }
+       }
+     },
      "variables": [],
-     "createdBy": { "kind": "user", "userId": "default-user" },
+-    "createdBy": { "kind": "user", "userId": "default-user" },
++    "createdBy": {
++      "kind": "user",
++      "userId": "default-user"
++    },
      "revision": 3,
 -    "updatedAt": 1784385000000
 +    "updatedAt": 1784385000000,
@@ -10019,9 +13266,271 @@
      "userId": "default-user",
      "name": "Hardening cost model",
      "description": "A transparent option model for unit cost, contingency, total investment, and annualized benefit.",
-@@ -1016,6 +1035,95 @@
+-    "tags": ["Finance", "Planning", "Model"],
++    "tags": [
++      "Finance",
++      "Planning",
++      "Model"
++    ],
+     "body": {
+       "resource": "spreadsheet",
+       "cells": {
+-        "A1": { "value": { "kind": "text", "value": "Hardening cost model" }, "merge": "E1", "format": { "background": "--token-color-accent-2-surface", "padding": { "x": 10, "y": 8 } } },
+-        "A3": { "value": { "kind": "text", "value": "Option" }, "format": { "background": "--token-surface-secondary" } },
+-        "B3": { "value": { "kind": "text", "value": "Units" }, "format": { "background": "--token-surface-secondary" } },
+-        "C3": { "value": { "kind": "text", "value": "Unit cost" }, "format": { "background": "--token-surface-secondary" } },
+-        "D3": { "value": { "kind": "text", "value": "Contingency" }, "format": { "background": "--token-surface-secondary" } },
+-        "E3": { "value": { "kind": "text", "value": "Total" }, "format": { "background": "--token-surface-secondary" } },
+-        "A4": { "value": { "kind": "text", "value": "Covered conductor" } },
+-        "B4": { "value": { "kind": "number", "value": 18 }, "format": { "valueFormat": "0" } },
+-        "C4": { "value": { "kind": "number", "value": 142000 }, "format": { "valueFormat": "$#,##0" } },
+-        "D4": { "value": { "kind": "number", "value": 0.15 }, "format": { "valueFormat": "0%" } },
+-        "E4": { "expression": "B4*C4*(1+D4)", "format": { "valueFormat": "$#,##0" } },
+-        "A5": { "value": { "kind": "text", "value": "Underground segment" } },
+-        "B5": { "value": { "kind": "number", "value": 4 }, "format": { "valueFormat": "0" } },
+-        "C5": { "value": { "kind": "number", "value": 890000 }, "format": { "valueFormat": "$#,##0" } },
+-        "D5": { "value": { "kind": "number", "value": 0.2 }, "format": { "valueFormat": "0%" } },
+-        "E5": { "expression": "B5*C5*(1+D5)", "format": { "valueFormat": "$#,##0" } },
+-        "A7": { "value": { "kind": "text", "value": "Portfolio total" } },
+-        "E7": { "expression": "SUM(E4:E6)", "format": { "valueFormat": "$#,##0", "background": "--token-color-accent-2-surface" } }
++        "A1": {
++          "value": {
++            "kind": "text",
++            "value": "Hardening cost model"
++          },
++          "merge": "E1",
++          "format": {
++            "background": "--token-color-accent-2-surface",
++            "padding": {
++              "x": 10,
++              "y": 8
++            }
++          }
++        },
++        "A3": {
++          "value": {
++            "kind": "text",
++            "value": "Option"
++          },
++          "format": {
++            "background": "--token-surface-secondary"
++          }
++        },
++        "B3": {
++          "value": {
++            "kind": "text",
++            "value": "Units"
++          },
++          "format": {
++            "background": "--token-surface-secondary"
++          }
++        },
++        "C3": {
++          "value": {
++            "kind": "text",
++            "value": "Unit cost"
++          },
++          "format": {
++            "background": "--token-surface-secondary"
++          }
++        },
++        "D3": {
++          "value": {
++            "kind": "text",
++            "value": "Contingency"
++          },
++          "format": {
++            "background": "--token-surface-secondary"
++          }
++        },
++        "E3": {
++          "value": {
++            "kind": "text",
++            "value": "Total"
++          },
++          "format": {
++            "background": "--token-surface-secondary"
++          }
++        },
++        "A4": {
++          "value": {
++            "kind": "text",
++            "value": "Covered conductor"
++          }
++        },
++        "B4": {
++          "value": {
++            "kind": "number",
++            "value": 18
++          },
++          "format": {
++            "valueFormat": "0"
++          }
++        },
++        "C4": {
++          "value": {
++            "kind": "number",
++            "value": 142000
++          },
++          "format": {
++            "valueFormat": "$#,##0"
++          }
++        },
++        "D4": {
++          "value": {
++            "kind": "number",
++            "value": 0.15
++          },
++          "format": {
++            "valueFormat": "0%"
++          }
++        },
++        "E4": {
++          "expression": "B4*C4*(1+D4)",
++          "format": {
++            "valueFormat": "$#,##0"
++          }
++        },
++        "A5": {
++          "value": {
++            "kind": "text",
++            "value": "Underground segment"
++          }
++        },
++        "B5": {
++          "value": {
++            "kind": "number",
++            "value": 4
++          },
++          "format": {
++            "valueFormat": "0"
++          }
++        },
++        "C5": {
++          "value": {
++            "kind": "number",
++            "value": 890000
++          },
++          "format": {
++            "valueFormat": "$#,##0"
++          }
++        },
++        "D5": {
++          "value": {
++            "kind": "number",
++            "value": 0.2
++          },
++          "format": {
++            "valueFormat": "0%"
++          }
++        },
++        "E5": {
++          "expression": "B5*C5*(1+D5)",
++          "format": {
++            "valueFormat": "$#,##0"
++          }
++        },
++        "A7": {
++          "value": {
++            "kind": "text",
++            "value": "Portfolio total"
++          }
++        },
++        "E7": {
++          "expression": "SUM(E4:E6)",
++          "format": {
++            "valueFormat": "$#,##0",
++            "background": "--token-color-accent-2-surface"
++          }
++        }
++      },
++      "columnWidths": {
++        "A": 210,
++        "B": 90,
++        "C": 120,
++        "D": 110,
++        "E": 150
++      },
++      "rowHeights": {
++        "1": 38,
++        "3": 30
+       },
+-      "columnWidths": { "A": 210, "B": 90, "C": 120, "D": 110, "E": 150 },
+-      "rowHeights": { "1": 38, "3": 30 },
+       "formatRules": [
+-        { "from": "A3", "to": "E3", "style": "header", "format": { "background": "--token-surface-secondary", "border": { "color": "--token-color-active-border", "width": 1, "style": "solid" } } },
+-        { "from": "E4", "to": "E20", "format": { "background": "--token-color-accent-2-surface" } }
++        {
++          "from": "A3",
++          "to": "E3",
++          "style": "header",
++          "format": {
++            "background": "--token-surface-secondary",
++            "border": {
++              "color": "--token-color-active-border",
++              "width": 1,
++              "style": "solid"
++            }
++          }
++        },
++        {
++          "from": "E4",
++          "to": "E20",
++          "format": {
++            "background": "--token-color-accent-2-surface"
++          }
++        }
+       ],
+       "frozenRows": 3,
+       "frozenColumns": 1,
+       "print": {
+-        "page": { "paper": "letter", "orientation": "landscape", "margins": { "top": 0.5, "right": 0.5, "bottom": 0.5, "left": 0.5 } },
+-        "area": { "from": "A1", "to": "E20" },
++        "page": {
++          "paper": "letter",
++          "orientation": "landscape",
++          "margins": {
++            "top": 0.5,
++            "right": 0.5,
++            "bottom": 0.5,
++            "left": 0.5
++          }
++        },
++        "area": {
++          "from": "A1",
++          "to": "E20"
++        },
+         "repeatRows": "1:3",
+         "scale": "fit-width",
+         "gridlines": false,
+@@ -1008,14 +2227,181 @@
+       "styles": {
+         "defaultKey": "body",
+         "styles": {
+-          "body": { "name": "Body", "fontFamily": "IBM Plex Sans", "fontSize": 12, "color": "--token-ink-primary" },
+-          "header": { "name": "Header", "fontFamily": "IBM Plex Sans", "fontSize": 11, "fontWeight": 650, "color": "--token-ink-primary" }
++          "body": {
++            "name": "Body",
++            "fontFamily": "IBM Plex Sans",
++            "fontSize": 12,
++            "color": "--token-ink-primary"
++          },
++          "header": {
++            "name": "Header",
++            "fontFamily": "IBM Plex Sans",
++            "fontSize": 11,
++            "fontWeight": 650,
++            "color": "--token-ink-primary"
++          }
+         }
+       }
+     },
      "variables": [],
-     "createdBy": { "kind": "user", "userId": "default-user" },
+-    "createdBy": { "kind": "user", "userId": "default-user" },
++    "createdBy": {
++      "kind": "user",
++      "userId": "default-user"
++    },
      "revision": 5,
 -    "updatedAt": 1782306000000
 +    "updatedAt": 1782306000000,
@@ -10034,20 +13543,41 @@
 +    "userId": "default-user",
 +    "name": "Section divider",
 +    "description": "One slide that opens a section: a large title over a one-line lead.",
-+    "tags": ["Presentation", "Brand"],
++    "tags": [
++      "Presentation",
++      "Brand"
++    ],
 +    "body": {
 +      "resource": "slides",
 +      "aspectRatio": "16:9",
 +      "theme": {
-+        "background": { "kind": "color", "color": "--token-surface-primary" },
-+        "colors": { "text": "--token-ink-primary", "accent": "--token-color-accent-1-fill", "muted": "--token-ink-muted" },
++        "background": {
++          "kind": "color",
++          "color": "--token-surface-primary"
++        },
++        "colors": {
++          "text": "--token-ink-primary",
++          "accent": "--token-color-accent-1-fill",
++          "muted": "--token-ink-muted"
++        },
 +        "fontFamily": "IBM Plex Sans"
 +      },
 +      "styles": {
 +        "defaultKey": "body",
 +        "styles": {
-+          "title": { "name": "Title", "fontSize": 40, "fontWeight": 650, "color": "--token-ink-primary", "lineHeight": 1.05 },
-+          "body": { "name": "Body", "fontSize": 20, "color": "--token-ink-secondary", "lineHeight": 1.35 }
++          "title": {
++            "name": "Title",
++            "fontSize": 40,
++            "fontWeight": 650,
++            "color": "--token-ink-primary",
++            "lineHeight": 1.05
++          },
++          "body": {
++            "name": "Body",
++            "fontSize": 20,
++            "color": "--token-ink-secondary",
++            "lineHeight": 1.35
++          }
 +        }
 +      },
 +      "layouts": [
@@ -10057,8 +13587,26 @@
 +          "name": "Section divider",
 +          "locked": [],
 +          "placeholders": [
-+            { "role": "title", "frame": { "x": 0.08, "y": 0.34, "width": 0.84, "height": 0.2 }, "styleKey": "title" },
-+            { "role": "lead", "frame": { "x": 0.08, "y": 0.56, "width": 0.84, "height": 0.12 }, "styleKey": "body" }
++            {
++              "role": "title",
++              "frame": {
++                "x": 0.08,
++                "y": 0.34,
++                "width": 0.84,
++                "height": 0.2
++              },
++              "styleKey": "title"
++            },
++            {
++              "role": "lead",
++              "frame": {
++                "x": 0.08,
++                "y": 0.56,
++                "width": 0.84,
++                "height": 0.12
++              },
++              "styleKey": "body"
++            }
 +          ]
 +        }
 +      ],
@@ -10069,7 +13617,12 @@
 +          "elements": [
 +            {
 +              "id": "#tdiv-title-element",
-+              "frame": { "x": 0.08, "y": 0.34, "width": 0.84, "height": 0.2 },
++              "frame": {
++                "x": 0.08,
++                "y": 0.34,
++                "width": 0.84,
++                "height": 0.2
++              },
 +              "overflow": "shrink",
 +              "fromPlaceholder": "title",
 +              "content": {
@@ -10080,7 +13633,13 @@
 +                  "variant": "heading",
 +                  "level": 1,
 +                  "style": "title",
-+                  "atoms": [{ "id": "#tdiv-title-a", "kind": "literal", "text": "Section title" }],
++                  "atoms": [
++                    {
++                      "id": "#tdiv-title-a",
++                      "kind": "literal",
++                      "text": "Section title"
++                    }
++                  ],
 +                  "display": "Section title",
 +                  "marks": []
 +                }
@@ -10088,7 +13647,12 @@
 +            },
 +            {
 +              "id": "#tdiv-lead-element",
-+              "frame": { "x": 0.08, "y": 0.56, "width": 0.84, "height": 0.12 },
++              "frame": {
++                "x": 0.08,
++                "y": 0.56,
++                "width": 0.84,
++                "height": 0.12
++              },
 +              "overflow": "shrink",
 +              "fromPlaceholder": "lead",
 +              "content": {
@@ -10098,7 +13662,13 @@
 +                  "type": "text",
 +                  "variant": "paragraph",
 +                  "style": "body",
-+                  "atoms": [{ "id": "#tdiv-lead-a", "kind": "literal", "text": "One line on what this section settles." }],
++                  "atoms": [
++                    {
++                      "id": "#tdiv-lead-a",
++                      "kind": "literal",
++                      "text": "One line on what this section settles."
++                    }
++                  ],
 +                  "display": "One line on what this section settles.",
 +                  "marks": []
 +                }
@@ -10111,7 +13681,10 @@
 +      "sections": []
 +    },
 +    "variables": [],
-+    "createdBy": { "kind": "user", "userId": "default-user" },
++    "createdBy": {
++      "kind": "user",
++      "userId": "default-user"
++    },
 +    "revision": 1,
 +    "updatedAt": 1788000000000
    }
@@ -10241,10 +13814,10 @@
  test("document named styles mirror the text formatting inspector without metadata clutter", async ({ page }) => {
 ~~~~
 
-### new · `test/browser/template-features.spec.ts` (+194 / −0)
+### new · `test/browser/template-features.spec.ts` (+270 / −0)
 
 ~~~~diff
-@@ -0,0 +1,194 @@
+@@ -0,0 +1,270 @@
 +import { expect, test, type Locator, type Page, type TestInfo } from "@playwright/test";
 +
 +const unexpected: string[] = [];
@@ -10338,11 +13911,23 @@
 +  const modal = page.getByRole("dialog", { name: "Insert “Technical glossary”" });
 +  await expect(modal).toBeVisible();
 +  await expect(modal.getByText("Source material", { exact: true })).toBeVisible();
-+  const answer = modal.getByRole("button", { name: "Answer for Source material" });
-+  await expect(answer).toContainText("Default · Documents, Findings");
-+  await answer.click();
-+  await page.getByRole("option", { name: "Winter filings", exact: true }).click();
-+  await expect(answer).toContainText("Winter filings");
++  await expect(modal.getByText("Default · Documents, Findings")).toBeVisible();
++
++  await modal.getByRole("button", { name: "Change", exact: true }).click();
++  const builder = page.getByRole("dialog", { name: "What Source material selects here" });
++  await expect(builder).toBeVisible();
++  await builder.getByRole("button", { name: "Choose what to include", exact: true }).click();
++  await builder.getByRole("button", { name: "Add", exact: true }).first().click();
++  await builder.getByRole("button", { name: "Sets", exact: true }).click();
++  await builder
++    .locator(".offer")
++    .filter({ hasText: "Winter filings" })
++    .getByRole("button", { name: "Add", exact: true })
++    .click();
++  await expect(builder.getByText("Winter filings").first()).toBeVisible();
++  await builder.getByRole("button", { name: "Use this", exact: true }).click();
++
++  await expect(modal.getByText("Winter filings", { exact: true })).toBeVisible();
 +  await modal.getByRole("button", { name: "Insert", exact: true }).click();
 +
 +  await expect(context.getByText("Inserted “Technical glossary”.", { exact: true })).toBeVisible();
@@ -10380,7 +13965,7 @@
 +
 +  const modal = page.getByRole("dialog", { name: "Default scope for Source material" });
 +  await expect(modal).toBeVisible();
-+  await modal.getByRole("switch", { name: "Everything in the project" }).click();
++  await modal.getByRole("button", { name: "Everything in the project", exact: true }).click();
 +  await modal.getByRole("button", { name: "Set the default scope", exact: true }).click();
 +  await expect(scope).toHaveAttribute("title", /^Everything in the project — /);
 +
@@ -10427,7 +14012,20 @@
 +
 +  await context.getByRole("button", { name: "New set", exact: true }).click();
 +  await context.getByRole("textbox", { name: "Set name" }).fill(name);
-+  await context.getByRole("switch", { name: "Findings", exact: true }).first().click();
++  await context.getByRole("button", { name: "Choose what it selects", exact: true }).click();
++
++  const builder = page.getByRole("dialog", { name: "A set of resources" });
++  await expect(builder).toBeVisible();
++  await builder.getByRole("button", { name: "Choose what to include", exact: true }).click();
++  await builder.getByRole("button", { name: "Add", exact: true }).first().click();
++  await builder
++    .locator(".offer")
++    .filter({ hasText: "Findings" })
++    .getByRole("button", { name: "Add", exact: true })
++    .click();
++  await expect(builder.getByText("Findings", { exact: true }).first()).toBeVisible();
++  await builder.getByRole("button", { name: "Use this", exact: true }).click();
++
 +  await expect(context.getByText("Findings.", { exact: true })).toBeVisible();
 +  await context.getByRole("button", { name: "Create", exact: true }).click();
 +
@@ -10438,6 +14036,57 @@
 +  page.once("dialog", (dialog) => void dialog.accept());
 +  await context.getByTitle(new RegExp(`^Delete “${name}”`)).click();
 +  await expect(context.getByRole("button", { name: new RegExp(`^${name}`) })).toHaveCount(0);
++});
++
++test("a variable's default is built with an exclusion, stored, and read back as the rule", async ({ page }) => {
++  await page.goto("/app/dev-project", { waitUntil: "networkidle" });
++  await tabs(page).getByRole("button", { name: "Templates", exact: true }).click();
++  await page.getByRole("button", { name: /^Incident write-up/ }).first().click();
++
++  const inspector = page.locator('aside[aria-label="Inspector"][data-inspected="templates.template"]');
++  await expect(inspector).toBeVisible();
++  await inspector.getByText("Incident evidence", { exact: true }).click();
++
++  const scope = inspector.getByRole("button", { name: "Default scope", exact: true }).first();
++  await expect(scope).toBeVisible();
++
++  // The seeded default is a bound row, so the builder opens on the rule it holds.
++  await expect(scope).toHaveAttribute("title", /minus Interconnect glossary/);
++  await scope.click();
++
++  const builder = page.getByRole("dialog", { name: "Default scope for Incident evidence" });
++  await expect(builder).toBeVisible();
++  await expect(builder.getByText("Findings, Documents, Spreadsheets, minus Interconnect glossary")).toBeVisible();
++
++  await builder.getByRole("button", { name: "Add an exception", exact: true }).click();
++  await builder.getByRole("button", { name: "Resources", exact: true }).click();
++  await builder
++    .locator(".offer")
++    .filter({ hasText: "Substation 14 incident write-up" })
++    .getByRole("button", { name: "Add", exact: true })
++    .click();
++  await builder.getByRole("button", { name: "Done", exact: true }).click();
++  await builder.getByRole("button", { name: "Set the default scope", exact: true }).click();
++
++  await expect(scope).toHaveAttribute(
++    "title",
++    /minus Interconnect glossary and Substation 14 incident write-up/,
++    { timeout: 15_000 }
++  );
++
++  // Put the seeded template back the way the fixture had it.
++  await scope.click();
++  await expect(builder).toBeVisible();
++  await builder
++    .locator(".term")
++    .filter({ hasText: "Substation 14 incident write-up" })
++    .getByRole("button", { name: "×" })
++    .click();
++  await builder.getByRole("button", { name: "Set the default scope", exact: true }).click();
++  await expect(scope).not.toHaveAttribute("title", /Substation 14 incident write-up/, {
++    timeout: 15_000
++  });
++  await expect(scope).toHaveAttribute("title", /minus Interconnect glossary/);
 +});
 ~~~~
 
@@ -10542,7 +14191,7 @@
 +  await expect(page.locator("html")).toHaveAttribute("data-appearance", "helios");
 +});
 +
-+test("the scope plan carries its mock, its file list and its open decisions", async ({ page }) => {
++test("the scope page carries its mock, its file list and its settled decisions", async ({ page }) => {
 +  await page.setViewportSize({ width: 1500, height: 900 });
 +  await page.goto("/app/dev-project/reference/templates/scope", { waitUntil: "networkidle" });
 +
@@ -10550,7 +14199,7 @@
 +  await expect(page.getByText("Default scope for Source material").first()).toBeVisible();
 +  await expect(page.getByText("Add to Include", { exact: true })).toBeVisible();
 +
-+  await expect(page.getByRole("heading", { level: 2, name: "Every file this touches" })).toBeVisible();
++  await expect(page.getByRole("heading", { level: 2, name: "Every file it touched" })).toBeVisible();
 +  await expect(page.locator("#work tbody tr").first()).toBeVisible();
 +
 +  const recommended = page.locator("#forks .state.after");
@@ -10716,6 +14365,445 @@
        in the same tick. Besides doing needless work for every inspector, that
 ~~~~
 
+### new · `src/lib/components/authored/scope-builder/index.ts` (+9 / −0)
+
+~~~~diff
+@@ -0,0 +1,9 @@
++/**
++ * The one place a scope is chosen.
++ *
++ * Four surfaces open it: a variable's default from either editor's Templates
++ * panel or from the library inspector, the answer given while placing a
++ * template, and the Contexts panel's own sets. They differ in what they call it
++ * and what they do with the result, and in nothing else.
++ */
++export { default as ScopeBuilder } from "$authored-components/scope-builder/scope-builder.svelte";
+~~~~
+
+### new · `src/lib/components/authored/scope-builder/scope-builder.svelte` (+418 / −0)
+
+~~~~diff
+@@ -0,0 +1,418 @@
++<script lang="ts">
++  import { Button } from "$vendored-components/button";
++  import { Input } from "$vendored-components/input";
++  import { traceNode } from "$development-components/trace.svelte";
++
++  /**
++   * One rule, built by hand: what it includes, what it takes back out, and how
++   * many resources that is right now.
++   *
++   * **Every set is a difference**, so both lists are always here and the second
++   * is usually empty. Nothing this component can produce is a rule the
++   * vocabulary cannot hold, because it never builds one: it is handed rows and
++   * offers already in words, and it answers with the keys it was given.
++   *
++   * **The whole project is a mode rather than a term you add.** It is the common
++   * answer and the floor a variable falls back to, so it is one press.
++   *
++   * **The count is why the modal exists.** A rule with no number beside it is a
++   * guess, so the caller resolves it on every change and it sits under the
++   * sentence rather than behind a disclosure.
++   *
++   * What it owns is the disclosure: which side is being added to, which source
++   * is open, what is typed in the filter, and whether the preview is showing.
++   * Everything else belongs to whoever opened it.
++   */
++
++  export type ScopeSide = "include" | "exclude";
++
++  export type ScopeRow = { readonly key: string; readonly kind: string; readonly words: string };
++
++  export type ScopeOffer = {
++    readonly key: string;
++    readonly label: string;
++    readonly note?: string;
++    readonly held?: ScopeSide;
++    readonly refused?: string;
++  };
++
++  export type ScopeSource = {
++    readonly key: string;
++    readonly label: string;
++    readonly placeholder?: string;
++    readonly offers: readonly ScopeOffer[];
++  };
++
++  export type ScopePreview = { readonly key: string; readonly label: string; readonly note?: string };
++
++  let {
++    whole,
++    include,
++    exclude,
++    sentence,
++    count,
++    preview = [],
++    sources = [],
++    disabled = false,
++    onmode,
++    onadd,
++    ondrop
++  }: {
++    /** Whether the rule is the floor: everything the project holds. */
++    whole: boolean;
++    include: readonly ScopeRow[];
++    exclude: readonly ScopeRow[];
++    /** The rule as one sentence, the same one every surface shows afterwards. */
++    sentence: string;
++    /** How many resources it selects now. */
++    count: number;
++    /** What those resources are, for the list under the count. */
++    preview?: readonly ScopePreview[];
++    /** Where a term can be added from. A source with no placeholder is not filtered. */
++    sources?: readonly ScopeSource[];
++    disabled?: boolean;
++    onmode: (whole: boolean) => void;
++    onadd: (side: ScopeSide, source: string, key: string) => void;
++    ondrop: (side: ScopeSide, key: string) => void;
++  } = $props();
++
++  const trace = traceNode("ScopeBuilder", () => ({
++    whole,
++    include: include.length,
++    exclude: exclude.length,
++    count,
++    disabled
++  }));
++
++  let adding = $state<ScopeSide | undefined>(undefined);
++  let openSource = $state<string | undefined>(undefined);
++  let query = $state("");
++  let showing = $state(false);
++
++  const current = $derived(sources.find((source) => source.key === openSource) ?? sources[0]);
++
++  const shown = $derived(
++    current === undefined
++      ? []
++      : current.offers.filter(
++          (candidate) =>
++            query.trim() === "" ||
++            candidate.label.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase())
++        )
++  );
++
++  const rowsOn = (side: ScopeSide) => (side === "include" ? include : exclude);
++
++  const openAdd = (side: ScopeSide) => {
++    adding = side;
++    openSource = sources[0]?.key;
++    query = "";
++  };
++</script>
++
++<div {...trace} class="builder">
++  <div class="modes" role="group" aria-label="What this selects">
++    <Button
++      variant={whole ? "default" : "outline"}
++      size="xs"
++      {disabled}
++      aria-pressed={whole}
++      onclick={() => onmode(true)}
++    >
++      Everything in the project
++    </Button>
++    <Button
++      variant={whole ? "outline" : "default"}
++      size="xs"
++      {disabled}
++      aria-pressed={!whole}
++      onclick={() => onmode(false)}
++    >
++      Choose what to include
++    </Button>
++  </div>
++
++  {#if whole}
++    <p class="resting">
++      Every resource the project holds, now and later. This is also the floor: anything with no
++      scope of its own selects exactly this.
++    </p>
++  {:else}
++    {#each ["include", "exclude"] as const as side (side)}
++      <section class="list" aria-label={side === "include" ? "Included" : "Excluded"}>
++        <header>
++          <b>{side === "include" ? "Include" : "Exclude"}</b>
++          <Button variant="outline" size="xs" {disabled} onclick={() => openAdd(side)}>
++            {side === "include" ? "Add" : "Add an exception"}
++          </Button>
++        </header>
++        {#each rowsOn(side) as row (row.key)}
++          <div class="term">
++            <code>{row.kind}</code>
++            <span>{row.words}</span>
++            <Button
++              variant="ghost"
++              size="xs"
++              {disabled}
++              title={`Remove ${row.words}`}
++              onclick={() => ondrop(side, row.key)}
++            >
++              ×
++            </Button>
++          </div>
++        {/each}
++        {#if rowsOn(side).length === 0}
++          <p class="empty">
++            {side === "include"
++              ? "Nothing is included yet, so this selects nothing."
++              : "Nothing is excluded."}
++          </p>
++        {/if}
++      </section>
++    {/each}
++  {/if}
++
++  <p class="sentence">{sentence}</p>
++
++  <div class="count">
++    <b>{count}</b>
++    <span>{count === 1 ? "resource right now" : "resources right now"}</span>
++    {#if preview.length > 0}
++      <Button variant="ghost" size="xs" onclick={() => (showing = !showing)}>
++        {showing ? "Hide them" : "Show them"}
++      </Button>
++    {/if}
++  </div>
++
++  {#if showing && preview.length > 0}
++    <ul class="preview">
++      {#each preview as item (item.key)}
++        <li><span>{item.label}</span>{#if item.note}<small>{item.note}</small>{/if}</li>
++      {/each}
++    </ul>
++  {/if}
++
++  {#if adding !== undefined && current !== undefined}
++    <section class="adding" aria-label={`Add to ${adding === "include" ? "Include" : "Exclude"}`}>
++      <header>
++        <b>Add to {adding === "include" ? "Include" : "Exclude"}</b>
++        <Button variant="ghost" size="xs" onclick={() => (adding = undefined)}>Done</Button>
++      </header>
++
++      <div class="sources" role="group" aria-label="Where to add from">
++        {#each sources as source (source.key)}
++          <Button
++            variant={source.key === current.key ? "secondary" : "ghost"}
++            size="xs"
++            aria-pressed={source.key === current.key}
++            onclick={() => {
++              openSource = source.key;
++              query = "";
++            }}
++          >
++            {source.label}
++          </Button>
++        {/each}
++      </div>
++
++      {#if current.placeholder !== undefined}
++        <Input
++          type="search"
++          bind:value={query}
++          placeholder={current.placeholder}
++          aria-label={current.placeholder}
++          class="text-body-sm h-7 [&::-webkit-search-cancel-button]:hidden"
++        />
++      {/if}
++
++      <div class="offers">
++        {#each shown.slice(0, 60) as candidate (candidate.key)}
++          <div class="offer">
++            <span class="offer-name">{candidate.label}</span>
++            {#if candidate.note}<small>{candidate.note}</small>{/if}
++            {#if candidate.refused !== undefined}
++              <span class="refused" title={candidate.refused}>Would loop</span>
++            {:else if candidate.held !== undefined}
++              <span class="held">{candidate.held === "include" ? "Included" : "Excluded"}</span>
++            {:else}
++              <Button
++                variant="outline"
++                size="xs"
++                title={`Add ${candidate.label}`}
++                onclick={() => onadd(adding as ScopeSide, current.key, candidate.key)}
++              >
++                Add
++              </Button>
++            {/if}
++          </div>
++        {/each}
++        {#if shown.length === 0}
++          <p class="empty">Nothing matches.</p>
++        {/if}
++      </div>
++    </section>
++  {/if}
++</div>
++
++<style>
++  .builder {
++    display: flex;
++    flex-direction: column;
++    gap: calc(var(--token-spacing-unit) * 2);
++    padding: 0 calc(var(--token-spacing-unit) * 3);
++  }
++
++  .modes {
++    display: grid;
++    grid-template-columns: 1fr 1fr;
++    gap: calc(var(--token-spacing-unit) * 1);
++  }
++
++  .resting,
++  .empty {
++    margin: 0;
++    color: var(--token-ink-secondary);
++    font-size: var(--token-type-caption-size);
++  }
++
++  .empty { font-style: italic; }
++
++  .list { display: flex; flex-direction: column; gap: calc(var(--token-spacing-unit) * 1); }
++
++  .list header {
++    display: flex;
++    align-items: center;
++    justify-content: space-between;
++    gap: calc(var(--token-spacing-unit) * 1);
++  }
++
++  .list header b {
++    color: var(--token-ink-muted);
++    font-size: var(--token-type-caption-size);
++    font-weight: 700;
++    letter-spacing: .08em;
++    text-transform: uppercase;
++  }
++
++  .term {
++    display: grid;
++    grid-template-columns: auto minmax(0, 1fr) auto;
++    gap: calc(var(--token-spacing-unit) * 1);
++    align-items: center;
++    padding-inline-start: calc(var(--token-spacing-unit) * 1);
++    border: 1px solid var(--token-border-subtle);
++    border-radius: var(--token-radius-control);
++    background: var(--token-surface-elevated);
++  }
++
++  .term code {
++    padding: 0 calc(var(--token-spacing-unit) * .5);
++    border-radius: 3px;
++    background: var(--token-surface-work);
++    color: var(--token-ink-muted);
++    font-size: 10px;
++  }
++
++  .term span {
++    overflow: hidden;
++    font-size: var(--token-type-body-sm-size);
++    text-overflow: ellipsis;
++    white-space: nowrap;
++  }
++
++  .sentence {
++    margin: 0;
++    padding: calc(var(--token-spacing-unit) * 1.5);
++    border-inline-start: 2px solid var(--token-color-accent-1-text);
++    border-radius: 0 var(--token-radius-control) var(--token-radius-control) 0;
++    background: var(--token-color-accent-1-surface);
++    color: var(--token-ink-primary);
++    font-size: var(--token-type-body-sm-size);
++  }
++
++  .count {
++    display: flex;
++    align-items: baseline;
++    gap: calc(var(--token-spacing-unit) * 1);
++  }
++
++  .count b { font-size: 20px; font-weight: 700; }
++  .count span { color: var(--token-ink-secondary); font-size: var(--token-type-caption-size); }
++
++  .preview {
++    display: flex;
++    flex-direction: column;
++    gap: calc(var(--token-spacing-unit) * .5);
++    max-height: 12rem;
++    margin: 0;
++    padding: 0;
++    overflow-y: auto;
++    list-style: none;
++  }
++
++  .preview li {
++    display: flex;
++    align-items: baseline;
++    justify-content: space-between;
++    gap: calc(var(--token-spacing-unit) * 1);
++    font-size: var(--token-type-caption-size);
++  }
++
++  .preview small { color: var(--token-ink-muted); }
++
++  .adding {
++    display: flex;
++    flex-direction: column;
++    gap: calc(var(--token-spacing-unit) * 1);
++    padding: calc(var(--token-spacing-unit) * 1.5);
++    border: 1px solid var(--token-border-strong);
++    border-radius: var(--token-radius-panel);
++    background: var(--token-surface-panel);
++  }
++
++  .adding header {
++    display: flex;
++    align-items: center;
++    justify-content: space-between;
++  }
++
++  .adding header b { font-size: var(--token-type-body-sm-size); }
++
++  .sources { display: flex; gap: calc(var(--token-spacing-unit) * .5); }
++
++  .offers {
++    display: flex;
++    flex-direction: column;
++    max-height: 14rem;
++    overflow-y: auto;
++  }
++
++  .offer {
++    display: grid;
++    grid-template-columns: minmax(0, 1fr) auto auto;
++    gap: calc(var(--token-spacing-unit) * 1);
++    align-items: center;
++    padding: calc(var(--token-spacing-unit) * .5) 0;
++    border-bottom: 1px solid var(--token-border-subtle);
++  }
++
++  .offer-name {
++    overflow: hidden;
++    font-size: var(--token-type-body-sm-size);
++    text-overflow: ellipsis;
++    white-space: nowrap;
++  }
++
++  .offer small { color: var(--token-ink-muted); font-size: 10px; }
++
++  .held,
++  .refused {
++    padding: 0 calc(var(--token-spacing-unit) * 1);
++    border-radius: var(--token-radius-control);
++    background: var(--token-surface-work);
++    color: var(--token-ink-muted);
++    font-size: 10px;
++  }
++
++  .refused { color: var(--token-color-attention-text); }
++</style>
+~~~~
+
 ### changed · `src/lib/development-views/demo/components/demo-index.svelte` (+3 / −3)
 
 ~~~~diff
@@ -10779,7 +14867,7 @@
 +        <span class="tref-kicker">02 · The audit</span>
 +        <h1>What changed</h1>
 +        <p class="tref-lede">
-+          Eleven systematic changes, the decisions three reviews settled, every file with its line count, what
++          Twelve systematic changes, the decisions three reviews settled, every file with its line count, what
 +          was run to check the work, and what is still open. Measured against <code>{BASELINE}</code>, the
 +          commit this branch sits on, so it keeps saying the same thing as main moves on.
 +        </p>
@@ -10796,7 +14884,7 @@
 +    </header>
 +
 +    <nav class="tref-jumps" aria-label="On this page">
-+      <a href="#systematic">Eleven changes</a>
++      <a href="#systematic">Twelve changes</a>
 +      <a href="#model">The model, before and after</a>
 +      <a href="#decisions">What the reviews settled</a>
 +      <a href="#ledger">Every file</a>
@@ -10807,7 +14895,7 @@
 +
 +    <section class="tref-section" id="systematic">
 +      <div class="tref-section-head">
-+        <div><span class="tref-kicker">Before → now</span><h2>Eleven systematic changes</h2></div>
++        <div><span class="tref-kicker">Before → now</span><h2>Twelve systematic changes</h2></div>
 +        <p>
 +          Each is a decision with consequences across several files, written with what it replaced and why,
 +          so the page stays useful after the code is familiar.
@@ -12715,10 +16803,10 @@
 +}
 ~~~~
 
-### new · `src/lib/development-views/template-reference/components/scope-page.svelte` (+423 / −0)
+### new · `src/lib/development-views/template-reference/components/scope-page.svelte` (+425 / −0)
 
 ~~~~diff
-@@ -0,0 +1,423 @@
+@@ -0,0 +1,425 @@
 +<script lang="ts">
 +  import { page } from "$app/state";
 +
@@ -12762,13 +16850,13 @@
 +  <main class="tref-page">
 +    <header class="tref-mast">
 +      <div>
-+        <span class="tref-kicker">03 · The plan</span>
++        <span class="tref-kicker">03 · Scope</span>
 +        <h1>What a variable selects</h1>
 +        <p class="tref-lede">
-+          A variable is a hole. What fills it is a group of resources, and today that group can only be
-+          said in the crudest terms: everything, or some kinds, or one of the project's named sets. This
-+          page is the design for saying it properly, and the list of everything it touches. None of it is
-+          built.
++          A variable is a hole. What fills it is a group of resources, and until this work that group
++          could only be said in the crudest terms: everything, or some kinds, or one of the project's
++          named sets. It can now be built term by term, excluded from, and pointed at particular
++          resources. This page is how it works and every file it touched.
 +        </p>
 +      </div>
 +      <div class="tref-facts">
@@ -12791,7 +16879,7 @@
 +      <a href="#doors">Where it opens</a>
 +      <a href="#lifecycle">What gets written</a>
 +      <a href="#rules">Rules and refusals</a>
-+      <a href="#work">Every file it touches</a>
++      <a href="#work">Every file it touched</a>
 +      <a href="#forks">Eight decisions</a>
 +      <a href="#missing">What is still missing</a>
 +    </nav>
@@ -12815,15 +16903,16 @@
 +      </p>
 +
 +      <div class="tref-note">
-+        <h4>Which means, today, no exclusions anywhere</h4>
++        <h4>Which meant, before this, no exclusions anywhere</h4>
 +        <p>
-+          Neither a variable's default nor an answer given at Insert may exclude anything. The builder this
-+          page describes is mostly about excluding things, so it would refuse on its first use.
++          Neither a variable's default nor an answer given at Insert could exclude anything. A builder
++          mostly about excluding things would have refused on its first use.
 +        </p>
 +        <p>
 +          A stored row fixes it exactly. The difference lives <b>inside</b> the row; the default and the
 +          answer hold <b>one</b> term naming it; substitution stays one-for-one and flips sides cleanly.
-+          The row is not bookkeeping. It is what makes the feature expressible.
++          The row is not bookkeeping. It is what makes the feature expressible, and the resolver's refusal
++          is left exactly where it was, now unreachable from either door.
 +        </p>
 +      </div>
 +
@@ -12884,8 +16973,8 @@
 +      <figure class="tref-figure">
 +        <DiagramDifference />
 +        <figcaption>
-+          <b>Nothing here is new.</b> This is what <code>resolveResourceSet</code> already does, cycle guard
-+          and all. The gap is that no surface in the product can build the left-hand side.
++          <b>Nothing here is new.</b> This is what <code>resolveResourceSet</code> already did, cycle guard
++          and all. What was missing was any surface that could build the left-hand side.
 +        </figcaption>
 +      </figure>
 +    </section>
@@ -12919,10 +17008,11 @@
 +
 +    <section class="tref-section" id="builder">
 +      <div class="tref-section-head">
-+        <div><span class="tref-kicker">The thing to build</span><h2>The builder</h2></div>
++        <div><span class="tref-kicker">The thing itself</span><h2>The builder</h2></div>
 +        <p>
 +          One modal. It edits a rule and knows nothing about templates, variables, or which of its four
-+          callers opened it.
++          callers opened it. The mock below is what shipped, drawn rather than screenshotted so it stays
++          readable at any width.
 +        </p>
 +      </div>
 +
@@ -13019,7 +17109,7 @@
 +
 +    <section class="tref-section" id="work">
 +      <div class="tref-section-head">
-+        <div><span class="tref-kicker">The estimate</span><h2>Every file this touches</h2></div>
++        <div><span class="tref-kicker">What it cost</span><h2>Every file it touched</h2></div>
 +        <p>
 +          {WORK.length} entries across {areas.length} areas: {newFiles} new and {changedFiles} changed. Paths
 +          are relative to <code>app/src/lib</code> unless they say otherwise. A trailing slash is a
@@ -13061,10 +17151,10 @@
 +
 +    <section class="tref-section" id="forks">
 +      <div class="tref-section-head">
-+        <div><span class="tref-kicker">Yours to settle</span><h2>Eight decisions, each with a recommendation</h2></div>
++        <div><span class="tref-kicker">Settled</span><h2>Eight decisions, and how each landed</h2></div>
 +        <p>
-+          None of these is settled. Each says what I would do, why, and what the other way costs — so a
-+          one-line answer per number is enough to start.
++          Each was open when this was a plan. Three of them landed somewhere other than where the plan
++          expected, and those are the ones worth reading.
 +        </p>
 +      </div>
 +
@@ -13075,7 +17165,7 @@
 +            <h3>{fork.question}</h3>
 +            <p>{fork.because}</p>
 +          </div>
-+          <div class="state after"><span>Recommended</span>{fork.recommended}</div>
++          <div class="state after"><span>Built</span>{fork.recommended}</div>
 +          <div class="state before"><span>Otherwise</span>{fork.alternative}<em>{fork.cost}</em></div>
 +        </article>
 +      {/each}
@@ -13479,10 +17569,10 @@
 +</div>
 ~~~~
 
-### new · `src/lib/development-views/template-reference/procedures/changes.ts` (+256 / −0)
+### new · `src/lib/development-views/template-reference/procedures/changes.ts` (+265 / −0)
 
 ~~~~diff
-@@ -0,0 +1,256 @@
+@@ -0,0 +1,265 @@
 +import type { Decision, OpenItem, SystematicChange, Verification } from "$development-views/template-reference/types";
 +
 +export const SYSTEMATIC: SystematicChange[] = [
@@ -13573,6 +17663,15 @@
 +    now: "PanelSection mounts the body once the heading has settled, so switching away from a panel holding an open section no longer warns.",
 +    why: "The Templates panel is the first panel whose open section is switched away from under test, and every browser specification fails on a console warning.",
 +    area: "cross-cutting"
++  },
++  {
++    index: "12",
++    title: "A scope is built rather than picked",
++    before:
++      "A variable's default and an answer were a short list of toggles: everything, some kinds, or one of the project's named sets. Nothing could exclude anything, and nothing could name a particular resource.",
++    now: "One builder, opened from four places, with two term lists and a live count. A rule that excludes something or names resources is stored as a resourceSets row with no name, bound to the variable that owns it, and what points at it is a single set term.",
++    why: "Resolving a template substitutes one term for what fills it, on either side of a prompt's scope, and a difference cannot be substituted on the excluding side. The row is what makes exclusions expressible at all.",
++    area: "sets"
 +  }
 +];
 +
@@ -13640,14 +17739,14 @@
 +];
 +
 +export const VERIFICATION: Verification[] = [
-+  { check: "Types", command: "pnpm typecheck", result: "0 errors, 0 warnings across 2,496 files", clean: true },
++  { check: "Types", command: "pnpm typecheck", result: "0 errors, 0 warnings across 2,501 files", clean: true },
 +  { check: "Structure", command: "pnpm lint", result: "56 checks, 56 clean", clean: true },
-+  { check: "Unit", command: "pnpm test", result: "877 tests in 93 files", clean: true },
++  { check: "Unit", command: "pnpm test", result: "903 tests in 94 files", clean: true },
 +  { check: "Category keys", command: "pnpm category-keys -- --check", result: "10 categories and 13 content views in step", clean: true },
 +  {
 +    check: "Browser",
 +    command: "pnpm test:browser, from a clean seed",
-+    result: "42 of 42, after the rebase onto main. The deck selection case that had failed since the branch was cut is fixed on main.",
++    result: "43 of 43, after the rebase onto main. The deck selection case that had failed since the branch was cut is fixed on main.",
 +    clean: true
 +  }
 +];
@@ -13741,10 +17840,10 @@
 +};
 ~~~~
 
-### new · `src/lib/development-views/template-reference/procedures/inventory.ts` (+131 / −0)
+### new · `src/lib/development-views/template-reference/procedures/inventory.ts` (+137 / −0)
 
 ~~~~diff
-@@ -0,0 +1,131 @@
+@@ -0,0 +1,137 @@
 +import type { FileRecord } from "$development-views/template-reference/types";
 +
 +/**
@@ -13756,30 +17855,31 @@
 +export const FILES: FileRecord[] = [
 +  {"path":"app/scripts/generate-template-reference-inventory.mjs","status":"A","area":"cross-cutting","kind":"configuration","current":114,"base":0,"added":114,"deleted":0},
 +  {"path":"app/seed/documents.json","status":"M","area":"evidence","kind":"fixture","current":38,"base":42,"added":0,"deleted":4},
++  {"path":"app/seed/resourceSets.json","status":"M","area":"evidence","kind":"fixture","current":46,"base":29,"added":17,"deleted":0},
 +  {"path":"app/seed/slideDecks.json","status":"M","area":"evidence","kind":"fixture","current":38,"base":42,"added":0,"deleted":4},
 +  {"path":"app/seed/spreadsheets.json","status":"M","area":"evidence","kind":"fixture","current":20,"base":22,"added":0,"deleted":2},
-+  {"path":"app/seed/templates.json","status":"M","area":"evidence","kind":"fixture","current":1129,"base":1021,"added":118,"deleted":10},
++  {"path":"app/seed/templates.json","status":"M","area":"evidence","kind":"fixture","current":2407,"base":1021,"added":1589,"deleted":203},
 +  {"path":"app/seed/templateVersions.json","status":"M","area":"evidence","kind":"fixture","current":2285,"base":2199,"added":86,"deleted":0},
 +  {"path":"app/src/lib/app-views/categories/document-editor/content/document.svelte","status":"M","area":"editors","kind":"production","current":892,"base":887,"added":5,"deleted":0},
-+  {"path":"app/src/lib/app-views/categories/document-editor/context/templates.svelte","status":"A","area":"editors","kind":"production","current":578,"base":0,"added":578,"deleted":0},
++  {"path":"app/src/lib/app-views/categories/document-editor/context/templates.svelte","status":"A","area":"editors","kind":"production","current":610,"base":0,"added":610,"deleted":0},
 +  {"path":"app/src/lib/app-views/categories/document-editor/procedures/schema.ts","status":"M","area":"editors","kind":"production","current":229,"base":221,"added":11,"deleted":3},
-+  {"path":"app/src/lib/app-views/categories/document-editor/procedures/templating.ts","status":"A","area":"editors","kind":"production","current":328,"base":0,"added":328,"deleted":0},
-+  {"path":"app/src/lib/app-views/categories/document-editor/procedures/test/unit/templating.test.ts","status":"A","area":"editors","kind":"test","current":176,"base":0,"added":176,"deleted":0},
-+  {"path":"app/src/lib/app-views/categories/project-overview/context/contexts.svelte","status":"A","area":"contexts","kind":"production","current":255,"base":0,"added":255,"deleted":0},
-+  {"path":"app/src/lib/app-views/categories/project-overview/procedures/contexts.ts","status":"A","area":"contexts","kind":"production","current":140,"base":0,"added":140,"deleted":0},
-+  {"path":"app/src/lib/app-views/categories/project-overview/procedures/test/unit/contexts.test.ts","status":"A","area":"contexts","kind":"test","current":57,"base":0,"added":57,"deleted":0},
++  {"path":"app/src/lib/app-views/categories/document-editor/procedures/templating.ts","status":"A","area":"editors","kind":"production","current":302,"base":0,"added":302,"deleted":0},
++  {"path":"app/src/lib/app-views/categories/document-editor/procedures/test/unit/templating.test.ts","status":"A","area":"editors","kind":"test","current":167,"base":0,"added":167,"deleted":0},
++  {"path":"app/src/lib/app-views/categories/project-overview/context/contexts.svelte","status":"A","area":"contexts","kind":"production","current":279,"base":0,"added":279,"deleted":0},
++  {"path":"app/src/lib/app-views/categories/project-overview/procedures/contexts.ts","status":"A","area":"contexts","kind":"production","current":115,"base":0,"added":115,"deleted":0},
++  {"path":"app/src/lib/app-views/categories/project-overview/procedures/test/unit/contexts.test.ts","status":"A","area":"contexts","kind":"test","current":68,"base":0,"added":68,"deleted":0},
 +  {"path":"app/src/lib/app-views/categories/project-overview/project-overview.md","status":"M","area":"contexts","kind":"documentation","current":622,"base":618,"added":22,"deleted":18},
 +  {"path":"app/src/lib/app-views/categories/slide-deck-editor/context/comments.svelte","status":"M","area":"editors","kind":"production","current":175,"base":170,"added":6,"deleted":1},
-+  {"path":"app/src/lib/app-views/categories/slide-deck-editor/context/templates.svelte","status":"M","area":"editors","kind":"production","current":598,"base":8,"added":593,"deleted":3},
++  {"path":"app/src/lib/app-views/categories/slide-deck-editor/context/templates.svelte","status":"M","area":"editors","kind":"production","current":632,"base":8,"added":627,"deleted":3},
 +  {"path":"app/src/lib/app-views/categories/slide-deck-editor/inspector/threads.svelte","status":"M","area":"editors","kind":"production","current":151,"base":144,"added":8,"deleted":1},
-+  {"path":"app/src/lib/app-views/categories/slide-deck-editor/procedures/templating.ts","status":"A","area":"editors","kind":"production","current":337,"base":0,"added":337,"deleted":0},
++  {"path":"app/src/lib/app-views/categories/slide-deck-editor/procedures/templating.ts","status":"A","area":"editors","kind":"production","current":311,"base":0,"added":311,"deleted":0},
 +  {"path":"app/src/lib/app-views/categories/slide-deck-editor/procedures/test/unit/templating.test.ts","status":"A","area":"editors","kind":"test","current":130,"base":0,"added":130,"deleted":0},
 +  {"path":"app/src/lib/app-views/categories/slide-deck-editor/slide-deck-editor.md","status":"M","area":"editors","kind":"documentation","current":241,"base":221,"added":21,"deleted":1},
 +  {"path":"app/src/lib/app-views/categories/templates/content/editor.svelte","status":"M","area":"library","kind":"production","current":81,"base":50,"added":48,"deleted":17},
 +  {"path":"app/src/lib/app-views/categories/templates/content/library.svelte","status":"M","area":"library","kind":"production","current":555,"base":543,"added":23,"deleted":11},
-+  {"path":"app/src/lib/app-views/categories/templates/inspector/template.svelte","status":"M","area":"library","kind":"production","current":1402,"base":1185,"added":261,"deleted":44},
-+  {"path":"app/src/lib/app-views/categories/templates/procedures/library.svelte.ts","status":"M","area":"library","kind":"production","current":508,"base":356,"added":183,"deleted":31},
-+  {"path":"app/src/lib/app-views/categories/templates/procedures/test/unit/library.test.ts","status":"M","area":"library","kind":"test","current":49,"base":25,"added":24,"deleted":0},
++  {"path":"app/src/lib/app-views/categories/templates/inspector/template.svelte","status":"M","area":"library","kind":"production","current":1440,"base":1185,"added":298,"deleted":43},
++  {"path":"app/src/lib/app-views/categories/templates/procedures/library.svelte.ts","status":"M","area":"library","kind":"production","current":471,"base":356,"added":147,"deleted":32},
++  {"path":"app/src/lib/app-views/categories/templates/procedures/test/unit/library.test.ts","status":"M","area":"library","kind":"test","current":41,"base":25,"added":16,"deleted":0},
 +  {"path":"app/src/lib/app-views/categories/templates/templates.md","status":"M","area":"library","kind":"documentation","current":80,"base":109,"added":45,"deleted":74},
 +  {"path":"app/src/lib/capabilities/comments/api/start-thread/start-thread.ts","status":"M","area":"neighbours","kind":"production","current":44,"base":36,"added":8,"deleted":0},
 +  {"path":"app/src/lib/capabilities/comments/comments.md","status":"M","area":"neighbours","kind":"documentation","current":19,"base":15,"added":4,"deleted":0},
@@ -13790,12 +17890,12 @@
 +  {"path":"app/src/lib/capabilities/resource-sets/api/read-resource-sets/read-resource-sets.ts","status":"A","area":"sets","kind":"production","current":10,"base":0,"added":10,"deleted":0},
 +  {"path":"app/src/lib/capabilities/resource-sets/api/remove-resource-set/remove-resource-set.ts","status":"A","area":"sets","kind":"production","current":74,"base":0,"added":74,"deleted":0},
 +  {"path":"app/src/lib/capabilities/resource-sets/api/remove-resource-set/validate-remove-resource-set.ts","status":"A","area":"sets","kind":"production","current":16,"base":0,"added":16,"deleted":0},
-+  {"path":"app/src/lib/capabilities/resource-sets/api/shared/projection.ts","status":"A","area":"sets","kind":"production","current":214,"base":0,"added":214,"deleted":0},
-+  {"path":"app/src/lib/capabilities/resource-sets/api/shared/validation.ts","status":"A","area":"sets","kind":"production","current":133,"base":0,"added":133,"deleted":0},
++  {"path":"app/src/lib/capabilities/resource-sets/api/shared/projection.ts","status":"A","area":"sets","kind":"production","current":220,"base":0,"added":220,"deleted":0},
++  {"path":"app/src/lib/capabilities/resource-sets/api/shared/validation.ts","status":"A","area":"sets","kind":"production","current":172,"base":0,"added":172,"deleted":0},
 +  {"path":"app/src/lib/capabilities/resource-sets/api/update-resource-set/update-resource-set.ts","status":"A","area":"sets","kind":"production","current":72,"base":0,"added":72,"deleted":0},
 +  {"path":"app/src/lib/capabilities/resource-sets/api/update-resource-set/validate-update-resource-set.ts","status":"A","area":"sets","kind":"production","current":41,"base":0,"added":41,"deleted":0},
 +  {"path":"app/src/lib/capabilities/resource-sets/index.remote.ts","status":"A","area":"sets","kind":"production","current":39,"base":0,"added":39,"deleted":0},
-+  {"path":"app/src/lib/capabilities/resource-sets/resource-sets.md","status":"A","area":"sets","kind":"documentation","current":20,"base":0,"added":20,"deleted":0},
++  {"path":"app/src/lib/capabilities/resource-sets/resource-sets.md","status":"A","area":"sets","kind":"documentation","current":27,"base":0,"added":27,"deleted":0},
 +  {"path":"app/src/lib/capabilities/resource-sets/test/unit/resource-sets.test.ts","status":"A","area":"sets","kind":"test","current":230,"base":0,"added":230,"deleted":0},
 +  {"path":"app/src/lib/capabilities/resource-sets/types/resource-sets.ts","status":"A","area":"sets","kind":"production","current":72,"base":0,"added":72,"deleted":0},
 +  {"path":"app/src/lib/capabilities/store/store.md","status":"M","area":"neighbours","kind":"documentation","current":50,"base":51,"added":1,"deleted":2},
@@ -13807,28 +17907,31 @@
 +  {"path":"app/src/lib/capabilities/templates/api/discard-template-stage/discard-template-stage.ts","status":"A","area":"templates","kind":"production","current":31,"base":0,"added":31,"deleted":0},
 +  {"path":"app/src/lib/capabilities/templates/api/discard-template-stage/validate-discard-template-stage.ts","status":"A","area":"templates","kind":"production","current":8,"base":0,"added":8,"deleted":0},
 +  {"path":"app/src/lib/capabilities/templates/api/duplicate-template/duplicate-template.ts","status":"M","area":"templates","kind":"production","current":73,"base":72,"added":1,"deleted":0},
-+  {"path":"app/src/lib/capabilities/templates/api/instantiate-template/instantiate-template.ts","status":"M","area":"templates","kind":"production","current":201,"base":173,"added":51,"deleted":23},
++  {"path":"app/src/lib/capabilities/templates/api/instantiate-template/instantiate-template.ts","status":"M","area":"templates","kind":"production","current":213,"base":173,"added":86,"deleted":46},
 +  {"path":"app/src/lib/capabilities/templates/api/instantiate-template/validate-instantiate-template.ts","status":"M","area":"templates","kind":"production","current":20,"base":17,"added":5,"deleted":2},
 +  {"path":"app/src/lib/capabilities/templates/api/open-template-stage/open-template-stage.ts","status":"A","area":"templates","kind":"production","current":115,"base":0,"added":115,"deleted":0},
 +  {"path":"app/src/lib/capabilities/templates/api/open-template-stage/validate-open-template-stage.ts","status":"A","area":"templates","kind":"production","current":8,"base":0,"added":8,"deleted":0},
 +  {"path":"app/src/lib/capabilities/templates/api/read-resource-template/read-resource-template.ts","status":"A","area":"templates","kind":"production","current":48,"base":0,"added":48,"deleted":0},
 +  {"path":"app/src/lib/capabilities/templates/api/read-resource-template/validate-read-resource-template.ts","status":"A","area":"templates","kind":"production","current":8,"base":0,"added":8,"deleted":0},
-+  {"path":"app/src/lib/capabilities/templates/api/remove-template/remove-template.ts","status":"M","area":"templates","kind":"production","current":98,"base":164,"added":3,"deleted":69},
++  {"path":"app/src/lib/capabilities/templates/api/remove-template/remove-template.ts","status":"M","area":"templates","kind":"production","current":106,"base":164,"added":10,"deleted":68},
 +  {"path":"app/src/lib/capabilities/templates/api/shared/bodies.ts","status":"M","area":"templates","kind":"production","current":308,"base":462,"added":17,"deleted":171},
-+  {"path":"app/src/lib/capabilities/templates/api/shared/projection.ts","status":"M","area":"templates","kind":"production","current":257,"base":283,"added":19,"deleted":45},
-+  {"path":"app/src/lib/capabilities/templates/api/shared/stages.ts","status":"A","area":"templates","kind":"production","current":137,"base":0,"added":137,"deleted":0},
++  {"path":"app/src/lib/capabilities/templates/api/shared/projection.ts","status":"M","area":"templates","kind":"production","current":268,"base":283,"added":30,"deleted":45},
++  {"path":"app/src/lib/capabilities/templates/api/shared/scopes.ts","status":"A","area":"templates","kind":"production","current":204,"base":0,"added":204,"deleted":0},
++  {"path":"app/src/lib/capabilities/templates/api/shared/stages.ts","status":"A","area":"templates","kind":"production","current":141,"base":0,"added":141,"deleted":0},
 +  {"path":"app/src/lib/capabilities/templates/api/shared/template-rows.ts","status":"M","area":"templates","kind":"production","current":37,"base":36,"added":1,"deleted":0},
-+  {"path":"app/src/lib/capabilities/templates/api/shared/validation.ts","status":"M","area":"templates","kind":"production","current":1798,"base":1687,"added":119,"deleted":8},
++  {"path":"app/src/lib/capabilities/templates/api/shared/validation.ts","status":"M","area":"templates","kind":"production","current":1823,"base":1687,"added":146,"deleted":10},
 +  {"path":"app/src/lib/capabilities/templates/api/shared/variables.ts","status":"A","area":"templates","kind":"production","current":15,"base":0,"added":15,"deleted":0},
-+  {"path":"app/src/lib/capabilities/templates/api/update-template/update-template.ts","status":"M","area":"templates","kind":"production","current":124,"base":113,"added":21,"deleted":10},
++  {"path":"app/src/lib/capabilities/templates/api/update-template/update-template.ts","status":"M","area":"templates","kind":"production","current":171,"base":113,"added":69,"deleted":11},
 +  {"path":"app/src/lib/capabilities/templates/api/update-template/validate-update-template.ts","status":"M","area":"templates","kind":"production","current":65,"base":61,"added":6,"deleted":2},
 +  {"path":"app/src/lib/capabilities/templates/index.remote.ts","status":"M","area":"templates","kind":"production","current":124,"base":73,"added":57,"deleted":6},
-+  {"path":"app/src/lib/capabilities/templates/templates.md","status":"M","area":"templates","kind":"documentation","current":129,"base":91,"added":102,"deleted":64},
-+  {"path":"app/src/lib/capabilities/templates/test/unit/answers.test.ts","status":"A","area":"templates","kind":"test","current":331,"base":0,"added":331,"deleted":0},
++  {"path":"app/src/lib/capabilities/templates/templates.md","status":"M","area":"templates","kind":"documentation","current":143,"base":91,"added":116,"deleted":64},
++  {"path":"app/src/lib/capabilities/templates/test/unit/answers.test.ts","status":"A","area":"templates","kind":"test","current":491,"base":0,"added":491,"deleted":0},
 +  {"path":"app/src/lib/capabilities/templates/test/unit/stages.test.ts","status":"A","area":"templates","kind":"test","current":377,"base":0,"added":377,"deleted":0},
 +  {"path":"app/src/lib/capabilities/templates/test/unit/templates.test.ts","status":"M","area":"templates","kind":"test","current":1414,"base":1447,"added":57,"deleted":90},
 +  {"path":"app/src/lib/capabilities/templates/types/templates.ts","status":"M","area":"templates","kind":"production","current":248,"base":156,"added":109,"deleted":17},
 +  {"path":"app/src/lib/components/authored/panel/panel-section.svelte","status":"M","area":"cross-cutting","kind":"production","current":126,"base":114,"added":13,"deleted":1},
++  {"path":"app/src/lib/components/authored/scope-builder/index.ts","status":"A","area":"cross-cutting","kind":"production","current":9,"base":0,"added":9,"deleted":0},
++  {"path":"app/src/lib/components/authored/scope-builder/scope-builder.svelte","status":"A","area":"cross-cutting","kind":"production","current":418,"base":0,"added":418,"deleted":0},
 +  {"path":"app/src/lib/development-views/demo/components/demo-index.svelte","status":"M","area":"cross-cutting","kind":"production","current":100,"base":100,"added":3,"deleted":3},
 +  {"path":"app/src/lib/development-views/template-reference/components/changes-page.svelte","status":"A","area":"reference","kind":"reference","current":281,"base":0,"added":281,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/components/diagram-binding.svelte","status":"A","area":"reference","kind":"reference","current":168,"base":0,"added":168,"deleted":0},
@@ -13842,12 +17945,12 @@
 +  {"path":"app/src/lib/development-views/template-reference/components/file-ledger.svelte","status":"A","area":"reference","kind":"reference","current":138,"base":0,"added":138,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/components/reference-header.svelte","status":"A","area":"reference","kind":"reference","current":166,"base":0,"added":166,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/components/reference.css","status":"A","area":"reference","kind":"reference","current":305,"base":0,"added":305,"deleted":0},
-+  {"path":"app/src/lib/development-views/template-reference/components/scope-page.svelte","status":"A","area":"reference","kind":"reference","current":423,"base":0,"added":423,"deleted":0},
++  {"path":"app/src/lib/development-views/template-reference/components/scope-page.svelte","status":"A","area":"reference","kind":"reference","current":425,"base":0,"added":425,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/components/system-page.svelte","status":"A","area":"reference","kind":"reference","current":329,"base":0,"added":329,"deleted":0},
-+  {"path":"app/src/lib/development-views/template-reference/procedures/changes.ts","status":"A","area":"reference","kind":"reference","current":256,"base":0,"added":256,"deleted":0},
-+  {"path":"app/src/lib/development-views/template-reference/procedures/inventory.ts","status":"A","area":"reference","kind":"reference","current":131,"base":0,"added":131,"deleted":0},
++  {"path":"app/src/lib/development-views/template-reference/procedures/changes.ts","status":"A","area":"reference","kind":"reference","current":265,"base":0,"added":265,"deleted":0},
++  {"path":"app/src/lib/development-views/template-reference/procedures/inventory.ts","status":"A","area":"reference","kind":"reference","current":137,"base":0,"added":137,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/procedures/navigation.ts","status":"A","area":"reference","kind":"reference","current":16,"base":0,"added":16,"deleted":0},
-+  {"path":"app/src/lib/development-views/template-reference/procedures/scope.ts","status":"A","area":"reference","kind":"reference","current":570,"base":0,"added":570,"deleted":0},
++  {"path":"app/src/lib/development-views/template-reference/procedures/scope.ts","status":"A","area":"reference","kind":"reference","current":504,"base":0,"added":504,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/procedures/system.ts","status":"A","area":"reference","kind":"reference","current":223,"base":0,"added":223,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/template-reference.svelte","status":"A","area":"reference","kind":"reference","current":5,"base":0,"added":5,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/types.ts","status":"A","area":"reference","kind":"reference","current":129,"base":0,"added":129,"deleted":0},
@@ -13855,7 +17958,9 @@
 +  {"path":"app/src/lib/model/client/workspace-state/methods/shared/mint-view.ts","status":"M","area":"vocabulary","kind":"production","current":9,"base":5,"added":5,"deleted":1},
 +  {"path":"app/src/lib/model/client/workspace-state/test/unit/workspace-state.test.ts","status":"M","area":"vocabulary","kind":"test","current":1096,"base":1073,"added":23,"deleted":0},
 +  {"path":"app/src/lib/representation/data/behavior/core/resource-set.ts","status":"A","area":"vocabulary","kind":"production","current":45,"base":0,"added":45,"deleted":0},
++  {"path":"app/src/lib/representation/data/behavior/core/scope-draft.ts","status":"A","area":"vocabulary","kind":"production","current":421,"base":0,"added":421,"deleted":0},
 +  {"path":"app/src/lib/representation/data/behavior/core/test/unit/resource-set.test.ts","status":"A","area":"vocabulary","kind":"test","current":46,"base":0,"added":46,"deleted":0},
++  {"path":"app/src/lib/representation/data/behavior/core/test/unit/scope-draft.test.ts","status":"A","area":"vocabulary","kind":"test","current":194,"base":0,"added":194,"deleted":0},
 +  {"path":"app/src/lib/representation/data/behavior/templates/deck-of-slide.ts","status":"A","area":"vocabulary","kind":"production","current":18,"base":0,"added":18,"deleted":0},
 +  {"path":"app/src/lib/representation/data/behavior/templates/fresh-ids.ts","status":"A","area":"vocabulary","kind":"production","current":71,"base":0,"added":71,"deleted":0},
 +  {"path":"app/src/lib/representation/data/behavior/templates/portable.ts","status":"A","area":"vocabulary","kind":"production","current":103,"base":0,"added":103,"deleted":0},
@@ -13865,15 +17970,15 @@
 +  {"path":"app/src/lib/representation/data/behavior/templates/test/unit/portable.test.ts","status":"A","area":"vocabulary","kind":"test","current":97,"base":0,"added":97,"deleted":0},
 +  {"path":"app/src/lib/representation/data/behavior/templates/test/unit/scopes.test.ts","status":"A","area":"vocabulary","kind":"test","current":109,"base":0,"added":109,"deleted":0},
 +  {"path":"app/src/lib/representation/data/behavior/workspace/opening.ts","status":"M","area":"vocabulary","kind":"production","current":168,"base":164,"added":5,"deleted":1},
-+  {"path":"app/src/lib/representation/data/types/core/resource-set.ts","status":"M","area":"vocabulary","kind":"production","current":20,"base":40,"added":4,"deleted":24},
++  {"path":"app/src/lib/representation/data/types/core/resource-set.ts","status":"M","area":"vocabulary","kind":"production","current":32,"base":40,"added":16,"deleted":24},
 +  {"path":"app/src/lib/representation/data/types/templates/template.ts","status":"M","area":"vocabulary","kind":"production","current":57,"base":86,"added":0,"deleted":29},
 +  {"path":"app/src/lib/representation/data/types/workspace/tab.ts","status":"M","area":"vocabulary","kind":"production","current":55,"base":54,"added":1,"deleted":0},
-+  {"path":"app/src/lib/representation/store/tables.ts","status":"M","area":"vocabulary","kind":"production","current":642,"base":631,"added":15,"deleted":4},
++  {"path":"app/src/lib/representation/store/tables.ts","status":"M","area":"vocabulary","kind":"production","current":645,"base":631,"added":23,"deleted":9},
 +  {"path":"app/src/routes/app/[project]/reference/templates/+page.svelte","status":"M","area":"reference","kind":"reference","current":14,"base":5,"added":11,"deleted":2},
 +  {"path":"app/src/routes/app/[project]/reference/templates/changes/+page.svelte","status":"A","area":"reference","kind":"reference","current":14,"base":0,"added":14,"deleted":0},
 +  {"path":"app/src/routes/app/[project]/reference/templates/scope/+page.svelte","status":"A","area":"reference","kind":"reference","current":14,"base":0,"added":14,"deleted":0},
 +  {"path":"app/test/browser/document-editor.spec.ts","status":"M","area":"evidence","kind":"test","current":742,"base":735,"added":8,"deleted":1},
-+  {"path":"app/test/browser/template-features.spec.ts","status":"A","area":"evidence","kind":"test","current":194,"base":0,"added":194,"deleted":0},
++  {"path":"app/test/browser/template-features.spec.ts","status":"A","area":"evidence","kind":"test","current":270,"base":0,"added":270,"deleted":0},
 +  {"path":"app/test/browser/template-reference.spec.ts","status":"A","area":"evidence","kind":"test","current":114,"base":0,"added":114,"deleted":0}
 +];
 ~~~~
@@ -13887,7 +17992,7 @@
 +export const PAGES: ReferencePage[] = [
 +  { slug: "system", index: "01", label: "How templates work", sub: "The model, the verbs, the panels" },
 +  { slug: "changes", index: "02", label: "What changed", sub: "Every file, decision and check" },
-+  { slug: "scope", index: "03", label: "What a variable selects", sub: "The scope builder, and what it costs" }
++  { slug: "scope", index: "03", label: "What a variable selects", sub: "The scope builder, and what it cost" }
 +];
 +
 +const PATHS: Record<ReferencePage["slug"], string> = {
@@ -13900,10 +18005,10 @@
 +  `/app/${project}/reference/templates${PATHS[slug]}`;
 ~~~~
 
-### new · `src/lib/development-views/template-reference/procedures/scope.ts` (+570 / −0)
+### new · `src/lib/development-views/template-reference/procedures/scope.ts` (+504 / −0)
 
 ~~~~diff
-@@ -0,0 +1,570 @@
+@@ -0,0 +1,504 @@
 +import type {
 +  LifecycleStep,
 +  Refusal,
@@ -14133,175 +18238,109 @@
 +    path: "representation/store/tables.ts",
 +    status: "changed",
 +    area: "vocabulary",
-+    work: "name becomes optional and boundTo is added. NamedResourceSetFields is renamed, because a row is no longer necessarily named."
++    work: "name is optional and boundTo is added; NamedResourceSetFields became ResourceSetFields, because a row is no longer necessarily named."
 +  },
 +  {
 +    path: "representation/data/types/core/resource-set.ts",
 +    status: "changed",
 +    area: "vocabulary",
-+    work: "One added union, BoundTo: a template variable, or a resource. Neither term union moves."
++    work: "One added union, BoundTo: a template's variable, or a placed resource's. Neither term union moved."
 +  },
 +  {
 +    path: "representation/data/behavior/core/scope-draft.ts",
 +    status: "new",
 +    area: "vocabulary",
-+    work: "The pure half of the builder: two term lists, add, remove, whether a term is already held, whether a rule needs a row, which addition would close a cycle, and the rule as a sentence."
++    work: "The whole of it: the two lists, the kinds vocabulary, whether a rule needs a row, which addition would close a cycle, what a rule selects now, the sentence, and the rows and offers the builder is handed."
 +  },
 +  {
 +    path: "representation/data/behavior/core/test/unit/scope-draft.test.ts",
 +    status: "new",
 +    area: "vocabulary",
-+    work: "The draft term by term, including the inline cases that write no row and the cycle it refuses."
-+  },
-+  {
-+    path: "representation/data/behavior/core/resource-set.ts",
-+    status: "changed",
-+    area: "vocabulary",
-+    work: "A companion that reports the cycle it stopped at, so the builder can name the set rather than silently selecting nothing."
-+  },
-+  {
-+    path: "representation/data/behavior/core/test/unit/resource-set.test.ts",
-+    status: "changed",
-+    area: "vocabulary",
-+    work: "The reported cycle, and a bound row reached through a named one."
-+  },
-+  {
-+    path: "representation/data/behavior/templates/scopes.ts",
-+    status: "changed",
-+    area: "vocabulary",
-+    work: "No behaviour change. Its refusal on a difference is the reason the row exists, and a test says so."
-+  },
-+  {
-+    path: "capabilities/resource-sets/types/resource-sets.ts",
-+    status: "changed",
-+    area: "sets",
-+    work: "An optional name and an owner on create; the read result says whether a row is named or bound."
++    work: "Sixteen cases: the floor, the replacements, the two doors out, the cycle, the count, and the view."
 +  },
 +  {
 +    path: "capabilities/resource-sets/api/shared/validation.ts",
 +    status: "changed",
 +    area: "sets",
-+    work: "Named or bound but never both, the owner's shape, and the project check on every set term. The existing size limits stand."
++    work: "boundToOf admits an owner and refuses anything else. The existing size limits stand."
 +  },
 +  {
 +    path: "capabilities/resource-sets/api/shared/projection.ts",
 +    status: "changed",
 +    area: "sets",
-+    work: "namedSetsIn and projectSets keep listing named rows only; itemOf reports the owner."
++    work: "A stored row carries a name or an owner and never both or neither; the listing keeps to named rows, which is what every offer list wants."
 +  },
 +  {
-+    path: "capabilities/resource-sets/api/create-resource-set/",
-+    status: "changed",
-+    area: "sets",
-+    work: "Takes an owner and no name, or a name and no owner."
-+  },
-+  {
-+    path: "capabilities/resource-sets/api/read-resource-set/",
-+    status: "new",
-+    area: "sets",
-+    work: "One row by id, for a builder opening on a rule that is already stored."
-+  },
-+  {
-+    path: "capabilities/resource-sets/api/read-resource-sets/",
-+    status: "changed",
-+    area: "sets",
-+    work: "Unchanged in shape; bound rows stay out of the list, which is what every offer list wants."
-+  },
-+  {
-+    path: "capabilities/resource-sets/api/remove-resource-set/",
-+    status: "changed",
-+    area: "sets",
-+    work: "An owner's rows can be removed by the capability that owns them; a named row still refuses while anything names it."
-+  },
-+  {
-+    path: "capabilities/resource-sets/index.remote.ts",
-+    status: "changed",
-+    area: "sets",
-+    work: "One new door, and the changed shapes."
-+  },
-+  {
-+    path: "capabilities/resource-sets/test/unit/resource-sets.test.ts",
-+    status: "changed",
-+    area: "sets",
-+    work: "Named against bound, the owner rules, and removal by owner."
-+  },
-+  {
-+    path: "capabilities/resource-sets/resource-sets.md",
-+    status: "changed",
-+    area: "sets",
-+    work: "Named and bound, said once, in the capability that owns the table."
-+  },
-+  {
-+    path: "capabilities/templates/api/shared/normalise-scope.ts",
++    path: "capabilities/templates/api/shared/scopes.ts",
 +    status: "new",
 +    area: "templates",
-+    work: "The one place a rule becomes a term: inline when it can be, a written row when it cannot. Both update and instantiate call it."
++    work: "The one place a rule becomes a term: inline when it can be, a written row when it cannot, the owner's row rewritten rather than repeated, and a stored default read back as the rule it holds."
 +  },
 +  {
 +    path: "capabilities/templates/api/shared/validation.ts",
 +    status: "changed",
 +    area: "templates",
-+    work: "variablesOf admits a default that names a set; answersOf keeps taking a concrete rule, which is what the builder produces."
-+  },
-+  {
-+    path: "capabilities/templates/api/shared/variables.ts",
-+    status: "changed",
-+    area: "templates",
-+    work: "Finding a variable also reports the row it owns, so a variable that disappears takes its row with it."
++    work: "A chosen default is validated wider than a stored one, because it may exclude things and name resources until the server normalises it."
 +  },
 +  {
 +    path: "capabilities/templates/api/shared/projection.ts",
 +    status: "changed",
 +    area: "templates",
-+    work: "A projected variable carries the rule as a sentence and the row's id, so no panel derives it again."
++    work: "A variable's default naming a bound row is expanded into that row's rule, so the builder opens on what somebody built. A named set is left alone."
++  },
++  {
++    path: "capabilities/templates/api/shared/stages.ts",
++    status: "changed",
++    area: "templates",
++    work: "Discarding a working copy takes the rows that copy owns."
 +  },
 +  {
 +    path: "capabilities/templates/api/update-template/",
 +    status: "changed",
 +    area: "templates",
-+    work: "A default arrives as a rule, is normalised, and is checked to belong to this project and this variable."
++    work: "Each default is normalised against its own variable, a set from another project is refused, and a variable that disappears takes its row with it."
 +  },
 +  {
 +    path: "capabilities/templates/api/instantiate-template/",
 +    status: "changed",
 +    area: "templates",
-+    work: "The same normalisation for answers, with each row it writes owned by the resource it makes."
++    work: "The resource is minted first so an answer that needs a row has an owner; the answers are normalised, the scopes resolved, and a refusal rolls back exactly what was written."
 +  },
 +  {
 +    path: "capabilities/templates/api/remove-template/",
 +    status: "changed",
 +    area: "templates",
-+    work: "Deletes the rows its variables own, beside the stage it already discards."
++    work: "Deleting a template deletes the rows its variables own."
 +  },
 +  {
 +    path: "capabilities/templates/test/unit/answers.test.ts",
 +    status: "changed",
 +    area: "templates",
-+    work: "An answer that excludes something now resolves instead of refusing, because it became a row."
++    work: "Six cases: the row written, the row cleared, the row rewritten, a default naming resources, an answer that excludes, and a foreign set refused."
 +  },
 +  {
 +    path: "components/authored/scope-builder/",
 +    status: "new",
 +    area: "cross-cutting",
-+    work: "The builder: two lists, three add sources, the live count, the preview, and PanelSentence for the rule. Four callers, no caller-specific behaviour inside it."
++    work: "The builder, and its barrel. It is handed rows, offers, a sentence and a count, and answers with the keys it was given; nothing under components/ may reach the vocabulary itself."
 +  },
 +  {
 +    path: "app-views/categories/document-editor/procedures/templating.ts",
 +    status: "changed",
 +    area: "editors",
-+    work: "The kind vocabulary, ruleOf, ruleFrom and the answer options leave; the panel's own wiring stays."
++    work: "The local kind list, ruleOf, ruleFrom and the answer options went; what stays re-exports the shared draft and turns chosen rules into answers."
 +  },
 +  {
 +    path: "app-views/categories/document-editor/context/templates.svelte",
 +    status: "changed",
 +    area: "editors",
-+    work: "The toggle modal is replaced by the builder; the ask modal's rows gain Change beside the summary."
++    work: "The toggle modal is the builder; the ask modal lists each variable's rule with Change and Use the default beside it, and the builder opens as a modal of its own."
 +  },
 +  {
 +    path: "app-views/categories/slide-deck-editor/procedures/templating.ts",
 +    status: "changed",
 +    area: "editors",
-+    work: "The same removal, so the twin stops being a second copy of the vocabulary."
++    work: "The same removal, so the twin is no longer a second copy of the vocabulary."
 +  },
 +  {
 +    path: "app-views/categories/slide-deck-editor/context/templates.svelte",
@@ -14313,49 +18352,43 @@
 +    path: "app-views/categories/templates/procedures/library.svelte.ts",
 +    status: "changed",
 +    area: "library",
-+    work: "The third byte-identical copy of the vocabulary goes the same way."
++    work: "The third byte-identical copy went the same way."
 +  },
 +  {
 +    path: "app-views/categories/templates/inspector/template.svelte",
 +    status: "changed",
 +    area: "library",
-+    work: "Default scope and Use open the builder; the rule beneath the button becomes the shared sentence."
++    work: "Default scope and Use open the builder, and the rule under the button is the shared sentence."
 +  },
 +  {
 +    path: "app-views/categories/project-overview/procedures/contexts.ts",
 +    status: "changed",
 +    area: "contexts",
-+    work: "The fourth copy, which had drifted, is replaced by the shared draft; its own wording is what the sentence keeps."
++    work: "The fourth copy, which had drifted, is gone; the panel now reads the same words as everything else."
 +  },
 +  {
 +    path: "app-views/categories/project-overview/context/contexts.svelte",
 +    status: "changed",
 +    area: "contexts",
-+    work: "New set and Edit open the builder with a name field above it, so a named set is built exactly like a bound one."
++    work: "The kind toggles are replaced by the builder, so a named set can finally exclude something and name a particular resource."
 +  },
 +  {
 +    path: "app-views/categories/*/procedures/test/unit/",
 +    status: "changed",
 +    area: "evidence",
-+    work: "Four suites lose the tests for the four copies and gain one for the shared draft."
++    work: "Three suites lost the tests for their own copies and now check what they still own."
 +  },
 +  {
-+    path: "seed/resourceSets.json",
++    path: "seed/resourceSets.json · seed/templates.json",
 +    status: "changed",
 +    area: "evidence",
-+    work: "A bound row owned by a seeded template's variable, so every panel has one to draw before anyone builds one."
++    work: "A bound row owned by a seeded template's variable, holding an exclusion, so every panel has one to draw before anyone builds one."
 +  },
 +  {
 +    path: "test/browser/template-features.spec.ts",
 +    status: "changed",
 +    area: "evidence",
-+    work: "A default is built with an exclusion and a named resource, the count is read, and the placed copy is checked for the set term."
-+  },
-+  {
-+    path: "docs/superpowers/specs/",
-+    status: "changed",
-+    area: "documentation",
-+    work: "The design note gains the section this page is the long form of."
++    work: "Answering through the builder on insert, building a named set through it in Contexts, and a default built with an exclusion, stored, and read back."
 +  }
 +];
 +
@@ -14363,28 +18396,31 @@
 +  {
 +    index: "1",
 +    question: "Does a row have to be named?",
-+    recommended: "No. name becomes optional, and a row without one is bound.",
++    recommended: "No, and that is how it is built. name is optional; a row without one carries an owner instead.",
 +    because:
-+      "Anonymity is the point of the change. A synthesised name would appear in every offer list and in the Contexts panel, and somebody would eventually rename it.",
++      "Anonymity was the point of the change. A synthesised name would appear in every offer list and in the Contexts panel, and somebody would eventually rename it.",
 +    alternative: "Keep name required, generate one, and filter bound rows out of every list by their owner.",
-+    cost: "One optional column against a filter every reader has to remember."
++    cost: "The projection now refuses a row that carries both or neither, which is the rule stated once."
 +  },
 +  {
 +    index: "2",
 +    question: "Does every chosen scope write a row?",
-+    recommended: "No. The whole project and a bare list of kinds stay inline; everything else writes one.",
++    recommended:
++      "No, and the line landed narrower than planned: a row is written only when the rule excludes something or names particular resources.",
 +    because:
-+      "Those two are the common case and both are already expressible. Writing rows for them fills the table with rows that say nothing.",
++      "Those are exactly the two things a template's vocabulary cannot say. Kinds and named sets are already sayable inline, so writing rows for them would fill the table with rows that add an indirection and nothing else.",
 +    alternative: "Always write a row, so there is one code path and one place to look.",
-+    cost: "Uniformity against a table where most rows are the word project."
++    cost: "One predicate, needsRow, named once and tested on its own."
 +  },
 +  {
 +    index: "3",
 +    question: "How does a bound row know what owns it?",
-+    recommended: "An explicit boundTo on the row.",
-+    because: "Ownership is a fact worth storing. A sweep has to be written, scheduled and trusted.",
++    recommended:
++      "An explicit boundTo, and it names the variable on both sides: a template's variable, or a placed resource's.",
++    because:
++      "One resource may answer several variables, so the owner has to be the pair rather than the resource. Ownership is a fact worth storing; a sweep has to be written, scheduled and trusted.",
 +    alternative: "No owner, and a collector that removes rows nothing reaches.",
-+    cost: "One column against a background job and a window in which orphans are live."
++    cost: "One column, and three procedures that already delete things delete these too."
 +  },
 +  {
 +    index: "4",
@@ -14393,33 +18429,36 @@
 +    because:
 +      "There are four doors. A client-side write would repeat the same normalisation four times and put a second round trip in front of every save, which can half-fail.",
 +    alternative: "The client writes the row, then sends its id.",
-+    cost: "One shared server helper against four client copies and a two-step save."
++    cost:
++      "Instantiation mints its resource before resolving, because an answer's row is owned by the resource being made, and a refusal rolls back what it wrote."
 +  },
 +  {
 +    index: "5",
 +    question: "Does the Contexts panel keep its own editor?",
-+    recommended: "No. It opens the same builder with a name field above it.",
++    recommended: "No. It opens the same builder, and it gained exclusions and particular resources by doing so.",
 +    because:
-+      "Two editors for one rule is how the two drift, and they already have: four copies of the same prose, one of which says Selects nothing where the others say Nothing. The panel is also the weaker of the two, since it cannot name a resource.",
++      "Two editors for one rule is how the two drift, and they already had: four copies of the same prose, one of which said Selects nothing where the others said Nothing.",
 +    alternative: "Leave Contexts alone and build only for templates.",
-+    cost: "One panel changed now against two ways to say the same thing forever."
++    cost: "One panel changed, and a fourth copy of the vocabulary deleted."
 +  },
 +  {
 +    index: "6",
 +    question: "Can the builder save what you built as a named set?",
-+    recommended: "Not yet.",
++    recommended: "Not yet, as recommended.",
 +    because:
-+      "It is an update to a row that already exists, so it is cheap to add later, and offering it invites naming at the moment the person is trying not to name anything.",
-+    alternative: "Offer it, so a rule someone rebuilds twice can be kept.",
-+    cost: "Nothing is lost by waiting."
++      "It is an update to a row that already exists, so it stays cheap to add, and offering it invites naming at the moment somebody is trying not to name anything.",
++    alternative: "Offer it, so a rule somebody rebuilds twice can be kept.",
++    cost: "Nothing was lost by waiting."
 +  },
 +  {
 +    index: "7",
 +    question: "Where does the builder live?",
-+    recommended: "components/authored/scope-builder, with its arithmetic in representation behavior.",
-+    because: "Four callers in three trees, and the arithmetic is pure. Neither half belongs to a category.",
++    recommended:
++      "components/authored/scope-builder, with every piece of arithmetic in representation behavior — and the split is stricter than planned.",
++    because:
++      "Nothing under components/ may reach representation at all, not even for a type. So the builder is handed rows, offers, a sentence and a count, and answers with the keys it was given. It is the better shape: the component cannot express a rule the vocabulary would refuse.",
 +    alternative: "A component under the templates category that the others import.",
-+    cost: "A category importing another category's component is the thing the trees exist to prevent."
++    cost: "One function, builderView, that the four callers pass straight through."
 +  },
 +  {
 +    index: "8",
@@ -14427,7 +18466,7 @@
 +    recommended: "The project resource index, resolved in the client on every change.",
 +    because: "It is already loaded, the arithmetic is pure, and a count that lags the toggle is worse than no count.",
 +    alternative: "A server procedure that counts.",
-+    cost: "A round trip per keystroke against a count only as fresh as the index."
++    cost: "Each of the four surfaces reads the index it was already entitled to."
 +  }
 +];
 +
@@ -14454,13 +18493,13 @@
 +    title: "The scope vocabulary has four copies",
 +    detail:
 +      "ruleOf, ruleFrom, termWords, the kind list and the answer options are byte-identical in the document editor, the deck editor and the library, and a fourth, drifted copy sits in Contexts. The builder would be a fifth.",
-+    order: "Folded into this work, because it is the reason to do it once"
++    order: "Done. All four now read one module, and the drifted copy is gone"
 +  },
 +  {
 +    title: "A resource picker needs the index inside an editor",
 +    detail:
 +      "Naming a particular resource means listing the project's resources from a panel, which today only Project Overview does.",
-+    order: "Part of this work"
++    order: "Done. All four surfaces read the index, and the count comes from it"
 +  },
 +  {
 +    title: "Taking a template out of its project",

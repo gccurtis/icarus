@@ -4,6 +4,7 @@ import type { Id } from "$representation/data/types/core/id";
 import type { DocumentBody } from "$representation/data/types/documents/body";
 import type { SlideDeckBody } from "$representation/data/types/slide-decks/body";
 
+import { rowsOfResource } from "$capabilities/templates/api/shared/scopes";
 import { canonicalRowId, recordsIn } from "$capabilities/templates/api/shared/store";
 import type { TemplateStageTarget } from "$capabilities/templates/types/templates";
 
@@ -130,6 +131,9 @@ export const removeStage = (store: StoreModel, stage: Stage): void => {
       snapshots
     )
   );
+  for (const setId of rowsOfResource(store, stage.projectId, stage.resourceId)) {
+    store.remove(`resourceSets.${setId}`);
+  }
   if (recordsIn(store, table).some((row) => row._id === stage.resourceId)) {
     store.remove(`${table}.${stage.resourceId}`);
   }

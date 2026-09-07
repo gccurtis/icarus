@@ -3,6 +3,7 @@
   import Plus from "@lucide/svelte/icons/plus";
   import Target from "@lucide/svelte/icons/target";
 
+  import { OverlayModal } from "$authored-components/overlay";
   import {
     Panel,
     PanelBanner,
@@ -14,30 +15,34 @@
     PanelInput,
     PanelNote,
     PanelSearch,
-    PanelSection,
-    PanelToggle
+    PanelSection
   } from "$authored-components/panel";
+  import { ScopeBuilder } from "$authored-components/scope-builder";
   import {
-    KINDS,
+    builderView,
     changeSet,
     createSet,
     describeSet,
-    emptySet,
-    excludedKindsOf,
-    isWholeProject,
-    kindsOf,
-    namesOf,
+    draftOf,
+    narrowed,
     nextSetName,
+    offeringOf,
+    projectResources,
     removeSet,
     renameSet,
     resourceSets,
+    resourcesIn,
     ruleOf,
+    scopeNamesOf,
     setsIn,
-    withExcludedKind,
-    withKind,
+    termFor,
+    withTerm,
     withWholeProject,
-    type ResourceSet,
-    type ResourceSetItem
+    withoutTerm,
+    type OfferSource,
+    type ResourceSetItem,
+    type ScopeDraft,
+    type ScopeSide
   } from "$app-views/categories/project-overview/procedures/contexts";
   import { workspaceState } from "$model/client/workspace-state";
 
@@ -48,13 +53,17 @@
   });
 
   const answer = resourceSets();
+  const index = projectResources();
   const sets = $derived(setsIn(answer.ready ? answer.current : undefined));
-  const names = $derived(namesOf(sets));
+  const catalogue = $derived(resourcesIn(index.ready ? index.current : undefined));
+  const names = $derived(scopeNamesOf(sets, catalogue));
 
   let query = $state("");
   let creating = $state(false);
   let nameDraft = $state("");
-  let draft = $state<ResourceSet>(emptySet());
+  let draft = $state<ScopeDraft>(withWholeProject());
+  let editing = $state<ResourceSetItem | undefined>(undefined);
+  let builderOpen = $state(false);
   let pending = $state<string | undefined>(undefined);
   let actionError = $state<string | undefined>(undefined);
 
@@ -78,19 +87,56 @@
 
   const create = () =>
     run("create", async () => {
+      const rule = narrowed(draft);
+      if (rule === undefined) return;
       const name = nameDraft.trim() || nextSetName(sets);
-      await createSet(view, name, draft);
+      await createSet(view, name, rule);
       if (!live) return;
       creating = false;
       nameDraft = "";
-      draft = emptySet();
+      draft = withWholeProject();
     });
 
-  const change = (item: ResourceSetItem, next: ResourceSet) =>
+  const change = (item: ResourceSetItem) =>
     run(`change:${item.id}`, async () => {
-      const result = await changeSet(view, item, next);
+      const rule = narrowed(draft);
+      if (rule === undefined) return;
+      const result = await changeSet(view, item, rule);
       if (live && !result.accepted) actionError = result.detail;
     });
+
+  /** One builder, opened either on the set being made or on one that exists. */
+  const openBuilder = (item?: ResourceSetItem) => {
+    editing = item;
+    draft = draftOf(item?.set ?? draft);
+    builderOpen = true;
+  };
+
+  const confirmBuilder = () => {
+    const item = editing;
+    if (item !== undefined) void change(item);
+    editing = undefined;
+  };
+
+  const offering = $derived(offeringOf(sets, catalogue, editing?.id));
+  const view$ = $derived(builderView(draft, offering));
+
+  const addTerm = (side: ScopeSide, source: string, key: string) => {
+    const term = termFor(source as OfferSource, key);
+    if (term !== undefined) draft = withTerm(draft, side, term);
+  };
+
+  const dropTerm = (side: ScopeSide, key: string) => {
+    draft = withoutTerm(draft, side, key);
+  };
+
+  const setMode = (whole: boolean) => {
+    draft = whole ? withWholeProject() : { include: [], exclude: [] };
+  };
+
+  const scopeBlocked = $derived(
+    draft.include.length === 0 ? "Include something, or choose the whole project." : undefined
+  );
 
   const rename = (item: ResourceSetItem, name: string) =>
     run(`rename:${item.id}`, async () => {
@@ -117,30 +163,6 @@
     set.resolves === 0 ? "matches nothing" : `${set.resolves} ${set.resolves === 1 ? "resource" : "resources"}`;
 </script>
 
-{#snippet rule(set: ResourceSet, onchange: (next: ResourceSet) => void)}
-  <div class="rule">
-    <label class="toggle">
-      <PanelToggle label="Whole project" checked={isWholeProject(set)} disabled={busy} onchange={(on) => onchange(withWholeProject(set, on))} />
-      <span>Whole project</span>
-    </label>
-    {#each KINDS as entry (entry.kind)}
-      <label class="toggle">
-        <PanelToggle label={entry.label} checked={kindsOf(set).includes(entry.kind)} disabled={busy} onchange={(on) => onchange(withKind(set, entry.kind, on))} />
-        <span>{entry.label}</span>
-      </label>
-    {/each}
-  </div>
-  <p class="minus">Minus</p>
-  <div class="rule">
-    {#each KINDS as entry (entry.kind)}
-      <label class="toggle">
-        <PanelToggle label={`Exclude ${entry.label}`} checked={excludedKindsOf(set).includes(entry.kind)} disabled={busy} onchange={(on) => onchange(withExcludedKind(set, entry.kind, on))} />
-        <span>{entry.label}</span>
-      </label>
-    {/each}
-  </div>
-{/snippet}
-
 <Panel title="Contexts">
   {#snippet actions()}
     <PanelButton label="New set" icon={Plus} tone={creating ? "default" : "primary"} disabled={busy} onclick={() => (creating = !creating)} />
@@ -156,8 +178,15 @@
         <PanelInput label="Set name" placeholder={nextSetName(sets)} flush bind:value={nameDraft} onenter={create} />
         <PanelButton label="Create" tone="primary" disabled={busy} onclick={create} />
       </div>
-      {@render rule(draft, (next) => (draft = next))}
-      <PanelNote>{ruleOf(draft, names)}.</PanelNote>
+      <div class="rule">
+        <PanelNote>{ruleOf(draft, names)}.</PanelNote>
+        <PanelButton
+          label="Choose what it selects"
+          disabled={busy}
+          title="Open the builder on this set"
+          onclick={() => openBuilder()}
+        />
+      </div>
     </PanelSection>
   {/if}
 
@@ -188,8 +217,13 @@
             {#if set.resolves === 0}
               <PanelNote tone="gap">A set that matches nothing widens a prompt to the whole project rather than narrowing it to nothing.</PanelNote>
             {/if}
-            {@render rule(set.set, (next) => change(set, next))}
             <div class="remove">
+              <PanelButton
+                label="Change what it selects"
+                disabled={busy}
+                title={`Open the builder on “${set.name}”`}
+                onclick={() => openBuilder(set)}
+              />
               <PanelButton label="Delete set" tone="danger" disabled={busy} title={`Delete “${set.name}” — refused while another set or a template still names it`} onclick={() => remove(set)} />
             </div>
           </PanelSection>
@@ -199,6 +233,18 @@
   {/if}
   <PanelNote>Counts are resolved when this panel reads, never stored. <Target size={12} aria-hidden="true" /></PanelNote>
 </Panel>
+
+<OverlayModal
+  bind:open={builderOpen}
+  title={editing === undefined ? "A set of resources" : `What “${editing.name}” selects`}
+  description="A set is a rule, resolved when it is read. Everything a prompt or a template variable can be answered with is built here."
+  confirm={editing === undefined ? "Use this" : "Save"}
+  width="narrow"
+  blocked={scopeBlocked}
+  onconfirm={confirmBuilder}
+>
+  <ScopeBuilder {...view$} onmode={setMode} onadd={addTerm} ondrop={dropTerm} />
+</OverlayModal>
 
 <style>
   .add {
@@ -218,38 +264,16 @@
   }
 
   .rule {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: calc(var(--token-spacing-unit) * 1) calc(var(--token-spacing-unit) * 2);
-    margin: calc(var(--token-spacing-unit) * 2) 0;
-  }
-
-  .minus {
-    margin: 0;
-    color: var(--token-ink-muted);
-    font-size: var(--token-text-caption);
-    line-height: var(--token-text-caption-leading);
-    font-weight: 500;
-  }
-
-  .toggle {
     display: flex;
-    min-width: 0;
-    align-items: center;
-    gap: calc(var(--token-spacing-unit) * 1.5);
-    color: var(--token-ink-secondary);
-    font-size: var(--token-text-caption);
-    line-height: var(--token-text-caption-leading);
-  }
-
-  .toggle span {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: calc(var(--token-spacing-unit) * 1);
+    margin: calc(var(--token-spacing-unit) * 2) 0;
   }
 
   .remove {
     display: flex;
+    gap: calc(var(--token-spacing-unit) * 1);
     margin-top: calc(var(--token-spacing-unit) * 2);
   }
 </style>

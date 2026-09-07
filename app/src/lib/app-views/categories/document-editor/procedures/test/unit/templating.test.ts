@@ -4,18 +4,13 @@ import type { DocumentBody } from "$representation/data/types/documents/body";
 import { applyOps, invertAll } from "$representation/data/behavior/documents/apply-ops";
 import type { TemplateDetail } from "$capabilities/templates/index.remote";
 import {
-  answerFrom,
-  answerOptions,
   answersFrom,
   currentRowId,
-  defaultChoices,
+  draftOf,
   insertionOf,
   isWholeProject,
-  kindsOf,
   mergedVariables,
-  ruleFrom,
   ruleOf,
-  setIdsOf,
   withVariableField
 } from "$app-views/categories/document-editor/procedures/templating";
 
@@ -126,51 +121,47 @@ test("variables are edited by name and merged without repeats", () => {
   assert.deepEqual(merged[0], declared[0]);
 });
 
-test("a default is read as prose and built from the modal's two choices", () => {
+test("a default is read as prose, in the words every surface uses", () => {
   assert.equal(ruleOf(undefined), "Everything in the project");
-  assert.equal(isWholeProject(undefined), true);
-  assert.deepEqual(kindsOf(undefined), []);
+  assert.equal(isWholeProject(draftOf(undefined)), true);
   assert.equal(ruleOf({ include: [{ select: "kinds", kinds: ["finding", "document"] }], exclude: [] }), "Findings, Documents");
   assert.equal(
     ruleOf({ include: [{ select: "project" }], exclude: [{ select: "kinds", kinds: ["slides"] }] }),
     "Everything in the project, minus Slide decks"
   );
   assert.equal(ruleOf({ include: [], exclude: [] }), "Nothing");
-  assert.deepEqual(ruleFrom(true, ["finding"]), { include: [{ select: "project" }], exclude: [] });
-  assert.deepEqual(ruleFrom(false, ["finding", "document"]), {
-    include: [{ select: "kinds", kinds: ["finding", "document"] }],
-    exclude: []
-  });
-  assert.deepEqual(kindsOf(ruleFrom(false, ["research"])), ["research"]);
 
-  const names = new Map([["resourceSets:1", "Winter filings"]]);
-  const named = ruleFrom(false, [], ["resourceSets:1"]);
-  assert.deepEqual(named, { include: [{ select: "set", setId: "resourceSets:1" }], exclude: [] });
-  assert.deepEqual(setIdsOf(named), ["resourceSets:1"]);
+  const names = { sets: new Map([["resourceSets:1", "Winter filings"]]) };
+  const named = { include: [{ select: "set" as const, setId: "resourceSets:1" as never }], exclude: [] };
   assert.equal(ruleOf(named, names), "Winter filings");
-  assert.equal(ruleOf(named), "A set that no longer exists");
-  assert.equal(ruleOf(ruleFrom(false, ["finding"], ["resourceSets:1"]), names), "Findings and Winter filings");
+  assert.equal(ruleOf(named), "A chosen group");
 });
 
-test("inserting asks for each variable, offers the default first, and resolves the answers", () => {
-  const sets = [
-    { id: "resourceSets:1", name: "Winter filings", set: { include: [], exclude: [] }, createdByName: "Uma", revision: 1, updatedAt: 1, resolves: 3 }
-  ];
-  const options = answerOptions(template.variables[0], sets);
-  assert.equal(options[0].value, "default");
-  assert.equal(options[0].label, "Default · Findings");
-  assert.deepEqual(options.slice(1, 3).map((option) => option.label), ["Everything in the project", "Only documents"]);
-  assert.deepEqual(options.at(-1), { value: "set:resourceSets:1", label: "Winter filings" });
+test("an answer is a rule the caller built, and a variable nobody touched is absent", () => {
+  assert.deepEqual(answersFrom({ evidence: undefined }), {});
 
-  assert.deepEqual(defaultChoices(template.variables), { evidence: "default" });
-  assert.equal(answerFrom("default"), undefined);
-  assert.deepEqual(answerFrom("kind:finding"), { include: [{ select: "kinds", kinds: ["finding"] }], exclude: [] });
-  assert.deepEqual(answersFrom({ evidence: "default" }), {});
+  const answers = answersFrom({
+    evidence: { include: [{ select: "set", setId: "resourceSets:1" as never }], exclude: [] }
+  });
+  assert.deepEqual(answers, {
+    evidence: { include: [{ select: "set", setId: "resourceSets:1" }], exclude: [] }
+  });
 
-  const answers = answersFrom({ evidence: "set:resourceSets:1" });
   const insertion = insertionOf(held, template, "r2", "resolve", answers);
   const after = applyOps(held, insertion.ops);
   const row = after.rows[3];
   if (row.kind !== "blocks" || row.blocks[0].type !== "prompt") throw new Error("prompt expected");
   assert.deepEqual(row.blocks[0].scope, { include: [{ select: "set", setId: "resourceSets:1" }], exclude: [] });
+});
+
+test("a rule that excludes anything is sent as built, for the server to store", () => {
+  const answers = answersFrom({
+    evidence: {
+      include: [{ select: "project" }],
+      exclude: [{ select: "resources", refs: [{ kind: "document", id: "documents:2" }] }]
+    }
+  });
+  assert.deepEqual(answers.evidence.exclude, [
+    { select: "resources", refs: [{ kind: "document", id: "documents:2" }] }
+  ]);
 });

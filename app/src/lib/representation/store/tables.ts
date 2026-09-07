@@ -13,7 +13,7 @@ import type { MembershipRole } from "$representation/data/types/core/access";
 import type { Actor } from "$representation/data/types/core/actor";
 import type { Id, Row } from "$representation/data/types/core/id";
 import type { ResourceRef } from "$representation/data/types/core/resource";
-import type { ResourceSet } from "$representation/data/types/core/resource-set";
+import type { BoundTo, ResourceSet } from "$representation/data/types/core/resource-set";
 import type { BackReferenceTargetKind } from "$representation/data/types/data/back-reference";
 import type { FormulaUse } from "$representation/data/types/data/formula-use";
 import type {
@@ -410,16 +410,19 @@ export type TemplateStageFields = {
 };
 export type TemplateStage = Row<"templateStages"> & TemplateStageFields;
 
-export type NamedResourceSetFields = {
+export type ResourceSetFields = {
   projectId: Id<"projects">;
-  name: string;
+  /** Present on a project's own sets. Absent on a row bound to one variable or one resource. */
+  name?: string;
   description?: string;
+  /** Present on a bound row, and never together with a name. */
+  boundTo?: BoundTo;
   set: ResourceSet;
   createdBy: Actor;
   revision: number;
   updatedAt: number;
 };
-export type NamedResourceSet = Row<"resourceSets"> & NamedResourceSetFields;
+export type StoredResourceSet = Row<"resourceSets"> & ResourceSetFields;
 
 export type ConnectorFields = {
   projectId: Id<"projects">;
@@ -662,7 +665,7 @@ export type TableFields = {
   projects: ProjectFields;
   questions: QuestionFields;
   researchThreads: ResearchThreadFields;
-  resourceSets: NamedResourceSetFields;
+  resourceSets: ResourceSetFields;
   semanticIndexes: SemanticIndexFields;
   semanticIndexNodes: SemanticIndexNodeFields;
   semanticMaterialHistory: SemanticMaterialHistoryFields;

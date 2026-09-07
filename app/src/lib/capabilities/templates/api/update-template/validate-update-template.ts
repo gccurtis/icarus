@@ -42,7 +42,7 @@ export const validateUpdateTemplate = (input: unknown): UpdateTemplateInput => {
       : {}),
     ...(has(incoming, "tags") ? { tags: tagsOf(incoming.tags, "update-template") } : {}),
     ...(has(incoming, "variables")
-      ? { variables: variablesOf(incoming.variables, "update-template") }
+      ? { variables: variablesOf(incoming.variables, "update-template", true) }
       : {}),
     ...(variableDescription === undefined
       ? {}

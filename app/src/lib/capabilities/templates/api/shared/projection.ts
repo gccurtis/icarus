@@ -2,6 +2,7 @@ import type { StoreModel, TableRow } from "$model/server/store/index.server";
 import type { Scope } from "$runtime/server/scope.server";
 import type { Actor } from "$representation/data/types/core/actor";
 
+import { expandedScope } from "$capabilities/templates/api/shared/scopes";
 import {
   canonicalRowId,
   recordsIn
@@ -252,6 +253,16 @@ export const detailOf = (
   return {
     ...item,
     body: admitted.body,
-    variables: admitted.variables
+    /**
+     * A default naming a bound row is read back as the rule it holds, because
+     * that row is the variable's value rather than a set anyone chose. A named
+     * set stays a named set.
+     */
+    variables: admitted.variables.map((variable) => {
+      const expanded = expandedScope(store, scope.projectId, variable.default);
+      return expanded === undefined
+        ? variable
+        : { ...variable, default: expanded };
+    })
   };
 };

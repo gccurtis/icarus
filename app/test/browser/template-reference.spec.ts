@@ -95,7 +95,7 @@ test("the reference pages read in either material, and the choice carries betwee
   await expect(page.locator("html")).toHaveAttribute("data-appearance", "helios");
 });
 
-test("the scope plan carries its mock, its file list and its open decisions", async ({ page }) => {
+test("the scope page carries its mock, its file list and its settled decisions", async ({ page }) => {
   await page.setViewportSize({ width: 1500, height: 900 });
   await page.goto("/app/dev-project/reference/templates/scope", { waitUntil: "networkidle" });
 
@@ -103,7 +103,7 @@ test("the scope plan carries its mock, its file list and its open decisions", as
   await expect(page.getByText("Default scope for Source material").first()).toBeVisible();
   await expect(page.getByText("Add to Include", { exact: true })).toBeVisible();
 
-  await expect(page.getByRole("heading", { level: 2, name: "Every file this touches" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: "Every file it touched" })).toBeVisible();
   await expect(page.locator("#work tbody tr").first()).toBeVisible();
 
   const recommended = page.locator("#forks .state.after");

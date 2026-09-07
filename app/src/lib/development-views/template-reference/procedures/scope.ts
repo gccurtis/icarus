@@ -227,175 +227,109 @@ export const WORK: ScopeWork[] = [
     path: "representation/store/tables.ts",
     status: "changed",
     area: "vocabulary",
-    work: "name becomes optional and boundTo is added. NamedResourceSetFields is renamed, because a row is no longer necessarily named."
+    work: "name is optional and boundTo is added; NamedResourceSetFields became ResourceSetFields, because a row is no longer necessarily named."
   },
   {
     path: "representation/data/types/core/resource-set.ts",
     status: "changed",
     area: "vocabulary",
-    work: "One added union, BoundTo: a template variable, or a resource. Neither term union moves."
+    work: "One added union, BoundTo: a template's variable, or a placed resource's. Neither term union moved."
   },
   {
     path: "representation/data/behavior/core/scope-draft.ts",
     status: "new",
     area: "vocabulary",
-    work: "The pure half of the builder: two term lists, add, remove, whether a term is already held, whether a rule needs a row, which addition would close a cycle, and the rule as a sentence."
+    work: "The whole of it: the two lists, the kinds vocabulary, whether a rule needs a row, which addition would close a cycle, what a rule selects now, the sentence, and the rows and offers the builder is handed."
   },
   {
     path: "representation/data/behavior/core/test/unit/scope-draft.test.ts",
     status: "new",
     area: "vocabulary",
-    work: "The draft term by term, including the inline cases that write no row and the cycle it refuses."
-  },
-  {
-    path: "representation/data/behavior/core/resource-set.ts",
-    status: "changed",
-    area: "vocabulary",
-    work: "A companion that reports the cycle it stopped at, so the builder can name the set rather than silently selecting nothing."
-  },
-  {
-    path: "representation/data/behavior/core/test/unit/resource-set.test.ts",
-    status: "changed",
-    area: "vocabulary",
-    work: "The reported cycle, and a bound row reached through a named one."
-  },
-  {
-    path: "representation/data/behavior/templates/scopes.ts",
-    status: "changed",
-    area: "vocabulary",
-    work: "No behaviour change. Its refusal on a difference is the reason the row exists, and a test says so."
-  },
-  {
-    path: "capabilities/resource-sets/types/resource-sets.ts",
-    status: "changed",
-    area: "sets",
-    work: "An optional name and an owner on create; the read result says whether a row is named or bound."
+    work: "Sixteen cases: the floor, the replacements, the two doors out, the cycle, the count, and the view."
   },
   {
     path: "capabilities/resource-sets/api/shared/validation.ts",
     status: "changed",
     area: "sets",
-    work: "Named or bound but never both, the owner's shape, and the project check on every set term. The existing size limits stand."
+    work: "boundToOf admits an owner and refuses anything else. The existing size limits stand."
   },
   {
     path: "capabilities/resource-sets/api/shared/projection.ts",
     status: "changed",
     area: "sets",
-    work: "namedSetsIn and projectSets keep listing named rows only; itemOf reports the owner."
+    work: "A stored row carries a name or an owner and never both or neither; the listing keeps to named rows, which is what every offer list wants."
   },
   {
-    path: "capabilities/resource-sets/api/create-resource-set/",
-    status: "changed",
-    area: "sets",
-    work: "Takes an owner and no name, or a name and no owner."
-  },
-  {
-    path: "capabilities/resource-sets/api/read-resource-set/",
-    status: "new",
-    area: "sets",
-    work: "One row by id, for a builder opening on a rule that is already stored."
-  },
-  {
-    path: "capabilities/resource-sets/api/read-resource-sets/",
-    status: "changed",
-    area: "sets",
-    work: "Unchanged in shape; bound rows stay out of the list, which is what every offer list wants."
-  },
-  {
-    path: "capabilities/resource-sets/api/remove-resource-set/",
-    status: "changed",
-    area: "sets",
-    work: "An owner's rows can be removed by the capability that owns them; a named row still refuses while anything names it."
-  },
-  {
-    path: "capabilities/resource-sets/index.remote.ts",
-    status: "changed",
-    area: "sets",
-    work: "One new door, and the changed shapes."
-  },
-  {
-    path: "capabilities/resource-sets/test/unit/resource-sets.test.ts",
-    status: "changed",
-    area: "sets",
-    work: "Named against bound, the owner rules, and removal by owner."
-  },
-  {
-    path: "capabilities/resource-sets/resource-sets.md",
-    status: "changed",
-    area: "sets",
-    work: "Named and bound, said once, in the capability that owns the table."
-  },
-  {
-    path: "capabilities/templates/api/shared/normalise-scope.ts",
+    path: "capabilities/templates/api/shared/scopes.ts",
     status: "new",
     area: "templates",
-    work: "The one place a rule becomes a term: inline when it can be, a written row when it cannot. Both update and instantiate call it."
+    work: "The one place a rule becomes a term: inline when it can be, a written row when it cannot, the owner's row rewritten rather than repeated, and a stored default read back as the rule it holds."
   },
   {
     path: "capabilities/templates/api/shared/validation.ts",
     status: "changed",
     area: "templates",
-    work: "variablesOf admits a default that names a set; answersOf keeps taking a concrete rule, which is what the builder produces."
-  },
-  {
-    path: "capabilities/templates/api/shared/variables.ts",
-    status: "changed",
-    area: "templates",
-    work: "Finding a variable also reports the row it owns, so a variable that disappears takes its row with it."
+    work: "A chosen default is validated wider than a stored one, because it may exclude things and name resources until the server normalises it."
   },
   {
     path: "capabilities/templates/api/shared/projection.ts",
     status: "changed",
     area: "templates",
-    work: "A projected variable carries the rule as a sentence and the row's id, so no panel derives it again."
+    work: "A variable's default naming a bound row is expanded into that row's rule, so the builder opens on what somebody built. A named set is left alone."
+  },
+  {
+    path: "capabilities/templates/api/shared/stages.ts",
+    status: "changed",
+    area: "templates",
+    work: "Discarding a working copy takes the rows that copy owns."
   },
   {
     path: "capabilities/templates/api/update-template/",
     status: "changed",
     area: "templates",
-    work: "A default arrives as a rule, is normalised, and is checked to belong to this project and this variable."
+    work: "Each default is normalised against its own variable, a set from another project is refused, and a variable that disappears takes its row with it."
   },
   {
     path: "capabilities/templates/api/instantiate-template/",
     status: "changed",
     area: "templates",
-    work: "The same normalisation for answers, with each row it writes owned by the resource it makes."
+    work: "The resource is minted first so an answer that needs a row has an owner; the answers are normalised, the scopes resolved, and a refusal rolls back exactly what was written."
   },
   {
     path: "capabilities/templates/api/remove-template/",
     status: "changed",
     area: "templates",
-    work: "Deletes the rows its variables own, beside the stage it already discards."
+    work: "Deleting a template deletes the rows its variables own."
   },
   {
     path: "capabilities/templates/test/unit/answers.test.ts",
     status: "changed",
     area: "templates",
-    work: "An answer that excludes something now resolves instead of refusing, because it became a row."
+    work: "Six cases: the row written, the row cleared, the row rewritten, a default naming resources, an answer that excludes, and a foreign set refused."
   },
   {
     path: "components/authored/scope-builder/",
     status: "new",
     area: "cross-cutting",
-    work: "The builder: two lists, three add sources, the live count, the preview, and PanelSentence for the rule. Four callers, no caller-specific behaviour inside it."
+    work: "The builder, and its barrel. It is handed rows, offers, a sentence and a count, and answers with the keys it was given; nothing under components/ may reach the vocabulary itself."
   },
   {
     path: "app-views/categories/document-editor/procedures/templating.ts",
     status: "changed",
     area: "editors",
-    work: "The kind vocabulary, ruleOf, ruleFrom and the answer options leave; the panel's own wiring stays."
+    work: "The local kind list, ruleOf, ruleFrom and the answer options went; what stays re-exports the shared draft and turns chosen rules into answers."
   },
   {
     path: "app-views/categories/document-editor/context/templates.svelte",
     status: "changed",
     area: "editors",
-    work: "The toggle modal is replaced by the builder; the ask modal's rows gain Change beside the summary."
+    work: "The toggle modal is the builder; the ask modal lists each variable's rule with Change and Use the default beside it, and the builder opens as a modal of its own."
   },
   {
     path: "app-views/categories/slide-deck-editor/procedures/templating.ts",
     status: "changed",
     area: "editors",
-    work: "The same removal, so the twin stops being a second copy of the vocabulary."
+    work: "The same removal, so the twin is no longer a second copy of the vocabulary."
   },
   {
     path: "app-views/categories/slide-deck-editor/context/templates.svelte",
@@ -407,49 +341,43 @@ export const WORK: ScopeWork[] = [
     path: "app-views/categories/templates/procedures/library.svelte.ts",
     status: "changed",
     area: "library",
-    work: "The third byte-identical copy of the vocabulary goes the same way."
+    work: "The third byte-identical copy went the same way."
   },
   {
     path: "app-views/categories/templates/inspector/template.svelte",
     status: "changed",
     area: "library",
-    work: "Default scope and Use open the builder; the rule beneath the button becomes the shared sentence."
+    work: "Default scope and Use open the builder, and the rule under the button is the shared sentence."
   },
   {
     path: "app-views/categories/project-overview/procedures/contexts.ts",
     status: "changed",
     area: "contexts",
-    work: "The fourth copy, which had drifted, is replaced by the shared draft; its own wording is what the sentence keeps."
+    work: "The fourth copy, which had drifted, is gone; the panel now reads the same words as everything else."
   },
   {
     path: "app-views/categories/project-overview/context/contexts.svelte",
     status: "changed",
     area: "contexts",
-    work: "New set and Edit open the builder with a name field above it, so a named set is built exactly like a bound one."
+    work: "The kind toggles are replaced by the builder, so a named set can finally exclude something and name a particular resource."
   },
   {
     path: "app-views/categories/*/procedures/test/unit/",
     status: "changed",
     area: "evidence",
-    work: "Four suites lose the tests for the four copies and gain one for the shared draft."
+    work: "Three suites lost the tests for their own copies and now check what they still own."
   },
   {
-    path: "seed/resourceSets.json",
+    path: "seed/resourceSets.json · seed/templates.json",
     status: "changed",
     area: "evidence",
-    work: "A bound row owned by a seeded template's variable, so every panel has one to draw before anyone builds one."
+    work: "A bound row owned by a seeded template's variable, holding an exclusion, so every panel has one to draw before anyone builds one."
   },
   {
     path: "test/browser/template-features.spec.ts",
     status: "changed",
     area: "evidence",
-    work: "A default is built with an exclusion and a named resource, the count is read, and the placed copy is checked for the set term."
-  },
-  {
-    path: "docs/superpowers/specs/",
-    status: "changed",
-    area: "documentation",
-    work: "The design note gains the section this page is the long form of."
+    work: "Answering through the builder on insert, building a named set through it in Contexts, and a default built with an exclusion, stored, and read back."
   }
 ];
 
@@ -457,28 +385,31 @@ export const FORKS: ScopeFork[] = [
   {
     index: "1",
     question: "Does a row have to be named?",
-    recommended: "No. name becomes optional, and a row without one is bound.",
+    recommended: "No, and that is how it is built. name is optional; a row without one carries an owner instead.",
     because:
-      "Anonymity is the point of the change. A synthesised name would appear in every offer list and in the Contexts panel, and somebody would eventually rename it.",
+      "Anonymity was the point of the change. A synthesised name would appear in every offer list and in the Contexts panel, and somebody would eventually rename it.",
     alternative: "Keep name required, generate one, and filter bound rows out of every list by their owner.",
-    cost: "One optional column against a filter every reader has to remember."
+    cost: "The projection now refuses a row that carries both or neither, which is the rule stated once."
   },
   {
     index: "2",
     question: "Does every chosen scope write a row?",
-    recommended: "No. The whole project and a bare list of kinds stay inline; everything else writes one.",
+    recommended:
+      "No, and the line landed narrower than planned: a row is written only when the rule excludes something or names particular resources.",
     because:
-      "Those two are the common case and both are already expressible. Writing rows for them fills the table with rows that say nothing.",
+      "Those are exactly the two things a template's vocabulary cannot say. Kinds and named sets are already sayable inline, so writing rows for them would fill the table with rows that add an indirection and nothing else.",
     alternative: "Always write a row, so there is one code path and one place to look.",
-    cost: "Uniformity against a table where most rows are the word project."
+    cost: "One predicate, needsRow, named once and tested on its own."
   },
   {
     index: "3",
     question: "How does a bound row know what owns it?",
-    recommended: "An explicit boundTo on the row.",
-    because: "Ownership is a fact worth storing. A sweep has to be written, scheduled and trusted.",
+    recommended:
+      "An explicit boundTo, and it names the variable on both sides: a template's variable, or a placed resource's.",
+    because:
+      "One resource may answer several variables, so the owner has to be the pair rather than the resource. Ownership is a fact worth storing; a sweep has to be written, scheduled and trusted.",
     alternative: "No owner, and a collector that removes rows nothing reaches.",
-    cost: "One column against a background job and a window in which orphans are live."
+    cost: "One column, and three procedures that already delete things delete these too."
   },
   {
     index: "4",
@@ -487,33 +418,36 @@ export const FORKS: ScopeFork[] = [
     because:
       "There are four doors. A client-side write would repeat the same normalisation four times and put a second round trip in front of every save, which can half-fail.",
     alternative: "The client writes the row, then sends its id.",
-    cost: "One shared server helper against four client copies and a two-step save."
+    cost:
+      "Instantiation mints its resource before resolving, because an answer's row is owned by the resource being made, and a refusal rolls back what it wrote."
   },
   {
     index: "5",
     question: "Does the Contexts panel keep its own editor?",
-    recommended: "No. It opens the same builder with a name field above it.",
+    recommended: "No. It opens the same builder, and it gained exclusions and particular resources by doing so.",
     because:
-      "Two editors for one rule is how the two drift, and they already have: four copies of the same prose, one of which says Selects nothing where the others say Nothing. The panel is also the weaker of the two, since it cannot name a resource.",
+      "Two editors for one rule is how the two drift, and they already had: four copies of the same prose, one of which said Selects nothing where the others said Nothing.",
     alternative: "Leave Contexts alone and build only for templates.",
-    cost: "One panel changed now against two ways to say the same thing forever."
+    cost: "One panel changed, and a fourth copy of the vocabulary deleted."
   },
   {
     index: "6",
     question: "Can the builder save what you built as a named set?",
-    recommended: "Not yet.",
+    recommended: "Not yet, as recommended.",
     because:
-      "It is an update to a row that already exists, so it is cheap to add later, and offering it invites naming at the moment the person is trying not to name anything.",
-    alternative: "Offer it, so a rule someone rebuilds twice can be kept.",
-    cost: "Nothing is lost by waiting."
+      "It is an update to a row that already exists, so it stays cheap to add, and offering it invites naming at the moment somebody is trying not to name anything.",
+    alternative: "Offer it, so a rule somebody rebuilds twice can be kept.",
+    cost: "Nothing was lost by waiting."
   },
   {
     index: "7",
     question: "Where does the builder live?",
-    recommended: "components/authored/scope-builder, with its arithmetic in representation behavior.",
-    because: "Four callers in three trees, and the arithmetic is pure. Neither half belongs to a category.",
+    recommended:
+      "components/authored/scope-builder, with every piece of arithmetic in representation behavior — and the split is stricter than planned.",
+    because:
+      "Nothing under components/ may reach representation at all, not even for a type. So the builder is handed rows, offers, a sentence and a count, and answers with the keys it was given. It is the better shape: the component cannot express a rule the vocabulary would refuse.",
     alternative: "A component under the templates category that the others import.",
-    cost: "A category importing another category's component is the thing the trees exist to prevent."
+    cost: "One function, builderView, that the four callers pass straight through."
   },
   {
     index: "8",
@@ -521,7 +455,7 @@ export const FORKS: ScopeFork[] = [
     recommended: "The project resource index, resolved in the client on every change.",
     because: "It is already loaded, the arithmetic is pure, and a count that lags the toggle is worse than no count.",
     alternative: "A server procedure that counts.",
-    cost: "A round trip per keystroke against a count only as fresh as the index."
+    cost: "Each of the four surfaces reads the index it was already entitled to."
   }
 ];
 
@@ -548,13 +482,13 @@ export const GAPS: ScopeGap[] = [
     title: "The scope vocabulary has four copies",
     detail:
       "ruleOf, ruleFrom, termWords, the kind list and the answer options are byte-identical in the document editor, the deck editor and the library, and a fourth, drifted copy sits in Contexts. The builder would be a fifth.",
-    order: "Folded into this work, because it is the reason to do it once"
+    order: "Done. All four now read one module, and the drifted copy is gone"
   },
   {
     title: "A resource picker needs the index inside an editor",
     detail:
       "Naming a particular resource means listing the project's resources from a panel, which today only Project Overview does.",
-    order: "Part of this work"
+    order: "Done. All four surfaces read the index, and the count comes from it"
   },
   {
     title: "Taking a template out of its project",

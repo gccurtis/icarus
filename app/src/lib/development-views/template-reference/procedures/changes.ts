@@ -88,6 +88,15 @@ export const SYSTEMATIC: SystematicChange[] = [
     now: "PanelSection mounts the body once the heading has settled, so switching away from a panel holding an open section no longer warns.",
     why: "The Templates panel is the first panel whose open section is switched away from under test, and every browser specification fails on a console warning.",
     area: "cross-cutting"
+  },
+  {
+    index: "12",
+    title: "A scope is built rather than picked",
+    before:
+      "A variable's default and an answer were a short list of toggles: everything, some kinds, or one of the project's named sets. Nothing could exclude anything, and nothing could name a particular resource.",
+    now: "One builder, opened from four places, with two term lists and a live count. A rule that excludes something or names resources is stored as a resourceSets row with no name, bound to the variable that owns it, and what points at it is a single set term.",
+    why: "Resolving a template substitutes one term for what fills it, on either side of a prompt's scope, and a difference cannot be substituted on the excluding side. The row is what makes exclusions expressible at all.",
+    area: "sets"
   }
 ];
 
@@ -155,14 +164,14 @@ export const DECISIONS: Decision[] = [
 ];
 
 export const VERIFICATION: Verification[] = [
-  { check: "Types", command: "pnpm typecheck", result: "0 errors, 0 warnings across 2,496 files", clean: true },
+  { check: "Types", command: "pnpm typecheck", result: "0 errors, 0 warnings across 2,501 files", clean: true },
   { check: "Structure", command: "pnpm lint", result: "56 checks, 56 clean", clean: true },
-  { check: "Unit", command: "pnpm test", result: "877 tests in 93 files", clean: true },
+  { check: "Unit", command: "pnpm test", result: "903 tests in 94 files", clean: true },
   { check: "Category keys", command: "pnpm category-keys -- --check", result: "10 categories and 13 content views in step", clean: true },
   {
     check: "Browser",
     command: "pnpm test:browser, from a clean seed",
-    result: "42 of 42, after the rebase onto main. The deck selection case that had failed since the branch was cut is fixed on main.",
+    result: "43 of 43, after the rebase onto main. The deck selection case that had failed since the branch was cut is fixed on main.",
     clean: true
   }
 ];

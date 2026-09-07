@@ -15,45 +15,48 @@
     PanelBanner,
     PanelChip,
     PanelEmpty,
-    PanelSelect,
-    PanelSkeleton,
-    PanelToggle
+    PanelSkeleton
   } from "$authored-components/panel";
+  import { ScopeBuilder } from "$authored-components/scope-builder";
   import { Button } from "$vendored-components/button";
   import { Input } from "$vendored-components/input";
   import { Textarea } from "$vendored-components/textarea";
   import {
-    DEFAULT_ANSWER,
     EDITOR_CATEGORY,
-    KINDS,
-    answerOptions,
     answersFrom,
-    defaultChoices,
+    builderView,
     detailIn,
+    draftOf,
     duplicateTemplate,
     editTemplate,
     emptyTemplateInspectorTitle,
     inspectTemplate,
     instantiateTemplate,
-    isWholeProject,
-    kindsOf,
-    namesOf,
+    offeringOf,
+    projectResources,
     removeTemplate,
     resourceSets,
-    ruleFrom,
+    resourcesIn,
     ruleOf,
+    scopeNamesOf,
     selectedTemplateIdIn,
-    setIdsOf,
     setsIn,
     templateDetail,
     templateLibrary,
+    termFor,
     unavailableTemplateIn,
     updateTemplateDescription,
     updateTemplateName,
     updateTemplateTags,
     updateTemplateVariableDefault,
     updateTemplateVariableDescription,
+    withTerm,
+    withWholeProject,
+    withoutTerm,
     type LibraryTemplateDetail,
+    type OfferSource,
+    type ScopeDraft,
+    type ScopeSide,
     type TemplateAnswers,
     type TemplateVariable
   } from "$app-views/categories/templates/procedures/library.svelte";
@@ -65,8 +68,11 @@
   );
   const library = templateLibrary();
   const sets = resourceSets();
+  const index = projectResources();
   const setItems = $derived(setsIn(sets.ready ? sets.current : undefined));
-  const setNames = $derived(namesOf(setItems));
+  const catalogue = $derived(resourcesIn(index.ready ? index.current : undefined));
+  const setNames = $derived(scopeNamesOf(setItems, catalogue));
+  const offering = $derived(offeringOf(setItems, catalogue));
   const availableTemplateIds = $derived(
     library.ready ? library.current.templates.map((row) => row.id) : []
   );
@@ -89,16 +95,30 @@
   const unavailable = $derived(unavailableTemplateIn(detailAnswer));
   let defaultFor = $state<TemplateVariable | undefined>(undefined);
   let defaultOpen = $state(false);
-  let draftWhole = $state(true);
-  let draftKinds = $state<string[]>([]);
-  let draftSets = $state<string[]>([]);
+  let draft = $state<ScopeDraft>(draftOf(undefined));
   let useOpen = $state(false);
-  let useChoices = $state<Record<string, string>>({});
-  const defaultBlocked = $derived(
-    !draftWhole && draftKinds.length === 0 && draftSets.length === 0
-      ? "Pick everything, or at least one kind or set."
-      : undefined
+  let answerOpen = $state(false);
+  let useChoices = $state<Record<string, ScopeDraft | undefined>>({});
+  let answering = $state<TemplateVariable | undefined>(undefined);
+  const scopeBlocked = $derived(
+    draft.include.length === 0 ? "Include something, or choose everything in the project." : undefined
   );
+
+  /** Every builder edits this one draft, because only one is ever open. */
+  const view$ = $derived(builderView(draft, offering));
+
+  const addTerm = (side: ScopeSide, source: string, key: string) => {
+    const term = termFor(source as OfferSource, key);
+    if (term !== undefined) draft = withTerm(draft, side, term);
+  };
+
+  const dropTerm = (side: ScopeSide, key: string) => {
+    draft = withoutTerm(draft, side, key);
+  };
+
+  const setMode = (whole: boolean) => {
+    draft = whole ? withWholeProject() : { include: [], exclude: [] };
+  };
 
   let editingDescription = $state(false);
   let descriptionDraft = $state("");
@@ -496,11 +516,41 @@
       void instantiate({});
       return;
     }
-    useChoices = defaultChoices(template.variables);
+    useChoices = {};
+    answering = undefined;
     useOpen = true;
   };
 
   const confirmUse = () => void instantiate(answersFrom(useChoices));
+
+  /**
+   * The builder is its own modal rather than a second face of the ask modal.
+   * Swapping one modal's title, body and confirm while it is open replaces the
+   * footer under the pointer, and the press lands on a button that has gone.
+   */
+  const openAnswer = (variable: TemplateVariable) => {
+    answering = variable;
+    draft = draftOf(useChoices[variable.name] ?? variable.default);
+    useOpen = false;
+    answerOpen = true;
+  };
+
+  const confirmAnswer = () => {
+    if (answering !== undefined) useChoices = { ...useChoices, [answering.name]: draft };
+    answering = undefined;
+    answerOpen = false;
+    useOpen = true;
+  };
+
+  const cancelAnswer = () => {
+    answering = undefined;
+    useOpen = true;
+  };
+
+  const clearAnswer = (variable: TemplateVariable) => {
+    const { [variable.name]: _dropped, ...rest } = useChoices;
+    useChoices = rest;
+  };
 
   const instantiate = async (answers: TemplateAnswers) => {
     if (template === undefined || pending !== undefined) return;
@@ -554,22 +604,8 @@
   const openDefault = (variable: TemplateVariable) => {
     if (template === undefined || !template.canEdit || pending !== undefined) return;
     defaultFor = variable;
-    draftWhole = isWholeProject(variable.default);
-    draftKinds = [...kindsOf(variable.default)];
-    draftSets = [...setIdsOf(variable.default)];
+    draft = draftOf(variable.default);
     defaultOpen = true;
-  };
-
-  const toggleKind = (kind: string, on: boolean) => {
-    draftKinds = on
-      ? [...draftKinds.filter((held) => held !== kind), kind]
-      : draftKinds.filter((held) => held !== kind);
-  };
-
-  const toggleSet = (setId: string, on: boolean) => {
-    draftSets = on
-      ? [...draftSets.filter((held) => held !== setId), setId]
-      : draftSets.filter((held) => held !== setId);
   };
 
   const setDefault = async () => {
@@ -577,7 +613,7 @@
     if (template === undefined || variable === undefined || pending !== undefined) return;
     const subject = template;
     const originTabId = view.activeId;
-    const rule = ruleFrom(draftWhole, draftKinds, draftSets);
+    const rule = draft;
 
     pending = "default";
     actionError = undefined;
@@ -877,7 +913,7 @@
 <OverlayModal
   bind:open={useOpen}
   title={`Use “${template?.name ?? "the template"}”`}
-  description="What each variable selects in the new resource. The default is what the template suggests."
+  description="What each variable selects in the new resource. Untouched, each uses the template's own default."
   confirm="Create"
   width="narrow"
   onconfirm={confirmUse}
@@ -889,61 +925,68 @@
         {#if variable.description}
           <span class="answer-help">{variable.description}</span>
         {/if}
-        <PanelSelect
-          label={`Answer for ${variable.label}`}
-          value={useChoices[variable.name] ?? DEFAULT_ANSWER}
-          options={answerOptions(variable, setItems)}
-          onchange={(next) => (useChoices = { ...useChoices, [variable.name]: next })}
-        />
+        <span class="answer-rule">
+          {useChoices[variable.name] === undefined ? "Default · " : ""}{ruleOf(
+            useChoices[variable.name] ?? variable.default,
+            setNames
+          )}
+        </span>
+        <span class="answer-actions">
+          <Button
+            variant="outline"
+            size="xs"
+            title={`Choose what ${variable.label} selects here`}
+            onclick={() => openAnswer(variable)}
+          >
+            Change
+          </Button>
+          {#if useChoices[variable.name] !== undefined}
+            <Button
+              variant="ghost"
+              size="xs"
+              title={`Put ${variable.label} back to the template's own default`}
+              onclick={() => clearAnswer(variable)}
+            >
+              Use the default
+            </Button>
+          {/if}
+        </span>
       </div>
     {/each}
   </div>
 </OverlayModal>
 
 <OverlayModal
+  bind:open={answerOpen}
+  title={`What ${answering?.label ?? "the variable"} selects here`}
+  description="For the new resource only. Nothing here changes the template."
+  confirm="Use this"
+  width="narrow"
+  blocked={scopeBlocked}
+  onconfirm={confirmAnswer}
+  oncancel={cancelAnswer}
+>
+  <ScopeBuilder {...view$} onmode={setMode} onadd={addTerm} ondrop={dropTerm} />
+</OverlayModal>
+
+<OverlayModal
   bind:open={defaultOpen}
   title={`Default scope for ${defaultFor?.label ?? "the variable"}`}
-  description="What the variable selects until whoever inserts the template says otherwise."
+  description="What the variable selects until whoever places the template says otherwise."
   confirm="Set the default scope"
   width="narrow"
-  blocked={defaultBlocked}
+  blocked={scopeBlocked}
   onconfirm={() => void setDefault()}
 >
-  <div class="choices">
-    <label class="choice">
-      <PanelToggle label="Everything in the project" checked={draftWhole} onchange={(on) => (draftWhole = on)} />
-      <span>Everything in the project</span>
-    </label>
-    <p class="or">Or only these kinds</p>
-    {#each KINDS as entry (entry.kind)}
-      <label class="choice">
-        <PanelToggle label={entry.label} checked={draftKinds.includes(entry.kind)} disabled={draftWhole} onchange={(on) => toggleKind(entry.kind, on)} />
-        <span class:muted={draftWhole}>{entry.label}</span>
-      </label>
-    {/each}
-    {#if setItems.length > 0}
-      <p class="or">Or these sets</p>
-      {#each setItems as set (set.id)}
-        <label class="choice">
-          <PanelToggle label={set.name} checked={draftSets.includes(set.id)} disabled={draftWhole} onchange={(on) => toggleSet(set.id, on)} />
-          <span class:muted={draftWhole}>{set.name}</span>
-        </label>
-      {/each}
-    {/if}
-  </div>
+  <ScopeBuilder {...view$} onmode={setMode} onadd={addTerm} ondrop={dropTerm} />
 </OverlayModal>
 
 <style>
-  .choices,
   .answers {
     display: flex;
     flex-direction: column;
-    gap: calc(var(--token-spacing-unit) * 1.5);
-    padding: 0 calc(var(--token-spacing-unit) * 3);
-  }
-
-  .answers {
     gap: calc(var(--token-spacing-unit) * 3);
+    padding: 0 calc(var(--token-spacing-unit) * 3);
   }
 
   .answer {
@@ -965,24 +1008,19 @@
     line-height: var(--token-text-caption-leading);
   }
 
-  .choice {
-    display: flex;
-    align-items: center;
-    gap: calc(var(--token-spacing-unit) * 2);
+  .answer-rule {
+    padding: calc(var(--token-spacing-unit) * 1) calc(var(--token-spacing-unit) * 1.5);
+    border-inline-start: 2px solid var(--token-color-accent-1-text);
+    border-radius: 0 var(--token-radius-control) var(--token-radius-control) 0;
+    background: var(--token-color-accent-1-surface);
     color: var(--token-ink-primary);
     font-size: var(--token-text-body-sm);
     line-height: var(--token-text-body-sm-leading);
   }
 
-  .muted {
-    color: var(--token-ink-muted);
-  }
-
-  .or {
-    margin: calc(var(--token-spacing-unit) * 1) 0 0;
-    color: var(--token-ink-muted);
-    font-size: var(--token-text-caption);
-    line-height: var(--token-text-caption-leading);
+  .answer-actions {
+    display: flex;
+    gap: calc(var(--token-spacing-unit) * 1);
   }
 
   .inspector-stack {

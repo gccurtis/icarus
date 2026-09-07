@@ -1,21 +1,34 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  emptySet,
-  excludedKindsOf,
   isWholeProject,
-  kindsOf,
   nextSetName,
   ruleOf,
-  withExcludedKind,
-  withKind,
-  withWholeProject
+  scopeNamesOf,
+  withTerm,
+  withWholeProject,
+  withoutTerm
 } from "$app-views/categories/project-overview/procedures/contexts";
 
+const emptySet = () => ({ include: [], exclude: [] });
+
 describe("resource set rules", () => {
-  it("reads a rule as a sentence, naming sets it reaches", () => {
-    const names = new Map([["resourceSets:2", "Field evidence"]]);
-    expect(ruleOf(emptySet())).toBe("Selects nothing");
+  it("reads a rule as a sentence, naming sets and resources it reaches", () => {
+    const names = scopeNamesOf(
+      [
+        {
+          id: "resourceSets:2",
+          name: "Field evidence",
+          set: emptySet(),
+          createdByName: "x",
+          revision: 1,
+          updatedAt: 1,
+          resolves: 0
+        }
+      ],
+      [{ id: "documents:1", name: "Winter readiness brief" }]
+    );
+    expect(ruleOf(emptySet())).toBe("Nothing");
     expect(ruleOf({ include: [{ select: "project" }], exclude: [{ select: "kinds", kinds: ["slides"] }] })).toBe(
       "Everything in the project, minus Slide decks"
     );
@@ -31,19 +44,17 @@ describe("resource set rules", () => {
         },
         names
       )
-    ).toBe("Documents, Findings and Field evidence and 1 named resource");
+    ).toBe("Documents, Findings, Field evidence and Winter readiness brief");
   });
 
-  it("builds and unbuilds a rule from toggles", () => {
-    const findings = withKind(emptySet(), "finding", true);
-    expect(kindsOf(findings)).toEqual(["finding"]);
-    const wide = withWholeProject(findings, true);
-    expect(isWholeProject(wide)).toBe(true);
-    expect(withWholeProject(wide, false)).toEqual(findings);
-    expect(withKind(findings, "finding", false)).toEqual(emptySet());
-    const narrowed = withExcludedKind(wide, "slides", true);
-    expect(excludedKindsOf(narrowed)).toEqual(["slides"]);
-    expect(withExcludedKind(narrowed, "slides", false)).toEqual(wide);
+  it("builds and unbuilds a rule one term at a time", () => {
+    const findings = withTerm(emptySet(), "include", { select: "kinds", kinds: ["finding"] });
+    expect(ruleOf(findings)).toBe("Findings");
+    expect(isWholeProject(withWholeProject())).toBe(true);
+    expect(withoutTerm(findings, "include", "kinds:finding")).toEqual(emptySet());
+    const narrowed = withTerm(withWholeProject(), "exclude", { select: "kinds", kinds: ["slides"] });
+    expect(ruleOf(narrowed)).toBe("Everything in the project, minus Slide decks");
+    expect(withoutTerm(narrowed, "exclude", "kinds:slides")).toEqual(withWholeProject());
   });
 
   it("names a new set after the ones that exist", () => {

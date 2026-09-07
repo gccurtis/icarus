@@ -25,5 +25,22 @@
     "createdBy": { "kind": "user", "userId": "users:4" },
     "revision": 1,
     "updatedAt": 1787004000000
+  },
+  {
+    "_id": "resourceSets:3",
+    "_creationTime": 1787000000000,
+    "projectId": "default",
+    "boundTo": {
+      "kind": "variable",
+      "templateId": "templates:1",
+      "variable": "incident_evidence"
+    },
+    "set": {
+      "include": [{ "select": "kinds", "kinds": ["finding", "document", "spreadsheet"] }],
+      "exclude": [{ "select": "resources", "refs": [{ "kind": "document", "id": "documents:3" }] }]
+    },
+    "createdBy": { "kind": "user", "userId": "users:1" },
+    "revision": 1,
+    "updatedAt": 1787004000000
   }
 ]

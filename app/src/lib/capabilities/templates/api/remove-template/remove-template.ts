@@ -7,6 +7,7 @@ import {
   reportableRevision,
   visibleTemplate
 } from "$capabilities/templates/api/shared/projection";
+import { removeRowsBoundTo } from "$capabilities/templates/api/shared/scopes";
 import { removeStage, stagesIn } from "$capabilities/templates/api/shared/stages";
 import {
   canonicalRowId,
@@ -89,6 +90,13 @@ export const removeTemplate = async (input: unknown): Promise<RemoveTemplateResu
 
   store.transaction((unit) => {
     for (const stage of stages) removeStage(unit as typeof store, stage);
+    for (const variable of template.variables) {
+      removeRowsBoundTo(unit as typeof store, scope.projectId, {
+        kind: "variable",
+        templateId: template._id,
+        variable: variable.name
+      });
+    }
     unit.removeRows(
       "templateVersions",
       versionIds.map((id) => asId<"templateVersions">(id))

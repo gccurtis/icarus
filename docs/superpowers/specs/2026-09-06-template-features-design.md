@@ -39,9 +39,12 @@ slides, or spreadsheet; `TemplateVariable` is still name, label, description, op
 (The first pass added a `slide` body kind and answer types; both are gone.)
 
 `data/types/core/resource-set.ts` — `TemplatedTerm` gains the `set` term, so a variable's
-default may name one of the project's sets now that a template belongs to a project.
+default may name one of the project's sets now that a template belongs to a project; and `BoundTo`
+says what owns a row that has no name.
 
-`store/tables.ts` — `templates` gains `projectId` and `lastUsedAt`; `documents`, `slideDecks` and
+`store/tables.ts` — `resourceSets.name` becomes optional and `boundTo` is added, so a row is
+either a project subject or a value one variable holds; `templates` gains `projectId` and
+`lastUsedAt`; `documents`, `slideDecks` and
 `spreadsheets` lose `templateId`, because a resource made from a template is a copy that knows
 nothing of where it came from; and one new table, `templateStages`: `projectId, templateId,
 templateRevision, target, resourceId, createdBy, updatedAt`. The stage resource is an ordinary `documents` or
@@ -181,18 +184,27 @@ Still open, each built the recommended way:
 2. **Inserting a deck template.** Recommended: bring missing layouts and styles across.
    Alternative: slides only.
 
-## Scope, still to build
+## Scope
 
-A separate plan, designed after the fourth review and not built. A variable's scope is chosen in
-one modal that edits a rule — two flat lists, include and exclude, with kinds, named sets and
-particular resources in either — and the server stores that rule as a `resourceSets` row whenever
-it cannot be said inline. A row with a name is a project subject; a row without one is bound to
-the variable or the resource that points at it, is never listed, and dies with its owner. A
-variable's default and a placed copy's prompt scope then hold one `set` term, which is what makes
-exclusions expressible at all: `resolveTemplateScopes` refuses to flatten a variable answered with
-a difference, and one term substitutes on either side where a difference cannot.
+Designed after the fourth review and built. A variable's scope is chosen in one modal that edits a
+rule — two flat lists, include and exclude, with kinds, named sets and particular resources in
+either, and a count of what it selects right now. The server stores that rule as a `resourceSets`
+row whenever it cannot be said inline, which means whenever it excludes anything or names
+particular resources. A row with a name is a project subject; a row with `boundTo` instead is bound
+to the variable that owns it, on a template or on a placed resource, is never listed, and goes when
+its owner goes. A variable's default and a placed copy's prompt scope then hold one `set` term,
+which is what makes exclusions expressible at all: `resolveTemplateScopes` refuses to flatten a
+variable answered with a difference, and one term substitutes on either side where a difference
+cannot.
 
-The whole plan, its mock, its eight open decisions and every file it touches is
+Four surfaces open the one builder: a variable's default from either editor's Templates panel or
+from the library inspector, the answer given while placing a template, and Project Overview's
+Contexts panel, which gave up its own toggles and gained exclusions by doing so. The arithmetic and
+the words live in `representation/data/behavior/core/scope-draft.ts`, because nothing under
+`components/` may reach the vocabulary; the builder is handed rows, offers, a sentence and a count,
+and answers with the keys it was given.
+
+The whole of it, its mock, how each of the eight decisions landed and every file it touched is
 `/app/<project>/reference/templates/scope`.
 
 ## Testing

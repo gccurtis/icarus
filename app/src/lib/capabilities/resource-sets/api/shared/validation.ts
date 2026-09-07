@@ -1,5 +1,5 @@
 import { asId } from "$representation/data/behavior/core/id";
-import type { ResourceSet, SetTerm } from "$representation/data/types/core/resource-set";
+import type { BoundTo, ResourceSet, SetTerm } from "$representation/data/types/core/resource-set";
 
 type Fields = Record<string, unknown>;
 
@@ -58,6 +58,45 @@ export const nameOf = (value: unknown, subject: string): string => {
   const name = value.trim();
   if (name.length > 160) throw new Error(`resource-sets/${subject}: name is at most 160 characters`);
   return name;
+};
+
+/**
+ * What owns a bound row.
+ *
+ * A row carries a name or an owner and never both: naming is the whole
+ * difference between a project's own set and a value something else holds.
+ */
+export const boundToOf = (value: unknown, subject: string): BoundTo => {
+  if (!isRecord(value)) throw new Error(`resource-sets/${subject}: boundTo is an object`);
+  if (value.kind === "variable") {
+    if (
+      Object.keys(value).length !== 3 ||
+      !canonicalText(value.templateId, MAX_IDENTIFIER_LENGTH) ||
+      !canonicalText(value.variable, MAX_KIND_LENGTH)
+    ) {
+      throw new Error(`resource-sets/${subject}: a variable owner names a template and a variable`);
+    }
+    return {
+      kind: "variable",
+      templateId: asId<"templates">(value.templateId as string),
+      variable: value.variable as string
+    };
+  }
+  if (value.kind === "resource") {
+    if (
+      Object.keys(value).length !== 3 ||
+      !canonicalText(value.resourceId, MAX_IDENTIFIER_LENGTH) ||
+      !canonicalText(value.variable, MAX_KIND_LENGTH)
+    ) {
+      throw new Error(`resource-sets/${subject}: a resource owner names one resource and a variable`);
+    }
+    return {
+      kind: "resource",
+      resourceId: value.resourceId as string,
+      variable: value.variable as string
+    };
+  }
+  throw new Error(`resource-sets/${subject}: an owner is a variable or a resource`);
 };
 
 export const descriptionOf = (value: unknown, subject: string): string => {

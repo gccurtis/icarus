@@ -91,11 +91,23 @@ test("inserting a template into a document asks for each variable, shows its def
   const modal = page.getByRole("dialog", { name: "Insert “Technical glossary”" });
   await expect(modal).toBeVisible();
   await expect(modal.getByText("Source material", { exact: true })).toBeVisible();
-  const answer = modal.getByRole("button", { name: "Answer for Source material" });
-  await expect(answer).toContainText("Default · Documents, Findings");
-  await answer.click();
-  await page.getByRole("option", { name: "Winter filings", exact: true }).click();
-  await expect(answer).toContainText("Winter filings");
+  await expect(modal.getByText("Default · Documents, Findings")).toBeVisible();
+
+  await modal.getByRole("button", { name: "Change", exact: true }).click();
+  const builder = page.getByRole("dialog", { name: "What Source material selects here" });
+  await expect(builder).toBeVisible();
+  await builder.getByRole("button", { name: "Choose what to include", exact: true }).click();
+  await builder.getByRole("button", { name: "Add", exact: true }).first().click();
+  await builder.getByRole("button", { name: "Sets", exact: true }).click();
+  await builder
+    .locator(".offer")
+    .filter({ hasText: "Winter filings" })
+    .getByRole("button", { name: "Add", exact: true })
+    .click();
+  await expect(builder.getByText("Winter filings").first()).toBeVisible();
+  await builder.getByRole("button", { name: "Use this", exact: true }).click();
+
+  await expect(modal.getByText("Winter filings", { exact: true })).toBeVisible();
   await modal.getByRole("button", { name: "Insert", exact: true }).click();
 
   await expect(context.getByText("Inserted “Technical glossary”.", { exact: true })).toBeVisible();
@@ -133,7 +145,7 @@ test("a document is saved as a template, takes its variable from an inserted pro
 
   const modal = page.getByRole("dialog", { name: "Default scope for Source material" });
   await expect(modal).toBeVisible();
-  await modal.getByRole("switch", { name: "Everything in the project" }).click();
+  await modal.getByRole("button", { name: "Everything in the project", exact: true }).click();
   await modal.getByRole("button", { name: "Set the default scope", exact: true }).click();
   await expect(scope).toHaveAttribute("title", /^Everything in the project — /);
 
@@ -180,7 +192,20 @@ test("the project's resource sets are made, counted, and removed from the Contex
 
   await context.getByRole("button", { name: "New set", exact: true }).click();
   await context.getByRole("textbox", { name: "Set name" }).fill(name);
-  await context.getByRole("switch", { name: "Findings", exact: true }).first().click();
+  await context.getByRole("button", { name: "Choose what it selects", exact: true }).click();
+
+  const builder = page.getByRole("dialog", { name: "A set of resources" });
+  await expect(builder).toBeVisible();
+  await builder.getByRole("button", { name: "Choose what to include", exact: true }).click();
+  await builder.getByRole("button", { name: "Add", exact: true }).first().click();
+  await builder
+    .locator(".offer")
+    .filter({ hasText: "Findings" })
+    .getByRole("button", { name: "Add", exact: true })
+    .click();
+  await expect(builder.getByText("Findings", { exact: true }).first()).toBeVisible();
+  await builder.getByRole("button", { name: "Use this", exact: true }).click();
+
   await expect(context.getByText("Findings.", { exact: true })).toBeVisible();
   await context.getByRole("button", { name: "Create", exact: true }).click();
 
@@ -191,4 +216,55 @@ test("the project's resource sets are made, counted, and removed from the Contex
   page.once("dialog", (dialog) => void dialog.accept());
   await context.getByTitle(new RegExp(`^Delete “${name}”`)).click();
   await expect(context.getByRole("button", { name: new RegExp(`^${name}`) })).toHaveCount(0);
+});
+
+test("a variable's default is built with an exclusion, stored, and read back as the rule", async ({ page }) => {
+  await page.goto("/app/dev-project", { waitUntil: "networkidle" });
+  await tabs(page).getByRole("button", { name: "Templates", exact: true }).click();
+  await page.getByRole("button", { name: /^Incident write-up/ }).first().click();
+
+  const inspector = page.locator('aside[aria-label="Inspector"][data-inspected="templates.template"]');
+  await expect(inspector).toBeVisible();
+  await inspector.getByText("Incident evidence", { exact: true }).click();
+
+  const scope = inspector.getByRole("button", { name: "Default scope", exact: true }).first();
+  await expect(scope).toBeVisible();
+
+  // The seeded default is a bound row, so the builder opens on the rule it holds.
+  await expect(scope).toHaveAttribute("title", /minus Interconnect glossary/);
+  await scope.click();
+
+  const builder = page.getByRole("dialog", { name: "Default scope for Incident evidence" });
+  await expect(builder).toBeVisible();
+  await expect(builder.getByText("Findings, Documents, Spreadsheets, minus Interconnect glossary")).toBeVisible();
+
+  await builder.getByRole("button", { name: "Add an exception", exact: true }).click();
+  await builder.getByRole("button", { name: "Resources", exact: true }).click();
+  await builder
+    .locator(".offer")
+    .filter({ hasText: "Substation 14 incident write-up" })
+    .getByRole("button", { name: "Add", exact: true })
+    .click();
+  await builder.getByRole("button", { name: "Done", exact: true }).click();
+  await builder.getByRole("button", { name: "Set the default scope", exact: true }).click();
+
+  await expect(scope).toHaveAttribute(
+    "title",
+    /minus Interconnect glossary and Substation 14 incident write-up/,
+    { timeout: 15_000 }
+  );
+
+  // Put the seeded template back the way the fixture had it.
+  await scope.click();
+  await expect(builder).toBeVisible();
+  await builder
+    .locator(".term")
+    .filter({ hasText: "Substation 14 incident write-up" })
+    .getByRole("button", { name: "×" })
+    .click();
+  await builder.getByRole("button", { name: "Set the default scope", exact: true }).click();
+  await expect(scope).not.toHaveAttribute("title", /Substation 14 incident write-up/, {
+    timeout: 15_000
+  });
+  await expect(scope).toHaveAttribute("title", /minus Interconnect glossary/);
 });

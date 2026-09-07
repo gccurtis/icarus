@@ -6,6 +6,7 @@ import type { ResourceRef } from "$representation/data/types/core/resource";
 import type { ResourceSet } from "$representation/data/types/core/resource-set";
 
 import {
+  boundToOf,
   descriptionOf,
   nameOf,
   resourceSetOf,
@@ -74,10 +75,14 @@ export const admitStoredSet = (row: NamedSet): NamedSet => {
   if (!Number.isFinite(row.updatedAt) || row.updatedAt < 0) {
     throw new Error(`resource-sets/${subject}: updated time is finite`);
   }
+  if ((row.name === undefined) === (row.boundTo === undefined)) {
+    throw new Error(`resource-sets/${subject}: a row carries a name or an owner, never both or neither`);
+  }
   const description = row.description === undefined ? undefined : descriptionOf(row.description, subject);
   return {
     ...row,
-    name: nameOf(row.name, subject),
+    ...(row.name === undefined ? {} : { name: nameOf(row.name, subject) }),
+    ...(row.boundTo === undefined ? {} : { boundTo: boundToOf(row.boundTo, subject) }),
     ...(description === undefined ? {} : { description }),
     set: resourceSetOf(row.set, subject),
     createdBy: actorOf(row.createdBy, subject)
@@ -170,7 +175,7 @@ export const itemOf = (
   sets: ReadonlyMap<string, ResourceSet>
 ): ResourceSetItem => ({
   id: set._id,
-  name: set.name,
+  name: set.name ?? "",
   ...(set.description === undefined ? {} : { description: set.description }),
   set: set.set,
   createdByName: actorName(store, scope, set.createdBy),
@@ -194,6 +199,7 @@ export const projectSets = (
   }
   for (const [index, row] of rows.entries()) {
     if (row.projectId !== scope.projectId) continue;
+    if (row.name === undefined) continue;
     const reportId = typeof row._id === "string" && row._id.length <= 500 ? row._id : `resourceSets:invalid-${index + 1}`;
     if (typeof row._id === "string" && (claims.get(row._id) ?? 0) > 1) {
       unavailable.push({ setId: reportId, reason: "corrupt", detail: "more than one stored row claims this set id" });
