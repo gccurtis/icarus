@@ -1,5 +1,13 @@
-import type { AgentTaskStatus, TaskPrompt } from "$representation/data/types/agents/agent-task";
+import type {
+  AgentTaskState,
+  PlanStep,
+  TaskOrigin,
+  TaskOutput,
+  TaskQuestion
+} from "$representation/data/types/agents/agent-task";
+import type { AutomationTrigger } from "$representation/data/types/agents/automation";
 import type { Message } from "$representation/data/types/agents/message";
+import type { ToolId } from "$representation/data/types/agents/tool";
 import type { Cast, PersonaAvatar, PersonaDefinition } from "$representation/data/types/agents/persona";
 import type { BranchPoint, ThreadKind } from "$representation/data/types/agents/thread";
 import type { ActivityTarget } from "$representation/data/types/collaboration/activity";
@@ -336,7 +344,7 @@ export type PersonaFields = {
   definition: PersonaDefinition;
   scope?: ResourceSet;
   cast?: Cast;
-  tools: string[];
+  tools: ToolId[];
   avatar?: PersonaAvatar;
   createdBy: Actor;
   revision: number;
@@ -358,19 +366,40 @@ export type AgentTaskFields = {
   projectId: Id<"projects">;
   threadId: Id<"threads">;
   title: string;
-  description?: string;
-  personaId?: Id<"personas">;
-  prompt: TaskPrompt;
-  status: AgentTaskStatus;
-  origin: Actor;
-  plan?: string;
-  data?: string;
-  error?: string;
-  startedAt?: number;
+  instruction: string;
+  personaId: Id<"personas">;
+  origin: TaskOrigin;
+  state: AgentTaskState;
+  scope?: ResourceSet;
+  tools: ToolId[];
+  plan: PlanStep[];
+  outputs: TaskOutput[];
+  questions: TaskQuestion[];
+  createdBy: Actor;
+  startedAt: number;
   finishedAt?: number;
+  reviewedBy?: Actor;
+  revision: number;
   updatedAt: number;
 };
 export type AgentTask = Row<"agentTasks"> & AgentTaskFields;
+
+export type AutomationFields = {
+  projectId: Id<"projects">;
+  name: string;
+  personaId: Id<"personas">;
+  instruction: string;
+  trigger: AutomationTrigger;
+  scope?: ResourceSet;
+  tools: ToolId[];
+  enabled: boolean;
+  firedCount: number;
+  lastFiredAt?: number;
+  createdBy: Actor;
+  revision: number;
+  updatedAt: number;
+};
+export type Automation = Row<"automations"> & AutomationFields;
 
 export type TemplateFields = {
   projectId: Id<"projects">;
@@ -592,6 +621,7 @@ export type WorkspaceRevision = Row<"workspaceRevisions"> & WorkspaceRevisionFie
 export const TABLE_NAMES = [
   "activity",
   "agentTasks",
+  "automations",
   "comments",
   "commentThreads",
   "connectors",
@@ -646,6 +676,7 @@ export type TableName = (typeof TABLE_NAMES)[number];
 export type TableFields = {
   activity: ActivityFields;
   agentTasks: AgentTaskFields;
+  automations: AutomationFields;
   comments: CommentFields;
   commentThreads: CommentThreadFields;
   connectors: ConnectorFields;

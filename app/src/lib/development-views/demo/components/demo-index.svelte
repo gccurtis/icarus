@@ -1,6 +1,7 @@
 <script lang="ts">
   import Blocks from "@lucide/svelte/icons/layout-template";
   import BookOpen from "@lucide/svelte/icons/book-open";
+  import Bot from "@lucide/svelte/icons/bot";
   import ChartColumn from "@lucide/svelte/icons/chart-column";
   import ClipboardCheck from "@lucide/svelte/icons/clipboard-check";
   import FlaskConical from "@lucide/svelte/icons/flask-conical";
@@ -14,18 +15,6 @@
 
   import { ScreenCard, ScreenCards } from "$authored-components/screen";
 
-  /**
-   * The other demo pages, from the one everybody opens first.
-   *
-   * They were being reached by typing the URL, which meant that in practice only
-   * the person who built them knew they existed. A reference nobody can find is
-   * a reference nobody reads.
-   *
-   * **Each card says what the page is FOR rather than what is on it**, because
-   * these pages answer different questions and picking the wrong one wastes the
-   * trip: one is a catalogue of shapes, one is a working screen, one is an
-   * argument about a data model, one is a conversation.
-   */
   const PAGES = [
     {
       href: "/demo/editor-audit",
@@ -130,6 +119,14 @@
       icon: Library,
       about:
         "Two pages: the model, the three verbs, the working copy and the panels; then the ten systematic changes, the decisions three reviews settled, every file and every check."
+    },
+    {
+      href: "/demo/agents-reference",
+      title: "Agents reference",
+      sub: "Nine pages staging the built category, with a note gutter on every row",
+      icon: Bot,
+      about:
+        "The real library, persona, task and automation surfaces, the rail and the lenses, each live over the project's store, then the rows, doors and seed behind them. Nothing runs an agent."
     }
   ];
 </script>

@@ -2,16 +2,8 @@ import type { ContextView, InspectorView } from "$representation/data/types/work
 
 export const CONTEXT_VIEWS = [
   "agents.automations",
-  "agents.behaviour",
-  "agents.context-persona",
-  "agents.do-this",
-  "agents.health",
-  "agents.overview",
   "agents.personas",
   "agents.tasks",
-  "agents.tools",
-  "agents.when",
-  "agents.work",
   "analysis.analyses",
   "analysis.chart",
   "analysis.chartable-variables",
@@ -90,20 +82,11 @@ export const CONTEXT_VIEWS = [
 ] as const satisfies readonly ContextView[];
 
 export const INSPECTOR_VIEWS = [
-  "agents.agent-action",
+  "agents.activity",
   "agents.automation",
-  "agents.behaviour-section",
-  "agents.last-fired",
-  "agents.model",
   "agents.persona",
-  "agents.refresh-action",
-  "agents.schedule-trigger",
   "agents.task",
-  "agents.task-behaviour",
-  "agents.task-results",
   "agents.tool",
-  "agents.trigger",
-  "agents.what-it-can-look-up",
   "analysis.analysis",
   "analysis.bar-graph",
   "analysis.bars",

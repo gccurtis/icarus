@@ -1,0 +1,240 @@
+[
+  {
+    "_id": "automations:minutes",
+    "_creationTime": 1785621600000,
+    "projectId": "default",
+    "name": "Recalculate outage minutes by substation",
+    "personaId": "personas:grid-analyst",
+    "instruction": "When the outage minutes sheet changes, recompute the per-substation totals and note any substation whose total moved by more than five percent.",
+    "trigger": {
+      "kind": "resource-edited",
+      "kinds": [
+        "spreadsheet"
+      ],
+      "ref": {
+        "kind": "spreadsheet",
+        "id": "spreadsheets:1"
+      }
+    },
+    "tools": [
+      "retrieve",
+      "resource.read",
+      "finding.create",
+      "analysis.evaluate"
+    ],
+    "enabled": true,
+    "firedCount": 41,
+    "lastFiredAt": 1788645420000,
+    "createdBy": {
+      "kind": "user",
+      "userId": "users:2"
+    },
+    "revision": 3,
+    "updatedAt": 1787868000000,
+    "scope": {
+      "include": [
+        {
+          "select": "set",
+          "setId": "resourceSets:2"
+        }
+      ],
+      "exclude": []
+    }
+  },
+  {
+    "_id": "automations:nightly",
+    "_creationTime": 1773093600000,
+    "projectId": "default",
+    "name": "Nightly outage digest",
+    "personaId": "personas:filing-editor",
+    "instruction": "Summarise last night's outage reports by substation and flag anything that changes the filing position.",
+    "trigger": {
+      "kind": "schedule",
+      "at": "02:00",
+      "repeats": "daily",
+      "timezone": "America/Chicago"
+    },
+    "tools": [
+      "resource.read",
+      "resource.write"
+    ],
+    "enabled": true,
+    "firedCount": 184,
+    "lastFiredAt": 1788591600000,
+    "createdBy": {
+      "kind": "user",
+      "userId": "users:1"
+    },
+    "revision": 4,
+    "updatedAt": 1785189600000
+  },
+  {
+    "_id": "automations:citations",
+    "_creationTime": 1783461600000,
+    "projectId": "default",
+    "name": "Check every citation in the Winter readiness brief",
+    "personaId": "personas:source-checker",
+    "instruction": "For every citation in the Winter readiness brief, confirm the source carries the claim. Flag anything the source only implies.",
+    "trigger": {
+      "kind": "resource-edited",
+      "kinds": [
+        "document"
+      ],
+      "ref": {
+        "kind": "document",
+        "id": "documents:1"
+      }
+    },
+    "tools": [
+      "retrieve",
+      "resource.read",
+      "web.search"
+    ],
+    "enabled": true,
+    "firedCount": 23,
+    "lastFiredAt": 1788638400000,
+    "createdBy": {
+      "kind": "user",
+      "userId": "users:3"
+    },
+    "revision": 2,
+    "updatedAt": 1786917600000,
+    "scope": {
+      "include": [
+        {
+          "select": "set",
+          "setId": "resourceSets:1"
+        }
+      ],
+      "exclude": []
+    }
+  },
+  {
+    "_id": "automations:glossary",
+    "_creationTime": 1786831200000,
+    "projectId": "default",
+    "name": "Refresh the interconnect glossary",
+    "personaId": "personas:source-checker",
+    "instruction": "When a document is created, add any interconnect term it introduces to the glossary with the sentence that defines it.",
+    "trigger": {
+      "kind": "resource-created",
+      "kinds": [
+        "document"
+      ]
+    },
+    "tools": [
+      "retrieve",
+      "resource.read",
+      "resource.write"
+    ],
+    "enabled": true,
+    "firedCount": 6,
+    "lastFiredAt": 1788559200000,
+    "createdBy": {
+      "kind": "user",
+      "userId": "users:3"
+    },
+    "revision": 1,
+    "updatedAt": 1786831200000
+  },
+  {
+    "_id": "automations:hardening",
+    "_creationTime": 1783461600000,
+    "projectId": "default",
+    "name": "Recompute the hardening cost model",
+    "personaId": "personas:grid-analyst",
+    "instruction": "Re-run the hardening cost model against the current outage totals and report the three programmes whose cost moved the most.",
+    "trigger": {
+      "kind": "manual"
+    },
+    "tools": [
+      "retrieve",
+      "resource.read",
+      "analysis.evaluate"
+    ],
+    "enabled": true,
+    "firedCount": 2,
+    "lastFiredAt": 1788386400000,
+    "createdBy": {
+      "kind": "user",
+      "userId": "users:2"
+    },
+    "revision": 2,
+    "updatedAt": 1787349600000
+  },
+  {
+    "_id": "automations:board",
+    "_creationTime": 1786053600000,
+    "projectId": "default",
+    "name": "Assemble the board review pack",
+    "personaId": "personas:filing-editor",
+    "instruction": "Assemble the weekly board pack from the Q1 exposure deck and the latest outage totals.",
+    "trigger": {
+      "kind": "schedule",
+      "at": "07:00",
+      "repeats": "weekly",
+      "weekday": "Monday",
+      "timezone": "America/Chicago"
+    },
+    "tools": [
+      "resource.read",
+      "resource.write"
+    ],
+    "enabled": false,
+    "firedCount": 0,
+    "createdBy": {
+      "kind": "user",
+      "userId": "users:2"
+    },
+    "revision": 1,
+    "updatedAt": 1786053600000
+  },
+  {
+    "_id": "automations:objections",
+    "_creationTime": 1788127200000,
+    "projectId": "default",
+    "name": "Argue against the undergrounding case",
+    "personaId": "personas:skeptic",
+    "instruction": "Take the undergrounding case at its strongest and list the objections a commissioner would raise, each with what would answer it.",
+    "trigger": {
+      "kind": "manual"
+    },
+    "tools": [
+      "retrieve",
+      "resource.read"
+    ],
+    "enabled": true,
+    "firedCount": 1,
+    "lastFiredAt": 1788127200000,
+    "createdBy": {
+      "kind": "user",
+      "userId": "default-user"
+    },
+    "revision": 1,
+    "updatedAt": 1788127200000
+  },
+  {
+    "_id": "automations:crosswalk",
+    "_creationTime": 1788300000000,
+    "projectId": "default",
+    "name": "Rebuild the substation crosswalk",
+    "personaId": "personas:grid-analyst",
+    "instruction": "Rebuild the crosswalk between SCADA substation codes and the commission's register names, and list every code that no longer maps.",
+    "trigger": {
+      "kind": "manual"
+    },
+    "tools": [
+      "retrieve",
+      "resource.read",
+      "resource.write"
+    ],
+    "enabled": true,
+    "firedCount": 0,
+    "createdBy": {
+      "kind": "user",
+      "userId": "users:3"
+    },
+    "revision": 1,
+    "updatedAt": 1788300000000
+  }
+]

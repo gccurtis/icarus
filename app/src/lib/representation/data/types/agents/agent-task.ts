@@ -1,22 +1,44 @@
-/**
- * Where a task stands.
- *
- * `waiting` is not `running` — a task blocked on human input consumes nothing.
- * `cancelled` is not `failed` — somebody stopping a task is not an error.
- */
-export type AgentTaskStatus =
-  | "draft"
-  | "running"
-  | "waiting"
-  | "complete"
-  | "failed"
-  | "cancelled";
+import type { AutomationTriggerKind } from "$representation/data/types/agents/automation";
+import type { Actor } from "$representation/data/types/core/actor";
+import type { Id } from "$representation/data/types/core/id";
+import type { ResourceRef } from "$representation/data/types/core/resource";
 
-/**
- * Which message is the instruction. Not the first message: a task can begin from
- * a conversation already in progress, and everything before the prompt is
- * inherited context.
- *
- * A reference rather than a copy, so the instruction cannot drift.
- */
-export type TaskPrompt = { messageId: string; index: number };
+export type AgentTaskState = "running" | "review" | "finished";
+
+export type PlanStepState = "pending" | "active" | "done";
+
+export type PlanStep = {
+  id: string;
+  title: string;
+  state: PlanStepState;
+  note?: string;
+};
+
+export type TaskOutput = {
+  id: string;
+  title: string;
+  detail?: string;
+  ref?: ResourceRef;
+  at: number;
+};
+
+export type TaskQuestion = {
+  id: string;
+  text: string;
+  askedAt: number;
+  stepId?: string;
+  options?: string[];
+  answer?: string;
+  answeredAt?: number;
+  answeredBy?: Actor;
+  rejectedAt?: number;
+};
+
+export type TaskOrigin =
+  | { kind: "person" }
+  | {
+      kind: "automation";
+      automationId: Id<"automations">;
+      trigger: AutomationTriggerKind;
+      ref?: ResourceRef;
+    };

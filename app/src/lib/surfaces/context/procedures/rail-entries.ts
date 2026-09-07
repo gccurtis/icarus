@@ -14,7 +14,6 @@ import Footprints from "@lucide/svelte/icons/footprints";
 import Grid3x3 from "@lucide/svelte/icons/grid-3x3";
 import Group from "@lucide/svelte/icons/group";
 import Hash from "@lucide/svelte/icons/hash";
-import HeartPulse from "@lucide/svelte/icons/heart-pulse";
 import Info from "@lucide/svelte/icons/info";
 import Layers from "@lucide/svelte/icons/layers";
 import LayoutPanelTop from "@lucide/svelte/icons/layout-panel-top";
@@ -40,8 +39,6 @@ import Type from "@lucide/svelte/icons/type";
 import Upload from "@lucide/svelte/icons/upload";
 import Users from "@lucide/svelte/icons/users";
 import Workflow from "@lucide/svelte/icons/workflow";
-import Wrench from "@lucide/svelte/icons/wrench";
-import Zap from "@lucide/svelte/icons/zap";
 
 import type { ContextView } from "$model/client/workspace-state";
 
@@ -49,15 +46,8 @@ export type RailEntry = { readonly label: string; readonly icon: Component };
 
 export const RAIL_ENTRIES: Record<ContextView, RailEntry> = {
   "agents.automations": { label: "Automations", icon: Workflow },
-  "agents.behaviour": { label: "Behaviour", icon: ScrollText },
-  "agents.context-persona": { label: "Context", icon: Target },
-  "agents.do-this": { label: "Do this", icon: Play },
-  "agents.health": { label: "Health", icon: HeartPulse },
   "agents.personas": { label: "Personas", icon: Bot },
   "agents.tasks": { label: "Tasks", icon: Sparkles },
-  "agents.tools": { label: "Tools", icon: Wrench },
-  "agents.when": { label: "When", icon: Zap },
-  "agents.work": { label: "Work", icon: Activity },
 
   "analysis.chart": { label: "Chart", icon: ChartColumn },
   "analysis.fields": { label: "Fields", icon: Axis3d },
@@ -74,7 +64,6 @@ export const RAIL_ENTRIES: Record<ContextView, RailEntry> = {
   "new-tab.templates": { label: "Templates", icon: LayoutTemplate },
   "research.threads": { label: "Threads", icon: MessagesSquare },
 
-  "agents.overview": { label: "Overview", icon: Info },
   "analysis.overview": { label: "Overview", icon: Info },
   "context-editor.overview": { label: "Overview", icon: Info },
   "slide-deck-editor.prompts": { label: "Prompts", icon: Sparkles },

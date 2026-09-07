@@ -47,19 +47,11 @@ export const OPENING: Record<Category, Opening> = {
 
   agents: {
     content: "agents.library",
-    context: "agents.overview",
+    context: "agents.personas",
     rail: [
-      "agents.overview",
       "agents.personas",
       "agents.tasks",
-      "agents.automations",
-      "agents.behaviour",
-      "agents.context-persona",
-      "agents.work",
-      "agents.tools",
-      "agents.when",
-      "agents.do-this",
-      "agents.health"
+      "agents.automations"
     ]
   },
 

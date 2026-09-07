@@ -1,275 +1,311 @@
 <script lang="ts">
-  import Bot from "@lucide/svelte/icons/bot";
-  import Clock from "@lucide/svelte/icons/clock";
+  import { onDestroy, onMount } from "svelte";
   import Play from "@lucide/svelte/icons/play";
+  import Trash2 from "@lucide/svelte/icons/trash-2";
 
-  import { PanelActor, PanelChip } from "$authored-components/panel";
-  import {
-    ScreenBar,
-    ScreenCell,
-    ScreenEmpty,
-    ScreenGroup,
-    ScreenItem,
-    ScreenList,
-    ScreenNote,
-    ScreenRow,
-    ScreenStat,
-    ScreenStats,
-    ScreenSurface,
-    ScreenTable
-  } from "$authored-components/screen";
+  import { PanelChip, PanelSentence } from "$authored-components/panel";
+  import { ScreenEmpty, ScreenGroup, ScreenNote } from "$authored-components/screen";
   import { Button } from "$vendored-components/button";
   import { Switch } from "$vendored-components/switch";
+  import { Textarea } from "$vendored-components/textarea";
+  import Grants from "$app-views/categories/agents/components/grants.svelte";
+  import NameInput from "$app-views/categories/agents/components/name-input.svelte";
+  import PersonaPicker from "$app-views/categories/agents/components/persona-picker.svelte";
+  import RemoteState from "$app-views/categories/agents/components/remote-state.svelte";
+  import SurfaceBand from "$app-views/categories/agents/components/surface-band.svelte";
+  import SurfaceHead from "$app-views/categories/agents/components/surface-head.svelte";
+  import TaskTable from "$app-views/categories/agents/components/task-table.svelte";
+  import TriggerEditor from "$app-views/categories/agents/components/trigger-editor.svelte";
   import {
-    actionsFor,
-    automation as automationDoor,
-    personasIn,
-    tasksIn,
-    triggersFor,
-    type ActionOption,
-    type PersonaRow,
-    type TaskRow,
-    type TriggerOption
-  } from "$app-views/categories/agents/procedures/agents";
+    agentsLibrary,
+    automationDetail,
+    inspectAutomation,
+    messageOf,
+    openTask,
+    removeAutomation,
+    runAutomation,
+    showLibrary,
+    updateAutomation
+  } from "$app-views/categories/agents/procedures/library.svelte";
+  import { relativeTime } from "$app-views/categories/agents/procedures/time";
+  import { TRIGGER_LABEL, triggerClause } from "$app-views/categories/agents/procedures/vocabulary";
+  import type { UpdateAutomationPatch } from "$capabilities/agents/index.remote";
   import { workspaceState } from "$model/client/workspace-state";
 
   const view = workspaceState();
+  const automationId = $derived(view.active.focus);
+  const detail = $derived(automationDetail(automationId));
+  const library = agentsLibrary();
 
-  /**
-   * One Automation: the trigger, what it does, and what it has produced.
-   *
-   * **An Automation is a task with a trigger**, which is why this centre is a
-   * sibling of the task manager rather than a category of its own kind. Everything
-   * below the details band is tasks — the ones this rule dispatched.
-   *
-   * **Behaviour left, trigger right.** What it does is the part someone writes
-   * and rewrites; when it happens is the part they set once and check. The
-   * setting goes on the side the eye returns to less often.
-   *
-   * **On and off is on the bar, not buried in the trigger.** It is the one
-   * control anybody reaches for in a hurry, and a rule that is off says so where
-   * its name is.
-   */
-  const id = $derived(view.active.focus ?? "nightly-digest");
+  let live = true;
+  onDestroy(() => {
+    live = false;
+  });
+  let now = $state(Date.now());
+  onMount(() => {
+    const timer = setInterval(() => (now = Date.now()), 30_000);
+    return () => clearInterval(timer);
+  });
 
-  const it = $derived(automationDoor(id).current);
-  const triggers = $derived(triggersFor(id).current);
-  const actions = $derived(actionsFor(id).current);
-  const personas = $derived(personasIn(view.project).current);
-
-  /** Every task this rule fired. The run history the rule itself does not keep. */
-  const runs = $derived(
-    tasksIn(view.project).current.filter((row: TaskRow) => row.firedBy === it.id)
+  const automation = $derived(
+    detail !== undefined && detail.ready ? (detail.current ?? undefined) : undefined
   );
 
-  const trigger = $derived(
-    triggers.find((option: TriggerOption) => option.chosen) ?? triggers[0]
-  );
-  const action = $derived(actions.find((option: ActionOption) => option.chosen) ?? actions[0]);
+  let claimed = $state<string>();
+  $effect(() => {
+    if (automation === undefined || claimed === automation.id) return;
+    claimed = automation.id;
+    inspectAutomation(view, automation.id);
+  });
 
-  const persona = $derived(
-    action.kind === "ask-agent"
-      ? personas.find((row: PersonaRow) => row.id === action.agent)
-      : undefined
-  );
+  let pending = $state<string>();
+  let actionError = $state<string>();
 
-  const STATE_TONE: Record<TaskRow["state"], "neutral" | "success" | "danger" | "attention"> = {
-    running: "attention",
-    waiting: "neutral",
-    completed: "success",
-    failed: "danger"
+  const save = async (label: string, patch: UpdateAutomationPatch) => {
+    if (automation === undefined) return;
+    pending = label;
+    actionError = undefined;
+    try {
+      const result = await updateAutomation(view, automation, patch);
+      if (live && !result.accepted) actionError = result.detail;
+    } catch (error) {
+      if (live) actionError = messageOf(error);
+    } finally {
+      pending = undefined;
+    }
   };
 
-  /** Local until something can write it back. A switch that did nothing would lie. */
-  let enabled = $state<boolean | undefined>(undefined);
-  const on = $derived(enabled ?? it.enabled);
+  const run = async () => {
+    if (automation === undefined) return;
+    pending = "run";
+    actionError = undefined;
+    try {
+      const result = await runAutomation(view, automation.id);
+      if (!live) return;
+      if (result.accepted) openTask(view, result.taskId);
+      else actionError = result.detail;
+    } catch (error) {
+      if (live) actionError = messageOf(error);
+    } finally {
+      pending = undefined;
+    }
+  };
 
-  const succeeded = $derived(runs.filter((row: TaskRow) => row.state === "completed").length);
-  const failed = $derived(runs.filter((row: TaskRow) => row.state === "failed").length);
+  const remove = async () => {
+    if (automation === undefined) return;
+    pending = "delete";
+    actionError = undefined;
+    try {
+      const result = await removeAutomation(view, automation);
+      if (!live) return;
+      if (result.accepted) {
+        view.clear();
+        showLibrary(view);
+      } else actionError = result.detail;
+    } catch (error) {
+      if (live) actionError = messageOf(error);
+    } finally {
+      pending = undefined;
+    }
+  };
+
+  const short = (text: string) => (text.length > 96 ? `${text.slice(0, 96).trimEnd()}…` : text);
+  const unwritten = $derived(automation !== undefined && automation.instruction.trim() === "");
 </script>
 
-<ScreenSurface wide>
-  <div class="board">
-    <div class="area-bar">
-      <ScreenBar
-        title={it.name}
-        backLabel="All agents"
-        onback={() => view.showContent("agents.library")}
-      >
-        {#snippet meta()}
-          <PanelChip tone={on ? "active" : "neutral"}>{on ? "On" : "Off"}</PanelChip>
-          <PanelChip>Revision {it.revision}</PanelChip>
-        {/snippet}
-        {#snippet actions()}
-          <label class="text-caption text-ink-secondary flex items-center gap-2">
-            <Switch checked={on} onCheckedChange={(next) => (enabled = next)} />
-            Enabled
-          </label>
-          <Button variant="outline" size="sm" onclick={() => view.showContent("agents.library")}>
-            <Play size={14} aria-hidden="true" />
-            Run now
-          </Button>
-        {/snippet}
-      </ScreenBar>
-    </div>
-
-    <!--
-      The rule as one sentence, in the two clauses the model stores it as. Read
-      before any of the configuration below it, because the configuration is only
-      legible once you know which sentence it is building.
-    -->
-    <div class="area-overview flex flex-col gap-3">
-      <p class="text-body text-ink-primary m-0 leading-relaxed">
-        <span class="text-ink-muted">When</span>
-        {it.sentence.triggerClause},
-        <span class="text-ink-muted">then</span>
-        {it.sentence.actionClause}.
-      </p>
-
-      <div class="flex flex-wrap items-center gap-4">
-        {#if persona}
-          <button
-            type="button"
-            class="hover:bg-surface-panel-hover rounded-control -m-1 flex items-center gap-2 p-1"
-            onclick={() => view.showContent("agents.persona", persona.id)}
-          >
-            <PanelActor name={persona.name} kind="agent" size="row" />
-            <span class="text-caption text-ink-secondary">{persona.name}</span>
-          </button>
-        {/if}
-        <span class="text-caption text-ink-muted flex items-center gap-1.5">
-          <Clock size={14} aria-hidden="true" />
-          Last fired {it.lastFire.when} · {it.lastFire.result.toLowerCase()}
-        </span>
-        <span class="text-caption text-ink-muted">Built by {it.createdBy}</span>
+<div class="surface">
+  <RemoteState
+    ready={library.ready && detail !== undefined && detail.ready}
+    error={library.error !== undefined
+      ? messageOf(library.error)
+      : detail?.error !== undefined
+        ? messageOf(detail.error)
+        : undefined}
+    what="The automation"
+    onretry={() => {
+      void library.refresh();
+      void detail?.refresh();
+    }}
+  >
+    {#if automation === undefined}
+      <div class="p-6">
+        <ScreenEmpty title="That automation is not in this project">
+          It may have been removed, or it belongs to another project.
+        </ScreenEmpty>
+        <Button variant="outline" size="sm" onclick={() => showLibrary(view)}>Back to the library</Button>
       </div>
+    {:else}
+      <SurfaceBand kicker="Automation" onback={() => showLibrary(view)} />
 
-      <ScreenStats label="Its record">
-        <ScreenStat value="~{it.lastFire.firedAbout}" label="Times fired" />
-        <ScreenStat value={String(succeeded)} label="Completed" tone="success" />
-        <ScreenStat value={String(failed)} label="Failed" tone={failed > 0 ? "danger" : "default"} />
-      </ScreenStats>
-
-      {#if it.lastFire.why}
-        <ScreenNote tone="gap">{it.lastFire.why}</ScreenNote>
-      {/if}
-    </div>
-
-    <div class="area-behaviour min-w-0">
-      <ScreenGroup label="What it does">
-        <ScreenList label="Actions">
-          {#each actions as option (option.kind)}
-            <ScreenItem
-              title={option.name}
-              excerpt={option.kind === "ask-agent" && option.chosen && option.prompt
-                ? option.prompt
-                : option.blurb}
-              meta={option.chosen ? "chosen" : undefined}
-              selected={option.chosen}
-              onselect={() =>
-                view.inspect("agents.agent-action", { kind: "action", id: option.kind })}
+      <div class="body">
+        <SurfaceHead>
+          <NameInput
+            value={automation.name}
+            label="Automation name"
+            placeholder="Name the automation"
+            onsave={(next) => save("name", { name: next })}
+          />
+          <div class="chips">
+            <PanelChip tone="neutral">{TRIGGER_LABEL[automation.trigger.kind]}</PanelChip>
+            <PanelChip tone={automation.enabled ? "success" : "inactive"}>{automation.enabled ? "On" : "Off"}</PanelChip>
+            {#if automation.running > 0}
+              <PanelChip tone="attention">{automation.running} running</PanelChip>
+            {/if}
+            <span class="text-caption text-ink-muted">
+              {#if automation.firedCount === 0}
+                Never fired
+              {:else}
+                Fired {automation.firedCount} {automation.firedCount === 1 ? "time" : "times"}
+                {#if automation.lastFiredAt !== null}· last {relativeTime(automation.lastFiredAt, now)}{/if}
+              {/if}
+              {#if pending !== undefined}· saving {pending}…{/if}
+            </span>
+          </div>
+          {#snippet actions()}
+            <label
+              class="text-caption text-ink-secondary flex items-center gap-2"
+              title={unwritten && !automation.enabled ? "Write the instruction under Do this first" : undefined}
             >
-              {#snippet lead()}<Bot size={16} aria-hidden="true" />{/snippet}
-            </ScreenItem>
-          {/each}
-        </ScreenList>
-      </ScreenGroup>
-    </div>
-
-    <div class="area-trigger min-w-0">
-      <ScreenGroup label="When it happens" tone="intelligence">
-        <ScreenList label="Triggers">
-          {#each triggers as option (option.kind)}
-            <ScreenItem
-              title={option.name}
-              excerpt={option.blurb}
-              meta={option.chosen ? "chosen" : undefined}
-              selected={option.chosen}
-              onselect={() =>
-                view.inspect("agents.trigger", { kind: "trigger", id: option.kind })}
+              <Switch
+                size="sm"
+                checked={automation.enabled}
+                disabled={pending !== undefined || (unwritten && !automation.enabled)}
+                onCheckedChange={(next: boolean) => save("enabled", { enabled: next })}
+              />
+              On
+            </label>
+            <Button
+              variant="default"
+              size="sm"
+              disabled={pending !== undefined || unwritten}
+              title={unwritten ? "Write the instruction under Do this first" : "Start one task from this now"}
+              onclick={run}
             >
-              {#snippet lead()}<Clock size={16} aria-hidden="true" />{/snippet}
-            </ScreenItem>
-          {/each}
-        </ScreenList>
-      </ScreenGroup>
-    </div>
+              <Play aria-hidden="true" />
+              {pending === "run" ? "Starting…" : "Run now"}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              class="text-danger-text"
+              disabled={pending !== undefined || automation.firedCount > 0}
+              title={automation.firedCount > 0 ? "It has fired tasks that still name it. Switch it off instead." : "Delete this automation"}
+              onclick={remove}
+            >
+              <Trash2 aria-hidden="true" />
+              Delete
+            </Button>
+          {/snippet}
+        </SurfaceHead>
 
-    <div class="area-runs min-w-0">
-      <ScreenGroup label="Previous runs" count={String(runs.length)}>
-        {#if runs.length === 0}
-          <ScreenEmpty title="It has fired, but no run is still on record">
-            The rule keeps only its last fire. A run becomes a task, and a task is
-            what carries the results.
-          </ScreenEmpty>
-        {:else}
-          <ScreenTable columns={["Run", "Persona", "Started", "Results", "State"]}>
-            {#each runs as row (row.id)}
-              <ScreenRow>
-                <ScreenCell
-                  name={row.title}
-                  onselect={() => view.showContent("agents.task", row.id)}
-                />
-                <ScreenCell>
-                  {personas.find((p: PersonaRow) => p.id === row.persona)?.name ?? row.persona}
-                </ScreenCell>
-                <ScreenCell num>{row.started}</ScreenCell>
-                <ScreenCell num>{row.results}</ScreenCell>
-                <ScreenCell>
-                  <PanelChip tone={STATE_TONE[row.state]}>{row.state}</PanelChip>
-                </ScreenCell>
-              </ScreenRow>
-            {/each}
-          </ScreenTable>
+        {#if actionError}
+          <ScreenNote tone="gap">{actionError}</ScreenNote>
         {/if}
-      </ScreenGroup>
-    </div>
-  </div>
-</ScreenSurface>
+
+        <div class="sentence" class:off={!automation.enabled}>
+          <PanelSentence size="head" lead="When" join="ask" tone={automation.enabled ? "default" : "inactive"}>
+            {#snippet when()}{triggerClause(automation.trigger, automation.triggerRefName ?? undefined)}{/snippet}
+            {#snippet then()}{automation.personaName} to {unwritten ? "…" : short(automation.instruction)}{/snippet}
+          </PanelSentence>
+        </div>
+
+        <ScreenGroup label="Trigger" tone="intelligence">
+          <TriggerEditor automationId={automation.id} disabled={pending !== undefined} />
+        </ScreenGroup>
+
+        <ScreenGroup label="Do this">
+          <div class="do">
+            <div class="stack">
+              <span class="text-caption text-ink-muted">Ask</span>
+              <PersonaPicker
+                value={automation.personaId}
+                disabled={pending !== undefined}
+                onchange={(id) => save("persona", { personaId: id })}
+              />
+            </div>
+            <div class="stack">
+              <span class="text-caption text-ink-muted">To</span>
+              <Textarea
+                rows={5}
+                value={automation.instruction}
+                placeholder="What to ask, in full. It is sent verbatim each time."
+                aria-label="Instruction"
+                disabled={pending !== undefined}
+                onchange={(event) => {
+                  const next = event.currentTarget.value.trim();
+                  if (next !== "" && next !== automation.instruction) void save("instruction", { instruction: next });
+                }}
+              />
+            </div>
+          </div>
+        </ScreenGroup>
+
+        <Grants label="Allowed" owner={automation.id} disabled={pending !== undefined} />
+
+        <ScreenGroup label="Fired">
+          <TaskTable automation={automation.id} />
+        </ScreenGroup>
+      </div>
+    {/if}
+  </RemoteState>
+</div>
 
 <style>
-  /**
-   * The specification's two halves, and the trigger is the right one. Behaviour
-   * is prose someone rewrites; a trigger is a setting they check.
-   */
-  .board {
-    display: grid;
-    gap: calc(var(--token-spacing-unit) * 5);
-    grid-template-columns: 3fr 2fr;
-    grid-template-areas:
-      "bar       bar"
-      "overview  overview"
-      "behaviour trigger"
-      "runs      runs";
-    align-content: start;
+  .surface {
+    display: flex;
+    height: 100%;
+    min-height: 0;
+    flex-direction: column;
   }
 
-  .area-bar {
-    grid-area: bar;
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: calc(var(--token-spacing-unit) * 2);
   }
-  .area-overview {
-    grid-area: overview;
-    max-width: 70ch;
+
+  .body {
+    display: flex;
+    min-height: 0;
+    flex: 1;
+    flex-direction: column;
+    gap: calc(var(--token-spacing-unit) * 6);
+    overflow-y: auto;
+    padding: calc(var(--token-spacing-unit) * 6);
+    scrollbar-width: none;
   }
-  .area-behaviour {
-    grid-area: behaviour;
+
+  .sentence {
+    max-width: 80ch;
+    padding: calc(var(--token-spacing-unit) * 3) calc(var(--token-spacing-unit) * 4);
+    border: 1px solid var(--token-border-subtle);
+    border-inline-start: 3px solid var(--token-color-intelligence-border);
+    border-radius: 0 var(--token-radius-panel) var(--token-radius-panel) 0;
+    background: var(--token-color-intelligence-surface);
   }
-  .area-trigger {
-    grid-area: trigger;
+
+  .sentence.off {
+    border-inline-start-color: var(--token-border-strong);
+    background: var(--token-surface-elevated);
   }
-  .area-runs {
-    grid-area: runs;
+
+  .do {
+    display: grid;
+    grid-template-columns: minmax(16rem, 2fr) minmax(0, 3fr);
+    gap: calc(var(--token-spacing-unit) * 4);
+    align-items: start;
+  }
+
+  .stack {
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--token-spacing-unit) * 2);
   }
 
   @media (max-width: 64rem) {
-    .board {
+    .do {
       grid-template-columns: 1fr;
-      grid-template-areas:
-        "bar"
-        "overview"
-        "trigger"
-        "behaviour"
-        "runs";
     }
   }
 </style>

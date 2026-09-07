@@ -1,249 +1,514 @@
 <script lang="ts">
-  import Boxes from "@lucide/svelte/icons/boxes";
-  import Wrench from "@lucide/svelte/icons/wrench";
+  import { onDestroy, onMount } from "svelte";
+  import Copy from "@lucide/svelte/icons/copy";
+  import MessageSquarePlus from "@lucide/svelte/icons/message-square-plus";
+  import Sparkles from "@lucide/svelte/icons/sparkles";
+  import Trash2 from "@lucide/svelte/icons/trash-2";
+  import Workflow from "@lucide/svelte/icons/workflow";
 
-  import { PanelActor, PanelChip } from "$authored-components/panel";
+  import { PanelActor } from "$authored-components/panel";
   import {
-    ScreenBar,
     ScreenCell,
     ScreenEmpty,
+    ScreenFilters,
     ScreenGroup,
     ScreenItem,
     ScreenList,
+    ScreenNote,
     ScreenRow,
-    ScreenStat,
-    ScreenStats,
-    ScreenSurface,
     ScreenTable
   } from "$authored-components/screen";
+  import { Button } from "$vendored-components/button";
+  import { Switch } from "$vendored-components/switch";
+  import BandTabs from "$app-views/categories/agents/components/band-tabs.svelte";
+  import DefinitionPanel from "$app-views/categories/agents/components/definition-panel.svelte";
+  import Grants from "$app-views/categories/agents/components/grants.svelte";
+  import NameInput from "$app-views/categories/agents/components/name-input.svelte";
+  import RemoteState from "$app-views/categories/agents/components/remote-state.svelte";
+  import SurfaceBand from "$app-views/categories/agents/components/surface-band.svelte";
+  import SurfaceHead from "$app-views/categories/agents/components/surface-head.svelte";
+  import TaskFilters from "$app-views/categories/agents/components/task-filters.svelte";
+  import TaskTable from "$app-views/categories/agents/components/task-table.svelte";
   import {
-    behaviourOf,
-    lookupScopeOf,
-    persona as personaDoor,
-    tasksIn,
-    toolsFor,
-    type BehaviourSection,
-    type TaskRow,
-    type ToolPermission
-  } from "$app-views/categories/agents/procedures/agents";
+    agentsLibrary,
+    createChat,
+    duplicatePersona,
+    inspectAutomation,
+    inspectPersona,
+    isSelected,
+    makeAutomation,
+    messageOf,
+    openAutomation,
+    openChat,
+    openNewTask,
+    openPersona,
+    personaDetail,
+    removePersona,
+    showLibrary,
+    updateAutomation,
+    updatePersona
+  } from "$app-views/categories/agents/procedures/library.svelte";
+  import { relativeTime } from "$app-views/categories/agents/procedures/time";
+  import {
+    TRIGGER_KINDS,
+    TRIGGER_LABEL,
+    triggerSummary
+  } from "$app-views/categories/agents/procedures/vocabulary";
+  import type { UpdatePersonaPatch } from "$capabilities/agents/index.remote";
   import { workspaceState } from "$model/client/workspace-state";
 
   const view = workspaceState();
+  const personaId = $derived(view.active.focus);
+  const detail = $derived(personaDetail(personaId));
+  const library = agentsLibrary();
 
-  /**
-   * One persona: what it is, how it is defined, and what it is doing.
-   *
-   * `focus` names it. Reached by opening a card in the library rather than by a
-   * switch in the shell — choosing which persona and choosing to edit one are the
-   * same act, so they are one call, and the way back is the bar at the top.
-   *
-   * **Three bands, in the order the questions come.** Who is this and how is it
-   * doing; then how it is defined; then, at the bottom, the work itself — because
-   * the work is the band you scroll to and the definition is the band you edit.
-   *
-   * **Nothing here is the lens.** Every row opens an inspector rather than
-   * expanding in place: a behaviour section is 400 characters of prose and a tool
-   * permission is a decision, and neither fits between two other bands.
-   */
-  const id = $derived(view.active.focus ?? "grid-analyst");
+  let live = true;
+  onDestroy(() => {
+    live = false;
+  });
+  let now = $state(Date.now());
+  onMount(() => {
+    const timer = setInterval(() => (now = Date.now()), 30_000);
+    return () => clearInterval(timer);
+  });
 
-  const profile = $derived(personaDoor(id).current);
-  const behaviour = $derived(behaviourOf(id).current);
-  const scope = $derived(lookupScopeOf(id).current);
-  const tools = $derived(toolsFor(id).current);
-  const tasks = $derived(
-    tasksIn(view.project).current.filter((row: TaskRow) => row.persona === profile.id)
+  const persona = $derived(
+    detail !== undefined && detail.ready ? (detail.current ?? undefined) : undefined
+  );
+  const answer = $derived(library.ready ? library.current : undefined);
+  const chats = $derived((answer?.chats ?? []).filter((row) => row.personaId === persona?.id));
+
+  let claimed = $state<string>();
+  $effect(() => {
+    if (persona === undefined || claimed === persona.id) return;
+    claimed = persona.id;
+    inspectPersona(view, persona.id);
+  });
+
+  let pending = $state<string>();
+  let actionError = $state<string>();
+  let band = $state("Tasks");
+
+  let query = $state("");
+  let kind = $state("any");
+  let taskState = $state("any");
+  let sort = $state("started");
+  let direction = $state("asc");
+
+  let ruleQuery = $state("");
+  let ruleTrigger = $state("any");
+  let ruleOn = $state("any");
+
+  const automations = $derived(
+    (answer?.automations ?? [])
+      .filter((row) => row.personaId === persona?.id)
+      .filter((row) => ruleTrigger === "any" || row.trigger.kind === ruleTrigger)
+      .filter((row) => ruleOn === "any" || String(row.enabled) === ruleOn)
+      .filter((row) => {
+        const needle = ruleQuery.trim().toLocaleLowerCase();
+        return needle === "" || row.name.toLocaleLowerCase().includes(needle);
+      })
   );
 
-  const written = $derived(
-    behaviour.filter((entry: BehaviourSection) => entry.text.trim() !== "")
-  );
-
-  const granted = $derived(tools.filter((tool: ToolPermission) => tool.allowed));
-
-  const STATE_TONE: Record<TaskRow["state"], "neutral" | "success" | "danger" | "attention"> = {
-    running: "attention",
-    waiting: "neutral",
-    completed: "success",
-    failed: "danger"
+  const save = async (label: string, patch: UpdatePersonaPatch) => {
+    if (persona === undefined) return;
+    pending = label;
+    actionError = undefined;
+    try {
+      const result = await updatePersona(view, persona, patch);
+      if (live && !result.accepted) actionError = result.detail;
+    } catch (error) {
+      if (live) actionError = messageOf(error);
+    } finally {
+      pending = undefined;
+    }
   };
 
-  /** How long it has been going, from the sortable minutes rather than the phrase. */
-  const elapsed = (minutes: number): string =>
-    minutes < 60
-      ? `${minutes} min`
-      : minutes < 1_440
-        ? `${Math.round(minutes / 60)} h`
-        : `${Math.round(minutes / 1_440)} d`;
+  const duplicate = async () => {
+    if (persona === undefined) return;
+    pending = "duplicate";
+    actionError = undefined;
+    try {
+      const result = await duplicatePersona(view, persona.id);
+      if (!live) return;
+      if (result.accepted) openPersona(view, result.id);
+      else actionError = result.detail;
+    } catch (error) {
+      if (live) actionError = messageOf(error);
+    } finally {
+      pending = undefined;
+    }
+  };
+
+  const remove = async () => {
+    if (persona === undefined) return;
+    pending = "delete";
+    actionError = undefined;
+    try {
+      const result = await removePersona(view, persona);
+      if (!live) return;
+      if (result.accepted) {
+        view.clear();
+        showLibrary(view);
+      } else actionError = result.detail;
+    } catch (error) {
+      if (live) actionError = messageOf(error);
+    } finally {
+      pending = undefined;
+    }
+  };
+
+  const makeRule = async () => {
+    if (persona === undefined) return;
+    pending = "automation";
+    actionError = undefined;
+    try {
+      const id = await makeAutomation(view, persona.id, automations.map((row) => row.name));
+      if (live && id !== undefined) openAutomation(view, id);
+    } catch (error) {
+      if (live) actionError = messageOf(error);
+    } finally {
+      pending = undefined;
+    }
+  };
+
+  const chat = async () => {
+    if (persona === undefined) return;
+    pending = "chat";
+    actionError = undefined;
+    try {
+      const result = await createChat(view, persona.id);
+      if (!live) return;
+      if (result.accepted) openChat(view, result.chatId);
+      else actionError = result.detail;
+    } catch (error) {
+      if (live) actionError = messageOf(error);
+    } finally {
+      pending = undefined;
+    }
+  };
+
+  const referenced = $derived(
+    persona === undefined
+      ? 0
+      : persona.counts.tasks + persona.counts.automations + persona.counts.chats
+  );
+
+  const toggleAutomation = async (automationId: string, revision: number, enabled: boolean) => {
+    actionError = undefined;
+    try {
+      const result = await updateAutomation(view, { id: automationId, revision }, { enabled });
+      if (live && !result.accepted) actionError = result.detail;
+    } catch (error) {
+      if (live) actionError = messageOf(error);
+    }
+  };
 </script>
 
-<ScreenSurface wide>
-  <div class="board">
-    <div class="area-bar">
-      <ScreenBar
-        title={profile.name}
-        backLabel="All agents"
-        onback={() => view.showContent("agents.library")}
-      >
-        {#snippet meta()}
-          <PanelChip tone="neutral">{profile.scope}</PanelChip>
-          <PanelChip>Revision {profile.revision}</PanelChip>
-        {/snippet}
-      </ScreenBar>
-    </div>
-
-    <!--
-      Identity and record together: two personas with similar prose are told apart
-      by what they have done, so the counts sit beside the description rather than
-      behind a tab.
-    -->
-    <div class="area-overview flex flex-col gap-3">
-      <div class="flex items-start gap-3">
-        <PanelActor name={profile.name} kind="agent" size="face" />
-        <div class="flex min-w-0 flex-col gap-1">
-          <p class="text-body-sm text-ink-primary m-0">{profile.describes}</p>
-          <p class="text-caption text-ink-muted m-0">
-            Built by {profile.createdBy} · changed {profile.updated}
-          </p>
-        </div>
+<div class="surface">
+  <RemoteState
+    ready={library.ready && detail !== undefined && detail.ready}
+    error={library.error !== undefined
+      ? messageOf(library.error)
+      : detail?.error !== undefined
+        ? messageOf(detail.error)
+        : undefined}
+    what="The persona"
+    onretry={() => {
+      void library.refresh();
+      void detail?.refresh();
+    }}
+  >
+    {#if persona === undefined}
+      <div class="p-6">
+        <ScreenEmpty title="That persona is not in this project">
+          It may have been deleted, or it belongs to another project.
+        </ScreenEmpty>
+        <Button variant="outline" size="sm" onclick={() => showLibrary(view)}>Back to the library</Button>
       </div>
+    {:else}
+      <SurfaceBand kicker="Persona" onback={() => showLibrary(view)} />
 
-      <ScreenStats label="What it has done">
-        <ScreenStat value={String(profile.record.running)} label="Running" tone="attention" />
-        <ScreenStat value={String(profile.record.completed)} label="Completed" />
-        <ScreenStat value={String(profile.record.failed)} label="Failed" tone="danger" />
-        <ScreenStat value={String(profile.record.findings)} label="Findings" />
-        <ScreenStat value={String(profile.record.conversations)} label="Conversations" />
-      </ScreenStats>
-    </div>
-
-    <div class="area-behaviour min-w-0">
-      <ScreenGroup label="Behaviour" count="{written.length} of {behaviour.length} written">
-        <ScreenList label="Behaviour sections">
-          {#each behaviour as section (section.id)}
-            <ScreenItem
-              title={section.name}
-              excerpt={section.text.trim() === "" ? section.purpose : section.text}
-              meta={section.text.trim() === "" ? "empty" : `${section.characters} chars`}
-              selected={view.selection?.id === section.id}
-              onselect={() =>
-                view.inspect("agents.behaviour-section", {
-                  kind: "behaviour",
-                  id: section.id
-                })}
-            />
-          {/each}
-        </ScreenList>
-      </ScreenGroup>
-    </div>
-
-    <div class="area-access flex min-w-0 flex-col gap-4">
-      <!--
-        What it can look up and what it may do are two different grants, and
-        confusing them is how an agent ends up able to write where it was only
-        meant to read.
-      -->
-      <ScreenGroup label="Can look up" tone="intelligence">
-        <ScreenList label="Lookup scope">
-          <ScreenItem
-            title={scope.name}
-            excerpt="{scope.searchable} of {scope.contains} searchable · {scope.sample.join(', ')}"
-            meta={scope.travels ? "travels" : "this project"}
-            onselect={() =>
-              view.inspect("agents.what-it-can-look-up", { kind: "scope", id: scope.id })}
-          >
-            {#snippet lead()}<Boxes size={16} aria-hidden="true" />{/snippet}
-          </ScreenItem>
-        </ScreenList>
-      </ScreenGroup>
-
-      <ScreenGroup label="Tools" count="{granted.length} of {tools.length} allowed">
-        <ScreenList label="Tool permissions">
-          {#each tools as tool (tool.id)}
-            <ScreenItem
-              title={tool.does}
-              meta={tool.allowed ? "allowed" : "off"}
-              selected={view.selection?.id === tool.id}
-              onselect={() => view.inspect("agents.tool", { kind: "tool", id: tool.id })}
+      <div class="body">
+        <div class="top">
+        <SurfaceHead>
+          <div class="identity">
+            <PanelActor name={persona.name} kind="agent" size="face" />
+            <div class="words">
+              <NameInput
+                value={persona.name}
+                label="Persona name"
+                placeholder="Name the persona"
+                onsave={(next) => save("name", { name: next })}
+              />
+              <input
+                class="describes"
+                value={persona.description ?? ""}
+                placeholder="One line on what it is for"
+                aria-label="Persona description"
+                onchange={(event) => {
+                  const next = event.currentTarget.value.trim();
+                  if (next !== (persona.description ?? "")) {
+                    void save("description", { description: next === "" ? null : next });
+                  }
+                }}
+              />
+            </div>
+          </div>
+          {#snippet actions()}
+            {#if pending !== undefined}
+              <span class="text-caption text-ink-muted">Saving {pending}…</span>
+            {/if}
+            <Button variant="default" size="sm" onclick={() => openNewTask(view, persona.id)}>
+              <Sparkles aria-hidden="true" />
+              New task
+            </Button>
+            <Button variant="outline" size="sm" disabled={pending !== undefined} onclick={makeRule}>
+              <Workflow aria-hidden="true" />
+              New automation
+            </Button>
+            <Button variant="outline" size="sm" disabled={pending !== undefined} onclick={chat}>
+              <MessageSquarePlus aria-hidden="true" />
+              New chat
+            </Button>
+            <Button variant="outline" size="sm" disabled={pending !== undefined} onclick={duplicate}>
+              <Copy aria-hidden="true" />
+              Duplicate
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              class="text-danger-text"
+              disabled={pending !== undefined || referenced > 0}
+              title={referenced > 0
+                ? `Still named by ${referenced} ${referenced === 1 ? "thing" : "things"} in this project`
+                : "Delete this persona"}
+              onclick={remove}
             >
-              {#snippet lead()}<Wrench size={16} aria-hidden="true" />{/snippet}
-            </ScreenItem>
-          {/each}
-        </ScreenList>
-      </ScreenGroup>
-    </div>
+              <Trash2 aria-hidden="true" />
+              Delete
+            </Button>
+          {/snippet}
+        </SurfaceHead>
 
-    <div class="area-tasks min-w-0">
-      <ScreenGroup label="Tasks it is managing" count={String(tasks.length)}>
-        {#if tasks.length === 0}
-          <ScreenEmpty title="Nothing running">
-            Work handed to this persona will appear here while it runs and after it finishes.
-          </ScreenEmpty>
-        {:else}
-          <ScreenTable columns={["Task", "Started by", "Running for", "Results", "State"]}>
-            {#each tasks as row (row.id)}
-              <ScreenRow>
-                <ScreenCell
-                  name={row.title}
-                  onselect={() => view.showContent("agents.task", row.id)}
-                />
-                <ScreenCell>{row.firedBy ? `${row.startedBy} · Automation` : row.startedBy}</ScreenCell>
-                <ScreenCell num>{elapsed(row.age)}</ScreenCell>
-                <ScreenCell num>{row.results}</ScreenCell>
-                <ScreenCell>
-                  <PanelChip tone={STATE_TONE[row.state]}>{row.state}</PanelChip>
-                </ScreenCell>
-              </ScreenRow>
-            {/each}
-          </ScreenTable>
+        {#if actionError}
+          <ScreenNote tone="gap">{actionError}</ScreenNote>
         {/if}
-      </ScreenGroup>
-    </div>
-  </div>
-</ScreenSurface>
+        </div>
+
+        <div class="pair">
+          <ScreenGroup label="Definition" fill>
+            <DefinitionPanel personaId={persona.id} disabled={pending !== undefined} />
+          </ScreenGroup>
+
+          <Grants label="Default" owner={persona.id} aligned disabled={pending !== undefined} />
+        </div>
+
+        <ScreenGroup label={band} fill>
+          {#snippet actions()}
+            <BandTabs
+              label="What this persona has"
+              options="Tasks,Automations"
+              value={band}
+              onchange={(next) => (band = next)}
+            />
+          {/snippet}
+
+          {#if band === "Tasks"}
+            <div class="stack">
+              <TaskFilters
+                withPersona={false}
+                bind:query
+                bind:kind
+                bind:taskState
+                bind:sort
+                bind:direction
+              />
+              <TaskTable
+                persona={persona.id}
+                withPersona={false}
+                {query}
+                {kind}
+                {taskState}
+                {sort}
+                {direction}
+                scroll
+                onclear={() => {
+                  query = "";
+                  kind = "any";
+                  taskState = "any";
+                }}
+              />
+            </div>
+          {:else}
+            <div class="stack">
+              <ScreenFilters placeholder="Search automations" bind:value={ruleQuery}>
+                <select class="filter" bind:value={ruleTrigger} aria-label="Trigger">
+                  <option value="any">Any trigger</option>
+                  {#each TRIGGER_KINDS as option (option)}
+                    <option value={option}>{TRIGGER_LABEL[option]}</option>
+                  {/each}
+                </select>
+                <select class="filter" bind:value={ruleOn} aria-label="Enabled">
+                  <option value="any">On and off</option>
+                  <option value="true">On</option>
+                  <option value="false">Off</option>
+                </select>
+              </ScreenFilters>
+
+              {#if automations.length === 0}
+                <ScreenEmpty title="No standing rule">
+                  An automation asks this persona to work when something happens.
+                </ScreenEmpty>
+              {:else}
+                <ScreenTable columns={["Automation", "Trigger", "Fired", "Last fired", "On"]}>
+                  {#each automations as row (row.id)}
+                    <ScreenRow
+                      selected={isSelected(view, "automation", row.id)}
+                      onselect={() => inspectAutomation(view, row.id)}
+                      onopen={() => openAutomation(view, row.id)}
+                    >
+                      <ScreenCell>
+                        <button
+                          type="button"
+                          class="text-body-sm text-ink-primary min-h-9 text-start hover:underline"
+                          onclick={() => inspectAutomation(view, row.id)}
+                          ondblclick={() => openAutomation(view, row.id)}
+                        >
+                          {row.name}
+                        </button>
+                      </ScreenCell>
+                      <ScreenCell>
+                        {TRIGGER_LABEL[row.trigger.kind]} · {triggerSummary(row.trigger, row.triggerRefName ?? undefined)}
+                      </ScreenCell>
+                      <ScreenCell num>{row.firedCount}</ScreenCell>
+                      <ScreenCell num>{row.lastFiredAt === null ? "—" : relativeTime(row.lastFiredAt, now)}</ScreenCell>
+                      <ScreenCell>
+                        <Switch
+                          size="sm"
+                          checked={row.enabled}
+                          aria-label="Enabled"
+                          onCheckedChange={(next: boolean) => toggleAutomation(row.id, row.revision, next)}
+                        />
+                      </ScreenCell>
+                    </ScreenRow>
+                  {/each}
+                </ScreenTable>
+              {/if}
+            </div>
+          {/if}
+        </ScreenGroup>
+
+        <ScreenGroup label="Chats" fill>
+          {#if chats.length === 0}
+            <ScreenEmpty title="No conversation yet">
+              New chat opens one in its own tab.
+            </ScreenEmpty>
+          {:else}
+            <ScreenList label="Chats with {persona.name}" scroll>
+              {#each chats as row (row.id)}
+                <ScreenItem
+                  title={row.title}
+                  excerpt={row.lastLine ?? "Nothing said yet"}
+                  meta={relativeTime(row.updatedAt, now)}
+                  onselect={() => openChat(view, row.id)}
+                />
+              {/each}
+            </ScreenList>
+          {/if}
+        </ScreenGroup>
+      </div>
+    {/if}
+  </RemoteState>
+</div>
 
 <style>
-  /**
-   * Two tracks for the definition band and one for everything else. Behaviour is
-   * prose and wants the measure; access is a short list of grants and does not.
-   */
-  .board {
-    display: grid;
-    gap: calc(var(--token-spacing-unit) * 5);
-    grid-template-columns: 3fr 2fr;
-    grid-template-areas:
-      "bar       bar"
-      "overview  overview"
-      "behaviour access"
-      "tasks     tasks";
-    align-content: start;
+  .surface {
+    display: flex;
+    height: 100%;
+    min-height: 0;
+    flex-direction: column;
   }
 
-  .area-bar {
-    grid-area: bar;
+  .identity {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: calc(var(--token-spacing-unit) * 4);
+    align-items: start;
   }
-  .area-overview {
-    grid-area: overview;
+
+  .words {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: calc(var(--token-spacing-unit) * 1);
   }
-  .area-behaviour {
-    grid-area: behaviour;
+
+  .describes {
+    width: 100%;
+    margin-left: calc(var(--token-spacing-unit) * -1);
+    padding: 0 var(--token-spacing-unit);
+    border: 1px solid transparent;
+    border-radius: var(--token-radius-control);
+    background: transparent;
+    color: var(--token-ink-secondary);
+    font-size: var(--token-text-body-sm);
+    line-height: var(--token-text-body-sm-leading);
+    outline: none;
   }
-  .area-access {
-    grid-area: access;
+
+  .describes:hover,
+  .describes:focus {
+    border-color: var(--token-border-subtle);
+    background: var(--token-surface-elevated);
   }
-  .area-tasks {
-    grid-area: tasks;
+
+  .body {
+    display: grid;
+    min-height: 0;
+    flex: 1;
+    gap: calc(var(--token-spacing-unit) * 6);
+    grid-template-rows: auto minmax(21rem, 5fr) minmax(23rem, 5fr) minmax(11rem, 3fr);
+    overflow-y: auto;
+    padding: calc(var(--token-spacing-unit) * 6);
+    scrollbar-width: none;
+  }
+
+  .top {
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--token-spacing-unit) * 3);
+  }
+
+  .pair {
+    display: grid;
+    min-height: 0;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: calc(var(--token-spacing-unit) * 6);
+    align-items: stretch;
+  }
+
+  .stack {
+    display: flex;
+    min-height: 0;
+    flex: 1;
+    flex-direction: column;
+    gap: calc(var(--token-spacing-unit) * 3);
+  }
+
+  .filter {
+    height: calc(var(--token-spacing-unit) * 7);
+    padding: 0 calc(var(--token-spacing-unit) * 2);
+    border: 1px solid var(--token-border-subtle);
+    border-radius: var(--token-radius-control);
+    background: var(--token-surface-panel);
+    color: var(--token-ink-secondary);
+    font-size: var(--token-text-caption);
   }
 
   @media (max-width: 64rem) {
-    .board {
+    .pair {
       grid-template-columns: 1fr;
-      grid-template-areas:
-        "bar"
-        "overview"
-        "behaviour"
-        "access"
-        "tasks";
     }
   }
 </style>

@@ -30,6 +30,7 @@ export type ProjectedRows = {
   hypotheses: Projection<"hypotheses", "projectId" | "statement">;
   memberships: Projection<"memberships", "projectId" | "userId" | "role">;
   personas: Projection<"personas", "projectId" | "name">;
+  personaThreads: Projection<"personaThreads", "projectId" | "title" | "personaId">;
   projects: Projection<"projects", "name" | "description">;
   questions: Projection<"questions", "projectId" | "text">;
   researchThreads: Projection<"researchThreads", "projectId" | "title">;
