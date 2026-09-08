@@ -29,6 +29,7 @@ import {
   readSemanticResourceForModel
 } from "$capabilities/semantic-overlay";
 import { rowsOf } from "$capabilities/derived-output/api/shared/rows";
+import { describedAgentTool } from "$capabilities/derived-output/api/shared/tool-catalog";
 
 type EvidenceDraft =
   | Omit<SemanticTextCitation, "selections">
@@ -344,8 +345,7 @@ export const createResourceReadingSession = (input: ReadingSessionInput) => {
 
   const tools: IntelligenceTool[] = [
     {
-      name: "read_selection",
-      description: "Read the current user selection directly from its authoritative resource and issue exact evidence.",
+      ...describedAgentTool("read_selection"),
       inputSchema: { type: "object", properties: {}, additionalProperties: false },
       execute: async () => {
         if (input.selection === undefined) throw new Error("this run has no user selection");
@@ -358,8 +358,7 @@ export const createResourceReadingSession = (input: ReadingSessionInput) => {
       }
     },
     {
-      name: "find_resources",
-      description: "Find project resource handles by title and kind. Navigation only; no evidence IDs.",
+      ...describedAgentTool("find_resources"),
       inputSchema: {
         type: "object",
         properties: {
@@ -391,8 +390,7 @@ export const createResourceReadingSession = (input: ReadingSessionInput) => {
       }
     },
     {
-      name: "list_document_blocks",
-      description: "List document blocks, nested paths, and exact-text ranges in reading order. Navigation only; no factual content or evidence IDs.",
+      ...describedAgentTool("list_document_blocks"),
       inputSchema: {
         type: "object",
         properties: {
@@ -452,8 +450,7 @@ export const createResourceReadingSession = (input: ReadingSessionInput) => {
       }
     },
     {
-      name: "list_deck_slides",
-      description: "List slide IDs in deck order. Navigation only; no evidence IDs.",
+      ...describedAgentTool("list_deck_slides"),
       inputSchema: {
         type: "object", properties: { resourceId: { type: "string" }, cursor: { type: "integer", minimum: 0 }, limit: { type: "integer", minimum: 1, maximum: 100 } }, required: ["resourceId"], additionalProperties: false
       },
@@ -469,16 +466,14 @@ export const createResourceReadingSession = (input: ReadingSessionInput) => {
       }
     },
     {
-      name: "read_text",
-      description: "Read one bounded UTF-16 range directly from a current project resource and issue exact evidence.",
+      ...describedAgentTool("read_text"),
       inputSchema: {
         type: "object", properties: { kind: { type: "string" }, resourceId: { type: "string" }, from: { type: "integer", minimum: 0 }, to: { type: "integer", minimum: 1 } }, required: ["kind", "resourceId", "from", "to"], additionalProperties: false
       },
       execute: async (value) => directText(value)
     },
     {
-      name: "inspect_dataset",
-      description: "Inspect bounded dataset structure and native-read handles. Context only; no evidence ID.",
+      ...describedAgentTool("inspect_dataset"),
       inputSchema: { type: "object", properties: { materialHandle: { type: "string" } }, required: ["materialHandle"], additionalProperties: false },
       execute: async (value) => {
         const { material } = materialFor(value);
@@ -510,8 +505,7 @@ export const createResourceReadingSession = (input: ReadingSessionInput) => {
       }
     },
     {
-      name: "inspect_code",
-      description: "Inspect code symbols and exact line ranges without returning code content. Context only.",
+      ...describedAgentTool("inspect_code"),
       inputSchema: { type: "object", properties: { materialHandle: { type: "string" } }, required: ["materialHandle"], additionalProperties: false },
       execute: async (value) => {
         const { material } = materialFor(value);
@@ -520,8 +514,7 @@ export const createResourceReadingSession = (input: ReadingSessionInput) => {
       }
     },
     {
-      name: "inspect_slide",
-      description: "Inspect slide item types, bounds, and material handles. Context only; no evidence IDs.",
+      ...describedAgentTool("inspect_slide"),
       inputSchema: { type: "object", properties: { resourceId: { type: "string" }, slideId: { type: "string" } }, required: ["resourceId", "slideId"], additionalProperties: false },
       execute: async (value) => {
         const held = record(value, "inspect_slide input must be an object");
@@ -615,8 +608,7 @@ export const createResourceReadingSession = (input: ReadingSessionInput) => {
       }
     },
     {
-      name: "view_slide",
-      description: "View a schematic slide layout for spatial orientation. Supporting context only, not a production render, and never citable.",
+      ...describedAgentTool("view_slide"),
       inputSchema: { type: "object", properties: { resourceId: { type: "string" }, slideId: { type: "string" } }, required: ["resourceId", "slideId"], additionalProperties: false },
       execute: async (value) => {
         const held = record(value, "view_slide input must be an object");
@@ -655,8 +647,7 @@ export const createResourceReadingSession = (input: ReadingSessionInput) => {
       }
     },
     {
-      name: "read_table",
-      description: "Read bounded native table cells and issue structured evidence.",
+      ...describedAgentTool("read_table"),
       inputSchema: { type: "object", properties: { materialHandle: { type: "string" }, rowFrom: { type: "integer", minimum: 0 }, rowTo: { type: "integer", minimum: 1 }, columnFrom: { type: "integer", minimum: 0 }, columnTo: { type: "integer", minimum: 1 } }, required: ["materialHandle"], additionalProperties: false },
       execute: async (value) => {
         const { held, material, snapshot } = materialFor(value);
@@ -685,8 +676,7 @@ export const createResourceReadingSession = (input: ReadingSessionInput) => {
       }
     },
     {
-      name: "read_chart",
-      description: "Read normalized native chart values and issue structured evidence.",
+      ...describedAgentTool("read_chart"),
       inputSchema: { type: "object", properties: { materialHandle: { type: "string" }, series: { type: "array", items: { type: "string" }, maxItems: 50 } }, required: ["materialHandle"], additionalProperties: false },
       execute: async (value) => {
         const { held, material, snapshot } = materialFor(value);
@@ -713,8 +703,7 @@ export const createResourceReadingSession = (input: ReadingSessionInput) => {
       }
     },
     {
-      name: "read_csv",
-      description: "Read bounded authoritative CSV rows/columns and issue structured evidence.",
+      ...describedAgentTool("read_csv"),
       inputSchema: { type: "object", properties: { materialHandle: { type: "string" }, rows: { type: "array", items: { type: "integer", minimum: 0 }, maxItems: 100 }, columns: { type: "array", items: { type: "string" }, maxItems: 50 } }, required: ["materialHandle", "rows", "columns"], additionalProperties: false },
       execute: async (value) => {
         const { held, material, snapshot } = materialFor(value);
@@ -746,8 +735,7 @@ export const createResourceReadingSession = (input: ReadingSessionInput) => {
       }
     },
     {
-      name: "read_code",
-      description: "Read an exact bounded line range from authoritative code and issue verbatim evidence.",
+      ...describedAgentTool("read_code"),
       inputSchema: { type: "object", properties: { materialHandle: { type: "string" }, fromLine: { type: "integer", minimum: 1 }, toLine: { type: "integer", minimum: 1 } }, required: ["materialHandle", "fromLine", "toLine"], additionalProperties: false },
       execute: async (value) => {
         const { held, material, snapshot } = materialFor(value);
@@ -765,8 +753,7 @@ export const createResourceReadingSession = (input: ReadingSessionInput) => {
       }
     },
     {
-      name: "read_image",
-      description: "Read content-addressed original image pixels, optionally bind the citation to crop coordinates, and issue visual evidence.",
+      ...describedAgentTool("read_image"),
       inputSchema: { type: "object", properties: { materialHandle: { type: "string" }, crop: { type: "object", properties: { x: { type: "number" }, y: { type: "number" }, width: { type: "number" }, height: { type: "number" } }, required: ["x", "y", "width", "height"], additionalProperties: false } }, required: ["materialHandle"], additionalProperties: false },
       execute: async (value) => {
         const { held, material, snapshot } = materialFor(value);

@@ -144,6 +144,37 @@ test("the semantic material page separates discovery summaries from native autho
   await page.screenshot({ path: "/tmp/semantic-material-layer.png", fullPage: true });
 });
 
+test("the semantic control room exposes every live intake signal and agent tool", async ({ page }) => {
+  await page.goto("/demo/semantic-overlay/ingestion-and-tools", { waitUntil: "networkidle" });
+
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("When knowledge moves");
+  await expect(page.locator(".hero-instruments")).toContainText("04");
+  await expect(page.locator(".hero-instruments")).toContainText("16");
+
+  const documentSave = page.getByRole("tab", { name: /Document save accepted/ });
+  await documentSave.click();
+  await expect(documentSave).toHaveAttribute("aria-selected", "true");
+  await expect(page.locator(".signal-readout")).toContainText("submitDocumentChanges");
+  await expect(page.locator(".signal-readout")).toContainText("semanticSyncJobs");
+  await expect(page.locator(".signal-readout")).toContainText("semanticMaterialJobs");
+
+  await page.getByRole("tab", { name: /Evidence 9/ }).click();
+  await expect(page.locator(".tool-list button")).toHaveCount(9);
+  await page.getByRole("button", { name: /retrieve_materials.*descriptor/ }).click();
+  await expect(page.locator(".observation-window")).toContainText("EVIDENCE-PRODUCING");
+  await expect(page.locator(".observation-window")).toContainText("broad claims only");
+
+  await page.getByRole("tab", { name: /Orientation 7/ }).click();
+  await expect(page.locator(".tool-list button")).toHaveCount(7);
+  await page.getByRole("button", { name: /list_deck_slides.*context only/ }).click();
+  await expect(page.locator(".observation-window")).toContainText("visible slide IDs");
+  await expect(page.locator(".observation-window")).toContainText("cannot support a final claim");
+
+  await page.getByRole("tab", { name: /All 16/ }).click();
+  await expect(page.locator(".tool-list button")).toHaveCount(16);
+  await page.screenshot({ path: "/tmp/semantic-ingestion-and-tools.png", fullPage: true });
+});
+
 test("the slide Prompt Block reference exposes the implemented editor and server boundary", async ({ page }) => {
   await page.goto("/demo/semantic-overlay/slide-prompt-blocks", { waitUntil: "networkidle" });
 
@@ -317,6 +348,7 @@ test("architecture surfaces follow Helios and Selene", async ({ page }) => {
     "/demo/semantic-overlay/agent-runtime",
     "/demo/semantic-overlay/resource-reading",
     "/demo/semantic-overlay/material-layer",
+    "/demo/semantic-overlay/ingestion-and-tools",
     "/demo/semantic-overlay/slide-prompt-blocks",
     "/demo/semantic-overlay/derived-output-live"
   ]) {
@@ -328,13 +360,16 @@ test("architecture surfaces follow Helios and Selene", async ({ page }) => {
     if (await toHelios.isVisible()) await toHelios.click();
     else await page.evaluate(() => (document.documentElement.dataset.appearance = "helios"));
     await expect(root).toHaveAttribute("data-appearance", "helios");
-    const surface = page.locator(".flow-page, .runtime-page, .reading-page, .material-page, .reference-page, .proof-shell").first();
+    const surface = page.locator(".flow-page, .runtime-page, .reading-page, .material-page, .intake-page, .reference-page, .proof-shell").first();
     const day = await surface.evaluate((node) => getComputedStyle(node).backgroundColor);
     if (route === "/demo/semantic-overlay/resource-reading") {
       await page.screenshot({ path: "/tmp/derived-output-resource-reading-helios.png", fullPage: true });
     }
     if (route === "/demo/semantic-overlay/material-layer") {
       await page.screenshot({ path: "/tmp/semantic-material-layer-helios.png", fullPage: true });
+    }
+    if (route === "/demo/semantic-overlay/ingestion-and-tools") {
+      await page.screenshot({ path: "/tmp/semantic-ingestion-and-tools-helios.png", fullPage: true });
     }
     if (route === "/demo/semantic-overlay/slide-prompt-blocks") {
       await page.screenshot({ path: "/tmp/slide-prompt-blocks-helios.png", fullPage: true });
@@ -354,6 +389,9 @@ test("architecture surfaces follow Helios and Selene", async ({ page }) => {
     if (route === "/demo/semantic-overlay/material-layer") {
       await page.screenshot({ path: "/tmp/semantic-material-layer-selene.png", fullPage: true });
     }
+    if (route === "/demo/semantic-overlay/ingestion-and-tools") {
+      await page.screenshot({ path: "/tmp/semantic-ingestion-and-tools-selene.png", fullPage: true });
+    }
     if (route === "/demo/semantic-overlay/slide-prompt-blocks") {
       await page.screenshot({ path: "/tmp/slide-prompt-blocks-selene.png", fullPage: true });
     }
@@ -367,6 +405,7 @@ test("architecture pages contain narrow overflow only inside intentional diagram
     "/demo/semantic-overlay/agent-runtime",
     "/demo/semantic-overlay/resource-reading",
     "/demo/semantic-overlay/material-layer",
+    "/demo/semantic-overlay/ingestion-and-tools",
     "/demo/semantic-overlay/slide-prompt-blocks"
   ]) {
     await page.goto(route, { waitUntil: "networkidle" });

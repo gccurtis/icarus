@@ -1,6 +1,6 @@
 # Derived Output architecture development views
 
-Six purpose-built pages communicate and exercise the system from different angles.
+Seven purpose-built pages communicate and exercise the system from different angles.
 
 - `components/procedure-flow.svelte` follows authoritative resource text into the Semantic
   Overlay, then follows a Prompt Block through generation and ID-based reading.
@@ -19,6 +19,11 @@ Six purpose-built pages communicate and exercise the system from different angle
   integration: in-place text conversion, presentation ownership, server-owned
   refresh, collaborative response publication, and the exact implementation
   seams. It is served at `/demo/semantic-overlay/slide-prompt-blocks`.
+- `../semantic-ingestion-tools/semantic-ingestion-tools.svelte` is the
+  current-implementation switchboard: every automatic authoring trigger, both
+  durable processing lanes, and the complete sixteen-tool observation surface
+  available to the answer-writing agent. It is served at
+  `/demo/semantic-overlay/ingestion-and-tools`.
 
 The document editor is also an executable surface now. An empty line converts
 to Prompt through the normal Block selector; the inspector creates and links
@@ -40,14 +45,12 @@ The procedure page is now an implementation map: green marks inherited code,
 orange marks code landed on this branch, blue marks an extended boundary, and
 gray marks explicit follow-ups such as export resolution, transactional
 first-link creation, automatic refresh policy, selected-text focus, and future
-resource adapters. The agent page keeps target
-`read_selection` and `find_resources` contracts beside the current single
-`retrieve` tool. The resource-reading page supersedes the earlier generic target
-`read` sketch with explicit `read_text`, `read_table`, `read_chart`,
-`read_image`, `read_csv`, and `read_code` tools. `retrieve` remains the live
-exact-text Semantic Overlay query; the target `retrieve_materials` uses a
-separate interpreted-material index. Every `read_*` tool uses the authoritative
-resource path.
+resource adapters. The ingestion-and-tools page records the live contract:
+`read_selection`, `find_resources`, `retrieve_materials`, every specialized
+reader, and every orientation tool now execute beside `retrieve`. `retrieve`
+queries the exact-text Semantic Overlay; `retrieve_materials` queries the
+separate interpreted-material index; every `read_*` tool resolves an
+authoritative resource snapshot or content-addressed native bytes.
 
 The durable target contract for this additional lane lives in
 [`semantic-material-layer.md`](../../../../../docs/semantic-material-layer.md).

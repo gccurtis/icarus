@@ -26,6 +26,7 @@ import {
   DERIVED_OUTPUT_SYSTEM_PROMPT,
   DERIVED_TEMPLATE_SYSTEM_PROMPT
 } from "$capabilities/derived-output/api/shared/agent-instructions";
+import { describedAgentTool } from "$capabilities/derived-output/api/shared/tool-catalog";
 
 export type SynthesisAttempt = {
   readonly status: "answered" | "insufficient";
@@ -282,8 +283,7 @@ const environment = (input: SynthesisInput): AttemptEnvironment => {
     issue
   });
   const retrieve: IntelligenceTool = {
-    name: "retrieve",
-    description: "Search only exact authored text in the current Semantic Overlay. Returns consolidated spans with evidence IDs.",
+    ...describedAgentTool("retrieve"),
     inputSchema: {
       type: "object",
       properties: { query: { type: "string", minLength: 1, maxLength: 2000 }, topK: { type: "integer", minimum: 1, maximum: 20 } },
@@ -313,8 +313,7 @@ const environment = (input: SynthesisInput): AttemptEnvironment => {
   };
   const tools = [retrieve, ...(reading?.tools ?? [])];
   if (input.reading !== undefined && reading !== undefined) tools.splice(1, 0, {
-    name: "retrieve_materials",
-    description: "Search interpreted material facets for tables, CSV, charts, images, and code. Use native read_* tools for exact claims.",
+    ...describedAgentTool("retrieve_materials"),
     inputSchema: {
       type: "object",
       properties: {

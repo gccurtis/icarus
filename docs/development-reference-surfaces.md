@@ -3,7 +3,7 @@
 This is the project standard for a development page whose job is to make a
 system understandable and provable. It records the decisions behind the
 Derived Output procedure flow, agent runtime, resource-reading contract,
-semantic material layer, executable proof, and slide Prompt Block pages. It is
+semantic material layer, ingestion/tool sightline, executable proof, and slide Prompt Block pages. It is
 not a layout template. Each page must take the visual form that best explains
 its own subject.
 
@@ -17,10 +17,10 @@ The standard is the method and the quality bar:
    diagnostics;
 6. leave a durable map from the page back to the code it describes.
 
-## Why the Derived Output reference is six pages
+## Why the Derived Output reference is seven pages
 
 One long reference page could contain all the information, but it would force
-six different questions into one visual hierarchy. The pages are separated
+seven different questions into one visual hierarchy. The pages are separated
 by the kind of understanding they need to create.
 
 | Surface | Question | Visual grammar | Proof level |
@@ -29,12 +29,13 @@ by the kind of understanding they need to create.
 | Agent runtime | What does the agent know, what may it call, and how does evidence become durable? | context stack, control loop, interactive tool console, evidence chain, infrastructure priorities | executable system prompt and complete live tool grammar imported from the capability |
 | Resource reading | How does the agent traverse a document or deck, understand a slide, and obtain typed evidence? | authority grammar, interactive tool field, task routes, slide anatomy, evidence spectrum, projection seam | live orientation/evidence tools with current bounds and named renderer/upload limitations |
 | Semantic material | How do tables, CSV data, images, charts, and code become semantically discoverable without replacing their native authority? | two-lane retrieval machine, interactive material record, processing track, evidence-distance ruler, schema wall | live registry, profiles, descriptors, image vectors, queues, index lane, retrieval, and readers |
+| Intake and agent sightline | Which accepted writes queue semantic work, when does queued work become searchable, and exactly what can the writer observe? | four-signal switchboard, source/update matrix, processing control room, shared live tool catalogue, access recipes | exact production call sites, queue behavior, and all sixteen executable tools |
 | Live proof | Does the vertical slice really work? | two-input laboratory, execution rail, stored result, evidence record | real project store, real resource write, real embedding/index query, real structured generation, real value read |
 | Slide Prompt Blocks | How does one ordinary text box acquire generated behavior without changing its slide presentation or collaboration contract? | interactive four-state editor specimen, data-boundary X-ray, exact sequence, one-flight collaboration map, file ledger | real conversion/editing/publication procedures plus Chromium editor proof |
 
 The pages link to one another, but each can stand on its own. Reusing navigation,
 typography, or a diagram renderer is useful; forcing the same card grid or
-section convention onto all six is not.
+section convention onto all seven is not.
 
 ## Source-of-truth pass
 

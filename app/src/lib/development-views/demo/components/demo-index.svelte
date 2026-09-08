@@ -6,6 +6,7 @@
   import FlaskConical from "@lucide/svelte/icons/flask-conical";
   import Library from "@lucide/svelte/icons/library";
   import MessagesSquare from "@lucide/svelte/icons/messages-square";
+  import Network from "@lucide/svelte/icons/network";
   import ScanEye from "@lucide/svelte/icons/scan-eye";
   import Shapes from "@lucide/svelte/icons/shapes";
   import Sparkles from "@lucide/svelte/icons/sparkles";
@@ -41,6 +42,14 @@
       icon: Workflow,
       about:
         "A connected architecture set: exact procedure flow, agent runtime, resource reading, semantic materials, evidence protocol, and scaling seams."
+    },
+    {
+      href: "/demo/semantic-overlay/ingestion-and-tools",
+      title: "Semantic intake and agent sightline",
+      sub: "What updates the overlay; what the writer can actually observe",
+      icon: Network,
+      about:
+        "The current implementation switchboard: every automatic ingestion hook, both durable lanes, processing conditions, and all sixteen executable agent tools."
     },
     {
       href: "/demo/semantic-overlay/slide-prompt-blocks",

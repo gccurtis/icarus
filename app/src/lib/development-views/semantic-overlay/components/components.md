@@ -16,7 +16,13 @@ unmerged integration branch.
 
 The newer Derived Output architecture pages live beside these at
 `/demo/semantic-overlay/derived-output-flow`, `/agent-runtime`,
-`/resource-reading`, `/material-layer`, `/slide-prompt-blocks`, and
+`/resource-reading`, `/material-layer`, `/ingestion-and-tools`, `/slide-prompt-blocks`, and
 `/derived-output-live`. They supersede the earlier “source publication is not
 wired” assumption with the executable projection, queue, publication, template,
 value-read, and document/slide Prompt Block slices.
+
+`/ingestion-and-tools` is the current-implementation switchboard. It records
+the four automatic authoring hooks, the exact/material queue boundary, all
+positive processing entry points, and the complete sixteen-tool sightline of
+the answer-writing agent. Its tool names and descriptions come from the same
+client-safe catalogue consumed by executable tool registration.
