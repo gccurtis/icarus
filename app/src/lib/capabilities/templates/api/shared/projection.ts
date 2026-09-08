@@ -14,7 +14,7 @@ import {
   requiredId,
   tagsOf,
   templateIdOf,
-  variablesOf
+  holesOf
 } from "$capabilities/templates/api/shared/validation";
 import type {
   TemplateDetail,
@@ -103,7 +103,7 @@ export const admitStoredTemplate = (template: Template): Template => {
       : descriptionOf(template.description, subject);
   const tags = tagsOf(template.tags, subject);
   const body = bodyOf(template.body, subject);
-  const variables = variablesOf(template.variables, subject);
+  const holes = holesOf(template.holes, subject);
   const createdBy = actorOf(template.createdBy, subject);
   const { description: _description, ...withoutDescription } = template;
   return {
@@ -112,7 +112,7 @@ export const admitStoredTemplate = (template: Template): Template => {
     ...(description === undefined ? {} : { description }),
     tags: [...tags],
     body,
-    variables: [...variables],
+    holes: [...holes],
     createdBy
   };
 };
@@ -233,7 +233,7 @@ const itemOf = (store: StoreModel, scope: Scope, template: Template): TemplateLi
     target: template.body.resource,
     availability: "project",
     tags: template.tags,
-    variableCount: template.variables.length,
+    holeCount: template.holes.length,
     createdByName: actorName(store, scope, template.createdBy),
     revision: template.revision,
     updatedAt: template.updatedAt,
@@ -249,20 +249,18 @@ export const detailOf = (
   template: Template
 ): TemplateDetail => {
   const admitted = admitStoredTemplate(template);
-  const { variableCount: _variableCount, ...item } = itemOf(store, scope, admitted);
+  const { holeCount: _holeCount, ...item } = itemOf(store, scope, admitted);
   return {
     ...item,
     body: admitted.body,
     /**
      * A default naming a bound row is read back as the rule it holds, because
-     * that row is the variable's value rather than a set anyone chose. A named
-     * set stays a named set.
+     * that row is the hole's value rather than a set anyone chose. A named set
+     * stays a named set.
      */
-    variables: admitted.variables.map((variable) => {
-      const expanded = expandedScope(store, scope.projectId, variable.default);
-      return expanded === undefined
-        ? variable
-        : { ...variable, default: expanded };
+    holes: admitted.holes.map((hole) => {
+      const expanded = expandedScope(store, scope.projectId, hole.default);
+      return expanded === undefined ? hole : { ...hole, default: expanded };
     })
   };
 };

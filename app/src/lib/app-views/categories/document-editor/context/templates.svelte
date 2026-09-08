@@ -30,8 +30,9 @@
     discardStage,
     documentTemplatesIn,
     draftOf,
+    holeNameRefusal,
     insertionOf,
-    mergedVariables,
+    mergedHoles,
     offeringOf,
     openStage,
     projectResources,
@@ -46,19 +47,21 @@
     templateDetail,
     templateLibrary,
     termFor,
-    updateVariables,
+    textHoleInsertion,
+    updateHoles,
+    withHoleField,
+    withNewTextHole,
     withTerm,
-    withVariableField,
     withWholeProject,
     withoutTerm,
-    type ChosenVariable,
+    type ChosenHole,
     type OfferSource,
     type ScopeDraft,
     type ScopeSide,
     type TemplateAnswers,
     type TemplateDetail,
-    type TemplateLibraryItem,
-    type TemplateVariable
+    type TemplateHole,
+    type TemplateLibraryItem
   } from "$app-views/categories/document-editor/procedures/templating";
   import { workspaceState } from "$model/client/workspace-state";
   import type { DocumentRuntime } from "$model/client/workspace-state";
@@ -100,7 +103,7 @@
   let pending = $state<string | undefined>(undefined);
   let actionError = $state<string | undefined>(undefined);
   let notice = $state<readonly string[]>([]);
-  let defaultFor = $state<TemplateVariable | undefined>(undefined);
+  let defaultFor = $state<TemplateHole | undefined>(undefined);
   let defaultOpen = $state(false);
   let draft = $state<ScopeDraft>(draftOf(undefined));
   let insertFor = $state<TemplateDetail | undefined>(undefined);
@@ -108,9 +111,13 @@
   let answerOpen = $state(false);
   let choices = $state<Record<string, ScopeDraft | undefined>>({});
   let texts = $state<Record<string, string | undefined>>({});
-  let answering = $state<TemplateVariable | undefined>(undefined);
+  let answering = $state<TemplateHole | undefined>(undefined);
+  let makeOpen = $state(false);
+  let holeName = $state("");
+  let holeDescription = $state("");
+  let holeText = $state("");
 
-  const askRows = $derived(answerRowsOf(insertFor?.variables ?? [], choices, texts, setNames));
+  const askRows = $derived(answerRowsOf(insertFor?.holes ?? [], choices, texts, setNames));
   const askBlocked = $derived(
     missingIn(askRows).length === 0 ? undefined : `${missingIn(askRows).join(", ")} still needs words.`
   );
@@ -239,9 +246,9 @@
     runtime.apply(insertion.ops);
     if (insertion.firstBlockId !== undefined) runtime.scrollTo = insertion.firstBlockId;
     if (stage !== undefined && template !== undefined) {
-      const merged = mergedVariables(template.variables, detail.variables);
-      if (merged.length !== template.variables.length) {
-        const result = await updateVariables(view, template, merged, documentId);
+      const merged = mergedHoles(template.holes, detail.holes);
+      if (merged.length !== template.holes.length) {
+        const result = await updateHoles(view, template, merged, documentId);
         if (live && !result.accepted) actionError = result.detail;
       }
     }
@@ -256,7 +263,7 @@
         actionError = "That template could not be read.";
         return;
       }
-      if (stage === undefined && detail.variables.length > 0) {
+      if (stage === undefined && detail.holes.length > 0) {
         insertFor = detail;
         choices = {};
         texts = {};
@@ -273,25 +280,59 @@
     void run(`place:${detail.id}`, () => place(detail, answersFrom(choices), wordsFrom(texts)));
   };
 
-  const changeVariables = (next: readonly ChosenVariable[]) =>
-    run("variables", async () => {
+  const changeHoles = (next: readonly ChosenHole[]) =>
+    run("holes", async () => {
       if (template === undefined) return;
-      const result = await updateVariables(view, template, next, documentId);
+      const result = await updateHoles(view, template, next, documentId);
       if (live && !result.accepted) actionError = result.detail;
     });
 
-  const openDefault = (variable: TemplateVariable) => {
-    defaultFor = variable;
-    draft = draftOf(variable.default);
+  const openDefault = (hole: TemplateHole) => {
+    defaultFor = hole;
+    draft = draftOf(hole.default);
     defaultOpen = true;
   };
 
   const confirmDefault = () => {
     if (template === undefined || defaultFor === undefined) return;
-    void changeVariables(
-      withVariableField(template.variables, defaultFor.name, { default: draft })
-    );
+    void changeHoles(withHoleField(template.holes, defaultFor.name, { default: draft }));
   };
+
+  const openMake = () => {
+    holeName = "";
+    holeDescription = "";
+    holeText = "";
+    makeOpen = true;
+  };
+
+  /**
+   * Declaring the hole and dropping its atom are one act, because a hole nothing
+   * in the prose asks for is a hole that fills nothing.
+   */
+  const confirmMake = () =>
+    void run("make-hole", async () => {
+      if (template === undefined || body === undefined || runtime === undefined) return;
+      const name = holeName.trim();
+      const ops = textHoleInsertion(body, view.selection, name);
+      if (ops.length === 0) {
+        actionError = "Put the caret in some text first — that is where the hole goes.";
+        return;
+      }
+      const result = await updateHoles(
+        view,
+        template,
+        withNewTextHole(template.holes, { name, description: holeDescription, text: holeText }),
+        documentId
+      );
+      if (!live) return;
+      if (!result.accepted) {
+        actionError = result.detail;
+        return;
+      }
+      runtime.apply(ops);
+      makeOpen = false;
+      notice = [`Added the hole “${name}”.`];
+    });
 
   /**
    * The builder is its own modal rather than a second face of the ask modal.
@@ -299,10 +340,10 @@
    * footer under the pointer, and the press lands on a button that has gone.
    */
   const openAnswer = (name: string) => {
-    const variable = insertFor?.variables.find((candidate) => candidate.name === name);
-    if (variable === undefined) return;
-    answering = variable;
-    draft = draftOf(choices[name] ?? variable.default);
+    const hole = insertFor?.holes.find((candidate) => candidate.name === name);
+    if (hole === undefined) return;
+    answering = hole;
+    draft = draftOf(choices[name] ?? hole.default);
     insertOpen = false;
     answerOpen = true;
   };
@@ -363,6 +404,7 @@
   const scopeBlocked = $derived(
     draft.include.length === 0 ? "Include something, or choose everything in the project." : undefined
   );
+  const makeBlocked = $derived(holeNameRefusal(template?.holes ?? [], holeName));
 </script>
 
 <Panel title="Templates">
@@ -391,42 +433,48 @@
       <PanelNote>Reading this document…</PanelNote>
     {:else if stage !== undefined}
       <div class="after-verbs">
-        <PanelSection title="Variables" count={template?.variables.length} chevron="end">
+        <PanelSection title="Holes" count={template?.holes.length} chevron="end">
+          <div class="make">
+            <PanelButton
+              label="Create hole"
+              disabled={busy || template === undefined}
+              title="Name a text hole and drop it where the caret is"
+              onclick={openMake}
+            />
+          </div>
           {#if template === undefined}
             <PanelNote>Reading the template…</PanelNote>
-          {:else if template.variables.length === 0}
-            <PanelNote>A variable appears when a prompt in this template asks for one. Nothing here does yet.</PanelNote>
           {:else}
-            {#each template.variables as variable (variable.name)}
-              <article class="variable">
+            {#each template.holes as hole (hole.name)}
+              <article class="hole">
                 <header>
-                  <PanelChip tone="accent-1">{variable.name}</PanelChip>
-                  <span class="variable-label">{variable.label}</span>
+                  <PanelChip tone="accent-1">{hole.name}</PanelChip>
+                  <span class="hole-label">{hole.label}</span>
                 </header>
                 <PanelEditableText
-                  value={variable.description ?? ""}
-                  label={`Description for ${variable.label}`}
-                  placeholder="What this variable stands for"
+                  value={hole.description ?? ""}
+                  label={`Description for ${hole.label}`}
+                  placeholder="What this hole stands for"
                   multiline
                   disabled={busy}
-                  onchange={(next) => changeVariables(withVariableField(template.variables, variable.name, { description: next }))}
+                  onchange={(next) => changeHoles(withHoleField(template.holes, hole.name, { description: next }))}
                 />
-                {#if variable.kind === "text"}
+                {#if hole.kind === "text"}
                   <PanelEditableText
-                    value={variable.text ?? ""}
-                    label={`Default words for ${variable.label}`}
+                    value={hole.text ?? ""}
+                    label={`Default words for ${hole.label}`}
                     placeholder="What it says when nobody says otherwise"
                     multiline
                     disabled={busy}
-                    onchange={(next) => changeVariables(withVariableField(template.variables, variable.name, { text: next }))}
+                    onchange={(next) => changeHoles(withHoleField(template.holes, hole.name, { text: next }))}
                   />
                 {:else}
                   <div class="scope">
                     <PanelButton
                       label="Default scope"
                       disabled={busy}
-                      title={`${ruleOf(variable.default, setNames)} — change what ${variable.label} selects by default`}
-                      onclick={() => openDefault(variable)}
+                      title={`${ruleOf(hole.default, setNames)} — change what ${hole.label} selects by default`}
+                      onclick={() => openDefault(hole)}
                     />
                   </div>
                 {/if}
@@ -442,6 +490,7 @@
       </div>
     {/if}
 
+    <div class="after-holes">
     <PanelSection title="List" chevron="end" flush>
       {#if library.error}
         <PanelBanner title="Templates unavailable" tone="danger">
@@ -457,7 +506,7 @@
             <div class="item">
               <PanelRow title={item.name}>
                 <span class="item-title">{item.name}</span>
-                <span class="item-sub">{item.variableCount} {item.variableCount === 1 ? "variable" : "variables"} · revision {item.revision}</span>
+                <span class="item-sub">{item.holeCount} {item.holeCount === 1 ? "hole" : "holes"} · revision {item.revision}</span>
                 <span class="item-actions">
                   <PanelButton label="Insert" tone="ghost" disabled={busy} title={`Insert “${item.name}” after the current row`} onclick={() => insert(item)} />
                   <PanelButton label="Edit" tone="ghost" disabled={busy} title={`Edit “${item.name}” in the editor`} onclick={() => edit(item)} />
@@ -468,13 +517,14 @@
         </PanelSearch>
       {/if}
     </PanelSection>
+    </div>
   {/if}
 </Panel>
 
 <OverlayModal
   bind:open={insertOpen}
   title={`Insert “${insertFor?.name ?? "the template"}”`}
-  description="Every parameter this template asks for. Open one to read what it means."
+  description="Every hole this template asks for. Open one to read what it means."
   confirm="Insert"
   width="wide"
   blocked={askBlocked}
@@ -490,7 +540,7 @@
 
 <OverlayModal
   bind:open={answerOpen}
-  title={`What ${answering?.label ?? "the parameter"} selects here`}
+  title={`What ${answering?.label ?? "the hole"} selects here`}
   description="For this copy only. Nothing here changes the template."
   confirm="Use this"
   width="wide"
@@ -511,7 +561,7 @@
 
 <OverlayModal
   bind:open={defaultOpen}
-  title={`Default scope for ${defaultFor?.label ?? "the parameter"}`}
+  title={`Default scope for ${defaultFor?.label ?? "the hole"}`}
   description="What it selects until whoever places the template says otherwise."
   confirm="Set the default scope"
   width="wide"
@@ -519,6 +569,21 @@
   onconfirm={confirmDefault}
 >
   <ScopeBuilder {...view$} onmode={setMode} onadd={addTerm} ondrop={dropTerm} onclear={clearScope} />
+</OverlayModal>
+
+<OverlayModal
+  bind:open={makeOpen}
+  title="Create a hole"
+  description="A place in the prose that whoever places this template fills in with words."
+  confirm="Create"
+  blocked={makeBlocked}
+  onconfirm={confirmMake}
+>
+  <div class="making">
+    <PanelInput label="Name" placeholder="subject_line" flush bind:value={holeName} />
+    <PanelInput label="Description" placeholder="What this hole stands for" flush bind:value={holeDescription} />
+    <PanelInput label="Default words" placeholder="What it says when nobody says otherwise" flush bind:value={holeText} />
+  </div>
 </OverlayModal>
 
 <style>
@@ -544,7 +609,24 @@
     border-top: 1px solid var(--token-border-subtle);
   }
 
-  .variable {
+  .after-holes {
+    margin-top: calc(var(--token-spacing-unit) * 2);
+    padding-top: calc(var(--token-spacing-unit) * 1);
+    border-top: 1px solid var(--token-border-subtle);
+  }
+
+  .make {
+    display: flex;
+    margin-bottom: calc(var(--token-spacing-unit) * 1.5);
+  }
+
+  .making {
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--token-spacing-unit) * 2);
+  }
+
+  .hole {
     display: flex;
     flex-direction: column;
     gap: calc(var(--token-spacing-unit) * 1.5);
@@ -554,18 +636,18 @@
     background: var(--token-surface-elevated);
   }
 
-  .variable + .variable {
+  .hole + .hole {
     margin-top: calc(var(--token-spacing-unit) * 1.5);
   }
 
-  .variable header {
+  .hole header {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: calc(var(--token-spacing-unit) * 1.5);
   }
 
-  .variable-label {
+  .hole-label {
     color: var(--token-ink-primary);
     font-size: var(--token-text-body-sm);
     font-weight: 600;

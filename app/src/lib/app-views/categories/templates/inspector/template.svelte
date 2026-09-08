@@ -52,8 +52,8 @@
     updateTemplateDescription,
     updateTemplateName,
     updateTemplateTags,
-    updateTemplateVariableDefault,
-    updateTemplateVariableDescription,
+    updateTemplateHoleDefault,
+    updateTemplateHoleDescription,
     withTerm,
     withWholeProject,
     withoutTerm,
@@ -62,7 +62,7 @@
     type ScopeDraft,
     type ScopeSide,
     type TemplateAnswers,
-    type TemplateVariable
+    type TemplateHole
   } from "$app-views/categories/templates/procedures/library.svelte";
   import { workspaceState } from "$model/client/workspace-state";
 
@@ -97,16 +97,16 @@
   });
   const template = $derived(detailIn(detailAnswer, now));
   const unavailable = $derived(unavailableTemplateIn(detailAnswer));
-  let defaultFor = $state<TemplateVariable | undefined>(undefined);
+  let defaultFor = $state<TemplateHole | undefined>(undefined);
   let defaultOpen = $state(false);
   let draft = $state<ScopeDraft>(draftOf(undefined));
   let useOpen = $state(false);
   let answerOpen = $state(false);
   let useChoices = $state<Record<string, ScopeDraft | undefined>>({});
   let useTexts = $state<Record<string, string | undefined>>({});
-  let answering = $state<TemplateVariable | undefined>(undefined);
+  let answering = $state<TemplateHole | undefined>(undefined);
 
-  const askRows = $derived(answerRowsOf(template?.variables ?? [], useChoices, useTexts, setNames));
+  const askRows = $derived(answerRowsOf(template?.holes ?? [], useChoices, useTexts, setNames));
   const askBlocked = $derived(
     missingIn(askRows).length === 0 ? undefined : `${missingIn(askRows).join(", ")} still needs words.`
   );
@@ -144,15 +144,15 @@
   let descriptionEditor = $state<HTMLTextAreaElement | null>(null);
   let nameTrigger = $state<HTMLButtonElement | null>(null);
   let descriptionTrigger = $state<HTMLButtonElement | null>(null);
-  let editingVariable = $state<string>();
-  let variableDescriptionDraft = $state("");
-  let variableBase = $state<LibraryTemplateDetail>();
-  let variableEditor = $state<HTMLTextAreaElement | null>(null);
+  let editingHole = $state<string>();
+  let holeDescriptionDraft = $state("");
+  let holeBase = $state<LibraryTemplateDetail>();
+  let holeEditor = $state<HTMLTextAreaElement | null>(null);
   let tagEditor = $state<HTMLInputElement | null>(null);
   let tagDraft = $state("");
   let activeTemplateId = $state<string>();
   let pending = $state<
-    "name" | "description" | "variable" | "tag" | "duplicate" | "delete" | "use" | "edit" | "default"
+    "name" | "description" | "hole" | "tag" | "duplicate" | "delete" | "use" | "edit" | "default"
   >();
   let actionError = $state<string>();
   let live = true;
@@ -173,9 +173,9 @@
     descriptionBase = undefined;
     tagDraft = "";
     editingDescription = false;
-    editingVariable = undefined;
-    variableDescriptionDraft = "";
-    variableBase = undefined;
+    editingHole = undefined;
+    holeDescriptionDraft = "";
+    holeBase = undefined;
     actionError = undefined;
   });
 
@@ -195,8 +195,8 @@
     if (template === undefined || !template.canEdit || pending !== undefined) return;
     editingName = false;
     nameBase = undefined;
-    editingVariable = undefined;
-    variableBase = undefined;
+    editingHole = undefined;
+    holeBase = undefined;
     descriptionBase = template;
     descriptionDraft = template.description;
     editingDescription = true;
@@ -209,8 +209,8 @@
     if (template === undefined || !template.canEdit || pending !== undefined) return;
     editingDescription = false;
     descriptionBase = undefined;
-    editingVariable = undefined;
-    variableBase = undefined;
+    editingHole = undefined;
+    holeBase = undefined;
     nameBase = template;
     nameDraft = template.name;
     editingName = true;
@@ -364,55 +364,55 @@
     }
   };
 
-  const startVariableDescription = async (variable: TemplateVariable) => {
+  const startHoleDescription = async (hole: TemplateHole) => {
     if (template === undefined || !template.canEdit || pending !== undefined) return;
     editingName = false;
     nameBase = undefined;
     editingDescription = false;
     descriptionBase = undefined;
-    variableBase = template;
-    editingVariable = variable.name;
-    variableDescriptionDraft = variable.description ?? "";
+    holeBase = template;
+    editingHole = hole.name;
+    holeDescriptionDraft = hole.description ?? "";
     await tick();
-    variableEditor?.focus();
-    variableEditor?.select();
+    holeEditor?.focus();
+    holeEditor?.select();
   };
 
-  const cancelVariableDescription = () => {
-    editingVariable = undefined;
-    variableDescriptionDraft = "";
-    variableBase = undefined;
+  const cancelHoleDescription = () => {
+    editingHole = undefined;
+    holeDescriptionDraft = "";
+    holeBase = undefined;
   };
 
-  const commitVariableDescription = async (variable: TemplateVariable) => {
-    const subject = variableBase;
+  const commitHoleDescription = async (hole: TemplateHole) => {
+    const subject = holeBase;
     const originTabId = view.activeId;
     if (
       subject === undefined ||
       template?.id !== subject.id ||
-      editingVariable !== variable.name ||
+      editingHole !== hole.name ||
       !subject.canEdit ||
       pending !== undefined
     ) {
       return;
     }
-    if (variableDescriptionDraft.trim() === (variable.description ?? "").trim()) {
-      cancelVariableDescription();
+    if (holeDescriptionDraft.trim() === (hole.description ?? "").trim()) {
+      cancelHoleDescription();
       return;
     }
 
-    pending = "variable";
+    pending = "hole";
     actionError = undefined;
     try {
-      const result = await updateTemplateVariableDescription(
+      const result = await updateTemplateHoleDescription(
         view,
         subject,
-        variable.name,
-        variableDescriptionDraft
+        hole.name,
+        holeDescriptionDraft
       );
       if (!stillInspecting(originTabId, subject.id)) return;
       if (!result.accepted) actionError = result.detail;
-      else cancelVariableDescription();
+      else cancelHoleDescription();
     } catch (error) {
       fail(error, originTabId, subject.id);
     } finally {
@@ -420,10 +420,10 @@
     }
   };
 
-  const variableKeydown = (event: KeyboardEvent) => {
+  const holeKeydown = (event: KeyboardEvent) => {
     if (event.key !== "Escape") return;
     event.preventDefault();
-    cancelVariableDescription();
+    cancelHoleDescription();
   };
 
   const addTag = async () => {
@@ -526,7 +526,7 @@
       actionError = SPREADSHEET_HANDOFF;
       return;
     }
-    if (template.variables.length === 0) {
+    if (template.holes.length === 0) {
       void instantiate({});
       return;
     }
@@ -544,10 +544,10 @@
    * footer under the pointer, and the press lands on a button that has gone.
    */
   const openAnswer = (name: string) => {
-    const variable = template?.variables.find((candidate) => candidate.name === name);
-    if (variable === undefined) return;
-    answering = variable;
-    draft = draftOf(useChoices[name] ?? variable.default);
+    const hole = template?.holes.find((candidate) => candidate.name === name);
+    if (hole === undefined) return;
+    answering = hole;
+    draft = draftOf(useChoices[name] ?? hole.default);
     useOpen = false;
     answerOpen = true;
   };
@@ -635,16 +635,16 @@
     }
   };
 
-  const openDefault = (variable: TemplateVariable) => {
+  const openDefault = (hole: TemplateHole) => {
     if (template === undefined || !template.canEdit || pending !== undefined) return;
-    defaultFor = variable;
-    draft = draftOf(variable.default);
+    defaultFor = hole;
+    draft = draftOf(hole.default);
     defaultOpen = true;
   };
 
   const setDefault = async () => {
-    const variable = defaultFor;
-    if (template === undefined || variable === undefined || pending !== undefined) return;
+    const hole = defaultFor;
+    if (template === undefined || hole === undefined || pending !== undefined) return;
     const subject = template;
     const originTabId = view.activeId;
     const rule = draft;
@@ -652,7 +652,7 @@
     pending = "default";
     actionError = undefined;
     try {
-      const result = await updateTemplateVariableDefault(view, subject, variable.name, rule);
+      const result = await updateTemplateHoleDefault(view, subject, hole.name, rule);
       if (!stillInspecting(originTabId, subject.id)) return;
       if (!result.accepted) actionError = result.detail;
     } catch (error) {
@@ -803,7 +803,7 @@
       </div>
 
       {#if !template.canEdit}
-        <p class="permission-note">Duplicate this template to edit its name, description, variables, or tags.</p>
+        <p class="permission-note">Duplicate this template to edit its name, description, holes, or tags.</p>
       {/if}
       {#if template.makes === "Spreadsheet"}
         <p class="permission-note">{SPREADSHEET_HANDOFF}</p>
@@ -811,62 +811,62 @@
 
       <div class="divider" aria-hidden="true"></div>
 
-      <section aria-labelledby="variables-heading">
-        <h3 id="variables-heading" class="section-heading">
-          Variables <span>{template.variables.length}</span>
+      <section aria-labelledby="holes-heading">
+        <h3 id="holes-heading" class="section-heading">
+          Holes <span>{template.holes.length}</span>
         </h3>
 
-        {#if template.variables.length === 0}
-          <PanelEmpty title="This template asks for no variables." flush />
+        {#if template.holes.length === 0}
+          <PanelEmpty title="This template asks for no holes." flush />
         {:else}
-          <div class="variable-list">
-            {#each template.variables as variable (variable.id)}
-              <details class="variable">
+          <div class="hole-list">
+            {#each template.holes as hole (hole.id)}
+              <details class="hole">
                 <summary>
-                  <span class="variable-name">
+                  <span class="hole-name">
                     <Braces size={13} aria-hidden="true" />
-                    {variable.label}
+                    {hole.label}
                   </span>
                   <ChevronDown class="disclosure-icon" size={13} aria-hidden="true" />
                 </summary>
-                <div class="variable-body">
-                  {#if editingVariable === variable.name}
+                <div class="hole-body">
+                  {#if editingHole === hole.name}
                     <Textarea
-                      bind:ref={variableEditor}
-                      class="variable-description-editor"
-                      bind:value={variableDescriptionDraft}
-                      aria-label={`Description for ${variable.label}`}
+                      bind:ref={holeEditor}
+                      class="hole-description-editor"
+                      bind:value={holeDescriptionDraft}
+                      aria-label={`Description for ${hole.label}`}
                       rows={3}
-                      onkeydown={variableKeydown}
-                      onblur={() => commitVariableDescription(variable)}
+                      onkeydown={holeKeydown}
+                      onblur={() => commitHoleDescription(hole)}
                     />
                   {:else if template.canEdit}
                     <button
                       type="button"
-                      class="variable-description"
+                      class="hole-description"
                       title="Double-click to edit this description"
-                      aria-label={`Edit description for ${variable.label}`}
-                      ondblclick={() => startVariableDescription(variable)}
+                      aria-label={`Edit description for ${hole.label}`}
+                      ondblclick={() => startHoleDescription(hole)}
                       onkeydown={(event) => {
                         if (event.key === "Enter" || event.key === " ") {
-                          startVariableDescription(variable);
+                          startHoleDescription(hole);
                         }
                       }}
-                    >{variable.description ?? "Add a description"}</button>
+                    >{hole.description ?? "Add a description"}</button>
                   {:else}
-                    <p>{variable.description ?? "No description supplied."}</p>
+                    <p>{hole.description ?? "No description supplied."}</p>
                   {/if}
-                  <div class="variable-default">
+                  <div class="hole-default">
                     {#if template.canEdit}
                       <Button
                         variant="outline"
                         size="xs"
-                        title={`${ruleOf(variable.default, setNames)} — change what ${variable.label} selects by default`}
+                        title={`${ruleOf(hole.default, setNames)} — change what ${hole.label} selects by default`}
                         disabled={pending !== undefined}
-                        onclick={() => openDefault(variable)}
+                        onclick={() => openDefault(hole)}
                       >Default scope</Button>
                     {:else}
-                      <span>{ruleOf(variable.default, setNames)}</span>
+                      <span>{ruleOf(hole.default, setNames)}</span>
                     {/if}
                   </div>
                 </div>
@@ -1012,7 +1012,7 @@
   .meta-line,
   .byline,
   .description,
-  .variable-body {
+  .hole-body {
     font-size: var(--token-text-caption);
     line-height: var(--token-text-caption-leading);
   }
@@ -1223,17 +1223,17 @@
     font-weight: 500;
   }
 
-  .variable-list {
+  .hole-list {
     overflow: hidden;
     border: 1px solid var(--token-border-subtle);
     border-radius: var(--token-radius-panel);
   }
 
-  .variable + .variable {
+  .hole + .hole {
     border-top: 1px solid var(--token-border-subtle);
   }
 
-  .variable summary {
+  .hole summary {
     display: flex;
     min-height: calc(var(--token-spacing-unit) * 8);
     align-items: center;
@@ -1247,25 +1247,25 @@
     list-style: none;
   }
 
-  .variable summary::-webkit-details-marker {
+  .hole summary::-webkit-details-marker {
     display: none;
   }
 
-  .variable summary:hover {
+  .hole summary:hover {
     background: var(--token-surface-panel-hover);
   }
 
-  .variable[open] > summary {
+  .hole[open] > summary {
     background: var(--token-surface-panel-hover);
     color: var(--token-ink-primary);
   }
 
-  .variable summary:focus-visible {
+  .hole summary:focus-visible {
     outline: 2px solid var(--token-color-interactive-border);
     outline-offset: -2px;
   }
 
-  .variable-name {
+  .hole-name {
     display: flex;
     min-width: 0;
     align-items: center;
@@ -1276,12 +1276,12 @@
     text-align: left;
   }
 
-  .variable-name :global(svg) {
+  .hole-name :global(svg) {
     flex: none;
     color: var(--token-ink-muted);
   }
 
-  .variable-default {
+  .hole-default {
     display: flex;
     align-items: center;
     margin-top: calc(var(--token-spacing-unit) * 1.5);
@@ -1294,20 +1294,20 @@
     transition: transform var(--token-motion-small) var(--token-ease-standard);
   }
 
-  .variable[open] :global(.disclosure-icon) {
+  .hole[open] :global(.disclosure-icon) {
     transform: rotate(180deg);
   }
 
-  .variable-body {
+  .hole-body {
     padding: 0 calc(var(--token-spacing-unit) * 2) calc(var(--token-spacing-unit) * 2.5);
     color: var(--token-ink-muted);
   }
 
-  .variable-body p {
+  .hole-body p {
     margin: 0;
   }
 
-  .variable-description {
+  .hole-description {
     display: block;
     width: 100%;
     margin: 0;
@@ -1321,16 +1321,16 @@
     text-align: left;
   }
 
-  .variable-description:hover {
+  .hole-description:hover {
     color: var(--token-ink-secondary);
   }
 
-  .variable-description:focus-visible {
+  .hole-description:focus-visible {
     outline: 2px solid var(--token-color-interactive-surface);
     outline-offset: 2px;
   }
 
-  :global(.variable-description-editor) {
+  :global(.hole-description-editor) {
     height: calc(var(--token-spacing-unit) * 18);
     min-height: calc(var(--token-spacing-unit) * 18);
     max-height: calc(var(--token-spacing-unit) * 18);

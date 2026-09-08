@@ -7,7 +7,7 @@ The project's resource sets: the scopes a prompt looks things up in.
 | `readResourceSets` | Every valid **named** set in the scoped project, with its creator's name and how many resources it selects now, plus quarantined invalid rows |
 | `createResourceSet` | A set from a name, an optional description, and an include and exclude list |
 | `updateResourceSet` | A compare-and-swap change to name, description, or the set itself |
-| `removeResourceSet` | A compare-and-swap delete, refused while another set or a template variable's default in this project still names it |
+| `removeResourceSet` | A compare-and-swap delete, refused while another set or a template hole's default in this project still names it |
 
 A set is `include` minus `exclude`. A term selects the whole project, a list of
 resource kinds matched by segment, named resources, or another set by id. The

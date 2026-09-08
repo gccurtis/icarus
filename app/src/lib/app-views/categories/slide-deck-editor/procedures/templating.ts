@@ -40,9 +40,10 @@ import {
 import type { TemplatedResourceSet } from "$representation/data/types/core/resource-set";
 import type { SlideDeckBody, SlideLayout } from "$representation/data/types/slide-decks/body";
 import type { SlideDeckOp } from "$representation/data/types/slide-decks/op";
-import type { TemplateVariable } from "$representation/data/types/templates/template";
+import type { TemplateHole } from "$representation/data/types/templates/template";
 import { mint, type IdKind } from "$app-views/categories/slide-deck-editor/procedures/ids";
-import type { WorkspaceStateModel } from "$model/client/workspace-state";
+import { addressOf } from "$app-views/categories/slide-deck-editor/procedures/selecting";
+import type { Selection, WorkspaceStateModel } from "$model/client/workspace-state";
 
 export type { ResourceSetItem } from "$capabilities/resource-sets/index.remote";
 export type {
@@ -52,7 +53,7 @@ export type {
   TemplateLibraryItem
 } from "$capabilities/templates/index.remote";
 export type { TemplatedResourceSet } from "$representation/data/types/core/resource-set";
-export type { TemplateVariable } from "$representation/data/types/templates/template";
+export type { TemplateHole } from "$representation/data/types/templates/template";
 
 export {
   answerRowsOf,
@@ -99,7 +100,7 @@ export const scopeNamesOf = (
   resources: new Map(resources.map((resource) => [resource.id, resource.name]))
 });
 
-/** What the builder is handed for a variable's default, or for an answer. */
+/** What the builder is handed for a hole's default, or for an answer. */
 export const offeringOf = (
   sets: readonly ResourceSetItem[],
   resources: readonly { readonly id: string; readonly kind: string; readonly name: string }[]
@@ -111,7 +112,7 @@ export const offeringOf = (
 /**
  * The answers a caller chose, as rules.
  *
- * A variable nobody touched is absent, which is what makes the template's own
+ * A hole nobody touched is absent, which is what makes the template's own
  * default apply. Everything present is sent as built; the server decides
  * whether it needs a row.
  */
@@ -187,7 +188,7 @@ export const insertionOf = (
 
   let source: SlideDeckBody = template.body;
   if (mode === "resolve") {
-    const resolved = resolveTemplateScopes(template.body, template.variables, answers);
+    const resolved = resolveTemplateScopes(template.body, template.holes, answers);
     if (!resolved.accepted || resolved.body.resource !== "slides") return none(body);
     const filled = fillTemplateAtoms(resolved.body, texts);
     if (filled.resource !== "slides") return none(body);
@@ -230,36 +231,117 @@ export const insertionOf = (
 };
 
 /**
- * A variable as the client sends it, which is wider than one as it is stored: a
+ * A hole as the client sends it, which is wider than one as it is stored: a
  * chosen rule may exclude things and may name particular resources, and the
  * server turns either into a row before it lands.
  */
-export type ChosenVariable = Omit<TemplateVariable, "default"> & { default?: ScopeDraft };
+export type ChosenHole = Omit<TemplateHole, "default"> & { default?: ScopeDraft };
 
-export const withVariableField = (
-  variables: readonly ChosenVariable[],
+export const withHoleField = (
+  holes: readonly ChosenHole[],
   name: string,
   change: { label?: string; description?: string; default?: ScopeDraft; text?: string }
-): readonly ChosenVariable[] =>
-  variables.map((variable) => {
-    if (variable.name !== name) return variable;
-    const next: ChosenVariable = { name: variable.name, label: change.label ?? variable.label };
-    const description = "description" in change ? change.description : variable.description;
-    const fallback = "default" in change ? change.default : variable.default;
-    const words = "text" in change ? change.text : variable.text;
-    if (variable.kind !== undefined) next.kind = variable.kind;
+): readonly ChosenHole[] =>
+  holes.map((hole) => {
+    if (hole.name !== name) return hole;
+    const next: ChosenHole = { name: hole.name, label: change.label ?? hole.label };
+    const description = "description" in change ? change.description : hole.description;
+    const fallback = "default" in change ? change.default : hole.default;
+    const words = "text" in change ? change.text : hole.text;
+    if (hole.kind !== undefined) next.kind = hole.kind;
     if (description !== undefined && description.trim().length > 0) next.description = description.trim();
     if (fallback !== undefined) next.default = fallback;
     if (words !== undefined && words.trim().length > 0) next.text = words;
     return next;
   });
 
-export const mergedVariables = (
-  held: readonly ChosenVariable[],
-  inserted: readonly ChosenVariable[]
-): readonly ChosenVariable[] => {
-  const names = new Set(held.map((variable) => variable.name));
-  return [...held, ...inserted.filter((variable) => !names.has(variable.name))];
+export const mergedHoles = (
+  held: readonly ChosenHole[],
+  inserted: readonly ChosenHole[]
+): readonly ChosenHole[] => {
+  const names = new Set(held.map((hole) => hole.name));
+  return [...held, ...inserted.filter((hole) => !names.has(hole.name))];
+};
+
+/**
+ * A text hole made by hand, rather than found.
+ *
+ * A scope hole exists because a prompt asks for one, so it cannot be authored. A
+ * text hole is a place in the prose, and nothing but the author knows where it
+ * goes — so the panel declares it and drops its atom into the selected text in
+ * the same act, and the next save finds it exactly as it finds any other.
+ */
+export const withNewTextHole = (
+  holes: readonly ChosenHole[],
+  asked: { name: string; description?: string; text?: string }
+): readonly ChosenHole[] => {
+  const name = asked.name.trim();
+  const description = asked.description?.trim() ?? "";
+  const words = asked.text ?? "";
+  return [
+    ...holes,
+    {
+      name,
+      label: name,
+      kind: "text",
+      ...(description === "" ? {} : { description }),
+      ...(words.trim() === "" ? {} : { text: words })
+    }
+  ];
+};
+
+/** Why a name will not do, or nothing when it will. */
+export const holeNameRefusal = (
+  holes: readonly ChosenHole[],
+  asked: string
+): string | undefined => {
+  const name = asked.trim();
+  if (name === "") return "Give the hole a name.";
+  if (!/^[\w][\w -]*$/.test(name)) return "A hole's name is letters, digits, spaces, hyphens and underscores.";
+  const taken = holes.some((hole) => hole.name.toLocaleLowerCase() === name.toLocaleLowerCase());
+  return taken ? `This template already has a hole called ${name}.` : undefined;
+};
+
+/**
+ * The block a new text hole's atom lands in: the one the caret is in, else the
+ * one inside the selected element, else the deck's last writable block.
+ */
+const holeBlockIn = (body: SlideDeckBody, selection: Selection | undefined) => {
+  const blocks = body.slides.flatMap((slide) =>
+    slide.elements.flatMap((element) =>
+      element.content.type === "text" || element.content.type === "prompt"
+        ? [{ elementId: element.id, block: element.content.block }]
+        : []
+    )
+  );
+  const held = selection?.id;
+  const caret = held === undefined ? undefined : addressOf(held)?.blockId;
+  return (
+    blocks.find((entry) => entry.block.id === caret) ??
+    blocks.find((entry) => entry.elementId === held) ??
+    blocks.at(-1)
+  );
+};
+
+/** The ops that put a text hole's atom into the selected text. */
+export const textHoleInsertion = (
+  body: SlideDeckBody,
+  selection: Selection | undefined,
+  name: string
+): readonly SlideDeckOp[] => {
+  const held = holeBlockIn(body, selection);
+  if (held === undefined) return [];
+  const atom = { id: mint("atom"), kind: "template" as const, name: name.trim() };
+  return [
+    {
+      op: "insert",
+      target: "atom",
+      path: `${held.block.id}/atoms`,
+      ids: [atom.id],
+      after: held.block.atoms.at(-1)?.id ?? null,
+      values: [atom]
+    }
+  ];
 };
 
 export const saveAsTemplate = (
@@ -315,19 +397,19 @@ export const discardStage = (
     )
   );
 
-export const updateVariables = (
+export const updateHoles = (
   view: WorkspaceStateModel,
   template: { readonly id: string; readonly revision: number },
-  variables: readonly ChosenVariable[],
+  holes: readonly ChosenHole[],
   resourceId?: string
 ) =>
   view.singleFlight(
-    ["template", view.project, template.id, "variables", template.revision, JSON.stringify(variables)],
+    ["template", view.project, template.id, "holes", template.revision, JSON.stringify(holes)],
     () =>
       updateTemplateRemote({
         templateId: template.id,
         baseRevision: template.revision,
-        patch: { variables }
+        patch: { holes }
       }).updates(
         readTemplateLibrary,
         readTemplate({ templateId: template.id }),

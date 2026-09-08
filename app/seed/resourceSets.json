@@ -31,9 +31,9 @@
     "_creationTime": 1787000000000,
     "projectId": "default",
     "boundTo": {
-      "kind": "variable",
+      "kind": "hole",
       "templateId": "templates:1",
-      "variable": "incident_evidence"
+      "hole": "incident_evidence"
     },
     "set": {
       "include": [{ "select": "kinds", "kinds": ["finding", "document", "spreadsheet"] }],

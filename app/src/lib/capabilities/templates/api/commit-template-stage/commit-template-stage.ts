@@ -13,7 +13,7 @@ import { leaderBodyOf, stageById } from "$capabilities/templates/api/shared/stag
 import type { RowFields } from "$capabilities/templates/api/shared/store";
 import { writeTemplateVersion } from "$capabilities/templates/api/shared/template-rows";
 import { bodyOf } from "$capabilities/templates/api/shared/validation";
-import { declaredFor } from "$capabilities/templates/api/shared/variables";
+import { declaredFor } from "$capabilities/templates/api/shared/holes";
 import type { CommitTemplateStageResult } from "$capabilities/templates/types/templates";
 
 export const commitTemplateStage = async (input: unknown): Promise<CommitTemplateStageResult> => {
@@ -101,7 +101,7 @@ export const commitTemplateStage = async (input: unknown): Promise<CommitTemplat
     ...(template.description === undefined ? {} : { description: template.description }),
     tags: [...template.tags],
     body,
-    variables: declaredFor(body, template.variables),
+    holes: declaredFor(body, template.holes),
     createdBy: template.createdBy,
     revision: template.revision + 1,
     updatedAt: at

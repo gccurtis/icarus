@@ -5,8 +5,10 @@
  *     node scripts/generate-template-reference-inventory.mjs > \
  *       src/lib/development-views/template-reference/procedures/inventory.ts
  *
- * The baseline is where this branch meets `main` rather than `main` itself, so
- * the ledger keeps measuring this work after main moves on.
+ * The baseline is where this branch meets the branch it sits on rather than that
+ * branch's head, so the ledger keeps measuring this work as the base moves on.
+ * `work/derived-output-architecture` is that branch, because prompt blocks live
+ * there; TEMPLATE_FEATURES_BASE names another, and main is the fallback.
  */
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
@@ -23,7 +25,17 @@ const physicalLines = (buffer) => {
   return text.split(/\r?\n/).length - (text.endsWith("\n") ? 1 : 0);
 };
 
-const baseline = git("merge-base", "HEAD", "main").trim();
+const mergeBase = (ref) => {
+  try {
+    return git("merge-base", "HEAD", ref).trim();
+  } catch {
+    return "";
+  }
+};
+
+const baseline =
+  process.env.TEMPLATE_FEATURES_BASE ??
+  (mergeBase("work/derived-output-architecture") || mergeBase("main"));
 
 const kindOf = (path) => {
   if (path.includes("development-views/template-reference/") || path.includes("reference/templates")) return "reference";

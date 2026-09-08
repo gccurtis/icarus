@@ -80,7 +80,7 @@ test.afterEach(async ({}, testInfo: TestInfo) => {
   expect(unexpected, `unexpected browser diagnostics in ${testInfo.title}`).toEqual([]);
 });
 
-test("inserting a template into a document asks for each variable, shows its default, and takes an answer", async ({ page }) => {
+test("inserting a template into a document asks for each hole, shows its default, and takes an answer", async ({ page }) => {
   await openDocumentFixture(page);
   const editor = page.locator(".ProseMirror");
   const before = await editor.innerText();
@@ -91,7 +91,7 @@ test("inserting a template into a document asks for each variable, shows its def
   const modal = page.getByRole("dialog", { name: "Insert “Technical glossary”" });
   await expect(modal).toBeVisible();
 
-  // Every parameter is listed, with its description and what answers it.
+  // Every hole is listed, with its description and what answers it.
   await expect(modal.getByText("Source material", { exact: true })).toBeVisible();
   await expect(modal.getByRole("button", { name: /Documents, Findings/ })).toBeVisible();
 
@@ -126,7 +126,7 @@ test("inserting a template into a document asks for each variable, shows its def
   await expect(page.locator(".title-bar")).toContainText("Saved", { timeout: 10_000 });
 });
 
-test("a document is saved as a template, takes its variable from an inserted prompt, and is saved back", async ({ page }) => {
+test("a document is saved as a template, takes its hole from an inserted prompt, and is saved back", async ({ page }) => {
   const name = `Browser template ${Date.now()}`;
   await openDocumentFixture(page);
 
@@ -138,13 +138,14 @@ test("a document is saved as a template, takes its variable from an inserted pro
 
   await expect(context.getByRole("button", { name: "Save", exact: true })).toBeVisible();
   await expect(context.getByRole("textbox", { name: "New variable" })).toHaveCount(0);
-  await expect(context.getByText("A variable appears when a prompt in this template asks for one.")).toBeVisible();
+  await expect(context.getByRole("button", { name: "Create hole", exact: true })).toBeVisible();
+  await expect(context.locator(".hole")).toHaveCount(0);
 
   await context.getByTitle("Insert “Technical glossary” after the current row").click();
   await expect(context.getByText("Inserted “Technical glossary”.", { exact: true })).toBeVisible();
   await expect(page.locator(".ProseMirror")).toContainText("Technical glossary");
 
-  const card = context.locator(".variable").filter({ hasText: "Source material" });
+  const card = context.locator(".hole").filter({ hasText: "Source material" });
   const scope = card.getByRole("button", { name: "Default scope", exact: true });
   await expect(scope).toBeVisible();
   await scope.click();
@@ -157,6 +158,43 @@ test("a document is saved as a template, takes its variable from an inserted pro
 
   await context.getByRole("button", { name: "Save", exact: true }).click();
   await expect(context.getByText("Saved to the template.", { exact: true })).toBeVisible({ timeout: 15_000 });
+
+  page.once("dialog", (dialog) => void dialog.accept());
+  await context.getByRole("button", { name: "Discard", exact: true }).click();
+  await expect(tabs(page).getByRole("button", { name: `Template · ${name}`, exact: true })).toHaveCount(0, { timeout: 15_000 });
+
+  await deleteTemplateFromLibrary(page, name);
+});
+
+test("Create hole declares a text hole and drops its atom where the caret is", async ({ page }) => {
+  const name = `Browser holes ${Date.now()}`;
+  await openDocumentFixture(page);
+
+  const context = await templatesPanel(page);
+  await context.getByRole("textbox", { name: "Template name" }).fill(name);
+  await context.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(page.locator(".title-bar h1")).toContainText(`Template · ${name}`, { timeout: 15_000 });
+
+  // The caret decides where the hole goes, so put it in the prose first.
+  const editor = page.locator(".ProseMirror");
+  await editor.getByRole("paragraph").first().click();
+
+  await context.getByRole("button", { name: "Create hole", exact: true }).click();
+  const modal = page.getByRole("dialog", { name: "Create a hole" });
+  await expect(modal).toBeVisible();
+
+  await modal.getByRole("textbox", { name: "Name" }).fill("client_name");
+  await modal.getByRole("textbox", { name: "Description" }).fill("Who the note is for");
+  await modal.getByRole("textbox", { name: "Default words" }).fill("Northwind");
+  await modal.getByRole("button", { name: "Create", exact: true }).click();
+
+  await expect(context.getByText("Added the hole “client_name”.", { exact: true })).toBeVisible({
+    timeout: 15_000
+  });
+  const card = context.locator(".hole").filter({ hasText: "client_name" });
+  await expect(card).toBeVisible();
+  await expect(card.getByRole("button", { name: "Default scope", exact: true })).toHaveCount(0);
+  await expect(editor.locator(".document-template-atom")).toContainText("client_name");
 
   page.once("dialog", (dialog) => void dialog.accept());
   await context.getByRole("button", { name: "Discard", exact: true }).click();
@@ -222,7 +260,7 @@ test("the project's resource sets are made, counted, and removed from the Contex
   await expect(context.getByRole("button", { name: new RegExp(`^${name}`) })).toHaveCount(0);
 });
 
-test("a variable's default is built with an exclusion, stored, and read back as the rule", async ({ page }) => {
+test("a hole's default is built with an exclusion, stored, and read back as the rule", async ({ page }) => {
   await page.goto("/app/dev-project", { waitUntil: "networkidle" });
   await tabs(page).getByRole("button", { name: "Templates", exact: true }).click();
   await page.getByRole("button", { name: /^Incident write-up/ }).first().click();

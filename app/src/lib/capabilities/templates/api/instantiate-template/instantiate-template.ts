@@ -17,7 +17,7 @@ import {
   visibleTemplate
 } from "$capabilities/templates/api/shared/projection";
 import { normalizeScope, unknownSetsIn } from "$capabilities/templates/api/shared/scopes";
-import { kindOf } from "$capabilities/templates/api/shared/variables";
+import { kindOf } from "$capabilities/templates/api/shared/holes";
 import type {
   InstantiateTemplateResult,
   TemplateAnswers
@@ -53,11 +53,11 @@ export const instantiateTemplate = async (input: unknown): Promise<InstantiateTe
   const stored = found.template;
   let template: ReturnType<typeof admitStoredTemplate>;
   let body: TemplateBody;
-  let variables;
+  let holes;
   try {
     template = admitStoredTemplate(stored);
     body = template.body;
-    variables = template.variables;
+    holes = template.holes;
   } catch (error) {
     return {
       accepted: false,
@@ -68,15 +68,15 @@ export const instantiateTemplate = async (input: unknown): Promise<InstantiateTe
     };
   }
 
-  /** A text parameter untouched by the caller falls back to its own default words. */
+  /** A text hole untouched by the caller falls back to its own default words. */
   const texts: Record<string, string> = { ...asked.texts };
-  for (const variable of variables) {
-    if (kindOf(variable) !== "text" || variable.text === undefined) continue;
-    if (texts[variable.name] === undefined) texts[variable.name] = variable.text;
+  for (const hole of holes) {
+    if (kindOf(hole) !== "text" || hole.text === undefined) continue;
+    if (texts[hole.name] === undefined) texts[hole.name] = hole.text;
   }
-  const unfilled = variables
-    .filter((variable) => kindOf(variable) === "text")
-    .map((variable) => variable.name)
+  const unfilled = holes
+    .filter((hole) => kindOf(hole) === "text")
+    .map((hole) => hole.name)
     .filter((name) => texts[name] === undefined || texts[name].trim() === "");
   if (unfilled.length > 0) {
     return {
@@ -128,7 +128,7 @@ export const instantiateTemplate = async (input: unknown): Promise<InstantiateTe
       store,
       scope.projectId,
       actor,
-      { kind: "resource", resourceId, variable: name },
+      { kind: "resource", resourceId, hole: name },
       rule,
       at
     );
@@ -142,7 +142,7 @@ export const instantiateTemplate = async (input: unknown): Promise<InstantiateTe
     store.remove(`${table}.${resourceId}`);
   };
 
-  const resolved = resolveTemplateScopes(body, variables, answered);
+  const resolved = resolveTemplateScopes(body, holes, answered);
   if (!resolved.accepted) {
     rollback();
     return {
@@ -160,7 +160,7 @@ export const instantiateTemplate = async (input: unknown): Promise<InstantiateTe
       templateId: template._id,
       reason: "unsupported-body",
       revision: template.revision,
-      detail: `the body names a variable the template does not declare: ${resolved.undeclared.join(", ")}`
+      detail: `the body names a hole the template does not declare: ${resolved.undeclared.join(", ")}`
     };
   }
   body = fillTemplateAtoms(resolved.body, texts);

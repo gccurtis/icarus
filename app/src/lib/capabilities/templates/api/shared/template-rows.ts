@@ -18,7 +18,7 @@ export const writeTemplateVersion = (
     ...(fields.description === undefined ? {} : { description: fields.description }),
     tags: fields.tags,
     body: fields.body,
-    variables: fields.variables,
+    holes: fields.holes,
     at
   });
 };
@@ -30,7 +30,7 @@ export const fieldsOfTemplate = (template: Template): TemplateFields => ({
   ...(template.description === undefined ? {} : { description: template.description }),
   tags: template.tags,
   body: template.body,
-  variables: template.variables,
+  holes: template.holes,
   createdBy: template.createdBy,
   revision: template.revision,
   updatedAt: template.updatedAt

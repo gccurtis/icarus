@@ -107,7 +107,7 @@
               "scope": {
                 "include": [
                   {
-                    "select": "variable",
+                    "select": "hole",
                     "name": "incident_evidence"
                   }
                 ],
@@ -164,7 +164,7 @@
         }
       ]
     },
-    "variables": [
+    "holes": [
       {
         "name": "incident_evidence",
         "label": "Incident evidence",
@@ -296,7 +296,7 @@
               "scope": {
                 "include": [
                   {
-                    "select": "variable",
+                    "select": "hole",
                     "name": "readiness_record"
                   }
                 ],
@@ -345,7 +345,7 @@
               "scope": {
                 "include": [
                   {
-                    "select": "variable",
+                    "select": "hole",
                     "name": "supporting_findings"
                   }
                 ],
@@ -361,7 +361,7 @@
         }
       ]
     },
-    "variables": [
+    "holes": [
       {
         "name": "readiness_record",
         "label": "Readiness record",
@@ -552,7 +552,7 @@
               "scope": {
                 "include": [
                   {
-                    "select": "variable",
+                    "select": "hole",
                     "name": "source_material"
                   }
                 ],
@@ -564,7 +564,7 @@
         }
       ]
     },
-    "variables": [
+    "holes": [
       {
         "name": "source_material",
         "label": "Source material",
@@ -706,7 +706,7 @@
               "scope": {
                 "include": [
                   {
-                    "select": "variable",
+                    "select": "hole",
                     "name": "decision_evidence"
                   }
                 ],
@@ -755,7 +755,7 @@
               "scope": {
                 "include": [
                   {
-                    "select": "variable",
+                    "select": "hole",
                     "name": "cost_models"
                   }
                 ],
@@ -803,7 +803,7 @@
         }
       ]
     },
-    "variables": [
+    "holes": [
       {
         "name": "decision_evidence",
         "label": "Decision evidence",
@@ -1000,7 +1000,7 @@
                   "scope": {
                     "include": [
                       {
-                        "select": "variable",
+                        "select": "hole",
                         "name": "board_evidence"
                       }
                     ],
@@ -1050,7 +1050,7 @@
         }
       ]
     },
-    "variables": [
+    "holes": [
       {
         "name": "board_evidence",
         "label": "Board evidence",
@@ -1226,7 +1226,7 @@
                   "scope": {
                     "include": [
                       {
-                        "select": "variable",
+                        "select": "hole",
                         "name": "field_record"
                       }
                     ],
@@ -1257,7 +1257,7 @@
         }
       ]
     },
-    "variables": [
+    "holes": [
       {
         "name": "field_record",
         "label": "Field work record",
@@ -1431,7 +1431,7 @@
                   "scope": {
                     "include": [
                       {
-                        "select": "variable",
+                        "select": "hole",
                         "name": "portfolio_record"
                       }
                     ],
@@ -1466,7 +1466,7 @@
         }
       ]
     },
-    "variables": [
+    "holes": [
       {
         "name": "portfolio_record",
         "label": "Portfolio record",
@@ -1642,7 +1642,7 @@
                   "scope": {
                     "include": [
                       {
-                        "select": "variable",
+                        "select": "hole",
                         "name": "option_evidence"
                       }
                     ],
@@ -1680,7 +1680,7 @@
                   "scope": {
                     "include": [
                       {
-                        "select": "variable",
+                        "select": "hole",
                         "name": "option_models"
                       }
                     ],
@@ -1715,7 +1715,7 @@
         }
       ]
     },
-    "variables": [
+    "holes": [
       {
         "name": "option_evidence",
         "label": "Option evidence",
@@ -1966,7 +1966,7 @@
         }
       }
     },
-    "variables": [],
+    "holes": [],
     "at": 1784385000000
   },
   {
@@ -2209,7 +2209,7 @@
         }
       }
     },
-    "variables": [],
+    "holes": [],
     "at": 1782306000000
   },
   {
@@ -2356,7 +2356,7 @@
       ],
       "sections": []
     },
-    "variables": [],
+    "holes": [],
     "at": 1788000000000
   },
   {
@@ -2459,7 +2459,7 @@
               "scope": {
                 "include": [
                   {
-                    "select": "variable",
+                    "select": "hole",
                     "name": "status_evidence"
                   }
                 ],
@@ -2471,7 +2471,7 @@
         }
       ]
     },
-    "variables": [
+    "holes": [
       {
         "name": "client_name",
         "label": "Client name",
@@ -2581,7 +2581,7 @@
               "scope": {
                 "include": [
                   {
-                    "select": "variable",
+                    "select": "hole",
                     "name": "incident_record"
                   }
                 ],
@@ -2632,7 +2632,7 @@
               "scope": {
                 "include": [
                   {
-                    "select": "variable",
+                    "select": "hole",
                     "name": "cost_models"
                   }
                 ],
@@ -2644,7 +2644,7 @@
         }
       ]
     },
-    "variables": [
+    "holes": [
       {
         "name": "incident_title",
         "label": "Incident title",

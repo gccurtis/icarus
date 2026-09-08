@@ -61,7 +61,7 @@ const prompt = (id: string, name: string) => ({
   atoms: [{ id: `${id}-a`, kind: "literal", text: "Sum up" }],
   display: "Sum up",
   marks: [],
-  scope: { include: [{ select: "variable", name }], exclude: [] },
+  scope: { include: [{ select: "hole", name }], exclude: [] },
   state: "idle"
 });
 
@@ -94,7 +94,7 @@ beforeEach(() => {
         name: "Brief",
         tags: [],
         body,
-        variables: [{ name: "evidence", label: "Evidence", default: { include: [{ select: "kinds", kinds: ["finding"] }], exclude: [] } }],
+        holes: [{ name: "evidence", label: "Evidence", default: { include: [{ select: "kinds", kinds: ["finding"] }], exclude: [] } }],
         createdBy: { kind: "user", userId: "u" },
         revision: 1,
         updatedAt: 20
@@ -132,7 +132,7 @@ describe("instantiating with answers", () => {
   });
 
   test("a default may name one of the project's sets", async () => {
-    model.tables.templates[0].variables = [
+    model.tables.templates[0].holes = [
       {
         name: "evidence",
         label: "Evidence",
@@ -147,8 +147,8 @@ describe("instantiating with answers", () => {
     });
   });
 
-  test("a variable without a default means the whole project", async () => {
-    model.tables.templates[0].variables = [{ name: "evidence", label: "Evidence" }];
+  test("a hole without a default means the whole project", async () => {
+    model.tables.templates[0].holes = [{ name: "evidence", label: "Evidence" }];
     const made = await instantiateTemplate({ templateId: "templates:1" });
     assert.ok(made.accepted);
     assert.deepEqual(scopeOf(model.tables.documentSnapshots[0]), {
@@ -157,7 +157,7 @@ describe("instantiating with answers", () => {
     });
   });
 
-  test("refuses an answer naming a set the project does not hold, and a body naming an undeclared variable", async () => {
+  test("refuses an answer naming a set the project does not hold, and a body naming an undeclared hole", async () => {
     const unknownSet = await instantiateTemplate({
       templateId: "templates:1",
       answers: { evidence: { include: [{ select: "set", setId: "resourceSets:9" }], exclude: [] } }
@@ -165,14 +165,14 @@ describe("instantiating with answers", () => {
     assert.equal(unknownSet.accepted, false);
     assert.match(unknownSet.accepted === false ? unknownSet.detail : "", /resourceSets:9/);
 
-    model.tables.templates[0].variables = [];
+    model.tables.templates[0].holes = [];
     const undeclared = await instantiateTemplate({ templateId: "templates:1" });
     assert.deepEqual(undeclared, {
       accepted: false,
       templateId: "templates:1",
       reason: "unsupported-body",
       revision: 1,
-      detail: "the body names a variable the template does not declare: evidence"
+      detail: "the body names a hole the template does not declare: evidence"
     });
     assert.deepEqual(model.tables.documents, []);
     await assert.rejects(
@@ -182,13 +182,13 @@ describe("instantiating with answers", () => {
   });
 });
 
-describe("replacing the variable list", () => {
-  test("keeps a variable the body names and accepts a list that declares it", async () => {
-    const dropped = await updateTemplate({ templateId: "templates:1", baseRevision: 1, patch: { variables: [] } });
+describe("replacing the hole list", () => {
+  test("keeps a hole the body names and accepts a list that declares it", async () => {
+    const dropped = await updateTemplate({ templateId: "templates:1", baseRevision: 1, patch: { holes: [] } });
     assert.deepEqual(dropped, {
       accepted: false,
       templateId: "templates:1",
-      reason: "variable-in-use",
+      reason: "hole-in-use",
       revision: 1,
       detail: "the body still names evidence"
     });
@@ -197,7 +197,7 @@ describe("replacing the variable list", () => {
       templateId: "templates:1",
       baseRevision: 1,
       patch: {
-        variables: [
+        holes: [
           { name: "evidence", label: "Evidence", description: "What happened" },
           { name: "models", label: "Models", default: { include: [{ select: "project" }], exclude: [] } }
         ]
@@ -205,7 +205,7 @@ describe("replacing the variable list", () => {
     });
     assert.deepEqual(kept, { accepted: true, templateId: "templates:1", revision: 2 });
     assert.deepEqual(
-      (model.tables.templates[0].variables as { name: string }[]).map((variable) => variable.name),
+      (model.tables.templates[0].holes as { name: string }[]).map((hole) => hole.name),
       ["evidence", "models"]
     );
   });
@@ -265,7 +265,7 @@ describe("a template from a live resource", () => {
     const held = model.tables.templates[1];
     assert.equal(held.name, "Winter brief shell");
     assert.deepEqual(held.tags, ["Winter"]);
-    assert.deepEqual(held.variables, [{ name: "evidence", label: "evidence" }]);
+    assert.deepEqual(held.holes, [{ name: "evidence", label: "evidence" }]);
     const kept = (held.body as { rows: { blocks: { marks: { link: unknown }[] }[] }[] }).rows[0]
       .blocks[1].marks[0].link;
     assert.deepEqual(kept, { kind: "url", url: "https://example.com/plan", note: "Scope" });
@@ -339,24 +339,24 @@ describe("a rule that cannot be said inline becomes a row", () => {
     exclude: [{ select: "kinds", kinds: ["slides"] }]
   };
 
-  test("a default that excludes something is stored, and the variable holds one term", async () => {
+  test("a default that excludes something is stored, and the hole holds one term", async () => {
     const result = await updateTemplate({
       templateId: "templates:1",
       baseRevision: 1,
-      patch: { variables: [{ name: "evidence", label: "Evidence", default: excluding }] }
+      patch: { holes: [{ name: "evidence", label: "Evidence", default: excluding }] }
     });
     assert.ok(result.accepted);
 
     const bound = model.tables.resourceSets.filter((set) => set.boundTo !== undefined);
     assert.equal(bound.length, 1);
     assert.deepEqual(bound[0].boundTo, {
-      kind: "variable",
+      kind: "hole",
       templateId: "templates:1",
-      variable: "evidence"
+      hole: "evidence"
     });
     assert.equal(bound[0].name, undefined);
     assert.deepEqual(bound[0].set, excluding);
-    assert.deepEqual(model.tables.templates[0].variables, [
+    assert.deepEqual(model.tables.templates[0].holes, [
       {
         name: "evidence",
         label: "Evidence",
@@ -369,13 +369,13 @@ describe("a rule that cannot be said inline becomes a row", () => {
     await updateTemplate({
       templateId: "templates:1",
       baseRevision: 1,
-      patch: { variables: [{ name: "evidence", label: "Evidence", default: excluding }] }
+      patch: { holes: [{ name: "evidence", label: "Evidence", default: excluding }] }
     });
     const result = await updateTemplate({
       templateId: "templates:1",
       baseRevision: 2,
       patch: {
-        variables: [
+        holes: [
           {
             name: "evidence",
             label: "Evidence",
@@ -388,18 +388,18 @@ describe("a rule that cannot be said inline becomes a row", () => {
     assert.equal(model.tables.resourceSets.filter((set) => set.boundTo !== undefined).length, 0);
   });
 
-  test("the same variable rewrites its own row rather than piling them up", async () => {
+  test("the same hole rewrites its own row rather than piling them up", async () => {
     await updateTemplate({
       templateId: "templates:1",
       baseRevision: 1,
-      patch: { variables: [{ name: "evidence", label: "Evidence", default: excluding }] }
+      patch: { holes: [{ name: "evidence", label: "Evidence", default: excluding }] }
     });
     const first = model.tables.resourceSets.find((set) => set.boundTo !== undefined);
     await updateTemplate({
       templateId: "templates:1",
       baseRevision: 2,
       patch: {
-        variables: [
+        holes: [
           {
             name: "evidence",
             label: "Evidence",
@@ -422,7 +422,7 @@ describe("a rule that cannot be said inline becomes a row", () => {
       templateId: "templates:1",
       baseRevision: 1,
       patch: {
-        variables: [
+        holes: [
           {
             name: "evidence",
             label: "Evidence",
@@ -453,7 +453,7 @@ describe("a rule that cannot be said inline becomes a row", () => {
     assert.deepEqual(bound[0].boundTo, {
       kind: "resource",
       resourceId: placed.resourceId,
-      variable: "evidence"
+      hole: "evidence"
     });
     assert.deepEqual(scopeOf(model.tables.documentSnapshots[0]), {
       include: [{ select: "set", setId: bound[0]._id }],
@@ -476,7 +476,7 @@ describe("a rule that cannot be said inline becomes a row", () => {
       templateId: "templates:1",
       baseRevision: 1,
       patch: {
-        variables: [
+        holes: [
           {
             name: "evidence",
             label: "Evidence",

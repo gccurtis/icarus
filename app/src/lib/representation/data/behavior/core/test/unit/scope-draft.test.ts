@@ -112,7 +112,7 @@ describe("whether a rule needs a row", () => {
 });
 
 describe("the two doors out of a draft", () => {
-  it("narrows to a concrete set when nothing names a variable", () => {
+  it("narrows to a concrete set when nothing names a hole", () => {
     const draft: ScopeDraft = {
       include: [{ select: "resources", refs: [{ kind: "document", id: "documents:1" }] }],
       exclude: []
@@ -122,7 +122,7 @@ describe("the two doors out of a draft", () => {
   });
 
   it("stays templated when nothing names a resource", () => {
-    const draft: ScopeDraft = { include: [{ select: "variable", name: "source_material" }], exclude: [] };
+    const draft: ScopeDraft = { include: [{ select: "hole", name: "source_material" }], exclude: [] };
     expect(templated(draft)).not.toBeUndefined();
     expect(narrowed(draft)).toBeUndefined();
   });
@@ -155,8 +155,8 @@ describe("what a draft selects", () => {
     ]);
   });
 
-  it("counts a variable term as nothing, because what fills it is not known here", () => {
-    const draft: ScopeDraft = { include: [{ select: "variable", name: "source" }], exclude: [] };
+  it("counts a hole term as nothing, because what fills it is not known here", () => {
+    const draft: ScopeDraft = { include: [{ select: "hole", name: "source" }], exclude: [] };
     expect(selectedBy(draft, catalogue, named)).toHaveLength(0);
   });
 });

@@ -65,7 +65,7 @@ const template = (slides: 1 | 2): TemplateDetail => ({
                 atoms: [{ id: "tp1-a", kind: "literal", text: "Sum up" }],
                 display: "Sum up",
                 marks: [],
-                scope: { include: [{ select: "variable", name: "evidence" }], exclude: [] },
+                scope: { include: [{ select: "hole", name: "evidence" }], exclude: [] },
                 state: "idle"
               }
             }
@@ -77,7 +77,7 @@ const template = (slides: 1 | 2): TemplateDetail => ({
     ],
     sections: []
   },
-  variables: [{ name: "evidence", label: "Evidence", default: { include: [{ select: "project" }], exclude: [] } }]
+  holes: [{ name: "evidence", label: "Evidence", default: { include: [{ select: "project" }], exclude: [] } }]
 });
 
 describe("inserting a template into a deck", () => {
@@ -101,13 +101,13 @@ describe("inserting a template into a deck", () => {
     expect(after.slides[1].notes[0].id.startsWith("blk-")).toBe(true);
   });
 
-  it("puts a one-slide template in, keeping variable terms for a stage", () => {
+  it("puts a one-slide template in, keeping hole terms for a stage", () => {
     const insertion = insertionOf(deck, template(1), "s2", "keep");
     expect(insertion.body.slides.length).toBe(3);
     expect(insertion.body.slides[2].id).toBe(insertion.firstSlideId);
     const element = insertion.body.slides[2].elements[0];
     if (element.content.type !== "prompt") throw new Error("prompt expected");
-    expect(element.content.block.scope).toEqual({ include: [{ select: "variable", name: "evidence" }], exclude: [] });
+    expect(element.content.block.scope).toEqual({ include: [{ select: "hole", name: "evidence" }], exclude: [] });
   });
 
   it("falls back to the end when the anchor is not in the deck, and does nothing for a document", () => {
@@ -120,8 +120,8 @@ describe("inserting a template into a deck", () => {
   it("lists only deck templates", () => {
     const library = {
       templates: [
-        { ...template(2), id: "a", variableCount: 1 },
-        { ...template(1), id: "b", target: "document" as const, variableCount: 1 }
+        { ...template(2), id: "a", holeCount: 1 },
+        { ...template(1), id: "b", target: "document" as const, holeCount: 1 }
       ],
       unavailable: []
     };

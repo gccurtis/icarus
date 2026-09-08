@@ -129,17 +129,19 @@ new template's working copy in its own tab. A slide saved this way is a deck
 template holding one slide, and nothing marks it afterwards.
 
 A working copy shows Save and Discard in the panel's header instead of the name
-field, because the tab title already says which template is open. Its Variables
-band is read-only about which variables exist: they are the names the slides'
-prompt scopes use. Each is a card carrying that name, its label, its
-description, and one button that opens the default-scope modal.
+field, because the tab title already says which template is open. Its Holes band
+lists every hole: a scope hole is found from the slides' prompt scopes and
+cannot be added by hand; a text hole is made by Create hole, which names it and
+drops its atom into the selected text. Each is a card carrying that name, its
+label, its description, and either default words or a button that opens the
+default-scope modal.
 
-A collapsible List section holds every deck template, searchable, each row
-inserting after the current slide or opening the template for editing.
-Inserting brings fresh identifiers and any layouts and named styles the deck
-lacks. A template with variables first asks, in one modal, what each selects
-here, showing the default as the first choice; inserting into a working copy
-asks nothing, keeps the variable terms, and merges the two variable lists.
+A divider separates the band from a collapsible List section holding every deck
+template, searchable, each row inserting after the current slide or opening the
+template for editing. Inserting brings fresh identifiers and any layouts and
+named styles the deck lacks. A template with holes first asks, in one modal,
+what fills each; inserting into a working copy asks nothing, keeps the hole
+terms, and merges the two hole lists.
 
 ## Inspectors
 

@@ -43,7 +43,7 @@
           <div><dt>Belongs to</dt><dd>One project</dd></div>
           <div><dt>Edited through</dt><dd>One shared working copy</dd></div>
           <div><dt>Placed by</dt><dd>Insert · Use</dd></div>
-          <div><dt>Variables come from</dt><dd>Prompt scopes in the body</dd></div>
+          <div><dt>Holes come from</dt><dd>Prompt scopes in the body</dd></div>
           <div><dt>Links back</dt><dd>None, in either direction</dd></div>
         </dl>
       </div>
@@ -55,7 +55,7 @@
       <a href="#nouns">Every word</a>
       <a href="#rows">Where it lives</a>
       <a href="#lifecycle">Step by step</a>
-      <a href="#variables">Variables and scope</a>
+      <a href="#holes">Holes and scope</a>
       <a href="#portable">What a template may not carry</a>
       <a href="#panels">The panels</a>
       <a href="#rules">Rules and refusals</a>
@@ -66,7 +66,7 @@
         <div><span class="tref-kicker">The shape of it</span><h2>Three verbs, and nothing else</h2></div>
         <p>
           Templates were real before this work; what was missing was a way to edit one, a way to say what a
-          variable selects, and a way to pull one into something already open. All three are the same act
+          hole selects, and a way to pull one into something already open. All three are the same act
           seen from different sides: making a copy.
         </p>
       </div>
@@ -177,12 +177,12 @@
       </div>
     </section>
 
-    <section class="tref-section" id="variables">
+    <section class="tref-section" id="holes">
       <div class="tref-section-head">
-        <div><span class="tref-kicker">Holes and what fills them</span><h2>Variables and scope</h2></div>
+        <div><span class="tref-kicker">Holes and what fills them</span><h2>Holes and scope</h2></div>
         <p>
-          A variable is a hole a prompt punched. Saving a template declares exactly the names the body's
-          prompt scopes use — which is why the panels let you describe a variable and set its scope, and
+          A scope hole is an empty place a prompt punched. Saving a template declares exactly the names the body's
+          prompt scopes use — which is why the panels let you describe a hole and set its scope, and
           never let you add or remove one.
         </p>
       </div>
@@ -198,23 +198,23 @@
       <div class="tref-note">
         <h4>Where the names come from today, and where they will come from</h4>
         <p>
-          A body carries a variable when a prompt's scope holds <code>{"{ select: \"variable\", name }"}</code>.
+          A body carries a hole when a prompt's scope holds <code>{"{ select: \"hole\", name }"}</code>.
           Prompt blocks are not built yet, so today that happens when a template that already has one is
-          inserted into a working copy: the terms are kept as holes and the inserted template's variables
+          inserted into a working copy: the terms are kept as holes and the inserted template's holes
           join this one's.
         </p>
         <p>
           The agreed shape for when prompt blocks land is pull-based: making a template walks the prompts
           it found and asks what each one's scope should be, and two prompts may point at the same
-          variable. Nothing about the model here changes when that arrives — it only starts declaring
-          variables on its own.
+          hole. Nothing about the model here changes when that arrives — it only starts declaring
+          holes on its own.
         </p>
       </div>
 
       <p class="tref-prose">
         A <b>resource set</b> — “Winter filings”, “Field evidence” — is a named selection of the project's
         things, made in Project Overview's Contexts panel. Those are the names in the Insert modal's
-        dropdown, offered beside “everything in the project” and the five kinds. A set that a variable's
+        dropdown, offered beside “everything in the project” and the five kinds. A set that a hole's
         default names cannot be deleted while it does.
       </p>
     </section>
@@ -271,7 +271,7 @@
       <p class="tref-prose">
         Project Overview carries the third panel, <b>Contexts</b>, where resource sets are made and
         counted; the templates library carries the fourth surface, the inspector, where a template's name,
-        description, tags and variables are read and Use, Edit, Duplicate and Delete sit in one row.
+        description, tags and holes are read and Use, Edit, Duplicate and Delete sit in one row.
       </p>
     </section>
 
@@ -307,7 +307,7 @@
       <div class="tref-note attention">
         <h4>Not built yet</h4>
         <p>
-          Prompt blocks that pick a variable; images stored with a template so they travel; making a new
+          Prompt blocks that pick a hole; images stored with a template so they travel; making a new
           formula instance for a project-neutral atom; and opening a spreadsheet template for editing,
           which waits on the spreadsheet editor. Each is listed with a recommendation on
           <a href={hrefOf(project, "changes")}>What changed</a>.

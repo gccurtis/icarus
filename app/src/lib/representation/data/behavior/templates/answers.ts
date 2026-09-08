@@ -1,11 +1,11 @@
 import { ruleWords, type ScopeDraft, type ScopeNames } from "$representation/data/behavior/core/scope-draft";
-import type { TemplateVariable } from "$representation/data/types/templates/template";
+import type { TemplateHole } from "$representation/data/types/templates/template";
 
 /**
- * What placing a template has to ask for, one row per parameter.
+ * What placing a template has to ask for, one row per hole.
  *
- * Every parameter is listed, because the list is the shape of the thing about to
- * be made. A scope always has a value — what the caller chose, else what the
+ * Every hole is listed, because the list is the shape of the thing about to be
+ * made. A scope always has a value — what the caller chose, else what the
  * template suggests — so it is never missing. Text has none until somebody types
  * some, which is the only thing that can hold a placement up.
  */
@@ -20,43 +20,43 @@ export type AnswerRow = {
   readonly missing: boolean;
 };
 
-export const kindOfVariable = (variable: TemplateVariable): "scope" | "text" =>
-  variable.kind === "text" ? "text" : "scope";
+export const kindOfHole = (hole: TemplateHole): "scope" | "text" =>
+  hole.kind === "text" ? "text" : "scope";
 
 export const answerRowsOf = (
-  variables: readonly TemplateVariable[],
+  holes: readonly TemplateHole[],
   chosen: Readonly<Record<string, ScopeDraft | undefined>>,
   texts: Readonly<Record<string, string | undefined>>,
   names: ScopeNames = {}
 ): readonly AnswerRow[] =>
-  variables.map((variable) => {
-    const kind = kindOfVariable(variable);
+  holes.map((hole) => {
+    const kind = kindOfHole(hole);
     if (kind === "text") {
-      const typed = texts[variable.name];
-      const words = typed ?? variable.text ?? "";
+      const typed = texts[hole.name];
+      const words = typed ?? hole.text ?? "";
       return {
-        key: variable.name,
-        label: variable.label,
-        ...(variable.description === undefined ? {} : { description: variable.description }),
+        key: hole.name,
+        label: hole.label,
+        ...(hole.description === undefined ? {} : { description: hole.description }),
         kind,
         value: words,
-        answered: typed !== undefined && typed !== (variable.text ?? ""),
+        answered: typed !== undefined && typed !== (hole.text ?? ""),
         missing: words.trim() === ""
       };
     }
-    const held = chosen[variable.name];
+    const held = chosen[hole.name];
     return {
-      key: variable.name,
-      label: variable.label,
-      ...(variable.description === undefined ? {} : { description: variable.description }),
+      key: hole.name,
+      label: hole.label,
+      ...(hole.description === undefined ? {} : { description: hole.description }),
       kind,
       /** The rule alone; whether it is the template's or the caller's is said beside it. */
-      value: ruleWords(held ?? variable.default, names),
+      value: ruleWords(held ?? hole.default, names),
       answered: held !== undefined,
       missing: false
     };
   });
 
-/** The parameters still holding a placement up. */
+/** The holes still holding a placement up. */
 export const missingIn = (rows: readonly AnswerRow[]): readonly string[] =>
   rows.filter((row) => row.missing).map((row) => row.label);

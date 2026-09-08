@@ -9,20 +9,20 @@ import type { PageSetup } from "$representation/data/types/spreadsheets/page-set
 import type { StyleSet } from "$representation/data/types/spreadsheets/style-set";
 
 /**
- * What a variable is answered with.
+ * What a hole is answered with.
  *
  * `scope` is a group of resources, and it always has an answer: what the caller
  * said, else the default, else the whole project. `text` is words, and it has
  * none until somebody types them, which is why placing a template asks.
  */
-export type TemplateVariableKind = "scope" | "text";
+export type TemplateHoleKind = "scope" | "text";
 
-export type TemplateVariable = {
+export type TemplateHole = {
   name: string;
   label: string;
   description?: string;
-  /** Absent means `scope`, which is what every variable was before text ones existed. */
-  kind?: TemplateVariableKind;
+  /** Absent means `scope`, which is what every hole was before text ones existed. */
+  kind?: TemplateHoleKind;
   /** What a `scope` selects when the caller says nothing. */
   default?: TemplatedResourceSet;
   /** What a `text` says when the caller says nothing. Absent means it must be filled in. */

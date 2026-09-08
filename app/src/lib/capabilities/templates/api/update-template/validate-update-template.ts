@@ -6,8 +6,8 @@ import {
   only,
   revisionOf,
   tagsOf,
-  templateIdOf,
-  variablesOf
+  holesOf,
+  templateIdOf
 } from "$capabilities/templates/api/shared/validation";
 import type {
   UpdateTemplateInput,
@@ -18,16 +18,16 @@ export const validateUpdateTemplate = (input: unknown): UpdateTemplateInput => {
   const fields = fieldsOf(input, "update-template");
   only(fields, ["templateId", "baseRevision", "patch"], "update-template");
   const incoming = fieldsOf(fields.patch, "update-template");
-  only(incoming, ["name", "description", "tags", "variableDescription", "variables"], "update-template");
+  only(incoming, ["name", "description", "tags", "holeDescription", "holes"], "update-template");
   if (Object.keys(incoming).length === 0) {
     throw new Error("templates/update-template: patch changes at least one field");
   }
 
-  const variableDescription = has(incoming, "variableDescription")
-    ? fieldsOf(incoming.variableDescription, "update-template")
+  const holeDescription = has(incoming, "holeDescription")
+    ? fieldsOf(incoming.holeDescription, "update-template")
     : undefined;
-  if (variableDescription !== undefined) {
-    only(variableDescription, ["name", "description"], "update-template");
+  if (holeDescription !== undefined) {
+    only(holeDescription, ["name", "description"], "update-template");
   }
 
   const patch: UpdateTemplatePatch = {
@@ -41,18 +41,18 @@ export const validateUpdateTemplate = (input: unknown): UpdateTemplateInput => {
         }
       : {}),
     ...(has(incoming, "tags") ? { tags: tagsOf(incoming.tags, "update-template") } : {}),
-    ...(has(incoming, "variables")
-      ? { variables: variablesOf(incoming.variables, "update-template", true) }
+    ...(has(incoming, "holes")
+      ? { holes: holesOf(incoming.holes, "update-template", true) }
       : {}),
-    ...(variableDescription === undefined
+    ...(holeDescription === undefined
       ? {}
       : {
-          variableDescription: {
-            name: nameOf(variableDescription.name, "update-template"),
+          holeDescription: {
+            name: nameOf(holeDescription.name, "update-template"),
             description:
-              variableDescription.description === null
+              holeDescription.description === null
                 ? null
-                : descriptionOf(variableDescription.description, "update-template")
+                : descriptionOf(holeDescription.description, "update-template")
           }
         })
   };

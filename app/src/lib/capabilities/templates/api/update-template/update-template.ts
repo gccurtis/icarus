@@ -1,7 +1,7 @@
 import { requireScope } from "$runtime/server/scope.server";
 import { serverModel } from "$runtime/server/start.server";
 import { asId } from "$representation/data/behavior/core/id";
-import { variableNamesIn } from "$representation/data/behavior/templates/scopes";
+import { scopeHoleNamesIn } from "$representation/data/behavior/templates/scopes";
 
 import {
   admitStoredTemplate,
@@ -72,24 +72,24 @@ export const updateTemplate = async (input: unknown): Promise<UpdateTemplateResu
       : (asked.patch.description ?? template.description);
   const at = Date.now();
   const actor = { kind: "user" as const, userId: asId<"users">(scope.userId) };
-  let variables = [...(asked.patch.variables ?? template.variables)];
-  if (asked.patch.variables !== undefined) {
-    const declared = new Set(variables.map((variable) => variable.name));
-    const orphaned = variableNamesIn(template.body).filter((name) => !declared.has(name));
+  let holes = [...(asked.patch.holes ?? template.holes)];
+  if (asked.patch.holes !== undefined) {
+    const declared = new Set(holes.map((hole) => hole.name));
+    const orphaned = scopeHoleNamesIn(template.body).filter((name) => !declared.has(name));
     if (orphaned.length > 0) {
       return {
         accepted: false,
         templateId: asked.templateId,
-        reason: "variable-in-use",
+        reason: "hole-in-use",
         revision: template.revision,
         detail: `the body still names ${orphaned.join(", ")}`
       };
     }
-    for (const variable of variables) {
+    for (const hole of holes) {
       const missing = unknownSetsIn(
         store,
         scope.projectId,
-        variable.default ?? { include: [], exclude: [] }
+        hole.default ?? { include: [], exclude: [] }
       );
       if (missing.length > 0) {
         return {
@@ -101,52 +101,49 @@ export const updateTemplate = async (input: unknown): Promise<UpdateTemplateResu
         };
       }
     }
-    for (const held of template.variables) {
-      if (variables.some((variable) => variable.name === held.name)) continue;
+    for (const held of template.holes) {
+      if (holes.some((hole) => hole.name === held.name)) continue;
       removeRowsBoundTo(store, scope.projectId, {
-        kind: "variable",
+        kind: "hole",
         templateId: template._id,
-        variable: held.name
+        hole: held.name
       });
     }
-    variables = variables.map((variable) => {
+    holes = holes.map((hole) => {
       const written = normalizeScope(
         store,
         scope.projectId,
         actor,
-        { kind: "variable", templateId: template._id, variable: variable.name },
-        variable.default,
+        { kind: "hole", templateId: template._id, hole: hole.name },
+        hole.default,
         at
       );
       return {
-        name: variable.name,
-        label: variable.label,
-        ...(variable.description === undefined ? {} : { description: variable.description }),
+        name: hole.name,
+        label: hole.label,
+        ...(hole.description === undefined ? {} : { description: hole.description }),
+        ...(hole.kind === undefined ? {} : { kind: hole.kind }),
+        ...(hole.text === undefined ? {} : { text: hole.text }),
         ...(written === undefined ? {} : { default: written.term })
       };
     });
   }
-  if (asked.patch.variableDescription !== undefined) {
-    const variable = asked.patch.variableDescription;
-    if (!variables.some((candidate) => candidate.name === variable.name)) {
+  if (asked.patch.holeDescription !== undefined) {
+    const asking = asked.patch.holeDescription;
+    if (!holes.some((candidate) => candidate.name === asking.name)) {
       return {
         accepted: false,
         templateId: asked.templateId,
         reason: "unsupported-body",
         revision: template.revision,
-        detail: `the template no longer declares variable ${variable.name}`
+        detail: `the template no longer declares hole ${asking.name}`
       };
     }
-    variables = variables.map((candidate) =>
-      candidate.name !== variable.name
-        ? candidate
-        : {
-            name: candidate.name,
-            label: candidate.label,
-            ...(variable.description === null ? {} : { description: variable.description }),
-            ...(candidate.default === undefined ? {} : { default: candidate.default })
-          }
-    );
+    holes = holes.map((candidate) => {
+      if (candidate.name !== asking.name) return candidate;
+      const { description: _description, ...rest } = candidate;
+      return asking.description === null ? rest : { ...rest, description: asking.description };
+    });
   }
   const fields: RowFields<"templates"> = {
     projectId: template.projectId,
@@ -155,7 +152,7 @@ export const updateTemplate = async (input: unknown): Promise<UpdateTemplateResu
     ...(description === undefined ? {} : { description }),
     tags: [...(asked.patch.tags ?? template.tags)],
     body: template.body,
-    variables,
+    holes,
     createdBy: template.createdBy,
     revision: template.revision + 1,
     updatedAt: at

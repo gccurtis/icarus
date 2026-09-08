@@ -201,7 +201,7 @@ describe("changing sets", () => {
       row("templates", "1", {
         projectId: "p",
         name: "Brief",
-        variables: [
+        holes: [
           {
             name: "evidence",
             label: "Evidence",

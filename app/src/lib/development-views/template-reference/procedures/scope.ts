@@ -43,11 +43,11 @@ export const TERMS: ScopeTerm[] = [
     inALiveResource: "Yes"
   },
   {
-    select: "variable",
+    select: "hole",
     reads: "Whatever source_material holds",
-    picks: "The answer given for that variable, else its default, else the whole project.",
+    picks: "The answer given for that hole, else its default, else the whole project.",
     inABody: "Yes",
-    inADefault: "Yes, one variable may defer to another",
+    inADefault: "Yes, one hole may defer to another",
     inALiveResource: "No"
   }
 ];
@@ -64,28 +64,28 @@ export const KINDS: ScopeDoor[] = [
     where: "A template atom in the prose names it",
     opens: "text",
     title: "Words",
-    confirms: "What the caller typed, else the parameter's own default words, else nothing — which is the only thing that holds a placement up",
+    confirms: "What the caller typed, else the hole's own default words, else nothing — which is the only thing that holds a placement up",
     writes: "The atom becomes a literal, and the block's display follows"
   }
 ];
 
 export const DOORS: ScopeDoor[] = [
   {
-    where: "Templates panel · a variable card on a working copy",
+    where: "Templates panel · a hole card on a working copy",
     opens: "Default scope",
     title: "Default scope for Source material",
     confirms: "Set the default scope",
     writes: "updateTemplate with a rule; the server stores a row if the rule needs one"
   },
   {
-    where: "Templates library · the inspector's variable list",
+    where: "Templates library · the inspector's hole list",
     opens: "Default scope",
     title: "Default scope for Source material",
     confirms: "Set the default scope",
     writes: "The same procedure, from the other door"
   },
   {
-    where: "Insert · one row per variable in the ask modal",
+    where: "Insert · one row per hole in the ask modal",
     opens: "Change",
     title: "What Source material selects here",
     confirms: "Use this",
@@ -111,7 +111,7 @@ export const LIFECYCLE: LifecycleStep[] = [
   {
     index: "1",
     title: "Open",
-    person: "Presses Default scope on a variable, or Change beside a variable in the ask modal",
+    person: "Presses Default scope on a hole, or Change beside a hole in the ask modal",
     client: "The builder opens on the rule that is there now, which is the whole project when nothing was chosen",
     server: "Nothing. It reads the project's resource index and the project's named sets, both already loaded",
     rows: "None"
@@ -144,16 +144,16 @@ export const LIFECYCLE: LifecycleStep[] = [
     index: "5",
     title: "Confirm an answer",
     person: "Presses Use this, then Insert or Use",
-    client: "Holds the rule beside the variable's name until the placing call",
+    client: "Holds the rule beside the hole's name until the placing call",
     server: "instantiateTemplate does the same normalisation, owning each row it writes to the resource it makes",
     rows: "The new resource, plus one row per answer that needs one"
   },
   {
     index: "6",
     title: "Forget",
-    person: "Deletes the template, or the prompt that asked for the variable",
+    person: "Deletes the template, or the prompt that asked for the hole",
     client: "Nothing",
-    server: "removeTemplate deletes the rows its variables own, the way it already discards the stage",
+    server: "removeTemplate deletes the rows its holes own, the way it already discards the stage",
     rows: "resourceSets −1 per bound row"
   }
 ];
@@ -167,12 +167,12 @@ export const RULES: Rule[] = [
   {
     rule: "A row with a name is a project subject. A row without one is bound to whatever points at it.",
     because:
-      "Naming is the whole difference. A named set is something people curate and reuse. A bound set is a value a variable happens to hold, and asking someone to name it is asking them to file something they never wanted to keep."
+      "Naming is the whole difference. A named set is something people curate and reuse. A bound set is a value a hole happens to hold, and asking someone to name it is asking them to file something they never wanted to keep."
   },
   {
     rule: "A bound row has exactly one owner and dies with it.",
     because:
-      "It exists to give one rule an id. Deleting the template, the variable or the resource that points at it leaves nothing that could read it again."
+      "It exists to give one rule an id. Deleting the template, the hole or the resource that points at it leaves nothing that could read it again."
   },
   {
     rule: "The caller sends a rule. The server decides whether it needs a row.",
@@ -190,12 +190,12 @@ export const RULES: Rule[] = [
       "They are the common case, they are already expressible inline, and writing rows for them would fill the table with rows that say nothing."
   },
   {
-    rule: "A template's body never names a set or a resource. It names a variable.",
+    rule: "A template's body never names a set or a resource. It names a hole.",
     because:
       "That is what makes a template a function rather than a value. Portability already strips both, and this work does not change it."
   },
   {
-    rule: "A variable's default may name a set, because a template belongs to a project.",
+    rule: "A hole's default may name a set, because a template belongs to a project.",
     because:
       "The default is project-local metadata rather than body. When a template is later taken out of its project, the default is one more thing the strip removes."
   }
@@ -208,9 +208,9 @@ export const REFUSALS: Refusal[] = [
     where: "The shared draft, before the write; updateResourceSet already refuses it as corrupt"
   },
   {
-    when: "A named set is deleted while a set or a template variable names it",
+    when: "A named set is deleted while a set or a template hole names it",
     answer: "in-use, naming what holds it",
-    where: "removeResourceSet, which already walks templates.variables"
+    where: "removeResourceSet, which already walks templates.holes"
   },
   {
     when: "A rule names a set from another project",
@@ -228,12 +228,12 @@ export const REFUSALS: Refusal[] = [
     where: "validateInstantiateTemplate"
   },
   {
-    when: "A prompt names a variable the template does not declare",
+    when: "A prompt names a hole the template does not declare",
     answer: "unsupported-body, with the names",
     where: "Unchanged"
   },
   {
-    when: "A variable is answered with a raw difference that reached resolution",
+    when: "A hole is answered with a raw difference that reached resolution",
     answer: "unsupported-body, as today",
     where: "resolveTemplateScopes, which should now be unreachable from either door"
   }
@@ -250,7 +250,7 @@ export const WORK: ScopeWork[] = [
     path: "representation/data/types/core/resource-set.ts",
     status: "changed",
     area: "vocabulary",
-    work: "One added union, BoundTo: a template's variable, or a placed resource's. Neither term union moved."
+    work: "One added union, BoundTo: a template's hole, or a placed resource's. Neither term union moved."
   },
   {
     path: "representation/data/behavior/core/scope-draft.ts",
@@ -292,7 +292,7 @@ export const WORK: ScopeWork[] = [
     path: "capabilities/templates/api/shared/projection.ts",
     status: "changed",
     area: "templates",
-    work: "A variable's default naming a bound row is expanded into that row's rule, so the builder opens on what somebody built. A named set is left alone."
+    work: "A hole's default naming a bound row is expanded into that row's rule, so the builder opens on what somebody built. A named set is left alone."
   },
   {
     path: "capabilities/templates/api/shared/stages.ts",
@@ -304,7 +304,7 @@ export const WORK: ScopeWork[] = [
     path: "capabilities/templates/api/update-template/",
     status: "changed",
     area: "templates",
-    work: "Each default is normalised against its own variable, a set from another project is refused, and a variable that disappears takes its row with it."
+    work: "Each default is normalised against its own hole, a set from another project is refused, and a hole that disappears takes its row with it."
   },
   {
     path: "capabilities/templates/api/instantiate-template/",
@@ -316,7 +316,7 @@ export const WORK: ScopeWork[] = [
     path: "capabilities/templates/api/remove-template/",
     status: "changed",
     area: "templates",
-    work: "Deleting a template deletes the rows its variables own."
+    work: "Deleting a template deletes the rows its holes own."
   },
   {
     path: "capabilities/templates/test/unit/answers.test.ts",
@@ -340,7 +340,7 @@ export const WORK: ScopeWork[] = [
     path: "app-views/categories/document-editor/context/templates.svelte",
     status: "changed",
     area: "editors",
-    work: "The toggle modal is the builder; the ask modal lists each variable's rule with Change and Use the default beside it, and the builder opens as a modal of its own."
+    work: "The toggle modal is the builder; the ask modal lists each hole's rule with Change and Use the default beside it, and the builder opens as a modal of its own."
   },
   {
     path: "app-views/categories/slide-deck-editor/procedures/templating.ts",
@@ -388,7 +388,7 @@ export const WORK: ScopeWork[] = [
     path: "seed/resourceSets.json · seed/templates.json",
     status: "changed",
     area: "evidence",
-    work: "A bound row owned by a seeded template's variable, holding an exclusion, so every panel has one to draw before anyone builds one."
+    work: "A bound row owned by a seeded template's hole, holding an exclusion, so every panel has one to draw before anyone builds one."
   },
   {
     path: "test/browser/template-features.spec.ts",
@@ -422,9 +422,9 @@ export const FORKS: ScopeFork[] = [
     index: "3",
     question: "How does a bound row know what owns it?",
     recommended:
-      "An explicit boundTo, and it names the variable on both sides: a template's variable, or a placed resource's.",
+      "An explicit boundTo, and it names the hole on both sides: a template's hole, or a placed resource's.",
     because:
-      "One resource may answer several variables, so the owner has to be the pair rather than the resource. Ownership is a fact worth storing; a sweep has to be written, scheduled and trusted.",
+      "One resource may answer several holes, so the owner has to be the pair rather than the resource. Ownership is a fact worth storing; a sweep has to be written, scheduled and trusted.",
     alternative: "No owner, and a collector that removes rows nothing reaches.",
     cost: "One column, and three procedures that already delete things delete these too."
   },
@@ -484,15 +484,15 @@ export const GAPS: ScopeGap[] = [
     order: "Lands with derived outputs, before any of this is useful end to end"
   },
   {
-    title: "A prompt block is what declares a variable",
+    title: "A prompt block is what declares a hole",
     detail:
-      "Today a variable appears only because a body already carries a variable scope, which happens when a template with one is inserted into a working copy. The agreed shape is pull-based: making a template walks the prompts it found and asks what each one's scope should be, and two prompts may share a variable.",
+      "Today a hole appears only because a body already carries a hole scope, which happens when a template with one is inserted into a working copy. The agreed shape is pull-based: making a template walks the prompts it found and asks what each one's scope should be, and two prompts may share a hole.",
     order: "Lands with prompt blocks. The builder is the modal that step opens"
   },
   {
     title: "A prompt block that loads a template",
     detail:
-      "The last integration: a prompt naming a template pulls it in and fills its variables with nobody opening a modal.",
+      "The last integration: a prompt naming a template pulls it in and fills its holes with nobody opening a modal.",
     order: "After both, and it needs nothing this plan does not already build"
   },
   {

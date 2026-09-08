@@ -90,11 +90,11 @@ export const removeTemplate = async (input: unknown): Promise<RemoveTemplateResu
 
   store.transaction((unit) => {
     for (const stage of stages) removeStage(unit as typeof store, stage);
-    for (const variable of template.variables) {
+    for (const hole of template.holes) {
       removeRowsBoundTo(unit as typeof store, scope.projectId, {
-        kind: "variable",
+        kind: "hole",
         templateId: template._id,
-        variable: variable.name
+        hole: hole.name
       });
     }
     unit.removeRows(

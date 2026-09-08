@@ -4,17 +4,17 @@
   import { traceNode } from "$development-components/trace.svelte";
 
   /**
-   * Every parameter a template asks for, as a name, what it means, and what it
+   * Every hole a template asks for, as a name, what it means, and what it
    * is answered with.
    *
-   * **All of them, always, and nothing folded away.** A template's parameters are
+   * **All of them, always, and nothing folded away.** A template's holes are
    * the shape of the thing you are about to make, so the whole list is on screen
    * and each row reads top to bottom: the name, the sentence whoever made the
    * template wrote, and the value. Nothing here is a disclosure, because a hole
    * you have to open to see is a hole you can forget.
    *
    * **The list scrolls; the modal does not grow.** A template with twelve
-   * parameters and one with two open the same size, so nothing jumps.
+   * holes and one with two open the same size, so nothing jumps.
    *
    * **The value is the control.** Text is a field you type in. A scope is a
    * block reading what it selects, which opens the builder when pressed. A row
@@ -22,7 +22,7 @@
    */
 
   export type AnswerRow = {
-    /** The parameter's name, and this component's key for it. */
+    /** The hole's name, and this component's key for it. */
     readonly key: string;
     readonly label: string;
     readonly description?: string;
@@ -31,7 +31,7 @@
     readonly value: string;
     /** Whether the caller has said anything, as against taking what was suggested. */
     readonly answered: boolean;
-    /** Whether it has no answer at all, which only a text parameter can be. */
+    /** Whether it has no answer at all, which only a text hole can be. */
     readonly missing: boolean;
   };
 
@@ -44,11 +44,11 @@
   }: {
     rows: readonly AnswerRow[];
     disabled?: boolean;
-    /** Open the builder for one scope parameter. */
+    /** Open the builder for one scope hole. */
     onscope: (key: string) => void;
-    /** The words typed for one text parameter. */
+    /** The words typed for one text hole. */
     ontext: (key: string, words: string) => void;
-    /** Put one parameter back to what the template suggests. */
+    /** Put one hole back to what the template suggests. */
     onreset: (key: string) => void;
   } = $props();
 
@@ -78,7 +78,7 @@
 
       <p class="what">
         {row.description ??
-          (row.kind === "text" ? "Words this template asks for." : "What this parameter selects.")}
+          (row.kind === "text" ? "Words this template asks for." : "What this hole selects.")}
       </p>
 
       {#if row.kind === "text"}

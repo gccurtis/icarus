@@ -36,7 +36,7 @@ export const portableBodyOf = <T>(body: T): Portable<T> => {
       return terms.filter((term) => {
         const portable =
           isRecord(term) &&
-          (term.select === "project" || term.select === "kinds" || term.select === "variable");
+          (term.select === "project" || term.select === "kinds" || term.select === "hole");
         if (!portable) drop("scope");
         return portable;
       });

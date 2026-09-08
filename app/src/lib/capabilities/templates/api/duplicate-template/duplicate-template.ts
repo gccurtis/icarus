@@ -55,7 +55,7 @@ export const duplicateTemplate = async (input: unknown): Promise<DuplicateTempla
     ...(source.description === undefined ? {} : { description: source.description }),
     tags: [...source.tags],
     body: structuredClone(source.body),
-    variables: structuredClone(source.variables),
+    holes: structuredClone(source.holes),
     createdBy: actor,
     revision: 1,
     updatedAt: at

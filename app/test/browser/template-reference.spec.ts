@@ -3,7 +3,7 @@ import { expect, test, type Page, type TestInfo } from "@playwright/test";
 const routes = [
   ["system", "/app/dev-project/reference/templates", "How templates work"],
   ["changes", "/app/dev-project/reference/templates/changes", "What changed"],
-  ["scope", "/app/dev-project/reference/templates/scope", "What a variable selects"]
+  ["scope", "/app/dev-project/reference/templates/scope", "What a hole selects"]
 ] as const;
 
 const unexpected: string[] = [];
@@ -102,7 +102,7 @@ test("the scope page carries its mock, its file list and its settled decisions",
   await expect(page.getByRole("heading", { level: 2, name: "The builder" })).toBeVisible();
   await expect(page.getByText("Insert “Client status note”").first()).toBeVisible();
   await expect(page.getByText("From", { exact: true }).first()).toBeVisible();
-  await expect(page.getByRole("heading", { level: 2, name: "Two kinds of parameter" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: "Two kinds of hole" })).toBeVisible();
 
   await expect(page.getByRole("heading", { level: 2, name: "Every file it touched" })).toBeVisible();
   await expect(page.locator("#work tbody tr").first()).toBeVisible();

@@ -68,35 +68,35 @@ export const nameOf = (value: unknown, subject: string): string => {
  */
 export const boundToOf = (value: unknown, subject: string): BoundTo => {
   if (!isRecord(value)) throw new Error(`resource-sets/${subject}: boundTo is an object`);
-  if (value.kind === "variable") {
+  if (value.kind === "hole") {
     if (
       Object.keys(value).length !== 3 ||
       !canonicalText(value.templateId, MAX_IDENTIFIER_LENGTH) ||
-      !canonicalText(value.variable, MAX_KIND_LENGTH)
+      !canonicalText(value.hole, MAX_KIND_LENGTH)
     ) {
-      throw new Error(`resource-sets/${subject}: a variable owner names a template and a variable`);
+      throw new Error(`resource-sets/${subject}: a hole owner names a template and a hole`);
     }
     return {
-      kind: "variable",
+      kind: "hole",
       templateId: asId<"templates">(value.templateId as string),
-      variable: value.variable as string
+      hole: value.hole as string
     };
   }
   if (value.kind === "resource") {
     if (
       Object.keys(value).length !== 3 ||
       !canonicalText(value.resourceId, MAX_IDENTIFIER_LENGTH) ||
-      !canonicalText(value.variable, MAX_KIND_LENGTH)
+      !canonicalText(value.hole, MAX_KIND_LENGTH)
     ) {
-      throw new Error(`resource-sets/${subject}: a resource owner names one resource and a variable`);
+      throw new Error(`resource-sets/${subject}: a resource owner names one resource and a hole`);
     }
     return {
       kind: "resource",
       resourceId: value.resourceId as string,
-      variable: value.variable as string
+      hole: value.hole as string
     };
   }
-  throw new Error(`resource-sets/${subject}: an owner is a variable or a resource`);
+  throw new Error(`resource-sets/${subject}: an owner is a hole or a resource`);
 };
 
 export const descriptionOf = (value: unknown, subject: string): string => {

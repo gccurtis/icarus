@@ -10,7 +10,7 @@ import { leaderBodyOf, resourceTableOf } from "$capabilities/templates/api/share
 import { recordsIn, type RowFields } from "$capabilities/templates/api/shared/store";
 import { writeTemplateVersion } from "$capabilities/templates/api/shared/template-rows";
 import { bodyOf } from "$capabilities/templates/api/shared/validation";
-import { declaredFor } from "$capabilities/templates/api/shared/variables";
+import { declaredFor } from "$capabilities/templates/api/shared/holes";
 import type { CreateTemplateFromResourceResult } from "$capabilities/templates/types/templates";
 
 export const createTemplateFromResource = async (
@@ -77,7 +77,7 @@ export const createTemplateFromResource = async (
     ...(asked.description === undefined ? {} : { description: asked.description }),
     tags: [...(asked.tags ?? [])],
     body,
-    variables: declaredFor(body, []),
+    holes: declaredFor(body, []),
     createdBy: actor,
     revision: 1,
     updatedAt: at

@@ -7,7 +7,8 @@ const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, "../../..");
 const git = (args) => spawnSync("git", args, { cwd: root, encoding: "utf8", maxBuffer: 256 * 1024 * 1024 });
 
-const branchPoint = git(["merge-base", "HEAD", "main"]).stdout.trim();
+const mergeBase = (ref) => git(["merge-base", "HEAD", ref]).stdout.trim();
+const branchPoint = mergeBase("work/derived-output-architecture") || mergeBase("main");
 const baseline = process.env.TEMPLATE_FEATURES_BASE ?? (branchPoint === "" ? "main" : branchPoint);
 
 const GROUPS = [

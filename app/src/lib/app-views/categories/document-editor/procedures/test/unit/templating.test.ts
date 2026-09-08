@@ -9,9 +9,9 @@ import {
   draftOf,
   insertionOf,
   isWholeProject,
-  mergedVariables,
+  mergedHoles,
   ruleOf,
-  withVariableField
+  withHoleField
 } from "$app-views/categories/document-editor/procedures/templating";
 
 const text = (id: string, display: string, style?: string) => ({
@@ -58,14 +58,14 @@ const template: TemplateDetail = {
             atoms: [{ id: "tp1-a", kind: "literal", text: "Sum up" }],
             display: "Sum up",
             marks: [],
-            scope: { include: [{ select: "variable", name: "evidence" }], exclude: [] },
+            scope: { include: [{ select: "hole", name: "evidence" }], exclude: [] },
             state: "idle"
           }
         ]
       }
     ]
   },
-  variables: [{ name: "evidence", label: "Evidence", default: { include: [{ select: "kinds", kinds: ["finding"] }], exclude: [] } }]
+  holes: [{ name: "evidence", label: "Evidence", default: { include: [{ select: "kinds", kinds: ["finding"] }], exclude: [] } }]
 };
 
 test("an insertion lands after the row holding the caret, or at the end", () => {
@@ -90,34 +90,34 @@ test("inserting into a document resolves prompts, mints ids, and brings missing 
   assert.deepEqual(applyOps(after, invertAll(insertion.ops)), body);
 });
 
-test("inserting into a stage keeps variable terms", () => {
+test("inserting into a stage keeps hole terms", () => {
   const kept = insertionOf(held, template, null, "keep");
   const after = applyOps(held, kept.ops);
   const first = after.rows[1];
   if (first.kind !== "blocks" || first.blocks[0].type !== "prompt") throw new Error("prompt expected");
-  assert.deepEqual(first.blocks[0].scope, { include: [{ select: "variable", name: "evidence" }], exclude: [] });
+  assert.deepEqual(first.blocks[0].scope, { include: [{ select: "hole", name: "evidence" }], exclude: [] });
 });
 
-test("a variable without a default resolves to the whole project on insert", () => {
-  const insertion = insertionOf(held, { ...template, variables: [{ name: "evidence", label: "Evidence" }] }, "r2", "resolve");
+test("a hole without a default resolves to the whole project on insert", () => {
+  const insertion = insertionOf(held, { ...template, holes: [{ name: "evidence", label: "Evidence" }] }, "r2", "resolve");
   const after = applyOps(held, insertion.ops);
   const row = after.rows[3];
   if (row.kind !== "blocks" || row.blocks[0].type !== "prompt") throw new Error("prompt expected");
   assert.deepEqual(row.blocks[0].scope, { include: [{ select: "project" }], exclude: [] });
 });
 
-test("variables are edited by name and merged without repeats", () => {
+test("holes are edited by name and merged without repeats", () => {
   const declared = [{ name: "incident_evidence", label: "Incident evidence" }];
 
-  const described = withVariableField(declared, "incident_evidence", { description: "  What happened  " });
+  const described = withHoleField(declared, "incident_evidence", { description: "  What happened  " });
   assert.equal(described[0].description, "What happened");
-  const cleared = withVariableField(described, "incident_evidence", { description: "" });
+  const cleared = withHoleField(described, "incident_evidence", { description: "" });
   assert.equal("description" in cleared[0], false);
-  const ruled = withVariableField(declared, "incident_evidence", { default: { include: [{ select: "project" }], exclude: [] } });
+  const ruled = withHoleField(declared, "incident_evidence", { default: { include: [{ select: "project" }], exclude: [] } });
   assert.deepEqual(ruled[0].default, { include: [{ select: "project" }], exclude: [] });
 
-  const merged = mergedVariables(declared, [{ name: "incident_evidence", label: "Other" }, { name: "models", label: "Models" }]);
-  assert.deepEqual(merged.map((variable) => variable.name), ["incident_evidence", "models"]);
+  const merged = mergedHoles(declared, [{ name: "incident_evidence", label: "Other" }, { name: "models", label: "Models" }]);
+  assert.deepEqual(merged.map((hole) => hole.name), ["incident_evidence", "models"]);
   assert.deepEqual(merged[0], declared[0]);
 });
 
@@ -137,7 +137,7 @@ test("a default is read as prose, in the words every surface uses", () => {
   assert.equal(ruleOf(named), "A chosen group");
 });
 
-test("an answer is a rule the caller built, and a variable nobody touched is absent", () => {
+test("an answer is a rule the caller built, and a hole nobody touched is absent", () => {
   assert.deepEqual(answersFrom({ evidence: undefined }), {});
 
   const answers = answersFrom({

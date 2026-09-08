@@ -27,18 +27,18 @@ export const SYSTEMATIC: SystematicChange[] = [
   },
   {
     index: "04",
-    title: "Variables are found, described and scoped",
-    before: "A variable was fixed at seed time with a portable default and no way to change it.",
-    now: "Saving or committing declares every variable name the body's prompt scopes use. The panels show them read-only, with a description and a default scope set through a modal — everything in the project, kinds, or one of the project's sets.",
-    why: "A variable exists because a prompt asks for one. Typing a name that no prompt uses would be a hole nothing fills.",
+    title: "Holes are found, described and scoped",
+    before: "A hole was fixed at seed time with a portable default and no way to change it.",
+    now: "Saving or committing declares every hole name the body's prompt scopes use. The panels show them read-only, with a description and a default scope set through a modal — everything in the project, kinds, or one of the project's sets.",
+    why: "A hole exists because a prompt asks for one. Typing a name that no prompt uses would be a hole nothing fills.",
     area: "templates"
   },
   {
     index: "05",
-    title: "Placing a template asks what its variables select",
+    title: "Placing a template asks what its holes select",
     before: "Instantiate resolved from the stored defaults and had no way to be told anything.",
-    now: "Insert and Use open one modal listing every variable, its description, and a choice whose first option is the default. The answers win for that copy and are stored nowhere.",
-    why: "Instantiating on its own and instantiating inside something else are the same act. Inserting into a template being edited is the exception: it keeps the holes and merges the variables.",
+    now: "Insert and Use open one modal listing every hole, its description, and a choice whose first option is the default. The answers win for that copy and are stored nowhere.",
+    why: "Instantiating on its own and instantiating inside something else are the same act. Inserting into a template being edited is the exception: it keeps the holes and merges the holes.",
     area: "editors"
   },
   {
@@ -46,7 +46,7 @@ export const SYSTEMATIC: SystematicChange[] = [
     title: "Resource sets became a subject",
     before: "The resourceSets table existed, was seeded with two rows, and no capability read or wrote it.",
     now: "A resource-sets capability of four procedures, and a Contexts panel in Project Overview that makes, renames, changes and deletes sets and counts what each one selects right now.",
-    why: "A prompt's scope, a variable's default and an answer can all name a set. Nothing could say what a set meant.",
+    why: "A prompt's scope, a hole's default and an answer can all name a set. Nothing could say what a set meant.",
     area: "sets"
   },
   {
@@ -93,8 +93,8 @@ export const SYSTEMATIC: SystematicChange[] = [
     index: "12",
     title: "A scope is built rather than picked",
     before:
-      "A variable's default and an answer were a short list of toggles: everything, some kinds, or one of the project's named sets. Nothing could exclude anything, and nothing could name a particular resource.",
-    now: "One builder, opened from four places, with two term lists and a live count. A rule that excludes something or names resources is stored as a resourceSets row with no name, bound to the variable that owns it, and what points at it is a single set term.",
+      "A hole's default and an answer were a short list of toggles: everything, some kinds, or one of the project's named sets. Nothing could exclude anything, and nothing could name a particular resource.",
+    now: "One builder, opened from four places, with two term lists and a live count. A rule that excludes something or names resources is stored as a resourceSets row with no name, bound to the hole that owns it, and what points at it is a single set term.",
     why: "Resolving a template substitutes one term for what fills it, on either side of a prompt's scope, and a difference cannot be substituted on the excluding side. The row is what makes exclusions expressible at all.",
     area: "sets"
   },
@@ -102,10 +102,28 @@ export const SYSTEMATIC: SystematicChange[] = [
     index: "13",
     title: "A template asks for words as well as for resources",
     before:
-      "A template's only parameter was a prompt's scope. Prose was fixed: a template that wanted a subject line, a client name or a date had to be edited after it was placed.",
-    now: "A template atom is a hole in the prose, found from the body like a scope is and declared beside it. Placing a template lists every parameter as a key and what answers it, opens each one to its description, and refuses while any words are missing.",
-    why: "It is deliberately not called a variable: a variable here is a named value a formula reads, and a template's parameters have nothing to do with that.",
+      "A template's only empty place was a prompt's scope. Prose was fixed: a template that wanted a subject line, a client name or a date had to be edited after it was placed.",
+    now: "A template atom is a hole in the prose, declared beside the scope holes and found from the body once it is placed. Placing a template lists every hole as a key and what answers it, opens each one to its description, and refuses while any words are missing.",
+    why: "A template is a function and its empty places are its arguments. Whether they select resources or say words, one list is what the person placing it has to fill.",
     area: "vocabulary"
+  },
+  {
+    index: "14",
+    title: "A hole is a hole, never a variable",
+    before:
+      "The empty places a template leaves were called variables, in the types, the tables, the capability, the panels and the seed — the same word this application already uses for a named value a formula reads.",
+    now: "TemplateHole, templates.holes, holeCount, holeDescription, hole-in-use, { select: \"hole\" } and a boundTo of kind hole. The Holes band sits above a rule, with Create hole at its top; the formula Variables panel keeps the word it had first.",
+    why: "Two unrelated ideas sharing a word is how a vocabulary stops being one. A template's holes have nothing to do with formula variables, so they no longer read as though they do.",
+    area: "vocabulary"
+  },
+  {
+    index: "15",
+    title: "A text hole is made where it goes",
+    before:
+      "Every hole was found from the body, so a text hole could only appear by inserting a template that already had one. Nothing in the panel could make a place for words.",
+    now: "Create hole, at the top of the Holes band, takes a name, a description and default words, declares the hole and drops its atom at the caret in one act. A scope hole is still found, because a prompt is what asks for one.",
+    why: "Only the writer knows where in the prose a hole belongs, so the panel cannot find it. Declaring without placing would leave a hole nothing fills, which is why the two happen together or not at all.",
+    area: "editors"
   }
 ];
 
@@ -118,9 +136,9 @@ export const DECISIONS: Decision[] = [
   },
   {
     round: "First review",
-    question: "Where does a variable's meaning live?",
+    question: "Where does a hole's meaning live?",
     answer: "In a default that always exists — everything in the project unless the template says otherwise. There is no binding.",
-    became: "TemplateVariable.default, the modal that sets it, and the removal of the per-project binding table and its procedure."
+    became: "TemplateHole.default, the modal that sets it, and the removal of the per-project binding table and its procedure."
   },
   {
     round: "First review",
@@ -148,14 +166,14 @@ export const DECISIONS: Decision[] = [
   },
   {
     round: "Third review",
-    question: "Should Use ask for variables the way Insert does?",
+    question: "Should Use ask for holes the way Insert does?",
     answer: "Yes — instantiating on its own or inside something else is still instantiating.",
     became: "The library inspector's Use opens the same modal and sends the answers to instantiateTemplate."
   },
   {
     round: "Third review",
-    question: "Can a person add or remove a variable?",
-    answer: "No. Variables come from prompt blocks; adding one by hand asks the author to keep a list in step with a body.",
+    question: "Can a person add or remove a hole?",
+    answer: "No. Holes come from prompt blocks; adding one by hand asks the author to keep a list in step with a body.",
     became: "The Add field and the Remove button are gone from both panels, and the helpers that minted names were deleted with them."
   },
   {
@@ -173,24 +191,24 @@ export const DECISIONS: Decision[] = [
 ];
 
 export const VERIFICATION: Verification[] = [
-  { check: "Types", command: "pnpm typecheck", result: "0 errors, 0 warnings across 2,508 files", clean: true },
+  { check: "Types", command: "pnpm typecheck", result: "0 errors, 0 warnings across 2,907 files", clean: true },
   { check: "Structure", command: "pnpm lint", result: "56 checks, 56 clean", clean: true },
-  { check: "Unit", command: "pnpm test", result: "911 tests in 95 files", clean: true },
+  { check: "Unit", command: "pnpm test", result: "1,031 tests in 116 files, 2 skipped", clean: true },
   { check: "Category keys", command: "pnpm category-keys -- --check", result: "10 categories and 13 content views in step", clean: true },
   {
     check: "Browser",
     command: "pnpm test:browser, from a clean seed",
-    result: "46 of 46, re-run after the rebase onto main. Nothing on the branch had to move to keep them passing.",
+    result: "58 of 58, with 4 skipped — the live-intelligence cases the base branch skips when no credential is configured.",
     clean: true
   }
 ];
 
 export const OPEN: OpenItem[] = [
   {
-    title: "Variables from prompt blocks, assigned as you go",
+    title: "Holes from the prompt blocks this branch now sits on",
     detail:
-      "Prompt blocks do not exist yet, so today a variable appears when a body already carries a { select: \"variable\" } scope — which happens when a template with one is inserted into a working copy. The agreed shape for when they land is pull-based: making a template walks the prompts it found and asks what each one's scope should be, and two prompts may point at the same variable.",
-    recommendation: "Build it with the prompt block, not before it."
+      "The base branch has live prompt blocks in both editors, so a scope hole can finally come from a prompt somebody wrote rather than only from an inserted template. Nothing here has been taught to read them yet: a hole still appears when a body already carries a { select: \"hole\" } scope. The agreed shape is pull-based — making a template walks the prompts it found and asks what each one's scope should be, and two prompts may point at the same hole.",
+    recommendation: "Build it against the prompt block that now exists, as the next piece of work."
   },
   {
     title: "Images stored with a template",
@@ -200,7 +218,7 @@ export const OPEN: OpenItem[] = [
   {
     title: "Binding a project-neutral formula",
     detail: "A formula atom in a template keeps its expression and has no formulaId; the editor draws it unbound. Nothing makes a new formula instance for it when a copy lands.",
-    recommendation: "Belongs to the formula system, which main does not have yet."
+    recommendation: "Belongs to the formula system, which the base does not have yet."
   },
   {
     title: "Where resource sets are managed",
@@ -220,9 +238,9 @@ export const OPEN: OpenItem[] = [
 ];
 
 export const MERGE = {
-  base: "306e308",
-  commits: 22,
-  mainFiles: 233,
+  base: "1166f8e",
+  commits: 43,
+  mainFiles: 432,
   overlap: [
     "app/seed/templates.json",
     "app/seed/templateVersions.json",
@@ -252,15 +270,23 @@ export const MERGE = {
   conflicts: [
     {
       path: "instantiate-template.ts",
-      note: "Main normalizes a document's styles and readies a deck before the leader snapshot is written. Both calls were kept, alongside this branch's scope resolution, and the deck branch took main's destructuring."
+      note: "The base normalizes a document's styles and readies a deck before the leader snapshot is written. Both calls were kept, alongside this branch's scope resolution, and the deck branch took the base's destructuring."
     },
     {
       path: "templates.test.ts",
-      note: "Main asserts the readied deck; this branch asserts lastUsedAt and that no copy carries a template id. Both assertions now stand in the same test."
+      note: "The base asserts the readied deck; this branch asserts lastUsedAt and that no copy carries a template id. Both assertions now stand in the same test."
     },
     {
       path: "slide-deck-editor.md",
-      note: "Main cut the document from 714 lines to 221 and left the Templates panel listed as a deferred placeholder. Main's rewrite was taken whole, and the panel was described again in its terse register."
+      note: "The base cut the document from 714 lines to 221 and later added a Prompts section. Its rewrite was taken whole each time, and the Templates panel was described again beside it in the same terse register."
+    },
+    {
+      path: "document-editor.spec.ts",
+      note: "Both sides moved one context view out of the same loop to assert it on its own — the base for Prompts, this branch for Templates. The loop now covers Variables alone and both blocks stand under it."
+    },
+    {
+      path: "typing.ts",
+      note: "The base taught the deck's typing to edit a Prompt Block; this branch measured atoms through displayOfAtom so a template atom counts. The editable-block type is the base's and the measurement is this branch's."
     }
   ]
 };
@@ -270,7 +296,7 @@ export const MODEL_DELTA = {
     { name: "templateStages", note: "projectId, templateId, templateRevision, target, resourceId, createdBy, updatedAt" },
     { name: "templates.projectId", note: "required — the project a template belongs to" },
     { name: "templates.lastUsedAt", note: "optional — when it was last instantiated, which is what recency reads" },
-    { name: "TemplatedTerm { select: \"set\" }", note: "a variable default may name one of the project's sets" },
+    { name: "TemplatedTerm { select: \"set\" }", note: "a hole default may name one of the project's sets" },
     { name: "Target.context", note: "a tab can be opened straight onto a named context view" }
   ],
   removed: [
@@ -280,7 +306,7 @@ export const MODEL_DELTA = {
   ],
   unchanged: [
     { name: "TemplateBody", note: "document | slides | spreadsheet, exactly as before" },
-    { name: "TemplateVariable", note: "name, label, description?, default? — main's shape" },
+    { name: "TemplateHole", note: "name, label, description?, default? — main's shape" },
     { name: "resourceSets", note: "the table was already there; only the capability over it is new" }
   ]
 };

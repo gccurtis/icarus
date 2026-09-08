@@ -14,22 +14,22 @@
     <li class="fallback">
       <span class="rank">2</span>
       <div>
-        <b>Else the variable's default scope</b>
-        <p>Everything in the project, particular kinds, one of the project's named sets — or another variable, expanded the same way.</p>
+        <b>Else the hole's default scope</b>
+        <p>Everything in the project, particular kinds, one of the project's named sets — or another hole, expanded the same way.</p>
       </div>
-      <code>variable.default</code>
+      <code>hole.default</code>
     </li>
     <li class="floor">
       <span class="rank">3</span>
       <div>
         <b>Else everything in the project</b>
-        <p>A variable with no default, or one that reaches itself. There is always an answer, so a template always resolves.</p>
+        <p>A hole with no default, or one that reaches itself. There is always an answer, so a template always resolves.</p>
       </div>
       <code>{"{ select: \"project\" }"}</code>
     </li>
   </ol>
   <p class="undeclared">
-    A prompt naming a variable the template does not declare is the one thing that refuses:
+    A prompt naming a hole the template does not declare is the one thing that refuses:
     <code>unsupported-body</code>, with the names, rather than a guess.
   </p>
 </div>

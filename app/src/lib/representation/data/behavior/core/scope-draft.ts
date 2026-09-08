@@ -80,7 +80,7 @@ export const termKey = (term: AnyTerm): string => {
   if (term.select === "project") return "project";
   if (term.select === "kinds") return `kinds:${[...term.kinds].sort().join(",")}`;
   if (term.select === "set") return `set:${term.setId}`;
-  if (term.select === "variable") return `variable:${term.name}`;
+  if (term.select === "hole") return `hole:${term.name}`;
   return `resources:${term.refs.map((ref) => `${ref.kind}/${ref.id}`).sort().join(",")}`;
 };
 
@@ -122,11 +122,11 @@ export const withoutTerm = (scope: ScopeDraft, side: ScopeSide, key: string): Sc
 /** The draft with everything cleared back to the floor. */
 export const withWholeProject = (): ScopeDraft => draftOf(undefined);
 
-const isSetTerm = (term: AnyTerm): term is SetTerm => term.select !== "variable";
+const isSetTerm = (term: AnyTerm): term is SetTerm => term.select !== "hole";
 
 const isTemplatedTerm = (term: AnyTerm): term is TemplatedTerm => term.select !== "resources";
 
-/** The draft as a concrete set, or undefined when it names a variable. */
+/** The draft as a concrete set, or undefined when it names a hole. */
 export const narrowed = (scope: ScopeDraft): ResourceSet | undefined =>
   scope.include.every(isSetTerm) && scope.exclude.every(isSetTerm)
     ? {
@@ -204,7 +204,7 @@ export const termWords = (term: AnyTerm, names: ScopeNames = {}): string => {
   if (term.select === "set") {
     return names.sets?.get(term.setId) ?? "a chosen group";
   }
-  if (term.select === "variable") return `whatever ${term.name} holds`;
+  if (term.select === "hole") return `whatever ${term.name} holds`;
   if (term.refs.length === 1) {
     const held = names.resources?.get(term.refs[0].id);
     return held ?? "one chosen resource";
@@ -406,7 +406,7 @@ export const selectedBy = (
 
   const ofTerm = (term: AnyTerm, seen: ReadonlySet<string>): readonly ResourceRef[] => {
     if (term.select === "project") return catalogue;
-    if (term.select === "variable") return [];
+    if (term.select === "hole") return [];
     if (term.select === "kinds") {
       return catalogue.filter((ref) => term.kinds.some((kind) => kindMatches(kind, ref.kind)));
     }

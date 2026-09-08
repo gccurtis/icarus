@@ -22,7 +22,7 @@ export const createTemplate = async (input: unknown): Promise<CreateTemplateResu
     ...(asked.description === undefined ? {} : { description: asked.description }),
     tags: [...(asked.tags ?? [])],
     body: emptyTemplateBody(asked.target),
-    variables: [],
+    holes: [],
     createdBy: actor,
     revision: 1,
     updatedAt: at

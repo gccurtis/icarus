@@ -112,7 +112,7 @@ const template = (id: string, body: unknown = documentBody, extra: Record<string
     name: `Template ${id}`,
     tags: [],
     body,
-    variables: [],
+    holes: [],
     createdBy: { kind: "user", userId: "u" },
     revision: 2,
     updatedAt: 20,
@@ -192,7 +192,7 @@ describe("opening a stage", () => {
     assert.equal(model.tables.templates[0].revision, 3);
   });
 
-  test("a name or variable edit carries every stage of the template to the new revision", async () => {
+  test("a name or hole edit carries every stage of the template to the new revision", async () => {
     await openTemplateStage({ templateId: "templates:1" });
     const renamed = await updateTemplate({
       templateId: "templates:1",
@@ -277,7 +277,7 @@ describe("saving a stage", () => {
               atoms: [{ id: "p1-a", kind: "literal", text: "Sum up" }],
               display: "Sum up",
               marks: [],
-              scope: { include: [{ select: "variable", name: "evidence" }], exclude: [] },
+              scope: { include: [{ select: "hole", name: "evidence" }], exclude: [] },
               state: "idle"
             }
           ]
@@ -296,7 +296,7 @@ describe("saving a stage", () => {
     const held = model.tables.templates[0];
     assert.equal(held.revision, 3);
     assert.deepEqual((held.body as { rows: unknown[] }).rows.length, 1);
-    assert.deepEqual(held.variables, [{ name: "evidence", label: "evidence" }]);
+    assert.deepEqual(held.holes, [{ name: "evidence", label: "evidence" }]);
     assert.equal(model.tables.templateVersions.length, 1);
     assert.equal(model.tables.templateStages[0].templateRevision, 3);
 

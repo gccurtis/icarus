@@ -66,7 +66,7 @@
   {/if}
 
   <ScreenNote tone="gap">
-    Spreadsheet templates wait for the spreadsheet editor; their name, description, variables and
+    Spreadsheet templates wait for the spreadsheet editor; their name, description, holes and
     tags still change in the Inspector.
   </ScreenNote>
 </ScreenSurface>

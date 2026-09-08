@@ -37,9 +37,9 @@
         <span class="tref-kicker">02 · The audit</span>
         <h1>What changed</h1>
         <p class="tref-lede">
-          Thirteen systematic changes, the decisions three reviews settled, every file with its line count, what
+          Fifteen systematic changes, the decisions three reviews settled, every file with its line count, what
           was run to check the work, and what is still open. Measured against <code>{BASELINE}</code>, the
-          commit this branch sits on, so it keeps saying the same thing as main moves on.
+          commit this branch sits on, so it keeps saying the same thing as that branch moves on.
         </p>
       </div>
       <div class="tref-facts">
@@ -48,24 +48,24 @@
           <div><dt>Created</dt><dd>{made}</dd></div>
           <div><dt>Changed</dt><dd>{changed}</dd></div>
           <div><dt>Lines</dt><dd>+{added.toLocaleString()} / −{deleted.toLocaleString()}</dd></div>
-          <div><dt>Committed</dt><dd>Four commits, rebased onto main</dd></div>
+          <div><dt>Committed</dt><dd>Five commits, on derived outputs</dd></div>
         </dl>
       </div>
     </header>
 
     <nav class="tref-jumps" aria-label="On this page">
-      <a href="#systematic">Thirteen changes</a>
+      <a href="#systematic">Fifteen changes</a>
       <a href="#model">The model, before and after</a>
       <a href="#decisions">What the reviews settled</a>
       <a href="#ledger">Every file</a>
       <a href="#verification">What was checked</a>
       <a href="#open">Still open</a>
-      <a href="#merge">Rebased onto main</a>
+      <a href="#merge">Where it sits</a>
     </nav>
 
     <section class="tref-section" id="systematic">
       <div class="tref-section-head">
-        <div><span class="tref-kicker">Before → now</span><h2>Thirteen systematic changes</h2></div>
+        <div><span class="tref-kicker">Before → now</span><h2>Fifteen systematic changes</h2></div>
         <p>
           Each is a decision with consequences across several files, written with what it replaced and why,
           so the page stays useful after the code is familiar.
@@ -224,21 +224,23 @@
 
     <section class="tref-section" id="merge">
       <div class="tref-section-head">
-        <div><span class="tref-kicker">Already done</span><h2>Rebased onto main</h2></div>
+        <div><span class="tref-kicker">Already done</span><h2>Where it sits</h2></div>
         <p>
-          Four commits on <code>work/template-features</code>, sitting directly on main's head. Everything
-          on this page is measured from there, so the numbers say what this branch adds and nothing else.
+          Five commits on <code>work/template-features</code>, sitting on
+          <code>work/derived-output-architecture</code> rather than on main — because that is where
+          prompt blocks are, and a prompt's scope is what a scope hole fills. Everything on this page
+          is measured from there, so the numbers say what this branch adds and nothing else.
         </p>
       </div>
 
       <div class="tref-cards">
         <article class="tref-card">
           <h3>Base</h3>
-          <p><code>{MERGE.base}</code> — the commit this branch now sits on.</p>
+          <p><code>{MERGE.base}</code> — the head of <code>work/derived-output-architecture</code>, which is itself 21 commits ahead of main.</p>
         </article>
         <article class="tref-card">
-          <h3>What main brought</h3>
-          <p>{MERGE.commits} commits and {MERGE.mainFiles} files since the original branch point: editor stabilization, the editor audit, the withdrawal of header and footer authoring, and a pass over the editors' controls and inspectors.</p>
+          <h3>What the base brought</h3>
+          <p>{MERGE.commits} commits and {MERGE.mainFiles} files since the original branch point: editor stabilization, the editor audit, the withdrawal of header and footer authoring, a pass over the editors' controls, then the semantic overlay, derived outputs and live prompt blocks in both editors.</p>
         </article>
         <article class="tref-card">
           <h3>Files both sides touched</h3>
@@ -261,8 +263,10 @@
         <h4>The rest merged without a decision</h4>
         <p>
           {MERGE.overlap.length - MERGE.conflicts.length} of the {MERGE.overlap.length} were edited on both
-          sides but never on the same lines, and the last two rebases replayed all four commits with nothing
-          to reconcile at all. Every check was re-run afterwards.
+          sides but never on the same lines, across five rebases. Every check was re-run afterwards, and the
+          move onto derived outputs turned up one real defect of its own: the templates validator refused a
+          Prompt Block carrying a named style, which is exactly what a text box keeps when it is converted
+          in place.
         </p>
       </div>
     </section>

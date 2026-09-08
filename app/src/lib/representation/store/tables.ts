@@ -76,7 +76,7 @@ import type {
 } from "$representation/data/types/spreadsheets/snapshot";
 import type {
   TemplateBody,
-  TemplateVariable
+  TemplateHole
 } from "$representation/data/types/templates/template";
 import type { WorkspaceOp } from "$representation/data/types/workspace/op";
 import type { TabId, TabRecord, TabView } from "$representation/data/types/workspace/tab";
@@ -379,7 +379,7 @@ export type TemplateFields = {
   description?: string;
   tags: string[];
   body: TemplateBody;
-  variables: TemplateVariable[];
+  holes: TemplateHole[];
   createdBy: Actor;
   revision: number;
   updatedAt: number;
@@ -394,7 +394,7 @@ export type TemplateVersionFields = {
   description?: string;
   tags: string[];
   body: TemplateBody;
-  variables: TemplateVariable[];
+  holes: TemplateHole[];
   at: number;
 };
 export type TemplateVersion = Row<"templateVersions"> & TemplateVersionFields;
@@ -412,7 +412,7 @@ export type TemplateStage = Row<"templateStages"> & TemplateStageFields;
 
 export type ResourceSetFields = {
   projectId: Id<"projects">;
-  /** Present on a project's own sets. Absent on a row bound to one variable or one resource. */
+  /** Present on a project's own sets. Absent on a row bound to one hole or one resource. */
   name?: string;
   description?: string;
   /** Present on a bound row, and never together with a name. */

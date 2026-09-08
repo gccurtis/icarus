@@ -1,40 +1,40 @@
 # Template Features Change Set
 
-138 files under app/ against 306e308, the commit this branch sits on — 80 created, 58 changed, 0 deleted — +15967 / −1090 lines, measured from committed and working-tree changes when this page was built.
+138 files under app/ against 1166f8e, the commit this branch sits on — 80 created, 58 changed, 0 deleted — +16600 / −1335 lines, measured from committed and working-tree changes when this page was built.
 
 | Status | File | + | − | Systematic change |
 | --- | --- | --- | --- | --- |
-| new | `scripts/generate-template-reference-inventory.mjs` | +114 | −0 | The reference pages, and the one shared component they moved |
+| new | `scripts/generate-template-reference-inventory.mjs` | +126 | −0 | The reference pages, and the one shared component they moved |
 | changed | `seed/documents.json` | +0 | −4 | The seeded one-slide template |
 | changed | `seed/resourceSets.json` | +17 | −0 | The seeded one-slide template |
 | changed | `seed/slideDecks.json` | +0 | −4 | The seeded one-slide template |
 | changed | `seed/spreadsheets.json` | +0 | −2 | The seeded one-slide template |
-| changed | `seed/templates.json` | +1516 | −242 | The seeded one-slide template |
-| changed | `seed/templateVersions.json` | +497 | −1 | The seeded one-slide template |
+| changed | `seed/templates.json` | +1524 | −250 | The seeded one-slide template |
+| changed | `seed/templateVersions.json` | +518 | −22 | The seeded one-slide template |
 | changed | `src/lib/app-views/categories/document-editor/content/document.svelte` | +15 | −0 | The document editor's Templates panel |
-| new | `src/lib/app-views/categories/document-editor/context/templates.svelte` | +601 | −0 | The document editor's Templates panel |
+| new | `src/lib/app-views/categories/document-editor/context/templates.svelte` | +683 | −0 | The document editor's Templates panel |
 | changed | `src/lib/app-views/categories/document-editor/procedures/projection.ts` | +33 | −8 | The document editor's Templates panel |
 | changed | `src/lib/app-views/categories/document-editor/procedures/schema.ts` | +37 | −3 | The document editor's Templates panel |
-| new | `src/lib/app-views/categories/document-editor/procedures/templating.ts` | +327 | −0 | The document editor's Templates panel |
+| new | `src/lib/app-views/categories/document-editor/procedures/templating.ts` | +394 | −0 | The document editor's Templates panel |
 | new | `src/lib/app-views/categories/document-editor/procedures/test/unit/templating.test.ts` | +167 | −0 | The document editor's Templates panel |
 | new | `src/lib/app-views/categories/project-overview/context/contexts.svelte` | +283 | −0 | Project Overview's Contexts panel |
 | new | `src/lib/app-views/categories/project-overview/procedures/contexts.ts` | +115 | −0 | Project Overview's Contexts panel |
 | new | `src/lib/app-views/categories/project-overview/procedures/test/unit/contexts.test.ts` | +68 | −0 | Project Overview's Contexts panel |
-| changed | `src/lib/app-views/categories/project-overview/project-overview.md` | +22 | −18 | Project Overview's Contexts panel |
+| changed | `src/lib/app-views/categories/project-overview/project-overview.md` | +25 | −21 | Project Overview's Contexts panel |
 | changed | `src/lib/app-views/categories/slide-deck-editor/context/comments.svelte` | +6 | −1 | The slide-deck editor's Templates panel |
-| changed | `src/lib/app-views/categories/slide-deck-editor/context/templates.svelte` | +618 | −3 | The slide-deck editor's Templates panel |
+| changed | `src/lib/app-views/categories/slide-deck-editor/context/templates.svelte` | +700 | −3 | The slide-deck editor's Templates panel |
 | changed | `src/lib/app-views/categories/slide-deck-editor/inspector/threads.svelte` | +8 | −1 | The slide-deck editor's Templates panel |
 | changed | `src/lib/app-views/categories/slide-deck-editor/procedures/scene.ts` | +3 | −3 | The slide-deck editor's Templates panel |
-| new | `src/lib/app-views/categories/slide-deck-editor/procedures/templating.ts` | +336 | −0 | The slide-deck editor's Templates panel |
+| new | `src/lib/app-views/categories/slide-deck-editor/procedures/templating.ts` | +418 | −0 | The slide-deck editor's Templates panel |
 | new | `src/lib/app-views/categories/slide-deck-editor/procedures/test/unit/templating.test.ts` | +130 | −0 | The slide-deck editor's Templates panel |
 | changed | `src/lib/app-views/categories/slide-deck-editor/procedures/typing.ts` | +2 | −3 | The slide-deck editor's Templates panel |
-| changed | `src/lib/app-views/categories/slide-deck-editor/slide-deck-editor.md` | +21 | −1 | The slide-deck editor's Templates panel |
+| changed | `src/lib/app-views/categories/slide-deck-editor/slide-deck-editor.md` | +23 | −1 | The slide-deck editor's Templates panel |
 | changed | `src/lib/app-views/categories/templates/content/editor.svelte` | +48 | −17 | The template library, editor door, and inspector |
-| changed | `src/lib/app-views/categories/templates/content/library.svelte` | +23 | −11 | The template library, editor door, and inspector |
-| changed | `src/lib/app-views/categories/templates/inspector/template.svelte` | +271 | −43 | The template library, editor door, and inspector |
-| changed | `src/lib/app-views/categories/templates/procedures/library.svelte.ts` | +165 | −32 | The template library, editor door, and inspector |
+| changed | `src/lib/app-views/categories/templates/content/library.svelte` | +33 | −21 | The template library, editor door, and inspector |
+| changed | `src/lib/app-views/categories/templates/inspector/template.svelte` | +347 | −119 | The template library, editor door, and inspector |
+| changed | `src/lib/app-views/categories/templates/procedures/library.svelte.ts` | +177 | −45 | The template library, editor door, and inspector |
 | changed | `src/lib/app-views/categories/templates/procedures/test/unit/library.test.ts` | +16 | −0 | The template library, editor door, and inspector |
-| changed | `src/lib/app-views/categories/templates/templates.md` | +45 | −74 | The template library, editor door, and inspector |
+| changed | `src/lib/app-views/categories/templates/templates.md` | +46 | −75 | The template library, editor door, and inspector |
 | changed | `src/lib/capabilities/comments/api/start-thread/start-thread.ts` | +8 | −0 | What the other capabilities changed |
 | changed | `src/lib/capabilities/comments/comments.md` | +4 | −0 | What the other capabilities changed |
 | changed | `src/lib/capabilities/comments/test/unit/comments.test.ts` | +12 | −0 | What the other capabilities changed |
@@ -57,11 +57,11 @@
 | new | `src/lib/capabilities/templates/api/commit-template-stage/validate-commit-template-stage.ts` | +16 | −0 | The templates capability |
 | new | `src/lib/capabilities/templates/api/create-template-from-resource/create-template-from-resource.ts` | +89 | −0 | The templates capability |
 | new | `src/lib/capabilities/templates/api/create-template-from-resource/validate-create-template-from-resource.ts` | +44 | −0 | The templates capability |
-| changed | `src/lib/capabilities/templates/api/create-template/create-template.ts` | +1 | −0 | The templates capability |
+| changed | `src/lib/capabilities/templates/api/create-template/create-template.ts` | +2 | −1 | The templates capability |
 | new | `src/lib/capabilities/templates/api/discard-template-stage/discard-template-stage.ts` | +31 | −0 | The templates capability |
 | new | `src/lib/capabilities/templates/api/discard-template-stage/validate-discard-template-stage.ts` | +8 | −0 | The templates capability |
-| changed | `src/lib/capabilities/templates/api/duplicate-template/duplicate-template.ts` | +1 | −0 | The templates capability |
-| changed | `src/lib/capabilities/templates/api/instantiate-template/instantiate-template.ts` | +110 | −46 | The templates capability |
+| changed | `src/lib/capabilities/templates/api/duplicate-template/duplicate-template.ts` | +2 | −1 | The templates capability |
+| changed | `src/lib/capabilities/templates/api/instantiate-template/instantiate-template.ts` | +112 | −48 | The templates capability |
 | changed | `src/lib/capabilities/templates/api/instantiate-template/validate-instantiate-template.ts` | +8 | −3 | The templates capability |
 | new | `src/lib/capabilities/templates/api/open-template-stage/open-template-stage.ts` | +115 | −0 | The templates capability |
 | new | `src/lib/capabilities/templates/api/open-template-stage/validate-open-template-stage.ts` | +8 | −0 | The templates capability |
@@ -69,27 +69,27 @@
 | new | `src/lib/capabilities/templates/api/read-resource-template/validate-read-resource-template.ts` | +8 | −0 | The templates capability |
 | changed | `src/lib/capabilities/templates/api/remove-template/remove-template.ts` | +10 | −68 | The templates capability |
 | changed | `src/lib/capabilities/templates/api/shared/bodies.ts` | +17 | −171 | The templates capability |
-| changed | `src/lib/capabilities/templates/api/shared/projection.ts` | +30 | −45 | The templates capability |
+| new | `src/lib/capabilities/templates/api/shared/holes.ts` | +39 | −0 | The templates capability |
+| changed | `src/lib/capabilities/templates/api/shared/projection.ts` | +32 | −49 | The templates capability |
 | new | `src/lib/capabilities/templates/api/shared/scopes.ts` | +204 | −0 | The templates capability |
 | new | `src/lib/capabilities/templates/api/shared/stages.ts` | +141 | −0 | The templates capability |
-| changed | `src/lib/capabilities/templates/api/shared/template-rows.ts` | +1 | −0 | The templates capability |
-| changed | `src/lib/capabilities/templates/api/shared/validation.ts` | +192 | −12 | The templates capability |
-| new | `src/lib/capabilities/templates/api/shared/variables.ts` | +39 | −0 | The templates capability |
-| changed | `src/lib/capabilities/templates/api/update-template/update-template.ts` | +69 | −11 | The templates capability |
-| changed | `src/lib/capabilities/templates/api/update-template/validate-update-template.ts` | +6 | −2 | The templates capability |
+| changed | `src/lib/capabilities/templates/api/shared/template-rows.ts` | +3 | −2 | The templates capability |
+| changed | `src/lib/capabilities/templates/api/shared/validation.ts` | +227 | −51 | The templates capability |
+| changed | `src/lib/capabilities/templates/api/update-template/update-template.ts` | +81 | −26 | The templates capability |
+| changed | `src/lib/capabilities/templates/api/update-template/validate-update-template.ts` | +14 | −10 | The templates capability |
 | changed | `src/lib/capabilities/templates/index.remote.ts` | +58 | −6 | The templates capability |
-| changed | `src/lib/capabilities/templates/templates.md` | +124 | −64 | The templates capability |
+| changed | `src/lib/capabilities/templates/templates.md` | +126 | −64 | The templates capability |
 | new | `src/lib/capabilities/templates/test/unit/answers.test.ts` | +491 | −0 | The templates capability |
 | new | `src/lib/capabilities/templates/test/unit/stages.test.ts` | +377 | −0 | The templates capability |
-| changed | `src/lib/capabilities/templates/test/unit/templates.test.ts` | +57 | −90 | The templates capability |
-| changed | `src/lib/capabilities/templates/types/templates.ts` | +113 | −17 | The templates capability |
+| changed | `src/lib/capabilities/templates/test/unit/templates.test.ts` | +89 | −122 | The templates capability |
+| changed | `src/lib/capabilities/templates/types/templates.ts` | +118 | −22 | The templates capability |
 | changed | `src/lib/components/authored/panel/panel-section.svelte` | +13 | −1 | The reference pages, and the one shared component they moved |
 | new | `src/lib/components/authored/scope-builder/index.ts` | +9 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/components/authored/scope-builder/scope-builder.svelte` | +455 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/components/authored/template-answers/index.ts` | +8 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/components/authored/template-answers/template-answers.svelte` | +185 | −0 | The reference pages, and the one shared component they moved |
 | changed | `src/lib/development-views/demo/components/demo-index.svelte` | +3 | −3 | The reference pages, and the one shared component they moved |
-| new | `src/lib/development-views/template-reference/components/changes-page.svelte` | +281 | −0 | The reference pages, and the one shared component they moved |
+| new | `src/lib/development-views/template-reference/components/changes-page.svelte` | +285 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/development-views/template-reference/components/diagram-binding.svelte` | +168 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/development-views/template-reference/components/diagram-builder.svelte` | +274 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/development-views/template-reference/components/diagram-difference.svelte` | +128 | −0 | The reference pages, and the one shared component they moved |
@@ -101,9 +101,9 @@
 | new | `src/lib/development-views/template-reference/components/file-ledger.svelte` | +138 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/development-views/template-reference/components/reference-header.svelte` | +166 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/development-views/template-reference/components/reference.css` | +305 | −0 | The reference pages, and the one shared component they moved |
-| new | `src/lib/development-views/template-reference/components/scope-page.svelte` | +467 | −0 | The reference pages, and the one shared component they moved |
+| new | `src/lib/development-views/template-reference/components/scope-page.svelte` | +468 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/development-views/template-reference/components/system-page.svelte` | +329 | −0 | The reference pages, and the one shared component they moved |
-| new | `src/lib/development-views/template-reference/procedures/changes.ts` | +286 | −0 | The reference pages, and the one shared component they moved |
+| new | `src/lib/development-views/template-reference/procedures/changes.ts` | +312 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/development-views/template-reference/procedures/inventory.ts` | +148 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/development-views/template-reference/procedures/navigation.ts` | +16 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/development-views/template-reference/procedures/scope.ts` | +521 | −0 | The reference pages, and the one shared component they moved |
@@ -133,14 +133,14 @@
 | changed | `src/lib/representation/data/behavior/workspace/opening.ts` | +5 | −1 | The vocabulary: one table, five functions, one field |
 | changed | `src/lib/representation/data/types/content/content-block.ts` | +16 | −1 | The vocabulary: one table, five functions, one field |
 | changed | `src/lib/representation/data/types/core/resource-set.ts` | +16 | −24 | The vocabulary: one table, five functions, one field |
-| changed | `src/lib/representation/data/types/templates/template.ts` | +11 | −26 | The vocabulary: one table, five functions, one field |
+| changed | `src/lib/representation/data/types/templates/template.ts` | +12 | −27 | The vocabulary: one table, five functions, one field |
 | changed | `src/lib/representation/data/types/workspace/tab.ts` | +1 | −0 | The vocabulary: one table, five functions, one field |
-| changed | `src/lib/representation/store/tables.ts` | +23 | −9 | The vocabulary: one table, five functions, one field |
+| changed | `src/lib/representation/store/tables.ts` | +26 | −12 | The vocabulary: one table, five functions, one field |
 | changed | `src/routes/app/[project]/reference/templates/+page.svelte` | +11 | −2 | The reference pages, and the one shared component they moved |
 | new | `src/routes/app/[project]/reference/templates/changes/+page.svelte` | +14 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/routes/app/[project]/reference/templates/scope/+page.svelte` | +14 | −0 | The reference pages, and the one shared component they moved |
 | changed | `test/browser/document-editor.spec.ts` | +8 | −1 | Browser evidence |
-| new | `test/browser/template-features.spec.ts` | +277 | −0 | Browser evidence |
+| new | `test/browser/template-features.spec.ts` | +315 | −0 | Browser evidence |
 | new | `test/browser/template-reference.spec.ts` | +115 | −0 | Browser evidence |
 
 ## Outside app/
@@ -150,7 +150,7 @@
 | changed | `docs/artifacts/template-dictionary/index.html` | +297 | −0 |
 | changed | `docs/artifacts/template-dictionary/index.md` | +139 | −0 |
 | changed | `docs/artifacts/template-features-changes/index.html` | +1071 | −0 |
-| changed | `docs/artifacts/template-features-changes/index.md` | +20355 | −0 |
+| changed | `docs/artifacts/template-features-changes/index.md` | +21922 | −0 |
 | changed | `docs/artifacts/template-stage-flow/index.html` | +393 | −0 |
 | changed | `docs/artifacts/template-stage-flow/index.md` | +140 | −0 |
 | changed | `docs/artifacts/template-system-concepts/index.html` | +627 | −0 |
@@ -160,7 +160,7 @@
 | changed | `docs/reference/template-features/03-capabilities.html` | +235 | −0 |
 | changed | `docs/reference/template-features/04-panels.html` | +208 | −0 |
 | changed | `docs/reference/template-features/05-changes.html` | +1160 | −0 |
-| changed | `docs/reference/template-features/build-diffs.mjs` | +242 | −0 |
+| changed | `docs/reference/template-features/build-diffs.mjs` | +243 | −0 |
 | changed | `docs/reference/template-features/index.html` | +167 | −0 |
 | changed | `docs/reference/template-features/reference.css` | +389 | −0 |
 | changed | `docs/superpowers/specs/2026-09-06-template-features-design.md` | +255 | −0 |
@@ -405,7 +405,7 @@
 +  if (term.select === "project") return "project";
 +  if (term.select === "kinds") return `kinds:${[...term.kinds].sort().join(",")}`;
 +  if (term.select === "set") return `set:${term.setId}`;
-+  if (term.select === "variable") return `variable:${term.name}`;
++  if (term.select === "hole") return `hole:${term.name}`;
 +  return `resources:${term.refs.map((ref) => `${ref.kind}/${ref.id}`).sort().join(",")}`;
 +};
 +
@@ -447,11 +447,11 @@
 +/** The draft with everything cleared back to the floor. */
 +export const withWholeProject = (): ScopeDraft => draftOf(undefined);
 +
-+const isSetTerm = (term: AnyTerm): term is SetTerm => term.select !== "variable";
++const isSetTerm = (term: AnyTerm): term is SetTerm => term.select !== "hole";
 +
 +const isTemplatedTerm = (term: AnyTerm): term is TemplatedTerm => term.select !== "resources";
 +
-+/** The draft as a concrete set, or undefined when it names a variable. */
++/** The draft as a concrete set, or undefined when it names a hole. */
 +export const narrowed = (scope: ScopeDraft): ResourceSet | undefined =>
 +  scope.include.every(isSetTerm) && scope.exclude.every(isSetTerm)
 +    ? {
@@ -529,7 +529,7 @@
 +  if (term.select === "set") {
 +    return names.sets?.get(term.setId) ?? "a chosen group";
 +  }
-+  if (term.select === "variable") return `whatever ${term.name} holds`;
++  if (term.select === "hole") return `whatever ${term.name} holds`;
 +  if (term.refs.length === 1) {
 +    const held = names.resources?.get(term.refs[0].id);
 +    return held ?? "one chosen resource";
@@ -731,7 +731,7 @@
 +
 +  const ofTerm = (term: AnyTerm, seen: ReadonlySet<string>): readonly ResourceRef[] => {
 +    if (term.select === "project") return catalogue;
-+    if (term.select === "variable") return [];
++    if (term.select === "hole") return [];
 +    if (term.select === "kinds") {
 +      return catalogue.filter((ref) => term.kinds.some((kind) => kindMatches(kind, ref.kind)));
 +    }
@@ -934,7 +934,7 @@
 +});
 +
 +describe("the two doors out of a draft", () => {
-+  it("narrows to a concrete set when nothing names a variable", () => {
++  it("narrows to a concrete set when nothing names a hole", () => {
 +    const draft: ScopeDraft = {
 +      include: [{ select: "resources", refs: [{ kind: "document", id: "documents:1" }] }],
 +      exclude: []
@@ -944,7 +944,7 @@
 +  });
 +
 +  it("stays templated when nothing names a resource", () => {
-+    const draft: ScopeDraft = { include: [{ select: "variable", name: "source_material" }], exclude: [] };
++    const draft: ScopeDraft = { include: [{ select: "hole", name: "source_material" }], exclude: [] };
 +    expect(templated(draft)).not.toBeUndefined();
 +    expect(narrowed(draft)).toBeUndefined();
 +  });
@@ -977,8 +977,8 @@
 +    ]);
 +  });
 +
-+  it("counts a variable term as nothing, because what fills it is not known here", () => {
-+    const draft: ScopeDraft = { include: [{ select: "variable", name: "source" }], exclude: [] };
++  it("counts a hole term as nothing, because what fills it is not known here", () => {
++    const draft: ScopeDraft = { include: [{ select: "hole", name: "source" }], exclude: [] };
 +    expect(selectedBy(draft, catalogue, named)).toHaveLength(0);
 +  });
 +});
@@ -1041,15 +1041,15 @@
 ### changed · `src/lib/representation/data/behavior/slide-decks/apply-ops.ts` (+2 / −2)
 
 ~~~~diff
-@@ -3,6 +3,7 @@ import type {
-   MarkEnd,
+@@ -4,6 +4,7 @@ import type {
+   PromptBlock,
    TextBlock
  } from "$representation/data/types/content/content-block";
 +import { displayOfAtom } from "$representation/data/behavior/content/positions";
  import type { SlideDeckBody } from "$representation/data/types/slide-decks/body";
  import type { SlideDeckOp } from "$representation/data/types/slide-decks/op";
  
-@@ -216,8 +217,7 @@ const applyMove = (body: SlideDeckBody, op: Extract<SlideDeckOp, { op: "move" }>
+@@ -218,8 +219,7 @@ const applyMove = (body: SlideDeckBody, op: Extract<SlideDeckOp, { op: "move" }>
      return insertAfter(withoutIds(list, [op.id]), op.after, [moving]);
    });
  
@@ -1066,13 +1066,13 @@
 ~~~~diff
 @@ -0,0 +1,62 @@
 +import { ruleWords, type ScopeDraft, type ScopeNames } from "$representation/data/behavior/core/scope-draft";
-+import type { TemplateVariable } from "$representation/data/types/templates/template";
++import type { TemplateHole } from "$representation/data/types/templates/template";
 +
 +/**
-+ * What placing a template has to ask for, one row per parameter.
++ * What placing a template has to ask for, one row per hole.
 + *
-+ * Every parameter is listed, because the list is the shape of the thing about to
-+ * be made. A scope always has a value — what the caller chose, else what the
++ * Every hole is listed, because the list is the shape of the thing about to be
++ * made. A scope always has a value — what the caller chose, else what the
 + * template suggests — so it is never missing. Text has none until somebody types
 + * some, which is the only thing that can hold a placement up.
 + */
@@ -1087,44 +1087,44 @@
 +  readonly missing: boolean;
 +};
 +
-+export const kindOfVariable = (variable: TemplateVariable): "scope" | "text" =>
-+  variable.kind === "text" ? "text" : "scope";
++export const kindOfHole = (hole: TemplateHole): "scope" | "text" =>
++  hole.kind === "text" ? "text" : "scope";
 +
 +export const answerRowsOf = (
-+  variables: readonly TemplateVariable[],
++  holes: readonly TemplateHole[],
 +  chosen: Readonly<Record<string, ScopeDraft | undefined>>,
 +  texts: Readonly<Record<string, string | undefined>>,
 +  names: ScopeNames = {}
 +): readonly AnswerRow[] =>
-+  variables.map((variable) => {
-+    const kind = kindOfVariable(variable);
++  holes.map((hole) => {
++    const kind = kindOfHole(hole);
 +    if (kind === "text") {
-+      const typed = texts[variable.name];
-+      const words = typed ?? variable.text ?? "";
++      const typed = texts[hole.name];
++      const words = typed ?? hole.text ?? "";
 +      return {
-+        key: variable.name,
-+        label: variable.label,
-+        ...(variable.description === undefined ? {} : { description: variable.description }),
++        key: hole.name,
++        label: hole.label,
++        ...(hole.description === undefined ? {} : { description: hole.description }),
 +        kind,
 +        value: words,
-+        answered: typed !== undefined && typed !== (variable.text ?? ""),
++        answered: typed !== undefined && typed !== (hole.text ?? ""),
 +        missing: words.trim() === ""
 +      };
 +    }
-+    const held = chosen[variable.name];
++    const held = chosen[hole.name];
 +    return {
-+      key: variable.name,
-+      label: variable.label,
-+      ...(variable.description === undefined ? {} : { description: variable.description }),
++      key: hole.name,
++      label: hole.label,
++      ...(hole.description === undefined ? {} : { description: hole.description }),
 +      kind,
 +      /** The rule alone; whether it is the template's or the caller's is said beside it. */
-+      value: ruleWords(held ?? variable.default, names),
++      value: ruleWords(held ?? hole.default, names),
 +      answered: held !== undefined,
 +      missing: false
 +    };
 +  });
 +
-+/** The parameters still holding a placement up. */
++/** The holes still holding a placement up. */
 +export const missingIn = (rows: readonly AnswerRow[]): readonly string[] =>
 +  rows.filter((row) => row.missing).map((row) => row.label);
 ~~~~
@@ -1272,7 +1272,7 @@
 +      return terms.filter((term) => {
 +        const portable =
 +          isRecord(term) &&
-+          (term.select === "project" || term.select === "kinds" || term.select === "variable");
++          (term.select === "project" || term.select === "kinds" || term.select === "hole");
 +        if (!portable) drop("scope");
 +        return portable;
 +      });
@@ -1353,7 +1353,7 @@
 +} from "$representation/data/types/core/resource-set";
 +import type {
 +  TemplateBody,
-+  TemplateVariable
++  TemplateHole
 +} from "$representation/data/types/templates/template";
 +
 +type Term = SetTerm | TemplatedTerm;
@@ -1389,7 +1389,7 @@
 +const isTemplateAtom = (value: Record<string, unknown>): boolean =>
 +  value.kind === "template" && typeof value.name === "string" && typeof value.id === "string";
 +
-+/** Every parameter the body's template atoms ask for words for. */
++/** Every hole the body's template atoms ask for words for. */
 +export const templateAtomNamesIn = (body: TemplateBody): readonly string[] => {
 +  const names = new Set<string>();
 +  const walk = (value: unknown): void => {
@@ -1432,7 +1432,7 @@
 +  return walk(body) as TemplateBody;
 +};
 +
-+export const variableNamesIn = (body: TemplateBody): readonly string[] => {
++export const scopeHoleNamesIn = (body: TemplateBody): readonly string[] => {
 +  const names = new Set<string>();
 +  const walk = (value: unknown): void => {
 +    if (Array.isArray(value)) {
@@ -1445,7 +1445,7 @@
 +        const terms = value.scope[side];
 +        if (!Array.isArray(terms)) continue;
 +        for (const term of terms) {
-+          if (isRecord(term) && term.select === "variable" && typeof term.name === "string") {
++          if (isRecord(term) && term.select === "hole" && typeof term.name === "string") {
 +            names.add(term.name);
 +          }
 +        }
@@ -1459,10 +1459,10 @@
 +
 +export const resolveTemplateScopes = (
 +  body: TemplateBody,
-+  variables: readonly TemplateVariable[],
++  holes: readonly TemplateHole[],
 +  answers: ScopeAnswers = {}
 +): ResolvedScopes => {
-+  const definitions = new Map(variables.map((variable) => [variable.name, variable]));
++  const definitions = new Map(holes.map((hole) => [hole.name, hole]));
 +  const memo = new Map<string, Scope>();
 +  const undeclared = new Set<string>();
 +  let emitted = 0;
@@ -1481,7 +1481,7 @@
 +    const same: Term[] = [];
 +    const opposite: Term[] = [];
 +    for (const term of terms) {
-+      if (term.select !== "variable") {
++      if (term.select !== "hole") {
 +        append(same, [term]);
 +        continue;
 +      }
@@ -1546,7 +1546,7 @@
 +      return {
 +        accepted: false,
 +        reason: "unsupported-body",
-+        detail: "a variable answered with exclusions cannot be flattened without changing scope"
++        detail: "a hole answered with exclusions cannot be flattened without changing scope"
 +      };
 +    }
 +    if (error instanceof RangeError && error.message === OVERFLOW) {
@@ -1572,7 +1572,7 @@
 +  fillTemplateAtoms,
 +  templateAtomNamesIn
 +} from "$representation/data/behavior/templates/scopes";
-+import type { TemplateBody, TemplateVariable } from "$representation/data/types/templates/template";
++import type { TemplateBody, TemplateHole } from "$representation/data/types/templates/template";
 +
 +const body = (): TemplateBody => ({
 +  resource: "document",
@@ -1625,7 +1625,7 @@
 +});
 +
 +describe("what placing a template asks for", () => {
-+  const variables: TemplateVariable[] = [
++  const holes: TemplateHole[] = [
 +    {
 +      name: "evidence",
 +      label: "Evidence",
@@ -1636,7 +1636,7 @@
 +  ];
 +
 +  it("gives every parameter a row, and a scope always has a value", () => {
-+    const rows = answerRowsOf(variables, {}, {});
++    const rows = answerRowsOf(holes, {}, {});
 +    expect(rows.map((row) => row.kind)).toEqual(["scope", "text"]);
 +    expect(rows[0].value).toBe("Findings");
 +    expect(rows[0].missing).toBe(false);
@@ -1653,14 +1653,14 @@
 +  });
 +
 +  it("marks a text parameter missing until it has words", () => {
-+    expect(missingIn(answerRowsOf(variables, {}, {}))).toEqual(["Subject"]);
-+    expect(missingIn(answerRowsOf(variables, {}, { subject: "  " }))).toEqual(["Subject"]);
-+    expect(missingIn(answerRowsOf(variables, {}, { subject: "Winter" }))).toEqual([]);
++    expect(missingIn(answerRowsOf(holes, {}, {}))).toEqual(["Subject"]);
++    expect(missingIn(answerRowsOf(holes, {}, { subject: "  " }))).toEqual(["Subject"]);
++    expect(missingIn(answerRowsOf(holes, {}, { subject: "Winter" }))).toEqual([]);
 +  });
 +
 +  it("reads a chosen scope as itself rather than as the default", () => {
 +    const rows = answerRowsOf(
-+      variables,
++      holes,
 +      { evidence: { include: [{ select: "project" }], exclude: [] } },
 +      { subject: "Winter" }
 +    );
@@ -1911,10 +1911,10 @@
 +
 +import type { PromptBlock } from "$representation/data/types/content/content-block";
 +import type { TemplatedTerm } from "$representation/data/types/core/resource-set";
-+import type { TemplateBody, TemplateVariable } from "$representation/data/types/templates/template";
++import type { TemplateBody, TemplateHole } from "$representation/data/types/templates/template";
 +import {
 +  resolveTemplateScopes,
-+  variableNamesIn
++  scopeHoleNamesIn
 +} from "$representation/data/behavior/templates/scopes";
 +
 +const prompt = (id: string, include: TemplatedTerm[]): PromptBlock => ({
@@ -1940,15 +1940,15 @@
 +  return block?.type === "prompt" ? block.scope : undefined;
 +};
 +
-+const evidence: TemplateVariable = {
++const evidence: TemplateHole = {
 +  name: "evidence",
 +  label: "Evidence",
 +  default: { include: [{ select: "kinds", kinds: ["finding"] }], exclude: [] }
 +};
 +
 +describe("resolveTemplateScopes", () => {
-+  it("fills a variable term from its default", () => {
-+    const resolved = resolveTemplateScopes(body([prompt("p", [{ select: "variable", name: "evidence" }])]), [evidence]);
++  it("fills a hole term from its default", () => {
++    const resolved = resolveTemplateScopes(body([prompt("p", [{ select: "hole", name: "evidence" }])]), [evidence]);
 +    expect(resolved.accepted).toBe(true);
 +    if (!resolved.accepted) return;
 +    expect(resolved.undeclared).toEqual([]);
@@ -1960,7 +1960,7 @@
 +
 +  it("prefers the caller's answer to the default", () => {
 +    const resolved = resolveTemplateScopes(
-+      body([prompt("p", [{ select: "variable", name: "evidence" }])]),
++      body([prompt("p", [{ select: "hole", name: "evidence" }])]),
 +      [evidence],
 +      { evidence: { include: [{ select: "set", setId: "resourceSets:2" as never }], exclude: [] } }
 +    );
@@ -1971,9 +1971,9 @@
 +    });
 +  });
 +
-+  it("means the whole project for a variable declared without a default", () => {
++  it("means the whole project for a hole declared without a default", () => {
 +    const resolved = resolveTemplateScopes(
-+      body([prompt("p", [{ select: "variable", name: "models" }])]),
++      body([prompt("p", [{ select: "hole", name: "models" }])]),
 +      [{ name: "models", label: "Models" }]
 +    );
 +    if (!resolved.accepted) throw new Error(resolved.detail);
@@ -1982,38 +1982,38 @@
 +
 +  it("keeps the term and reports a name the template does not declare", () => {
 +    const resolved = resolveTemplateScopes(
-+      body([prompt("p", [{ select: "variable", name: "evidence" }, { select: "variable", name: "models" }])]),
++      body([prompt("p", [{ select: "hole", name: "evidence" }, { select: "hole", name: "models" }])]),
 +      [evidence]
 +    );
 +    if (!resolved.accepted) throw new Error(resolved.detail);
 +    expect(resolved.undeclared).toEqual(["models"]);
 +    expect(scopeOf(resolved.body, "p")).toEqual({
-+      include: [{ select: "kinds", kinds: ["finding"] }, { select: "variable", name: "models" }],
++      include: [{ select: "kinds", kinds: ["finding"] }, { select: "hole", name: "models" }],
 +      exclude: []
 +    });
 +  });
 +
 +  it("refuses a default that excludes, because a difference does not flatten", () => {
-+    const resolved = resolveTemplateScopes(body([prompt("p", [{ select: "variable", name: "evidence" }])]), [
++    const resolved = resolveTemplateScopes(body([prompt("p", [{ select: "hole", name: "evidence" }])]), [
 +      { ...evidence, default: { include: [{ select: "project" }], exclude: [{ select: "kinds", kinds: ["slides"] }] } }
 +    ]);
 +    expect(resolved).toMatchObject({ accepted: false, reason: "unsupported-body" });
 +  });
 +
-+  it("treats a variable that reaches itself as the whole project", () => {
-+    const resolved = resolveTemplateScopes(body([prompt("p", [{ select: "variable", name: "loop" }])]), [
-+      { name: "loop", label: "Loop", default: { include: [{ select: "variable", name: "loop" }], exclude: [] } }
++  it("treats a hole that reaches itself as the whole project", () => {
++    const resolved = resolveTemplateScopes(body([prompt("p", [{ select: "hole", name: "loop" }])]), [
++      { name: "loop", label: "Loop", default: { include: [{ select: "hole", name: "loop" }], exclude: [] } }
 +    ]);
 +    if (!resolved.accepted) throw new Error(resolved.detail);
 +    expect(scopeOf(resolved.body, "p")).toEqual({ include: [{ select: "project" }], exclude: [] });
 +  });
 +
-+  it("lists the variable names a body refers to", () => {
++  it("lists the hole names a body refers to", () => {
 +    const held = body([
-+      prompt("p", [{ select: "variable", name: "b" }]),
-+      prompt("q", [{ select: "variable", name: "a" }, { select: "kinds", kinds: ["document"] }])
++      prompt("p", [{ select: "hole", name: "b" }]),
++      prompt("q", [{ select: "hole", name: "a" }, { select: "kinds", kinds: ["document"] }])
 +    ]);
-+    expect(variableNamesIn(held)).toEqual(["a", "b"]);
++    expect(scopeHoleNamesIn(held)).toEqual(["a", "b"]);
 +  });
 +});
 ~~~~
@@ -2105,7 +2105,7 @@
 - * a variable may be excluded as easily as included.
 - */
 -export type TemplatedTerm = ProjectTerm | KindsTerm | { select: "variable"; name: string };
-+export type TemplatedTerm = ProjectTerm | KindsTerm | NamedSetTerm | { select: "variable"; name: string };
++export type TemplatedTerm = ProjectTerm | KindsTerm | NamedSetTerm | { select: "hole"; name: string };
  
 -/**
 - * Everything in `include`, minus everything in `exclude`.
@@ -2129,11 +2129,11 @@
 + * its owner goes.
 + */
 +export type BoundTo =
-+  | { kind: "variable"; templateId: Id<"templates">; variable: string }
-+  | { kind: "resource"; resourceId: string; variable: string };
++  | { kind: "hole"; templateId: Id<"templates">; hole: string }
++  | { kind: "resource"; resourceId: string; hole: string };
 ~~~~
 
-### changed · `src/lib/representation/data/types/templates/template.ts` (+11 / −26)
+### changed · `src/lib/representation/data/types/templates/template.ts` (+12 / −27)
 
 ~~~~diff
 @@ -9,40 +9,34 @@ import type { PageSetup } from "$representation/data/types/spreadsheets/page-set
@@ -2141,7 +2141,7 @@
  
  /**
 - * One question a template asks when it is instantiated.
-+ * What a variable is answered with.
++ * What a hole is answered with.
   *
 - * `name` is what a `{ select: "variable" }` term names. Nothing lists which
 - * blocks the answer reaches — instantiation walks the body and fills every term
@@ -2154,15 +2154,16 @@
 + * said, else the default, else the whole project. `text` is words, and it has
 + * none until somebody types them, which is why placing a template asks.
   */
-+export type TemplateVariableKind = "scope" | "text";
+-export type TemplateVariable = {
++export type TemplateHoleKind = "scope" | "text";
 +
- export type TemplateVariable = {
++export type TemplateHole = {
    name: string;
 -  /** What the person filling it in is asked. */
    label: string;
    description?: string;
-+  /** Absent means `scope`, which is what every variable was before text ones existed. */
-+  kind?: TemplateVariableKind;
++  /** Absent means `scope`, which is what every hole was before text ones existed. */
++  kind?: TemplateHoleKind;
 +  /** What a `scope` selects when the caller says nothing. */
    default?: TemplatedResourceSet;
 +  /** What a `text` says when the caller says nothing. Absent means it must be filled in. */
@@ -2221,7 +2222,7 @@
  };
 ~~~~
 
-### changed · `src/lib/representation/store/tables.ts` (+23 / −9)
+### changed · `src/lib/representation/store/tables.ts` (+26 / −12)
 
 ~~~~diff
 @@ -15,7 +15,7 @@ import type { MembershipRole } from "$representation/data/types/core/access";
@@ -2233,7 +2234,16 @@
  import type { BackReferenceTargetKind } from "$representation/data/types/data/back-reference";
  import type { FormulaUse } from "$representation/data/types/data/formula-use";
  import type {
-@@ -169,7 +169,6 @@ export type SpreadsheetChangeSet = Row<"spreadsheetChangeSets"> & SpreadsheetCha
+@@ -77,7 +77,7 @@ import type {
+ } from "$representation/data/types/spreadsheets/snapshot";
+ import type {
+   TemplateBody,
+-  TemplateVariable
++  TemplateHole
+ } from "$representation/data/types/templates/template";
+ import type { WorkspaceOp } from "$representation/data/types/workspace/op";
+ import type { TabId, TabRecord, TabView } from "$representation/data/types/workspace/tab";
+@@ -185,7 +185,6 @@ export type SpreadsheetChangeSet = Row<"spreadsheetChangeSets"> & SpreadsheetCha
  export type DocumentFields = {
    projectId: Id<"projects">;
    title: string;
@@ -2241,7 +2251,7 @@
    createdBy: Actor;
    updatedBy: Actor;
    updatedAt: number;
-@@ -179,7 +178,6 @@ export type Document = Row<"documents"> & DocumentFields;
+@@ -195,7 +194,6 @@ export type Document = Row<"documents"> & DocumentFields;
  export type SlideDeckFields = {
    projectId: Id<"projects">;
    title: string;
@@ -2249,7 +2259,7 @@
    createdBy: Actor;
    updatedBy: Actor;
    updatedAt: number;
-@@ -189,7 +187,6 @@ export type SlideDeck = Row<"slideDecks"> & SlideDeckFields;
+@@ -205,7 +203,6 @@ export type SlideDeck = Row<"slideDecks"> & SlideDeckFields;
  export type SpreadsheetFields = {
    projectId: Id<"projects">;
    title: string;
@@ -2257,7 +2267,7 @@
    createdBy: Actor;
    updatedBy: Actor;
    updatedAt: number;
-@@ -340,16 +337,17 @@ export type AgentTaskFields = {
+@@ -380,16 +377,17 @@ export type AgentTaskFields = {
  export type AgentTask = Row<"agentTasks"> & AgentTaskFields;
  
  export type TemplateFields = {
@@ -2268,7 +2278,8 @@
 -  /** Flat library labels. An empty array means the template is untagged. */
    tags: string[];
    body: TemplateBody;
-   variables: TemplateVariable[];
+-  variables: TemplateVariable[];
++  holes: TemplateHole[];
    createdBy: Actor;
    revision: number;
    updatedAt: number;
@@ -2276,7 +2287,13 @@
  };
  export type Template = Row<"templates"> & TemplateFields;
  
-@@ -365,16 +363,30 @@ export type TemplateVersionFields = {
+@@ -400,21 +398,35 @@ export type TemplateVersionFields = {
+   description?: string;
+   tags: string[];
+   body: TemplateBody;
+-  variables: TemplateVariable[];
++  holes: TemplateHole[];
+   at: number;
  };
  export type TemplateVersion = Row<"templateVersions"> & TemplateVersionFields;
  
@@ -2295,7 +2312,7 @@
 +
 +export type ResourceSetFields = {
 +  projectId: Id<"projects">;
-+  /** Present on a project's own sets. Absent on a row bound to one variable or one resource. */
++  /** Present on a project's own sets. Absent on a row bound to one hole or one resource. */
 +  name?: string;
    description?: string;
 +  /** Present on a bound row, and never together with a name. */
@@ -2310,7 +2327,7 @@
  
  export type ConnectorFields = {
    projectId: Id<"projects">;
-@@ -572,6 +584,7 @@ export const TABLE_NAMES = [
+@@ -619,6 +631,7 @@ export const TABLE_NAMES = [
    "spreadsheets",
    "spreadsheetSnapshots",
    "templates",
@@ -2318,7 +2335,7 @@
    "templateVersions",
    "threadParts",
    "threads",
-@@ -604,7 +617,7 @@ export type TableFields = {
+@@ -652,7 +665,7 @@ export type TableFields = {
    projects: ProjectFields;
    questions: QuestionFields;
    researchThreads: ResearchThreadFields;
@@ -2326,8 +2343,8 @@
 +  resourceSets: ResourceSetFields;
    semanticIndexes: SemanticIndexFields;
    semanticIndexNodes: SemanticIndexNodeFields;
-   semanticObjectHistory: SemanticObjectHistoryFields;
-@@ -619,6 +632,7 @@ export type TableFields = {
+   semanticMaterialHistory: SemanticMaterialHistoryFields;
+@@ -672,6 +685,7 @@ export type TableFields = {
    spreadsheets: SpreadsheetFields;
    spreadsheetSnapshots: SpreadsheetSnapshotFields;
    templates: TemplateFields;
@@ -2358,7 +2375,7 @@
 +import type { RowFields } from "$capabilities/templates/api/shared/store";
 +import { writeTemplateVersion } from "$capabilities/templates/api/shared/template-rows";
 +import { bodyOf } from "$capabilities/templates/api/shared/validation";
-+import { declaredFor } from "$capabilities/templates/api/shared/variables";
++import { declaredFor } from "$capabilities/templates/api/shared/holes";
 +import type { CommitTemplateStageResult } from "$capabilities/templates/types/templates";
 +
 +export const commitTemplateStage = async (input: unknown): Promise<CommitTemplateStageResult> => {
@@ -2446,7 +2463,7 @@
 +    ...(template.description === undefined ? {} : { description: template.description }),
 +    tags: [...template.tags],
 +    body,
-+    variables: declaredFor(body, template.variables),
++    holes: declaredFor(body, template.holes),
 +    createdBy: template.createdBy,
 +    revision: template.revision + 1,
 +    updatedAt: at
@@ -2504,7 +2521,7 @@
 +import { recordsIn, type RowFields } from "$capabilities/templates/api/shared/store";
 +import { writeTemplateVersion } from "$capabilities/templates/api/shared/template-rows";
 +import { bodyOf } from "$capabilities/templates/api/shared/validation";
-+import { declaredFor } from "$capabilities/templates/api/shared/variables";
++import { declaredFor } from "$capabilities/templates/api/shared/holes";
 +import type { CreateTemplateFromResourceResult } from "$capabilities/templates/types/templates";
 +
 +export const createTemplateFromResource = async (
@@ -2571,7 +2588,7 @@
 +    ...(asked.description === undefined ? {} : { description: asked.description }),
 +    tags: [...(asked.tags ?? [])],
 +    body,
-+    variables: declaredFor(body, []),
++    holes: declaredFor(body, []),
 +    createdBy: actor,
 +    revision: 1,
 +    updatedAt: at
@@ -2633,10 +2650,10 @@
 +};
 ~~~~
 
-### changed · `src/lib/capabilities/templates/api/create-template/create-template.ts` (+1 / −0)
+### changed · `src/lib/capabilities/templates/api/create-template/create-template.ts` (+2 / −1)
 
 ~~~~diff
-@@ -16,6 +16,7 @@ export const createTemplate = async (input: unknown): Promise<CreateTemplateResu
+@@ -16,12 +16,13 @@ export const createTemplate = async (input: unknown): Promise<CreateTemplateResu
    const at = Date.now();
    const actor = { kind: "user" as const, userId: asId<"users">(scope.userId) };
    const fields: RowFields<"templates"> = {
@@ -2644,6 +2661,13 @@
      userId: actor.userId,
      name: asked.name,
      ...(asked.description === undefined ? {} : { description: asked.description }),
+     tags: [...(asked.tags ?? [])],
+     body: emptyTemplateBody(asked.target),
+-    variables: [],
++    holes: [],
+     createdBy: actor,
+     revision: 1,
+     updatedAt: at
 ~~~~
 
 ### new · `src/lib/capabilities/templates/api/discard-template-stage/discard-template-stage.ts` (+31 / −0)
@@ -2697,10 +2721,10 @@
 +};
 ~~~~
 
-### changed · `src/lib/capabilities/templates/api/duplicate-template/duplicate-template.ts` (+1 / −0)
+### changed · `src/lib/capabilities/templates/api/duplicate-template/duplicate-template.ts` (+2 / −1)
 
 ~~~~diff
-@@ -49,6 +49,7 @@ export const duplicateTemplate = async (input: unknown): Promise<DuplicateTempla
+@@ -49,12 +49,13 @@ export const duplicateTemplate = async (input: unknown): Promise<DuplicateTempla
    const at = Date.now();
    const actor = { kind: "user" as const, userId: asId<"users">(scope.userId) };
    const fields: RowFields<"templates"> = {
@@ -2708,9 +2732,16 @@
      userId: actor.userId,
      name: asked.name ?? copyName(source.name),
      ...(source.description === undefined ? {} : { description: source.description }),
+     tags: [...source.tags],
+     body: structuredClone(source.body),
+-    variables: structuredClone(source.variables),
++    holes: structuredClone(source.holes),
+     createdBy: actor,
+     revision: 1,
+     updatedAt: at
 ~~~~
 
-### changed · `src/lib/capabilities/templates/api/instantiate-template/instantiate-template.ts` (+110 / −46)
+### changed · `src/lib/capabilities/templates/api/instantiate-template/instantiate-template.ts` (+112 / −48)
 
 ~~~~diff
 @@ -3,19 +3,37 @@ import { serverModel } from "$runtime/server/start.server";
@@ -2736,7 +2767,7 @@
  } from "$capabilities/templates/api/shared/projection";
 -import type { InstantiateTemplateResult } from "$capabilities/templates/types/templates";
 +import { normalizeScope, unknownSetsIn } from "$capabilities/templates/api/shared/scopes";
-+import { kindOf } from "$capabilities/templates/api/shared/variables";
++import { kindOf } from "$capabilities/templates/api/shared/holes";
 +import type {
 +  InstantiateTemplateResult,
 +  TemplateAnswers
@@ -2756,6 +2787,20 @@
  
  export const instantiateTemplate = async (input: unknown): Promise<InstantiateTemplateResult> => {
    const scope = await requireScope();
+@@ -35,11 +53,11 @@ export const instantiateTemplate = async (input: unknown): Promise<InstantiateTe
+   const stored = found.template;
+   let template: ReturnType<typeof admitStoredTemplate>;
+   let body: TemplateBody;
+-  let variables;
++  let holes;
+   try {
+     template = admitStoredTemplate(stored);
+     body = template.body;
+-    variables = template.variables;
++    holes = template.holes;
+   } catch (error) {
+     return {
+       accepted: false,
 @@ -49,48 +67,110 @@ export const instantiateTemplate = async (input: unknown): Promise<InstantiateTe
        detail: error instanceof Error ? error.message : String(error)
      };
@@ -2772,15 +2817,15 @@
 -      };
 -    }
 +
-+  /** A text parameter untouched by the caller falls back to its own default words. */
++  /** A text hole untouched by the caller falls back to its own default words. */
 +  const texts: Record<string, string> = { ...asked.texts };
-+  for (const variable of variables) {
-+    if (kindOf(variable) !== "text" || variable.text === undefined) continue;
-+    if (texts[variable.name] === undefined) texts[variable.name] = variable.text;
++  for (const hole of holes) {
++    if (kindOf(hole) !== "text" || hole.text === undefined) continue;
++    if (texts[hole.name] === undefined) texts[hole.name] = hole.text;
 +  }
-+  const unfilled = variables
-+    .filter((variable) => kindOf(variable) === "text")
-+    .map((variable) => variable.name)
++  const unfilled = holes
++    .filter((hole) => kindOf(hole) === "text")
++    .map((hole) => hole.name)
 +    .filter((name) => texts[name] === undefined || texts[name].trim() === "");
 +  if (unfilled.length > 0) {
      return {
@@ -2836,7 +2881,7 @@
 +      store,
 +      scope.projectId,
 +      actor,
-+      { kind: "resource", resourceId, variable: name },
++      { kind: "resource", resourceId, hole: name },
 +      rule,
 +      at
 +    );
@@ -2850,7 +2895,7 @@
 +    store.remove(`${table}.${resourceId}`);
 +  };
 +
-+  const resolved = resolveTemplateScopes(body, variables, answered);
++  const resolved = resolveTemplateScopes(body, holes, answered);
 +  if (!resolved.accepted) {
 +    rollback();
 +    return {
@@ -2868,7 +2913,7 @@
 +      templateId: template._id,
 +      reason: "unsupported-body",
 +      revision: template.revision,
-+      detail: `the body names a variable the template does not declare: ${resolved.undeclared.join(", ")}`
++      detail: `the body names a hole the template does not declare: ${resolved.undeclared.join(", ")}`
 +    };
 +  }
 +  body = fillTemplateAtoms(resolved.body, texts);
@@ -3258,11 +3303,11 @@
 -      "templateId"
 -    );
 +  for (const stage of stages) removeStage(store, stage);
-+  for (const variable of template.variables) {
++  for (const hole of template.holes) {
 +    removeRowsBoundTo(store, scope.projectId, {
-+      kind: "variable",
++      kind: "hole",
 +      templateId: template._id,
-+      variable: variable.name
++      hole: hole.name
 +    });
    }
    store.removeRows(
@@ -3487,7 +3532,52 @@
  export type MaterializedSpreadsheet = {
 ~~~~
 
-### changed · `src/lib/capabilities/templates/api/shared/projection.ts` (+30 / −45)
+### new · `src/lib/capabilities/templates/api/shared/holes.ts` (+39 / −0)
+
+~~~~diff
+@@ -0,0 +1,39 @@
++import {
++  scopeHoleNamesIn,
++  templateAtomNamesIn
++} from "$representation/data/behavior/templates/scopes";
++import type { TemplateBody, TemplateHole } from "$representation/data/types/templates/template";
++
++/**
++ * The holes a body asks for, found rather than authored.
++ *
++ * A prompt's scope naming one makes it a `scope` hole, answered with a group of
++ * resources and defaulting to the whole project. A template atom in the prose
++ * makes it a `text` one, answered with words and defaulting to nothing, which is
++ * why placing a template has to ask for it.
++ *
++ * A name used both ways is a scope, because a scope always has an answer and
++ * text never does: taking the other side would leave a template that cannot be
++ * placed until somebody types into a hole they cannot see.
++ */
++export const declaredFor = (
++  body: TemplateBody,
++  known: readonly TemplateHole[]
++): TemplateHole[] => {
++  const declared = new Set(known.map((hole) => hole.name));
++  const scopes = scopeHoleNamesIn(body);
++  const asScope = new Set(scopes);
++  const texts = templateAtomNamesIn(body).filter((name) => !asScope.has(name));
++
++  return [
++    ...known,
++    ...scopes.filter((name) => !declared.has(name)).map((name) => ({ name, label: name })),
++    ...texts
++      .filter((name) => !declared.has(name))
++      .map((name) => ({ name, label: name, kind: "text" as const }))
++  ];
++};
++
++/** What a hole is answered with, treating an older one with no kind as a scope. */
++export const kindOf = (hole: TemplateHole): "scope" | "text" =>
++  hole.kind === "text" ? "text" : "scope";
+~~~~
+
+### changed · `src/lib/capabilities/templates/api/shared/projection.ts` (+32 / −49)
 
 ~~~~diff
 @@ -2,6 +2,7 @@ import type { StoreModel, TableRow } from "$model/server/store/index.server";
@@ -3498,6 +3588,15 @@
  import {
    canonicalRowId,
    recordsIn
+@@ -13,7 +14,7 @@ import {
+   requiredId,
+   tagsOf,
+   templateIdOf,
+-  variablesOf
++  holesOf
+ } from "$capabilities/templates/api/shared/validation";
+ import type {
+   TemplateDetail,
 @@ -74,10 +75,10 @@ const actorOf = (value: unknown, subject: string): Actor => {
    throw new Error(`templates/${subject}: createdBy is a represented actor`);
  };
@@ -3523,6 +3622,24 @@
  
    const name = nameOf(template.name, subject);
    const description =
+@@ -96,7 +103,7 @@ export const admitStoredTemplate = (template: Template): Template => {
+       : descriptionOf(template.description, subject);
+   const tags = tagsOf(template.tags, subject);
+   const body = bodyOf(template.body, subject);
+-  const variables = variablesOf(template.variables, subject);
++  const holes = holesOf(template.holes, subject);
+   const createdBy = actorOf(template.createdBy, subject);
+   const { description: _description, ...withoutDescription } = template;
+   return {
+@@ -105,7 +112,7 @@ export const admitStoredTemplate = (template: Template): Template => {
+     ...(description === undefined ? {} : { description }),
+     tags: [...tags],
+     body,
+-    variables: [...variables],
++    holes: [...holes],
+     createdBy
+   };
+ };
 @@ -116,7 +123,7 @@ export const visibleTemplate = (
    templateId: string
  ): TemplateLookup => {
@@ -3608,7 +3725,8 @@
 -    availability: "personal",
 +    availability: "project",
      tags: template.tags,
-     variableCount: template.variables.length,
+-    variableCount: template.variables.length,
++    holeCount: template.holes.length,
      createdByName: actorName(store, scope, template.createdBy),
      revision: template.revision,
      updatedAt: template.updatedAt,
@@ -3617,7 +3735,7 @@
      canEdit: true,
      canDelete: true
    };
-@@ -272,12 +249,20 @@ export const detailOf = (
+@@ -272,12 +249,18 @@ export const detailOf = (
    template: Template
  ): TemplateDetail => {
    const admitted = admitStoredTemplate(template);
@@ -3629,20 +3747,18 @@
 -    lastUsedAt
 -  );
 -  return { ...item, body: admitted.body, variables: admitted.variables };
-+  const { variableCount: _variableCount, ...item } = itemOf(store, scope, admitted);
++  const { holeCount: _holeCount, ...item } = itemOf(store, scope, admitted);
 +  return {
 +    ...item,
 +    body: admitted.body,
 +    /**
 +     * A default naming a bound row is read back as the rule it holds, because
-+     * that row is the variable's value rather than a set anyone chose. A named
-+     * set stays a named set.
++     * that row is the hole's value rather than a set anyone chose. A named set
++     * stays a named set.
 +     */
-+    variables: admitted.variables.map((variable) => {
-+      const expanded = expandedScope(store, scope.projectId, variable.default);
-+      return expanded === undefined
-+        ? variable
-+        : { ...variable, default: expanded };
++    holes: admitted.holes.map((hole) => {
++      const expanded = expandedScope(store, scope.projectId, hole.default);
++      return expanded === undefined ? hole : { ...hole, default: expanded };
 +    })
 +  };
  };
@@ -3667,18 +3783,18 @@
 +/**
 + * A chosen rule becomes a term, and a row only when it has to.
 + *
-+ * Four surfaces choose a scope: a variable's default from either editor's panel
-+ * or from the library inspector, and an answer given while placing a template.
++ * Four surfaces choose a scope: a hole's default from either editor's panel or
++ * from the library inspector, and an answer given while placing a template.
 + * All four send the rule they built and none of them writes anything, because
 + * the normalisation is the same every time and a client-side write would put a
 + * second round trip in front of a save that can then half-fail.
 + *
 + * **A rule that excludes anything, or names particular resources, is stored.**
-+ * Resolving a template substitutes a variable term for what fills it, and a
-+ * variable term may sit on either side of a prompt's scope. One term for one
-+ * term works on both sides; one term for a difference does not. So the
-+ * difference lives inside a row and what points at it is a single `set` term.
-+ * Everything else is said inline, which is the common case.
++ * Resolving a template substitutes a hole term for what fills it, and a hole
++ * term may sit on either side of a prompt's scope. One term for one term works
++ * on both sides; one term for a difference does not. So the difference lives
++ * inside a row and what points at it is a single `set` term. Everything else is
++ * said inline, which is the common case.
 + */
 +
 +export type ScopeOwner = BoundTo;
@@ -3695,21 +3811,21 @@
 +const sameOwner = (held: unknown, owner: ScopeOwner): boolean => {
 +  if (held === null || typeof held !== "object") return false;
 +  const record = held as Record<string, unknown>;
-+  if (owner.kind === "variable") {
++  if (owner.kind === "hole") {
 +    return (
-+      record.kind === "variable" &&
++      record.kind === "hole" &&
 +      record.templateId === owner.templateId &&
-+      record.variable === owner.variable
++      record.hole === owner.hole
 +    );
 +  }
 +  return (
 +    record.kind === "resource" &&
 +    record.resourceId === owner.resourceId &&
-+    record.variable === owner.variable
++    record.hole === owner.hole
 +  );
 +};
 +
-+/** Every row bound to one resource, whichever variable it answered. */
++/** Every row bound to one resource, whichever hole it answered. */
 +export const rowsOfResource = (
 +  store: StoreModel,
 +  projectId: string,
@@ -3831,8 +3947,8 @@
 +/**
 + * A stored default read back as the rule somebody built.
 + *
-+ * A term naming a bound row is expanded, because that row is this variable's
-+ * value rather than a set anyone chose. A term naming one of the project's own
++ * A term naming a bound row is expanded, because that row is this hole's value
++ * rather than a set anyone chose. A term naming one of the project's own
 + * sets is left alone, because choosing it was the point.
 + */
 +export const expandedScope = (
@@ -4005,10 +4121,17 @@
 +};
 ~~~~
 
-### changed · `src/lib/capabilities/templates/api/shared/template-rows.ts` (+1 / −0)
+### changed · `src/lib/capabilities/templates/api/shared/template-rows.ts` (+3 / −2)
 
 ~~~~diff
-@@ -24,6 +24,7 @@ export const writeTemplateVersion = (
+@@ -18,18 +18,19 @@ export const writeTemplateVersion = (
+     ...(fields.description === undefined ? {} : { description: fields.description }),
+     tags: fields.tags,
+     body: fields.body,
+-    variables: fields.variables,
++    holes: fields.holes,
+     at
+   });
  };
  
  export const fieldsOfTemplate = (template: Template): TemplateFields => ({
@@ -4016,14 +4139,23 @@
    userId: template.userId,
    name: template.name,
    ...(template.description === undefined ? {} : { description: template.description }),
+   tags: template.tags,
+   body: template.body,
+-  variables: template.variables,
++  holes: template.holes,
+   createdBy: template.createdBy,
+   revision: template.revision,
+   updatedAt: template.updatedAt
 ~~~~
 
-### changed · `src/lib/capabilities/templates/api/shared/validation.ts` (+192 / −12)
+### changed · `src/lib/capabilities/templates/api/shared/validation.ts` (+227 / −51)
 
 ~~~~diff
-@@ -2,9 +2,14 @@ import type {
+@@ -1,10 +1,15 @@
+ import type {
    TemplateBody,
-   TemplateVariable
+-  TemplateVariable
++  TemplateHole
  } from "$representation/data/types/templates/template";
 +import type { ResourceSet, SetTerm } from "$representation/data/types/core/resource-set";
  import { normalizeSlideDeckBody } from "$representation/data/behavior/slide-decks/normalize";
@@ -4105,7 +4237,7 @@
 +  if (value.kind === "template") {
 +    return (
 +      hasOnlyKeys(value, ["id", "kind", "name"]) &&
-+      validCanonicalText(value.name, MAX_VARIABLE_NAME_LENGTH)
++      validCanonicalText(value.name, MAX_HOLE_NAME_LENGTH)
 +    );
 +  }
    return (
@@ -4122,7 +4254,23 @@
      )
      .join("");
  
-@@ -1515,7 +1564,6 @@ const validSpreadsheet = (body: Fields): boolean => {
+@@ -811,6 +860,7 @@ const validBlock = (value: unknown, depth = 0): boolean => {
+         "id",
+         "type",
+         "derivedOutputId",
++        "style",
+         "atoms",
+         "display",
+         "marks",
+@@ -821,6 +871,7 @@ const validBlock = (value: unknown, depth = 0): boolean => {
+         "format"
+       ]) &&
+       (value.derivedOutputId === undefined || validIdentifier(value.derivedOutputId)) &&
++      (value.style === undefined || validIdentifier(value.style)) &&
+       Array.isArray(value.atoms) &&
+       value.atoms.length <= MAX_BLOCKS_PER_CONTAINER &&
+       value.atoms.every(validAtom) &&
+@@ -1515,7 +1566,6 @@ const validSpreadsheet = (body: Fields): boolean => {
    return validStyles(body.styles);
  };
  
@@ -4130,7 +4278,7 @@
  const assertPortableBody = (value: unknown, subject: string): void => {
    const boundField = (step: Fields): string | undefined => {
      if (step.to === "resource" && "ref" in step) return "resource reference";
-@@ -1557,9 +1605,7 @@ export const bodyOf = (value: unknown, subject: string): TemplateBody => {
+@@ -1557,9 +1607,7 @@ export const bodyOf = (value: unknown, subject: string): TemplateBody => {
    const raw = fieldsOf(value, subject);
    const target = targetOf(raw.resource, subject);
    const normalized =
@@ -4141,7 +4289,7 @@
    const body = fieldsOf(normalized, subject);
    const valid =
      target === "document"
-@@ -1567,10 +1613,97 @@ export const bodyOf = (value: unknown, subject: string): TemplateBody => {
+@@ -1567,16 +1615,103 @@ export const bodyOf = (value: unknown, subject: string): TemplateBody => {
        : target === "slides"
          ? validSlides(body)
          : validSpreadsheet(body);
@@ -4152,6 +4300,7 @@
    return normalized as TemplateBody;
  };
  
+-const MAX_TEMPLATE_VARIABLES = 100;
 +const validSetTerm = (value: unknown): boolean => {
 +  if (!isRecord(value)) return false;
 +  if (value.select === "project") return Object.keys(value).length === 1;
@@ -4199,35 +4348,35 @@
 +
 +export const answersOf = (value: unknown, subject: string): TemplateAnswers => {
 +  if (!isRecord(value)) {
-+    throw new Error(`templates/${subject}: answers map variable names to resource sets`);
++    throw new Error(`templates/${subject}: answers map hole names to resource sets`);
 +  }
 +  const entries = Object.entries(value);
-+  if (entries.length > MAX_TEMPLATE_VARIABLES) {
-+    throw new Error(`templates/${subject}: at most ${MAX_TEMPLATE_VARIABLES} variables are answered`);
++  if (entries.length > MAX_TEMPLATE_HOLES) {
++    throw new Error(`templates/${subject}: at most ${MAX_TEMPLATE_HOLES} holes are answered`);
 +  }
 +  const answers: Record<string, ResourceSet> = {};
 +  for (const [name, answer] of entries) {
-+    if (!validCanonicalText(name, MAX_VARIABLE_NAME_LENGTH)) {
-+      throw new Error(`templates/${subject}: every answered variable has a name`);
++    if (!validCanonicalText(name, MAX_HOLE_NAME_LENGTH)) {
++      throw new Error(`templates/${subject}: every answered hole has a name`);
 +    }
 +    answers[name] = resourceSetOf(answer, subject);
 +  }
 +  return answers;
 +};
 +
-+/** The words a caller filled the template's text parameters in with. */
++/** The words a caller filled the template's text holes in with. */
 +export const textsOf = (value: unknown, subject: string): Readonly<Record<string, string>> => {
 +  if (!isRecord(value)) {
-+    throw new Error(`templates/${subject}: texts map variable names to words`);
++    throw new Error(`templates/${subject}: texts map hole names to words`);
 +  }
 +  const entries = Object.entries(value);
-+  if (entries.length > MAX_TEMPLATE_VARIABLES) {
-+    throw new Error(`templates/${subject}: at most ${MAX_TEMPLATE_VARIABLES} variables are answered`);
++  if (entries.length > MAX_TEMPLATE_HOLES) {
++    throw new Error(`templates/${subject}: at most ${MAX_TEMPLATE_HOLES} holes are answered`);
 +  }
 +  const texts: Record<string, string> = {};
 +  for (const [name, words] of entries) {
-+    if (!validCanonicalText(name, MAX_VARIABLE_NAME_LENGTH)) {
-+      throw new Error(`templates/${subject}: every answered variable has a name`);
++    if (!validCanonicalText(name, MAX_HOLE_NAME_LENGTH)) {
++      throw new Error(`templates/${subject}: every answered hole has a name`);
 +    }
 +    if (!validText(words, MAX_BLOCK_TEXT_LENGTH, true)) {
 +      throw new Error(`templates/${subject}: a text answer is words`);
@@ -4237,29 +4386,50 @@
 +  return texts;
 +};
 +
- const MAX_TEMPLATE_VARIABLES = 100;
++const MAX_TEMPLATE_HOLES = 100;
  const MAX_TEMPLATE_TERMS_PER_SIDE = 100;
  const MAX_TEMPLATE_KINDS_PER_TERM = 100;
-@@ -1591,6 +1724,14 @@ const validTerm = (value: unknown): boolean => {
-       validCanonicalText(value.name, MAX_VARIABLE_NAME_LENGTH)
-     );
+-const MAX_VARIABLE_NAME_LENGTH = 160;
+-const MAX_VARIABLE_LABEL_LENGTH = 500;
+-const MAX_VARIABLE_DESCRIPTION_LENGTH = 4_000;
++const MAX_HOLE_NAME_LENGTH = 160;
++const MAX_HOLE_LABEL_LENGTH = 500;
++const MAX_HOLE_DESCRIPTION_LENGTH = 4_000;
+ const MAX_RESOURCE_KIND_LENGTH = 160;
+ 
+ const validTerm = (value: unknown): boolean => {
+@@ -1584,11 +1719,19 @@ const validTerm = (value: unknown): boolean => {
+   if (value.select === "project") {
+     return hasOnlyKeys(value, ["select"]) && Object.keys(value).length === 1;
    }
+-  if (value.select === "variable") {
++  if (value.select === "hole") {
+     return (
+       hasOnlyKeys(value, ["select", "name"]) &&
+       Object.keys(value).length === 2 &&
+-      validCanonicalText(value.name, MAX_VARIABLE_NAME_LENGTH)
++      validCanonicalText(value.name, MAX_HOLE_NAME_LENGTH)
++    );
++  }
 +  if (value.select === "set") {
 +    return (
 +      hasOnlyKeys(value, ["select", "setId"]) &&
 +      Object.keys(value).length === 2 &&
 +      typeof value.setId === "string" &&
 +      /^resourceSets:[^.:\s]+$/.test(value.setId)
-+    );
-+  }
+     );
+   }
    if (
-     value.select !== "kinds" ||
-     !hasOnlyKeys(value, ["select", "kinds"]) ||
-@@ -1618,7 +1759,29 @@ const validTemplatedSet = (value: unknown): boolean =>
+@@ -1618,62 +1761,95 @@ const validTemplatedSet = (value: unknown): boolean =>
    value.exclude.length <= MAX_TEMPLATE_TERMS_PER_SIDE &&
    value.exclude.every(validTerm);
  
 -export const variablesOf = (value: unknown, subject: string): readonly TemplateVariable[] => {
+-  if (!Array.isArray(value)) throw new Error(`templates/${subject}: variables is a list`);
+-  if (value.length > MAX_TEMPLATE_VARIABLES) {
+-    throw new Error(
+-      `templates/${subject}: a template has at most ${MAX_TEMPLATE_VARIABLES} variables`
+-    );
 +/**
 + * A rule somebody just built, before it is normalised.
 + *
@@ -4278,107 +4448,119 @@
 +  value.exclude.length <= MAX_TEMPLATE_TERMS_PER_SIDE &&
 +  value.exclude.every((term) => validTerm(term) || validSetTerm(term));
 +
-+export const variablesOf = (
++export const holesOf = (
 +  value: unknown,
 +  subject: string,
 +  chosen = false
-+): readonly TemplateVariable[] => {
-   if (!Array.isArray(value)) throw new Error(`templates/${subject}: variables is a list`);
-   if (value.length > MAX_TEMPLATE_VARIABLES) {
-     throw new Error(
-@@ -1630,10 +1793,24 @@ export const variablesOf = (value: unknown, subject: string): readonly TemplateV
-   for (const variable of value) {
++): readonly TemplateHole[] => {
++  if (!Array.isArray(value)) throw new Error(`templates/${subject}: holes is a list`);
++  if (value.length > MAX_TEMPLATE_HOLES) {
++    throw new Error(`templates/${subject}: a template has at most ${MAX_TEMPLATE_HOLES} holes`);
+   }
+   const seen = new Set<string>();
+   const declared = new Set<string>();
+-  for (const variable of value) {
++  for (const hole of value) {
      if (
-       !isRecord(variable) ||
+-      !isRecord(variable) ||
 -      !hasOnlyKeys(variable, ["name", "label", "description", "default"])
-+      !hasOnlyKeys(variable, ["name", "label", "description", "kind", "default", "text"])
++      !isRecord(hole) ||
++      !hasOnlyKeys(hole, ["name", "label", "description", "kind", "default", "text"])
      ) {
-       throw new Error(`templates/${subject}: a variable has only represented fields`);
+-      throw new Error(`templates/${subject}: a variable has only represented fields`);
++      throw new Error(`templates/${subject}: a hole has only represented fields`);
      }
-+    if (variable.kind !== undefined && variable.kind !== "scope" && variable.kind !== "text") {
-+      throw new Error(`templates/${subject}: a variable is answered with a scope or with text`);
-+    }
-+    if (variable.kind === "text" && variable.default !== undefined) {
-+      throw new Error(`templates/${subject}: a text variable has no default scope`);
-+    }
-+    if (variable.text !== undefined) {
-+      if (variable.kind !== "text") {
-+        throw new Error(`templates/${subject}: only a text variable has default words`);
-+      }
-+      if (!validText(variable.text, MAX_BLOCK_TEXT_LENGTH, true)) {
-+        throw new Error(`templates/${subject}: a variable's default words are text`);
-+      }
-+    }
-     if (!validCanonicalText(variable.name, MAX_VARIABLE_NAME_LENGTH)) {
-       throw new Error(`templates/${subject}: every variable has a name`);
+-    if (!validCanonicalText(variable.name, MAX_VARIABLE_NAME_LENGTH)) {
+-      throw new Error(`templates/${subject}: every variable has a name`);
++    if (hole.kind !== undefined && hole.kind !== "scope" && hole.kind !== "text") {
++      throw new Error(`templates/${subject}: a hole is answered with a scope or with text`);
      }
-@@ -1648,7 +1825,10 @@ export const variablesOf = (value: unknown, subject: string): readonly TemplateV
+-    if (!validCanonicalText(variable.label, MAX_VARIABLE_LABEL_LENGTH)) {
+-      throw new Error(`templates/${subject}: every variable has a label`);
++    if (hole.kind === "text" && hole.default !== undefined) {
++      throw new Error(`templates/${subject}: a text hole has no default scope`);
++    }
++    if (hole.text !== undefined) {
++      if (hole.kind !== "text") {
++        throw new Error(`templates/${subject}: only a text hole has default words`);
++      }
++      if (!validText(hole.text, MAX_BLOCK_TEXT_LENGTH, true)) {
++        throw new Error(`templates/${subject}: a hole's default words are text`);
++      }
++    }
++    if (!validCanonicalText(hole.name, MAX_HOLE_NAME_LENGTH)) {
++      throw new Error(`templates/${subject}: every hole has a name`);
++    }
++    if (!validCanonicalText(hole.label, MAX_HOLE_LABEL_LENGTH)) {
++      throw new Error(`templates/${subject}: every hole has a label`);
+     }
+     if (
+-      variable.description !== undefined &&
+-      (!isText(variable.description) ||
+-        variable.description.length > MAX_VARIABLE_DESCRIPTION_LENGTH ||
+-        variable.description !== variable.description.trim())
++      hole.description !== undefined &&
++      (!isText(hole.description) ||
++        hole.description.length > MAX_HOLE_DESCRIPTION_LENGTH ||
++        hole.description !== hole.description.trim())
      ) {
-       throw new Error(`templates/${subject}: a variable description is text`);
+-      throw new Error(`templates/${subject}: a variable description is text`);
++      throw new Error(`templates/${subject}: a hole description is text`);
      }
 -    if (variable.default !== undefined && !validTemplatedSet(variable.default)) {
+-      throw new Error(`templates/${subject}: a variable default is a templated resource set`);
 +    if (
-+      variable.default !== undefined &&
-+      !(chosen ? validChosenSet(variable.default) : validTemplatedSet(variable.default))
++      hole.default !== undefined &&
++      !(chosen ? validChosenSet(hole.default) : validTemplatedSet(hole.default))
 +    ) {
-       throw new Error(`templates/${subject}: a variable default is a templated resource set`);
++      throw new Error(`templates/${subject}: a hole default is a templated resource set`);
      }
-     const key = variable.name.toLocaleLowerCase();
+-    const key = variable.name.toLocaleLowerCase();
+-    if (seen.has(key)) throw new Error(`templates/${subject}: variable names are unique`);
++    const key = hole.name.toLocaleLowerCase();
++    if (seen.has(key)) throw new Error(`templates/${subject}: hole names are unique`);
+     seen.add(key);
+-    declared.add(variable.name);
++    declared.add(hole.name);
+   }
+-  for (const variable of value as Fields[]) {
+-    if (!isRecord(variable.default)) continue;
++  for (const hole of value as Fields[]) {
++    if (!isRecord(hole.default)) continue;
+     const terms = [
+-      ...((variable.default.include as unknown[]) ?? []),
+-      ...((variable.default.exclude as unknown[]) ?? [])
++      ...((hole.default.include as unknown[]) ?? []),
++      ...((hole.default.exclude as unknown[]) ?? [])
+     ];
+     for (const term of terms) {
+-      if (
+-        isRecord(term) &&
+-        term.select === "variable" &&
+-        !declared.has(term.name as string)
+-      ) {
+-        throw new Error(`templates/${subject}: a variable default names a declared variable`);
++      if (isRecord(term) && term.select === "hole" && !declared.has(term.name as string)) {
++        throw new Error(`templates/${subject}: a hole default names a declared hole`);
+       }
+     }
+   }
+   assertStoredValue(value, subject);
+-  return value as readonly TemplateVariable[];
++  return value as readonly TemplateHole[];
+ };
+ 
+ export const has = (fields: Fields, field: string): boolean =>
 ~~~~
 
-### new · `src/lib/capabilities/templates/api/shared/variables.ts` (+39 / −0)
-
-~~~~diff
-@@ -0,0 +1,39 @@
-+import {
-+  templateAtomNamesIn,
-+  variableNamesIn
-+} from "$representation/data/behavior/templates/scopes";
-+import type { TemplateBody, TemplateVariable } from "$representation/data/types/templates/template";
-+
-+/**
-+ * The parameters a body asks for, found rather than authored.
-+ *
-+ * A prompt's scope naming one makes it a `scope` parameter, answered with a
-+ * group of resources and defaulting to the whole project. A template atom in the
-+ * prose makes it a `text` one, answered with words and defaulting to nothing,
-+ * which is why placing a template has to ask for it.
-+ *
-+ * A name used both ways is a scope, because a scope always has an answer and
-+ * text never does: taking the other side would leave a template that cannot be
-+ * placed until somebody types into a hole they cannot see.
-+ */
-+export const declaredFor = (
-+  body: TemplateBody,
-+  known: readonly TemplateVariable[]
-+): TemplateVariable[] => {
-+  const declared = new Set(known.map((variable) => variable.name));
-+  const scopes = variableNamesIn(body);
-+  const asScope = new Set(scopes);
-+  const texts = templateAtomNamesIn(body).filter((name) => !asScope.has(name));
-+
-+  return [
-+    ...known,
-+    ...scopes.filter((name) => !declared.has(name)).map((name) => ({ name, label: name })),
-+    ...texts
-+      .filter((name) => !declared.has(name))
-+      .map((name) => ({ name, label: name, kind: "text" as const }))
-+  ];
-+};
-+
-+/** What a parameter is answered with, treating an older one with no kind as a scope. */
-+export const kindOf = (variable: TemplateVariable): "scope" | "text" =>
-+  variable.kind === "text" ? "text" : "scope";
-~~~~
-
-### changed · `src/lib/capabilities/templates/api/update-template/update-template.ts` (+69 / −11)
+### changed · `src/lib/capabilities/templates/api/update-template/update-template.ts` (+81 / −26)
 
 ~~~~diff
 @@ -1,11 +1,19 @@
  import { requireScope } from "$runtime/server/scope.server";
  import { serverModel } from "$runtime/server/start.server";
 +import { asId } from "$representation/data/behavior/core/id";
-+import { variableNamesIn } from "$representation/data/behavior/templates/scopes";
++import { scopeHoleNamesIn } from "$representation/data/behavior/templates/scopes";
  
  import {
    admitStoredTemplate,
@@ -4410,31 +4592,34 @@
    if (stored.revision !== asked.baseRevision) {
      return {
        accepted: false,
-@@ -71,7 +70,62 @@ export const updateTemplate = async (input: unknown): Promise<UpdateTemplateResu
+@@ -71,43 +70,99 @@ export const updateTemplate = async (input: unknown): Promise<UpdateTemplateResu
      asked.patch.description === null
        ? undefined
        : (asked.patch.description ?? template.description);
 -  let variables = [...template.variables];
+-  if (asked.patch.variableDescription !== undefined) {
+-    const variable = asked.patch.variableDescription;
+-    if (!variables.some((candidate) => candidate.name === variable.name)) {
 +  const at = Date.now();
 +  const actor = { kind: "user" as const, userId: asId<"users">(scope.userId) };
-+  let variables = [...(asked.patch.variables ?? template.variables)];
-+  if (asked.patch.variables !== undefined) {
-+    const declared = new Set(variables.map((variable) => variable.name));
-+    const orphaned = variableNamesIn(template.body).filter((name) => !declared.has(name));
++  let holes = [...(asked.patch.holes ?? template.holes)];
++  if (asked.patch.holes !== undefined) {
++    const declared = new Set(holes.map((hole) => hole.name));
++    const orphaned = scopeHoleNamesIn(template.body).filter((name) => !declared.has(name));
 +    if (orphaned.length > 0) {
 +      return {
 +        accepted: false,
 +        templateId: asked.templateId,
-+        reason: "variable-in-use",
++        reason: "hole-in-use",
 +        revision: template.revision,
 +        detail: `the body still names ${orphaned.join(", ")}`
 +      };
 +    }
-+    for (const variable of variables) {
++    for (const hole of holes) {
 +      const missing = unknownSetsIn(
 +        store,
 +        scope.projectId,
-+        variable.default ?? { include: [], exclude: [] }
++        hole.default ?? { include: [], exclude: [] }
 +      );
 +      if (missing.length > 0) {
 +        return {
@@ -4446,37 +4631,60 @@
 +        };
 +      }
 +    }
-+    for (const held of template.variables) {
-+      if (variables.some((variable) => variable.name === held.name)) continue;
++    for (const held of template.holes) {
++      if (holes.some((hole) => hole.name === held.name)) continue;
 +      removeRowsBoundTo(store, scope.projectId, {
-+        kind: "variable",
++        kind: "hole",
 +        templateId: template._id,
-+        variable: held.name
++        hole: held.name
 +      });
 +    }
-+    variables = variables.map((variable) => {
++    holes = holes.map((hole) => {
 +      const written = normalizeScope(
 +        store,
 +        scope.projectId,
 +        actor,
-+        { kind: "variable", templateId: template._id, variable: variable.name },
-+        variable.default,
++        { kind: "hole", templateId: template._id, hole: hole.name },
++        hole.default,
 +        at
 +      );
 +      return {
-+        name: variable.name,
-+        label: variable.label,
-+        ...(variable.description === undefined ? {} : { description: variable.description }),
++        name: hole.name,
++        label: hole.label,
++        ...(hole.description === undefined ? {} : { description: hole.description }),
++        ...(hole.kind === undefined ? {} : { kind: hole.kind }),
++        ...(hole.text === undefined ? {} : { text: hole.text }),
 +        ...(written === undefined ? {} : { default: written.term })
 +      };
 +    });
 +  }
-   if (asked.patch.variableDescription !== undefined) {
-     const variable = asked.patch.variableDescription;
-     if (!variables.some((candidate) => candidate.name === variable.name)) {
-@@ -94,8 +148,8 @@ export const updateTemplate = async (input: unknown): Promise<UpdateTemplateResu
-           }
-     );
++  if (asked.patch.holeDescription !== undefined) {
++    const asking = asked.patch.holeDescription;
++    if (!holes.some((candidate) => candidate.name === asking.name)) {
+       return {
+         accepted: false,
+         templateId: asked.templateId,
+         reason: "unsupported-body",
+         revision: template.revision,
+-        detail: `the template no longer declares variable ${variable.name}`
++        detail: `the template no longer declares hole ${asking.name}`
+       };
+     }
+-    variables = variables.map((candidate) =>
+-      candidate.name !== variable.name
+-        ? candidate
+-        : {
+-            name: candidate.name,
+-            label: candidate.label,
+-            ...(variable.description === null ? {} : { description: variable.description }),
+-            ...(candidate.default === undefined ? {} : { default: candidate.default })
+-          }
+-    );
++    holes = holes.map((candidate) => {
++      if (candidate.name !== asking.name) return candidate;
++      const { description: _description, ...rest } = candidate;
++      return asking.description === null ? rest : { ...rest, description: asking.description };
++    });
    }
 -  const at = Date.now();
    const fields: RowFields<"templates"> = {
@@ -4484,7 +4692,13 @@
      userId: template.userId,
      name: asked.patch.name ?? template.name,
      ...(description === undefined ? {} : { description }),
-@@ -108,6 +162,10 @@ export const updateTemplate = async (input: unknown): Promise<UpdateTemplateResu
+     tags: [...(asked.patch.tags ?? template.tags)],
+     body: template.body,
+-    variables,
++    holes,
+     createdBy: template.createdBy,
+     revision: template.revision + 1,
+     updatedAt: at
    };
    store.update(`templates.${template._id}`, fields);
    writeTemplateVersion(store, template._id, fields, at);
@@ -4497,38 +4711,63 @@
  };
 ~~~~
 
-### changed · `src/lib/capabilities/templates/api/update-template/validate-update-template.ts` (+6 / −2)
+### changed · `src/lib/capabilities/templates/api/update-template/validate-update-template.ts` (+14 / −10)
 
 ~~~~diff
-@@ -6,7 +6,8 @@ import {
+@@ -6,6 +6,7 @@ import {
    only,
    revisionOf,
    tagsOf,
--  templateIdOf
-+  templateIdOf,
-+  variablesOf
++  holesOf,
+   templateIdOf
  } from "$capabilities/templates/api/shared/validation";
  import type {
-   UpdateTemplateInput,
-@@ -17,7 +18,7 @@ export const validateUpdateTemplate = (input: unknown): UpdateTemplateInput => {
+@@ -17,16 +18,16 @@ export const validateUpdateTemplate = (input: unknown): UpdateTemplateInput => {
    const fields = fieldsOf(input, "update-template");
    only(fields, ["templateId", "baseRevision", "patch"], "update-template");
    const incoming = fieldsOf(fields.patch, "update-template");
 -  only(incoming, ["name", "description", "tags", "variableDescription"], "update-template");
-+  only(incoming, ["name", "description", "tags", "variableDescription", "variables"], "update-template");
++  only(incoming, ["name", "description", "tags", "holeDescription", "holes"], "update-template");
    if (Object.keys(incoming).length === 0) {
      throw new Error("templates/update-template: patch changes at least one field");
    }
-@@ -40,6 +41,9 @@ export const validateUpdateTemplate = (input: unknown): UpdateTemplateInput => {
+ 
+-  const variableDescription = has(incoming, "variableDescription")
+-    ? fieldsOf(incoming.variableDescription, "update-template")
++  const holeDescription = has(incoming, "holeDescription")
++    ? fieldsOf(incoming.holeDescription, "update-template")
+     : undefined;
+-  if (variableDescription !== undefined) {
+-    only(variableDescription, ["name", "description"], "update-template");
++  if (holeDescription !== undefined) {
++    only(holeDescription, ["name", "description"], "update-template");
+   }
+ 
+   const patch: UpdateTemplatePatch = {
+@@ -40,15 +41,18 @@ export const validateUpdateTemplate = (input: unknown): UpdateTemplateInput => {
          }
        : {}),
      ...(has(incoming, "tags") ? { tags: tagsOf(incoming.tags, "update-template") } : {}),
-+    ...(has(incoming, "variables")
-+      ? { variables: variablesOf(incoming.variables, "update-template", true) }
+-    ...(variableDescription === undefined
++    ...(has(incoming, "holes")
++      ? { holes: holesOf(incoming.holes, "update-template", true) }
 +      : {}),
-     ...(variableDescription === undefined
++    ...(holeDescription === undefined
        ? {}
        : {
+-          variableDescription: {
+-            name: nameOf(variableDescription.name, "update-template"),
++          holeDescription: {
++            name: nameOf(holeDescription.name, "update-template"),
+             description:
+-              variableDescription.description === null
++              holeDescription.description === null
+                 ? null
+-                : descriptionOf(variableDescription.description, "update-template")
++                : descriptionOf(holeDescription.description, "update-template")
+           }
+         })
+   };
 ~~~~
 
 ### changed · `src/lib/capabilities/templates/index.remote.ts` (+58 / −6)
@@ -4647,10 +4886,10 @@
    UpdateTemplateResult
 ~~~~
 
-### changed · `src/lib/capabilities/templates/templates.md` (+124 / −64)
+### changed · `src/lib/capabilities/templates/templates.md` (+126 / −64)
 
 ~~~~diff
-@@ -1,57 +1,125 @@
+@@ -1,57 +1,127 @@
  # templates
  
 -The project-facing template library, with its mutations and the crossing that
@@ -4699,14 +4938,14 @@
 -in the scoped project whose `templateId` names the template. Later edits to that
 -resource do not make the template appear newly used.
 +| `readTemplateLibrary` | Every valid template in the scoped project, projected as library metadata with creator name, permissions and last use, plus quarantined invalid row notices |
-+| `readTemplate` | The full body and variables for one valid template in the project, `unavailable` for a corrupt row, or `null` |
++| `readTemplate` | The full body and holes for one valid template in the project, `unavailable` for a corrupt row, or `null` |
 +| `readResourceTemplate` | For one document or deck: the stage it is, if any |
 +| `createTemplate` | A template in the scoped project with a server-built valid empty body and revision-one history |
 +| `createTemplateFromResource` | A template from a live document, a live deck, or one slide of a deck as a one-slide deck, its body made portable first; says what could not travel |
-+| `updateTemplate` | A compare-and-swap name, description, tag, variable-help or variable-list update plus an immutable version snapshot |
++| `updateTemplate` | A compare-and-swap name, description, tag, hole-help or hole-list update plus an immutable version snapshot |
 +| `duplicateTemplate` | A template in the project copied into a new one at revision one |
 +| `removeTemplate` | A compare-and-swap delete after the stage and all version rows are removed |
-+| `instantiateTemplate` | A regular document, deck, or spreadsheet with a revision-zero leader snapshot and no reference back to the template, its prompt scopes filled from the caller's answers, else each variable's default |
++| `instantiateTemplate` | A regular document, deck, or spreadsheet with a revision-zero leader snapshot and no reference back to the template, its prompt scopes filled from the caller's answers, else each hole's default |
 +| `openTemplateStage` | The template's stage, made if absent: a scratch document or deck holding the template body, and the row that says so |
 +| `commitTemplateStage` | The stage resource's leader body, made portable and validated, written as the template's next revision |
 +| `discardTemplateStage` | The stage row and its scratch resource removed, with the resource's snapshots, change sets and comments |
@@ -4738,52 +4977,54 @@
 +output ids, links to people and resources, images stored in the project, and
 +scope terms naming project resources are dropped, and each is said back to the
 +caller. A template turns a value into a function, so this holds inside one
-+project as much as across two: a prompt's scope is what the variables fill, and
++project as much as across two: a prompt's scope is what the holes fill, and
 +a formula keeps its expression and loses its instance, its project-neutral
 +form, drawn as unbound in the editor until a formula is made for it again. The
 +body is then admitted exactly as a stored one would be, so a template can never
 +hold what a template may not.
 +
-+## Variables
++## Holes
 +
-+A variable exists because the body names it. Saving a stage or making a template
-+from a resource declares every name the body asks for, so the list is found
-+rather than authored; the panels edit a variable's description and default and
-+never its membership.
++A hole is a place the body leaves for whoever places the template. A scope hole
++exists because the body names it: saving a stage or making a template from a
++resource declares every name the prompts ask for, so that list is found rather
++than authored. A text hole is authored, because nothing but the writer knows
++where in the prose it belongs — the panel declares it and drops its atom at the
++caret in one act, and the next save finds it like any other.
 +
-+**A body asks in two ways, so a variable is answered in two ways.** A prompt's
-+scope naming one makes it a `scope`: a group of resources, which always has an
-+answer because the whole project is the floor. A template atom in the prose makes
-+it a `text`: words, filled from the caller, else the variable's own `text`, else
-+nothing. That last case is the only thing that can hold a placement up, and
++**A body asks in two ways, so a hole is answered in two ways.** A prompt's scope
++naming one makes it a `scope`: a group of resources, which always has an answer
++because the whole project is the floor. A template atom in the prose makes it a
++`text`: words, filled from the caller, else the hole's own `text`, else nothing.
++That last case is the only thing that can hold a placement up, and
 +`instantiateTemplate` refuses it with the names of what is still empty. A name
 +used both ways is a scope, because otherwise the template could never be placed.
 +
-+A variable's `default` is what it selects when the caller says nothing: the
-+whole project, kinds, one of the project's named sets, or another variable. A
-+variable declared without one means the whole project. Instantiation fills
-+every prompt scope from the caller's answers, else the default; an answer is a
-+resource set, and a named set it points at is checked to exist before anything
-+is written. A body naming a variable the template does not declare is refused
-+rather than guessed at.
++A hole's `default` is what it selects when the caller says nothing: the whole
++project, kinds, one of the project's named sets, or another hole. A hole
++declared without one means the whole project. Instantiation fills every prompt
++scope from the caller's answers, else the default; an answer is a resource set,
++and a named set it points at is checked to exist before anything is written. A
++body naming a hole the template does not declare is refused rather than guessed
++at.
 +
 +**A rule that cannot be said inline is stored, and what points at it is one
 +term.** Both a default and an answer arrive as whatever somebody built, which
 +may exclude things and may name particular resources — neither of which the
 +templated vocabulary holds. `normalizeScope` writes those as a `resourceSets`
-+row bound to the variable that owns them, and the default or answer becomes a
-+single `set` term naming it. That is not bookkeeping: resolving a template
-+substitutes a variable term for what fills it, on either side of a prompt's
-+scope, and one term for a difference cannot be expressed on the excluding side.
-+A rule that is only the project, kinds or named sets is kept inline and writes
-+nothing. Reading a template back expands a bound default into the rule it holds,
-+so a builder opens on what was built; a named set is left as the named set
-+somebody chose. The rows go when their owner does: a template removed, a
-+variable dropped, a working copy discarded.
++row bound to the hole that owns them, and the default or answer becomes a single
++`set` term naming it. That is not bookkeeping: resolving a template substitutes
++a hole term for what fills it, on either side of a prompt's scope, and one term
++for a difference cannot be expressed on the excluding side. A rule that is only
++the project, kinds or named sets is kept inline and writes nothing. Reading a
++template back expands a bound default into the rule it holds, so a builder opens
++on what was built; a named set is left as the named set somebody chose. The rows
++go when their owner does: a template removed, a hole dropped, a working copy
++discarded.
 +
-+`updateTemplate` still takes a whole variable list, because that is how a
-+description or a default is written, and it refuses with `variable-in-use` while
-+the body still names a variable the list drops.
++`updateTemplate` still takes a whole hole list, because that is how a
++description, a default or a new text hole is written, and it refuses with
++`hole-in-use` while the body still names a scope hole the list drops.
 +
 +## Stages
 +
@@ -4794,7 +5035,7 @@
 +template are editing one copy through the editor's own collaboration. Saving
 +reads the scratch leader body, makes it portable, validates it, and writes it as
 +the template's next revision; the stage stays open until it is discarded, so
-+saving twice is ordinary. A name, tag or variable edit never touches the body,
++saving twice is ordinary. A name, tag or hole edit never touches the body,
 +so it carries the stage to the new revision. The stage is the only thing that
 +writes a template's body, so a copy and its template cannot drift apart; the
 +compare-and-swap on save refuses only a second session's save that landed
@@ -4822,7 +5063,7 @@
  
  Every stored row is re-admitted before projection or mutation. A malformed
  legacy row is quarantined from the list, reported as unavailable on direct read,
-@@ -62,19 +130,12 @@ therefore cannot crash the rest of the library or be copied into new history.
+@@ -62,19 +132,12 @@ therefore cannot crash the rest of the library or be copied into new history.
  
  Instantiation writes normal resource rows, not a private template-editor data
  model. Documents and decks receive their represented body as a leader snapshot.
@@ -4848,7 +5089,7 @@
  
  ## Persistence boundary
  
-@@ -84,8 +145,7 @@ then updates live memory. This removes phantom state after a failed write and
+@@ -84,8 +147,7 @@ then updates live memory. This removes phantom state after a failed write and
  bounds collection creation/removal to one table persistence operation.
  
  It is not yet a transaction across table files. Template/version writes,
@@ -4930,7 +5171,7 @@
 +  atoms: [{ id: `${id}-a`, kind: "literal", text: "Sum up" }],
 +  display: "Sum up",
 +  marks: [],
-+  scope: { include: [{ select: "variable", name }], exclude: [] },
++  scope: { include: [{ select: "hole", name }], exclude: [] },
 +  state: "idle"
 +});
 +
@@ -4963,7 +5204,7 @@
 +        name: "Brief",
 +        tags: [],
 +        body,
-+        variables: [{ name: "evidence", label: "Evidence", default: { include: [{ select: "kinds", kinds: ["finding"] }], exclude: [] } }],
++        holes: [{ name: "evidence", label: "Evidence", default: { include: [{ select: "kinds", kinds: ["finding"] }], exclude: [] } }],
 +        createdBy: { kind: "user", userId: "u" },
 +        revision: 1,
 +        updatedAt: 20
@@ -5001,7 +5242,7 @@
 +  });
 +
 +  test("a default may name one of the project's sets", async () => {
-+    model.tables.templates[0].variables = [
++    model.tables.templates[0].holes = [
 +      {
 +        name: "evidence",
 +        label: "Evidence",
@@ -5016,8 +5257,8 @@
 +    });
 +  });
 +
-+  test("a variable without a default means the whole project", async () => {
-+    model.tables.templates[0].variables = [{ name: "evidence", label: "Evidence" }];
++  test("a hole without a default means the whole project", async () => {
++    model.tables.templates[0].holes = [{ name: "evidence", label: "Evidence" }];
 +    const made = await instantiateTemplate({ templateId: "templates:1" });
 +    assert.ok(made.accepted);
 +    assert.deepEqual(scopeOf(model.tables.documentSnapshots[0]), {
@@ -5026,7 +5267,7 @@
 +    });
 +  });
 +
-+  test("refuses an answer naming a set the project does not hold, and a body naming an undeclared variable", async () => {
++  test("refuses an answer naming a set the project does not hold, and a body naming an undeclared hole", async () => {
 +    const unknownSet = await instantiateTemplate({
 +      templateId: "templates:1",
 +      answers: { evidence: { include: [{ select: "set", setId: "resourceSets:9" }], exclude: [] } }
@@ -5034,14 +5275,14 @@
 +    assert.equal(unknownSet.accepted, false);
 +    assert.match(unknownSet.accepted === false ? unknownSet.detail : "", /resourceSets:9/);
 +
-+    model.tables.templates[0].variables = [];
++    model.tables.templates[0].holes = [];
 +    const undeclared = await instantiateTemplate({ templateId: "templates:1" });
 +    assert.deepEqual(undeclared, {
 +      accepted: false,
 +      templateId: "templates:1",
 +      reason: "unsupported-body",
 +      revision: 1,
-+      detail: "the body names a variable the template does not declare: evidence"
++      detail: "the body names a hole the template does not declare: evidence"
 +    });
 +    assert.deepEqual(model.tables.documents, []);
 +    await assert.rejects(
@@ -5051,13 +5292,13 @@
 +  });
 +});
 +
-+describe("replacing the variable list", () => {
-+  test("keeps a variable the body names and accepts a list that declares it", async () => {
-+    const dropped = await updateTemplate({ templateId: "templates:1", baseRevision: 1, patch: { variables: [] } });
++describe("replacing the hole list", () => {
++  test("keeps a hole the body names and accepts a list that declares it", async () => {
++    const dropped = await updateTemplate({ templateId: "templates:1", baseRevision: 1, patch: { holes: [] } });
 +    assert.deepEqual(dropped, {
 +      accepted: false,
 +      templateId: "templates:1",
-+      reason: "variable-in-use",
++      reason: "hole-in-use",
 +      revision: 1,
 +      detail: "the body still names evidence"
 +    });
@@ -5066,7 +5307,7 @@
 +      templateId: "templates:1",
 +      baseRevision: 1,
 +      patch: {
-+        variables: [
++        holes: [
 +          { name: "evidence", label: "Evidence", description: "What happened" },
 +          { name: "models", label: "Models", default: { include: [{ select: "project" }], exclude: [] } }
 +        ]
@@ -5074,7 +5315,7 @@
 +    });
 +    assert.deepEqual(kept, { accepted: true, templateId: "templates:1", revision: 2 });
 +    assert.deepEqual(
-+      (model.tables.templates[0].variables as { name: string }[]).map((variable) => variable.name),
++      (model.tables.templates[0].holes as { name: string }[]).map((hole) => hole.name),
 +      ["evidence", "models"]
 +    );
 +  });
@@ -5134,7 +5375,7 @@
 +    const held = model.tables.templates[1];
 +    assert.equal(held.name, "Winter brief shell");
 +    assert.deepEqual(held.tags, ["Winter"]);
-+    assert.deepEqual(held.variables, [{ name: "evidence", label: "evidence" }]);
++    assert.deepEqual(held.holes, [{ name: "evidence", label: "evidence" }]);
 +    const kept = (held.body as { rows: { blocks: { marks: { link: unknown }[] }[] }[] }).rows[0]
 +      .blocks[1].marks[0].link;
 +    assert.deepEqual(kept, { kind: "url", url: "https://example.com/plan", note: "Scope" });
@@ -5208,24 +5449,24 @@
 +    exclude: [{ select: "kinds", kinds: ["slides"] }]
 +  };
 +
-+  test("a default that excludes something is stored, and the variable holds one term", async () => {
++  test("a default that excludes something is stored, and the hole holds one term", async () => {
 +    const result = await updateTemplate({
 +      templateId: "templates:1",
 +      baseRevision: 1,
-+      patch: { variables: [{ name: "evidence", label: "Evidence", default: excluding }] }
++      patch: { holes: [{ name: "evidence", label: "Evidence", default: excluding }] }
 +    });
 +    assert.ok(result.accepted);
 +
 +    const bound = model.tables.resourceSets.filter((set) => set.boundTo !== undefined);
 +    assert.equal(bound.length, 1);
 +    assert.deepEqual(bound[0].boundTo, {
-+      kind: "variable",
++      kind: "hole",
 +      templateId: "templates:1",
-+      variable: "evidence"
++      hole: "evidence"
 +    });
 +    assert.equal(bound[0].name, undefined);
 +    assert.deepEqual(bound[0].set, excluding);
-+    assert.deepEqual(model.tables.templates[0].variables, [
++    assert.deepEqual(model.tables.templates[0].holes, [
 +      {
 +        name: "evidence",
 +        label: "Evidence",
@@ -5238,13 +5479,13 @@
 +    await updateTemplate({
 +      templateId: "templates:1",
 +      baseRevision: 1,
-+      patch: { variables: [{ name: "evidence", label: "Evidence", default: excluding }] }
++      patch: { holes: [{ name: "evidence", label: "Evidence", default: excluding }] }
 +    });
 +    const result = await updateTemplate({
 +      templateId: "templates:1",
 +      baseRevision: 2,
 +      patch: {
-+        variables: [
++        holes: [
 +          {
 +            name: "evidence",
 +            label: "Evidence",
@@ -5257,18 +5498,18 @@
 +    assert.equal(model.tables.resourceSets.filter((set) => set.boundTo !== undefined).length, 0);
 +  });
 +
-+  test("the same variable rewrites its own row rather than piling them up", async () => {
++  test("the same hole rewrites its own row rather than piling them up", async () => {
 +    await updateTemplate({
 +      templateId: "templates:1",
 +      baseRevision: 1,
-+      patch: { variables: [{ name: "evidence", label: "Evidence", default: excluding }] }
++      patch: { holes: [{ name: "evidence", label: "Evidence", default: excluding }] }
 +    });
 +    const first = model.tables.resourceSets.find((set) => set.boundTo !== undefined);
 +    await updateTemplate({
 +      templateId: "templates:1",
 +      baseRevision: 2,
 +      patch: {
-+        variables: [
++        holes: [
 +          {
 +            name: "evidence",
 +            label: "Evidence",
@@ -5291,7 +5532,7 @@
 +      templateId: "templates:1",
 +      baseRevision: 1,
 +      patch: {
-+        variables: [
++        holes: [
 +          {
 +            name: "evidence",
 +            label: "Evidence",
@@ -5322,7 +5563,7 @@
 +    assert.deepEqual(bound[0].boundTo, {
 +      kind: "resource",
 +      resourceId: placed.resourceId,
-+      variable: "evidence"
++      hole: "evidence"
 +    });
 +    assert.deepEqual(scopeOf(model.tables.documentSnapshots[0]), {
 +      include: [{ select: "set", setId: bound[0]._id }],
@@ -5345,7 +5586,7 @@
 +      templateId: "templates:1",
 +      baseRevision: 1,
 +      patch: {
-+        variables: [
++        holes: [
 +          {
 +            name: "evidence",
 +            label: "Evidence",
@@ -5478,7 +5719,7 @@
 +    name: `Template ${id}`,
 +    tags: [],
 +    body,
-+    variables: [],
++    holes: [],
 +    createdBy: { kind: "user", userId: "u" },
 +    revision: 2,
 +    updatedAt: 20,
@@ -5558,7 +5799,7 @@
 +    assert.equal(model.tables.templates[0].revision, 3);
 +  });
 +
-+  test("a name or variable edit carries every stage of the template to the new revision", async () => {
++  test("a name or hole edit carries every stage of the template to the new revision", async () => {
 +    await openTemplateStage({ templateId: "templates:1" });
 +    const renamed = await updateTemplate({
 +      templateId: "templates:1",
@@ -5643,7 +5884,7 @@
 +              atoms: [{ id: "p1-a", kind: "literal", text: "Sum up" }],
 +              display: "Sum up",
 +              marks: [],
-+              scope: { include: [{ select: "variable", name: "evidence" }], exclude: [] },
++              scope: { include: [{ select: "hole", name: "evidence" }], exclude: [] },
 +              state: "idle"
 +            }
 +          ]
@@ -5662,7 +5903,7 @@
 +    const held = model.tables.templates[0];
 +    assert.equal(held.revision, 3);
 +    assert.deepEqual((held.body as { rows: unknown[] }).rows.length, 1);
-+    assert.deepEqual(held.variables, [{ name: "evidence", label: "evidence" }]);
++    assert.deepEqual(held.holes, [{ name: "evidence", label: "evidence" }]);
 +    assert.equal(model.tables.templateVersions.length, 1);
 +    assert.equal(model.tables.templateStages[0].templateRevision, 3);
 +
@@ -5743,10 +5984,19 @@
 +});
 ~~~~
 
-### changed · `src/lib/capabilities/templates/test/unit/templates.test.ts` (+57 / −90)
+### changed · `src/lib/capabilities/templates/test/unit/templates.test.ts` (+89 / −122)
 
 ~~~~diff
-@@ -168,6 +168,7 @@ const template = (
+@@ -118,7 +118,7 @@ const { removeTemplate } = await import(
+ const { updateTemplate } = await import(
+   "$capabilities/templates/api/update-template/update-template"
+ );
+-const { bodyOf, variablesOf } = await import(
++const { bodyOf, holesOf } = await import(
+   "$capabilities/templates/api/shared/validation"
+ );
+ 
+@@ -168,11 +168,12 @@ const template = (
    extra: Record<string, unknown> = {}
  ): Row =>
    row("templates", id, {
@@ -5754,6 +6004,12 @@
      userId: owner,
      name: `Template ${id}`,
      tags: ["Useful"],
+     body,
+-    variables: [],
++    holes: [],
+     createdBy: { kind: "user", userId: owner },
+     revision: 2,
+     updatedAt: 20,
 @@ -227,12 +228,12 @@ describe("the project library", () => {
      assert.equal(answer.templates[0].createdByName, "Someone");
    });
@@ -5848,7 +6104,35 @@
  
      assert.deepEqual(
        await updateTemplate({ templateId: "templates:1", baseRevision: 1, patch: { name: "Stale" } }),
-@@ -445,6 +433,7 @@ describe("template mutations", () => {
+@@ -403,10 +391,10 @@ describe("template mutations", () => {
+     assert.equal(model.tables.templateVersions[0].revision, 3);
+   });
+ 
+-  test("updates variable prose without exposing its stable key or default to editing", async () => {
++  test("updates hole prose without exposing its stable key or default to editing", async () => {
+     model.tables.templates.push(
+       template("1", "u", documentBody, {
+-        variables: [
++        holes: [
+           {
+             name: "evidence",
+             label: "Evidence",
+@@ -421,12 +409,12 @@ describe("template mutations", () => {
+       templateId: "templates:1",
+       baseRevision: 2,
+       patch: {
+-        variableDescription: { name: "evidence", description: "  Choose the evidence set.  " }
++        holeDescription: { name: "evidence", description: "  Choose the evidence set.  " }
+       }
+     });
+ 
+     assert.deepEqual(answer, { accepted: true, templateId: "templates:1", revision: 3 });
+-    assert.deepEqual(model.tables.templates[0].variables, [
++    assert.deepEqual(model.tables.templates[0].holes, [
+       {
+         name: "evidence",
+         label: "Evidence",
+@@ -445,10 +433,11 @@ describe("template mutations", () => {
      assert.equal(answer.accepted, true);
      const copy = model.tables.templates.find((candidate) => candidate._id === "templates:2");
      assert.equal(copy?.userId, "u");
@@ -5856,6 +6140,11 @@
      assert.equal(copy?.name, "My copy");
      assert.deepEqual(copy?.createdBy, { kind: "user", userId: "u" });
      assert.notEqual(copy?.body, model.tables.templates[0].body);
+-    assert.notEqual(copy?.variables, model.tables.templates[0].variables);
++    assert.notEqual(copy?.holes, model.tables.templates[0].holes);
+     assert.equal(model.tables.templateVersions.length, 1);
+   });
+ 
 @@ -508,28 +497,16 @@ describe("template mutations", () => {
      assert.equal(typeof copy?.name === "string" && copy.name.endsWith(" copy"), true);
    });
@@ -5966,7 +6255,32 @@
      assert.notEqual(model.tables.documents[0].createdBy, model.tables.documents[0].updatedBy);
      assert.notEqual(model.tables.slideDecks[0].createdBy, model.tables.slideDecks[0].updatedBy);
    });
-@@ -736,15 +690,14 @@ describe("instantiation", () => {
+@@ -702,7 +656,7 @@ describe("instantiation", () => {
+     assert.equal(model.calls.some((call) => call === "create sheetCells"), false);
+   });
+ 
+-  test("does not invent a variable-answer contract", async () => {
++  test("does not invent a hole-answer contract", async () => {
+     model.tables.templates.push(
+       template(
+         "1",
+@@ -721,7 +675,7 @@ describe("instantiation", () => {
+                   display: "",
+                   marks: [],
+                   scope: {
+-                    include: [{ select: "variable", name: "region" }],
++                    include: [{ select: "hole", name: "region" }],
+                     exclude: []
+                   },
+                   state: "idle"
+@@ -730,21 +684,20 @@ describe("instantiation", () => {
+             }
+           ]
+         },
+-        { variables: [{ name: "region", label: "Region" }] }
++        { holes: [{ name: "region", label: "Region" }] }
+       )
+     );
  
      const answer = await instantiateTemplate({ templateId: "templates:1" });
  
@@ -5989,6 +6303,107 @@
    });
  
    test("uses represented defaults without asking for an invented value shape", async () => {
+@@ -766,7 +719,7 @@ describe("instantiation", () => {
+                   display: "",
+                   marks: [],
+                   scope: {
+-                    include: [{ select: "variable", name: "evidence" }],
++                    include: [{ select: "hole", name: "evidence" }],
+                     exclude: []
+                   },
+                   state: "idle"
+@@ -778,7 +731,7 @@ describe("instantiation", () => {
+                   display: "",
+                   marks: [],
+                   scope: {
+-                    include: [{ select: "variable", name: "evidence" }],
++                    include: [{ select: "hole", name: "evidence" }],
+                     exclude: []
+                   },
+                   state: "idle"
+@@ -788,7 +741,7 @@ describe("instantiation", () => {
+           ]
+         },
+         {
+-          variables: [
++          holes: [
+             {
+               name: "evidence",
+               label: "Evidence",
+@@ -821,7 +774,7 @@ describe("instantiation", () => {
+   });
+ 
+   test("bounds recursively expanding represented defaults before writing", async () => {
+-    const variables = Array.from({ length: 16 }, (_, index) => ({
++    const holes = Array.from({ length: 16 }, (_, index) => ({
+       name: `branch-${index}`,
+       label: `Branch ${index}`,
+       default:
+@@ -829,8 +782,8 @@ describe("instantiation", () => {
+           ? { include: [{ select: "project" as const }], exclude: [] }
+           : {
+               include: [
+-                { select: "variable" as const, name: `branch-${index + 1}` },
+-                { select: "variable" as const, name: `branch-${index + 1}` }
++                { select: "hole" as const, name: `branch-${index + 1}` },
++                { select: "hole" as const, name: `branch-${index + 1}` }
+               ],
+               exclude: []
+             }
+@@ -853,7 +806,7 @@ describe("instantiation", () => {
+                   display: "",
+                   marks: [],
+                   scope: {
+-                    include: [{ select: "variable", name: "branch-0" }],
++                    include: [{ select: "hole", name: "branch-0" }],
+                     exclude: []
+                   },
+                   state: "idle"
+@@ -862,7 +815,7 @@ describe("instantiation", () => {
+             }
+           ]
+         },
+-        { variables }
++        { holes }
+       )
+     );
+ 
+@@ -874,7 +827,7 @@ describe("instantiation", () => {
+     assert.equal(model.tables.documents.length, 0);
+   });
+ 
+-  test("refuses a variable-set difference rather than broadening its scope", async () => {
++  test("refuses a hole-set difference rather than broadening its scope", async () => {
+     model.tables.templates.push(
+       template(
+         "1",
+@@ -894,7 +847,7 @@ describe("instantiation", () => {
+                   marks: [],
+                   scope: {
+                     include: [{ select: "kinds", kinds: ["document"] }],
+-                    exclude: [{ select: "variable", name: "other-material" }]
++                    exclude: [{ select: "hole", name: "other-material" }]
+                   },
+                   state: "idle"
+                 }
+@@ -903,7 +856,7 @@ describe("instantiation", () => {
+           ]
+         },
+         {
+-          variables: [
++          holes: [
+             {
+               name: "other-material",
+               label: "Other material",
+@@ -1007,7 +960,7 @@ describe("stored template validation", () => {
+     assert.doesNotThrow(() => bodyOf(body, "record-keys"));
+   });
+ 
+-  test("accepts only canonical represented variables and bounded templated defaults", () => {
++  test("accepts only canonical represented holes and bounded templated defaults", () => {
+     const valid = [
+       {
+         name: "region",
 @@ -1017,9 +970,14 @@ describe("stored template validation", () => {
            include: [{ select: "kinds", kinds: ["finding", "document"] }],
            exclude: [{ select: "project" }]
@@ -6001,26 +6416,91 @@
        }
      ];
 -    assert.equal(variablesOf(valid, "test").length, 1);
-+    assert.equal(variablesOf(valid, "test").length, 2);
++    assert.equal(holesOf(valid, "test").length, 2);
  
      const invalid = [
        [{ ...valid[0], invented: true }],
-@@ -1062,6 +1020,15 @@ describe("stored template validation", () => {
-           }
-         }
-       ],
+@@ -1057,7 +1015,16 @@ describe("stored template validation", () => {
+         {
+           ...valid[0],
+           default: {
+-            include: [{ select: "variable", name: "Region" }],
++            include: [{ select: "hole", name: "Region" }],
++            exclude: []
++          }
++        }
++      ],
 +      [
 +        {
 +          ...valid[0],
 +          default: {
 +            include: [{ select: "set", setId: "sets:1" }],
-+            exclude: []
-+          }
-+        }
-+      ],
-       [
-         { name: "region", label: "Region" },
+             exclude: []
+           }
+         }
+@@ -1067,29 +1034,29 @@ describe("stored template validation", () => {
          { name: "Region", label: "Duplicate by case" }
+       ]
+     ];
+-    for (const variables of invalid) {
+-      assert.throws(() => variablesOf(variables, "test"), /templates\/test:/);
++    for (const holes of invalid) {
++      assert.throws(() => holesOf(holes, "test"), /templates\/test:/);
+     }
+   });
+ 
+-  test("requires exact case for one variable default referencing another", () => {
++  test("requires exact case for one hole default referencing another", () => {
+     assert.throws(
+       () =>
+-        variablesOf(
++        holesOf(
+           [
+             { name: "region", label: "Region" },
+             {
+               name: "evidence",
+               label: "Evidence",
+               default: {
+-                include: [{ select: "variable", name: "Region" }],
++                include: [{ select: "hole", name: "Region" }],
+                 exclude: []
+               }
+             }
+           ],
+           "test"
+         ),
+-      /default names a declared variable/
++      /default names a declared hole/
+     );
+   });
+ 
+@@ -1398,7 +1365,7 @@ describe("stored template validation", () => {
+     }
+   });
+ 
+-  test("keeps body variable lookup exact when declarations differ only by case", async () => {
++  test("keeps body hole lookup exact when declarations differ only by case", async () => {
+     model.tables.templates.push(
+       template(
+         "1",
+@@ -1417,7 +1384,7 @@ describe("stored template validation", () => {
+                   display: "",
+                   marks: [],
+                   scope: {
+-                    include: [{ select: "variable", name: "Region" }],
++                    include: [{ select: "hole", name: "Region" }],
+                     exclude: []
+                   },
+                   state: "idle"
+@@ -1427,7 +1394,7 @@ describe("stored template validation", () => {
+           ]
+         },
+         {
+-          variables: [
++          holes: [
+             {
+               name: "region",
+               label: "Region",
 @@ -1441,7 +1408,7 @@ describe("stored template validation", () => {
      const answer = await instantiateTemplate({ templateId: "templates:1" });
  
@@ -6033,15 +6513,16 @@
  });
 ~~~~
 
-### changed · `src/lib/capabilities/templates/types/templates.ts` (+113 / −17)
+### changed · `src/lib/capabilities/templates/types/templates.ts` (+118 / −22)
 
 ~~~~diff
-@@ -1,3 +1,4 @@
+@@ -1,17 +1,17 @@
 +import type { ResourceSet } from "$representation/data/types/core/resource-set";
  import type {
    TemplateBody,
-   TemplateVariable
-@@ -5,13 +6,12 @@ import type {
+-  TemplateVariable
++  TemplateHole
+ } from "$representation/data/types/templates/template";
  
  export type TemplateTarget = TemplateBody["resource"];
  
@@ -6059,6 +6540,27 @@
  export type TemplateLibraryItem = {
    readonly id: string;
    readonly name: string;
+@@ -19,7 +19,7 @@ export type TemplateLibraryItem = {
+   readonly target: TemplateTarget;
+   readonly availability: TemplateAvailability;
+   readonly tags: readonly string[];
+-  readonly variableCount: number;
++  readonly holeCount: number;
+   readonly createdByName: string;
+   readonly revision: number;
+   readonly updatedAt: number;
+@@ -28,9 +28,9 @@ export type TemplateLibraryItem = {
+   readonly canDelete: boolean;
+ };
+ 
+-export type TemplateDetail = Omit<TemplateLibraryItem, "variableCount"> & {
++export type TemplateDetail = Omit<TemplateLibraryItem, "holeCount"> & {
+   readonly body: TemplateBody;
+-  readonly variables: readonly TemplateVariable[];
++  readonly holes: readonly TemplateHole[];
+ };
+ 
+ export type TemplateUnavailable = {
 @@ -62,16 +62,39 @@ export type CreateTemplateResult = {
    readonly revision: 1;
  };
@@ -6093,11 +6595,12 @@
    readonly description?: string | null;
    readonly tags?: readonly string[];
 -  /** Changes one variable's prose without making its stable key client-editable. */
-   readonly variableDescription?: {
+-  readonly variableDescription?: {
++  readonly holeDescription?: {
      readonly name: string;
      readonly description: string | null;
    };
-+  readonly variables?: readonly TemplateVariable[];
++  readonly holes?: readonly TemplateHole[];
  };
  
  export type UpdateTemplateInput = {
@@ -6106,7 +6609,7 @@
        readonly accepted: false;
        readonly templateId: string;
 -      readonly reason: "not-found" | "forbidden" | "stale" | "unsupported-body";
-+      readonly reason: "not-found" | "stale" | "unsupported-body" | "variable-in-use";
++      readonly reason: "not-found" | "stale" | "unsupported-body" | "hole-in-use";
        readonly revision: number | null;
        readonly detail: string;
      };
@@ -6125,7 +6628,7 @@
        readonly detail: string;
      };
  
-+/** What a caller typed into the template's text parameters, by name. */
++/** What a caller typed into the template's text holes, by name. */
 +export type TemplateTexts = Readonly<Record<string, string>>;
 +
  export type InstantiateTemplateInput = {
@@ -6364,7 +6867,7 @@
 +  }
 +
 +  const usedByTemplate = recordsIn(store, "templates").find(
-+    (row) => row.projectId === scope.projectId && namesSet(row.variables, stored._id)
++    (row) => row.projectId === scope.projectId && namesSet(row.holes, stored._id)
 +  );
 +  if (usedByTemplate !== undefined) {
 +    return {
@@ -6703,35 +7206,35 @@
 + */
 +export const boundToOf = (value: unknown, subject: string): BoundTo => {
 +  if (!isRecord(value)) throw new Error(`resource-sets/${subject}: boundTo is an object`);
-+  if (value.kind === "variable") {
++  if (value.kind === "hole") {
 +    if (
 +      Object.keys(value).length !== 3 ||
 +      !canonicalText(value.templateId, MAX_IDENTIFIER_LENGTH) ||
-+      !canonicalText(value.variable, MAX_KIND_LENGTH)
++      !canonicalText(value.hole, MAX_KIND_LENGTH)
 +    ) {
-+      throw new Error(`resource-sets/${subject}: a variable owner names a template and a variable`);
++      throw new Error(`resource-sets/${subject}: a hole owner names a template and a hole`);
 +    }
 +    return {
-+      kind: "variable",
++      kind: "hole",
 +      templateId: asId<"templates">(value.templateId as string),
-+      variable: value.variable as string
++      hole: value.hole as string
 +    };
 +  }
 +  if (value.kind === "resource") {
 +    if (
 +      Object.keys(value).length !== 3 ||
 +      !canonicalText(value.resourceId, MAX_IDENTIFIER_LENGTH) ||
-+      !canonicalText(value.variable, MAX_KIND_LENGTH)
++      !canonicalText(value.hole, MAX_KIND_LENGTH)
 +    ) {
-+      throw new Error(`resource-sets/${subject}: a resource owner names one resource and a variable`);
++      throw new Error(`resource-sets/${subject}: a resource owner names one resource and a hole`);
 +    }
 +    return {
 +      kind: "resource",
 +      resourceId: value.resourceId as string,
-+      variable: value.variable as string
++      hole: value.hole as string
 +    };
 +  }
-+  throw new Error(`resource-sets/${subject}: an owner is a variable or a resource`);
++  throw new Error(`resource-sets/${subject}: an owner is a hole or a resource`);
 +};
 +
 +export const descriptionOf = (value: unknown, subject: string): string => {
@@ -6990,7 +7493,7 @@
 +| `readResourceSets` | Every valid **named** set in the scoped project, with its creator's name and how many resources it selects now, plus quarantined invalid rows |
 +| `createResourceSet` | A set from a name, an optional description, and an include and exclude list |
 +| `updateResourceSet` | A compare-and-swap change to name, description, or the set itself |
-+| `removeResourceSet` | A compare-and-swap delete, refused while another set or a template variable's default in this project still names it |
++| `removeResourceSet` | A compare-and-swap delete, refused while another set or a template hole's default in this project still names it |
 +
 +A set is `include` minus `exclude`. A term selects the whole project, a list of
 +resource kinds matched by segment, named resources, or another set by id. The
@@ -7217,7 +7720,7 @@
 +      row("templates", "1", {
 +        projectId: "p",
 +        name: "Brief",
-+        variables: [
++        holes: [
 +          {
 +            name: "evidence",
 +            label: "Evidence",
@@ -7543,13 +8046,13 @@
 -    Name, description, variable help text, and tags autosave in the Inspector today. Body authoring
 -    still needs a collaborative edit-session identity, Template blocks for variable-bearing Prompt
 -    positions, and deterministic scratch cleanup after the editor flushes.
-+    Spreadsheet templates wait for the spreadsheet editor; their name, description, variables and
++    Spreadsheet templates wait for the spreadsheet editor; their name, description, holes and
 +    tags still change in the Inspector.
    </ScreenNote>
  </ScreenSurface>
 ~~~~
 
-### changed · `src/lib/app-views/categories/templates/content/library.svelte` (+23 / −11)
+### changed · `src/lib/app-views/categories/templates/content/library.svelte` (+33 / −21)
 
 ~~~~diff
 @@ -25,6 +25,7 @@
@@ -7569,6 +8072,15 @@
    let now = $state(Date.now());
    onMount(() => {
      const timer = setInterval(() => (now = Date.now()), 60_000);
+@@ -52,7 +55,7 @@
+     { value: "updated", label: "Updated" },
+     { value: "name", label: "Name" },
+     { value: "makes", label: "Makes" },
+-    { value: "variables", label: "Variables" }
++    { value: "holes", label: "Holes" }
+   ] as const;
+ 
+   const TARGETS: readonly TemplateTarget[] = ["Document", "Slide deck", "Spreadsheet"];
 @@ -69,7 +72,6 @@
      Spreadsheet: "1 / 1"
    };
@@ -7585,6 +8097,32 @@
    $effect(() => {
      if (tagMode !== "some") return;
      const next = selectedTags.filter((tag) => TAGS.includes(tag));
+@@ -124,8 +125,8 @@
+   const compare = (a: LibraryTemplate, b: LibraryTemplate): number => {
+     if (sortBy === "name") return a.name.localeCompare(b.name);
+     if (sortBy === "makes") return a.makes.localeCompare(b.makes) || a.name.localeCompare(b.name);
+-    if (sortBy === "variables") {
+-      return a.variableCount - b.variableCount || a.name.localeCompare(b.name);
++    if (sortBy === "holes") {
++      return a.holeCount - b.holeCount || a.name.localeCompare(b.name);
+     }
+     return b.updatedAt - a.updatedAt || a.name.localeCompare(b.name);
+   };
+@@ -162,11 +163,11 @@
+     updated: { asc: "Newest first", desc: "Oldest first" },
+     name: { asc: "A to Z", desc: "Z to A" },
+     makes: { asc: "A to Z", desc: "Z to A" },
+-    variables: { asc: "Fewest variables first", desc: "Most variables first" }
++    holes: { asc: "Fewest holes first", desc: "Most holes first" }
+   };
+ 
+-  const variableCount = (row: LibraryTemplate): string =>
+-    `${row.variableCount} ${row.variableCount === 1 ? "variable" : "variables"}`;
++  const holeCount = (row: LibraryTemplate): string =>
++    `${row.holeCount} ${row.holeCount === 1 ? "hole" : "holes"}`;
+ 
+   const clear = () => {
+     search = "";
 @@ -183,7 +184,6 @@
      inspectTemplate(view, row.id);
    };
@@ -7620,6 +8158,21 @@
    };
  </script>
  
+@@ -219,12 +232,12 @@
+           <ScreenThumb
+             ratio={TARGET_RATIO[row.makes]}
+             lines={4}
+-            variables={Math.min(row.variableCount, 4)}
++            variables={Math.min(row.holeCount, 4)}
+           />
+         </span>
+       {/snippet}
+       <span class="text-caption text-ink-muted truncate">
+-        Used {row.lastUsed} · {variableCount(row)}
++        Used {row.lastUsed} · {holeCount(row)}
+       </span>
+     </ScreenCard>
+   </div>
 @@ -236,6 +249,7 @@
        {#snippet actions()}
          <p class="text-caption text-ink-muted m-0 max-w-xs text-end">
@@ -7638,6 +8191,24 @@
        {#if unavailable.length > 0}
          <ScreenNote tone="gap">
            {unavailable.length} stored {unavailable.length === 1 ? "template is" : "templates are"}
+@@ -376,7 +393,7 @@
+                 : "Templates will appear here when one is created."}
+             </ScreenEmpty>
+           {:else}
+-            <ScreenTable columns={["Name", "Makes", "Scope", "Variables", "Tags", "Updated"]}>
++            <ScreenTable columns={["Name", "Makes", "Scope", "Holes", "Tags", "Updated"]}>
+               {#each ordered as row (row.id)}
+                 {@const Icon = TARGET_ICON[row.makes]}
+                 <ScreenRow
+@@ -399,7 +416,7 @@
+                   </ScreenCell>
+                   <ScreenCell>{row.makes}</ScreenCell>
+                   <ScreenCell>{row.scope}</ScreenCell>
+-                  <ScreenCell num>{row.variableCount}</ScreenCell>
++                  <ScreenCell num>{row.holeCount}</ScreenCell>
+                   <ScreenCell>{row.tags.join(", ") || "—"}</ScreenCell>
+                   <ScreenCell num>{row.updated}</ScreenCell>
+                 </ScreenRow>
 @@ -497,11 +514,6 @@
      outline-offset: 1px;
    }
@@ -7652,7 +8223,7 @@
      height: calc(var(--token-spacing-unit) * 16);
 ~~~~
 
-### changed · `src/lib/app-views/categories/templates/inspector/template.svelte` (+271 / −43)
+### changed · `src/lib/app-views/categories/templates/inspector/template.svelte` (+347 / −119)
 
 ~~~~diff
 @@ -4,10 +4,12 @@
@@ -7668,7 +8239,7 @@
    import {
      Panel,
      PanelBanner,
-@@ -15,25 +17,51 @@
+@@ -15,26 +17,52 @@
      PanelEmpty,
      PanelSkeleton
    } from "$authored-components/panel";
@@ -7707,19 +8278,22 @@
      updateTemplateDescription,
      updateTemplateName,
      updateTemplateTags,
-+    updateTemplateVariableDefault,
-     updateTemplateVariableDescription,
+-    updateTemplateVariableDescription,
++    updateTemplateHoleDefault,
++    updateTemplateHoleDescription,
 +    withTerm,
 +    withWholeProject,
 +    withoutTerm,
      type LibraryTemplateDetail,
+-    type TemplateVariable
 +    type OfferSource,
 +    type ScopeDraft,
 +    type ScopeSide,
 +    type TemplateAnswers,
-     type TemplateVariable
++    type TemplateHole
    } from "$app-views/categories/templates/procedures/library.svelte";
    import { workspaceState } from "$model/client/workspace-state";
+ 
 @@ -43,6 +71,12 @@
      view.selection?.kind === "template" ? view.selection.id : undefined
    );
@@ -7737,16 +8311,16 @@
    });
    const template = $derived(detailIn(detailAnswer, now));
    const unavailable = $derived(unavailableTemplateIn(detailAnswer));
-+  let defaultFor = $state<TemplateVariable | undefined>(undefined);
++  let defaultFor = $state<TemplateHole | undefined>(undefined);
 +  let defaultOpen = $state(false);
 +  let draft = $state<ScopeDraft>(draftOf(undefined));
 +  let useOpen = $state(false);
 +  let answerOpen = $state(false);
 +  let useChoices = $state<Record<string, ScopeDraft | undefined>>({});
 +  let useTexts = $state<Record<string, string | undefined>>({});
-+  let answering = $state<TemplateVariable | undefined>(undefined);
++  let answering = $state<TemplateHole | undefined>(undefined);
 +
-+  const askRows = $derived(answerRowsOf(template?.variables ?? [], useChoices, useTexts, setNames));
++  const askRows = $derived(answerRowsOf(template?.holes ?? [], useChoices, useTexts, setNames));
 +  const askBlocked = $derived(
 +    missingIn(askRows).length === 0 ? undefined : `${missingIn(askRows).join(", ")} still needs words.`
 +  );
@@ -7776,15 +8350,151 @@
  
    let editingDescription = $state(false);
    let descriptionDraft = $state("");
-@@ -82,7 +152,7 @@
+@@ -74,15 +144,15 @@
+   let descriptionEditor = $state<HTMLTextAreaElement | null>(null);
+   let nameTrigger = $state<HTMLButtonElement | null>(null);
+   let descriptionTrigger = $state<HTMLButtonElement | null>(null);
+-  let editingVariable = $state<string>();
+-  let variableDescriptionDraft = $state("");
+-  let variableBase = $state<LibraryTemplateDetail>();
+-  let variableEditor = $state<HTMLTextAreaElement | null>(null);
++  let editingHole = $state<string>();
++  let holeDescriptionDraft = $state("");
++  let holeBase = $state<LibraryTemplateDetail>();
++  let holeEditor = $state<HTMLTextAreaElement | null>(null);
+   let tagEditor = $state<HTMLInputElement | null>(null);
    let tagDraft = $state("");
    let activeTemplateId = $state<string>();
    let pending = $state<
 -    "name" | "description" | "variable" | "tag" | "duplicate" | "delete" | "use"
-+    "name" | "description" | "variable" | "tag" | "duplicate" | "delete" | "use" | "edit" | "default"
++    "name" | "description" | "hole" | "tag" | "duplicate" | "delete" | "use" | "edit" | "default"
    >();
    let actionError = $state<string>();
    let live = true;
+@@ -103,9 +173,9 @@
+     descriptionBase = undefined;
+     tagDraft = "";
+     editingDescription = false;
+-    editingVariable = undefined;
+-    variableDescriptionDraft = "";
+-    variableBase = undefined;
++    editingHole = undefined;
++    holeDescriptionDraft = "";
++    holeBase = undefined;
+     actionError = undefined;
+   });
+ 
+@@ -125,8 +195,8 @@
+     if (template === undefined || !template.canEdit || pending !== undefined) return;
+     editingName = false;
+     nameBase = undefined;
+-    editingVariable = undefined;
+-    variableBase = undefined;
++    editingHole = undefined;
++    holeBase = undefined;
+     descriptionBase = template;
+     descriptionDraft = template.description;
+     editingDescription = true;
+@@ -139,8 +209,8 @@
+     if (template === undefined || !template.canEdit || pending !== undefined) return;
+     editingDescription = false;
+     descriptionBase = undefined;
+-    editingVariable = undefined;
+-    variableBase = undefined;
++    editingHole = undefined;
++    holeBase = undefined;
+     nameBase = template;
+     nameDraft = template.name;
+     editingName = true;
+@@ -294,55 +364,55 @@
+     }
+   };
+ 
+-  const startVariableDescription = async (variable: TemplateVariable) => {
++  const startHoleDescription = async (hole: TemplateHole) => {
+     if (template === undefined || !template.canEdit || pending !== undefined) return;
+     editingName = false;
+     nameBase = undefined;
+     editingDescription = false;
+     descriptionBase = undefined;
+-    variableBase = template;
+-    editingVariable = variable.name;
+-    variableDescriptionDraft = variable.description ?? "";
++    holeBase = template;
++    editingHole = hole.name;
++    holeDescriptionDraft = hole.description ?? "";
+     await tick();
+-    variableEditor?.focus();
+-    variableEditor?.select();
++    holeEditor?.focus();
++    holeEditor?.select();
+   };
+ 
+-  const cancelVariableDescription = () => {
+-    editingVariable = undefined;
+-    variableDescriptionDraft = "";
+-    variableBase = undefined;
++  const cancelHoleDescription = () => {
++    editingHole = undefined;
++    holeDescriptionDraft = "";
++    holeBase = undefined;
+   };
+ 
+-  const commitVariableDescription = async (variable: TemplateVariable) => {
+-    const subject = variableBase;
++  const commitHoleDescription = async (hole: TemplateHole) => {
++    const subject = holeBase;
+     const originTabId = view.activeId;
+     if (
+       subject === undefined ||
+       template?.id !== subject.id ||
+-      editingVariable !== variable.name ||
++      editingHole !== hole.name ||
+       !subject.canEdit ||
+       pending !== undefined
+     ) {
+       return;
+     }
+-    if (variableDescriptionDraft.trim() === (variable.description ?? "").trim()) {
+-      cancelVariableDescription();
++    if (holeDescriptionDraft.trim() === (hole.description ?? "").trim()) {
++      cancelHoleDescription();
+       return;
+     }
+ 
+-    pending = "variable";
++    pending = "hole";
+     actionError = undefined;
+     try {
+-      const result = await updateTemplateVariableDescription(
++      const result = await updateTemplateHoleDescription(
+         view,
+         subject,
+-        variable.name,
+-        variableDescriptionDraft
++        hole.name,
++        holeDescriptionDraft
+       );
+       if (!stillInspecting(originTabId, subject.id)) return;
+       if (!result.accepted) actionError = result.detail;
+-      else cancelVariableDescription();
++      else cancelHoleDescription();
+     } catch (error) {
+       fail(error, originTabId, subject.id);
+     } finally {
+@@ -350,10 +420,10 @@
+     }
+   };
+ 
+-  const variableKeydown = (event: KeyboardEvent) => {
++  const holeKeydown = (event: KeyboardEvent) => {
+     if (event.key !== "Escape") return;
+     event.preventDefault();
+-    cancelVariableDescription();
++    cancelHoleDescription();
+   };
+ 
+   const addTag = async () => {
 @@ -450,35 +520,114 @@
      }
    };
@@ -7800,7 +8510,7 @@
        actionError = SPREADSHEET_HANDOFF;
        return;
      }
-+    if (template.variables.length === 0) {
++    if (template.holes.length === 0) {
 +      void instantiate({});
 +      return;
 +    }
@@ -7818,10 +8528,10 @@
 +   * footer under the pointer, and the press lands on a button that has gone.
 +   */
 +  const openAnswer = (name: string) => {
-+    const variable = template?.variables.find((candidate) => candidate.name === name);
-+    if (variable === undefined) return;
-+    answering = variable;
-+    draft = draftOf(useChoices[name] ?? variable.default);
++    const hole = template?.holes.find((candidate) => candidate.name === name);
++    if (hole === undefined) return;
++    answering = hole;
++    draft = draftOf(useChoices[name] ?? hole.default);
 +    useOpen = false;
 +    answerOpen = true;
 +  };
@@ -7918,16 +8628,16 @@
 -  /** Placeholder for the variable settings modal; defaults stay unchanged until that contract exists. */
 -  const showVariableSettings = (variable: TemplateVariable) => {
 -    alert(`Variable settings for “${variable.label}” will open here.`);
-+  const openDefault = (variable: TemplateVariable) => {
++  const openDefault = (hole: TemplateHole) => {
 +    if (template === undefined || !template.canEdit || pending !== undefined) return;
-+    defaultFor = variable;
-+    draft = draftOf(variable.default);
++    defaultFor = hole;
++    draft = draftOf(hole.default);
 +    defaultOpen = true;
 +  };
 +
 +  const setDefault = async () => {
-+    const variable = defaultFor;
-+    if (template === undefined || variable === undefined || pending !== undefined) return;
++    const hole = defaultFor;
++    if (template === undefined || hole === undefined || pending !== undefined) return;
 +    const subject = template;
 +    const originTabId = view.activeId;
 +    const rule = draft;
@@ -7935,7 +8645,7 @@
 +    pending = "default";
 +    actionError = undefined;
 +    try {
-+      const result = await updateTemplateVariableDefault(view, subject, variable.name, rule);
++      const result = await updateTemplateHoleDefault(view, subject, hole.name, rule);
 +      if (!stillInspecting(originTabId, subject.id)) return;
 +      if (!result.accepted) actionError = result.detail;
 +    } catch (error) {
@@ -7964,9 +8674,38 @@
          <Button
            variant="ghost"
            size="icon-sm"
-@@ -641,20 +823,10 @@
-             {#each template.variables as variable (variable.id)}
-               <details class="variable">
+@@ -621,7 +803,7 @@
+       </div>
+ 
+       {#if !template.canEdit}
+-        <p class="permission-note">Duplicate this template to edit its name, description, variables, or tags.</p>
++        <p class="permission-note">Duplicate this template to edit its name, description, holes, or tags.</p>
+       {/if}
+       {#if template.makes === "Spreadsheet"}
+         <p class="permission-note">{SPREADSHEET_HANDOFF}</p>
+@@ -629,61 +811,64 @@
+ 
+       <div class="divider" aria-hidden="true"></div>
+ 
+-      <section aria-labelledby="variables-heading">
+-        <h3 id="variables-heading" class="section-heading">
+-          Variables <span>{template.variables.length}</span>
++      <section aria-labelledby="holes-heading">
++        <h3 id="holes-heading" class="section-heading">
++          Holes <span>{template.holes.length}</span>
+         </h3>
+ 
+-        {#if template.variables.length === 0}
+-          <PanelEmpty title="This template asks for no variables." flush />
++        {#if template.holes.length === 0}
++          <PanelEmpty title="This template asks for no holes." flush />
+         {:else}
+-          <div class="variable-list">
+-            {#each template.variables as variable (variable.id)}
+-              <details class="variable">
++          <div class="hole-list">
++            {#each template.holes as hole (hole.id)}
++              <details class="hole">
                  <summary>
 -                  <button
 -                    type="button"
@@ -7979,29 +8718,66 @@
 -                      showVariableSettings(variable);
 -                    }}
 -                  >
-+                  <span class="variable-name">
++                  <span class="hole-name">
                      <Braces size={13} aria-hidden="true" />
-                     {variable.label}
+-                    {variable.label}
 -                  </button>
++                    {hole.label}
 +                  </span>
                    <ChevronDown class="disclosure-icon" size={13} aria-hidden="true" />
                  </summary>
-                 <div class="variable-body">
-@@ -684,6 +856,19 @@
+-                <div class="variable-body">
+-                  {#if editingVariable === variable.name}
++                <div class="hole-body">
++                  {#if editingHole === hole.name}
+                     <Textarea
+-                      bind:ref={variableEditor}
+-                      class="variable-description-editor"
+-                      bind:value={variableDescriptionDraft}
+-                      aria-label={`Description for ${variable.label}`}
++                      bind:ref={holeEditor}
++                      class="hole-description-editor"
++                      bind:value={holeDescriptionDraft}
++                      aria-label={`Description for ${hole.label}`}
+                       rows={3}
+-                      onkeydown={variableKeydown}
+-                      onblur={() => commitVariableDescription(variable)}
++                      onkeydown={holeKeydown}
++                      onblur={() => commitHoleDescription(hole)}
+                     />
+                   {:else if template.canEdit}
+                     <button
+                       type="button"
+-                      class="variable-description"
++                      class="hole-description"
+                       title="Double-click to edit this description"
+-                      aria-label={`Edit description for ${variable.label}`}
+-                      ondblclick={() => startVariableDescription(variable)}
++                      aria-label={`Edit description for ${hole.label}`}
++                      ondblclick={() => startHoleDescription(hole)}
+                       onkeydown={(event) => {
+                         if (event.key === "Enter" || event.key === " ") {
+-                          startVariableDescription(variable);
++                          startHoleDescription(hole);
+                         }
+                       }}
+-                    >{variable.description ?? "Add a description"}</button>
++                    >{hole.description ?? "Add a description"}</button>
                    {:else}
-                     <p>{variable.description ?? "No description supplied."}</p>
+-                    <p>{variable.description ?? "No description supplied."}</p>
++                    <p>{hole.description ?? "No description supplied."}</p>
                    {/if}
-+                  <div class="variable-default">
++                  <div class="hole-default">
 +                    {#if template.canEdit}
 +                      <Button
 +                        variant="outline"
 +                        size="xs"
-+                        title={`${ruleOf(variable.default, setNames)} — change what ${variable.label} selects by default`}
++                        title={`${ruleOf(hole.default, setNames)} — change what ${hole.label} selects by default`}
 +                        disabled={pending !== undefined}
-+                        onclick={() => openDefault(variable)}
++                        onclick={() => openDefault(hole)}
 +                      >Default scope</Button>
 +                    {:else}
-+                      <span>{ruleOf(variable.default, setNames)}</span>
++                      <span>{ruleOf(hole.default, setNames)}</span>
 +                    {/if}
 +                  </div>
                  </div>
@@ -8066,6 +8842,15 @@
    .inspector-stack {
      display: flex;
      flex-direction: column;
+@@ -776,7 +1012,7 @@
+   .meta-line,
+   .byline,
+   .description,
+-  .variable-body {
++  .hole-body {
+     font-size: var(--token-text-caption);
+     line-height: var(--token-text-caption-leading);
+   }
 @@ -906,7 +1142,7 @@
  
    .template-actions {
@@ -8075,7 +8860,56 @@
      align-self: stretch;
      overflow: hidden;
      width: 100%;
-@@ -1034,32 +1270,24 @@
+@@ -987,17 +1223,17 @@
+     font-weight: 500;
+   }
+ 
+-  .variable-list {
++  .hole-list {
+     overflow: hidden;
+     border: 1px solid var(--token-border-subtle);
+     border-radius: var(--token-radius-panel);
+   }
+ 
+-  .variable + .variable {
++  .hole + .hole {
+     border-top: 1px solid var(--token-border-subtle);
+   }
+ 
+-  .variable summary {
++  .hole summary {
+     display: flex;
+     min-height: calc(var(--token-spacing-unit) * 8);
+     align-items: center;
+@@ -1011,75 +1247,67 @@
+     list-style: none;
+   }
+ 
+-  .variable summary::-webkit-details-marker {
++  .hole summary::-webkit-details-marker {
+     display: none;
+   }
+ 
+-  .variable summary:hover {
++  .hole summary:hover {
+     background: var(--token-surface-panel-hover);
+   }
+ 
+-  .variable[open] > summary {
++  .hole[open] > summary {
+     background: var(--token-surface-panel-hover);
+     color: var(--token-ink-primary);
+   }
+ 
+-  .variable summary:focus-visible {
++  .hole summary:focus-visible {
+     outline: 2px solid var(--token-color-interactive-border);
+     outline-offset: -2px;
+   }
+ 
+-  .variable-name {
++  .hole-name {
+     display: flex;
      min-width: 0;
      align-items: center;
      gap: calc(var(--token-spacing-unit) * 1.5);
@@ -8100,12 +8934,13 @@
 -    outline-offset: 2px;
 -  }
 -
-   .variable-name :global(svg) {
+-  .variable-name :global(svg) {
++  .hole-name :global(svg) {
      flex: none;
      color: var(--token-ink-muted);
    }
  
-+  .variable-default {
++  .hole-default {
 +    display: flex;
 +    align-items: center;
 +    margin-top: calc(var(--token-spacing-unit) * 1.5);
@@ -8115,12 +8950,56 @@
    :global(.disclosure-icon) {
      flex: none;
      color: var(--token-ink-muted);
+     transition: transform var(--token-motion-small) var(--token-ease-standard);
+   }
+ 
+-  .variable[open] :global(.disclosure-icon) {
++  .hole[open] :global(.disclosure-icon) {
+     transform: rotate(180deg);
+   }
+ 
+-  .variable-body {
++  .hole-body {
+     padding: 0 calc(var(--token-spacing-unit) * 2) calc(var(--token-spacing-unit) * 2.5);
+     color: var(--token-ink-muted);
+   }
+ 
+-  .variable-body p {
++  .hole-body p {
+     margin: 0;
+   }
+ 
+-  .variable-description {
++  .hole-description {
+     display: block;
+     width: 100%;
+     margin: 0;
+@@ -1093,16 +1321,16 @@
+     text-align: left;
+   }
+ 
+-  .variable-description:hover {
++  .hole-description:hover {
+     color: var(--token-ink-secondary);
+   }
+ 
+-  .variable-description:focus-visible {
++  .hole-description:focus-visible {
+     outline: 2px solid var(--token-color-interactive-surface);
+     outline-offset: 2px;
+   }
+ 
+-  :global(.variable-description-editor) {
++  :global(.hole-description-editor) {
+     height: calc(var(--token-spacing-unit) * 18);
+     min-height: calc(var(--token-spacing-unit) * 18);
+     max-height: calc(var(--token-spacing-unit) * 18);
 ~~~~
 
-### changed · `src/lib/app-views/categories/templates/procedures/library.svelte.ts` (+165 / −32)
+### changed · `src/lib/app-views/categories/templates/procedures/library.svelte.ts` (+177 / −45)
 
 ~~~~diff
-@@ -2,33 +2,48 @@ import {
+@@ -2,33 +2,47 @@ import {
    createTemplate as createTemplateRemote,
    duplicateTemplate as duplicateTemplateRemote,
    instantiateTemplate as instantiateTemplateRemote,
@@ -8155,7 +9034,6 @@
 +  type ScopeNames,
 +  type ScopeOffering
 +} from "$representation/data/behavior/core/scope-draft";
-+import type { TemplateVariable as StoredTemplateVariable } from "$representation/data/types/templates/template";
 +import type { Category, WorkspaceStateModel } from "$model/client/workspace-state";
 +
 +export type { ResourceSetItem } from "$capabilities/resource-sets/index.remote";
@@ -8165,8 +9043,9 @@
  export type TemplateTarget = "Document" | "Slide deck" | "Spreadsheet";
  export type TemplateScope = "Project" | "Personal";
  
- export type TemplateVariable = TemplateDetail["variables"][number] & {
+-export type TemplateVariable = TemplateDetail["variables"][number] & {
 -  /** Stable inside one template; represented variables are named rather than identified. */
++export type TemplateHole = TemplateDetail["holes"][number] & {
    readonly id: string;
  };
  
@@ -8177,7 +9056,25 @@
  export type LibraryTemplate = {
    readonly id: string;
    readonly name: string;
-@@ -72,6 +87,16 @@ const TARGET_VALUE: Record<TemplateTarget, StoredTemplateTarget> = {
+@@ -36,7 +50,7 @@ export type LibraryTemplate = {
+   readonly makes: TemplateTarget;
+   readonly scope: TemplateScope;
+   readonly tags: readonly string[];
+-  readonly variableCount: number;
++  readonly holeCount: number;
+   readonly createdBy: string;
+   readonly revision: number;
+   readonly updatedAt: number;
+@@ -48,7 +62,7 @@ export type LibraryTemplate = {
+ };
+ 
+ export type LibraryTemplateDetail = LibraryTemplate & {
+-  readonly variables: readonly TemplateVariable[];
++  readonly holes: readonly TemplateHole[];
+ };
+ 
+ export type TemplateLibrarySummary = {
+@@ -72,6 +86,16 @@ const TARGET_VALUE: Record<TemplateTarget, StoredTemplateTarget> = {
    Spreadsheet: "spreadsheet"
  };
  
@@ -8194,7 +9091,7 @@
  const SCOPE_LABEL = {
    project: "Project",
    personal: "Personal"
-@@ -81,7 +106,6 @@ const MINUTE = 60_000;
+@@ -81,7 +105,6 @@ const MINUTE = 60_000;
  const HOUR = 60 * MINUTE;
  const DAY = 24 * HOUR;
  
@@ -8202,7 +9099,16 @@
  export const relativeTime = (at: number, now: number): string => {
    const gap = Math.max(0, now - at);
    if (gap < MINUTE) return "just now";
-@@ -120,31 +144,25 @@ const project = (row: TemplateLibraryItem, now: number): LibraryTemplate => ({
+@@ -109,7 +132,7 @@ const project = (row: TemplateLibraryItem, now: number): LibraryTemplate => ({
+   makes: TARGET_LABEL[row.target],
+   scope: SCOPE_LABEL[row.availability],
+   tags: row.tags,
+-  variableCount: row.variableCount,
++  holeCount: row.holeCount,
+   createdBy: row.createdByName,
+   revision: row.revision,
+   updatedAt: row.updatedAt,
+@@ -120,54 +143,46 @@ const project = (row: TemplateLibraryItem, now: number): LibraryTemplate => ({
    canDelete: row.canDelete
  });
  
@@ -8234,7 +9140,20 @@
  export const detailIn = (
    answer: ReadTemplateResult | undefined,
    now: number
-@@ -161,13 +179,11 @@ export const detailIn = (
+ ): LibraryTemplateDetail | undefined => {
+   if (answer === null || answer === undefined || "unavailable" in answer) return undefined;
+ 
+-  const row = project({ ...answer, variableCount: answer.variables.length }, now);
++  const row = project({ ...answer, holeCount: answer.holes.length }, now);
+   return {
+     ...row,
+-    variables: answer.variables.map((variable) => ({
+-      ...variable,
+-      id: `${answer.id}:${variable.name}`
++    holes: answer.holes.map((hole) => ({
++      ...hole,
++      id: `${answer.id}:${hole.name}`
+     }))
    };
  };
  
@@ -8248,7 +9167,7 @@
  export const recentTemplatesIn = (
    rows: readonly LibraryTemplate[],
    limit = 10
-@@ -184,7 +200,6 @@ export const recentTemplatesIn = (
+@@ -184,7 +199,6 @@ export const recentTemplatesIn = (
      .toSorted((a, b) => b.lastUsedAt - a.lastUsedAt)
      .slice(0, Math.max(0, limit));
  
@@ -8256,7 +9175,7 @@
  export const templateLibrarySummaryIn = (
    rows: readonly LibraryTemplate[]
  ): TemplateLibrarySummary => {
-@@ -208,7 +223,6 @@ const defaultName = (target: TemplateTarget): string =>
+@@ -208,7 +222,6 @@ const defaultName = (target: TemplateTarget): string =>
      Spreadsheet: "Untitled spreadsheet template"
    })[target];
  
@@ -8264,7 +9183,7 @@
  export const nextTemplateName = (
    target: TemplateTarget,
    rows: readonly LibraryTemplate[]
-@@ -220,13 +234,93 @@ export const nextTemplateName = (
+@@ -220,13 +233,93 @@ export const nextTemplateName = (
    return `${base} ${suffix}`;
  };
  
@@ -8314,7 +9233,7 @@
 +  resources: new Map(resources.map((resource) => [resource.id, resource.name]))
 +});
 +
-+/** What the builder is handed for a variable's default, or for an answer. */
++/** What the builder is handed for a hole's default, or for an answer. */
 +export const offeringOf = (
 +  sets: readonly ResourceSetItem[],
 +  resources: readonly { readonly id: string; readonly kind: string; readonly name: string }[]
@@ -8326,7 +9245,7 @@
 +/**
 + * The answers a caller chose, as rules.
 + *
-+ * A variable nobody touched is absent, which is what makes the template's own
++ * A hole nobody touched is absent, which is what makes the template's own
 + * default apply. Everything present is sent as built; the server decides
 + * whether it needs a row.
 + */
@@ -8360,7 +9279,7 @@
  export const createTemplate = (
    view: WorkspaceStateModel,
    target: TemplateTarget,
-@@ -241,7 +335,6 @@ export const createTemplate = (
+@@ -241,7 +334,6 @@ export const createTemplate = (
    );
  };
  
@@ -8368,7 +9287,7 @@
  export const updateTemplateName = (
    view: WorkspaceStateModel,
    row: LibraryTemplateDetail,
-@@ -259,7 +352,6 @@ export const updateTemplateName = (
+@@ -259,7 +351,6 @@ export const updateTemplateName = (
    );
  };
  
@@ -8376,15 +9295,39 @@
  export const updateTemplateDescription = (
    view: WorkspaceStateModel,
    row: LibraryTemplateDetail,
-@@ -285,7 +377,6 @@ export const updateTemplateDescription = (
+@@ -285,11 +376,10 @@ export const updateTemplateDescription = (
    );
  };
  
 -/** Update variable help text while preserving its stable key, label, and default selection. */
- export const updateTemplateVariableDescription = (
+-export const updateTemplateVariableDescription = (
++export const updateTemplateHoleDescription = (
    view: WorkspaceStateModel,
    row: LibraryTemplateDetail,
-@@ -315,7 +406,6 @@ export const updateTemplateVariableDescription = (
+-  variableName: string,
++  holeName: string,
+   description: string
+ ) => {
+   const storedDescription = description.trim() || null;
+@@ -300,8 +390,8 @@ export const updateTemplateVariableDescription = (
+       row.id,
+       "update",
+       row.revision,
+-      "variable-description",
+-      variableName,
++      "hole-description",
++      holeName,
+       storedDescription
+     ],
+     () =>
+@@ -309,13 +399,12 @@ export const updateTemplateVariableDescription = (
+         templateId: row.id,
+         baseRevision: row.revision,
+         patch: {
+-          variableDescription: { name: variableName, description: storedDescription }
++          holeDescription: { name: holeName, description: storedDescription }
+         }
+       }).updates(readTemplateLibrary, readTemplate({ templateId: row.id }))
    );
  };
  
@@ -8392,27 +9335,27 @@
  export const updateTemplateTags = (
    view: WorkspaceStateModel,
    row: LibraryTemplateDetail,
-@@ -331,13 +421,31 @@ export const updateTemplateTags = (
+@@ -331,13 +420,31 @@ export const updateTemplateTags = (
        }).updates(readTemplateLibrary, readTemplate({ templateId: row.id }))
    );
  
 -/** Copy any visible template into the current viewer's ownership. */
-+export const updateTemplateVariableDefault = (
++export const updateTemplateHoleDefault = (
 +  view: WorkspaceStateModel,
 +  row: LibraryTemplateDetail,
-+  variableName: string,
++  holeName: string,
 +  rule: ScopeDraft
 +) => {
-+  const variables = row.variables.map(({ id: _id, ...variable }) =>
-+    variable.name === variableName ? { ...variable, default: rule } : variable
++  const holes = row.holes.map(({ id: _id, ...hole }) =>
++    hole.name === holeName ? { ...hole, default: rule } : hole
 +  );
 +  return view.singleFlight(
-+    ["template", view.project, row.id, "update", row.revision, "variable-default", variableName, JSON.stringify(rule)],
++    ["template", view.project, row.id, "update", row.revision, "hole-default", holeName, JSON.stringify(rule)],
 +    () =>
 +      updateTemplateRemote({
 +        templateId: row.id,
 +        baseRevision: row.revision,
-+        patch: { variables }
++        patch: { holes }
 +      }).updates(readTemplateLibrary, readTemplate({ templateId: row.id }))
 +  );
 +};
@@ -8426,7 +9369,7 @@
  export const removeTemplate = (view: WorkspaceStateModel, row: LibraryTemplateDetail) =>
    view.singleFlight(["template", view.project, row.id, "remove", row.revision], () =>
      removeTemplateRemote({ templateId: row.id, baseRevision: row.revision }).updates(
-@@ -346,11 +454,36 @@ export const removeTemplate = (view: WorkspaceStateModel, row: LibraryTemplateDe
+@@ -346,11 +453,36 @@ export const removeTemplate = (view: WorkspaceStateModel, row: LibraryTemplateDe
      )
    );
  
@@ -8504,7 +9447,7 @@
    });
 ~~~~
 
-### changed · `src/lib/app-views/categories/templates/templates.md` (+45 / −74)
+### changed · `src/lib/app-views/categories/templates/templates.md` (+46 / −75)
 
 ~~~~diff
 @@ -1,109 +1,80 @@
@@ -8539,8 +9482,8 @@
 +and the ordinary editor opens on that copy in its own tab. The editor's Templates
 +panel is where the copy is saved back or discarded. `Use` is the separate gesture
 +that instantiates an independent project resource and opens its ordinary editor
-+for documents and decks, after asking, in one modal, what each variable should
-+select, its default offered first; the resource it makes carries no reference
++for documents and decks, after asking, in one modal, what fills each hole, its
++default offered first; the resource it makes carries no reference
 +back to the template. Spreadsheet materialization exists at the capability
 +boundary, but neither Use nor Edit reaches it until the spreadsheet editor
 +consumes represented resource ids.
@@ -8570,7 +9513,7 @@
  ## Inspector: template
  
  The inspector performs a body-bearing read only for the selected template. It
- shows target, availability, update time, creator, description, variables, and
+-shows target, availability, update time, creator, description, variables, and
 -tags. Name and fixed-height description fields autosave on blur; variable help
 -text autosaves, while clicking a variable name marks the future default-settings
 -modal boundary without exposing keys or defaults in the disclosure. Tag creation
@@ -8587,6 +9530,7 @@
 -type or requiredness fields that representation does not carry.
 -Instantiation resolves represented defaults, including nested defaults. It does
 -not invent caller-supplied answers before representation defines that payload.
++shows target, availability, update time, creator, description, holes, and
 +tags. Name and fixed-height description fields autosave on blur. Four actions
 +sit in one row: Use, Edit, Duplicate, Delete. Edit opens the template's copy in
 +its editor, making the copy if the project has none yet. Duplicate always
@@ -8594,11 +9538,11 @@
 +removes the template with its version rows and its working copy; resources made
 +from it are untouched, because none refers back.
 +
-+Each variable opens into its description, then one button reading its default
-+scope as a sentence, which opens a modal to change it — everything in the
-+project, particular kinds, or one of the project's named sets. Which variables
-+exist is not editable anywhere: they are the names the body's prompt scopes use,
-+found when the template is saved.
++Each hole opens into its description, then one button reading its default scope
++as a sentence, which opens a modal to change it — everything in the project,
++particular kinds, or one of the project's named sets. Which scope holes exist is
++not editable here: they are the names the body's prompt scopes use, found when
++the template is saved.
  
  ## Capability seam
  
@@ -8669,7 +9613,7 @@
 ### changed · `src/lib/app-views/categories/document-editor/content/document.svelte` (+15 / −0)
 
 ~~~~diff
-@@ -841,6 +841,21 @@
+@@ -888,6 +888,21 @@
      color: var(--token-color-danger-text);
    }
  
@@ -8693,10 +9637,10 @@
      text-underline-offset: 0.12em;
 ~~~~
 
-### new · `src/lib/app-views/categories/document-editor/context/templates.svelte` (+601 / −0)
+### new · `src/lib/app-views/categories/document-editor/context/templates.svelte` (+683 / −0)
 
 ~~~~diff
-@@ -0,0 +1,601 @@
+@@ -0,0 +1,683 @@
 +<script lang="ts">
 +  import { onDestroy } from "svelte";
 +
@@ -8729,8 +9673,9 @@
 +    discardStage,
 +    documentTemplatesIn,
 +    draftOf,
++    holeNameRefusal,
 +    insertionOf,
-+    mergedVariables,
++    mergedHoles,
 +    offeringOf,
 +    openStage,
 +    projectResources,
@@ -8745,19 +9690,21 @@
 +    templateDetail,
 +    templateLibrary,
 +    termFor,
-+    updateVariables,
++    textHoleInsertion,
++    updateHoles,
++    withHoleField,
++    withNewTextHole,
 +    withTerm,
-+    withVariableField,
 +    withWholeProject,
 +    withoutTerm,
-+    type ChosenVariable,
++    type ChosenHole,
 +    type OfferSource,
 +    type ScopeDraft,
 +    type ScopeSide,
 +    type TemplateAnswers,
 +    type TemplateDetail,
-+    type TemplateLibraryItem,
-+    type TemplateVariable
++    type TemplateHole,
++    type TemplateLibraryItem
 +  } from "$app-views/categories/document-editor/procedures/templating";
 +  import { workspaceState } from "$model/client/workspace-state";
 +  import type { DocumentRuntime } from "$model/client/workspace-state";
@@ -8799,7 +9746,7 @@
 +  let pending = $state<string | undefined>(undefined);
 +  let actionError = $state<string | undefined>(undefined);
 +  let notice = $state<readonly string[]>([]);
-+  let defaultFor = $state<TemplateVariable | undefined>(undefined);
++  let defaultFor = $state<TemplateHole | undefined>(undefined);
 +  let defaultOpen = $state(false);
 +  let draft = $state<ScopeDraft>(draftOf(undefined));
 +  let insertFor = $state<TemplateDetail | undefined>(undefined);
@@ -8807,9 +9754,13 @@
 +  let answerOpen = $state(false);
 +  let choices = $state<Record<string, ScopeDraft | undefined>>({});
 +  let texts = $state<Record<string, string | undefined>>({});
-+  let answering = $state<TemplateVariable | undefined>(undefined);
++  let answering = $state<TemplateHole | undefined>(undefined);
++  let makeOpen = $state(false);
++  let holeName = $state("");
++  let holeDescription = $state("");
++  let holeText = $state("");
 +
-+  const askRows = $derived(answerRowsOf(insertFor?.variables ?? [], choices, texts, setNames));
++  const askRows = $derived(answerRowsOf(insertFor?.holes ?? [], choices, texts, setNames));
 +  const askBlocked = $derived(
 +    missingIn(askRows).length === 0 ? undefined : `${missingIn(askRows).join(", ")} still needs words.`
 +  );
@@ -8938,9 +9889,9 @@
 +    runtime.apply(insertion.ops);
 +    if (insertion.firstBlockId !== undefined) runtime.scrollTo = insertion.firstBlockId;
 +    if (stage !== undefined && template !== undefined) {
-+      const merged = mergedVariables(template.variables, detail.variables);
-+      if (merged.length !== template.variables.length) {
-+        const result = await updateVariables(view, template, merged, documentId);
++      const merged = mergedHoles(template.holes, detail.holes);
++      if (merged.length !== template.holes.length) {
++        const result = await updateHoles(view, template, merged, documentId);
 +        if (live && !result.accepted) actionError = result.detail;
 +      }
 +    }
@@ -8955,7 +9906,7 @@
 +        actionError = "That template could not be read.";
 +        return;
 +      }
-+      if (stage === undefined && detail.variables.length > 0) {
++      if (stage === undefined && detail.holes.length > 0) {
 +        insertFor = detail;
 +        choices = {};
 +        texts = {};
@@ -8972,25 +9923,59 @@
 +    void run(`place:${detail.id}`, () => place(detail, answersFrom(choices), wordsFrom(texts)));
 +  };
 +
-+  const changeVariables = (next: readonly ChosenVariable[]) =>
-+    run("variables", async () => {
++  const changeHoles = (next: readonly ChosenHole[]) =>
++    run("holes", async () => {
 +      if (template === undefined) return;
-+      const result = await updateVariables(view, template, next, documentId);
++      const result = await updateHoles(view, template, next, documentId);
 +      if (live && !result.accepted) actionError = result.detail;
 +    });
 +
-+  const openDefault = (variable: TemplateVariable) => {
-+    defaultFor = variable;
-+    draft = draftOf(variable.default);
++  const openDefault = (hole: TemplateHole) => {
++    defaultFor = hole;
++    draft = draftOf(hole.default);
 +    defaultOpen = true;
 +  };
 +
 +  const confirmDefault = () => {
 +    if (template === undefined || defaultFor === undefined) return;
-+    void changeVariables(
-+      withVariableField(template.variables, defaultFor.name, { default: draft })
-+    );
++    void changeHoles(withHoleField(template.holes, defaultFor.name, { default: draft }));
 +  };
++
++  const openMake = () => {
++    holeName = "";
++    holeDescription = "";
++    holeText = "";
++    makeOpen = true;
++  };
++
++  /**
++   * Declaring the hole and dropping its atom are one act, because a hole nothing
++   * in the prose asks for is a hole that fills nothing.
++   */
++  const confirmMake = () =>
++    void run("make-hole", async () => {
++      if (template === undefined || body === undefined || runtime === undefined) return;
++      const name = holeName.trim();
++      const ops = textHoleInsertion(body, view.selection, name);
++      if (ops.length === 0) {
++        actionError = "Put the caret in some text first — that is where the hole goes.";
++        return;
++      }
++      const result = await updateHoles(
++        view,
++        template,
++        withNewTextHole(template.holes, { name, description: holeDescription, text: holeText }),
++        documentId
++      );
++      if (!live) return;
++      if (!result.accepted) {
++        actionError = result.detail;
++        return;
++      }
++      runtime.apply(ops);
++      makeOpen = false;
++      notice = [`Added the hole “${name}”.`];
++    });
 +
 +  /**
 +   * The builder is its own modal rather than a second face of the ask modal.
@@ -8998,10 +9983,10 @@
 +   * footer under the pointer, and the press lands on a button that has gone.
 +   */
 +  const openAnswer = (name: string) => {
-+    const variable = insertFor?.variables.find((candidate) => candidate.name === name);
-+    if (variable === undefined) return;
-+    answering = variable;
-+    draft = draftOf(choices[name] ?? variable.default);
++    const hole = insertFor?.holes.find((candidate) => candidate.name === name);
++    if (hole === undefined) return;
++    answering = hole;
++    draft = draftOf(choices[name] ?? hole.default);
 +    insertOpen = false;
 +    answerOpen = true;
 +  };
@@ -9062,6 +10047,7 @@
 +  const scopeBlocked = $derived(
 +    draft.include.length === 0 ? "Include something, or choose everything in the project." : undefined
 +  );
++  const makeBlocked = $derived(holeNameRefusal(template?.holes ?? [], holeName));
 +</script>
 +
 +<Panel title="Templates">
@@ -9090,42 +10076,48 @@
 +      <PanelNote>Reading this document…</PanelNote>
 +    {:else if stage !== undefined}
 +      <div class="after-verbs">
-+        <PanelSection title="Variables" count={template?.variables.length} chevron="end">
++        <PanelSection title="Holes" count={template?.holes.length} chevron="end">
++          <div class="make">
++            <PanelButton
++              label="Create hole"
++              disabled={busy || template === undefined}
++              title="Name a text hole and drop it where the caret is"
++              onclick={openMake}
++            />
++          </div>
 +          {#if template === undefined}
 +            <PanelNote>Reading the template…</PanelNote>
-+          {:else if template.variables.length === 0}
-+            <PanelNote>A variable appears when a prompt in this template asks for one. Nothing here does yet.</PanelNote>
 +          {:else}
-+            {#each template.variables as variable (variable.name)}
-+              <article class="variable">
++            {#each template.holes as hole (hole.name)}
++              <article class="hole">
 +                <header>
-+                  <PanelChip tone="accent-1">{variable.name}</PanelChip>
-+                  <span class="variable-label">{variable.label}</span>
++                  <PanelChip tone="accent-1">{hole.name}</PanelChip>
++                  <span class="hole-label">{hole.label}</span>
 +                </header>
 +                <PanelEditableText
-+                  value={variable.description ?? ""}
-+                  label={`Description for ${variable.label}`}
-+                  placeholder="What this variable stands for"
++                  value={hole.description ?? ""}
++                  label={`Description for ${hole.label}`}
++                  placeholder="What this hole stands for"
 +                  multiline
 +                  disabled={busy}
-+                  onchange={(next) => changeVariables(withVariableField(template.variables, variable.name, { description: next }))}
++                  onchange={(next) => changeHoles(withHoleField(template.holes, hole.name, { description: next }))}
 +                />
-+                {#if variable.kind === "text"}
++                {#if hole.kind === "text"}
 +                  <PanelEditableText
-+                    value={variable.text ?? ""}
-+                    label={`Default words for ${variable.label}`}
++                    value={hole.text ?? ""}
++                    label={`Default words for ${hole.label}`}
 +                    placeholder="What it says when nobody says otherwise"
 +                    multiline
 +                    disabled={busy}
-+                    onchange={(next) => changeVariables(withVariableField(template.variables, variable.name, { text: next }))}
++                    onchange={(next) => changeHoles(withHoleField(template.holes, hole.name, { text: next }))}
 +                  />
 +                {:else}
 +                  <div class="scope">
 +                    <PanelButton
 +                      label="Default scope"
 +                      disabled={busy}
-+                      title={`${ruleOf(variable.default, setNames)} — change what ${variable.label} selects by default`}
-+                      onclick={() => openDefault(variable)}
++                      title={`${ruleOf(hole.default, setNames)} — change what ${hole.label} selects by default`}
++                      onclick={() => openDefault(hole)}
 +                    />
 +                  </div>
 +                {/if}
@@ -9141,6 +10133,7 @@
 +      </div>
 +    {/if}
 +
++    <div class="after-holes">
 +    <PanelSection title="List" chevron="end" flush>
 +      {#if library.error}
 +        <PanelBanner title="Templates unavailable" tone="danger">
@@ -9156,7 +10149,7 @@
 +            <div class="item">
 +              <PanelRow title={item.name}>
 +                <span class="item-title">{item.name}</span>
-+                <span class="item-sub">{item.variableCount} {item.variableCount === 1 ? "variable" : "variables"} · revision {item.revision}</span>
++                <span class="item-sub">{item.holeCount} {item.holeCount === 1 ? "hole" : "holes"} · revision {item.revision}</span>
 +                <span class="item-actions">
 +                  <PanelButton label="Insert" tone="ghost" disabled={busy} title={`Insert “${item.name}” after the current row`} onclick={() => insert(item)} />
 +                  <PanelButton label="Edit" tone="ghost" disabled={busy} title={`Edit “${item.name}” in the editor`} onclick={() => edit(item)} />
@@ -9167,13 +10160,14 @@
 +        </PanelSearch>
 +      {/if}
 +    </PanelSection>
++    </div>
 +  {/if}
 +</Panel>
 +
 +<OverlayModal
 +  bind:open={insertOpen}
 +  title={`Insert “${insertFor?.name ?? "the template"}”`}
-+  description="Every parameter this template asks for. Open one to read what it means."
++  description="Every hole this template asks for. Open one to read what it means."
 +  confirm="Insert"
 +  width="wide"
 +  blocked={askBlocked}
@@ -9189,7 +10183,7 @@
 +
 +<OverlayModal
 +  bind:open={answerOpen}
-+  title={`What ${answering?.label ?? "the parameter"} selects here`}
++  title={`What ${answering?.label ?? "the hole"} selects here`}
 +  description="For this copy only. Nothing here changes the template."
 +  confirm="Use this"
 +  width="wide"
@@ -9210,7 +10204,7 @@
 +
 +<OverlayModal
 +  bind:open={defaultOpen}
-+  title={`Default scope for ${defaultFor?.label ?? "the parameter"}`}
++  title={`Default scope for ${defaultFor?.label ?? "the hole"}`}
 +  description="What it selects until whoever places the template says otherwise."
 +  confirm="Set the default scope"
 +  width="wide"
@@ -9218,6 +10212,21 @@
 +  onconfirm={confirmDefault}
 +>
 +  <ScopeBuilder {...view$} onmode={setMode} onadd={addTerm} ondrop={dropTerm} onclear={clearScope} />
++</OverlayModal>
++
++<OverlayModal
++  bind:open={makeOpen}
++  title="Create a hole"
++  description="A place in the prose that whoever places this template fills in with words."
++  confirm="Create"
++  blocked={makeBlocked}
++  onconfirm={confirmMake}
++>
++  <div class="making">
++    <PanelInput label="Name" placeholder="subject_line" flush bind:value={holeName} />
++    <PanelInput label="Description" placeholder="What this hole stands for" flush bind:value={holeDescription} />
++    <PanelInput label="Default words" placeholder="What it says when nobody says otherwise" flush bind:value={holeText} />
++  </div>
 +</OverlayModal>
 +
 +<style>
@@ -9243,7 +10252,24 @@
 +    border-top: 1px solid var(--token-border-subtle);
 +  }
 +
-+  .variable {
++  .after-holes {
++    margin-top: calc(var(--token-spacing-unit) * 2);
++    padding-top: calc(var(--token-spacing-unit) * 1);
++    border-top: 1px solid var(--token-border-subtle);
++  }
++
++  .make {
++    display: flex;
++    margin-bottom: calc(var(--token-spacing-unit) * 1.5);
++  }
++
++  .making {
++    display: flex;
++    flex-direction: column;
++    gap: calc(var(--token-spacing-unit) * 2);
++  }
++
++  .hole {
 +    display: flex;
 +    flex-direction: column;
 +    gap: calc(var(--token-spacing-unit) * 1.5);
@@ -9253,18 +10279,18 @@
 +    background: var(--token-surface-elevated);
 +  }
 +
-+  .variable + .variable {
++  .hole + .hole {
 +    margin-top: calc(var(--token-spacing-unit) * 1.5);
 +  }
 +
-+  .variable header {
++  .hole header {
 +    display: flex;
 +    flex-wrap: wrap;
 +    align-items: center;
 +    gap: calc(var(--token-spacing-unit) * 1.5);
 +  }
 +
-+  .variable-label {
++  .hole-label {
 +    color: var(--token-ink-primary);
 +    font-size: var(--token-text-body-sm);
 +    font-weight: 600;
@@ -9303,7 +10329,7 @@
 ### changed · `src/lib/app-views/categories/document-editor/procedures/projection.ts` (+33 / −8)
 
 ~~~~diff
-@@ -71,8 +71,9 @@ export const emptyRow = (): DocumentRow => ({
+@@ -72,8 +72,9 @@ export const emptyRow = (): DocumentRow => ({
    ]
  });
  
@@ -9315,7 +10341,7 @@
  
  export type Segment = { readonly atom: Atom; readonly start: number; readonly end: number };
  
-@@ -173,6 +174,9 @@ const formulaNode = (atom: Extract<Atom, { kind: "formula" }>, marks: readonly P
+@@ -174,6 +175,9 @@ const formulaNode = (atom: Extract<Atom, { kind: "formula" }>, marks: readonly P
      [...marks]
    );
  
@@ -9325,7 +10351,7 @@
  const inlineOf = (block: Styled): ProseMirrorNode[] => {
    const segments = segmentsOf(block.atoms);
    const spans: Span[] = block.marks
-@@ -193,6 +197,10 @@ const inlineOf = (block: Styled): ProseMirrorNode[] => {
+@@ -194,6 +198,10 @@ const inlineOf = (block: Styled): ProseMirrorNode[] => {
        nodes.push(formulaNode(segment.atom, covering(segment.start, segment.end)));
        continue;
      }
@@ -9336,7 +10362,7 @@
  
      const cuts = new Set<number>([segment.start, segment.end]);
      for (const span of spans) {
-@@ -290,10 +298,18 @@ export const docOf = (body: DocumentBody, metrics: Metrics): ProseMirrorNode =>
+@@ -291,10 +299,18 @@ export const docOf = (body: DocumentBody, metrics: Metrics): ProseMirrorNode =>
    );
  };
  
@@ -9356,7 +10382,7 @@
    });
    return text;
  };
-@@ -419,6 +435,15 @@ const atomsOf = (node: ProseMirrorNode): Walked => {
+@@ -427,6 +443,15 @@ const atomsOf = (node: ProseMirrorNode): Walked => {
    };
  
    node.forEach((child) => {
@@ -9372,7 +10398,7 @@
      if (child.type.name !== "formula_atom") {
        run += child.text ?? "";
        return;
-@@ -455,7 +480,7 @@ const gather = (node: ProseMirrorNode): Map<string, Gathered> => {
+@@ -463,7 +488,7 @@ const gather = (node: ProseMirrorNode): Map<string, Gathered> => {
    let at = 0;
  
    node.forEach((child) => {
@@ -9381,7 +10407,7 @@
      const from = at;
      const to = at + length;
      at = to;
-@@ -611,9 +636,9 @@ export const displayOffsetOf = (block: ProseMirrorNode, offset: number): number
+@@ -633,9 +658,9 @@ export const displayOffsetOf = (block: ProseMirrorNode, offset: number): number
  
    for (let index = 0; index < block.childCount && pm < offset; index += 1) {
      const child = block.child(index);
@@ -9393,7 +10419,7 @@
        continue;
      }
  
-@@ -632,8 +657,8 @@ export const proseOffsetOf = (block: ProseMirrorNode, display: number): number =
+@@ -654,8 +679,8 @@ export const proseOffsetOf = (block: ProseMirrorNode, display: number): number =
  
    for (let index = 0; index < block.childCount && seen < display; index += 1) {
      const child = block.child(index);
@@ -9480,10 +10506,10 @@
        ]
 ~~~~
 
-### new · `src/lib/app-views/categories/document-editor/procedures/templating.ts` (+327 / −0)
+### new · `src/lib/app-views/categories/document-editor/procedures/templating.ts` (+394 / −0)
 
 ~~~~diff
-@@ -0,0 +1,327 @@
+@@ -0,0 +1,394 @@
 +import {
 +  readProjectResourceIndex,
 +  type ProjectResourceIndex
@@ -9525,7 +10551,7 @@
 +import type { TemplatedResourceSet } from "$representation/data/types/core/resource-set";
 +import type { DocumentBody, DocumentRow } from "$representation/data/types/documents/body";
 +import type { DocumentOp } from "$representation/data/types/documents/op";
-+import type { TemplateVariable } from "$representation/data/types/templates/template";
++import type { TemplateHole } from "$representation/data/types/templates/template";
 +import { rowHolding } from "$app-views/categories/document-editor/procedures/blocks";
 +import { mint, type IdKind } from "$app-views/categories/document-editor/procedures/ids";
 +import { addressOf } from "$app-views/categories/document-editor/procedures/inspecting";
@@ -9539,7 +10565,7 @@
 +  TemplateLibraryItem
 +} from "$capabilities/templates/index.remote";
 +export type { TemplatedResourceSet } from "$representation/data/types/core/resource-set";
-+export type { TemplateVariable } from "$representation/data/types/templates/template";
++export type { TemplateHole } from "$representation/data/types/templates/template";
 +
 +export {
 +  answerRowsOf,
@@ -9586,7 +10612,7 @@
 +  resources: new Map(resources.map((resource) => [resource.id, resource.name]))
 +});
 +
-+/** What the builder is handed for a variable's default, or for an answer. */
++/** What the builder is handed for a hole's default, or for an answer. */
 +export const offeringOf = (
 +  sets: readonly ResourceSetItem[],
 +  resources: readonly { readonly id: string; readonly kind: string; readonly name: string }[]
@@ -9598,11 +10624,11 @@
 +/**
 + * The answers a caller chose, as rules.
 + *
-+ * A variable nobody touched is absent, which is what makes the template's own
++ * A hole nobody touched is absent, which is what makes the template's own
 + * default apply. Everything present is sent as built; the server decides
 + * whether it needs a row.
 + */
-+/** The words typed for each text parameter, with the untouched ones left out. */
++/** The words typed for each text hole, with the untouched ones left out. */
 +export const wordsFrom = (
 +  texts: Readonly<Record<string, string | undefined>>
 +): Readonly<Record<string, string>> =>
@@ -9687,7 +10713,7 @@
 +
 +  let source = template.body;
 +  if (mode === "resolve") {
-+    const resolved = resolveTemplateScopes(template.body, template.variables, answers);
++    const resolved = resolveTemplateScopes(template.body, template.holes, answers);
 +    if (!resolved.accepted || resolved.body.resource !== "document") {
 +      return { ops: [], firstBlockId: undefined };
 +    }
@@ -9717,36 +10743,103 @@
 +};
 +
 +/**
-+ * A variable as the client sends it, which is wider than one as it is stored: a
++ * A hole as the client sends it, which is wider than one as it is stored: a
 + * chosen rule may exclude things and may name particular resources, and the
 + * server turns either into a row before it lands.
 + */
-+export type ChosenVariable = Omit<TemplateVariable, "default"> & { default?: ScopeDraft };
++export type ChosenHole = Omit<TemplateHole, "default"> & { default?: ScopeDraft };
 +
-+export const withVariableField = (
-+  variables: readonly ChosenVariable[],
++export const withHoleField = (
++  holes: readonly ChosenHole[],
 +  name: string,
 +  change: { label?: string; description?: string; default?: ScopeDraft; text?: string }
-+): readonly ChosenVariable[] =>
-+  variables.map((variable) => {
-+    if (variable.name !== name) return variable;
-+    const next: ChosenVariable = { name: variable.name, label: change.label ?? variable.label };
-+    const description = "description" in change ? change.description : variable.description;
-+    const fallback = "default" in change ? change.default : variable.default;
-+    const words = "text" in change ? change.text : variable.text;
-+    if (variable.kind !== undefined) next.kind = variable.kind;
++): readonly ChosenHole[] =>
++  holes.map((hole) => {
++    if (hole.name !== name) return hole;
++    const next: ChosenHole = { name: hole.name, label: change.label ?? hole.label };
++    const description = "description" in change ? change.description : hole.description;
++    const fallback = "default" in change ? change.default : hole.default;
++    const words = "text" in change ? change.text : hole.text;
++    if (hole.kind !== undefined) next.kind = hole.kind;
 +    if (description !== undefined && description.trim().length > 0) next.description = description.trim();
 +    if (fallback !== undefined) next.default = fallback;
 +    if (words !== undefined && words.trim().length > 0) next.text = words;
 +    return next;
 +  });
 +
-+export const mergedVariables = (
-+  held: readonly ChosenVariable[],
-+  inserted: readonly ChosenVariable[]
-+): readonly ChosenVariable[] => {
-+  const names = new Set(held.map((variable) => variable.name));
-+  return [...held, ...inserted.filter((variable) => !names.has(variable.name))];
++export const mergedHoles = (
++  held: readonly ChosenHole[],
++  inserted: readonly ChosenHole[]
++): readonly ChosenHole[] => {
++  const names = new Set(held.map((hole) => hole.name));
++  return [...held, ...inserted.filter((hole) => !names.has(hole.name))];
++};
++
++/**
++ * A text hole made by hand, rather than found.
++ *
++ * A scope hole exists because a prompt asks for one, so it cannot be authored. A
++ * text hole is a place in the prose, and nothing but the author knows where it
++ * goes — so the panel declares it and drops its atom at the caret in the same
++ * act, and the next save finds it exactly as it finds any other.
++ */
++export const withNewTextHole = (
++  holes: readonly ChosenHole[],
++  asked: { name: string; description?: string; text?: string }
++): readonly ChosenHole[] => {
++  const name = asked.name.trim();
++  const description = asked.description?.trim() ?? "";
++  const words = asked.text ?? "";
++  return [
++    ...holes,
++    {
++      name,
++      label: name,
++      kind: "text",
++      ...(description === "" ? {} : { description }),
++      ...(words.trim() === "" ? {} : { text: words })
++    }
++  ];
++};
++
++/** Why a name will not do, or nothing when it will. */
++export const holeNameRefusal = (
++  holes: readonly ChosenHole[],
++  asked: string
++): string | undefined => {
++  const name = asked.trim();
++  if (name === "") return "Give the hole a name.";
++  if (!/^[\w][\w -]*$/.test(name)) return "A hole's name is letters, digits, spaces, hyphens and underscores.";
++  const taken = holes.some((hole) => hole.name.toLocaleLowerCase() === name.toLocaleLowerCase());
++  return taken ? `This template already has a hole called ${name}.` : undefined;
++};
++
++const holeBlockIn = (body: DocumentBody, selection: Selection | undefined) => {
++  const blockId = selection === undefined ? undefined : addressOf(selection.id)?.blockId;
++  const takes = (block: { type: string }) => block.type === "text" || block.type === "prompt";
++  const blocks = body.rows.flatMap((row) => (row.kind === "blocks" ? row.blocks : []));
++  return blocks.find((block) => block.id === blockId && takes(block)) ?? blocks.findLast(takes);
++};
++
++/** The ops that put a text hole's atom where the caret is. */
++export const textHoleInsertion = (
++  body: DocumentBody,
++  selection: Selection | undefined,
++  name: string
++): readonly DocumentOp[] => {
++  const block = holeBlockIn(body, selection);
++  if (block === undefined || !("atoms" in block)) return [];
++  const atom = { id: mint("atom"), kind: "template" as const, name: name.trim() };
++  return [
++    {
++      op: "insert",
++      target: "atom",
++      path: `${block.id}/atoms`,
++      ids: [atom.id],
++      after: block.atoms.at(-1)?.id ?? null,
++      values: [atom]
++    }
++  ];
 +};
 +
 +export const saveAsTemplate = (view: WorkspaceStateModel, resourceId: string, name: string) =>
@@ -9792,19 +10885,19 @@
 +    )
 +  );
 +
-+export const updateVariables = (
++export const updateHoles = (
 +  view: WorkspaceStateModel,
 +  template: { readonly id: string; readonly revision: number },
-+  variables: readonly ChosenVariable[],
++  holes: readonly ChosenHole[],
 +  resourceId?: string
 +) =>
 +  view.singleFlight(
-+    ["template", view.project, template.id, "variables", template.revision, JSON.stringify(variables)],
++    ["template", view.project, template.id, "holes", template.revision, JSON.stringify(holes)],
 +    () =>
 +      updateTemplateRemote({
 +        templateId: template.id,
 +        baseRevision: template.revision,
-+        patch: { variables }
++        patch: { holes }
 +      }).updates(
 +        readTemplateLibrary,
 +        readTemplate({ templateId: template.id }),
@@ -9828,9 +10921,9 @@
 +  draftOf,
 +  insertionOf,
 +  isWholeProject,
-+  mergedVariables,
++  mergedHoles,
 +  ruleOf,
-+  withVariableField
++  withHoleField
 +} from "$app-views/categories/document-editor/procedures/templating";
 +
 +const text = (id: string, display: string, style?: string) => ({
@@ -9877,14 +10970,14 @@
 +            atoms: [{ id: "tp1-a", kind: "literal", text: "Sum up" }],
 +            display: "Sum up",
 +            marks: [],
-+            scope: { include: [{ select: "variable", name: "evidence" }], exclude: [] },
++            scope: { include: [{ select: "hole", name: "evidence" }], exclude: [] },
 +            state: "idle"
 +          }
 +        ]
 +      }
 +    ]
 +  },
-+  variables: [{ name: "evidence", label: "Evidence", default: { include: [{ select: "kinds", kinds: ["finding"] }], exclude: [] } }]
++  holes: [{ name: "evidence", label: "Evidence", default: { include: [{ select: "kinds", kinds: ["finding"] }], exclude: [] } }]
 +};
 +
 +test("an insertion lands after the row holding the caret, or at the end", () => {
@@ -9909,34 +11002,34 @@
 +  assert.deepEqual(applyOps(after, invertAll(insertion.ops)), body);
 +});
 +
-+test("inserting into a stage keeps variable terms", () => {
++test("inserting into a stage keeps hole terms", () => {
 +  const kept = insertionOf(held, template, null, "keep");
 +  const after = applyOps(held, kept.ops);
 +  const first = after.rows[1];
 +  if (first.kind !== "blocks" || first.blocks[0].type !== "prompt") throw new Error("prompt expected");
-+  assert.deepEqual(first.blocks[0].scope, { include: [{ select: "variable", name: "evidence" }], exclude: [] });
++  assert.deepEqual(first.blocks[0].scope, { include: [{ select: "hole", name: "evidence" }], exclude: [] });
 +});
 +
-+test("a variable without a default resolves to the whole project on insert", () => {
-+  const insertion = insertionOf(held, { ...template, variables: [{ name: "evidence", label: "Evidence" }] }, "r2", "resolve");
++test("a hole without a default resolves to the whole project on insert", () => {
++  const insertion = insertionOf(held, { ...template, holes: [{ name: "evidence", label: "Evidence" }] }, "r2", "resolve");
 +  const after = applyOps(held, insertion.ops);
 +  const row = after.rows[3];
 +  if (row.kind !== "blocks" || row.blocks[0].type !== "prompt") throw new Error("prompt expected");
 +  assert.deepEqual(row.blocks[0].scope, { include: [{ select: "project" }], exclude: [] });
 +});
 +
-+test("variables are edited by name and merged without repeats", () => {
++test("holes are edited by name and merged without repeats", () => {
 +  const declared = [{ name: "incident_evidence", label: "Incident evidence" }];
 +
-+  const described = withVariableField(declared, "incident_evidence", { description: "  What happened  " });
++  const described = withHoleField(declared, "incident_evidence", { description: "  What happened  " });
 +  assert.equal(described[0].description, "What happened");
-+  const cleared = withVariableField(described, "incident_evidence", { description: "" });
++  const cleared = withHoleField(described, "incident_evidence", { description: "" });
 +  assert.equal("description" in cleared[0], false);
-+  const ruled = withVariableField(declared, "incident_evidence", { default: { include: [{ select: "project" }], exclude: [] } });
++  const ruled = withHoleField(declared, "incident_evidence", { default: { include: [{ select: "project" }], exclude: [] } });
 +  assert.deepEqual(ruled[0].default, { include: [{ select: "project" }], exclude: [] });
 +
-+  const merged = mergedVariables(declared, [{ name: "incident_evidence", label: "Other" }, { name: "models", label: "Models" }]);
-+  assert.deepEqual(merged.map((variable) => variable.name), ["incident_evidence", "models"]);
++  const merged = mergedHoles(declared, [{ name: "incident_evidence", label: "Other" }, { name: "models", label: "Models" }]);
++  assert.deepEqual(merged.map((hole) => hole.name), ["incident_evidence", "models"]);
 +  assert.deepEqual(merged[0], declared[0]);
 +});
 +
@@ -9956,7 +11049,7 @@
 +  assert.equal(ruleOf(named), "A chosen group");
 +});
 +
-+test("an answer is a rule the caller built, and a variable nobody touched is absent", () => {
++test("an answer is a rule the caller built, and a hole nobody touched is absent", () => {
 +  assert.deepEqual(answersFrom({ evidence: undefined }), {});
 +
 +  const answers = answersFrom({
@@ -10020,10 +11113,10 @@
          placeholder="Write a comment on {subject}…"
 ~~~~
 
-### changed · `src/lib/app-views/categories/slide-deck-editor/context/templates.svelte` (+618 / −3)
+### changed · `src/lib/app-views/categories/slide-deck-editor/context/templates.svelte` (+700 / −3)
 
 ~~~~diff
-@@ -1,8 +1,623 @@
+@@ -1,8 +1,705 @@
  <script lang="ts">
 -  import { Panel, PanelEmpty, PanelNote } from "$authored-components/panel";
 +  import { onDestroy } from "svelte";
@@ -10057,8 +11150,9 @@
 +    detailIn,
 +    discardStage,
 +    draftOf,
++    holeNameRefusal,
 +    insertionOf,
-+    mergedVariables,
++    mergedHoles,
 +    offeringOf,
 +    openStage,
 +    projectResources,
@@ -10073,19 +11167,21 @@
 +    templateDetail,
 +    templateLibrary,
 +    termFor,
-+    updateVariables,
++    textHoleInsertion,
++    updateHoles,
++    withHoleField,
++    withNewTextHole,
 +    withTerm,
-+    withVariableField,
 +    withWholeProject,
 +    withoutTerm,
-+    type ChosenVariable,
++    type ChosenHole,
 +    type OfferSource,
 +    type ScopeDraft,
 +    type ScopeSide,
 +    type TemplateAnswers,
 +    type TemplateDetail,
-+    type TemplateLibraryItem,
-+    type TemplateVariable
++    type TemplateHole,
++    type TemplateLibraryItem
 +  } from "$app-views/categories/slide-deck-editor/procedures/templating";
 +  import { readStore, workspaceState, type SlideDeckRuntime } from "$model/client/workspace-state";
 +
@@ -10132,7 +11228,7 @@
 +  let pending = $state<string | undefined>(undefined);
 +  let actionError = $state<string | undefined>(undefined);
 +  let notice = $state<readonly string[]>([]);
-+  let defaultFor = $state<TemplateVariable | undefined>(undefined);
++  let defaultFor = $state<TemplateHole | undefined>(undefined);
 +  let defaultOpen = $state(false);
 +  let draft = $state<ScopeDraft>(draftOf(undefined));
 +  let insertFor = $state<TemplateDetail | undefined>(undefined);
@@ -10140,9 +11236,13 @@
 +  let answerOpen = $state(false);
 +  let choices = $state<Record<string, ScopeDraft | undefined>>({});
 +  let texts = $state<Record<string, string | undefined>>({});
-+  let answering = $state<TemplateVariable | undefined>(undefined);
++  let answering = $state<TemplateHole | undefined>(undefined);
++  let makeOpen = $state(false);
++  let holeName = $state("");
++  let holeDescription = $state("");
++  let holeText = $state("");
 +
-+  const askRows = $derived(answerRowsOf(insertFor?.variables ?? [], choices, texts, setNames));
++  const askRows = $derived(answerRowsOf(insertFor?.holes ?? [], choices, texts, setNames));
 +  const askBlocked = $derived(
 +    missingIn(askRows).length === 0 ? undefined : `${missingIn(askRows).join(", ")} still needs words.`
 +  );
@@ -10277,9 +11377,9 @@
 +    runtime.apply(insertion.ops);
 +    if (insertion.firstSlideId !== undefined) show(insertion.firstSlideId);
 +    if (stage !== undefined && template !== undefined) {
-+      const merged = mergedVariables(template.variables, detail.variables);
-+      if (merged.length !== template.variables.length) {
-+        const result = await updateVariables(view, template, merged, deckId);
++      const merged = mergedHoles(template.holes, detail.holes);
++      if (merged.length !== template.holes.length) {
++        const result = await updateHoles(view, template, merged, deckId);
 +        if (live && !result.accepted) actionError = result.detail;
 +      }
 +    }
@@ -10294,7 +11394,7 @@
 +        actionError = "That template could not be read.";
 +        return;
 +      }
-+      if (stage === undefined && detail.variables.length > 0) {
++      if (stage === undefined && detail.holes.length > 0) {
 +        insertFor = detail;
 +        choices = {};
 +        texts = {};
@@ -10311,25 +11411,59 @@
 +    void run(`place:${detail.id}`, () => place(detail, answersFrom(choices), wordsFrom(texts)));
 +  };
 +
-+  const changeVariables = (next: readonly ChosenVariable[]) =>
-+    run("variables", async () => {
++  const changeHoles = (next: readonly ChosenHole[]) =>
++    run("holes", async () => {
 +      if (template === undefined) return;
-+      const result = await updateVariables(view, template, next, deckId);
++      const result = await updateHoles(view, template, next, deckId);
 +      if (live && !result.accepted) actionError = result.detail;
 +    });
 +
-+  const openDefault = (variable: TemplateVariable) => {
-+    defaultFor = variable;
-+    draft = draftOf(variable.default);
++  const openDefault = (hole: TemplateHole) => {
++    defaultFor = hole;
++    draft = draftOf(hole.default);
 +    defaultOpen = true;
 +  };
 +
 +  const confirmDefault = () => {
 +    if (template === undefined || defaultFor === undefined) return;
-+    void changeVariables(
-+      withVariableField(template.variables, defaultFor.name, { default: draft })
-+    );
++    void changeHoles(withHoleField(template.holes, defaultFor.name, { default: draft }));
 +  };
++
++  const openMake = () => {
++    holeName = "";
++    holeDescription = "";
++    holeText = "";
++    makeOpen = true;
++  };
++
++  /**
++   * Declaring the hole and dropping its atom are one act, because a hole nothing
++   * in the deck's text asks for is a hole that fills nothing.
++   */
++  const confirmMake = () =>
++    void run("make-hole", async () => {
++      if (template === undefined || body === undefined || runtime === undefined) return;
++      const name = holeName.trim();
++      const ops = textHoleInsertion(body, view.selection, name);
++      if (ops.length === 0) {
++        actionError = "Select some text first — that is where the hole goes.";
++        return;
++      }
++      const result = await updateHoles(
++        view,
++        template,
++        withNewTextHole(template.holes, { name, description: holeDescription, text: holeText }),
++        deckId
++      );
++      if (!live) return;
++      if (!result.accepted) {
++        actionError = result.detail;
++        return;
++      }
++      runtime.apply(ops);
++      makeOpen = false;
++      notice = [`Added the hole “${name}”.`];
++    });
 +
 +  /**
 +   * The builder is its own modal rather than a second face of the ask modal.
@@ -10337,10 +11471,10 @@
 +   * footer under the pointer, and the press lands on a button that has gone.
 +   */
 +  const openAnswer = (name: string) => {
-+    const variable = insertFor?.variables.find((candidate) => candidate.name === name);
-+    if (variable === undefined) return;
-+    answering = variable;
-+    draft = draftOf(choices[name] ?? variable.default);
++    const hole = insertFor?.holes.find((candidate) => candidate.name === name);
++    if (hole === undefined) return;
++    answering = hole;
++    draft = draftOf(choices[name] ?? hole.default);
 +    insertOpen = false;
 +    answerOpen = true;
 +  };
@@ -10396,6 +11530,7 @@
 +    draft = { include: [], exclude: [] };
 +  };
 +
++  const makeBlocked = $derived(holeNameRefusal(template?.holes ?? [], holeName));
 +  const busy = $derived(pending !== undefined || body === undefined);
 +  const unnamed = $derived(nameDraft.trim() === "");
 +  const scopeBlocked = $derived(
@@ -10433,42 +11568,48 @@
 +      <PanelNote>Reading this deck…</PanelNote>
 +    {:else if stage !== undefined}
 +      <div class="after-verbs">
-+        <PanelSection title="Variables" count={template?.variables.length} chevron="end">
++        <PanelSection title="Holes" count={template?.holes.length} chevron="end">
++          <div class="make">
++            <PanelButton
++              label="Create hole"
++              disabled={busy || template === undefined}
++              title="Name a text hole and drop it into the selected text"
++              onclick={openMake}
++            />
++          </div>
 +          {#if template === undefined}
 +            <PanelNote>Reading the template…</PanelNote>
-+          {:else if template.variables.length === 0}
-+            <PanelNote>A variable appears when a prompt in this template asks for one. Nothing here does yet.</PanelNote>
 +          {:else}
-+            {#each template.variables as variable (variable.name)}
-+              <article class="variable">
++            {#each template.holes as hole (hole.name)}
++              <article class="hole">
 +                <header>
-+                  <PanelChip tone="accent-1">{variable.name}</PanelChip>
-+                  <span class="variable-label">{variable.label}</span>
++                  <PanelChip tone="accent-1">{hole.name}</PanelChip>
++                  <span class="hole-label">{hole.label}</span>
 +                </header>
 +                <PanelEditableText
-+                  value={variable.description ?? ""}
-+                  label={`Description for ${variable.label}`}
-+                  placeholder="What this variable stands for"
++                  value={hole.description ?? ""}
++                  label={`Description for ${hole.label}`}
++                  placeholder="What this hole stands for"
 +                  multiline
 +                  disabled={busy}
-+                  onchange={(next) => changeVariables(withVariableField(template.variables, variable.name, { description: next }))}
++                  onchange={(next) => changeHoles(withHoleField(template.holes, hole.name, { description: next }))}
 +                />
-+                {#if variable.kind === "text"}
++                {#if hole.kind === "text"}
 +                  <PanelEditableText
-+                    value={variable.text ?? ""}
-+                    label={`Default words for ${variable.label}`}
++                    value={hole.text ?? ""}
++                    label={`Default words for ${hole.label}`}
 +                    placeholder="What it says when nobody says otherwise"
 +                    multiline
 +                    disabled={busy}
-+                    onchange={(next) => changeVariables(withVariableField(template.variables, variable.name, { text: next }))}
++                    onchange={(next) => changeHoles(withHoleField(template.holes, hole.name, { text: next }))}
 +                  />
 +                {:else}
 +                  <div class="scope">
 +                    <PanelButton
 +                      label="Default scope"
 +                      disabled={busy}
-+                      title={`${ruleOf(variable.default, setNames)} — change what ${variable.label} selects by default`}
-+                      onclick={() => openDefault(variable)}
++                      title={`${ruleOf(hole.default, setNames)} — change what ${hole.label} selects by default`}
++                      onclick={() => openDefault(hole)}
 +                    />
 +                  </div>
 +                {/if}
@@ -10487,6 +11628,7 @@
 +      </div>
 +    {/if}
 +
++    <div class="after-holes">
 +    <PanelSection title="List" chevron="end" flush>
 +      {#if library.error}
 +        <PanelBanner title="Templates unavailable" tone="danger">
@@ -10502,7 +11644,7 @@
 +            <div class="item">
 +              <PanelRow title={item.name}>
 +                <span class="item-title">{item.name}</span>
-+                <span class="item-sub">{item.variableCount} {item.variableCount === 1 ? "variable" : "variables"} · revision {item.revision}</span>
++                <span class="item-sub">{item.holeCount} {item.holeCount === 1 ? "hole" : "holes"} · revision {item.revision}</span>
 +                <span class="item-actions">
 +                  <PanelButton label="Insert" tone="ghost" disabled={busy} title={`Insert “${item.name}” after slide ${position}`} onclick={() => insert(item)} />
 +                  <PanelButton label="Edit" tone="ghost" disabled={busy} title={`Edit “${item.name}” in the editor`} onclick={() => edit(item)} />
@@ -10513,13 +11655,14 @@
 +        </PanelSearch>
 +      {/if}
 +    </PanelSection>
++    </div>
 +  {/if}
  </Panel>
 +
 +<OverlayModal
 +  bind:open={insertOpen}
 +  title={`Insert “${insertFor?.name ?? "the template"}”`}
-+  description="Every parameter this template asks for. Open one to read what it means."
++  description="Every hole this template asks for. Open one to read what it means."
 +  confirm="Insert"
 +  width="wide"
 +  blocked={askBlocked}
@@ -10535,7 +11678,7 @@
 +
 +<OverlayModal
 +  bind:open={answerOpen}
-+  title={`What ${answering?.label ?? "the parameter"} selects here`}
++  title={`What ${answering?.label ?? "the hole"} selects here`}
 +  description="For this copy only. Nothing here changes the template."
 +  confirm="Use this"
 +  width="wide"
@@ -10556,7 +11699,7 @@
 +
 +<OverlayModal
 +  bind:open={defaultOpen}
-+  title={`Default scope for ${defaultFor?.label ?? "the parameter"}`}
++  title={`Default scope for ${defaultFor?.label ?? "the hole"}`}
 +  description="What it selects until whoever places the template says otherwise."
 +  confirm="Set the default scope"
 +  width="wide"
@@ -10564,6 +11707,21 @@
 +  onconfirm={confirmDefault}
 +>
 +  <ScopeBuilder {...view$} onmode={setMode} onadd={addTerm} ondrop={dropTerm} onclear={clearScope} />
++</OverlayModal>
++
++<OverlayModal
++  bind:open={makeOpen}
++  title="Create a hole"
++  description="A place in the deck's text that whoever places this template fills in with words."
++  confirm="Create"
++  blocked={makeBlocked}
++  onconfirm={confirmMake}
++>
++  <div class="making">
++    <PanelInput label="Name" placeholder="subject_line" flush bind:value={holeName} />
++    <PanelInput label="Description" placeholder="What this hole stands for" flush bind:value={holeDescription} />
++    <PanelInput label="Default words" placeholder="What it says when nobody says otherwise" flush bind:value={holeText} />
++  </div>
 +</OverlayModal>
 +
 +<style>
@@ -10595,7 +11753,24 @@
 +    border-top: 1px solid var(--token-border-subtle);
 +  }
 +
-+  .variable {
++  .after-holes {
++    margin-top: calc(var(--token-spacing-unit) * 2);
++    padding-top: calc(var(--token-spacing-unit) * 1);
++    border-top: 1px solid var(--token-border-subtle);
++  }
++
++  .make {
++    display: flex;
++    margin-bottom: calc(var(--token-spacing-unit) * 1.5);
++  }
++
++  .making {
++    display: flex;
++    flex-direction: column;
++    gap: calc(var(--token-spacing-unit) * 2);
++  }
++
++  .hole {
 +    display: flex;
 +    flex-direction: column;
 +    gap: calc(var(--token-spacing-unit) * 1.5);
@@ -10605,18 +11780,18 @@
 +    background: var(--token-surface-elevated);
 +  }
 +
-+  .variable + .variable {
++  .hole + .hole {
 +    margin-top: calc(var(--token-spacing-unit) * 1.5);
 +  }
 +
-+  .variable header {
++  .hole header {
 +    display: flex;
 +    flex-wrap: wrap;
 +    align-items: center;
 +    gap: calc(var(--token-spacing-unit) * 1.5);
 +  }
 +
-+  .variable-label {
++  .hole-label {
 +    color: var(--token-ink-primary);
 +    font-size: var(--token-text-body-sm);
 +    font-weight: 600;
@@ -10718,10 +11893,10 @@
        cuts.add(offset + length);
 ~~~~
 
-### new · `src/lib/app-views/categories/slide-deck-editor/procedures/templating.ts` (+336 / −0)
+### new · `src/lib/app-views/categories/slide-deck-editor/procedures/templating.ts` (+418 / −0)
 
 ~~~~diff
-@@ -0,0 +1,336 @@
+@@ -0,0 +1,418 @@
 +import {
 +  readProjectResourceIndex,
 +  type ProjectResourceIndex
@@ -10764,9 +11939,10 @@
 +import type { TemplatedResourceSet } from "$representation/data/types/core/resource-set";
 +import type { SlideDeckBody, SlideLayout } from "$representation/data/types/slide-decks/body";
 +import type { SlideDeckOp } from "$representation/data/types/slide-decks/op";
-+import type { TemplateVariable } from "$representation/data/types/templates/template";
++import type { TemplateHole } from "$representation/data/types/templates/template";
 +import { mint, type IdKind } from "$app-views/categories/slide-deck-editor/procedures/ids";
-+import type { WorkspaceStateModel } from "$model/client/workspace-state";
++import { addressOf } from "$app-views/categories/slide-deck-editor/procedures/selecting";
++import type { Selection, WorkspaceStateModel } from "$model/client/workspace-state";
 +
 +export type { ResourceSetItem } from "$capabilities/resource-sets/index.remote";
 +export type {
@@ -10776,7 +11952,7 @@
 +  TemplateLibraryItem
 +} from "$capabilities/templates/index.remote";
 +export type { TemplatedResourceSet } from "$representation/data/types/core/resource-set";
-+export type { TemplateVariable } from "$representation/data/types/templates/template";
++export type { TemplateHole } from "$representation/data/types/templates/template";
 +
 +export {
 +  answerRowsOf,
@@ -10823,7 +11999,7 @@
 +  resources: new Map(resources.map((resource) => [resource.id, resource.name]))
 +});
 +
-+/** What the builder is handed for a variable's default, or for an answer. */
++/** What the builder is handed for a hole's default, or for an answer. */
 +export const offeringOf = (
 +  sets: readonly ResourceSetItem[],
 +  resources: readonly { readonly id: string; readonly kind: string; readonly name: string }[]
@@ -10835,7 +12011,7 @@
 +/**
 + * The answers a caller chose, as rules.
 + *
-+ * A variable nobody touched is absent, which is what makes the template's own
++ * A hole nobody touched is absent, which is what makes the template's own
 + * default apply. Everything present is sent as built; the server decides
 + * whether it needs a row.
 + */
@@ -10911,7 +12087,7 @@
 +
 +  let source: SlideDeckBody = template.body;
 +  if (mode === "resolve") {
-+    const resolved = resolveTemplateScopes(template.body, template.variables, answers);
++    const resolved = resolveTemplateScopes(template.body, template.holes, answers);
 +    if (!resolved.accepted || resolved.body.resource !== "slides") return none(body);
 +    const filled = fillTemplateAtoms(resolved.body, texts);
 +    if (filled.resource !== "slides") return none(body);
@@ -10954,36 +12130,117 @@
 +};
 +
 +/**
-+ * A variable as the client sends it, which is wider than one as it is stored: a
++ * A hole as the client sends it, which is wider than one as it is stored: a
 + * chosen rule may exclude things and may name particular resources, and the
 + * server turns either into a row before it lands.
 + */
-+export type ChosenVariable = Omit<TemplateVariable, "default"> & { default?: ScopeDraft };
++export type ChosenHole = Omit<TemplateHole, "default"> & { default?: ScopeDraft };
 +
-+export const withVariableField = (
-+  variables: readonly ChosenVariable[],
++export const withHoleField = (
++  holes: readonly ChosenHole[],
 +  name: string,
 +  change: { label?: string; description?: string; default?: ScopeDraft; text?: string }
-+): readonly ChosenVariable[] =>
-+  variables.map((variable) => {
-+    if (variable.name !== name) return variable;
-+    const next: ChosenVariable = { name: variable.name, label: change.label ?? variable.label };
-+    const description = "description" in change ? change.description : variable.description;
-+    const fallback = "default" in change ? change.default : variable.default;
-+    const words = "text" in change ? change.text : variable.text;
-+    if (variable.kind !== undefined) next.kind = variable.kind;
++): readonly ChosenHole[] =>
++  holes.map((hole) => {
++    if (hole.name !== name) return hole;
++    const next: ChosenHole = { name: hole.name, label: change.label ?? hole.label };
++    const description = "description" in change ? change.description : hole.description;
++    const fallback = "default" in change ? change.default : hole.default;
++    const words = "text" in change ? change.text : hole.text;
++    if (hole.kind !== undefined) next.kind = hole.kind;
 +    if (description !== undefined && description.trim().length > 0) next.description = description.trim();
 +    if (fallback !== undefined) next.default = fallback;
 +    if (words !== undefined && words.trim().length > 0) next.text = words;
 +    return next;
 +  });
 +
-+export const mergedVariables = (
-+  held: readonly ChosenVariable[],
-+  inserted: readonly ChosenVariable[]
-+): readonly ChosenVariable[] => {
-+  const names = new Set(held.map((variable) => variable.name));
-+  return [...held, ...inserted.filter((variable) => !names.has(variable.name))];
++export const mergedHoles = (
++  held: readonly ChosenHole[],
++  inserted: readonly ChosenHole[]
++): readonly ChosenHole[] => {
++  const names = new Set(held.map((hole) => hole.name));
++  return [...held, ...inserted.filter((hole) => !names.has(hole.name))];
++};
++
++/**
++ * A text hole made by hand, rather than found.
++ *
++ * A scope hole exists because a prompt asks for one, so it cannot be authored. A
++ * text hole is a place in the prose, and nothing but the author knows where it
++ * goes — so the panel declares it and drops its atom into the selected text in
++ * the same act, and the next save finds it exactly as it finds any other.
++ */
++export const withNewTextHole = (
++  holes: readonly ChosenHole[],
++  asked: { name: string; description?: string; text?: string }
++): readonly ChosenHole[] => {
++  const name = asked.name.trim();
++  const description = asked.description?.trim() ?? "";
++  const words = asked.text ?? "";
++  return [
++    ...holes,
++    {
++      name,
++      label: name,
++      kind: "text",
++      ...(description === "" ? {} : { description }),
++      ...(words.trim() === "" ? {} : { text: words })
++    }
++  ];
++};
++
++/** Why a name will not do, or nothing when it will. */
++export const holeNameRefusal = (
++  holes: readonly ChosenHole[],
++  asked: string
++): string | undefined => {
++  const name = asked.trim();
++  if (name === "") return "Give the hole a name.";
++  if (!/^[\w][\w -]*$/.test(name)) return "A hole's name is letters, digits, spaces, hyphens and underscores.";
++  const taken = holes.some((hole) => hole.name.toLocaleLowerCase() === name.toLocaleLowerCase());
++  return taken ? `This template already has a hole called ${name}.` : undefined;
++};
++
++/**
++ * The block a new text hole's atom lands in: the one the caret is in, else the
++ * one inside the selected element, else the deck's last writable block.
++ */
++const holeBlockIn = (body: SlideDeckBody, selection: Selection | undefined) => {
++  const blocks = body.slides.flatMap((slide) =>
++    slide.elements.flatMap((element) =>
++      element.content.type === "text" || element.content.type === "prompt"
++        ? [{ elementId: element.id, block: element.content.block }]
++        : []
++    )
++  );
++  const held = selection?.id;
++  const caret = held === undefined ? undefined : addressOf(held)?.blockId;
++  return (
++    blocks.find((entry) => entry.block.id === caret) ??
++    blocks.find((entry) => entry.elementId === held) ??
++    blocks.at(-1)
++  );
++};
++
++/** The ops that put a text hole's atom into the selected text. */
++export const textHoleInsertion = (
++  body: SlideDeckBody,
++  selection: Selection | undefined,
++  name: string
++): readonly SlideDeckOp[] => {
++  const held = holeBlockIn(body, selection);
++  if (held === undefined) return [];
++  const atom = { id: mint("atom"), kind: "template" as const, name: name.trim() };
++  return [
++    {
++      op: "insert",
++      target: "atom",
++      path: `${held.block.id}/atoms`,
++      ids: [atom.id],
++      after: held.block.atoms.at(-1)?.id ?? null,
++      values: [atom]
++    }
++  ];
 +};
 +
 +export const saveAsTemplate = (
@@ -11039,19 +12296,19 @@
 +    )
 +  );
 +
-+export const updateVariables = (
++export const updateHoles = (
 +  view: WorkspaceStateModel,
 +  template: { readonly id: string; readonly revision: number },
-+  variables: readonly ChosenVariable[],
++  holes: readonly ChosenHole[],
 +  resourceId?: string
 +) =>
 +  view.singleFlight(
-+    ["template", view.project, template.id, "variables", template.revision, JSON.stringify(variables)],
++    ["template", view.project, template.id, "holes", template.revision, JSON.stringify(holes)],
 +    () =>
 +      updateTemplateRemote({
 +        templateId: template.id,
 +        baseRevision: template.revision,
-+        patch: { variables }
++        patch: { holes }
 +      }).updates(
 +        readTemplateLibrary,
 +        readTemplate({ templateId: template.id }),
@@ -11131,7 +12388,7 @@
 +                atoms: [{ id: "tp1-a", kind: "literal", text: "Sum up" }],
 +                display: "Sum up",
 +                marks: [],
-+                scope: { include: [{ select: "variable", name: "evidence" }], exclude: [] },
++                scope: { include: [{ select: "hole", name: "evidence" }], exclude: [] },
 +                state: "idle"
 +              }
 +            }
@@ -11143,7 +12400,7 @@
 +    ],
 +    sections: []
 +  },
-+  variables: [{ name: "evidence", label: "Evidence", default: { include: [{ select: "project" }], exclude: [] } }]
++  holes: [{ name: "evidence", label: "Evidence", default: { include: [{ select: "project" }], exclude: [] } }]
 +});
 +
 +describe("inserting a template into a deck", () => {
@@ -11167,13 +12424,13 @@
 +    expect(after.slides[1].notes[0].id.startsWith("blk-")).toBe(true);
 +  });
 +
-+  it("puts a one-slide template in, keeping variable terms for a stage", () => {
++  it("puts a one-slide template in, keeping hole terms for a stage", () => {
 +    const insertion = insertionOf(deck, template(1), "s2", "keep");
 +    expect(insertion.body.slides.length).toBe(3);
 +    expect(insertion.body.slides[2].id).toBe(insertion.firstSlideId);
 +    const element = insertion.body.slides[2].elements[0];
 +    if (element.content.type !== "prompt") throw new Error("prompt expected");
-+    expect(element.content.block.scope).toEqual({ include: [{ select: "variable", name: "evidence" }], exclude: [] });
++    expect(element.content.block.scope).toEqual({ include: [{ select: "hole", name: "evidence" }], exclude: [] });
 +  });
 +
 +  it("falls back to the end when the anchor is not in the deck, and does nothing for a document", () => {
@@ -11186,8 +12443,8 @@
 +  it("lists only deck templates", () => {
 +    const library = {
 +      templates: [
-+        { ...template(2), id: "a", variableCount: 1 },
-+        { ...template(1), id: "b", target: "document" as const, variableCount: 1 }
++        { ...template(2), id: "a", holeCount: 1 },
++        { ...template(1), id: "b", target: "document" as const, holeCount: 1 }
 +      ],
 +      unavailable: []
 +    };
@@ -11199,36 +12456,40 @@
 ### changed · `src/lib/app-views/categories/slide-deck-editor/procedures/typing.ts` (+2 / −3)
 
 ~~~~diff
-@@ -1,10 +1,9 @@
- import type { Atom, Mark, MarkStyle, TextBlock } from "$representation/data/types/content/content-block";
+@@ -5,14 +5,13 @@ import type {
+   PromptBlock,
+   TextBlock
+ } from "$representation/data/types/content/content-block";
 -import { endAt, rangeOf } from "$representation/data/behavior/content/positions";
 +import { displayOfAtom, endAt, rangeOf } from "$representation/data/behavior/content/positions";
  import type { SlideDeckOp } from "$representation/data/types/slide-decks/op";
  import { mint } from "$app-views/categories/slide-deck-editor/procedures/ids";
  
+ type EditableTextBlock = TextBlock | PromptBlock;
+ 
 -const lengthOf = (atom: Atom): number =>
 -  atom.kind === "literal" ? atom.text.length : atom.lastResolvedDisplay.length;
 +const lengthOf = (atom: Atom): number => displayOfAtom(atom).length;
  
- export const replaced = (block: TextBlock, from: number, to: number, insert: string): SlideDeckOp[] => {
+ export const replaced = (block: EditableTextBlock, from: number, to: number, insert: string): SlideDeckOp[] => {
    const start = Math.min(from, to);
 ~~~~
 
-### changed · `src/lib/app-views/categories/slide-deck-editor/slide-deck-editor.md` (+21 / −1)
+### changed · `src/lib/app-views/categories/slide-deck-editor/slide-deck-editor.md` (+23 / −1)
 
 ~~~~diff
-@@ -59,7 +59,7 @@ The registered context keys are the complete rail vocabulary for this editor.
+@@ -62,7 +62,7 @@ The registered context keys are the complete rail vocabulary for this editor.
  | `slide-deck-editor.theme` | Edit slide aspect/background, save or remove layouts, and open deck named styles. |
  | `slide-deck-editor.find` | Find or replace text in slide objects, table cells, and speaker notes. |
  | `slide-deck-editor.comments` | Create and browse deck-, slide-, or element-scoped threads. |
 -| `slide-deck-editor.templates` | Deferred placeholder; template browsing is not implemented here. |
 +| `slide-deck-editor.templates` | Save the deck or one slide as a template, edit a template through this deck, and insert a deck template after the current slide. |
  | `slide-deck-editor.variables` | Deferred placeholder; deck variable management is not implemented here. |
- | `slide-deck-editor.prompts` | Deferred placeholder; prompt management is not implemented here. |
+ | `slide-deck-editor.prompts` | List Prompt Blocks across the deck, navigate to their slide, and open their inspector. |
  
-@@ -107,6 +107,26 @@ uses the element's resolved label, not an ambiguous initial. New threads persist
- their exact scope. Open and resolved threads remain separate, and every row
- states its anchor before routing to `slide-deck-editor.comment`.
+@@ -121,6 +121,28 @@ A Prompt Block begins as a standalone text box. `Prompt` appears beside
+ outer element ID, frame, paint, order, text, marks, style, and format survive.
+ Only its content kind changes from `text` to `prompt`.
  
 +### Templates
 +
@@ -11238,17 +12499,19 @@
 +template holding one slide, and nothing marks it afterwards.
 +
 +A working copy shows Save and Discard in the panel's header instead of the name
-+field, because the tab title already says which template is open. Its Variables
-+band is read-only about which variables exist: they are the names the slides'
-+prompt scopes use. Each is a card carrying that name, its label, its
-+description, and one button that opens the default-scope modal.
++field, because the tab title already says which template is open. Its Holes band
++lists every hole: a scope hole is found from the slides' prompt scopes and
++cannot be added by hand; a text hole is made by Create hole, which names it and
++drops its atom into the selected text. Each is a card carrying that name, its
++label, its description, and either default words or a button that opens the
++default-scope modal.
 +
-+A collapsible List section holds every deck template, searchable, each row
-+inserting after the current slide or opening the template for editing.
-+Inserting brings fresh identifiers and any layouts and named styles the deck
-+lacks. A template with variables first asks, in one modal, what each selects
-+here, showing the default as the first choice; inserting into a working copy
-+asks nothing, keeps the variable terms, and merges the two variable lists.
++A divider separates the band from a collapsible List section holding every deck
++template, searchable, each row inserting after the current slide or opening the
++template for editing. Inserting brings fresh identifiers and any layouts and
++named styles the deck lacks. A template with holes first asks, in one modal,
++what fills each; inserting into a working copy asks nothing, keeps the hole
++terms, and merges the two hole lists.
 +
  ## Inspectors
  
@@ -11741,7 +13004,7 @@
 +});
 ~~~~
 
-### changed · `src/lib/app-views/categories/project-overview/project-overview.md` (+22 / −18)
+### changed · `src/lib/app-views/categories/project-overview/project-overview.md` (+25 / −21)
 
 ~~~~diff
 @@ -84,24 +84,28 @@ since the record stores an actor as a display name —
@@ -11764,8 +13027,6 @@
 -
 -What it deliberately does not do: it does not edit a rule. That happens on the
 -Context category, and the header control is the way there.
--
--Routes to `context-editor.context`.
 +The project's saved resource sets, and what each of them resolves to *now*. A
 +set is a live rule rather than a stored list, which is why the count beside each
 +name is the whole point of the row: it is the only thing that says whether the
@@ -11773,7 +13034,8 @@
 +field; each row opens into its name, description, the rule read as a sentence,
 +the count, and the toggles that make the rule — whole project, kinds included,
 +kinds excluded.
-+
+ 
+-Routes to `context-editor.context`.
 +A set that resolves to nothing says "matches nothing" and carries a note saying
 +why that matters: a rule with no members widens a prompt to the whole project
 +instead of narrowing it, which is the opposite of what its author asked for.
@@ -11790,6 +13052,26 @@
 +Routes nowhere: the row is the editor.
  
  ### contexts-library
+ 
+@@ -276,14 +280,14 @@ Personas doing this work are managed.
+ 
+ What is available here, grouped by what comes out of it: Documents, Slide decks,
+ Spreadsheets. Grouped that way because the first question about a template is
+-what it makes. Each row carries its scope and its variable count as one line,
++what it makes. Each row carries its scope and its hole count as one line,
+ because they are one decision — together they say whether the template can be
+ used at all.
+ 
+ What it deliberately does not do: a row opens a template and cannot instantiate
+-one. There is no Use control, because nothing in a body carries a variable key
+-yet; a Use that ran today would hand back a document with the keys still sitting
+-in it, which is worse than no Use.
++one. There is no Use control, because nothing in a body carries a hole key yet;
++a Use that ran today would hand back a document with the keys still sitting in
++it, which is worse than no Use.
+ 
+ A note at the foot counts the templates that make a single slide, which has no
+ group here yet.
 ~~~~
 
 ## The seeded one-slide template
@@ -11844,9 +13126,9 @@
 +    "_creationTime": 1787000000000,
 +    "projectId": "default",
 +    "boundTo": {
-+      "kind": "variable",
++      "kind": "hole",
 +      "templateId": "templates:1",
-+      "variable": "incident_evidence"
++      "hole": "incident_evidence"
 +    },
 +    "set": {
 +      "include": [{ "select": "kinds", "kinds": ["finding", "document", "spreadsheet"] }],
@@ -11917,7 +13199,7 @@
      "updatedAt": 1788127200000
 ~~~~
 
-### changed · `seed/templates.json` (+1516 / −242)
+### changed · `seed/templates.json` (+1524 / −250)
 
 ~~~~diff
 @@ -2,23 +2,51 @@
@@ -12024,7 +13306,7 @@
 +              "scope": {
 +                "include": [
 +                  {
-+                    "select": "variable",
++                    "select": "hole",
 +                    "name": "incident_evidence"
 +                  }
 +                ],
@@ -12056,7 +13338,7 @@
                "display": "Corrective actions",
                "marks": []
              },
-@@ -83,12 +146,21 @@
+@@ -83,47 +146,98 @@
                "type": "text",
                "variant": "paragraph",
                "style": "body",
@@ -12080,7 +13362,9 @@
          }
        ]
      },
-@@ -97,33 +169,75 @@
+-    "variables": [
++    "holes": [
+       {
          "name": "incident_evidence",
          "label": "Incident evidence",
          "description": "Findings, documents, and operating models that establish the incident timeline.",
@@ -12211,7 +13495,7 @@
 +              "scope": {
 +                "include": [
 +                  {
-+                    "select": "variable",
++                    "select": "hole",
 +                    "name": "readiness_record"
 +                  }
 +                ],
@@ -12228,7 +13512,7 @@
          },
          {
            "id": "#trf-row-support",
-@@ -179,21 +322,44 @@
+@@ -179,62 +322,133 @@
                "variant": "heading",
                "level": 2,
                "style": "heading",
@@ -12260,7 +13544,7 @@
 +              "scope": {
 +                "include": [
 +                  {
-+                    "select": "variable",
++                    "select": "hole",
 +                    "name": "supporting_findings"
 +                  }
 +                ],
@@ -12277,7 +13561,9 @@
          }
        ]
      },
-@@ -202,39 +368,87 @@
+-    "variables": [
++    "holes": [
+       {
          "name": "readiness_record",
          "label": "Readiness record",
          "description": "The forecasts, plans, and operating material that define the readiness posture.",
@@ -12440,7 +13726,7 @@
          },
          {
            "id": "#ttg-row-review",
-@@ -290,17 +535,37 @@
+@@ -290,56 +535,131 @@
                "variant": "heading",
                "level": 2,
                "style": "term",
@@ -12472,7 +13758,7 @@
 +              "scope": {
 +                "include": [
 +                  {
-+                    "select": "variable",
++                    "select": "hole",
 +                    "name": "source_material"
 +                  }
 +                ],
@@ -12481,7 +13767,12 @@
                "state": "idle"
              }
            ]
-@@ -312,34 +577,89 @@
+         }
+       ]
+     },
+-    "variables": [
++    "holes": [
+       {
          "name": "source_material",
          "label": "Source material",
          "description": "Documents and findings whose terminology should be normalized.",
@@ -12627,7 +13918,7 @@
 +              "scope": {
 +                "include": [
 +                  {
-+                    "select": "variable",
++                    "select": "hole",
 +                    "name": "decision_evidence"
 +                  }
 +                ],
@@ -12676,7 +13967,7 @@
 +              "scope": {
 +                "include": [
 +                  {
-+                    "select": "variable",
++                    "select": "hole",
 +                    "name": "cost_models"
 +                  }
 +                ],
@@ -12693,7 +13984,7 @@
          },
          {
            "id": "#tdm-row-recommendation",
-@@ -420,10 +792,26 @@
+@@ -420,45 +792,94 @@
                "type": "text",
                "variant": "paragraph",
                "style": "callout",
@@ -12722,7 +14013,11 @@
              }
            ]
          }
-@@ -434,31 +822,64 @@
+       ]
+     },
+-    "variables": [
++    "holes": [
+       {
          "name": "decision_evidence",
          "label": "Decision evidence",
          "description": "The findings and documents that establish why a decision is required.",
@@ -12933,7 +14228,7 @@
 +                  "scope": {
 +                    "include": [
 +                      {
-+                        "select": "variable",
++                        "select": "hole",
 +                        "name": "board_evidence"
 +                      }
 +                    ],
@@ -12986,7 +14281,8 @@
 +        }
 +      ]
      },
-     "variables": [
+-    "variables": [
++    "holes": [
        {
          "name": "board_evidence",
          "label": "Board evidence",
@@ -13175,7 +14471,7 @@
 +                  "scope": {
 +                    "include": [
 +                      {
-+                        "select": "variable",
++                        "select": "hole",
 +                        "name": "field_record"
 +                      }
 +                    ],
@@ -13208,7 +14504,8 @@
 +        }
 +      ]
      },
-     "variables": [
+-    "variables": [
++    "holes": [
        {
          "name": "field_record",
          "label": "Field work record",
@@ -13395,7 +14692,7 @@
 +                  "scope": {
 +                    "include": [
 +                      {
-+                        "select": "variable",
++                        "select": "hole",
 +                        "name": "portfolio_record"
 +                      }
 +                    ],
@@ -13432,7 +14729,8 @@
 +        }
 +      ]
      },
-     "variables": [
+-    "variables": [
++    "holes": [
        {
          "name": "portfolio_record",
          "label": "Portfolio record",
@@ -13621,7 +14919,7 @@
 +                  "scope": {
 +                    "include": [
 +                      {
-+                        "select": "variable",
++                        "select": "hole",
 +                        "name": "option_evidence"
 +                      }
 +                    ],
@@ -13662,7 +14960,7 @@
 +                  "scope": {
 +                    "include": [
 +                      {
-+                        "select": "variable",
++                        "select": "hole",
 +                        "name": "option_models"
 +                      }
 +                    ],
@@ -13699,7 +14997,8 @@
 +        }
 +      ]
      },
-     "variables": [
+-    "variables": [
++    "holes": [
        {
          "name": "option_evidence",
          "label": "Option evidence",
@@ -13829,8 +15128,7 @@
 +            "color": "--token-ink-secondary",
 +            "lineHeight": 1.35
 +          }
-         }
--      }
++        }
 +      },
 +      "layouts": [
 +        {
@@ -13931,11 +15229,8 @@
 +        }
 +      ],
 +      "sections": []
-     },
-     "variables": [],
--    "createdBy": { "kind": "user", "userId": "default-user" },
--    "revision": 3,
--    "updatedAt": 1784385000000
++    },
++    "holes": [],
 +    "createdBy": {
 +      "kind": "user",
 +      "userId": "default-user"
@@ -14043,7 +15338,7 @@
 +              "scope": {
 +                "include": [
 +                  {
-+                    "select": "variable",
++                    "select": "hole",
 +                    "name": "status_evidence"
 +                  }
 +                ],
@@ -14055,7 +15350,7 @@
 +        }
 +      ]
 +    },
-+    "variables": [
++    "holes": [
 +      {
 +        "name": "client_name",
 +        "label": "Client name",
@@ -14083,13 +15378,17 @@
 +            }
 +          ],
 +          "exclude": []
-+        }
-+      }
+         }
+       }
 +    ],
 +    "createdBy": {
 +      "kind": "user",
 +      "userId": "users:1"
-+    },
+     },
+-    "variables": [],
+-    "createdBy": { "kind": "user", "userId": "default-user" },
+-    "revision": 3,
+-    "updatedAt": 1784385000000
 +    "revision": 1,
 +    "updatedAt": 1788000000000
    },
@@ -14195,7 +15494,7 @@
 +              "scope": {
 +                "include": [
 +                  {
-+                    "select": "variable",
++                    "select": "hole",
 +                    "name": "incident_record"
 +                  }
 +                ],
@@ -14246,7 +15545,7 @@
 +              "scope": {
 +                "include": [
 +                  {
-+                    "select": "variable",
++                    "select": "hole",
 +                    "name": "cost_models"
 +                  }
 +                ],
@@ -14258,7 +15557,7 @@
 +        }
 +      ]
 +    },
-+    "variables": [
++    "holes": [
 +      {
 +        "name": "incident_title",
 +        "label": "Incident title",
@@ -14338,9 +15637,54 @@
  ]
 ~~~~
 
-### changed · `seed/templateVersions.json` (+497 / −1)
+### changed · `seed/templateVersions.json` (+518 / −22)
 
 ~~~~diff
+@@ -107,7 +107,7 @@
+               "scope": {
+                 "include": [
+                   {
+-                    "select": "variable",
++                    "select": "hole",
+                     "name": "incident_evidence"
+                   }
+                 ],
+@@ -164,7 +164,7 @@
+         }
+       ]
+     },
+-    "variables": [
++    "holes": [
+       {
+         "name": "incident_evidence",
+         "label": "Incident evidence",
+@@ -296,7 +296,7 @@
+               "scope": {
+                 "include": [
+                   {
+-                    "select": "variable",
++                    "select": "hole",
+                     "name": "readiness_record"
+                   }
+                 ],
+@@ -345,7 +345,7 @@
+               "scope": {
+                 "include": [
+                   {
+-                    "select": "variable",
++                    "select": "hole",
+                     "name": "supporting_findings"
+                   }
+                 ],
+@@ -361,7 +361,7 @@
+         }
+       ]
+     },
+-    "variables": [
++    "holes": [
+       {
+         "name": "readiness_record",
+         "label": "Readiness record",
 @@ -459,9 +459,19 @@
                    "id": "#ttg-title-a",
                    "kind": "literal",
@@ -14362,6 +15706,24 @@
                "marks": []
              }
            ]
+@@ -542,7 +552,7 @@
+               "scope": {
+                 "include": [
+                   {
+-                    "select": "variable",
++                    "select": "hole",
+                     "name": "source_material"
+                   }
+                 ],
+@@ -554,7 +564,7 @@
+         }
+       ]
+     },
+-    "variables": [
++    "holes": [
+       {
+         "name": "source_material",
+         "label": "Source material",
 @@ -571,6 +581,12 @@
            ],
            "exclude": []
@@ -14375,9 +15737,129 @@
        }
      ],
      "at": 1787244300000
-@@ -2195,5 +2211,485 @@
+@@ -690,7 +706,7 @@
+               "scope": {
+                 "include": [
+                   {
+-                    "select": "variable",
++                    "select": "hole",
+                     "name": "decision_evidence"
+                   }
+                 ],
+@@ -739,7 +755,7 @@
+               "scope": {
+                 "include": [
+                   {
+-                    "select": "variable",
++                    "select": "hole",
+                     "name": "cost_models"
+                   }
+                 ],
+@@ -787,7 +803,7 @@
+         }
+       ]
      },
-     "variables": [],
+-    "variables": [
++    "holes": [
+       {
+         "name": "decision_evidence",
+         "label": "Decision evidence",
+@@ -984,7 +1000,7 @@
+                   "scope": {
+                     "include": [
+                       {
+-                        "select": "variable",
++                        "select": "hole",
+                         "name": "board_evidence"
+                       }
+                     ],
+@@ -1034,7 +1050,7 @@
+         }
+       ]
+     },
+-    "variables": [
++    "holes": [
+       {
+         "name": "board_evidence",
+         "label": "Board evidence",
+@@ -1210,7 +1226,7 @@
+                   "scope": {
+                     "include": [
+                       {
+-                        "select": "variable",
++                        "select": "hole",
+                         "name": "field_record"
+                       }
+                     ],
+@@ -1241,7 +1257,7 @@
+         }
+       ]
+     },
+-    "variables": [
++    "holes": [
+       {
+         "name": "field_record",
+         "label": "Field work record",
+@@ -1415,7 +1431,7 @@
+                   "scope": {
+                     "include": [
+                       {
+-                        "select": "variable",
++                        "select": "hole",
+                         "name": "portfolio_record"
+                       }
+                     ],
+@@ -1450,7 +1466,7 @@
+         }
+       ]
+     },
+-    "variables": [
++    "holes": [
+       {
+         "name": "portfolio_record",
+         "label": "Portfolio record",
+@@ -1626,7 +1642,7 @@
+                   "scope": {
+                     "include": [
+                       {
+-                        "select": "variable",
++                        "select": "hole",
+                         "name": "option_evidence"
+                       }
+                     ],
+@@ -1664,7 +1680,7 @@
+                   "scope": {
+                     "include": [
+                       {
+-                        "select": "variable",
++                        "select": "hole",
+                         "name": "option_models"
+                       }
+                     ],
+@@ -1699,7 +1715,7 @@
+         }
+       ]
+     },
+-    "variables": [
++    "holes": [
+       {
+         "name": "option_evidence",
+         "label": "Option evidence",
+@@ -1950,7 +1966,7 @@
+         }
+       }
+     },
+-    "variables": [],
++    "holes": [],
+     "at": 1784385000000
+   },
+   {
+@@ -2193,7 +2209,487 @@
+         }
+       }
+     },
+-    "variables": [],
++    "holes": [],
      "at": 1782306000000
 +  },
 +  {
@@ -14524,7 +16006,7 @@
 +      ],
 +      "sections": []
 +    },
-+    "variables": [],
++    "holes": [],
 +    "at": 1788000000000
 +  },
 +  {
@@ -14627,7 +16109,7 @@
 +              "scope": {
 +                "include": [
 +                  {
-+                    "select": "variable",
++                    "select": "hole",
 +                    "name": "status_evidence"
 +                  }
 +                ],
@@ -14639,7 +16121,7 @@
 +        }
 +      ]
 +    },
-+    "variables": [
++    "holes": [
 +      {
 +        "name": "client_name",
 +        "label": "Client name",
@@ -14749,7 +16231,7 @@
 +              "scope": {
 +                "include": [
 +                  {
-+                    "select": "variable",
++                    "select": "hole",
 +                    "name": "incident_record"
 +                  }
 +                ],
@@ -14800,7 +16282,7 @@
 +              "scope": {
 +                "include": [
 +                  {
-+                    "select": "variable",
++                    "select": "hole",
 +                    "name": "cost_models"
 +                  }
 +                ],
@@ -14812,7 +16294,7 @@
 +        }
 +      ]
 +    },
-+    "variables": [
++    "holes": [
 +      {
 +        "name": "incident_title",
 +        "label": "Incident title",
@@ -14868,15 +16350,19 @@
 ### changed · `test/browser/document-editor.spec.ts` (+8 / −1)
 
 ~~~~diff
-@@ -724,10 +724,17 @@ test("document context panels are operational and compact", async ({ page }) =>
+@@ -724,7 +724,7 @@ test("document context panels are operational and compact", async ({ page }) =>
    await expect(context.getByText(/from edge/i)).toHaveCount(0);
    await expect(context.getByRole("button", { name: /Increase|Decrease/ })).toHaveCount(0);
  
--  for (const name of ["Variables", "Templates", "Prompts"] as const) {
-+  for (const name of ["Variables", "Prompts"] as const) {
+-  for (const name of ["Variables", "Templates"] as const) {
++  for (const name of ["Variables"] as const) {
      await context.getByRole("button", { name, exact: true }).click();
      await expect(context.getByText(`document-editor.${name.toLowerCase()}`, { exact: true })).toBeVisible();
    }
+@@ -735,6 +735,13 @@ test("document context panels are operational and compact", async ({ page }) =>
+   await expect(context.getByRole("button", { name: "Create and generate" })).toHaveCount(0);
+   await expect(context.getByText("No Prompt Blocks yet.", { exact: true })).toBeVisible();
+   await expect(context.getByText(/To create one/)).toHaveCount(0);
 +
 +  await context.getByRole("button", { name: "Templates", exact: true }).click();
 +  await expect(context.getByRole("heading", { name: "Templates" })).toBeVisible();
@@ -14889,10 +16375,10 @@
  test("document named styles mirror the text formatting inspector without metadata clutter", async ({ page }) => {
 ~~~~
 
-### new · `test/browser/template-features.spec.ts` (+277 / −0)
+### new · `test/browser/template-features.spec.ts` (+315 / −0)
 
 ~~~~diff
-@@ -0,0 +1,277 @@
+@@ -0,0 +1,315 @@
 +import { expect, test, type Locator, type Page, type TestInfo } from "@playwright/test";
 +
 +const unexpected: string[] = [];
@@ -14975,7 +16461,7 @@
 +  expect(unexpected, `unexpected browser diagnostics in ${testInfo.title}`).toEqual([]);
 +});
 +
-+test("inserting a template into a document asks for each variable, shows its default, and takes an answer", async ({ page }) => {
++test("inserting a template into a document asks for each hole, shows its default, and takes an answer", async ({ page }) => {
 +  await openDocumentFixture(page);
 +  const editor = page.locator(".ProseMirror");
 +  const before = await editor.innerText();
@@ -14986,7 +16472,7 @@
 +  const modal = page.getByRole("dialog", { name: "Insert “Technical glossary”" });
 +  await expect(modal).toBeVisible();
 +
-+  // Every parameter is listed, with its description and what answers it.
++  // Every hole is listed, with its description and what answers it.
 +  await expect(modal.getByText("Source material", { exact: true })).toBeVisible();
 +  await expect(modal.getByRole("button", { name: /Documents, Findings/ })).toBeVisible();
 +
@@ -15021,7 +16507,7 @@
 +  await expect(page.locator(".title-bar")).toContainText("Saved", { timeout: 10_000 });
 +});
 +
-+test("a document is saved as a template, takes its variable from an inserted prompt, and is saved back", async ({ page }) => {
++test("a document is saved as a template, takes its hole from an inserted prompt, and is saved back", async ({ page }) => {
 +  const name = `Browser template ${Date.now()}`;
 +  await openDocumentFixture(page);
 +
@@ -15033,13 +16519,14 @@
 +
 +  await expect(context.getByRole("button", { name: "Save", exact: true })).toBeVisible();
 +  await expect(context.getByRole("textbox", { name: "New variable" })).toHaveCount(0);
-+  await expect(context.getByText("A variable appears when a prompt in this template asks for one.")).toBeVisible();
++  await expect(context.getByRole("button", { name: "Create hole", exact: true })).toBeVisible();
++  await expect(context.locator(".hole")).toHaveCount(0);
 +
 +  await context.getByTitle("Insert “Technical glossary” after the current row").click();
 +  await expect(context.getByText("Inserted “Technical glossary”.", { exact: true })).toBeVisible();
 +  await expect(page.locator(".ProseMirror")).toContainText("Technical glossary");
 +
-+  const card = context.locator(".variable").filter({ hasText: "Source material" });
++  const card = context.locator(".hole").filter({ hasText: "Source material" });
 +  const scope = card.getByRole("button", { name: "Default scope", exact: true });
 +  await expect(scope).toBeVisible();
 +  await scope.click();
@@ -15052,6 +16539,43 @@
 +
 +  await context.getByRole("button", { name: "Save", exact: true }).click();
 +  await expect(context.getByText("Saved to the template.", { exact: true })).toBeVisible({ timeout: 15_000 });
++
++  page.once("dialog", (dialog) => void dialog.accept());
++  await context.getByRole("button", { name: "Discard", exact: true }).click();
++  await expect(tabs(page).getByRole("button", { name: `Template · ${name}`, exact: true })).toHaveCount(0, { timeout: 15_000 });
++
++  await deleteTemplateFromLibrary(page, name);
++});
++
++test("Create hole declares a text hole and drops its atom where the caret is", async ({ page }) => {
++  const name = `Browser holes ${Date.now()}`;
++  await openDocumentFixture(page);
++
++  const context = await templatesPanel(page);
++  await context.getByRole("textbox", { name: "Template name" }).fill(name);
++  await context.getByRole("button", { name: "Save", exact: true }).click();
++  await expect(page.locator(".title-bar h1")).toContainText(`Template · ${name}`, { timeout: 15_000 });
++
++  // The caret decides where the hole goes, so put it in the prose first.
++  const editor = page.locator(".ProseMirror");
++  await editor.getByRole("paragraph").first().click();
++
++  await context.getByRole("button", { name: "Create hole", exact: true }).click();
++  const modal = page.getByRole("dialog", { name: "Create a hole" });
++  await expect(modal).toBeVisible();
++
++  await modal.getByRole("textbox", { name: "Name" }).fill("client_name");
++  await modal.getByRole("textbox", { name: "Description" }).fill("Who the note is for");
++  await modal.getByRole("textbox", { name: "Default words" }).fill("Northwind");
++  await modal.getByRole("button", { name: "Create", exact: true }).click();
++
++  await expect(context.getByText("Added the hole “client_name”.", { exact: true })).toBeVisible({
++    timeout: 15_000
++  });
++  const card = context.locator(".hole").filter({ hasText: "client_name" });
++  await expect(card).toBeVisible();
++  await expect(card.getByRole("button", { name: "Default scope", exact: true })).toHaveCount(0);
++  await expect(editor.locator(".document-template-atom")).toContainText("client_name");
 +
 +  page.once("dialog", (dialog) => void dialog.accept());
 +  await context.getByRole("button", { name: "Discard", exact: true }).click();
@@ -15117,7 +16641,7 @@
 +  await expect(context.getByRole("button", { name: new RegExp(`^${name}`) })).toHaveCount(0);
 +});
 +
-+test("a variable's default is built with an exclusion, stored, and read back as the rule", async ({ page }) => {
++test("a hole's default is built with an exclusion, stored, and read back as the rule", async ({ page }) => {
 +  await page.goto("/app/dev-project", { waitUntil: "networkidle" });
 +  await tabs(page).getByRole("button", { name: "Templates", exact: true }).click();
 +  await page.getByRole("button", { name: /^Incident write-up/ }).first().click();
@@ -15181,7 +16705,7 @@
 +const routes = [
 +  ["system", "/app/dev-project/reference/templates", "How templates work"],
 +  ["changes", "/app/dev-project/reference/templates/changes", "What changed"],
-+  ["scope", "/app/dev-project/reference/templates/scope", "What a variable selects"]
++  ["scope", "/app/dev-project/reference/templates/scope", "What a hole selects"]
 +] as const;
 +
 +const unexpected: string[] = [];
@@ -15280,7 +16804,7 @@
 +  await expect(page.getByRole("heading", { level: 2, name: "The builder" })).toBeVisible();
 +  await expect(page.getByText("Insert “Client status note”").first()).toBeVisible();
 +  await expect(page.getByText("From", { exact: true }).first()).toBeVisible();
-+  await expect(page.getByRole("heading", { level: 2, name: "Two kinds of parameter" })).toBeVisible();
++  await expect(page.getByRole("heading", { level: 2, name: "Two kinds of hole" })).toBeVisible();
 +
 +  await expect(page.getByRole("heading", { level: 2, name: "Every file it touched" })).toBeVisible();
 +  await expect(page.locator("#work tbody tr").first()).toBeVisible();
@@ -15295,10 +16819,10 @@
 
 ## The reference pages, and the one shared component they moved
 
-### new · `scripts/generate-template-reference-inventory.mjs` (+114 / −0)
+### new · `scripts/generate-template-reference-inventory.mjs` (+126 / −0)
 
 ~~~~diff
-@@ -0,0 +1,114 @@
+@@ -0,0 +1,126 @@
 +#!/usr/bin/env node
 +/**
 + * The file ledger behind /app/<project>/reference/templates/changes.
@@ -15306,8 +16830,10 @@
 + *     node scripts/generate-template-reference-inventory.mjs > \
 + *       src/lib/development-views/template-reference/procedures/inventory.ts
 + *
-+ * The baseline is where this branch meets `main` rather than `main` itself, so
-+ * the ledger keeps measuring this work after main moves on.
++ * The baseline is where this branch meets the branch it sits on rather than that
++ * branch's head, so the ledger keeps measuring this work as the base moves on.
++ * `work/derived-output-architecture` is that branch, because prompt blocks live
++ * there; TEMPLATE_FEATURES_BASE names another, and main is the fallback.
 + */
 +import { execFileSync } from "node:child_process";
 +import { existsSync, readFileSync } from "node:fs";
@@ -15324,7 +16850,17 @@
 +  return text.split(/\r?\n/).length - (text.endsWith("\n") ? 1 : 0);
 +};
 +
-+const baseline = git("merge-base", "HEAD", "main").trim();
++const mergeBase = (ref) => {
++  try {
++    return git("merge-base", "HEAD", ref).trim();
++  } catch {
++    return "";
++  }
++};
++
++const baseline =
++  process.env.TEMPLATE_FEATURES_BASE ??
++  (mergeBase("work/derived-output-architecture") || mergeBase("main"));
 +
 +const kindOf = (path) => {
 +  if (path.includes("development-views/template-reference/") || path.includes("reference/templates")) return "reference";
@@ -15948,17 +17484,17 @@
 +  import { traceNode } from "$development-components/trace.svelte";
 +
 +  /**
-+   * Every parameter a template asks for, as a name, what it means, and what it
++   * Every hole a template asks for, as a name, what it means, and what it
 +   * is answered with.
 +   *
-+   * **All of them, always, and nothing folded away.** A template's parameters are
++   * **All of them, always, and nothing folded away.** A template's holes are
 +   * the shape of the thing you are about to make, so the whole list is on screen
 +   * and each row reads top to bottom: the name, the sentence whoever made the
 +   * template wrote, and the value. Nothing here is a disclosure, because a hole
 +   * you have to open to see is a hole you can forget.
 +   *
 +   * **The list scrolls; the modal does not grow.** A template with twelve
-+   * parameters and one with two open the same size, so nothing jumps.
++   * holes and one with two open the same size, so nothing jumps.
 +   *
 +   * **The value is the control.** Text is a field you type in. A scope is a
 +   * block reading what it selects, which opens the builder when pressed. A row
@@ -15966,7 +17502,7 @@
 +   */
 +
 +  export type AnswerRow = {
-+    /** The parameter's name, and this component's key for it. */
++    /** The hole's name, and this component's key for it. */
 +    readonly key: string;
 +    readonly label: string;
 +    readonly description?: string;
@@ -15975,7 +17511,7 @@
 +    readonly value: string;
 +    /** Whether the caller has said anything, as against taking what was suggested. */
 +    readonly answered: boolean;
-+    /** Whether it has no answer at all, which only a text parameter can be. */
++    /** Whether it has no answer at all, which only a text hole can be. */
 +    readonly missing: boolean;
 +  };
 +
@@ -15988,11 +17524,11 @@
 +  }: {
 +    rows: readonly AnswerRow[];
 +    disabled?: boolean;
-+    /** Open the builder for one scope parameter. */
++    /** Open the builder for one scope hole. */
 +    onscope: (key: string) => void;
-+    /** The words typed for one text parameter. */
++    /** The words typed for one text hole. */
 +    ontext: (key: string, words: string) => void;
-+    /** Put one parameter back to what the template suggests. */
++    /** Put one hole back to what the template suggests. */
 +    onreset: (key: string) => void;
 +  } = $props();
 +
@@ -16022,7 +17558,7 @@
 +
 +      <p class="what">
 +        {row.description ??
-+          (row.kind === "text" ? "Words this template asks for." : "What this parameter selects.")}
++          (row.kind === "text" ? "Words this template asks for." : "What this hole selects.")}
 +      </p>
 +
 +      {#if row.kind === "text"}
@@ -16132,7 +17668,7 @@
 ### changed · `src/lib/development-views/demo/components/demo-index.svelte` (+3 / −3)
 
 ~~~~diff
-@@ -72,11 +72,11 @@
+@@ -125,11 +125,11 @@
      },
      {
        href: "/demo/templates",
@@ -16149,10 +17685,10 @@
  </script>
 ~~~~
 
-### new · `src/lib/development-views/template-reference/components/changes-page.svelte` (+281 / −0)
+### new · `src/lib/development-views/template-reference/components/changes-page.svelte` (+285 / −0)
 
 ~~~~diff
-@@ -0,0 +1,281 @@
+@@ -0,0 +1,285 @@
 +<script lang="ts">
 +  import { page } from "$app/state";
 +
@@ -16192,9 +17728,9 @@
 +        <span class="tref-kicker">02 · The audit</span>
 +        <h1>What changed</h1>
 +        <p class="tref-lede">
-+          Thirteen systematic changes, the decisions three reviews settled, every file with its line count, what
++          Fifteen systematic changes, the decisions three reviews settled, every file with its line count, what
 +          was run to check the work, and what is still open. Measured against <code>{BASELINE}</code>, the
-+          commit this branch sits on, so it keeps saying the same thing as main moves on.
++          commit this branch sits on, so it keeps saying the same thing as that branch moves on.
 +        </p>
 +      </div>
 +      <div class="tref-facts">
@@ -16203,24 +17739,24 @@
 +          <div><dt>Created</dt><dd>{made}</dd></div>
 +          <div><dt>Changed</dt><dd>{changed}</dd></div>
 +          <div><dt>Lines</dt><dd>+{added.toLocaleString()} / −{deleted.toLocaleString()}</dd></div>
-+          <div><dt>Committed</dt><dd>Four commits, rebased onto main</dd></div>
++          <div><dt>Committed</dt><dd>Five commits, on derived outputs</dd></div>
 +        </dl>
 +      </div>
 +    </header>
 +
 +    <nav class="tref-jumps" aria-label="On this page">
-+      <a href="#systematic">Thirteen changes</a>
++      <a href="#systematic">Fifteen changes</a>
 +      <a href="#model">The model, before and after</a>
 +      <a href="#decisions">What the reviews settled</a>
 +      <a href="#ledger">Every file</a>
 +      <a href="#verification">What was checked</a>
 +      <a href="#open">Still open</a>
-+      <a href="#merge">Rebased onto main</a>
++      <a href="#merge">Where it sits</a>
 +    </nav>
 +
 +    <section class="tref-section" id="systematic">
 +      <div class="tref-section-head">
-+        <div><span class="tref-kicker">Before → now</span><h2>Thirteen systematic changes</h2></div>
++        <div><span class="tref-kicker">Before → now</span><h2>Fifteen systematic changes</h2></div>
 +        <p>
 +          Each is a decision with consequences across several files, written with what it replaced and why,
 +          so the page stays useful after the code is familiar.
@@ -16379,21 +17915,23 @@
 +
 +    <section class="tref-section" id="merge">
 +      <div class="tref-section-head">
-+        <div><span class="tref-kicker">Already done</span><h2>Rebased onto main</h2></div>
++        <div><span class="tref-kicker">Already done</span><h2>Where it sits</h2></div>
 +        <p>
-+          Four commits on <code>work/template-features</code>, sitting directly on main's head. Everything
-+          on this page is measured from there, so the numbers say what this branch adds and nothing else.
++          Five commits on <code>work/template-features</code>, sitting on
++          <code>work/derived-output-architecture</code> rather than on main — because that is where
++          prompt blocks are, and a prompt's scope is what a scope hole fills. Everything on this page
++          is measured from there, so the numbers say what this branch adds and nothing else.
 +        </p>
 +      </div>
 +
 +      <div class="tref-cards">
 +        <article class="tref-card">
 +          <h3>Base</h3>
-+          <p><code>{MERGE.base}</code> — the commit this branch now sits on.</p>
++          <p><code>{MERGE.base}</code> — the head of <code>work/derived-output-architecture</code>, which is itself 21 commits ahead of main.</p>
 +        </article>
 +        <article class="tref-card">
-+          <h3>What main brought</h3>
-+          <p>{MERGE.commits} commits and {MERGE.mainFiles} files since the original branch point: editor stabilization, the editor audit, the withdrawal of header and footer authoring, and a pass over the editors' controls and inspectors.</p>
++          <h3>What the base brought</h3>
++          <p>{MERGE.commits} commits and {MERGE.mainFiles} files since the original branch point: editor stabilization, the editor audit, the withdrawal of header and footer authoring, a pass over the editors' controls, then the semantic overlay, derived outputs and live prompt blocks in both editors.</p>
 +        </article>
 +        <article class="tref-card">
 +          <h3>Files both sides touched</h3>
@@ -16416,8 +17954,10 @@
 +        <h4>The rest merged without a decision</h4>
 +        <p>
 +          {MERGE.overlap.length - MERGE.conflicts.length} of the {MERGE.overlap.length} were edited on both
-+          sides but never on the same lines, and the last two rebases replayed all four commits with nothing
-+          to reconcile at all. Every check was re-run afterwards.
++          sides but never on the same lines, across five rebases. Every check was re-run afterwards, and the
++          move onto derived outputs turned up one real defect of its own: the templates validator refused a
++          Prompt Block carrying a named style, which is exactly what a text box keeps when it is converted
++          in place.
 +        </p>
 +      </div>
 +    </section>
@@ -16449,7 +17989,7 @@
 +
 +  const bound = [
 +    { field: "name", value: "absent" },
-+    { field: "boundTo", value: "{ variable, templateId, name }" },
++    { field: "boundTo", value: "{ hole, templateId, name }" },
 +    { field: "set", value: "{ include, exclude }" }
 +  ];
 +</script>
@@ -16465,7 +18005,7 @@
 +    </dl>
 +    <ul>
 +      <li>Appears in <code>readResourceSets</code></li>
-+      <li>Refuses removal while a set or a variable names it</li>
++      <li>Refuses removal while a set or a hole names it</li>
 +      <li>Survives everything that points at it</li>
 +    </ul>
 +  </section>
@@ -16481,20 +18021,20 @@
 +    <ul>
 +      <li>Read only through the id that points at it</li>
 +      <li>Removed with its owner</li>
-+      <li>Two variables that build the same rule get two rows, and that is correct</li>
++      <li>Two holes that build the same rule get two rows, and that is correct</li>
 +    </ul>
 +  </section>
 +</div>
 +
 +<div class="pointers">
 +  <div class="from">
-+    <code>templates.variables[i].default</code>
++    <code>templates.holes[i].default</code>
 +    <small>a template's project-local metadata</small>
 +  </div>
 +  <div class="arrow" aria-hidden="true">→</div>
 +  <div class="term"><code>{"{ select: \"set\", setId }"}</code><small>one term, so it substitutes on either side</small></div>
 +  <div class="arrow" aria-hidden="true">→</div>
-+  <div class="to bound-to"><b>A bound row</b><small>owner: that variable</small></div>
++  <div class="to bound-to"><b>A bound row</b><small>owner: that hole</small></div>
 +
 +  <div class="from">
 +    <code>documents.body … prompt.scope</code>
@@ -16629,7 +18169,7 @@
 +    <div class="modal">
 +      <header>
 +        <b>Insert “Client status note”</b>
-+        <p>Every parameter this template asks for.</p>
++        <p>Every hole this template asks for.</p>
 +      </header>
 +      <div class="body">
 +        <div class="row needs">
@@ -16692,7 +18232,7 @@
 +
 +<ul class="notes">
 +  <li>
-+    <b>Every parameter, always, and nothing folded away.</b> Each row reads top to bottom: the name,
++    <b>Every hole, always, and nothing folded away.</b> Each row reads top to bottom: the name,
 +    the sentence whoever made the template wrote, and the value. A row with nothing in it carries a
 +    rule down its left edge, and the confirm says which one is holding it up.
 +  </li>
@@ -16702,7 +18242,7 @@
 +    nothing opens a third lid.
 +  </li>
 +  <li>
-+    <b>The list scrolls; the modal does not grow.</b> A template with twelve parameters and one with
++    <b>The list scrolls; the modal does not grow.</b> A template with twelve holes and one with
 +    two open the same size, and both panes of the builder are one fixed height, so nothing jumps as
 +    somebody clicks between Kinds, Sets and Resources.
 +  </li>
@@ -16711,7 +18251,7 @@
 +    because what you can take out should be what you put in.
 +  </li>
 +  <li>
-+    <b>The floor is a button.</b> Whole project is the common answer, Default puts a parameter back to
++    <b>The floor is a button.</b> Whole project is the common answer, Default puts a hole back to
 +    what the template suggested, and Clear empties both sides to start again.
 +  </li>
 +</ul>
@@ -17040,8 +18580,8 @@
 +      <div class="hint">The name is required; Save opens the new template's working copy in a new tab.</div>
 +      <div class="section">List <em>⌄</em></div>
 +      <div class="search">Search templates…</div>
-+      <div class="row"><b>Decision memo</b><small>2 variables · revision 4</small><span><span class="button">Insert</span><span class="button">Edit</span></span></div>
-+      <div class="row"><b>Technical glossary</b><small>1 variable · revision 3</small><span><span class="button">Insert</span><span class="button">Edit</span></span></div>
++      <div class="row"><b>Decision memo</b><small>2 holes · revision 4</small><span><span class="button">Insert</span><span class="button">Edit</span></span></div>
++      <div class="row"><b>Technical glossary</b><small>1 hole · revision 3</small><span><span class="button">Insert</span><span class="button">Edit</span></span></div>
 +    </div>
 +  </figure>
 +
@@ -17049,8 +18589,8 @@
 +    <figcaption>The same panel on a working copy</figcaption>
 +    <div class="panel">
 +      <header><b>Templates</b><span class="actions"><span class="button primary">Save</span><span class="button danger">Discard</span></span></header>
-+      <div class="section">Variables <em>1 ⌄</em></div>
-+      <div class="variable">
++      <div class="section">Holes <em>1 ⌄</em></div>
++      <div class="hole">
 +        <span class="chip">source_material</span>
 +        <b>Source material</b>
 +        <span class="description">Documents and findings whose terminology should be normalized.</span>
@@ -17058,16 +18598,16 @@
 +      </div>
 +      <div class="section">List <em>⌄</em></div>
 +      <div class="search">Search templates…</div>
-+      <div class="row"><b>Decision memo</b><small>2 variables · revision 4</small><span><span class="button">Insert</span><span class="button">Edit</span></span></div>
++      <div class="row"><b>Decision memo</b><small>2 holes · revision 4</small><span><span class="button">Insert</span><span class="button">Edit</span></span></div>
 +    </div>
 +  </figure>
 +</div>
 +
 +<ul class="notes">
 +  <li><b>No name field</b> on a working copy — the tab already says <code>Template · name</code>, and Save and Discard sit where it was, above a rule.</li>
-+  <li><b>No add, no remove</b> in Variables: the list is what the body's prompts ask for. Each is a card carrying the name a prompt uses, its label, its description and one button.</li>
++  <li><b>Create hole</b> sits at the top of Holes and makes a text hole: it takes a name, a description and default words, then drops the atom at the caret. A scope hole cannot be made here — that list is what the body's prompts ask for.</li>
 +  <li><b>Default scope</b> opens the modal; what it currently selects is on the button's title rather than in its label.</li>
-+  <li><b>List</b> is a collapsible section of its own, so inserting a template into a template is plainly a different thing from the variables above it.</li>
++  <li><b>List</b> is a collapsible section of its own behind a rule, so inserting a template into a template is plainly a different thing from the holes above it.</li>
 +</ul>
 +
 +<style>
@@ -17139,7 +18679,7 @@
 +  .row small { color: var(--token-ink-muted); font-size: 10px; }
 +  .row span { display: flex; gap: .3rem; margin-top: .2rem; }
 +
-+  .variable { display: grid; justify-items: start; gap: .35rem; padding: .5rem; border: 1px solid var(--token-border-subtle); border-radius: 6px; background: var(--token-surface-elevated); }
++  .hole { display: grid; justify-items: start; gap: .35rem; padding: .5rem; border: 1px solid var(--token-border-subtle); border-radius: 6px; background: var(--token-surface-elevated); }
 +  .description { color: var(--token-ink-secondary); }
 +
 +  .chip {
@@ -17169,7 +18709,7 @@
 +  <section class="group template">
 +    <h4>What the template is</h4>
 +    <ul>
-+      <li><code>templates</code><span>projectId, name, tags, body, variables, revision, lastUsedAt</span></li>
++      <li><code>templates</code><span>projectId, name, tags, body, holes, revision, lastUsedAt</span></li>
 +      <li><code>templateVersions</code><span>one row per revision, never read back yet</span></li>
 +    </ul>
 +    <p class="writer">Written by <code>createTemplate</code>, <code>createTemplateFromResource</code>, <code>updateTemplate</code>, <code>commitTemplateStage</code>, <code>duplicateTemplate</code>, <code>removeTemplate</code></p>
@@ -17328,22 +18868,22 @@
 +    <li class="fallback">
 +      <span class="rank">2</span>
 +      <div>
-+        <b>Else the variable's default scope</b>
-+        <p>Everything in the project, particular kinds, one of the project's named sets — or another variable, expanded the same way.</p>
++        <b>Else the hole's default scope</b>
++        <p>Everything in the project, particular kinds, one of the project's named sets — or another hole, expanded the same way.</p>
 +      </div>
-+      <code>variable.default</code>
++      <code>hole.default</code>
 +    </li>
 +    <li class="floor">
 +      <span class="rank">3</span>
 +      <div>
 +        <b>Else everything in the project</b>
-+        <p>A variable with no default, or one that reaches itself. There is always an answer, so a template always resolves.</p>
++        <p>A hole with no default, or one that reaches itself. There is always an answer, so a template always resolves.</p>
 +      </div>
 +      <code>{"{ select: \"project\" }"}</code>
 +    </li>
 +  </ol>
 +  <p class="undeclared">
-+    A prompt naming a variable the template does not declare is the one thing that refuses:
++    A prompt naming a hole the template does not declare is the one thing that refuses:
 +    <code>unsupported-body</code>, with the names, rather than a guess.
 +  </p>
 +</div>
@@ -17427,7 +18967,7 @@
 +  <g class="box template">
 +    <rect x="430" y="40" width="240" height="104" rx="10" />
 +    <text x="450" y="72" class="title">The template</text>
-+    <text x="450" y="94" class="sub">A portable body, its variables,</text>
++    <text x="450" y="94" class="sub">A portable body, its holes,</text>
 +    <text x="450" y="112" class="sub">and a revision that only moves</text>
 +    <text x="450" y="130" class="sub">when the working copy is saved</text>
 +  </g>
@@ -17453,7 +18993,7 @@
 +
 +  <path class="line" d="M 672 96 C 760 100 790 166 838 170" marker-end="url(#tref-arrow)" />
 +  <text x="690" y="104" class="label">Use · Insert</text>
-+  <text x="690" y="120" class="hint">asks what each variable selects</text>
++  <text x="690" y="120" class="hint">asks what each hole selects</text>
 +
 +  <path class="line" d="M 500 146 L 500 226" marker-end="url(#tref-arrow)" />
 +  <text x="486" y="180" class="label right">Edit</text>
@@ -18113,10 +19653,10 @@
 +}
 ~~~~
 
-### new · `src/lib/development-views/template-reference/components/scope-page.svelte` (+467 / −0)
+### new · `src/lib/development-views/template-reference/components/scope-page.svelte` (+468 / −0)
 
 ~~~~diff
-@@ -0,0 +1,467 @@
+@@ -0,0 +1,468 @@
 +<script lang="ts">
 +  import { page } from "$app/state";
 +
@@ -18162,9 +19702,9 @@
 +    <header class="tref-mast">
 +      <div>
 +        <span class="tref-kicker">03 · Scope</span>
-+        <h1>What a variable selects</h1>
++        <h1>What a hole selects</h1>
 +        <p class="tref-lede">
-+          A variable is a hole. What fills it is a group of resources, and until this work that group
++          A scope hole is an empty place a prompt punched. What fills it is a group of resources, and until this work that group
 +          could only be said in the crudest terms: everything, or some kinds, or one of the project's
 +          named sets. It can now be built term by term, excluded from, and pointed at particular
 +          resources. This page is how it works and every file it touched.
@@ -18182,7 +19722,7 @@
 +    </header>
 +
 +    <nav class="tref-jumps" aria-label="On this page">
-+      <a href="#parameters">Two kinds of parameter</a>
++      <a href="#holes">Two kinds of hole</a>
 +      <a href="#why">Why a row at all</a>
 +      <a href="#terms">Every term</a>
 +      <a href="#difference">A set is a difference</a>
@@ -18196,13 +19736,14 @@
 +      <a href="#missing">What is still missing</a>
 +    </nav>
 +
-+    <section class="tref-section" id="parameters">
++    <section class="tref-section" id="holes">
 +      <div class="tref-section-head">
-+        <div><span class="tref-kicker">What a template asks for</span><h2>Two kinds of parameter</h2></div>
++        <div><span class="tref-kicker">What a template asks for</span><h2>Two kinds of hole</h2></div>
 +        <p>
-+          A template is a function and these are its parameters. Both are found from the body rather
-+          than authored, both are declared in one list, and both carry a name, a label and a
-+          description written by whoever made the template.
++          A template is a function and these are the places it leaves empty. Both are declared in one
++          list and both carry a name, a label and a description written by whoever made the template.
++          A scope hole is found from the body; a text hole is placed by hand, because only the writer
++          knows where in the prose it belongs.
 +        </p>
 +      </div>
 +
@@ -18226,13 +19767,13 @@
 +      </div>
 +
 +      <div class="tref-note attention">
-+        <h4>A template's parameter is not a variable</h4>
++        <h4>A hole is not a variable</h4>
 +        <p>
 +          A variable in this application is a named value a formula reads, and it has nothing to do
-+          with templates. So the atom that holds a hole in a template's prose is a
-+          <code>template</code> atom, not a variable atom, and it appears nowhere outside a template
-+          body and the copy that template is edited through. The word is worth guarding: two
-+          unrelated ideas sharing it is how a vocabulary stops being one.
++          with templates. That is why none of this is called one: a template's empty places are
++          holes, the atom that marks a text hole in the prose is a <code>template</code> atom, and it
++          appears nowhere outside a template body and the copy that template is edited through. The
++          word is worth guarding: two unrelated ideas sharing it is how a vocabulary stops being one.
 +        </p>
 +      </div>
 +    </section>
@@ -18241,24 +19782,24 @@
 +      <div class="tref-section-head">
 +        <div><span class="tref-kicker">The load-bearing fact</span><h2>Why a row, and not a bigger rule</h2></div>
 +        <p>
-+          The obvious move is to let a variable's default hold a richer rule inline. It does not work, and
++          The obvious move is to let a hole's default hold a richer rule inline. It does not work, and
 +          the reason is already in the code rather than in anyone's opinion.
 +        </p>
 +      </div>
 +
 +      <p class="tref-prose">
-+        Resolving a template substitutes each variable term for what fills it. A variable term can appear
++        Resolving a template substitutes each hole term for what fills it. A hole term can appear
 +        on either side of a prompt's scope: a prompt may say <em>these, and not those</em>. Substituting
 +        one term for one term works on both sides. Substituting one term for
 +        <em>a difference</em> does not, because a difference on the exclude side is not expressible as a
 +        flat difference. So the resolver refuses it, in as many words:
-+        <code>a variable answered with exclusions cannot be flattened without changing scope</code>.
++        <code>a hole answered with exclusions cannot be flattened without changing scope</code>.
 +      </p>
 +
 +      <div class="tref-note">
 +        <h4>Which meant, before this, no exclusions anywhere</h4>
 +        <p>
-+          Neither a variable's default nor an answer given at Insert could exclude anything. A builder
++          Neither a hole's default nor an answer given at Insert could exclude anything. A builder
 +          mostly about excluding things would have refused on its first use.
 +        </p>
 +        <p>
@@ -18294,7 +19835,7 @@
 +              <th>Reads as</th>
 +              <th>Picks</th>
 +              <th>In a template body</th>
-+              <th>In a variable's default</th>
++              <th>In a hole's default</th>
 +              <th>In a live resource</th>
 +            </tr>
 +          </thead>
@@ -18336,7 +19877,7 @@
 +      <div class="tref-section-head">
 +        <div><span class="tref-kicker">The change of stance</span><h2>Named, or bound</h2></div>
 +        <p>
-+          A set stopped being a thing people curate and became a value a variable holds. Both still exist,
++          A set stopped being a thing people curate and became a value a hole holds. Both still exist,
 +          and the only difference between them is whether a person gave it a name.
 +        </p>
 +      </div>
@@ -18363,7 +19904,7 @@
 +      <div class="tref-section-head">
 +        <div><span class="tref-kicker">The thing itself</span><h2>The builder</h2></div>
 +        <p>
-+          One modal. It edits a rule and knows nothing about templates, variables, or which of its four
++          One modal. It edits a rule and knows nothing about templates, holes, or which of its four
 +          callers opened it. The mock below is what shipped, drawn rather than screenshotted so it stays
 +          readable at any width.
 +        </p>
@@ -18372,7 +19913,7 @@
 +      <figure class="tref-figure">
 +        <DiagramBuilder />
 +        <figcaption>
-+          <b>Two modals, and never a third.</b> The ask lists every parameter and holds Insert while any
++          <b>Two modals, and never a third.</b> The ask lists every hole and holds Insert while any
 +          words are missing; a value opens the builder, which is two tabs and, inside one, two panes.
 +        </figcaption>
 +      </figure>
@@ -18546,11 +20087,11 @@
 +      <div class="tref-note attention">
 +        <h4>One thing the sequence assumes that is not obviously true</h4>
 +        <p>
-+          Variables are found from prompt scopes. Until prompt blocks exist, the only way a variable comes
++          Holes are found from prompt scopes. Until prompt blocks exist, the only way a hole comes
 +          into being is by inserting a template that already has one, which means a template made on main
-+          from a fresh document will have no variables and the builder will have nothing to open on. The
++          from a fresh document will have no holes and the builder will have nothing to open on. The
 +          order still works, but this piece has to land <b>with</b> prompt blocks rather than after them,
-+          or the first thing anyone sees is an empty Variables band.
++          or the first thing anyone sees is an empty Holes band.
 +        </p>
 +      </div>
 +    </section>
@@ -18635,7 +20176,7 @@
 +          <div><dt>Belongs to</dt><dd>One project</dd></div>
 +          <div><dt>Edited through</dt><dd>One shared working copy</dd></div>
 +          <div><dt>Placed by</dt><dd>Insert · Use</dd></div>
-+          <div><dt>Variables come from</dt><dd>Prompt scopes in the body</dd></div>
++          <div><dt>Holes come from</dt><dd>Prompt scopes in the body</dd></div>
 +          <div><dt>Links back</dt><dd>None, in either direction</dd></div>
 +        </dl>
 +      </div>
@@ -18647,7 +20188,7 @@
 +      <a href="#nouns">Every word</a>
 +      <a href="#rows">Where it lives</a>
 +      <a href="#lifecycle">Step by step</a>
-+      <a href="#variables">Variables and scope</a>
++      <a href="#holes">Holes and scope</a>
 +      <a href="#portable">What a template may not carry</a>
 +      <a href="#panels">The panels</a>
 +      <a href="#rules">Rules and refusals</a>
@@ -18658,7 +20199,7 @@
 +        <div><span class="tref-kicker">The shape of it</span><h2>Three verbs, and nothing else</h2></div>
 +        <p>
 +          Templates were real before this work; what was missing was a way to edit one, a way to say what a
-+          variable selects, and a way to pull one into something already open. All three are the same act
++          hole selects, and a way to pull one into something already open. All three are the same act
 +          seen from different sides: making a copy.
 +        </p>
 +      </div>
@@ -18769,12 +20310,12 @@
 +      </div>
 +    </section>
 +
-+    <section class="tref-section" id="variables">
++    <section class="tref-section" id="holes">
 +      <div class="tref-section-head">
-+        <div><span class="tref-kicker">Holes and what fills them</span><h2>Variables and scope</h2></div>
++        <div><span class="tref-kicker">Holes and what fills them</span><h2>Holes and scope</h2></div>
 +        <p>
-+          A variable is a hole a prompt punched. Saving a template declares exactly the names the body's
-+          prompt scopes use — which is why the panels let you describe a variable and set its scope, and
++          A scope hole is an empty place a prompt punched. Saving a template declares exactly the names the body's
++          prompt scopes use — which is why the panels let you describe a hole and set its scope, and
 +          never let you add or remove one.
 +        </p>
 +      </div>
@@ -18790,23 +20331,23 @@
 +      <div class="tref-note">
 +        <h4>Where the names come from today, and where they will come from</h4>
 +        <p>
-+          A body carries a variable when a prompt's scope holds <code>{"{ select: \"variable\", name }"}</code>.
++          A body carries a hole when a prompt's scope holds <code>{"{ select: \"hole\", name }"}</code>.
 +          Prompt blocks are not built yet, so today that happens when a template that already has one is
-+          inserted into a working copy: the terms are kept as holes and the inserted template's variables
++          inserted into a working copy: the terms are kept as holes and the inserted template's holes
 +          join this one's.
 +        </p>
 +        <p>
 +          The agreed shape for when prompt blocks land is pull-based: making a template walks the prompts
 +          it found and asks what each one's scope should be, and two prompts may point at the same
-+          variable. Nothing about the model here changes when that arrives — it only starts declaring
-+          variables on its own.
++          hole. Nothing about the model here changes when that arrives — it only starts declaring
++          holes on its own.
 +        </p>
 +      </div>
 +
 +      <p class="tref-prose">
 +        A <b>resource set</b> — “Winter filings”, “Field evidence” — is a named selection of the project's
 +        things, made in Project Overview's Contexts panel. Those are the names in the Insert modal's
-+        dropdown, offered beside “everything in the project” and the five kinds. A set that a variable's
++        dropdown, offered beside “everything in the project” and the five kinds. A set that a hole's
 +        default names cannot be deleted while it does.
 +      </p>
 +    </section>
@@ -18863,7 +20404,7 @@
 +      <p class="tref-prose">
 +        Project Overview carries the third panel, <b>Contexts</b>, where resource sets are made and
 +        counted; the templates library carries the fourth surface, the inspector, where a template's name,
-+        description, tags and variables are read and Use, Edit, Duplicate and Delete sit in one row.
++        description, tags and holes are read and Use, Edit, Duplicate and Delete sit in one row.
 +      </p>
 +    </section>
 +
@@ -18899,7 +20440,7 @@
 +      <div class="tref-note attention">
 +        <h4>Not built yet</h4>
 +        <p>
-+          Prompt blocks that pick a variable; images stored with a template so they travel; making a new
++          Prompt blocks that pick a hole; images stored with a template so they travel; making a new
 +          formula instance for a project-neutral atom; and opening a spreadsheet template for editing,
 +          which waits on the spreadsheet editor. Each is listed with a recommendation on
 +          <a href={hrefOf(project, "changes")}>What changed</a>.
@@ -18921,10 +20462,10 @@
 +</div>
 ~~~~
 
-### new · `src/lib/development-views/template-reference/procedures/changes.ts` (+286 / −0)
+### new · `src/lib/development-views/template-reference/procedures/changes.ts` (+312 / −0)
 
 ~~~~diff
-@@ -0,0 +1,286 @@
+@@ -0,0 +1,312 @@
 +import type { Decision, OpenItem, SystematicChange, Verification } from "$development-views/template-reference/types";
 +
 +export const SYSTEMATIC: SystematicChange[] = [
@@ -18954,18 +20495,18 @@
 +  },
 +  {
 +    index: "04",
-+    title: "Variables are found, described and scoped",
-+    before: "A variable was fixed at seed time with a portable default and no way to change it.",
-+    now: "Saving or committing declares every variable name the body's prompt scopes use. The panels show them read-only, with a description and a default scope set through a modal — everything in the project, kinds, or one of the project's sets.",
-+    why: "A variable exists because a prompt asks for one. Typing a name that no prompt uses would be a hole nothing fills.",
++    title: "Holes are found, described and scoped",
++    before: "A hole was fixed at seed time with a portable default and no way to change it.",
++    now: "Saving or committing declares every hole name the body's prompt scopes use. The panels show them read-only, with a description and a default scope set through a modal — everything in the project, kinds, or one of the project's sets.",
++    why: "A hole exists because a prompt asks for one. Typing a name that no prompt uses would be a hole nothing fills.",
 +    area: "templates"
 +  },
 +  {
 +    index: "05",
-+    title: "Placing a template asks what its variables select",
++    title: "Placing a template asks what its holes select",
 +    before: "Instantiate resolved from the stored defaults and had no way to be told anything.",
-+    now: "Insert and Use open one modal listing every variable, its description, and a choice whose first option is the default. The answers win for that copy and are stored nowhere.",
-+    why: "Instantiating on its own and instantiating inside something else are the same act. Inserting into a template being edited is the exception: it keeps the holes and merges the variables.",
++    now: "Insert and Use open one modal listing every hole, its description, and a choice whose first option is the default. The answers win for that copy and are stored nowhere.",
++    why: "Instantiating on its own and instantiating inside something else are the same act. Inserting into a template being edited is the exception: it keeps the holes and merges the holes.",
 +    area: "editors"
 +  },
 +  {
@@ -18973,7 +20514,7 @@
 +    title: "Resource sets became a subject",
 +    before: "The resourceSets table existed, was seeded with two rows, and no capability read or wrote it.",
 +    now: "A resource-sets capability of four procedures, and a Contexts panel in Project Overview that makes, renames, changes and deletes sets and counts what each one selects right now.",
-+    why: "A prompt's scope, a variable's default and an answer can all name a set. Nothing could say what a set meant.",
++    why: "A prompt's scope, a hole's default and an answer can all name a set. Nothing could say what a set meant.",
 +    area: "sets"
 +  },
 +  {
@@ -19020,8 +20561,8 @@
 +    index: "12",
 +    title: "A scope is built rather than picked",
 +    before:
-+      "A variable's default and an answer were a short list of toggles: everything, some kinds, or one of the project's named sets. Nothing could exclude anything, and nothing could name a particular resource.",
-+    now: "One builder, opened from four places, with two term lists and a live count. A rule that excludes something or names resources is stored as a resourceSets row with no name, bound to the variable that owns it, and what points at it is a single set term.",
++      "A hole's default and an answer were a short list of toggles: everything, some kinds, or one of the project's named sets. Nothing could exclude anything, and nothing could name a particular resource.",
++    now: "One builder, opened from four places, with two term lists and a live count. A rule that excludes something or names resources is stored as a resourceSets row with no name, bound to the hole that owns it, and what points at it is a single set term.",
 +    why: "Resolving a template substitutes one term for what fills it, on either side of a prompt's scope, and a difference cannot be substituted on the excluding side. The row is what makes exclusions expressible at all.",
 +    area: "sets"
 +  },
@@ -19029,10 +20570,28 @@
 +    index: "13",
 +    title: "A template asks for words as well as for resources",
 +    before:
-+      "A template's only parameter was a prompt's scope. Prose was fixed: a template that wanted a subject line, a client name or a date had to be edited after it was placed.",
-+    now: "A template atom is a hole in the prose, found from the body like a scope is and declared beside it. Placing a template lists every parameter as a key and what answers it, opens each one to its description, and refuses while any words are missing.",
-+    why: "It is deliberately not called a variable: a variable here is a named value a formula reads, and a template's parameters have nothing to do with that.",
++      "A template's only empty place was a prompt's scope. Prose was fixed: a template that wanted a subject line, a client name or a date had to be edited after it was placed.",
++    now: "A template atom is a hole in the prose, declared beside the scope holes and found from the body once it is placed. Placing a template lists every hole as a key and what answers it, opens each one to its description, and refuses while any words are missing.",
++    why: "A template is a function and its empty places are its arguments. Whether they select resources or say words, one list is what the person placing it has to fill.",
 +    area: "vocabulary"
++  },
++  {
++    index: "14",
++    title: "A hole is a hole, never a variable",
++    before:
++      "The empty places a template leaves were called variables, in the types, the tables, the capability, the panels and the seed — the same word this application already uses for a named value a formula reads.",
++    now: "TemplateHole, templates.holes, holeCount, holeDescription, hole-in-use, { select: \"hole\" } and a boundTo of kind hole. The Holes band sits above a rule, with Create hole at its top; the formula Variables panel keeps the word it had first.",
++    why: "Two unrelated ideas sharing a word is how a vocabulary stops being one. A template's holes have nothing to do with formula variables, so they no longer read as though they do.",
++    area: "vocabulary"
++  },
++  {
++    index: "15",
++    title: "A text hole is made where it goes",
++    before:
++      "Every hole was found from the body, so a text hole could only appear by inserting a template that already had one. Nothing in the panel could make a place for words.",
++    now: "Create hole, at the top of the Holes band, takes a name, a description and default words, declares the hole and drops its atom at the caret in one act. A scope hole is still found, because a prompt is what asks for one.",
++    why: "Only the writer knows where in the prose a hole belongs, so the panel cannot find it. Declaring without placing would leave a hole nothing fills, which is why the two happen together or not at all.",
++    area: "editors"
 +  }
 +];
 +
@@ -19045,9 +20604,9 @@
 +  },
 +  {
 +    round: "First review",
-+    question: "Where does a variable's meaning live?",
++    question: "Where does a hole's meaning live?",
 +    answer: "In a default that always exists — everything in the project unless the template says otherwise. There is no binding.",
-+    became: "TemplateVariable.default, the modal that sets it, and the removal of the per-project binding table and its procedure."
++    became: "TemplateHole.default, the modal that sets it, and the removal of the per-project binding table and its procedure."
 +  },
 +  {
 +    round: "First review",
@@ -19075,14 +20634,14 @@
 +  },
 +  {
 +    round: "Third review",
-+    question: "Should Use ask for variables the way Insert does?",
++    question: "Should Use ask for holes the way Insert does?",
 +    answer: "Yes — instantiating on its own or inside something else is still instantiating.",
 +    became: "The library inspector's Use opens the same modal and sends the answers to instantiateTemplate."
 +  },
 +  {
 +    round: "Third review",
-+    question: "Can a person add or remove a variable?",
-+    answer: "No. Variables come from prompt blocks; adding one by hand asks the author to keep a list in step with a body.",
++    question: "Can a person add or remove a hole?",
++    answer: "No. Holes come from prompt blocks; adding one by hand asks the author to keep a list in step with a body.",
 +    became: "The Add field and the Remove button are gone from both panels, and the helpers that minted names were deleted with them."
 +  },
 +  {
@@ -19100,24 +20659,24 @@
 +];
 +
 +export const VERIFICATION: Verification[] = [
-+  { check: "Types", command: "pnpm typecheck", result: "0 errors, 0 warnings across 2,508 files", clean: true },
++  { check: "Types", command: "pnpm typecheck", result: "0 errors, 0 warnings across 2,907 files", clean: true },
 +  { check: "Structure", command: "pnpm lint", result: "56 checks, 56 clean", clean: true },
-+  { check: "Unit", command: "pnpm test", result: "911 tests in 95 files", clean: true },
++  { check: "Unit", command: "pnpm test", result: "1,031 tests in 116 files, 2 skipped", clean: true },
 +  { check: "Category keys", command: "pnpm category-keys -- --check", result: "10 categories and 13 content views in step", clean: true },
 +  {
 +    check: "Browser",
 +    command: "pnpm test:browser, from a clean seed",
-+    result: "46 of 46, re-run after the rebase onto main. Nothing on the branch had to move to keep them passing.",
++    result: "58 of 58, with 4 skipped — the live-intelligence cases the base branch skips when no credential is configured.",
 +    clean: true
 +  }
 +];
 +
 +export const OPEN: OpenItem[] = [
 +  {
-+    title: "Variables from prompt blocks, assigned as you go",
++    title: "Holes from the prompt blocks this branch now sits on",
 +    detail:
-+      "Prompt blocks do not exist yet, so today a variable appears when a body already carries a { select: \"variable\" } scope — which happens when a template with one is inserted into a working copy. The agreed shape for when they land is pull-based: making a template walks the prompts it found and asks what each one's scope should be, and two prompts may point at the same variable.",
-+    recommendation: "Build it with the prompt block, not before it."
++      "The base branch has live prompt blocks in both editors, so a scope hole can finally come from a prompt somebody wrote rather than only from an inserted template. Nothing here has been taught to read them yet: a hole still appears when a body already carries a { select: \"hole\" } scope. The agreed shape is pull-based — making a template walks the prompts it found and asks what each one's scope should be, and two prompts may point at the same hole.",
++    recommendation: "Build it against the prompt block that now exists, as the next piece of work."
 +  },
 +  {
 +    title: "Images stored with a template",
@@ -19127,7 +20686,7 @@
 +  {
 +    title: "Binding a project-neutral formula",
 +    detail: "A formula atom in a template keeps its expression and has no formulaId; the editor draws it unbound. Nothing makes a new formula instance for it when a copy lands.",
-+    recommendation: "Belongs to the formula system, which main does not have yet."
++    recommendation: "Belongs to the formula system, which the base does not have yet."
 +  },
 +  {
 +    title: "Where resource sets are managed",
@@ -19147,9 +20706,9 @@
 +];
 +
 +export const MERGE = {
-+  base: "306e308",
-+  commits: 22,
-+  mainFiles: 233,
++  base: "1166f8e",
++  commits: 43,
++  mainFiles: 432,
 +  overlap: [
 +    "app/seed/templates.json",
 +    "app/seed/templateVersions.json",
@@ -19179,15 +20738,23 @@
 +  conflicts: [
 +    {
 +      path: "instantiate-template.ts",
-+      note: "Main normalizes a document's styles and readies a deck before the leader snapshot is written. Both calls were kept, alongside this branch's scope resolution, and the deck branch took main's destructuring."
++      note: "The base normalizes a document's styles and readies a deck before the leader snapshot is written. Both calls were kept, alongside this branch's scope resolution, and the deck branch took the base's destructuring."
 +    },
 +    {
 +      path: "templates.test.ts",
-+      note: "Main asserts the readied deck; this branch asserts lastUsedAt and that no copy carries a template id. Both assertions now stand in the same test."
++      note: "The base asserts the readied deck; this branch asserts lastUsedAt and that no copy carries a template id. Both assertions now stand in the same test."
 +    },
 +    {
 +      path: "slide-deck-editor.md",
-+      note: "Main cut the document from 714 lines to 221 and left the Templates panel listed as a deferred placeholder. Main's rewrite was taken whole, and the panel was described again in its terse register."
++      note: "The base cut the document from 714 lines to 221 and later added a Prompts section. Its rewrite was taken whole each time, and the Templates panel was described again beside it in the same terse register."
++    },
++    {
++      path: "document-editor.spec.ts",
++      note: "Both sides moved one context view out of the same loop to assert it on its own — the base for Prompts, this branch for Templates. The loop now covers Variables alone and both blocks stand under it."
++    },
++    {
++      path: "typing.ts",
++      note: "The base taught the deck's typing to edit a Prompt Block; this branch measured atoms through displayOfAtom so a template atom counts. The editable-block type is the base's and the measurement is this branch's."
 +    }
 +  ]
 +};
@@ -19197,7 +20764,7 @@
 +    { name: "templateStages", note: "projectId, templateId, templateRevision, target, resourceId, createdBy, updatedAt" },
 +    { name: "templates.projectId", note: "required — the project a template belongs to" },
 +    { name: "templates.lastUsedAt", note: "optional — when it was last instantiated, which is what recency reads" },
-+    { name: "TemplatedTerm { select: \"set\" }", note: "a variable default may name one of the project's sets" },
++    { name: "TemplatedTerm { select: \"set\" }", note: "a hole default may name one of the project's sets" },
 +    { name: "Target.context", note: "a tab can be opened straight onto a named context view" }
 +  ],
 +  removed: [
@@ -19207,7 +20774,7 @@
 +  ],
 +  unchanged: [
 +    { name: "TemplateBody", note: "document | slides | spreadsheet, exactly as before" },
-+    { name: "TemplateVariable", note: "name, label, description?, default? — main's shape" },
++    { name: "TemplateHole", note: "name, label, description?, default? — main's shape" },
 +    { name: "resourceSets", note: "the table was already there; only the capability over it is new" }
 +  ]
 +};
@@ -19221,42 +20788,42 @@
 +
 +/**
 + * Generated by scripts/generate-template-reference-inventory.mjs.
-+ * Comparison: 306e308 (branch point) → worktree.
++ * Comparison: 1166f8e (branch point) → worktree.
 + */
-+export const BASELINE = "306e308";
++export const BASELINE = "1166f8e";
 +
 +export const FILES: FileRecord[] = [
-+  {"path":"app/scripts/generate-template-reference-inventory.mjs","status":"A","area":"cross-cutting","kind":"configuration","current":114,"base":0,"added":114,"deleted":0},
++  {"path":"app/scripts/generate-template-reference-inventory.mjs","status":"A","area":"cross-cutting","kind":"configuration","current":126,"base":0,"added":126,"deleted":0},
 +  {"path":"app/seed/documents.json","status":"M","area":"evidence","kind":"fixture","current":38,"base":42,"added":0,"deleted":4},
 +  {"path":"app/seed/resourceSets.json","status":"M","area":"evidence","kind":"fixture","current":46,"base":29,"added":17,"deleted":0},
 +  {"path":"app/seed/slideDecks.json","status":"M","area":"evidence","kind":"fixture","current":38,"base":42,"added":0,"deleted":4},
 +  {"path":"app/seed/spreadsheets.json","status":"M","area":"evidence","kind":"fixture","current":20,"base":22,"added":0,"deleted":2},
-+  {"path":"app/seed/templates.json","status":"M","area":"evidence","kind":"fixture","current":2295,"base":1021,"added":1516,"deleted":242},
-+  {"path":"app/seed/templateVersions.json","status":"M","area":"evidence","kind":"fixture","current":2695,"base":2199,"added":497,"deleted":1},
-+  {"path":"app/src/lib/app-views/categories/document-editor/content/document.svelte","status":"M","area":"editors","kind":"production","current":907,"base":892,"added":15,"deleted":0},
-+  {"path":"app/src/lib/app-views/categories/document-editor/context/templates.svelte","status":"A","area":"editors","kind":"production","current":601,"base":0,"added":601,"deleted":0},
-+  {"path":"app/src/lib/app-views/categories/document-editor/procedures/projection.ts","status":"M","area":"editors","kind":"production","current":729,"base":704,"added":33,"deleted":8},
++  {"path":"app/seed/templates.json","status":"M","area":"evidence","kind":"fixture","current":2295,"base":1021,"added":1524,"deleted":250},
++  {"path":"app/seed/templateVersions.json","status":"M","area":"evidence","kind":"fixture","current":2695,"base":2199,"added":518,"deleted":22},
++  {"path":"app/src/lib/app-views/categories/document-editor/content/document.svelte","status":"M","area":"editors","kind":"production","current":954,"base":939,"added":15,"deleted":0},
++  {"path":"app/src/lib/app-views/categories/document-editor/context/templates.svelte","status":"A","area":"editors","kind":"production","current":683,"base":0,"added":683,"deleted":0},
++  {"path":"app/src/lib/app-views/categories/document-editor/procedures/projection.ts","status":"M","area":"editors","kind":"production","current":751,"base":726,"added":33,"deleted":8},
 +  {"path":"app/src/lib/app-views/categories/document-editor/procedures/schema.ts","status":"M","area":"editors","kind":"production","current":255,"base":221,"added":37,"deleted":3},
-+  {"path":"app/src/lib/app-views/categories/document-editor/procedures/templating.ts","status":"A","area":"editors","kind":"production","current":327,"base":0,"added":327,"deleted":0},
++  {"path":"app/src/lib/app-views/categories/document-editor/procedures/templating.ts","status":"A","area":"editors","kind":"production","current":394,"base":0,"added":394,"deleted":0},
 +  {"path":"app/src/lib/app-views/categories/document-editor/procedures/test/unit/templating.test.ts","status":"A","area":"editors","kind":"test","current":167,"base":0,"added":167,"deleted":0},
 +  {"path":"app/src/lib/app-views/categories/project-overview/context/contexts.svelte","status":"A","area":"contexts","kind":"production","current":283,"base":0,"added":283,"deleted":0},
 +  {"path":"app/src/lib/app-views/categories/project-overview/procedures/contexts.ts","status":"A","area":"contexts","kind":"production","current":115,"base":0,"added":115,"deleted":0},
 +  {"path":"app/src/lib/app-views/categories/project-overview/procedures/test/unit/contexts.test.ts","status":"A","area":"contexts","kind":"test","current":68,"base":0,"added":68,"deleted":0},
-+  {"path":"app/src/lib/app-views/categories/project-overview/project-overview.md","status":"M","area":"contexts","kind":"documentation","current":622,"base":618,"added":22,"deleted":18},
++  {"path":"app/src/lib/app-views/categories/project-overview/project-overview.md","status":"M","area":"contexts","kind":"documentation","current":622,"base":618,"added":25,"deleted":21},
 +  {"path":"app/src/lib/app-views/categories/slide-deck-editor/context/comments.svelte","status":"M","area":"editors","kind":"production","current":175,"base":170,"added":6,"deleted":1},
-+  {"path":"app/src/lib/app-views/categories/slide-deck-editor/context/templates.svelte","status":"M","area":"editors","kind":"production","current":623,"base":8,"added":618,"deleted":3},
++  {"path":"app/src/lib/app-views/categories/slide-deck-editor/context/templates.svelte","status":"M","area":"editors","kind":"production","current":705,"base":8,"added":700,"deleted":3},
 +  {"path":"app/src/lib/app-views/categories/slide-deck-editor/inspector/threads.svelte","status":"M","area":"editors","kind":"production","current":151,"base":144,"added":8,"deleted":1},
-+  {"path":"app/src/lib/app-views/categories/slide-deck-editor/procedures/scene.ts","status":"M","area":"editors","kind":"production","current":326,"base":326,"added":3,"deleted":3},
-+  {"path":"app/src/lib/app-views/categories/slide-deck-editor/procedures/templating.ts","status":"A","area":"editors","kind":"production","current":336,"base":0,"added":336,"deleted":0},
++  {"path":"app/src/lib/app-views/categories/slide-deck-editor/procedures/scene.ts","status":"M","area":"editors","kind":"production","current":333,"base":333,"added":3,"deleted":3},
++  {"path":"app/src/lib/app-views/categories/slide-deck-editor/procedures/templating.ts","status":"A","area":"editors","kind":"production","current":418,"base":0,"added":418,"deleted":0},
 +  {"path":"app/src/lib/app-views/categories/slide-deck-editor/procedures/test/unit/templating.test.ts","status":"A","area":"editors","kind":"test","current":130,"base":0,"added":130,"deleted":0},
-+  {"path":"app/src/lib/app-views/categories/slide-deck-editor/procedures/typing.ts","status":"M","area":"editors","kind":"production","current":198,"base":199,"added":2,"deleted":3},
-+  {"path":"app/src/lib/app-views/categories/slide-deck-editor/slide-deck-editor.md","status":"M","area":"editors","kind":"documentation","current":245,"base":225,"added":21,"deleted":1},
++  {"path":"app/src/lib/app-views/categories/slide-deck-editor/procedures/typing.ts","status":"M","area":"editors","kind":"production","current":206,"base":207,"added":2,"deleted":3},
++  {"path":"app/src/lib/app-views/categories/slide-deck-editor/slide-deck-editor.md","status":"M","area":"editors","kind":"documentation","current":284,"base":262,"added":23,"deleted":1},
 +  {"path":"app/src/lib/app-views/categories/templates/content/editor.svelte","status":"M","area":"library","kind":"production","current":81,"base":50,"added":48,"deleted":17},
-+  {"path":"app/src/lib/app-views/categories/templates/content/library.svelte","status":"M","area":"library","kind":"production","current":555,"base":543,"added":23,"deleted":11},
-+  {"path":"app/src/lib/app-views/categories/templates/inspector/template.svelte","status":"M","area":"library","kind":"production","current":1413,"base":1185,"added":271,"deleted":43},
-+  {"path":"app/src/lib/app-views/categories/templates/procedures/library.svelte.ts","status":"M","area":"library","kind":"production","current":489,"base":356,"added":165,"deleted":32},
++  {"path":"app/src/lib/app-views/categories/templates/content/library.svelte","status":"M","area":"library","kind":"production","current":555,"base":543,"added":33,"deleted":21},
++  {"path":"app/src/lib/app-views/categories/templates/inspector/template.svelte","status":"M","area":"library","kind":"production","current":1413,"base":1185,"added":347,"deleted":119},
++  {"path":"app/src/lib/app-views/categories/templates/procedures/library.svelte.ts","status":"M","area":"library","kind":"production","current":488,"base":356,"added":177,"deleted":45},
 +  {"path":"app/src/lib/app-views/categories/templates/procedures/test/unit/library.test.ts","status":"M","area":"library","kind":"test","current":41,"base":25,"added":16,"deleted":0},
-+  {"path":"app/src/lib/app-views/categories/templates/templates.md","status":"M","area":"library","kind":"documentation","current":80,"base":109,"added":45,"deleted":74},
++  {"path":"app/src/lib/app-views/categories/templates/templates.md","status":"M","area":"library","kind":"documentation","current":80,"base":109,"added":46,"deleted":75},
 +  {"path":"app/src/lib/capabilities/comments/api/start-thread/start-thread.ts","status":"M","area":"neighbours","kind":"production","current":44,"base":36,"added":8,"deleted":0},
 +  {"path":"app/src/lib/capabilities/comments/comments.md","status":"M","area":"neighbours","kind":"documentation","current":19,"base":15,"added":4,"deleted":0},
 +  {"path":"app/src/lib/capabilities/comments/test/unit/comments.test.ts","status":"M","area":"neighbours","kind":"test","current":137,"base":125,"added":12,"deleted":0},
@@ -19279,11 +20846,11 @@
 +  {"path":"app/src/lib/capabilities/templates/api/commit-template-stage/validate-commit-template-stage.ts","status":"A","area":"templates","kind":"production","current":16,"base":0,"added":16,"deleted":0},
 +  {"path":"app/src/lib/capabilities/templates/api/create-template-from-resource/create-template-from-resource.ts","status":"A","area":"templates","kind":"production","current":89,"base":0,"added":89,"deleted":0},
 +  {"path":"app/src/lib/capabilities/templates/api/create-template-from-resource/validate-create-template-from-resource.ts","status":"A","area":"templates","kind":"production","current":44,"base":0,"added":44,"deleted":0},
-+  {"path":"app/src/lib/capabilities/templates/api/create-template/create-template.ts","status":"M","area":"templates","kind":"production","current":34,"base":33,"added":1,"deleted":0},
++  {"path":"app/src/lib/capabilities/templates/api/create-template/create-template.ts","status":"M","area":"templates","kind":"production","current":34,"base":33,"added":2,"deleted":1},
 +  {"path":"app/src/lib/capabilities/templates/api/discard-template-stage/discard-template-stage.ts","status":"A","area":"templates","kind":"production","current":31,"base":0,"added":31,"deleted":0},
 +  {"path":"app/src/lib/capabilities/templates/api/discard-template-stage/validate-discard-template-stage.ts","status":"A","area":"templates","kind":"production","current":8,"base":0,"added":8,"deleted":0},
-+  {"path":"app/src/lib/capabilities/templates/api/duplicate-template/duplicate-template.ts","status":"M","area":"templates","kind":"production","current":73,"base":72,"added":1,"deleted":0},
-+  {"path":"app/src/lib/capabilities/templates/api/instantiate-template/instantiate-template.ts","status":"M","area":"templates","kind":"production","current":237,"base":173,"added":110,"deleted":46},
++  {"path":"app/src/lib/capabilities/templates/api/duplicate-template/duplicate-template.ts","status":"M","area":"templates","kind":"production","current":73,"base":72,"added":2,"deleted":1},
++  {"path":"app/src/lib/capabilities/templates/api/instantiate-template/instantiate-template.ts","status":"M","area":"templates","kind":"production","current":237,"base":173,"added":112,"deleted":48},
 +  {"path":"app/src/lib/capabilities/templates/api/instantiate-template/validate-instantiate-template.ts","status":"M","area":"templates","kind":"production","current":22,"base":17,"added":8,"deleted":3},
 +  {"path":"app/src/lib/capabilities/templates/api/open-template-stage/open-template-stage.ts","status":"A","area":"templates","kind":"production","current":115,"base":0,"added":115,"deleted":0},
 +  {"path":"app/src/lib/capabilities/templates/api/open-template-stage/validate-open-template-stage.ts","status":"A","area":"templates","kind":"production","current":8,"base":0,"added":8,"deleted":0},
@@ -19291,27 +20858,27 @@
 +  {"path":"app/src/lib/capabilities/templates/api/read-resource-template/validate-read-resource-template.ts","status":"A","area":"templates","kind":"production","current":8,"base":0,"added":8,"deleted":0},
 +  {"path":"app/src/lib/capabilities/templates/api/remove-template/remove-template.ts","status":"M","area":"templates","kind":"production","current":106,"base":164,"added":10,"deleted":68},
 +  {"path":"app/src/lib/capabilities/templates/api/shared/bodies.ts","status":"M","area":"templates","kind":"production","current":308,"base":462,"added":17,"deleted":171},
-+  {"path":"app/src/lib/capabilities/templates/api/shared/projection.ts","status":"M","area":"templates","kind":"production","current":268,"base":283,"added":30,"deleted":45},
++  {"path":"app/src/lib/capabilities/templates/api/shared/holes.ts","status":"A","area":"templates","kind":"production","current":39,"base":0,"added":39,"deleted":0},
++  {"path":"app/src/lib/capabilities/templates/api/shared/projection.ts","status":"M","area":"templates","kind":"production","current":266,"base":283,"added":32,"deleted":49},
 +  {"path":"app/src/lib/capabilities/templates/api/shared/scopes.ts","status":"A","area":"templates","kind":"production","current":204,"base":0,"added":204,"deleted":0},
 +  {"path":"app/src/lib/capabilities/templates/api/shared/stages.ts","status":"A","area":"templates","kind":"production","current":141,"base":0,"added":141,"deleted":0},
-+  {"path":"app/src/lib/capabilities/templates/api/shared/template-rows.ts","status":"M","area":"templates","kind":"production","current":37,"base":36,"added":1,"deleted":0},
-+  {"path":"app/src/lib/capabilities/templates/api/shared/validation.ts","status":"M","area":"templates","kind":"production","current":1867,"base":1687,"added":192,"deleted":12},
-+  {"path":"app/src/lib/capabilities/templates/api/shared/variables.ts","status":"A","area":"templates","kind":"production","current":39,"base":0,"added":39,"deleted":0},
-+  {"path":"app/src/lib/capabilities/templates/api/update-template/update-template.ts","status":"M","area":"templates","kind":"production","current":171,"base":113,"added":69,"deleted":11},
-+  {"path":"app/src/lib/capabilities/templates/api/update-template/validate-update-template.ts","status":"M","area":"templates","kind":"production","current":65,"base":61,"added":6,"deleted":2},
++  {"path":"app/src/lib/capabilities/templates/api/shared/template-rows.ts","status":"M","area":"templates","kind":"production","current":37,"base":36,"added":3,"deleted":2},
++  {"path":"app/src/lib/capabilities/templates/api/shared/validation.ts","status":"M","area":"templates","kind":"production","current":1863,"base":1687,"added":227,"deleted":51},
++  {"path":"app/src/lib/capabilities/templates/api/update-template/update-template.ts","status":"M","area":"templates","kind":"production","current":168,"base":113,"added":81,"deleted":26},
++  {"path":"app/src/lib/capabilities/templates/api/update-template/validate-update-template.ts","status":"M","area":"templates","kind":"production","current":65,"base":61,"added":14,"deleted":10},
 +  {"path":"app/src/lib/capabilities/templates/index.remote.ts","status":"M","area":"templates","kind":"production","current":125,"base":73,"added":58,"deleted":6},
-+  {"path":"app/src/lib/capabilities/templates/templates.md","status":"M","area":"templates","kind":"documentation","current":151,"base":91,"added":124,"deleted":64},
++  {"path":"app/src/lib/capabilities/templates/templates.md","status":"M","area":"templates","kind":"documentation","current":153,"base":91,"added":126,"deleted":64},
 +  {"path":"app/src/lib/capabilities/templates/test/unit/answers.test.ts","status":"A","area":"templates","kind":"test","current":491,"base":0,"added":491,"deleted":0},
 +  {"path":"app/src/lib/capabilities/templates/test/unit/stages.test.ts","status":"A","area":"templates","kind":"test","current":377,"base":0,"added":377,"deleted":0},
-+  {"path":"app/src/lib/capabilities/templates/test/unit/templates.test.ts","status":"M","area":"templates","kind":"test","current":1414,"base":1447,"added":57,"deleted":90},
-+  {"path":"app/src/lib/capabilities/templates/types/templates.ts","status":"M","area":"templates","kind":"production","current":252,"base":156,"added":113,"deleted":17},
++  {"path":"app/src/lib/capabilities/templates/test/unit/templates.test.ts","status":"M","area":"templates","kind":"test","current":1414,"base":1447,"added":89,"deleted":122},
++  {"path":"app/src/lib/capabilities/templates/types/templates.ts","status":"M","area":"templates","kind":"production","current":252,"base":156,"added":118,"deleted":22},
 +  {"path":"app/src/lib/components/authored/panel/panel-section.svelte","status":"M","area":"cross-cutting","kind":"production","current":126,"base":114,"added":13,"deleted":1},
 +  {"path":"app/src/lib/components/authored/scope-builder/index.ts","status":"A","area":"cross-cutting","kind":"production","current":9,"base":0,"added":9,"deleted":0},
 +  {"path":"app/src/lib/components/authored/scope-builder/scope-builder.svelte","status":"A","area":"cross-cutting","kind":"production","current":455,"base":0,"added":455,"deleted":0},
 +  {"path":"app/src/lib/components/authored/template-answers/index.ts","status":"A","area":"cross-cutting","kind":"production","current":8,"base":0,"added":8,"deleted":0},
 +  {"path":"app/src/lib/components/authored/template-answers/template-answers.svelte","status":"A","area":"cross-cutting","kind":"production","current":185,"base":0,"added":185,"deleted":0},
-+  {"path":"app/src/lib/development-views/demo/components/demo-index.svelte","status":"M","area":"cross-cutting","kind":"production","current":100,"base":100,"added":3,"deleted":3},
-+  {"path":"app/src/lib/development-views/template-reference/components/changes-page.svelte","status":"A","area":"reference","kind":"reference","current":281,"base":0,"added":281,"deleted":0},
++  {"path":"app/src/lib/development-views/demo/components/demo-index.svelte","status":"M","area":"cross-cutting","kind":"production","current":153,"base":153,"added":3,"deleted":3},
++  {"path":"app/src/lib/development-views/template-reference/components/changes-page.svelte","status":"A","area":"reference","kind":"reference","current":285,"base":0,"added":285,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/components/diagram-binding.svelte","status":"A","area":"reference","kind":"reference","current":168,"base":0,"added":168,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/components/diagram-builder.svelte","status":"A","area":"reference","kind":"reference","current":274,"base":0,"added":274,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/components/diagram-difference.svelte","status":"A","area":"reference","kind":"reference","current":128,"base":0,"added":128,"deleted":0},
@@ -19323,9 +20890,9 @@
 +  {"path":"app/src/lib/development-views/template-reference/components/file-ledger.svelte","status":"A","area":"reference","kind":"reference","current":138,"base":0,"added":138,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/components/reference-header.svelte","status":"A","area":"reference","kind":"reference","current":166,"base":0,"added":166,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/components/reference.css","status":"A","area":"reference","kind":"reference","current":305,"base":0,"added":305,"deleted":0},
-+  {"path":"app/src/lib/development-views/template-reference/components/scope-page.svelte","status":"A","area":"reference","kind":"reference","current":467,"base":0,"added":467,"deleted":0},
++  {"path":"app/src/lib/development-views/template-reference/components/scope-page.svelte","status":"A","area":"reference","kind":"reference","current":468,"base":0,"added":468,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/components/system-page.svelte","status":"A","area":"reference","kind":"reference","current":329,"base":0,"added":329,"deleted":0},
-+  {"path":"app/src/lib/development-views/template-reference/procedures/changes.ts","status":"A","area":"reference","kind":"reference","current":286,"base":0,"added":286,"deleted":0},
++  {"path":"app/src/lib/development-views/template-reference/procedures/changes.ts","status":"A","area":"reference","kind":"reference","current":312,"base":0,"added":312,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/procedures/inventory.ts","status":"A","area":"reference","kind":"reference","current":148,"base":0,"added":148,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/procedures/navigation.ts","status":"A","area":"reference","kind":"reference","current":16,"base":0,"added":16,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/procedures/scope.ts","status":"A","area":"reference","kind":"reference","current":521,"base":0,"added":521,"deleted":0},
@@ -19341,7 +20908,7 @@
 +  {"path":"app/src/lib/representation/data/behavior/core/test/unit/resource-set.test.ts","status":"A","area":"vocabulary","kind":"test","current":46,"base":0,"added":46,"deleted":0},
 +  {"path":"app/src/lib/representation/data/behavior/core/test/unit/scope-draft.test.ts","status":"A","area":"vocabulary","kind":"test","current":194,"base":0,"added":194,"deleted":0},
 +  {"path":"app/src/lib/representation/data/behavior/documents/apply-ops.ts","status":"M","area":"vocabulary","kind":"production","current":463,"base":462,"added":2,"deleted":1},
-+  {"path":"app/src/lib/representation/data/behavior/slide-decks/apply-ops.ts","status":"M","area":"vocabulary","kind":"production","current":322,"base":322,"added":2,"deleted":2},
++  {"path":"app/src/lib/representation/data/behavior/slide-decks/apply-ops.ts","status":"M","area":"vocabulary","kind":"production","current":324,"base":324,"added":2,"deleted":2},
 +  {"path":"app/src/lib/representation/data/behavior/templates/answers.ts","status":"A","area":"vocabulary","kind":"production","current":62,"base":0,"added":62,"deleted":0},
 +  {"path":"app/src/lib/representation/data/behavior/templates/deck-of-slide.ts","status":"A","area":"vocabulary","kind":"production","current":18,"base":0,"added":18,"deleted":0},
 +  {"path":"app/src/lib/representation/data/behavior/templates/fresh-ids.ts","status":"A","area":"vocabulary","kind":"production","current":71,"base":0,"added":71,"deleted":0},
@@ -19355,14 +20922,14 @@
 +  {"path":"app/src/lib/representation/data/behavior/workspace/opening.ts","status":"M","area":"vocabulary","kind":"production","current":168,"base":164,"added":5,"deleted":1},
 +  {"path":"app/src/lib/representation/data/types/content/content-block.ts","status":"M","area":"vocabulary","kind":"production","current":145,"base":130,"added":16,"deleted":1},
 +  {"path":"app/src/lib/representation/data/types/core/resource-set.ts","status":"M","area":"vocabulary","kind":"production","current":32,"base":40,"added":16,"deleted":24},
-+  {"path":"app/src/lib/representation/data/types/templates/template.ts","status":"M","area":"vocabulary","kind":"production","current":71,"base":86,"added":11,"deleted":26},
++  {"path":"app/src/lib/representation/data/types/templates/template.ts","status":"M","area":"vocabulary","kind":"production","current":71,"base":86,"added":12,"deleted":27},
 +  {"path":"app/src/lib/representation/data/types/workspace/tab.ts","status":"M","area":"vocabulary","kind":"production","current":55,"base":54,"added":1,"deleted":0},
-+  {"path":"app/src/lib/representation/store/tables.ts","status":"M","area":"vocabulary","kind":"production","current":645,"base":631,"added":23,"deleted":9},
++  {"path":"app/src/lib/representation/store/tables.ts","status":"M","area":"vocabulary","kind":"production","current":698,"base":684,"added":26,"deleted":12},
 +  {"path":"app/src/routes/app/[project]/reference/templates/+page.svelte","status":"M","area":"reference","kind":"reference","current":14,"base":5,"added":11,"deleted":2},
 +  {"path":"app/src/routes/app/[project]/reference/templates/changes/+page.svelte","status":"A","area":"reference","kind":"reference","current":14,"base":0,"added":14,"deleted":0},
 +  {"path":"app/src/routes/app/[project]/reference/templates/scope/+page.svelte","status":"A","area":"reference","kind":"reference","current":14,"base":0,"added":14,"deleted":0},
-+  {"path":"app/test/browser/document-editor.spec.ts","status":"M","area":"evidence","kind":"test","current":830,"base":823,"added":8,"deleted":1},
-+  {"path":"app/test/browser/template-features.spec.ts","status":"A","area":"evidence","kind":"test","current":277,"base":0,"added":277,"deleted":0},
++  {"path":"app/test/browser/document-editor.spec.ts","status":"M","area":"evidence","kind":"test","current":884,"base":877,"added":8,"deleted":1},
++  {"path":"app/test/browser/template-features.spec.ts","status":"A","area":"evidence","kind":"test","current":315,"base":0,"added":315,"deleted":0},
 +  {"path":"app/test/browser/template-reference.spec.ts","status":"A","area":"evidence","kind":"test","current":115,"base":0,"added":115,"deleted":0}
 +];
 ~~~~
@@ -19376,7 +20943,7 @@
 +export const PAGES: ReferencePage[] = [
 +  { slug: "system", index: "01", label: "How templates work", sub: "The model, the verbs, the panels" },
 +  { slug: "changes", index: "02", label: "What changed", sub: "Every file, decision and check" },
-+  { slug: "scope", index: "03", label: "What a variable selects", sub: "The scope builder, and what it cost" }
++  { slug: "scope", index: "03", label: "What a hole selects", sub: "The scope builder, and what it cost" }
 +];
 +
 +const PATHS: Record<ReferencePage["slug"], string> = {
@@ -19438,11 +21005,11 @@
 +    inALiveResource: "Yes"
 +  },
 +  {
-+    select: "variable",
++    select: "hole",
 +    reads: "Whatever source_material holds",
-+    picks: "The answer given for that variable, else its default, else the whole project.",
++    picks: "The answer given for that hole, else its default, else the whole project.",
 +    inABody: "Yes",
-+    inADefault: "Yes, one variable may defer to another",
++    inADefault: "Yes, one hole may defer to another",
 +    inALiveResource: "No"
 +  }
 +];
@@ -19459,28 +21026,28 @@
 +    where: "A template atom in the prose names it",
 +    opens: "text",
 +    title: "Words",
-+    confirms: "What the caller typed, else the parameter's own default words, else nothing — which is the only thing that holds a placement up",
++    confirms: "What the caller typed, else the hole's own default words, else nothing — which is the only thing that holds a placement up",
 +    writes: "The atom becomes a literal, and the block's display follows"
 +  }
 +];
 +
 +export const DOORS: ScopeDoor[] = [
 +  {
-+    where: "Templates panel · a variable card on a working copy",
++    where: "Templates panel · a hole card on a working copy",
 +    opens: "Default scope",
 +    title: "Default scope for Source material",
 +    confirms: "Set the default scope",
 +    writes: "updateTemplate with a rule; the server stores a row if the rule needs one"
 +  },
 +  {
-+    where: "Templates library · the inspector's variable list",
++    where: "Templates library · the inspector's hole list",
 +    opens: "Default scope",
 +    title: "Default scope for Source material",
 +    confirms: "Set the default scope",
 +    writes: "The same procedure, from the other door"
 +  },
 +  {
-+    where: "Insert · one row per variable in the ask modal",
++    where: "Insert · one row per hole in the ask modal",
 +    opens: "Change",
 +    title: "What Source material selects here",
 +    confirms: "Use this",
@@ -19506,7 +21073,7 @@
 +  {
 +    index: "1",
 +    title: "Open",
-+    person: "Presses Default scope on a variable, or Change beside a variable in the ask modal",
++    person: "Presses Default scope on a hole, or Change beside a hole in the ask modal",
 +    client: "The builder opens on the rule that is there now, which is the whole project when nothing was chosen",
 +    server: "Nothing. It reads the project's resource index and the project's named sets, both already loaded",
 +    rows: "None"
@@ -19539,16 +21106,16 @@
 +    index: "5",
 +    title: "Confirm an answer",
 +    person: "Presses Use this, then Insert or Use",
-+    client: "Holds the rule beside the variable's name until the placing call",
++    client: "Holds the rule beside the hole's name until the placing call",
 +    server: "instantiateTemplate does the same normalisation, owning each row it writes to the resource it makes",
 +    rows: "The new resource, plus one row per answer that needs one"
 +  },
 +  {
 +    index: "6",
 +    title: "Forget",
-+    person: "Deletes the template, or the prompt that asked for the variable",
++    person: "Deletes the template, or the prompt that asked for the hole",
 +    client: "Nothing",
-+    server: "removeTemplate deletes the rows its variables own, the way it already discards the stage",
++    server: "removeTemplate deletes the rows its holes own, the way it already discards the stage",
 +    rows: "resourceSets −1 per bound row"
 +  }
 +];
@@ -19562,12 +21129,12 @@
 +  {
 +    rule: "A row with a name is a project subject. A row without one is bound to whatever points at it.",
 +    because:
-+      "Naming is the whole difference. A named set is something people curate and reuse. A bound set is a value a variable happens to hold, and asking someone to name it is asking them to file something they never wanted to keep."
++      "Naming is the whole difference. A named set is something people curate and reuse. A bound set is a value a hole happens to hold, and asking someone to name it is asking them to file something they never wanted to keep."
 +  },
 +  {
 +    rule: "A bound row has exactly one owner and dies with it.",
 +    because:
-+      "It exists to give one rule an id. Deleting the template, the variable or the resource that points at it leaves nothing that could read it again."
++      "It exists to give one rule an id. Deleting the template, the hole or the resource that points at it leaves nothing that could read it again."
 +  },
 +  {
 +    rule: "The caller sends a rule. The server decides whether it needs a row.",
@@ -19585,12 +21152,12 @@
 +      "They are the common case, they are already expressible inline, and writing rows for them would fill the table with rows that say nothing."
 +  },
 +  {
-+    rule: "A template's body never names a set or a resource. It names a variable.",
++    rule: "A template's body never names a set or a resource. It names a hole.",
 +    because:
 +      "That is what makes a template a function rather than a value. Portability already strips both, and this work does not change it."
 +  },
 +  {
-+    rule: "A variable's default may name a set, because a template belongs to a project.",
++    rule: "A hole's default may name a set, because a template belongs to a project.",
 +    because:
 +      "The default is project-local metadata rather than body. When a template is later taken out of its project, the default is one more thing the strip removes."
 +  }
@@ -19603,9 +21170,9 @@
 +    where: "The shared draft, before the write; updateResourceSet already refuses it as corrupt"
 +  },
 +  {
-+    when: "A named set is deleted while a set or a template variable names it",
++    when: "A named set is deleted while a set or a template hole names it",
 +    answer: "in-use, naming what holds it",
-+    where: "removeResourceSet, which already walks templates.variables"
++    where: "removeResourceSet, which already walks templates.holes"
 +  },
 +  {
 +    when: "A rule names a set from another project",
@@ -19623,12 +21190,12 @@
 +    where: "validateInstantiateTemplate"
 +  },
 +  {
-+    when: "A prompt names a variable the template does not declare",
++    when: "A prompt names a hole the template does not declare",
 +    answer: "unsupported-body, with the names",
 +    where: "Unchanged"
 +  },
 +  {
-+    when: "A variable is answered with a raw difference that reached resolution",
++    when: "A hole is answered with a raw difference that reached resolution",
 +    answer: "unsupported-body, as today",
 +    where: "resolveTemplateScopes, which should now be unreachable from either door"
 +  }
@@ -19645,7 +21212,7 @@
 +    path: "representation/data/types/core/resource-set.ts",
 +    status: "changed",
 +    area: "vocabulary",
-+    work: "One added union, BoundTo: a template's variable, or a placed resource's. Neither term union moved."
++    work: "One added union, BoundTo: a template's hole, or a placed resource's. Neither term union moved."
 +  },
 +  {
 +    path: "representation/data/behavior/core/scope-draft.ts",
@@ -19687,7 +21254,7 @@
 +    path: "capabilities/templates/api/shared/projection.ts",
 +    status: "changed",
 +    area: "templates",
-+    work: "A variable's default naming a bound row is expanded into that row's rule, so the builder opens on what somebody built. A named set is left alone."
++    work: "A hole's default naming a bound row is expanded into that row's rule, so the builder opens on what somebody built. A named set is left alone."
 +  },
 +  {
 +    path: "capabilities/templates/api/shared/stages.ts",
@@ -19699,7 +21266,7 @@
 +    path: "capabilities/templates/api/update-template/",
 +    status: "changed",
 +    area: "templates",
-+    work: "Each default is normalised against its own variable, a set from another project is refused, and a variable that disappears takes its row with it."
++    work: "Each default is normalised against its own hole, a set from another project is refused, and a hole that disappears takes its row with it."
 +  },
 +  {
 +    path: "capabilities/templates/api/instantiate-template/",
@@ -19711,7 +21278,7 @@
 +    path: "capabilities/templates/api/remove-template/",
 +    status: "changed",
 +    area: "templates",
-+    work: "Deleting a template deletes the rows its variables own."
++    work: "Deleting a template deletes the rows its holes own."
 +  },
 +  {
 +    path: "capabilities/templates/test/unit/answers.test.ts",
@@ -19735,7 +21302,7 @@
 +    path: "app-views/categories/document-editor/context/templates.svelte",
 +    status: "changed",
 +    area: "editors",
-+    work: "The toggle modal is the builder; the ask modal lists each variable's rule with Change and Use the default beside it, and the builder opens as a modal of its own."
++    work: "The toggle modal is the builder; the ask modal lists each hole's rule with Change and Use the default beside it, and the builder opens as a modal of its own."
 +  },
 +  {
 +    path: "app-views/categories/slide-deck-editor/procedures/templating.ts",
@@ -19783,7 +21350,7 @@
 +    path: "seed/resourceSets.json · seed/templates.json",
 +    status: "changed",
 +    area: "evidence",
-+    work: "A bound row owned by a seeded template's variable, holding an exclusion, so every panel has one to draw before anyone builds one."
++    work: "A bound row owned by a seeded template's hole, holding an exclusion, so every panel has one to draw before anyone builds one."
 +  },
 +  {
 +    path: "test/browser/template-features.spec.ts",
@@ -19817,9 +21384,9 @@
 +    index: "3",
 +    question: "How does a bound row know what owns it?",
 +    recommended:
-+      "An explicit boundTo, and it names the variable on both sides: a template's variable, or a placed resource's.",
++      "An explicit boundTo, and it names the hole on both sides: a template's hole, or a placed resource's.",
 +    because:
-+      "One resource may answer several variables, so the owner has to be the pair rather than the resource. Ownership is a fact worth storing; a sweep has to be written, scheduled and trusted.",
++      "One resource may answer several holes, so the owner has to be the pair rather than the resource. Ownership is a fact worth storing; a sweep has to be written, scheduled and trusted.",
 +    alternative: "No owner, and a collector that removes rows nothing reaches.",
 +    cost: "One column, and three procedures that already delete things delete these too."
 +  },
@@ -19879,15 +21446,15 @@
 +    order: "Lands with derived outputs, before any of this is useful end to end"
 +  },
 +  {
-+    title: "A prompt block is what declares a variable",
++    title: "A prompt block is what declares a hole",
 +    detail:
-+      "Today a variable appears only because a body already carries a variable scope, which happens when a template with one is inserted into a working copy. The agreed shape is pull-based: making a template walks the prompts it found and asks what each one's scope should be, and two prompts may share a variable.",
++      "Today a hole appears only because a body already carries a hole scope, which happens when a template with one is inserted into a working copy. The agreed shape is pull-based: making a template walks the prompts it found and asks what each one's scope should be, and two prompts may share a hole.",
 +    order: "Lands with prompt blocks. The builder is the modal that step opens"
 +  },
 +  {
 +    title: "A prompt block that loads a template",
 +    detail:
-+      "The last integration: a prompt naming a template pulls it in and fills its variables with nobody opening a modal.",
++      "The last integration: a prompt naming a template pulls it in and fills its holes with nobody opening a modal.",
 +    order: "After both, and it needs nothing this plan does not already build"
 +  },
 +  {
@@ -19925,8 +21492,8 @@
 +export const NOUNS: Noun[] = [
 +  {
 +    term: "Template",
-+    says: "A saved original that belongs to one project: a name, tags, a body, and a list of variables. Every write makes a new revision and keeps the last one as a version.",
-+    onDisk: "templates (projectId, userId, name, tags, body, variables, revision, lastUsedAt) · templateVersions",
++    says: "A saved original that belongs to one project: a name, tags, a body, and a list of holes. Every write makes a new revision and keeps the last one as a version.",
++    onDisk: "templates (projectId, userId, name, tags, body, holes, revision, lastUsedAt) · templateVersions",
 +    not: "a resource — it cannot be opened in an editor; its working copy can"
 +  },
 +  {
@@ -19943,20 +21510,20 @@
 +    not: "lossless — the save says what it dropped, in words"
 +  },
 +  {
-+    term: "Variable",
++    term: "Hole",
 +    says: "A hole in the body that a prompt's scope names. It carries the name the scope uses, a label, a description, and a default scope. It exists because the body names it.",
-+    onDisk: "TemplateVariable { name, label, description?, default? }",
++    onDisk: "TemplateHole { name, label, description?, default? }",
 +    not: "something you type in by hand — nothing in the panels adds or removes one"
 +  },
 +  {
 +    term: "Default scope",
-+    says: "What a variable selects when nobody says otherwise: everything in the project, particular kinds, or one of the project's named sets. A variable with none means everything in the project.",
-+    onDisk: "TemplatedResourceSet on the variable",
++    says: "What a hole selects when nobody says otherwise: everything in the project, particular kinds, or one of the project's named sets. A hole with none means everything in the project.",
++    onDisk: "TemplatedResourceSet on the hole",
 +    not: "an answer — it is what the template suggests, not what one use decided"
 +  },
 +  {
 +    term: "Answer",
-+    says: "What one person picks for one variable at the moment they insert or use the template. It wins over the default for that copy only.",
++    says: "What one person picks for one hole at the moment they insert or use the template. It wins over the default for that copy only.",
 +    onDisk: "nothing — answers are passed to instantiate and never stored",
 +    not: "a binding — no row remembers it"
 +  },
@@ -20013,7 +21580,7 @@
 +  {
 +    name: "Insert",
 +    gesture: "Insert on a row of the Templates panel",
-+    does: "Asks what each variable should select, then copies the template's saved body into the open resource after the current row or slide, with fresh ids",
++    does: "Asks what each hole should select, then copies the template's saved body into the open resource after the current row or slide, with fresh ids",
 +    leaves: "An ordinary edit — undo removes it, and later changes to the template never reach it",
 +    procedure: "insertionOf + runtime.apply"
 +  },
@@ -20039,14 +21606,14 @@
 +    title: "Make",
 +    person: "Names the open document, deck or current slide and presses Save",
 +    client: "Sends the resource id and the name, then opens a new tab straight onto the copy's Templates panel",
-+    server: "Reads the leader snapshot, makes the body portable, stamps the project, declares the variables the body names, says what it dropped",
++    server: "Reads the leader snapshot, makes the body portable, stamps the project, declares the holes the body names, says what it dropped",
 +    rows: "templates at 1 · templateVersions 1 · templateStages staged at 1 · a scratch row titled Template · name"
 +  },
 +  {
 +    index: "02",
 +    title: "Open",
 +    person: "Presses Edit on a template",
-+    client: "The ordinary editor opens on the scratch resource; the panel shows Save and Discard in its header, then the variables",
++    client: "The ordinary editor opens on the scratch resource; the panel shows Save and Discard in its header, then the holes",
 +    server: "Returns the template's working copy, or writes the body at revision N into a new scratch row and records the stage",
 +    rows: "Nothing new on a resume; otherwise a stage row and a scratch row at N"
 +  },
@@ -20061,8 +21628,8 @@
 +  {
 +    index: "04",
 +    title: "Describe",
-+    person: "Opens a variable, writes what it stands for, sets its default scope",
-+    client: "Writes the whole variable list at the revision the panel read; the body is untouched",
++    person: "Opens a hole, writes what it stands for, sets its default scope",
++    client: "Writes the whole hole list at the revision the panel read; the body is untouched",
 +    server: "updateTemplate makes revision N+1 and carries the working copy to N+1, so this never makes the next save stale",
 +    rows: "templates at N+1 · templateVersions N+1 · templateStages staged at N+1"
 +  },
@@ -20077,7 +21644,7 @@
 +  {
 +    index: "06",
 +    title: "Insert or Use",
-+    person: "Answers each variable in one modal, or leaves every default",
++    person: "Answers each hole in one modal, or leaves every default",
 +    client: "Insert builds ops from the template's saved body with fresh ids and the scopes filled in; Use sends the answers to the server",
 +    server: "instantiateTemplate resolves the scopes, writes the new resource, and records the template's last use",
 +    rows: "Ops on the open resource, or a new resource with no reference back"
@@ -20107,11 +21674,11 @@
 +  },
 +  {
 +    rule: "A template is portable, inside its project too",
-+    because: "It turns a value into a function: what pointed at one particular thing is stripped and the variables fill the scopes."
++    because: "It turns a value into a function: what pointed at one particular thing is stripped and the holes fill the scopes."
 +  },
 +  {
-+    rule: "Variables are found, not typed",
-+    because: "A variable exists because a prompt's scope names it. Nothing in the panels adds or removes one."
++    rule: "A scope hole is found, a text hole is placed",
++    because: "A scope hole exists because a prompt's scope names it, so nothing in the panels adds or removes one. A text hole is a place in the prose, and only the writer knows where it goes: Create hole names it and drops its atom at the caret in one act."
 +  },
 +  {
 +    rule: "A working copy takes no comments",
@@ -20127,9 +21694,9 @@
 +  { when: "A template in another project", answer: "not-found", where: "read, update, remove, instantiate, open" },
 +  { when: "A save whose base revision is behind", answer: "stale", where: "commitTemplateStage, updateTemplate, removeTemplate" },
 +  { when: "A spreadsheet template asked to open for editing", answer: "unsupported-body", where: "openTemplateStage" },
-+  { when: "A body naming a variable the template does not declare", answer: "unsupported-body, with the names", where: "instantiateTemplate" },
++  { when: "A body naming a hole the template does not declare", answer: "unsupported-body, with the names", where: "instantiateTemplate" },
 +  { when: "An answer naming a set this project does not hold", answer: "unsupported-body, with the ids", where: "instantiateTemplate" },
-+  { when: "A variable list that drops a name the body still uses", answer: "variable-in-use, with the names", where: "updateTemplate" },
++  { when: "A hole list that drops a name the body still uses", answer: "hole-in-use, with the names", where: "updateTemplate" },
 +  { when: "A resource set another set or a template default still names", answer: "in-use, naming which", where: "removeResourceSet" },
 +  { when: "A comment thread on a working copy", answer: "refused before anything is written", where: "startThread" },
 +  { when: "A save while the editor still holds unflushed work", answer: "refused in the panel, before the request", where: "the Templates panel" }
@@ -20140,7 +21707,7 @@
 +  { item: "A prompt's generated output id", keeps: "the prompt, its text and its scope" },
 +  { item: "Links to people, personas and resources", keeps: "the marked text, and a link to a URL with its note" },
 +  { item: "Images stored in the project", keeps: "the image block, and an image at a URL" },
-+  { item: "Scope terms naming a set or particular resources", keeps: "the whole-project and kind terms, and the variables" },
++  { item: "Scope terms naming a set or particular resources", keeps: "the whole-project and kind terms, and the holes" },
 +  { item: "Ranges into another spreadsheet, and values that reference a resource", keeps: "the cell, emptied" }
 +];
 ~~~~

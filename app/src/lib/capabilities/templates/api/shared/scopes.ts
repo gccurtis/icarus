@@ -13,18 +13,18 @@ import { recordsIn } from "$capabilities/templates/api/shared/store";
 /**
  * A chosen rule becomes a term, and a row only when it has to.
  *
- * Four surfaces choose a scope: a variable's default from either editor's panel
- * or from the library inspector, and an answer given while placing a template.
+ * Four surfaces choose a scope: a hole's default from either editor's panel or
+ * from the library inspector, and an answer given while placing a template.
  * All four send the rule they built and none of them writes anything, because
  * the normalisation is the same every time and a client-side write would put a
  * second round trip in front of a save that can then half-fail.
  *
  * **A rule that excludes anything, or names particular resources, is stored.**
- * Resolving a template substitutes a variable term for what fills it, and a
- * variable term may sit on either side of a prompt's scope. One term for one
- * term works on both sides; one term for a difference does not. So the
- * difference lives inside a row and what points at it is a single `set` term.
- * Everything else is said inline, which is the common case.
+ * Resolving a template substitutes a hole term for what fills it, and a hole
+ * term may sit on either side of a prompt's scope. One term for one term works
+ * on both sides; one term for a difference does not. So the difference lives
+ * inside a row and what points at it is a single `set` term. Everything else is
+ * said inline, which is the common case.
  */
 
 export type ScopeOwner = BoundTo;
@@ -41,21 +41,21 @@ const named = (store: StoreModel, projectId: string): ReadonlySet<string> =>
 const sameOwner = (held: unknown, owner: ScopeOwner): boolean => {
   if (held === null || typeof held !== "object") return false;
   const record = held as Record<string, unknown>;
-  if (owner.kind === "variable") {
+  if (owner.kind === "hole") {
     return (
-      record.kind === "variable" &&
+      record.kind === "hole" &&
       record.templateId === owner.templateId &&
-      record.variable === owner.variable
+      record.hole === owner.hole
     );
   }
   return (
     record.kind === "resource" &&
     record.resourceId === owner.resourceId &&
-    record.variable === owner.variable
+    record.hole === owner.hole
   );
 };
 
-/** Every row bound to one resource, whichever variable it answered. */
+/** Every row bound to one resource, whichever hole it answered. */
 export const rowsOfResource = (
   store: StoreModel,
   projectId: string,
@@ -177,8 +177,8 @@ export const normalizeScope = (
 /**
  * A stored default read back as the rule somebody built.
  *
- * A term naming a bound row is expanded, because that row is this variable's
- * value rather than a set anyone chose. A term naming one of the project's own
+ * A term naming a bound row is expanded, because that row is this hole's value
+ * rather than a set anyone chose. A term naming one of the project's own
  * sets is left alone, because choosing it was the point.
  */
 export const expandedScope = (

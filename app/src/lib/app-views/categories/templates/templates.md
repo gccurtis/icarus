@@ -18,8 +18,8 @@ capability stages a copy of the template's body as a scratch document or deck,
 and the ordinary editor opens on that copy in its own tab. The editor's Templates
 panel is where the copy is saved back or discarded. `Use` is the separate gesture
 that instantiates an independent project resource and opens its ordinary editor
-for documents and decks, after asking, in one modal, what each variable should
-select, its default offered first; the resource it makes carries no reference
+for documents and decks, after asking, in one modal, what fills each hole, its
+default offered first; the resource it makes carries no reference
 back to the template. Spreadsheet materialization exists at the capability
 boundary, but neither Use nor Edit reaches it until the spreadsheet editor
 consumes represented resource ids.
@@ -41,7 +41,7 @@ the library down by scope and target.
 ## Inspector: template
 
 The inspector performs a body-bearing read only for the selected template. It
-shows target, availability, update time, creator, description, variables, and
+shows target, availability, update time, creator, description, holes, and
 tags. Name and fixed-height description fields autosave on blur. Four actions
 sit in one row: Use, Edit, Duplicate, Delete. Edit opens the template's copy in
 its editor, making the copy if the project has none yet. Duplicate always
@@ -49,11 +49,11 @@ creates an independent copy in the project. Delete is revision-checked and
 removes the template with its version rows and its working copy; resources made
 from it are untouched, because none refers back.
 
-Each variable opens into its description, then one button reading its default
-scope as a sentence, which opens a modal to change it — everything in the
-project, particular kinds, or one of the project's named sets. Which variables
-exist is not editable anywhere: they are the names the body's prompt scopes use,
-found when the template is saved.
+Each hole opens into its description, then one button reading its default scope
+as a sentence, which opens a modal to change it — everything in the project,
+particular kinds, or one of the project's named sets. Which scope holes exist is
+not editable here: they are the names the body's prompt scopes use, found when
+the template is saved.
 
 ## Capability seam
 

@@ -13,7 +13,7 @@
     <div class="modal">
       <header>
         <b>Insert “Client status note”</b>
-        <p>Every parameter this template asks for.</p>
+        <p>Every hole this template asks for.</p>
       </header>
       <div class="body">
         <div class="row needs">
@@ -76,7 +76,7 @@
 
 <ul class="notes">
   <li>
-    <b>Every parameter, always, and nothing folded away.</b> Each row reads top to bottom: the name,
+    <b>Every hole, always, and nothing folded away.</b> Each row reads top to bottom: the name,
     the sentence whoever made the template wrote, and the value. A row with nothing in it carries a
     rule down its left edge, and the confirm says which one is holding it up.
   </li>
@@ -86,7 +86,7 @@
     nothing opens a third lid.
   </li>
   <li>
-    <b>The list scrolls; the modal does not grow.</b> A template with twelve parameters and one with
+    <b>The list scrolls; the modal does not grow.</b> A template with twelve holes and one with
     two open the same size, and both panes of the builder are one fixed height, so nothing jumps as
     somebody clicks between Kinds, Sets and Resources.
   </li>
@@ -95,7 +95,7 @@
     because what you can take out should be what you put in.
   </li>
   <li>
-    <b>The floor is a button.</b> Whole project is the common answer, Default puts a parameter back to
+    <b>The floor is a button.</b> Whole project is the common answer, Default puts a hole back to
     what the template suggested, and Clear empties both sides to start again.
   </li>
 </ul>

@@ -7,7 +7,7 @@
 
   const bound = [
     { field: "name", value: "absent" },
-    { field: "boundTo", value: "{ variable, templateId, name }" },
+    { field: "boundTo", value: "{ hole, templateId, name }" },
     { field: "set", value: "{ include, exclude }" }
   ];
 </script>
@@ -23,7 +23,7 @@
     </dl>
     <ul>
       <li>Appears in <code>readResourceSets</code></li>
-      <li>Refuses removal while a set or a variable names it</li>
+      <li>Refuses removal while a set or a hole names it</li>
       <li>Survives everything that points at it</li>
     </ul>
   </section>
@@ -39,20 +39,20 @@
     <ul>
       <li>Read only through the id that points at it</li>
       <li>Removed with its owner</li>
-      <li>Two variables that build the same rule get two rows, and that is correct</li>
+      <li>Two holes that build the same rule get two rows, and that is correct</li>
     </ul>
   </section>
 </div>
 
 <div class="pointers">
   <div class="from">
-    <code>templates.variables[i].default</code>
+    <code>templates.holes[i].default</code>
     <small>a template's project-local metadata</small>
   </div>
   <div class="arrow" aria-hidden="true">→</div>
   <div class="term"><code>{"{ select: \"set\", setId }"}</code><small>one term, so it substitutes on either side</small></div>
   <div class="arrow" aria-hidden="true">→</div>
-  <div class="to bound-to"><b>A bound row</b><small>owner: that variable</small></div>
+  <div class="to bound-to"><b>A bound row</b><small>owner: that hole</small></div>
 
   <div class="from">
     <code>documents.body … prompt.scope</code>

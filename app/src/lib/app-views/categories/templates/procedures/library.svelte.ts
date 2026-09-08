@@ -31,7 +31,6 @@ import {
   type ScopeNames,
   type ScopeOffering
 } from "$representation/data/behavior/core/scope-draft";
-import type { TemplateVariable as StoredTemplateVariable } from "$representation/data/types/templates/template";
 import type { Category, WorkspaceStateModel } from "$model/client/workspace-state";
 
 export type { ResourceSetItem } from "$capabilities/resource-sets/index.remote";
@@ -40,7 +39,7 @@ export type { TemplateAnswers } from "$capabilities/templates/index.remote";
 export type TemplateTarget = "Document" | "Slide deck" | "Spreadsheet";
 export type TemplateScope = "Project" | "Personal";
 
-export type TemplateVariable = TemplateDetail["variables"][number] & {
+export type TemplateHole = TemplateDetail["holes"][number] & {
   readonly id: string;
 };
 
@@ -51,7 +50,7 @@ export type LibraryTemplate = {
   readonly makes: TemplateTarget;
   readonly scope: TemplateScope;
   readonly tags: readonly string[];
-  readonly variableCount: number;
+  readonly holeCount: number;
   readonly createdBy: string;
   readonly revision: number;
   readonly updatedAt: number;
@@ -63,7 +62,7 @@ export type LibraryTemplate = {
 };
 
 export type LibraryTemplateDetail = LibraryTemplate & {
-  readonly variables: readonly TemplateVariable[];
+  readonly holes: readonly TemplateHole[];
 };
 
 export type TemplateLibrarySummary = {
@@ -133,7 +132,7 @@ const project = (row: TemplateLibraryItem, now: number): LibraryTemplate => ({
   makes: TARGET_LABEL[row.target],
   scope: SCOPE_LABEL[row.availability],
   tags: row.tags,
-  variableCount: row.variableCount,
+  holeCount: row.holeCount,
   createdBy: row.createdByName,
   revision: row.revision,
   updatedAt: row.updatedAt,
@@ -169,12 +168,12 @@ export const detailIn = (
 ): LibraryTemplateDetail | undefined => {
   if (answer === null || answer === undefined || "unavailable" in answer) return undefined;
 
-  const row = project({ ...answer, variableCount: answer.variables.length }, now);
+  const row = project({ ...answer, holeCount: answer.holes.length }, now);
   return {
     ...row,
-    variables: answer.variables.map((variable) => ({
-      ...variable,
-      id: `${answer.id}:${variable.name}`
+    holes: answer.holes.map((hole) => ({
+      ...hole,
+      id: `${answer.id}:${hole.name}`
     }))
   };
 };
@@ -279,7 +278,7 @@ export const scopeNamesOf = (
   resources: new Map(resources.map((resource) => [resource.id, resource.name]))
 });
 
-/** What the builder is handed for a variable's default, or for an answer. */
+/** What the builder is handed for a hole's default, or for an answer. */
 export const offeringOf = (
   sets: readonly ResourceSetItem[],
   resources: readonly { readonly id: string; readonly kind: string; readonly name: string }[]
@@ -291,7 +290,7 @@ export const offeringOf = (
 /**
  * The answers a caller chose, as rules.
  *
- * A variable nobody touched is absent, which is what makes the template's own
+ * A hole nobody touched is absent, which is what makes the template's own
  * default apply. Everything present is sent as built; the server decides
  * whether it needs a row.
  */
@@ -377,10 +376,10 @@ export const updateTemplateDescription = (
   );
 };
 
-export const updateTemplateVariableDescription = (
+export const updateTemplateHoleDescription = (
   view: WorkspaceStateModel,
   row: LibraryTemplateDetail,
-  variableName: string,
+  holeName: string,
   description: string
 ) => {
   const storedDescription = description.trim() || null;
@@ -391,8 +390,8 @@ export const updateTemplateVariableDescription = (
       row.id,
       "update",
       row.revision,
-      "variable-description",
-      variableName,
+      "hole-description",
+      holeName,
       storedDescription
     ],
     () =>
@@ -400,7 +399,7 @@ export const updateTemplateVariableDescription = (
         templateId: row.id,
         baseRevision: row.revision,
         patch: {
-          variableDescription: { name: variableName, description: storedDescription }
+          holeDescription: { name: holeName, description: storedDescription }
         }
       }).updates(readTemplateLibrary, readTemplate({ templateId: row.id }))
   );
@@ -421,22 +420,22 @@ export const updateTemplateTags = (
       }).updates(readTemplateLibrary, readTemplate({ templateId: row.id }))
   );
 
-export const updateTemplateVariableDefault = (
+export const updateTemplateHoleDefault = (
   view: WorkspaceStateModel,
   row: LibraryTemplateDetail,
-  variableName: string,
+  holeName: string,
   rule: ScopeDraft
 ) => {
-  const variables = row.variables.map(({ id: _id, ...variable }) =>
-    variable.name === variableName ? { ...variable, default: rule } : variable
+  const holes = row.holes.map(({ id: _id, ...hole }) =>
+    hole.name === holeName ? { ...hole, default: rule } : hole
   );
   return view.singleFlight(
-    ["template", view.project, row.id, "update", row.revision, "variable-default", variableName, JSON.stringify(rule)],
+    ["template", view.project, row.id, "update", row.revision, "hole-default", holeName, JSON.stringify(rule)],
     () =>
       updateTemplateRemote({
         templateId: row.id,
         baseRevision: row.revision,
-        patch: { variables }
+        patch: { holes }
       }).updates(readTemplateLibrary, readTemplate({ templateId: row.id }))
   );
 };

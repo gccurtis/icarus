@@ -123,7 +123,7 @@ const { removeTemplate } = await import(
 const { updateTemplate } = await import(
   "$capabilities/templates/api/update-template/update-template"
 );
-const { bodyOf, variablesOf } = await import(
+const { bodyOf, holesOf } = await import(
   "$capabilities/templates/api/shared/validation"
 );
 
@@ -178,7 +178,7 @@ const template = (
     name: `Template ${id}`,
     tags: ["Useful"],
     body,
-    variables: [],
+    holes: [],
     createdBy: { kind: "user", userId: owner },
     revision: 2,
     updatedAt: 20,
@@ -396,10 +396,10 @@ describe("template mutations", () => {
     assert.equal(model.tables.templateVersions[0].revision, 3);
   });
 
-  test("updates variable prose without exposing its stable key or default to editing", async () => {
+  test("updates hole prose without exposing its stable key or default to editing", async () => {
     model.tables.templates.push(
       template("1", "u", documentBody, {
-        variables: [
+        holes: [
           {
             name: "evidence",
             label: "Evidence",
@@ -414,12 +414,12 @@ describe("template mutations", () => {
       templateId: "templates:1",
       baseRevision: 2,
       patch: {
-        variableDescription: { name: "evidence", description: "  Choose the evidence set.  " }
+        holeDescription: { name: "evidence", description: "  Choose the evidence set.  " }
       }
     });
 
     assert.deepEqual(answer, { accepted: true, templateId: "templates:1", revision: 3 });
-    assert.deepEqual(model.tables.templates[0].variables, [
+    assert.deepEqual(model.tables.templates[0].holes, [
       {
         name: "evidence",
         label: "Evidence",
@@ -442,7 +442,7 @@ describe("template mutations", () => {
     assert.equal(copy?.name, "My copy");
     assert.deepEqual(copy?.createdBy, { kind: "user", userId: "u" });
     assert.notEqual(copy?.body, model.tables.templates[0].body);
-    assert.notEqual(copy?.variables, model.tables.templates[0].variables);
+    assert.notEqual(copy?.holes, model.tables.templates[0].holes);
     assert.equal(model.tables.templateVersions.length, 1);
   });
 
@@ -648,7 +648,7 @@ describe("instantiation", () => {
     assert.equal(model.calls.some((call) => call.startsWith("create")), false);
   });
 
-  test("does not invent a variable-answer contract", async () => {
+  test("does not invent a hole-answer contract", async () => {
     model.tables.templates.push(
       template(
         "1",
@@ -667,7 +667,7 @@ describe("instantiation", () => {
                   display: "",
                   marks: [],
                   scope: {
-                    include: [{ select: "variable", name: "region" }],
+                    include: [{ select: "hole", name: "region" }],
                     exclude: []
                   },
                   state: "idle"
@@ -676,7 +676,7 @@ describe("instantiation", () => {
             }
           ]
         },
-        { variables: [{ name: "region", label: "Region" }] }
+        { holes: [{ name: "region", label: "Region" }] }
       )
     );
 
@@ -711,7 +711,7 @@ describe("instantiation", () => {
                   display: "",
                   marks: [],
                   scope: {
-                    include: [{ select: "variable", name: "evidence" }],
+                    include: [{ select: "hole", name: "evidence" }],
                     exclude: []
                   },
                   state: "idle"
@@ -723,7 +723,7 @@ describe("instantiation", () => {
                   display: "",
                   marks: [],
                   scope: {
-                    include: [{ select: "variable", name: "evidence" }],
+                    include: [{ select: "hole", name: "evidence" }],
                     exclude: []
                   },
                   state: "idle"
@@ -733,7 +733,7 @@ describe("instantiation", () => {
           ]
         },
         {
-          variables: [
+          holes: [
             {
               name: "evidence",
               label: "Evidence",
@@ -766,7 +766,7 @@ describe("instantiation", () => {
   });
 
   test("bounds recursively expanding represented defaults before writing", async () => {
-    const variables = Array.from({ length: 16 }, (_, index) => ({
+    const holes = Array.from({ length: 16 }, (_, index) => ({
       name: `branch-${index}`,
       label: `Branch ${index}`,
       default:
@@ -774,8 +774,8 @@ describe("instantiation", () => {
           ? { include: [{ select: "project" as const }], exclude: [] }
           : {
               include: [
-                { select: "variable" as const, name: `branch-${index + 1}` },
-                { select: "variable" as const, name: `branch-${index + 1}` }
+                { select: "hole" as const, name: `branch-${index + 1}` },
+                { select: "hole" as const, name: `branch-${index + 1}` }
               ],
               exclude: []
             }
@@ -798,7 +798,7 @@ describe("instantiation", () => {
                   display: "",
                   marks: [],
                   scope: {
-                    include: [{ select: "variable", name: "branch-0" }],
+                    include: [{ select: "hole", name: "branch-0" }],
                     exclude: []
                   },
                   state: "idle"
@@ -807,7 +807,7 @@ describe("instantiation", () => {
             }
           ]
         },
-        { variables }
+        { holes }
       )
     );
 
@@ -819,7 +819,7 @@ describe("instantiation", () => {
     assert.equal(model.tables.documents.length, 0);
   });
 
-  test("refuses a variable-set difference rather than broadening its scope", async () => {
+  test("refuses a hole-set difference rather than broadening its scope", async () => {
     model.tables.templates.push(
       template(
         "1",
@@ -839,7 +839,7 @@ describe("instantiation", () => {
                   marks: [],
                   scope: {
                     include: [{ select: "kinds", kinds: ["document"] }],
-                    exclude: [{ select: "variable", name: "other-material" }]
+                    exclude: [{ select: "hole", name: "other-material" }]
                   },
                   state: "idle"
                 }
@@ -848,7 +848,7 @@ describe("instantiation", () => {
           ]
         },
         {
-          variables: [
+          holes: [
             {
               name: "other-material",
               label: "Other material",
@@ -952,7 +952,7 @@ describe("stored template validation", () => {
     assert.doesNotThrow(() => bodyOf(body, "record-keys"));
   });
 
-  test("accepts only canonical represented variables and bounded templated defaults", () => {
+  test("accepts only canonical represented holes and bounded templated defaults", () => {
     const valid = [
       {
         name: "region",
@@ -969,7 +969,7 @@ describe("stored template validation", () => {
         default: { include: [{ select: "set", setId: "resourceSets:1" }], exclude: [] }
       }
     ];
-    assert.equal(variablesOf(valid, "test").length, 2);
+    assert.equal(holesOf(valid, "test").length, 2);
 
     const invalid = [
       [{ ...valid[0], invented: true }],
@@ -1007,7 +1007,7 @@ describe("stored template validation", () => {
         {
           ...valid[0],
           default: {
-            include: [{ select: "variable", name: "Region" }],
+            include: [{ select: "hole", name: "Region" }],
             exclude: []
           }
         }
@@ -1026,29 +1026,29 @@ describe("stored template validation", () => {
         { name: "Region", label: "Duplicate by case" }
       ]
     ];
-    for (const variables of invalid) {
-      assert.throws(() => variablesOf(variables, "test"), /templates\/test:/);
+    for (const holes of invalid) {
+      assert.throws(() => holesOf(holes, "test"), /templates\/test:/);
     }
   });
 
-  test("requires exact case for one variable default referencing another", () => {
+  test("requires exact case for one hole default referencing another", () => {
     assert.throws(
       () =>
-        variablesOf(
+        holesOf(
           [
             { name: "region", label: "Region" },
             {
               name: "evidence",
               label: "Evidence",
               default: {
-                include: [{ select: "variable", name: "Region" }],
+                include: [{ select: "hole", name: "Region" }],
                 exclude: []
               }
             }
           ],
           "test"
         ),
-      /default names a declared variable/
+      /default names a declared hole/
     );
   });
 
@@ -1395,7 +1395,7 @@ describe("stored template validation", () => {
     }
   });
 
-  test("keeps body variable lookup exact when declarations differ only by case", async () => {
+  test("keeps body hole lookup exact when declarations differ only by case", async () => {
     model.tables.templates.push(
       template(
         "1",
@@ -1414,7 +1414,7 @@ describe("stored template validation", () => {
                   display: "",
                   marks: [],
                   scope: {
-                    include: [{ select: "variable", name: "Region" }],
+                    include: [{ select: "hole", name: "Region" }],
                     exclude: []
                   },
                   state: "idle"
@@ -1424,7 +1424,7 @@ describe("stored template validation", () => {
           ]
         },
         {
-          variables: [
+          holes: [
             {
               name: "region",
               label: "Region",

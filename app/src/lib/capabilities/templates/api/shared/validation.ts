@@ -1,6 +1,6 @@
 import type {
   TemplateBody,
-  TemplateVariable
+  TemplateHole
 } from "$representation/data/types/templates/template";
 import type { ResourceSet, SetTerm } from "$representation/data/types/core/resource-set";
 import { normalizeSlideDeckBody } from "$representation/data/behavior/slide-decks/normalize";
@@ -657,7 +657,7 @@ const validAtom = (value: unknown): boolean => {
   if (value.kind === "template") {
     return (
       hasOnlyKeys(value, ["id", "kind", "name"]) &&
-      validCanonicalText(value.name, MAX_VARIABLE_NAME_LENGTH)
+      validCanonicalText(value.name, MAX_HOLE_NAME_LENGTH)
     );
   }
   return (
@@ -860,6 +860,7 @@ const validBlock = (value: unknown, depth = 0): boolean => {
         "id",
         "type",
         "derivedOutputId",
+        "style",
         "atoms",
         "display",
         "marks",
@@ -870,6 +871,7 @@ const validBlock = (value: unknown, depth = 0): boolean => {
         "format"
       ]) &&
       (value.derivedOutputId === undefined || validIdentifier(value.derivedOutputId)) &&
+      (value.style === undefined || validIdentifier(value.style)) &&
       Array.isArray(value.atoms) &&
       value.atoms.length <= MAX_BLOCKS_PER_CONTAINER &&
       value.atoms.every(validAtom) &&
@@ -1666,35 +1668,35 @@ export const resourceSetOf = (value: unknown, subject: string): ResourceSet => {
 
 export const answersOf = (value: unknown, subject: string): TemplateAnswers => {
   if (!isRecord(value)) {
-    throw new Error(`templates/${subject}: answers map variable names to resource sets`);
+    throw new Error(`templates/${subject}: answers map hole names to resource sets`);
   }
   const entries = Object.entries(value);
-  if (entries.length > MAX_TEMPLATE_VARIABLES) {
-    throw new Error(`templates/${subject}: at most ${MAX_TEMPLATE_VARIABLES} variables are answered`);
+  if (entries.length > MAX_TEMPLATE_HOLES) {
+    throw new Error(`templates/${subject}: at most ${MAX_TEMPLATE_HOLES} holes are answered`);
   }
   const answers: Record<string, ResourceSet> = {};
   for (const [name, answer] of entries) {
-    if (!validCanonicalText(name, MAX_VARIABLE_NAME_LENGTH)) {
-      throw new Error(`templates/${subject}: every answered variable has a name`);
+    if (!validCanonicalText(name, MAX_HOLE_NAME_LENGTH)) {
+      throw new Error(`templates/${subject}: every answered hole has a name`);
     }
     answers[name] = resourceSetOf(answer, subject);
   }
   return answers;
 };
 
-/** The words a caller filled the template's text parameters in with. */
+/** The words a caller filled the template's text holes in with. */
 export const textsOf = (value: unknown, subject: string): Readonly<Record<string, string>> => {
   if (!isRecord(value)) {
-    throw new Error(`templates/${subject}: texts map variable names to words`);
+    throw new Error(`templates/${subject}: texts map hole names to words`);
   }
   const entries = Object.entries(value);
-  if (entries.length > MAX_TEMPLATE_VARIABLES) {
-    throw new Error(`templates/${subject}: at most ${MAX_TEMPLATE_VARIABLES} variables are answered`);
+  if (entries.length > MAX_TEMPLATE_HOLES) {
+    throw new Error(`templates/${subject}: at most ${MAX_TEMPLATE_HOLES} holes are answered`);
   }
   const texts: Record<string, string> = {};
   for (const [name, words] of entries) {
-    if (!validCanonicalText(name, MAX_VARIABLE_NAME_LENGTH)) {
-      throw new Error(`templates/${subject}: every answered variable has a name`);
+    if (!validCanonicalText(name, MAX_HOLE_NAME_LENGTH)) {
+      throw new Error(`templates/${subject}: every answered hole has a name`);
     }
     if (!validText(words, MAX_BLOCK_TEXT_LENGTH, true)) {
       throw new Error(`templates/${subject}: a text answer is words`);
@@ -1704,12 +1706,12 @@ export const textsOf = (value: unknown, subject: string): Readonly<Record<string
   return texts;
 };
 
-const MAX_TEMPLATE_VARIABLES = 100;
+const MAX_TEMPLATE_HOLES = 100;
 const MAX_TEMPLATE_TERMS_PER_SIDE = 100;
 const MAX_TEMPLATE_KINDS_PER_TERM = 100;
-const MAX_VARIABLE_NAME_LENGTH = 160;
-const MAX_VARIABLE_LABEL_LENGTH = 500;
-const MAX_VARIABLE_DESCRIPTION_LENGTH = 4_000;
+const MAX_HOLE_NAME_LENGTH = 160;
+const MAX_HOLE_LABEL_LENGTH = 500;
+const MAX_HOLE_DESCRIPTION_LENGTH = 4_000;
 const MAX_RESOURCE_KIND_LENGTH = 160;
 
 const validTerm = (value: unknown): boolean => {
@@ -1717,11 +1719,11 @@ const validTerm = (value: unknown): boolean => {
   if (value.select === "project") {
     return hasOnlyKeys(value, ["select"]) && Object.keys(value).length === 1;
   }
-  if (value.select === "variable") {
+  if (value.select === "hole") {
     return (
       hasOnlyKeys(value, ["select", "name"]) &&
       Object.keys(value).length === 2 &&
-      validCanonicalText(value.name, MAX_VARIABLE_NAME_LENGTH)
+      validCanonicalText(value.name, MAX_HOLE_NAME_LENGTH)
     );
   }
   if (value.select === "set") {
@@ -1777,83 +1779,77 @@ const validChosenSet = (value: unknown): boolean =>
   value.exclude.length <= MAX_TEMPLATE_TERMS_PER_SIDE &&
   value.exclude.every((term) => validTerm(term) || validSetTerm(term));
 
-export const variablesOf = (
+export const holesOf = (
   value: unknown,
   subject: string,
   chosen = false
-): readonly TemplateVariable[] => {
-  if (!Array.isArray(value)) throw new Error(`templates/${subject}: variables is a list`);
-  if (value.length > MAX_TEMPLATE_VARIABLES) {
-    throw new Error(
-      `templates/${subject}: a template has at most ${MAX_TEMPLATE_VARIABLES} variables`
-    );
+): readonly TemplateHole[] => {
+  if (!Array.isArray(value)) throw new Error(`templates/${subject}: holes is a list`);
+  if (value.length > MAX_TEMPLATE_HOLES) {
+    throw new Error(`templates/${subject}: a template has at most ${MAX_TEMPLATE_HOLES} holes`);
   }
   const seen = new Set<string>();
   const declared = new Set<string>();
-  for (const variable of value) {
+  for (const hole of value) {
     if (
-      !isRecord(variable) ||
-      !hasOnlyKeys(variable, ["name", "label", "description", "kind", "default", "text"])
+      !isRecord(hole) ||
+      !hasOnlyKeys(hole, ["name", "label", "description", "kind", "default", "text"])
     ) {
-      throw new Error(`templates/${subject}: a variable has only represented fields`);
+      throw new Error(`templates/${subject}: a hole has only represented fields`);
     }
-    if (variable.kind !== undefined && variable.kind !== "scope" && variable.kind !== "text") {
-      throw new Error(`templates/${subject}: a variable is answered with a scope or with text`);
+    if (hole.kind !== undefined && hole.kind !== "scope" && hole.kind !== "text") {
+      throw new Error(`templates/${subject}: a hole is answered with a scope or with text`);
     }
-    if (variable.kind === "text" && variable.default !== undefined) {
-      throw new Error(`templates/${subject}: a text variable has no default scope`);
+    if (hole.kind === "text" && hole.default !== undefined) {
+      throw new Error(`templates/${subject}: a text hole has no default scope`);
     }
-    if (variable.text !== undefined) {
-      if (variable.kind !== "text") {
-        throw new Error(`templates/${subject}: only a text variable has default words`);
+    if (hole.text !== undefined) {
+      if (hole.kind !== "text") {
+        throw new Error(`templates/${subject}: only a text hole has default words`);
       }
-      if (!validText(variable.text, MAX_BLOCK_TEXT_LENGTH, true)) {
-        throw new Error(`templates/${subject}: a variable's default words are text`);
+      if (!validText(hole.text, MAX_BLOCK_TEXT_LENGTH, true)) {
+        throw new Error(`templates/${subject}: a hole's default words are text`);
       }
     }
-    if (!validCanonicalText(variable.name, MAX_VARIABLE_NAME_LENGTH)) {
-      throw new Error(`templates/${subject}: every variable has a name`);
+    if (!validCanonicalText(hole.name, MAX_HOLE_NAME_LENGTH)) {
+      throw new Error(`templates/${subject}: every hole has a name`);
     }
-    if (!validCanonicalText(variable.label, MAX_VARIABLE_LABEL_LENGTH)) {
-      throw new Error(`templates/${subject}: every variable has a label`);
-    }
-    if (
-      variable.description !== undefined &&
-      (!isText(variable.description) ||
-        variable.description.length > MAX_VARIABLE_DESCRIPTION_LENGTH ||
-        variable.description !== variable.description.trim())
-    ) {
-      throw new Error(`templates/${subject}: a variable description is text`);
+    if (!validCanonicalText(hole.label, MAX_HOLE_LABEL_LENGTH)) {
+      throw new Error(`templates/${subject}: every hole has a label`);
     }
     if (
-      variable.default !== undefined &&
-      !(chosen ? validChosenSet(variable.default) : validTemplatedSet(variable.default))
+      hole.description !== undefined &&
+      (!isText(hole.description) ||
+        hole.description.length > MAX_HOLE_DESCRIPTION_LENGTH ||
+        hole.description !== hole.description.trim())
     ) {
-      throw new Error(`templates/${subject}: a variable default is a templated resource set`);
+      throw new Error(`templates/${subject}: a hole description is text`);
     }
-    const key = variable.name.toLocaleLowerCase();
-    if (seen.has(key)) throw new Error(`templates/${subject}: variable names are unique`);
+    if (
+      hole.default !== undefined &&
+      !(chosen ? validChosenSet(hole.default) : validTemplatedSet(hole.default))
+    ) {
+      throw new Error(`templates/${subject}: a hole default is a templated resource set`);
+    }
+    const key = hole.name.toLocaleLowerCase();
+    if (seen.has(key)) throw new Error(`templates/${subject}: hole names are unique`);
     seen.add(key);
-    declared.add(variable.name);
+    declared.add(hole.name);
   }
-  for (const variable of value as Fields[]) {
-    if (!isRecord(variable.default)) continue;
+  for (const hole of value as Fields[]) {
+    if (!isRecord(hole.default)) continue;
     const terms = [
-      ...((variable.default.include as unknown[]) ?? []),
-      ...((variable.default.exclude as unknown[]) ?? [])
+      ...((hole.default.include as unknown[]) ?? []),
+      ...((hole.default.exclude as unknown[]) ?? [])
     ];
     for (const term of terms) {
-      if (
-        isRecord(term) &&
-        term.select === "variable" &&
-        !declared.has(term.name as string)
-      ) {
-        throw new Error(`templates/${subject}: a variable default names a declared variable`);
+      if (isRecord(term) && term.select === "hole" && !declared.has(term.name as string)) {
+        throw new Error(`templates/${subject}: a hole default names a declared hole`);
       }
     }
   }
   assertStoredValue(value, subject);
-  return value as readonly TemplateVariable[];
+  return value as readonly TemplateHole[];
 };
 
 export const has = (fields: Fields, field: string): boolean =>

@@ -3,8 +3,8 @@ import type { LifecycleStep, Noun, Refusal, Rule, Verb } from "$development-view
 export const NOUNS: Noun[] = [
   {
     term: "Template",
-    says: "A saved original that belongs to one project: a name, tags, a body, and a list of variables. Every write makes a new revision and keeps the last one as a version.",
-    onDisk: "templates (projectId, userId, name, tags, body, variables, revision, lastUsedAt) · templateVersions",
+    says: "A saved original that belongs to one project: a name, tags, a body, and a list of holes. Every write makes a new revision and keeps the last one as a version.",
+    onDisk: "templates (projectId, userId, name, tags, body, holes, revision, lastUsedAt) · templateVersions",
     not: "a resource — it cannot be opened in an editor; its working copy can"
   },
   {
@@ -21,20 +21,20 @@ export const NOUNS: Noun[] = [
     not: "lossless — the save says what it dropped, in words"
   },
   {
-    term: "Variable",
+    term: "Hole",
     says: "A hole in the body that a prompt's scope names. It carries the name the scope uses, a label, a description, and a default scope. It exists because the body names it.",
-    onDisk: "TemplateVariable { name, label, description?, default? }",
+    onDisk: "TemplateHole { name, label, description?, default? }",
     not: "something you type in by hand — nothing in the panels adds or removes one"
   },
   {
     term: "Default scope",
-    says: "What a variable selects when nobody says otherwise: everything in the project, particular kinds, or one of the project's named sets. A variable with none means everything in the project.",
-    onDisk: "TemplatedResourceSet on the variable",
+    says: "What a hole selects when nobody says otherwise: everything in the project, particular kinds, or one of the project's named sets. A hole with none means everything in the project.",
+    onDisk: "TemplatedResourceSet on the hole",
     not: "an answer — it is what the template suggests, not what one use decided"
   },
   {
     term: "Answer",
-    says: "What one person picks for one variable at the moment they insert or use the template. It wins over the default for that copy only.",
+    says: "What one person picks for one hole at the moment they insert or use the template. It wins over the default for that copy only.",
     onDisk: "nothing — answers are passed to instantiate and never stored",
     not: "a binding — no row remembers it"
   },
@@ -91,7 +91,7 @@ export const VERBS: Verb[] = [
   {
     name: "Insert",
     gesture: "Insert on a row of the Templates panel",
-    does: "Asks what each variable should select, then copies the template's saved body into the open resource after the current row or slide, with fresh ids",
+    does: "Asks what each hole should select, then copies the template's saved body into the open resource after the current row or slide, with fresh ids",
     leaves: "An ordinary edit — undo removes it, and later changes to the template never reach it",
     procedure: "insertionOf + runtime.apply"
   },
@@ -117,14 +117,14 @@ export const LIFECYCLE: LifecycleStep[] = [
     title: "Make",
     person: "Names the open document, deck or current slide and presses Save",
     client: "Sends the resource id and the name, then opens a new tab straight onto the copy's Templates panel",
-    server: "Reads the leader snapshot, makes the body portable, stamps the project, declares the variables the body names, says what it dropped",
+    server: "Reads the leader snapshot, makes the body portable, stamps the project, declares the holes the body names, says what it dropped",
     rows: "templates at 1 · templateVersions 1 · templateStages staged at 1 · a scratch row titled Template · name"
   },
   {
     index: "02",
     title: "Open",
     person: "Presses Edit on a template",
-    client: "The ordinary editor opens on the scratch resource; the panel shows Save and Discard in its header, then the variables",
+    client: "The ordinary editor opens on the scratch resource; the panel shows Save and Discard in its header, then the holes",
     server: "Returns the template's working copy, or writes the body at revision N into a new scratch row and records the stage",
     rows: "Nothing new on a resume; otherwise a stage row and a scratch row at N"
   },
@@ -139,8 +139,8 @@ export const LIFECYCLE: LifecycleStep[] = [
   {
     index: "04",
     title: "Describe",
-    person: "Opens a variable, writes what it stands for, sets its default scope",
-    client: "Writes the whole variable list at the revision the panel read; the body is untouched",
+    person: "Opens a hole, writes what it stands for, sets its default scope",
+    client: "Writes the whole hole list at the revision the panel read; the body is untouched",
     server: "updateTemplate makes revision N+1 and carries the working copy to N+1, so this never makes the next save stale",
     rows: "templates at N+1 · templateVersions N+1 · templateStages staged at N+1"
   },
@@ -155,7 +155,7 @@ export const LIFECYCLE: LifecycleStep[] = [
   {
     index: "06",
     title: "Insert or Use",
-    person: "Answers each variable in one modal, or leaves every default",
+    person: "Answers each hole in one modal, or leaves every default",
     client: "Insert builds ops from the template's saved body with fresh ids and the scopes filled in; Use sends the answers to the server",
     server: "instantiateTemplate resolves the scopes, writes the new resource, and records the template's last use",
     rows: "Ops on the open resource, or a new resource with no reference back"
@@ -185,11 +185,11 @@ export const RULES: Rule[] = [
   },
   {
     rule: "A template is portable, inside its project too",
-    because: "It turns a value into a function: what pointed at one particular thing is stripped and the variables fill the scopes."
+    because: "It turns a value into a function: what pointed at one particular thing is stripped and the holes fill the scopes."
   },
   {
-    rule: "Variables are found, not typed",
-    because: "A variable exists because a prompt's scope names it. Nothing in the panels adds or removes one."
+    rule: "A scope hole is found, a text hole is placed",
+    because: "A scope hole exists because a prompt's scope names it, so nothing in the panels adds or removes one. A text hole is a place in the prose, and only the writer knows where it goes: Create hole names it and drops its atom at the caret in one act."
   },
   {
     rule: "A working copy takes no comments",
@@ -205,9 +205,9 @@ export const REFUSALS: Refusal[] = [
   { when: "A template in another project", answer: "not-found", where: "read, update, remove, instantiate, open" },
   { when: "A save whose base revision is behind", answer: "stale", where: "commitTemplateStage, updateTemplate, removeTemplate" },
   { when: "A spreadsheet template asked to open for editing", answer: "unsupported-body", where: "openTemplateStage" },
-  { when: "A body naming a variable the template does not declare", answer: "unsupported-body, with the names", where: "instantiateTemplate" },
+  { when: "A body naming a hole the template does not declare", answer: "unsupported-body, with the names", where: "instantiateTemplate" },
   { when: "An answer naming a set this project does not hold", answer: "unsupported-body, with the ids", where: "instantiateTemplate" },
-  { when: "A variable list that drops a name the body still uses", answer: "variable-in-use, with the names", where: "updateTemplate" },
+  { when: "A hole list that drops a name the body still uses", answer: "hole-in-use, with the names", where: "updateTemplate" },
   { when: "A resource set another set or a template default still names", answer: "in-use, naming which", where: "removeResourceSet" },
   { when: "A comment thread on a working copy", answer: "refused before anything is written", where: "startThread" },
   { when: "A save while the editor still holds unflushed work", answer: "refused in the panel, before the request", where: "the Templates panel" }
@@ -218,6 +218,6 @@ export const STRIPPED: { item: string; keeps: string }[] = [
   { item: "A prompt's generated output id", keeps: "the prompt, its text and its scope" },
   { item: "Links to people, personas and resources", keeps: "the marked text, and a link to a URL with its note" },
   { item: "Images stored in the project", keeps: "the image block, and an image at a URL" },
-  { item: "Scope terms naming a set or particular resources", keeps: "the whole-project and kind terms, and the variables" },
+  { item: "Scope terms naming a set or particular resources", keeps: "the whole-project and kind terms, and the holes" },
   { item: "Ranges into another spreadsheet, and values that reference a resource", keeps: "the cell, emptied" }
 ];

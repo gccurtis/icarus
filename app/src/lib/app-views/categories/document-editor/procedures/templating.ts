@@ -39,7 +39,7 @@ import {
 import type { TemplatedResourceSet } from "$representation/data/types/core/resource-set";
 import type { DocumentBody, DocumentRow } from "$representation/data/types/documents/body";
 import type { DocumentOp } from "$representation/data/types/documents/op";
-import type { TemplateVariable } from "$representation/data/types/templates/template";
+import type { TemplateHole } from "$representation/data/types/templates/template";
 import { rowHolding } from "$app-views/categories/document-editor/procedures/blocks";
 import { mint, type IdKind } from "$app-views/categories/document-editor/procedures/ids";
 import { addressOf } from "$app-views/categories/document-editor/procedures/inspecting";
@@ -53,7 +53,7 @@ export type {
   TemplateLibraryItem
 } from "$capabilities/templates/index.remote";
 export type { TemplatedResourceSet } from "$representation/data/types/core/resource-set";
-export type { TemplateVariable } from "$representation/data/types/templates/template";
+export type { TemplateHole } from "$representation/data/types/templates/template";
 
 export {
   answerRowsOf,
@@ -100,7 +100,7 @@ export const scopeNamesOf = (
   resources: new Map(resources.map((resource) => [resource.id, resource.name]))
 });
 
-/** What the builder is handed for a variable's default, or for an answer. */
+/** What the builder is handed for a hole's default, or for an answer. */
 export const offeringOf = (
   sets: readonly ResourceSetItem[],
   resources: readonly { readonly id: string; readonly kind: string; readonly name: string }[]
@@ -112,11 +112,11 @@ export const offeringOf = (
 /**
  * The answers a caller chose, as rules.
  *
- * A variable nobody touched is absent, which is what makes the template's own
+ * A hole nobody touched is absent, which is what makes the template's own
  * default apply. Everything present is sent as built; the server decides
  * whether it needs a row.
  */
-/** The words typed for each text parameter, with the untouched ones left out. */
+/** The words typed for each text hole, with the untouched ones left out. */
 export const wordsFrom = (
   texts: Readonly<Record<string, string | undefined>>
 ): Readonly<Record<string, string>> =>
@@ -201,7 +201,7 @@ export const insertionOf = (
 
   let source = template.body;
   if (mode === "resolve") {
-    const resolved = resolveTemplateScopes(template.body, template.variables, answers);
+    const resolved = resolveTemplateScopes(template.body, template.holes, answers);
     if (!resolved.accepted || resolved.body.resource !== "document") {
       return { ops: [], firstBlockId: undefined };
     }
@@ -231,36 +231,103 @@ export const insertionOf = (
 };
 
 /**
- * A variable as the client sends it, which is wider than one as it is stored: a
+ * A hole as the client sends it, which is wider than one as it is stored: a
  * chosen rule may exclude things and may name particular resources, and the
  * server turns either into a row before it lands.
  */
-export type ChosenVariable = Omit<TemplateVariable, "default"> & { default?: ScopeDraft };
+export type ChosenHole = Omit<TemplateHole, "default"> & { default?: ScopeDraft };
 
-export const withVariableField = (
-  variables: readonly ChosenVariable[],
+export const withHoleField = (
+  holes: readonly ChosenHole[],
   name: string,
   change: { label?: string; description?: string; default?: ScopeDraft; text?: string }
-): readonly ChosenVariable[] =>
-  variables.map((variable) => {
-    if (variable.name !== name) return variable;
-    const next: ChosenVariable = { name: variable.name, label: change.label ?? variable.label };
-    const description = "description" in change ? change.description : variable.description;
-    const fallback = "default" in change ? change.default : variable.default;
-    const words = "text" in change ? change.text : variable.text;
-    if (variable.kind !== undefined) next.kind = variable.kind;
+): readonly ChosenHole[] =>
+  holes.map((hole) => {
+    if (hole.name !== name) return hole;
+    const next: ChosenHole = { name: hole.name, label: change.label ?? hole.label };
+    const description = "description" in change ? change.description : hole.description;
+    const fallback = "default" in change ? change.default : hole.default;
+    const words = "text" in change ? change.text : hole.text;
+    if (hole.kind !== undefined) next.kind = hole.kind;
     if (description !== undefined && description.trim().length > 0) next.description = description.trim();
     if (fallback !== undefined) next.default = fallback;
     if (words !== undefined && words.trim().length > 0) next.text = words;
     return next;
   });
 
-export const mergedVariables = (
-  held: readonly ChosenVariable[],
-  inserted: readonly ChosenVariable[]
-): readonly ChosenVariable[] => {
-  const names = new Set(held.map((variable) => variable.name));
-  return [...held, ...inserted.filter((variable) => !names.has(variable.name))];
+export const mergedHoles = (
+  held: readonly ChosenHole[],
+  inserted: readonly ChosenHole[]
+): readonly ChosenHole[] => {
+  const names = new Set(held.map((hole) => hole.name));
+  return [...held, ...inserted.filter((hole) => !names.has(hole.name))];
+};
+
+/**
+ * A text hole made by hand, rather than found.
+ *
+ * A scope hole exists because a prompt asks for one, so it cannot be authored. A
+ * text hole is a place in the prose, and nothing but the author knows where it
+ * goes — so the panel declares it and drops its atom at the caret in the same
+ * act, and the next save finds it exactly as it finds any other.
+ */
+export const withNewTextHole = (
+  holes: readonly ChosenHole[],
+  asked: { name: string; description?: string; text?: string }
+): readonly ChosenHole[] => {
+  const name = asked.name.trim();
+  const description = asked.description?.trim() ?? "";
+  const words = asked.text ?? "";
+  return [
+    ...holes,
+    {
+      name,
+      label: name,
+      kind: "text",
+      ...(description === "" ? {} : { description }),
+      ...(words.trim() === "" ? {} : { text: words })
+    }
+  ];
+};
+
+/** Why a name will not do, or nothing when it will. */
+export const holeNameRefusal = (
+  holes: readonly ChosenHole[],
+  asked: string
+): string | undefined => {
+  const name = asked.trim();
+  if (name === "") return "Give the hole a name.";
+  if (!/^[\w][\w -]*$/.test(name)) return "A hole's name is letters, digits, spaces, hyphens and underscores.";
+  const taken = holes.some((hole) => hole.name.toLocaleLowerCase() === name.toLocaleLowerCase());
+  return taken ? `This template already has a hole called ${name}.` : undefined;
+};
+
+const holeBlockIn = (body: DocumentBody, selection: Selection | undefined) => {
+  const blockId = selection === undefined ? undefined : addressOf(selection.id)?.blockId;
+  const takes = (block: { type: string }) => block.type === "text" || block.type === "prompt";
+  const blocks = body.rows.flatMap((row) => (row.kind === "blocks" ? row.blocks : []));
+  return blocks.find((block) => block.id === blockId && takes(block)) ?? blocks.findLast(takes);
+};
+
+/** The ops that put a text hole's atom where the caret is. */
+export const textHoleInsertion = (
+  body: DocumentBody,
+  selection: Selection | undefined,
+  name: string
+): readonly DocumentOp[] => {
+  const block = holeBlockIn(body, selection);
+  if (block === undefined || !("atoms" in block)) return [];
+  const atom = { id: mint("atom"), kind: "template" as const, name: name.trim() };
+  return [
+    {
+      op: "insert",
+      target: "atom",
+      path: `${block.id}/atoms`,
+      ids: [atom.id],
+      after: block.atoms.at(-1)?.id ?? null,
+      values: [atom]
+    }
+  ];
 };
 
 export const saveAsTemplate = (view: WorkspaceStateModel, resourceId: string, name: string) =>
@@ -306,19 +373,19 @@ export const discardStage = (
     )
   );
 
-export const updateVariables = (
+export const updateHoles = (
   view: WorkspaceStateModel,
   template: { readonly id: string; readonly revision: number },
-  variables: readonly ChosenVariable[],
+  holes: readonly ChosenHole[],
   resourceId?: string
 ) =>
   view.singleFlight(
-    ["template", view.project, template.id, "variables", template.revision, JSON.stringify(variables)],
+    ["template", view.project, template.id, "holes", template.revision, JSON.stringify(holes)],
     () =>
       updateTemplateRemote({
         templateId: template.id,
         baseRevision: template.revision,
-        patch: { variables }
+        patch: { holes }
       }).updates(
         readTemplateLibrary,
         readTemplate({ templateId: template.id }),
