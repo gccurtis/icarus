@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { onDestroy, onMount } from "svelte";
   import ArrowDownNarrowWide from "@lucide/svelte/icons/arrow-down-narrow-wide";
   import ArrowUpNarrowWide from "@lucide/svelte/icons/arrow-up-narrow-wide";
   import ChartColumn from "@lucide/svelte/icons/chart-column";
@@ -28,28 +27,61 @@
   import { readProjectResourceIndex } from "$capabilities/project-resources/index.remote";
   import { actorName } from "$app-views/categories/project-overview/procedures/actor-name";
   import { activity } from "$app-views/categories/project-overview/procedures/activity";
-  import { createChat } from "$app-views/categories/project-overview/procedures/create-chat";
+  import { OverviewState } from "$app-views/categories/project-overview/content/overview.state.svelte";
+  import { keepBoardCurrent } from "$app-views/categories/project-overview/procedures/effects/board.svelte";
   import { inspectionFor } from "$app-views/categories/project-overview/procedures/inspecting";
+  import { makeResource } from "$app-views/categories/project-overview/procedures/make-resource";
   import { mentions as mentionsForViewer } from "$app-views/categories/project-overview/procedures/mentions";
   import { openingFor } from "$app-views/categories/project-overview/procedures/opening";
   import { people } from "$app-views/categories/project-overview/procedures/people";
   import { project } from "$app-views/categories/project-overview/procedures/project";
   import { projectId, viewerId } from "$app-views/categories/project-overview/procedures/scope";
-  import { createsResource } from "$app-views/categories/project-overview/procedures/creating";
-  import { resourcesIn, type Resource, type ResourceKind } from "$app-views/categories/project-overview/procedures/resources";
+  import {
+    resourcesIn,
+    type Resource,
+    type ResourceKind
+  } from "$app-views/categories/project-overview/procedures/resources";
   import { workspaceState } from "$model/client/workspace-state";
 
   const view = workspaceState();
-  let live = true;
-  onDestroy(() => {
-    live = false;
-  });
+  const board = new OverviewState();
+  const clock = keepBoardCurrent(board);
 
-  let now = $state(Date.now());
-  onMount(() => {
-    const timer = setInterval(() => (now = Date.now()), 60_000);
-    return () => clearInterval(timer);
-  });
+  /**
+   * Project Overview — the grounding zone. Reset, re-align, launch.
+   *
+   * Three bands: who and what this project is, then the two things you came for
+   * side by side — what to make, and what is waiting on you — then everything the
+   * project contains.
+   *
+   * **Nothing on this board scrolls; two of its bands do.** The board is a grid
+   * of bounded rows rather than content-height ones, so a long activity feed or a
+   * forty-row project cannot push the table off the bottom. Where a region holds
+   * more than it has height for, the region gives in — the feed scrolls inside
+   * its own frame and so does the table — because a screen you have to scroll is
+   * a screen you cannot take in at a glance, which is the only thing this one is
+   * for. A band that scrolls is a promise that everything is reachable; a table
+   * silently cut to five rows is a project that looks smaller than it is.
+   *
+   * **A row is a thing, not a health report.** There is no Status column on the
+   * Resources table, and no connector band above it: what cannot proceed belongs
+   * in the status bar rather than in the place a person comes to re-orient.
+   *
+   * **The header carries no Settings.** Settings is a property of the project
+   * rather than of this category, so it lives in the top bar.
+   */
+  /**
+   * One project, one viewer, one clock.
+   *
+   * `now` is read once per render rather than per row: a table that asked the
+   * clock ten times would draw ten rows against ten different moments, and the
+   * two that straddled a minute boundary would disagree about how long ago the
+   * same edit was.
+   *
+   * The project is not `view.project` — that is the token from the route, and
+   * what scopes a row is the id it resolves to. Both come from `scope`, which
+   * says there why it has to work them out.
+   */
 
   const id = $derived(projectId());
   const viewer = $derived(viewerId());
@@ -57,19 +89,11 @@
 
   const it = $derived(project(id));
   const everyone = $derived(people(id));
-  const mentions = $derived(mentionsForViewer(id, viewer, now));
-  const events = $derived(activity(id, now));
+  const mentions = $derived(mentionsForViewer(id, viewer, clock.now));
+  const events = $derived(activity(id, clock.now));
   const work = $derived(
-    resourcesIn(resourceIndex.ready ? resourceIndex.current : undefined, now)
+    resourcesIn(resourceIndex.ready ? resourceIndex.current : undefined, clock.now)
   );
-
-  let feed = $state<"mentions" | "activity">("mentions");
-
-  let search = $state("");
-  let kind = $state("all");
-  let actor = $state("all");
-  let sortBy = $state("updated");
-  let direction = $state<"asc" | "desc">("asc");
 
   const SORTS = [
     { value: "updated", label: "Updated" },
@@ -77,6 +101,13 @@
     { value: "kind", label: "Kind" }
   ] as const;
 
+  /**
+   * What a kind is called in the table, and in the filter that narrows to it.
+   *
+   * Total rather than partial, both of them: a kind added to the vocabulary
+   * without a name here is a build error rather than a blank cell and an option
+   * nobody can read.
+   */
   const KIND_LABEL: Record<ResourceKind, string> = {
     document: "Document",
     slides: "Slide deck",
@@ -142,43 +173,16 @@
    * Omitting it asks Project Resources to allocate the first free suffix on the
    * server immediately before the row is created.
    */
-  let creating = $state<"document" | "slides" | "spreadsheet" | "research">();
-  let creationError = $state<string>();
-
-  const make = async (key: (typeof CREATE)[number]["key"]) => {
-    if (key === "document" || key === "slides" || key === "spreadsheet") {
-      if (creating !== undefined) return;
-
-      creating = key;
-      void createsResource({
-        view,
-        target: key,
-        live: () => live,
-        refused: (message) => {
-          creationError = message;
-        },
-        ended: () => {
-          creating = undefined;
-        }
-      });
+  const make = (key: (typeof CREATE)[number]["key"]) => {
+    if (
+      key === "document" ||
+      key === "slides" ||
+      key === "spreadsheet" ||
+      key === "research"
+    ) {
+      void makeResource(view, board.creation, key);
       return;
     }
-
-    if (key === "research") {
-      if (creating !== undefined) return;
-      creating = "research";
-      creationError = undefined;
-      try {
-        const threadId = await createChat(view);
-        if (live) view.open({ category: "research", content: "research.thread", resourceId: threadId });
-      } catch (error) {
-        if (live) creationError = error instanceof Error ? error.message : "That did not start";
-      } finally {
-        if (live) creating = undefined;
-      }
-      return;
-    }
-
     alert("Creating a represented analysis graph is not wired up yet.");
   };
 
@@ -198,8 +202,8 @@
   };
 
   const compare = (a: Resource, b: Resource): number => {
-    if (sortBy === "name") return a.name.localeCompare(b.name);
-    if (sortBy === "kind")
+    if (board.sortBy === "name") return a.name.localeCompare(b.name);
+    if (board.sortBy === "kind")
       return (
         KIND_LABEL[a.kind].localeCompare(KIND_LABEL[b.kind]) || a.name.localeCompare(b.name)
       );
@@ -213,23 +217,31 @@
   };
 
   const ofKind = (of: ResourceKind): boolean =>
-    kind === "all" || (kind === WITHOUT_FILES ? of !== "file" : of === kind);
+    board.kind === "all" || (board.kind === WITHOUT_FILES ? of !== "file" : of === board.kind);
 
   const matched = $derived(
     work
       .filter((row) => ofKind(row.kind))
-      .filter((row) => actor === "all" || row.updatedBy === actor)
-      .filter((row) => row.name.toLowerCase().includes(search.trim().toLowerCase()))
+      .filter((row) => board.actor === "all" || row.updatedBy === board.actor)
+      .filter((row) => row.name.toLowerCase().includes(board.search.trim().toLowerCase()))
   );
 
   const ordered = $derived(
-    [...matched].sort((a, b) => (direction === "asc" ? 1 : -1) * compare(a, b))
+    [...matched].sort((a, b) => (board.direction === "asc" ? 1 : -1) * compare(a, b))
   );
 
   const listed = $derived(
     ordered.map((row) => ({ row, ...inspectionFor(row) }))
   );
 
+  /**
+   * Both filters offer what the work contains rather than what the vocabulary
+   * allows, for the same reason. The kind list and the actor list are derived from
+   * the rows already in the project, so they stay in step with what is on the
+   * board and never widen past the table they are narrowing. The visible task label
+   * uses the driving persona name and task id (for example, Generalist (e344csd))
+   * rather than a generic agent label.
+   */
   const kinds = $derived(
     [...new Set(work.map((row) => row.kind))].sort((a, b) =>
       KIND_PLURAL[a].localeCompare(KIND_PLURAL[b])
@@ -240,6 +252,13 @@
     [...new Set(work.map((row) => row.updatedBy))].sort((a, b) => a.localeCompare(b))
   );
 
+  /**
+   * Everyone in the project, those who are here now first.
+   *
+   * The faces are a strip with a chip on the end, and the chip is what the rest
+   * are behind — so an ordering that could put a present person there would hide
+   * the one fact the strip exists to show. Within each half nothing is ranked.
+   */
   const faces = $derived(
     [...everyone]
       .sort((a, b) => Number(b.at !== undefined) - Number(a.at !== undefined))
@@ -252,9 +271,9 @@
   );
 
   const clear = () => {
-    search = "";
-    kind = "all";
-    actor = "all";
+    board.search = "";
+    board.kind = "all";
+    board.actor = "all";
   };
 </script>
 
@@ -301,8 +320,8 @@
         {:else if !resourceIndex.ready}
           <ScreenNote>Loading the resource list; server-side blank creation remains available.</ScreenNote>
         {/if}
-        {#if creationError}
-          <ScreenNote tone="gap">Could not create the resource: {creationError}</ScreenNote>
+        {#if board.creation.failure}
+          <ScreenNote tone="gap">Could not create the resource: {board.creation.failure}</ScreenNote>
         {/if}
         <div class="create" role="group" aria-label="What you can make">
           {#each CREATE as pill (pill.key)}
@@ -311,8 +330,9 @@
               type="button"
               disabled={(pill.key === "document" ||
                 pill.key === "slides" ||
-                pill.key === "spreadsheet") &&
-                creating !== undefined}
+                pill.key === "spreadsheet" ||
+                pill.key === "research") &&
+                board.creation.making !== undefined}
               onclick={() => make(pill.key)}
               class="rounded-control text-body-sm flex w-full cursor-pointer items-center gap-2 border px-3 text-start {pill.tint}"
             >
@@ -327,12 +347,24 @@
     <div class="area-review">
       <ScreenGroup label="Review">
         {#snippet actions()}
+          <!--
+            A single-choice group, because the two are alternatives: one is
+            showing and the other is not, and two independent buttons could be
+            pressed into a state the feed below has no way to draw.
+          -->
+          <!--
+            Bound rather than set, because a single-choice group clears itself
+            when the pressed item is the one already chosen. Reading back through
+            the binding puts it straight again: there is no state in which
+            neither half is showing, so there must be none in which neither
+            reads as pressed.
+          -->
           <ToggleGroup
             type="single"
             bind:value={
-              () => feed,
+              () => board.feed,
               (next: string) => {
-                if (next === "mentions" || next === "activity") feed = next;
+                if (next === "mentions" || next === "activity") board.feed = next;
               }
             }
             variant="outline"
@@ -350,7 +382,7 @@
         {/snippet}
 
         <div class="feed">
-          {#if feed === "mentions"}
+          {#if board.feed === "mentions"}
             <ScreenList label="Mentions of you" scroll>
               {#each mentions as mention (mention.id)}
                 <ScreenItem
@@ -396,19 +428,30 @@
       </ScreenGroup>
     </div>
 
+    <!--
+      Everything the project contains, as one table — every kind, because "what is
+      in this project" is one question. The band takes whatever height the two
+      above leave and the rows scroll inside it, so the count over the table is
+      the whole answer rather than the part that fitted.
+    -->
     <div class="area-resources">
       <ScreenGroup label="Resources" fill>
+        <!--
+          The count is matched-of-total, so a filtered view never looks like the
+          whole project. The direction rides in `order`, which draws it inside the
+          order's own frame: which way a sort runs is half of one decision.
+        -->
         <ScreenFilters
           placeholder="Search this project"
           matched={matched.length}
           total={work.length}
           sorts={SORTS}
-          bind:sort={sortBy}
-          bind:value={search}
+          bind:sort={board.sortBy}
+          bind:value={board.search}
         >
           <select
             class="border-border-subtle bg-surface-panel text-caption rounded-control border px-2 py-1"
-            bind:value={kind}
+            bind:value={board.kind}
             aria-label="Kind"
           >
             <option value="all">All kinds</option>
@@ -421,7 +464,7 @@
           </select>
           <select
             class="border-border-subtle bg-surface-panel text-caption rounded-control border px-2 py-1"
-            bind:value={actor}
+            bind:value={board.actor}
             aria-label="Updated by"
           >
             <option value="all">Anyone</option>
@@ -434,11 +477,11 @@
             <Button
               variant="ghost"
               size="icon-sm"
-              aria-label={DIRECTION[sortBy][direction]}
-              title={DIRECTION[sortBy][direction]}
-              onclick={() => (direction = direction === "asc" ? "desc" : "asc")}
+              aria-label={DIRECTION[board.sortBy][board.direction]}
+              title={DIRECTION[board.sortBy][board.direction]}
+              onclick={() => (board.direction = board.direction === "asc" ? "desc" : "asc")}
             >
-              {#if direction === "asc"}
+              {#if board.direction === "asc"}
                 <ArrowUpNarrowWide aria-hidden="true" />
               {:else}
                 <ArrowDownNarrowWide aria-hidden="true" />
@@ -515,6 +558,36 @@
     gap: calc(var(--token-spacing-unit) * 2);
   }
 
+  /**
+   * Two tracks in the middle band, 2fr and 3fr, and full width above and below.
+   *
+   * The halves are not equal because what they hold is not: Create is five pills
+   * of one word each and Review is prose, so the width goes to the side that has
+   * sentences to break.
+   *
+   * **Every row is bounded, and the last one takes what is left.** The brief's
+   * one hard requirement is that this screen never scrolls, and content-height
+   * rows cannot promise that — a project with forty resources or a busy week of
+   * activity would each grow a row until the table left the viewport. So the
+   * middle band is capped at what its taller half needs and Resources is given
+   * the remainder, which is also what makes the table inside it scrollable: a
+   * band with no height of its own has nothing for a table to give in to.
+   *
+   * **The middle row is one measurement, taken once.** Create and Review are two
+   * halves of one row and have to end level, so rather than each being sized and
+   * the pair checked, the band is defined as *four Review entries tall* and
+   * everything else is derived from it: the feed takes it, Create divides it by
+   * five, and the row is it plus the label above.
+   *
+   * An entry is what an entry is made of — a title line, a caption line and its
+   * own padding — rather than a measured pixel count, which would drift the day
+   * the type scale moves. There is no term for a gap between the two lines,
+   * because both feeds hand them to `ScreenItem` as one block.
+   *
+   * At 1440x900 less the 44px top bar, the 36px tab strip and the 32px status
+   * bar, the plane is 788px and the surface's padding takes 48 of it. Header and
+   * the middle row come to roughly 370, and Resources is the other 370.
+   */
   .board {
     --entry: calc(
       var(--token-text-body-sm-leading) + var(--token-text-caption-leading) +
@@ -550,6 +623,15 @@
     grid-area: resources;
   }
 
+  /**
+   * Each band is a column its own contents can shrink inside.
+   *
+   * A grid item is as tall as its row, but a block child of one is as tall as
+   * *its* contents and spills — so a bounded row alone does not bound what is in
+   * it. These three make the band a flex column with no floor under it, which is
+   * what lets the feed and the table give in to the height they were given
+   * instead of deciding it.
+   */
   .area-create,
   .area-review,
   .area-resources {
@@ -558,12 +640,28 @@
     flex-direction: column;
   }
 
+  /**
+   * Four entries exactly, and the same four whichever feed is showing: the two
+   * are alternatives, so a frame that resized as you switched would move the
+   * table below it every time.
+   *
+   * Grid rather than flex, so the list stretches to the band on both axes
+   * without this file reaching into another component's classes to do it.
+   */
   .feed {
     display: grid;
     min-height: 0;
     height: var(--band);
   }
 
+  /**
+   * The same height, cut five ways.
+   *
+   * Five pills where the feed beside it spends the height on four entries, so
+   * each is a little shorter than an entry and the two bands end exactly level.
+   * The rows are `1fr` rather than a fixed height, so the four gaps come out of
+   * the band rather than being added to it.
+   */
   .create {
     display: grid;
     min-height: 0;

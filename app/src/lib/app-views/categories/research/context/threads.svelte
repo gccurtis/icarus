@@ -1,16 +1,17 @@
 <script lang="ts">
-  import { onDestroy, onMount } from "svelte";
   import MessagesSquare from "@lucide/svelte/icons/messages-square";
   import Plus from "@lucide/svelte/icons/plus";
 
   import { Panel, PanelButton, PanelEmpty, PanelRow, PanelSkeleton } from "$authored-components/panel";
   import {
     chosenThread,
-    createThread,
-    messageOf,
     openThread,
-    threadList
-  } from "$app-views/categories/research/procedures/chat.svelte";
+    threadList,
+    type Working
+  } from "$app-views/categories/research/procedures/chat";
+  import { createThread } from "$app-views/categories/research/procedures/create-thread";
+  import { startClock } from "$app-views/categories/research/procedures/effects/clock.svelte";
+  import { releaseWhenGone } from "$app-views/categories/research/procedures/effects/mounted.svelte";
   import { since } from "$app-views/categories/research/procedures/time";
   import { workspaceState } from "$model/client/workspace-state";
 
@@ -19,33 +20,20 @@
   const threads = $derived(list.ready ? list.current.threads : []);
   const open = $derived(chosenThread(view, threads));
 
-  let now = $state(Date.now());
-  let live = true;
-  onDestroy(() => {
-    live = false;
-  });
-  onMount(() => {
-    const timer = setInterval(() => (now = Date.now()), 10_000);
-    return () => clearInterval(timer);
-  });
-
-  let pending = $state(false);
-  const start = async () => {
-    pending = true;
-    try {
-      const made = await createThread(view);
-      if (live) openThread(view, made.threadId);
-    } catch (error) {
-      if (live) console.error(messageOf(error));
-    } finally {
-      if (live) pending = false;
-    }
-  };
+  const clock = startClock();
+  const surface: Working = $state({ mounted: true, pending: false, failure: undefined });
+  releaseWhenGone(surface);
 </script>
 
 <Panel title="Threads">
   {#snippet actions()}
-    <PanelButton label="New" icon={Plus} tone="primary" disabled={pending} onclick={start} />
+    <PanelButton
+      label="New"
+      icon={Plus}
+      tone="primary"
+      disabled={surface.pending}
+      onclick={() => createThread(view, surface)}
+    />
   {/snippet}
 
   {#if !list.ready}
@@ -59,7 +47,7 @@
         sub={thread.turnCount === 0
           ? "Nothing asked yet"
           : `${thread.turnCount} turn${thread.turnCount === 1 ? "" : "s"}`}
-        meta={since(thread.updatedAt, now)}
+        meta={since(thread.updatedAt, clock.now)}
         icon={MessagesSquare}
         selected={thread.id === open}
         tone={thread.id === open ? "intelligence" : "default"}

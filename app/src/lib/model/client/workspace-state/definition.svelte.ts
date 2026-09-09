@@ -18,6 +18,8 @@ import { activate } from "$model/client/workspace-state/methods/activate";
 import { clear } from "$model/client/workspace-state/methods/clear";
 import { close } from "$model/client/workspace-state/methods/close";
 import { documentRuntime } from "$model/client/workspace-state/methods/document-runtime";
+import { draft } from "$model/client/workspace-state/methods/draft";
+import { keepDraft } from "$model/client/workspace-state/methods/keep-draft";
 import { slideDeckRuntime } from "$model/client/workspace-state/methods/slide-deck-runtime";
 import { spreadsheetRuntime } from "$model/client/workspace-state/methods/spreadsheet-runtime";
 import { flush } from "$model/client/workspace-state/methods/flush";
@@ -94,6 +96,7 @@ export class WorkspaceStateData {
 
   pendingFlush: Promise<void> | undefined;
   readonly pendingFlights = new Map<string, Promise<unknown>>();
+  readonly drafts = new Map<string, string>();
 
   #timer: ReturnType<typeof setTimeout> | undefined;
 
@@ -286,6 +289,14 @@ export class WorkspaceState implements WorkspaceStateModel {
 
   spreadsheetRuntime(resourceId: string): SpreadsheetRuntime {
     return spreadsheetRuntime(this.#state, resourceId);
+  }
+
+  draft(key: string): string {
+    return draft(this.#state, key);
+  }
+
+  keepDraft(key: string, text: string): void {
+    keepDraft(this.#state, key, text);
   }
 
   readStore(table: TableName): StoreQuery {

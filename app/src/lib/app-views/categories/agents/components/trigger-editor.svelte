@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { onDestroy } from "svelte";
   import type { Component } from "svelte";
   import CalendarClock from "@lucide/svelte/icons/calendar-clock";
   import FilePen from "@lucide/svelte/icons/file-pen";
@@ -9,12 +8,10 @@
   import { PanelChoice } from "$authored-components/panel";
   import { ScreenCard, ScreenCards, ScreenNote } from "$authored-components/screen";
   import * as ToggleGroup from "$vendored-components/toggle-group";
-  import {
-    agentsLibrary,
-    automationDetail,
-    messageOf,
-    updateAutomation
-  } from "$app-views/categories/agents/procedures/library.svelte";
+  import { agentsLibrary, automationDetail } from "$app-views/categories/agents/procedures/agents";
+  import { releaseWhenGone } from "$app-views/categories/agents/procedures/effects/release.svelte";
+  import { run, type Working } from "$app-views/categories/agents/procedures/run";
+  import { updateAutomation } from "$app-views/categories/agents/procedures/update-automation";
   import {
     REPEATS,
     TRIGGER_KINDS,
@@ -38,26 +35,13 @@
   const resources = $derived(library.ready ? library.current.resources : []);
   const value = $derived<AutomationTrigger>(automation?.trigger ?? { kind: "manual" });
 
-  let live = true;
-  onDestroy(() => {
-    live = false;
-  });
+  const surface: Working = $state({ mounted: true, busy: undefined, failure: undefined });
+  releaseWhenGone(surface);
 
-  let pending = $state(false);
-  let actionError = $state<string>();
-
-  const save = async (next: AutomationTrigger) => {
+  const save = (next: AutomationTrigger) => {
     if (automation === undefined) return;
-    pending = true;
-    actionError = undefined;
-    try {
-      const result = await updateAutomation(view, automation, { trigger: next });
-      if (live && !result.accepted) actionError = result.detail;
-    } catch (error) {
-      if (live) actionError = messageOf(error);
-    } finally {
-      pending = false;
-    }
+    const held = automation;
+    void run(surface, "trigger", () => updateAutomation(view, held, { trigger: next }));
   };
 
   const CARD: Record<
@@ -72,7 +56,7 @@
 
   const ZONES = ["America/Chicago", "America/New_York", "America/Los_Angeles", "Europe/London", "UTC"];
 
-  const off = $derived(disabled || pending || automation === undefined);
+  const off = $derived(disabled || surface.busy !== undefined || automation === undefined);
 
   const pick = (kind: AutomationTriggerKind) => {
     if (off || kind === value.kind) return;
@@ -123,8 +107,8 @@
 </script>
 
 <div class="editor">
-  {#if actionError}
-    <ScreenNote tone="gap">{actionError}</ScreenNote>
+  {#if surface.failure}
+    <ScreenNote tone="gap">{surface.failure}</ScreenNote>
   {/if}
   <ScreenCards min="11rem">
     {#each TRIGGER_KINDS as kind (kind)}

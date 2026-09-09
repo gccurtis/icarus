@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { onMount } from "svelte";
   import FolderOpen from "@lucide/svelte/icons/folder-open";
 
   import {
@@ -12,16 +11,14 @@
     PanelLink,
     PanelSkeleton
   } from "$authored-components/panel";
+  import { agentsLibrary, messageOf } from "$app-views/categories/agents/procedures/agents";
+  import { startClock } from "$app-views/categories/agents/procedures/effects/clock.svelte";
+  import { inspectAgent } from "$app-views/categories/agents/procedures/inspect";
   import {
-    agentsLibrary,
-    inspectAutomation,
-    inspectPersona,
-    inspectTask,
-    messageOf,
     openAutomation,
     openPersona,
     openTask
-  } from "$app-views/categories/agents/procedures/library.svelte";
+  } from "$app-views/categories/agents/procedures/navigate";
   import { dateAndTime, relativeTime } from "$app-views/categories/agents/procedures/time";
   import { workspaceState } from "$model/client/workspace-state";
 
@@ -33,11 +30,7 @@
     eventId === undefined ? undefined : answer?.activity.find((row) => row.id === eventId)
   );
 
-  let now = $state(Date.now());
-  onMount(() => {
-    const timer = setInterval(() => (now = Date.now()), 30_000);
-    return () => clearInterval(timer);
-  });
+  const clock = startClock();
 
   const TARGET_LABEL = new Map<string, string>([
     ["task", "Task"],
@@ -55,9 +48,12 @@
 
   const inspectTarget = () => {
     if (event === undefined) return;
-    if (event.targetKind === "task") inspectTask(view, event.targetId);
-    else if (event.targetKind === "persona") inspectPersona(view, event.targetId);
-    else if (event.targetKind === "automation") inspectAutomation(view, event.targetId);
+    if (event.targetKind === "task") inspectAgent(view, { kind: "task", id: event.targetId });
+    else if (event.targetKind === "persona") {
+      inspectAgent(view, { kind: "persona", id: event.targetId });
+    } else if (event.targetKind === "automation") {
+      inspectAgent(view, { kind: "automation", id: event.targetId });
+    }
   };
 
   const openTarget = () => {
@@ -99,7 +95,10 @@
       <PanelField label="Persona">
         {#if event.personaId !== null}
           {@const personaId = event.personaId}
-          <PanelLink label={event.actorName} onselect={() => inspectPersona(view, personaId)} />
+          <PanelLink
+            label={event.actorName}
+            onselect={() => inspectAgent(view, { kind: "persona", id: personaId })}
+          />
         {:else}
           {event.actorName}
         {/if}
@@ -112,7 +111,7 @@
         {/if}
       </PanelField>
       <PanelField label="When">
-        {relativeTime(event.at, now)} · {dateAndTime(event.at)}
+        {relativeTime(event.at, clock.now)} · {dateAndTime(event.at)}
       </PanelField>
     </PanelFields>
   </Panel>

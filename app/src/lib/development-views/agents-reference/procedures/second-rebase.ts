@@ -49,12 +49,12 @@ export const RESOLUTION = `flowchart LR
   rename --> narrow["narrow where it maps"]
   narrow --> lint
 
-  lint -->|"129 findings<br/>across 15 checks"| triage["fix what is ours to fix,<br/>baseline the rest with a reason"]
+  lint -->|"129 findings<br/>across 15 checks"| triage["fix all 114,<br/>remove 15 resolved exceptions"]
   lint -->|"clean"| tests{"unit suite"}
   triage --> tests
 
   tests -->|"19 failed"| doubles["the test doubles<br/>have no transaction"]
-  tests -->|"1,155 passed"| green2["green"]
+  tests -->|"1,175 passed"| green2["green"]
   doubles --> green2
   green1 --> green2
 
@@ -174,14 +174,14 @@ export const SILENT: readonly {
     found: "Typecheck · 2 errors",
     what: "A resource set row's name became optional and boundTo was added, so a row can be bound to one template hole or one resource instead of being a project's named set. git merged the declaration cleanly — it took the base's — and left our reference to the old name dangling one line below.",
     cost: "agents/api/shared/projection.ts, where the persona scope picker lists the project's named sets.",
-    fix: "The filter that proved name was a string could not carry that proof into the map beside it. One flatMap narrows where it maps. The behaviour this now states out loud: a bound row is not offered as a persona's scope, because it belongs to one hole, not to the project."
+    fix: "The filter that proved name was a string could not carry that proof into the map beside it. One flatMap narrows where it maps. Every row is still the project's — a bound row is not offered in the persona's scope picker because it has no name to offer, being the scope of one hole or one resource rather than a set somebody made and can choose again."
   },
   {
     n: 2,
     found: "Structural lint · 129 findings across 15 checks",
     what: "The lint grew from fifty-six checks to ninety: eight new pillars, and a baseline file that grandfathers what was already in the tree when each checker became blocking. Our two hundred and ten files were written against the fifty-six and met the ninety for the first time in the replay.",
     cost: "Both new capabilities, both new view categories, every reference route, and three baseline entries pointing at a file this branch deleted.",
-    fix: "Twenty-four findings were fixed and ninety were baselined with a rationale naming this rebase rather than the file's borrowed default. Twelve stale entries and three invalid ones were removed, because the work resolved the debt they were holding open."
+    fix: "All hundred and fourteen were fixed rather than held: the routes moved, the handlers and effects moved into procedures, six state owners took what the surfaces were keeping beside their markup, thirty-one procedure files replaced two, five capability files split, and every command now writes inside one transaction. Fifteen exceptions the base branch was holding for code this work replaced were removed, so the baseline is smaller than it was before the rebase and holds nothing of this branch's."
   },
   {
     n: 3,
@@ -193,113 +193,122 @@ export const SILENT: readonly {
 ];
 
 /** The twenty-four findings answered by changing the code, and the fifteen entries removed. */
+/** The hundred and fourteen findings, and the change that answered each family. */
 export const FIXED: readonly (readonly string[])[] = [
-  [
-    "multi-write-capability-uses-a-unit-of-work",
-    "9",
-    "Every command in both capabilities stages its writes in one store.transaction. ask does it four times rather than once, because a turn is not one synchronous moment: reclaiming a stranded turn, opening this one, publishing the answer, and recording a failure are four intents with a model call between them."
-  ],
-  [
-    "multi-table-intent-is-atomic",
-    "9",
-    "The nine intents named in the Store's shared failpoint contract, beside the twenty-one already there."
-  ],
-  [
-    "subject-write-proves-ownership",
-    "2",
-    "A cross-project ownership contract per capability, naming all eighteen commands and asserting that each resolves its subject through the request scope and takes no project from its own input."
-  ],
-  [
-    "mutable-state-has-an-instance",
-    "2",
-    "Two constant lookup tables were built with new Map at module load. They are plain records now, which is what they always were."
-  ],
-  [
-    "architecture-docs-match-the-graph",
-    "1",
-    "capabilities.md names agents and research-chat in the subject inventory."
-  ],
-  [
-    "production-svelte-imports-no-capability",
-    "1",
-    "Project Overview called createThread from inside the component. It calls a named procedure now, which calls the capability."
-  ],
-  [
-    "removed · stale entries",
-    "12",
-    "Debt grandfathered in files this branch replaced: the fixture agents procedures, the mock research thread, and the tab state they declared. The lint asks for a resolved exception to be taken out, so a baseline never outlives the code it was written for."
-  ],
-  [
-    "removed · invalid entries",
-    "3",
-    "Three entries pointed at app-views/categories/agents/procedures/agents.ts, the fixture module this branch deleted. architecture-exceptions-expire refuses to be baselined, so these had to go rather than be held."
-  ]
-];
-
-export const BASELINED: readonly (readonly string[])[] = [
   [
     "async-command-state-lives-with-command",
     "34",
-    "Base carries 29",
-    "Inline async handlers in the agents and research components. A mechanical move into procedures/, and the same debt every view in the tree already has."
+    "Every inline handler now calls one named procedure. Both categories gained a runner — agents' `run`, research chat's own commands — that holds what is in flight, what refused and whether the surface is still there, so a handler is a sentence rather than a try/catch."
   ],
   [
     "component-effects-have-a-home",
     "21",
-    "Base carries 65",
-    "onMount, onDestroy and $effect written where they are used rather than in procedures/effects/."
+    "No production component in either category calls onMount, onDestroy or $effect any more. Nine effects modules under procedures/effects/ name each synchronisation: the clock every relative time is drawn from, the draft that follows a chat, the lens that opens once per thing, and the release that stops a late answer writing to a surface that has gone."
   ],
   [
     "development-fixtures-stay-in-development",
     "18",
-    "Base carries 0",
-    "The live reference routes import their pages from development-views. Routes under /demo/ are exempt from this rule; these are not, and cannot move there — a remote function resolves its scope from the project in the page's path, and every page here reads the project's real store."
+    "The seventeen reference routes moved from /app/<project>/reference/agents to /demo/<project>/reference/agents, which is where the templates reference already lived. A remote function reads its project from the second path segment whether the first is app or demo, so the pages still stage the real store — they are simply no longer production code."
   ],
   [
-    "remounted-views-hold-no-declared-tab-state",
-    "5",
-    "Base carries 11",
-    "The checker wants an @state-lifetime annotation on every local binding. No content view in the tree carries one; all eleven that exist are baselined too."
+    "component-state-declares-a-lifetime · remounted-views-hold-no-declared-tab-state",
+    "10",
+    "Six colocated state owners — thread, library, persona, task, automation, overview — hold every binding the surfaces used to keep beside their markup. No local $state is left in a content view, so there is nothing left to classify."
+  ],
+  [
+    "multi-write-capability-uses-a-unit-of-work · multi-table-intent-is-atomic",
+    "18",
+    "Every command in both capabilities stages its writes in one store.transaction, and all nine intents are named in the Store's shared failpoint contract."
   ],
   [
     "source-complexity-is-reviewed",
     "5",
-    "Base carries 23",
-    "The chat's tool set, its answer, its ask, the library procedures and the agents projection are each over the line the checker draws."
-  ],
-  [
-    "component-state-declares-a-lifetime",
-    "4",
-    "Base carries 8",
-    "The same annotation, asked for by a second checker at file scope."
+    "Five files split rather than marked reviewed: the chat's tools into a kit, a reading half and a searching half; its answer into prompts, the decision schema and the run; ask into the turn's own helpers; the agents projection into personas and tasks; and the view procedures into one file per command."
   ],
   [
     "procedure-directory-has-one-entry-chain",
     "2",
-    "Base carries 22",
-    "library.svelte.ts exposes twenty-one entry chains and chat.svelte.ts six. One directory per subject rather than one per chain."
+    "library.svelte.ts exposed twenty-one effectful entries and chat.svelte.ts six. They are now thirty-one small procedure files, one intent each, beside seven pure ones."
   ],
   [
     "mutable-state-has-an-instance",
-    "1",
-    "Base carries 3",
-    "The draft holder. A half-typed message survives a tab switch precisely because that Map is module state and not the surface's."
+    "3",
+    "Two constant lookup tables became records. The third was the draft holder, and the fix is the interesting one: the workspace state owns drafts now, keyed by an opaque string, because a composing surface is remounted whenever its tab is left."
   ],
   [
-    "production-io-has-a-model-owner",
-    "1",
-    "Base carries 1",
-    "The review gutter's endpoint appends a note to a file with node:fs. It is an instrument for reading these pages, not a part of the product."
+    "subject-write-proves-ownership",
+    "2",
+    "A cross-project ownership contract per capability, naming all eighteen commands and asserting each resolves its subject through the request scope and takes no project from its own input."
+  ],
+  [
+    "architecture-docs-match-the-graph · production-svelte-imports-no-capability · production-io-has-a-model-owner",
+    "3",
+    "capabilities.md names both new capabilities; Project Overview calls a procedure rather than the capability; the review-note endpoint moved with the routes and is no longer production I/O."
+  ],
+  [
+    "removed · resolved exceptions",
+    "15",
+    "Entries the base branch was holding for code this work replaced: the fixture agents procedures, the mock research thread, the tab state they declared, and three that pointed at a file this branch deleted. The baseline is smaller than it was before the rebase, and holds nothing of this branch's."
+  ]
+];
+
+/** What had to exist before the findings could be fixed rather than held. */
+export const BUILT: readonly (readonly string[])[] = [
+  [
+    "One runner for every command",
+    "procedures/run.ts",
+    "Takes the surface, a label, the command and what to do on success. Refuses a second press while one is in flight, shows a refusal's own words, turns a throw into the same failure, and writes nothing back to a surface that has gone. Nine unit tests, one per rule."
+  ],
+  [
+    "Six state owners",
+    "content/<surface>.state.svelte.ts",
+    "A class per content surface holding what it holds. The component constructs it and reads through it, so what a command does to a surface is a method on a thing rather than an assignment reaching back into markup."
+  ],
+  [
+    "Nine effects modules",
+    "procedures/effects/",
+    "startClock, keepDraftWithChat, followNewestTurn, followShownThing, releaseThread, releaseWhenGone, keepBoardCurrent. Every lifecycle call in both categories lives in one of these."
+  ],
+  [
+    "Drafts on the workspace",
+    "model/client/workspace-state",
+    "draft(key) and keepDraft(key, text), delegating to two methods like every other action on that model. Keyed by an opaque string, so two composing surfaces keep two drafts and neither knows about the other. Four tests, including that a draft survives a tab move."
+  ],
+  [
+    "One file per command",
+    "procedures/",
+    "Thirty-one of them across the two categories, matching how the capabilities are already laid out: one directory per command there, one file per command here."
+  ],
+  [
+    "One seam for the inspector",
+    "procedures/inspect.ts",
+    "inspectAgent(view, target) pairs each lens with a selection of its own kind. A lens drawn over the wrong kind of selection is the one way this category can show a blank panel, so the pairing is a test rather than a convention."
   ]
 ];
 
 export const CHECKS: readonly (readonly string[])[] = [
-  ["Typecheck", "2 errors · 3,263 files", "0 errors · 0 warnings", "One rename, two call sites"],
-  ["Structural lint", "15 of 90 with findings · 129 findings", "90 of 90 clean · 379 baselined", "24 fixed · 90 baselined · 15 entries removed"],
-  ["Unit tests", "19 failed · 1,132 passed", "1,155 passed · 2 skipped · 133 files", "4 new tests, both of them contracts"],
-  ["Baseline entries", "300", "379", "288 kept · 91 added · 12 dropped; the extra one is this page's own route"],
+  ["Typecheck", "2 errors", "0 errors · 3,327 files", "One rename, two call sites"],
+  [
+    "Structural lint",
+    "15 of 90 with findings · 129 findings",
+    "90 of 90 clean · 0 findings",
+    "114 fixed · 15 exceptions removed · none added"
+  ],
+  [
+    "Unit tests",
+    "19 failed · 1,132 passed",
+    "1,175 passed · 2 skipped · 136 files",
+    "24 new, on the runner, the drafts and the inspector seam"
+  ],
+  [
+    "Baseline entries",
+    "300 before the rebase",
+    "285",
+    "Fifteen of the tree's own exceptions resolved; this branch holds none"
+  ],
   ["Conflicted files", "3", "0", "demo index · persist · tables"]
 ];
+
 
 export const STEPS: readonly { actor: string; action: string; artifact?: string }[] = [
   {

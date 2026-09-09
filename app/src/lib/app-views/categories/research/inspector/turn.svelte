@@ -17,7 +17,7 @@
     threadDetail,
     threadList,
     turnById
-  } from "$app-views/categories/research/procedures/chat.svelte";
+  } from "$app-views/categories/research/procedures/chat";
   import { workspaceState } from "$model/client/workspace-state";
 
   const view = workspaceState();

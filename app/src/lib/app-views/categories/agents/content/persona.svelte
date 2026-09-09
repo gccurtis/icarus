@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { onDestroy, onMount } from "svelte";
   import Copy from "@lucide/svelte/icons/copy";
   import MessageSquarePlus from "@lucide/svelte/icons/message-square-plus";
   import Sparkles from "@lucide/svelte/icons/sparkles";
@@ -29,25 +28,31 @@
   import SurfaceHead from "$app-views/categories/agents/components/surface-head.svelte";
   import TaskFilters from "$app-views/categories/agents/components/task-filters.svelte";
   import TaskTable from "$app-views/categories/agents/components/task-table.svelte";
+  import { PersonaState } from "$app-views/categories/agents/content/persona.state.svelte";
   import {
     agentsLibrary,
-    createChat,
-    duplicatePersona,
-    inspectAutomation,
-    inspectPersona,
-    isSelected,
-    makeAutomation,
     messageOf,
+    personaDetail
+  } from "$app-views/categories/agents/procedures/agents";
+  import { createChat } from "$app-views/categories/agents/procedures/create-chat";
+  import { duplicatePersona } from "$app-views/categories/agents/procedures/duplicate-persona";
+  import { followShownThing } from "$app-views/categories/agents/procedures/effects/claim.svelte";
+  import { startClock } from "$app-views/categories/agents/procedures/effects/clock.svelte";
+  import { releaseWhenGone } from "$app-views/categories/agents/procedures/effects/release.svelte";
+  import { inspectAgent } from "$app-views/categories/agents/procedures/inspect";
+  import { makeAutomation } from "$app-views/categories/agents/procedures/make-automation";
+  import {
+    isSelected,
     openAutomation,
     openChat,
     openNewTask,
     openPersona,
-    personaDetail,
-    removePersona,
-    showLibrary,
-    updateAutomation,
-    updatePersona
-  } from "$app-views/categories/agents/procedures/library.svelte";
+    showLibrary
+  } from "$app-views/categories/agents/procedures/navigate";
+  import { removePersona } from "$app-views/categories/agents/procedures/remove-persona";
+  import { run } from "$app-views/categories/agents/procedures/run";
+  import { updateAutomation } from "$app-views/categories/agents/procedures/update-automation";
+  import { updatePersona } from "$app-views/categories/agents/procedures/update-persona";
   import { relativeTime } from "$app-views/categories/agents/procedures/time";
   import {
     TRIGGER_KINDS,
@@ -62,15 +67,9 @@
   const detail = $derived(personaDetail(personaId));
   const library = agentsLibrary();
 
-  let live = true;
-  onDestroy(() => {
-    live = false;
-  });
-  let now = $state(Date.now());
-  onMount(() => {
-    const timer = setInterval(() => (now = Date.now()), 30_000);
-    return () => clearInterval(timer);
-  });
+  const surface = new PersonaState();
+  const clock = startClock();
+  releaseWhenGone(surface);
 
   const persona = $derived(
     detail !== undefined && detail.ready ? (detail.current ?? undefined) : undefined
@@ -78,114 +77,68 @@
   const answer = $derived(library.ready ? library.current : undefined);
   const chats = $derived((answer?.chats ?? []).filter((row) => row.personaId === persona?.id));
 
-  let claimed = $state<string>();
-  $effect(() => {
-    if (persona === undefined || claimed === persona.id) return;
-    claimed = persona.id;
-    inspectPersona(view, persona.id);
-  });
-
-  let pending = $state<string>();
-  let actionError = $state<string>();
-  let band = $state("Tasks");
-
-  let query = $state("");
-  let kind = $state("any");
-  let taskState = $state("any");
-  let sort = $state("started");
-  let direction = $state("asc");
-
-  let ruleQuery = $state("");
-  let ruleTrigger = $state("any");
-  let ruleOn = $state("any");
+  followShownThing(view, surface, () =>
+    persona === undefined ? undefined : { kind: "persona", id: persona.id }
+  );
 
   const automations = $derived(
     (answer?.automations ?? [])
       .filter((row) => row.personaId === persona?.id)
-      .filter((row) => ruleTrigger === "any" || row.trigger.kind === ruleTrigger)
-      .filter((row) => ruleOn === "any" || String(row.enabled) === ruleOn)
+      .filter((row) => surface.ruleTrigger === "any" || row.trigger.kind === surface.ruleTrigger)
+      .filter((row) => surface.ruleOn === "any" || String(row.enabled) === surface.ruleOn)
       .filter((row) => {
-        const needle = ruleQuery.trim().toLocaleLowerCase();
+        const needle = surface.ruleQuery.trim().toLocaleLowerCase();
         return needle === "" || row.name.toLocaleLowerCase().includes(needle);
       })
   );
 
-  const save = async (label: string, patch: UpdatePersonaPatch) => {
+  const save = (label: string, patch: UpdatePersonaPatch) => {
     if (persona === undefined) return;
-    pending = label;
-    actionError = undefined;
-    try {
-      const result = await updatePersona(view, persona, patch);
-      if (live && !result.accepted) actionError = result.detail;
-    } catch (error) {
-      if (live) actionError = messageOf(error);
-    } finally {
-      pending = undefined;
-    }
+    const held = persona;
+    void run(surface, label, () => updatePersona(view, held, patch));
   };
 
-  const duplicate = async () => {
+  const duplicate = () => {
     if (persona === undefined) return;
-    pending = "duplicate";
-    actionError = undefined;
-    try {
-      const result = await duplicatePersona(view, persona.id);
-      if (!live) return;
-      if (result.accepted) openPersona(view, result.id);
-      else actionError = result.detail;
-    } catch (error) {
-      if (live) actionError = messageOf(error);
-    } finally {
-      pending = undefined;
-    }
+    const held = persona;
+    void run(
+      surface,
+      "duplicate",
+      () => duplicatePersona(view, held.id),
+      (made) => openPersona(view, made.id)
+    );
   };
 
-  const remove = async () => {
+  const remove = () => {
     if (persona === undefined) return;
-    pending = "delete";
-    actionError = undefined;
-    try {
-      const result = await removePersona(view, persona);
-      if (!live) return;
-      if (result.accepted) {
-        view.clear();
-        showLibrary(view);
-      } else actionError = result.detail;
-    } catch (error) {
-      if (live) actionError = messageOf(error);
-    } finally {
-      pending = undefined;
-    }
+    const held = persona;
+    void run(surface, "delete", () => removePersona(view, held), () => {
+      view.clear();
+      showLibrary(view);
+    });
   };
 
-  const makeRule = async () => {
+  const makeRule = () => {
     if (persona === undefined) return;
-    pending = "automation";
-    actionError = undefined;
-    try {
-      const id = await makeAutomation(view, persona.id, automations.map((row) => row.name));
-      if (live && id !== undefined) openAutomation(view, id);
-    } catch (error) {
-      if (live) actionError = messageOf(error);
-    } finally {
-      pending = undefined;
-    }
+    const held = persona;
+    const taken = automations.map((row) => row.name);
+    void run(
+      surface,
+      "automation",
+      () => makeAutomation(view, held.id, taken),
+      (made) => openAutomation(view, made.id)
+    );
   };
 
-  const chat = async () => {
+  const chat = () => {
     if (persona === undefined) return;
-    pending = "chat";
-    actionError = undefined;
-    try {
-      const result = await createChat(view, persona.id);
-      if (!live) return;
-      if (result.accepted) openChat(view, result.chatId);
-      else actionError = result.detail;
-    } catch (error) {
-      if (live) actionError = messageOf(error);
-    } finally {
-      pending = undefined;
-    }
+    const held = persona;
+    void run(
+      surface,
+      "chat",
+      () => createChat(view, held.id),
+      (made) => openChat(view, made.chatId)
+    );
   };
 
   const referenced = $derived(
@@ -194,14 +147,10 @@
       : persona.counts.tasks + persona.counts.automations + persona.counts.chats
   );
 
-  const toggleAutomation = async (automationId: string, revision: number, enabled: boolean) => {
-    actionError = undefined;
-    try {
-      const result = await updateAutomation(view, { id: automationId, revision }, { enabled });
-      if (live && !result.accepted) actionError = result.detail;
-    } catch (error) {
-      if (live) actionError = messageOf(error);
-    }
+  const toggleAutomation = (automationId: string, revision: number, enabled: boolean) => {
+    void run(surface, `automation:${automationId}`, () =>
+      updateAutomation(view, { id: automationId, revision }, { enabled })
+    );
   };
 </script>
 
@@ -256,22 +205,22 @@
             </div>
           </div>
           {#snippet actions()}
-            {#if pending !== undefined}
-              <span class="text-caption text-ink-muted">Saving {pending}…</span>
+            {#if surface.busy !== undefined}
+              <span class="text-caption text-ink-muted">Saving {surface.busy}…</span>
             {/if}
             <Button variant="default" size="sm" onclick={() => openNewTask(view, persona.id)}>
               <Sparkles aria-hidden="true" />
               New task
             </Button>
-            <Button variant="outline" size="sm" disabled={pending !== undefined} onclick={makeRule}>
+            <Button variant="outline" size="sm" disabled={surface.busy !== undefined} onclick={makeRule}>
               <Workflow aria-hidden="true" />
               New automation
             </Button>
-            <Button variant="outline" size="sm" disabled={pending !== undefined} onclick={chat}>
+            <Button variant="outline" size="sm" disabled={surface.busy !== undefined} onclick={chat}>
               <MessageSquarePlus aria-hidden="true" />
               New chat
             </Button>
-            <Button variant="outline" size="sm" disabled={pending !== undefined} onclick={duplicate}>
+            <Button variant="outline" size="sm" disabled={surface.busy !== undefined} onclick={duplicate}>
               <Copy aria-hidden="true" />
               Duplicate
             </Button>
@@ -279,7 +228,7 @@
               variant="ghost"
               size="sm"
               class="text-danger-text"
-              disabled={pending !== undefined || referenced > 0}
+              disabled={surface.busy !== undefined || referenced > 0}
               title={referenced > 0
                 ? `Still named by ${referenced} ${referenced === 1 ? "thing" : "things"} in this project`
                 : "Delete this persona"}
@@ -291,65 +240,61 @@
           {/snippet}
         </SurfaceHead>
 
-        {#if actionError}
-          <ScreenNote tone="gap">{actionError}</ScreenNote>
+        {#if surface.failure}
+          <ScreenNote tone="gap">{surface.failure}</ScreenNote>
         {/if}
         </div>
 
         <div class="pair">
           <ScreenGroup label="Definition" fill>
-            <DefinitionPanel personaId={persona.id} disabled={pending !== undefined} />
+            <DefinitionPanel personaId={persona.id} disabled={surface.busy !== undefined} />
           </ScreenGroup>
 
-          <Grants label="Default" owner={persona.id} aligned disabled={pending !== undefined} />
+          <Grants label="Default" owner={persona.id} aligned disabled={surface.busy !== undefined} />
         </div>
 
-        <ScreenGroup label={band} fill>
+        <ScreenGroup label={surface.band} fill>
           {#snippet actions()}
             <BandTabs
               label="What this persona has"
               options="Tasks,Automations"
-              value={band}
-              onchange={(next) => (band = next)}
+              value={surface.band}
+              onchange={(next) => (surface.band = next)}
             />
           {/snippet}
 
-          {#if band === "Tasks"}
+          {#if surface.band === "Tasks"}
             <div class="stack">
               <TaskFilters
                 withPersona={false}
-                bind:query
-                bind:kind
-                bind:taskState
-                bind:sort
-                bind:direction
+                bind:query={surface.query}
+                bind:kind={surface.kind}
+                bind:taskState={surface.taskState}
+                bind:sort={surface.sort}
+                bind:direction={surface.direction}
               />
               <TaskTable
                 persona={persona.id}
                 withPersona={false}
-                {query}
-                {kind}
-                {taskState}
-                {sort}
-                {direction}
+                query={surface.query}
+                kind={surface.kind}
+                taskState={surface.taskState}
+                sort={surface.sort}
+                direction={surface.direction}
                 scroll
-                onclear={() => {
-                  query = "";
-                  kind = "any";
-                  taskState = "any";
-                }}
+                onclear={() => surface.clearFilters()}
               />
             </div>
           {:else}
             <div class="stack">
-              <ScreenFilters placeholder="Search automations" bind:value={ruleQuery}>
-                <select class="filter" bind:value={ruleTrigger} aria-label="Trigger">
+              <ScreenFilters placeholder="Search automations" bind:value={surface.ruleQuery}>
+                <select class="filter" bind:value={surface.ruleTrigger} aria-label="Trigger">
                   <option value="any">Any trigger</option>
                   {#each TRIGGER_KINDS as option (option)}
                     <option value={option}>{TRIGGER_LABEL[option]}</option>
                   {/each}
                 </select>
-                <select class="filter" bind:value={ruleOn} aria-label="Enabled">
+                <select class="filter" bind:value={surface.ruleOn} aria-label="Enabled">
                   <option value="any">On and off</option>
                   <option value="true">On</option>
                   <option value="false">Off</option>
@@ -365,14 +310,14 @@
                   {#each automations as row (row.id)}
                     <ScreenRow
                       selected={isSelected(view, "automation", row.id)}
-                      onselect={() => inspectAutomation(view, row.id)}
+                      onselect={() => inspectAgent(view, { kind: "automation", id: row.id })}
                       onopen={() => openAutomation(view, row.id)}
                     >
                       <ScreenCell>
                         <button
                           type="button"
                           class="text-body-sm text-ink-primary min-h-9 text-start hover:underline"
-                          onclick={() => inspectAutomation(view, row.id)}
+                          onclick={() => inspectAgent(view, { kind: "automation", id: row.id })}
                           ondblclick={() => openAutomation(view, row.id)}
                         >
                           {row.name}
@@ -382,7 +327,7 @@
                         {TRIGGER_LABEL[row.trigger.kind]} · {triggerSummary(row.trigger, row.triggerRefName ?? undefined)}
                       </ScreenCell>
                       <ScreenCell num>{row.firedCount}</ScreenCell>
-                      <ScreenCell num>{row.lastFiredAt === null ? "—" : relativeTime(row.lastFiredAt, now)}</ScreenCell>
+                      <ScreenCell num>{row.lastFiredAt === null ? "—" : relativeTime(row.lastFiredAt, clock.now)}</ScreenCell>
                       <ScreenCell>
                         <Switch
                           size="sm"
@@ -410,7 +355,7 @@
                 <ScreenItem
                   title={row.title}
                   excerpt={row.lastLine ?? "Nothing said yet"}
-                  meta={relativeTime(row.updatedAt, now)}
+                  meta={relativeTime(row.updatedAt, clock.now)}
                   onselect={() => openChat(view, row.id)}
                 />
               {/each}

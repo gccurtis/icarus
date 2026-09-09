@@ -109,7 +109,7 @@ const { setThreadPersona } = await import(
   "$capabilities/research-chat/api/set-thread-persona/set-thread-persona"
 );
 const { stopTurn } = await import("$capabilities/research-chat/api/stop-turn/stop-turn");
-const { personaPrompt } = await import("$capabilities/research-chat/api/shared/answer");
+const { personaPrompt } = await import("$capabilities/research-chat/api/shared/prompts");
 
 const persona = (id: string, tools: string[], scope?: unknown): Row => ({
   ...(scope === undefined ? {} : { scope }),

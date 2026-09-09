@@ -1,15 +1,12 @@
 <script lang="ts">
-  import { onDestroy } from "svelte";
-
   import { ScreenNote } from "$authored-components/screen";
   import { Button } from "$vendored-components/button";
   import * as Tabs from "$vendored-components/tabs";
   import { Textarea } from "$vendored-components/textarea";
-  import {
-    messageOf,
-    personaDetail,
-    updatePersona
-  } from "$app-views/categories/agents/procedures/library.svelte";
+  import { personaDetail } from "$app-views/categories/agents/procedures/agents";
+  import { releaseWhenGone } from "$app-views/categories/agents/procedures/effects/release.svelte";
+  import { run, type Working } from "$app-views/categories/agents/procedures/run";
+  import { updatePersona } from "$app-views/categories/agents/procedures/update-persona";
   import type { PersonaSectionName } from "$capabilities/agents/index.remote";
   import { workspaceState } from "$model/client/workspace-state";
 
@@ -31,10 +28,8 @@
   const detail = $derived(personaDetail(personaId));
   const persona = $derived(detail !== undefined && detail.ready ? (detail.current ?? undefined) : undefined);
 
-  let live = true;
-  onDestroy(() => {
-    live = false;
-  });
+  const surface: Working = $state({ mounted: true, busy: undefined, failure: undefined });
+  releaseWhenGone(surface);
 
   const SECTIONS: readonly { name: PersonaSectionName; label: string; purpose: string }[] = [
     {
@@ -73,25 +68,17 @@
   const draft = $derived(drafts[shown.name] ?? saved);
   const dirty = $derived(draft.trim() !== saved.trim());
 
-  let pending = $state(false);
-  let actionError = $state<string>();
-
-  const save = async () => {
+  const save = () => {
     if (persona === undefined || !dirty) return;
+    const held = persona;
     const name = shown.name;
     const text = drafts[name] ?? "";
-    pending = true;
-    actionError = undefined;
-    try {
-      const result = await updatePersona(view, persona, { section: { name, text } });
-      if (!live) return;
-      if (result.accepted) drafts = { ...drafts, [name]: undefined as unknown as string };
-      else actionError = result.detail;
-    } catch (error) {
-      if (live) actionError = messageOf(error);
-    } finally {
-      pending = false;
-    }
+    void run(
+      surface,
+      "save",
+      () => updatePersona(view, held, { section: { name, text } }),
+      () => (drafts = { ...drafts, [name]: undefined as unknown as string })
+    );
   };
 </script>
 
@@ -117,7 +104,7 @@
           value={drafts[entry.name] ?? (persona?.definition[entry.name] ?? "")}
           placeholder="Nothing written. This section is left out of the prompt."
           aria-label="{entry.label} text"
-          disabled={disabled || pending}
+          disabled={disabled || surface.busy !== undefined}
           class="h-full resize-none"
           oninput={(event) => (drafts = { ...drafts, [entry.name]: event.currentTarget.value })}
           onblur={save}
@@ -126,16 +113,20 @@
     {/each}
   </Tabs.Root>
 
-  {#if actionError}
-    <ScreenNote tone="gap">{actionError}</ScreenNote>
+  {#if surface.failure}
+    <ScreenNote tone="gap">{surface.failure}</ScreenNote>
   {/if}
 
   {#if withSave}
     <div class="foot">
       <span class="text-caption text-ink-muted">
-        {pending ? "Saving…" : dirty ? "Not saved yet" : "Saved"}
+        {surface.busy !== undefined ? "Saving…" : dirty ? "Not saved yet" : "Saved"}
       </span>
-      <Button size="sm" disabled={disabled || pending || !dirty} onclick={save}>Save</Button>
+      <Button
+        size="sm"
+        disabled={disabled || surface.busy !== undefined || !dirty}
+        onclick={save}
+      >Save</Button>
     </div>
   {/if}
 </div>

@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { onDestroy, onMount } from "svelte";
   import FolderOpen from "@lucide/svelte/icons/folder-open";
   import Sparkles from "@lucide/svelte/icons/sparkles";
   import Target from "@lucide/svelte/icons/target";
@@ -19,17 +18,16 @@
   import DefinitionModal from "$app-views/categories/agents/components/definition-modal.svelte";
   import {
     agentsLibrary,
-    inspectTask,
-    inspectTool,
-    isSelected,
     messageOf,
-    openPersona,
-    openTask,
-    personaDetail,
-    taskRowsIn,
-    updatePersona,
-    type TaskRow
-  } from "$app-views/categories/agents/procedures/library.svelte";
+    personaDetail
+  } from "$app-views/categories/agents/procedures/agents";
+  import { startClock } from "$app-views/categories/agents/procedures/effects/clock.svelte";
+  import { releaseWhenGone } from "$app-views/categories/agents/procedures/effects/release.svelte";
+  import { inspectAgent } from "$app-views/categories/agents/procedures/inspect";
+  import { isSelected, openPersona, openTask } from "$app-views/categories/agents/procedures/navigate";
+  import { run, type Working } from "$app-views/categories/agents/procedures/run";
+  import { taskRowsIn, type TaskRow } from "$app-views/categories/agents/procedures/tasks";
+  import { updatePersona } from "$app-views/categories/agents/procedures/update-persona";
   import { scopeRows } from "$app-views/categories/agents/procedures/scope";
   import { toolOf } from "$app-views/categories/agents/procedures/vocabulary";
   import type { PersonaSectionName, UpdatePersonaPatch } from "$capabilities/agents/index.remote";
@@ -40,21 +38,17 @@
   const detail = $derived(personaDetail(personaId));
   const library = agentsLibrary();
 
-  let live = true;
-  onDestroy(() => {
-    live = false;
-  });
-  let now = $state(Date.now());
-  onMount(() => {
-    const timer = setInterval(() => (now = Date.now()), 30_000);
-    return () => clearInterval(timer);
-  });
+  const surface: Working = $state({ mounted: true, busy: undefined, failure: undefined });
+  releaseWhenGone(surface);
+  const clock = startClock();
 
   const persona = $derived(
     detail !== undefined && detail.ready ? (detail.current ?? undefined) : undefined
   );
   const answer = $derived(library.ready ? library.current : undefined);
-  const work = $derived(taskRowsIn(answer, now).filter((row) => row.personaId === persona?.id));
+  const work = $derived(
+    taskRowsIn(answer, clock.now).filter((row) => row.personaId === persona?.id)
+  );
   const running = $derived(work.filter((row) => row.state === "running"));
   const review = $derived(work.filter((row) => row.state === "review"));
   const reach = $derived(
@@ -71,21 +65,10 @@
 
   let editing = $state<string>();
 
-  let pending = $state<string>();
-  let actionError = $state<string>();
-
-  const save = async (label: string, patch: UpdatePersonaPatch) => {
+  const save = (label: string, patch: UpdatePersonaPatch) => {
     if (persona === undefined) return;
-    pending = label;
-    actionError = undefined;
-    try {
-      const result = await updatePersona(view, persona, patch);
-      if (live && !result.accepted) actionError = result.detail;
-    } catch (error) {
-      if (live) actionError = messageOf(error);
-    } finally {
-      pending = undefined;
-    }
+    const held = persona;
+    void run(surface, label, () => updatePersona(view, held, patch));
   };
 
   const rename = (element: HTMLInputElement) => {
@@ -123,7 +106,7 @@
         {tone}
         titleTone={row.openQuestions > 0 ? "attention" : undefined}
         selected={isSelected(view, "task", row.id)}
-        onselect={() => inspectTask(view, row.id)}
+        onselect={() => inspectAgent(view, { kind: "task", id: row.id })}
       />
     </div>
   {/each}
@@ -147,8 +130,8 @@
   </Panel>
 {:else}
   <Panel title="Persona">
-    {#if actionError}
-      <PanelBanner title="That did not save" tone="attention">{actionError}</PanelBanner>
+    {#if surface.failure}
+      <PanelBanner title="That did not save" tone="attention">{surface.failure}</PanelBanner>
     {/if}
 
     <div class="head">
@@ -156,7 +139,7 @@
         value={persona.name}
         placeholder="Name the persona"
         aria-label="Persona name"
-        disabled={pending !== undefined}
+        disabled={surface.busy !== undefined}
         class="text-body font-medium"
         onchange={(event) => rename(event.currentTarget)}
         onkeydown={(event) => {
@@ -171,7 +154,7 @@
         rows={3}
         placeholder="What it is for"
         aria-label="Persona description"
-        disabled={pending !== undefined}
+        disabled={surface.busy !== undefined}
         class="text-body-sm max-h-28 resize-none overflow-y-auto"
         onchange={(event) => describe(event.currentTarget.value)}
       />
@@ -225,7 +208,7 @@
           sub={tool?.does}
           icon={Wrench}
           selected={isSelected(view, "tool", toolId) && view.selection?.at === persona.id}
-          onselect={() => inspectTool(view, toolId, persona.id)}
+          onselect={() => inspectAgent(view, { kind: "tool", id: toolId, at: persona.id })}
         />
       {:else}
         <PanelEmpty title="No tool is allowed by default." flush />

@@ -4,15 +4,14 @@
 
   import { ScreenFilters } from "$authored-components/screen";
   import { Button } from "$vendored-components/button";
+  import { agentsLibrary } from "$app-views/categories/agents/procedures/agents";
   import {
     DIRECTION,
     ORIGIN_KINDS,
     SORTS,
-    STATES,
-    STATE_LABEL,
-    agentsLibrary,
     type SortKey
-  } from "$app-views/categories/agents/procedures/library.svelte";
+  } from "$app-views/categories/agents/procedures/sorting";
+  import { STATES, STATE_LABEL } from "$app-views/categories/agents/procedures/tasks";
   import { ORIGIN_LABEL } from "$app-views/categories/agents/procedures/vocabulary";
 
   let {

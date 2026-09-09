@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { onDestroy, onMount } from "svelte";
   import Play from "@lucide/svelte/icons/play";
   import Plus from "@lucide/svelte/icons/plus";
   import Workflow from "@lucide/svelte/icons/workflow";
@@ -14,16 +13,14 @@
     PanelSkeleton
   } from "$authored-components/panel";
   import { Button } from "$vendored-components/button";
-  import {
-    agentsLibrary,
-    inspectAutomation,
-    inspectTask,
-    isSelected,
-    makeAutomation,
-    messageOf,
-    openAutomation,
-    runAutomation
-  } from "$app-views/categories/agents/procedures/library.svelte";
+  import { agentsLibrary, messageOf } from "$app-views/categories/agents/procedures/agents";
+  import { startClock } from "$app-views/categories/agents/procedures/effects/clock.svelte";
+  import { releaseWhenGone } from "$app-views/categories/agents/procedures/effects/release.svelte";
+  import { inspectAgent } from "$app-views/categories/agents/procedures/inspect";
+  import { makeAutomation } from "$app-views/categories/agents/procedures/make-automation";
+  import { isSelected, openAutomation } from "$app-views/categories/agents/procedures/navigate";
+  import { run, type Working } from "$app-views/categories/agents/procedures/run";
+  import { runAutomation } from "$app-views/categories/agents/procedures/run-automation";
   import { relativeTime } from "$app-views/categories/agents/procedures/time";
   import { triggerSummary } from "$app-views/categories/agents/procedures/vocabulary";
   import type { AutomationItem } from "$capabilities/agents/index.remote";
@@ -32,58 +29,35 @@
   const view = workspaceState();
   const library = agentsLibrary();
 
-  let live = true;
-  onDestroy(() => {
-    live = false;
-  });
+  const surface: Working = $state({ mounted: true, busy: undefined, failure: undefined });
+  releaseWhenGone(surface);
 
-  let pending = $state<string>();
-  let actionError = $state<string>();
-
-  const make = async () => {
-    if (pending !== undefined || !library.ready) return;
+  const make = () => {
+    if (!library.ready) return;
     const personaId = library.current.personas[0]?.id;
     if (personaId === undefined) {
-      actionError = "Make a persona first; an automation asks one to work.";
+      surface.failure = "Make a persona first; an automation asks one to work.";
       return;
     }
-    pending = "new";
-    actionError = undefined;
-    try {
-      const id = await makeAutomation(
-        view,
-        personaId,
-        library.current.automations.map((row) => row.name)
-      );
-      if (live && id !== undefined) openAutomation(view, id);
-    } catch (error) {
-      if (live) actionError = messageOf(error);
-    } finally {
-      pending = undefined;
-    }
+    const taken = library.current.automations.map((row) => row.name);
+    void run(
+      surface,
+      "new",
+      () => makeAutomation(view, personaId, taken),
+      (made) => openAutomation(view, made.id)
+    );
   };
 
-  const run = async (row: AutomationItem) => {
-    if (pending !== undefined) return;
-    pending = row.id;
-    actionError = undefined;
-    try {
-      const result = await runAutomation(view, row.id);
-      if (!live) return;
-      if (result.accepted) inspectTask(view, result.taskId);
-      else actionError = result.detail;
-    } catch (error) {
-      if (live) actionError = messageOf(error);
-    } finally {
-      pending = undefined;
-    }
+  const fire = (row: AutomationItem) => {
+    void run(
+      surface,
+      row.id,
+      () => runAutomation(view, row.id),
+      (fired) => inspectAgent(view, { kind: "task", id: fired.taskId })
+    );
   };
 
-  let now = $state(Date.now());
-  onMount(() => {
-    const timer = setInterval(() => (now = Date.now()), 30_000);
-    return () => clearInterval(timer);
-  });
+  const clock = startClock();
 
   const all = $derived(library.ready ? library.current.automations : []);
 
@@ -106,7 +80,7 @@
     `${row.personaName} · ${triggerSummary(row.trigger, row.triggerRefName ?? undefined)}`;
 
   const meta = (row: AutomationItem): string | undefined =>
-    row.lastFiredAt === null ? undefined : relativeTime(row.lastFiredAt, now);
+    row.lastFiredAt === null ? undefined : relativeTime(row.lastFiredAt, clock.now);
 </script>
 
 {#snippet list(entries: readonly AutomationItem[])}
@@ -119,7 +93,7 @@
         icon={Workflow}
         tone={row.running > 0 ? "active" : "default"}
         selected={isSelected(view, "automation", row.id)}
-        onselect={() => inspectAutomation(view, row.id)}
+        onselect={() => inspectAgent(view, { kind: "automation", id: row.id })}
       />
     </div>
   {/each}
@@ -134,16 +108,16 @@
         icon={Workflow}
         tone={row.running > 0 ? "active" : "default"}
         selected={isSelected(view, "automation", row.id)}
-        onselect={() => inspectAutomation(view, row.id)}
+        onselect={() => inspectAgent(view, { kind: "automation", id: row.id })}
       >
         {#snippet control()}
           <PanelButton
-            label={pending === row.id ? "Starting" : "Run"}
+            label={surface.busy === row.id ? "Starting" : "Run"}
             icon={Play}
             tone="ghost"
-            disabled={pending !== undefined}
+            disabled={surface.busy !== undefined}
             title="Start one task from this now"
-            onclick={() => run(row)}
+            onclick={() => fire(row)}
           />
         {/snippet}
       </PanelRow>
@@ -153,11 +127,17 @@
 
 <Panel title="Automations">
   {#snippet actions()}
-    <PanelButton label="New" icon={Plus} tone="primary" disabled={pending !== undefined} onclick={make} />
+    <PanelButton
+      label="New"
+      icon={Plus}
+      tone="primary"
+      disabled={surface.busy !== undefined}
+      onclick={make}
+    />
   {/snippet}
 
-  {#if actionError}
-    <PanelBanner title="That did not happen" tone="attention">{actionError}</PanelBanner>
+  {#if surface.failure}
+    <PanelBanner title="That did not happen" tone="attention">{surface.failure}</PanelBanner>
   {/if}
 
   {#if library.error}

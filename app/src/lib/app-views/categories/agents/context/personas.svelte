@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { onDestroy } from "svelte";
   import Bot from "@lucide/svelte/icons/bot";
   import FolderOpen from "@lucide/svelte/icons/folder-open";
   import Plus from "@lucide/svelte/icons/plus";
@@ -13,25 +12,21 @@
     PanelSkeleton
   } from "$authored-components/panel";
   import { Button } from "$vendored-components/button";
-  import {
-    agentsLibrary,
-    createPersona,
-    inspectPersona,
-    isSelected,
-    messageOf,
-    nextName,
-    openPersona
-  } from "$app-views/categories/agents/procedures/library.svelte";
+  import { agentsLibrary, messageOf } from "$app-views/categories/agents/procedures/agents";
+  import { createPersona } from "$app-views/categories/agents/procedures/create-persona";
+  import { releaseWhenGone } from "$app-views/categories/agents/procedures/effects/release.svelte";
+  import { inspectAgent } from "$app-views/categories/agents/procedures/inspect";
+  import { nextName } from "$app-views/categories/agents/procedures/naming";
+  import { isSelected, openPersona } from "$app-views/categories/agents/procedures/navigate";
+  import { run, type Working } from "$app-views/categories/agents/procedures/run";
   import type { PersonaItem } from "$capabilities/agents/index.remote";
   import { workspaceState } from "$model/client/workspace-state";
 
   const view = workspaceState();
   const library = agentsLibrary();
 
-  let live = true;
-  onDestroy(() => {
-    live = false;
-  });
+  const surface: Working = $state({ mounted: true, busy: undefined, failure: undefined });
+  releaseWhenGone(surface);
 
   const personas = $derived(library.ready ? library.current.personas : []);
 
@@ -56,30 +51,26 @@
     return parts.join(" · ");
   };
 
-  let pending = $state(false);
-  let actionError = $state<string>();
-
-  const make = async () => {
-    if (pending) return;
-    pending = true;
-    actionError = undefined;
-    try {
-      const result = await createPersona(
-        view,
-        nextName("Untitled persona", personas.map((persona) => persona.name))
-      );
-      if (live) openPersona(view, result.id);
-    } catch (error) {
-      if (live) actionError = messageOf(error);
-    } finally {
-      pending = false;
-    }
+  const make = () => {
+    const name = nextName("Untitled persona", personas.map((persona) => persona.name));
+    void run(
+      surface,
+      "persona",
+      () => createPersona(view, name),
+      (made) => openPersona(view, made.id)
+    );
   };
 </script>
 
 <Panel title="Personas">
   {#snippet actions()}
-    <PanelButton label="New" icon={Plus} tone="primary" disabled={pending} onclick={make} />
+    <PanelButton
+      label="New"
+      icon={Plus}
+      tone="primary"
+      disabled={surface.busy !== undefined}
+      onclick={make}
+    />
     <PanelButton
       label="Open"
       icon={FolderOpen}
@@ -97,8 +88,8 @@
   {:else if !library.ready}
     <PanelSkeleton shape="rows" count={4} />
   {:else}
-    {#if actionError}
-      <PanelBanner title="The persona was not created" tone="attention">{actionError}</PanelBanner>
+    {#if surface.failure}
+      <PanelBanner title="The persona was not created" tone="attention">{surface.failure}</PanelBanner>
     {/if}
     <PanelSearch
       placeholder="Search personas"
@@ -115,7 +106,7 @@
             icon={Bot}
             tone={persona.counts.running > 0 ? "active" : "default"}
             selected={isSelected(view, "persona", persona.id)}
-            onselect={() => inspectPersona(view, persona.id)}
+            onselect={() => inspectAgent(view, { kind: "persona", id: persona.id })}
           />
         </div>
       {/each}

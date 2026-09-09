@@ -1,30 +1,28 @@
 <script lang="ts">
-  import { onDestroy, onMount } from "svelte";
   import Plus from "@lucide/svelte/icons/plus";
   import SquareArrowOutUpRight from "@lucide/svelte/icons/square-arrow-out-up-right";
 
   import { ScreenAction, ScreenBanner, ScreenEmpty, ScreenSurface } from "$authored-components/screen";
   import { Button } from "$vendored-components/button";
   import Composer from "$app-views/categories/research/components/composer.svelte";
+  import { ThreadState } from "$app-views/categories/research/content/thread.state.svelte";
+  import { askQuestion } from "$app-views/categories/research/procedures/ask-question";
   import {
-    MODE_LABEL,
-    SCOPE_LABEL,
-    askQuestion,
     chosenThread,
-    createThread,
     currentTurn,
-    draftFor,
-    keepDraft,
-    inspectTurn,
-    messageOf,
-    openThread,
-    setPersona,
-    stopTurn,
     threadDetail,
     threadList,
     turnById
-  } from "$app-views/categories/research/procedures/chat.svelte";
+  } from "$app-views/categories/research/procedures/chat";
+  import { createThread } from "$app-views/categories/research/procedures/create-thread";
+  import { startClock } from "$app-views/categories/research/procedures/effects/clock.svelte";
+  import { keepDraftWithChat } from "$app-views/categories/research/procedures/effects/draft.svelte";
+  import { followNewestTurn } from "$app-views/categories/research/procedures/effects/newest.svelte";
+  import { releaseThread } from "$app-views/categories/research/procedures/effects/release.svelte";
+  import { setPersona } from "$app-views/categories/research/procedures/set-persona";
+  import { stopTurn } from "$app-views/categories/research/procedures/stop-turn";
   import { since } from "$app-views/categories/research/procedures/time";
+  import { MODE_LABEL, SCOPE_LABEL } from "$app-views/categories/research/procedures/vocabulary";
   import { workspaceState } from "$model/client/workspace-state";
 
   const view = workspaceState();
@@ -44,128 +42,35 @@
   );
   const turn = $derived(asked ?? newest);
 
-  let now = $state(Date.now());
-  let mounted = true;
-  onDestroy(() => {
-    mounted = false;
-  });
-  onMount(() => {
-    const timer = setInterval(() => (now = Date.now()), 10_000);
-    return () => clearInterval(timer);
-  });
-
-  let claimed = $state<string>();
-  $effect(() => {
-    const id = newest?.id;
-    if (id === undefined || claimed === id) return;
-    claimed = id;
-    inspectTurn(view, id);
-  });
-
   const chat = $derived(threads.find((row) => row.id === threadId));
   const running = $derived(
     turns.find((row) => row.state === "running" || row.state === "queued")
   );
   const live = $derived(running !== undefined);
 
-  let text = $state("");
-  /**
-   * The half-written question follows the chat, not the surface.
-   *
-   * `held` is which chat the field currently belongs to. Until it agrees with
-   * the open chat the field has not been restored yet, and saving what is in it
-   * would overwrite the draft with the empty string it starts at.
-   */
-  let held = $state<string>();
-  $effect(() => {
-    const id = threadId;
-    if (held === id) return;
-    if (held !== undefined) keepDraft(held, text);
-    held = id;
-    text = draftFor(id);
-  });
-  $effect(() => {
-    if (held !== threadId) return;
-    keepDraft(threadId, text);
-  });
-  onDestroy(() => keepDraft(held, text));
-  let scope = $state("project");
-  /** "kind id" of the chosen resource, empty when the whole project is in scope. */
-  let resource = $state("");
+  const surface = new ThreadState(view);
+  const clock = startClock();
+  releaseThread(surface);
+  keepDraftWithChat(view, surface, () => threadId);
+  followNewestTurn(view, surface, () => newest?.id);
 
-  /** What the composer is showing, as the capability takes it. */
-  const chosenScope = (): { kind: "project" } | { kind: "resource"; ref: { kind: string; id: string } } =>
-    scope === "project" || resource === ""
-      ? { kind: "project" }
-      : {
-          kind: "resource",
-          ref: { kind: resource.slice(0, resource.indexOf(" ")), id: resource.slice(resource.indexOf(" ") + 1) }
-        };
-  let pending = $state(false);
-  let stopping = $state(false);
-  let asking = $state<string>();
-  let failure = $state<string>();
-
-  const send = async (written: string) => {
-    if (threadId === undefined || pending || live) return;
-    asking = written;
-    text = "";
-    pending = true;
-    failure = undefined;
-    try {
-      const result = await askQuestion(view, threadId, written, chosenScope());
-      if (!mounted) return;
-      if (result.accepted) {
-        // The centre follows the turn that was just made, whatever was pinned.
-        claimed = result.turnId;
-        inspectTurn(view, result.turnId);
-      } else {
-        failure = result.detail;
-        text = written;
-      }
-    } catch (error) {
-      if (mounted) failure = messageOf(error);
-    } finally {
-      if (mounted) {
-        pending = false;
-        stopping = false;
-        asking = undefined;
-      }
-    }
+  const send = (written: string) => {
+    if (threadId === undefined || live) return;
+    void askQuestion(view, surface, threadId, written);
   };
 
-  const stop = async () => {
-    if (threadId === undefined || !(pending || live)) return;
-    const already = stopping;
-    stopping = true;
-    try {
-      const result = await stopTurn(view, threadId);
-      if (mounted && !result.accepted && already) failure = result.detail;
-    } catch (error) {
-      if (mounted) failure = messageOf(error);
-    }
+  const stop = () => {
+    if (threadId === undefined || !(surface.pending || live)) return;
+    void stopTurn(view, surface, threadId);
   };
 
-  const choosePersona = async (personaId: string) => {
+  const choosePersona = (personaId: string) => {
     if (threadId === undefined) return;
-    try {
-      await setPersona(view, threadId, personaId === "" ? null : personaId);
-    } catch (error) {
-      if (mounted) failure = messageOf(error);
-    }
+    void setPersona(view, surface, threadId, personaId);
   };
 
-  const start = async () => {
-    pending = true;
-    try {
-      const made = await createThread(view);
-      if (mounted) openThread(view, made.threadId);
-    } catch (error) {
-      if (mounted) failure = messageOf(error);
-    } finally {
-      if (mounted) pending = false;
-    }
-  };
+  const nameOf = (kind: string, id: string): string =>
+    resources.find((entry) => entry.kind === kind && entry.id === id)?.name ?? SCOPE_LABEL.resource;
 </script>
 
 <ScreenSurface>
@@ -173,19 +78,19 @@
     <ScreenEmpty title="Loading" />
   {:else if threadId === undefined}
     <ScreenEmpty title="No chats yet">
-      <Button onclick={start} disabled={pending}>Start a chat</Button>
+      <Button onclick={() => createThread(view, surface)} disabled={surface.pending}>Start a chat</Button>
     </ScreenEmpty>
   {:else}
     <div class="plane">
       <div class="asked">
-        {#if asking !== undefined}
+        {#if surface.asking !== undefined}
           <p class="meta">
             <span>just now</span>
             <span aria-hidden="true">·</span>
             <span>
-              {scope === "project" || resource === ""
+              {surface.scope === "project" || surface.resource === ""
                 ? SCOPE_LABEL.project
-                : (resources.find((entry) => `${entry.kind} ${entry.id}` === resource)?.name ??
+                : (resources.find((entry) => `${entry.kind} ${entry.id}` === surface.resource)?.name ??
                   SCOPE_LABEL.resource)}
             </span>
             <span aria-hidden="true">·</span>
@@ -195,20 +100,15 @@
               <span>{chat.personaName}</span>
             {/if}
           </p>
-          <h1>{asking}</h1>
+          <h1>{surface.asking}</h1>
         {:else if turn !== undefined}
           <p class="meta">
-            <span>{since(turn.askedAt, now)}</span>
+            <span>{since(turn.askedAt, clock.now)}</span>
             <span aria-hidden="true">·</span>
             <span>
               {turn.scope.kind === "project"
                 ? SCOPE_LABEL.project
-                : (resources.find(
-                    (entry) =>
-                      turn.scope.kind === "resource" &&
-                      entry.kind === turn.scope.ref.kind &&
-                      entry.id === turn.scope.ref.id
-                  )?.name ?? SCOPE_LABEL.resource)}
+                : nameOf(turn.scope.ref.kind, turn.scope.ref.id)}
             </span>
             <span aria-hidden="true">·</span>
             <span>{MODE_LABEL[turn.mode]}</span>
@@ -225,14 +125,14 @@
       </div>
 
       <div class="answer">
-        {#if failure}
-          <ScreenBanner title="That did not run" tone="attention">{failure}</ScreenBanner>
+        {#if surface.failure}
+          <ScreenBanner title="That did not run" tone="attention">{surface.failure}</ScreenBanner>
         {/if}
 
-        {#if pending || live}
+        {#if surface.pending || live}
           <p class="working">
             <span class="pulse" aria-hidden="true"></span>
-            {stopping || turn?.stopRequested === true
+            {surface.stopping || turn?.stopRequested === true
               ? "Wrapping up with what it has"
               : "Reading the project"}
           </p>
@@ -293,24 +193,21 @@
 
       <div class="foot">
         <Composer
-          bind:value={text}
+          bind:value={surface.text}
           mode="explore"
-          {scope}
-          pending={pending || live}
-          stopping={stopping || turn?.stopRequested === true}
+          scope={surface.scope}
+          pending={surface.pending || live}
+          stopping={surface.stopping || turn?.stopRequested === true}
           persona={chat?.personaId ?? ""}
           personaIds={personas.map((entry) => entry.id).join("\n")}
           personaNames={personas.map((entry) => entry.name).join("\n")}
           resourceIds={resources.map((entry) => `${entry.kind} ${entry.id}`).join("\n")}
           resourceNames={resources.map((entry) => entry.name).join("\n")}
-          {resource}
+          resource={surface.resource}
           onsend={send}
           onstop={stop}
           onpersona={choosePersona}
-          onscope={(chosen) => {
-            scope = chosen === "project" ? "project" : "resource";
-            resource = chosen === "project" ? "" : chosen;
-          }}
+          onscope={(chosen) => surface.chooseScope(chosen)}
         />
       </div>
     </div>

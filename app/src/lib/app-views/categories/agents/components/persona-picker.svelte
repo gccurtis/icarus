@@ -5,7 +5,7 @@
   import { Button } from "$vendored-components/button";
   import * as Command from "$vendored-components/command";
   import * as Popover from "$vendored-components/popover";
-  import { agentsLibrary } from "$app-views/categories/agents/procedures/library.svelte";
+  import { agentsLibrary } from "$app-views/categories/agents/procedures/agents";
 
   let {
     value,

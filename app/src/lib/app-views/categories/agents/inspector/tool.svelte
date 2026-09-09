@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { onDestroy } from "svelte";
-
   import {
     Panel,
     PanelBanner,
@@ -12,17 +10,11 @@
     PanelSkeleton,
     PanelToggle
   } from "$authored-components/panel";
-  import {
-    agentsLibrary,
-    inspectAutomation,
-    inspectPersona,
-    inspectTask,
-    messageOf,
-    ownerOf,
-    updateAutomation,
-    updatePersona,
-    updateTask
-  } from "$app-views/categories/agents/procedures/library.svelte";
+  import { agentsLibrary, messageOf, ownerOf } from "$app-views/categories/agents/procedures/agents";
+  import { releaseWhenGone } from "$app-views/categories/agents/procedures/effects/release.svelte";
+  import { inspectAgent } from "$app-views/categories/agents/procedures/inspect";
+  import { run, type Working } from "$app-views/categories/agents/procedures/run";
+  import { setTools } from "$app-views/categories/agents/procedures/set-tools";
   import {
     isToolId,
     orderedTools,
@@ -34,10 +26,8 @@
   const view = workspaceState();
   const library = agentsLibrary();
 
-  let live = true;
-  onDestroy(() => {
-    live = false;
-  });
+  const surface: Working = $state({ mounted: true, busy: undefined, failure: undefined });
+  releaseWhenGone(surface);
 
   const toolId = $derived(
     view.selection?.kind === "tool" && isToolId(view.selection.id) ? view.selection.id : undefined
@@ -55,37 +45,19 @@
   const allowed = $derived(owner !== undefined && toolId !== undefined && owner.tools.includes(toolId));
   const byDefault = $derived(defaults !== undefined && toolId !== undefined && defaults.includes(toolId));
 
-  let pending = $state(false);
-  let actionError = $state<string>();
-
-  const toggle = async (next: boolean) => {
+  const toggle = (next: boolean) => {
     if (owner === undefined || toolId === undefined) return;
-    const set = new Set<ToolId>(owner.tools);
+    const held = owner;
+    const set = new Set<ToolId>(held.tools);
     if (next) set.add(toolId);
     else set.delete(toolId);
     const tools = orderedTools([...set]);
-    pending = true;
-    actionError = undefined;
-    try {
-      const result =
-        owner.kind === "persona"
-          ? await updatePersona(view, owner, { tools })
-          : owner.kind === "task"
-            ? await updateTask(view, owner, { tools })
-            : await updateAutomation(view, owner, { tools });
-      if (live && !result.accepted) actionError = result.detail;
-    } catch (error) {
-      if (live) actionError = messageOf(error);
-    } finally {
-      pending = false;
-    }
+    void run(surface, "tools", () => setTools(view, held, tools));
   };
 
   const back = () => {
     if (owner === undefined) return;
-    if (owner.kind === "persona") inspectPersona(view, owner.id);
-    else if (owner.kind === "task") inspectTask(view, owner.id);
-    else inspectAutomation(view, owner.id);
+    inspectAgent(view, { kind: owner.kind, id: owner.id });
   };
 
   const OWNER_WORD = { persona: "Persona", task: "Task", automation: "Automation" } as const;
@@ -120,8 +92,8 @@
       {/if}
     {/snippet}
 
-    {#if actionError}
-      <PanelBanner title="That did not save" tone="attention">{actionError}</PanelBanner>
+    {#if surface.failure}
+      <PanelBanner title="That did not save" tone="attention">{surface.failure}</PanelBanner>
     {/if}
 
     <PanelFields>
@@ -133,7 +105,12 @@
           {#if owner.finished}
             {allowed ? "Yes, as it ran" : "No, as it ran"}
           {:else}
-            <PanelToggle checked={allowed} label="Allow {tool.name}" disabled={pending} onchange={toggle} />
+            <PanelToggle
+              checked={allowed}
+              label="Allow {tool.name}"
+              disabled={surface.busy !== undefined}
+              onchange={toggle}
+            />
           {/if}
         </PanelField>
         {#if defaults !== undefined}

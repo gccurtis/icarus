@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { onDestroy, onMount } from "svelte";
   import CircleCheck from "@lucide/svelte/icons/circle-check";
   import FolderOpen from "@lucide/svelte/icons/folder-open";
   import Square from "@lucide/svelte/icons/square";
@@ -21,19 +20,18 @@
   } from "$authored-components/panel";
   import Target from "@lucide/svelte/icons/target";
 
+  import { agentsLibrary, messageOf, taskDetail } from "$app-views/categories/agents/procedures/agents";
+  import { startClock } from "$app-views/categories/agents/procedures/effects/clock.svelte";
+  import { releaseWhenGone } from "$app-views/categories/agents/procedures/effects/release.svelte";
+  import { inspectAgent } from "$app-views/categories/agents/procedures/inspect";
+  import { isSelected, openTask } from "$app-views/categories/agents/procedures/navigate";
+  import { run, type Working } from "$app-views/categories/agents/procedures/run";
   import {
     STATE_LABEL,
     STATE_TONE,
-    agentsLibrary,
-    inspectPersona,
-    inspectTool,
-    isSelected,
-    messageOf,
-    openTask,
-    taskDetail,
-    typeLabelOf,
-    updateTask
-  } from "$app-views/categories/agents/procedures/library.svelte";
+    typeLabelOf
+  } from "$app-views/categories/agents/procedures/tasks";
+  import { updateTask } from "$app-views/categories/agents/procedures/update-task";
   import { scopeRows } from "$app-views/categories/agents/procedures/scope";
   import { elapsed, relativeTime } from "$app-views/categories/agents/procedures/time";
   import { isOpen, toolOf } from "$app-views/categories/agents/procedures/vocabulary";
@@ -43,15 +41,9 @@
   const taskId = $derived(view.selection?.kind === "task" ? view.selection.id : undefined);
   const detail = $derived(taskDetail(taskId));
 
-  let live = true;
-  onDestroy(() => {
-    live = false;
-  });
-  let now = $state(Date.now());
-  onMount(() => {
-    const timer = setInterval(() => (now = Date.now()), 15_000);
-    return () => clearInterval(timer);
-  });
+  const surface: Working = $state({ mounted: true, busy: undefined, failure: undefined });
+  releaseWhenGone(surface);
+  const clock = startClock(15_000);
 
   const task = $derived(
     detail !== undefined && detail.ready ? (detail.current ?? undefined) : undefined
@@ -77,21 +69,10 @@
     )
   );
 
-  let pending = $state(false);
-  let actionError = $state<string>();
-
-  const finish = async () => {
+  const finish = () => {
     if (task === undefined) return;
-    pending = true;
-    actionError = undefined;
-    try {
-      const result = await updateTask(view, task, { state: "finished" });
-      if (live && !result.accepted) actionError = result.detail;
-    } catch (error) {
-      if (live) actionError = messageOf(error);
-    } finally {
-      pending = false;
-    }
+    const held = task;
+    void run(surface, "finish", () => updateTask(view, held, { state: "finished" }));
   };
 </script>
 
@@ -116,14 +97,14 @@
     {#snippet actions()}
       <PanelButton label="Open" icon={FolderOpen} tone="primary" onclick={() => openTask(view, task.id)} />
       {#if task.state === "running"}
-        <PanelButton label="Stop" icon={Square} disabled={pending} onclick={finish} />
+        <PanelButton label="Stop" icon={Square} disabled={surface.busy !== undefined} onclick={finish} />
       {:else if task.state === "review"}
-        <PanelButton label="Mark reviewed" icon={CircleCheck} disabled={pending} onclick={finish} />
+        <PanelButton label="Mark reviewed" icon={CircleCheck} disabled={surface.busy !== undefined} onclick={finish} />
       {/if}
     {/snippet}
 
-    {#if actionError}
-      <PanelBanner title="That did not save" tone="attention">{actionError}</PanelBanner>
+    {#if surface.failure}
+      <PanelBanner title="That did not save" tone="attention">{surface.failure}</PanelBanner>
     {/if}
 
     <div class="facts">
@@ -135,8 +116,11 @@
         {/if}
       </div>
       <p class="line">
-        <PanelLink label={task.personaName} onselect={() => inspectPersona(view, task.personaId)} />
-        <span class="muted">· {relativeTime(task.startedAt, now)}</span>
+        <PanelLink
+          label={task.personaName}
+          onselect={() => inspectAgent(view, { kind: "persona", id: task.personaId })}
+        />
+        <span class="muted">· {relativeTime(task.startedAt, clock.now)}</span>
       </p>
     </div>
 
@@ -147,7 +131,7 @@
     </div>
 
     <div class="pt-2">
-      <PanelSection title="Plan" count={elapsed(task.startedAt, task.finishedAt ?? now)}>
+      <PanelSection title="Plan" count={elapsed(task.startedAt, task.finishedAt ?? clock.now)}>
         {#if task.plan.length === 0}
           <PanelEmpty title={task.state === "running" ? "No plan yet. The runner writes it when it picks the task up." : "No plan on record."} flush />
         {:else}
@@ -167,7 +151,7 @@
           <PanelRow
             title={question.text}
             sub={isOpen(question)
-              ? `Asked ${relativeTime(question.askedAt, now)} · waiting on you`
+              ? `Asked ${relativeTime(question.askedAt, clock.now)} · waiting on you`
               : question.rejectedAt !== undefined
                 ? "Handed back to the agent"
                 : `Answered: ${question.answer}`}
@@ -202,7 +186,7 @@
             sub={tool?.does}
             icon={Wrench}
             selected={isSelected(view, "tool", toolId) && view.selection?.at === task.id}
-            onselect={() => inspectTool(view, toolId, task.id)}
+            onselect={() => inspectAgent(view, { kind: "tool", id: toolId, at: task.id })}
           />
         {:else}
           <PanelEmpty title="No tool allowed." flush />

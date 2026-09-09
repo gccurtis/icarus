@@ -1,7 +1,7 @@
 <script lang="ts">
   import { PanelActor } from "$authored-components/panel";
   import { ScreenEmpty } from "$authored-components/screen";
-  import { taskDetail } from "$app-views/categories/agents/procedures/library.svelte";
+  import { taskDetail } from "$app-views/categories/agents/procedures/agents";
   import { clock } from "$app-views/categories/agents/procedures/time";
 
   let { taskId }: { taskId: string } = $props();

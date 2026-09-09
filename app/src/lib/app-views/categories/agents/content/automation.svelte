@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { onDestroy, onMount } from "svelte";
   import Play from "@lucide/svelte/icons/play";
   import Trash2 from "@lucide/svelte/icons/trash-2";
 
@@ -16,17 +15,20 @@
   import SurfaceHead from "$app-views/categories/agents/components/surface-head.svelte";
   import TaskTable from "$app-views/categories/agents/components/task-table.svelte";
   import TriggerEditor from "$app-views/categories/agents/components/trigger-editor.svelte";
+  import { AutomationState } from "$app-views/categories/agents/content/automation.state.svelte";
   import {
     agentsLibrary,
     automationDetail,
-    inspectAutomation,
-    messageOf,
-    openTask,
-    removeAutomation,
-    runAutomation,
-    showLibrary,
-    updateAutomation
-  } from "$app-views/categories/agents/procedures/library.svelte";
+    messageOf
+  } from "$app-views/categories/agents/procedures/agents";
+  import { followShownThing } from "$app-views/categories/agents/procedures/effects/claim.svelte";
+  import { startClock } from "$app-views/categories/agents/procedures/effects/clock.svelte";
+  import { releaseWhenGone } from "$app-views/categories/agents/procedures/effects/release.svelte";
+  import { openTask, showLibrary } from "$app-views/categories/agents/procedures/navigate";
+  import { removeAutomation } from "$app-views/categories/agents/procedures/remove-automation";
+  import { run } from "$app-views/categories/agents/procedures/run";
+  import { runAutomation } from "$app-views/categories/agents/procedures/run-automation";
+  import { updateAutomation } from "$app-views/categories/agents/procedures/update-automation";
   import { relativeTime } from "$app-views/categories/agents/procedures/time";
   import { TRIGGER_LABEL, triggerClause } from "$app-views/categories/agents/procedures/vocabulary";
   import type { UpdateAutomationPatch } from "$capabilities/agents/index.remote";
@@ -37,76 +39,42 @@
   const detail = $derived(automationDetail(automationId));
   const library = agentsLibrary();
 
-  let live = true;
-  onDestroy(() => {
-    live = false;
-  });
-  let now = $state(Date.now());
-  onMount(() => {
-    const timer = setInterval(() => (now = Date.now()), 30_000);
-    return () => clearInterval(timer);
-  });
+  const surface = new AutomationState();
+  const clock = startClock();
+  releaseWhenGone(surface);
 
   const automation = $derived(
     detail !== undefined && detail.ready ? (detail.current ?? undefined) : undefined
   );
 
-  let claimed = $state<string>();
-  $effect(() => {
-    if (automation === undefined || claimed === automation.id) return;
-    claimed = automation.id;
-    inspectAutomation(view, automation.id);
-  });
+  followShownThing(view, surface, () =>
+    automation === undefined ? undefined : { kind: "automation", id: automation.id }
+  );
 
-  let pending = $state<string>();
-  let actionError = $state<string>();
-
-  const save = async (label: string, patch: UpdateAutomationPatch) => {
+  const save = (label: string, patch: UpdateAutomationPatch) => {
     if (automation === undefined) return;
-    pending = label;
-    actionError = undefined;
-    try {
-      const result = await updateAutomation(view, automation, patch);
-      if (live && !result.accepted) actionError = result.detail;
-    } catch (error) {
-      if (live) actionError = messageOf(error);
-    } finally {
-      pending = undefined;
-    }
+    const held = automation;
+    void run(surface, label, () => updateAutomation(view, held, patch));
   };
 
-  const run = async () => {
+  const fire = () => {
     if (automation === undefined) return;
-    pending = "run";
-    actionError = undefined;
-    try {
-      const result = await runAutomation(view, automation.id);
-      if (!live) return;
-      if (result.accepted) openTask(view, result.taskId);
-      else actionError = result.detail;
-    } catch (error) {
-      if (live) actionError = messageOf(error);
-    } finally {
-      pending = undefined;
-    }
+    const held = automation;
+    void run(
+      surface,
+      "run",
+      () => runAutomation(view, held.id),
+      (fired) => openTask(view, fired.taskId)
+    );
   };
 
-  const remove = async () => {
+  const remove = () => {
     if (automation === undefined) return;
-    pending = "delete";
-    actionError = undefined;
-    try {
-      const result = await removeAutomation(view, automation);
-      if (!live) return;
-      if (result.accepted) {
-        view.clear();
-        showLibrary(view);
-      } else actionError = result.detail;
-    } catch (error) {
-      if (live) actionError = messageOf(error);
-    } finally {
-      pending = undefined;
-    }
+    const held = automation;
+    void run(surface, "delete", () => removeAutomation(view, held), () => {
+      view.clear();
+      showLibrary(view);
+    });
   };
 
   const short = (text: string) => (text.length > 96 ? `${text.slice(0, 96).trimEnd()}…` : text);
@@ -156,9 +124,9 @@
                 Never fired
               {:else}
                 Fired {automation.firedCount} {automation.firedCount === 1 ? "time" : "times"}
-                {#if automation.lastFiredAt !== null}· last {relativeTime(automation.lastFiredAt, now)}{/if}
+                {#if automation.lastFiredAt !== null}· last {relativeTime(automation.lastFiredAt, clock.now)}{/if}
               {/if}
-              {#if pending !== undefined}· saving {pending}…{/if}
+              {#if surface.busy !== undefined}· saving {surface.busy}…{/if}
             </span>
           </div>
           {#snippet actions()}
@@ -169,7 +137,7 @@
               <Switch
                 size="sm"
                 checked={automation.enabled}
-                disabled={pending !== undefined || (unwritten && !automation.enabled)}
+                disabled={surface.busy !== undefined || (unwritten && !automation.enabled)}
                 onCheckedChange={(next: boolean) => save("enabled", { enabled: next })}
               />
               On
@@ -177,18 +145,18 @@
             <Button
               variant="default"
               size="sm"
-              disabled={pending !== undefined || unwritten}
+              disabled={surface.busy !== undefined || unwritten}
               title={unwritten ? "Write the instruction under Do this first" : "Start one task from this now"}
-              onclick={run}
+              onclick={fire}
             >
               <Play aria-hidden="true" />
-              {pending === "run" ? "Starting…" : "Run now"}
+              {surface.busy === "run" ? "Starting…" : "Run now"}
             </Button>
             <Button
               variant="ghost"
               size="sm"
               class="text-danger-text"
-              disabled={pending !== undefined || automation.firedCount > 0}
+              disabled={surface.busy !== undefined || automation.firedCount > 0}
               title={automation.firedCount > 0 ? "It has fired tasks that still name it. Switch it off instead." : "Delete this automation"}
               onclick={remove}
             >
@@ -198,8 +166,8 @@
           {/snippet}
         </SurfaceHead>
 
-        {#if actionError}
-          <ScreenNote tone="gap">{actionError}</ScreenNote>
+        {#if surface.failure}
+          <ScreenNote tone="gap">{surface.failure}</ScreenNote>
         {/if}
 
         <div class="sentence" class:off={!automation.enabled}>
@@ -210,7 +178,7 @@
         </div>
 
         <ScreenGroup label="Trigger" tone="intelligence">
-          <TriggerEditor automationId={automation.id} disabled={pending !== undefined} />
+          <TriggerEditor automationId={automation.id} disabled={surface.busy !== undefined} />
         </ScreenGroup>
 
         <ScreenGroup label="Do this">
@@ -219,7 +187,7 @@
               <span class="text-caption text-ink-muted">Ask</span>
               <PersonaPicker
                 value={automation.personaId}
-                disabled={pending !== undefined}
+                disabled={surface.busy !== undefined}
                 onchange={(id) => save("persona", { personaId: id })}
               />
             </div>
@@ -230,7 +198,7 @@
                 value={automation.instruction}
                 placeholder="What to ask, in full. It is sent verbatim each time."
                 aria-label="Instruction"
-                disabled={pending !== undefined}
+                disabled={surface.busy !== undefined}
                 onchange={(event) => {
                   const next = event.currentTarget.value.trim();
                   if (next !== "" && next !== automation.instruction) void save("instruction", { instruction: next });
@@ -240,7 +208,7 @@
           </div>
         </ScreenGroup>
 
-        <Grants label="Allowed" owner={automation.id} disabled={pending !== undefined} />
+        <Grants label="Allowed" owner={automation.id} disabled={surface.busy !== undefined} />
 
         <ScreenGroup label="Fired">
           <TaskTable automation={automation.id} />

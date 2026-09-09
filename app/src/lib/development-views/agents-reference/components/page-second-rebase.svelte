@@ -10,7 +10,7 @@
   import { pageOf } from "$development-views/agents-reference/procedures/navigation";
   import { questionsFor } from "$development-views/agents-reference/procedures/questions";
   import {
-    BASELINED,
+    BUILT,
     CARRIED,
     CHECKS,
     CONFLICTS,
@@ -150,8 +150,8 @@
   <ReferenceSection
     id="fixed"
     kicker="The lint, part one"
-    title="Twenty-four findings fixed, fifteen entries removed"
-    lede="Fixed rather than baselined wherever the finding named something this branch was already trying to do. Three of these families are the durability argument the persist conflict started, finished properly: one unit of work per intent, each intent named in the Store's failpoint contract, and every command proved to resolve its subject through the request scope."
+    title="A hundred and fourteen findings fixed, and none held"
+    lede="The baseline is the repository's own mechanism for an exception that is real but not this change's to close, and the first pass through this used it for ninety entries. That was the wrong call: a checker encodes the agreed structure, and code that has to be excused from it is code that does not yet have the structure. So every finding was worked off instead — and fifteen exceptions the base branch was holding for code this work replaced went with them. The baseline is smaller than it was before the rebase, and holds nothing of this branch's."
   >
     <SpecTable
       label="What was fixed"
@@ -163,17 +163,17 @@
   </ReferenceSection>
 
   <ReferenceSection
-    id="baselined"
+    id="built"
     kicker="The lint, part two"
-    title="Ninety-one entries baselined, each with a reason of its own"
-    lede="The baseline is the repository's own mechanism for an exception that is real but not this change's to close. Every entry the base branch holds says pre-existing structural debt captured when this checker became blocking. These say what they actually are: authored on work/agents against the pre-pillar lint, then rebased onto the audit pillars. Ninety came from the replay; the ninety-first is this page's own route, which trips the same fixture rule as its sixteen siblings. The column on the right is what the base already holds for the same check, which is the honest measure of whether this is our debt or the tree's."
+    title="Six things had to exist first"
+    lede="A hundred and fourteen findings across ninety files do not come apart one at a time. Each family turned out to name one missing thing, and once that thing existed the findings in it went together. This is what was built, and it is the part worth keeping regardless of what any checker says."
   >
     <SpecTable
-      label="What was baselined"
-      columns={["Check", "Ours", "In the baseline before", "Why it is held rather than fixed"]}
-      rows={BASELINED}
-      mono={[0]}
-      noted="baselined"
+      label="What was built"
+      columns={["What", "Where", "What it does"]}
+      rows={BUILT}
+      mono={[1]}
+      noted="built"
     />
   </ReferenceSection>
 

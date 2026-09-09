@@ -82,6 +82,15 @@ export interface WorkspaceStateModel {
   slideDeckRuntime(resourceId: string): SlideDeckRuntime;
   spreadsheetRuntime(resourceId: string): SpreadsheetRuntime;
 
+  /**
+   * What somebody typed and has not sent, kept for as long as this workspace.
+   *
+   * A composing surface is remounted when its tab is left, so the text has to be
+   * held by something that is not the surface. An empty string forgets the key.
+   */
+  draft(key: string): string;
+  keepDraft(key: string, text: string): void;
+
   /** A table read whose remote resource is owned by this client workspace. */
   readStore(table: TableName): StoreQuery;
 

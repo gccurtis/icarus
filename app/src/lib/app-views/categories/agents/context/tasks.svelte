@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { onMount } from "svelte";
   import Plus from "@lucide/svelte/icons/plus";
   import Sparkles from "@lucide/svelte/icons/sparkles";
 
@@ -13,28 +12,23 @@
     PanelSkeleton
   } from "$authored-components/panel";
   import { Button } from "$vendored-components/button";
+  import { agentsLibrary, messageOf } from "$app-views/categories/agents/procedures/agents";
+  import { startClock } from "$app-views/categories/agents/procedures/effects/clock.svelte";
+  import { inspectAgent } from "$app-views/categories/agents/procedures/inspect";
   import {
-    agentsLibrary,
-    inspectTask,
     isSelected,
-    messageOf,
     openNewTask,
-    openTask,
-    taskRowsIn,
-    type TaskRow
-  } from "$app-views/categories/agents/procedures/library.svelte";
+    openTask
+  } from "$app-views/categories/agents/procedures/navigate";
+  import { taskRowsIn, type TaskRow } from "$app-views/categories/agents/procedures/tasks";
   import { workspaceState } from "$model/client/workspace-state";
 
   const view = workspaceState();
   const library = agentsLibrary();
 
-  let now = $state(Date.now());
-  onMount(() => {
-    const timer = setInterval(() => (now = Date.now()), 30_000);
-    return () => clearInterval(timer);
-  });
+  const clock = startClock();
 
-  const rows = $derived(taskRowsIn(library.ready ? library.current : undefined, now));
+  const rows = $derived(taskRowsIn(library.ready ? library.current : undefined, clock.now));
 
   let query = $state("");
   const needle = $derived(query.trim().toLocaleLowerCase());
@@ -67,7 +61,7 @@
         {tone}
         titleTone={row.openQuestions > 0 ? "attention" : undefined}
         selected={isSelected(view, "task", row.id)}
-        onselect={() => inspectTask(view, row.id)}
+        onselect={() => inspectAgent(view, { kind: "task", id: row.id })}
       />
     </div>
   {/each}

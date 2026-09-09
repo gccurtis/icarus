@@ -10,5 +10,5 @@ export const load: PageServerLoad = ({ locals }) => {
     );
   }
 
-  redirect(307, `/app/${token}/reference/agents`);
+  redirect(307, `/demo/${token}/reference/agents`);
 };

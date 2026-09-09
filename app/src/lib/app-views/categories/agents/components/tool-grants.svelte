@@ -1,17 +1,11 @@
 <script lang="ts">
-  import { onDestroy } from "svelte";
-
   import { ScreenNote } from "$authored-components/screen";
   import { Switch } from "$vendored-components/switch";
-  import {
-    agentsLibrary,
-    inspectTool,
-    messageOf,
-    ownerOf,
-    updateAutomation,
-    updatePersona,
-    updateTask
-  } from "$app-views/categories/agents/procedures/library.svelte";
+  import { agentsLibrary, ownerOf } from "$app-views/categories/agents/procedures/agents";
+  import { releaseWhenGone } from "$app-views/categories/agents/procedures/effects/release.svelte";
+  import { inspectAgent } from "$app-views/categories/agents/procedures/inspect";
+  import { run, type Working } from "$app-views/categories/agents/procedures/run";
+  import { setTools } from "$app-views/categories/agents/procedures/set-tools";
   import { TOOLS, orderedTools, type ToolId } from "$app-views/categories/agents/procedures/vocabulary";
   import { workspaceState } from "$model/client/workspace-state";
 
@@ -32,10 +26,8 @@
   const view = workspaceState();
   const library = agentsLibrary();
 
-  let live = true;
-  onDestroy(() => {
-    live = false;
-  });
+  const surface: Working = $state({ mounted: true, busy: undefined, failure: undefined });
+  releaseWhenGone(surface);
 
   const answer = $derived(library.ready ? library.current : undefined);
   const held = $derived(owner === undefined ? undefined : ownerOf(answer, owner));
@@ -52,10 +44,7 @@
         : orderedTools(chosen.split(",").map((entry) => entry.trim()))
   );
 
-  let pending = $state(false);
-  let actionError = $state<string>();
-
-  const toggle = async (toolId: ToolId, next: boolean) => {
+  const toggle = (toolId: ToolId, next: boolean) => {
     const set = new Set<ToolId>(current);
     if (next) set.add(toolId);
     else set.delete(toolId);
@@ -64,26 +53,13 @@
       onchange?.(tools.join(","));
       return;
     }
-    pending = true;
-    actionError = undefined;
-    try {
-      const result =
-        held.kind === "persona"
-          ? await updatePersona(view, held, { tools })
-          : held.kind === "task"
-            ? await updateTask(view, held, { tools })
-            : await updateAutomation(view, held, { tools });
-      if (live && !result.accepted) actionError = result.detail;
-    } catch (error) {
-      if (live) actionError = messageOf(error);
-    } finally {
-      pending = false;
-    }
+    const owner = held;
+    void run(surface, "tools", () => setTools(view, owner, tools));
   };
 </script>
 
-{#if actionError}
-  <ScreenNote tone="gap">{actionError}</ScreenNote>
+{#if surface.failure}
+  <ScreenNote tone="gap">{surface.failure}</ScreenNote>
 {/if}
 <ul class="tools surface-seam-grid">
   {#each TOOLS as tool (tool.id)}
@@ -92,12 +68,16 @@
         size="sm"
         checked={current.includes(tool.id)}
         aria-label="Allow {tool.name}"
-        disabled={disabled || pending || held?.finished === true}
+        disabled={disabled || surface.busy !== undefined || held?.finished === true}
         onCheckedChange={(next: boolean) => toggle(tool.id, next)}
       />
       <div class="words">
         {#if held !== undefined}
-          <button type="button" class="name hover:underline" onclick={() => inspectTool(view, tool.id, held.id)}>
+          <button
+            type="button"
+            class="name hover:underline"
+            onclick={() => inspectAgent(view, { kind: "tool", id: tool.id, at: held.id })}
+          >
             {tool.name}
           </button>
         {:else}

@@ -1094,3 +1094,51 @@ test("a singleton's id is its category, so two clients name the same tab", () =>
     [...SINGLETONS]
   );
 });
+
+/**
+ * An unsent composition outlives the surface writing it.
+ *
+ * A composing surface is remounted whenever its tab is left, so the workspace
+ * holds the text. The key is opaque, so two surfaces writing two things keep two
+ * drafts and neither knows about the other.
+ */
+test("a draft is kept per key, and is an empty string until there is one", () => {
+  const model = workspaceState();
+
+  assert.equal(model.draft("research-chat:t1"), "");
+
+  model.keepDraft("research-chat:t1", "half a question");
+  model.keepDraft("research-chat:t2", "a different one");
+
+  assert.equal(model.draft("research-chat:t1"), "half a question");
+  assert.equal(model.draft("research-chat:t2"), "a different one");
+});
+
+test("an empty draft is forgotten rather than kept as an empty string", () => {
+  const model = workspaceState();
+
+  model.keepDraft("research-chat:t1", "something");
+  model.keepDraft("research-chat:t1", "");
+
+  assert.equal(model.draft("research-chat:t1"), "");
+});
+
+test("a draft survives every tab move, because it belongs to the workspace", () => {
+  const model = workspaceState();
+  const first = model.open(thread("r1"));
+  model.keepDraft("research-chat:r1", "written and not sent");
+
+  model.open(document("d1"));
+  model.activate(first.id);
+
+  assert.equal(model.draft("research-chat:r1"), "written and not sent");
+});
+
+test("one workspace's drafts are not another's", () => {
+  const one = workspaceState();
+  const other = workspaceState();
+
+  one.keepDraft("research-chat:r1", "mine");
+
+  assert.equal(other.draft("research-chat:r1"), "");
+});

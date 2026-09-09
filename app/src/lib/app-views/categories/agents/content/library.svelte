@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { onDestroy, onMount } from "svelte";
   import Bot from "@lucide/svelte/icons/bot";
   import ScrollText from "@lucide/svelte/icons/scroll-text";
   import Sparkles from "@lucide/svelte/icons/sparkles";
@@ -17,86 +16,62 @@
   import RemoteState from "$app-views/categories/agents/components/remote-state.svelte";
   import TaskFilters from "$app-views/categories/agents/components/task-filters.svelte";
   import TaskTable from "$app-views/categories/agents/components/task-table.svelte";
+  import { LibraryState } from "$app-views/categories/agents/content/library.state.svelte";
+  import { agentsLibrary, messageOf } from "$app-views/categories/agents/procedures/agents";
+  import { createPersona } from "$app-views/categories/agents/procedures/create-persona";
+  import { startClock } from "$app-views/categories/agents/procedures/effects/clock.svelte";
+  import { releaseWhenGone } from "$app-views/categories/agents/procedures/effects/release.svelte";
+  import { inspectAgent } from "$app-views/categories/agents/procedures/inspect";
+  import { makeAutomation } from "$app-views/categories/agents/procedures/make-automation";
+  import { nextName } from "$app-views/categories/agents/procedures/naming";
   import {
-    agentsLibrary,
-    createPersona,
-    inspectActivity,
     isSelected,
-    makeAutomation,
-    messageOf,
-    nextName,
     openAutomation,
     openNewTask,
     openPersona
-  } from "$app-views/categories/agents/procedures/library.svelte";
+  } from "$app-views/categories/agents/procedures/navigate";
+  import { run } from "$app-views/categories/agents/procedures/run";
   import { relativeTime } from "$app-views/categories/agents/procedures/time";
   import { workspaceState } from "$model/client/workspace-state";
 
   const view = workspaceState();
   const library = agentsLibrary();
 
-  let live = true;
-  onDestroy(() => {
-    live = false;
-  });
-  let now = $state(Date.now());
-  onMount(() => {
-    const timer = setInterval(() => (now = Date.now()), 30_000);
-    return () => clearInterval(timer);
-  });
+  const surface = new LibraryState();
+  const clock = startClock();
+  releaseWhenGone(surface);
 
   const answer = $derived(library.ready ? library.current : undefined);
   const personas = $derived(answer?.personas ?? []);
   const activity = $derived(answer?.activity ?? []);
 
-  let persona = $state("any");
-  let query = $state("");
-  let kind = $state("any");
-  let taskState = $state("any");
-  let sort = $state("started");
-  let direction = $state("asc");
-
-  let pendingCreate = $state<"persona" | "automation">();
-  let actionError = $state<string>();
-
-  const makePersona = async () => {
-    if (pendingCreate !== undefined) return;
-    pendingCreate = "persona";
-    actionError = undefined;
-    try {
-      const result = await createPersona(
-        view,
-        nextName("Untitled persona", personas.map((row) => row.name))
-      );
-      if (live && view.active.category === "agents") openPersona(view, result.id);
-    } catch (error) {
-      actionError = messageOf(error);
-    } finally {
-      pendingCreate = undefined;
-    }
+  const makePersona = () => {
+    const name = nextName("Untitled persona", personas.map((row) => row.name));
+    void run(
+      surface,
+      "persona",
+      () => createPersona(view, name),
+      (made) => {
+        if (view.active.category === "agents") openPersona(view, made.id);
+      }
+    );
   };
 
-  const makeRule = async () => {
-    if (pendingCreate !== undefined) return;
-    const personaId = persona !== "any" ? persona : personas[0]?.id;
+  const makeRule = () => {
+    const personaId = surface.persona !== "any" ? surface.persona : personas[0]?.id;
     if (personaId === undefined) {
-      actionError = "Make a persona first; an automation asks one to work.";
+      surface.failure = "Make a persona first; an automation asks one to work.";
       return;
     }
-    pendingCreate = "automation";
-    actionError = undefined;
-    try {
-      const id = await makeAutomation(
-        view,
-        personaId,
-        (answer?.automations ?? []).map((row) => row.name)
-      );
-      if (live && id !== undefined && view.active.category === "agents") openAutomation(view, id);
-    } catch (error) {
-      actionError = messageOf(error);
-    } finally {
-      pendingCreate = undefined;
-    }
+    const taken = (answer?.automations ?? []).map((row) => row.name);
+    void run(
+      surface,
+      "automation",
+      () => makeAutomation(view, personaId, taken),
+      (made) => {
+        if (view.active.category === "agents") openAutomation(view, made.id);
+      }
+    );
   };
 
   const CREATE = [
@@ -112,7 +87,7 @@
       label: "Task",
       icon: Sparkles,
       tint: "border-interactive-border bg-interactive-surface text-interactive-text hover:border-interactive-fill hover:bg-interactive-surface-hover",
-      act: () => openNewTask(view, persona === "any" ? undefined : persona)
+      act: () => openNewTask(view, surface.persona === "any" ? undefined : surface.persona)
     },
     {
       key: "automation",
@@ -130,11 +105,6 @@
     }
   ] as const;
 
-  const clear = () => {
-    query = "";
-    kind = "any";
-    taskState = "any";
-  };
 </script>
 
 <ScreenSurface wide>
@@ -153,8 +123,8 @@
             </p>
           {/snippet}
         </ScreenHeader>
-        {#if actionError}
-          <ScreenNote tone="gap">{actionError}</ScreenNote>
+        {#if surface.failure}
+          <ScreenNote tone="gap">{surface.failure}</ScreenNote>
         {/if}
       </div>
 
@@ -166,12 +136,12 @@
               <button
                 type="button"
                 onclick={pill.act}
-                disabled={pendingCreate !== undefined}
+                disabled={surface.busy !== undefined}
                 title={pill.key === "skill" ? "Skills are not built yet" : undefined}
                 class="rounded-control text-body-sm flex w-full cursor-pointer items-center gap-2 border px-3 text-start disabled:opacity-60 {pill.tint}"
               >
                 <Icon size={16} aria-hidden="true" />
-                {pendingCreate === pill.key ? "Creating…" : pill.label}
+                {surface.busy === pill.key ? "Creating…" : pill.label}
               </button>
             {/each}
           </div>
@@ -184,9 +154,9 @@
             <ScreenList label="Activity from agents" scroll>
               {#each activity as event (event.id)}
                 <ScreenItem
-                  meta={relativeTime(event.at, now)}
+                  meta={relativeTime(event.at, clock.now)}
                   selected={isSelected(view, "activity", event.id)}
-                  onselect={() => inspectActivity(view, event.id)}
+                  onselect={() => inspectAgent(view, { kind: "activity", id: event.id })}
                 >
                   <span class="block truncate">
                     <strong>{event.actorName}</strong>
@@ -209,10 +179,10 @@
       <div class="area-tasks">
         <ScreenGroup label="Tasks" fill>
           <div class="table-stack">
-            <TaskFilters bind:persona bind:query bind:kind bind:taskState bind:sort bind:direction />
+            <TaskFilters bind:persona={surface.persona} bind:query={surface.query} bind:kind={surface.kind} bind:taskState={surface.taskState} bind:sort={surface.sort} bind:direction={surface.direction} />
 
             <div class="table-body">
-              <TaskTable {persona} {query} {kind} {taskState} {sort} {direction} scroll onclear={clear} />
+              <TaskTable persona={surface.persona} query={surface.query} kind={surface.kind} taskState={surface.taskState} sort={surface.sort} direction={surface.direction} scroll onclear={() => surface.clearFilters()} />
             </div>
           </div>
         </ScreenGroup>

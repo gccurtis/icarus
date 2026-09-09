@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { onDestroy } from "svelte";
-
   import { ScreenGroup } from "$authored-components/screen";
   import { Button } from "$vendored-components/button";
   import * as Tabs from "$vendored-components/tabs";
@@ -8,12 +6,10 @@
   import ScopeEditor from "$app-views/categories/agents/components/scope-editor.svelte";
   import ScrollWell from "$app-views/categories/agents/components/scroll-well.svelte";
   import ToolGrants from "$app-views/categories/agents/components/tool-grants.svelte";
-  import {
-    agentsLibrary,
-    messageOf,
-    ownerOf,
-    setScope
-  } from "$app-views/categories/agents/procedures/library.svelte";
+  import { agentsLibrary, ownerOf } from "$app-views/categories/agents/procedures/agents";
+  import { releaseWhenGone } from "$app-views/categories/agents/procedures/effects/release.svelte";
+  import { run, type Working } from "$app-views/categories/agents/procedures/run";
+  import { setScope } from "$app-views/categories/agents/procedures/set-scope";
   import { workspaceState } from "$model/client/workspace-state";
 
   let {
@@ -37,33 +33,23 @@
   const view = workspaceState();
   const library = agentsLibrary();
 
-  let live = true;
-  onDestroy(() => {
-    live = false;
-  });
+  const surface: Working = $state({ mounted: true, busy: undefined, failure: undefined });
+  releaseWhenGone(surface);
 
   const answer = $derived(library.ready ? library.current : undefined);
   const held = $derived(owner === undefined ? undefined : ownerOf(answer, owner));
   const restorable = $derived(held !== undefined && held.kind !== "persona" && held.scope !== null);
 
   let shown = $state("Scope");
-  let pending = $state(false);
 
   const SAYS = {
     Scope: "What it may search, read and quote.",
     Tools: "What it may do while it works."
   } as const;
 
-  const restore = async () => {
+  const restore = () => {
     if (held === undefined) return;
-    pending = true;
-    try {
-      await setScope(view, held, null);
-    } catch (error) {
-      void messageOf(error);
-    } finally {
-      pending = false;
-    }
+    void run(surface, "restore", () => setScope(view, held, null));
   };
 </script>
 
@@ -82,7 +68,7 @@
         <Button
           variant="outline"
           size="xs"
-          disabled={disabled || pending}
+          disabled={disabled || surface.busy !== undefined}
           title="Read whatever the persona reads"
           onclick={restore}
         >

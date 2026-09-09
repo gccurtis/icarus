@@ -443,30 +443,30 @@ export const QUESTIONS: readonly Question[] = [
   {
     n: 37,
     page: "second-rebase",
-    title: "Fifty-five inline handlers and effects are held rather than moved",
+    title: "The base branch still holds two hundred and eighty-five exceptions",
     matters:
-      "async-command-state-lives-with-command and component-effects-have-a-home account for fifty-five of the ninety baselined entries. The move is mechanical and it is not small: every handler becomes a named procedure and every lifecycle call moves into procedures/effects/. The base branch holds ninety-four entries of the same two checks, so the tree is not clean either way.",
+      "Both categories are clean against all ninety checks now, and neither holds a baseline entry. The rest of the tree does: ninety-four entries for inline handlers and effects alone, spread across the document editor, the slide deck editor, templates and the shell. The mechanisms this branch built — one runner, colocated state owners, named effects modules — are the same ones those surfaces would need.",
     options: [
-      "Work them off now, as one refactor across both categories, before anything else is built on them.",
-      "Work them off per surface, whenever that surface is next opened for another reason.",
-      "Leave them baselined until the checks are reviewed, since the whole tree fails them."
+      "Work the older surfaces off the baseline the same way, one category at a time.",
+      "Work each off whenever it is next opened for another reason.",
+      "Leave them; the two new categories are the standard and the rest catch up when they change."
     ],
     recommendation:
-      "Per surface. A refactor of fifty-five call sites in one pass has no test that proves it did nothing, and these surfaces are still moving."
+      "One category at a time, and the slide deck editor first, because it holds the most entries and its state owners would be the largest saving. The runner and the effects modules are per-category by design, so nothing has to be shared before it is wanted twice."
   },
   {
     n: 38,
     page: "second-rebase",
-    title: "The reference routes cannot satisfy the fixture rule where they live",
+    title: "The reference routes now live at /demo/<project>/",
     matters:
-      "Seventeen entries are one rule: production code may not import development-views. Routes under /demo/ are exempt. These pages cannot move there, because a remote function resolves its scope from the project in the page's path and every page reads the project's real store.",
+      "Seventeen findings were one rule: production code may not import development-views. Routes under /demo/ are exempt, and the templates reference already lived at /demo/<project>/reference/templates. Moving matched the precedent, and a remote function still resolves its project from the second path segment either way. What changes is the address people have bookmarked.",
     options: [
-      "Hold the seventeen entries and accept that a live reference route is an exception.",
-      "Teach the checker that a route segment named reference is exempt the way /demo/ is.",
-      "Move the pages out of development-views into a production tree of their own."
+      "Leave it: the reference is a development surface and now says so in its address.",
+      "Redirect the old /app/<project>/reference/agents to the new one for a while.",
+      "Give the reference a production home of its own, so the address stops moving."
     ],
     recommendation:
-      "Teach the checker, but only as a proposal in prose first. The rule is right and the exemption is narrow: a route whose whole purpose is to stage the product over real data is neither production nor a demo, and the tree has no third word for it yet."
+      "Leave it. /demo/agents-reference already redirects to whatever the current address is, which is the link worth keeping, and a reference suite is not a product surface."
   },
   {
     n: 39,

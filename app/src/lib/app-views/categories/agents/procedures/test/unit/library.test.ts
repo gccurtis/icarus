@@ -1,16 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  filterRows,
-  isNew,
-  nextName,
-  pendingReviewIn,
-  presetPersonaOf,
-  sortRows,
-  taskRowOf,
-  toolChange,
-  type TaskRow
-} from "$app-views/categories/agents/procedures/library.svelte";
+import { isNew, nextName, presetPersonaOf, toolChange } from "$app-views/categories/agents/procedures/naming";
+import { filterRows, sortRows } from "$app-views/categories/agents/procedures/sorting";
+import { pendingReviewIn, taskRowOf, type TaskRow } from "$app-views/categories/agents/procedures/tasks";
 import type { TaskItem } from "$capabilities/agents/index.remote";
 
 const NOW = 1_000_000;

@@ -1,23 +1,18 @@
 <script lang="ts">
-  import { onMount } from "svelte";
-
   import { PanelActor, PanelChip } from "$authored-components/panel";
   import { ScreenCell, ScreenEmpty, ScreenRow, ScreenTable } from "$authored-components/screen";
+  import { agentsLibrary } from "$app-views/categories/agents/procedures/agents";
+  import { startClock } from "$app-views/categories/agents/procedures/effects/clock.svelte";
+  import { inspectAgent } from "$app-views/categories/agents/procedures/inspect";
+  import { isSelected, openTask } from "$app-views/categories/agents/procedures/navigate";
+  import { filterRows, sortRows, type SortKey } from "$app-views/categories/agents/procedures/sorting";
   import {
     STATE_LABEL,
     STATE_TONE,
-    agentsLibrary,
-    filterRows,
-    inspectPersona,
-    inspectTask,
-    isSelected,
-    openTask,
-    sortRows,
     taskRowsIn,
     type OriginKind,
-    type SortKey,
     type TaskRow
-  } from "$app-views/categories/agents/procedures/library.svelte";
+  } from "$app-views/categories/agents/procedures/tasks";
   import type { AgentTaskState } from "$app-views/categories/agents/procedures/vocabulary";
   import { workspaceState } from "$model/client/workspace-state";
 
@@ -48,13 +43,9 @@
   const view = workspaceState();
   const library = agentsLibrary();
 
-  let now = $state(Date.now());
-  onMount(() => {
-    const timer = setInterval(() => (now = Date.now()), 30_000);
-    return () => clearInterval(timer);
-  });
+  const clock = startClock();
 
-  const all = $derived(taskRowsIn(library.ready ? library.current : undefined, now));
+  const all = $derived(taskRowsIn(library.ready ? library.current : undefined, clock.now));
   const inScope = $derived(
     all.filter(
       (row) =>
@@ -104,14 +95,14 @@
     {#each rows as row (row.id)}
       <ScreenRow
         selected={isSelected(view, "task", row.id)}
-        onselect={() => inspectTask(view, row.id)}
+        onselect={() => inspectAgent(view, { kind: "task", id: row.id })}
         onopen={() => openTask(view, row.id)}
       >
         <ScreenCell>
           <button
             type="button"
             class="text-body-sm text-ink-primary min-h-9 text-start hover:underline"
-            onclick={() => inspectTask(view, row.id)}
+            onclick={() => inspectAgent(view, { kind: "task", id: row.id })}
             ondblclick={() => openTask(view, row.id)}
           >
             {row.title}
@@ -128,7 +119,7 @@
               type="button"
               class="flex min-h-9 items-center hover:underline"
               title="Inspect {row.personaName}"
-              onclick={() => inspectPersona(view, row.personaId)}
+              onclick={() => inspectAgent(view, { kind: "persona", id: row.personaId })}
             >
               <PanelActor name={row.personaName} kind="agent" size="row" />
             </button>

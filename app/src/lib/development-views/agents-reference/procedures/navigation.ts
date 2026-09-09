@@ -1,6 +1,6 @@
 import type { PageRecord, PageSlug } from "$development-views/agents-reference/types";
 
-export const referenceRoot = (project: string): string => `/app/${project}/reference/agents`;
+export const referenceRoot = (project: string): string => `/demo/${project}/reference/agents`;
 
 export const PAGES: readonly PageRecord[] = [
   {
@@ -268,14 +268,14 @@ export const PAGES: readonly PageRecord[] = [
     path: "/second-rebase",
     title: "The second rebase: a rewritten base, and six ways to stop.",
     eyebrow: "Operations · every conflict, and how it was addressed",
-    lede: "The base was not extended, it was rebased onto three new commits on main and came back with different hashes. This page is what that cost: the two commits replayed, the three files git stopped on, the three more that only typecheck, the lint and the suite could see, and the twenty-four findings fixed against the ninety held with a reason.",
+    lede: "The base was not extended, it was rebased onto three new commits on main and came back with different hashes. This page is what that cost: the two commits replayed, the three files git stopped on, the three more that only typecheck, the lint and the suite could see, and the hundred and fourteen findings that were worked off rather than excused.",
     readout: [
       { label: "Commits replayed", value: "2" },
       { label: "Commits underneath", value: "37, 21 of them rewritten" },
       { label: "Conflicts git found", value: "3" },
       { label: "Conflicts it did not", value: "3" },
-      { label: "Lint findings", value: "129 · 24 fixed · 90 held" },
-      { label: "Green at the end", value: "Yes" }
+      { label: "Lint findings", value: "129 · all 114 fixed · 0 held" },
+      { label: "Baseline entries", value: "285, down from 300" }
     ]
   }
 ];

@@ -1,6 +1,6 @@
 # Agents reference
 
-The Agents category, staged live at `/app/<project>/reference/agents` and reached
+The Agents category, staged live at `/demo/<project>/reference/agents` and reached
 from `/demo/agents-reference`. Seventeen pages in four groups: the built agents
 surfaces staged live; the research chat as it was built; four specifications —
 personas, tasks, automations, and research chat whole; and two records of the
@@ -23,9 +23,9 @@ The response page carries a mock rather than a stage, because neither the table
 tool nor the chart system exists yet; what it is for is having the argument
 before either is built.
 
-It lives under the project route rather than under `/demo` because every surface
-reads the agents capability, and a remote function resolves its scope from the
-project in the page's path.
+It lives at `/demo/<project>/` rather than `/demo/` because every surface reads
+the agents capability, and a remote function resolves its scope from the project
+in the page's path — the second segment, whether the first is `app` or `demo`.
 
 ## The review gutter
 

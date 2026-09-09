@@ -1,15 +1,15 @@
 <script lang="ts">
-  import { onDestroy, onMount } from "svelte";
   import CornerDownRight from "@lucide/svelte/icons/corner-down-right";
 
   import { Panel, PanelEmpty, PanelSkeleton, PanelRow } from "$authored-components/panel";
   import {
     chosenThread,
     currentTurn,
-    inspectTurn,
     threadDetail,
     threadList
-  } from "$app-views/categories/research/procedures/chat.svelte";
+  } from "$app-views/categories/research/procedures/chat";
+  import { startClock } from "$app-views/categories/research/procedures/effects/clock.svelte";
+  import { inspectTurn } from "$app-views/categories/research/procedures/inspect-turn";
   import { since } from "$app-views/categories/research/procedures/time";
   import { workspaceState } from "$model/client/workspace-state";
 
@@ -21,19 +21,9 @@
   const answer = $derived(detail !== undefined && detail.ready ? detail.current : undefined);
   const turns = $derived([...(answer?.turns ?? [])].reverse());
   const latest = $derived(currentTurn(answer?.turns ?? []));
-  const shown = $derived(
-    view.selection?.kind === "turn" ? view.selection.id : latest?.id
-  );
+  const shown = $derived(view.selection?.kind === "turn" ? view.selection.id : latest?.id);
 
-  let now = $state(Date.now());
-  let live = true;
-  onDestroy(() => {
-    live = false;
-  });
-  onMount(() => {
-    const timer = setInterval(() => (now = Date.now()), 10_000);
-    return () => clearInterval(timer);
-  });
+  const clock = startClock();
 
   const TONE = {
     queued: "attention",
@@ -66,7 +56,7 @@
         sub={SUB[turn.state] === ""
           ? `${turn.sources.length} source${turn.sources.length === 1 ? "" : "s"}`
           : SUB[turn.state]}
-        meta={since(turn.askedAt, now)}
+        meta={since(turn.askedAt, clock.now)}
         icon={CornerDownRight}
         tone={TONE[turn.state]}
         selected={turn.id === shown}

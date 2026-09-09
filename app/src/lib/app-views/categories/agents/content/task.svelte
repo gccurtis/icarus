@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { onDestroy, onMount } from "svelte";
   import Check from "@lucide/svelte/icons/check";
   import CircleCheck from "@lucide/svelte/icons/circle-check";
   import Square from "@lucide/svelte/icons/square";
@@ -29,25 +28,24 @@
   import SurfaceBand from "$app-views/categories/agents/components/surface-band.svelte";
   import SurfaceHead from "$app-views/categories/agents/components/surface-head.svelte";
   import ThreadFeed from "$app-views/categories/agents/components/thread-feed.svelte";
+  import { TaskState } from "$app-views/categories/agents/content/task.state.svelte";
+  import { agentsLibrary, messageOf, taskDetail } from "$app-views/categories/agents/procedures/agents";
+  import { answerTaskQuestion } from "$app-views/categories/agents/procedures/answer-task-question";
+  import { createTask } from "$app-views/categories/agents/procedures/create-task";
+  import { followShownThing } from "$app-views/categories/agents/procedures/effects/claim.svelte";
+  import { startClock } from "$app-views/categories/agents/procedures/effects/clock.svelte";
+  import { releaseWhenGone } from "$app-views/categories/agents/procedures/effects/release.svelte";
+  import { inspectAgent } from "$app-views/categories/agents/procedures/inspect";
+  import { isNew, presetPersonaOf } from "$app-views/categories/agents/procedures/naming";
+  import { openAutomation, openTask, showLibrary } from "$app-views/categories/agents/procedures/navigate";
+  import { run } from "$app-views/categories/agents/procedures/run";
+  import { sendTaskMessage } from "$app-views/categories/agents/procedures/send-task-message";
   import {
     STATE_LABEL,
     STATE_TONE,
-    agentsLibrary,
-    answerTaskQuestion,
-    createTask,
-    inspectPersona,
-    inspectTask,
-    isNew,
-    messageOf,
-    openAutomation,
-    openTask,
-    presetPersonaOf,
-    sendTaskMessage,
-    showLibrary,
-    taskDetail,
-    typeLabelOf,
-    updateTask
-  } from "$app-views/categories/agents/procedures/library.svelte";
+    typeLabelOf
+  } from "$app-views/categories/agents/procedures/tasks";
+  import { updateTask } from "$app-views/categories/agents/procedures/update-task";
   import { elapsed, relativeTime } from "$app-views/categories/agents/procedures/time";
   import { isOpen, orderedTools, type TaskQuestion } from "$app-views/categories/agents/procedures/vocabulary";
   import type { UpdateTaskPatch } from "$capabilities/agents/index.remote";
@@ -59,15 +57,9 @@
   const detail = $derived(fresh ? undefined : taskDetail(focus));
   const library = agentsLibrary();
 
-  let live = true;
-  onDestroy(() => {
-    live = false;
-  });
-  let now = $state(Date.now());
-  onMount(() => {
-    const timer = setInterval(() => (now = Date.now()), 15_000);
-    return () => clearInterval(timer);
-  });
+  const surface = new TaskState();
+  const clock = startClock(15_000);
+  releaseWhenGone(surface);
 
   const answer = $derived(library.ready ? library.current : undefined);
   const personas = $derived(answer?.personas ?? []);
@@ -75,85 +67,55 @@
     detail !== undefined && detail.ready ? (detail.current ?? undefined) : undefined
   );
 
-  let claimed = $state<string>();
-  $effect(() => {
-    if (task === undefined || claimed === task.id) return;
-    claimed = task.id;
-    inspectTask(view, task.id);
-  });
+  followShownThing(view, surface, () =>
+    task === undefined ? undefined : { kind: "task", id: task.id }
+  );
 
-  let pending = $state<string>();
-  let actionError = $state<string>();
-
-  const save = async (label: string, patch: UpdateTaskPatch) => {
+  const save = (label: string, patch: UpdateTaskPatch) => {
     if (task === undefined) return;
-    pending = label;
-    actionError = undefined;
-    try {
-      const result = await updateTask(view, task, patch);
-      if (live && !result.accepted) actionError = result.detail;
-    } catch (error) {
-      if (live) actionError = messageOf(error);
-    } finally {
-      pending = undefined;
-    }
+    const held = task;
+    void run(surface, label, () => updateTask(view, held, patch));
   };
 
-  let message = $state("");
-  const send = async (text: string) => {
+  const send = (text: string) => {
     if (task === undefined) return;
-    pending = "message";
-    actionError = undefined;
-    try {
-      const result = await sendTaskMessage(view, task.id, text);
-      if (!live) return;
-      if (result.accepted) message = "";
-      else actionError = result.detail;
-    } catch (error) {
-      if (live) actionError = messageOf(error);
-    } finally {
-      pending = undefined;
-    }
+    const held = task;
+    void run(
+      surface,
+      "message",
+      () => sendTaskMessage(view, held.id, text),
+      () => (surface.message = "")
+    );
   };
 
   const OTHER = "other";
-  let picked = $state<Record<string, string>>({});
-  let other = $state<Record<string, string>>({});
-  let chosenTab = $state<string>();
 
   const questions = $derived(task?.questions ?? []);
   const ordered = $derived([
     ...questions.filter(isOpen),
     ...questions.filter((question) => !isOpen(question))
   ]);
-  const activeTab = $derived(chosenTab ?? ordered[0]?.id ?? "");
+  const activeTab = $derived(surface.chosenTab ?? ordered[0]?.id ?? "");
   const current = $derived(ordered.find((question) => question.id === activeTab));
 
   const choiceOf = (question: TaskQuestion): string | undefined =>
-    (question.options ?? []).length === 0 ? OTHER : picked[question.id];
+    (question.options ?? []).length === 0 ? OTHER : surface.picked[question.id];
 
   const replyOf = (question: TaskQuestion): string => {
     const choice = choiceOf(question);
     if (choice === undefined) return "";
-    return choice === OTHER ? (other[question.id] ?? "").trim() : choice;
+    return choice === OTHER ? (surface.other[question.id] ?? "").trim() : choice;
   };
 
-  const settle = async (question: TaskQuestion, reply: { answer: string } | { reject: true }) => {
+  const settle = (question: TaskQuestion, reply: { answer: string } | { reject: true }) => {
     if (task === undefined) return;
-    pending = "answer";
-    actionError = undefined;
-    try {
-      const result = await answerTaskQuestion(view, task.id, question.id, reply);
-      if (!live) return;
-      if (result.accepted) {
-        picked = { ...picked, [question.id]: "" };
-        other = { ...other, [question.id]: "" };
-      } else actionError = result.detail;
-    } catch (error) {
-      if (live) actionError = messageOf(error);
-    } finally {
-      pending = undefined;
-    }
+    const held = task;
+    void run(
+      surface,
+      "answer",
+      () => answerTaskQuestion(view, held.id, question.id, reply),
+      () => surface.settled(question.id)
+    );
   };
 
   const STEP_WORD = { pending: "Waiting", active: "Running", done: "Done" } as const;
@@ -162,38 +124,35 @@
   );
   const instructionEditable = $derived(task !== undefined && task.state === "running" && task.plan.length === 0);
 
-  let draftPersona = $state<string | undefined>(undefined);
-  let draftTitle = $state("");
-  let draftInstruction = $state("");
-  let draftTools = $state<string | undefined>(undefined);
-  const chosenPersonaId = $derived(draftPersona ?? presetPersonaOf(focus) ?? personas[0]?.id);
+  const chosenPersonaId = $derived(
+    surface.draftPersona ?? presetPersonaOf(focus) ?? personas[0]?.id
+  );
   const chosenPersona = $derived(personas.find((candidate) => candidate.id === chosenPersonaId));
-  const newTools = $derived(draftTools ?? (chosenPersona?.tools ?? []).join(","));
+  const newTools = $derived(surface.draftTools ?? (chosenPersona?.tools ?? []).join(","));
   const split = (joined: string) =>
     joined
       .split(",")
       .map((entry) => entry.trim())
       .filter((entry) => entry !== "");
 
-  const create = async () => {
-    if (chosenPersona === undefined || draftTitle.trim() === "" || draftInstruction.trim() === "") return;
-    pending = "create";
-    actionError = undefined;
-    try {
-      const result = await createTask(view, {
-        personaId: chosenPersona.id,
-        title: draftTitle.trim(),
-        instruction: draftInstruction.trim(),
-        tools: orderedTools(split(newTools))
-      });
-      if (!live) return;
-      if (result.accepted) openTask(view, result.id);
-      else actionError = result.detail;
-    } catch (error) {
-      if (live) actionError = messageOf(error);
-    } finally {
-      pending = undefined;
-    }
+  const create = () => {
+    if (
+      chosenPersona === undefined ||
+      surface.draftTitle.trim() === "" ||
+      surface.draftInstruction.trim() === ""
+    ) return;
+    const input = {
+      personaId: chosenPersona.id,
+      title: surface.draftTitle.trim(),
+      instruction: surface.draftInstruction.trim(),
+      tools: orderedTools(split(newTools))
+    };
+    void run(
+      surface,
+      "create",
+      () => createTask(view, input),
+      (made) => openTask(view, made.id)
+    );
   };
 </script>
 
@@ -223,16 +182,16 @@
             <Button
               variant="default"
               size="sm"
-              disabled={pending !== undefined || chosenPersona === undefined || draftTitle.trim() === "" || draftInstruction.trim() === ""}
+              disabled={surface.busy !== undefined || chosenPersona === undefined || surface.draftTitle.trim() === "" || surface.draftInstruction.trim() === ""}
               onclick={create}
             >
-              {pending === "create" ? "Creating…" : "Create and start"}
+              {surface.busy === "create" ? "Creating…" : "Create and start"}
             </Button>
           {/snippet}
         </SurfaceHead>
 
-        {#if actionError}
-          <ScreenNote tone="gap">{actionError}</ScreenNote>
+        {#if surface.failure}
+          <ScreenNote tone="gap">{surface.failure}</ScreenNote>
         {/if}
 
         <div class="pair">
@@ -240,12 +199,12 @@
             <div class="stack">
               <input
                 class="field"
-                bind:value={draftTitle}
+                bind:value={surface.draftTitle}
                 placeholder="Name the task"
                 aria-label="Task name"
               />
               <Textarea
-                bind:value={draftInstruction}
+                bind:value={surface.draftInstruction}
                 rows={6}
                 placeholder="What to ask, in full. It is sent verbatim."
                 aria-label="Instruction"
@@ -258,8 +217,8 @@
               <PersonaPicker
                 value={chosenPersonaId}
                 onchange={(id) => {
-                  draftPersona = id;
-                  draftTools = undefined;
+                  surface.draftPersona = id;
+                  surface.draftTools = undefined;
                 }}
               />
             </ScreenGroup>
@@ -268,7 +227,7 @@
               label="Allowed"
               personaId={chosenPersonaId}
               chosen={newTools}
-              onchange={(next) => (draftTools = next)}
+              onchange={(next) => (surface.draftTools = next)}
             />
           </div>
         </div>
@@ -301,12 +260,12 @@
               </PanelChip>
             {/if}
             <span class="text-caption text-ink-muted">
-              Started {relativeTime(task.startedAt, now)} by {task.startedByName}
+              Started {relativeTime(task.startedAt, clock.now)} by {task.startedByName}
               · {task.finishedAt === null
-                ? elapsed(task.startedAt, now)
+                ? elapsed(task.startedAt, clock.now)
                 : `took ${elapsed(task.startedAt, task.finishedAt)}`}
               {#if task.reviewedByName}· reviewed by {task.reviewedByName}{/if}
-              {#if pending !== undefined}· saving {pending}…{/if}
+              {#if surface.busy !== undefined}· saving {surface.busy}…{/if}
             </span>
           </div>
           {#snippet actions()}
@@ -320,7 +279,7 @@
               <Button
                 variant="outline"
                 size="sm"
-                disabled={pending !== undefined}
+                disabled={surface.busy !== undefined}
                 onclick={() => save("stop", { state: "finished" })}
               >
                 <Square aria-hidden="true" />
@@ -330,7 +289,7 @@
               <Button
                 variant="default"
                 size="sm"
-                disabled={pending !== undefined}
+                disabled={surface.busy !== undefined}
                 onclick={() => save("review", { state: "finished" })}
               >
                 <CircleCheck aria-hidden="true" />
@@ -340,8 +299,8 @@
           {/snippet}
         </SurfaceHead>
 
-        {#if actionError}
-          <ScreenNote tone="gap">{actionError}</ScreenNote>
+        {#if surface.failure}
+          <ScreenNote tone="gap">{surface.failure}</ScreenNote>
         {/if}
         </div>
 
@@ -361,7 +320,7 @@
           {:else}
             <blockquote class="instruction">{task.instruction}</blockquote>
           {/if}
-          <button type="button" class="fact" onclick={() => inspectPersona(view, task.personaId)}>
+          <button type="button" class="fact" onclick={() => inspectAgent(view, { kind: "persona", id: task.personaId })}>
             <PanelActor name={task.personaName} kind="agent" size="row" />
           </button>
         </div>
@@ -387,7 +346,7 @@
                       </span>
                     </ScreenCell>
                     <ScreenCell num>
-                      <span class="state {step.state}">{STEP_WORD[step.state]}</span>
+                      <span class="surface {step.state}">{STEP_WORD[step.state]}</span>
                     </ScreenCell>
                   </ScreenRow>
                 {/each}
@@ -403,7 +362,7 @@
             {:else}
               <Tabs.Root
                 value={activeTab}
-                onValueChange={(next: string) => (chosenTab = next)}
+                onValueChange={(next: string) => (surface.chosenTab = next)}
                 class="asking"
               >
                 <div class="asking-head">
@@ -425,13 +384,14 @@
                       <div class="asking-scroll">
                       <p class="question">{question.text}</p>
                       <span class="text-caption text-ink-muted">
-                        Asked {relativeTime(question.askedAt, now)} · waiting on you
+                        Asked {relativeTime(question.askedAt, clock.now)} · waiting on you
                       </span>
                       {#if options.length > 0}
                         <RadioGroup.Root
-                          value={picked[question.id] ?? ""}
+                          value={surface.picked[question.id] ?? ""}
                           aria-label="Answer"
-                          onValueChange={(next: string) => (picked = { ...picked, [question.id]: next })}
+                          onValueChange={(next: string) =>
+                            (surface.picked = { ...surface.picked, [question.id]: next })}
                         >
                           {#each options as option, index (option)}
                             <label class="option">
@@ -450,8 +410,12 @@
                           rows={4}
                           placeholder="Your answer, in your own words"
                           aria-label="Your answer"
-                          value={other[question.id] ?? ""}
-                          oninput={(event) => (other = { ...other, [question.id]: event.currentTarget.value })}
+                          value={surface.other[question.id] ?? ""}
+                          oninput={(event) =>
+                            (surface.other = {
+                              ...surface.other,
+                              [question.id]: event.currentTarget.value
+                            })}
                         />
                       {/if}
                       </div>
@@ -459,7 +423,7 @@
                         <Button
                           variant="outline"
                           size="sm"
-                          disabled={pending !== undefined}
+                          disabled={surface.busy !== undefined}
                           title="Hand the decision back to the agent"
                           onclick={() => settle(question, { reject: true })}
                         >
@@ -467,7 +431,7 @@
                         </Button>
                         <Button
                           size="sm"
-                          disabled={pending !== undefined || replyOf(question) === ""}
+                          disabled={surface.busy !== undefined || replyOf(question) === ""}
                           onclick={() => settle(question, { answer: replyOf(question) })}
                         >
                           Answer
@@ -477,7 +441,7 @@
                       <div class="asking-scroll">
                       <p class="question">{question.text}</p>
                       <span class="text-caption text-ink-muted">
-                        Asked {relativeTime(question.askedAt, now)}
+                        Asked {relativeTime(question.askedAt, clock.now)}
                       </span>
                       {#if options.length > 0}
                         <ul class="settled-options">
@@ -494,13 +458,13 @@
                       {#if question.rejectedAt !== undefined}
                         <p class="answer">Handed back to the agent to decide.</p>
                         <span class="text-caption text-ink-muted">
-                          By {question.answeredByName ?? "someone"} {relativeTime(question.rejectedAt, now)}
+                          By {question.answeredByName ?? "someone"} {relativeTime(question.rejectedAt, clock.now)}
                         </span>
                       {:else}
                         <p class="answer">{question.answer}</p>
                         <span class="text-caption text-ink-muted">
                           Answered by {question.answeredByName ?? "someone"}
-                          {question.answeredAt === undefined ? "" : relativeTime(question.answeredAt, now)}
+                          {question.answeredAt === undefined ? "" : relativeTime(question.answeredAt, clock.now)}
                         </span>
                       {/if}
                       </div>
@@ -527,7 +491,7 @@
                     <ScreenItem
                       title={output.title}
                       excerpt={output.detail}
-                      meta={output.refName ?? relativeTime(output.at, now)}
+                      meta={output.refName ?? relativeTime(output.at, clock.now)}
                     />
                   {/each}
                 </ScreenList>
@@ -535,7 +499,7 @@
             {/if}
           </ScreenGroup>
 
-          <Grants label="Allowed" owner={task.id} disabled={pending !== undefined} />
+          <Grants label="Allowed" owner={task.id} disabled={surface.busy !== undefined} />
         </div>
 
         <ScreenGroup label="Thread" fill>
@@ -549,7 +513,7 @@
               <ScreenComposer
                 label="Message the agent"
                 placeholder="Steer it, correct it, or add what it should know"
-                bind:value={message}
+                bind:value={surface.message}
                 onsend={send}
               >
                 {#snippet scope()}

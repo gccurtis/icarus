@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { onDestroy } from "svelte";
   import FileText from "@lucide/svelte/icons/file-text";
   import FolderTree from "@lucide/svelte/icons/folder-tree";
   import Globe from "@lucide/svelte/icons/globe";
@@ -12,12 +11,10 @@
   import { ScreenNote } from "$authored-components/screen";
   import { Button } from "$vendored-components/button";
   import * as DropdownMenu from "$vendored-components/dropdown-menu";
-  import {
-    agentsLibrary,
-    messageOf,
-    ownerOf,
-    setScope
-  } from "$app-views/categories/agents/procedures/library.svelte";
+  import { agentsLibrary, ownerOf } from "$app-views/categories/agents/procedures/agents";
+  import { releaseWhenGone } from "$app-views/categories/agents/procedures/effects/release.svelte";
+  import { run, type Working } from "$app-views/categories/agents/procedures/run";
+  import { setScope } from "$app-views/categories/agents/procedures/set-scope";
   import {
     scopeRows,
     withProject,
@@ -40,10 +37,8 @@
   const view = workspaceState();
   const library = agentsLibrary();
 
-  let live = true;
-  onDestroy(() => {
-    live = false;
-  });
+  const surface: Working = $state({ mounted: true, busy: undefined, failure: undefined });
+  releaseWhenGone(surface);
 
   const answer = $derived(library.ready ? library.current : undefined);
   const sets = $derived(answer?.resourceSets ?? []);
@@ -61,21 +56,9 @@
   const rows = $derived(scopeRows(shown, sets, resources));
   const frozen = $derived(disabled || held === undefined || held.finished);
 
-  let pending = $state(false);
-  let actionError = $state<string>();
-
-  const write = async (next: ReturnType<typeof withoutRow>) => {
+  const write = (next: ReturnType<typeof withoutRow>) => {
     if (held === undefined) return;
-    pending = true;
-    actionError = undefined;
-    try {
-      const result = await setScope(view, held, next);
-      if (live && !result.accepted) actionError = result.detail;
-    } catch (error) {
-      if (live) actionError = messageOf(error);
-    } finally {
-      pending = false;
-    }
+    void run(surface, "scope", () => setScope(view, held, next));
   };
 
   const ICON = new Map([
@@ -90,14 +73,14 @@
   const iconOf = (refKind: string) => ICON.get(refKind) ?? FileText;
 </script>
 
-{#if actionError}
-  <ScreenNote tone="gap">{actionError}</ScreenNote>
+{#if surface.failure}
+  <ScreenNote tone="gap">{surface.failure}</ScreenNote>
 {/if}
 
 <ul class="scope surface-seam-grid">
   <li class="add">
     <DropdownMenu.Root>
-      <DropdownMenu.Trigger disabled={frozen || pending}>
+      <DropdownMenu.Trigger disabled={frozen || surface.busy !== undefined}>
         {#snippet child({ props })}
           <button {...props} type="button" class="add-row">
             <Plus size={16} aria-hidden="true" />
@@ -145,7 +128,7 @@
           variant="ghost"
           size="icon-sm"
           aria-label="Remove {row.title}"
-          disabled={pending}
+          disabled={surface.busy !== undefined}
           onclick={() => write(withoutRow(shown, row.key))}
         >
           <X aria-hidden="true" />
