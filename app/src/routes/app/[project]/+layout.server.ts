@@ -1,3 +1,4 @@
+import { resolveScope } from "$runtime/server/scope.server";
 import type { Configuration } from "$runtime/server/start.server";
 import type { LayoutServerLoad } from "./$types";
 
@@ -74,6 +75,8 @@ const publish = (configuration: Configuration): Record<string, unknown> => {
  * server *loads* — the client router fetches this, so the data is present when
  * the layout script runs.
  */
-export const load: LayoutServerLoad = ({ locals }) => ({
-  configuration: publish(locals.model.configuration)
-});
+export const load: LayoutServerLoad = async ({ locals, params }) => {
+  await resolveScope(locals.session, params.project);
+
+  return { configuration: publish(locals.model.configuration) };
+};

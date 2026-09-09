@@ -1,7 +1,7 @@
-import type { BlockFormat } from "$representation/data/types/content/block-format";
+import type { CellFormat } from "$representation/data/types/spreadsheets/cell-format";
 import type { SheetCell } from "$representation/data/types/spreadsheets/cell";
 import type { FormatRule, SpreadsheetBody } from "$representation/data/types/spreadsheets/body";
-import type { TextStyle } from "$representation/data/types/spreadsheets/style-set";
+import type { CellStyle } from "$representation/data/types/spreadsheets/style-set";
 import {
   contains,
   indexOf,
@@ -12,18 +12,24 @@ import {
 } from "$app-views/categories/spreadsheet-editor/procedures/addresses";
 import type { ValueKind } from "$app-views/categories/spreadsheet-editor/procedures/values";
 
-export type { BlockFormat, Border, BorderLine, BorderSide, BorderStyle } from "$representation/data/types/content/block-format";
-export { BORDER_SIDES, hasBorder } from "$representation/data/behavior/content/borders";
+export type {
+  BorderLine,
+  BorderSide,
+  BorderStyle,
+  CellBorder,
+  CellFormat
+} from "$representation/data/types/spreadsheets/cell-format";
+export { BORDER_SIDES, hasBorder } from "$representation/data/behavior/spreadsheets/borders";
 export type { FormatRule } from "$representation/data/types/spreadsheets/body";
-export type { TextStyle } from "$representation/data/types/spreadsheets/style-set";
+export type { CellStyle } from "$representation/data/types/spreadsheets/style-set";
 
 export type Paint = {
   readonly styleKey: string;
-  readonly style: TextStyle;
+  readonly style: CellStyle;
   readonly styleRule: FormatRule | undefined;
   readonly rules: readonly FormatRule[];
-  readonly format: BlockFormat;
-  readonly own: BlockFormat | undefined;
+  readonly format: CellFormat;
+  readonly own: CellFormat | undefined;
 };
 
 export const FAMILIES = ["IBM Plex Sans", "IBM Plex Serif", "IBM Plex Mono", "Georgia"] as const;
@@ -50,7 +56,7 @@ export const paintOf = (
   const rules = rulesCovering(body, grid, ref);
   let styleKey = body.styles.defaultKey;
   let styleRule: FormatRule | undefined;
-  let format: BlockFormat = {};
+  let format: CellFormat = {};
   for (const rule of rules) {
     if (rule.style !== undefined && body.styles.styles[rule.style] !== undefined) {
       styleKey = rule.style;
@@ -85,7 +91,7 @@ export const alignOf = (paint: Paint, kind: ValueKind): Align => {
   }
 };
 
-export const weightOf = (style: TextStyle): number => style.fontWeight ?? (style.bold ? 600 : 400);
+export const weightOf = (style: CellStyle): number => style.fontWeight ?? (style.bold ? 600 : 400);
 
 export type Emphasis = {
   readonly bold: boolean;

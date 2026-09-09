@@ -11,7 +11,7 @@ export type SubmitSpreadsheetChangesInput = {
   readonly changeSet: SpreadsheetChangeSetInput;
 };
 
-export type SubmitRefusal = "stale" | "unresolved";
+export type SubmitRefusal = "stale" | "unresolved" | "missing";
 
 export type SubmitSpreadsheetChangesResult =
   | {

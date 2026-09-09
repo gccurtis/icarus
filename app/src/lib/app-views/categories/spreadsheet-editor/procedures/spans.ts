@@ -58,6 +58,21 @@ export const spillChildOf = (sheet: LiveSheet, grid: Grid, ref: CellRef): Span |
 export const mergeCoveredOf = (sheet: LiveSheet, grid: Grid, ref: CellRef): Span | undefined =>
   childSpanOf(mergeSpans(sheet, grid), grid, ref);
 
+/**
+ * The merge a whole rectangle sits inside, if it sits inside one.
+ *
+ * A selection is asked this rather than "are you exactly a merge": the library
+ * knows a merge's columns and not its rows, so clicking a block two columns wide
+ * and three rows tall reports the one row it was clicked on. Every such answer
+ * is inside the block, and the block is one cell.
+ */
+export const mergeAround = (sheet: LiveSheet, grid: Grid, rect: Rect): Span | undefined =>
+  mergeSpans(sheet, grid).find(
+    (span) =>
+      contains(span.rect, rect.row, rect.column) &&
+      contains(span.rect, rect.row + rect.rows - 1, rect.column + rect.columns - 1)
+  );
+
 export const mergeOf = (sheet: LiveSheet, grid: Grid, ref: CellRef): Span | undefined => {
   const held = sheet.cells[keyOf(ref)];
   if (held?.mergedTo === undefined) return undefined;

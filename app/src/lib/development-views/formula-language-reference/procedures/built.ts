@@ -233,5 +233,5 @@ export const COUNTS = {
   calls: 33,
   failures: 12,
   cases: 110,
-  suite: 1032
+  suite: 1051
 } as const;

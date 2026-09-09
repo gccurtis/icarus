@@ -24,14 +24,34 @@ and series autofill are Pro), Univer (Apache 2, a complete spreadsheet whose vie
 layer is React 18 with its own model, commands, undo and formula plugin),
 Handsontable ($899 per developer per year commercially), Jspreadsheet CE (MIT, DOM
 table, merges and frozen columns, lazy loading rather than virtualisation).
-*Recommendation: build it, as an authored component.* The slide editor already made
-this move when it dropped Konva for `slide-surface`. The sheet's model is the model,
-so every library brings a second one to translate from; the only MIT,
-Svelte-compatible candidate gates merges, which are in our body; the complete one
-brings React. The sheet needs no engine from a library, which removes the main
-reason to take one. Cost: virtualisation, selection, clipboard, fill, resize and IME
-are ours, about the size of `slide-surface`. If it slips, RevoGrid inside the same
-component is the fallback and nothing outside it changes.
+*Recommended at the time: build it, as an authored component,* on the reasoning that
+the slide editor had just dropped Konva for `slide-surface`.
+
+**Reversed in the build. What runs is Glide Data Grid 6.0.3 (MIT) inside a React
+root, wrapped by the authored Svelte component `components/authored/sheet-surface`.**
+The estimate was wrong about cost: virtualisation, range and multi-rect selection,
+clipboard, fill handle, IME and column resize are weeks of work each and all of them
+are in the library. Nothing outside `sheet-surface` knows the library exists.
+
+The boundary, as built:
+
+- **Svelte owns the state.** The component takes a `SurfaceScene` — tracks, a
+  `cellAt(row, column)` and the merged blocks — plus a selection and highlights, and
+  emits intents (`onselect`, `onedit`, `onfill`, `onpaste`, `onresize`, `onbegin`).
+  It holds no sheet and no ops.
+- **React is a rendering detail, mounted once.** `createRoot` on a host div, and one
+  `$effect` re-renders `DataEditor` whenever the scene, theme or size changes. There
+  is no React state, no context, and no component tree beyond the grid itself.
+- **Glide draws the cells and owns the scroll.** `sheet-surface-glide.ts` translates
+  a `SurfaceCell` into a `GridCell` and paints runs, borders and pins in `drawCell`.
+- **Everything the library cannot do is drawn over it.** It spans columns but not
+  rows, has no row resize, and its `getBounds` answers for an unscrolled grid — so
+  merged blocks and both resize handles are DOM overlays positioned by
+  `sheet-surface-geometry.ts` from the same track sizes the library is handed, offset
+  by the scrolling element's own `scrollTop` and `scrollLeft`.
+
+The fallback if the library is ever dropped is unchanged: the scene and the intents
+are the contract, and only this one directory would be rewritten.
 
 **2 · A `sheet` op target for everything above the cells.** `SpreadsheetOp` can set
 a cell, a rule or a mark and can insert, remove and move rows, columns and rules.

@@ -44,7 +44,7 @@
 
   const apply = (ops: Edit["ops"]) => {
     if (ops.length === 0 || sheet === undefined) return;
-    runtime?.apply(recalculating(sheetId, sheet, ops));
+    runtime?.apply(recalculating(view.project, sheetId, sheet, ops));
   };
 
   const mergeable = $derived(rects.length === 1 && primary !== undefined && primary.rows * primary.columns > 1);

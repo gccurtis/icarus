@@ -20,7 +20,7 @@
 
   const sheet = $derived(runtime?.sheet);
   const grid = $derived(gridOf(sheet?.body));
-  const rows = $derived(sheet === undefined ? [] : styleRows(sheet, grid));
+  const rows = $derived(sheet === undefined ? [] : styleRows(sheet));
 
   let filter = $state("");
 
@@ -49,8 +49,6 @@
     runtime?.apply(appliedStyle(sheet.body, grid, rects, key));
   };
 
-  const usage = (cells: number, rules: number): string =>
-    `${cells} ${cells === 1 ? "cell" : "cells"} · ${rules} ${rules === 1 ? "rule" : "rules"}`;
 </script>
 
 <Panel title="Styles">
@@ -68,7 +66,7 @@
       {#each shown as row (row.key)}
         <PanelRow
           title={row.style.name}
-          sub={`${row.isDefault ? "default · " : ""}${row.shorthand} · ${usage(row.cells, row.rules.length)}`}
+          sub={`${row.isDefault ? "default · " : ""}${row.shorthand}`}
           selected={chosen === row.key}
           onselect={() => open(row.key)}
         >

@@ -9,7 +9,7 @@ let held: Picker | undefined;
  * is writing one the expression it should draw is the draft rather than what the
  * cell holds. One channel, because a sheet has one caret.
  */
-let draft = $state<string | undefined>(undefined);
+let draft = $state<{ readonly at: string; readonly text: string } | undefined>(undefined);
 
 export const arm = (picker: Picker): void => {
   held = picker;
@@ -27,11 +27,11 @@ export const pick = (address: string, anchor: string): boolean => {
   return true;
 };
 
-export const drafting = (text: string | undefined): void => {
-  draft = text;
+export const drafting = (next: { readonly at: string; readonly text: string } | undefined): void => {
+  draft = next;
 };
 
-export const drafted = (): string | undefined => draft;
+export const drafted = (): { readonly at: string; readonly text: string } | undefined => draft;
 
 /**
  * Somebody began writing on the grid. The grid opens no editor of its own, so
@@ -47,4 +47,23 @@ export const writingBegun = (): { readonly seed: string; readonly at: number } |
 
 export const writingTaken = (): void => {
   opening = undefined;
+};
+
+/**
+ * Writing finished at the keyboard, so the caret belongs back on the grid.
+ *
+ * Only Enter and Escape say this. A click into another field ends the writing
+ * too, and taking the caret back from wherever the reader just put it is the
+ * one thing this must not do.
+ */
+let closing = $state<number | undefined>(undefined);
+
+export const endWriting = (): void => {
+  closing = (closing ?? 0) + 1;
+};
+
+export const writingEnded = (): number | undefined => closing;
+
+export const endingTaken = (): void => {
+  closing = undefined;
 };

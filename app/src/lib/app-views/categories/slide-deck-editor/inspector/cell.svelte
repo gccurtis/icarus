@@ -12,8 +12,6 @@
   import { elementIn, slideHolding, slideIndexOf, withSet, withSets, type TextBlock } from "$app-views/categories/slide-deck-editor/procedures/deck";
   import { cellsSignal, elementsSignal, selectedCells, selectedIds, slideSignal } from "$app-views/categories/slide-deck-editor/procedures/selecting";
   import {
-    boxLineOf,
-    boxedBorder,
     columnsOf,
     gridOf,
     isRectangular,
@@ -23,7 +21,6 @@
     withRowInserted,
     withRowRemoved,
     withSplitCell,
-    type BorderStyle,
     type GridCell
   } from "$app-views/categories/slide-deck-editor/procedures/tables";
   import { workspaceState, type SlideDeckRuntime } from "$model/client/workspace-state";
@@ -70,11 +67,9 @@
 
   const sharedFill = $derived(same(chosen.map((held) => held.cell.format?.background ?? "")));
   const sharedAlign = $derived(same(chosen.map((held) => textOfCell(held)?.format?.horizontalAlignment ?? "start")));
-  const lineOf = (cell: GridCell) => boxLineOf(cell.cell.format?.border);
-
-  const sharedBorderColor = $derived(same(chosen.map((held) => lineOf(held)?.color ?? "")));
-  const sharedBorderWidth = $derived(same(chosen.map((held) => lineOf(held)?.width ?? 0)));
-  const sharedBorderStyle = $derived(same(chosen.map((held) => lineOf(held)?.style ?? "solid")));
+  const sharedBorderColor = $derived(same(chosen.map((held) => held.cell.format?.border?.color ?? "")));
+  const sharedBorderWidth = $derived(same(chosen.map((held) => held.cell.format?.border?.width ?? 0)));
+  const sharedBorderStyle = $derived(same(chosen.map((held) => held.cell.format?.border?.style ?? "solid")));
   const canMerge = $derived(chosen.length > 1 && isRectangular(grid, picked));
   const canSplit = $derived(single && (first.rowSpan > 1 || first.columnSpan > 1));
 
@@ -103,42 +98,29 @@
     });
 
   const setBorderColor = (value: string) =>
-    each((held) => {
-      const line = lineOf(held);
-      return value === ""
+    each((held) =>
+      value === ""
         ? [{ path: `${held.cell.id}/format/border`, value: null }]
         : [
-            {
-              path: `${held.cell.id}/format/border`,
-              value: boxedBorder({
-                color: value,
-                width: line === undefined || line.width <= 0 ? 1 : line.width,
-                style: line?.style ?? "solid"
-              })
-            }
-          ];
-    });
+            { path: `${held.cell.id}/format/border/color`, value },
+            { path: `${held.cell.id}/format/border/width`, value: held.cell.format?.border?.width ?? 1 },
+            { path: `${held.cell.id}/format/border/style`, value: held.cell.format?.border?.style ?? "solid" }
+          ]
+    );
 
   const setBorderWidth = (width: number) =>
-    each((held) => {
-      const line = lineOf(held);
-      return width === 0
+    each((held) =>
+      width === 0
         ? [{ path: `${held.cell.id}/format/border`, value: null }]
         : [
-            {
-              path: `${held.cell.id}/format/border`,
-              value: boxedBorder({ color: line?.color ?? (body?.theme.colors.text ?? ""), width, style: line?.style ?? "solid" })
-            }
-          ];
-    });
+            { path: `${held.cell.id}/format/border/color`, value: held.cell.format?.border?.color ?? (body?.theme.colors.text ?? "") },
+            { path: `${held.cell.id}/format/border/width`, value: width },
+            { path: `${held.cell.id}/format/border/style`, value: held.cell.format?.border?.style ?? "solid" }
+          ]
+    );
 
   const setBorderStyle = (style: string) =>
-    each((held) => {
-      const line = lineOf(held);
-      return line === undefined
-        ? []
-        : [{ path: `${held.cell.id}/format/border`, value: boxedBorder({ ...line, style: style as BorderStyle }) }];
-    });
+    each((held) => (held.cell.format?.border === undefined ? [] : [{ path: `${held.cell.id}/format/border/style`, value: style }]));
 
   const setWidth = (percent: number) => {
     if (body === undefined || table === undefined || first === undefined) return;

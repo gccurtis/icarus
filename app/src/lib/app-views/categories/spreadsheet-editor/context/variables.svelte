@@ -16,12 +16,12 @@
   const view = workspaceState();
 
   $effect(() => {
-    if (!variablesLoaded()) void loadVariables();
+    if (!variablesLoaded(view.project)) void loadVariables(view.project);
   });
 
   let filter = $state("");
 
-  const held = $derived(variables());
+  const held = $derived(variables(view.project));
 
   const shown = $derived(
     held.filter((variable) => variable.name.toLowerCase().includes(filter.trim().toLowerCase()))
@@ -41,7 +41,7 @@
     let index = 1;
     while (taken.has(`variable${index}`)) index += 1;
     const wanted = `variable${index}`;
-    const answer = await saveVariable({ name: wanted, value: { kind: "empty" }, type: "any" });
+    const answer = await saveVariable(view.project, { name: wanted, value: { kind: "empty" }, type: "any" });
     if (answer.saved) open(wanted);
   };
 

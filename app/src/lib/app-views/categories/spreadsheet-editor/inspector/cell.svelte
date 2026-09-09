@@ -60,7 +60,7 @@
       refusalTimer = setTimeout(() => (refusal = undefined), 5000);
       return;
     }
-    if (edit.ops.length > 0 && sheet !== undefined) runtime?.apply(recalculating(sheetId, sheet, edit.ops));
+    if (edit.ops.length > 0 && sheet !== undefined) runtime?.apply(recalculating(view.project, sheetId, sheet, edit.ops));
   };
 
   const unmerge = () => {

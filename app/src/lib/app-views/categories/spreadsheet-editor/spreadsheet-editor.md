@@ -118,6 +118,7 @@ writes.
 The engine is the project's, not the editor's, so nothing about the language is
 defined in this directory. A frozen row is counted from the last row rather than
 the first, because the grid library freezes leading columns and trailing rows
-only; a merge is drawn across columns for the same reason. A formula that answers
-with a table does not spill yet: the value kind exists and the grid draws it as a
-count.
+only. A merge spans rows as well as columns, but the library spans columns only,
+so the block is drawn over the canvas from the same tracks the library is given
+rather than in it. A formula that answers with a table does not spill yet: the
+value kind exists and the grid draws it as a count.

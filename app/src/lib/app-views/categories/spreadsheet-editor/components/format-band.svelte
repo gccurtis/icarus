@@ -5,40 +5,29 @@
   import AlignVerticalJustifyCenter from "@lucide/svelte/icons/align-vertical-justify-center";
   import AlignVerticalJustifyEnd from "@lucide/svelte/icons/align-vertical-justify-end";
   import AlignVerticalJustifyStart from "@lucide/svelte/icons/align-vertical-justify-start";
-  import PanelBottom from "@lucide/svelte/icons/panel-bottom";
-  import PanelLeft from "@lucide/svelte/icons/panel-left";
-  import PanelRight from "@lucide/svelte/icons/panel-right";
-  import PanelTop from "@lucide/svelte/icons/panel-top";
 
   import {
     PanelChoice,
-    PanelColor,
     PanelControlGroup,
     PanelControlRow,
-    PanelMarks,
+    PanelInlineStyle,
     PanelNumber,
     PanelSection,
     PanelSelect
   } from "$authored-components/panel";
   import { Input } from "$vendored-components/input";
-  import ColorPair from "$app-views/categories/spreadsheet-editor/components/color-pair.svelte";
+  import BorderSection from "$app-views/categories/spreadsheet-editor/components/border-section.svelte";
   import { gridOf, keyOf, refsIn } from "$app-views/categories/spreadsheet-editor/procedures/addresses";
   import { setField, type Edit } from "$app-views/categories/spreadsheet-editor/procedures/cells";
-  import { INKS, orClear, orNone } from "$app-views/categories/spreadsheet-editor/procedures/colors";
+  import { FILLS, INKS, orClear, orNone } from "$app-views/categories/spreadsheet-editor/procedures/colors";
   import {
-    BORDER_SIDES,
     DEFAULT_FONT_SIZE,
     FAMILIES,
     emphasisOf,
-    hasBorder,
     familyOf,
     paintOf,
     sizeOf,
-    type BlockFormat,
-    type Border,
-    type BorderLine,
-    type BorderSide,
-    type BorderStyle,
+    type CellFormat,
     type Paint
   } from "$app-views/categories/spreadsheet-editor/procedures/formatting";
   import { STYLES } from "$app-views/categories/spreadsheet-editor/procedures/marks";
@@ -64,22 +53,6 @@
     { value: "middle", label: "Middle", icon: AlignVerticalJustifyCenter },
     { value: "bottom", label: "Bottom", icon: AlignVerticalJustifyEnd }
   ];
-
-  const DASHES = [
-    { value: "solid", label: "Solid" },
-    { value: "dashed", label: "Dashed" },
-    { value: "dotted", label: "Dotted" }
-  ];
-
-  const SIDE_OPTIONS = [
-    { value: "left", label: "Left", icon: PanelLeft },
-    { value: "top", label: "Top", icon: PanelTop },
-    { value: "all", label: "All", short: "All" },
-    { value: "bottom", label: "Bottom", icon: PanelBottom },
-    { value: "right", label: "Right", icon: PanelRight }
-  ];
-
-  const DEFAULT_BORDER: BorderLine = { color: "--token-border-strong", width: 1, style: "solid" };
 
   const FAMILY_OPTIONS = FAMILIES.map((family) => ({ value: family, label: family }));
 
@@ -117,23 +90,6 @@
   const valignShared = $derived(shared((paint) => paint.format.verticalAlignment ?? "middle"));
   const colorShared = $derived(shared((paint) => paint.format.color ?? paint.style.color));
   const backgroundShared = $derived(shared((paint) => paint.format.background ?? paint.style.background));
-  const borderShared = $derived(shared((paint) => paint.format.border));
-  const border = $derived(borderShared.value ?? undefined);
-
-  let editing = $state<BorderSide[]>([]);
-
-  const sideValue = $derived(editing.length === BORDER_SIDES.length ? ["all", ...editing] : [...editing]);
-
-  const drawn = $derived(editing.some((side) => border?.[side] !== undefined));
-
-  const lineShared = $derived.by((): { value: BorderLine | undefined; mixed: boolean } => {
-    const seen = [
-      ...new Set(paints.flatMap((paint) => editing.map((side) => JSON.stringify(paint.format.border?.[side] ?? null))))
-    ];
-    return { value: seen.length === 1 ? ((JSON.parse(seen[0]) as BorderLine | null) ?? undefined) : undefined, mixed: seen.length > 1 };
-  });
-
-  const line = $derived(lineShared.value);
   const emphases = $derived(paints.map(emphasisOf));
   const marksOn = $derived(
     STYLES.filter((style) => emphases.length > 0 && emphases.every((emphasis) => emphasis[style.value as keyof typeof emphasis])).map((style) => style.value)
@@ -173,7 +129,7 @@
     if (ops.length > 0) runtime?.apply(ops);
   };
 
-  const formatted = (field: keyof BlockFormat, value: unknown) => {
+  const formatted = (field: keyof CellFormat, value: unknown) => {
     if (sheet === undefined) return;
     if (ref !== undefined && held !== undefined) {
       apply([setField(sheet, ref, `format/${field}`, value)]);
@@ -192,7 +148,7 @@
       const wanted = next.includes(style.value);
       const had = marksOn.includes(style.value);
       if (wanted === had && !marksMixed.includes(style.value)) continue;
-      formatted(style.value as keyof BlockFormat, wanted ? true : null);
+      formatted(style.value as keyof CellFormat, wanted ? true : null);
     }
   };
 
@@ -217,54 +173,6 @@
     apply(ops);
   };
 
-  const sided = (next: string[]) => {
-    const wanted = next.filter((value): value is BorderSide => value !== "all");
-    const everything = editing.length === BORDER_SIDES.length;
-    if (next.includes("all") && !everything) {
-      editing = [...BORDER_SIDES];
-      return;
-    }
-    if (!next.includes("all") && everything && wanted.length === BORDER_SIDES.length) {
-      editing = [];
-      return;
-    }
-    editing = BORDER_SIDES.filter((side) => wanted.includes(side));
-  };
-
-  const bordered = (change: (held: BorderLine | undefined) => BorderLine | undefined) => {
-    if (editing.length === 0) return;
-    const next: Border = { ...(border ?? {}) };
-    for (const side of editing) {
-      const wanted = change(next[side]);
-      if (wanted === undefined) delete next[side];
-      else next[side] = wanted;
-    }
-    formatted("border", hasBorder(next) ? next : null);
-  };
-
-  const borderColoured = (next: string) => {
-    if (next === "") {
-      bordered(() => undefined);
-      return;
-    }
-    bordered((held) => ({
-      color: next,
-      width: held === undefined || held.width <= 0 ? DEFAULT_BORDER.width : held.width,
-      style: held?.style ?? DEFAULT_BORDER.style
-    }));
-  };
-
-  const borderSized = (width: number) => {
-    if (width <= 0) {
-      bordered(() => undefined);
-      return;
-    }
-    bordered((held) => ({ color: held?.color ?? DEFAULT_BORDER.color, width, style: held?.style ?? DEFAULT_BORDER.style }));
-  };
-
-  const borderDashed = (style: string) => {
-    bordered((held) => (held === undefined ? undefined : { ...held, style: style as BorderStyle }));
-  };
 </script>
 
 {#if sheet && rects.length > 0}
@@ -292,11 +200,16 @@
           />
         </div>
       </div>
-      <PanelMarks label="Formatting" value={[...marksOn]} mixed={marksMixed} options={STYLES} flush onchange={marked} />
-      <ColorPair
+      <PanelInlineStyle
+        marks={[...marksOn]}
+        mixedMarks={marksMixed}
+        options={STYLES}
         foreground={orNone(colorShared.value)}
         background={orNone(backgroundShared.value)}
-        mixed={colorShared.mixed || backgroundShared.mixed}
+        foregroundOptions={INKS}
+        backgroundOptions={FILLS}
+        coloursMixed={colorShared.mixed || backgroundShared.mixed}
+        onmarks={marked}
         onforeground={(next) => formatted("color", orClear(next))}
         onbackground={(next) => formatted("background", orClear(next))}
       />
@@ -368,49 +281,7 @@
     </PanelControlGroup>
   </PanelSection>
 
-  <PanelSection title="Border">
-    <PanelControlGroup flush>
-      <PanelMarks label="Which sides you are styling" value={sideValue} options={SIDE_OPTIONS} flush onchange={sided} />
-      <PanelControlRow label="Border">
-        <div class="pair tight">
-          <div class="swatch">
-            <PanelColor
-              picker
-              clearable
-              label="Border colour"
-              value={orNone(line?.color)}
-              options={INKS}
-              mixed={lineShared.mixed}
-              disabled={editing.length === 0}
-              flush
-              onchange={borderColoured}
-            />
-          </div>
-          <div class="figure">
-            <PanelNumber
-              label="Border width"
-              value={line?.width ?? 0}
-              min={0}
-              max={12}
-              disabled={editing.length === 0}
-              flush
-              onchange={borderSized}
-            />
-          </div>
-        </div>
-      </PanelControlRow>
-      <PanelControlRow label="Dash">
-        <PanelSelect
-          label="Border dash"
-          value={line?.style ?? "solid"}
-          mixed={lineShared.mixed}
-          options={DASHES}
-          disabled={!drawn}
-          onchange={borderDashed}
-        />
-      </PanelControlRow>
-    </PanelControlGroup>
-  </PanelSection>
+  <BorderSection />
 {/if}
 
 <style>
@@ -431,14 +302,6 @@
   .grow {
     min-width: 0;
     flex: 1;
-  }
-
-  .tight {
-    justify-content: flex-start;
-  }
-
-  .swatch {
-    flex: 0 0 auto;
   }
 
   .figure {

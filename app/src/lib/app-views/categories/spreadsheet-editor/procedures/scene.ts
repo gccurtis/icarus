@@ -81,7 +81,8 @@ export const sceneOf = (
   sheet: LiveSheet,
   grid: Grid,
   pins: ReadonlyMap<string, SurfacePin>,
-  facts: SheetFacts
+  facts: SheetFacts,
+  draft?: { readonly at: string; readonly text: string }
 ): SurfaceScene => {
   const merges = mergeSpans(sheet, grid);
   const spills = spillSpans(sheet, grid);
@@ -111,7 +112,7 @@ export const sceneOf = (
     const merge = spanCovering(merges, row, column);
     if (merge !== undefined && !isAnchor(merge, row, column)) {
       const covered =
-        merge.rect.row === row && merge.rect.columns > 1
+        merge.rect.columns > 1
           ? { ...COVERED, span: merge.rect.columns, spanFrom: merge.rect.column }
           : COVERED;
       cache.set(cacheKey, covered);
@@ -134,10 +135,18 @@ export const sceneOf = (
     const marks = held?.marks;
     const emphasis = emphasisOf(paint);
 
+    /**
+     * What is being typed shows where it will land, so the grid and the field
+     * read the same. Only the text is the draft: the alignment, the format and
+     * the marks stay the cell's own, because a number turning into left-aligned
+     * text mid-keystroke reads as the cell having changed kind when it has not.
+     */
+    const writing = draft?.at === key ? draft.text : undefined;
+
     const cell: SurfaceCell = {
-      text,
+      text: writing ?? text,
       raw: editableOf(facts, held),
-      tone,
+      tone: writing === undefined ? tone : "plain",
       align: alignOf(paint, kind),
       valign: valignOf(paint),
       spilled: spill !== undefined,
@@ -153,7 +162,7 @@ export const sceneOf = (
       span: merge !== undefined && merge.rect.columns > 1 ? merge.rect.columns : undefined,
       covered: false,
       readonly: child,
-      runs: marks !== undefined && marks.length > 0 && tone === "plain" ? runsOf(text, marks) : undefined,
+      runs: writing === undefined && marks !== undefined && marks.length > 0 && tone === "plain" ? runsOf(text, marks) : undefined,
       pin: pins.get(key),
       border: paint.format.border
     };
@@ -166,6 +175,13 @@ export const sceneOf = (
     rows,
     frozenColumns: sheet.body.frozenColumns ?? 0,
     frozenRows: Math.min(sheet.body.frozenRows ?? 0, Math.max(0, rows.length - 1)),
+    merges: merges.map((span) => ({
+      row: span.rect.row,
+      column: span.rect.column,
+      rows: span.rect.rows,
+      columns: span.rect.columns,
+      cell: cellAt(span.rect.row, span.rect.column)
+    })),
     cellAt
   };
 };

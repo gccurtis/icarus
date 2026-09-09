@@ -91,7 +91,7 @@
       return;
     }
     const edit = typed(sheet, grid, current, expression.startsWith("=") ? expression : `=${expression}`, facts);
-    if (edit.refused === undefined && edit.ops.length > 0) runtime?.apply(recalculating(sheetId, sheet, edit.ops));
+    if (edit.refused === undefined && edit.ops.length > 0) runtime?.apply(recalculating(view.project, sheetId, sheet, edit.ops));
     reset();
   };
 </script>

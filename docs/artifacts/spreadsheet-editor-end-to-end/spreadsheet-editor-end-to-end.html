@@ -756,7 +756,7 @@
         </div>
         <div class="compare">
           <div class="opt rec">
-            <h4>Build it in Svelte <span class="pill live">recommended</span></h4>
+            <h4>Build it in Svelte <span class="pill live">recommended at the time; not what was built</span></h4>
             <ul>
               <li class="win">The same move the slide editor already made when it dropped Konva; the sheet's model is the model, so there is no second one to translate from.</li>
               <li class="win">Merges, spills, format rules, comment pins, id-addressed cells and the in-cell editor are all ours to draw exactly as the model says.</li>
@@ -789,9 +789,12 @@
           </div>
         </div>
         <div class="note-block">
-          Whichever way the first question is answered, everything else on these pages
-          holds: the scene, the intents, the ops, the lenses and the panels are the same.
-          Only what sits inside <code>sheet-surface.svelte</code> changes.
+          <strong>The question was answered the other way.</strong> What runs is Glide Data Grid
+          6.0.3 (MIT) inside a React root, wrapped by <code>components/authored/sheet-surface</code>;
+          the boundary is written out under the first question on <em>Questions and decisions</em>.
+          Everything else on these pages held exactly as promised: the scene, the intents, the ops,
+          the lenses and the panels are the same, and only what sits inside
+          <code>sheet-surface</code> changed.
         </div>
       </div>
       <div class="notes"></div>

@@ -8,6 +8,7 @@ const model = vi.hoisted(() => ({
   snapshots: [] as Row[],
   changeSets: [] as Row[],
   cells: [] as Row[],
+  sheets: [] as Row[],
   variables: [] as Row[],
   formulas: [] as Row[],
   backReferences: [] as Row[],
@@ -16,6 +17,7 @@ const model = vi.hoisted(() => ({
     const table = path.split(".")[0];
     if (table === "spreadsheetChangeSets") return model.changeSets;
     if (table === "sheetCells") return model.cells;
+    if (table === "spreadsheets") return model.sheets;
     if (table === "variables") return model.variables;
     if (table === "formulas") return model.formulas;
     if (table === "dataBackReferences") return model.backReferences;
@@ -36,10 +38,12 @@ const model = vi.hoisted(() => ({
     },
     update: (path: string, value: unknown) => {
       model.calls.push(`update ${path}`);
-      const [, id] = path.split(".");
+      const [, id, field] = path.split(".");
       const rows = model.tableOf(path);
       const at = rows.findIndex((row) => row._id === id);
-      if (at !== -1) rows[at] = { ...(value as Row), _id: id };
+      if (at === -1) return;
+      rows[at] =
+        field === undefined ? { ...(value as Row), _id: id } : { ...rows[at], [field]: value };
     },
     remove: (path: string) => {
       model.calls.push(`remove ${path}`);
@@ -78,8 +82,11 @@ const body = () => ({
   styles: { styles: { body: { name: "Body" } }, defaultKey: "body" }
 });
 
-const leaderAt = (revision: number) =>
-  model.snapshots.push({
+const leaderAt = (revision: number) => {
+  if (!model.sheets.some((row) => row._id === "spreadsheets:1")) {
+    model.sheets.push({ _id: "spreadsheets:1", projectId: "p", title: "Sheet" });
+  }
+  return model.snapshots.push({
     _id: "spreadsheetSnapshots:1",
     projectId: "p",
     resourceId: "spreadsheets:1",
@@ -89,6 +96,7 @@ const leaderAt = (revision: number) =>
     body: body(),
     at: 1
   });
+};
 
 const cellRow = (rowId: string, columnId: string, value: unknown) =>
   model.cells.push({
@@ -120,6 +128,7 @@ beforeEach(() => {
   model.snapshots.length = 0;
   model.changeSets.length = 0;
   model.cells.length = 0;
+  model.sheets.length = 0;
   model.variables.length = 0;
   model.formulas.length = 0;
   model.backReferences.length = 0;
@@ -153,15 +162,29 @@ test("a read answers the leader body and the sheet's cells without their row fie
   assert.deepEqual(found?.cells, [{ rowId: "r1", columnId: "c1", value: { kind: "text", value: "Feeder" } }]);
 });
 
-test("the first change set on an unwritten sheet mints the leader from the empty grid", async () => {
-  const accepted = await submitSpreadsheetChanges(typing(0, "r3/c2/value", 42));
+test("a change set for a sheet that is not there writes nothing", async () => {
+  const answer = await submitSpreadsheetChanges(typing(0, "r3/c2/value", 42));
 
-  assert.deepEqual(accepted, { accepted: true, revision: 1 });
-  assert.equal(model.snapshots.length, 1);
-  assert.equal(model.snapshots[0].revision, 1);
-  assert.equal(model.cells.length, 1);
-  assert.equal(model.cells[0].rowId, "r3");
-  assert.equal(model.cells[0].rowOrder, 3);
+  assert.deepEqual(answer, {
+    accepted: false,
+    reason: "missing",
+    revision: 0,
+    detail: "no spreadsheet in this project has that id"
+  });
+  assert.equal(model.snapshots.length, 0);
+  assert.equal(model.cells.length, 0);
+  assert.equal(model.changeSets.length, 0);
+});
+
+test("a sheet with no leader snapshot is not written into existence", async () => {
+  model.sheets.push({ _id: "spreadsheets:1", projectId: "p", title: "Sheet" });
+
+  const answer = await submitSpreadsheetChanges(typing(0, "r3/c2/value", 42));
+
+  assert.equal(answer.accepted, false);
+  assert.equal(!answer.accepted && answer.reason, "missing");
+  assert.equal(model.snapshots.length, 0);
+  assert.equal(model.changeSets.length, 0);
 });
 
 test("a set on a coordinate makes a cell row, and a second set updates it", async () => {
@@ -172,7 +195,8 @@ test("a set on a coordinate makes a cell row, and a second set updates it", asyn
   assert.deepEqual(model.cells[0].value, { kind: "number", value: 12 });
   assert.equal(model.cells[0].rowOrder, 2);
 
-  await submitSpreadsheetChanges(typing(1, "r2/c1/value", 13, { kind: "number", value: 12 }));
+  const second = await submitSpreadsheetChanges(typing(1, "r2/c1/value", 13, { kind: "number", value: 12 }));
+  assert.deepEqual(second, { accepted: true, revision: 2 });
   assert.equal(model.cells.length, 1);
   assert.deepEqual(model.cells[0].value, { kind: "number", value: 13 });
   assert.equal(model.calls.filter((call) => call === "create sheetCells").length, 1);
@@ -286,4 +310,210 @@ test("an accepted change set marks the spreadsheet updated", async () => {
   await submitSpreadsheetChanges(typing(0, "r1/c1/value", 1));
 
   assert.ok(model.calls.includes("update spreadsheets.spreadsheets:1.updatedAt"));
+});
+
+test("a cell written with a formula is accepted and answered", async () => {
+  leaderAt(0);
+  cellRow("r1", "c1", { kind: "number", value: 4 });
+
+  const answer = await submitSpreadsheetChanges(
+    sending(0, [
+      {
+        op: "set",
+        target: "cell",
+        path: "r2/c1",
+        value: {
+          rowId: "r2",
+          columnId: "c1",
+          value: { kind: "empty" },
+          expression: "=`cell|spreadsheets:1|r1|c1`*3",
+          anchors: [""]
+        },
+        was: null
+      }
+    ])
+  );
+
+  assert.equal(answer.accepted, true);
+  const written = model.cells.find((cell) => cell.rowId === "r2");
+  assert.deepEqual(written?.value, { kind: "number", value: 12 });
+});
+
+test("a forged was is replaced by what the sheet actually held", async () => {
+  leaderAt(0);
+  cellRow("r1", "c1", { kind: "number", value: 7 });
+
+  await submitSpreadsheetChanges(typing(0, "r1/c1/value", 9, { kind: "number", value: 1_000_000 }));
+
+  assert.equal(model.changeSets.length, 1);
+  const [op] = model.changeSets[0].ops as { was: unknown }[];
+  assert.deepEqual(op.was, { kind: "number", value: 7 });
+});
+
+test("a forged was on a field that held nothing is recorded as nothing", async () => {
+  leaderAt(0);
+
+  await submitSpreadsheetChanges(typing(0, "r1/c1/value", 9, { kind: "number", value: 42 }));
+
+  const [op] = model.changeSets[0].ops as { was: unknown }[];
+  assert.equal(op.was, null);
+});
+
+test("forged removal values are replaced by the rows that were really there", async () => {
+  leaderAt(0);
+  cellRow("r1", "c1", { kind: "text", value: "Feeder" });
+
+  await submitSpreadsheetChanges(
+    sending(0, [
+      {
+        op: "remove",
+        target: "gridRow",
+        path: "rows",
+        ids: ["r1"],
+        values: [
+          {
+            id: "r1",
+            order: 99,
+            cells: [{ rowId: "r1", columnId: "c1", value: { kind: "text", value: "invented" } }]
+          }
+        ],
+        after: null
+      }
+    ])
+  );
+
+  const [op] = model.changeSets[0].ops as {
+    values: { id: string; order: number; cells: unknown[] }[];
+  }[];
+  assert.equal(op.values.length, 1);
+  assert.equal(op.values[0].id, "r1");
+  assert.equal(op.values[0].order, 1);
+  assert.deepEqual(op.values[0].cells, [
+    { rowId: "r1", columnId: "c1", value: { kind: "text", value: "Feeder" } }
+  ]);
+});
+
+test("an incorrect wasAfter is replaced by where the track really sat", async () => {
+  leaderAt(0);
+
+  await submitSpreadsheetChanges(
+    sending(0, [
+      { op: "move", target: "gridRow", path: "rows", id: "r2", after: null, wasAfter: "r9" }
+    ])
+  );
+
+  const [op] = model.changeSets[0].ops as { wasAfter: unknown }[];
+  assert.equal(op.wasAfter, "r1");
+});
+
+test("touched is worked out from the ops rather than taken", async () => {
+  leaderAt(0);
+
+  await submitSpreadsheetChanges({
+    changeSet: {
+      resourceId: "spreadsheets:1",
+      baseRevision: 0,
+      ops: [
+        { op: "set", target: "cell", path: "r1/c1/value", value: { kind: "number", value: 1 }, was: null }
+      ],
+      touched: ["r5/c5/value", "something/else"]
+    }
+  });
+
+  assert.deepEqual(model.changeSets[0].touched, ["r1/c1/value"]);
+});
+
+test("a change set authored against a revision ahead of the leader is stale", async () => {
+  leaderAt(1);
+
+  const answer = await submitSpreadsheetChanges(typing(4, "r1/c1/value", 1));
+
+  assert.equal(answer.accepted, false);
+  assert.equal(!answer.accepted && answer.reason, "stale");
+  assert.equal(model.changeSets.length, 0);
+});
+
+test("an op that names no known operation is refused before anything is read", async () => {
+  leaderAt(0);
+
+  await assert.rejects(
+    () => submitSpreadsheetChanges(sending(0, [{ op: "destroy", target: "cell", path: "r1/c1" }])),
+    /is not an operation/
+  );
+  assert.equal(model.changeSets.length, 0);
+});
+
+test("an op that names no known target is refused", async () => {
+  leaderAt(0);
+
+  await assert.rejects(
+    () =>
+      submitSpreadsheetChanges(
+        sending(0, [{ op: "set", target: "everything", path: "r1", value: 1 }])
+      ),
+    /is not a target/
+  );
+});
+
+test("more ops than a change set may carry are refused", async () => {
+  leaderAt(0);
+  const ops = Array.from({ length: 501 }, (_, index) => ({
+    op: "set",
+    target: "cell",
+    path: "r1/c1/value",
+    value: { kind: "number", value: index }
+  }));
+
+  await assert.rejects(() => submitSpreadsheetChanges(sending(0, ops)), /at most 500 ops/);
+});
+
+test("a path longer than a path may be is refused", async () => {
+  leaderAt(0);
+
+  await assert.rejects(
+    () =>
+      submitSpreadsheetChanges(
+        sending(0, [{ op: "set", target: "cell", path: "r".repeat(513), value: null }])
+      ),
+    /names a path/
+  );
+});
+
+test("a value nested deeper than a sheet ever needs is refused", async () => {
+  leaderAt(0);
+  const deep: Record<string, unknown> = { kind: "number", value: 1 };
+  let at = deep;
+  for (let index = 0; index < 20; index += 1) {
+    at.more = {};
+    at = at.more as Record<string, unknown>;
+  }
+
+  await assert.rejects(
+    () =>
+      submitSpreadsheetChanges(
+        sending(0, [{ op: "set", target: "cell", path: "r1/c1/value", value: deep }])
+      ),
+    /plain JSON/
+  );
+});
+
+test("an insert whose ids and values disagree in number is refused", async () => {
+  leaderAt(0);
+
+  await assert.rejects(
+    () =>
+      submitSpreadsheetChanges(
+        sending(0, [
+          {
+            op: "insert",
+            target: "gridRow",
+            path: "rows",
+            ids: ["r7", "r8"],
+            values: [{ id: "r7", order: 7 }],
+            after: null
+          }
+        ])
+      ),
+    /one value per id/
+  );
 });

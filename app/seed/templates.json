@@ -423,7 +423,7 @@
               "atoms": [{ "id": "#tdm-recommendation-a", "kind": "literal", "text": "Recommendation: state the path, owner, decision date, and next irreversible step." }],
               "display": "Recommendation: state the path, owner, decision date, and next irreversible step.",
               "marks": [],
-              "format": { "padding": { "x": 12, "y": 10 }, "border": { "top": { "color": "--token-color-active-border", "width": 1, "style": "solid" }, "right": { "color": "--token-color-active-border", "width": 1, "style": "solid" }, "bottom": { "color": "--token-color-active-border", "width": 1, "style": "solid" }, "left": { "color": "--token-color-active-border", "width": 1, "style": "solid" } } }
+              "format": { "padding": { "x": 12, "y": 10 }, "border": { "color": "--token-color-active-border", "width": 1, "style": "solid" } }
             }
           ]
         }
@@ -534,7 +534,7 @@
               ],
               "overflow": "shrink",
               "fromPlaceholder": "body",
-              "format": { "padding": { "x": 18, "y": 16 }, "border": { "top": { "color": "--token-color-active-border", "width": 1, "style": "solid" }, "right": { "color": "--token-color-active-border", "width": 1, "style": "solid" }, "bottom": { "color": "--token-color-active-border", "width": 1, "style": "solid" }, "left": { "color": "--token-color-active-border", "width": 1, "style": "solid" } } }
+              "format": { "padding": { "x": 18, "y": 16 }, "border": { "color": "--token-color-active-border", "width": 1, "style": "solid" } }
             }
           ],
           "notes": [
@@ -755,7 +755,7 @@
               ],
               "overflow": "shrink",
               "fromPlaceholder": "body",
-              "format": { "padding": { "x": 18, "y": 16 }, "border": { "top": { "color": "--token-color-intelligence-border", "width": 1, "style": "solid" }, "right": { "color": "--token-color-intelligence-border", "width": 1, "style": "solid" }, "bottom": { "color": "--token-color-intelligence-border", "width": 1, "style": "solid" }, "left": { "color": "--token-color-intelligence-border", "width": 1, "style": "solid" } } }
+              "format": { "padding": { "x": 18, "y": 16 }, "border": { "color": "--token-color-intelligence-border", "width": 1, "style": "solid" } }
             }
           ],
           "notes": []
@@ -879,7 +879,7 @@
               ],
               "overflow": "shrink",
               "fromPlaceholder": "body",
-              "format": { "padding": { "x": 18, "y": 16 }, "border": { "top": { "color": "--token-color-active-border", "width": 1, "style": "solid" }, "right": { "color": "--token-color-active-border", "width": 1, "style": "solid" }, "bottom": { "color": "--token-color-active-border", "width": 1, "style": "solid" }, "left": { "color": "--token-color-active-border", "width": 1, "style": "solid" } } }
+              "format": { "padding": { "x": 18, "y": 16 }, "border": { "color": "--token-color-active-border", "width": 1, "style": "solid" } }
             }
           ],
           "notes": []
@@ -934,7 +934,7 @@
       "columnWidths": { "A": 180, "B": 100, "C": 100, "D": 100, "E": 120, "F": 150 },
       "rowHeights": { "1": 38, "3": 30 },
       "formatRules": [
-        { "from": "A3", "to": "F3", "style": "header", "format": { "background": "--token-surface-secondary", "border": { "top": { "color": "--token-color-active-border", "width": 1, "style": "solid" }, "right": { "color": "--token-color-active-border", "width": 1, "style": "solid" }, "bottom": { "color": "--token-color-active-border", "width": 1, "style": "solid" }, "left": { "color": "--token-color-active-border", "width": 1, "style": "solid" } } } },
+        { "from": "A3", "to": "F3", "style": "header", "format": { "background": "--token-surface-secondary", "border": { "color": "--token-color-active-border", "width": 1, "style": "solid" } } },
         { "from": "F4", "to": "F20", "format": { "background": "--token-color-intelligence-surface" } }
       ],
       "frozenRows": 3,
@@ -992,7 +992,7 @@
       "columnWidths": { "A": 210, "B": 90, "C": 120, "D": 110, "E": 150 },
       "rowHeights": { "1": 38, "3": 30 },
       "formatRules": [
-        { "from": "A3", "to": "E3", "style": "header", "format": { "background": "--token-surface-secondary", "border": { "top": { "color": "--token-color-active-border", "width": 1, "style": "solid" }, "right": { "color": "--token-color-active-border", "width": 1, "style": "solid" }, "bottom": { "color": "--token-color-active-border", "width": 1, "style": "solid" }, "left": { "color": "--token-color-active-border", "width": 1, "style": "solid" } } } },
+        { "from": "A3", "to": "E3", "style": "header", "format": { "background": "--token-surface-secondary", "border": { "color": "--token-color-active-border", "width": 1, "style": "solid" } } },
         { "from": "E4", "to": "E20", "format": { "background": "--token-color-accent-2-surface" } }
       ],
       "frozenRows": 3,

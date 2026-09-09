@@ -53,12 +53,27 @@ export type SurfaceCell = {
   readonly border?: SurfaceBorder;
 };
 
+/**
+ * A merged block and what it holds.
+ *
+ * The grid spans columns and has no notion of a row span at all, so a merge
+ * taller than one row is drawn over the canvas rather than in it.
+ */
+export type SurfaceMerge = {
+  readonly row: number;
+  readonly column: number;
+  readonly rows: number;
+  readonly columns: number;
+  readonly cell: SurfaceCell;
+};
+
 export type SurfaceScene = {
   readonly columns: readonly SurfaceTrack[];
   readonly rows: readonly SurfaceTrack[];
   readonly frozenColumns: number;
   /** How many rows the grid pins, counted from the last one. */
   readonly frozenRows: number;
+  readonly merges: readonly SurfaceMerge[];
   readonly cellAt: (row: number, column: number) => SurfaceCell;
 };
 

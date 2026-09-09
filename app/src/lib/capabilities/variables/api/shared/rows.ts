@@ -17,7 +17,7 @@ export const recordOf = (row: VariableRow): VariableRecord => ({
   id: row._id,
   name: row.name,
   value: row.value,
-  type: row.type ?? "any",
+  type: row.type,
   ...(row.description === undefined ? {} : { description: row.description }),
   updatedAt: row.updatedAt
 });

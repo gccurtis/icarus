@@ -219,12 +219,12 @@ describe("stats and styles", () => {
     expect(aggregateOf(held, grid, [{ row: 1, column: 1, rows: 3, columns: 1 }])).toMatchObject({ cells: 3, filled: 3, numbers: 3, sum: 4320800 });
   });
 
-  it("count who wears a style, and write a rule to apply one", () => {
+  it("name every style, and write a rule to apply one", () => {
     const held = sheet();
-    const rows = styleRows(held, grid);
+    const rows = styleRows(held);
 
-    expect(rows.find((row) => row.key === "header")).toMatchObject({ cells: 1, shorthand: "600 · centred" });
-    expect(rows.find((row) => row.key === "body")?.cells).toBe(6);
+    expect(rows.find((row) => row.key === "header")).toMatchObject({ shorthand: "600 · centred", isDefault: false });
+    expect(rows.find((row) => row.key === "body")).toMatchObject({ isDefault: true });
 
     const [op] = appliedStyle(held.body, grid, [{ row: 1, column: 0, rows: 2, columns: 1 }], "header");
     expect(op).toMatchObject({ op: "insert", target: "formatRule", values: [{ from: { rowId: "r2", columnId: "c1" }, to: { rowId: "r3", columnId: "c1" }, style: "header" }] });

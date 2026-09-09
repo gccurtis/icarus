@@ -3,7 +3,7 @@ import { serverModel } from "$runtime/server/start.server";
 import type { StoreModel } from "$model/server/store/index.server";
 import type { Id } from "$representation/data/types/core/id";
 import type { SpreadsheetOp } from "$representation/data/types/spreadsheets/op";
-import { emptyBody } from "$representation/data/behavior/spreadsheets/empty-sheet";
+import { canonicalOf } from "$representation/data/behavior/spreadsheets/history";
 
 import { cellRowsOf, cellsOf } from "$capabilities/spreadsheet/api/shared/cells";
 import { answered, writeFormulas } from "$capabilities/spreadsheet/api/shared/answering";
@@ -18,6 +18,16 @@ type Landed = {
   readonly revision: number;
   readonly ops: readonly SpreadsheetOp[];
   readonly touched: readonly string[];
+};
+
+const sheetExists = (
+  store: StoreModel,
+  projectId: Id<"projects">,
+  resourceId: Id<"spreadsheets">
+): boolean => {
+  const found = store.read("spreadsheets");
+  if (found?.table !== "spreadsheets" || found.kind !== "table") return false;
+  return found.rows.some((row) => row._id === resourceId && row.projectId === projectId);
 };
 
 const related = (a: string, b: string): boolean =>
@@ -78,8 +88,25 @@ export const submitSpreadsheetChanges = async (
   const resourceId = changeSet.resourceId as Id<"spreadsheets">;
   const actor = { kind: "user" as const, userId: scope.userId as Id<"users"> };
 
+  if (!sheetExists(store, projectId, resourceId)) {
+    return {
+      accepted: false,
+      reason: "missing",
+      revision: 0,
+      detail: "no spreadsheet in this project has that id"
+    };
+  }
+
   const leader = leaderOf(store, projectId, resourceId);
-  const revision = leader?.revision ?? 0;
+  if (leader === undefined) {
+    return {
+      accepted: false,
+      reason: "missing",
+      revision: 0,
+      detail: "that spreadsheet has no leader snapshot to change"
+    };
+  }
+  const revision = leader.revision;
 
   const catchUp = catchUpFor(
     store,
@@ -100,8 +127,11 @@ export const submitSpreadsheetChanges = async (
 
   const rows = cellRowsOf(store, projectId, resourceId);
   let next;
+  let canonical;
   try {
-    const applied = applyOps({ body: leader?.body ?? emptyBody(), cells: cellsOf(rows) }, changeSet.ops);
+    const held = { body: leader.body, cells: cellsOf(rows) };
+    canonical = canonicalOf(held, changeSet.ops);
+    const applied = applyOps(held, canonical.ops);
     next = writeFormulas(store, projectId, resourceId, answered(store, projectId, resourceId, applied));
   } catch (error) {
     return {
@@ -121,13 +151,13 @@ export const submitSpreadsheetChanges = async (
     revision: advanced,
     baseRevision: changeSet.baseRevision,
     tier: "recent",
-    ops: changeSet.ops,
-    touched: changeSet.touched,
+    ops: canonical.ops,
+    touched: canonical.touched,
     actor,
     at
   });
 
-  const snapshot = {
+  store.update(`spreadsheetSnapshots.${leader._id}`, {
     projectId,
     resourceId,
     revision: advanced,
@@ -135,10 +165,7 @@ export const submitSpreadsheetChanges = async (
     part: 0,
     body: next.body,
     at
-  };
-
-  if (leader === undefined) store.create("spreadsheetSnapshots", snapshot);
-  else store.update(`spreadsheetSnapshots.${leader._id}`, snapshot);
+  });
 
   writeCells(store, projectId, resourceId, rows, next);
 

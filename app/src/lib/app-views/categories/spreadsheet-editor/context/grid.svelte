@@ -65,7 +65,7 @@
 
   const apply = (ops: Parameters<SpreadsheetRuntime["apply"]>[0]) => {
     if (ops.length === 0 || sheet === undefined) return;
-    runtime?.apply(recalculating(sheetId, sheet, ops));
+    runtime?.apply(recalculating(view.project, sheetId, sheet, ops));
   };
 
   const addRow = (where: "above" | "below") => {

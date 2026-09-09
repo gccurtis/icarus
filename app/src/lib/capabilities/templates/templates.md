@@ -11,7 +11,7 @@ turns a template into an ordinary editable resource.
 | `updateTemplate` | An owner-only, compare-and-swap name, description, tag, or variable-help update plus an immutable version snapshot |
 | `duplicateTemplate` | A visible template copied into the viewer's ownership at revision one |
 | `removeTemplate` | An owner-only, compare-and-swap delete after current-project provenance and all version rows are removed; cross-project references refuse deletion |
-| `instantiateTemplate` | A regular document, deck, or spreadsheet with template provenance and a revision-zero leader snapshot |
+| `instantiateTemplate` | A regular document or deck with template provenance and a revision-zero leader snapshot; a spreadsheet template is refused while the sheet representation is being rebuilt |
 
 ## Visibility and availability
 

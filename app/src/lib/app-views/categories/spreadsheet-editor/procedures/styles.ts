@@ -1,8 +1,8 @@
-import type { BlockFormat } from "$representation/data/types/content/block-format";
+import type { CellFormat } from "$representation/data/types/spreadsheets/cell-format";
 import type { FormatRule, SpreadsheetBody } from "$representation/data/types/spreadsheets/body";
 import type { LiveSheet } from "$representation/data/types/spreadsheets/live";
 import type { SpreadsheetOp } from "$representation/data/types/spreadsheets/op";
-import type { TextStyle } from "$representation/data/types/spreadsheets/style-set";
+import type { CellStyle } from "$representation/data/types/spreadsheets/style-set";
 import {
   contains,
   indexOf,
@@ -18,16 +18,14 @@ import type { Edit } from "$app-views/categories/spreadsheet-editor/procedures/s
 
 export type StyleRow = {
   readonly key: string;
-  readonly style: TextStyle;
-  readonly cells: number;
-  readonly rules: readonly FormatRule[];
+  readonly style: CellStyle;
   readonly shorthand: string;
   readonly isDefault: boolean;
 };
 
 const ALIGN_WORD: Record<string, string> = { start: "start", center: "centred", end: "end", justify: "justified" };
 
-export const shorthandOf = (style: TextStyle): string => {
+export const shorthandOf = (style: CellStyle): string => {
   const parts: string[] = [];
   const weight = style.fontWeight ?? (style.bold ? 600 : undefined);
   if (weight !== undefined && weight !== 400) parts.push(String(weight));
@@ -39,38 +37,13 @@ export const shorthandOf = (style: TextStyle): string => {
   return parts.length === 0 ? "plain" : parts.join(" · ");
 };
 
-export const usageOf = (
-  sheet: LiveSheet,
-  grid: Grid,
-  key: string
-): { readonly cells: number; readonly rules: FormatRule[] } => {
-  const body = sheet.body;
-  const rules = body.formatRules.filter((rule) => rule.style === key);
-  const isDefault = body.styles.defaultKey === key;
-  let cells = 0;
-  for (const cell of Object.values(sheet.cells)) {
-    const ref = { rowId: cell.rowId, columnId: cell.columnId };
-    const at = indexOf(grid, ref);
-    if (at === undefined) continue;
-    const covering = rulesCovering(body, grid, ref).filter((rule) => rule.style !== undefined && body.styles.styles[rule.style] !== undefined);
-    const wearing = covering.length === 0 ? body.styles.defaultKey : covering[covering.length - 1].style;
-    if (wearing === key || (isDefault && covering.length === 0)) cells += 1;
-  }
-  return { cells, rules };
-};
-
-export const styleRows = (sheet: LiveSheet, grid: Grid): StyleRow[] =>
-  Object.entries(sheet.body.styles.styles).map(([key, style]) => {
-    const usage = usageOf(sheet, grid, key);
-    return {
-      key,
-      style,
-      cells: usage.cells,
-      rules: usage.rules,
-      shorthand: shorthandOf(style),
-      isDefault: key === sheet.body.styles.defaultKey
-    };
-  });
+export const styleRows = (sheet: LiveSheet): StyleRow[] =>
+  Object.entries(sheet.body.styles.styles).map(([key, style]) => ({
+    key,
+    style,
+    shorthand: shorthandOf(style),
+    isDefault: key === sheet.body.styles.defaultKey
+  }));
 
 const exactRule = (body: SpreadsheetBody, grid: Grid, rect: Rect): FormatRule | undefined =>
   [...body.formatRules].reverse().find((rule) => {
@@ -104,7 +77,7 @@ export const ruleFormatOver = (
   body: SpreadsheetBody,
   grid: Grid,
   rects: readonly Rect[],
-  field: keyof BlockFormat,
+  field: keyof CellFormat,
   value: unknown
 ): SpreadsheetOp[] =>
   rects.flatMap((rect): SpreadsheetOp[] => {
@@ -138,7 +111,7 @@ const freshKey = (body: SpreadsheetBody, base: string): string => {
   return `${root}-${n}`;
 };
 
-export const newStyle = (body: SpreadsheetBody, from?: TextStyle): { readonly ops: SpreadsheetOp[]; readonly key: string } => {
+export const newStyle = (body: SpreadsheetBody, from?: CellStyle): { readonly ops: SpreadsheetOp[]; readonly key: string } => {
   const name = from === undefined ? "Untitled" : `${from.name} copy`;
   const key = freshKey(body, name);
   return {
@@ -164,7 +137,7 @@ export const madeDefault = (body: SpreadsheetBody, key: string): SpreadsheetOp |
 export const setStyleField = (
   body: SpreadsheetBody,
   key: string,
-  field: keyof TextStyle,
+  field: keyof CellStyle,
   value: unknown
 ): SpreadsheetOp | undefined => {
   const held = body.styles.styles[key];

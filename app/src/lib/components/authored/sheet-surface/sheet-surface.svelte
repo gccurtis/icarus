@@ -29,14 +29,27 @@
     runOf,
     surfaceSelectionOf
   } from "$authored-components/sheet-surface/sheet-surface-glide";
+  import SheetSurfaceBlocks from "$authored-components/sheet-surface/sheet-surface-blocks.svelte";
+  import {
+    HEADER,
+    MARKER,
+    blocksOf,
+    columnWidth as trackColumnWidth,
+    edgesOf,
+    rowHeight as trackRowHeight,
+    startsOf
+  } from "$authored-components/sheet-surface/sheet-surface-geometry";
+  import SheetSurfaceHandles from "$authored-components/sheet-surface/sheet-surface-handles.svelte";
   import { measurer, themeOf, type Measure } from "$authored-components/sheet-surface/sheet-surface-theme";
   import type {
     SurfaceApi,
+    SurfaceCell,
     SurfaceDirection,
     SurfaceEdit,
     SurfaceFill,
     SurfaceHighlight,
     SurfaceHit,
+    SurfaceMerge,
     SurfacePaste,
     SurfaceScene,
     SurfaceSelection
@@ -97,8 +110,6 @@
   } = $props();
 
   const PORTAL = "portal";
-  const HEADER = 26;
-  const MARKER = 44;
   const APPEND_COLUMN = "append";
   const APPEND_WIDTH = 112;
 
@@ -159,88 +170,46 @@
   });
 
   /**
-   * Where every visible boundary sits, asked of the grid rather than worked out
-   * from a scroll offset. The library draws a resize cursor for a column and has
-   * no notion of a row height at all, so both handles are ours.
+   * How far the grid has been scrolled, read from the element that scrolls.
+   *
+   * `getBounds` answers for an unscrolled grid, so anything drawn over the
+   * canvas has to work the position out from the tracks it already hands the
+   * library. This is that source.
    */
-  const edges = $derived.by(() => {
+  let offset = $state({ left: 0, top: 0 });
+
+  $effect(() => {
     void region;
     void size;
-    void zoom;
-    void scene;
-    const grid = ref.current;
-    const outer = frame;
-    if (grid === undefined || grid === null || outer === undefined) return { columns: [], rows: [] };
-
-    const box = outer.getBoundingClientRect();
-    const firstRow = Math.max(0, region.y);
-    const firstColumn = Math.max(0, region.x);
-
-    const columns: { index: number; x: number }[] = [];
-    for (let index = 0; index < Math.min(scene.frozenColumns, appendAt); index += 1) {
-      const bounds = grid.getBounds(index, firstRow);
-      if (bounds !== undefined) columns.push({ index, x: bounds.x - box.left + bounds.width });
-    }
-    for (let index = firstColumn; index < Math.min(firstColumn + region.width + 2, appendAt); index += 1) {
-      if (index < scene.frozenColumns) continue;
-      const bounds = grid.getBounds(index, firstRow);
-      if (bounds !== undefined) columns.push({ index, x: bounds.x - box.left + bounds.width });
-    }
-
-    const rows: { index: number; y: number }[] = [];
-    for (let index = firstRow; index < Math.min(firstRow + region.height + 2, scene.rows.length); index += 1) {
-      const bounds = grid.getBounds(firstColumn, index);
-      if (bounds !== undefined) rows.push({ index, y: bounds.y - box.top + bounds.height });
-    }
-    return { columns, rows };
+    const node = host?.querySelector(".dvn-scroller");
+    if (!(node instanceof HTMLElement)) return;
+    const read = () => {
+      if (node.scrollLeft !== offset.left || node.scrollTop !== offset.top) {
+        offset = { left: node.scrollLeft, top: node.scrollTop };
+      }
+    };
+    read();
+    node.addEventListener("scroll", read, { passive: true });
+    return () => node.removeEventListener("scroll", read);
   });
 
-  const dragColumn = (index: number) => (event: PointerEvent) => {
-    const from = event.clientX;
-    const start = Math.round((drafts[index] ?? scene.columns[index].size * scale));
-    const handle = event.currentTarget as HTMLElement;
-    handle.setPointerCapture(event.pointerId);
-    dragging = true;
+  const columnWidth = (index: number) => trackColumnWidth(scene, drafts, scale, index);
+  const rowHeight = (index: number) => trackRowHeight(scene, rowDrafts, scale, index);
 
-    const move = (moved: PointerEvent) => {
-      drafts = { ...drafts, [index]: Math.max(28, Math.round(start + moved.clientX - from)) };
-    };
-    const done = () => {
-      handle.removeEventListener("pointermove", move);
-      handle.removeEventListener("pointerup", done);
-      const next = drafts[index] ?? start;
+  const starts = $derived(startsOf(scene, drafts, rowDrafts, scale));
+  const edges = $derived(edgesOf(scene, starts, offset, region, drafts, rowDrafts, scale, appendAt));
+  const blocks = $derived(blocksOf(scene, starts, offset));
+
+  const previewed = (kind: "column" | "row", index: number, size: number | undefined) => {
+    if (kind === "column") {
       const { [index]: _gone, ...rest } = drafts;
       void _gone;
-      drafts = rest;
-      dragging = false;
-      onresize?.(index, Math.round(next / scale));
-    };
-    handle.addEventListener("pointermove", move);
-    handle.addEventListener("pointerup", done);
-  };
-
-  const dragRow = (index: number) => (event: PointerEvent) => {
-    const from = event.clientY;
-    const start = Math.round(rowDrafts[index] ?? (scene.rows[index]?.size ?? 26) * scale);
-    const handle = event.currentTarget as HTMLElement;
-    handle.setPointerCapture(event.pointerId);
-    dragging = true;
-
-    const move = (moved: PointerEvent) => {
-      rowDrafts = { ...rowDrafts, [index]: Math.max(16, Math.round(start + moved.clientY - from)) };
-    };
-    const done = () => {
-      handle.removeEventListener("pointermove", move);
-      handle.removeEventListener("pointerup", done);
-      const next = rowDrafts[index] ?? start;
-      const { [index]: _gone, ...rest } = rowDrafts;
-      void _gone;
-      rowDrafts = rest;
-      dragging = false;
-      onrowresize?.(index, Math.round(next / scale));
-    };
-    handle.addEventListener("pointermove", move);
-    handle.addEventListener("pointerup", done);
+      drafts = size === undefined ? rest : { ...rest, [index]: size };
+      return;
+    }
+    const { [index]: _gone, ...rest } = rowDrafts;
+    void _gone;
+    rowDrafts = size === undefined ? rest : { ...rest, [index]: size };
   };
 
   const ensurePortal = () => {
@@ -523,29 +492,21 @@
 <div bind:this={frame} class="sheet-surface" role="presentation">
   <div bind:this={host} class="host" onfocusin={focusIn} onfocusout={focusOut}></div>
 
+  <SheetSurfaceBlocks {blocks} {selection} {scale} {mono} {base} />
+
   <div class="handles" class:dragging>
-    {#each edges.columns as edge (edge.index)}
-      <div
-        class="handle across"
-        role="separator"
-        aria-orientation="vertical"
-        aria-label={`Width of column ${scene.columns[edge.index]?.label ?? ""}`}
-        tabindex="-1"
-        style={`left: ${edge.x - 3}px; height: ${Math.round(HEADER * scale)}px;`}
-        onpointerdown={dragColumn(edge.index)}
-      ></div>
-    {/each}
-    {#each edges.rows as edge (edge.index)}
-      <div
-        class="handle down"
-        role="separator"
-        aria-orientation="horizontal"
-        aria-label={`Height of row ${edge.index + 1}`}
-        tabindex="-1"
-        style={`top: ${edge.y - 3}px; width: ${Math.round(MARKER * scale)}px;`}
-        onpointerdown={dragRow(edge.index)}
-      ></div>
-    {/each}
+    <SheetSurfaceHandles
+      {scene}
+      {scale}
+      columns={edges.columns}
+      rows={edges.rows}
+      columnSize={columnWidth}
+      rowSize={rowHeight}
+      ondrag={(running) => (dragging = running)}
+      onpreview={previewed}
+      {onresize}
+      {onrowresize}
+    />
   </div>
 </div>
 
@@ -570,25 +531,7 @@
     pointer-events: none;
   }
 
-  .handle {
-    position: absolute;
-    pointer-events: auto;
-    touch-action: none;
-  }
-
-  .handle.across {
-    top: 0;
-    width: 7px;
-    cursor: col-resize;
-  }
-
-  .handle.down {
-    left: 0;
-    height: 7px;
-    cursor: row-resize;
-  }
-
-  .handles.dragging .handle {
+  .handles.dragging :global(.handle) {
     pointer-events: none;
   }
 

@@ -1,4 +1,4 @@
-import type { BlockFormat } from "$representation/data/types/content/block-format";
+import type { CellFormat } from "$representation/data/types/spreadsheets/cell-format";
 import type { CellRange } from "$representation/data/types/content/formula-value";
 import type { PageSetup } from "$representation/data/types/spreadsheets/page-setup";
 import type { StyleSet } from "$representation/data/types/spreadsheets/style-set";
@@ -8,7 +8,7 @@ export type PrintScale = number | "fit-width" | "fit-page";
 export type FormatRule = CellRange & {
   id: string;
   style?: string;
-  format?: BlockFormat;
+  format?: CellFormat;
 };
 
 export type SheetPrint = {

@@ -33,7 +33,9 @@ export const sourceFor = (resourceId: string | undefined, sheet: LiveSheet): She
  * names. Another sheet is reachable only where one has been handed over, and a
  * formula that names one the reader cannot see is left alone rather than broken.
  */
-export const AROUND: Surroundings = { variable: variableValue };
+export const aroundOf = (project: string): Surroundings => ({
+  variable: (name) => variableValue(project, name)
+});
 
 export const factsOf = (
   resourceId: string | undefined,
@@ -73,9 +75,13 @@ export const storedOf = (
  * An edit and everything it changes, for a sheet the editor is holding open.
  */
 export const recalculating = (
+  project: string,
   resourceId: string | undefined,
   sheet: LiveSheet,
-  ops: readonly SpreadsheetOp[],
-  around: Surroundings = AROUND
+  ops: readonly SpreadsheetOp[]
 ): SpreadsheetOp[] =>
-  withRecalculation(sourceOf((resourceId ?? "") as Id<"spreadsheets">, sheet), ops, around);
+  withRecalculation(
+    sourceOf((resourceId ?? "") as Id<"spreadsheets">, sheet),
+    ops,
+    aroundOf(project)
+  );

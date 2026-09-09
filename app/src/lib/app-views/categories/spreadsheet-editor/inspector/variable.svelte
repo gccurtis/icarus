@@ -40,7 +40,7 @@
   const view = workspaceState();
 
   $effect(() => {
-    if (!variablesLoaded()) void loadVariables();
+    if (!variablesLoaded(view.project)) void loadVariables(view.project);
   });
 
   const chosen = $derived(view.selection?.kind === VARIABLE ? view.selection.id : undefined);
@@ -48,7 +48,7 @@
   const held = $derived(
     chosen === undefined
       ? undefined
-      : variables().find((variable) => variable.name.toLowerCase() === chosen.toLowerCase())
+      : variables(view.project).find((variable) => variable.name.toLowerCase() === chosen.toLowerCase())
   );
 
   let name = $state("");
@@ -72,7 +72,7 @@
     if (record === undefined) return;
     const wanted = name.trim();
     const parsed = parseTyped(literal);
-    const answer = await saveVariable({
+    const answer = await saveVariable(view.project, {
       name: wanted,
       value: parsed.kind === "value" ? parsed.value : { kind: "empty" },
       type
@@ -83,7 +83,7 @@
     }
     refusal = undefined;
     if (wanted === record.name) return;
-    if (wanted.toLowerCase() !== record.name.toLowerCase()) await removeVariable(record.name);
+    if (wanted.toLowerCase() !== record.name.toLowerCase()) await removeVariable(view.project, record.name);
     const signal = variableSignal(wanted);
     view.inspect(signal.key, signal.selection);
   };
@@ -96,7 +96,7 @@
   const remove = async (): Promise<void> => {
     const record = held;
     if (record === undefined) return;
-    await removeVariable(record.name);
+    await removeVariable(view.project, record.name);
     view.clear();
   };
 </script>

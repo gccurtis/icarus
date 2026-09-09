@@ -6,10 +6,7 @@ import { ensureSlideDeckReady } from "$representation/data/behavior/slide-decks/
 import type { TemplateBody } from "$representation/data/types/templates/template";
 
 import { validateInstantiateTemplate } from "$capabilities/templates/api/instantiate-template/validate-instantiate-template";
-import {
-  materializeSpreadsheet,
-  resolveTemplateDefaults
-} from "$capabilities/templates/api/shared/bodies";
+import { resolveTemplateDefaults } from "$capabilities/templates/api/shared/bodies";
 import {
   admitStoredTemplate,
   reportableRevision,
@@ -140,34 +137,11 @@ export const instantiateTemplate = async (input: unknown): Promise<InstantiateTe
     };
   }
 
-  const materialized = materializeSpreadsheet(body);
-  const resourceId = store.create("spreadsheets", {
-    projectId,
-    title,
-    templateId: template._id,
-    createdBy: actor,
-    updatedBy: { ...actor },
-    updatedAt: at
-  });
-  store.create("spreadsheetSnapshots", {
-    projectId,
-    resourceId,
-    revision: 0,
-    role: "leader",
-    part: 0,
-    body: materialized.body,
-    at
-  });
-  store.createMany(
-    "sheetCells",
-    materialized.cells.map((cell) => ({ projectId, resourceId, ...cell }))
-  );
   return {
-    accepted: true,
+    accepted: false,
     templateId: template._id,
-    templateRevision: template.revision,
-    target: body.resource,
-    resourceId,
-    revision: 0
+    reason: "unsupported-body",
+    revision: template.revision,
+    detail: "a spreadsheet template cannot be instantiated while the sheet representation is being rebuilt"
   };
 };

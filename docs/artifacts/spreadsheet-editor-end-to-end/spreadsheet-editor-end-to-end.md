@@ -85,14 +85,17 @@ The whole comparison and the recommendation sit as the first question on
 
 | Option | For | Against |
 | --- | --- | --- |
-| **Build it in Svelte** (recommended) | The same move the slide editor made when it dropped Konva; the sheet's model is the model, so there is no second one to translate from. Merges, spills, format rules, comment pins, id-addressed cells and the in-cell editor are ours to draw exactly as the model says. Every behaviour is a named, tested procedure. | Virtualisation, selection, clipboard, fill, resize and IME are ours to get right. About the size of `slide-surface`. |
+| **Build it in Svelte** (recommended at the time; *not* what was built) | The same move the slide editor made when it dropped Konva; the sheet's model is the model, so there is no second one to translate from. Merges, spills, format rules, comment pins, id-addressed cells and the in-cell editor are ours to draw exactly as the model says. Every behaviour is a named, tested procedure. | Virtualisation, selection, clipboard, fill, resize and IME are ours to get right. About the size of `slide-surface`. |
 | RevoGrid (MIT) | Svelte 5 adapter, virtual scroll to a million rows, range selection, clipboard, basic autofill, pinned rows and columns, cancelable before-hooks. | Cell merging and series autofill are RevoGrid Pro; merges are in our model. Cells render through Stencil templates, not Svelte. A data-grid column model wearing a spreadsheet. |
 | Univer (Apache 2) | A complete spreadsheet: canvas render, merges, frozen panes, rich text, styles, clipboard. | Its view layer is React 18. Its own model, command system, undo, selection, styles, and a formula plugin to keep out. Everything we want to be ours would be a bypass of something it already does. |
 | Handsontable · Jspreadsheet CE | | Handsontable: $899 per developer per year for commercial use; free only for non-commercial work. Jspreadsheet CE: MIT, merges and frozen columns, but a DOM table with lazy loading rather than a virtualised grid. |
 
-Whichever way the first question is answered, everything else on these pages
-holds: the scene, the intents, the ops, the lenses and the panels are the same.
-Only what sits inside `sheet-surface.svelte` changes.
+**The question was answered the other way.** What runs is Glide Data Grid 6.0.3
+(MIT) inside a React root, wrapped by `components/authored/sheet-surface`; the
+boundary is written out under the first question on *Questions and decisions*.
+Everything else on these pages held exactly as promised: the scene, the intents,
+the ops, the lenses and the panels are the same, and only what sits inside
+`sheet-surface` changed.
 
 ### Import boundaries
 

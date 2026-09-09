@@ -13,21 +13,19 @@
     PanelControlRow,
     PanelCrumbs,
     PanelEmpty,
-    PanelMarks,
+    PanelInlineStyle,
     PanelNumber,
-    PanelRow,
     PanelSection,
     PanelSelect
   } from "$authored-components/panel";
   import { Input } from "$vendored-components/input";
-  import ColorPair from "$app-views/categories/spreadsheet-editor/components/color-pair.svelte";
-  import { gridOf, rangeLabelOf } from "$app-views/categories/spreadsheet-editor/procedures/addresses";
+  import { gridOf } from "$app-views/categories/spreadsheet-editor/procedures/addresses";
   import type { Edit } from "$app-views/categories/spreadsheet-editor/procedures/cells";
-  import { orClear, orNone } from "$app-views/categories/spreadsheet-editor/procedures/colors";
-  import { DEFAULT_FONT_SIZE, FAMILIES, type TextStyle } from "$app-views/categories/spreadsheet-editor/procedures/formatting";
+  import { FILLS, INKS, orClear, orNone } from "$app-views/categories/spreadsheet-editor/procedures/colors";
+  import { DEFAULT_FONT_SIZE, FAMILIES, type CellStyle } from "$app-views/categories/spreadsheet-editor/procedures/formatting";
   import { STYLES, type MarkStyle } from "$app-views/categories/spreadsheet-editor/procedures/marks";
   import { STYLE, styleSignal } from "$app-views/categories/spreadsheet-editor/procedures/selecting";
-  import { deletedStyle, madeDefault, newStyle, setStyleField, usageOf } from "$app-views/categories/spreadsheet-editor/procedures/styles";
+  import { deletedStyle, madeDefault, newStyle, setStyleField } from "$app-views/categories/spreadsheet-editor/procedures/styles";
   import { isInspectorView, workspaceState, type SpreadsheetRuntime } from "$model/client/workspace-state";
 
   const FAMILY_OPTIONS = FAMILIES.map((family) => ({ value: family, label: family }));
@@ -53,7 +51,6 @@
   const key = $derived(view.selection?.kind === STYLE ? view.selection.id : undefined);
   const style = $derived(key === undefined ? undefined : sheet?.body.styles.styles[key]);
   const isDefault = $derived(key !== undefined && sheet?.body.styles.defaultKey === key);
-  const usage = $derived(sheet === undefined || key === undefined ? undefined : usageOf(sheet, grid, key));
   const marks = $derived.by((): MarkStyle[] => {
     if (style === undefined) return [];
     return [
@@ -70,7 +67,7 @@
     if (ops.length > 0) runtime?.apply(ops);
   };
 
-  const field = (name: keyof TextStyle, value: unknown) => {
+  const field = (name: keyof CellStyle, value: unknown) => {
     if (sheet === undefined || key === undefined) return;
     const op = setStyleField(sheet.body, key, name, value);
     if (op !== undefined) apply([op]);
@@ -159,11 +156,14 @@
         <PanelControlRow label="Font size">
           <PanelNumber label="Font size" value={style.fontSize ?? DEFAULT_FONT_SIZE} unit="px" min={6} max={96} flush onchange={(next) => field("fontSize", next)} />
         </PanelControlRow>
-        <div class="border-border-subtle border-t" aria-hidden="true"></div>
-        <PanelMarks label="Formatting" value={[...marks]} options={STYLES} flush onchange={marked} />
-        <ColorPair
+        <PanelInlineStyle
+          marks={[...marks]}
+          options={STYLES}
           foreground={orNone(style.color)}
           background={orNone(style.background)}
+          foregroundOptions={INKS}
+          backgroundOptions={FILLS}
+          onmarks={marked}
           onforeground={(next: string) => field("color", orClear(next))}
           onbackground={(next: string) => field("background", orClear(next))}
         />
@@ -172,16 +172,6 @@
         </PanelControlRow>
       </PanelControlGroup>
     </PanelSection>
-
-    <div class="usage">
-      <span class="text-caption text-ink-muted">
-        {usage?.cells ?? 0} {usage?.cells === 1 ? "cell" : "cells"} · {usage?.rules.length ?? 0}
-        {usage?.rules.length === 1 ? "rule" : "rules"}
-      </span>
-    </div>
-    {#each usage?.rules ?? [] as rule (rule.id)}
-      <PanelRow title={rangeLabelOf(grid, rule)} sub="rule" />
-    {/each}
   {:else}
     <PanelEmpty title="Pick a style in the Styles panel" />
   {/if}
@@ -199,9 +189,5 @@
     display: flex;
     flex-wrap: wrap;
     gap: calc(var(--token-spacing-unit) * 1.5);
-  }
-
-  .usage {
-    padding: calc(var(--token-spacing-unit) * 2) calc(var(--token-spacing-unit) * 3) calc(var(--token-spacing-unit) * 1);
   }
 </style>

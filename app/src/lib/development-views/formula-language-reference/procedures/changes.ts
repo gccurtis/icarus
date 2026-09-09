@@ -160,6 +160,45 @@ export const GROUPS: readonly Group[] = [
         ["slide-deck-editor/", "+30", "changed", "The deck's table cells write all four sides at once, which is the border they had"]
       ]
     }
+  },
+  {
+    title: "A merge that spans rows",
+    detail:
+      "The library spans columns and has no row span at all, so a merge taller than one row was three blank cells under a full one. It is drawn over the canvas now, from the same track sizes the library is given.",
+    files: {
+      columns,
+      mono: [0],
+      rows: [
+        ["sheet-surface-types.ts", "+14", "changed", "A scene carries its merged blocks, each with the cell that fills it"],
+        ["procedures/scene.ts", "+10", "changed", "Every row of a merge spans its columns, so no line is drawn down the middle of one"],
+        ["sheet-surface.svelte", "+120", "changed", "One element per merge, and a position worked out from the scroller's own offset because getBounds answers for an unscrolled grid"],
+        ["spreadsheet-editor.md", "+2", "changed", "Says a merge spans rows and why it is not drawn in the canvas"]
+      ]
+    }
+  },
+  {
+    title: "Hardening: the eight the review asked for",
+    detail:
+      "The sheet stops borrowing the document's format, the server stops taking the client's word for history, a variable belongs to a project, the four largest files are split, and the whole editor is driven in a browser.",
+    files: {
+      columns,
+      mono: [0],
+      rows: [
+        ["types/spreadsheets/cell-format.ts", "42", "new", "The sheet's own cell format and its per-side border, so a sheet change no longer reaches the deck"],
+        ["types/spreadsheets/style-set.ts", "30", "changed", "TextStyle becomes CellStyle and carries borders and a number format"],
+        ["behavior/spreadsheets/history.ts", "132", "new", "What a set replaced, what a remove carried away and where a track sat, worked out on the server"],
+        ["submit-spreadsheet-changes/validate-*.ts", "125", "changed", "Every variant checked, every list and string bounded, and the client's history dropped"],
+        ["submit-spreadsheet-changes.ts", "+30", "changed", "The sheet and its leader must exist; the change set stores the history the server derived"],
+        ["behavior/spreadsheets/apply-*.ts · editing.ts", "490", "changed", "The 407-line engine as five files: dispatch, shared edits, cells, tracks, formatting"],
+        ["sheet-surface-geometry.ts · -blocks · -handles", "371", "new", "The surface's tracks, its merged blocks and its resize handles, out of the 782-line component"],
+        ["components/border-section.svelte · sheet-menu · sheet-strip", "530", "new", "The border section, the right-click menu and the bottom strip as their own components"],
+        ["procedures/painting.ts", "55", "new", "Which cells are painted how, and where one field of a format is written"],
+        ["procedures/variables.svelte.ts", "73", "changed", "Kept per project, so two projects may hold the same name and mean different numbers"],
+        ["capabilities/templates/", "-190", "changed", "Spreadsheet template instantiation is refused rather than half-adapted to the new format"],
+        ["test/browser/spreadsheet-editor.spec.ts", "480", "new", "Sixteen Chromium scenarios: opening, editing, saving, reload, formulas, undo, ranges, merges, zoom, scrolling and a refused submission"],
+        ["capabilities/*/test/unit/", "+220", "changed", "Eighteen more cases: forged history, dead resources, bounds, and one name in two projects"]
+      ]
+    }
   }
 ];
 

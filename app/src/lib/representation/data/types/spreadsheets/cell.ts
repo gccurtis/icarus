@@ -1,9 +1,9 @@
-import type { BlockFormat } from "$representation/data/types/content/block-format";
 import type { Mark } from "$representation/data/types/content/content-block";
 import type { CellRef } from "$representation/data/types/content/formula-value";
 import type { VariableValue } from "$representation/data/types/content/variable-value";
 import type { Id } from "$representation/data/types/core/id";
 import type { Refusal } from "$representation/data/types/formulas/refusal";
+import type { CellFormat } from "$representation/data/types/spreadsheets/cell-format";
 
 /**
  * One populated cell.
@@ -32,7 +32,7 @@ export type SheetCell = {
   formulaId?: Id<"formulas">;
   failure?: Refusal;
   marks?: Mark[];
-  format?: BlockFormat;
+  format?: CellFormat;
   mergedTo?: CellRef;
   spillTo?: CellRef;
 };

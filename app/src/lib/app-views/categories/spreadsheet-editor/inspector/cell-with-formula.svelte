@@ -62,7 +62,7 @@
   const sheets = $derived(rowsOf(sheetRows, "spreadsheets"));
 
   const apply = (edit: Edit) => {
-    if (edit.refused === undefined && edit.ops.length > 0 && sheet !== undefined) runtime?.apply(recalculating(sheetId, sheet, edit.ops));
+    if (edit.refused === undefined && edit.ops.length > 0 && sheet !== undefined) runtime?.apply(recalculating(view.project, sheetId, sheet, edit.ops));
   };
 
   const unmerge = () => {

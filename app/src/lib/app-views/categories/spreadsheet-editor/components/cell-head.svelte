@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Input } from "$vendored-components/input";
   import { cn } from "$vendored-components/utils";
-  import { gridOf } from "$app-views/categories/spreadsheet-editor/procedures/addresses";
+  import { gridOf, keyOf, type CellRef } from "$app-views/categories/spreadsheet-editor/procedures/addresses";
   import {
     anchorLabel,
     anchored,
@@ -14,6 +14,7 @@
     arm,
     disarm,
     drafting,
+    endWriting,
     writingBegun,
     writingTaken,
     type Picker
@@ -39,7 +40,6 @@
   });
 
   const sheet = $derived(runtime?.sheet);
-  const grid = $derived(gridOf(sheet?.body));
   const facts = $derived(factsOf(sheetId, sheet));
   const ref = $derived(selectedRef(view.selection));
   const held = $derived(sheet === undefined || ref === undefined ? undefined : cellAt(sheet, ref));
@@ -47,6 +47,7 @@
   const expression = $derived(held?.expression !== undefined);
 
   let editing = $state(false);
+  let editingAt = $state<CellRef | undefined>(undefined);
   let draft = $state("");
   let field = $state<HTMLInputElement | null>(null);
   let span = $state<{ from: number; to: number; anchor: string } | undefined>(undefined);
@@ -75,7 +76,9 @@
     refusal = undefined;
   });
 
-  const picking = $derived(editing && draft.trimStart().startsWith("="));
+  const formula = (text: string) => text.trimStart().startsWith("=");
+
+  const picking = $derived(editing && formula(draft));
 
   $effect(() => {
     if (picking) arm(picker);
@@ -84,7 +87,7 @@
   });
 
   $effect(() => {
-    drafting(picking ? draft : undefined);
+    drafting(editing && editingAt !== undefined ? { at: keyOf(editingAt), text: draft } : undefined);
     return () => drafting(undefined);
   });
 
@@ -114,6 +117,7 @@
     if (sheet === undefined || ref === undefined) return;
     draft = seed === undefined || seed === "" ? shown : seed;
     span = undefined;
+    editingAt = ref;
     editing = true;
     setTimeout(() => {
       field?.focus();
@@ -131,17 +135,21 @@
   });
 
   const commit = () => {
-    if (!editing || sheet === undefined || ref === undefined) return;
+    const at = editingAt;
+    const live = runtime?.sheet;
+    const resourceId = view.active.resourceId;
+    if (!editing || at === undefined || live === undefined) return;
     editing = false;
     disarm(picker);
-    if (draft === shown) return;
-    const edit = typed(sheet, grid, ref, draft, facts);
+    const known = factsOf(resourceId, live);
+    if (draft === editableOf(known, cellAt(live, at))) return;
+    const edit = typed(live, gridOf(live.body), at, draft, known);
     if (edit.refused !== undefined) {
       refusal = edit.refused;
       return;
     }
     refusal = undefined;
-    if (edit.ops.length > 0) runtime?.apply(recalculating(sheetId, sheet, edit.ops));
+    if (edit.ops.length > 0) runtime?.apply(recalculating(view.project, resourceId, live, edit.ops));
   };
 
   const keydown = (event: KeyboardEvent) => {
@@ -149,11 +157,13 @@
       event.preventDefault();
       editing = false;
       disarm(picker);
+      endWriting();
       return;
     }
     if (event.key === "Enter") {
       event.preventDefault();
       commit();
+      endWriting();
       return;
     }
     if (event.key === "F4") {
@@ -186,7 +196,7 @@
         onclick={track}
         onselect={track}
         onblur={() => {
-          if (!picking) commit();
+          if (!formula(draft)) commit();
         }}
       />
       {#if anchor !== undefined}

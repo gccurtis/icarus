@@ -681,30 +681,17 @@ describe("instantiation", () => {
     assert.equal(snapshot.styles.styles.body.lineHeight, 16.5);
   });
 
-  test("materializes addressed spreadsheet cells into stable row and column ids", async () => {
+  test("refuses a spreadsheet template rather than writing a sheet it cannot describe", async () => {
     model.tables.templates.push(template("1", "u", spreadsheetBody));
 
     const answer = await instantiateTemplate({ templateId: "templates:1" });
 
-    assert.equal(answer.accepted && answer.target, "spreadsheet");
-    const snapshot = model.tables.spreadsheetSnapshots[0].body as {
-      rows: { id: string; height?: number }[];
-      columns: { id: string; width?: number }[];
-      print: { repeatRows: string[]; repeatColumns: string[] };
-    };
-    assert.equal(snapshot.rows[1].height, 30);
-    assert.equal(snapshot.columns[1].width, 140);
-    assert.deepEqual(snapshot.print.repeatRows, ["row-1", "row-2"]);
-    assert.deepEqual(snapshot.print.repeatColumns, ["column-A", "column-B"]);
-    assert.deepEqual(
-      model.tables.sheetCells.map((cell) => [cell.rowId, cell.columnId, cell.rowOrder]),
-      [
-        ["row-2", "column-B", 1],
-        ["row-1", "column-A", 0]
-      ]
-    );
-    assert.equal(model.calls.filter((call) => call === "createMany sheetCells").length, 1);
-    assert.equal(model.calls.some((call) => call === "create sheetCells"), false);
+    assert.equal(answer.accepted, false);
+    assert.equal(!answer.accepted && answer.reason, "unsupported-body");
+    assert.equal(model.tables.spreadsheets.length, 0);
+    assert.equal(model.tables.spreadsheetSnapshots.length, 0);
+    assert.equal(model.tables.sheetCells.length, 0);
+    assert.equal(model.calls.some((call) => call.startsWith("create")), false);
   });
 
   test("does not invent a variable-answer contract", async () => {

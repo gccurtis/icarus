@@ -1,11 +1,6 @@
 <script lang="ts">
   import { untrack } from "svelte";
 
-  import Minus from "@lucide/svelte/icons/minus";
-  import Plus from "@lucide/svelte/icons/plus";
-  import Redo2 from "@lucide/svelte/icons/redo-2";
-  import Undo2 from "@lucide/svelte/icons/undo-2";
-
   import { read } from "$capabilities/store/index.remote";
   import {
     SheetSurface,
@@ -17,8 +12,9 @@
     type SurfacePaste,
     type SurfaceSelection
   } from "$authored-components/sheet-surface";
-  import { Button } from "$vendored-components/button";
   import * as ContextMenu from "$vendored-components/context-menu";
+  import SheetMenu from "$app-views/categories/spreadsheet-editor/components/sheet-menu.svelte";
+  import SheetStrip from "$app-views/categories/spreadsheet-editor/components/sheet-strip.svelte";
   import {
     columnLabel,
     gridOf,
@@ -29,16 +25,22 @@
     rectLabelOf,
     refAt,
     refsIn,
-    sameRect,
     type Rect
   } from "$app-views/categories/spreadsheet-editor/procedures/addresses";
   import { cleared, typed, type Edit } from "$app-views/categories/spreadsheet-editor/procedures/cells";
   import { pasted } from "$app-views/categories/spreadsheet-editor/procedures/clipboard";
   import { anchorOf, pinsOf, threadsOf } from "$app-views/categories/spreadsheet-editor/procedures/comments";
   import { filled } from "$app-views/categories/spreadsheet-editor/procedures/fill";
-  import { armed, beginWriting, drafted, pick } from "$app-views/categories/spreadsheet-editor/procedures/picking.svelte";
   import {
-    AROUND,
+    armed,
+    beginWriting,
+    drafted,
+    endingTaken,
+    pick,
+    writingEnded
+  } from "$app-views/categories/spreadsheet-editor/procedures/picking.svelte";
+  import {
+    aroundOf,
     factsOf,
     recalculated,
     recalculating,
@@ -67,7 +69,14 @@
     surfaceSelectionOf,
     type Signal
   } from "$app-views/categories/spreadsheet-editor/procedures/selecting";
-  import { merged, mergeOf, mergeSpans, spillChildOf, spillOf, unmerged } from "$app-views/categories/spreadsheet-editor/procedures/spans";
+  import {
+    merged,
+    mergeAround,
+    mergeOf,
+    spillChildOf,
+    spillOf,
+    unmerged
+  } from "$app-views/categories/spreadsheet-editor/procedures/spans";
   import { usedRect } from "$app-views/categories/spreadsheet-editor/procedures/stats";
   import { rowsOf, tableQuery } from "$app-views/categories/spreadsheet-editor/procedures/store";
   import {
@@ -84,16 +93,6 @@
     resizedRow
   } from "$app-views/categories/spreadsheet-editor/procedures/structure";
   import { workspaceState, type SpreadsheetRuntime, type SyncState } from "$model/client/workspace-state";
-
-  const SYNC_LABEL: Record<SyncState, string> = {
-    loading: "Loading",
-    saved: "Saved",
-    saving: "Saving",
-    rebasing: "Rebasing",
-    "needs-review": "Needs review",
-    offline: "Offline",
-    error: "Not saved"
-  };
 
   const WHEEL_NOTCH = 120;
   const PERCENT_PER_NOTCH = 2;
@@ -120,15 +119,15 @@
   });
 
   $effect(() => {
-    if (!variablesLoaded()) void loadVariables();
+    if (!variablesLoaded(view.project)) void loadVariables(view.project);
   });
 
   $effect(() => {
-    void variablesRevision();
+    void variablesRevision(view.project);
     untrack(() => {
       const open = sheet;
       if (open === undefined || sheetId === undefined) return;
-      const ops = recalculated(sourceFor(sheetId, open), AROUND);
+      const ops = recalculated(sourceFor(sheetId, open), aroundOf(view.project));
       if (ops.length > 0) runtime?.apply(ops);
     });
   });
@@ -147,7 +146,7 @@
       : pinsOf(threads, sheet, grid, currentThread, view.selection?.kind === "cell" ? view.selection.id : undefined)
   );
 
-  const scene = $derived(sheet === undefined ? undefined : sceneOf(sheet, grid, pins, facts));
+  const scene = $derived(sheet === undefined ? undefined : sceneOf(sheet, grid, pins, facts, drafted()));
   const selection = $derived.by((): SurfaceSelection | undefined => {
     const held = view.selection;
     if (held?.kind !== "comment") return surfaceSelectionOf(grid, held);
@@ -169,7 +168,7 @@
     const held = sheet.cells[`${ref.rowId}/${ref.columnId}`];
 
     const writing = drafted();
-    const draft = writing === undefined ? undefined : storedOf(facts, writing);
+    const draft = writing === undefined ? undefined : storedOf(facts, writing.text);
     const reading: SheetCell | undefined =
       draft === undefined
         ? held
@@ -211,7 +210,7 @@
 
   const apply = (ops: Edit["ops"]) => {
     if (ops.length === 0 || sheet === undefined) return;
-    runtime?.apply(recalculating(sheetId, sheet, ops));
+    runtime?.apply(recalculating(view.project, sheetId, sheet, ops));
   };
 
   const perform = (edit: Edit): boolean => {
@@ -241,6 +240,15 @@
     if (sheet !== undefined && view.inspected === "empty" && view.selection === undefined) view.inspect(WHOLE);
   });
 
+  $effect(() => {
+    const held = view.selection;
+    if (sheet === undefined || held?.kind !== "range" || held.ranges !== undefined) return;
+    const [only] = selectedRects(grid, held);
+    if (only === undefined) return;
+    const span = mergeAround(sheet, grid, only);
+    if (span !== undefined) show(cellSignal(sheet, grid, span.anchor));
+  });
+
   const everything = (): Signal | undefined => {
     if (sheet === undefined || grid.rows.length === 0 || grid.columns.length === 0) return undefined;
     const rect = usedRect(sheet, grid) ?? { row: 0, column: 0, rows: 1, columns: 1 };
@@ -262,7 +270,7 @@
     const [only] = next.ranges;
     if (only !== undefined && next.ranges.length === 1) {
       if (wholeGrid(only)) return everything();
-      const span = mergeSpans(sheet, grid).find((held) => sameRect(held.rect, only));
+      const span = mergeAround(sheet, grid, only);
       if (span !== undefined) return cellSignal(sheet, grid, span.anchor);
       if (only.rows === 1 && only.columns === 1) {
         const ref = refAt(grid, only.row, only.column);
@@ -368,106 +376,13 @@
     }
   };
 
-  const hitRows = $derived.by((): number[] => {
-    const held = hit;
-    if (held === undefined || held.kind === "corner" || held.kind === "column") return [];
-    const chosen = selectedRowIds(view.selection).flatMap((id) => {
-      const index = grid.rowAt.get(id);
-      return index === undefined ? [] : [index];
-    });
-    return chosen.includes(held.row) ? chosen : [held.row];
-  });
 
-  const hitColumns = $derived.by((): number[] => {
-    const held = hit;
-    if (held === undefined || held.kind === "corner" || held.kind === "row") return [];
-    const chosen = selectedColumnIds(view.selection).flatMap((id) => {
-      const index = grid.columnAt.get(id);
-      return index === undefined ? [] : [index];
-    });
-    return chosen.includes(held.column) ? chosen : [held.column];
-  });
 
-  const hitRect = $derived.by((): Rect | undefined => {
-    const rects = selectedRects(grid, view.selection);
-    return rects.length === 1 && view.selection?.kind === "range" ? rects[0] : undefined;
-  });
-
-  const hitAnchor = $derived.by(() => {
-    const held = hit;
-    if (sheet === undefined || held === undefined || held.kind !== "cell") return undefined;
-    const ref = refAt(grid, held.row, held.column);
-    return ref === undefined ? undefined : mergeOf(sheet, grid, ref);
-  });
-
-  const rowWord = (indices: readonly number[]): string =>
-    indices.length === 1 ? `row ${indices[0] + 1}` : `${indices.length} rows`;
-
-  const columnWord = (indices: readonly number[]): string =>
-    indices.length === 1 ? `column ${columnLabel(indices[0])}` : `${indices.length} columns`;
-
-  const insertRows = (where: "above" | "below") => {
-    const rows = hitRows;
-    if (rows.length === 0) return;
-    const sorted = [...rows].sort((a, b) => a - b);
-    const after = where === "above" ? (sorted[0] === 0 ? null : grid.rows[sorted[0] - 1].id) : grid.rows[sorted[sorted.length - 1]].id;
-    apply(insertedRows(after, sorted.length).ops);
-  };
-
-  const insertColumns = (where: "left" | "right") => {
-    const columns = hitColumns;
-    if (columns.length === 0) return;
-    const sorted = [...columns].sort((a, b) => a - b);
-    const after = where === "left" ? (sorted[0] === 0 ? null : grid.columns[sorted[0] - 1].id) : grid.columns[sorted[sorted.length - 1]].id;
-    apply(insertedColumns(after, sorted.length).ops);
-  };
-
-  const removeRows = () => {
-    if (sheet === undefined || hitRows.length === 0) return;
-    if (hitRows.length >= grid.rows.length) {
-      say("A sheet keeps at least one row.");
-      return;
-    }
-    apply(removedRows(sheet, grid, hitRows.map((index) => grid.rows[index].id)));
-    view.clear();
-  };
-
-  const removeColumns = () => {
-    if (sheet === undefined || hitColumns.length === 0) return;
-    if (hitColumns.length >= grid.columns.length) {
-      say("A sheet keeps at least one column.");
-      return;
-    }
-    apply(removedColumns(sheet, grid, hitColumns.map((index) => grid.columns[index].id)));
-    view.clear();
-  };
+  const selectAll = () => show(everything());
 
   const clearSelection = () => {
     if (selection !== undefined) deleted(selection);
   };
-
-  const merge = () => {
-    if (sheet === undefined || hitRect === undefined) return;
-    const edit = merged(sheet, grid, hitRect);
-    if (perform(edit) && edit.cleared !== undefined && edit.cleared > 0) {
-      say(`${edit.cleared} ${edit.cleared === 1 ? "cell was" : "cells were"} cleared; ${rectLabelOf(grid, { ...hitRect, rows: 1, columns: 1 })} keeps its value.`);
-    }
-  };
-
-  const unmerge = () => {
-    if (sheet === undefined || hitAnchor === undefined) return;
-    perform(unmerged(sheet, hitAnchor.anchor));
-  };
-
-  const freezeUpTo = () => {
-    if (sheet === undefined || hitColumns.length === 0) return;
-    const index = Math.max(...hitColumns) + 1;
-    const frozen = sheet.body.frozenColumns ?? 0;
-    const op = frozenColumnsSet(sheet.body, frozen === index ? 0 : index);
-    if (op !== undefined) apply([op]);
-  };
-
-  const selectAll = () => show(everything());
 
   const openLens = (signal: Signal | undefined) => {
     if (signal !== undefined) view.inspect(signal.key, signal.selection);
@@ -494,6 +409,12 @@
       runtime?.redo();
     }
   };
+
+  $effect(() => {
+    if (writingEnded() === undefined) return;
+    endingTaken();
+    api?.focus();
+  });
 
   $effect(() => {
     const target = runtime?.scrollTo;
@@ -565,84 +486,20 @@
       {/snippet}
     </ContextMenu.Trigger>
 
-    <ContextMenu.Content class="w-60">
-      {#if hit?.kind === "corner"}
-        <ContextMenu.Item onSelect={selectAll}>Select the used range</ContextMenu.Item>
-      {:else if hit?.kind === "cell"}
-        <ContextMenu.Item onSelect={() => api?.cut()}>Cut</ContextMenu.Item>
-        <ContextMenu.Item onSelect={() => api?.copy()}>Copy</ContextMenu.Item>
-        <ContextMenu.Item onSelect={() => api?.paste()}>Paste</ContextMenu.Item>
-        <ContextMenu.Separator />
-        <ContextMenu.Item onSelect={clearSelection}>Clear contents</ContextMenu.Item>
-        {#if hitAnchor}
-          <ContextMenu.Item onSelect={unmerge}>Unmerge {rectLabelOf(grid, hitAnchor.rect)}</ContextMenu.Item>
-        {:else if hitRect && hitRect.rows * hitRect.columns > 1}
-          <ContextMenu.Item onSelect={merge}>Merge {rectLabelOf(grid, hitRect)}</ContextMenu.Item>
-        {/if}
-        <ContextMenu.Separator />
-        <ContextMenu.Item onSelect={() => insertRows("above")}>Insert {rowWord(hitRows)} above</ContextMenu.Item>
-        <ContextMenu.Item onSelect={() => insertRows("below")}>Insert {rowWord(hitRows)} below</ContextMenu.Item>
-        <ContextMenu.Item onSelect={() => insertColumns("left")}>Insert {columnWord(hitColumns)} left</ContextMenu.Item>
-        <ContextMenu.Item onSelect={() => insertColumns("right")}>Insert {columnWord(hitColumns)} right</ContextMenu.Item>
-        <ContextMenu.Separator />
-        <ContextMenu.Item variant="destructive" onSelect={removeRows}>Remove {rowWord(hitRows)}</ContextMenu.Item>
-        <ContextMenu.Item variant="destructive" onSelect={removeColumns}>Remove {columnWord(hitColumns)}</ContextMenu.Item>
-      {:else if hit?.kind === "row"}
-        <ContextMenu.Label class="text-caption text-ink-muted px-1.5 py-1 font-normal">
-          {rowWord(hitRows).replace(/^\w/, (letter) => letter.toUpperCase())}
-        </ContextMenu.Label>
-        <ContextMenu.Item onSelect={() => insertRows("above")}>Insert {rowWord(hitRows)} above</ContextMenu.Item>
-        <ContextMenu.Item onSelect={() => insertRows("below")}>Insert {rowWord(hitRows)} below</ContextMenu.Item>
-        <ContextMenu.Item onSelect={() => openLens(rowSignal(grid, hitRows))}>Height and more…</ContextMenu.Item>
-        <ContextMenu.Separator />
-        <ContextMenu.Item onSelect={clearSelection}>Clear contents</ContextMenu.Item>
-        <ContextMenu.Item variant="destructive" onSelect={removeRows}>Remove {rowWord(hitRows)}</ContextMenu.Item>
-      {:else if hit?.kind === "column"}
-        <ContextMenu.Label class="text-caption text-ink-muted px-1.5 py-1 font-normal">
-          {columnWord(hitColumns).replace(/^\w/, (letter) => letter.toUpperCase())}
-        </ContextMenu.Label>
-        <ContextMenu.Item onSelect={() => insertColumns("left")}>Insert {columnWord(hitColumns)} left</ContextMenu.Item>
-        <ContextMenu.Item onSelect={() => insertColumns("right")}>Insert {columnWord(hitColumns)} right</ContextMenu.Item>
-        <ContextMenu.Item onSelect={() => openLens(columnSignal(grid, hitColumns))}>Width and more…</ContextMenu.Item>
-        <ContextMenu.Item onSelect={freezeUpTo}>
-          {(sheet?.body.frozenColumns ?? 0) === Math.max(...hitColumns) + 1 ? "Unfreeze columns" : `Freeze columns up to ${columnLabel(Math.max(...hitColumns))}`}
-        </ContextMenu.Item>
-        <ContextMenu.Separator />
-        <ContextMenu.Item onSelect={clearSelection}>Clear contents</ContextMenu.Item>
-        <ContextMenu.Item variant="destructive" onSelect={removeColumns}>Remove {columnWord(hitColumns)}</ContextMenu.Item>
-      {/if}
-    </ContextMenu.Content>
+    <SheetMenu
+      over={hit?.kind}
+      row={hit !== undefined && hit.kind !== "corner" && hit.kind !== "column" ? hit.row : 0}
+      column={hit !== undefined && hit.kind !== "corner" && hit.kind !== "row" ? hit.column : 0}
+      onsay={say}
+      oncut={() => api?.cut()}
+      oncopy={() => api?.copy()}
+      onpaste={() => api?.paste()}
+      onclear={clearSelection}
+      onselectall={selectAll}
+    />
   </ContextMenu.Root>
 
-  <div class="area-strip bg-surface-panel border-border-subtle flex items-center gap-2 border-t">
-    {#if notice}
-      <span class="text-caption text-attention-text min-w-0 truncate">{notice}</span>
-    {/if}
-    <span class="ms-auto flex shrink-0 items-center gap-1">
-      <Button variant="ghost" size="icon-xs" aria-label="Undo" title="Undo" disabled={!runtime?.canUndo} onclick={() => runtime?.undo()}>
-        <Undo2 aria-hidden="true" />
-      </Button>
-      <Button variant="ghost" size="icon-xs" aria-label="Redo" title="Redo" disabled={!runtime?.canRedo} onclick={() => runtime?.redo()}>
-        <Redo2 aria-hidden="true" />
-      </Button>
-      <span class="border-border-subtle mx-1 h-4 border-l" aria-hidden="true"></span>
-      <Button variant="ghost" size="icon-xs" aria-label="Zoom out" onclick={() => view.setZoom(clampZoom(zoom - ZOOM_STEP))}>
-        <Minus aria-hidden="true" />
-      </Button>
-      <button
-        type="button"
-        class="text-caption text-ink-secondary hover:text-ink-primary rounded-control w-12 tabular-nums"
-        title="Back to 100%"
-        onclick={() => view.setZoom(100)}
-      >
-        {zoom}%
-      </button>
-      <Button variant="ghost" size="icon-xs" aria-label="Zoom in" onclick={() => view.setZoom(clampZoom(zoom + ZOOM_STEP))}>
-        <Plus aria-hidden="true" />
-      </Button>
-      <span class="text-caption text-ink-muted ms-2">· {SYNC_LABEL[runtime?.sync ?? "loading"]}</span>
-    </span>
-  </div>
+  <SheetStrip {notice} />
 </div>
 
 <style>
@@ -671,8 +528,4 @@
     padding: calc(var(--token-spacing-unit) * 4);
   }
 
-  .area-strip {
-    min-width: 0;
-    padding: calc(var(--token-spacing-unit) * 1.5) calc(var(--token-spacing-unit) * 3);
-  }
 </style>
