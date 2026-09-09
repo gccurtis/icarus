@@ -1,7 +1,10 @@
 import { basename, dirname, join } from "node:path";
 
 import { check } from "../shared/check.mjs";
-import { productionSources, valueExports } from "../shared/production.mjs";
+import { productionSources } from "../shared/production.mjs";
+import { procedureEntries } from "./procedure-directory-has-one-entry-chain/effects.mjs";
+
+const MAX_PURE_FAMILY = 8;
 
 const procedureRoots = (tree) =>
   [tree.path("app-views"), tree.path("surfaces")]
@@ -15,7 +18,8 @@ export default check({
   name: "procedure-directory-has-one-entry-chain",
   says: "A view procedure file exposes one entry intent, subdirectories have matching entries, and shared steps have multiple consumers.",
   subjects: {
-    "one-entry": "one file or directory names one public procedure intent",
+    "one-entry": "one file or directory names one effectful public procedure intent",
+    "pure-family": "a pure helper family has a deliberately small public surface",
     "shared-is-shared": "shared procedure code has more than one real caller"
   },
   run(tree) {
@@ -24,14 +28,28 @@ export default check({
     for (const path of files) {
       const relative = tree.rel(path);
       if (relative.includes("/test/") || relative.includes("/shared/")) continue;
-      const exports = valueExports(tree, path);
-      if (exports.length <= 1) continue;
-      found.push({
-        subject: "one-entry",
-        path,
-        fingerprint: exports.sort().join(","),
-        message: `procedure source exposes ${exports.length} entry values: ${exports.join(", ")}`
-      });
+      const entries = procedureEntries(tree, path);
+      if (entries.effects.length > 1) {
+        found.push({
+          subject: "one-entry",
+          path,
+          fingerprint: entries.entries.join(","),
+          message:
+            `procedure source exposes ${entries.effects.length} effectful entry chains: ` +
+            entries.effects.join(", ")
+        });
+        continue;
+      }
+      if (entries.pure.length > MAX_PURE_FAMILY) {
+        found.push({
+          subject: "pure-family",
+          path,
+          fingerprint: entries.entries.join(","),
+          message:
+            `pure procedure family exposes ${entries.pure.length} public values; ` +
+            `the bounded family limit is ${MAX_PURE_FAMILY}: ${entries.pure.join(", ")}`
+        });
+      }
     }
 
     const roots = new Set(files.map((path) => tree.rel(path).split("/procedures/")[0]));

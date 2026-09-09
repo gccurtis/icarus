@@ -28,11 +28,36 @@ export const MUTATIONS = [
   {
     check: "procedure-directory-has-one-entry-chain",
     subject: "one-entry",
-    says: "one procedure source exposes two public intents",
+    says: "one procedure source exposes two effectful public intents",
     names: "procedures/two-entries.ts",
     changes: [{
       path: "src/lib/app-views/categories/project-overview/procedures/two-entries.ts",
-      write: `export const one = (): number => 1;\nexport const two = (): number => 2;\n`
+      write:
+        `export const one = (commit: () => void): void => commit();\n` +
+        `export const two = (commit: () => void): void => commit();\n`
+    }]
+  },
+  {
+    check: "procedure-directory-has-one-entry-chain",
+    subject: "pure-family",
+    says: "a pure helper family grows past its public surface bound",
+    names: "procedures/wide-family.ts",
+    changes: [{
+      path: "src/lib/app-views/categories/project-overview/procedures/wide-family.ts",
+      write: `${Array.from(
+        { length: 9 },
+        (_, index) => `export const value${index} = (input: number): number => input + ${index};`
+      ).join("\n")}\n`
+    }]
+  },
+  {
+    check: "procedure-directory-has-one-entry-chain",
+    subject: "shared-is-shared",
+    says: "a shared procedure helper has only one procedure consumer",
+    names: "procedures/shared/lonely.ts",
+    changes: [{
+      path: "src/lib/app-views/categories/project-overview/procedures/shared/lonely.ts",
+      write: `export const lonely = (value: number): number => value;\n`
     }]
   },
   {

@@ -27,7 +27,7 @@ export const METRICS: readonly AuditMetric[] = [
   {
     value: "90 / 90",
     label: "Architecture checks clean",
-    detail: "All checks execute; 352 pre-existing findings are held by the reviewed debt ratchet.",
+    detail: "All checks execute; 330 pre-existing findings are held by the reviewed debt ratchet.",
     tone: "positive"
   },
   {
@@ -126,7 +126,7 @@ export const SCORECARD: readonly ScorecardRow[] = [
     concern: "Enforcement and reviewability",
     grade: "Strong",
     assessment: "Every pillar contract maps to an executable checker, and every checker has a mutation proving that it can fail.",
-    evidence: "90 checks cover 45 pillar contracts; 352 existing findings are explicit debt and every new finding blocks lint."
+    evidence: "90 checks cover 45 pillar contracts; 330 existing findings are explicit debt and every new finding blocks lint."
   }
 ];
 

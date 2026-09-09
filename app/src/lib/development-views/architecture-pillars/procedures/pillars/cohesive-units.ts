@@ -72,13 +72,13 @@ export const COHESIVE_UNITS: ArchitecturePillar = {
       name: "procedure-directory-has-one-entry-chain",
       status: "Enforced",
       wave: 3,
-      mechanism: "Filesystem + export/import graph",
-      guarantee: "A view procedure source exposes at most one value entry, each procedure subdirectory has its matching entry file, and shared code has consumers in two procedure directories.",
-      detects: "Flat files with multiple value exports, procedure directories without matching entries, and shared/ modules used from fewer than two distinct directories.",
+      mechanism: "Effect analysis + filesystem/export/import graph",
+      guarantee: "A view procedure source exposes at most one effectful entry chain, a pure helper family exposes at most eight cohesive values, each procedure subdirectory has its matching entry file, and shared code has consumers in two procedure directories.",
+      detects: "Multiple exported commands, over-wide pure helper families, procedure directories without matching entries, and shared/ modules used from fewer than two distinct directories.",
       implementation:
-        "Apply the capability entry-file convention to app-view and surface procedure trees, count value exports per source, and count direct production importers of shared modules by directory.",
-      current: "Enforced for view procedure entries and shared consumers; 45 multi-entry sources are baselined.",
-      limit: "Some algorithm libraries appropriately expose several pure functions; classify them as representation behavior instead of view procedures."
+        "Classify exported functions through assignments, callbacks, lifecycle/browser operations, capability commands, and local call propagation; bound non-effectful public families separately; retain directory-entry and real shared-consumer checks.",
+      current: "Enforced for effectful entries, bounded pure families, directory entries, and shared consumers; 23 existing violations remain ratcheted.",
+      limit: "Static effect analysis is intentionally conservative. Source complexity and review still decide whether a nominally pure family has more than one reason to change."
     },
     {
       id: "COH-03",
@@ -134,7 +134,7 @@ export const COHESIVE_UNITS: ArchitecturePillar = {
   ],
   rollout: [
     "Use the active debt baseline as a ratchet while splitting the 24 complexity hotspots.",
-    "Structure one large procedure family at a time into one-entry call chains and remove its baseline record.",
+    "Split multiple effectful chains and over-wide pure families on intent boundaries, then remove their baseline records.",
     "Replace the four stale architecture claims with generated inventories or durable invariant prose.",
     "Complete Store's ownership/lifetime/invariant contract and keep every exception mapped and expiring."
   ],
