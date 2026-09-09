@@ -60,6 +60,16 @@ export type MarkLink =
 
 export type MarkEnd = { atom: string; offset: number };
 
+/**
+ * A run marked as a hole: a template made from this body puts one here.
+ *
+ * Marking changes nothing. The words stay where they are, every other mark over
+ * them stays, and the resource reads exactly as it did — a hole is a note about
+ * where a template's argument goes, not an edit. The run only becomes a
+ * template atom on the copy, when the template is made.
+ */
+export type MarkHole = { name: string; description?: string };
+
 export type Mark = {
   id: string;
   from: MarkEnd;
@@ -68,6 +78,7 @@ export type Mark = {
   link?: MarkLink;
   color?: string;
   background?: string;
+  hole?: MarkHole;
 };
 
 export type TextVariant = "paragraph" | "heading" | "list" | "quote" | "code";

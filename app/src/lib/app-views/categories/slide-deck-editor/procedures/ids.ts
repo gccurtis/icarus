@@ -1,10 +1,11 @@
-export type IdKind = "slide" | "element" | "block" | "atom" | "layout";
+export type IdKind = "slide" | "element" | "block" | "atom" | "mark" | "layout";
 
 const PREFIX: Record<IdKind, string> = {
   slide: "slide",
   element: "el",
   block: "blk",
   atom: "atm",
+  mark: "mrk",
   layout: "layout"
 };
 

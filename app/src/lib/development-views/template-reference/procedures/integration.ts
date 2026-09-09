@@ -19,11 +19,11 @@ export const CHAIN: ChainLink[] = [
   },
   {
     index: "02",
-    step: "Something is templateified",
+    step: "Something is templateified, and nothing about the resource changes",
     gesture: "Templateify, in the Template section of a prompt or of a text selection",
-    runs: "promptHoleOps on a block, or selectionHoleOps on a range",
+    runs: "promptHoleOps writes a record on the block; markHoleOps writes a mark over the run",
     state: "works",
-    evidence: "template-features.spec.ts — a templateified prompt becomes a hole"
+    evidence: "template-features.spec.ts — Templateify marks a run without changing the document"
   },
   {
     index: "03",
@@ -37,7 +37,7 @@ export const CHAIN: ChainLink[] = [
     index: "04",
     step: "Making a template keeps exactly those holes",
     gesture: "None — it is what saving means",
-    runs: "promptHolesOf · textHolesOf · withAsks · portableBodyOf · withPromptHoles",
+    runs: "promptHolesOf · withAsks · portableBodyOf · withPromptHoles · withMarkedHoles · textHolesOf",
     state: "works",
     evidence: "answers.test.ts — gives no hole to a prompt nobody templateified"
   },
@@ -157,9 +157,16 @@ export const SETTLED: Decision[] = [
   {
     round: "This round",
     question: "What can become one?",
-    answer: "A prompt block, and a run of selected text. Both, by the same gesture.",
+    answer: "A prompt block, and a run of selected text — in a document and on a slide alike, by the same gesture.",
     became:
-      "The Template section appears in the prompt inspector and in the text-selection inspector, in the ordinary editor as much as in a working copy."
+      "The Template section appears in both editors' prompt inspectors and in both editors' text-selection inspectors, in the ordinary editor as much as in a working copy."
+  },
+  {
+    round: "This round",
+    question: "What does templateifying do to the resource?",
+    answer: "Nothing. It marks where a hole goes; it does not put one there.",
+    became:
+      "A text hole is an ordinary mark, addressed like a comment or a link. The words, the formatting and the display are exactly what they were, and withMarkedHoles turns each marked run into its atom only on the copy the template is built from."
   },
   {
     round: "This round",
@@ -192,21 +199,21 @@ export const SETTLED: Decision[] = [
 
 export const LIMITS: ScopeGap[] = [
   {
-    title: "Templateifying a selection drops marks that reached into it",
+    title: "A mark that reaches into a hole is dropped — on the copy",
     detail:
-      "Only the atoms the selection touches are rebuilt, so formatting elsewhere in the paragraph survives. A bold run that crossed the selection's edge does not.",
-    order: "Acceptable: the words became a question. Revisit if it turns out to bite."
+      "In the template, a bold run that crossed a hole's edge is gone: those words are a question now, and formatting a question means nothing. Every other mark keeps exactly the words it covered, mapped by position. The resource itself keeps all of them.",
+    order: "Settled. This is the only thing templating drops, and it drops it where it is harmless."
   },
   {
-    title: "A hole's prompt is a snapshot",
+    title: "A prompt's text is copied into the template when the template is made",
     detail:
-      "The question shown when placing a template is copied onto the block when the template is made. Editing the prompt in the original afterwards does not reach the template — saving the template again does.",
+      "A prompt's words live on the derived output it is linked to, and a template leaves that row behind. So the words are copied onto the block on the way in, and a copy made later gets a derived output of its own built from them. Editing the prompt in the original afterwards does not reach the template — saving the template again does.",
     order: "Correct as long as a template is a copy, which is the whole model. Nothing to do."
   },
   {
-    title: "Only the document editor templateifies a selection",
+    title: "A hole cannot span two blocks",
     detail:
-      "The deck's text is edited through the slide surface rather than a text-selection inspector, so a deck's holes come from its prompts. Its prose can still hold a hole carried in from an inserted template.",
-    order: "Add it when the deck grows the same inspector seam."
+      "A mark lives inside one block, so a selection running across a paragraph break marks nothing. Selecting within a paragraph, or a whole one, is what is offered.",
+    order: "Worth revisiting only if somebody wants a hole that swallows structure."
   }
 ];

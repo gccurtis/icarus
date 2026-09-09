@@ -32,6 +32,10 @@ import {
   type ScopeOffering
 } from "$representation/data/behavior/core/scope-draft";
 import { applyOps } from "$representation/data/behavior/slide-decks/apply-ops";
+import {
+  holeMarkOver,
+  holeNameOver
+} from "$representation/data/behavior/templates/prompt-holes";
 import { withFreshIds, type IdHint } from "$representation/data/behavior/templates/fresh-ids";
 import {
   fillTemplateAtoms,
@@ -42,8 +46,7 @@ import type { SlideDeckBody, SlideLayout } from "$representation/data/types/slid
 import type { SlideDeckOp } from "$representation/data/types/slide-decks/op";
 import type { TemplateHole } from "$representation/data/types/templates/template";
 import { mint, type IdKind } from "$app-views/categories/slide-deck-editor/procedures/ids";
-import { addressOf } from "$app-views/categories/slide-deck-editor/procedures/selecting";
-import type { Selection, WorkspaceStateModel } from "$model/client/workspace-state";
+import type { WorkspaceStateModel } from "$model/client/workspace-state";
 
 export type { ResourceSetItem } from "$capabilities/resource-sets/index.remote";
 export type {
@@ -57,8 +60,9 @@ export type { TemplateHole } from "$representation/data/types/templates/template
 
 export {
   defaultScopeOf,
+  holeMarkOver,
+  holeNameOver,
   holeNamesIn,
-  holeSplice,
   nextHoleName,
   offeredHoleName,
   promptWordsIn
@@ -311,44 +315,63 @@ export const holeNameRefusal = (
   return taken ? `This template already has a hole called ${name}.` : undefined;
 };
 
-/**
- * The block a new text hole's atom lands in: the one the caret is in, else the
- * one inside the selected element, else the deck's last writable block.
- */
-const holeBlockIn = (body: SlideDeckBody, selection: Selection | undefined) => {
-  const blocks = body.slides.flatMap((slide) =>
-    slide.elements.flatMap((element) =>
-      element.content.type === "text" || element.content.type === "prompt"
-        ? [{ elementId: element.id, block: element.content.block }]
-        : []
-    )
-  );
-  const held = selection?.id;
-  const caret = held === undefined ? undefined : addressOf(held)?.blockId;
-  return (
-    blocks.find((entry) => entry.block.id === caret) ??
-    blocks.find((entry) => entry.elementId === held) ??
-    blocks.at(-1)
-  );
+
+const blockAt = (body: SlideDeckBody, blockId: string) => {
+  for (const slide of body.slides) {
+    for (const element of slide.elements) {
+      const content = element.content;
+      if (content.type !== "text" && content.type !== "prompt") continue;
+      if (content.block.id === blockId) return content.block;
+    }
+  }
+  return undefined;
 };
 
-/** The ops that put a text hole's atom into the selected text. */
-export const textHoleInsertion = (
+/** The words a selection covers, which become what its hole says by default. */
+export const selectedWords = (
   body: SlideDeckBody,
-  selection: Selection | undefined,
+  range: { readonly blockId: string; readonly from: number; readonly to: number } | undefined
+): string => {
+  if (range === undefined) return "";
+  const block = blockAt(body, range.blockId);
+  if (block === undefined) return "";
+  return block.display.slice(Math.min(range.from, range.to), Math.max(range.from, range.to));
+};
+
+/** Whether this run is already marked as a hole, and under what name. */
+export const markedHoleAt = (
+  body: SlideDeckBody,
+  range: { readonly blockId: string; readonly from: number; readonly to: number } | undefined
+): string | undefined => {
+  if (range === undefined) return undefined;
+  const block = blockAt(body, range.blockId);
+  return block === undefined ? undefined : holeNameOver(block.atoms, block.marks, range.from, range.to);
+};
+
+/**
+ * A run of a slide's text marked as a hole.
+ *
+ * Nothing about the deck changes: the words stay, every other mark over them
+ * stays, and only the template made from it holds a hole where they were.
+ */
+export const markHoleOps = (
+  body: SlideDeckBody,
+  range: { readonly blockId: string; readonly from: number; readonly to: number } | undefined,
   name: string
 ): readonly SlideDeckOp[] => {
-  const held = holeBlockIn(body, selection);
-  if (held === undefined) return [];
-  const atom = { id: mint("atom"), kind: "template" as const, name: name.trim() };
+  if (range === undefined) return [];
+  const block = blockAt(body, range.blockId);
+  if (block === undefined) return [];
+  const mark = holeMarkOver(block.atoms, range.from, range.to, name.trim(), () => mint("mark"));
+  if (mark === undefined) return [];
   return [
     {
       op: "insert",
-      target: "atom",
-      path: `${held.block.id}/atoms`,
-      ids: [atom.id],
-      after: held.block.atoms.at(-1)?.id ?? null,
-      values: [atom]
+      target: "mark",
+      path: `${block.id}/marks`,
+      ids: [mark.id],
+      after: block.marks.at(-1)?.id ?? null,
+      values: [mark]
     }
   ];
 };

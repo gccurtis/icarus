@@ -584,6 +584,17 @@ const markEndOf = (value: unknown): { atom: string; offset: number } | undefined
   return { atom: value.atom, offset: value.offset };
 };
 
+/** What an atom puts on the block's display, which is what a mark is measured against. */
+const atomDisplayOf = (atom: unknown): string | undefined => {
+  if (!isRecord(atom)) return undefined;
+  if (atom.kind === "literal") return isText(atom.text) ? atom.text : undefined;
+  if (atom.kind === "formula") {
+    return isText(atom.lastResolvedDisplay) ? atom.lastResolvedDisplay : undefined;
+  }
+  if (atom.kind === "template") return isText(atom.name) ? `{${atom.name}}` : undefined;
+  return undefined;
+};
+
 const markPosition = (
   atoms: readonly unknown[],
   end: { atom: string; offset: number }
@@ -591,12 +602,7 @@ const markPosition = (
   let position = 0;
   for (const atom of atoms) {
     if (!isRecord(atom) || !validIdentifier(atom.id)) return undefined;
-    const display =
-      atom.kind === "literal"
-        ? atom.text
-        : atom.kind === "formula"
-          ? atom.lastResolvedDisplay
-          : undefined;
+    const display = atomDisplayOf(atom);
     if (!isText(display)) return undefined;
     if (atom.id === end.atom) return end.offset <= display.length ? position + end.offset : undefined;
     position += display.length;
@@ -612,7 +618,7 @@ const validMarks = (value: unknown, atoms?: readonly unknown[]): boolean =>
     const to = isRecord(mark) ? markEndOf(mark.to) : undefined;
     if (
       !isRecord(mark) ||
-      !hasOnlyKeys(mark, ["id", "from", "to", "style", "link", "color", "background"]) ||
+      !hasOnlyKeys(mark, ["id", "from", "to", "style", "link", "color", "background", "hole"]) ||
       !validIdentifier(mark.id) ||
       from === undefined ||
       to === undefined
@@ -642,7 +648,8 @@ const validMarks = (value: unknown, atoms?: readonly unknown[]): boolean =>
     return (
       (mark.link === undefined || validMarkLink(mark.link)) &&
       (mark.color === undefined || validText(mark.color, 1_000)) &&
-      (mark.background === undefined || validText(mark.background, 1_000))
+      (mark.background === undefined || validText(mark.background, 1_000)) &&
+      (mark.hole === undefined || validPromptHole(mark.hole))
     );
   });
 
@@ -687,15 +694,7 @@ const validAtom = (value: unknown): boolean => {
 };
 
 const displayOfAtoms = (atoms: readonly unknown[]): string =>
-  atoms
-    .map((atom) =>
-      isRecord(atom) && atom.kind === "formula"
-        ? (atom.lastResolvedDisplay as string)
-        : isRecord(atom) && atom.kind === "template"
-          ? `{${atom.name as string}}`
-          : ((atom as Fields).text as string)
-    )
-    .join("");
+  atoms.map((atom) => atomDisplayOf(atom) ?? "").join("");
 
 /** What a prompt says its hole is called, before the hole itself is declared. */
 const validPromptHole = (value: unknown): boolean =>

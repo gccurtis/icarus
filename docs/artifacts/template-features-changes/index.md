@@ -1,6 +1,6 @@
 # Template Features Change Set
 
-157 files under app/ against 1166f8e, the commit this branch sits on — 94 created, 63 changed, 0 deleted — +19627 / −1344 lines, measured from committed and working-tree changes when this page was built.
+161 files under app/ against 1166f8e, the commit this branch sits on — 96 created, 65 changed, 0 deleted — +20514 / −1360 lines, measured from committed and working-tree changes when this page was built.
 
 | Status | File | + | − | Systematic change |
 | --- | --- | --- | --- | --- |
@@ -14,23 +14,25 @@
 | changed | `src/lib/app-views/categories/document-editor/content/document.svelte` | +15 | −0 | The document editor's Templates panel |
 | new | `src/lib/app-views/categories/document-editor/context/templates.svelte` | +616 | −0 | The document editor's Templates panel |
 | changed | `src/lib/app-views/categories/document-editor/inspector/prompt-block.svelte` | +114 | −4 | The document editor's Templates panel |
-| changed | `src/lib/app-views/categories/document-editor/inspector/text-selection.svelte` | +40 | −0 | The document editor's Templates panel |
+| changed | `src/lib/app-views/categories/document-editor/inspector/text-selection.svelte` | +50 | −0 | The document editor's Templates panel |
 | changed | `src/lib/app-views/categories/document-editor/procedures/projection.ts` | +33 | −8 | The document editor's Templates panel |
 | changed | `src/lib/app-views/categories/document-editor/procedures/prompt-blocks.ts` | +17 | −0 | The document editor's Templates panel |
 | changed | `src/lib/app-views/categories/document-editor/procedures/schema.ts` | +37 | −3 | The document editor's Templates panel |
-| new | `src/lib/app-views/categories/document-editor/procedures/templating.ts` | +410 | −0 | The document editor's Templates panel |
+| new | `src/lib/app-views/categories/document-editor/procedures/templating.ts` | +417 | −0 | The document editor's Templates panel |
 | new | `src/lib/app-views/categories/document-editor/procedures/test/unit/templating.test.ts` | +167 | −0 | The document editor's Templates panel |
 | new | `src/lib/app-views/categories/project-overview/context/contexts.svelte` | +283 | −0 | Project Overview's Contexts panel |
 | new | `src/lib/app-views/categories/project-overview/procedures/contexts.ts` | +115 | −0 | Project Overview's Contexts panel |
 | new | `src/lib/app-views/categories/project-overview/procedures/test/unit/contexts.test.ts` | +68 | −0 | Project Overview's Contexts panel |
 | changed | `src/lib/app-views/categories/project-overview/project-overview.md` | +25 | −21 | Project Overview's Contexts panel |
 | changed | `src/lib/app-views/categories/slide-deck-editor/context/comments.svelte` | +6 | −1 | The slide-deck editor's Templates panel |
-| changed | `src/lib/app-views/categories/slide-deck-editor/context/templates.svelte` | +635 | −3 | The slide-deck editor's Templates panel |
+| changed | `src/lib/app-views/categories/slide-deck-editor/context/templates.svelte` | +634 | −3 | The slide-deck editor's Templates panel |
 | changed | `src/lib/app-views/categories/slide-deck-editor/inspector/prompt-block.svelte` | +115 | −4 | The slide-deck editor's Templates panel |
+| changed | `src/lib/app-views/categories/slide-deck-editor/inspector/text-selection.svelte` | +61 | −1 | The slide-deck editor's Templates panel |
 | changed | `src/lib/app-views/categories/slide-deck-editor/inspector/threads.svelte` | +8 | −1 | The slide-deck editor's Templates panel |
+| changed | `src/lib/app-views/categories/slide-deck-editor/procedures/ids.ts` | +2 | −1 | The slide-deck editor's Templates panel |
 | changed | `src/lib/app-views/categories/slide-deck-editor/procedures/prompt-blocks.ts` | +17 | −0 | The slide-deck editor's Templates panel |
 | changed | `src/lib/app-views/categories/slide-deck-editor/procedures/scene.ts` | +3 | −3 | The slide-deck editor's Templates panel |
-| new | `src/lib/app-views/categories/slide-deck-editor/procedures/templating.ts` | +427 | −0 | The slide-deck editor's Templates panel |
+| new | `src/lib/app-views/categories/slide-deck-editor/procedures/templating.ts` | +450 | −0 | The slide-deck editor's Templates panel |
 | new | `src/lib/app-views/categories/slide-deck-editor/procedures/test/unit/templating.test.ts` | +130 | −0 | The slide-deck editor's Templates panel |
 | changed | `src/lib/app-views/categories/slide-deck-editor/procedures/typing.ts` | +2 | −3 | The slide-deck editor's Templates panel |
 | changed | `src/lib/app-views/categories/slide-deck-editor/slide-deck-editor.md` | +23 | −1 | The slide-deck editor's Templates panel |
@@ -76,16 +78,16 @@
 | changed | `src/lib/capabilities/templates/api/shared/bodies.ts` | +17 | −171 | The templates capability |
 | new | `src/lib/capabilities/templates/api/shared/holes.ts` | +39 | −0 | The templates capability |
 | changed | `src/lib/capabilities/templates/api/shared/projection.ts` | +32 | −49 | The templates capability |
-| new | `src/lib/capabilities/templates/api/shared/prompts.ts` | +157 | −0 | The templates capability |
+| new | `src/lib/capabilities/templates/api/shared/prompts.ts` | +164 | −0 | The templates capability |
 | new | `src/lib/capabilities/templates/api/shared/scopes.ts` | +204 | −0 | The templates capability |
 | new | `src/lib/capabilities/templates/api/shared/stages.ts` | +141 | −0 | The templates capability |
 | changed | `src/lib/capabilities/templates/api/shared/template-rows.ts` | +3 | −2 | The templates capability |
-| changed | `src/lib/capabilities/templates/api/shared/validation.ts` | +246 | −51 | The templates capability |
+| changed | `src/lib/capabilities/templates/api/shared/validation.ts` | +259 | −65 | The templates capability |
 | changed | `src/lib/capabilities/templates/api/update-template/update-template.ts` | +81 | −26 | The templates capability |
 | changed | `src/lib/capabilities/templates/api/update-template/validate-update-template.ts` | +14 | −10 | The templates capability |
 | changed | `src/lib/capabilities/templates/index.remote.ts` | +58 | −6 | The templates capability |
 | changed | `src/lib/capabilities/templates/templates.md` | +126 | −64 | The templates capability |
-| new | `src/lib/capabilities/templates/test/unit/answers.test.ts` | +588 | −0 | The templates capability |
+| new | `src/lib/capabilities/templates/test/unit/answers.test.ts` | +655 | −0 | The templates capability |
 | new | `src/lib/capabilities/templates/test/unit/stages.test.ts` | +377 | −0 | The templates capability |
 | changed | `src/lib/capabilities/templates/test/unit/templates.test.ts` | +89 | −122 | The templates capability |
 | changed | `src/lib/capabilities/templates/types/templates.ts` | +118 | −22 | The templates capability |
@@ -114,9 +116,9 @@
 | new | `src/lib/development-views/template-reference/components/scope-page.svelte` | +468 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/development-views/template-reference/components/system-page.svelte` | +329 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/development-views/template-reference/components/walkthrough-page.svelte` | +373 | −0 | The reference pages, and the one shared component they moved |
-| new | `src/lib/development-views/template-reference/procedures/changes.ts` | +348 | −0 | The reference pages, and the one shared component they moved |
-| new | `src/lib/development-views/template-reference/procedures/integration.ts` | +212 | −0 | The reference pages, and the one shared component they moved |
-| new | `src/lib/development-views/template-reference/procedures/inventory.ts` | +167 | −0 | The reference pages, and the one shared component they moved |
+| new | `src/lib/development-views/template-reference/procedures/changes.ts` | +370 | −0 | The reference pages, and the one shared component they moved |
+| new | `src/lib/development-views/template-reference/procedures/integration.ts` | +219 | −0 | The reference pages, and the one shared component they moved |
+| new | `src/lib/development-views/template-reference/procedures/inventory.ts` | +171 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/development-views/template-reference/procedures/navigation.ts` | +27 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/development-views/template-reference/procedures/rebase.ts` | +157 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/development-views/template-reference/procedures/scope.ts` | +521 | −0 | The reference pages, and the one shared component they moved |
@@ -138,16 +140,18 @@
 | new | `src/lib/representation/data/behavior/templates/deck-of-slide.ts` | +18 | −0 | The vocabulary: one table, five functions, one field |
 | new | `src/lib/representation/data/behavior/templates/fresh-ids.ts` | +71 | −0 | The vocabulary: one table, five functions, one field |
 | new | `src/lib/representation/data/behavior/templates/portable.ts` | +87 | −0 | The vocabulary: one table, five functions, one field |
-| new | `src/lib/representation/data/behavior/templates/prompt-holes.ts` | +280 | −0 | The vocabulary: one table, five functions, one field |
+| new | `src/lib/representation/data/behavior/templates/prompt-holes.ts` | +403 | −0 | The vocabulary: one table, five functions, one field |
 | new | `src/lib/representation/data/behavior/templates/scopes.ts` | +216 | −0 | The vocabulary: one table, five functions, one field |
 | new | `src/lib/representation/data/behavior/templates/test/unit/answers.test.ts` | +104 | −0 | The vocabulary: one table, five functions, one field |
+| new | `src/lib/representation/data/behavior/templates/test/unit/at-scale.test.ts` | +299 | −0 | The vocabulary: one table, five functions, one field |
 | new | `src/lib/representation/data/behavior/templates/test/unit/deck-of-slide.test.ts` | +36 | −0 | The vocabulary: one table, five functions, one field |
 | new | `src/lib/representation/data/behavior/templates/test/unit/fresh-ids.test.ts` | +81 | −0 | The vocabulary: one table, five functions, one field |
+| new | `src/lib/representation/data/behavior/templates/test/unit/marked-holes.test.ts` | +239 | −0 | The vocabulary: one table, five functions, one field |
 | new | `src/lib/representation/data/behavior/templates/test/unit/portable.test.ts` | +105 | −0 | The vocabulary: one table, five functions, one field |
-| new | `src/lib/representation/data/behavior/templates/test/unit/prompt-holes.test.ts` | +176 | −0 | The vocabulary: one table, five functions, one field |
+| new | `src/lib/representation/data/behavior/templates/test/unit/prompt-holes.test.ts` | +153 | −0 | The vocabulary: one table, five functions, one field |
 | new | `src/lib/representation/data/behavior/templates/test/unit/scopes.test.ts` | +109 | −0 | The vocabulary: one table, five functions, one field |
 | changed | `src/lib/representation/data/behavior/workspace/opening.ts` | +5 | −1 | The vocabulary: one table, five functions, one field |
-| changed | `src/lib/representation/data/types/content/content-block.ts` | +44 | −1 | The vocabulary: one table, five functions, one field |
+| changed | `src/lib/representation/data/types/content/content-block.ts` | +55 | −1 | The vocabulary: one table, five functions, one field |
 | changed | `src/lib/representation/data/types/core/resource-set.ts` | +16 | −24 | The vocabulary: one table, five functions, one field |
 | changed | `src/lib/representation/data/types/templates/template.ts` | +12 | −27 | The vocabulary: one table, five functions, one field |
 | changed | `src/lib/representation/data/types/workspace/tab.ts` | +1 | −0 | The vocabulary: one table, five functions, one field |
@@ -159,7 +163,7 @@
 | new | `src/routes/app/[project]/reference/templates/scope/+page.svelte` | +14 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/routes/app/[project]/reference/templates/walkthrough/+page.svelte` | +14 | −0 | The reference pages, and the one shared component they moved |
 | changed | `test/browser/document-editor.spec.ts` | +10 | −2 | Browser evidence |
-| new | `test/browser/template-features.spec.ts` | +424 | −0 | Browser evidence |
+| new | `test/browser/template-features.spec.ts` | +440 | −0 | Browser evidence |
 | new | `test/browser/template-reference.spec.ts` | +176 | −0 | Browser evidence |
 
 ## Outside app/
@@ -168,8 +172,8 @@
 | --- | --- | --- | --- |
 | changed | `docs/artifacts/template-dictionary/index.html` | +297 | −0 |
 | changed | `docs/artifacts/template-dictionary/index.md` | +139 | −0 |
-| changed | `docs/artifacts/template-features-changes/index.html` | +1161 | −0 |
-| changed | `docs/artifacts/template-features-changes/index.md` | +24983 | −0 |
+| changed | `docs/artifacts/template-features-changes/index.html` | +1186 | −0 |
+| changed | `docs/artifacts/template-features-changes/index.md` | +26256 | −0 |
 | changed | `docs/artifacts/template-stage-flow/index.html` | +393 | −0 |
 | changed | `docs/artifacts/template-stage-flow/index.md` | +140 | −0 |
 | changed | `docs/artifacts/template-system-concepts/index.html` | +627 | −0 |
@@ -178,7 +182,7 @@
 | changed | `docs/reference/template-features/02-model.html` | +209 | −0 |
 | changed | `docs/reference/template-features/03-capabilities.html` | +235 | −0 |
 | changed | `docs/reference/template-features/04-panels.html` | +208 | −0 |
-| changed | `docs/reference/template-features/05-changes.html` | +1250 | −0 |
+| changed | `docs/reference/template-features/05-changes.html` | +1275 | −0 |
 | changed | `docs/reference/template-features/build-diffs.mjs` | +243 | −0 |
 | changed | `docs/reference/template-features/index.html` | +167 | −0 |
 | changed | `docs/reference/template-features/reference.css` | +389 | −0 |
@@ -1342,12 +1346,12 @@
 +};
 ~~~~
 
-### new · `src/lib/representation/data/behavior/templates/prompt-holes.ts` (+280 / −0)
+### new · `src/lib/representation/data/behavior/templates/prompt-holes.ts` (+403 / −0)
 
 ~~~~diff
-@@ -0,0 +1,280 @@
-+import { segmentsOf } from "$representation/data/behavior/content/positions";
-+import type { Atom } from "$representation/data/types/content/content-block";
+@@ -0,0 +1,403 @@
++import { displayOfAtom, endAt, linearOf, segmentsOf } from "$representation/data/behavior/content/positions";
++import type { Atom, Mark } from "$representation/data/types/content/content-block";
 +import type { TemplatedResourceSet } from "$representation/data/types/core/resource-set";
 +import type { TemplateBody, TemplateHole } from "$representation/data/types/templates/template";
 +
@@ -1394,6 +1398,8 @@
 +
 +const promptsIn = (body: unknown) => walkFor(body, isPrompt);
 +const atomsIn = (body: unknown) => walkFor(body, isTemplateAtom);
++const holeMarksIn = (body: unknown) =>
++  walkFor(body, (value) => isRecord(value.hole) && typeof value.hole.name === "string" && isRecord(value.from));
 +
 +const named = (held: unknown): string => {
 +  if (!isRecord(held)) return "";
@@ -1408,6 +1414,7 @@
 +    if (held !== "") names.add(held);
 +  }
 +  for (const atom of atomsIn(body)) names.add(atom.name as string);
++  for (const mark of holeMarksIn(body)) names.add((mark.hole as Fields).name as string);
 +  return [...names];
 +};
 +
@@ -1561,70 +1568,190 @@
 +  return words;
 +};
 +
-+export type AtomSplice = {
-+  readonly remove: readonly string[];
-+  readonly after: string | null;
-+  readonly values: readonly Atom[];
-+};
-+
-+/**
-+ * A run of text becoming a hole, as the atoms that replace it.
-+ *
-+ * Only the atoms the selection actually touches are rebuilt: what is left of
-+ * the first, the hole itself, and what is left of the last. Marks that reached
-+ * into those atoms go with them, which is the cost of turning words into a
-+ * question and is why the gesture is deliberate.
-+ */
-+export const holeSplice = (
++/** The mark that says a run is a hole, addressed the way every other mark is. */
++export const holeMarkOver = (
 +  atoms: readonly Atom[],
 +  from: number,
 +  to: number,
-+  hole: { name: string; description?: string },
++  name: string,
 +  mint: () => string
-+): AtomSplice | undefined => {
++): Mark | undefined => {
 +  const start = Math.min(from, to);
 +  const end = Math.max(from, to);
-+  if (end <= start) return undefined;
++  if (end <= start || name === "" || atoms.length === 0) return undefined;
++  return {
++    id: mint(),
++    from: endAt(atoms, start, "from"),
++    to: endAt(atoms, end, "to"),
++    hole: { name }
++  };
++};
++
++/** The hole already covering this run, if one does. */
++export const holeNameOver = (
++  atoms: readonly Atom[],
++  marks: readonly Mark[],
++  from: number,
++  to: number
++): string | undefined => {
++  const start = Math.min(from, to);
++  const end = Math.max(from, to);
++  for (const run of markedRunsIn(atoms, marks)) {
++    if (run.start < end && run.end > start) return run.hole.name as string;
++  }
++  return undefined;
++};
++
++type Marked = { readonly start: number; readonly end: number; readonly hole: Fields };
++
++/** Where each hole mark sits on the block's display, sorted and non-overlapping. */
++const markedRunsIn = (atoms: readonly Atom[], marks: readonly Mark[]): readonly Marked[] => {
++  const runs: Marked[] = [];
++  for (const mark of marks) {
++    if (!isRecord(mark.hole) || typeof mark.hole.name !== "string") continue;
++    const from = linearOf(atoms, mark.from);
++    const to = linearOf(atoms, mark.to);
++    const start = Math.min(from, to);
++    const end = Math.max(from, to);
++    if (end <= start) continue;
++    runs.push({ start, end, hole: mark.hole });
++  }
++  runs.sort((a, b) => a.start - b.start);
++  /** An overlap would make two holes claim the same words, so the later one is not a hole. */
++  return runs.filter((run, index) => index === 0 || run.start >= runs[index - 1].end);
++};
++
++const holeAtom = (hole: Fields, words: string, id: string): Atom => {
++  const description = typeof hole.description === "string" ? hole.description.trim() : "";
++  return {
++    id,
++    kind: "template",
++    name: (hole.name as string).trim(),
++    ...(description === "" ? {} : { description }),
++    ...(words === "" ? {} : { text: words })
++  };
++};
++
++/**
++ * The marked runs, as the atoms and marks that replace them.
++ *
++ * Every mark that does not reach into a hole keeps the exact words it covered,
++ * because the ends are remapped by position rather than by atom. A mark that
++ * does reach into one goes: those words are a question now, and formatting a
++ * question is not a thing this vocabulary can mean.
++ */
++export const withHolesAt = (
++  atoms: readonly Atom[],
++  marks: readonly Mark[],
++  mint: () => string
++): { readonly atoms: readonly Atom[]; readonly marks: readonly Mark[] } => {
++  const runs = markedRunsIn(atoms, marks);
++  if (runs.length === 0) {
++    return { atoms, marks: marks.filter((mark) => mark.hole === undefined) };
++  }
 +
 +  const segments = segmentsOf(atoms);
-+  const touched = segments.filter((segment) => segment.start < end && segment.end > start);
-+  if (touched.length === 0) return undefined;
++  const total = segments.at(-1)?.end ?? 0;
++  const next: Atom[] = [];
++  /** Which stretch of the old display each new literal atom carries, for remapping the marks. */
++  const carried: { readonly from: number; readonly to: number; readonly atom: string }[] = [];
 +
-+  const first = touched[0];
-+  const last = touched[touched.length - 1];
-+  const at = segments.findIndex((segment) => segment.atom.id === first.atom.id);
-+  const before = at <= 0 ? null : segments[at - 1].atom.id;
++  const carry = (from: number, to: number): void => {
++    for (const segment of segments) {
++      const start = Math.max(segment.start, from);
++      const end = Math.min(segment.end, to);
++      if (end <= start) continue;
++      if (segment.atom.kind !== "literal") {
++        next.push({ ...segment.atom, id: mint() });
++        continue;
++      }
++      const atom: Atom = {
++        id: mint(),
++        kind: "literal",
++        text: segment.atom.text.slice(start - segment.start, end - segment.start)
++      };
++      next.push(atom);
++      carried.push({ from: start, to: end, atom: atom.id });
++    }
++  };
 +
-+  const wordsOf = (segment: (typeof segments)[number], sliceFrom: number, sliceTo: number): string =>
-+    segment.atom.kind === "literal" ? segment.atom.text.slice(sliceFrom, sliceTo) : "";
++  let at = 0;
++  for (const run of runs) {
++    carry(at, run.start);
++    const words = segments
++      .map((segment) => {
++        const start = Math.max(segment.start, run.start);
++        const end = Math.min(segment.end, run.end);
++        if (end <= start || segment.atom.kind !== "literal") return "";
++        return segment.atom.text.slice(start - segment.start, end - segment.start);
++      })
++      .join("");
++    next.push(holeAtom(run.hole, words, mint()));
++    at = run.end;
++  }
++  carry(at, total);
 +
-+  const head = wordsOf(first, 0, start - first.start);
-+  const tail = wordsOf(last, end - last.start, last.end - last.start);
-+  const taken = touched
-+    .map((segment) =>
-+      segment.atom.kind === "literal"
-+        ? segment.atom.text.slice(
-+            Math.max(start - segment.start, 0),
-+            Math.min(end - segment.start, segment.end - segment.start)
-+          )
-+        : ""
-+    )
-+    .join("");
++  /**
++   * A mark's end, put back where it was.
++   *
++   * A start prefers the stretch that begins at it and an end prefers the one
++   * that finishes there, so a mark butting up against a hole keeps its words
++   * rather than reaching across the boundary.
++   */
++  const endAtLanding = (position: number, prefer: "start" | "end"): Mark["from"] | undefined => {
++    const holding = carried.filter((entry) => entry.from <= position && position <= entry.to);
++    if (holding.length === 0) return undefined;
++    const chosen = prefer === "start" ? holding[holding.length - 1] : holding[0];
++    return { atom: chosen.atom, offset: position - chosen.from };
++  };
 +
-+  const description = hole.description?.trim() ?? "";
-+  const values: Atom[] = [
-+    ...(head === "" ? [] : [{ id: mint(), kind: "literal" as const, text: head }]),
-+    {
-+      id: mint(),
-+      kind: "template" as const,
-+      name: hole.name,
-+      ...(description === "" ? {} : { description }),
-+      ...(taken === "" ? {} : { text: taken })
-+    },
-+    ...(tail === "" ? [] : [{ id: mint(), kind: "literal" as const, text: tail }])
-+  ];
++  const kept: Mark[] = [];
++  for (const mark of marks) {
++    if (mark.hole !== undefined) continue;
++    const from = linearOf(atoms, mark.from);
++    const to = linearOf(atoms, mark.to);
++    const start = Math.min(from, to);
++    const end = Math.max(from, to);
++    if (runs.some((run) => run.start < end && run.end > start)) continue;
++    const head = endAtLanding(start, "start");
++    const tail = endAtLanding(end, "end");
++    if (head === undefined || tail === undefined) continue;
++    kept.push({
++      ...mark,
++      from: { atom: head.atom, offset: head.offset },
++      to: { atom: tail.atom, offset: tail.offset }
++    });
++  }
 +
-+  return { remove: touched.map((segment) => segment.atom.id), after: before, values };
++  return { atoms: next, marks: kept };
++};
++
++/**
++ * Every marked run in the body, as a hole in the prose.
++ *
++ * This runs on the copy a template is made from, never on the resource itself:
++ * marking a run changes nothing about the document, and only the template ends
++ * up with a hole where the words were.
++ */
++export const withMarkedHoles = <T>(body: T, mint: () => string): T => {
++  const walk = (value: unknown): unknown => {
++    if (Array.isArray(value)) return value.map(walk);
++    if (!isRecord(value)) return value;
++    const next: Fields = {};
++    for (const [field, nested] of Object.entries(value)) next[field] = walk(nested);
++    if (!Array.isArray(next.atoms) || !Array.isArray(next.marks)) return next;
++    const held = withHolesAt(next.atoms as Atom[], next.marks as Mark[], mint);
++    if (held.atoms === next.atoms && held.marks.length === (next.marks as Mark[]).length) return next;
++    return {
++      ...next,
++      atoms: [...held.atoms],
++      marks: [...held.marks],
++      ...(typeof next.display === "string"
++        ? { display: held.atoms.map(displayOfAtom).join("") }
++        : {})
++    };
++  };
++  return walk(body) as T;
 +};
 ~~~~
 
@@ -1960,6 +2087,311 @@
 +});
 ~~~~
 
+### new · `src/lib/representation/data/behavior/templates/test/unit/at-scale.test.ts` (+299 / −0)
+
+~~~~diff
+@@ -0,0 +1,299 @@
++import { describe, expect, it } from "vitest";
++
++import { asId } from "$representation/data/behavior/core/id";
++import {
++  holeNamesIn,
++  promptHolesOf,
++  promptWordsIn,
++  textHolesOf,
++  withAsks,
++  withMarkedHoles,
++  withPromptHoles
++} from "$representation/data/behavior/templates/prompt-holes";
++import {
++  fillTemplateAtoms,
++  resolveTemplateScopes,
++  scopeHoleNamesIn,
++  templateAtomNamesIn
++} from "$representation/data/behavior/templates/scopes";
++import type { Atom, Mark } from "$representation/data/types/content/content-block";
++import type { TemplateBody, TemplateHole } from "$representation/data/types/templates/template";
++
++/**
++ * What a template has to survive once it is worth having.
++ *
++ * A real template is long, asks a lot of questions, and sits over prose that
++ * somebody has already formatted. These cases hold the whole pipeline —
++ * marking, templating, resolving, filling — to that size and to the awkward
++ * shapes text actually takes.
++ */
++
++const literal = (id: string, text: string): Atom => ({ id, kind: "literal", text });
++
++const holeMark = (id: string, atom: string, from: number, to: number, name: string): Mark => ({
++  id,
++  from: { atom, offset: from },
++  to: { atom, offset: to },
++  hole: { name }
++});
++
++const styleMark = (id: string, atom: string, from: number, to: number): Mark => ({
++  id,
++  from: { atom, offset: from },
++  to: { atom, offset: to },
++  style: ["bold"]
++});
++
++const paragraph = (id: string, atoms: readonly Atom[], marks: readonly Mark[]) => ({
++  id,
++  type: "text",
++  variant: "paragraph",
++  atoms: [...atoms],
++  display: atoms.map((atom) => (atom.kind === "literal" ? atom.text : "")).join(""),
++  marks: [...marks]
++});
++
++const prompt = (id: string, extra: Record<string, unknown>) => ({
++  id,
++  type: "prompt",
++  atoms: [literal(`${id}-a`, "Sum up")],
++  display: "Sum up",
++  marks: [],
++  state: "idle",
++  ...extra
++});
++
++const bodyOf = (blocks: readonly unknown[]) => ({
++  resource: "document",
++  rows: [{ id: "r1", kind: "blocks", blocks: [...blocks] }]
++});
++
++const minter = () => {
++  let at = 0;
++  return () => {
++    at += 1;
++    return `n${at}`;
++  };
++};
++
++const templated = <T>(body: T): T => withMarkedHoles(withPromptHoles(body, promptHolesOf(body)), minter());
++
++const blocksOf = (body: unknown): Record<string, unknown>[] =>
++  ((body as { rows: { blocks: Record<string, unknown>[] }[] }).rows[0].blocks);
++
++const setScope = (id: string) => ({
++  include: [{ select: "set" as const, setId: asId<"resourceSets">(id) }],
++  exclude: []
++});
++
++describe("a template of real size", () => {
++  const PROSE = 240;
++  const PROMPTS = 60;
++
++  const large = () =>
++    bodyOf([
++      ...Array.from({ length: PROSE }, (_, index) => {
++        const words = `Paragraph ${index} names Northwind and closes.`;
++        const at = words.indexOf("Northwind");
++        return paragraph(
++          `p${index}`,
++          [literal(`p${index}a`, words)],
++          index % 3 === 0
++            ? [holeMark(`p${index}m`, `p${index}a`, at, at + "Northwind".length, `Text ${index}`)]
++            : [styleMark(`p${index}m`, `p${index}a`, 0, 9)]
++        );
++      }),
++      ...Array.from({ length: PROMPTS }, (_, index) =>
++        prompt(`q${index}`, {
++          scope: setScope(`resourceSets:${index}`),
++          ...(index % 2 === 0 ? { hole: { name: `Scope ${index}` } } : {})
++        })
++      )
++    ]);
++
++  it("keeps every hole somebody made and nothing else", () => {
++    const held = templated(large());
++    const scopes = scopeHoleNamesIn(held as unknown as TemplateBody);
++    const texts = templateAtomNamesIn(held as unknown as TemplateBody);
++    expect(scopes).toHaveLength(PROMPTS / 2);
++    expect(texts).toHaveLength(Math.ceil(PROSE / 3));
++    expect(new Set(holeNamesIn(held)).size).toBe(scopes.length + texts.length);
++  });
++
++  it("leaves every untemplateified prompt reading exactly what it read", () => {
++    const held = templated(large());
++    const untouched = blocksOf(held).filter(
++      (block) => block.type === "prompt" && block.hole === undefined
++    );
++    expect(untouched).toHaveLength(PROMPTS / 2);
++    for (const block of untouched) {
++      expect((block.scope as { include: { select: string }[] }).include[0].select).toBe("set");
++    }
++  });
++
++  it("keeps the words each text hole stands for, and the prose around them", () => {
++    const held = templated(large());
++    const holes = textHolesOf(held);
++    expect(holes).toHaveLength(Math.ceil(PROSE / 3));
++    expect(holes.every((hole) => hole.text === "Northwind")).toBe(true);
++    const marked = blocksOf(held)[0];
++    expect(marked.display).toBe("Paragraph 0 names {Text 0} and closes.");
++    expect(blocksOf(held)[1].display).toBe("Paragraph 1 names Northwind and closes.");
++  });
++
++  it("keeps the formatting on every paragraph nobody templateified", () => {
++    const held = templated(large());
++    const styled = blocksOf(held).filter(
++      (block) => block.type === "text" && (block.marks as Mark[]).length > 0
++    );
++    expect(styled).toHaveLength(PROSE - Math.ceil(PROSE / 3));
++    expect(styled.every((block) => (block.marks as Mark[])[0].style?.[0] === "bold")).toBe(true);
++  });
++
++  it("resolves every scope hole in one pass, with nothing undeclared", () => {
++    const held = templated(large()) as unknown as TemplateBody;
++    const holes: TemplateHole[] = promptHolesOf(large()).map((draft) => draft.hole);
++    const resolved = resolveTemplateScopes(held, holes);
++    expect(resolved.accepted).toBe(true);
++    if (!resolved.accepted) return;
++    expect(resolved.undeclared).toEqual([]);
++    const prompts = blocksOf(resolved.body).filter((block) => block.type === "prompt");
++    for (const block of prompts) {
++      const include = (block.scope as { include: { select: string }[] }).include;
++      expect(include.every((term) => term.select !== "hole")).toBe(true);
++    }
++  });
++
++  it("fills every text hole it is answered for and leaves the rest standing", () => {
++    const held = templated(large()) as unknown as TemplateBody;
++    const names = templateAtomNamesIn(held);
++    const answers = Object.fromEntries(names.slice(1).map((name) => [name, "Southwind"]));
++    const filled = fillTemplateAtoms(held, answers);
++    expect(templateAtomNamesIn(filled)).toEqual([names[0]]);
++    expect(blocksOf(filled)[3].display).toBe("Paragraph 3 names Southwind and closes.");
++    expect(blocksOf(filled)[0].display).toBe("Paragraph 0 names {Text 0} and closes.");
++  });
++});
++
++describe("text that is not simple", () => {
++  const held = (atoms: readonly Atom[], marks: readonly Mark[]) =>
++    withMarkedHoles(bodyOf([paragraph("b1", atoms, marks)]), minter());
++
++  it("takes a run of astral characters whole", () => {
++    const body = held(
++      [literal("a1", "Ana 🚀 Ortiz signs.")],
++      [holeMark("m1", "a1", 4, 6, "launch")]
++    );
++    expect(textHolesOf(body)[0].text).toBe("🚀");
++    expect(blocksOf(body)[0].display).toBe("Ana {launch} Ortiz signs.");
++  });
++
++  it("takes two holes that touch, without either eating the other", () => {
++    const body = held(
++      [literal("a1", "AnaOrtiz signs.")],
++      [holeMark("m1", "a1", 0, 3, "first"), holeMark("m2", "a1", 3, 8, "last")]
++    );
++    expect(blocksOf(body)[0].display).toBe("{first}{last} signs.");
++    expect(textHolesOf(body).map((hole) => hole.text)).toEqual(["Ana", "Ortiz"]);
++  });
++
++  it("takes the whole block, and a run at each end", () => {
++    const whole = held([literal("a1", "Everything.")], [holeMark("m1", "a1", 0, 11, "all")]);
++    expect(blocksOf(whole)[0].display).toBe("{all}");
++
++    const ends = held(
++      [literal("a1", "Ana writes Ortiz")],
++      [holeMark("m1", "a1", 0, 3, "first"), holeMark("m2", "a1", 11, 16, "last")]
++    );
++    expect(blocksOf(ends)[0].display).toBe("{first} writes {last}");
++  });
++
++  it("holds fifty holes and fifty formatted runs in one paragraph, all of them", () => {
++    const words = Array.from({ length: 50 }, (_, index) => `hole${index} keep${index} `).join("");
++    const marks: Mark[] = [];
++    let at = 0;
++    for (let index = 0; index < 50; index += 1) {
++      const holeText = `hole${index}`;
++      const keepText = `keep${index}`;
++      marks.push(holeMark(`h${index}`, "a1", at, at + holeText.length, `Hole ${index}`));
++      at += holeText.length + 1;
++      marks.push(styleMark(`s${index}`, "a1", at, at + keepText.length));
++      at += keepText.length + 1;
++    }
++    const body = held([literal("a1", words)], marks);
++    const block = blocksOf(body)[0];
++    expect(textHolesOf(body)).toHaveLength(50);
++    expect(block.marks).toHaveLength(50);
++    const atoms = block.atoms as Atom[];
++    const spans = atoms.map((atom) => (atom.kind === "literal" ? atom.text : ""));
++    for (const mark of block.marks as Mark[]) {
++      const index = atoms.findIndex((atom) => atom.id === mark.from.atom);
++      const before = spans.slice(0, index).join("").length;
++      const flat = spans.join("");
++      expect(flat.slice(before + mark.from.offset, before + mark.to.offset)).toMatch(/^keep\d+$/);
++    }
++  });
++
++  it("refuses a run of nothing but a caret, however many are asked for", () => {
++    const body = held(
++      [literal("a1", "Untouched.")],
++      [holeMark("m1", "a1", 4, 4, "nothing"), holeMark("m2", "a1", 9, 9, "also nothing")]
++    );
++    expect(blocksOf(body)[0].display).toBe("Untouched.");
++    expect(textHolesOf(body)).toEqual([]);
++  });
++});
++
++describe("prompts that ask a lot", () => {
++  const long = `Read every filing and ${"weigh the counterparties, ".repeat(400)}then answer.`;
++
++  it("carries a prompt of ten thousand characters onto the block and back off it", () => {
++    const held = bodyOf([prompt("q1", { hole: { name: "sources" }, scope: setScope("resourceSets:1") })]);
++    const asked = withAsks(held, { q1: long });
++    const body = withPromptHoles(asked, promptHolesOf(asked)) as unknown as TemplateBody;
++    expect(long.length).toBeGreaterThan(10_000);
++    expect(promptWordsIn(body).sources).toBe(long);
++  });
++
++  it("gives two prompts sharing one name one answer between them", () => {
++    const held = bodyOf([
++      prompt("q1", { hole: { name: "winter" }, scope: setScope("resourceSets:1") }),
++      prompt("q2", { hole: { name: "winter" }, scope: setScope("resourceSets:1") })
++    ]);
++    const body = templated(held) as unknown as TemplateBody;
++    expect(scopeHoleNamesIn(body)).toEqual(["winter"]);
++
++    const holes: TemplateHole[] = [{ name: "winter", label: "winter", default: setScope("resourceSets:1") }];
++    const answer = { include: [{ select: "kinds" as const, kinds: ["research"] }], exclude: [] };
++    const resolved = resolveTemplateScopes(body, holes, { winter: answer });
++    expect(resolved.accepted).toBe(true);
++    if (!resolved.accepted) return;
++    const scopes = blocksOf(resolved.body).map((block) => block.scope);
++    expect(scopes[0]).toEqual(scopes[1]);
++    expect(scopes[0]).toEqual({ include: [{ select: "kinds", kinds: ["research"] }], exclude: [] });
++  });
++
++  it("falls back to the whole project for a hole the template never declared", () => {
++    const body = templated(
++      bodyOf([prompt("q1", { hole: { name: "missing" }, scope: setScope("resourceSets:1") })])
++    ) as unknown as TemplateBody;
++    const resolved = resolveTemplateScopes(body, []);
++    expect(resolved.accepted).toBe(true);
++    if (!resolved.accepted) return;
++    expect(resolved.undeclared).toEqual(["missing"]);
++  });
++
++  it("refuses an answer that excludes, because a difference cannot be flattened", () => {
++    const body = templated(
++      bodyOf([prompt("q1", { hole: { name: "winter" }, scope: setScope("resourceSets:1") })])
++    ) as unknown as TemplateBody;
++    const holes: TemplateHole[] = [{ name: "winter", label: "winter", default: setScope("resourceSets:1") }];
++    const resolved = resolveTemplateScopes(body, holes, {
++      winter: {
++        include: [{ select: "project" }],
++        exclude: [{ select: "kinds", kinds: ["finding"] }]
++      }
++    });
++    expect(resolved.accepted).toBe(false);
++  });
++});
+~~~~
+
 ### new · `src/lib/representation/data/behavior/templates/test/unit/deck-of-slide.test.ts` (+36 / −0)
 
 ~~~~diff
@@ -2089,6 +2521,251 @@
 +});
 ~~~~
 
+### new · `src/lib/representation/data/behavior/templates/test/unit/marked-holes.test.ts` (+239 / −0)
+
+~~~~diff
+@@ -0,0 +1,239 @@
++import { describe, expect, it } from "vitest";
++
++import {
++  holeMarkOver,
++  holeNameOver,
++  withHolesAt,
++  withMarkedHoles
++} from "$representation/data/behavior/templates/prompt-holes";
++import type { Atom, Mark } from "$representation/data/types/content/content-block";
++
++/**
++ * Marking a run is not an edit.
++ *
++ * These cases are the foundation the rest of templating stands on: a body may
++ * be long, may hold many holes, may be formatted heavily, and none of that is
++ * allowed to change until a template is made from a copy of it.
++ */
++
++const words = (id: string, text: string): Atom => ({ id, kind: "literal", text });
++
++const mint = () => {
++  let at = 0;
++  return () => {
++    at += 1;
++    return `n${at}`;
++  };
++};
++
++const hole = (id: string, from: [string, number], to: [string, number], name: string): Mark => ({
++  id,
++  from: { atom: from[0], offset: from[1] },
++  to: { atom: to[0], offset: to[1] },
++  hole: { name }
++});
++
++const style = (id: string, from: [string, number], to: [string, number]): Mark => ({
++  id,
++  from: { atom: from[0], offset: from[1] },
++  to: { atom: to[0], offset: to[1] },
++  style: ["bold"]
++});
++
++const display = (atoms: readonly Atom[]) =>
++  atoms
++    .map((atom) =>
++      atom.kind === "literal" ? atom.text : atom.kind === "template" ? `{${atom.name}}` : ""
++    )
++    .join("");
++
++describe("marking a run", () => {
++  const atoms = [words("a1", "Dear Northwind, about winter.")];
++
++  it("addresses the run the way every other mark does", () => {
++    const mark = holeMarkOver(atoms, 5, 14, "Hole 1", mint());
++    expect(mark).toEqual({
++      id: "n1",
++      from: { atom: "a1", offset: 5 },
++      to: { atom: "a1", offset: 14 },
++      hole: { name: "Hole 1" }
++    });
++  });
++
++  it("refuses a caret, a blank name, and an empty block", () => {
++    expect(holeMarkOver(atoms, 5, 5, "Hole 1", mint())).toBeUndefined();
++    expect(holeMarkOver(atoms, 5, 14, "  ".trim(), mint())).toBeUndefined();
++    expect(holeMarkOver([], 0, 3, "Hole 1", mint())).toBeUndefined();
++  });
++
++  it("reports a run already covered by a hole, and only when it overlaps", () => {
++    const marks = [hole("m1", ["a1", 5], ["a1", 14], "client")];
++    expect(holeNameOver(atoms, marks, 6, 9)).toBe("client");
++    expect(holeNameOver(atoms, marks, 0, 5)).toBeUndefined();
++    expect(holeNameOver(atoms, marks, 14, 20)).toBeUndefined();
++  });
++});
++
++describe("a marked run becoming a hole, on the copy", () => {
++  it("keeps the words as what the hole says and leaves the rest of the prose", () => {
++    const atoms = [words("a1", "Dear Northwind, about winter.")];
++    const held = withHolesAt(atoms, [hole("m1", ["a1", 5], ["a1", 14], "client")], mint());
++    expect(display(held.atoms)).toBe("Dear {client}, about winter.");
++    expect(held.atoms[1]).toEqual({ id: "n2", kind: "template", name: "client", text: "Northwind" });
++    expect(held.marks).toEqual([]);
++  });
++
++  it("keeps a mark that does not reach into the hole, over exactly the same words", () => {
++    const atoms = [words("a1", "Dear Northwind, about winter.")];
++    const held = withHolesAt(
++      atoms,
++      [hole("m1", ["a1", 5], ["a1", 14], "client"), style("m2", ["a1", 22], ["a1", 28])],
++      mint()
++    );
++    const kept = held.marks.find((mark) => mark.id === "m2");
++    expect(kept).toBeDefined();
++    const segments = held.atoms.map((atom) => display([atom]));
++    const flat = segments.join("");
++    const at = held.atoms.findIndex((atom) => atom.id === kept?.from.atom);
++    const before = segments.slice(0, at).join("").length;
++    expect(flat.slice(before + kept!.from.offset, before + kept!.to.offset)).toBe("winter");
++  });
++
++  it("drops a mark that reaches into the hole, because those words are a question now", () => {
++    const atoms = [words("a1", "Dear Northwind, about winter.")];
++    const held = withHolesAt(
++      atoms,
++      [hole("m1", ["a1", 5], ["a1", 14], "client"), style("m2", ["a1", 0], ["a1", 9])],
++      mint()
++    );
++    expect(held.marks).toEqual([]);
++  });
++
++  it("takes several holes in one block, in order, without disturbing each other", () => {
++    const atoms = [words("a1", "Dear Northwind, about winter, from Ana.")];
++    const held = withHolesAt(
++      atoms,
++      [
++        hole("m2", ["a1", 35], ["a1", 38], "sender"),
++        hole("m1", ["a1", 5], ["a1", 14], "client")
++      ],
++      mint()
++    );
++    expect(display(held.atoms)).toBe("Dear {client}, about winter, from {sender}.");
++  });
++
++  it("refuses a second hole that overlaps the first", () => {
++    const atoms = [words("a1", "Dear Northwind, about winter.")];
++    const held = withHolesAt(
++      atoms,
++      [hole("m1", ["a1", 5], ["a1", 14], "client"), hole("m2", ["a1", 10], ["a1", 20], "other")],
++      mint()
++    );
++    expect(display(held.atoms)).toBe("Dear {client}, about winter.");
++  });
++
++  it("spans several atoms, taking every literal it covers", () => {
++    const atoms = [words("a1", "Dear "), words("a2", "North"), words("a3", "wind, hello.")];
++    const held = withHolesAt(atoms, [hole("m1", ["a1", 5], ["a3", 4], "client")], mint());
++    expect(display(held.atoms)).toBe("Dear {client}, hello.");
++    expect(held.atoms.find((atom) => atom.kind === "template")).toMatchObject({ text: "Northwind" });
++  });
++
++  it("swallows a formula atom that sits inside the run", () => {
++    const atoms: Atom[] = [
++      words("a1", "Total "),
++      {
++        id: "a2",
++        kind: "formula",
++        expression: "SUM(x)",
++        lastResolvedDisplay: "42",
++        lastResolvedValue: { kind: "empty" },
++        state: "fresh"
++      },
++      words("a3", " today.")
++    ];
++    const held = withHolesAt(atoms, [hole("m1", ["a1", 3], ["a3", 3], "figure")], mint());
++    expect(display(held.atoms)).toBe("Tot{figure}day.");
++    expect(held.atoms.some((atom) => atom.kind === "formula")).toBe(false);
++  });
++
++  it("leaves a block with no hole marks exactly as it was", () => {
++    const atoms = [words("a1", "Nothing to see.")];
++    const marks = [style("m1", ["a1", 0], ["a1", 7])];
++    const held = withHolesAt(atoms, marks, mint());
++    expect(held.atoms).toBe(atoms);
++    expect(held.marks).toEqual(marks);
++  });
++});
++
++describe("across a whole body", () => {
++  const body = () => ({
++    resource: "document",
++    rows: [
++      {
++        id: "r1",
++        kind: "blocks",
++        blocks: [
++          {
++            id: "b1",
++            type: "text",
++            variant: "paragraph",
++            atoms: [words("a1", "Dear Northwind.")],
++            display: "Dear Northwind.",
++            marks: [hole("m1", ["a1", 5], ["a1", 14], "client")]
++          },
++          {
++            id: "b2",
++            type: "text",
++            variant: "paragraph",
++            atoms: [words("b1a", "Nothing here.")],
++            display: "Nothing here.",
++            marks: []
++          }
++        ]
++      }
++    ]
++  });
++
++  it("rewrites the marked block, rebuilds its display, and leaves the others alone", () => {
++    const held = withMarkedHoles(body(), mint()) as ReturnType<typeof body>;
++    const blocks = held.rows[0].blocks as { display: string; marks: unknown[] }[];
++    expect(blocks[0].display).toBe("Dear {client}.");
++    expect(blocks[0].marks).toEqual([]);
++    expect(blocks[1].display).toBe("Nothing here.");
++  });
++
++  it("never touches the body it was given", () => {
++    const original = body();
++    const snapshot = JSON.stringify(original);
++    withMarkedHoles(original, mint());
++    expect(JSON.stringify(original)).toBe(snapshot);
++  });
++
++  it("carries a hundred holes without losing one", () => {
++    const long = {
++      resource: "document",
++      rows: Array.from({ length: 100 }, (_, index) => ({
++        id: `r${index}`,
++        kind: "blocks",
++        blocks: [
++          {
++            id: `b${index}`,
++            type: "text",
++            variant: "paragraph",
++            atoms: [words(`a${index}`, `Row ${index} names Northwind here.`)],
++            display: `Row ${index} names Northwind here.`,
++            marks: [
++              hole(`m${index}`, [`a${index}`, `Row ${index} names `.length], [`a${index}`, `Row ${index} names Northwind`.length], `Hole ${index + 1}`)
++            ]
++          }
++        ]
++      }))
++    };
++    const held = withMarkedHoles(long, mint()) as typeof long;
++    const displays = held.rows.map((row) => (row.blocks[0] as { display: string }).display);
++    expect(displays[0]).toBe("Row 0 names {Hole 1} here.");
++    expect(displays[99]).toBe("Row 99 names {Hole 100} here.");
++    expect(displays.every((line) => line.includes("{Hole "))).toBe(true);
++  });
++});
+~~~~
+
 ### new · `src/lib/representation/data/behavior/templates/test/unit/portable.test.ts` (+105 / −0)
 
 ~~~~diff
@@ -2200,16 +2877,15 @@
 +});
 ~~~~
 
-### new · `src/lib/representation/data/behavior/templates/test/unit/prompt-holes.test.ts` (+176 / −0)
+### new · `src/lib/representation/data/behavior/templates/test/unit/prompt-holes.test.ts` (+153 / −0)
 
 ~~~~diff
-@@ -0,0 +1,176 @@
+@@ -0,0 +1,153 @@
 +import { describe, expect, it } from "vitest";
 +
 +import {
 +  defaultScopeOf,
 +  holeNamesIn,
-+  holeSplice,
 +  mergedPromptHoles,
 +  nextHoleName,
 +  offeredHoleName,
@@ -2219,7 +2895,6 @@
 +  withAsks,
 +  withPromptHoles
 +} from "$representation/data/behavior/templates/prompt-holes";
-+import type { Atom } from "$representation/data/types/content/content-block";
 +import type { TemplateBody, TemplateHole } from "$representation/data/types/templates/template";
 +
 +const prompt = (id: string, extra: Record<string, unknown> = {}) => ({
@@ -2337,27 +3012,6 @@
 +    expect(textHolesOf(held)).toEqual([
 +      { name: "Hole 1", label: "Hole 1", kind: "text", description: "Who it is for", text: "Ana" }
 +    ]);
-+  });
-+});
-+
-+describe("turning a selection into a hole", () => {
-+  const atoms: Atom[] = [
-+    { id: "a1", kind: "literal", text: "Dear Northwind, about winter." }
-+  ];
-+
-+  it("splits the run and keeps the words as what the hole says", () => {
-+    const splice = holeSplice(atoms, 5, 14, { name: "Hole 1" }, () => "fresh");
-+    expect(splice?.remove).toEqual(["a1"]);
-+    expect(splice?.after).toBeNull();
-+    expect(splice?.values).toEqual([
-+      { id: "fresh", kind: "literal", text: "Dear " },
-+      { id: "fresh", kind: "template", name: "Hole 1", text: "Northwind" },
-+      { id: "fresh", kind: "literal", text: ", about winter." }
-+    ]);
-+  });
-+
-+  it("refuses a selection that covers nothing", () => {
-+    expect(holeSplice(atoms, 4, 4, { name: "Hole 1" }, () => "fresh")).toBeUndefined();
 +  });
 +});
 +
@@ -2522,7 +3176,7 @@
      frame: { ...STARTING_FRAME },
 ~~~~
 
-### changed · `src/lib/representation/data/types/content/content-block.ts` (+44 / −1)
+### changed · `src/lib/representation/data/types/content/content-block.ts` (+55 / −1)
 
 ~~~~diff
 @@ -20,7 +20,35 @@ export type FormulaAtom = {
@@ -2562,7 +3216,32 @@
  
  export type MarkStyle = "bold" | "italic" | "underline" | "strikethrough" | "code";
  
-@@ -112,6 +140,18 @@ export type TableBlock = {
+@@ -32,6 +60,16 @@ export type MarkLink =
+ 
+ export type MarkEnd = { atom: string; offset: number };
+ 
++/**
++ * A run marked as a hole: a template made from this body puts one here.
++ *
++ * Marking changes nothing. The words stay where they are, every other mark over
++ * them stays, and the resource reads exactly as it did — a hole is a note about
++ * where a template's argument goes, not an edit. The run only becomes a
++ * template atom on the copy, when the template is made.
++ */
++export type MarkHole = { name: string; description?: string };
++
+ export type Mark = {
+   id: string;
+   from: MarkEnd;
+@@ -40,6 +78,7 @@ export type Mark = {
+   link?: MarkLink;
+   color?: string;
+   background?: string;
++  hole?: MarkHole;
+ };
+ 
+ export type TextVariant = "paragraph" | "heading" | "list" | "quote" | "code";
+@@ -112,6 +151,18 @@ export type TableBlock = {
  
  export type PromptState = "idle" | "fresh" | "stale" | "generating" | "error";
  
@@ -2581,7 +3260,7 @@
  export type PromptBlock = {
    id: string;
    type: "prompt";
-@@ -121,6 +161,9 @@ export type PromptBlock = {
+@@ -121,6 +172,9 @@ export type PromptBlock = {
    display: string;
    marks: Mark[];
    scope?: ResourceSet | TemplatedResourceSet;
@@ -4313,10 +4992,10 @@
  };
 ~~~~
 
-### new · `src/lib/capabilities/templates/api/shared/prompts.ts` (+157 / −0)
+### new · `src/lib/capabilities/templates/api/shared/prompts.ts` (+164 / −0)
 
 ~~~~diff
-@@ -0,0 +1,157 @@
+@@ -0,0 +1,164 @@
 +import type { StoreModel } from "$model/server/store/index.server";
 +import { asId } from "$representation/data/behavior/core/id";
 +import { needsRow } from "$representation/data/behavior/core/scope-draft";
@@ -4327,6 +5006,7 @@
 +  promptHolesOf,
 +  textHolesOf,
 +  withAsks,
++  withMarkedHoles,
 +  withPromptHoles
 +} from "$representation/data/behavior/templates/prompt-holes";
 +import type { TemplateHole } from "$representation/data/types/templates/template";
@@ -4428,9 +5108,11 @@
 + * A live body as a template holds it: portable, and asking rather than telling.
 + *
 + * The order matters. The holes are read first, so a hole's default is the scope
-+ * as the prompt actually reads it. The question is copied next, while the link
-+ * to the derived output still exists. Only then is the body made portable, and
-+ * each templated prompt's scope replaced by the hole that stands for it.
++ * as the prompt actually reads it. The prompt text is copied next, while the
++ * link to the derived output still exists. Only then is the body made portable,
++ * each templated prompt's scope replaced by the hole that stands for it, and
++ * each marked run turned into a hole in the prose — on the copy, which is why
++ * marking a run never changes the resource it was marked in.
 + */
 +/**
 + * A hole's default, once the template it belongs to has an identity.
@@ -4470,7 +5152,11 @@
 +  const drafts = promptHolesOf(candidate);
 +  const asked = withAsks(candidate, askedBy(store, candidate));
 +  const portable = portableBodyOf(asked);
-+  const body = withPromptHoles(portable.body, drafts);
++  let minted = 0;
++  const body = withMarkedHoles(withPromptHoles(portable.body, drafts), () => {
++    minted += 1;
++    return `hole-${minted}`;
++  });
 +  const fresh = [...drafts.map((draft) => draft.hole), ...textHolesOf(body)];
 +  return { body, dropped: portable.dropped, holes: mergedPromptHoles(known, fresh) };
 +};
@@ -4860,7 +5546,7 @@
    updatedAt: template.updatedAt
 ~~~~
 
-### changed · `src/lib/capabilities/templates/api/shared/validation.ts` (+246 / −51)
+### changed · `src/lib/capabilities/templates/api/shared/validation.ts` (+259 / −65)
 
 ~~~~diff
 @@ -1,10 +1,15 @@
@@ -4942,7 +5628,58 @@
    }
    if (value.kind === "actor") {
      return hasOnlyKeys(value, ["kind", "actor"]) && validActor(value.actor);
-@@ -613,6 +654,17 @@ const validAtom = (value: unknown): boolean => {
+@@ -543,6 +584,17 @@ const markEndOf = (value: unknown): { atom: string; offset: number } | undefined
+   return { atom: value.atom, offset: value.offset };
+ };
+ 
++/** What an atom puts on the block's display, which is what a mark is measured against. */
++const atomDisplayOf = (atom: unknown): string | undefined => {
++  if (!isRecord(atom)) return undefined;
++  if (atom.kind === "literal") return isText(atom.text) ? atom.text : undefined;
++  if (atom.kind === "formula") {
++    return isText(atom.lastResolvedDisplay) ? atom.lastResolvedDisplay : undefined;
++  }
++  if (atom.kind === "template") return isText(atom.name) ? `{${atom.name}}` : undefined;
++  return undefined;
++};
++
+ const markPosition = (
+   atoms: readonly unknown[],
+   end: { atom: string; offset: number }
+@@ -550,12 +602,7 @@ const markPosition = (
+   let position = 0;
+   for (const atom of atoms) {
+     if (!isRecord(atom) || !validIdentifier(atom.id)) return undefined;
+-    const display =
+-      atom.kind === "literal"
+-        ? atom.text
+-        : atom.kind === "formula"
+-          ? atom.lastResolvedDisplay
+-          : undefined;
++    const display = atomDisplayOf(atom);
+     if (!isText(display)) return undefined;
+     if (atom.id === end.atom) return end.offset <= display.length ? position + end.offset : undefined;
+     position += display.length;
+@@ -571,7 +618,7 @@ const validMarks = (value: unknown, atoms?: readonly unknown[]): boolean =>
+     const to = isRecord(mark) ? markEndOf(mark.to) : undefined;
+     if (
+       !isRecord(mark) ||
+-      !hasOnlyKeys(mark, ["id", "from", "to", "style", "link", "color", "background"]) ||
++      !hasOnlyKeys(mark, ["id", "from", "to", "style", "link", "color", "background", "hole"]) ||
+       !validIdentifier(mark.id) ||
+       from === undefined ||
+       to === undefined
+@@ -601,7 +648,8 @@ const validMarks = (value: unknown, atoms?: readonly unknown[]): boolean =>
+     return (
+       (mark.link === undefined || validMarkLink(mark.link)) &&
+       (mark.color === undefined || validText(mark.color, 1_000)) &&
+-      (mark.background === undefined || validText(mark.background, 1_000))
++      (mark.background === undefined || validText(mark.background, 1_000)) &&
++      (mark.hole === undefined || validPromptHole(mark.hole))
+     );
+   });
+ 
+@@ -613,6 +661,17 @@ const validAtom = (value: unknown): boolean => {
        validText(value.text, MAX_BLOCK_TEXT_LENGTH, true)
      );
    }
@@ -4960,17 +5697,19 @@
    return (
      value.kind === "formula" &&
      hasOnlyKeys(value, [
-@@ -639,10 +691,22 @@ const displayOfAtoms = (atoms: readonly unknown[]): string =>
-     .map((atom) =>
-       isRecord(atom) && atom.kind === "formula"
-         ? (atom.lastResolvedDisplay as string)
--        : ((atom as Fields).text as string)
-+        : isRecord(atom) && atom.kind === "template"
-+          ? `{${atom.name as string}}`
-+          : ((atom as Fields).text as string)
-     )
-     .join("");
+@@ -635,13 +694,17 @@ const validAtom = (value: unknown): boolean => {
+ };
  
+ const displayOfAtoms = (atoms: readonly unknown[]): string =>
+-  atoms
+-    .map((atom) =>
+-      isRecord(atom) && atom.kind === "formula"
+-        ? (atom.lastResolvedDisplay as string)
+-        : ((atom as Fields).text as string)
+-    )
+-    .join("");
++  atoms.map((atom) => atomDisplayOf(atom) ?? "").join("");
++
 +/** What a prompt says its hole is called, before the hole itself is declared. */
 +const validPromptHole = (value: unknown): boolean =>
 +  isRecord(value) &&
@@ -4980,11 +5719,10 @@
 +    (isText(value.description) &&
 +      value.description.length <= MAX_HOLE_DESCRIPTION_LENGTH &&
 +      value.description === value.description.trim()));
-+
+ 
  const validBlock = (value: unknown, depth = 0): boolean => {
    if (depth > 12 || !isRecord(value) || !validIdentifier(value.id) || !isText(value.type)) {
-     return false;
-@@ -811,16 +875,22 @@ const validBlock = (value: unknown, depth = 0): boolean => {
+@@ -811,16 +874,22 @@ const validBlock = (value: unknown, depth = 0): boolean => {
          "id",
          "type",
          "derivedOutputId",
@@ -5007,7 +5745,7 @@
        Array.isArray(value.atoms) &&
        value.atoms.length <= MAX_BLOCKS_PER_CONTAINER &&
        value.atoms.every(validAtom) &&
-@@ -1515,7 +1585,6 @@ const validSpreadsheet = (body: Fields): boolean => {
+@@ -1515,7 +1584,6 @@ const validSpreadsheet = (body: Fields): boolean => {
    return validStyles(body.styles);
  };
  
@@ -5015,7 +5753,7 @@
  const assertPortableBody = (value: unknown, subject: string): void => {
    const boundField = (step: Fields): string | undefined => {
      if (step.to === "resource" && "ref" in step) return "resource reference";
-@@ -1557,9 +1626,7 @@ export const bodyOf = (value: unknown, subject: string): TemplateBody => {
+@@ -1557,9 +1625,7 @@ export const bodyOf = (value: unknown, subject: string): TemplateBody => {
    const raw = fieldsOf(value, subject);
    const target = targetOf(raw.resource, subject);
    const normalized =
@@ -5026,7 +5764,7 @@
    const body = fieldsOf(normalized, subject);
    const valid =
      target === "document"
-@@ -1567,16 +1634,103 @@ export const bodyOf = (value: unknown, subject: string): TemplateBody => {
+@@ -1567,16 +1633,103 @@ export const bodyOf = (value: unknown, subject: string): TemplateBody => {
        : target === "slides"
          ? validSlides(body)
          : validSpreadsheet(body);
@@ -5135,7 +5873,7 @@
  const MAX_RESOURCE_KIND_LENGTH = 160;
  
  const validTerm = (value: unknown): boolean => {
-@@ -1584,11 +1738,19 @@ const validTerm = (value: unknown): boolean => {
+@@ -1584,11 +1737,19 @@ const validTerm = (value: unknown): boolean => {
    if (value.select === "project") {
      return hasOnlyKeys(value, ["select"]) && Object.keys(value).length === 1;
    }
@@ -5157,7 +5895,7 @@
      );
    }
    if (
-@@ -1618,62 +1780,95 @@ const validTemplatedSet = (value: unknown): boolean =>
+@@ -1618,62 +1779,95 @@ const validTemplatedSet = (value: unknown): boolean =>
    value.exclude.length <= MAX_TEMPLATE_TERMS_PER_SIDE &&
    value.exclude.every(validTerm);
  
@@ -5206,14 +5944,10 @@
      ) {
 -      throw new Error(`templates/${subject}: a variable has only represented fields`);
 +      throw new Error(`templates/${subject}: a hole has only represented fields`);
-     }
--    if (!validCanonicalText(variable.name, MAX_VARIABLE_NAME_LENGTH)) {
--      throw new Error(`templates/${subject}: every variable has a name`);
++    }
 +    if (hole.kind !== undefined && hole.kind !== "scope" && hole.kind !== "text") {
 +      throw new Error(`templates/${subject}: a hole is answered with a scope or with text`);
-     }
--    if (!validCanonicalText(variable.label, MAX_VARIABLE_LABEL_LENGTH)) {
--      throw new Error(`templates/${subject}: every variable has a label`);
++    }
 +    if (hole.kind === "text" && hole.default !== undefined) {
 +      throw new Error(`templates/${subject}: a text hole has no default scope`);
 +    }
@@ -5224,10 +5958,14 @@
 +      if (!validText(hole.text, MAX_BLOCK_TEXT_LENGTH, true)) {
 +        throw new Error(`templates/${subject}: a hole's default words are text`);
 +      }
-+    }
+     }
+-    if (!validCanonicalText(variable.name, MAX_VARIABLE_NAME_LENGTH)) {
+-      throw new Error(`templates/${subject}: every variable has a name`);
 +    if (!validCanonicalText(hole.name, MAX_HOLE_NAME_LENGTH)) {
 +      throw new Error(`templates/${subject}: every hole has a name`);
-+    }
+     }
+-    if (!validCanonicalText(variable.label, MAX_VARIABLE_LABEL_LENGTH)) {
+-      throw new Error(`templates/${subject}: every variable has a label`);
 +    if (!validCanonicalText(hole.label, MAX_HOLE_LABEL_LENGTH)) {
 +      throw new Error(`templates/${subject}: every hole has a label`);
      }
@@ -5841,10 +6579,10 @@
 +needs a represented transaction or explicit recovery contract.
 ~~~~
 
-### new · `src/lib/capabilities/templates/test/unit/answers.test.ts` (+588 / −0)
+### new · `src/lib/capabilities/templates/test/unit/answers.test.ts` (+655 / −0)
 
 ~~~~diff
-@@ -0,0 +1,588 @@
+@@ -0,0 +1,655 @@
 +import assert from "node:assert/strict";
 +import { beforeEach, describe, test, vi } from "vitest";
 +
@@ -6118,6 +6856,73 @@
 +    assert.deepEqual(kept, { kind: "url", url: "https://example.com/plan", note: "Scope" });
 +    assert.equal("templateId" in model.tables.documents[0], false);
 +    assert.equal(model.tables.templateVersions.length, 1);
++  });
++
++  /**
++   * Marking a run says where a hole goes. It does not put one there.
++   *
++   * The template gets the hole and the resource keeps its words, its
++   * formatting and its display exactly as they were, which is the whole reason
++   * a hole over text is a mark rather than an edit.
++   */
++  test("turns a marked run into a hole on the template and leaves the document alone", async () => {
++    const live = {
++      rows: [
++        {
++          id: "r1",
++          kind: "blocks",
++          blocks: [
++            {
++              id: "t1",
++              type: "text",
++              variant: "paragraph",
++              atoms: [{ id: "t1-a", kind: "literal", text: "Dear Northwind, about winter." }],
++              display: "Dear Northwind, about winter.",
++              marks: [
++                {
++                  id: "m1",
++                  from: { atom: "t1-a", offset: 5 },
++                  to: { atom: "t1-a", offset: 14 },
++                  hole: { name: "client", description: "Who it is for" }
++                },
++                { id: "m2", from: { atom: "t1-a", offset: 22 }, to: { atom: "t1-a", offset: 28 }, style: ["bold"] },
++                { id: "m3", from: { atom: "t1-a", offset: 0 }, to: { atom: "t1-a", offset: 9 }, style: ["italic"] }
++              ]
++            }
++          ]
++        }
++      ]
++    };
++    const untouched = structuredClone(live);
++    model.tables.documents.push(row("documents", "1", { projectId: "p", title: "Winter note" }));
++    model.tables.documentSnapshots.push(
++      row("documentSnapshots", "1", {
++        projectId: "p",
++        resourceId: "documents:1",
++        role: "leader",
++        revision: 2,
++        body: live
++      })
++    );
++
++    const made = await createTemplateFromResource({
++      target: "document",
++      resourceId: "documents:1",
++      name: "Winter note shell",
++      tags: []
++    });
++    assert.equal(made.accepted, true);
++
++    const held = model.tables.templates[1];
++    assert.deepEqual(held.holes, [
++      { name: "client", label: "client", kind: "text", description: "Who it is for", text: "Northwind" }
++    ]);
++    const block = (held.body as { rows: { blocks: Record<string, unknown>[] }[] }).rows[0].blocks[0];
++    assert.equal(block.display, "Dear {client}, about winter.");
++    assert.equal((block.marks as unknown[]).length, 1);
++    assert.deepEqual((block.marks as { style: string[] }[])[0].style, ["bold"]);
++
++    assert.deepEqual(model.tables.documentSnapshots[0].body, untouched);
 +  });
 +
 +  /**
@@ -11272,63 +12077,73 @@
      display: flex;
 ~~~~
 
-### changed · `src/lib/app-views/categories/document-editor/inspector/text-selection.svelte` (+40 / −0)
+### changed · `src/lib/app-views/categories/document-editor/inspector/text-selection.svelte` (+50 / −0)
 
 ~~~~diff
-@@ -21,6 +21,11 @@
+@@ -21,6 +21,12 @@
      type HorizontalAlignment
    } from "$app-views/categories/document-editor/procedures/blocks";
    import { FILLS, INKS, orClear, orNone } from "$app-views/categories/document-editor/procedures/colours";
 +  import {
++    markHoleOps,
++    markedHoleAt,
 +    nextHoleName,
-+    selectedWords,
-+    selectionHoleOps
++    selectedWords
 +  } from "$app-views/categories/document-editor/procedures/templating";
    import {
      ago,
      anchorOf,
-@@ -273,6 +278,24 @@
+@@ -273,6 +279,26 @@
    const openThread = (id: string) =>
      view.inspect("document-editor.comment", { kind: "comment", id });
    const openPerson = (id: string) => view.inspect("general.person", { kind: "person", id });
 +
 +  /**
-+   * A run of text becoming a hole.
++   * A run of text marked as a hole.
 +   *
-+   * The words are what the hole says by default, so a template placed without
-+   * changing anything reads exactly like the document it came from.
++   * Nothing about the document changes. The words are what the hole says by
++   * default, so a template placed without changing anything reads exactly like
++   * the document it came from.
 +   */
 +  const holeBody = $derived(runtime?.body);
 +  const holeOffer = $derived(holeBody === undefined ? "Hole 1" : nextHoleName(holeBody));
 +  const holeWords = $derived(
 +    holeBody === undefined ? "" : selectedWords(holeBody, view.selection)
 +  );
++  const holeHere = $derived(holeBody === undefined ? undefined : markedHoleAt(holeBody, view.selection));
 +
 +  const templateify = () => {
 +    if (runtime === undefined || holeBody === undefined) return;
-+    const ops = selectionHoleOps(holeBody, view.selection, holeOffer);
++    const ops = markHoleOps(holeBody, view.selection, holeOffer);
 +    if (ops.length > 0) runtime.apply(ops);
 +  };
  </script>
  
  {#snippet head(title: string)}
-@@ -365,6 +388,23 @@
+@@ -365,6 +391,30 @@
        onchange={setSpacing}
      />
  
 +    {#if holeWords !== ""}
 +      <PanelSection title="Template" chevron="end">
 +        <div class="flex flex-col items-start gap-2">
-+          <PanelNote tone="muted">
-+            Make this a hole and a template built from this document will ask what fills it, starting
-+            from what it says now.
-+          </PanelNote>
-+          <PanelButton
-+            label="Templateify"
-+            tone="primary"
-+            title={`Turn the selection into a hole called ${holeOffer}`}
-+            onclick={templateify}
-+          />
++          {#if holeHere === undefined}
++            <PanelNote tone="muted">
++              Mark this as a hole and a template built from this document will ask what fills it,
++              starting from what it says now. The document itself does not change.
++            </PanelNote>
++            <PanelButton
++              label="Templateify"
++              tone="primary"
++              title={`Mark the selection as a hole called ${holeOffer}`}
++              onclick={templateify}
++            />
++          {:else}
++            <PanelNote tone="muted">
++              These words are the hole <b>{holeHere}</b>. They stay exactly as they are here; the
++              template made from this document asks what goes in their place.
++            </PanelNote>
++          {/if}
 +        </div>
 +      </PanelSection>
 +    {/if}
@@ -11547,10 +12362,10 @@
        ]
 ~~~~
 
-### new · `src/lib/app-views/categories/document-editor/procedures/templating.ts` (+410 / −0)
+### new · `src/lib/app-views/categories/document-editor/procedures/templating.ts` (+417 / −0)
 
 ~~~~diff
-@@ -0,0 +1,410 @@
+@@ -0,0 +1,417 @@
 +import {
 +  readProjectResourceIndex,
 +  type ProjectResourceIndex
@@ -11594,7 +12409,10 @@
 +import type { DocumentOp } from "$representation/data/types/documents/op";
 +import type { TemplateHole } from "$representation/data/types/templates/template";
 +import { linearOf } from "$representation/data/behavior/content/positions";
-+import { holeSplice } from "$representation/data/behavior/templates/prompt-holes";
++import {
++  holeMarkOver,
++  holeNameOver
++} from "$representation/data/behavior/templates/prompt-holes";
 +import { rowHolding } from "$app-views/categories/document-editor/procedures/blocks";
 +import { mint, type IdKind } from "$app-views/categories/document-editor/procedures/ids";
 +import { addressOf } from "$app-views/categories/document-editor/procedures/inspecting";
@@ -11618,8 +12436,9 @@
 +
 +export {
 +  defaultScopeOf,
++  holeMarkOver,
++  holeNameOver,
 +  holeNamesIn,
-+  holeSplice,
 +  nextHoleName,
 +  offeredHoleName,
 +  promptWordsIn
@@ -11861,14 +12680,25 @@
 +  return blockWithAtoms(body, range.blockId)?.display.slice(range.from, range.to) ?? "";
 +};
 +
++/** Whether this run is already marked as a hole, and under what name. */
++export const markedHoleAt = (
++  body: DocumentBody,
++  selection: Selection | undefined
++): string | undefined => {
++  const range = selectedRange(body, selection);
++  if (range === undefined) return undefined;
++  const block = blockWithAtoms(body, range.blockId);
++  return block === undefined ? undefined : holeNameOver(block.atoms, block.marks, range.from, range.to);
++};
++
 +/**
-+ * A run of text becoming a hole.
++ * A run of text marked as a hole.
 + *
-+ * The words are not thrown away: they become what the hole says when nobody
-+ * says otherwise, so a template placed with every default reads exactly like
-+ * the document it was made from.
++ * Nothing about the document changes: the words stay, every other mark over
++ * them stays, and the paragraph reads exactly as it did. The mark says where a
++ * template's hole goes, and only the template — a copy — ever has one.
 + */
-+export const selectionHoleOps = (
++export const markHoleOps = (
 +  body: DocumentBody,
 +  selection: Selection | undefined,
 +  name: string
@@ -11877,24 +12707,16 @@
 +  if (range === undefined) return [];
 +  const block = blockWithAtoms(body, range.blockId);
 +  if (block === undefined) return [];
-+  const splice = holeSplice(block.atoms, range.from, range.to, { name: name.trim() }, () => mint("atom"));
-+  if (splice === undefined) return [];
++  const mark = holeMarkOver(block.atoms, range.from, range.to, name.trim(), () => mint("mark"));
++  if (mark === undefined) return [];
 +  return [
 +    {
 +      op: "insert",
-+      target: "atom",
-+      path: `${block.id}/atoms`,
-+      ids: splice.values.map((atom) => atom.id),
-+      after: splice.after,
-+      values: [...splice.values]
-+    },
-+    {
-+      op: "remove",
-+      target: "atom",
-+      path: `${block.id}/atoms`,
-+      ids: [...splice.remove],
-+      after: splice.after,
-+      values: block.atoms.filter((atom: { id: string }) => splice.remove.includes(atom.id))
++      target: "mark",
++      path: `${block.id}/marks`,
++      ids: [mark.id],
++      after: block.marks.at(-1)?.id ?? null,
++      values: [mark]
 +    }
 +  ];
 +};
@@ -12170,10 +12992,10 @@
          placeholder="Write a comment on {subject}…"
 ~~~~
 
-### changed · `src/lib/app-views/categories/slide-deck-editor/context/templates.svelte` (+635 / −3)
+### changed · `src/lib/app-views/categories/slide-deck-editor/context/templates.svelte` (+634 / −3)
 
 ~~~~diff
-@@ -1,8 +1,640 @@
+@@ -1,8 +1,639 @@
  <script lang="ts">
 -  import { Panel, PanelEmpty, PanelNote } from "$authored-components/panel";
 +  import { onDestroy } from "svelte";
@@ -12224,7 +13046,6 @@
 +    templateDetail,
 +    templateLibrary,
 +    termFor,
-+    textHoleInsertion,
 +    updateHoles,
 +    withHoleField,
 +    withNewTextHole,
@@ -13001,6 +13822,93 @@
      display: flex;
 ~~~~
 
+### changed · `src/lib/app-views/categories/slide-deck-editor/inspector/text-selection.svelte` (+61 / −1)
+
+~~~~diff
+@@ -1,5 +1,18 @@
+ <script lang="ts">
+-  import { Panel, PanelCrumbs, PanelEmpty } from "$authored-components/panel";
++  import {
++    Panel,
++    PanelButton,
++    PanelCrumbs,
++    PanelEmpty,
++    PanelNote,
++    PanelSection
++  } from "$authored-components/panel";
++  import {
++    markHoleOps,
++    markedHoleAt,
++    nextHoleName,
++    selectedWords
++  } from "$app-views/categories/slide-deck-editor/procedures/templating";
+   import TextSpacing from "$app-views/categories/slide-deck-editor/components/text-spacing.svelte";
+   import TextStyle from "$app-views/categories/slide-deck-editor/components/text-style.svelte";
+   import { blockIn, slideIndexOf } from "$app-views/categories/slide-deck-editor/procedures/deck";
+@@ -17,6 +30,20 @@
+   const range = $derived(rangeOf(view.selection));
+   const block = $derived(body === undefined || range === undefined ? undefined : blockIn(body, range.blockId));
+   const position = $derived(body === undefined ? 0 : slideIndexOf(body, view.active.focus ?? undefined) + 1);
++
++  /**
++   * A run of a slide's text marked as a hole. Nothing about the deck changes —
++   * the words stay, and only a template made from it holds a hole here.
++   */
++  const offered = $derived(body === undefined ? "Hole 1" : nextHoleName(body));
++  const words = $derived(body === undefined ? "" : selectedWords(body, range));
++  const here = $derived(body === undefined ? undefined : markedHoleAt(body, range));
++
++  const templateify = () => {
++    if (runtime === undefined || body === undefined) return;
++    const ops = markHoleOps(body, range, offered);
++    if (ops.length > 0) runtime.apply(ops);
++  };
+ </script>
+ 
+ <Panel title="Text selection">
+@@ -30,7 +57,40 @@
+   {#if block && range}
+     <TextStyle blockId={block.id} from={range.from} to={range.to} />
+     <TextSpacing blockId={block.id} />
++
++    {#if words !== ""}
++      <PanelSection title="Template" chevron="end">
++        <div class="template">
++          {#if here === undefined}
++            <PanelNote tone="muted">
++              Mark this as a hole and a template built from this deck will ask what fills it, starting
++              from what it says now. The deck itself does not change.
++            </PanelNote>
++            <PanelButton
++              label="Templateify"
++              tone="primary"
++              title={`Mark the selection as a hole called ${offered}`}
++              onclick={templateify}
++            />
++          {:else}
++            <PanelNote tone="muted">
++              These words are the hole <b>{here}</b>. They stay exactly as they are here; the template
++              made from this deck asks what goes in their place.
++            </PanelNote>
++          {/if}
++        </div>
++      </PanelSection>
++    {/if}
+   {:else}
+     <PanelEmpty title="Select some text on the slide" />
+   {/if}
+ </Panel>
++
++<style>
++  .template {
++    display: flex;
++    flex-direction: column;
++    align-items: flex-start;
++    gap: calc(var(--token-spacing-unit) * 1.5);
++  }
++</style>
+~~~~
+
 ### changed · `src/lib/app-views/categories/slide-deck-editor/inspector/threads.svelte` (+8 / −1)
 
 ~~~~diff
@@ -13040,6 +13948,23 @@
  
    <section aria-labelledby="slide-thread-open" class="flex flex-col">
      <div class="text-ink-secondary flex items-center gap-1.5 px-3 py-1.5 text-start">
+~~~~
+
+### changed · `src/lib/app-views/categories/slide-deck-editor/procedures/ids.ts` (+2 / −1)
+
+~~~~diff
+@@ -1,10 +1,11 @@
+-export type IdKind = "slide" | "element" | "block" | "atom" | "layout";
++export type IdKind = "slide" | "element" | "block" | "atom" | "mark" | "layout";
+ 
+ const PREFIX: Record<IdKind, string> = {
+   slide: "slide",
+   element: "el",
+   block: "blk",
+   atom: "atm",
++  mark: "mrk",
+   layout: "layout"
+ };
 ~~~~
 
 ### changed · `src/lib/app-views/categories/slide-deck-editor/procedures/prompt-blocks.ts` (+17 / −0)
@@ -13096,10 +14021,10 @@
        cuts.add(offset + length);
 ~~~~
 
-### new · `src/lib/app-views/categories/slide-deck-editor/procedures/templating.ts` (+427 / −0)
+### new · `src/lib/app-views/categories/slide-deck-editor/procedures/templating.ts` (+450 / −0)
 
 ~~~~diff
-@@ -0,0 +1,427 @@
+@@ -0,0 +1,450 @@
 +import {
 +  readProjectResourceIndex,
 +  type ProjectResourceIndex
@@ -13134,6 +14059,10 @@
 +  type ScopeOffering
 +} from "$representation/data/behavior/core/scope-draft";
 +import { applyOps } from "$representation/data/behavior/slide-decks/apply-ops";
++import {
++  holeMarkOver,
++  holeNameOver
++} from "$representation/data/behavior/templates/prompt-holes";
 +import { withFreshIds, type IdHint } from "$representation/data/behavior/templates/fresh-ids";
 +import {
 +  fillTemplateAtoms,
@@ -13144,8 +14073,7 @@
 +import type { SlideDeckOp } from "$representation/data/types/slide-decks/op";
 +import type { TemplateHole } from "$representation/data/types/templates/template";
 +import { mint, type IdKind } from "$app-views/categories/slide-deck-editor/procedures/ids";
-+import { addressOf } from "$app-views/categories/slide-deck-editor/procedures/selecting";
-+import type { Selection, WorkspaceStateModel } from "$model/client/workspace-state";
++import type { WorkspaceStateModel } from "$model/client/workspace-state";
 +
 +export type { ResourceSetItem } from "$capabilities/resource-sets/index.remote";
 +export type {
@@ -13159,8 +14087,9 @@
 +
 +export {
 +  defaultScopeOf,
++  holeMarkOver,
++  holeNameOver,
 +  holeNamesIn,
-+  holeSplice,
 +  nextHoleName,
 +  offeredHoleName,
 +  promptWordsIn
@@ -13413,44 +14342,63 @@
 +  return taken ? `This template already has a hole called ${name}.` : undefined;
 +};
 +
-+/**
-+ * The block a new text hole's atom lands in: the one the caret is in, else the
-+ * one inside the selected element, else the deck's last writable block.
-+ */
-+const holeBlockIn = (body: SlideDeckBody, selection: Selection | undefined) => {
-+  const blocks = body.slides.flatMap((slide) =>
-+    slide.elements.flatMap((element) =>
-+      element.content.type === "text" || element.content.type === "prompt"
-+        ? [{ elementId: element.id, block: element.content.block }]
-+        : []
-+    )
-+  );
-+  const held = selection?.id;
-+  const caret = held === undefined ? undefined : addressOf(held)?.blockId;
-+  return (
-+    blocks.find((entry) => entry.block.id === caret) ??
-+    blocks.find((entry) => entry.elementId === held) ??
-+    blocks.at(-1)
-+  );
++
++const blockAt = (body: SlideDeckBody, blockId: string) => {
++  for (const slide of body.slides) {
++    for (const element of slide.elements) {
++      const content = element.content;
++      if (content.type !== "text" && content.type !== "prompt") continue;
++      if (content.block.id === blockId) return content.block;
++    }
++  }
++  return undefined;
 +};
 +
-+/** The ops that put a text hole's atom into the selected text. */
-+export const textHoleInsertion = (
++/** The words a selection covers, which become what its hole says by default. */
++export const selectedWords = (
 +  body: SlideDeckBody,
-+  selection: Selection | undefined,
++  range: { readonly blockId: string; readonly from: number; readonly to: number } | undefined
++): string => {
++  if (range === undefined) return "";
++  const block = blockAt(body, range.blockId);
++  if (block === undefined) return "";
++  return block.display.slice(Math.min(range.from, range.to), Math.max(range.from, range.to));
++};
++
++/** Whether this run is already marked as a hole, and under what name. */
++export const markedHoleAt = (
++  body: SlideDeckBody,
++  range: { readonly blockId: string; readonly from: number; readonly to: number } | undefined
++): string | undefined => {
++  if (range === undefined) return undefined;
++  const block = blockAt(body, range.blockId);
++  return block === undefined ? undefined : holeNameOver(block.atoms, block.marks, range.from, range.to);
++};
++
++/**
++ * A run of a slide's text marked as a hole.
++ *
++ * Nothing about the deck changes: the words stay, every other mark over them
++ * stays, and only the template made from it holds a hole where they were.
++ */
++export const markHoleOps = (
++  body: SlideDeckBody,
++  range: { readonly blockId: string; readonly from: number; readonly to: number } | undefined,
 +  name: string
 +): readonly SlideDeckOp[] => {
-+  const held = holeBlockIn(body, selection);
-+  if (held === undefined) return [];
-+  const atom = { id: mint("atom"), kind: "template" as const, name: name.trim() };
++  if (range === undefined) return [];
++  const block = blockAt(body, range.blockId);
++  if (block === undefined) return [];
++  const mark = holeMarkOver(block.atoms, range.from, range.to, name.trim(), () => mint("mark"));
++  if (mark === undefined) return [];
 +  return [
 +    {
 +      op: "insert",
-+      target: "atom",
-+      path: `${held.block.id}/atoms`,
-+      ids: [atom.id],
-+      after: held.block.atoms.at(-1)?.id ?? null,
-+      values: [atom]
++      target: "mark",
++      path: `${block.id}/marks`,
++      ids: [mark.id],
++      after: block.marks.at(-1)?.id ?? null,
++      values: [mark]
 +    }
 +  ];
 +};
@@ -17597,10 +18545,10 @@
    await expect(inspector).toBeVisible();
 ~~~~
 
-### new · `test/browser/template-features.spec.ts` (+424 / −0)
+### new · `test/browser/template-features.spec.ts` (+440 / −0)
 
 ~~~~diff
-@@ -0,0 +1,424 @@
+@@ -0,0 +1,440 @@
 +import { expect, test, type Locator, type Page, type TestInfo } from "@playwright/test";
 +
 +const unexpected: string[] = [];
@@ -17876,7 +18824,11 @@
 +  await deleteTemplateFromLibrary(page, name);
 +});
 +
-+test("Templateify turns a run of selected text into a hole that says those words", async ({ page }) => {
++/**
++ * Marking a run is not an edit. The document reads exactly as it did before and
++ * after; only the template made from it holds a hole where the words were.
++ */
++test("Templateify marks a run without changing the document, and the template gets the hole", async ({ page }) => {
 +  const name = `Browser holes ${Date.now()}`;
 +  await openDocumentFixture(page);
 +
@@ -17884,6 +18836,7 @@
 +  const editor = page.locator(".ProseMirror");
 +  const paragraph = editor.getByRole("paragraph").first();
 +  await expect(paragraph).toBeVisible();
++  const before = await editor.innerText();
 +  await paragraph.dblclick();
 +
 +  const selection = page.locator(
@@ -17894,7 +18847,11 @@
 +  expect(words.length).toBeGreaterThan(0);
 +
 +  await selection.getByRole("button", { name: "Templateify", exact: true }).click();
-+  await expect(editor.locator(".document-template-atom")).toContainText("Hole 1");
++
++  // The document is untouched: same words, no hole drawn into the prose.
++  await expect(selection.getByText("These words are the hole")).toBeVisible();
++  await expect(editor.locator(".document-template-atom")).toHaveCount(0);
++  expect(await editor.innerText()).toEqual(before);
 +  await expect(page.locator(".title-bar")).toContainText("Saved", { timeout: 15_000 });
 +
 +  // The words are not thrown away — they become what the hole says by default.
@@ -17908,9 +18865,16 @@
 +  await expect(card.getByRole("button", { name: "Default scope", exact: true })).toHaveCount(0);
 +  await expect(card).toContainText(words);
 +
++  // The copy the template opened holds the hole; the original still holds the words.
++  await expect(page.locator(".ProseMirror").locator(".document-template-atom")).toContainText("Hole 1");
++
 +  page.once("dialog", (dialog) => void dialog.accept());
 +  await context.getByRole("button", { name: "Discard", exact: true }).click();
 +  await expect(tabs(page).getByRole("button", { name: `Template · ${name}`, exact: true })).toHaveCount(0, { timeout: 15_000 });
++
++  await openDocumentFixture(page);
++  expect(await page.locator(".ProseMirror").innerText()).toEqual(before);
++  await expect(page.locator(".ProseMirror").locator(".document-template-atom")).toHaveCount(0);
 +
 +  await deleteTemplateFromLibrary(page, name);
 +});
@@ -23137,10 +24101,10 @@
 +</style>
 ~~~~
 
-### new · `src/lib/development-views/template-reference/procedures/changes.ts` (+348 / −0)
+### new · `src/lib/development-views/template-reference/procedures/changes.ts` (+370 / −0)
 
 ~~~~diff
-@@ -0,0 +1,348 @@
+@@ -0,0 +1,370 @@
 +import type { Decision, OpenItem, SystematicChange, Verification } from "$development-views/template-reference/types";
 +
 +export const SYSTEMATIC: SystematicChange[] = [
@@ -23296,6 +24260,24 @@
 +    area: "templates"
 +  },
 +  {
++    index: "20",
++    title: "Templateifying marks a run, and never edits it",
++    before:
++      "Templateifying a selection spliced the words out of the paragraph and put a template atom in their place. The document now read {Hole 1} where the prose had been, marks reaching into the run were lost, and taking it back meant typing the words again.",
++    now: "A hole over text is an ordinary mark, addressed the way a comment or a link is. The resource is untouched — same words, same formatting, and the Template section reads back which hole those words are. Only the copy the template is built from turns each marked run into its atom. Measuring a mark now counts a hole as the width of what it displays, which the validator could not do before and which refused every template holding both a hole and a formatted run.",
++    why: "A resource is not a template and must not be damaged to make one. Marking says these words are where a hole goes; it does not say the words are gone.",
++    area: "editors"
++  },
++  {
++    index: "21",
++    title: "A deck templateifies its words too",
++    before:
++      "A deck's holes could only come from its prompts. Selecting words on a slide offered nothing, so a deck template could not ask for a client name.",
++    now: "The deck's text-selection inspector carries the same Template section as the document's, over the same marks and the same functions. What differs is only how a selection is addressed.",
++    why: "Both editors hold blocks of atoms with marks over them. A hole that works in one and not the other is an accident of which inspector was built first.",
++    area: "editors"
++  },
++  {
 +    index: "17",
 +    title: "Placing a template walks its holes",
 +    before:
@@ -23370,9 +24352,9 @@
 +];
 +
 +export const VERIFICATION: Verification[] = [
-+  { check: "Types", command: "pnpm typecheck", result: "0 errors, 0 warnings across 2,924 files", clean: true },
++  { check: "Types", command: "pnpm typecheck", result: "0 errors, 0 warnings across 2,926 files", clean: true },
 +  { check: "Structure", command: "pnpm lint", result: "56 checks, 56 clean", clean: true },
-+  { check: "Unit", command: "pnpm test", result: "1,046 tests in 117 files, 2 skipped", clean: true },
++  { check: "Unit", command: "pnpm test", result: "1,074 tests in 119 files, 2 skipped", clean: true },
 +  { check: "Category keys", command: "pnpm category-keys -- --check", result: "10 categories and 13 content views in step", clean: true },
 +  {
 +    check: "Browser",
@@ -23384,10 +24366,10 @@
 +
 +export const OPEN: OpenItem[] = [
 +  {
-+    title: "Holes from the prompt blocks this branch now sits on",
++    title: "Two prompts sharing one hole",
 +    detail:
-+      "The base branch has live prompt blocks in both editors, so a scope hole can finally come from a prompt somebody wrote rather than only from an inserted template. Nothing here has been taught to read them yet: a hole still appears when a body already carries a { select: \"hole\" } scope. The agreed shape is pull-based — making a template walks the prompts it found and asks what each one's scope should be, and two prompts may point at the same hole.",
-+    recommendation: "Build it against the prompt block that now exists, as the next piece of work."
++      "Nothing stops it and nothing offers it: typing the same name on two prompts makes them one question, because a name is the whole of a hole's identity. There is no picker of existing names, so it happens only on purpose.",
++    recommendation: "Leave it until somebody wants it. The offered name would become a list the moment it is worth choosing from."
 +  },
 +  {
 +    title: "Images stored with a template",
@@ -23476,7 +24458,11 @@
 +    { name: "templates.projectId", note: "required — the project a template belongs to" },
 +    { name: "templates.lastUsedAt", note: "optional — when it was last instantiated, which is what recency reads" },
 +    { name: "TemplatedTerm { select: \"set\" }", note: "a hole default may name one of the project's sets" },
-+    { name: "Target.context", note: "a tab can be opened straight onto a named context view" }
++    { name: "Target.context", note: "a tab can be opened straight onto a named context view" },
++    { name: "Mark.hole", note: "{ name, description? } — a run of words somebody templateified, addressed like any other mark" },
++    { name: "PromptBlock.hole", note: "{ name, description? } — set by Templateify, absent until then" },
++    { name: "PromptBlock.asks", note: "the prompt's own words, copied on the way into a template" },
++    { name: "TemplateAtom", note: "kind \"template\" — a hole standing in the prose of a template's body" }
 +  ],
 +  removed: [
 +    { name: "documents.templateId", note: "a copy knows nothing of where it came from" },
@@ -23485,16 +24471,16 @@
 +  ],
 +  unchanged: [
 +    { name: "TemplateBody", note: "document | slides | spreadsheet, exactly as before" },
-+    { name: "TemplateHole", note: "name, label, description?, default? — main's shape" },
++    { name: "TemplateHole", note: "main's name, label, description?, default?, widened with kind and text for a hole that asks for words" },
 +    { name: "resourceSets", note: "the table was already there; only the capability over it is new" }
 +  ]
 +};
 ~~~~
 
-### new · `src/lib/development-views/template-reference/procedures/integration.ts` (+212 / −0)
+### new · `src/lib/development-views/template-reference/procedures/integration.ts` (+219 / −0)
 
 ~~~~diff
-@@ -0,0 +1,212 @@
+@@ -0,0 +1,219 @@
 +import type { ChainLink, Decision, ScopeGap } from "$development-views/template-reference/types";
 +
 +/**
@@ -23516,11 +24502,11 @@
 +  },
 +  {
 +    index: "02",
-+    step: "Something is templateified",
++    step: "Something is templateified, and nothing about the resource changes",
 +    gesture: "Templateify, in the Template section of a prompt or of a text selection",
-+    runs: "promptHoleOps on a block, or selectionHoleOps on a range",
++    runs: "promptHoleOps writes a record on the block; markHoleOps writes a mark over the run",
 +    state: "works",
-+    evidence: "template-features.spec.ts — a templateified prompt becomes a hole"
++    evidence: "template-features.spec.ts — Templateify marks a run without changing the document"
 +  },
 +  {
 +    index: "03",
@@ -23534,7 +24520,7 @@
 +    index: "04",
 +    step: "Making a template keeps exactly those holes",
 +    gesture: "None — it is what saving means",
-+    runs: "promptHolesOf · textHolesOf · withAsks · portableBodyOf · withPromptHoles",
++    runs: "promptHolesOf · withAsks · portableBodyOf · withPromptHoles · withMarkedHoles · textHolesOf",
 +    state: "works",
 +    evidence: "answers.test.ts — gives no hole to a prompt nobody templateified"
 +  },
@@ -23654,9 +24640,16 @@
 +  {
 +    round: "This round",
 +    question: "What can become one?",
-+    answer: "A prompt block, and a run of selected text. Both, by the same gesture.",
++    answer: "A prompt block, and a run of selected text — in a document and on a slide alike, by the same gesture.",
 +    became:
-+      "The Template section appears in the prompt inspector and in the text-selection inspector, in the ordinary editor as much as in a working copy."
++      "The Template section appears in both editors' prompt inspectors and in both editors' text-selection inspectors, in the ordinary editor as much as in a working copy."
++  },
++  {
++    round: "This round",
++    question: "What does templateifying do to the resource?",
++    answer: "Nothing. It marks where a hole goes; it does not put one there.",
++    became:
++      "A text hole is an ordinary mark, addressed like a comment or a link. The words, the formatting and the display are exactly what they were, and withMarkedHoles turns each marked run into its atom only on the copy the template is built from."
 +  },
 +  {
 +    round: "This round",
@@ -23689,30 +24682,30 @@
 +
 +export const LIMITS: ScopeGap[] = [
 +  {
-+    title: "Templateifying a selection drops marks that reached into it",
++    title: "A mark that reaches into a hole is dropped — on the copy",
 +    detail:
-+      "Only the atoms the selection touches are rebuilt, so formatting elsewhere in the paragraph survives. A bold run that crossed the selection's edge does not.",
-+    order: "Acceptable: the words became a question. Revisit if it turns out to bite."
++      "In the template, a bold run that crossed a hole's edge is gone: those words are a question now, and formatting a question means nothing. Every other mark keeps exactly the words it covered, mapped by position. The resource itself keeps all of them.",
++    order: "Settled. This is the only thing templating drops, and it drops it where it is harmless."
 +  },
 +  {
-+    title: "A hole's prompt is a snapshot",
++    title: "A prompt's text is copied into the template when the template is made",
 +    detail:
-+      "The question shown when placing a template is copied onto the block when the template is made. Editing the prompt in the original afterwards does not reach the template — saving the template again does.",
++      "A prompt's words live on the derived output it is linked to, and a template leaves that row behind. So the words are copied onto the block on the way in, and a copy made later gets a derived output of its own built from them. Editing the prompt in the original afterwards does not reach the template — saving the template again does.",
 +    order: "Correct as long as a template is a copy, which is the whole model. Nothing to do."
 +  },
 +  {
-+    title: "Only the document editor templateifies a selection",
++    title: "A hole cannot span two blocks",
 +    detail:
-+      "The deck's text is edited through the slide surface rather than a text-selection inspector, so a deck's holes come from its prompts. Its prose can still hold a hole carried in from an inserted template.",
-+    order: "Add it when the deck grows the same inspector seam."
++      "A mark lives inside one block, so a selection running across a paragraph break marks nothing. Selecting within a paragraph, or a whole one, is what is offered.",
++    order: "Worth revisiting only if somebody wants a hole that swallows structure."
 +  }
 +];
 ~~~~
 
-### new · `src/lib/development-views/template-reference/procedures/inventory.ts` (+167 / −0)
+### new · `src/lib/development-views/template-reference/procedures/inventory.ts` (+171 / −0)
 
 ~~~~diff
-@@ -0,0 +1,167 @@
+@@ -0,0 +1,171 @@
 +import type { FileRecord } from "$development-views/template-reference/types";
 +
 +/**
@@ -23732,23 +24725,25 @@
 +  {"path":"app/src/lib/app-views/categories/document-editor/content/document.svelte","status":"M","area":"editors","kind":"production","current":954,"base":939,"added":15,"deleted":0},
 +  {"path":"app/src/lib/app-views/categories/document-editor/context/templates.svelte","status":"A","area":"editors","kind":"production","current":616,"base":0,"added":616,"deleted":0},
 +  {"path":"app/src/lib/app-views/categories/document-editor/inspector/prompt-block.svelte","status":"M","area":"editors","kind":"production","current":352,"base":242,"added":114,"deleted":4},
-+  {"path":"app/src/lib/app-views/categories/document-editor/inspector/text-selection.svelte","status":"M","area":"editors","kind":"production","current":534,"base":494,"added":40,"deleted":0},
++  {"path":"app/src/lib/app-views/categories/document-editor/inspector/text-selection.svelte","status":"M","area":"editors","kind":"production","current":544,"base":494,"added":50,"deleted":0},
 +  {"path":"app/src/lib/app-views/categories/document-editor/procedures/projection.ts","status":"M","area":"editors","kind":"production","current":751,"base":726,"added":33,"deleted":8},
 +  {"path":"app/src/lib/app-views/categories/document-editor/procedures/prompt-blocks.ts","status":"M","area":"editors","kind":"production","current":104,"base":87,"added":17,"deleted":0},
 +  {"path":"app/src/lib/app-views/categories/document-editor/procedures/schema.ts","status":"M","area":"editors","kind":"production","current":255,"base":221,"added":37,"deleted":3},
-+  {"path":"app/src/lib/app-views/categories/document-editor/procedures/templating.ts","status":"A","area":"editors","kind":"production","current":410,"base":0,"added":410,"deleted":0},
++  {"path":"app/src/lib/app-views/categories/document-editor/procedures/templating.ts","status":"A","area":"editors","kind":"production","current":417,"base":0,"added":417,"deleted":0},
 +  {"path":"app/src/lib/app-views/categories/document-editor/procedures/test/unit/templating.test.ts","status":"A","area":"editors","kind":"test","current":167,"base":0,"added":167,"deleted":0},
 +  {"path":"app/src/lib/app-views/categories/project-overview/context/contexts.svelte","status":"A","area":"contexts","kind":"production","current":283,"base":0,"added":283,"deleted":0},
 +  {"path":"app/src/lib/app-views/categories/project-overview/procedures/contexts.ts","status":"A","area":"contexts","kind":"production","current":115,"base":0,"added":115,"deleted":0},
 +  {"path":"app/src/lib/app-views/categories/project-overview/procedures/test/unit/contexts.test.ts","status":"A","area":"contexts","kind":"test","current":68,"base":0,"added":68,"deleted":0},
 +  {"path":"app/src/lib/app-views/categories/project-overview/project-overview.md","status":"M","area":"contexts","kind":"documentation","current":622,"base":618,"added":25,"deleted":21},
 +  {"path":"app/src/lib/app-views/categories/slide-deck-editor/context/comments.svelte","status":"M","area":"editors","kind":"production","current":175,"base":170,"added":6,"deleted":1},
-+  {"path":"app/src/lib/app-views/categories/slide-deck-editor/context/templates.svelte","status":"M","area":"editors","kind":"production","current":640,"base":8,"added":635,"deleted":3},
++  {"path":"app/src/lib/app-views/categories/slide-deck-editor/context/templates.svelte","status":"M","area":"editors","kind":"production","current":639,"base":8,"added":634,"deleted":3},
 +  {"path":"app/src/lib/app-views/categories/slide-deck-editor/inspector/prompt-block.svelte","status":"M","area":"editors","kind":"production","current":388,"base":277,"added":115,"deleted":4},
++  {"path":"app/src/lib/app-views/categories/slide-deck-editor/inspector/text-selection.svelte","status":"M","area":"editors","kind":"production","current":96,"base":36,"added":61,"deleted":1},
 +  {"path":"app/src/lib/app-views/categories/slide-deck-editor/inspector/threads.svelte","status":"M","area":"editors","kind":"production","current":151,"base":144,"added":8,"deleted":1},
++  {"path":"app/src/lib/app-views/categories/slide-deck-editor/procedures/ids.ts","status":"M","area":"editors","kind":"production","current":13,"base":12,"added":2,"deleted":1},
 +  {"path":"app/src/lib/app-views/categories/slide-deck-editor/procedures/prompt-blocks.ts","status":"M","area":"editors","kind":"production","current":220,"base":203,"added":17,"deleted":0},
 +  {"path":"app/src/lib/app-views/categories/slide-deck-editor/procedures/scene.ts","status":"M","area":"editors","kind":"production","current":333,"base":333,"added":3,"deleted":3},
-+  {"path":"app/src/lib/app-views/categories/slide-deck-editor/procedures/templating.ts","status":"A","area":"editors","kind":"production","current":427,"base":0,"added":427,"deleted":0},
++  {"path":"app/src/lib/app-views/categories/slide-deck-editor/procedures/templating.ts","status":"A","area":"editors","kind":"production","current":450,"base":0,"added":450,"deleted":0},
 +  {"path":"app/src/lib/app-views/categories/slide-deck-editor/procedures/test/unit/templating.test.ts","status":"A","area":"editors","kind":"test","current":130,"base":0,"added":130,"deleted":0},
 +  {"path":"app/src/lib/app-views/categories/slide-deck-editor/procedures/typing.ts","status":"M","area":"editors","kind":"production","current":206,"base":207,"added":2,"deleted":3},
 +  {"path":"app/src/lib/app-views/categories/slide-deck-editor/slide-deck-editor.md","status":"M","area":"editors","kind":"documentation","current":284,"base":262,"added":23,"deleted":1},
@@ -23794,16 +24789,16 @@
 +  {"path":"app/src/lib/capabilities/templates/api/shared/bodies.ts","status":"M","area":"templates","kind":"production","current":308,"base":462,"added":17,"deleted":171},
 +  {"path":"app/src/lib/capabilities/templates/api/shared/holes.ts","status":"A","area":"templates","kind":"production","current":39,"base":0,"added":39,"deleted":0},
 +  {"path":"app/src/lib/capabilities/templates/api/shared/projection.ts","status":"M","area":"templates","kind":"production","current":266,"base":283,"added":32,"deleted":49},
-+  {"path":"app/src/lib/capabilities/templates/api/shared/prompts.ts","status":"A","area":"templates","kind":"production","current":157,"base":0,"added":157,"deleted":0},
++  {"path":"app/src/lib/capabilities/templates/api/shared/prompts.ts","status":"A","area":"templates","kind":"production","current":164,"base":0,"added":164,"deleted":0},
 +  {"path":"app/src/lib/capabilities/templates/api/shared/scopes.ts","status":"A","area":"templates","kind":"production","current":204,"base":0,"added":204,"deleted":0},
 +  {"path":"app/src/lib/capabilities/templates/api/shared/stages.ts","status":"A","area":"templates","kind":"production","current":141,"base":0,"added":141,"deleted":0},
 +  {"path":"app/src/lib/capabilities/templates/api/shared/template-rows.ts","status":"M","area":"templates","kind":"production","current":37,"base":36,"added":3,"deleted":2},
-+  {"path":"app/src/lib/capabilities/templates/api/shared/validation.ts","status":"M","area":"templates","kind":"production","current":1882,"base":1687,"added":246,"deleted":51},
++  {"path":"app/src/lib/capabilities/templates/api/shared/validation.ts","status":"M","area":"templates","kind":"production","current":1881,"base":1687,"added":259,"deleted":65},
 +  {"path":"app/src/lib/capabilities/templates/api/update-template/update-template.ts","status":"M","area":"templates","kind":"production","current":168,"base":113,"added":81,"deleted":26},
 +  {"path":"app/src/lib/capabilities/templates/api/update-template/validate-update-template.ts","status":"M","area":"templates","kind":"production","current":65,"base":61,"added":14,"deleted":10},
 +  {"path":"app/src/lib/capabilities/templates/index.remote.ts","status":"M","area":"templates","kind":"production","current":125,"base":73,"added":58,"deleted":6},
 +  {"path":"app/src/lib/capabilities/templates/templates.md","status":"M","area":"templates","kind":"documentation","current":153,"base":91,"added":126,"deleted":64},
-+  {"path":"app/src/lib/capabilities/templates/test/unit/answers.test.ts","status":"A","area":"templates","kind":"test","current":588,"base":0,"added":588,"deleted":0},
++  {"path":"app/src/lib/capabilities/templates/test/unit/answers.test.ts","status":"A","area":"templates","kind":"test","current":655,"base":0,"added":655,"deleted":0},
 +  {"path":"app/src/lib/capabilities/templates/test/unit/stages.test.ts","status":"A","area":"templates","kind":"test","current":377,"base":0,"added":377,"deleted":0},
 +  {"path":"app/src/lib/capabilities/templates/test/unit/templates.test.ts","status":"M","area":"templates","kind":"test","current":1414,"base":1447,"added":89,"deleted":122},
 +  {"path":"app/src/lib/capabilities/templates/types/templates.ts","status":"M","area":"templates","kind":"production","current":252,"base":156,"added":118,"deleted":22},
@@ -23832,9 +24827,9 @@
 +  {"path":"app/src/lib/development-views/template-reference/components/scope-page.svelte","status":"A","area":"reference","kind":"reference","current":468,"base":0,"added":468,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/components/system-page.svelte","status":"A","area":"reference","kind":"reference","current":329,"base":0,"added":329,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/components/walkthrough-page.svelte","status":"A","area":"reference","kind":"reference","current":373,"base":0,"added":373,"deleted":0},
-+  {"path":"app/src/lib/development-views/template-reference/procedures/changes.ts","status":"A","area":"reference","kind":"reference","current":348,"base":0,"added":348,"deleted":0},
-+  {"path":"app/src/lib/development-views/template-reference/procedures/integration.ts","status":"A","area":"reference","kind":"reference","current":212,"base":0,"added":212,"deleted":0},
-+  {"path":"app/src/lib/development-views/template-reference/procedures/inventory.ts","status":"A","area":"reference","kind":"reference","current":166,"base":0,"added":166,"deleted":0},
++  {"path":"app/src/lib/development-views/template-reference/procedures/changes.ts","status":"A","area":"reference","kind":"reference","current":370,"base":0,"added":370,"deleted":0},
++  {"path":"app/src/lib/development-views/template-reference/procedures/integration.ts","status":"A","area":"reference","kind":"reference","current":219,"base":0,"added":219,"deleted":0},
++  {"path":"app/src/lib/development-views/template-reference/procedures/inventory.ts","status":"A","area":"reference","kind":"reference","current":173,"base":0,"added":173,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/procedures/navigation.ts","status":"A","area":"reference","kind":"reference","current":27,"base":0,"added":27,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/procedures/rebase.ts","status":"A","area":"reference","kind":"reference","current":157,"base":0,"added":157,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/procedures/scope.ts","status":"A","area":"reference","kind":"reference","current":521,"base":0,"added":521,"deleted":0},
@@ -23856,16 +24851,18 @@
 +  {"path":"app/src/lib/representation/data/behavior/templates/deck-of-slide.ts","status":"A","area":"vocabulary","kind":"production","current":18,"base":0,"added":18,"deleted":0},
 +  {"path":"app/src/lib/representation/data/behavior/templates/fresh-ids.ts","status":"A","area":"vocabulary","kind":"production","current":71,"base":0,"added":71,"deleted":0},
 +  {"path":"app/src/lib/representation/data/behavior/templates/portable.ts","status":"A","area":"vocabulary","kind":"production","current":87,"base":0,"added":87,"deleted":0},
-+  {"path":"app/src/lib/representation/data/behavior/templates/prompt-holes.ts","status":"A","area":"vocabulary","kind":"production","current":280,"base":0,"added":280,"deleted":0},
++  {"path":"app/src/lib/representation/data/behavior/templates/prompt-holes.ts","status":"A","area":"vocabulary","kind":"production","current":403,"base":0,"added":403,"deleted":0},
 +  {"path":"app/src/lib/representation/data/behavior/templates/scopes.ts","status":"A","area":"vocabulary","kind":"production","current":216,"base":0,"added":216,"deleted":0},
 +  {"path":"app/src/lib/representation/data/behavior/templates/test/unit/answers.test.ts","status":"A","area":"vocabulary","kind":"test","current":104,"base":0,"added":104,"deleted":0},
++  {"path":"app/src/lib/representation/data/behavior/templates/test/unit/at-scale.test.ts","status":"A","area":"vocabulary","kind":"test","current":299,"base":0,"added":299,"deleted":0},
 +  {"path":"app/src/lib/representation/data/behavior/templates/test/unit/deck-of-slide.test.ts","status":"A","area":"vocabulary","kind":"test","current":36,"base":0,"added":36,"deleted":0},
 +  {"path":"app/src/lib/representation/data/behavior/templates/test/unit/fresh-ids.test.ts","status":"A","area":"vocabulary","kind":"test","current":81,"base":0,"added":81,"deleted":0},
++  {"path":"app/src/lib/representation/data/behavior/templates/test/unit/marked-holes.test.ts","status":"A","area":"vocabulary","kind":"test","current":239,"base":0,"added":239,"deleted":0},
 +  {"path":"app/src/lib/representation/data/behavior/templates/test/unit/portable.test.ts","status":"A","area":"vocabulary","kind":"test","current":105,"base":0,"added":105,"deleted":0},
-+  {"path":"app/src/lib/representation/data/behavior/templates/test/unit/prompt-holes.test.ts","status":"A","area":"vocabulary","kind":"test","current":176,"base":0,"added":176,"deleted":0},
++  {"path":"app/src/lib/representation/data/behavior/templates/test/unit/prompt-holes.test.ts","status":"A","area":"vocabulary","kind":"test","current":153,"base":0,"added":153,"deleted":0},
 +  {"path":"app/src/lib/representation/data/behavior/templates/test/unit/scopes.test.ts","status":"A","area":"vocabulary","kind":"test","current":109,"base":0,"added":109,"deleted":0},
 +  {"path":"app/src/lib/representation/data/behavior/workspace/opening.ts","status":"M","area":"vocabulary","kind":"production","current":168,"base":164,"added":5,"deleted":1},
-+  {"path":"app/src/lib/representation/data/types/content/content-block.ts","status":"M","area":"vocabulary","kind":"production","current":173,"base":130,"added":44,"deleted":1},
++  {"path":"app/src/lib/representation/data/types/content/content-block.ts","status":"M","area":"vocabulary","kind":"production","current":184,"base":130,"added":55,"deleted":1},
 +  {"path":"app/src/lib/representation/data/types/core/resource-set.ts","status":"M","area":"vocabulary","kind":"production","current":32,"base":40,"added":16,"deleted":24},
 +  {"path":"app/src/lib/representation/data/types/templates/template.ts","status":"M","area":"vocabulary","kind":"production","current":71,"base":86,"added":12,"deleted":27},
 +  {"path":"app/src/lib/representation/data/types/workspace/tab.ts","status":"M","area":"vocabulary","kind":"production","current":55,"base":54,"added":1,"deleted":0},
@@ -23877,7 +24874,7 @@
 +  {"path":"app/src/routes/app/[project]/reference/templates/scope/+page.svelte","status":"A","area":"reference","kind":"reference","current":14,"base":0,"added":14,"deleted":0},
 +  {"path":"app/src/routes/app/[project]/reference/templates/walkthrough/+page.svelte","status":"A","area":"reference","kind":"reference","current":14,"base":0,"added":14,"deleted":0},
 +  {"path":"app/test/browser/document-editor.spec.ts","status":"M","area":"evidence","kind":"test","current":885,"base":877,"added":10,"deleted":2},
-+  {"path":"app/test/browser/template-features.spec.ts","status":"A","area":"evidence","kind":"test","current":424,"base":0,"added":424,"deleted":0},
++  {"path":"app/test/browser/template-features.spec.ts","status":"A","area":"evidence","kind":"test","current":440,"base":0,"added":440,"deleted":0},
 +  {"path":"app/test/browser/template-reference.spec.ts","status":"A","area":"evidence","kind":"test","current":176,"base":0,"added":176,"deleted":0}
 +];
 ~~~~
@@ -24923,15 +25920,15 @@
 +  },
 +  {
 +    title: "Something is templateified",
-+    what: "A prompt, or a run of selected text. Until this, a template built from the document asks nothing at all.",
-+    runs: "promptHoleOps on a block, or selectionHoleOps on a range",
-+    leaves: "A hole named Hole 1, whose default is what the thing already is"
++    what: "A prompt, or a run of selected text. Nothing about the resource changes: the block gains a record, the words gain a mark. Until this, a template built from the document asks nothing at all.",
++    runs: "promptHoleOps writes a hole record; markHoleOps writes a mark over the run",
++    leaves: "A hole named Hole 1, whose default is what the thing already is, and prose that reads exactly as it did"
 +  },
 +  {
 +    title: "The resource is saved as a template",
-+    what: "Only what was templateified becomes a hole. The prompt's question is copied onto the block as its link is left behind.",
-+    runs: "promptHolesOf · textHolesOf · withAsks · portableBodyOf · withPromptHoles",
-+    leaves: "templates.holes, and a body whose templated prompt scopes are hole terms"
++    what: "On the copy — and only there — each marked run becomes the hole it was marked as. The prompt's question is copied onto the block as its link is left behind.",
++    runs: "promptHolesOf · withAsks · portableBodyOf · withPromptHoles · withMarkedHoles · textHolesOf",
++    leaves: "templates.holes, a body whose templated prompt scopes are hole terms, and an untouched original"
 +  },
 +  {
 +    title: "Somebody places it",

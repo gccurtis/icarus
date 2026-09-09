@@ -153,6 +153,24 @@ export const SYSTEMATIC: SystematicChange[] = [
     area: "templates"
   },
   {
+    index: "20",
+    title: "Templateifying marks a run, and never edits it",
+    before:
+      "Templateifying a selection spliced the words out of the paragraph and put a template atom in their place. The document now read {Hole 1} where the prose had been, marks reaching into the run were lost, and taking it back meant typing the words again.",
+    now: "A hole over text is an ordinary mark, addressed the way a comment or a link is. The resource is untouched — same words, same formatting, and the Template section reads back which hole those words are. Only the copy the template is built from turns each marked run into its atom. Measuring a mark now counts a hole as the width of what it displays, which the validator could not do before and which refused every template holding both a hole and a formatted run.",
+    why: "A resource is not a template and must not be damaged to make one. Marking says these words are where a hole goes; it does not say the words are gone.",
+    area: "editors"
+  },
+  {
+    index: "21",
+    title: "A deck templateifies its words too",
+    before:
+      "A deck's holes could only come from its prompts. Selecting words on a slide offered nothing, so a deck template could not ask for a client name.",
+    now: "The deck's text-selection inspector carries the same Template section as the document's, over the same marks and the same functions. What differs is only how a selection is addressed.",
+    why: "Both editors hold blocks of atoms with marks over them. A hole that works in one and not the other is an accident of which inspector was built first.",
+    area: "editors"
+  },
+  {
     index: "17",
     title: "Placing a template walks its holes",
     before:
@@ -227,9 +245,9 @@ export const DECISIONS: Decision[] = [
 ];
 
 export const VERIFICATION: Verification[] = [
-  { check: "Types", command: "pnpm typecheck", result: "0 errors, 0 warnings across 2,924 files", clean: true },
+  { check: "Types", command: "pnpm typecheck", result: "0 errors, 0 warnings across 2,926 files", clean: true },
   { check: "Structure", command: "pnpm lint", result: "56 checks, 56 clean", clean: true },
-  { check: "Unit", command: "pnpm test", result: "1,046 tests in 117 files, 2 skipped", clean: true },
+  { check: "Unit", command: "pnpm test", result: "1,074 tests in 119 files, 2 skipped", clean: true },
   { check: "Category keys", command: "pnpm category-keys -- --check", result: "10 categories and 13 content views in step", clean: true },
   {
     check: "Browser",
@@ -241,10 +259,10 @@ export const VERIFICATION: Verification[] = [
 
 export const OPEN: OpenItem[] = [
   {
-    title: "Holes from the prompt blocks this branch now sits on",
+    title: "Two prompts sharing one hole",
     detail:
-      "The base branch has live prompt blocks in both editors, so a scope hole can finally come from a prompt somebody wrote rather than only from an inserted template. Nothing here has been taught to read them yet: a hole still appears when a body already carries a { select: \"hole\" } scope. The agreed shape is pull-based — making a template walks the prompts it found and asks what each one's scope should be, and two prompts may point at the same hole.",
-    recommendation: "Build it against the prompt block that now exists, as the next piece of work."
+      "Nothing stops it and nothing offers it: typing the same name on two prompts makes them one question, because a name is the whole of a hole's identity. There is no picker of existing names, so it happens only on purpose.",
+    recommendation: "Leave it until somebody wants it. The offered name would become a list the moment it is worth choosing from."
   },
   {
     title: "Images stored with a template",
@@ -333,7 +351,11 @@ export const MODEL_DELTA = {
     { name: "templates.projectId", note: "required — the project a template belongs to" },
     { name: "templates.lastUsedAt", note: "optional — when it was last instantiated, which is what recency reads" },
     { name: "TemplatedTerm { select: \"set\" }", note: "a hole default may name one of the project's sets" },
-    { name: "Target.context", note: "a tab can be opened straight onto a named context view" }
+    { name: "Target.context", note: "a tab can be opened straight onto a named context view" },
+    { name: "Mark.hole", note: "{ name, description? } — a run of words somebody templateified, addressed like any other mark" },
+    { name: "PromptBlock.hole", note: "{ name, description? } — set by Templateify, absent until then" },
+    { name: "PromptBlock.asks", note: "the prompt's own words, copied on the way into a template" },
+    { name: "TemplateAtom", note: "kind \"template\" — a hole standing in the prose of a template's body" }
   ],
   removed: [
     { name: "documents.templateId", note: "a copy knows nothing of where it came from" },
@@ -342,7 +364,7 @@ export const MODEL_DELTA = {
   ],
   unchanged: [
     { name: "TemplateBody", note: "document | slides | spreadsheet, exactly as before" },
-    { name: "TemplateHole", note: "name, label, description?, default? — main's shape" },
+    { name: "TemplateHole", note: "main's name, label, description?, default?, widened with kind and text for a hole that asks for words" },
     { name: "resourceSets", note: "the table was already there; only the capability over it is new" }
   ]
 };

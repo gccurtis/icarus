@@ -8,6 +8,7 @@ import {
   promptHolesOf,
   textHolesOf,
   withAsks,
+  withMarkedHoles,
   withPromptHoles
 } from "$representation/data/behavior/templates/prompt-holes";
 import type { TemplateHole } from "$representation/data/types/templates/template";
@@ -109,9 +110,11 @@ export type TemplatedBody<T> = {
  * A live body as a template holds it: portable, and asking rather than telling.
  *
  * The order matters. The holes are read first, so a hole's default is the scope
- * as the prompt actually reads it. The question is copied next, while the link
- * to the derived output still exists. Only then is the body made portable, and
- * each templated prompt's scope replaced by the hole that stands for it.
+ * as the prompt actually reads it. The prompt text is copied next, while the
+ * link to the derived output still exists. Only then is the body made portable,
+ * each templated prompt's scope replaced by the hole that stands for it, and
+ * each marked run turned into a hole in the prose — on the copy, which is why
+ * marking a run never changes the resource it was marked in.
  */
 /**
  * A hole's default, once the template it belongs to has an identity.
@@ -151,7 +154,11 @@ export const templatedBodyOf = <T>(
   const drafts = promptHolesOf(candidate);
   const asked = withAsks(candidate, askedBy(store, candidate));
   const portable = portableBodyOf(asked);
-  const body = withPromptHoles(portable.body, drafts);
+  let minted = 0;
+  const body = withMarkedHoles(withPromptHoles(portable.body, drafts), () => {
+    minted += 1;
+    return `hole-${minted}`;
+  });
   const fresh = [...drafts.map((draft) => draft.hole), ...textHolesOf(body)];
   return { body, dropped: portable.dropped, holes: mergedPromptHoles(known, fresh) };
 };

@@ -3,7 +3,6 @@ import { describe, expect, it } from "vitest";
 import {
   defaultScopeOf,
   holeNamesIn,
-  holeSplice,
   mergedPromptHoles,
   nextHoleName,
   offeredHoleName,
@@ -13,7 +12,6 @@ import {
   withAsks,
   withPromptHoles
 } from "$representation/data/behavior/templates/prompt-holes";
-import type { Atom } from "$representation/data/types/content/content-block";
 import type { TemplateBody, TemplateHole } from "$representation/data/types/templates/template";
 
 const prompt = (id: string, extra: Record<string, unknown> = {}) => ({
@@ -131,27 +129,6 @@ describe("text holes", () => {
     expect(textHolesOf(held)).toEqual([
       { name: "Hole 1", label: "Hole 1", kind: "text", description: "Who it is for", text: "Ana" }
     ]);
-  });
-});
-
-describe("turning a selection into a hole", () => {
-  const atoms: Atom[] = [
-    { id: "a1", kind: "literal", text: "Dear Northwind, about winter." }
-  ];
-
-  it("splits the run and keeps the words as what the hole says", () => {
-    const splice = holeSplice(atoms, 5, 14, { name: "Hole 1" }, () => "fresh");
-    expect(splice?.remove).toEqual(["a1"]);
-    expect(splice?.after).toBeNull();
-    expect(splice?.values).toEqual([
-      { id: "fresh", kind: "literal", text: "Dear " },
-      { id: "fresh", kind: "template", name: "Hole 1", text: "Northwind" },
-      { id: "fresh", kind: "literal", text: ", about winter." }
-    ]);
-  });
-
-  it("refuses a selection that covers nothing", () => {
-    expect(holeSplice(atoms, 4, 4, { name: "Hole 1" }, () => "fresh")).toBeUndefined();
   });
 });
 

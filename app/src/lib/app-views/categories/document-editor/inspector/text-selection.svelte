@@ -22,9 +22,10 @@
   } from "$app-views/categories/document-editor/procedures/blocks";
   import { FILLS, INKS, orClear, orNone } from "$app-views/categories/document-editor/procedures/colours";
   import {
+    markHoleOps,
+    markedHoleAt,
     nextHoleName,
-    selectedWords,
-    selectionHoleOps
+    selectedWords
   } from "$app-views/categories/document-editor/procedures/templating";
   import {
     ago,
@@ -280,20 +281,22 @@
   const openPerson = (id: string) => view.inspect("general.person", { kind: "person", id });
 
   /**
-   * A run of text becoming a hole.
+   * A run of text marked as a hole.
    *
-   * The words are what the hole says by default, so a template placed without
-   * changing anything reads exactly like the document it came from.
+   * Nothing about the document changes. The words are what the hole says by
+   * default, so a template placed without changing anything reads exactly like
+   * the document it came from.
    */
   const holeBody = $derived(runtime?.body);
   const holeOffer = $derived(holeBody === undefined ? "Hole 1" : nextHoleName(holeBody));
   const holeWords = $derived(
     holeBody === undefined ? "" : selectedWords(holeBody, view.selection)
   );
+  const holeHere = $derived(holeBody === undefined ? undefined : markedHoleAt(holeBody, view.selection));
 
   const templateify = () => {
     if (runtime === undefined || holeBody === undefined) return;
-    const ops = selectionHoleOps(holeBody, view.selection, holeOffer);
+    const ops = markHoleOps(holeBody, view.selection, holeOffer);
     if (ops.length > 0) runtime.apply(ops);
   };
 </script>
@@ -391,16 +394,23 @@
     {#if holeWords !== ""}
       <PanelSection title="Template" chevron="end">
         <div class="flex flex-col items-start gap-2">
-          <PanelNote tone="muted">
-            Make this a hole and a template built from this document will ask what fills it, starting
-            from what it says now.
-          </PanelNote>
-          <PanelButton
-            label="Templateify"
-            tone="primary"
-            title={`Turn the selection into a hole called ${holeOffer}`}
-            onclick={templateify}
-          />
+          {#if holeHere === undefined}
+            <PanelNote tone="muted">
+              Mark this as a hole and a template built from this document will ask what fills it,
+              starting from what it says now. The document itself does not change.
+            </PanelNote>
+            <PanelButton
+              label="Templateify"
+              tone="primary"
+              title={`Mark the selection as a hole called ${holeOffer}`}
+              onclick={templateify}
+            />
+          {:else}
+            <PanelNote tone="muted">
+              These words are the hole <b>{holeHere}</b>. They stay exactly as they are here; the
+              template made from this document asks what goes in their place.
+            </PanelNote>
+          {/if}
         </div>
       </PanelSection>
     {/if}

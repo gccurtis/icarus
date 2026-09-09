@@ -83,15 +83,15 @@ export const STAGES = [
   },
   {
     title: "Something is templateified",
-    what: "A prompt, or a run of selected text. Until this, a template built from the document asks nothing at all.",
-    runs: "promptHoleOps on a block, or selectionHoleOps on a range",
-    leaves: "A hole named Hole 1, whose default is what the thing already is"
+    what: "A prompt, or a run of selected text. Nothing about the resource changes: the block gains a record, the words gain a mark. Until this, a template built from the document asks nothing at all.",
+    runs: "promptHoleOps writes a hole record; markHoleOps writes a mark over the run",
+    leaves: "A hole named Hole 1, whose default is what the thing already is, and prose that reads exactly as it did"
   },
   {
     title: "The resource is saved as a template",
-    what: "Only what was templateified becomes a hole. The prompt's question is copied onto the block as its link is left behind.",
-    runs: "promptHolesOf · textHolesOf · withAsks · portableBodyOf · withPromptHoles",
-    leaves: "templates.holes, and a body whose templated prompt scopes are hole terms"
+    what: "On the copy — and only there — each marked run becomes the hole it was marked as. The prompt's question is copied onto the block as its link is left behind.",
+    runs: "promptHolesOf · withAsks · portableBodyOf · withPromptHoles · withMarkedHoles · textHolesOf",
+    leaves: "templates.holes, a body whose templated prompt scopes are hole terms, and an untouched original"
   },
   {
     title: "Somebody places it",

@@ -1,5 +1,5 @@
-import { segmentsOf } from "$representation/data/behavior/content/positions";
-import type { Atom } from "$representation/data/types/content/content-block";
+import { displayOfAtom, endAt, linearOf, segmentsOf } from "$representation/data/behavior/content/positions";
+import type { Atom, Mark } from "$representation/data/types/content/content-block";
 import type { TemplatedResourceSet } from "$representation/data/types/core/resource-set";
 import type { TemplateBody, TemplateHole } from "$representation/data/types/templates/template";
 
@@ -46,6 +46,8 @@ const walkFor = (body: unknown, take: (value: Fields) => boolean): readonly Fiel
 
 const promptsIn = (body: unknown) => walkFor(body, isPrompt);
 const atomsIn = (body: unknown) => walkFor(body, isTemplateAtom);
+const holeMarksIn = (body: unknown) =>
+  walkFor(body, (value) => isRecord(value.hole) && typeof value.hole.name === "string" && isRecord(value.from));
 
 const named = (held: unknown): string => {
   if (!isRecord(held)) return "";
@@ -60,6 +62,7 @@ export const holeNamesIn = (body: unknown): readonly string[] => {
     if (held !== "") names.add(held);
   }
   for (const atom of atomsIn(body)) names.add(atom.name as string);
+  for (const mark of holeMarksIn(body)) names.add((mark.hole as Fields).name as string);
   return [...names];
 };
 
@@ -213,68 +216,188 @@ export const promptWordsIn = (body: TemplateBody): Readonly<Record<string, strin
   return words;
 };
 
-export type AtomSplice = {
-  readonly remove: readonly string[];
-  readonly after: string | null;
-  readonly values: readonly Atom[];
-};
-
-/**
- * A run of text becoming a hole, as the atoms that replace it.
- *
- * Only the atoms the selection actually touches are rebuilt: what is left of
- * the first, the hole itself, and what is left of the last. Marks that reached
- * into those atoms go with them, which is the cost of turning words into a
- * question and is why the gesture is deliberate.
- */
-export const holeSplice = (
+/** The mark that says a run is a hole, addressed the way every other mark is. */
+export const holeMarkOver = (
   atoms: readonly Atom[],
   from: number,
   to: number,
-  hole: { name: string; description?: string },
+  name: string,
   mint: () => string
-): AtomSplice | undefined => {
+): Mark | undefined => {
   const start = Math.min(from, to);
   const end = Math.max(from, to);
-  if (end <= start) return undefined;
+  if (end <= start || name === "" || atoms.length === 0) return undefined;
+  return {
+    id: mint(),
+    from: endAt(atoms, start, "from"),
+    to: endAt(atoms, end, "to"),
+    hole: { name }
+  };
+};
+
+/** The hole already covering this run, if one does. */
+export const holeNameOver = (
+  atoms: readonly Atom[],
+  marks: readonly Mark[],
+  from: number,
+  to: number
+): string | undefined => {
+  const start = Math.min(from, to);
+  const end = Math.max(from, to);
+  for (const run of markedRunsIn(atoms, marks)) {
+    if (run.start < end && run.end > start) return run.hole.name as string;
+  }
+  return undefined;
+};
+
+type Marked = { readonly start: number; readonly end: number; readonly hole: Fields };
+
+/** Where each hole mark sits on the block's display, sorted and non-overlapping. */
+const markedRunsIn = (atoms: readonly Atom[], marks: readonly Mark[]): readonly Marked[] => {
+  const runs: Marked[] = [];
+  for (const mark of marks) {
+    if (!isRecord(mark.hole) || typeof mark.hole.name !== "string") continue;
+    const from = linearOf(atoms, mark.from);
+    const to = linearOf(atoms, mark.to);
+    const start = Math.min(from, to);
+    const end = Math.max(from, to);
+    if (end <= start) continue;
+    runs.push({ start, end, hole: mark.hole });
+  }
+  runs.sort((a, b) => a.start - b.start);
+  /** An overlap would make two holes claim the same words, so the later one is not a hole. */
+  return runs.filter((run, index) => index === 0 || run.start >= runs[index - 1].end);
+};
+
+const holeAtom = (hole: Fields, words: string, id: string): Atom => {
+  const description = typeof hole.description === "string" ? hole.description.trim() : "";
+  return {
+    id,
+    kind: "template",
+    name: (hole.name as string).trim(),
+    ...(description === "" ? {} : { description }),
+    ...(words === "" ? {} : { text: words })
+  };
+};
+
+/**
+ * The marked runs, as the atoms and marks that replace them.
+ *
+ * Every mark that does not reach into a hole keeps the exact words it covered,
+ * because the ends are remapped by position rather than by atom. A mark that
+ * does reach into one goes: those words are a question now, and formatting a
+ * question is not a thing this vocabulary can mean.
+ */
+export const withHolesAt = (
+  atoms: readonly Atom[],
+  marks: readonly Mark[],
+  mint: () => string
+): { readonly atoms: readonly Atom[]; readonly marks: readonly Mark[] } => {
+  const runs = markedRunsIn(atoms, marks);
+  if (runs.length === 0) {
+    return { atoms, marks: marks.filter((mark) => mark.hole === undefined) };
+  }
 
   const segments = segmentsOf(atoms);
-  const touched = segments.filter((segment) => segment.start < end && segment.end > start);
-  if (touched.length === 0) return undefined;
+  const total = segments.at(-1)?.end ?? 0;
+  const next: Atom[] = [];
+  /** Which stretch of the old display each new literal atom carries, for remapping the marks. */
+  const carried: { readonly from: number; readonly to: number; readonly atom: string }[] = [];
 
-  const first = touched[0];
-  const last = touched[touched.length - 1];
-  const at = segments.findIndex((segment) => segment.atom.id === first.atom.id);
-  const before = at <= 0 ? null : segments[at - 1].atom.id;
+  const carry = (from: number, to: number): void => {
+    for (const segment of segments) {
+      const start = Math.max(segment.start, from);
+      const end = Math.min(segment.end, to);
+      if (end <= start) continue;
+      if (segment.atom.kind !== "literal") {
+        next.push({ ...segment.atom, id: mint() });
+        continue;
+      }
+      const atom: Atom = {
+        id: mint(),
+        kind: "literal",
+        text: segment.atom.text.slice(start - segment.start, end - segment.start)
+      };
+      next.push(atom);
+      carried.push({ from: start, to: end, atom: atom.id });
+    }
+  };
 
-  const wordsOf = (segment: (typeof segments)[number], sliceFrom: number, sliceTo: number): string =>
-    segment.atom.kind === "literal" ? segment.atom.text.slice(sliceFrom, sliceTo) : "";
+  let at = 0;
+  for (const run of runs) {
+    carry(at, run.start);
+    const words = segments
+      .map((segment) => {
+        const start = Math.max(segment.start, run.start);
+        const end = Math.min(segment.end, run.end);
+        if (end <= start || segment.atom.kind !== "literal") return "";
+        return segment.atom.text.slice(start - segment.start, end - segment.start);
+      })
+      .join("");
+    next.push(holeAtom(run.hole, words, mint()));
+    at = run.end;
+  }
+  carry(at, total);
 
-  const head = wordsOf(first, 0, start - first.start);
-  const tail = wordsOf(last, end - last.start, last.end - last.start);
-  const taken = touched
-    .map((segment) =>
-      segment.atom.kind === "literal"
-        ? segment.atom.text.slice(
-            Math.max(start - segment.start, 0),
-            Math.min(end - segment.start, segment.end - segment.start)
-          )
-        : ""
-    )
-    .join("");
+  /**
+   * A mark's end, put back where it was.
+   *
+   * A start prefers the stretch that begins at it and an end prefers the one
+   * that finishes there, so a mark butting up against a hole keeps its words
+   * rather than reaching across the boundary.
+   */
+  const endAtLanding = (position: number, prefer: "start" | "end"): Mark["from"] | undefined => {
+    const holding = carried.filter((entry) => entry.from <= position && position <= entry.to);
+    if (holding.length === 0) return undefined;
+    const chosen = prefer === "start" ? holding[holding.length - 1] : holding[0];
+    return { atom: chosen.atom, offset: position - chosen.from };
+  };
 
-  const description = hole.description?.trim() ?? "";
-  const values: Atom[] = [
-    ...(head === "" ? [] : [{ id: mint(), kind: "literal" as const, text: head }]),
-    {
-      id: mint(),
-      kind: "template" as const,
-      name: hole.name,
-      ...(description === "" ? {} : { description }),
-      ...(taken === "" ? {} : { text: taken })
-    },
-    ...(tail === "" ? [] : [{ id: mint(), kind: "literal" as const, text: tail }])
-  ];
+  const kept: Mark[] = [];
+  for (const mark of marks) {
+    if (mark.hole !== undefined) continue;
+    const from = linearOf(atoms, mark.from);
+    const to = linearOf(atoms, mark.to);
+    const start = Math.min(from, to);
+    const end = Math.max(from, to);
+    if (runs.some((run) => run.start < end && run.end > start)) continue;
+    const head = endAtLanding(start, "start");
+    const tail = endAtLanding(end, "end");
+    if (head === undefined || tail === undefined) continue;
+    kept.push({
+      ...mark,
+      from: { atom: head.atom, offset: head.offset },
+      to: { atom: tail.atom, offset: tail.offset }
+    });
+  }
 
-  return { remove: touched.map((segment) => segment.atom.id), after: before, values };
+  return { atoms: next, marks: kept };
+};
+
+/**
+ * Every marked run in the body, as a hole in the prose.
+ *
+ * This runs on the copy a template is made from, never on the resource itself:
+ * marking a run changes nothing about the document, and only the template ends
+ * up with a hole where the words were.
+ */
+export const withMarkedHoles = <T>(body: T, mint: () => string): T => {
+  const walk = (value: unknown): unknown => {
+    if (Array.isArray(value)) return value.map(walk);
+    if (!isRecord(value)) return value;
+    const next: Fields = {};
+    for (const [field, nested] of Object.entries(value)) next[field] = walk(nested);
+    if (!Array.isArray(next.atoms) || !Array.isArray(next.marks)) return next;
+    const held = withHolesAt(next.atoms as Atom[], next.marks as Mark[], mint);
+    if (held.atoms === next.atoms && held.marks.length === (next.marks as Mark[]).length) return next;
+    return {
+      ...next,
+      atoms: [...held.atoms],
+      marks: [...held.marks],
+      ...(typeof next.display === "string"
+        ? { display: held.atoms.map(displayOfAtom).join("") }
+        : {})
+    };
+  };
+  return walk(body) as T;
 };

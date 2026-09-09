@@ -47,7 +47,6 @@
     templateDetail,
     templateLibrary,
     termFor,
-    textHoleInsertion,
     updateHoles,
     withHoleField,
     withNewTextHole,

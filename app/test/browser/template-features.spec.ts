@@ -273,7 +273,11 @@ test("a templateified prompt becomes a hole the template asks about", async ({ p
   await deleteTemplateFromLibrary(page, name);
 });
 
-test("Templateify turns a run of selected text into a hole that says those words", async ({ page }) => {
+/**
+ * Marking a run is not an edit. The document reads exactly as it did before and
+ * after; only the template made from it holds a hole where the words were.
+ */
+test("Templateify marks a run without changing the document, and the template gets the hole", async ({ page }) => {
   const name = `Browser holes ${Date.now()}`;
   await openDocumentFixture(page);
 
@@ -281,6 +285,7 @@ test("Templateify turns a run of selected text into a hole that says those words
   const editor = page.locator(".ProseMirror");
   const paragraph = editor.getByRole("paragraph").first();
   await expect(paragraph).toBeVisible();
+  const before = await editor.innerText();
   await paragraph.dblclick();
 
   const selection = page.locator(
@@ -291,7 +296,11 @@ test("Templateify turns a run of selected text into a hole that says those words
   expect(words.length).toBeGreaterThan(0);
 
   await selection.getByRole("button", { name: "Templateify", exact: true }).click();
-  await expect(editor.locator(".document-template-atom")).toContainText("Hole 1");
+
+  // The document is untouched: same words, no hole drawn into the prose.
+  await expect(selection.getByText("These words are the hole")).toBeVisible();
+  await expect(editor.locator(".document-template-atom")).toHaveCount(0);
+  expect(await editor.innerText()).toEqual(before);
   await expect(page.locator(".title-bar")).toContainText("Saved", { timeout: 15_000 });
 
   // The words are not thrown away — they become what the hole says by default.
@@ -305,9 +314,16 @@ test("Templateify turns a run of selected text into a hole that says those words
   await expect(card.getByRole("button", { name: "Default scope", exact: true })).toHaveCount(0);
   await expect(card).toContainText(words);
 
+  // The copy the template opened holds the hole; the original still holds the words.
+  await expect(page.locator(".ProseMirror").locator(".document-template-atom")).toContainText("Hole 1");
+
   page.once("dialog", (dialog) => void dialog.accept());
   await context.getByRole("button", { name: "Discard", exact: true }).click();
   await expect(tabs(page).getByRole("button", { name: `Template · ${name}`, exact: true })).toHaveCount(0, { timeout: 15_000 });
+
+  await openDocumentFixture(page);
+  expect(await page.locator(".ProseMirror").innerText()).toEqual(before);
+  await expect(page.locator(".ProseMirror").locator(".document-template-atom")).toHaveCount(0);
 
   await deleteTemplateFromLibrary(page, name);
 });

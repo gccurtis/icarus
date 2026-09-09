@@ -41,7 +41,10 @@ import type { DocumentBody, DocumentRow } from "$representation/data/types/docum
 import type { DocumentOp } from "$representation/data/types/documents/op";
 import type { TemplateHole } from "$representation/data/types/templates/template";
 import { linearOf } from "$representation/data/behavior/content/positions";
-import { holeSplice } from "$representation/data/behavior/templates/prompt-holes";
+import {
+  holeMarkOver,
+  holeNameOver
+} from "$representation/data/behavior/templates/prompt-holes";
 import { rowHolding } from "$app-views/categories/document-editor/procedures/blocks";
 import { mint, type IdKind } from "$app-views/categories/document-editor/procedures/ids";
 import { addressOf } from "$app-views/categories/document-editor/procedures/inspecting";
@@ -65,8 +68,9 @@ export {
 
 export {
   defaultScopeOf,
+  holeMarkOver,
+  holeNameOver,
   holeNamesIn,
-  holeSplice,
   nextHoleName,
   offeredHoleName,
   promptWordsIn
@@ -308,14 +312,25 @@ export const selectedWords = (body: DocumentBody, selection: Selection | undefin
   return blockWithAtoms(body, range.blockId)?.display.slice(range.from, range.to) ?? "";
 };
 
+/** Whether this run is already marked as a hole, and under what name. */
+export const markedHoleAt = (
+  body: DocumentBody,
+  selection: Selection | undefined
+): string | undefined => {
+  const range = selectedRange(body, selection);
+  if (range === undefined) return undefined;
+  const block = blockWithAtoms(body, range.blockId);
+  return block === undefined ? undefined : holeNameOver(block.atoms, block.marks, range.from, range.to);
+};
+
 /**
- * A run of text becoming a hole.
+ * A run of text marked as a hole.
  *
- * The words are not thrown away: they become what the hole says when nobody
- * says otherwise, so a template placed with every default reads exactly like
- * the document it was made from.
+ * Nothing about the document changes: the words stay, every other mark over
+ * them stays, and the paragraph reads exactly as it did. The mark says where a
+ * template's hole goes, and only the template — a copy — ever has one.
  */
-export const selectionHoleOps = (
+export const markHoleOps = (
   body: DocumentBody,
   selection: Selection | undefined,
   name: string
@@ -324,24 +339,16 @@ export const selectionHoleOps = (
   if (range === undefined) return [];
   const block = blockWithAtoms(body, range.blockId);
   if (block === undefined) return [];
-  const splice = holeSplice(block.atoms, range.from, range.to, { name: name.trim() }, () => mint("atom"));
-  if (splice === undefined) return [];
+  const mark = holeMarkOver(block.atoms, range.from, range.to, name.trim(), () => mint("mark"));
+  if (mark === undefined) return [];
   return [
     {
       op: "insert",
-      target: "atom",
-      path: `${block.id}/atoms`,
-      ids: splice.values.map((atom) => atom.id),
-      after: splice.after,
-      values: [...splice.values]
-    },
-    {
-      op: "remove",
-      target: "atom",
-      path: `${block.id}/atoms`,
-      ids: [...splice.remove],
-      after: splice.after,
-      values: block.atoms.filter((atom: { id: string }) => splice.remove.includes(atom.id))
+      target: "mark",
+      path: `${block.id}/marks`,
+      ids: [mark.id],
+      after: block.marks.at(-1)?.id ?? null,
+      values: [mark]
     }
   ];
 };
