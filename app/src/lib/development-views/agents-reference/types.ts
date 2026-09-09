@@ -14,7 +14,8 @@ export type PageSlug =
   | "personas"
   | "tasks"
   | "automations"
-  | "research-chat";
+  | "research-chat"
+  | "second-rebase";
 
 export type PageRecord = {
   readonly slug: PageSlug;

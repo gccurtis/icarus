@@ -123,10 +123,10 @@
     {
       href: "/demo/agents-reference",
       title: "Agents reference",
-      sub: "Sixteen pages: the built surfaces, the research chat, and four specifications",
+      sub: "Seventeen pages: the built surfaces, the research chat, four specifications and two rebases",
       icon: Bot,
       about:
-        "The real library, persona, task and automation surfaces live over the project's store; the research chat, wired and answering; and then the specifications — personas, tasks, automations and research chat — each one state, behaviour, every procedure step by step, and the execution flow as diagrams."
+        "The real library, persona, task and automation surfaces live over the project's store; the research chat, wired and answering; the specifications — personas, tasks, automations and research chat — each one state, behaviour, every procedure step by step, and the execution flow as diagrams; and both rebases onto the derived output branch, with every conflict and how it was addressed."
     }
   ];
 </script>

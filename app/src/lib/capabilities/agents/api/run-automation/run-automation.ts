@@ -27,32 +27,35 @@ export const runAutomation = async (input: unknown): Promise<RunAutomationResult
 
   const at = Date.now();
   const actor = viewer(scope);
-  const threadId = openThread(store, scope.projectId, "agentTask", at, {
-    role: "prompt",
-    author: actor,
-    text: automation.instruction
+  const taskId = store.transaction((unit) => {
+    const threadId = openThread(unit, scope.projectId, "agentTask", at, {
+      role: "prompt",
+      author: actor,
+      text: automation.instruction
+    });
+    const fields: RowFields<"agentTasks"> = {
+      projectId: asId<"projects">(scope.projectId),
+      threadId,
+      title: automation.name,
+      instruction: automation.instruction,
+      personaId: automation.personaId,
+      origin: { kind: "automation", automationId: automation._id, trigger: "manual" },
+      state: "running",
+      ...(automation.scope === undefined ? {} : { scope: automation.scope }),
+      tools: [...automation.tools],
+      plan: [],
+      outputs: [],
+      questions: [],
+      createdBy: actor,
+      startedAt: at,
+      revision: 1,
+      updatedAt: at
+    };
+    const opened = unit.create("agentTasks", fields);
+    unit.update(`automations.${automation._id}.firedCount`, automation.firedCount + 1);
+    unit.update(`automations.${automation._id}.lastFiredAt`, at);
+    unit.update(`automations.${automation._id}.updatedAt`, at);
+    return opened;
   });
-  const fields: RowFields<"agentTasks"> = {
-    projectId: asId<"projects">(scope.projectId),
-    threadId,
-    title: automation.name,
-    instruction: automation.instruction,
-    personaId: automation.personaId,
-    origin: { kind: "automation", automationId: automation._id, trigger: "manual" },
-    state: "running",
-    ...(automation.scope === undefined ? {} : { scope: automation.scope }),
-    tools: [...automation.tools],
-    plan: [],
-    outputs: [],
-    questions: [],
-    createdBy: actor,
-    startedAt: at,
-    revision: 1,
-    updatedAt: at
-  };
-  const taskId = store.create("agentTasks", fields);
-  store.update(`automations.${automation._id}.firedCount`, automation.firedCount + 1);
-  store.update(`automations.${automation._id}.lastFiredAt`, at);
-  store.update(`automations.${automation._id}.updatedAt`, at);
   return { accepted: true, id: automation._id, taskId, revision: automation.revision };
 };

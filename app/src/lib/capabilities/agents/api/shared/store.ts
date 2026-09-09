@@ -1,8 +1,11 @@
-import type { StoreModel, TableName, TableRow } from "$model/server/store/index.server";
+import type { StoreUnitOfWork, TableName, TableRow } from "$model/server/store/index.server";
 
 export type RowFields<T extends TableName> = Omit<TableRow<T>, "_id" | "_creationTime">;
 
-export const rowsIn = <T extends TableName>(store: StoreModel, table: T): readonly TableRow<T>[] => {
+export const rowsIn = <T extends TableName>(
+  store: StoreUnitOfWork,
+  table: T
+): readonly TableRow<T>[] => {
   const found = store.read(table);
   if (found?.table !== table || found.kind !== "table" || !Array.isArray(found.rows)) return [];
   return found.rows.filter(
@@ -11,7 +14,7 @@ export const rowsIn = <T extends TableName>(store: StoreModel, table: T): readon
 };
 
 export const rowIn = <T extends TableName>(
-  store: StoreModel,
+  store: StoreUnitOfWork,
   table: T,
   id: string
 ): TableRow<T> | undefined => rowsIn(store, table).find((row) => row._id === id);

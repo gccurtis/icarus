@@ -58,29 +58,29 @@ export const TRIGGER_RESOURCE_KINDS = [
   { id: "finding", label: "Findings" }
 ] as const;
 
-const KIND_WORD = new Map<string, string>([
-  ["document", "a document"],
-  ["slides", "a slide deck"],
-  ["spreadsheet", "a spreadsheet"],
-  ["finding", "a finding"]
-]);
+const KIND_WORD: Record<string, string> = {
+  "document": "a document",
+  "slides": "a slide deck",
+  "spreadsheet": "a spreadsheet",
+  "finding": "a finding"
+};
 
-const KIND_PLURAL = new Map<string, string>([
-  ["document", "documents"],
-  ["slides", "slide decks"],
-  ["spreadsheet", "spreadsheets"],
-  ["finding", "findings"]
-]);
+const KIND_PLURAL: Record<string, string> = {
+  "document": "documents",
+  "slides": "slide decks",
+  "spreadsheet": "spreadsheets",
+  "finding": "findings"
+};
 
 const kindsPhrase = (kinds: readonly string[]): string => {
-  const words = kinds.map((kind) => KIND_WORD.get(kind) ?? kind);
+  const words = kinds.map((kind) => KIND_WORD[kind] ?? kind);
   if (words.length === 0) return "any resource";
   if (words.length === 1) return words[0];
   return `${words.slice(0, -1).join(", ")} or ${words[words.length - 1]}`;
 };
 
 const pluralPhrase = (kinds: readonly string[]): string => {
-  const words = kinds.map((kind) => KIND_PLURAL.get(kind) ?? kind);
+  const words = kinds.map((kind) => KIND_PLURAL[kind] ?? kind);
   if (words.length === 0) return "resources";
   if (words.length === 1) return words[0];
   return `${words.slice(0, -1).join(", ")} or ${words[words.length - 1]}`;

@@ -69,6 +69,15 @@ const model = vi.hoisted(() => ({
     },
     removeRows: (table: string, ids: readonly string[]) => {
       model.tables[table] = (model.tables[table] ?? []).filter((row) => !ids.includes(row._id));
+    },
+    transaction: <T>(work: (unit: unknown) => T): T => {
+      const before = structuredClone(model.tables);
+      try {
+        return work(model.store);
+      } catch (error) {
+        model.tables = before;
+        throw error;
+      }
     }
   }
 }));

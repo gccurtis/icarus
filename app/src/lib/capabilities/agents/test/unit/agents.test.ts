@@ -42,6 +42,15 @@ const model = vi.hoisted(() => ({
       const index = rows.findIndex((row) => row._id === id);
       if (index < 0) throw new Error(`no row ${path}`);
       rows.splice(index, 1);
+    },
+    transaction: <T>(work: (unit: unknown) => T): T => {
+      const before = structuredClone(model.tables);
+      try {
+        return work(model.store);
+      } catch (error) {
+        model.tables = before;
+        throw error;
+      }
     }
   }
 }));

@@ -26,9 +26,9 @@
   import * as DropdownMenu from "$vendored-components/dropdown-menu";
   import { ToggleGroup, ToggleGroupItem } from "$vendored-components/toggle-group";
   import { readProjectResourceIndex } from "$capabilities/project-resources/index.remote";
-  import { createThread, readThreads } from "$capabilities/research-chat/index.remote";
   import { actorName } from "$app-views/categories/project-overview/procedures/actor-name";
   import { activity } from "$app-views/categories/project-overview/procedures/activity";
+  import { createChat } from "$app-views/categories/project-overview/procedures/create-chat";
   import { inspectionFor } from "$app-views/categories/project-overview/procedures/inspecting";
   import { mentions as mentionsForViewer } from "$app-views/categories/project-overview/procedures/mentions";
   import { openingFor } from "$app-views/categories/project-overview/procedures/opening";
@@ -169,9 +169,7 @@
       creating = "research";
       creationError = undefined;
       try {
-        const { threadId } = await createThread({}).updates(readThreads);
-        // The tab bar names a chat from this query, which Overview leaves warm.
-        await view.readStore("researchThreads").refresh();
+        const threadId = await createChat(view);
         if (live) view.open({ category: "research", content: "research.thread", resourceId: threadId });
       } catch (error) {
         if (live) creationError = error instanceof Error ? error.message : "That did not start";

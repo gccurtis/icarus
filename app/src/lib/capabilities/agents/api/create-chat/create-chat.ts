@@ -18,17 +18,19 @@ export const createChat = async (input: unknown): Promise<CreateChatResult> => {
   const persona = found.row;
 
   const at = Date.now();
-  const threadId = openThread(store, scope.projectId, "researchThread", at);
-  const fields: RowFields<"researchThreads"> = {
-    projectId: asId<"projects">(scope.projectId),
-    threadId,
-    personaId: persona._id,
-    title: asked.title ?? `Chat with ${persona.name}`,
-    mode: { kind: "explore" },
-    findingIds: [],
-    createdBy: viewer(scope),
-    updatedAt: at
-  };
-  const chatId = store.create("researchThreads", fields);
+  const chatId = store.transaction((unit) => {
+    const threadId = openThread(unit, scope.projectId, "researchThread", at);
+    const fields: RowFields<"researchThreads"> = {
+      projectId: asId<"projects">(scope.projectId),
+      threadId,
+      personaId: persona._id,
+      title: asked.title ?? `Chat with ${persona.name}`,
+      mode: { kind: "explore" },
+      findingIds: [],
+      createdBy: viewer(scope),
+      updatedAt: at
+    };
+    return unit.create("researchThreads", fields);
+  });
   return { accepted: true, id: persona._id, chatId, revision: 1 };
 };

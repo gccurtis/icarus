@@ -12,12 +12,21 @@ import type { StoreFailpoint } from "$model/server/store/types";
  * this executable failpoint contract for the shared durability mechanism.
  */
 const coveredIntents = [
+  "agents/api/answer-task-question/answer-task-question.ts",
+  "agents/api/create-chat/create-chat.ts",
+  "agents/api/create-task/create-task.ts",
+  "agents/api/run-automation/run-automation.ts",
+  "agents/api/send-task-message/send-task-message.ts",
   "comments/api/reply/reply.ts",
   "comments/api/resolve-thread/resolve-thread.ts",
   "comments/api/start-thread/start-thread.ts",
   "derived-output/api/refresh-derived-output/refresh-derived-output.ts",
   "document/api/submit-document-changes/submit-document-changes.ts",
   "project-resources/api/create-project-resource/create-project-resource.ts",
+  "research-chat/api/ask/ask.ts",
+  "research-chat/api/create-thread/create-thread.ts",
+  "research-chat/api/remove-thread/remove-thread.ts",
+  "research-chat/api/set-thread-persona/set-thread-persona.ts",
   "semantic-overlay/api/backfill-semantic-overlay/backfill-semantic-overlay.ts",
   "semantic-overlay/api/enqueue-semantic-sync/enqueue-semantic-sync.ts",
   "semantic-overlay/api/process-semantic-sync-queue/process-semantic-sync-queue.ts",

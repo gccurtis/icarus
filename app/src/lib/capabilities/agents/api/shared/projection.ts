@@ -300,8 +300,8 @@ export const library = (store: StoreModel, scope: Scope): ReadAgentsLibraryResul
     tools: TOOLS,
     resources: resources.toSorted(byName),
     resourceSets: rowsIn(store, "resourceSets")
-      .filter((row) => row.projectId === scope.projectId && typeof row.name === "string")
-      .map((row) => ({ id: row._id as string, name: row.name }))
+      .filter((row) => row.projectId === scope.projectId)
+      .flatMap((row) => (row.name === undefined ? [] : [{ id: row._id as string, name: row.name }]))
       .toSorted(byName)
   };
 };

@@ -1,4 +1,4 @@
-import type { StoreModel, TableRow } from "$model/server/store/index.server";
+import type { StoreUnitOfWork, TableRow } from "$model/server/store/index.server";
 import type { Message, MessageRole } from "$representation/data/types/agents/message";
 import type { ThreadKind } from "$representation/data/types/agents/thread";
 import type { Actor } from "$representation/data/types/core/actor";
@@ -7,13 +7,13 @@ import { messageText, textMessage } from "$representation/data/behavior/agents/m
 
 import { rowsIn, uniqueId } from "$capabilities/agents/api/shared/store";
 
-export const messagesOf = (store: StoreModel, threadId: string): readonly Message[] =>
+export const messagesOf = (store: StoreUnitOfWork, threadId: string): readonly Message[] =>
   rowsIn(store, "threadParts")
     .filter((part) => part.threadId === threadId && Array.isArray(part.messages))
     .toSorted((left, right) => left.part - right.part)
     .flatMap((part) => part.messages);
 
-export const lastLineOf = (store: StoreModel, threadId: string): string | null => {
+export const lastLineOf = (store: StoreUnitOfWork, threadId: string): string | null => {
   const messages = messagesOf(store, threadId);
   const last = messages[messages.length - 1];
   if (last === undefined) return null;
@@ -22,7 +22,7 @@ export const lastLineOf = (store: StoreModel, threadId: string): string | null =
 };
 
 export const openThread = (
-  store: StoreModel,
+  store: StoreUnitOfWork,
   projectId: string,
   kind: ThreadKind,
   at: number,
@@ -38,7 +38,7 @@ export const openThread = (
 };
 
 export const appendMessage = (
-  store: StoreModel,
+  store: StoreUnitOfWork,
   projectId: string,
   threadId: string,
   role: MessageRole,

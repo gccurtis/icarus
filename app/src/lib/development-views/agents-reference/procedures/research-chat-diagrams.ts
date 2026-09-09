@@ -212,9 +212,11 @@ export const RECOVERY_DIAGRAM = `flowchart TB
     stranded -->|no| reclaim["write failed with the reason, then carry on"]
   end
 
-  subgraph disk["every table write"]
-    write(["a row changes"]) --> tmp["serialise the whole table to table.json.next"]
-    tmp --> keep["rename table.json to table.json.previous"]
-    keep --> swap["rename table.json.next to table.json"]
-    swap --> safe["the version before this one is still on disk"]
+  subgraph disk["one turn, one commit boundary"]
+    write(["three tables change"]) --> unit["stage every change in one unit of work"]
+    unit --> journal["write the journal: the committed value of each table"]
+    journal --> tables["replace each table file, durably"]
+    tables --> clear["remove the journal"]
+    journal --> stop(["the process stops here"])
+    stop --> replay["the next start replays the journal before serving a read"]
   end`;

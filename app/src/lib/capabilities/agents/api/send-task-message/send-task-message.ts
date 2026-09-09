@@ -18,7 +18,9 @@ export const sendTaskMessage = async (input: unknown): Promise<WriteResult> => {
     return refused(asked.taskId, "invalid-state", "the task is finished, so nothing reads its thread", task.revision);
   }
   const at = Date.now();
-  appendMessage(store, scope.projectId, task.threadId, "prompt", viewer(scope), at, asked.text);
-  store.update(`agentTasks.${task._id}.updatedAt`, at);
+  store.transaction((unit) => {
+    appendMessage(unit, scope.projectId, task.threadId, "prompt", viewer(scope), at, asked.text);
+    unit.update(`agentTasks.${task._id}.updatedAt`, at);
+  });
   return { accepted: true, id: task._id, revision: task.revision };
 };

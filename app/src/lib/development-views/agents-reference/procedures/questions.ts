@@ -439,6 +439,48 @@ export const QUESTIONS: readonly Question[] = [
     ],
     recommendation:
       "Promote it when a third system needs it, and not before. Two copies of thirty lines is cheaper than a capability nobody else uses, and the duplication is visible on this page."
+  },
+  {
+    n: 37,
+    page: "second-rebase",
+    title: "Fifty-five inline handlers and effects are held rather than moved",
+    matters:
+      "async-command-state-lives-with-command and component-effects-have-a-home account for fifty-five of the ninety baselined entries. The move is mechanical and it is not small: every handler becomes a named procedure and every lifecycle call moves into procedures/effects/. The base branch holds ninety-four entries of the same two checks, so the tree is not clean either way.",
+    options: [
+      "Work them off now, as one refactor across both categories, before anything else is built on them.",
+      "Work them off per surface, whenever that surface is next opened for another reason.",
+      "Leave them baselined until the checks are reviewed, since the whole tree fails them."
+    ],
+    recommendation:
+      "Per surface. A refactor of fifty-five call sites in one pass has no test that proves it did nothing, and these surfaces are still moving."
+  },
+  {
+    n: 38,
+    page: "second-rebase",
+    title: "The reference routes cannot satisfy the fixture rule where they live",
+    matters:
+      "Seventeen entries are one rule: production code may not import development-views. Routes under /demo/ are exempt. These pages cannot move there, because a remote function resolves its scope from the project in the page's path and every page reads the project's real store.",
+    options: [
+      "Hold the seventeen entries and accept that a live reference route is an exception.",
+      "Teach the checker that a route segment named reference is exempt the way /demo/ is.",
+      "Move the pages out of development-views into a production tree of their own."
+    ],
+    recommendation:
+      "Teach the checker, but only as a proposal in prose first. The rule is right and the exemption is narrow: a route whose whole purpose is to stage the product over real data is neither production nor a demo, and the tree has no third word for it yet."
+  },
+  {
+    n: 39,
+    page: "second-rebase",
+    title: "The journal replaced .previous, and nothing keeps a version now",
+    matters:
+      "The journal makes a set of writes all-or-none and finishes an interrupted commit on the next start. It does not keep the value a table held before the commit. A correct write of wrong rows is durable, atomic, and unrecoverable.",
+    options: [
+      "Accept it: the journal answers the fault that was actually raised, and a version history is a different feature.",
+      "Keep one version per table again, written inside the commit so replay cannot overwrite it.",
+      "Snapshot the whole data directory on a schedule, outside the Store entirely."
+    ],
+    recommendation:
+      "Accept it for now and say so out loud, which is what this page is doing. A version kept inside the commit doubles every write, and the fault it guards against — a command that writes the wrong thing correctly — is caught by tests rather than by a file."
   }
 ];
 

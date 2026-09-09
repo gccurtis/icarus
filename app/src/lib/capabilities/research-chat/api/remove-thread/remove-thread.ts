@@ -17,17 +17,17 @@ export const removeThread = async (input: unknown): Promise<RemoveThreadResult> 
   if (turns.some((turn) => turn.state === "running" || turn.state === "queued")) {
     return { accepted: false, threadId: asked.threadId, detail: "it is still answering" };
   }
-  store.removeRows(
-    "researchTurns",
-    turns.map((turn) => turn._id)
-  );
-  store.removeRows(
-    "threadParts",
-    rowsIn(store, "threadParts")
-      .filter((part) => part.threadId === thread.threadId)
-      .map((part) => part._id)
-  );
-  store.removeRows("threads", [thread.threadId]);
-  store.removeRows("researchThreads", [thread._id]);
+  const partIds = rowsIn(store, "threadParts")
+    .filter((part) => part.threadId === thread.threadId)
+    .map((part) => part._id);
+  store.transaction((unit) => {
+    unit.removeRows(
+      "researchTurns",
+      turns.map((turn) => turn._id)
+    );
+    unit.removeRows("threadParts", partIds);
+    unit.removeRows("threads", [thread.threadId]);
+    unit.removeRows("researchThreads", [thread._id]);
+  });
   return { accepted: true, threadId: thread._id };
 };

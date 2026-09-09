@@ -1,5 +1,6 @@
 import { requireScope } from "$runtime/server/scope.server";
 import { serverModel, type ServerModel } from "$runtime/server/start.server";
+import type { StoreUnitOfWork } from "$model/server/store/index.server";
 import { textMessage } from "$representation/data/behavior/agents/messages";
 import { DEFAULT_TOOLS, orderedTools } from "$representation/data/behavior/agents/tools";
 import type { Id } from "$representation/data/types/core/id";
@@ -52,21 +53,33 @@ const safeFailure = (error: unknown): string =>
     .replace(/(?:api[-_ ]?key)\s*[:=]\s*\S+/gi, "apiKey=[redacted]")
     .slice(0, 400);
 
-const append = (
-  model: ServerModel,
-  projectId: string,
-  threadId: string,
-  message: Message
-): void => {
+type PartTarget =
+  | { readonly kind: "first" }
+  | { readonly kind: "last"; readonly id: string; readonly messages: readonly Message[] };
+
+/** Which part a message lands in, resolved before the write opens. */
+const partTarget = (model: ServerModel, threadId: string): PartTarget => {
   const parts = rowsIn(model.store, "threadParts")
     .filter((part) => part.threadId === threadId)
     .toSorted((left, right) => left.part - right.part);
   const last = parts[parts.length - 1];
-  if (last === undefined) {
-    model.store.create("threadParts", { projectId, threadId, part: 1, messages: [message] });
+  return last === undefined
+    ? { kind: "first" }
+    : { kind: "last", id: last._id, messages: last.messages };
+};
+
+const append = (
+  unit: StoreUnitOfWork,
+  projectId: string,
+  threadId: string,
+  target: PartTarget,
+  message: Message
+): void => {
+  if (target.kind === "first") {
+    unit.create("threadParts", { projectId, threadId, part: 1, messages: [message] });
     return;
   }
-  model.store.update(`threadParts.${last._id}.messages`, [...last.messages, message]);
+  unit.update(`threadParts.${target.id}.messages`, [...target.messages, message]);
 };
 
 const DEFAULT_GRANTS = orderedTools([...DEFAULT_TOOLS]);
@@ -87,12 +100,14 @@ const personaFor = (model: ServerModel, projectId: string, personaId: string | u
  */
 const reclaim = (model: ServerModel, turnId: string): void => {
   const at = Date.now();
-  model.store.update(`researchTurns.${turnId}.state`, "failed");
-  model.store.update(
-    `researchTurns.${turnId}.error`,
-    "The server restarted while this was running, so it never finished."
-  );
-  model.store.update(`researchTurns.${turnId}.updatedAt`, at);
+  model.store.transaction((unit) => {
+    unit.update(`researchTurns.${turnId}.state`, "failed");
+    unit.update(
+      `researchTurns.${turnId}.error`,
+      "The server restarted while this was running, so it never finished."
+    );
+    unit.update(`researchTurns.${turnId}.updatedAt`, at);
+  });
 };
 
 const titleFrom = (question: string): string => {
@@ -156,30 +171,33 @@ export const ask = async (input: unknown): Promise<AskResult> => {
 
   const at = Date.now();
   const prompt = textMessage(`m-${uniqueId()}`, "prompt", viewer(scope), at, asked.text);
-  append(model, projectId, thread.threadId, prompt);
+  const promptTarget = partTarget(model, thread.threadId);
 
-  const turnId = model.store.create("researchTurns", {
-    projectId,
-    researchThreadId: thread._id,
-    threadId: thread.threadId,
-    promptMessageId: prompt.id,
-    prompt: asked.text,
-    mode: thread.mode,
-    scope: asked.scope ?? { kind: "project" },
-    tools: asked.tools ?? [],
-    state: "running",
-    blocks: [],
-    queries: [],
-    sources: [],
-    findings: [],
-    askedAt: at,
-    updatedAt: at
+  const turnId = model.store.transaction((unit) => {
+    append(unit, projectId, thread.threadId, promptTarget, prompt);
+    const opened = unit.create("researchTurns", {
+      projectId,
+      researchThreadId: thread._id,
+      threadId: thread.threadId,
+      promptMessageId: prompt.id,
+      prompt: asked.text,
+      mode: thread.mode,
+      scope: asked.scope ?? { kind: "project" },
+      tools: asked.tools ?? [],
+      state: "running",
+      blocks: [],
+      queries: [],
+      sources: [],
+      findings: [],
+      askedAt: at,
+      updatedAt: at
+    });
+    if (thread.title === "New chat") {
+      unit.update(`researchThreads.${thread._id}.title`, titleFrom(asked.text));
+    }
+    unit.update(`researchThreads.${thread._id}.updatedAt`, at);
+    return opened;
   });
-
-  if (thread.title === "New chat") {
-    model.store.update(`researchThreads.${thread._id}.title`, titleFrom(asked.text));
-  }
-  model.store.update(`researchThreads.${thread._id}.updatedAt`, at);
 
   const history = turnsIn(model.store, projectId, thread._id)
     .filter((turn) => turn._id !== turnId && turn.state === "answered")
@@ -226,33 +244,35 @@ export const ask = async (input: unknown): Promise<AskResult> => {
         .flatMap((block) => (block.type === "text" ? [block.display] : []))
         .join("\n\n")
     );
-    append(model, projectId, thread.threadId, response);
-
+    const responseTarget = partTarget(model, thread.threadId);
     const stopped = rowsIn(model.store, "researchTurns").find((row) => row._id === turnId)
       ?.stopRequestedAt;
-    model.store.update(`researchTurns.${turnId}`, {
-      projectId,
-      researchThreadId: thread._id,
-      threadId: thread.threadId,
-      promptMessageId: prompt.id,
-      messageId: response.id,
-      prompt: asked.text,
-      mode: thread.mode,
-      scope: asked.scope ?? { kind: "project" },
-      tools: asked.tools ?? [],
-      state: answer.status,
-      ...(stopped === undefined ? {} : { stopRequestedAt: stopped }),
-      blocks: answer.blocks,
-      queries: answer.queries,
-      sources: answer.sources,
-      findings: answer.findings,
-      usage: answer.usage,
-      model: answer.model,
-      askedAt: at,
-      answeredAt,
-      updatedAt: answeredAt
+    model.store.transaction((unit) => {
+      append(unit, projectId, thread.threadId, responseTarget, response);
+      unit.update(`researchTurns.${turnId}`, {
+        projectId,
+        researchThreadId: thread._id,
+        threadId: thread.threadId,
+        promptMessageId: prompt.id,
+        messageId: response.id,
+        prompt: asked.text,
+        mode: thread.mode,
+        scope: asked.scope ?? { kind: "project" },
+        tools: asked.tools ?? [],
+        state: answer.status,
+        ...(stopped === undefined ? {} : { stopRequestedAt: stopped }),
+        blocks: answer.blocks,
+        queries: answer.queries,
+        sources: answer.sources,
+        findings: answer.findings,
+        usage: answer.usage,
+        model: answer.model,
+        askedAt: at,
+        answeredAt,
+        updatedAt: answeredAt
+      });
+      unit.update(`researchThreads.${thread._id}.updatedAt`, answeredAt);
     });
-    model.store.update(`researchThreads.${thread._id}.updatedAt`, answeredAt);
 
     model.observability.logger.info("researchChat.answered", {
       projectId,
@@ -272,19 +292,18 @@ export const ask = async (input: unknown): Promise<AskResult> => {
     const failedAt = Date.now();
     const abandoned = flight.controller.signal.aborted;
     const ranOut = flight.reason === "deadline";
-    model.store.update(
-      `researchTurns.${turnId}.state`,
-      abandoned && !ranOut ? "cancelled" : "failed"
-    );
-    model.store.update(
-      `researchTurns.${turnId}.error`,
-      ranOut
-        ? "It ran past the time a turn is given and was stopped."
-        : abandoned
-          ? "Cancelled before it answered."
-          : safeFailure(error)
-    );
-    model.store.update(`researchTurns.${turnId}.updatedAt`, failedAt);
+    model.store.transaction((unit) => {
+      unit.update(`researchTurns.${turnId}.state`, abandoned && !ranOut ? "cancelled" : "failed");
+      unit.update(
+        `researchTurns.${turnId}.error`,
+        ranOut
+          ? "It ran past the time a turn is given and was stopped."
+          : abandoned
+            ? "Cancelled before it answered."
+            : safeFailure(error)
+      );
+      unit.update(`researchTurns.${turnId}.updatedAt`, failedAt);
+    });
     model.observability.logger.warn("researchChat.failed", {
       projectId,
       threadId: thread._id,

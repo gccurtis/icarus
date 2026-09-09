@@ -260,6 +260,23 @@ export const PAGES: readonly PageRecord[] = [
       { label: "Shares with agents", value: "threads and threadParts" },
       { label: "Steering", value: "None yet" }
     ]
+  },
+  {
+    slug: "second-rebase",
+    index: "16",
+    label: "Rebase II",
+    path: "/second-rebase",
+    title: "The second rebase: a rewritten base, and six ways to stop.",
+    eyebrow: "Operations · every conflict, and how it was addressed",
+    lede: "The base was not extended, it was rebased onto three new commits on main and came back with different hashes. This page is what that cost: the two commits replayed, the three files git stopped on, the three more that only typecheck, the lint and the suite could see, and the twenty-four findings fixed against the ninety held with a reason.",
+    readout: [
+      { label: "Commits replayed", value: "2" },
+      { label: "Commits underneath", value: "37, 21 of them rewritten" },
+      { label: "Conflicts git found", value: "3" },
+      { label: "Conflicts it did not", value: "3" },
+      { label: "Lint findings", value: "129 · 24 fixed · 90 held" },
+      { label: "Green at the end", value: "Yes" }
+    ]
   }
 ];
 

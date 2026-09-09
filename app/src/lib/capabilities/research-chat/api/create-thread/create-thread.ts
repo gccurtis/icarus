@@ -11,24 +11,26 @@ export const createThread = async (input: unknown): Promise<CreateThreadResult> 
   const asked = validateCreateThread(input);
   const store = serverModel().store;
   const at = Date.now();
-  const threadId = store.create("threads", {
-    projectId: scope.projectId,
-    kind: "researchThread"
-  }) as Id<"threads">;
-  store.create("threadParts", {
-    projectId: scope.projectId,
-    threadId,
-    part: 1,
-    messages: []
-  });
-  const researchThreadId = store.create("researchThreads", {
-    projectId: scope.projectId,
-    threadId,
-    title: asked.title ?? "New chat",
-    mode: { kind: "explore" },
-    findingIds: [],
-    createdBy: viewer(scope),
-    updatedAt: at
+  const researchThreadId = store.transaction((unit) => {
+    const threadId = unit.create("threads", {
+      projectId: scope.projectId,
+      kind: "researchThread"
+    }) as Id<"threads">;
+    unit.create("threadParts", {
+      projectId: scope.projectId,
+      threadId,
+      part: 1,
+      messages: []
+    });
+    return unit.create("researchThreads", {
+      projectId: scope.projectId,
+      threadId,
+      title: asked.title ?? "New chat",
+      mode: { kind: "explore" },
+      findingIds: [],
+      createdBy: viewer(scope),
+      updatedAt: at
+    });
   });
   return { threadId: researchThreadId };
 };

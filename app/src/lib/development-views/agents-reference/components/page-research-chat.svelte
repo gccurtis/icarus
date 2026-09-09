@@ -138,13 +138,13 @@
     },
     {
       n: 4,
-      title: "Every table keeps the version before this one",
-      body: "A write serialises the whole table to a temporary file, renames the current file to .previous, then renames the temporary into place. Two renames, no extra serialisation, and the last good version of every table is on disk under a name nothing reads. One version deep, because every fault this guards against is found within one write."
+      title: "One turn is one write, or none of it",
+      body: "Appending the question, opening the turn and naming the chat are three tables. They are staged in one unit of work and cross one commit boundary: a journal names every table's next value, then each file is replaced, then the journal is removed. A process that stops between those files finds the journal on the next start and finishes the same decision before it serves a read."
     },
     {
       n: 5,
       title: "What it does not protect against",
-      body: "A rename is atomic, so a torn file is not possible. What is possible is a logically inconsistent moment across tables: a question in the thread with no answer beside it. That is exactly the state the reclaim turns into a failed turn with a reason."
+      body: "A write is durable and a set of writes is all-or-none, so neither a torn file nor a half-applied turn is possible. What is possible is a turn that was genuinely running when the process stopped. That is exactly the state the reclaim turns into a failed turn with a reason."
     }
   ];
 

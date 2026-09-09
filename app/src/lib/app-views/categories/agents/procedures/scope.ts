@@ -16,12 +16,12 @@ export const EVERYTHING: ResourceSet = { include: [{ select: "project" }], exclu
 
 const refKey = (ref: ResourceRef): string => `resource:${ref.kind}:${ref.id}`;
 
-const KIND_WORD = new Map<string, string>([
-  ["document", "Document"],
-  ["slides", "Slide deck"],
-  ["spreadsheet", "Spreadsheet"],
-  ["finding", "Finding"]
-]);
+const KIND_WORD: Record<string, string> = {
+  document: "Document",
+  slides: "Slide deck",
+  spreadsheet: "Spreadsheet",
+  finding: "Finding"
+};
 
 export const scopeRows = (
   scope: ResourceSet | null,
@@ -53,7 +53,7 @@ export const scopeRows = (
         key: `kinds:${term.kinds.join("+")}`,
         kind: "kinds",
         refKind: term.kinds[0] ?? "project",
-        title: term.kinds.map((kind) => KIND_WORD.get(kind) ?? kind).join(", "),
+        title: term.kinds.map((kind) => KIND_WORD[kind] ?? kind).join(", "),
         detail: "Every resource of that kind"
       });
     } else {
@@ -66,7 +66,7 @@ export const scopeRows = (
           kind: "resource",
           refKind: ref.kind,
           title: named?.name ?? "A resource",
-          detail: KIND_WORD.get(ref.kind) ?? ref.kind
+          detail: KIND_WORD[ref.kind] ?? ref.kind
         });
       }
     }

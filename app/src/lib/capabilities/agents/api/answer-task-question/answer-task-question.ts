@@ -34,16 +34,18 @@ export const answerTaskQuestion = async (input: unknown): Promise<WriteResult> =
         ? { ...candidate, rejectedAt: at, answeredBy: actor }
         : { ...candidate, answer: asked.answer, answeredAt: at, answeredBy: actor }
   );
-  appendMessage(
-    store,
-    scope.projectId,
-    task.threadId,
-    "prompt",
-    actor,
-    at,
-    asked.reject ? `Not answering: ${question.text} Use your judgement.` : asked.answer ?? ""
-  );
-  store.update(`agentTasks.${task._id}.questions`, questions);
-  store.update(`agentTasks.${task._id}.updatedAt`, at);
+  store.transaction((unit) => {
+    appendMessage(
+      unit,
+      scope.projectId,
+      task.threadId,
+      "prompt",
+      actor,
+      at,
+      asked.reject ? `Not answering: ${question.text} Use your judgement.` : asked.answer ?? ""
+    );
+    unit.update(`agentTasks.${task._id}.questions`, questions);
+    unit.update(`agentTasks.${task._id}.updatedAt`, at);
+  });
   return { accepted: true, id: task._id, revision: task.revision };
 };

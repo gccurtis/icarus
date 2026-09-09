@@ -1,9 +1,10 @@
 # Agents reference
 
 The Agents category, staged live at `/app/<project>/reference/agents` and reached
-from `/demo/agents-reference`. Sixteen pages in three groups: the built agents
-surfaces staged live; the research chat as it was built; and four specifications
-— personas, tasks, automations, and research chat whole.
+from `/demo/agents-reference`. Seventeen pages in four groups: the built agents
+surfaces staged live; the research chat as it was built; four specifications —
+personas, tasks, automations, and research chat whole; and two records of the
+rebases onto the derived output branch.
 
 A specification page has one shape: state, then behaviour over that state, then
 every procedure as a chain of what it takes, each step with the function that

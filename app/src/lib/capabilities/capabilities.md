@@ -13,12 +13,14 @@ as built to everything that looks at the tree.
 
 The current subject inventory is:
 
+- `agents` owns personas, tasks, automations and the activity they leave behind;
 - `comments` owns comment threads and their messages;
 - `derived-output` owns grounded prompt results and refresh work;
 - `development` owns explicitly non-production fixtures;
 - `document` owns document resources and revisions;
 - `project` owns Project Overview summaries, history, people, comments, and resource metadata;
 - `project-resources` projects the resources visible in one project;
+- `research-chat` owns research threads, the turns that answer them, and the run in flight;
 - `resource-sets` owns named reusable resource scopes;
 - `semantic-overlay` owns semantic translation, material profiles, indexes, and synchronization;
 - `slide-deck` owns slide-deck resources and revisions;

@@ -27,10 +27,15 @@ export const setThreadPersona = async (input: unknown): Promise<RemoveThreadResu
     if (persona === undefined) {
       return { accepted: false, threadId: asked.threadId, detail: "no persona in this project has that id" };
     }
-    store.update(`researchThreads.${thread._id}.personaId`, persona._id);
+    store.transaction((unit) => {
+      unit.update(`researchThreads.${thread._id}.personaId`, persona._id);
+      unit.update(`researchThreads.${thread._id}.updatedAt`, Date.now());
+    });
   } else {
-    store.remove(`researchThreads.${thread._id}.personaId`);
+    store.transaction((unit) => {
+      unit.remove(`researchThreads.${thread._id}.personaId`);
+      unit.update(`researchThreads.${thread._id}.updatedAt`, Date.now());
+    });
   }
-  store.update(`researchThreads.${thread._id}.updatedAt`, Date.now());
   return { accepted: true, threadId: thread._id };
 };

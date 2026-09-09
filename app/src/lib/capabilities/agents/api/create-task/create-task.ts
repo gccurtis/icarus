@@ -18,29 +18,31 @@ export const createTask = async (input: unknown): Promise<WriteResult> => {
   const persona = found.row;
   const at = Date.now();
   const actor = viewer(scope);
-  const threadId = openThread(store, scope.projectId, "agentTask", at, {
-    role: "prompt",
-    author: actor,
-    text: asked.instruction
+  const id = store.transaction((unit) => {
+    const threadId = openThread(unit, scope.projectId, "agentTask", at, {
+      role: "prompt",
+      author: actor,
+      text: asked.instruction
+    });
+    const fields: RowFields<"agentTasks"> = {
+      projectId: asId<"projects">(scope.projectId),
+      threadId,
+      title: asked.title,
+      instruction: asked.instruction,
+      personaId: persona._id,
+      origin: { kind: "person" },
+      state: "running",
+      ...(asked.scope === undefined ? {} : { scope: asked.scope }),
+      tools: [...(asked.tools ?? persona.tools)],
+      plan: [],
+      outputs: [],
+      questions: [],
+      createdBy: actor,
+      startedAt: at,
+      revision: 1,
+      updatedAt: at
+    };
+    return unit.create("agentTasks", fields);
   });
-  const fields: RowFields<"agentTasks"> = {
-    projectId: asId<"projects">(scope.projectId),
-    threadId,
-    title: asked.title,
-    instruction: asked.instruction,
-    personaId: persona._id,
-    origin: { kind: "person" },
-    state: "running",
-    ...(asked.scope === undefined ? {} : { scope: asked.scope }),
-    tools: [...(asked.tools ?? persona.tools)],
-    plan: [],
-    outputs: [],
-    questions: [],
-    createdBy: actor,
-    startedAt: at,
-    revision: 1,
-    updatedAt: at
-  };
-  const id = store.create("agentTasks", fields);
   return { accepted: true, id, revision: 1 };
 };
