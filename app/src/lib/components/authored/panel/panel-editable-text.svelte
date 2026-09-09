@@ -43,6 +43,8 @@
     placeholder = "Empty",
     multiline = false,
     mono = false,
+    appearance = "plain",
+    previewLines,
     activate = "click",
     mixed = false,
     disabled = false,
@@ -68,6 +70,10 @@
     multiline?: boolean;
     /** For values you would retype: an identifier, a key, an expression. */
     mono?: boolean;
+    /** Give an important editable value a persistent field-like affordance. */
+    appearance?: "plain" | "field";
+    /** Bound a multiline resting value. Activating it still exposes the complete text. */
+    previewLines?: 2 | 3 | 4;
     activate?: "click" | "double-click";
     disabled?: boolean;
     /** Absent means read-only, and the value renders as plain text. */
@@ -82,12 +88,20 @@
     placeholder,
     multiline,
     mono,
+    appearance,
+    previewLines,
     activate,
     mixed,
     disabled
   }));
 
   const editable = $derived(!disabled && onchange !== undefined);
+
+  const CLAMP: Record<NonNullable<typeof previewLines>, string> = {
+    2: "line-clamp-2",
+    3: "line-clamp-3",
+    4: "line-clamp-4"
+  };
 
   let editing = $state(false);
   let draft = $state("");
@@ -175,22 +189,36 @@
     onkeydown={openKey}
     title={hover}
     class={cn(
-      "group border-transparent hover:border-border-subtle hover:bg-surface-panel-hover flex w-full min-w-0 cursor-text items-start gap-1 rounded-control border px-1 py-0.5 text-start",
+      "group flex w-full min-w-0 cursor-text items-start gap-1 rounded-control border text-start transition-colors",
       /* -mx-1 keeps the idle text on the same left edge as a read-only value:
          the padding exists for the hover box, not for the text. */
-      "-mx-1",
+      appearance === "plain" &&
+        "border-transparent hover:border-border-subtle hover:bg-surface-panel-hover -mx-1 px-1 py-0.5",
+      appearance === "field" &&
+        "border-border-subtle bg-surface-panel hover:border-interactive-border hover:bg-surface-panel-hover px-2 py-2",
       mono && "text-mono font-mono tabular-nums",
       !mono && "text-body-sm",
       value && !mixed ? "text-ink-primary" : "text-ink-muted italic"
     )}
   >
-    <span class={cn("min-w-0 flex-1", multiline ? "whitespace-pre-wrap" : "truncate")}>
+    <span
+      class={cn(
+        "min-w-0 flex-1 break-words",
+        multiline ? "whitespace-pre-wrap" : "truncate",
+        previewLines !== undefined && CLAMP[previewLines]
+      )}
+    >
       {mixed ? "Mixed" : value || placeholder}
     </span>
     <Pencil
       size={11}
       aria-hidden="true"
-      class="text-ink-muted mt-1 shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
+      class={cn(
+        "mt-1 shrink-0 transition-opacity",
+        appearance === "field"
+          ? "text-interactive-text opacity-80 group-hover:opacity-100"
+          : "text-ink-muted opacity-0 group-hover:opacity-100"
+      )}
     />
   </button>
 {:else}

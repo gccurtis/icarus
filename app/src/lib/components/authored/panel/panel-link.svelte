@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Button } from "$vendored-components/button";
+  import { cn } from "$vendored-components/utils";
   import { traceNode } from "$development-components/trace.svelte";
 
   /**
@@ -26,24 +27,33 @@
   let {
     label,
     title,
+    lines,
     onselect
   }: {
     label: string;
     /** Hover text: the full name, the kind, or where this leads. */
     title?: string;
+    /** Bound unusually long labels while keeping the complete name available on hover. */
+    lines?: 1 | 2 | 3;
     onselect: () => void;
   } = $props();
 
   // The marker is forwarded through `Button` onto the element it renders.
-  const trace = traceNode("PanelLink", () => ({ label, title }));
+  const trace = traceNode("PanelLink", () => ({ label, title, lines }));
+
+  const CLAMP: Record<NonNullable<typeof lines>, string> = {
+    1: "truncate",
+    2: "line-clamp-2",
+    3: "line-clamp-3"
+  };
 </script>
 
 <Button
   {...trace}
   variant="link"
-  {title}
+  title={title ?? (lines === undefined ? undefined : label)}
   onclick={onselect}
-  class="text-interactive-text h-auto justify-start p-0 text-[length:inherit] leading-[inherit] font-[inherit] whitespace-normal"
+  class="text-interactive-text h-auto max-w-full min-w-0 justify-start p-0 text-start text-[length:inherit] leading-[inherit] font-[inherit] whitespace-normal"
 >
-  {label}
+  <span class={cn("min-w-0", lines === undefined ? "break-words" : CLAMP[lines])}>{label}</span>
 </Button>

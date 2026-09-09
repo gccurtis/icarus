@@ -33,6 +33,7 @@
     [
       { href: "/demo/context", label: "Context" },
       { href: "/demo/inspector", label: "Inspector" },
+      { href: "/demo/project-overview-panels", label: "Project panels" },
       { href: "/demo/workspace", label: "Workspace" }
     ],
     [

@@ -14,9 +14,7 @@ export const OPENING: Record<Category, Opening> = {
     context: "project-overview.overview",
     rail: [
       "project-overview.overview",
-      "project-overview.history",
-      "project-overview.variables",
-      "project-overview.contexts"
+      "project-overview.history"
     ]
   },
 

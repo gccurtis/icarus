@@ -165,6 +165,7 @@ export const INSPECTOR_VIEWS = [
   "new-tab.start-from-template",
   "new-tab.upload",
   "project-overview.activity",
+  "project-overview.comment",
   "project-overview.connector",
   "project-overview.file",
   "project-overview.project",

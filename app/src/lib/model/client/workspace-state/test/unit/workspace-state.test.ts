@@ -661,7 +661,7 @@ test("selecting a view the rail does not offer throws", () => {
 
 test("selecting a view the rail offers moves the rail", () => {
   const model = workspaceState();
-  const where = railFor("project-overview")[3];
+  const where = railFor("project-overview")[1];
 
   model.selectContext(where);
 
@@ -816,7 +816,7 @@ test("resize changes only what it was given", () => {
 test("resize cannot reach the rail", () => {
   // Structural rather than conventional: a drag can never move the rail.
   const model = workspaceState();
-  const where = railFor("project-overview")[2];
+  const where = railFor("project-overview")[1];
   model.selectContext(where);
 
   model.resize({ contextWidth: 500 });

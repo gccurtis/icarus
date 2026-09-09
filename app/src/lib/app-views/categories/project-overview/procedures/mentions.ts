@@ -3,6 +3,7 @@ import { nameOf } from "$app-views/categories/project-overview/procedures/resour
 import type { Actor } from "$representation/data/types/core/actor";
 
 export type Mention = {
+  /** The discussion lifetime; the comment inspector is keyed by its thread. */
   readonly id: string;
   readonly age: string;
   readonly author: Actor;
@@ -46,7 +47,7 @@ export const mentions = (
       const first = comment.blocks[0];
       return [
         {
-          id: comment._id,
+          id: thread._id,
           age: since(comment._creationTime, now),
           author: comment.author,
           resource: nameOf(projectId, thread.target.id, now),

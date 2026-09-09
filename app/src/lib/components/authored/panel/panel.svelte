@@ -36,6 +36,7 @@
    */
   let {
     title,
+    titleLines,
     heading,
     crumbs,
     actions,
@@ -44,6 +45,8 @@
   }: {
     /** Names the view. Rendered as the panel's heading, so it is never empty. */
     title: string;
+    /** Bound a subject-owned title that can be arbitrarily long. */
+    titleLines?: 1 | 2 | 3;
     /** Optional interactive rendering of the heading; it must still contain an h2. */
     heading?: Snippet;
     /**
@@ -61,6 +64,12 @@
   } = $props();
 
   const trace = traceNode("Panel", () => ({ title }));
+
+  const CLAMP: Record<NonNullable<typeof titleLines>, string> = {
+    1: "truncate",
+    2: "line-clamp-2",
+    3: "line-clamp-3"
+  };
 </script>
 
 <section {...trace} class={cn("flex h-full min-h-0 flex-col", className)}>
@@ -72,7 +81,13 @@
     {#if heading}
       {@render heading()}
     {:else}
-      <h2 class="text-body-sm text-ink-secondary m-0 font-semibold">{title}</h2>
+      <h2
+        class={cn(
+          "text-body-sm text-ink-secondary m-0 min-w-0 break-words font-semibold",
+          titleLines !== undefined && CLAMP[titleLines]
+        )}
+        title={titleLines === undefined ? undefined : title}
+      >{title}</h2>
     {/if}
     {#if actions}
       <div class="flex flex-wrap items-center gap-1">{@render actions()}</div>

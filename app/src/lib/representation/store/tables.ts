@@ -168,6 +168,7 @@ export type SpreadsheetChangeSet = Row<"spreadsheetChangeSets"> & SpreadsheetCha
 export type DocumentFields = {
   projectId: Id<"projects">;
   title: string;
+  summary?: string;
   templateId?: Id<"templates">;
   createdBy: Actor;
   updatedBy: Actor;
@@ -178,6 +179,7 @@ export type Document = Row<"documents"> & DocumentFields;
 export type SlideDeckFields = {
   projectId: Id<"projects">;
   title: string;
+  summary?: string;
   templateId?: Id<"templates">;
   createdBy: Actor;
   updatedBy: Actor;
@@ -188,6 +190,7 @@ export type SlideDeck = Row<"slideDecks"> & SlideDeckFields;
 export type SpreadsheetFields = {
   projectId: Id<"projects">;
   title: string;
+  summary?: string;
   templateId?: Id<"templates">;
   createdBy: Actor;
   updatedBy: Actor;
@@ -451,6 +454,7 @@ export type Hypothesis = Row<"hypotheses"> & HypothesisFields;
 export type FindingFields = {
   projectId: Id<"projects">;
   title: string;
+  summary?: string;
   body: ContentBlock[];
   sources: FindingSource[];
   evidenceFor: Id<"hypotheses">[];
@@ -467,6 +471,7 @@ export type ResearchThreadFields = {
   projectId: Id<"projects">;
   threadId: Id<"threads">;
   title: string;
+  summary?: string;
   mode: ResearchMode;
   findingIds: Id<"findings">[];
   createdBy: Actor;

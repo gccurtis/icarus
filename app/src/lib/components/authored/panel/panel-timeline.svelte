@@ -35,7 +35,7 @@
   type Entry = {
     /** Stable across refreshes: this is the each block's key. */
     id: string;
-    /** What happened, as a line. Wraps — it is a sentence, not a title to scan. */
+    /** What happened, as a line. Wraps unless the caller asks for a compact feed. */
     what: string;
     /** The qualifier under it: a fragment, a target, a reason. */
     detail?: string;
@@ -59,6 +59,8 @@
     label,
     size = "row",
     flush = false,
+    interactiveRows = false,
+    compact = false,
     empty = "Nothing has happened yet."
   }: {
     /**
@@ -83,12 +85,24 @@
     size?: "row" | "head";
     /** Drop the panel gutter, for a timeline inside an already-padded region. */
     flush?: boolean;
+    /** Make the complete event surface the target, with one coherent hover state. */
+    interactiveRows?: boolean;
+    /** Bound long event and detail text so one record cannot consume the feed. */
+    compact?: boolean;
     /** What an empty feed says. An empty `<ol>` draws nothing and reads as a fault. */
     empty?: string;
   } = $props();
 
   // Two roots, but only ever one of them: the marker goes on both branches.
-  const trace = traceNode("PanelTimeline", () => ({ entries, label, size, flush, empty }));
+  const trace = traceNode("PanelTimeline", () => ({
+    entries,
+    label,
+    size,
+    flush,
+    interactiveRows,
+    compact,
+    empty
+  }));
 
   const MARK: Record<Tone, string> = {
     default: "text-ink-muted",
@@ -160,26 +174,51 @@
           {/if}
         </span>
 
-        <div class={cn("flex min-w-0 flex-1 flex-col", !last && "pb-3")}>
-          <div class="flex items-baseline justify-between gap-2">
-            {#if entry.onselect}
-              <button
-                type="button"
-                onclick={entry.onselect}
-                class={cn("text-ink-primary min-w-0 flex-1 text-start hover:underline", line)}
-              >
+        {#if entry.onselect && interactiveRows}
+          <button
+            type="button"
+            onclick={entry.onselect}
+            title={compact ? entry.what : undefined}
+            class={cn(
+              "hover:bg-surface-panel-hover focus-visible:ring-active-border -mx-1.5 -mt-1 flex min-w-0 flex-1 flex-col rounded-control px-1.5 py-1 text-start transition-colors focus-visible:ring-2 focus-visible:outline-none",
+              !last && "mb-2"
+            )}
+          >
+            <span class="flex w-full min-w-0 items-baseline justify-between gap-2">
+              <span class={cn("text-ink-primary min-w-0 flex-1 break-words", line, compact && "line-clamp-2")}>
                 {entry.what}
-              </button>
-            {:else}
-              <p class={cn("text-ink-primary m-0 min-w-0 flex-1", line)}>{entry.what}</p>
+              </span>
+              <span class="text-caption text-ink-muted shrink-0 tabular-nums">{entry.time}</span>
+            </span>
+            {#if entry.detail}
+              <span class={cn("text-caption text-ink-muted min-w-0 max-w-full", compact && "truncate")} title={compact ? entry.detail : undefined}>
+                {entry.detail}
+              </span>
             {/if}
-            <span class="text-caption text-ink-muted shrink-0 tabular-nums">{entry.time}</span>
-          </div>
+          </button>
+        {:else}
+          <div class={cn("flex min-w-0 flex-1 flex-col", !last && "pb-3")}>
+            <div class="flex items-baseline justify-between gap-2">
+              {#if entry.onselect}
+                <button
+                  type="button"
+                  onclick={entry.onselect}
+                  title={compact ? entry.what : undefined}
+                  class={cn("text-ink-primary min-w-0 flex-1 break-words text-start hover:underline", line, compact && "line-clamp-2")}
+                >
+                  {entry.what}
+                </button>
+              {:else}
+                <p class={cn("text-ink-primary m-0 min-w-0 flex-1 break-words", line, compact && "line-clamp-2")} title={compact ? entry.what : undefined}>{entry.what}</p>
+              {/if}
+              <span class="text-caption text-ink-muted shrink-0 tabular-nums">{entry.time}</span>
+            </div>
 
-          {#if entry.detail}
-            <p class="text-caption text-ink-muted m-0">{entry.detail}</p>
-          {/if}
-        </div>
+            {#if entry.detail}
+              <p class={cn("text-caption text-ink-muted m-0", compact && "truncate")} title={compact ? entry.detail : undefined}>{entry.detail}</p>
+            {/if}
+          </div>
+        {/if}
       </li>
     {/each}
   </ol>

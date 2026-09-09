@@ -4,6 +4,7 @@
     "_creationTime": 1786694400000,
     "projectId": "default",
     "title": "Three feeders carry 41% of customer-minutes",
+    "summary": "A concentrated set of three feeders accounts for 41% of customer-minutes lost in the current dataset.",
     "body": [],
     "sources": [
       { "kind": "resource", "ref": { "kind": "spreadsheet", "id": "spreadsheets:1" }, "locator": "Sheet1!A1:D220" }
@@ -21,6 +22,7 @@
     "_creationTime": 1785225600000,
     "projectId": "default",
     "title": "Trimming cycles under 4 years show no measurable gain",
+    "summary": "Available evidence does not show a measurable reliability gain from vegetation cycles shorter than four years.",
     "body": [],
     "sources": [
       { "kind": "url", "url": "https://example.org/vegetation-study", "title": "Vegetation study", "capturedAt": 1785225600000 }

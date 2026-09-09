@@ -140,7 +140,7 @@ The record half works exactly as Activity's does — the row is a sentence holdi
 two links, the actor to who did it and the target to the event. It carries no
 actor or target listboxes; the merge is meant to be read down, not narrowed.
 
-Routes to `general.comment` for a mention, `project-overview.activity` for an event,
+Routes to `project-overview.comment` for a mention, `project-overview.activity` for an event,
 and `general.person`, `agents.persona` or `project-overview.connector` for an actor.
 
 ### mentions

@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
+  import ChevronDown from "@lucide/svelte/icons/chevron-down";
 
   import PanelLink from "$authored-components/panel/panel-link.svelte";
   import { cn } from "$vendored-components/utils";
@@ -38,6 +39,8 @@
     source,
     sourceLabel,
     when,
+    collapsible = false,
+    previewLines = 4,
     onopen,
     children
   }: {
@@ -58,12 +61,22 @@
      * leaving off where it plainly could not.
      */
     sourceLabel?: string;
+    /** Clamp intentionally long quoted text until the reader asks for all of it. */
+    collapsible?: boolean;
+    previewLines?: 3 | 4 | 5;
     /** Open the original. Absent when there is genuinely nowhere to go. */
     onopen?: () => void;
     children: Snippet;
   } = $props();
 
-  const trace = traceNode("PanelQuote", () => ({ tone, source, sourceLabel }));
+  const trace = traceNode("PanelQuote", () => ({ tone, source, sourceLabel, collapsible, previewLines }));
+
+  const CLAMP: Record<NonNullable<typeof previewLines>, string> = {
+    3: "line-clamp-3",
+    4: "line-clamp-4",
+    5: "line-clamp-5"
+  };
+  let expanded = $state(false);
 </script>
 
 <figure
@@ -74,23 +87,46 @@
     tone === "intelligence" && "border-intelligence-border bg-intelligence-surface"
   )}
 >
-  <blockquote class="m-0">{@render children()}</blockquote>
+  <blockquote
+    class={cn(
+      "m-0 min-w-0 break-words",
+      collapsible && !expanded && CLAMP[previewLines]
+    )}
+  >{@render children()}</blockquote>
+
+  {#if collapsible}
+    <button
+      type="button"
+      class="text-interactive-text hover:bg-surface-panel -ms-1 flex w-fit items-center gap-0.5 rounded-control px-1 py-0.5 text-caption font-medium"
+      aria-expanded={expanded}
+      onclick={() => (expanded = !expanded)}
+    >
+      {expanded ? "Show less" : "Show more"}
+      <ChevronDown
+        size={11}
+        aria-hidden="true"
+        class={cn("transition-transform", expanded && "rotate-180")}
+      />
+    </button>
+  {/if}
 
   {#if source || when}
     <figcaption class="text-caption text-ink-muted flex flex-wrap items-baseline gap-1">
       {#if sourceLabel}
         <span>{sourceLabel}:</span>
       {/if}
-      {#if source}
-        {#if onopen}
-          <PanelLink label={source} title="Open the original" onselect={onopen} />
-        {:else}
-          <span>{source}</span>
+      <span class="inline-flex min-w-0 max-w-full items-baseline gap-1">
+        {#if source}
+          {#if onopen}
+            <PanelLink label={source} title="Open the original" onselect={onopen} />
+          {:else}
+            <span>{source}</span>
+          {/if}
         {/if}
-      {/if}
-      {#if when}
-        <span>{when}</span>
-      {/if}
+        {#if when}
+          <span class="shrink-0 whitespace-nowrap">{when}</span>
+        {/if}
+      </span>
     </figcaption>
   {/if}
 </figure>

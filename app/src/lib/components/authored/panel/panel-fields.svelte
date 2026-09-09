@@ -17,9 +17,19 @@
    * leaves nothing for the value — so a pair whose value will not fit stacks instead,
    * which is `PanelField`'s `stacked`.
    */
-  let { children, align = "start" }: { children: Snippet; align?: "start" | "end" } = $props();
+  let {
+    proportional = false,
+    align = "start",
+    children
+  }: {
+    /** Let both columns shrink with the flank instead of holding a fixed label width. */
+    proportional?: boolean;
+    /** Align compact values to the trailing edge. */
+    align?: "start" | "end";
+    children: Snippet;
+  } = $props();
 
-  const trace = traceNode("PanelFields", () => ({ align }));
+  const trace = traceNode("PanelFields", () => ({ proportional, align }));
 </script>
 
 <dl
@@ -28,7 +38,9 @@
     "m-0 grid items-baseline gap-x-2 gap-y-1.5 px-3",
     align === "end"
       ? "grid-cols-[minmax(0,max-content)_minmax(0,1fr)] [&>dd]:text-end"
-      : "grid-cols-[minmax(0,7rem)_minmax(0,1fr)]"
+      : proportional
+        ? "grid-cols-[minmax(0,1fr)_minmax(0,1fr)]"
+        : "grid-cols-[minmax(0,7rem)_minmax(0,1fr)]"
   )}
 >
   {@render children()}

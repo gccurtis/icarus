@@ -340,7 +340,7 @@
                 <ScreenItem
                   meta={mention.age}
                   onselect={() =>
-                    view.inspect("general.comment", { kind: "comment", id: mention.id })}
+                    view.inspect("project-overview.comment", { kind: "comment", id: mention.id })}
                 >
                   <span class="block truncate" title={mention.resource}>
                     <strong>{actorName(mention.author)}</strong>

@@ -27,6 +27,7 @@
     label,
     mono = false,
     stacked = false,
+    hierarchy = false,
     children
   }: {
     label: string;
@@ -34,32 +35,42 @@
     mono?: boolean;
     /** Put the label above the value, and give the value the full width. */
     stacked?: boolean;
+    /** Increase label/value contrast for sparse, executive metadata. */
+    hierarchy?: boolean;
     children: Snippet;
   } = $props();
 
   // Two roots — a `dt` and a `dd` — so the marker goes on the first of them.
-  const trace = traceNode("PanelField", () => ({ label, mono, stacked }));
+  const trace = traceNode("PanelField", () => ({ label, mono, stacked, hierarchy }));
 </script>
 
 <!--
   The label carries its own text as a title, because a truncated label with no
   way to recover it is a field whose meaning is gone.
 
-  It is the same size as its value and differs only in colour. A label is the
-  question the value answers, and a reader scans labels to find the row they
-  want — a label set smaller AND fainter is two distinctions where one does the
-  work, and it is how a dense panel ends up unreadable.
+  By default it is the same size as its value and differs only in colour. A
+  dense field list relies on labels for scanning, so shrinking every label would
+  make that list harder to read. Sparse administrative metadata can opt into
+  `hierarchy`: there the extra space supports an eyebrow label and a stronger
+  value, making the difference between the question and its answer explicit.
 -->
 <dt {...trace}
   title={stacked ? undefined : label}
-  class={cn("text-body-sm text-ink-secondary truncate", stacked && "col-span-2")}
+  class={cn(
+    "truncate",
+    hierarchy
+      ? "text-caption text-ink-muted font-semibold tracking-wide uppercase"
+      : "text-body-sm text-ink-secondary",
+    stacked && "col-span-2"
+  )}
 >
   {label}
 </dt>
 <dd
   class={cn(
     "text-body-sm text-ink-primary m-0 min-w-0",
-    stacked && "col-span-2 -mt-1",
+    stacked && (hierarchy ? "col-span-2 -mt-0.5" : "col-span-2 -mt-1"),
+    hierarchy && "font-medium",
     mono && "font-mono text-mono tabular-nums"
   )}
 >
