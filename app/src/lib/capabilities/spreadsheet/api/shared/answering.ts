@@ -97,8 +97,18 @@ export const writeFormulas = (
 
   const idOf = new Map<string, Id<"formulas">>();
   for (const [representation, keys] of wanted) {
-    const uses = keys.map((key) => usedBy(resourceId, key));
     const existing = byText.get(representation);
+    const uses = [
+      ...(existing?.usedBy ?? []).filter(
+        (use) =>
+          !(
+            use.in === "resource" &&
+            use.ref.kind === "spreadsheet" &&
+            use.ref.id === resourceId
+          )
+      ),
+      ...keys.map((key) => usedBy(resourceId, key))
+    ];
     if (existing === undefined) {
       const id = unit.create("formulas", { projectId, representation, usedBy: uses, updatedAt: at }) as Id<"formulas">;
       idOf.set(representation, id);
@@ -113,7 +123,14 @@ export const writeFormulas = (
 
   for (const row of held) {
     if (wanted.has(row.representation)) continue;
-    const kept = (row.usedBy ?? []).filter((use) => !(use.in === "resource" && use.ref.id === resourceId));
+    const kept = (row.usedBy ?? []).filter(
+      (use) =>
+        !(
+          use.in === "resource" &&
+          use.ref.kind === "spreadsheet" &&
+          use.ref.id === resourceId
+        )
+    );
     if (kept.length === (row.usedBy ?? []).length) continue;
     if (kept.length === 0) {
       unit.remove(`formulas.${row._id}`);

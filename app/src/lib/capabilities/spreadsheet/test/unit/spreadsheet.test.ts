@@ -345,6 +345,55 @@ test("a cell written with a formula is accepted and answered", async () => {
   assert.deepEqual(written?.value, { kind: "number", value: 12 });
 });
 
+test("sharing a formula with another sheet preserves that sheet's ownership", async () => {
+  leaderAt(0);
+  model.formulas.push({
+    _id: "formulas:shared",
+    projectId: "p",
+    representation: "=1+1",
+    usedBy: [
+      {
+        in: "resource",
+        ref: { kind: "spreadsheet", id: "spreadsheets:other" },
+        path: "r1/c1"
+      }
+    ],
+    updatedAt: 1
+  });
+
+  const answer = await submitSpreadsheetChanges(
+    sending(0, [
+      {
+        op: "set",
+        target: "cell",
+        path: "r1/c1",
+        value: {
+          rowId: "r1",
+          columnId: "c1",
+          value: { kind: "empty" },
+          expression: "=1+1",
+          anchors: []
+        },
+        was: null
+      }
+    ])
+  );
+
+  assert.equal(answer.accepted, true);
+  assert.deepEqual(model.formulas[0].usedBy, [
+    {
+      in: "resource",
+      ref: { kind: "spreadsheet", id: "spreadsheets:other" },
+      path: "r1/c1"
+    },
+    {
+      in: "resource",
+      ref: { kind: "spreadsheet", id: "spreadsheets:1" },
+      path: "r1/c1"
+    }
+  ]);
+});
+
 test("a forged was is replaced by what the sheet actually held", async () => {
   leaderAt(0);
   cellRow("r1", "c1", { kind: "number", value: 7 });
