@@ -12,12 +12,10 @@ const first = {
 };
 
 describe("text comment anchors", () => {
-  it("reads the legacy single-block representation", () => {
-    expect(textAnchorSpans({ kind: "text", ...first })).toEqual([first]);
-    expect(canonicalAnchorWithin({ kind: "text", ...first })).toEqual({
-      kind: "text",
-      spans: [first]
-    });
+  it("reads the current single-span representation", () => {
+    const anchor = { kind: "text" as const, spans: [first] };
+    expect(textAnchorSpans(anchor)).toEqual([first]);
+    expect(canonicalAnchorWithin(anchor)).toEqual(anchor);
   });
 
   it("preserves every span in the canonical cross-block representation", () => {

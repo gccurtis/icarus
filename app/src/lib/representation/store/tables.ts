@@ -5,7 +5,7 @@ import type { BranchPoint, ThreadKind } from "$representation/data/types/agents/
 import type { ActivityTarget } from "$representation/data/types/collaboration/activity";
 import type {
   Resolution,
-  StoredAnchorWithin
+  AnchorWithin
 } from "$representation/data/types/collaboration/anchor";
 import type { ContentBlock, MarkLink } from "$representation/data/types/content/content-block";
 import type { VariableType, VariableValue } from "$representation/data/types/content/variable-value";
@@ -477,7 +477,7 @@ export type ResearchThread = Row<"researchThreads"> & ResearchThreadFields;
 export type CommentThreadFields = {
   projectId: Id<"projects">;
   target: ResourceRef;
-  within?: StoredAnchorWithin;
+  within?: AnchorWithin;
   quote?: string;
   resolution?: Resolution;
   createdBy: Actor;

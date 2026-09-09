@@ -2,7 +2,6 @@ import type {
   TemplateBody,
   TemplateVariable
 } from "$representation/data/types/templates/template";
-import { normalizeSlideDeckBody } from "$representation/data/behavior/slide-decks/normalize";
 
 import type { TemplateTarget } from "$capabilities/templates/types/templates";
 import {
@@ -1556,11 +1555,7 @@ export const bodyOf = (value: unknown, subject: string): TemplateBody => {
   assertPortableBody(value, subject);
   const raw = fieldsOf(value, subject);
   const target = targetOf(raw.resource, subject);
-  const normalized =
-    target === "slides"
-      ? { ...normalizeSlideDeckBody(raw), resource: "slides" as const }
-      : value;
-  const body = fieldsOf(normalized, subject);
+  const body = raw;
   const valid =
     target === "document"
       ? validDocument(body)
@@ -1568,7 +1563,7 @@ export const bodyOf = (value: unknown, subject: string): TemplateBody => {
         ? validSlides(body)
         : validSpreadsheet(body);
   if (!valid) throw new Error(`templates/${subject}: body is not a valid ${target} template body`);
-  return normalized as TemplateBody;
+  return value as TemplateBody;
 };
 
 const MAX_TEMPLATE_VARIABLES = 100;

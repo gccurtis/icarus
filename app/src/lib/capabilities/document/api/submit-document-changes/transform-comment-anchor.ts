@@ -4,7 +4,6 @@ import {
 } from "$representation/data/behavior/collaboration/anchors";
 import type {
   AnchorWithin,
-  StoredAnchorWithin,
   TextAnchorSpan
 } from "$representation/data/types/collaboration/anchor";
 import type { DocumentBody, DocumentRow } from "$representation/data/types/documents/body";
@@ -58,7 +57,7 @@ const liveAtoms = (body: DocumentBody): ReadonlyMap<string, ReadonlySet<string>>
 
 /** Moves structural comment anchors through one accepted document change set. */
 export const transformCommentAnchor = (
-  within: StoredAnchorWithin | undefined,
+  within: AnchorWithin | undefined,
   ops: readonly DocumentOp[],
   after: DocumentBody
 ): AnchorWithin | undefined => {

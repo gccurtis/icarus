@@ -1,5 +1,5 @@
 import type { StoreModel } from "$model/server/store/index.server";
-import { normalizeSlideDeckBody } from "$representation/data/behavior/slide-decks/normalize";
+import { ensureSlideDeckReady } from "$representation/data/behavior/slide-decks/readiness";
 import type { Id } from "$representation/data/types/core/id";
 import type { SlideDeckBody } from "$representation/data/types/slide-decks/body";
 
@@ -23,5 +23,5 @@ export const leaderOf = (
   );
   return leader === undefined
     ? undefined
-    : { ...leader, body: normalizeSlideDeckBody(leader.body) };
+    : { ...leader, body: ensureSlideDeckReady(leader.body) };
 };

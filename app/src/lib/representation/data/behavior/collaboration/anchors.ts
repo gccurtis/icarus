@@ -1,6 +1,5 @@
 import type {
   AnchorWithin,
-  StoredAnchorWithin,
   TextAnchorSpan
 } from "$representation/data/types/collaboration/anchor";
 
@@ -20,22 +19,17 @@ const validSpan = (value: unknown): value is TextAnchorSpan => {
   return typeof blockId === "string" && blockId.length > 0 && validEnd(from) && validEnd(to);
 };
 
-/**
- * Returns the structural spans of either the current representation or the
- * single-block shape written by earlier clients.
- */
+/** Return only structurally usable spans from the current text-anchor representation. */
 export const textAnchorSpans = (
-  within: StoredAnchorWithin | undefined
+  within: AnchorWithin | undefined
 ): readonly TextAnchorSpan[] => {
-  if (within?.kind !== "text") return [];
-  if ("spans" in within) return within.spans.filter(validSpan);
-  if (!validSpan(within)) return [];
-  return [{ blockId: within.blockId, from: within.from, to: within.to }];
+  if (within?.kind !== "text" || !Array.isArray(within.spans)) return [];
+  return within.spans.filter(validSpan);
 };
 
 /** Canonicalizes stored input before a thread is edited or written again. */
 export const canonicalAnchorWithin = (
-  within: StoredAnchorWithin | undefined
+  within: AnchorWithin | undefined
 ): AnchorWithin | undefined => {
   if (within === undefined || within.kind !== "text") return within;
   return { kind: "text", spans: [...textAnchorSpans(within)] };

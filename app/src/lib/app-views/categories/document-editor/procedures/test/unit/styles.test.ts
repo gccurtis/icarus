@@ -41,14 +41,14 @@ test("block layout overrides its style without taking ownership of typography", 
   assert.equal(style.fontWeight, 600);
 });
 
-test("legacy ratio leading resolves to document pixels for styles and block overrides", () => {
+test("document line height preserves the represented pixel value without schema inference", () => {
   const set = {
     defaultKey: "body",
-    styles: { body: { name: "Body", fontSize: 11, lineHeight: 1.5 } }
+    styles: { body: { name: "Body", fontSize: 11, lineHeight: 16.5 } }
   };
 
   assert.equal(resolve(set, "body", undefined).lineHeight, 16.5);
-  assert.equal(resolve(set, "body", { lineHeight: 1.45 }).lineHeight, 15.95);
+  assert.equal(resolve(set, "body", { lineHeight: 15.95 }).lineHeight, 15.95);
 });
 
 test("the first style edit writes the default set into the document first", () => {

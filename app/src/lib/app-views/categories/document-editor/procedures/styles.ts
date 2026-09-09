@@ -7,10 +7,6 @@ import type {
 import type { DocumentBody } from "$representation/data/types/documents/body";
 import type { DocumentOp } from "$representation/data/types/documents/op";
 import type { StyleSet, TextStyle } from "$representation/data/types/documents/style-set";
-import {
-  documentLineHeightPx,
-  normalizeDocumentTextStyle
-} from "$representation/data/behavior/documents/typography";
 import { cssColour } from "$app-views/categories/document-editor/procedures/colours";
 
 export type Styled = TextBlock | PromptBlock;
@@ -123,18 +119,11 @@ export const resolve = (
   format: BlockFormat | undefined
 ): TextStyle => {
   const base = set.styles[key ?? set.defaultKey] ?? set.styles[set.defaultKey] ?? { name: "Body" };
-  const resolved: TextStyle = { ...normalizeDocumentTextStyle(base) };
+  const resolved: TextStyle = { ...base };
 
   for (const field of OVERRIDES) {
     const value = format?.[field];
     if (value === undefined) continue;
-    if (field === "lineHeight") {
-      resolved.lineHeight = documentLineHeightPx(
-        resolved.fontSize ?? BODY_FONT_SIZE,
-        value as number
-      );
-      continue;
-    }
     Object.assign(resolved, { [field]: value });
   }
 

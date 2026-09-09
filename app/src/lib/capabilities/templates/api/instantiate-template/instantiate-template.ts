@@ -1,8 +1,7 @@
 import { requireScope } from "$runtime/server/scope.server";
 import { serverModel } from "$runtime/server/start.server";
 import { asId } from "$representation/data/behavior/core/id";
-import { normalizeDocumentStyleSet } from "$representation/data/behavior/documents/typography";
-import { ensureSlideDeckReady } from "$representation/data/behavior/slide-decks/normalize";
+import { ensureSlideDeckReady } from "$representation/data/behavior/slide-decks/readiness";
 import type { TemplateBody } from "$representation/data/types/templates/template";
 
 import { validateInstantiateTemplate } from "$capabilities/templates/api/instantiate-template/validate-instantiate-template";
@@ -75,9 +74,6 @@ export const instantiateTemplate = async (input: unknown): Promise<InstantiateTe
 
   if (body.resource === "document") {
     const { resource: _resource, ...documentBody } = body;
-    const readyBody = documentBody.styles === undefined
-      ? documentBody
-      : { ...documentBody, styles: normalizeDocumentStyleSet(documentBody.styles) };
     return store.transaction((unit) => {
       const resourceId = unit.create("documents", {
         projectId,
@@ -95,7 +91,7 @@ export const instantiateTemplate = async (input: unknown): Promise<InstantiateTe
         revision: 0,
         role: "leader",
         part: 0,
-        body: readyBody,
+        body: documentBody,
         at
       });
       return {

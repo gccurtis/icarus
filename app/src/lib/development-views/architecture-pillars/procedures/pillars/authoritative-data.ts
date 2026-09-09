@@ -128,12 +128,12 @@ sheet view → renders constants, not SpreadsheetRuntime.body`,
       detects: "Legacy-prefixed types and constants, compatibility or migration source paths, and executable fallback discriminator strings.",
       implementation:
         "Parse identifiers and string literals from production TypeScript and Svelte scripts, and inspect production source-path components. Comments and documentation do not count.",
-      current: "Enforced; three existing representation compatibility branches are baselined as removal work.",
+      current: "Enforced; document leading, slide bodies, and comment anchors now accept only their current represented shapes.",
       limit: "Neutral names can disguise backward reading, so review must still reject old-shape support rather than merely renaming it."
     }
   ],
   rollout: [
-    "Delete the three baselined representation compatibility branches once their current-schema replacements are verified.",
+    "Keep current-schema validation explicit whenever a representation changes; reject old shapes instead of adding readers.",
     "Move the seven production fixture repositories into development snapshots or replace them with represented reads.",
     "Complete the SpreadsheetRuntime workspace/view vertical slice and remove its reachability finding.",
     "Generate resource identity cases from seeded resources and category registrations for all three runtime families.",

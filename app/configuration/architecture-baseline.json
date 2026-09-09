@@ -1481,42 +1481,6 @@
       "review": "2027-03-01"
     },
     {
-      "checker": "legacy-schema-support-does-not-exist",
-      "contract": "DATA-06",
-      "pillar": "authoritative-data",
-      "path": "src/lib/representation/data/behavior/documents/typography.ts",
-      "fingerprint": "LEGACY_RATIO_CEILING",
-      "finding": "ARCH-07",
-      "owner": "architecture-remediation",
-      "rationale": "Pre-existing structural debt captured when this checker became blocking",
-      "removal": "Remove when legacy-schema-support-does-not-exist reports clean for this structure",
-      "review": "2027-03-01"
-    },
-    {
-      "checker": "legacy-schema-support-does-not-exist",
-      "contract": "DATA-06",
-      "pillar": "authoritative-data",
-      "path": "src/lib/representation/data/behavior/slide-decks/normalize.ts",
-      "fingerprint": "legacy,legacy-slide-element",
-      "finding": "ARCH-07",
-      "owner": "architecture-remediation",
-      "rationale": "Pre-existing structural debt captured when this checker became blocking",
-      "removal": "Remove when legacy-schema-support-does-not-exist reports clean for this structure",
-      "review": "2027-03-01"
-    },
-    {
-      "checker": "legacy-schema-support-does-not-exist",
-      "contract": "DATA-06",
-      "pillar": "authoritative-data",
-      "path": "src/lib/representation/data/types/collaboration/anchor.ts",
-      "fingerprint": "LegacyTextAnchor",
-      "finding": "ARCH-07",
-      "owner": "architecture-remediation",
-      "rationale": "Pre-existing structural debt captured when this checker became blocking",
-      "removal": "Remove when legacy-schema-support-does-not-exist reports clean for this structure",
-      "review": "2027-03-01"
-    },
-    {
       "checker": "model-definitions-delegate",
       "contract": "BEH-03",
       "pillar": "procedural-transparency",

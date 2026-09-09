@@ -10,6 +10,8 @@ const first = {
   to: { atom: "#a1", offset: 8 }
 };
 
+const anchor = () => ({ kind: "text" as const, spans: [first] });
+
 const body = (text: string): DocumentBody => ({
   rows: [
     {
@@ -40,26 +42,26 @@ const splice = (at: number, insert: string, remove: string): DocumentOp => ({
 
 describe("document comment anchors", () => {
   it("keeps the cited text selected when typing before or inside it", () => {
-    expect(transformCommentAnchor({ kind: "text", ...first }, [splice(0, "++", "")], body("++abcdefghij"))).toEqual({
+    expect(transformCommentAnchor(anchor(), [splice(0, "++", "")], body("++abcdefghij"))).toEqual({
       kind: "text",
       spans: [{ ...first, from: { atom: "#a1", offset: 5 }, to: { atom: "#a1", offset: 10 } }]
     });
 
-    expect(transformCommentAnchor({ kind: "text", ...first }, [splice(5, "++", "")], body("abcde++fghij"))).toEqual({
+    expect(transformCommentAnchor(anchor(), [splice(5, "++", "")], body("abcde++fghij"))).toEqual({
       kind: "text",
       spans: [{ ...first, to: { atom: "#a1", offset: 10 } }]
     });
   });
 
   it("contracts deletion to a stable collapsed anchor", () => {
-    expect(transformCommentAnchor({ kind: "text", ...first }, [splice(3, "", "defgh")], body("abcij"))).toEqual({
+    expect(transformCommentAnchor(anchor(), [splice(3, "", "defgh")], body("abcij"))).toEqual({
       kind: "text",
       spans: [{ ...first, from: { atom: "#a1", offset: 3 }, to: { atom: "#a1", offset: 3 } }]
     });
   });
 
   it("detaches a span when its block no longer exists", () => {
-    expect(transformCommentAnchor({ kind: "text", ...first }, [], { rows: [] })).toEqual({
+    expect(transformCommentAnchor(anchor(), [], { rows: [] })).toEqual({
       kind: "text",
       spans: []
     });

@@ -122,9 +122,9 @@ export const inspectorReference: AreaReference = {
     {
       id: "comment-thread",
       title: "Create and manage a comment",
-      trigger: "The user comments on one or more selected text spans, or opens an existing thread.",
+      trigger: "The user comments on one contiguous text range, or opens an existing thread.",
       steps: [
-        { actor: "Text lens", action: "Converts all selected ranges into one canonical multi-span anchor.", artifact: "StoredAnchorWithin" },
+        { actor: "Text lens", action: "Converts the selected range into canonical structural spans across its blocks.", artifact: "AnchorWithin" },
         { actor: "Store capability", action: "Creates the thread and opening comment with user/project ownership.", artifact: "commentThreads + comments" },
         { actor: "Comment lens", action: "Joins selected text, opener, replies, authors, and resolution state.", artifact: "general.comment" },
         { actor: "Store capability", action: "Adds replies or changes resolved state; queries refresh.", artifact: "native store operations" }

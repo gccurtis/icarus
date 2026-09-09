@@ -32,7 +32,7 @@ export const backendReference: AreaReference = {
     {
       title: "Document representation now carries complete editing semantics",
       before: "The model lacked several required style, furniture, link-note, and multi-span annotation fields.",
-      now: "Block formats include spacing/line-height/indent; furniture supports normal and first-page roots; links carry optional per-occurrence notes; anchors canonically hold multiple spans while decoding legacy single spans.",
+      now: "Block formats include spacing/line-height/indent; furniture supports normal and first-page roots; links carry optional per-occurrence notes; anchors canonically hold one current list of spans.",
       why: "UI behavior must map to explicit durable data instead of editor-only conventions."
     },
     {
@@ -112,7 +112,7 @@ export const backendReference: AreaReference = {
       title: "Transform comment anchors",
       trigger: "An accepted text operation inserts, deletes, or replaces content.",
       steps: [
-        { actor: "Anchor decoder", action: "Canonicalizes current multi-span and legacy single-span representations.", artifact: "StoredAnchorWithin" },
+        { actor: "Anchor reader", action: "Filters structurally invalid entries from the current multi-span representation.", artifact: "AnchorWithin" },
         { actor: "Endpoint transform", action: "Shifts start/end offsets with distinct affinity rules for boundary insertions.", artifact: "from/to affinity" },
         { actor: "Live-body filter", action: "Drops spans whose structural block or atom no longer exists after application.", artifact: "post-op DocumentBody" },
         { actor: "Thread update", action: "Persists remaining canonical spans or an empty/detached anchor state.", artifact: "commentThread.within" }
@@ -161,8 +161,8 @@ export const backendReference: AreaReference = {
     {
       name: "Stored comment anchor",
       owner: "Store representation + document capability",
-      shape: "canonical list of structural spans with from/to endpoints; legacy single-block input remains decodable",
-      states: ["multi-span attached", "partially attached", "detached/empty", "legacy decoded"],
+      shape: "canonical list of structural spans with from/to endpoints",
+      states: ["multi-span attached", "partially attached", "detached/empty"],
       transitions: ["create from selection", "accepted text op → shift/filter", "resolve for display"],
       invariants: ["Server transform uses post-op body", "Deleted identities are never guessed", "An empty anchor does not delete the discussion"],
       sources: ["src/lib/representation/data/types/collaboration/anchor.ts", "src/lib/capabilities/document/api/submit-document-changes/transform-comment-anchor.ts"]
@@ -238,7 +238,7 @@ export const backendReference: AreaReference = {
   structure: [
     { path: "src/lib/representation/data/types/documents/* + content/*", role: "Document model", note: "Rows, blocks, atoms, formats, styles, marks, links, page setup, furniture, and operations." },
     { path: "src/lib/representation/data/behavior/documents/apply-ops.ts", role: "Operation representation", note: "Structural resolution, validation, immutable application, mark maintenance, and inversion." },
-    { path: "src/lib/representation/data/types/collaboration/anchor.ts + representation/store/tables.ts", role: "Store model", note: "Comment thread/comment/user records and canonical/legacy anchor shapes." },
+    { path: "src/lib/representation/data/types/collaboration/anchor.ts + representation/store/tables.ts", role: "Store model", note: "Comment thread/comment/user records and the one canonical anchor shape." },
     { path: "src/lib/capabilities/document/api/*", role: "Document capability boundary", note: "Authorization, query, submit validation, catch-up, conflict refusal, persistence, and acknowledgement." },
     { path: "src/lib/capabilities/document/api/submit-document-changes/transform-comment-anchor.ts", role: "Annotation maintenance", note: "Canonical endpoint affinity, shift/filter, and detached behavior." },
     { path: "src/lib/capabilities/store/api/read/scoped-read.ts", role: "Generic store capability", note: "Scoped safe-field projection used by workspace queries." }

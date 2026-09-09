@@ -36,7 +36,16 @@ const thread = (id: string, blockId: string, from: number, to: number): Thread =
     _creationTime: 1,
     projectId: "p",
     target: { kind: "document", id: "d" },
-    within: { kind: "text", blockId, from: { atom: `${blockId}-atom`, offset: from }, to: { atom: `${blockId}-atom`, offset: to } },
+    within: {
+      kind: "text",
+      spans: [
+        {
+          blockId,
+          from: { atom: `${blockId}-atom`, offset: from },
+          to: { atom: `${blockId}-atom`, offset: to }
+        }
+      ]
+    },
     createdBy: { kind: "user", userId: "u" },
     updatedAt: 1
   }) as unknown as Thread;

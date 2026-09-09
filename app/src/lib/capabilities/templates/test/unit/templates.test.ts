@@ -662,12 +662,12 @@ describe("instantiation", () => {
     assert.notEqual(model.tables.slideDecks[0].createdBy, model.tables.slideDecks[0].updatedBy);
   });
 
-  test("normalizes legacy document leading before a template becomes a snapshot", async () => {
+  test("preserves current document pixel leading without schema inference", async () => {
     model.tables.templates.push(template("1", "u", {
       resource: "document",
       styles: {
         defaultKey: "body",
-        styles: { body: { name: "Body", fontSize: 11, lineHeight: 1.5 } }
+        styles: { body: { name: "Body", fontSize: 11, lineHeight: 16.5 } }
       },
       rows: []
     }));
@@ -1195,7 +1195,7 @@ describe("stored template validation", () => {
     }
   });
 
-  test("validates slide layouts, placeholders, overflow, references, frames, and deck ids", () => {
+  test("validates current slide layouts, content, references, frames, and deck ids", () => {
     const body = {
       resource: "slides",
       aspectRatio: "16:9",
@@ -1203,6 +1203,7 @@ describe("stored template validation", () => {
       styles: { defaultKey: "body", styles: { body: { name: "Body" } } },
       layouts: [
         {
+          id: "layout-title",
           key: "title",
           name: "Title",
           locked: [],
@@ -1225,8 +1226,9 @@ describe("stored template validation", () => {
               frame: { x: 0.1, y: 0.1, width: 0.8, height: 0.2 },
               overflow: "shrink",
               fromPlaceholder: "title",
-              blocks: [
-                {
+              content: {
+                type: "text",
+                block: {
                   id: "slide-block",
                   type: "text",
                   variant: "heading",
@@ -1234,7 +1236,7 @@ describe("stored template validation", () => {
                   display: "Title",
                   marks: []
                 }
-              ]
+              }
             }
           ],
           notes: [
@@ -1251,30 +1253,59 @@ describe("stored template validation", () => {
       ],
       sections: [{ id: "section-1", name: "Opening", firstSlideId: "slide-1" }]
     };
-    const normalized = bodyOf(body, "test");
-    assert.equal(normalized.resource, "slides");
-    if (normalized.resource !== "slides") throw new Error("expected a slide template");
-    assert.equal(normalized.layouts[0].id, "layout-title");
-    assert.equal(normalized.slides[0].elements[0].content.type, "text");
-    assert.doesNotThrow(() => bodyOf(normalized, "normalized"));
+    const current = bodyOf(body, "test");
+    assert.equal(current.resource, "slides");
+    if (current.resource !== "slides") throw new Error("expected a slide template");
+    assert.equal(current.layouts[0].id, "layout-title");
+    assert.equal(current.slides[0].elements[0].content.type, "text");
+    assert.doesNotThrow(() => bodyOf(current, "current"));
 
     const compound = bodyOf(
       changed(body, (draft) => {
         const slide = fields(entries(draft.slides)[0]);
         const element = fields(entries(slide.elements)[0]);
-        entries(element.blocks).push({
-          id: "prompt-block",
-          type: "prompt",
-          atoms: [{ id: "prompt-atom", kind: "literal", text: "Summarize" }],
-          display: "Summarize",
-          marks: [],
-          scope: { include: [{ select: "project" }], exclude: [] },
-          state: "idle"
-        });
-        element.format = {
-          background: "paper",
-          border: { color: "rule", width: 1, style: "solid" },
-          padding: { x: 12, y: 8 }
+        element.content = {
+          type: "group",
+          children: [
+            {
+              id: "background-element",
+              frame: { x: 0, y: 0, width: 1, height: 1 },
+              paint: { fill: "paper", stroke: { color: "rule", width: 1, dash: "solid" } },
+              locked: true,
+              content: { type: "shape", shape: "rectangle" }
+            },
+            {
+              id: "text-element",
+              frame: { x: 0.1, y: 0.1, width: 0.8, height: 0.35 },
+              content: {
+                type: "text",
+                block: {
+                  id: "group-text-block",
+                  type: "text",
+                  variant: "paragraph",
+                  atoms: [{ id: "group-text-atom", kind: "literal", text: "Evidence" }],
+                  display: "Evidence",
+                  marks: []
+                }
+              }
+            },
+            {
+              id: "prompt-element",
+              frame: { x: 0.1, y: 0.55, width: 0.8, height: 0.35 },
+              content: {
+                type: "prompt",
+                block: {
+                  id: "prompt-block",
+                  type: "prompt",
+                  atoms: [{ id: "prompt-atom", kind: "literal", text: "Summarize" }],
+                  display: "Summarize",
+                  marks: [],
+                  scope: { include: [{ select: "project" }], exclude: [] },
+                  state: "idle"
+                }
+              }
+            }
+          ]
         };
       }),
       "compound"
@@ -1332,13 +1363,20 @@ describe("stored template validation", () => {
         const notes = fields(entries(slide.notes)[0]);
         notes.id = "slide-block";
       }),
-      changed(normalized, (draft) => {
+      changed(current, (draft) => {
         const slide = fields(entries(draft.slides)[0]);
         const element = fields(entries(slide.elements)[0]);
         fields(element.content).invented = true;
       }),
-      changed(normalized, (draft) => {
+      changed(current, (draft) => {
         fields(entries(draft.layouts)[0]).id = "";
+      }),
+      changed(current, (draft) => {
+        const slide = fields(entries(draft.slides)[0]);
+        const element = fields(entries(slide.elements)[0]);
+        const content = fields(element.content);
+        element.blocks = [content.block];
+        delete element.content;
       })
     ];
     for (const candidate of malformed) {

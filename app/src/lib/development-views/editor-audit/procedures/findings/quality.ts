@@ -57,9 +57,9 @@ export const QUALITY_FINDINGS: readonly Finding[] = [
     title: "An empty deck template could recreate the zero-slide defect",
     symptom: "Instantiating an intentionally blank deck template could yield a project deck with no canvas.",
     cause: "The template empty-body factory independently used slides: [], allowing creation paths to drift.",
-    fix: "Normalize zero-slide bodies to one freshly identified slide at project-deck instantiation.",
+    fix: "Fulfil the current editor-readiness invariant by adding one freshly identified slide at project-deck instantiation.",
     acceptance: "Every path producing a project deck opens one canvas, including blank template instantiation.",
-    evidence: ["templates/api/instantiate-template/instantiate-template.ts", "slide-decks/normalize.ts"]
+    evidence: ["templates/api/instantiate-template/instantiate-template.ts", "slide-decks/readiness.ts"]
   },
   {
     id: "QA-06",

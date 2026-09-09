@@ -9,9 +9,9 @@ export const DOCUMENT_FINDINGS: readonly Finding[] = [
     title: "Document line height mixed pixels with unitless ratios",
     symptom: "Transformer Bank Replacement Decision and Substation 14 Incident Write-up overlapped and paginated incorrectly.",
     cause: "The renderer emitted lineHeight as pixels while fixtures stored ratios such as 1.5, producing literal 1.5px leading and corrupting paginator estimates.",
-    fix: "Keep document leading as absolute pixels, normalize legacy ratio values at the read boundary, migrate seed/template fixtures, and retain unitless ratios only for decks.",
+    fix: "Keep document leading as absolute pixels, migrate seed/template fixtures, and remove ratio inference so only the current document unit is read.",
     acceptance: "Affected documents have sane computed leading and no overlap between blocks sharing horizontal space.",
-    evidence: ["representation/data/behavior/documents/typography.ts", "document-editor/procedures/styles.ts", "seed/documentSnapshots.json"]
+    evidence: ["document-editor/procedures/styles.ts", "seed/documentSnapshots.json"]
   },
   {
     id: "DOC-02",
@@ -33,8 +33,8 @@ export const DOCUMENT_FINDINGS: readonly Finding[] = [
     title: "Multi-range comment handling could freeze the inspector",
     symptom: "One thread projected through several anchors could throw duplicate-key errors and freeze the inspector; the creation UI also allowed a comment across disjoint selections.",
     cause: "Each anchor span mapped back to the same thread, but the inspector rendered that array keyed by thread ID without deduplication.",
-    fix: "Deduplicate legacy multi-anchor thread projections by ID, preserve them for compatibility, and allow new comments only from one contiguous selection.",
-    acceptance: "A disjoint selection shows an explanation and no composer; a contiguous selection can create one thread; existing multi-anchor threads still render once.",
+    fix: "Deduplicate current multi-span thread projections by ID and allow new comments only from one contiguous selection.",
+    acceptance: "A disjoint selection shows an explanation and no composer; a contiguous selection can create one thread; current multi-span threads render once.",
     evidence: ["document-editor/procedures/comments.ts", "document-editor.spec.ts"]
   },
   {
