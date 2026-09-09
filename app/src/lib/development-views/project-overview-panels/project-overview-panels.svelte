@@ -47,6 +47,9 @@
         current application can actually make. Seed values illustrate the shape; capability status
         comes from code.
       </p>
+      <a class="delivery-link" href="/demo/project-overview-panels/delivery">
+        Read the complete 3e670c5..930fb95 delivery record →
+      </a>
     </div>
 
     <dl class="scorecard" aria-label="Reference coverage">
@@ -185,8 +188,9 @@
       <span class="eyebrow">Current application path</span>
       <h2 id="architecture-title">A panel is a projection, not a table reader.</h2>
       <p>
-        The filesystem remains the component registry. The missing step is a small set of scoped,
-        subject-owned projections between represented rows and these view models.
+        The filesystem remains the component registry. Named view procedures now call a scoped
+        Project capability, which returns subject-owned projections instead of exposing represented
+        rows directly to components.
       </p>
     </header>
 
@@ -200,8 +204,8 @@
   </section>
 
   <footer class="reference-footer">
-    <span>Branch <code>work/project-overview-panels</code></span>
-    <span>Baseline <code>306e308 · clean main</code></span>
+    <span>Delivery <code>3e670c5..930fb95</code></span>
+    <a href="/demo/project-overview-panels/delivery">Complete delivery reference →</a>
     <span>Mocks mirror current seed names; no mock reads seed files at runtime.</span>
   </footer>
 </div>
@@ -253,6 +257,16 @@
     color: var(--token-ink-secondary);
     font-size: 1rem;
     line-height: 1.65;
+  }
+
+  .delivery-link {
+    display: inline-flex;
+    margin-top: 1rem;
+    padding-bottom: 0.2rem;
+    border-bottom: 1px solid var(--token-color-active-border);
+    color: var(--token-color-interactive-text);
+    font-size: 0.68rem;
+    font-weight: 650;
   }
 
   .scorecard {
@@ -818,6 +832,11 @@
 
   .reference-footer code {
     color: var(--token-ink-secondary);
+  }
+
+  .reference-footer a {
+    color: var(--token-color-interactive-text);
+    font-weight: 650;
   }
 
   @media (max-width: 72rem) {
