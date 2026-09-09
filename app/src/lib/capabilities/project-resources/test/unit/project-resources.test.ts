@@ -12,8 +12,8 @@ vi.mock("$runtime/server/scope.server", () => ({
 }));
 
 vi.mock("$runtime/server/start.server", () => ({
-  serverModel: () => ({
-    store: {
+  serverModel: () => {
+    const unit = {
       create: (table: string, fields: Record<string, unknown>) => {
         model.writes.push({ table, fields });
         return `${table}:new`;
@@ -23,8 +23,9 @@ vi.mock("$runtime/server/start.server", () => ({
         kind: "table",
         rows: model.tables.get(table) ?? []
       })
-    }
-  })
+    };
+    return { store: { ...unit, transaction: (work: (inside: typeof unit) => unknown) => work(unit) } };
+  }
 }));
 
 const { readProjectResourceIndex } = await import(
@@ -120,6 +121,44 @@ describe("createProjectResource", () => {
     expect(snapshot.slides[0].id).toMatch(/^slide-[0-9a-f-]{36}$/);
   });
 
+  it("creates an editor-ready empty spreadsheet", async () => {
+    const result = await createProjectResource({ target: "spreadsheet", title: "Forecast" });
+
+    expect(result).toMatchObject({
+      accepted: true,
+      target: "spreadsheet",
+      resourceId: "spreadsheets:new",
+      title: "Forecast",
+      revision: 0
+    });
+    expect(model.writes[0]).toMatchObject({
+      table: "spreadsheets",
+      fields: {
+        projectId: "projects:mine",
+        title: "Forecast",
+        createdBy: { kind: "user", userId: "users:me" }
+      }
+    });
+    expect(model.writes[1]).toMatchObject({
+      table: "spreadsheetSnapshots",
+      fields: {
+        projectId: "projects:mine",
+        resourceId: "spreadsheets:new",
+        revision: 0,
+        role: "leader",
+        part: 0
+      }
+    });
+    const body = model.writes[1].fields.body as {
+      rows: unknown[];
+      columns: unknown[];
+      styles: { defaultKey: string };
+    };
+    expect(body.rows).toHaveLength(100);
+    expect(body.columns).toHaveLength(100);
+    expect(body.styles.defaultKey).toBe("body");
+  });
+
   it("allocates the first free project-local Untitled suffix when title is omitted", async () => {
     model.tables.set("documents", [
       { projectId: "projects:mine", title: "Untitled document 1" },
@@ -147,11 +186,23 @@ describe("createProjectResource", () => {
       table: "slideDecks",
       fields: { projectId: "projects:mine", title: "Untitled deck 2" }
     });
+
+    model.writes.length = 0;
+    model.tables.set("spreadsheets", [
+      { projectId: "projects:mine", title: "Untitled spreadsheet 1" },
+      { projectId: "projects:mine", title: "Untitled spreadsheet 3" }
+    ]);
+    const spreadsheet = await createProjectResource({ target: "spreadsheet" });
+    expect(spreadsheet.title).toBe("Untitled spreadsheet 2");
+    expect(model.writes[0]).toMatchObject({
+      table: "spreadsheets",
+      fields: { projectId: "projects:mine", title: "Untitled spreadsheet 2" }
+    });
   });
 
   it("refuses unsupported targets, malformed optional titles, and extra fields before writing", async () => {
-    await expect(createProjectResource({ target: "spreadsheet", title: "Sheet" })).rejects.toThrow(
-      /target is document or slides/
+    await expect(createProjectResource({ target: "analysis", title: "Graph" })).rejects.toThrow(
+      /target is document, slides, or spreadsheet/
     );
     await expect(createProjectResource({ target: "document", title: "  " })).rejects.toThrow(
       /1 to 160/

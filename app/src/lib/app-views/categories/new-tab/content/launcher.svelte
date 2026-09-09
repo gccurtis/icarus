@@ -33,7 +33,7 @@
     type EditorKind,
     type LibraryTemplate
   } from "$app-views/categories/new-tab/procedures/library";
-  import { createProjectResource } from "$app-views/categories/new-tab/procedures/creating";
+  import { createsEditorResource } from "$app-views/categories/new-tab/procedures/creating-editor-resource";
   import { openingFor } from "$app-views/categories/new-tab/procedures/opening";
   import { project } from "$app-views/categories/new-tab/procedures/project";
   import {
@@ -157,34 +157,25 @@
 
   const blocked = $derived(startable.filter((row) => row.variables > 0).length);
 
-  let creating = $state<"Document" | "Slide deck">();
+  let creating = $state<"Document" | "Slide deck" | "Spreadsheet">();
   let creationError = $state<string>();
 
   /** Create the represented row and leader snapshot before the editor consumes its id. */
-  const create = async (kind: EditorKind) => {
-    if (kind.name === "Spreadsheet") {
-      alert("Creating a spreadsheet is not wired up yet.");
-      return;
-    }
-    if (creating !== undefined) return;
-
-    const originTabId = view.activeId;
-    creating = kind.name;
-    creationError = undefined;
-    try {
-      const target = kind.name === "Document" ? "document" : "slides";
-      const { resourceId } = await createProjectResource(view, { target });
-      if (view.activeId !== originTabId) return;
-      view.open({
-        category: target === "document" ? "document-editor" : "slide-deck-editor",
-        resourceId
-      });
-    } catch (error) {
-      creationError = error instanceof Error ? error.message : String(error);
-    } finally {
-      creating = undefined;
-    }
-  };
+  const create = (kind: EditorKind) =>
+    void createsEditorResource({
+      view,
+      kind,
+      busy: () => creating !== undefined,
+      began: (name) => {
+        creating = name;
+      },
+      refused: (message) => {
+        creationError = message;
+      },
+      ended: () => {
+        creating = undefined;
+      }
+    });
 
   /**
    * A search hit and a recent card are two rows of different shapes over the

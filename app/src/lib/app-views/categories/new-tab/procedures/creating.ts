@@ -16,7 +16,13 @@ export const createProjectResource = (
   view: WorkspaceStateModel,
   input: CreateProjectResourceInput
 ) => {
-  const table = view.readStore(input.target === "document" ? "documents" : "slideDecks");
+  const table = view.readStore(
+    input.target === "document"
+      ? "documents"
+      : input.target === "slides"
+        ? "slideDecks"
+        : "spreadsheets"
+  );
   return view.singleFlight(
     ["new-tab", view.project, "create", input.target, input.title?.trim() ?? null],
     async () => {

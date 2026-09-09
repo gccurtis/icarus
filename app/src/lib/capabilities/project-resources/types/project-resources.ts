@@ -27,7 +27,7 @@ export type ProjectResourceIndex = {
   readonly unavailable: readonly ProjectResourceUnavailable[];
 };
 
-export type ProjectResourceTarget = "document" | "slides";
+export type ProjectResourceTarget = "document" | "slides" | "spreadsheet";
 
 export type CreateProjectResourceInput = {
   readonly target: ProjectResourceTarget;

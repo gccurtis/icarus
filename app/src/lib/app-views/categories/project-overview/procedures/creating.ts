@@ -3,7 +3,7 @@ import type { WorkspaceStateModel } from "$model/client/workspace-state";
 
 export type Creation = {
   readonly view: WorkspaceStateModel;
-  readonly target: "document" | "slides";
+  readonly target: "document" | "slides" | "spreadsheet";
   readonly live: () => boolean;
   readonly refused: (message: string | undefined) => void;
   readonly ended: () => void;
@@ -32,7 +32,12 @@ export const createsResource = async (asked: Creation): Promise<void> => {
 
     if (asked.live() && view.activeId === originTabId && held) {
       view.open({
-        category: target === "document" ? "document-editor" : "slide-deck-editor",
+        category:
+          target === "document"
+            ? "document-editor"
+            : target === "slides"
+              ? "slide-deck-editor"
+              : "spreadsheet-editor",
         resourceId
       });
     }

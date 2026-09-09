@@ -136,11 +136,11 @@
     }
   ] as const;
 
-  let creating = $state<"document" | "slides">();
+  let creating = $state<"document" | "slides" | "spreadsheet">();
   let creationError = $state<string>();
 
   const make = (key: (typeof CREATE)[number]["key"]) => {
-    if (key === "document" || key === "slides") {
+    if (key === "document" || key === "slides" || key === "spreadsheet") {
       if (creating !== undefined) return;
 
       creating = key;
@@ -155,11 +155,6 @@
           creating = undefined;
         }
       });
-      return;
-    }
-
-    if (key === "spreadsheet") {
-      alert("Creating a spreadsheet is not wired up yet.");
       return;
     }
 
@@ -298,7 +293,9 @@
             {@const Icon = pill.icon}
             <button
               type="button"
-              disabled={(pill.key === "document" || pill.key === "slides") &&
+              disabled={(pill.key === "document" ||
+                pill.key === "slides" ||
+                pill.key === "spreadsheet") &&
                 creating !== undefined}
               onclick={() => make(pill.key)}
               class="rounded-control text-body-sm flex w-full cursor-pointer items-center gap-2 border px-3 text-start {pill.tint}"

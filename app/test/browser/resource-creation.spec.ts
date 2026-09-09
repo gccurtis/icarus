@@ -73,7 +73,7 @@ test("New Tab Recent and search open represented resources instead of dead tabs"
   await expect(tabs.getByText("Disconnected", { exact: true })).toHaveCount(0);
 });
 
-test("Project Overview creates a durable document and a usable one-slide deck", async ({ page }) => {
+test("Project Overview creates durable document, deck, and spreadsheet resources", async ({ page }) => {
   let create = await openOverview(page);
   await create.getByRole("button", { name: "Document", exact: true }).click();
 
@@ -148,9 +148,23 @@ test("Project Overview creates a durable document and a usable one-slide deck", 
   await expect(
     page.locator('aside[aria-label="Context"]').getByRole("button", { name: "Slide 1", exact: true })
   ).toHaveCount(1);
+
+  await page
+    .getByRole("toolbar", { name: "Open tabs" })
+    .getByRole("button", { name: "Overview", exact: true })
+    .click();
+  create = page.locator(".area-create");
+  await create.getByRole("button", { name: "Spreadsheet", exact: true }).click();
+
+  await expect(page.locator(".area-title h1")).toHaveText(/^Untitled spreadsheet \d+$/);
+  await expect(page.locator(".sheet-surface")).toBeVisible();
+  await expect(page.locator("canvas").first()).toBeVisible();
+  await expect(
+    page.getByRole("toolbar", { name: "Open tabs" }).getByText("Disconnected", { exact: true })
+  ).toHaveCount(0);
 });
 
-test("New Tab creates represented documents and decks instead of title-shaped IDs", async ({ page }) => {
+test("New Tab creates represented documents, decks, and spreadsheets instead of title-shaped IDs", async ({ page }) => {
   await page.goto("/app/dev-project", { waitUntil: "networkidle" });
   const tabs = page.getByRole("toolbar", { name: "Open tabs" });
 
@@ -165,12 +179,19 @@ test("New Tab creates represented documents and decks instead of title-shaped ID
   await launchers.getByRole("button", { name: "Slide deck", exact: true }).click();
   await expect(page.locator(".area-title h1")).toHaveText(/^Untitled deck \d+$/);
   await expect(page.locator(".area-canvas").getByRole("application", { name: "Slide" })).toBeVisible();
+
+  await tabs.locator('button.tab.icon[aria-label="New tab"]').click();
+  launchers = page.locator(".area-editors");
+  await launchers.getByRole("button", { name: "Spreadsheet", exact: true }).click();
+  await expect(page.locator(".area-title h1")).toHaveText(/^Untitled spreadsheet \d+$/);
+  await expect(page.locator(".sheet-surface")).toBeVisible();
+  await expect(page.locator("canvas").first()).toBeVisible();
+  await expect(tabs.getByText("Disconnected", { exact: true })).toHaveCount(0);
 });
 
 test("unsupported Project Overview creation actions explain that they are not wired", async ({ page }) => {
   const create = await openOverview(page);
   const expected = new Map([
-    ["Spreadsheet", "Creating a spreadsheet is not wired up yet."],
     ["Research chat", "Starting a represented research chat is not wired up yet."],
     ["Analysis graph", "Creating a represented analysis graph is not wired up yet."]
   ]);
