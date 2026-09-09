@@ -14,7 +14,8 @@
     actor Person
     participant View as Upload view
     participant Cap as external-files capability
-    participant Bytes as materialContent model
+    participant Native as External native admission
+    participant Bytes as externalFileStorage
     participant Store as representation store
     participant Sem as semantic-overlay queue
     participant Library as External singleton
@@ -23,9 +24,13 @@
     View->>View: preview names, paths, sizes
     View->>Cap: uploadExternalFiles remote form
     activate Cap
-    Cap->>Cap: requireScope then validate batch
+    Cap->>Cap: requireScope, validate form and configured limits
     loop each accepted candidate
-      Cap->>Bytes: put complete bounded Uint8Array
+      Cap->>Cap: normalize path, buffer and recount bounded bytes
+      Cap->>Native: derive hash, size, storageId, MIME and subkind
+      Native-->>Cap: authoritative native descriptor
+      Cap->>Bytes: put descriptor plus complete bytes
+      Bytes->>Bytes: verify descriptor, hash and size
       Bytes-->>Cap: storageId, hash, size, reused
       Cap->>Store: compare project path and hash
       alt same path and hash
@@ -34,8 +39,9 @@
         Cap->>Store: create externalFiles row at revision 1
         Store-->>Cap: externalFileId
       end
-      Cap->>Sem: enqueue eligible exact and/or material lane
-      Sem-->>Cap: queued, unsupported, or recoverable failure
+      Cap->>Store: append durable uploaded history event
+      Cap->>Sem: enqueue material only when code, CSV/TSV or image
+      Sem-->>Cap: queued, unsupported, or recoverable enqueue failure
     end
     Cap-->>View: successes plus per-file rejections
     deactivate Cap
@@ -49,21 +55,45 @@
     classDef base fill:#fffdf8,stroke:#315a72,color:#172232
 
     A["Verified bytes + canonical name"]:::base --> B{"Server-sniffed family"}:::base
-    B -->|plain text| T["externalFile::text"]:::yes
-    B -->|recognized + classified code| C["externalFile::text<br/>exact + code material"]:::yes
+    B -->|plain text or source code| C["externalFile::code<br/>one material target"]:::yes
     B -->|CSV / TSV| D["externalFile::data"]:::yes
     B -->|image| I["externalFile::image"]:::yes
     B -->|PDF / Office| P["managed + download<br/>no extraction claim"]:::warn
     B -->|audio / video| AV["managed + download<br/>no transcript claim"]:::warn
     B -->|unknown or active| R["manage + force attachment<br/>no inline execution"]:::stop
 
-    T --> TE["exact lane<br/>UTF-8 spans"]:::yes
-    C --> CE["exact lane when text"]:::yes
-    C --> CM["material lane<br/>code profile"]:::yes
-    D --> DM["material lane<br/>CSV profile"]:::yes
-    I --> IM["material lane<br/>image facets + optional pixels"]:::yes
+    C --> CM["material lane<br/>bounded code profile<br/>64 KB source excerpt to descriptor"]:::yes
+    D --> DM["material lane<br/>bounded data profile<br/>+ optional authored context"]:::yes
+    I --> IM["material lane<br/>direct original visual vector<br/>no generated summary"]:::yes
     P -. future .-> EX["versioned extraction artifact"]:::warn
     AV -. future .-> EX`;
+
+  const reuploadSequence = `sequenceDiagram
+    autonumber
+    actor Person
+    participant Inspector as File Inspector
+    participant External as external-files capability
+    participant Native as externalFileStorage
+    participant Rows as externalFiles table
+    participant Sem as semantic-overlay
+    participant History as durable History
+
+    Person->>Inspector: choose Re-upload and select bytes
+    Inspector->>External: externalFileId + baseRevision + File
+    External->>External: scope, bound, recount, derive descriptor
+    External->>Native: publish and verify candidate bytes
+    Native-->>External: new or reused receipt
+    External->>Sem: retire prior revision's semantic products
+    alt retirement fails
+      External->>Native: compensate candidate if unclaimed
+      External-->>Inspector: rejected, original row stays unchanged
+    else retirement succeeds
+      External->>Rows: CAS same id, preserve identity, replace receipt, revision + 1
+      External->>History: append re-uploaded event
+      External->>Sem: queue supported material for new revision
+      External->>Native: remove previous hash only if now unshared
+      External-->>Inspector: accepted with same URL and resource id
+    end`;
 
   const consistencyDiagram = `stateDiagram-v2
     [*] --> Selected
@@ -78,10 +108,10 @@
     ResourceCommitted --> SemanticQueued: enqueue succeeds
     ResourceCommitted --> SemanticNotApplicable: no eligible lane
     ResourceCommitted --> SemanticPending: enqueue fails
-    SemanticPending --> SemanticQueued: rename, refresh, or external worker retry
+    SemanticPending --> SemanticQueued: later backfill or queue host
     SemanticQueued --> SemanticCurrent: worker publishes
     SemanticQueued --> SemanticFailed: provider or adapter failure
-    SemanticFailed --> SemanticQueued: explicit retry
+    SemanticFailed --> SemanticQueued: backfill after correction
     ResourceCommitted --> Manageable
     SemanticNotApplicable --> Manageable
     SemanticQueued --> Manageable
@@ -93,9 +123,10 @@
     ["Single file", "50,000,000 bytes", "The implemented remote-form path buffers each File before bounded native publication."],
     ["Whole batch", "250,000,000 bytes", "Bounds declared multipart memory and request work; every received file is re-counted."],
     ["Download response", "50,000,000 bytes", "The authorized route refuses a native response beyond the configured ceiling."],
-    ["Text semantics", "5,000,000 bytes", "The exact worker fails the semantic lane—not upload—when UTF-8 source exceeds its bound."],
-    ["Image pixels", "5,000,000 bytes", "Larger images retain deterministic metadata but skip native visual input."],
+    ["External exact lane", "none", "No External file kind is chunked into exact semantic spans."],
+    ["Image input", "50,000,000 bytes", "Matches the upload ceiling; admitted standalone images pass their original pixels directly to visual embedding."],
     ["CSV profile", "20k rows / 200k cells", "Matches the bounded existing CSV parser, including a 256-column ceiling."],
+    ["Text descriptor input", "64,000 bytes", "A deterministic head/tail excerpt gives the material summarizer verified UTF-8 without putting the full native file in a semantic row."],
     ["Path length", "512 UTF-8 bytes", "Enforced after NFC and slash normalization; there is no separate leaf-name filesystem operation."]
   ] as const;
 
@@ -104,8 +135,9 @@
     ["File.arrayBuffer", "No row; no blob", "Return read-failed for that candidate", "Retry candidate"],
     ["Native put", "No row; temporary sibling is removed", "Return storage-failed for that candidate", "Retry candidate"],
     ["Metadata create", "Verified orphan may exist", "Return store-failed and remove the unclaimed blob best-effort", "Retry safely; same hash can reuse an orphan"],
-    ["Semantic enqueue", "File row and native bytes are usable", "Return enqueue-failed on the successful receipt", "Rename, Inspector refresh, or an external worker can requeue"],
-    ["Semantic worker", "File row is usable", "Durable failed job with sanitized reason", "Explicit retry after correction"],
+    ["Semantic enqueue", "File row and native bytes are usable", "Return enqueue-failed on the successful receipt", "A queue host or backfill can requeue"],
+    ["Semantic worker", "File row is usable", "Durable failed job with sanitized reason", "Backfill after correcting provider, bytes, or adapter input"],
+    ["Re-upload before row CAS", "Original row still points at original bytes; prior semantics may have been retired", "Reject and compensate unclaimed candidate bytes", "Old resource remains usable; backfill can restore retired semantics"],
     ["Download response", "Source remains manageable", "Missing/corrupt/oversized bytes fail explicitly; invalid Range returns 416", "Repair native storage or retry a valid attachment range"]
   ] as const;
 
@@ -113,7 +145,7 @@
     ["Scope before input", "Call requireScope() before validation and never accept browser-authored projectId, createdBy, storageId, hash, or subkind."],
     ["Path normalization", "Convert backslashes, normalize NFC, preserve folder display, and reject dot/empty segments, absolute roots, drive prefixes, NUL, traversal, and duplicate canonical paths."],
     ["Byte authority", "Recount received bytes and calculate SHA-256 server-side. File.size is checked twice; extension and browser MIME remain classification hints."],
-    ["Format policy", "Sniff PNG, JPEG, GIF, PDF, and ZIP signatures. Other admitted types use declared MIME then extension fallback; all bytes remain attachment-only."],
+    ["Format policy", "Sniff PNG, JPEG, GIF, WebP, PDF, and ZIP signatures. Canonical textual/code and data extensions override arbitrary browser MIME; other valid declared types are retained. All bytes remain attachment-only."],
     ["Safe serving", "Authorize every read. Use nosniff, sandbox CSP, escaped dual filenames, bounded single ranges, a SHA-256 ETag, private/no-cache, and Content-Disposition attachment."],
     ["Operational bounds", "Cap candidates, bytes, paths, parser work, and concurrent uploads. If archives arrive later, add entry/decompression/ratio limits before extraction."]
   ] as const;
@@ -127,11 +159,11 @@
       <div>
         <a class="back" href="/demo/external-files">← External-files system</a>
         <span class="kicker">01 · ingestion and interpretation</span>
-        <h1>Commit bytes before meaning.</h1>
+        <h1>External admits bytes before delegating meaning.</h1>
         <p class="hero-copy">
           Upload is a short authoritative path: scope, validate, store verified bytes, reuse or create one
-          project resource row, then enqueue only supported derived products. Folder selection changes the batch and
-          relative-path metadata—it does not create a second storage model.
+          project resource row, then enqueue only supported material work. Folder selection changes the batch and
+          relative-path metadata—it does not create a second native-storage model.
         </p>
       </div>
       <aside class="hero-aside">
@@ -148,8 +180,9 @@
       <div class="section-head">
         <div><span class="kicker">Authoritative sequence</span><h2>Seven hand-offs, one committed identity</h2></div>
         <p>
-          The remote form is transport only. The capability owns orchestration; materialContent owns byte I/O;
-          the store owns resource metadata; the semantic capability owns derived jobs; workspace state owns library focus and inspection.
+          The remote form is transport only. External owns native admission and lifecycle; externalFileStorage
+          verifies and persists its descriptors; the represented store owns rows; the semantic capability owns
+          downstream material work; workspace state owns library focus and inspection.
         </p>
       </div>
       <div class="diagram-frame">
@@ -210,11 +243,11 @@ File.webkitRelativePath`}</code></pre>
 
     <section class="section">
       <div class="section-head">
-        <div><span class="kicker">Format routing</span><h2>Management, exact text, and materials are separate promises</h2></div>
+        <div><span class="kicker">Format routing</span><h2>Management and material interpretation are separate promises</h2></div>
         <p>Every accepted format gets a manageable library row. Classification decides safe Inspector actions and eligible semantic lanes; it does not require a dedicated editor or imply that a parser succeeded.</p>
       </div>
       <div class="diagram-frame">
-        <MermaidDiagram source={routingDiagram} label="Format classification and semantic routing" caption="The current useful semantic adapters are text, code, CSV, and image. PDF/Office/media extraction is intentionally deferred." minHeight="38rem" />
+        <MermaidDiagram source={routingDiagram} label="Format classification and semantic routing" caption="Unified text/code, CSV/TSV, and image are the only External material adapters. External has no exact lane; every other family is intentionally managed-only." minHeight="38rem" />
       </div>
       <div class="table-wrap formats">
         <table class="reference-table">
@@ -236,7 +269,21 @@ File.webkitRelativePath`}</code></pre>
       </div>
       <div class="callout">
         <AlertTriangle size={18} strokeWidth={1.8} aria-hidden="true" />
-        <div><h3>Classifier breadth remains an explicit implementation limit.</h3><p>The upload classifier covers the common code extensions listed in representation behavior, while codeLanguage recognizes a broader set. A blank-MIME file outside the first set can remain managed-only even if the profiler understands its extension; the UI makes that limitation visible instead of scheduling a doomed job.</p></div>
+        <div><h3>External has one canonical textual family.</h3><p>The upload classifier and material profiler share the External-owned language recognizer. Plain text, Markdown, XML, and recognized source code all become <code>externalFile::code</code>; a persisted legacy <code>text</code> subkind is canonicalized on read. Known extensions are resolved before arbitrary browser MIME.</p></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <div><span class="kicker">Explicit content update</span><h2>Re-upload changes bytes without changing the object</h2></div>
+        <p>Ordinary upload never overwrites an occupied path. Re-upload is the deliberate update operation and is protected by the selected row's base revision.</p>
+      </div>
+      <div class="diagram-frame">
+        <MermaidDiagram source={reuploadSequence} label="External file re-upload sequence" caption="The same externalFile id, local name, relative path, download URL, references, and original upload provenance survive; native and material identities advance." minHeight="38rem" />
+      </div>
+      <div class="callout success">
+        <CheckCircle2 size={18} strokeWidth={1.8} aria-hidden="true" />
+        <div><h3>Upload and re-upload intentionally mean different things.</h3><p>Uploading different bytes at an occupied path returns a path conflict. Re-upload from that file's Inspector retires the old material revision and updates the same represented resource, so references remain intact.</p></div>
       </div>
     </section>
 

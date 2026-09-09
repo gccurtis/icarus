@@ -1,18 +1,20 @@
 import { asId } from "$representation/data/behavior/core/id";
 import {
   externalFileNameIn,
-  fileSubkindFor,
-  mediaTypeForExternalBytes,
   normalizeExternalRelativePath
 } from "$representation/data/behavior/external/file";
 import type { Id } from "$representation/data/types/core/id";
-import type { MaterialContentReceipt } from "$model/server/material-content/index.server";
-import type { ServerModel } from "$runtime/server/start.server";
 import { requireScope } from "$runtime/server/scope.server";
 import { serverModel } from "$runtime/server/start.server";
 import { enqueueSemanticSync } from "$capabilities/semantic-overlay";
 
 import { externalFilesLimits } from "$capabilities/external-files/api/shared/configuration";
+import type { ExternalFileStorageReceipt } from "$model/server/external-file-storage/index.server";
+import { recordExternalFileHistory } from "$capabilities/external-files/api/shared/history";
+import {
+  admitNativeFile,
+  releaseUnclaimedNativeFile
+} from "$capabilities/external-files/api/shared/native-file";
 import { externalFileIn, rowsOf } from "$capabilities/external-files/api/shared/rows";
 import { displayName } from "$capabilities/external-files/api/shared/validation";
 import { validateUploadExternalFiles } from "$capabilities/external-files/api/upload-external-files/validate-upload-external-files";
@@ -45,23 +47,6 @@ const rejected = (
   reason,
   detail
 });
-
-/** Best-effort compensation for a blob written before its represented row exists. */
-const releaseUnclaimed = async (
-  model: ServerModel,
-  receipt: MaterialContentReceipt
-): Promise<void> => {
-  if (
-    receipt.reused ||
-    rowsOf(model.store, "externalFiles").some((row) => row.hash === receipt.hash)
-  ) return;
-  try {
-    await model.materialContent.remove(receipt);
-  } catch {
-    // A content-addressed orphan is safer than converting one rejected file
-    // into a failed batch. A later successful upload can reclaim the same hash.
-  }
-};
 
 export const uploadExternalFiles = async (input: unknown): Promise<UploadExternalFilesResult> => {
   const scope = await requireScope();
@@ -133,13 +118,17 @@ export const uploadExternalFiles = async (input: unknown): Promise<UploadExterna
       outcomes.push(rejected(file, "read-failed", safeFailure(error), relativePath));
       continue;
     }
-    const mediaType = mediaTypeForExternalBytes(bytes, file.type, name);
-    const subkind = fileSubkindFor(mediaType, name);
-    const releaseStorage = await model.materialContent.acquireMutation();
+    const native = admitNativeFile(bytes, file.type, name);
+    const { mediaType, subkind } = native;
+    const releaseStorage = await model.externalFileStorage.acquireMutation();
     try {
-      let receipt: MaterialContentReceipt;
+      let receipt: ExternalFileStorageReceipt;
       try {
-        receipt = await model.materialContent.put({ bytes, maxBytes: limits.maxFileBytes });
+        receipt = await model.externalFileStorage.put({
+          ...native,
+          bytes,
+          maxBytes: limits.maxFileBytes
+        });
       } catch (error) {
         outcomes.push(rejected(file, "storage-failed", safeFailure(error), relativePath));
         continue;
@@ -155,7 +144,7 @@ export const uploadExternalFiles = async (input: unknown): Promise<UploadExterna
       });
       if (existing !== undefined) {
         if (existing.hash !== receipt.hash) {
-          await releaseUnclaimed(model, receipt);
+          await releaseUnclaimedNativeFile(model, receipt);
           outcomes.push(rejected(
             file,
             "path-conflict",
@@ -166,7 +155,7 @@ export const uploadExternalFiles = async (input: unknown): Promise<UploadExterna
         }
         const admitted = externalFileIn(model, scope, existing._id);
         if (admitted === null || "unavailable" in admitted) {
-          await releaseUnclaimed(model, receipt);
+          await releaseUnclaimedNativeFile(model, receipt);
           outcomes.push(rejected(
             file,
             "path-conflict",
@@ -222,10 +211,18 @@ export const uploadExternalFiles = async (input: unknown): Promise<UploadExterna
           updatedAt: at
         });
       } catch (error) {
-        await releaseUnclaimed(model, receipt);
+        await releaseUnclaimedNativeFile(model, receipt);
         outcomes.push(rejected(file, "store-failed", safeFailure(error), relativePath));
         continue;
       }
+
+      recordExternalFileHistory(model, scope, {
+        event: "uploaded",
+        externalFileId,
+        name,
+        relativePath,
+        detail: `${receipt.size} bytes · ${mediaType}`
+      });
 
       let semantic: UploadedExternalFile["semantic"] = "unsupported";
       let semanticDetail: string | undefined;

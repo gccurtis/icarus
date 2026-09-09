@@ -1,40 +1,75 @@
 # external files
 
-The scoped ingestion and management boundary for project-owned native files.
-External owns upload receipts, safe metadata projection, local display rename,
-usage checks, download resolution, deletion, and shared-byte reclamation. Native
-bytes are content-addressed by SHA-256 through the material-content model; a
-relative upload path is stored only as metadata and is never joined to a server
-filesystem path.
+The project-scoped authority for native external files. External owns the
+complete source lifecycle: upload admission, native descriptor derivation,
+storage coordination, represented identity, paths/directories, history,
+authorized download, references, re-upload and deletion.
 
-| procedure | answers |
+The semantic material lane is downstream. It never calculates an upload hash,
+publishes/removes native content, chooses a storage path, or owns the External
+row. External delegates a committed reference only for unified plain-text/source
+code, CSV/TSV, or images. External has no exact semantic lane.
+
+## Procedures
+
+| Procedure | Contract |
 | --- | --- |
-| `readExternalFileLibrary` | Every valid file in the project with bounded metadata, semantic status, limits, and quarantined-row notices |
-| `readExternalFile` | One file's metadata, native-byte availability, semantic products, and represented usage |
-| `uploadExternalFiles` | A mixed-success file/folder batch with stable row receipts and post-commit semantic enqueue status |
-| `renameExternalFile` | A compare-and-swap project-local display rename that preserves original name, path, hash, and bytes |
-| `removeExternalFile` | A compare-and-swap delete after usage refusal and semantic retirement, followed by unreferenced-byte reclamation |
-| `readExternalFileContent` | Server-only authorization and verified native-byte resolution for the HTTP download route |
+| `readExternalFileLibrary` | Strict project inventory, virtual directories, material status, limits and quarantined metadata |
+| `readExternalFile` | One admitted file plus native availability, References and conditional material projection |
+| `readExternalFileHistory` | Newest 200 durable project lifecycle events, including deleted files |
+| `uploadExternalFiles` | Mixed-result bounded file/folder ingestion and post-commit supported-material enqueue |
+| `reuploadExternalFile` | CAS replacement of native content on the same id/name/path, semantic retirement/requeue and old-blob reclamation |
+| `renameExternalFile` | CAS local name/path-leaf rename with original upload provenance preserved |
+| `relocateExternalFile` | CAS full project-path change with collision rejection |
+| `relocateExternalDirectory` | Descendant-token CAS and one atomic table replacement for every member path |
+| `updateExternalFileContext` | CAS add/clear of bounded authored CSV/TSV context and material retirement/requeue |
+| `removeExternalFile` | Reference-safe CAS delete, semantic retirement, durable History and unshared-byte reclamation |
+| `readExternalFileContent` | Server-only authorization and verified native-byte resolution for the attachment route |
 
-New rows always carry original name, normalized relative path, byte size,
-revision, and updated actor. Those fields remain optional in the representation
-type because stores created before this capability contain the smaller external
-row shape. Reads admit that legacy shape and project concrete fallback values;
-new writes do not reproduce it.
+## Native authority
 
-The JSON store is failure-safe per table but is not transactional across the
-native-byte directory, external rows, semantic tables, and indexes. Ingestion
-therefore publishes bytes first, creates a row second, and enqueues semantics
-last. Native publication/row creation and row removal/native reclamation share
-the material-content model's process-level mutation lease; otherwise delete could remove a newly published
-hash before its upload creates the claiming row. This matches the represented
-store's process-local concurrency model. A semantic enqueue failure is reported
-but never rolls back a valid file.
-Deletion refuses represented usage, retires semantic products while the source
-row still exists, removes the row synchronously, and then removes the blob only
-when no external row in any project carries the hash. A last-step byte removal
-failure leaves a safe orphan for later reclamation rather than a dangling row.
+`admitNativeFile` receives already bounded bytes and derives the SHA-256,
+`_storage:<hash>`, actual size, canonical media type and subkind. It passes that
+complete descriptor to `externalFileStorage`, which verifies rather than
+discovers it. The repository atomically publishes, deduplicates, re-verifies on
+read, removes idempotently, and reads the legacy material directory for old rows.
 
-Files are resources managed in the singleton External library, not editable
-documents and not per-file workspace tabs. Findings are intentionally not part
-of this implementation.
+The repository's process mutation lease serializes native publication/row claim
+with row removal/native reclamation. It is not a distributed lock.
+
+## Representation and compatibility
+
+New rows have original/current name, canonical relative path, classification,
+native receipt, optional dataset context, origin, actors, revision and update
+time. The representation keeps additions optional for stored legacy rows. Reads
+strictly admit metadata and project safe fallback values; invalid rows are
+quarantined.
+
+Plain text, Markdown, XML, and recognized source files all persist as the
+canonical `code` subkind and delegate through `externalFile::code`. The retired
+stored `text` value is accepted only for compatibility and canonicalized on
+read; it is never emitted by current admission.
+
+Folders are projections over canonical relative paths. A directory revision token
+is derived from all descendant ids, revisions and paths. File/path collisions,
+root moves, and moving a folder inside itself are rejected before any descendant
+is replaced.
+
+## Ordering and recovery
+
+Initial upload derives and publishes bytes before row creation, then appends
+History and enqueues supported material. A row failure compensates an unclaimed
+new blob best-effort. A semantic failure never rolls back a usable file.
+
+Re-upload publishes candidate bytes, retires old semantics, updates the same row,
+appends History, queues new supported material, then removes the old hash only if
+no row claims it. If cleanup fails before row replacement, the original row
+remains authoritative.
+
+Delete refuses represented usage, retires semantics, rechecks revision and usage,
+removes the row, records History, and reclaims only an unshared hash. A final
+native removal error leaves a safe reported orphan.
+
+The filesystem, represented tables, History rows and semantic tables do not share
+a distributed transaction. Ordering and compensation are explicit parts of each
+result contract.

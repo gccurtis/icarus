@@ -4,10 +4,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, it, vi } from "vitest";
 
-import { defineMaterialContent } from "$model/server/material-content/index.server";
+import { defineExternalFileStorage } from "$model/server/external-file-storage/index.server";
 import { defineStore } from "$model/server/store/index.server";
 import type { ServerModel } from "$runtime/server/start.server";
 import type { UploadedExternalFile } from "$capabilities/external-files/types/external-files";
+import { admitNativeFile } from "$capabilities/external-files/api/shared/native-file";
 
 const state = vi.hoisted(() => ({
   scope: { projectId: "projects:external", userId: "users:ana", username: "Ana" },
@@ -30,11 +31,26 @@ const { readExternalFileContent } = await import(
 const { readExternalFileLibrary } = await import(
   "$capabilities/external-files/api/read-external-file-library/read-external-file-library"
 );
+const { readExternalFileHistory } = await import(
+  "$capabilities/external-files/api/read-external-file-history/read-external-file-history"
+);
+const { relocateExternalDirectory } = await import(
+  "$capabilities/external-files/api/relocate-external-directory/relocate-external-directory"
+);
+const { relocateExternalFile } = await import(
+  "$capabilities/external-files/api/relocate-external-file/relocate-external-file"
+);
 const { removeExternalFile } = await import(
   "$capabilities/external-files/api/remove-external-file/remove-external-file"
 );
 const { renameExternalFile } = await import(
   "$capabilities/external-files/api/rename-external-file/rename-external-file"
+);
+const { reuploadExternalFile } = await import(
+  "$capabilities/external-files/api/reupload-external-file/reupload-external-file"
+);
+const { updateExternalFileContext } = await import(
+  "$capabilities/external-files/api/update-external-file-context/update-external-file-context"
 );
 const { uploadExternalFiles } = await import(
   "$capabilities/external-files/api/upload-external-files/upload-external-files"
@@ -60,7 +76,7 @@ beforeEach(async () => {
   let at = 100;
   state.model = {
     store: defineStore({ now: () => (at += 1) }),
-    materialContent: defineMaterialContent(join(directory, "materials")),
+    externalFileStorage: defineExternalFileStorage(join(directory, "external-files")),
     configuration: { get: (key: string) => limits[key] },
     embedding: {
       space: { provider: "jina", model: "test", dimensions: 2 },
@@ -102,14 +118,17 @@ describe("external file capability", () => {
       (outcome): outcome is UploadedExternalFile => outcome.status === "uploaded"
     );
     assert.deepEqual(uploaded.map((outcome) => outcome.semantic), ["queued", "queued"]);
+    assert.equal(uploaded[0].subkind, "code");
     assert.equal(uploaded[1].mediaType, "image/png");
     assert.equal(uploaded[1].subkind, "image");
 
     const library = await readExternalFileLibrary();
     assert.equal(library.files.length, 2);
     assert.equal(library.files.find((file) => file.name === "notes.md")?.relativePath, "research/notes.md");
-    assert.equal(library.files.find((file) => file.name === "notes.md")?.semantic.exact.state, "queued");
+    assert.equal(library.files.find((file) => file.name === "notes.md")?.semantic.exact.state, "unsupported");
+    assert.equal(library.files.find((file) => file.name === "notes.md")?.semantic.material.state, "queued");
     assert.equal(library.files.find((file) => file.name === "map.bin")?.semantic.material.state, "queued");
+    assert.deepEqual(library.directories.map((directory) => directory.path), ["", "research"]);
 
     const retried = await upload([note], ["research/notes.md"]);
     assert.equal(retried.reused, 1);
@@ -140,19 +159,19 @@ describe("external file capability", () => {
     const changed = await renameExternalFile({
       externalFileId: before.id,
       baseRevision: before.revision,
-      name: "Pricing logic"
+      name: "pricing.ts"
     });
     assert.equal(changed.accepted, true);
     const after = await readExternalFile({ externalFileId: before.id });
     assert.ok(after !== null && !("unavailable" in after));
     if (after === null || "unavailable" in after) return;
-    assert.equal(after.name, "Pricing logic");
+    assert.equal(after.name, "pricing.ts");
     assert.equal(after.originalName, "answer.ts");
-    assert.equal(after.relativePath, "src/answer.ts");
+    assert.equal(after.relativePath, "src/pricing.ts");
     assert.equal(after.hash, before.hash);
     assert.deepEqual(await readExternalFileContent({ externalFileId: before.id }), {
       externalFileId: before.id,
-      name: "Pricing logic",
+      name: "pricing.ts",
       mediaType: "text/typescript",
       hash: before.hash,
       bytes: new TextEncoder().encode("const answer = 42;")
@@ -217,9 +236,9 @@ describe("external file capability", () => {
   });
 
   it("keeps foreign project rows outside list and detail reads", async () => {
-    const receipt = await state.model.materialContent.put({
-      bytes: new TextEncoder().encode("foreign")
-    });
+    const bytes = new TextEncoder().encode("foreign");
+    const native = admitNativeFile(bytes, "text/plain", "foreign.txt");
+    const receipt = await state.model.externalFileStorage.put({ ...native, bytes });
     const foreignId = state.model.store.create("externalFiles", {
       projectId: "projects:foreign",
       name: "foreign.txt",
@@ -278,10 +297,10 @@ describe("external file capability", () => {
   });
 
   it("reports native storage failure for one candidate without creating a row", async () => {
-    const held = state.model.materialContent;
+    const held = state.model.externalFileStorage;
     state.model = {
       ...state.model,
-      materialContent: {
+      externalFileStorage: {
         acquireMutation: held.acquireMutation,
         put: async () => {
           throw new Error("disk unavailable");
@@ -299,5 +318,102 @@ describe("external file capability", () => {
       assert.match(result.outcomes[0].detail, /disk unavailable/);
     }
     assert.equal((await readExternalFileLibrary()).files.length, 0);
+  });
+
+  it("re-uploads in place, retires the old blob, and records durable history", async () => {
+    const created = await upload([
+      new File(["export const version = 1;"], "module.ts", { type: "text/typescript" })
+    ], ["src/module.ts"]);
+    const outcome = created.outcomes[0];
+    assert.notEqual(outcome.status, "rejected");
+    if (outcome.status === "rejected") return;
+    const before = await readExternalFile({ externalFileId: outcome.externalFileId });
+    assert.ok(before !== null && !("unavailable" in before));
+    if (before === null || "unavailable" in before) return;
+
+    const replaced = await reuploadExternalFile({
+      id: "reupload",
+      externalFileId: before.id,
+      baseRevision: before.revision,
+      file: new File(["export const version = 2;"], "replacement.ts", { type: "text/typescript" })
+    });
+    assert.equal(replaced.accepted, true);
+    if (!replaced.accepted) return;
+    assert.equal(replaced.externalFileId, before.id);
+    assert.equal(replaced.revision, before.revision + 1);
+    assert.equal(replaced.previousBlob, "removed");
+    assert.equal(replaced.subkind, "code");
+    const after = await readExternalFile({ externalFileId: before.id });
+    assert.ok(after !== null && !("unavailable" in after));
+    if (after === null || "unavailable" in after) return;
+    assert.equal(after.name, "module.ts");
+    assert.equal(after.relativePath, "src/module.ts");
+    assert.notEqual(after.hash, before.hash);
+    assert.equal(
+      new TextDecoder().decode((await readExternalFileContent({ externalFileId: before.id }))?.bytes),
+      "export const version = 2;"
+    );
+    assert.deepEqual(
+      (await readExternalFileHistory()).entries.map((entry) => entry.event),
+      ["re-uploaded", "uploaded"]
+    );
+  });
+
+  it("moves files and whole virtual directories with collision-safe revisions", async () => {
+    const created = await upload([
+      new File(["a,b\n1,2"], "one.csv", { type: "text/csv" }),
+      new File(["export const two = 2"], "two.ts", { type: "text/typescript" })
+    ], ["source/data/one.csv", "source/code/two.ts"]);
+    const first = created.outcomes[0];
+    assert.notEqual(first.status, "rejected");
+    if (first.status === "rejected") return;
+    const detail = await readExternalFile({ externalFileId: first.externalFileId });
+    assert.ok(detail !== null && !("unavailable" in detail));
+    if (detail === null || "unavailable" in detail) return;
+    const moved = await relocateExternalFile({
+      externalFileId: detail.id,
+      baseRevision: detail.revision,
+      relativePath: "source/data/renamed.csv"
+    });
+    assert.equal(moved.accepted, true);
+
+    const library = await readExternalFileLibrary();
+    const source = library.directories.find((directory) => directory.path === "source");
+    assert.ok(source !== undefined);
+    const relocated = await relocateExternalDirectory({
+      path: "source",
+      destination: "archive/2026",
+      baseRevisionToken: source.revisionToken
+    });
+    assert.equal(relocated.accepted, true);
+    if (!relocated.accepted) return;
+    assert.equal(relocated.movedFiles, 2);
+    assert.deepEqual(
+      (await readExternalFileLibrary()).files.map((file) => file.relativePath).sort(),
+      ["archive/2026/code/two.ts", "archive/2026/data/renamed.csv"]
+    );
+  });
+
+  it("stores optional dataset context as authored material input", async () => {
+    const created = await upload([
+      new File(["account,value\nA,10"], "ledger.csv", { type: "text/csv" })
+    ]);
+    const outcome = created.outcomes[0];
+    assert.notEqual(outcome.status, "rejected");
+    if (outcome.status === "rejected") return;
+    const before = await readExternalFile({ externalFileId: outcome.externalFileId });
+    assert.ok(before !== null && !("unavailable" in before));
+    if (before === null || "unavailable" in before) return;
+    const changed = await updateExternalFileContext({
+      externalFileId: before.id,
+      baseRevision: before.revision,
+      semanticContext: "Monthly invoiced value in US dollars; test accounts are excluded."
+    });
+    assert.equal(changed.accepted, true);
+    const after = await readExternalFile({ externalFileId: before.id });
+    assert.ok(after !== null && !("unavailable" in after));
+    if (after === null || "unavailable" in after) return;
+    assert.equal(after.semanticContext, "Monthly invoiced value in US dollars; test accounts are excluded.");
+    assert.equal((await readExternalFileHistory()).entries[0].event, "context-updated");
   });
 });

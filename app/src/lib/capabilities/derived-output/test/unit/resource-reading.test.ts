@@ -166,7 +166,7 @@ describe("Derived Output resource-reading session", () => {
       },
       {
         _id: "externalFiles:code", _creationTime: 2, projectId, name: "answer.ts",
-        mediaType: "text/typescript", subkind: "text", storageId: "_storage:code", hash: hash("b")
+        mediaType: "text/typescript", subkind: "code", storageId: "_storage:code", hash: hash("b")
       },
       {
         _id: "externalFiles:image", _creationTime: 3, projectId, name: "diagram.png",
@@ -184,7 +184,7 @@ describe("Derived Output resource-reading session", () => {
       {
         _id: "semanticMaterials:code", _creationTime: 2, projectId, identityKey: "code",
         kind: "code", name: "answer.ts",
-        source: { kind: "externalFile", ref: { kind: "externalFile::text", id: "externalFiles:code" }, fileId: "externalFiles:code", hash: hash("b"), mediaType: "text/typescript", subkind: "text" },
+        source: { kind: "externalFile", ref: { kind: "externalFile::code", id: "externalFiles:code" }, fileId: "externalFiles:code", hash: hash("b"), mediaType: "text/typescript", subkind: "code" },
         profile: { kind: "code", language: "typescript", lines: 2, imports: [], exports: ["answer"], symbols: [{ name: "answer", kind: "variable", fromLine: 1, toLine: 1 }], parser: "bounded-regex", truncated: false, warnings: [] },
         profileHash: "code-profile", contextHash: "code-context", revisionKey: `hash:${hash("b")}`, state: "ready", updatedAt: 1
       },
@@ -223,7 +223,7 @@ describe("Derived Output resource-reading session", () => {
           return { kind: "table", table, rows: tables.get(table) ?? [] } as never;
         }
       },
-      materialContent: {
+      externalFileStorage: {
         read: async (ref: { storageId: Id<"_storage"> }) => content.get(ref.storageId)
       }
     } as unknown as ServerModel;
@@ -536,18 +536,6 @@ describe("Derived Output resource-reading session", () => {
       /content-addressed storage/
     );
 
-    const exactCode = await tool("read_text").execute({
-      kind: "externalFile::text",
-      resourceId: "externalFiles:code",
-      from: 0,
-      to: 6
-    }) as { source: { contentHash: string }; span: { text: string }; evidenceId: string };
-    assert.equal(exactCode.span.text, "export");
-    assert.equal(exactCode.source.contentHash, hash("b"));
-    assert.equal(
-      (issued.get(exactCode.evidenceId) as { source: { contentHash: string } }).source.contentHash,
-      hash("b")
-    );
   });
 
   it("rechecks the Resource Set even for an attempt-local material handle", async () => {

@@ -1,18 +1,21 @@
 import {
   readExternalFile,
+  readExternalFileHistory,
   readExternalFileLibrary,
+  relocateExternalDirectory as relocateExternalDirectoryRemote,
+  relocateExternalFile as relocateExternalFileRemote,
   removeExternalFile as removeExternalFileRemote,
   renameExternalFile as renameExternalFileRemote,
+  reuploadExternalFile,
+  updateExternalFileContext as updateExternalFileContextRemote,
   uploadExternalFiles,
+  type ExternalDirectoryItem,
   type ExternalFileDetail,
+  type ExternalFileHistoryEntry,
   type ExternalFileLibraryItem,
   type ReadExternalFileLibraryResult,
   type ReadExternalFileResult
 } from "$capabilities/external-files/index.remote";
-import {
-  enqueueSemanticSync,
-  processSemanticSyncQueue
-} from "$capabilities/semantic-overlay/index.remote";
 import type { WorkspaceStateModel } from "$model/client/workspace-state";
 
 export type LibraryExternalFile = ExternalFileLibraryItem & {
@@ -27,6 +30,14 @@ export type LibraryExternalFileDetail = ExternalFileDetail & {
   readonly sizeLabel: string;
   readonly semanticLabel: string;
   readonly semanticTone: "current" | "queued" | "failed" | "limited" | "idle";
+};
+
+export type LibraryExternalDirectory = ExternalDirectoryItem & {
+  readonly sizeLabel: string;
+};
+
+export type LibraryExternalHistoryEntry = ExternalFileHistoryEntry & {
+  readonly when: string;
 };
 
 const MINUTE = 60_000;
@@ -94,12 +105,29 @@ const project = (row: ExternalFileLibraryItem, now: number): LibraryExternalFile
 });
 
 export const externalFileLibrary = () => readExternalFileLibrary();
+export const externalFileHistory = () => readExternalFileHistory();
 export const externalFileUpload = uploadExternalFiles;
+export const externalFileReupload = reuploadExternalFile;
 
 export const externalFilesIn = (
   answer: ReadExternalFileLibraryResult | undefined,
   now: number
 ): readonly LibraryExternalFile[] => answer?.files.map((row) => project(row, now)) ?? [];
+
+export const externalDirectoriesIn = (
+  answer: ReadExternalFileLibraryResult | undefined
+): readonly LibraryExternalDirectory[] => answer?.directories.map((directory) => ({
+  ...directory,
+  sizeLabel: bytesLabel(directory.knownBytes)
+})) ?? [];
+
+export const externalHistoryIn = (
+  entries: readonly ExternalFileHistoryEntry[] | undefined,
+  now: number
+): readonly LibraryExternalHistoryEntry[] => entries?.map((entry) => ({
+  ...entry,
+  when: relativeTime(entry.at, now)
+})) ?? [];
 
 export const externalFileDetail = (externalFileId: string | undefined) =>
   externalFileId === undefined ? undefined : readExternalFile({ externalFileId });
@@ -126,6 +154,11 @@ export const inspectExternalFile = (view: WorkspaceStateModel, externalFileId: s
   view.inspect("external.file", { kind: "external-file", id: externalFileId });
 };
 
+export const inspectExternalDirectory = (view: WorkspaceStateModel, path: string): void => {
+  view.open({ category: "external" });
+  view.inspect("external.directory", { kind: "external-directory", id: path });
+};
+
 export const renameExternalFile = (
   view: WorkspaceStateModel,
   row: Pick<LibraryExternalFileDetail, "id" | "revision">,
@@ -150,23 +183,43 @@ export const removeExternalFile = (
   }).updates(readExternalFileLibrary, readExternalFile({ externalFileId: row.id }))
 );
 
-export const refreshExternalFileSemantics = (
+export const relocateExternalFile = (
   view: WorkspaceStateModel,
-  row: Pick<LibraryExternalFileDetail, "id" | "subkind">
+  row: Pick<LibraryExternalFileDetail, "id" | "revision">,
+  relativePath: string
 ) => view.singleFlight(
-  ["external-file", view.project, row.id, "semantic-refresh"],
-  async () => {
-    const detail = readExternalFile({ externalFileId: row.id });
-    const queued = await enqueueSemanticSync({
-      ref: { kind: `externalFile::${row.subkind}`, id: row.id }
-    }).updates(readExternalFileLibrary, detail);
-    if (queued === null) return { supported: false as const };
-    const processed = await processSemanticSyncQueue({
-      limit: 2,
-      ref: queued.ref
-    }).updates(readExternalFileLibrary, detail);
-    return { supported: true as const, processed };
-  }
+  ["external-file", view.project, row.id, "relocate", row.revision, relativePath.trim()],
+  () => relocateExternalFileRemote({
+    externalFileId: row.id,
+    baseRevision: row.revision,
+    relativePath: relativePath.trim()
+  }).updates(readExternalFileLibrary, readExternalFile({ externalFileId: row.id }))
+);
+
+export const relocateExternalDirectory = (
+  view: WorkspaceStateModel,
+  row: Pick<LibraryExternalDirectory, "path" | "revisionToken">,
+  destination: string
+) => view.singleFlight(
+  ["external-directory", view.project, row.path, "relocate", row.revisionToken, destination.trim()],
+  () => relocateExternalDirectoryRemote({
+    path: row.path,
+    destination: destination.trim(),
+    baseRevisionToken: row.revisionToken
+  }).updates(readExternalFileLibrary)
+);
+
+export const updateExternalFileContext = (
+  view: WorkspaceStateModel,
+  row: Pick<LibraryExternalFileDetail, "id" | "revision">,
+  semanticContext: string
+) => view.singleFlight(
+  ["external-file", view.project, row.id, "context", row.revision, semanticContext.trim()],
+  () => updateExternalFileContextRemote({
+    externalFileId: row.id,
+    baseRevision: row.revision,
+    semanticContext
+  }).updates(readExternalFileLibrary, readExternalFile({ externalFileId: row.id }))
 );
 
 export const externalFileDownloadHref = (

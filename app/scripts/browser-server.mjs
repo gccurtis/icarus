@@ -13,9 +13,11 @@ if (!Number.isInteger(port) || port < 1 || port > 65_535) {
 const supplied = process.env.ICARUS_BROWSER_STORE_DIRECTORY?.trim();
 const storeDirectory = supplied || mkdtempSync(join(tmpdir(), "icarus-browser-store-"));
 const owned = supplied === undefined || supplied.length === 0;
-const suppliedMaterials = process.env.ICARUS_BROWSER_MATERIAL_DIRECTORY?.trim();
-const materialDirectory = suppliedMaterials || mkdtempSync(join(tmpdir(), "icarus-browser-materials-"));
-const materialsOwned = suppliedMaterials === undefined || suppliedMaterials.length === 0;
+const suppliedExternalFiles = process.env.ICARUS_BROWSER_EXTERNAL_FILE_DIRECTORY?.trim();
+const externalFileDirectory = suppliedExternalFiles || mkdtempSync(
+  join(tmpdir(), "icarus-browser-external-files-")
+);
+const externalFilesOwned = suppliedExternalFiles === undefined || suppliedExternalFiles.length === 0;
 
 if (owned) cpSync(join(process.cwd(), "seed"), storeDirectory, { recursive: true });
 
@@ -31,11 +33,11 @@ const cleanup = () => {
     rmSync(storeDirectory, { recursive: true, force: true });
   }
   if (
-    materialsOwned &&
-    dirname(materialDirectory) === tmpdir() &&
-    basename(materialDirectory).startsWith("icarus-browser-materials-")
+    externalFilesOwned &&
+    dirname(externalFileDirectory) === tmpdir() &&
+    basename(externalFileDirectory).startsWith("icarus-browser-external-files-")
   ) {
-    rmSync(materialDirectory, { recursive: true, force: true });
+    rmSync(externalFileDirectory, { recursive: true, force: true });
   }
 };
 
@@ -54,7 +56,7 @@ const child = spawn(
             ICARUS_BROWSER_SEED_DIRECTORY: join(process.cwd(), "seed")
           }
         : {}),
-      ICARUS_MATERIAL_DIRECTORY: materialDirectory
+      ICARUS_EXTERNAL_FILE_DIRECTORY: externalFileDirectory
     }
   }
 );

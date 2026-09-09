@@ -1,7 +1,7 @@
 import type { StoreModel, TableRow } from "$model/server/store/index.server";
 import type { Scope, ServerModel } from "$runtime/server/start.server";
 import { asId } from "$representation/data/behavior/core/id";
-import { fileSubkindFor, normalizeExternalRelativePath } from "$representation/data/behavior/external/file";
+import { canonicalFileSubkind, normalizeExternalRelativePath } from "$representation/data/behavior/external/file";
 import type { Actor } from "$representation/data/types/core/actor";
 import type { ExternalFileOrigin } from "$representation/data/types/external/file";
 import { readSemanticStatusFor } from "$capabilities/semantic-overlay";
@@ -68,6 +68,19 @@ const sizeOf = (value: unknown): number | null => {
     throw new Error("external file size is a non-negative safe integer");
   }
   return value as number;
+};
+
+const semanticContextOf = (value: unknown): string | undefined => {
+  if (value === undefined || value === "") return undefined;
+  if (
+    typeof value !== "string" ||
+    value.length > 4_000 ||
+    value !== value.trim() ||
+    value.includes("\u0000")
+  ) {
+    throw new Error("external file semantic context is bounded canonical text");
+  }
+  return value;
 };
 
 const actorOf = (value: unknown): Actor => {
@@ -173,8 +186,8 @@ export const admitExternalFile = (
   ) {
     throw new Error("external file media type is bounded text");
   }
-  const subkind = row.subkind ?? fileSubkindFor(row.mediaType, name);
-  if (!["text", "data", "image", "audio", "video", "unknown"].includes(subkind)) {
+  const subkind = canonicalFileSubkind(row.subkind, row.mediaType, name);
+  if (!["code", "data", "image", "audio", "video", "unknown"].includes(subkind)) {
     throw new Error("external file subkind is represented");
   }
   if (typeof row.hash !== "string" || !/^[a-f0-9]{64}$/i.test(row.hash)) {
@@ -206,6 +219,9 @@ export const admitExternalFile = (
       createdByName: actorName(model.store, scope, createdBy),
       updatedByName: actorName(model.store, scope, updatedBy),
       origin: originOf(row.origin),
+      ...(semanticContextOf(row.semanticContext) === undefined
+        ? {}
+        : { semanticContext: semanticContextOf(row.semanticContext) }),
       semantic
     }
   };

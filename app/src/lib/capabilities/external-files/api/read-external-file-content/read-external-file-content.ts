@@ -15,9 +15,10 @@ export const readExternalFileContent = async (
   const found = externalFileIn(model, scope, asked.externalFileId);
   if (found === null) return null;
   if ("unavailable" in found) throw new Error(found.detail);
-  const bytes = await model.materialContent.read({
+  const bytes = await model.externalFileStorage.read({
     storageId: found.row.storageId,
-    hash: found.row.hash
+    hash: found.row.hash,
+    ...(found.item.size === null ? {} : { size: found.item.size })
   });
   if (bytes === undefined) throw new Error("The file's native bytes are unavailable.");
   const { maxResponseBytes } = externalFilesLimits(model.configuration);

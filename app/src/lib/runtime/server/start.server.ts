@@ -4,8 +4,8 @@ import { createStore } from "$model/server/store/index.server";
 import type { ServerModel } from "$runtime/server/types";
 import { createEmbedding } from "$model/server/embedding/index.server";
 import { createIntelligence } from "$model/server/intelligence/index.server";
-import { createMaterialContent } from "$model/server/material-content/index.server";
 import { createOperationFlights } from "$model/server/operation-flights/index.server";
+import { createExternalFileStorage } from "$model/server/external-file-storage/index.server";
 
 export type { ServerModel } from "$runtime/server/types";
 export type { Scope, Session } from "$runtime/server/scope.server";
@@ -53,9 +53,9 @@ const buildServerModel = async (): Promise<ServerModel> => {
   // Browser suites may point the process at a disposable represented store.
   // Production and ordinary development continue to use configured data/.
   const store = createStore(configuration, process.env.ICARUS_STORE_DIRECTORY);
-  const materialContent = createMaterialContent(
+  const externalFileStorage = createExternalFileStorage(
     configuration,
-    process.env.ICARUS_MATERIAL_DIRECTORY
+    process.env.ICARUS_EXTERNAL_FILE_DIRECTORY
   );
   const operationFlights = createOperationFlights();
 
@@ -68,7 +68,7 @@ const buildServerModel = async (): Promise<ServerModel> => {
     configuration,
     observability,
     store,
-    materialContent,
+    externalFileStorage,
     close: async () => {
       operationFlights.close();
       await observability.close();

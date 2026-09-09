@@ -52,14 +52,23 @@ export const resourcesOf = (
     updatedBy: row.updatedByName
   }));
 
-/** Recent is changed-recently until the workspace has represented open history. */
+/** Recent is changed-recently, with a batch-safe single card for each manager-only family. */
 export const recentsOf = (
   indexed: ProjectResourceIndex | undefined,
   now: number,
   limit = 8
-): readonly LauncherResource[] =>
-  resourcesOf(indexed, now)
+): readonly LauncherResource[] => {
+  const representedManagerKinds = new Set<ProjectResourceKind>(["file"]);
+  const seenManagerKinds = new Set<ProjectResourceKind>();
+  return resourcesOf(indexed, now)
     .toSorted((left, right) =>
       right.updatedAt - left.updatedAt || left.name.localeCompare(right.name)
     )
+    .filter((row) => {
+      if (!representedManagerKinds.has(row.kind)) return true;
+      if (seenManagerKinds.has(row.kind)) return false;
+      seenManagerKinds.add(row.kind);
+      return true;
+    })
     .slice(0, Math.max(0, limit));
+};

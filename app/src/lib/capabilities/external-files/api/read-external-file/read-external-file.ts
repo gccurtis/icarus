@@ -15,9 +15,10 @@ export const readExternalFile = async (input: unknown): Promise<ReadExternalFile
   if (found === null || "unavailable" in found) return found;
   let native: ExternalFileNativeState;
   try {
-    const bytes = await model.materialContent.read({
+    const bytes = await model.externalFileStorage.read({
       storageId: found.row.storageId,
-      hash: found.row.hash
+      hash: found.row.hash,
+      ...(found.item.size === null ? {} : { size: found.item.size })
     });
     native = bytes === undefined ? { state: "missing" } : { state: "available", size: bytes.byteLength };
   } catch (error) {

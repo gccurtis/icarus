@@ -13,16 +13,19 @@
     actor User
     participant UI as External content
     participant Cap as external-files capability
-    participant Blob as materialContent
+    participant Admit as External native admission
+    participant Blob as externalFileStorage
     participant Rows as representation store
     participant Sem as semantic-overlay
     participant Cache as remote query caches
 
     User->>UI: select files or browser directory
     UI->>Cap: multipart File[] + relativePaths[]
-    Cap->>Cap: scope, limits, path admission, byte read, media sniff
+    Cap->>Cap: scope, limits, path admission and bounded byte read
     loop each candidate
-      Cap->>Blob: put complete bounded Uint8Array
+      Cap->>Admit: derive hash, size, storageId, MIME and subkind
+      Admit-->>Cap: authoritative descriptor
+      Cap->>Blob: put verified descriptor plus complete bytes
       Blob-->>Cap: hash + storageId + size + reused
       alt project path already exists
         Cap->>Rows: compare existing hash and admit row
@@ -31,7 +34,8 @@
         Cap->>Rows: create externalFiles row at revision 1
         Rows-->>Cap: externalFileId
       end
-      opt exact or material lane eligible
+      Cap->>Rows: append uploaded History event
+      opt code, CSV/TSV or image material is eligible
         Cap->>Sem: enqueue committed resource reference
         Sem-->>Cap: queued ids or recoverable error
       end
@@ -43,7 +47,8 @@
   const lifecycle = `stateDiagram-v2
     [*] --> Candidate
     Candidate --> Rejected: invalid form, limit, path, read, or storage
-    Candidate --> BlobReady: verified SHA-256 receipt
+    Candidate --> DescriptorReady: External derives native descriptor
+    DescriptorReady --> BlobReady: storage verifies and publishes receipt
     BlobReady --> Rejected: same path, different hash
     BlobReady --> ExistingRow: same path, same hash
     BlobReady --> Represented: new externalFiles row
@@ -51,18 +56,20 @@
     ExistingRow --> ManagedOnly: no supported lane
     Represented --> SemanticQueued: supported lane
     Represented --> ManagedOnly: no supported lane
-    SemanticQueued --> SemanticCurrent: worker or Inspector refresh publishes
+    SemanticQueued --> SemanticCurrent: queue host publishes
     SemanticQueued --> SemanticFailed: adapter or provider failure
-    SemanticFailed --> SemanticQueued: explicit refresh
-    SemanticCurrent --> Stale: local display rename changes updatedAt
-    Stale --> SemanticQueued: rename enqueue or refresh
+    SemanticFailed --> SemanticQueued: backfill after correction
+    SemanticCurrent --> Replacing: user selects Re-upload
+    Replacing --> SemanticQueued: same row id, new receipt and revision
+    Replacing --> SemanticCurrent: replacement rejected; original row remains
+    SemanticCurrent --> SemanticQueued: local rename changes semantic name
     Represented --> DeleteRefused: represented usage exists or revision changed
     ManagedOnly --> DeleteRefused: represented usage exists or revision changed
     SemanticCurrent --> DeleteRefused: represented usage exists or revision changed
     Represented --> Retiring: confirmed and unused
     ManagedOnly --> Retiring: confirmed and unused
     SemanticCurrent --> Retiring: confirmed and unused
-    Retiring --> Removed: semantic retirement + row removal
+    Retiring --> Removed: semantic retirement + row removal + History
     Removed --> BlobRetained: another row shares hash or removal fails safely
     Removed --> BlobRemoved: no row shares hash and remove succeeds
     BlobRetained --> [*]
@@ -78,10 +85,10 @@
 
     TAB["Permanent tab<br/>category = external<br/>no resourceId"]:::permanent
     OPEN["open({ category: external, focus? })"]:::state
-    CONTENT["Content · external.library<br/>upload + searchable inventory"]:::surface
-    CONTEXT["Context<br/>overview · activity · policy"]:::surface
-    SELECT["Selection<br/>kind = external-file<br/>id = externalFileId"]:::state
-    INSPECT["Inspector · external.file<br/>rename · download · delete<br/>provenance · usage · semantics"]:::surface
+    CONTENT["Content · external.library<br/>Table / Directory · upload · search"]:::surface
+    CONTEXT["Context<br/>Overview · durable History"]:::surface
+    SELECT["Selection<br/>external-file id<br/>or external-directory path"]:::state
+    INSPECT["Inspector<br/>external.file · external.directory<br/>rename · re-upload · move · delete"]:::surface
     STATUS["Status bar<br/>subject-capability name read"]:::surface
     OLD["Older workspace snapshot"]:::state
     ADOPT["adopt missing singleton<br/>preserve existing landings"]:::state
@@ -101,21 +108,21 @@
     classDef material fill:#fff1df,stroke:#d06b32,color:#492c17
     classDef off fill:#f1efe9,stroke:#aaa194,color:#615b54
 
-    FILE["Committed external file<br/>immutable bytes at revision 0"]:::source
-    TEXT{"subkind = text?"}:::exact
-    PROFILE{"image, CSV/TSV,<br/>or recognized code?"}:::material
-    EJOB["semanticSyncJob<br/>exact spans"]:::exact
-    MJOB["semanticMaterialJob<br/>profile + description"]:::material
+    FILE["Committed external file<br/>External-owned bytes + row revision"]:::source
+    PROFILE{"text/code,<br/>CSV/TSV, or image?"}:::material
+    MJOB["semanticMaterialJob<br/>one resource material"]:::material
+    CODE["plain text / source code<br/>code profile + bounded source descriptor"]:::material
+    DATA["CSV/TSV<br/>profile + authored context<br/>+ optional descriptor"]:::material
+    IMAGE["image<br/>direct original visual vector<br/>no descriptor"]:::material
     NONE["unsupported<br/>no poison job"]:::off
     STATUS["readSemanticStatus<br/>not-started · queued · running<br/>failed · stale · current"]:::source
-    REVIEW["File Inspector<br/>review facts, warnings,<br/>summary + provenance"]:::source
+    REVIEW["File Inspector<br/>conditional status, profile<br/>and summary review"]:::source
     RETIRE["retireSemanticResource<br/>archive + remove + reindex"]:::source
 
-    FILE --> TEXT
     FILE --> PROFILE
-    TEXT -->|yes| EJOB --> STATUS
-    TEXT -->|no| NONE
-    PROFILE -->|yes| MJOB --> STATUS
+    PROFILE -->|code| CODE --> MJOB --> STATUS
+    PROFILE -->|CSV / TSV| DATA --> MJOB
+    PROFILE -->|image| IMAGE --> MJOB
     PROFILE -->|no| NONE
     NONE --> STATUS
     STATUS --> REVIEW
@@ -130,11 +137,32 @@
       effect: "Upload works in enhanced and native form paths without browser-dependent serialization."
     },
     {
+      stage: "Folder path serialization",
+      assumption: "Assigning an aligned relativePaths array through the remote-form fields object would make directory paths part of the request.",
+      observed: "The browser serialized only successful DOM controls. Files arrived, but nested webkitRelativePath values silently collapsed to leaf names.",
+      change: "The Content view snapshots every browser relative path and renders one indexed hidden relativePaths control beside each selected File.",
+      effect: "A real directory tree reaches the capability with stable File/path index alignment; Chromium proves nested paths survive upload and reload."
+    },
+    {
       stage: "Receipt handling",
       assumption: "A remote form result could be consumed once by comparing object identity in a Svelte effect.",
       observed: "Reactive result snapshots can be proxies with fresh identity; equality produced warnings and an effect update-depth loop.",
       change: "The view compares a serializable receipt signature and keeps the latest result as raw immutable state.",
       effect: "One submission causes one focus transition and the most recent file/folder receipt stays visible."
+    },
+    {
+      stage: "Directory selection",
+      assumption: "A focus-restoration effect could always realign Inspector selection with the tab's file focus.",
+      observed: "Selecting a virtual directory was immediately overwritten by the older selected-file focus, so the directory Inspector flashed and vanished.",
+      change: "Restoration now yields while selection.kind is external-directory; file focus is used only when no directory subject is active.",
+      effect: "Folder selection is stable, restorable library focus remains useful, and directory rename/move can be tested in the real surface."
+    },
+    {
+      stage: "Launcher integration",
+      assumption: "Adding every External row to the shared resource index was sufficient for New Tab search and Recent.",
+      observed: "File cards had no opening target, and one directory upload filled all eight Recent slots with manager-only files, hiding ordinary editor work.",
+      change: "New Tab file results now open the External singleton with file focus. Search keeps every file, while Recent keeps only the newest file entry for the manager-only family.",
+      effect: "A file launcher reaches the real manager without creating an editor tab, and one batch cannot monopolize the project recency shelf."
     },
     {
       stage: "Status bar",
@@ -144,18 +172,39 @@
       effect: "The status bar displays the local file name without weakening the generic store allowlist."
     },
     {
+      stage: "Native-byte ownership",
+      assumption: "The existing materialContent object could remain a general blob service and calculate native identity for External.",
+      observed: "That made the downstream interpretation layer own hashing, storage, deletion, and concurrency for an unrelated source-resource lifecycle.",
+      change: "material-content was removed. External now derives its complete native descriptor, while a narrow externalFileStorage model only verifies, publishes, reads, and removes that descriptor.",
+      effect: "The semantic material lane receives an admitted resource reference and can focus on profiles, summaries, and embeddings instead of byte management."
+    },
+    {
       stage: "Browser isolation",
-      assumption: "Copying the represented seed into a temporary directory isolated browser mutations.",
-      observed: "Native material bytes use a separate configured directory and would survive the disposable row store.",
-      change: "Runtime accepts ICARUS_MATERIAL_DIRECTORY; browser-server provisions and removes a second temporary directory.",
-      effect: "System tests can upload and delete real bytes without polluting development data or leaving rows and blobs out of sync."
+      assumption: "A disposable represented row directory was sufficient to isolate end-to-end upload tests.",
+      observed: "External native bytes have an independent lifecycle and would otherwise survive browser runs.",
+      change: "Runtime accepts ICARUS_EXTERNAL_FILE_DIRECTORY; browser-server provisions a second disposable directory while configured legacy storage remains read-compatible.",
+      effect: "System tests upload, replace, download, and delete real bytes without polluting development storage."
     },
     {
       stage: "Semantic eligibility",
-      assumption: "Every external file should receive both semantic jobs and let the worker decide support.",
-      observed: "That creates durable failures for Office, PDF, audio, video, and arbitrary data with no adapter.",
-      change: "Exact and material targets are independent; material eligibility is image, true CSV/TSV, or recognized code only.",
-      effect: "Unsupported types say Managed only and create no poison work, while Markdown can be exact-only."
+      assumption: "Plain text needed a separate managed-only subkind while source code had a material profile, and External text/code might also enter the exact lane.",
+      observed: "That split the same textual byte boundary into two policies, denied useful summaries to ordinary text, and duplicated source files across semantic concepts the product does not promise.",
+      change: "External exact ingestion was removed. Plain text and source code now canonicalize to externalFile::code and one bounded code-profile material; a 64 KB source excerpt feeds its descriptor. CSV/TSV remains data with authored context, and standalone images use only their original visual vector.",
+      effect: "There is one textual delegation path, legacy text rows migrate on read, summary text is separately embedded from deterministic profile facets, and image meaning is not diluted by generated text."
+    },
+    {
+      stage: "Re-upload identity",
+      assumption: "A same-path different-hash conflict was enough; replacement lineage could remain future work.",
+      observed: "Users need to update referenced content without deleting the object or changing every reference.",
+      change: "The file Inspector now has an explicit Re-upload form. It CAS-checks the row, publishes candidate bytes, retires old semantics, updates the same id/revision, queues supported meaning, and reclaims the previous unshared blob.",
+      effect: "Upload remains collision-safe, while re-upload is a deliberate same-object content update with a stable URL and references."
+    },
+    {
+      stage: "Directory management",
+      assumption: "Relative paths could be displayed as folder groupings without needing a mutation contract.",
+      observed: "A useful directory view needs rename/move, but creating durable folder rows would introduce a second hierarchy to synchronize.",
+      change: "Directories are projected from canonical paths and carry an opaque token over descendant id/revision/path. A collision-checked store.replaceRows commit rewrites every descendant atomically.",
+      effect: "People can manage a mock directory hierarchy while native blobs remain content-addressed and no folder entity can drift."
     },
     {
       stage: "Deletion",
@@ -172,29 +221,31 @@
       effect: "Old valid files remain readable while every new upload writes the complete shape."
     },
     {
-      stage: "Activity context",
-      assumption: "An Activity panel implied a durable upload/rename/delete event feed.",
-      observed: "The representation has no external-file event journal and manufacturing audit history would be misleading.",
-      change: "Activity is explicitly a projection of current rows, using revision and updated actor/time; deletions cannot appear after the row is gone.",
-      effect: "The UI is useful without claiming an audit trail. A real journal is a separate future capability."
+      stage: "History context",
+      assumption: "A current-row Activity projection was sufficient for recency.",
+      observed: "It erased deletions and could not distinguish initial upload, re-upload, rename, move, and dataset-context changes.",
+      change: "The Policy view was removed and Activity became History, backed by scoped activity rows appended by each lifecycle procedure and retained after file deletion.",
+      effect: "Context stays library-wide and gives a truthful durable lifecycle record instead of reconstructing history from surviving rows."
     },
     {
       stage: "Blob reclamation race",
       assumption: "Scanning externalFiles for a shared hash immediately before removal was enough to protect an in-flight upload.",
       observed: "An upload can publish a hash before creating its row; deletion could see no claimant in that interval and remove the just-published bytes.",
-      change: "Upload publication/row creation and delete row removal/blob reclamation now share the material-content model’s process-level mutation lease.",
+      change: "Upload/re-upload publication and row claims, plus delete/reclamation, share externalFileStorage's process-level mutation lease.",
       effect: "The process-local represented store cannot create a successful row whose native blob was concurrently reclaimed."
     }
   ] as const;
 
   const concessions = [
-    ["Buffered request", "Remote forms materialize each File as an ArrayBuffer before materialContent.put. The enforced 50 MB/file and 250 MB/batch limits make that bounded, but this is not a streaming upload architecture."],
-    ["No cross-store transaction", "Native filesystem publication, represented JSON tables, and semantic tables cannot commit atomically. Ordering, compensation, and a process-level storage mutation lock prevent dangling rows; a rare cleanup failure can retain an orphaned content-addressed blob."],
-    ["Immediate physical GC", "There is no tombstone, retention window, or deletion audit journal. The row is hard-deleted and a global externalFiles hash scan protects shared content before physical removal."],
-    ["Explicit worker gap", "Jobs are durable and coalesced, but no always-on queue host ships here. Upload success means queued, not semantically current; Inspector Refresh performs bounded processing on demand."],
-    ["Partial media sniffing", "PNG, JPEG, GIF, PDF, and ZIP signatures override weak claims. Other types use declared MIME then filename fallback; serving remains attachment-only, and invalid text fails semantic processing safely."],
+    ["Buffered request", "Remote forms materialize each File as an ArrayBuffer before External admission. The enforced 50 MB/file and 250 MB/batch limits make this finite, but it is not resumable or streaming upload."],
+    ["No cross-store transaction", "External native storage, represented JSON tables, semantic tables, and History rows cannot commit together. Ordering and compensation prevent dangling resource rows; rare cleanup or event-append failure can leave safe recoverable state."],
+    ["Process-local lease", "The storage mutation lease closes upload/delete races inside one server process. A multi-process deployment would need a shared lock, transactional object-store claim system, or durable claim record."],
+    ["Immediate physical GC", "There is no tombstone or retention window. After durable History is appended, the file row is hard-deleted and a global externalFiles hash scan protects shared bytes before physical removal."],
+    ["Explicit worker-host gap", "Jobs and backfill procedures are durable and coalesced, but this branch does not deploy an always-on queue host. The Inspector intentionally has no manual refresh button; queued status remains honest until an operational host runs."],
+    ["Partial media sniffing", "PNG, JPEG, GIF, WebP, PDF, and ZIP signatures override weak claims; known textual/code and data extensions override arbitrary browser MIME. Other families retain a sanitized declared type and remain attachment-only."],
     ["No inline media experiences", "External manages files. It does not preview PDF/image/audio/video, render spreadsheets, or edit code. Native download is the content action."],
-    ["No replacement lineage", "A project-relative path is unique. Identical retries reuse; different bytes at that path reject. There is no supersedes relation or replace button."],
+    ["Re-upload, not version browser", "Re-upload advances the same row and preserves History, but there is no UI to browse or restore prior byte revisions. An unshared predecessor blob is reclaimed immediately."],
+    ["Legacy storage compatibility", "New bytes publish under data/external-files. Reads and removal also address the prior data/materials directory so pre-boundary rows remain usable; there is no eager migration job."],
     ["Findings excluded", "Findings are not implemented in this slice. The category can gain a second managed-kind adapter later without changing the stable-tab identity."]
   ] as const;
 
@@ -203,14 +254,19 @@
     ["Path", "NFC; slash-normalized; relative; no empty, dot, dot-dot, NUL, or drive-root segment"],
     ["Project identity", "externalFiles:<UUID>; row revision begins at 1 for new uploads"],
     ["Native identity", "_storage:<lowercase SHA-256>; actual size comes from received bytes"],
-    ["Retry", "same normalized path + same hash → reused row; same path + different hash → per-file path-conflict"],
-    ["Rename", "compare baseRevision; update name/updatedBy/updatedAt/revision only; enqueue supported semantic lanes"],
-    ["Delete", "compare revision; refuse usage; retire semantics; recheck; hard-delete; scan all rows by hash; remove only when unshared"],
+    ["Descriptor owner", "External derives SHA-256, actual size, _storage:<hash>, canonical media type, and subkind before storage I/O"],
+    ["Retry", "same normalized path + same hash → reused row; same path + different hash → path conflict and explicit Re-upload guidance"],
+    ["Rename", "compare baseRevision; update local name and path leaf; preserve original upload name/bytes; revision + 1; retire/requeue supported material"],
+    ["Move file", "compare baseRevision; normalize full destination; reject collisions; update name/path and revision"],
+    ["Move directory", "compare opaque descendant token; reject self/descendant/collision destinations; replace all member rows in one table commit"],
+    ["Re-upload", "compare baseRevision; preserve id/name/path/original name; replace native receipt; revision + 1; retire/requeue material; reclaim old unshared hash"],
+    ["Delete", "compare revision; refuse references; retire semantics; recheck; hard-delete; append History; scan hashes; remove only when unshared"],
     ["Download", "project-authorized GET; max 50,000,000-byte response; attachment; private/no-cache; ranges; SHA-256 ETag; nosniff; CSP sandbox"],
-    ["Exact semantics", "externalFile::text; immutable semantic revision 0; strict UTF-8; 5 MB worker ceiling"],
-    ["Material semantics", "recognized code, CSV/TSV, or image; deterministic profile plus optional generated descriptor"],
-    ["Selection", "workspace Selection { kind: external-file, id }; target remains category external"],
-    ["Context", "Overview = aggregate; Activity = current-row projection; Policy = live configuration and behavior"]
+    ["Exact semantics", "unsupported for every External file kind; legacy external exact sources are always stale"],
+    ["Material semantics", "plain text/source → externalFile::code, bounded code profile and 64 KB source-backed descriptor; CSV/TSV → bounded profile/authored context/optional descriptor; image → direct original visual vector only"],
+    ["Selection", "workspace Selection is external-file id or external-directory path; tab target remains category external"],
+    ["Context", "Overview = aggregate; History = durable project lifecycle events; there is no Policy view"],
+    ["Inspector", "top actions Rename/Re-upload/Download/Move/Delete; double-click name/path; Details; References; conditional dataset context and material review; no hash"]
   ] as const;
 </script>
 
@@ -242,7 +298,7 @@
     <section class="section">
       <div class="section-head">
         <div><span class="kicker">Commit topology</span><h2>The row is the usability boundary</h2></div>
-        <p>Bytes publish first so a row never intentionally points at absent native content. Semantic enqueue happens after the row and is recoverable; every candidate retains its own outcome.</p>
+        <p>External derives identity before its storage model is called. Bytes publish first so a row never intentionally points at absent native content; material enqueue happens after the row and is recoverable.</p>
       </div>
       <div class="diagram-frame"><MermaidDiagram source={commitTopology} label="Implemented external file upload sequence" caption="The operation is an ordered workflow across filesystem, represented store, and semantic store—not a cross-system transaction." minHeight="43rem" /></div>
     </section>
@@ -253,15 +309,15 @@
         <div class="diagram-frame"><MermaidDiagram source={lifecycle} label="Implemented external file lifecycle" caption="In-use or stale deletion returns to management. A removed row may safely leave a shared or cleanup-failed blob." minHeight="49rem" /></div>
       </div>
       <div>
-        <div class="section-head compact"><div><span class="kicker">Meaning</span><h2>Two independent semantic lanes</h2></div></div>
-        <div class="diagram-frame"><MermaidDiagram source={semantic} label="Implemented external semantic routing" caption="Unsupported is a status, not a failed job. Generated descriptions never replace exact source or deterministic profiles." minHeight="49rem" /></div>
+        <div class="section-head compact"><div><span class="kicker">Meaning</span><h2>One delegated material lane</h2></div></div>
+        <div class="diagram-frame"><MermaidDiagram source={semantic} label="Implemented external semantic routing" caption="Unsupported is a status, not a failed job. Code/data profiles and native image vectors remain derived from the External-owned source." minHeight="49rem" /></div>
       </div>
     </section>
 
     <section class="section">
       <div class="section-head">
         <div><span class="kicker">Workspace identity</span><h2>External is the stable thing; files are subjects</h2></div>
-        <p>The category carries no resourceId. Focus restores a row, Selection drives external.file, and older snapshots are adopted forward without erasing their existing landings.</p>
+        <p>The category carries no resourceId. Focus restores a file; Selection drives external.file or external.directory; older snapshots are adopted forward without erasing their existing landings.</p>
       </div>
       <div class="diagram-frame"><MermaidDiagram source={workspace} label="Implemented External workspace surface architecture" caption="There is one permanent External tab and one file manager Inspector. No MIME family mints an editor tab." minHeight="37rem" /></div>
     </section>
@@ -307,15 +363,16 @@
       </div>
       <ul class="invariants">
         <li><CheckCircle2 aria-hidden="true" /><span>A file can be useful and downloadable with zero semantic products.</span></li>
-        <li><CheckCircle2 aria-hidden="true" /><span>Local rename never changes originalName, relativePath, storageId, hash, size, origin, creator, or native bytes.</span></li>
+        <li><CheckCircle2 aria-hidden="true" /><span>Local rename changes the name and relative-path leaf but never originalName, storage receipt, origin, creator, or native bytes.</span></li>
+        <li><CheckCircle2 aria-hidden="true" /><span>Re-upload is the only content replacement gesture and preserves the External row id, local name/path, and represented references.</span></li>
         <li><CheckCircle2 aria-hidden="true" /><span>Corrupt metadata is quarantined; corrupt or missing native bytes are explicit Inspector states.</span></li>
         <li><CheckCircle2 aria-hidden="true" /><span>Every external-file read is project-scoped through the owning capability.</span></li>
-        <li><CheckCircle2 aria-hidden="true" /><span>Unsupported semantic types do not create durable failing jobs.</span></li>
+        <li><CheckCircle2 aria-hidden="true" /><span>External never delegates to exact semantics; unsupported material types do not create durable failing jobs.</span></li>
         <li><CheckCircle2 aria-hidden="true" /><span>Deletion cannot silently break represented references or remove a hash shared by another file row.</span></li>
-        <li><CheckCircle2 aria-hidden="true" /><span>Generated summaries are reviewable derivative output with model, prompt, coverage, and uncertainty—not source authority.</span></li>
+        <li><CheckCircle2 aria-hidden="true" /><span>Generated summaries appear only for material types that produced one; standalone images remain a pure native visual vector.</span></li>
         <li><CheckCircle2 aria-hidden="true" /><span>The name shown to the user is External. Resources is not the category or stable-tab label.</span></li>
       </ul>
-      <div class="callout"><Lightbulb size={18} strokeWidth={1.8} aria-hidden="true" /><div><h3>Next design work can happen against the real surface.</h3><p>The live route supports upload, inspection, filtering, context switching, semantic review, rename, download, and delete. Findings remains the only named manager-kind omission.</p></div></div>
+      <div class="callout"><Lightbulb size={18} strokeWidth={1.8} aria-hidden="true" /><div><h3>Next design work can happen against the real surface.</h3><p>The live route supports file/folder upload, Table/Directory navigation, file and folder inspection, durable History, name/path edits, re-upload, dataset context, conditional semantic review, download, and reference-safe delete. Findings remains deferred.</p></div></div>
     </section>
   </main>
 

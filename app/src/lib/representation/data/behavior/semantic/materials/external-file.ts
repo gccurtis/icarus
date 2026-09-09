@@ -18,11 +18,20 @@ const source = (file: ExternalFileIdentity) => ({
   subkind: file.subkind
 });
 
-/** Adapter called by the future upload boundary after authoritative bytes are stored. */
+/** Pure adapter called by the material worker after External has verified the source value. */
 export const projectExternalFileMaterial = (
   file: ExternalFileIdentity,
   content?: string
 ): MaterialSeed | undefined => {
+  const context = {
+    title: file.name,
+    ...(file.semanticContext === undefined ? {} : { userDescription: file.semanticContext }),
+    nearbyText: [],
+    notes: []
+  };
+  const authored = file.semanticContext === undefined
+    ? {}
+    : { userDescription: file.semanticContext };
   const csv = isCsvFile(file.name, file.mediaType);
   if (csv && content !== undefined) return {
     identityKey: JSON.stringify(["csv", file.fileId, file.hash]),
@@ -30,7 +39,8 @@ export const projectExternalFileMaterial = (
     name: file.name,
     source: source(file),
     profile: profileCsv(content).profile,
-    context: { title: file.name, nearbyText: [], notes: [] }
+    context,
+    ...authored
   };
   const language = codeLanguage(file.name, file.mediaType);
   if (content !== undefined && language !== "unknown") return {
@@ -39,7 +49,9 @@ export const projectExternalFileMaterial = (
     name: file.name,
     source: source(file),
     profile: profileCode(content, file.name, file.mediaType),
-    context: { title: file.name, nearbyText: [], notes: [] }
+    context,
+    sourceText: content,
+    ...authored
   };
   if (file.subkind === "image") {
     const block: ImageBlock = {
@@ -54,7 +66,7 @@ export const projectExternalFileMaterial = (
       name: file.name,
       source: source(file),
       profile: profileImage(block, file.hash, 0, file.mediaType),
-      context: { title: file.name, nearbyText: [], notes: [] },
+      context,
       ...(file.nativeImage === undefined ? {} : { nativeImage: file.nativeImage })
     };
   }

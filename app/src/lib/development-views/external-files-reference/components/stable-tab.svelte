@@ -38,8 +38,8 @@
     WS["Workspace state<br/>External singleton + TabView"]:::state
     OPEN["OPENING external<br/>library + overview rail"]:::registry
     START["SINGLETONS + permanent<br/>tab-bar control"]:::registry
-    CAP["external-files capability<br/>list · read · rename · remove · download"]:::state
-    SEM["semantic-overlay capability<br/>status · descriptor · refresh"]:::state
+    CAP["external-files capability<br/>ingest · replace · move · history · delete"]:::state
+    SEM["semantic-overlay capability<br/>material status · retire · enqueue"]:::state
 
     subgraph Frame["App frame — sibling manager surfaces"]
       CTX["Context host<br/>library-wide state"]:::host
@@ -47,9 +47,9 @@
       INS["Inspector host<br/>selected subject"]:::host
     end
 
-    C1["external.overview<br/>activity · policy"]:::view
-    C2["external.library<br/>upload · search · filter · sort"]:::view
-    C3["external.file<br/>rename · delete · summary · provenance"]:::view
+    C1["external.overview · external.history<br/>aggregate + durable events"]:::view
+    C2["external.library<br/>table/directory · upload · search · sort"]:::view
+    C3["external.file · external.directory<br/>compact manager Inspectors"]:::view
     FUT["external.finding<br/>future subject adapter"]:::view
 
     START --> WS
@@ -69,39 +69,65 @@
     WS -->|inspected key + selection| C3
     FUT -. later .-> INS`;
 
+  const directoryDiagram = `flowchart TB
+    classDef row fill:#e8f0ef,stroke:#347f78,color:#172232
+    classDef projection fill:#fffdf8,stroke:#315a72,color:#172232
+    classDef mutation fill:#fff1df,stroke:#d06b32,color:#492c17
+    classDef guard fill:#201f35,stroke:#806fa9,color:#f6ebe2
+
+    R1["externalFiles:A<br/>research/site/photo.png · rev 2"]:::row
+    R2["externalFiles:B<br/>research/site/notes.csv · rev 4"]:::row
+    R3["externalFiles:C<br/>research/readme.txt · rev 1"]:::row
+    P["directory projection<br/>root / research / research/site"]:::projection
+    T["revision token<br/>hash of descendant id + revision + path"]:::guard
+    I["Directory Inspector<br/>rename or move research/site"]:::mutation
+    C{"collision and self-descendant checks"}:::guard
+    A["store.replaceRows<br/>all descendant paths in one commit"]:::mutation
+
+    R1 --> P
+    R2 --> P
+    R3 --> P
+    P --> T --> I --> C
+    C -->|accepted| A
+    A --> R1
+    A --> R2`;
+
   const panelContracts = [
     {
       panel: "Content surface",
       question: "Which non-editor resources are in this project?",
-      owns: "File/folder upload entry points, latest mixed receipt, search, kind/semantic filters, sorting, library rows, quarantine notice, and empty/error states.",
+      owns: "File/folder upload entry points, latest mixed receipt, Table/Directory toggle, breadcrumbs, search, kind/semantic filters, sorting, virtual folders, file rows, quarantine notice, and empty/error states.",
       mustNot: "Render a file editor, decode arbitrary source bodies, put management actions inside every row, or create a tab for a selected item.",
       keys: "external.library"
     },
     {
       panel: "Context panel",
       question: "What is true of this library as a whole?",
-      owns: "Inventory counts, current-row activity projection, storage/semantic coverage, configured limits, and project-wide management policy.",
+      owns: "Overview for inventory/storage/material coverage and History for durable upload, re-upload, rename, move, context-update, and delete events.",
       mustNot: "Follow every selected row, duplicate file controls, or present a generated summary as a library-wide fact.",
-      keys: "external.overview · .activity · .policy"
+      keys: "external.overview · external.history"
     },
     {
       panel: "Inspector panel",
       question: "What is this selected file, and what can I do to it?",
-      owns: "Local display rename, delete, original provenance, byte identity, download, semantic coverage, generated-summary review, and retry actions.",
-      mustNot: "Edit source bytes, become a format-specific editor, erase the original filename on rename, or imply unsupported extraction exists.",
-      keys: "external.file (Findings adapter deferred)"
+      owns: "A compact top action row (Rename, Re-upload, Download, Move, Delete), double-click name/path edits, Details, reference count/list, dataset context, and material status/summary only where applicable. A directory Inspector manages a projected subtree.",
+      mustNot: "Edit source bodies, become a format-specific editor, expose internal hash/storage fields, show summary UI for unsupported files, or imply unsupported extraction exists.",
+      keys: "external.file · external.directory (Findings deferred)"
     }
   ] as const;
 
   const stateOwnership = [
-    ["Source bytes", "materialContent model", "content-addressed by SHA-256; immutable internal storage", "Yes"],
-    ["ExternalFile row", "representation store", "original name/path + mutable display name + revision + actors + trusted byte receipt", "Yes"],
+    ["Native descriptor", "external-files capability", "server-derived hash + size + storage id + MIME + subkind", "Re-derived on re-upload"],
+    ["Source bytes", "externalFileStorage model", "verified content-addressed native value; primary External directory plus legacy read compatibility", "Yes; replaced explicitly"],
+    ["ExternalFile row", "representation store", "original upload name + mutable local name/path + optional dataset context + revision + actors + native receipt", "Yes"],
+    ["Virtual directory", "external-files projection", "path, parent, direct/descendant counts, byte totals, opaque descendant revision token", "No row — refetch"],
     ["Tab identity", "workspace TabRecord", "id external, category external, no resourceId", "Yes"],
     ["Selected subject", "workspace TabView", "focus externalFileId + external.file selection + active Context lens", "Yes"],
     ["Library query", "external-files capability cache", "all admitted project rows plus unavailable entries and live limits", "No — refetch"],
     ["Inspector edit draft", "external.file component", "rename draft, confirmation, pending action, recoverable error", "Never"],
-    ["Semantic products", "semantic overlay", "eligibility, jobs, profile, generated descriptor, provenance, generation", "Yes, but derived"],
-    ["Deletion cleanup", "external-files + semantic capabilities", "usage refusal, semantic retirement, hard row removal, immediate shared-hash check and unshared-byte removal", "Ordered workflow"]
+    ["Semantic products", "semantic overlay", "material eligibility, job, profile/native visual facet, optional generated descriptor, generation", "Yes, but derived"],
+    ["History event", "activity table via external-files", "immutable project-scoped lifecycle event independent of the current row", "Yes; last 200 read"],
+    ["Deletion cleanup", "external-files + semantic capabilities", "usage refusal, semantic retirement, hard row removal, history append, shared-hash check, unshared-byte removal", "Ordered workflow"]
   ] as const;
 
   const managerStates = [
@@ -112,16 +138,22 @@
     ["Unavailable row", "Stored metadata is corrupt", "Report a bounded unavailable count while valid rows remain manageable."],
     ["Selected file missing", "Row was deleted or access changed", "Clear stale selection, keep the singleton open, and return focus to the inventory."],
     ["Bytes unavailable", "Verified read fails", "Inspector preserves trusted metadata, disables download, and exposes report/recovery state."],
-    ["Semantic limited", "Queued, failed, or unsupported", "Inspector says exactly which lane is pending or unavailable and offers retry only when meaningful."]
+    ["Semantic limited", "Queued, failed, or unsupported", "Inspector describes material state only for unified text/code, data, and image and has no manual refresh or misleading summary block."],
+    ["Selected directory changed", "A descendant revision token is stale", "Reject the subtree move, refetch, and keep the current directory selected."]
   ] as const;
 
   const interactionRules = [
     ["Open the manager", "Top-bar External and every file launcher call workspace.open({ category: external, focus? }). The singleton target key is external."],
+    ["Find from New Tab", "Search retains every file and opens External with that file focused. Recent collapses the manager-only file family to its newest entry so folder ingestion cannot crowd out editor work."],
     ["Select a row", "Single click aligns durable focus with { kind: external-file, id } and opens external.file. Selection changes the Inspector, never the tab list."],
     ["Upload", "Files and directories enter through the library action. Successful rows appear immediately; a chosen receipt may become the inspected subject."],
-    ["Rename locally", "Inspector updates only the project display name with a base revision. Original name, relative path, hash, and bytes remain provenance."],
+    ["Rename locally", "Rename or double-click Name performs file CAS, updates the name and path leaf, preserves original upload name and bytes, and advances revision."],
+    ["Move a file", "Move or double-click Path performs file CAS against the complete canonical destination and rejects a collision."],
+    ["Move a directory", "Select a projected folder and rename/move it in external.directory. A descendant-set token rejects stale work; every affected path commits atomically."],
+    ["Re-upload", "The top action chooses replacement bytes for the same row. Name/path/id and existing references remain; byte receipt and material revision change."],
     ["Delete", "Inspector requires confirmation and zero represented usage; it retires semantics, rechecks revision/usage, hard-deletes the row, then removes only an unshared blob."],
-    ["Review semantics", "Inspector shows exact/material eligibility, generation, generated-summary provenance, uncertainty, failure, and refresh—not an editor for the summary."],
+    ["Review semantics", "Unified text/code and data may expose a generated summary; standalone images explain direct visual embedding; unsupported files show no semantic-summary section."],
+    ["Add dataset context", "CSV/TSV exposes authored context in the Inspector. Saving or clearing it advances revision, retires prior material output, and queues the revised profile."],
     ["Download", "Inspector uses the authorized attachment response with range and integrity headers. No inline quick look and no format-specific Icarus editor is implemented."],
     ["Add Findings later", "The library gains a finding adapter and external.finding lens; singleton identity, Content shell, Context, selection, and routing stay unchanged."]
   ] as const;
@@ -138,8 +170,8 @@
         <h1>One library. No file editors.</h1>
         <p class="hero-copy">
           External is a project-level stable tab like Overview and Templates. Content is an inventory;
-          Context explains the library; selecting a row drives a file Inspector where people rename, delete,
-          download, and review semantic products. Files do not become workspace tabs of their own.
+          Context provides Overview and durable History; selecting a row drives a compact file or directory
+          Inspector for lifecycle management. Files do not become workspace tabs of their own.
         </p>
       </div>
       <aside class="hero-aside">
@@ -156,8 +188,8 @@
       <div class="section-head">
         <div><span class="kicker">Interactive reference specimen</span><h2>Library in Content, management in Inspector</h2></div>
         <p>
-          Select any file row, switch the library-wide Context rail, edit a local display name, inspect the
-          generated semantic summary, or exercise the delete confirmation. This specimen communicates the
+          Select a file or projected folder, switch between Table and Directory views, open durable History,
+          edit local name/path, exercise re-upload, or inspect the conditional material section. This specimen communicates the
           panel contract; the same lifecycle is executable in the production surface at <code>/app/dev-project</code>.
         </p>
       </div>
@@ -165,6 +197,16 @@
       <div class="callout">
         <AlertTriangle size={18} strokeWidth={1.8} aria-hidden="true" />
         <div><h3>The file ID is the selected subject—not the tab target.</h3><p>Opening External from the top bar may inspect nothing. A launcher or upload receipt may focus a real row; stale or deleted focus must resolve back to the empty Inspector safely.</p></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <div><span class="kicker">Directory view</span><h2>A folder is a view that can still be managed safely</h2></div>
+        <p>There is no second directory entity to synchronize. The capability projects folders from file paths, gives each projection an opaque descendant-set token, and rewrites a subtree only after stale and collision checks.</p>
+      </div>
+      <div class="diagram-frame">
+        <MermaidDiagram source={directoryDiagram} label="Virtual External directory projection and atomic move" caption="The folder Inspector changes every descendant path in one externalFiles-table persistence boundary; the native bytes never move." minHeight="34rem" />
       </div>
     </section>
 

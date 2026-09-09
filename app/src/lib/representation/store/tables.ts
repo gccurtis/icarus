@@ -28,7 +28,7 @@ import type {
   ConnectorConfiguration,
   ConnectorCredential,
 } from "$representation/data/types/external/connector";
-import type { ExternalFileOrigin, FileSubkind } from "$representation/data/types/external/file";
+import type { ExternalFileOrigin, StoredFileSubkind } from "$representation/data/types/external/file";
 import type { FindingSource } from "$representation/data/types/investigation/finding";
 import type {
   HypothesisAssessment,
@@ -476,13 +476,15 @@ export type ExternalFileFields = {
   originalName?: string;
   relativePath?: string;
   mediaType: string;
-  subkind: FileSubkind;
+  subkind: StoredFileSubkind;
   storageId: Id<"_storage">;
   hash: string;
   size?: number;
   origin: ExternalFileOrigin;
   createdBy: Actor;
   updatedBy?: Actor;
+  /** Optional user-authored meaning, primarily for datasets with weak intrinsic labels. */
+  semanticContext?: string;
   revision?: number;
   updatedAt: number;
 };

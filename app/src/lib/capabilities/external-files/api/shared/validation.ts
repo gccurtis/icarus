@@ -1,9 +1,17 @@
 import type {
   ReadExternalFileInput,
+  RelocateExternalDirectoryInput,
+  RelocateExternalFileInput,
   RemoveExternalFileInput,
+  ReuploadExternalFileInput,
   RenameExternalFileInput,
+  UpdateExternalFileContextInput,
   UploadExternalFilesInput
 } from "$capabilities/external-files/types/external-files";
+import {
+  normalizeExternalDirectoryPath,
+  normalizeExternalRelativePath
+} from "$representation/data/behavior/external/file";
 
 const record = (value: unknown, procedure: string): Record<string, unknown> => {
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
@@ -32,7 +40,7 @@ export const externalFileId = (value: unknown, procedure: string): string => {
   return value;
 };
 
-const baseRevision = (value: unknown, procedure: string): number => {
+export const baseRevision = (value: unknown, procedure: string): number => {
   if (!Number.isSafeInteger(value) || (value as number) < 0) {
     throw new Error(`external-files/${procedure}: baseRevision is a non-negative safe integer`);
   }
@@ -88,6 +96,76 @@ const fileValue = (value: unknown): value is File => {
     typeof file.size === "number" &&
     typeof file.arrayBuffer === "function"
   );
+};
+
+export const validateRelocateExternalFile = (input: unknown): RelocateExternalFileInput => {
+  const candidate = record(input, "relocate");
+  only(candidate, ["externalFileId", "baseRevision", "relativePath"], "relocate");
+  if (typeof candidate.relativePath !== "string") {
+    throw new Error("external-files/relocate: relativePath is text");
+  }
+  return {
+    externalFileId: externalFileId(candidate.externalFileId, "relocate"),
+    baseRevision: baseRevision(candidate.baseRevision, "relocate"),
+    relativePath: normalizeExternalRelativePath(candidate.relativePath)
+  };
+};
+
+export const validateRelocateExternalDirectory = (
+  input: unknown
+): RelocateExternalDirectoryInput => {
+  const candidate = record(input, "relocate-directory");
+  only(candidate, ["path", "destination", "baseRevisionToken"], "relocate-directory");
+  if (typeof candidate.path !== "string" || typeof candidate.destination !== "string") {
+    throw new Error("external-files/relocate-directory: paths are text");
+  }
+  if (
+    typeof candidate.baseRevisionToken !== "string" ||
+    !/^[a-f0-9]{64}$/.test(candidate.baseRevisionToken)
+  ) {
+    throw new Error("external-files/relocate-directory: baseRevisionToken is canonical");
+  }
+  return {
+    path: normalizeExternalDirectoryPath(candidate.path),
+    destination: normalizeExternalDirectoryPath(candidate.destination),
+    baseRevisionToken: candidate.baseRevisionToken
+  };
+};
+
+export const validateReuploadExternalFile = (input: unknown): ReuploadExternalFileInput => {
+  const candidate = record(input, "reupload");
+  only(candidate, ["id", "externalFileId", "baseRevision", "file"], "reupload");
+  if (candidate.id !== "reupload") {
+    throw new Error("external-files/reupload: id is reupload");
+  }
+  if (!fileValue(candidate.file)) {
+    throw new Error("external-files/reupload: file is one File");
+  }
+  return {
+    id: "reupload",
+    externalFileId: externalFileId(candidate.externalFileId, "reupload"),
+    baseRevision: baseRevision(candidate.baseRevision, "reupload"),
+    file: candidate.file
+  };
+};
+
+export const validateUpdateExternalFileContext = (
+  input: unknown
+): UpdateExternalFileContextInput => {
+  const candidate = record(input, "update-context");
+  only(candidate, ["externalFileId", "baseRevision", "semanticContext"], "update-context");
+  if (typeof candidate.semanticContext !== "string") {
+    throw new Error("external-files/update-context: semanticContext is text");
+  }
+  const semanticContext = candidate.semanticContext.trim().normalize("NFC");
+  if (semanticContext.length > 4_000 || semanticContext.includes("\u0000")) {
+    throw new Error("external-files/update-context: semanticContext is at most 4,000 characters");
+  }
+  return {
+    externalFileId: externalFileId(candidate.externalFileId, "update-context"),
+    baseRevision: baseRevision(candidate.baseRevision, "update-context"),
+    semanticContext
+  };
 };
 
 export const validateUploadExternalFiles = (input: unknown): UploadExternalFilesInput => {

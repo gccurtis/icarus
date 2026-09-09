@@ -13,7 +13,6 @@ import CornerDownRight from "@lucide/svelte/icons/corner-down-right";
 import FileText from "@lucide/svelte/icons/file-text";
 import Footprints from "@lucide/svelte/icons/footprints";
 import Grid3x3 from "@lucide/svelte/icons/grid-3x3";
-import FolderCog from "@lucide/svelte/icons/folder-cog";
 import Group from "@lucide/svelte/icons/group";
 import Hash from "@lucide/svelte/icons/hash";
 import Info from "@lucide/svelte/icons/info";
@@ -87,9 +86,8 @@ export const RAIL_ENTRIES: Record<ContextView, RailEntry> = {
   "project-overview.variables": { label: "Variables", icon: Hash },
   "analysis.variables": { label: "Variables", icon: Hash },
   "document-editor.variables": { label: "Variables", icon: Hash },
-  "external.activity": { label: "Activity", icon: Activity },
+  "external.history": { label: "History", icon: ClockArrowLeft },
   "external.overview": { label: "Overview", icon: Info },
-  "external.policy": { label: "Policy", icon: FolderCog },
   "slide-deck-editor.variables": { label: "Variables", icon: Hash },
   "spreadsheet-editor.variables": { label: "Variables", icon: Hash },
   "project-overview.variables-create": { label: "Create variable", icon: Plus },

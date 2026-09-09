@@ -28,7 +28,7 @@ export const OPENING: Record<Category, Opening> = {
   external: {
     content: "external.library",
     context: "external.overview",
-    rail: ["external.overview", "external.activity", "external.policy"]
+    rail: ["external.overview", "external.history"]
   },
 
   research: {

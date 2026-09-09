@@ -3,193 +3,215 @@ import type { FormatContract } from "$development-views/external-files-reference
 /** Claims below are projections of production code on work/external-files. */
 export const CURRENT_TRUTHS = [
   {
-    area: "Native bytes",
+    area: "Ownership boundary",
     state: "exists",
-    contract: "materialContent.put hashes bounded bytes, publishes a complete sibling atomically, deduplicates by SHA-256, and returns a verified receipt. Reads re-hash; remove is idempotent.",
-    evidence: "model/server/material-content/{definition,types}.ts"
+    contract: "External reads the admitted File, derives SHA-256, byte size, storage id, media type, and file subkind, then delegates an already-complete descriptor to its storage model. The semantic material lane receives only an authorized resource reference and never manages upload bytes.",
+    evidence: "external-files/api/shared/native-file.ts"
+  },
+  {
+    area: "Native repository",
+    state: "exists",
+    contract: "externalFileStorage defensively verifies External's descriptor, atomically publishes a complete content-addressed value, deduplicates it, re-hashes every read, and removes it idempotently. A read-only legacy directory preserves old rows.",
+    evidence: "model/server/external-file-storage/{definition,types}.ts"
   },
   {
     area: "Resource record",
     state: "exists",
-    contract: "externalFiles owns project identity, mutable local name, immutable original name/path/hash/storage receipt, actual size, origin, actors, revision, and update time. New fields remain optional for old rows.",
-    evidence: "representation/store/tables.ts"
+    contract: "externalFiles owns project identity, current name/path, immutable original upload name, native receipt, classification, optional dataset context, actors, timestamps, and compare-and-swap revision. New fields remain readable alongside legacy rows.",
+    evidence: "representation/store/tables.ts + external-files/api/shared/rows.ts"
   },
   {
     area: "Admission",
     state: "exists",
-    contract: "The External capability scopes before reading, strictly admits each row, quarantines corrupt metadata, resolves safe actor/origin labels, and never returns internal filesystem paths.",
-    evidence: "capabilities/external-files/api/shared/rows.ts"
+    contract: "Every read and mutation scopes first, strictly admits represented metadata, quarantines malformed rows, normalizes paths, and returns safe actor/origin projections without exposing a filesystem location or accepting browser-authored authority.",
+    evidence: "external-files/api/shared/{rows,validation}.ts"
   },
   {
-    area: "Ingestion",
+    area: "Ingestion + re-upload",
     state: "exists",
-    contract: "Two multipart remote forms accept files or a browser directory, enforce count/byte/path limits, return mixed outcomes, preserve normalized relative paths, and compensate for unclaimed blobs best-effort.",
-    evidence: "external/content/library.svelte + upload-external-files.ts"
+    contract: "Bounded multipart forms ingest files or browser directories with mixed outcomes. Re-upload retains the same externalFile id/name/path, replaces its native receipt, advances revision, retires old semantic output, queues supported new meaning, and reclaims the prior unshared blob.",
+    evidence: "external-files/api/{upload-external-files,reupload-external-file}"
+  },
+  {
+    area: "Virtual directories",
+    state: "exists",
+    contract: "Folders are projected from canonical relative paths. File moves use row revision CAS; directory rename/move uses an opaque descendant-set token, collision preflight, and one atomic externalFiles-table replacement for all descendants.",
+    evidence: "external-files/api/{shared/directories,relocate-external-*}"
   },
   {
     area: "Stable library",
     state: "exists",
-    contract: "External is a permanent category singleton like Overview and Templates. Search, filters, sorting, upload receipts, context views, and selection live in the one library—not in per-file tabs.",
-    evidence: "workspace/starting.ts + app-views/categories/external"
+    contract: "External is a permanent category singleton like Overview and Templates. Its Content surface has Table and Directory views, search/filter/sort, upload receipts, and selection; files and folders never become editor tabs.",
+    evidence: "external/content/library.svelte + workspace/{starting,opening}.ts"
   },
   {
-    area: "File manager",
+    area: "Inspector manager",
     state: "exists",
-    contract: "external.file Inspector owns local rename, attachment download, confirmed reference-safe deletion, provenance, native integrity, usage, semantic status, deterministic profiles, generated summaries, and manual refresh.",
-    evidence: "external/inspector/file.svelte"
+    contract: "external.file owns top-level Rename, Re-upload, Download, Move, and Delete actions; double-click name/path editing; Details; reference count/list; dataset context; and semantic review only when a material representation can exist. It shows neither hashes nor editor controls.",
+    evidence: "external/inspector/{file,directory}.svelte"
   },
   {
-    area: "Semantic overlay",
+    area: "History",
     state: "exists",
-    contract: "Text can queue exact spans; recognized code, CSV/TSV, and images can independently queue material profiles and generated descriptions. Unsupported types create no failing job. Status and retirement are public capability seams.",
-    evidence: "semantic-overlay/{enqueue,status,retire} procedures"
+    contract: "The History Context view reads durable, project-scoped activity rows for upload, re-upload, rename, move, context update, and deletion. Deleted resources remain visible in history because events do not depend on the current file row.",
+    evidence: "external-files/api/{shared/history,read-external-file-history}"
+  },
+  {
+    area: "Semantic delegation",
+    state: "exists",
+    contract: "External files never enter the exact lane. Plain text and source code share externalFile::code and delegate verified UTF-8 to one bounded code-profile material; datasets use a separate profile and can add authored context. A standalone image delegates its original pixels directly to visual embedding and creates no generated summary. Other families create no semantic job.",
+    evidence: "semantic-overlay/api/shared/{resource-ref,material-resource,material-facets}.ts"
   },
   {
     area: "Queue execution",
     state: "partial",
-    contract: "Upload and rename enqueue durable/coalesced jobs without waiting. This branch has no always-on worker: the Inspector Refresh action invokes bounded processing inline; queued work otherwise awaits an external host.",
-    evidence: "external/procedures/library.svelte.ts"
+    contract: "Upload, rename, move, context change, and re-upload establish a revision and queue recoverable semantic work without waiting. This branch provides queue processing and backfill seams but no always-on deployment host, and the Inspector deliberately has no manual semantic-refresh control.",
+    evidence: "semantic-overlay/api/{enqueue-semantic-sync,backfill-semantic-overlay}"
+  },
+  {
+    area: "Native response",
+    state: "exists",
+    contract: "A project-authorized route serves verified bytes as an attachment with response bounds, one-range support, SHA-256 ETag, private/no-cache, nosniff, sandbox CSP, and escaped ASCII/UTF-8 filenames.",
+    evidence: "routes/app/[project]/external-files/[externalFile]/+server.ts"
   }
 ] as const;
 
 export const FORMAT_CONTRACTS: readonly FormatContract[] = [
   {
-    family: "Plain text",
-    examples: ".txt · .md · text/*",
-    classification: "text",
-    content: "Native attachment plus metadata and semantic state in the file Inspector",
-    exactLane: "Eligible — strict UTF-8, 5 MB worker ceiling",
-    materialLane: "Unsupported unless codeLanguage recognizes the file",
+    family: "Plain text + source code",
+    examples: ".txt · .md · .xml · .ts · .py · .go · .sql · .json",
+    classification: "code",
+    content: "Native attachment plus one bounded code-profile material and a generated summary when descriptor processing is enabled",
+    exactLane: "Unsupported — textual files are not split into exact spans",
+    materialLane: "Eligible — language, line count, code structure when present, and a separately embedded generated descriptor",
     v1: "complete",
-    caution: "Upload is valid before the exact worker runs; invalid UTF-8 fails the lane, not the file"
-  },
-  {
-    family: "Recognized source code",
-    examples: ".ts · .py · .go · .sql",
-    classification: "text for the built-in extension set",
-    content: "Native attachment, exact status, code profile, and optional generated description",
-    exactLane: "Eligible when classified text",
-    materialLane: "Eligible — language, imports, symbols, line profile",
-    v1: "complete",
-    caution: "The file classifier and codeLanguage have distinct extension sets; unsupported mismatches remain honestly managed-only"
+    caution: "All text/code shares externalFile::code. Strict UTF-8 decoding happens inside the worker; invalid text fails semantics without invalidating the stored file. The descriptor sees at most a 64,000-byte head/tail excerpt"
   },
   {
     family: "Delimited data",
     examples: ".csv · .tsv",
     classification: "data",
-    content: "Native attachment, sampled schema/profile, and optional generated description",
+    content: "Native attachment, editable authored dataset context, bounded profile, and optional generated material summary",
     exactLane: "Unsupported",
-    materialLane: "Eligible — bounded CSV/TSV profile",
+    materialLane: "Eligible — sampled rows, headers, column types, warnings, and authored context",
     v1: "complete",
-    caution: "The semantic parser—not upload—enforces row, column, and cell sampling bounds"
+    caution: "A dataset can be ambiguous; the Inspector explicitly lets a person add or clear context and then queues a new revision"
   },
   {
     family: "Image",
     examples: ".png · .jpg · .gif · .webp",
-    classification: "image when signature or media type supports it",
-    content: "Native attachment, deterministic image facets, optional generated description",
+    classification: "image from signature or admitted media type",
+    content: "Native attachment plus one direct visual representation in the material lane",
     exactLane: "Unsupported",
-    materialLane: "Eligible — native pixels included only at or below 5 MB",
+    materialLane: "Eligible — original pixels are embedded directly",
     v1: "complete",
-    caution: "There is deliberately no inline preview or image editor in External"
+    caution: "Standalone External images have no text facets or generated semantic summary; External still provides no preview/editor"
   },
   {
     family: "PDF",
     examples: ".pdf",
     classification: "unknown with application/pdf retained",
-    content: "Managed metadata and forced attachment download",
+    content: "Stored manager record and forced attachment download",
     exactLane: "Unsupported",
     materialLane: "Unsupported",
     v1: "stored",
-    caution: "PDF signature is sniffed, but no text extraction or viewer is claimed"
+    caution: "The PDF signature is detected, but there is no extraction, preview, OCR, or viewer claim"
   },
   {
-    family: "Office / archives",
-    examples: ".xlsx · .docx · .zip",
-    classification: "data for spreadsheet extensions; otherwise unknown",
-    content: "Managed metadata and forced attachment download",
+    family: "Office / archive",
+    examples: ".xlsx · .docx · .pptx · .zip",
+    classification: "unknown; sanitized supplied MIME may be retained",
+    content: "Stored manager record and forced attachment download",
     exactLane: "Unsupported",
-    materialLane: "Unsupported unless the bytes are actual CSV/TSV or recognized code/image",
+    materialLane: "Unsupported",
     v1: "stored",
-    caution: "ZIP signature retains a supplied media type; it does not inspect container members"
+    caution: "ZIP signatures are recognized only as a container; members are never expanded or executed"
   },
   {
     family: "Audio / video",
     examples: ".mp3 · .wav · .mp4 · .webm",
     classification: "audio / video from admitted media type",
-    content: "Managed metadata and forced attachment download",
+    content: "Stored manager record and forced attachment download",
     exactLane: "Unsupported",
     materialLane: "Unsupported",
     v1: "stored",
-    caution: "No playback surface or transcription is implemented"
+    caution: "There is no playback, waveform, thumbnail, transcription, or generated summary"
   },
   {
     family: "Unknown binary",
     examples: "everything else",
     classification: "unknown",
-    content: "Managed metadata and forced attachment download",
+    content: "Stored manager record and forced attachment download",
     exactLane: "Unsupported",
     materialLane: "Unsupported",
     v1: "stored",
-    caution: "All content is attachment-only with nosniff and sandbox CSP"
+    caution: "Unknown never means rejected solely for format; it means retained without entry into the semantic overlay"
   }
 ] as const;
 
 export const INGESTION_STEPS = [
   {
     id: "01",
-    owner: "External content view",
+    owner: "External Content view",
     call: "uploadExternalFiles.for(files | folder)",
-    input: "multipart File[] plus parallel relativePaths[]",
-    output: "one remote-form submission",
-    rule: "webkitRelativePath is copied before submit. Directory structure is metadata; there is no directory row or server path traversal."
+    input: "multipart File[] plus indexed relativePaths[]",
+    output: "one enhanced remote-form submission",
+    rule: "Folder paths are copied from webkitRelativePath into real hidden controls aligned by index; setting the remote field programmatically is not sufficient for browser serialization."
   },
   {
     id: "02",
     owner: "External-files capability",
     call: "requireScope → validateUploadExternalFiles",
-    input: "untrusted form fields",
-    output: "scoped File objects and server configuration",
-    rule: "The client supplies no project, actor, storage ID, hash, subkind, revision, or update time."
+    input: "untrusted form fields and browser File hints",
+    output: "scoped candidates plus configured bounds",
+    rule: "The client supplies no project, actor, storage id, hash, subkind, revision, timestamps, or trusted byte size."
   },
   {
     id: "03",
-    owner: "Representation behavior",
-    call: "normalizeExternalRelativePath + mediaTypeForExternalBytes",
-    input: "name/path, declared size/type, received bytes",
-    output: "canonical NFC path, local name, media type, subkind",
-    rule: "Reject absolute roots, drive roots, NUL, dot/empty segments, duplicates, and oversized UTF-8 paths; sniff PNG/JPEG/GIF/PDF/ZIP signatures before extension fallback."
+    owner: "External-files capability",
+    call: "normalize path → read bounded bytes",
+    input: "File.name, File.size, File.type, relative-path hint",
+    output: "canonical path and complete bounded Uint8Array",
+    rule: "Reject roots, traversal, NUL, empty segments, duplicate canonical paths, oversized UTF-8 paths, declared/received size disagreement, and batch/file ceilings."
   },
   {
     id: "04",
-    owner: "materialContent model",
-    call: "put({ bytes, maxBytes })",
-    input: "fully buffered, bounded Uint8Array",
-    output: "{ storageId, hash, size, reused }",
-    rule: "SHA-256 names the blob. A complete temporary sibling is atomically renamed, and an existing hash is re-read and verified."
+    owner: "External-files capability",
+    call: "admitNativeFile(bytes, MIME hint, name)",
+    input: "received bytes plus non-authoritative browser hints",
+    output: "{ storageId, hash, size, mediaType, subkind }",
+    rule: "External calculates SHA-256 and size, checks signatures first, canonicalizes known textual/code and data extensions, and keeps unknown content safely downloadable."
   },
   {
     id: "05",
-    owner: "External-files capability",
-    call: "path retry check → store.create(externalFiles)",
-    input: "trusted classification and native receipt",
-    output: "new row, reused row, conflict, or per-file failure",
-    rule: "Same project path + same hash is idempotent reuse; same path + different hash is rejected. Distinct paths may share the blob."
+    owner: "External-file storage model",
+    call: "externalFileStorage.put(admitted descriptor + bytes)",
+    input: "External-derived descriptor and complete byte value",
+    output: "verified { storageId, hash, size, reused } receipt",
+    rule: "The repository verifies every descriptor field, atomically renames a complete sibling, deduplicates by hash, and never classifies or authors file metadata."
   },
   {
     id: "06",
-    owner: "Semantic-overlay capability",
-    call: "enqueueSemanticSync",
-    input: "committed externalFile::<subkind> reference",
-    output: "zero, one, or two coalesced lane jobs",
-    rule: "Exact and material eligibility are independent. Enqueue errors are returned on the receipt and never roll back a valid file."
+    owner: "External-files capability",
+    call: "path policy → store.create(externalFiles) → history",
+    input: "trusted native receipt, classification, scope, and path",
+    output: "new row, idempotently reused row, path conflict, or per-file failure",
+    rule: "Same project path plus same hash reuses; different bytes at an occupied path reject and point users to Re-upload. Metadata failure triggers best-effort orphan compensation."
   },
   {
     id: "07",
+    owner: "Semantic-overlay capability",
+    call: "enqueueSemanticSync(committed ref)",
+    input: "externalFile::code (plain text or source), ::data, ::image, or unsupported family",
+    output: "one coalesced material job or no job",
+    rule: "Only unified text/code, CSV/TSV, and image are eligible. External exact work is impossible. Enqueue failure is reported but never rolls back a usable file."
+  },
+  {
+    id: "08",
     owner: "Workspace + External view",
-    call: "refresh queries → inspectExternalFile",
-    input: "successful upload/reuse outcome",
-    output: "External singleton focused on the file Inspector",
-    rule: "The upload result becomes the latest visible receipt; selection changes focus and Inspector only—never tab identity."
+    call: "refresh projections → inspectExternalFile",
+    input: "mixed upload receipt",
+    output: "same External singleton with a successful file selected",
+    rule: "The receipt stays visible; selection changes focus and Inspector only. Directory mode and folder metadata never create editor tabs or native server directories."
   }
 ] as const;

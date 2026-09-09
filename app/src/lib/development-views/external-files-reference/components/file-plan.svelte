@@ -22,10 +22,11 @@
     classDef proof fill:#201f35,stroke:#806fa9,color:#f6ebe2
 
     CFG["external-files.yaml<br/>actual runtime bounds"]:::source
-    MAT["material-content<br/>put · read · remove"]:::owner
+    NATIVE["External native admission<br/>derive descriptor"]:::owner
+    STORAGE["externalFileStorage<br/>verify · publish · read · remove"]:::owner
     REP["externalFiles row<br/>path + provenance + CAS"]:::owner
-    CAP["external-files capability<br/>lifecycle authority"]:::owner
-    SEM["semantic-overlay<br/>enqueue · status · retire"]:::owner
+    CAP["external-files capability<br/>lifecycle + paths + History"]:::owner
+    SEM["semantic-overlay<br/>material enqueue · status · retire"]:::owner
     ROUTE["authorized attachment route<br/>ranges + ETag"]:::source
     GEN["category-keys output<br/>external.library"]:::generated
     VIEW["External singleton<br/>Content · Context · Inspector"]:::source
@@ -35,14 +36,15 @@
     REF["five reference pages<br/>implementation truth"]:::proof
 
     CFG --> CAP
-    MAT --> CAP
+    NATIVE --> STORAGE
+    STORAGE --> CAP
     REP --> CAP
     CAP --> SEM
     CAP --> ROUTE
     CAP --> VIEW
     GEN --> VIEW
     INDEX --> VIEW
-    MAT --> UNIT
+    STORAGE --> UNIT
     CAP --> UNIT
     SEM --> UNIT
     ROUTE --> BROWSER
@@ -51,20 +53,20 @@
     BROWSER --> REF`;
 
   const verification = [
-    ["Native content", "put/read/reuse/bounds/removal and hash mismatch rejection", "Vitest filesystem integration", "passing"],
+    ["Native content", "External descriptor derivation plus storage verification, reuse, legacy lookup, bounds, removal, and hash/size/id mismatch rejection", "Vitest filesystem integration", "passing"],
     ["Representation", "relative-path traversal, roots, separators, signatures, and fallback media types", "Vitest unit", "passing"],
-    ["External capability", "upload, MIME sniff, idempotent path retry, conflict, project scope, rename CAS/provenance, in-use delete, semantic cleanup, blob reclaim", "Vitest capability integration", "passing"],
-    ["Semantic overlay", "independent exact/material eligibility, public status, code profile/description, retirement and idempotency", "Vitest integration", "passing"],
-    ["Real workspace", "permanent External tab, multipart upload, verified attachment response, rename, original provenance, delete, and no editor tab", "Playwright Chromium", "passing"],
+    ["External capability", "upload/reuse/conflict, re-upload identity, file/directory moves, History, dataset context, scope, CAS, reference-safe delete and blob reclaim", "Vitest capability integration", "passing"],
+    ["Semantic overlay", "no External exact lane, code/data material profiles, direct original-image vector, status, retirement and backfill", "Vitest integration", "passing"],
+    ["Real workspace", "code lifecycle, same-URL re-upload, durable History, a copied 33-file source directory, atomic folder rename, and exact 8 MiB download", "Playwright Chromium", "passing"],
     ["Reference suite", "Mermaid rendering, interactive specimen, file filtering, compact viewport, implementation lessons", "Playwright Chromium", "covered in final validation"]
   ] as const;
 
   const settled = [
     ["Identity", "A file row is the project resource; SHA-256 is the shared immutable native-blob identity."],
-    ["Replacement", "There is no replace operation. A different hash at the same relative path is rejected; explicit succession remains outside this slice."],
+    ["Replacement", "Upload rejects a different hash at an occupied path. Explicit Re-upload updates the same file id, keeps references, replaces its native receipt, and advances revision."],
     ["Deletion", "Deletion is a revision-aware hard delete after usage refusal and semantic retirement, followed by immediate unshared-blob reclamation."],
     ["Serving", "Every supported format is attachment-only. The route never provides an inline viewer and never serializes bytes through a remote query."],
-    ["Workers", "Upload and rename enqueue only. Manual Inspector refresh processes at most the matching exact/material work inline; no daemon was invented."],
+    ["Workers", "External mutations enqueue supported material work. There is no manual Inspector refresh and no always-on worker host is deployed by this branch."],
     ["Compatibility", "New metadata fields are optional in the table shape; strict read admission supplies safe fallbacks for pre-feature rows."],
     ["Findings", "Deferred. The External category is shaped to accept another manager adapter later, but no Findings UI or mutation was implemented."]
   ] as const;
@@ -103,9 +105,9 @@
       <aside class="hero-aside">
         <header><span>Branch footprint</span><span>{IMPLEMENTATION_FILES.length} entries</span></header>
         <div>
-          <h2>{count("created")} created · {count("modified")} modified · {count("generated")} generated</h2>
+          <h2>{count("created")} created · {count("modified")} modified · {count("removed")} removed · {count("generated")} generated</h2>
           <p>The ledger includes production, tests, live routes, browser isolation, and the reference suite itself.</p>
-          <div class="status-pills"><span class="status-pill create">created</span><span class="status-pill extend">modified</span><span class="status-pill exists">generated</span></div>
+          <div class="status-pills"><span class="status-pill create">created</span><span class="status-pill extend">modified</span><span class="status-pill defer">removed</span><span class="status-pill exists">generated</span></div>
         </div>
       </aside>
     </header>
@@ -120,19 +122,19 @@
 
     <section class="section">
       <div class="section-head">
-        <div><span class="kicker">Review ledger</span><h2>Every create, modify, and generate</h2></div>
+        <div><span class="kicker">Review ledger</span><h2>Every create, modify, remove, and generate</h2></div>
         <p>Filter by architectural layer, git action, path, owner, or purpose. This list is the concrete review surface for <code>work/external-files</code>.</p>
       </div>
       <div class="ledger-tools">
         <label><Filter size={14} aria-hidden="true" /><span class="sr-only">Search implementation files</span><input bind:value={query} placeholder="Filter path, owner, or reason" /></label>
         <select bind:value={layer} aria-label="Filter by architectural layer"><option value="all">All layers</option>{#each IMPLEMENTATION_LAYERS as value}<option value={value}>{value}</option>{/each}</select>
-        <select bind:value={action} aria-label="Filter by change action"><option value="all">All actions</option><option value="created">Created</option><option value="modified">Modified</option><option value="generated">Generated</option></select>
+        <select bind:value={action} aria-label="Filter by change action"><option value="all">All actions</option><option value="created">Created</option><option value="modified">Modified</option><option value="removed">Removed</option><option value="generated">Generated</option></select>
         <strong>{visibleFiles.length} entries</strong>
       </div>
       <div class="file-ledger">
         {#each visibleFiles as file, index (file.path)}
           <article>
-            <div class="file-marker"><span class="action {file.action}">{file.action === "created" ? "A" : file.action === "modified" ? "M" : "G"}</span><span>{file.layer}</span></div>
+            <div class="file-marker"><span class="action {file.action}">{file.action === "created" ? "A" : file.action === "modified" ? "M" : file.action === "removed" ? "D" : "G"}</span><span>{file.layer}</span></div>
             <div class="file-path"><code>{file.path}</code><small>{file.owner}</small></div>
             <p>{file.reason}</p>
             <span class="obligation">{String(index + 1).padStart(2, "0")}</span>
@@ -177,7 +179,7 @@
   .file-ledger article:first-child { border-top: 0; }
   .file-marker { display: flex; align-items: center; gap: .4rem; color: var(--ink-3); font: 600 7px/1 var(--token-font-mono); text-transform: uppercase; }
   .action { display: grid; width: 1.3rem; height: 1.3rem; place-items: center; border-radius: 3px; font-weight: 750; }
-  .action.created { background: var(--success-soft); color: var(--success); }.action.modified { background: var(--attention-soft); color: var(--attention); }.action.generated { background: var(--interactive-soft); color: var(--interactive); }
+  .action.created { background: var(--success-soft); color: var(--success); }.action.modified { background: var(--attention-soft); color: var(--attention); }.action.removed { background: var(--danger-soft); color: var(--danger); }.action.generated { background: var(--interactive-soft); color: var(--interactive); }
   .file-path { display: grid; min-width: 0; gap: .25rem; }
   .file-path code { color: var(--ink); font-size: 8px; overflow-wrap: anywhere; }
   .file-path small { color: var(--ink-3); font-size: 7px; }

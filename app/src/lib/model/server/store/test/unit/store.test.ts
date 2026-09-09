@@ -176,6 +176,7 @@ describe("remove", () => {
     const remaining = store.read("projects");
     expect(remaining?.kind === "table" && remaining.rows.map((row) => row._id)).toEqual([ids[1]]);
   });
+
 });
 
 describe("transaction", () => {

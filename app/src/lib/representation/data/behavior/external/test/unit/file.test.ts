@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  externalCodeLanguage,
   externalFileNameIn,
   fileSubkindFor,
   mediaTypeForExternalBytes,
@@ -32,6 +33,23 @@ describe("external file admission", () => {
       ),
     ).toBe("text/plain");
     expect(fileSubkindFor("text/csv", "facts.csv")).toBe("data");
+    expect(fileSubkindFor("text/markdown", "notes.md")).toBe("code");
+    expect(fileSubkindFor("text/plain", "README")).toBe("code");
+    expect(externalCodeLanguage("notes.md", "text/markdown")).toBe("markdown");
+    expect(externalCodeLanguage("README", "text/plain")).toBe("plain-text");
     expect(fileSubkindFor("application/pdf", "brief.pdf")).toBe("unknown");
+  });
+
+  it("canonicalizes recognized text extensions before arbitrary browser MIME hints", () => {
+    expect(mediaTypeForExternalBytes(
+      new TextEncoder().encode("export const answer = 42"),
+      "text/vnd.trolltech.linguist",
+      "answer.ts"
+    )).toBe("text/typescript");
+    expect(mediaTypeForExternalBytes(
+      new TextEncoder().encode("region\tvalue"),
+      "application/octet-stream",
+      "data.tsv"
+    )).toBe("text/tab-separated-values");
   });
 });

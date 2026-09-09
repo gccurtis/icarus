@@ -19,40 +19,45 @@
     classDef async fill:#201f35,stroke:#806fa9,color:#f6ebe2
 
     U["File picker<br/>files or directory"]:::new
-    F["external-files capability<br/>scope · validate · coordinate"]:::new
-    B["materialContent.put<br/>hash · atomic publish"]:::existing
-    R[("externalFiles row<br/>project identity + provenance")]:::existing
-    Q[("semantic queues<br/>exact + material")]:::existing
+    subgraph EXT["External capability — authoritative umbrella"]
+      F["admission<br/>scope · limits · hostile input"]:::new
+      D["native descriptor<br/>hash · size · MIME · subkind"]:::new
+      B["externalFileStorage<br/>verify · publish · read · remove"]:::existing
+      R[("externalFiles row<br/>identity · path · provenance · revision")]:::existing
+      H[("durable History<br/>upload · move · rename · replace · delete")]:::existing
+      DIR["virtual directories<br/>projection + atomic descendant move"]:::existing
+    end
+    Q[("semantic material queue<br/>supported types only")]:::async
     W["External singleton<br/>one manager tab per project"]:::existing
     C["Content<br/>upload + searchable library"]:::existing
-    X["Context<br/>overview + activity + policy"]:::existing
-    I["Inspector<br/>selected file management"]:::existing
+    X["Context<br/>overview + history"]:::existing
+    I["Inspector<br/>file or directory manager"]:::existing
     G["Findings<br/>deferred managed kind"]:::extend
-    E["exact text worker<br/>text/code spans"]:::existing
-    M["material worker<br/>CSV/code/image profiles"]:::existing
+    M["material worker<br/>code profile · data profile<br/>or direct image vector"]:::existing
 
-    U -->|remote form| F
-    F -->|trusted bytes| B
-    B -->|receipt| R
-    R -. post-commit .-> Q
+    U -->|multipart candidates| F -->|bounded bytes| D
+    D -->|complete descriptor| B
+    B -->|verified receipt| R
+    R --> H
+    R --> DIR
+    R -. committed ref .-> Q
     R -->|open target| W
     W --> C
     W --> X
     W --> I
     G -. future adapter .-> C
-    Q -. asynchronous .-> E
     Q -. asynchronous .-> M`;
 
   const contracts = [
     {
       icon: FileArchive,
-      title: "Bytes stay immutable",
-      text: "A local display rename changes metadata, never the hash, original upload name, or source bytes. Replacing content creates a successor identity."
+      title: "External owns native identity",
+      text: "External derives hash, size, storage id, MIME family, and subkind. externalFileStorage only verifies and persists that descriptor; material processing never performs general byte management."
     },
     {
       icon: Database,
-      title: "Folders are paths, not rows",
-      text: "A selected directory becomes a bounded batch. Each file carries a normalized project-relative path; synthetic folder groupings are projections."
+      title: "Folders are mutable projections",
+      text: "A selected directory becomes a bounded batch. Each file owns a canonical relative path; folder rows are projected and an entire subtree moves through one collision-checked table commit."
     },
     {
       icon: PanelsTopLeft,
@@ -61,8 +66,8 @@
     },
     {
       icon: Workflow,
-      title: "Semantics are reviewable derivatives",
-      text: "Upload success does not wait for embeddings or descriptions. The file Inspector reports coverage and generated summaries with provenance and retry state."
+      title: "Material receives admitted meaning",
+      text: "Plain text and source code share one code-profile material; CSV/TSV gets one data material; standalone images become one native visual vector. Other media stays managed without semantic rows."
     }
   ] as const;
 
@@ -72,14 +77,14 @@
       href: "/demo/external-files/ingestion",
       title: "Ingestion",
       summary: "The browser-to-bytes-to-row transaction boundary, classification, semantic routing, security, and recovery behavior.",
-      detail: "3 diagrams · 8 format contracts"
+      detail: "4 diagrams · 7 format contracts · re-upload"
     },
     {
       index: "02",
       href: "/demo/external-files/stable-tab",
       title: "External library",
-      summary: "An interactive singleton manager specimen: searchable file inventory in Content, library-wide Context, and rename/delete/semantic review in Inspector.",
-      detail: "4 file rows · 3 panels"
+      summary: "An interactive singleton manager specimen: table/directory inventory in Content, Overview/History in Context, and compact file or folder management in Inspector.",
+      detail: "4 file rows · 2 views · 3 panels"
     },
     {
       index: "03",
@@ -93,7 +98,7 @@
       href: "/demo/external-files/implementation",
       title: "Implementation learnings",
       summary: "What live implementation changed: multipart transport, proxy identity, capability ownership, cleanup, semantic eligibility, and explicit concessions.",
-      detail: "4 diagrams · 9 discoveries"
+      detail: "4 diagrams · 15 discoveries"
     }
   ] as const;
 
@@ -103,15 +108,20 @@
     ["Tab target", "category only", "external is in SINGLETONS and has the same permanent identity as Overview and Templates."],
     ["Selected item", "focus + Selection", "The selected externalFileId restores the row and drives external.file in Inspector without becoming the tab identity."],
     ["Managed kinds", "files now · findings later", "The category is intentionally broader than the first adapter and does not promise editors for either kind."],
-    ["Byte address", "SHA-256 hash", "The current material reader already verifies this identity."],
-    ["Folder model", "relativePath metadata", "Avoids an unnecessary directory entity while preserving hierarchy."],
+    ["Byte owner", "External", "The capability derives hash, size, media type, and subkind; material receives a trusted reference rather than owning general bytes."],
+    ["Byte repository", "externalFileStorage", "A narrowly named model verifies and persists External-owned descriptors; it also reads legacy material-directory blobs for compatibility."],
+    ["Folder model", "relativePath projection", "Directories remain views over rows, but files and whole subtrees can move through revision-aware capability procedures."],
     ["Upload transport", "remote form", "SvelteKit remote forms carry File/File[]; command payloads are not a binary boundary."],
     ["Read transport", "authorized response route", "Verified/ranged bytes are never serialized through metadata queries; every format downloads as an attachment."],
-    ["Local rename", "mutable display name", "Preserve the original upload name and immutable byte identity as provenance."],
+    ["Launcher behavior", "search all · recent one", "Project Overview and New Tab search focus files in External. New Tab Recent keeps only the newest file card so a batch cannot monopolize the shelf."],
+    ["Local rename", "name + path leaf", "Double-click or Rename updates the local name and path leaf, preserves original upload name/bytes, advances revision, and requeues eligible meaning."],
+    ["Path change", "move", "Double-click Path or use Move; file CAS protects one row and directory tokens protect an atomic subtree replacement."],
     ["Delete", "usage-safe hard delete", "Retire semantic products, recheck revision and usage, remove the row, then immediately reclaim only an unshared hash."],
-    ["Replacement", "not implemented", "A different hash at the same normalized project path is rejected; no file can silently change byte identity."],
-    ["Parsing", "bounded supported adapters", "Exact UTF-8, code, CSV/TSV, and image adapters exist; PDF, Office, OCR, audio, and video extraction do not."],
-    ["Worker timing", "post-commit durable jobs", "Semantic failure cannot roll back upload; Inspector Refresh is the current bounded execution host."]
+    ["Re-upload", "same resource identity", "Re-upload is the explicit update path: keep id/name/path, replace native receipt, increment revision, retire old meaning, queue supported new meaning, and reclaim an unshared predecessor blob."],
+    ["Semantic routing", "material only", "External exact ingestion is disabled. Plain text and source code share externalFile::code; CSV/TSV uses a bounded data profile; images use their original visual embedding; all other types stay outside the overlay."],
+    ["Dataset context", "optional authored text", "CSV/TSV Inspector context is revisioned input to material meaning because tabular values can be ambiguous without human framing."],
+    ["Context views", "Overview + History", "There is no Policy page. History is a durable event projection and survives deletion of the managed file."],
+    ["Worker timing", "post-commit durable jobs", "Semantic failure cannot roll back ingestion; queue processors and backfill are real seams, but this branch does not deploy an always-on worker or expose manual Inspector refresh."]
   ] as const;
 </script>
 
@@ -123,11 +133,11 @@
       <div>
         <a class="back" href="/demo">← All demos</a>
         <span class="kicker">External files · implemented architecture</span>
-        <h1>Bytes are now a stable resource.</h1>
+        <h1>External owns files; materials receive meaning.</h1>
         <p class="hero-copy">
           This suite explains the implemented path from a local file or browser directory to verified
-          native storage, project metadata, recoverable semantic products, and a persistent three-panel
-          manager. Claims are grounded in the branch’s production code and executable tests.
+          External-owned native storage, project metadata, recoverable material representations, and a
+          persistent three-panel manager. Claims are grounded in production code and executable tests.
         </p>
       </div>
 
@@ -150,10 +160,11 @@
 
     <section class="section">
       <div class="section-head">
-        <div><span class="kicker">Whole system</span><h2>One library, selected subjects, two semantic lanes</h2></div>
+          <div><span class="kicker">Whole system</span><h2>One library, one byte owner, one eligible semantic lane</h2></div>
         <p>
-          The capability turns untrusted browser input into a trusted byte receipt and project row.
-          The singleton library and independently eligible semantic lanes consume that committed identity.
+          The capability turns untrusted browser input into a trusted native descriptor, byte receipt, and
+          project row. The singleton library consumes that identity; the material lane receives only supported
+          committed references.
           Solid edges are implemented ownership; dotted edges are queued or explicitly deferred.
         </p>
       </div>
@@ -168,8 +179,8 @@
       <div class="callout success">
         <CheckCircle2 size={18} strokeWidth={1.8} aria-hidden="true" />
         <div>
-          <h3>The critical consistency boundary is metadata creation, not semantic publication.</h3>
-          <p>Once verified bytes and their row exist, the file can open and download. Queue processing may be late, fail safely, or be retried by backfill.</p>
+          <h3>The usable-file boundary is a verified native receipt plus its External row.</h3>
+          <p>Once both exist, the file can be managed and downloaded. Material work is downstream, may be late or fail safely, and can be recovered through queue processing or backfill.</p>
         </div>
       </div>
     </section>
@@ -198,7 +209,7 @@
         <AlertTriangle size={18} strokeWidth={1.8} aria-hidden="true" />
         <div>
           <h3>A stored preview is not the same promise as parsed knowledge.</h3>
-          <p>PDF, Office, audio, and video can be safely stored and downloaded. They are not viewed, parsed, transcribed, or represented as searchable knowledge.</p>
+          <p>PDF, Office, audio, video, and unknown binaries can be safely stored and downloaded. They are not viewed, parsed, transcribed, or represented as searchable knowledge in this implementation. Plain text is intentionally part of the unified code-profile material family.</p>
         </div>
       </div>
     </section>

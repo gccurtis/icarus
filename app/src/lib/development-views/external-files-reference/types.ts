@@ -4,7 +4,7 @@ export type ImplementationState = "exists" | "extend" | "create" | "defer";
 
 export type ImplementationFile = {
   path: string;
-  action: "created" | "modified" | "generated";
+  action: "created" | "modified" | "generated" | "removed";
   layer: "configuration" | "model" | "representation" | "capability" | "semantic" | "workspace" | "transport" | "reference" | "verification";
   owner: string;
   reason: string;

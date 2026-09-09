@@ -31,11 +31,12 @@ test.afterEach(async ({}, testInfo: TestInfo) => {
 test("external-files overview describes the implemented architecture", async ({ page }) => {
   await page.goto("/demo/external-files", { waitUntil: "networkidle" });
 
-  await expect(page.getByRole("heading", { level: 1 })).toContainText("Bytes are now a stable resource");
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("External owns files");
   await expect(page.locator(".mermaid-output svg")).toHaveCount(1, { timeout: 20_000 });
   await expect(page.locator(".diagram-error")).toHaveCount(0);
   await expect(page.locator(".truth-grid")).toContainText("External is a permanent category singleton");
-  await expect(page.locator(".truth-grid")).toContainText("materialContent.put");
+  await expect(page.locator(".truth-grid")).toContainText("External reads the admitted File");
+  await expect(page.locator(".truth-grid")).toContainText("standalone image");
   await expect(page.locator('.page-grid a[href="/demo/external-files/ingestion"]')).toHaveAttribute(
     "href",
     "/demo/external-files/ingestion"
@@ -46,12 +47,14 @@ test("external-files overview describes the implemented architecture", async ({ 
 test("ingestion reference renders sequence, routing, and recovery contracts", async ({ page }) => {
   await page.goto("/demo/external-files/ingestion", { waitUntil: "networkidle" });
 
-  await expect(page.getByRole("heading", { level: 1 })).toContainText("Commit bytes before meaning");
-  await expect(page.locator(".mermaid-output svg")).toHaveCount(3, { timeout: 20_000 });
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("External admits bytes");
+  await expect(page.locator(".mermaid-output svg")).toHaveCount(4, { timeout: 20_000 });
   await expect(page.locator(".diagram-error")).toHaveCount(0);
-  await expect(page.locator(".steps")).toContainText("materialContent");
+  await expect(page.locator(".steps")).toContainText("admitNativeFile");
+  await expect(page.locator(".steps")).toContainText("externalFileStorage");
   await expect(page.locator(".formats")).toContainText("PDF");
-  await expect(page.locator(".formats")).toContainText("no text extraction or viewer is claimed");
+  await expect(page.locator(".formats")).toContainText("no extraction, preview, OCR, or viewer claim");
+  await expect(page.locator(".formats")).toContainText("original pixels are embedded directly");
   await expect(page.getByRole("heading", { name: "Treat every uploaded byte as hostile" })).toBeVisible();
 });
 
@@ -59,7 +62,7 @@ test("External singleton manages selected files without opening file tabs", asyn
   await page.goto("/demo/external-files/stable-tab", { waitUntil: "networkidle" });
 
   await expect(page.getByRole("heading", { level: 1 })).toContainText("One library. No file editors");
-  await expect(page.locator(".mermaid-output svg")).toHaveCount(2, { timeout: 20_000 });
+  await expect(page.locator(".mermaid-output svg")).toHaveCount(3, { timeout: 20_000 });
   await expect(page.locator(".diagram-error")).toHaveCount(0);
   await expect(page.getByRole("tab", { name: "External" })).toHaveAttribute("aria-selected", "true");
   await expect(page.locator(".resource-table")).toContainText("quarterly-revenue.csv");
@@ -68,22 +71,27 @@ test("External singleton manages selected files without opening file tabs", asyn
   await page.getByRole("button", { name: "Inspect pricing-engine.ts" }).click();
   await expect(page.locator(".inspector-panel")).toContainText("text/typescript");
   await expect(page.locator(".inspector-panel")).toContainText("Pricing utilities");
-  await page.getByRole("button", { name: "Rename in Icarus" }).click();
+  await page.locator(".inspector-panel").getByRole("button", { name: "Rename", exact: true }).click();
   await page.getByLabel("Name in Icarus").fill("pricing-rules.ts");
   await page.getByRole("button", { name: "Save", exact: true }).click();
   await expect(page.locator(".resource-table")).toContainText("pricing-rules.ts");
   await expect(page.locator(".inspector-panel")).toContainText("pricing-engine.ts");
 
-  await page.getByRole("button", { name: "Activity" }).click();
-  await expect(page.locator(".context-panel")).toContainText("RECENT ROWS");
+  await page.getByRole("button", { name: "History" }).click();
+  await expect(page.locator(".context-panel")).toContainText("DURABLE FILE HISTORY");
+  await expect(page.locator(".context-panel")).toContainText("Renamed pricing-engine.ts");
   await page.getByRole("button", { name: "Inspect vendor-contract.pdf" }).click();
   await expect(page.locator(".inspector-panel")).toContainText("application/pdf");
-  await expect(page.locator(".inspector-panel")).toContainText("No semantic summary is available");
-  await page.getByRole("button", { name: "Delete from project" }).click();
+  await expect(page.locator(".inspector-panel")).not.toContainText("MATERIAL SUMMARY");
+  await page.locator(".inspector-panel").getByRole("button", { name: "Delete", exact: true }).click();
   await page.getByRole("button", { name: "Delete file", exact: true }).click();
   await expect(page.locator(".resource-table")).not.toContainText("vendor-contract.pdf");
-  await expect(page.getByRole("status")).toContainText("removed from the project library");
+  await expect(page.getByRole("status")).toContainText("History entry remains");
   await expect(page.getByRole("tab", { name: /vendor-contract\.pdf/ })).toHaveCount(0);
+
+  await page.getByRole("button", { name: "Directory", exact: true }).click();
+  await page.getByRole("button", { name: "Inspect imports folder" }).click();
+  await expect(page.locator(".inspector-panel")).toContainText("Virtual directory");
   await page.locator(".workspace-specimen").screenshot({ path: "/tmp/external-files-stable-tab.png" });
 });
 
@@ -93,7 +101,9 @@ test("file map exposes the exact implementation ledger", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 1 })).toContainText("These are the files that changed");
   await expect(page.locator(".mermaid-output svg")).toHaveCount(1, { timeout: 20_000 });
   await expect(page.locator(".diagram-error")).toHaveCount(0);
-  await expect(page.locator(".file-ledger")).toContainText("material-content/definition.ts");
+  await expect(page.locator(".file-ledger")).toContainText("external-file-storage/definition.ts");
+  await expect(page.locator(".file-ledger")).toContainText("Retired material-content model");
+  await expect(page.locator(".file-ledger")).toContainText("relocate-external-directory");
 
   await page.getByPlaceholder("Filter path, owner, or reason").fill("category-keys");
   await expect(page.locator(".file-ledger article")).toHaveCount(2);
@@ -109,6 +119,8 @@ test("implementation page records live discoveries and final concessions", async
   await expect(page.locator(".mermaid-output svg")).toHaveCount(4, { timeout: 20_000 });
   await expect(page.locator(".diagram-error")).toHaveCount(0);
   await expect(page.locator(".learning-grid")).toContainText("multipart/form-data");
+  await expect(page.locator(".learning-grid")).toContainText("indexed hidden relativePaths");
+  await expect(page.locator(".learning-grid")).toContainText("externalFileStorage");
   await expect(page.locator(".learning-grid")).toContainText("Status-bar name resolution");
   await expect(page.locator(".concession-grid")).toContainText("No cross-store transaction");
   await expect(page.getByText("The name shown to the user is External")).toBeVisible();

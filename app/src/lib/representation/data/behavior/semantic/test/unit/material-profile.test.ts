@@ -62,9 +62,9 @@ describe("bounded semantic material profilers", () => {
     });
   });
 
-  it("does not misclassify ordinary prose media types as source code", () => {
-    expect(codeLanguage("notes.md", "text/markdown")).toBe("unknown");
-    expect(codeLanguage("notes.txt", "text/plain")).toBe("unknown");
+  it("uses one code-profile language boundary for prose and source text", () => {
+    expect(codeLanguage("notes.md", "text/markdown")).toBe("markdown");
+    expect(codeLanguage("notes.txt", "text/plain")).toBe("plain-text");
     expect(codeLanguage("worker.ts", "text/plain")).toBe("typescript");
     expect(codeLanguage("config.json", "application/json")).toBe("json");
   });

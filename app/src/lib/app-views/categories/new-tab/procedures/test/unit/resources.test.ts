@@ -5,6 +5,7 @@ import {
   recentsOf,
   resourcesOf
 } from "$app-views/categories/new-tab/procedures/resources";
+import { openingFor } from "$app-views/categories/new-tab/procedures/opening";
 import type { ProjectResourceIndex } from "$capabilities/project-resources/index.remote";
 
 const MINUTE = 60_000;
@@ -86,6 +87,26 @@ describe("New tab represented resources", () => {
       "slideDecks:newer",
       "documents:middle"
     ]);
+  });
+
+  it("collapses manager-only files in Recent while keeping every file searchable", () => {
+    const withFiles: ProjectResourceIndex = {
+      resources: [
+        ...index.resources,
+        { id: "externalFiles:a", kind: "file", name: "a.txt", updatedAt: NOW, updatedByName: "Ana" },
+        { id: "externalFiles:b", kind: "file", name: "b.txt", updatedAt: NOW - 1, updatedByName: "Ana" }
+      ],
+      unavailable: []
+    };
+
+    expect(resourcesOf(withFiles, NOW).filter((row) => row.kind === "file")).toHaveLength(2);
+    expect(recentsOf(withFiles, NOW).filter((row) => row.kind === "file")).toEqual([
+      expect.objectContaining({ id: "externalFiles:a" })
+    ]);
+    expect(openingFor("file", "externalFiles:a")).toEqual({
+      category: "external",
+      focus: "externalFiles:a"
+    });
   });
 
   it("phrases timestamps across the launcher's compact ranges", () => {

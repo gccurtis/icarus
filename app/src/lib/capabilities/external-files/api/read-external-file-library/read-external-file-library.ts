@@ -2,6 +2,7 @@ import { requireScope } from "$runtime/server/scope.server";
 import { serverModel } from "$runtime/server/start.server";
 
 import { externalFilesLimits } from "$capabilities/external-files/api/shared/configuration";
+import { externalDirectoriesIn } from "$capabilities/external-files/api/shared/directories";
 import { externalFilesIn } from "$capabilities/external-files/api/shared/rows";
 import type { ReadExternalFileLibraryResult } from "$capabilities/external-files/types/external-files";
 
@@ -13,6 +14,7 @@ export const readExternalFileLibrary = async (): Promise<ReadExternalFileLibrary
     files: files
       .map(({ item }) => item)
       .sort((left, right) => right.updatedAt - left.updatedAt || left.name.localeCompare(right.name)),
+    directories: externalDirectoriesIn(files),
     unavailable,
     limits: externalFilesLimits(model.configuration)
   };

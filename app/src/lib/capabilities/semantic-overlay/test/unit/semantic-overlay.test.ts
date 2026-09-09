@@ -95,7 +95,7 @@ const state = vi.hoisted(() => {
         };
       }
     },
-    materialContent: {
+    externalFileStorage: {
       read: async () => {
         calls.nativeReads += 1;
         throw new Error("enqueue must not read native material content");
@@ -230,7 +230,7 @@ test("external-file enqueue records only material work without reading native by
   );
 });
 
-test("plain UTF-8 external-file enqueue schedules exact text without inventing a material job", async () => {
+test("legacy plain-text rows canonicalize to the code material lane only", async () => {
   seed("externalFiles", {
     _id: "externalFiles:notes",
     _creationTime: 2,
@@ -249,14 +249,12 @@ test("plain UTF-8 external-file enqueue schedules exact text without inventing a
     ref: { kind: "externalFile", id: "externalFiles:notes" }
   });
 
-  assert.deepEqual(result?.ref, { kind: "externalFile::text", id: "externalFiles:notes" });
-  assert.ok(result?.jobId !== undefined);
-  assert.equal(result?.materialJobId, undefined);
+  assert.equal(result?.jobId, undefined);
+  assert.ok(result?.materialJobId !== undefined);
+  assert.deepEqual(result?.ref, { kind: "externalFile::code", id: "externalFiles:notes" });
   assert.equal(state.calls.nativeReads, 0);
-  assert.deepEqual(
-    (state.tables.get("semanticSyncJobs") ?? []).map((row) => row.ref),
-    [{ kind: "externalFile::text", id: "externalFiles:notes" }]
-  );
+  assert.equal((state.tables.get("semanticSyncJobs") ?? []).length, 0);
+  assert.equal((state.tables.get("semanticMaterialJobs") ?? []).length, 1);
 });
 
 const seedCurrentCodeFile = (): void => {
@@ -267,7 +265,7 @@ const seedCurrentCodeFile = (): void => {
     projectId: "projects:1",
     name: "pricing.ts",
     mediaType: "text/typescript",
-    subkind: "text",
+    subkind: "code",
     storageId: "storage:code",
     hash,
     origin: { kind: "upload" },
@@ -302,11 +300,11 @@ const seedCurrentCodeFile = (): void => {
     name: "pricing.ts",
     source: {
       kind: "externalFile",
-      ref: { kind: "externalFile::text", id: "externalFiles:10" },
+      ref: { kind: "externalFile::code", id: "externalFiles:10" },
       fileId: "externalFiles:10",
       hash,
       mediaType: "text/typescript",
-      subkind: "text"
+      subkind: "code"
     },
     profile: {
       kind: "code",
@@ -351,15 +349,15 @@ const seedCurrentCodeFile = (): void => {
   });
 };
 
-test("semantic status projects exact coverage, material profile, and summary provenance", async () => {
+test("semantic status projects code only through the material lane", async () => {
   seedCurrentCodeFile();
 
   const status = await readSemanticStatus({
-    ref: { kind: "externalFile::text", id: "externalFiles:10" }
+    ref: { kind: "externalFile::code", id: "externalFiles:10" }
   });
 
-  assert.equal(status?.exact.state, "current");
-  assert.equal(status?.exact.objectCount, 1);
+  assert.equal(status?.exact.state, "unsupported");
+  assert.equal(status?.exact.objectCount, 0);
   assert.equal(status?.material.state, "current");
   assert.equal(status?.material.kind, "code");
   assert.equal(status?.material.descriptor?.summary, "Calculates plan pricing.");

@@ -34,7 +34,22 @@ export type ExternalFileLibraryItem = {
   readonly createdByName: string;
   readonly updatedByName: string;
   readonly origin: ExternalFileOriginView;
+  readonly semanticContext?: string;
   readonly semantic: ExternalFileSemanticStatus;
+};
+
+export type ExternalDirectoryItem = {
+  /** Empty string is the virtual project root. */
+  readonly path: string;
+  readonly name: string;
+  readonly parentPath: string | null;
+  readonly directFileCount: number;
+  readonly descendantFileCount: number;
+  readonly directDirectoryCount: number;
+  readonly knownBytes: number;
+  readonly unknownSizeCount: number;
+  /** Opaque compare-and-swap token over descendant ids, revisions, and paths. */
+  readonly revisionToken: string;
 };
 
 export type ExternalFileUnavailable = {
@@ -46,8 +61,32 @@ export type ExternalFileUnavailable = {
 
 export type ReadExternalFileLibraryResult = {
   readonly files: readonly ExternalFileLibraryItem[];
+  readonly directories: readonly ExternalDirectoryItem[];
   readonly unavailable: readonly ExternalFileUnavailable[];
   readonly limits: ExternalFilesLimits;
+};
+
+export type ExternalFileHistoryEvent =
+  | "uploaded"
+  | "re-uploaded"
+  | "renamed"
+  | "moved"
+  | "deleted"
+  | "context-updated";
+
+export type ExternalFileHistoryEntry = {
+  readonly id: string;
+  readonly externalFileId: string;
+  readonly event: ExternalFileHistoryEvent;
+  readonly name: string;
+  readonly relativePath: string;
+  readonly actorName: string;
+  readonly at: number;
+  readonly detail?: string;
+};
+
+export type ReadExternalFileHistoryResult = {
+  readonly entries: readonly ExternalFileHistoryEntry[];
 };
 
 export type ExternalFileUsageKind =
@@ -142,13 +181,93 @@ export type RenameExternalFileResult =
       readonly accepted: true;
       readonly externalFileId: string;
       readonly revision: number;
+      readonly relativePath: string;
       readonly semantic: "queued" | "unsupported" | "enqueue-failed";
       readonly semanticDetail?: string;
     }
   | {
       readonly accepted: false;
       readonly externalFileId: string;
-      readonly reason: "not-found" | "stale" | "corrupt";
+      readonly reason: "not-found" | "stale" | "corrupt" | "path-conflict" | "cleanup-failed";
+      readonly revision: number | null;
+      readonly detail: string;
+    };
+
+export type RelocateExternalFileInput = {
+  readonly externalFileId: string;
+  readonly baseRevision: number;
+  /** Complete destination path, including the file-name leaf. */
+  readonly relativePath: string;
+};
+
+export type RelocateExternalFileResult = RenameExternalFileResult;
+
+export type RelocateExternalDirectoryInput = {
+  readonly path: string;
+  readonly destination: string;
+  readonly baseRevisionToken: string;
+};
+
+export type RelocateExternalDirectoryResult =
+  | {
+      readonly accepted: true;
+      readonly path: string;
+      readonly destination: string;
+      readonly movedFiles: number;
+      readonly externalFileIds: readonly string[];
+    }
+  | {
+      readonly accepted: false;
+      readonly path: string;
+      readonly reason: "not-found" | "stale" | "path-conflict" | "invalid-destination";
+      readonly detail: string;
+    };
+
+export type ReuploadExternalFileInput = {
+  readonly id: "reupload";
+  readonly externalFileId: string;
+  readonly baseRevision: number;
+  readonly file: File;
+};
+
+export type ReuploadExternalFileResult =
+  | {
+      readonly accepted: true;
+      readonly externalFileId: string;
+      readonly revision: number;
+      readonly size: number;
+      readonly mediaType: string;
+      readonly subkind: FileSubkind;
+      readonly semantic: "queued" | "unsupported" | "enqueue-failed";
+      readonly semanticDetail?: string;
+      readonly previousBlob: "removed" | "shared" | "already-missing" | "retained-after-error";
+    }
+  | {
+      readonly accepted: false;
+      readonly externalFileId: string;
+      readonly reason: "not-found" | "stale" | "corrupt" | "file-too-large" | "read-failed" | "storage-failed" | "cleanup-failed" | "store-failed";
+      readonly revision: number | null;
+      readonly detail: string;
+    };
+
+export type UpdateExternalFileContextInput = {
+  readonly externalFileId: string;
+  readonly baseRevision: number;
+  readonly semanticContext: string;
+};
+
+export type UpdateExternalFileContextResult =
+  | {
+      readonly accepted: true;
+      readonly externalFileId: string;
+      readonly revision: number;
+      readonly semantic: "queued" | "unsupported" | "enqueue-failed";
+      readonly semanticDetail?: string;
+    }
+  | {
+      readonly accepted: false;
+      readonly externalFileId: string;
+      readonly reason: "not-found" | "stale" | "corrupt" | "cleanup-failed";
       readonly revision: number | null;
       readonly detail: string;
     };

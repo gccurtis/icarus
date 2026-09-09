@@ -28,3 +28,5 @@ semanticOverlay:
     # Deterministic identity/profile facets always publish. Structured model
     # descriptions add recall for significant materials and are content-addressed.
     generateDescriptors: true
+    # External image bytes are ephemeral provider input and never enter a row.
+    maxNativeImageBytes: 50000000

@@ -132,7 +132,7 @@ const fixture = (
         };
       }
     },
-    materialContent: {
+    externalFileStorage: {
       read: async () => {
         nativeReads += 1;
         return nativeImage === "missing" ? undefined : new Uint8Array([137, 80, 78, 71]);
@@ -365,5 +365,75 @@ describe("semantic material synchronization", () => {
       (held.store.read("semanticMaterialPlacements") as unknown as { rows: unknown[] }).rows.length,
       0
     );
+  });
+
+  it("embeds a standalone External image directly without text facets or a generated summary", async () => {
+    const store = defineStore({});
+    const hash = "b".repeat(64);
+    const externalId = store.create("externalFiles", {
+      projectId,
+      name: "diagram.png",
+      relativePath: "diagrams/diagram.png",
+      originalName: "diagram.png",
+      mediaType: "image/png",
+      subkind: "image",
+      size: 12,
+      storageId: `_storage:${hash}`,
+      hash,
+      origin: { kind: "upload" },
+      createdBy: { kind: "system" },
+      updatedAt: 1,
+      revision: 0
+    });
+    let visualCalls = 0;
+    const model = {
+      store,
+      configuration: {
+        get: (key: string): unknown => ({
+          "semanticOverlay.materials.generateDescriptors": true,
+          "semanticOverlay.materials.maxNativeImageBytes": 50_000_000,
+          "semanticOverlay.index.branchFactor": 3,
+          "semanticOverlay.index.leafSize": 2,
+          "semanticOverlay.index.maxIterations": 16,
+          "semanticOverlay.index.convergenceTolerance": 0.000001,
+          "semanticOverlay.index.candidateMultiplier": 2
+        })[key]
+      },
+      externalFileStorage: {
+        read: async () => new Uint8Array([137, 80, 78, 71, 1, 2, 3, 4, 5, 6, 7, 8])
+      },
+      embedding: {
+        space: { provider: "test", model: "visual", dimensions: 2 },
+        passages: async () => { throw new Error("standalone image must not make text vectors"); },
+        image: async () => {
+          visualCalls += 1;
+          return {
+            value: [1, 0],
+            usage: { operation: "imageVector", api: "test", model: "visual", requestCount: 1, inputItems: 1 }
+          };
+        }
+      },
+      intelligence: {
+        completeWithTools: async () => { throw new Error("standalone image must not be summarized"); }
+      },
+      observability: { logger: { info: () => {}, warn: () => {} } }
+    } as unknown as ServerModel;
+
+    const result = await syncSemanticMaterialsFor(model, projectId, {
+      kind: "externalFile::image",
+      id: externalId
+    });
+
+    assert.equal(result.outcome, "published");
+    assert.equal(visualCalls, 1);
+    assert.deepEqual(
+      (store.read("semanticObjects") as unknown as { rows: Array<{ facet: string }> }).rows
+        .map((row) => row.facet),
+      ["nativeVisual"]
+    );
+    const material = (store.read("semanticMaterials") as unknown as {
+      rows: Array<{ descriptor?: unknown }>;
+    }).rows[0];
+    assert.equal(material.descriptor, undefined);
   });
 });

@@ -190,6 +190,8 @@ export type MaterialSeed = {
   profile: MaterialProfile;
   context: MaterialAuthoredContext;
   userDescription?: string;
+  /** Verified UTF-8 source available only while generating a descriptor; never persisted. */
+  sourceText?: string;
   /** Ephemeral provider input. Publication never stores base64 bytes. */
   nativeImage?: NativeImageInput;
 };

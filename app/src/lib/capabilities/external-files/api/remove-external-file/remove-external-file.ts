@@ -2,6 +2,7 @@ import { requireScope } from "$runtime/server/scope.server";
 import { serverModel } from "$runtime/server/start.server";
 import { retireSemanticResource } from "$capabilities/semantic-overlay";
 
+import { recordExternalFileHistory } from "$capabilities/external-files/api/shared/history";
 import { externalFileIn, rowsOf } from "$capabilities/external-files/api/shared/rows";
 import { externalFileUsage } from "$capabilities/external-files/api/shared/usage";
 import { validateRemoveExternalFile } from "$capabilities/external-files/api/remove-external-file/validate-remove-external-file";
@@ -11,7 +12,7 @@ export const removeExternalFile = async (input: unknown): Promise<RemoveExternal
   const scope = await requireScope();
   const asked = validateRemoveExternalFile(input);
   const model = serverModel();
-  const releaseStorage = await model.materialContent.acquireMutation();
+  const releaseStorage = await model.externalFileStorage.acquireMutation();
   try {
     const found = externalFileIn(model, scope, asked.externalFileId);
     if (found === null) return {
@@ -91,6 +92,13 @@ export const removeExternalFile = async (input: unknown): Promise<RemoveExternal
     };
 
     model.store.removeRows("externalFiles", [current.row._id]);
+    recordExternalFileHistory(model, scope, {
+      event: "deleted",
+      externalFileId: current.row._id,
+      name: current.item.name,
+      relativePath: current.item.relativePath,
+      detail: `${current.item.size ?? "unknown"} bytes · revision ${current.item.revision + 1}`
+    });
     const shared = rowsOf(model.store, "externalFiles").some((row) => row.hash === current.row.hash);
     if (shared) return {
       accepted: true,
@@ -99,9 +107,10 @@ export const removeExternalFile = async (input: unknown): Promise<RemoveExternal
       blob: "shared"
     };
     try {
-      const removed = await model.materialContent.remove({
+      const removed = await model.externalFileStorage.remove({
         storageId: current.row.storageId,
-        hash: current.row.hash
+        hash: current.row.hash,
+        ...(current.item.size === null ? {} : { size: current.item.size })
       });
       return {
         accepted: true,
