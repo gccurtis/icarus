@@ -1,8 +1,8 @@
 # project resources
 
 A scoped, metadata-only index for the resources Project Overview can list:
-documents, slide decks, spreadsheets, research threads, and findings. External
-files and the retired connection resource are intentionally absent; connected
+documents, slide decks, spreadsheets, research threads, external files, and
+findings. The retired connection resource is intentionally absent; connected
 sources are represented as connectors.
 
 `readProjectResourceIndex` resolves its project from the request route, filters

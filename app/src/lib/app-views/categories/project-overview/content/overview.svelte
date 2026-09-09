@@ -190,6 +190,9 @@
     const target = openingFor(row);
     if (target) {
       view.open(target);
+      if (row.kind === "file") {
+        view.inspect("external.file", { kind: "external-file", id: row.id });
+      }
       return;
     }
 

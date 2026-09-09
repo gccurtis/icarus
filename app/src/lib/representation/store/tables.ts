@@ -470,13 +470,20 @@ export type Connector = Row<"connectors"> & ConnectorFields;
 
 export type ExternalFileFields = {
   projectId: Id<"projects">;
+  /** Mutable project-local display name. */
   name: string;
+  /** Compatibility fields are optional because persisted stores predate ingestion. */
+  originalName?: string;
+  relativePath?: string;
   mediaType: string;
   subkind: FileSubkind;
   storageId: Id<"_storage">;
   hash: string;
+  size?: number;
   origin: ExternalFileOrigin;
   createdBy: Actor;
+  updatedBy?: Actor;
+  revision?: number;
   updatedAt: number;
 };
 export type ExternalFile = Row<"externalFiles"> & ExternalFileFields;

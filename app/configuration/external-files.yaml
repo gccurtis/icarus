@@ -1,0 +1,10 @@
+# External ingestion and byte-response bounds. Remote forms buffer File values
+# before the capability receives them, so these are intentionally conservative.
+externalFiles:
+  upload:
+    maxFiles: 100
+    maxFileBytes: 50000000
+    maxBatchBytes: 250000000
+    maxPathBytes: 512
+  download:
+    maxResponseBytes: 50000000

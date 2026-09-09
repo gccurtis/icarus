@@ -22,7 +22,7 @@ export const enqueueSemanticSync = async (
   const textTarget = readSemanticSyncTargetFor(model.store, projectId, asked.ref);
   const materialTarget = readMaterialSyncTargetFor(model, projectId, asked.ref);
   const revision = textTarget?.revision ?? materialTarget?.revision;
-  if (revision === undefined || materialTarget === undefined) return null;
+  if (revision === undefined) return null;
   const ref = textTarget?.ref ?? materialTarget?.ref ?? asked.ref;
   const queued = model.store.transaction((unit) => {
     const atomic = semanticUnitModel(model, unit);

@@ -53,4 +53,57 @@ describe("native semantic material content", () => {
       /does not match/
     );
   });
+
+  it("atomically publishes bounded bytes and reuses their stable address", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "icarus-material-content-"));
+    directories.push(directory);
+    const content = defineMaterialContent(directory);
+    const bytes = new TextEncoder().encode("stable native bytes");
+    const hash = createHash("sha256").update(bytes).digest("hex");
+
+    const created = await content.put({ bytes, maxBytes: bytes.byteLength });
+    assert.deepEqual(created, {
+      storageId: `_storage:${hash}`,
+      hash,
+      size: bytes.byteLength,
+      reused: false
+    });
+    assert.deepEqual(await content.read(created), bytes);
+
+    const reused = await content.put({ bytes, maxBytes: bytes.byteLength });
+    assert.equal(reused.reused, true);
+    assert.equal(reused.storageId, created.storageId);
+    assert.equal(reused.hash, created.hash);
+  });
+
+  it("enforces the caller ceiling and removes an addressed value idempotently", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "icarus-material-content-"));
+    directories.push(directory);
+    const content = defineMaterialContent(directory);
+    const bytes = new TextEncoder().encode("too large");
+
+    await assert.rejects(() => content.put({ bytes, maxBytes: 3 }), /exceeds the 3 byte limit/);
+    const created = await content.put({ bytes });
+    assert.equal(await content.remove(created), true);
+    assert.equal(await content.remove(created), false);
+    assert.equal(await content.read(created), undefined);
+  });
+
+  it("serializes represented-row and native-content mutation leases", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "icarus-material-content-"));
+    directories.push(directory);
+    const content = defineMaterialContent(directory);
+    const releaseFirst = await content.acquireMutation();
+    let secondEntered = false;
+    const second = content.acquireMutation().then((release) => {
+      secondEntered = true;
+      release();
+    });
+
+    await Promise.resolve();
+    assert.equal(secondEntered, false);
+    releaseFirst();
+    await second;
+    assert.equal(secondEntered, true);
+  });
 });

@@ -133,7 +133,7 @@ describe("submitting", () => {
 
     assert.deepEqual(
       (snapshots()[0].tabs as Row[]).map((tab) => tab.id),
-      ["project-overview", "agents", "templates"]
+      ["project-overview", "agents", "templates", "external"]
     );
   });
 

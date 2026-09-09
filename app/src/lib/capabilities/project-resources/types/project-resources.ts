@@ -3,6 +3,7 @@ export type ProjectResourceKind =
   | "slides"
   | "spreadsheet"
   | "research"
+  | "file"
   | "finding";
 
 /** A closed metadata projection; represented bodies and storage fields never cross this door. */

@@ -1,4 +1,5 @@
 import type { TableName } from "$representation/store/tables";
+import { readExternalFile } from "$capabilities/external-files/index.remote";
 import { readTemplate } from "$capabilities/templates/index.remote";
 import { readStore } from "$model/client/workspace-state";
 
@@ -16,6 +17,7 @@ const NAMED_FIELD: Partial<Record<TableName, string | null>> = {
   derivedOutputs: null,
   documentChangeSets: null,
   documents: "title",
+  externalFiles: null,
   documentSnapshots: null,
   findings: "title",
   formulas: null,
@@ -54,6 +56,7 @@ const KIND_WORD: Partial<Record<TableName, string>> = {
   agentTasks: "Task",
   connectors: "Connector",
   documents: "Document",
+  externalFiles: "File",
   findings: "Finding",
   hypotheses: "Hypothesis",
   personas: "Persona",
@@ -75,6 +78,14 @@ const tableOf = (id: string): TableName | undefined => {
 /** What a row is called. `…` while the read is out, `Disconnected` when it answers empty. */
 export const nameOf = (id: string): string => {
   const table = tableOf(id);
+  if (table === "externalFiles") {
+    const answer = readExternalFile({ externalFileId: id });
+    if (!answer.ready) return "…";
+
+    const found = answer.current;
+    if (found === null) return "Disconnected";
+    return "unavailable" in found ? "Unavailable file" : found.name;
+  }
   if (table === "templates") {
     const answer = readTemplate({ templateId: id });
     if (!answer.ready) return "…";

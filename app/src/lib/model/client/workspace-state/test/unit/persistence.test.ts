@@ -251,7 +251,7 @@ test("a refusal the rebase cannot resolve adopts the server's workspace and says
   assert.equal(model.sync, "needs-review");
   assert.deepEqual(
     model.tabs.map((tab) => tab.id),
-    ["t1"]
+    ["t1", "project-overview", "agents", "templates", "external"]
   );
   assert.equal(model.revision, 40);
 });
@@ -300,7 +300,7 @@ test("a stored row comes back whole — the tabs, the widths and the tab that wa
 
   assert.deepEqual(
     model.tabs.map((tab) => tab.id),
-    ["t1", "t7"]
+    ["t1", "t7", "project-overview", "agents", "templates", "external"]
   );
   assert.equal(model.activeId, "t7");
   assert.equal(model.active.resourceId, "k57");

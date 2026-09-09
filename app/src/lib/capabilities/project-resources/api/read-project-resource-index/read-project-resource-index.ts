@@ -164,7 +164,7 @@ export const readProjectResourceIndex = async (): Promise<ProjectResourceIndex> 
       try {
         const id = idOf(row._id, table);
         if (idCounts.get(id) !== 1) throw new Error(`${table} id is unique`);
-        const actor = actorOf(row[actorField]);
+        const actor = actorOf(row[actorField] ?? row.createdBy);
         resources.push({
           id,
           kind,
@@ -190,6 +190,7 @@ export const readProjectResourceIndex = async (): Promise<ProjectResourceIndex> 
   collect("slideDecks", "slides", "title", "updatedBy");
   collect("spreadsheets", "spreadsheet", "title", "updatedBy");
   collect("researchThreads", "research", "title", "createdBy");
+  collect("externalFiles", "file", "name", "updatedBy");
   collect("findings", "finding", "title", "updatedBy");
 
   return { resources, unavailable };

@@ -120,6 +120,12 @@ const { querySemanticOverlay } = await import(
 const { enqueueSemanticSync } = await import(
   "$capabilities/semantic-overlay/api/enqueue-semantic-sync/enqueue-semantic-sync"
 );
+const { readSemanticStatus } = await import(
+  "$capabilities/semantic-overlay/api/read-semantic-status/read-semantic-status"
+);
+const { retireSemanticResource } = await import(
+  "$capabilities/semantic-overlay/api/retire-semantic-resource/retire-semantic-resource"
+);
 
 const seed = (table: string, row: Row): void => {
   state.tables.set(table, [...(state.tables.get(table) ?? []), row]);
@@ -224,7 +230,7 @@ test("external-file enqueue records only material work without reading native by
   );
 });
 
-test("UTF-8 external-file enqueue schedules both exact text and material work without reading bytes", async () => {
+test("plain UTF-8 external-file enqueue schedules exact text without inventing a material job", async () => {
   seed("externalFiles", {
     _id: "externalFiles:notes",
     _creationTime: 2,
@@ -245,11 +251,152 @@ test("UTF-8 external-file enqueue schedules both exact text and material work wi
 
   assert.deepEqual(result?.ref, { kind: "externalFile::text", id: "externalFiles:notes" });
   assert.ok(result?.jobId !== undefined);
-  assert.ok(result?.materialJobId !== undefined);
+  assert.equal(result?.materialJobId, undefined);
   assert.equal(state.calls.nativeReads, 0);
   assert.deepEqual(
     (state.tables.get("semanticSyncJobs") ?? []).map((row) => row.ref),
     [{ kind: "externalFile::text", id: "externalFiles:notes" }]
+  );
+});
+
+const seedCurrentCodeFile = (): void => {
+  const hash = "d".repeat(64);
+  seed("externalFiles", {
+    _id: "externalFiles:10",
+    _creationTime: 10,
+    projectId: "projects:1",
+    name: "pricing.ts",
+    mediaType: "text/typescript",
+    subkind: "text",
+    storageId: "storage:code",
+    hash,
+    origin: { kind: "upload" },
+    createdBy: { kind: "system" },
+    updatedAt: 10
+  });
+  seed("semanticSources", {
+    _id: "semanticSources:10",
+    _creationTime: 11,
+    projectId: "projects:1",
+    ref: { kind: "externalFile::text", id: "externalFiles:10" },
+    revision: 0,
+    contentHash: hash,
+    encoding: "utf-16",
+    updatedAt: 11
+  });
+  seed("semanticObjects", {
+    _id: "semanticObjects:10",
+    _creationTime: 12,
+    projectId: "projects:1",
+    lane: "text",
+    semanticSourceId: "semanticSources:10",
+    span: { from: 0, to: 7, text: "pricing" },
+    vector: [1, 0]
+  });
+  seed("semanticMaterials", {
+    _id: "semanticMaterials:10",
+    _creationTime: 13,
+    projectId: "projects:1",
+    identityKey: "code",
+    kind: "code",
+    name: "pricing.ts",
+    source: {
+      kind: "externalFile",
+      ref: { kind: "externalFile::text", id: "externalFiles:10" },
+      fileId: "externalFiles:10",
+      hash,
+      mediaType: "text/typescript",
+      subkind: "text"
+    },
+    profile: {
+      kind: "code",
+      language: "typescript",
+      lines: 8,
+      imports: [],
+      exports: ["price"],
+      symbols: [],
+      parser: "bounded-regex",
+      truncated: false,
+      warnings: []
+    },
+    profileHash: "profile",
+    contextHash: "context",
+    revisionKey: `hash:${hash}`,
+    descriptor: {
+      summary: "Calculates plan pricing.",
+      entities: ["plan"],
+      measures: ["price"],
+      dimensions: [],
+      themes: ["pricing"],
+      uncertainty: [],
+      coverage: { mode: "complete", description: "Complete bounded source" },
+      model: "test-model",
+      promptVersion: "material-v1",
+      inputHash: "descriptor",
+      generatedAt: 13
+    },
+    state: "ready",
+    updatedAt: 13
+  });
+  seed("semanticObjects", {
+    _id: "semanticObjects:11",
+    _creationTime: 14,
+    projectId: "projects:1",
+    lane: "material",
+    semanticMaterialId: "semanticMaterials:10",
+    facet: "profile",
+    facetText: "TypeScript pricing utility",
+    inputHash: "facet",
+    vector: [1, 0]
+  });
+};
+
+test("semantic status projects exact coverage, material profile, and summary provenance", async () => {
+  seedCurrentCodeFile();
+
+  const status = await readSemanticStatus({
+    ref: { kind: "externalFile::text", id: "externalFiles:10" }
+  });
+
+  assert.equal(status?.exact.state, "current");
+  assert.equal(status?.exact.objectCount, 1);
+  assert.equal(status?.material.state, "current");
+  assert.equal(status?.material.kind, "code");
+  assert.equal(status?.material.descriptor?.summary, "Calculates plan pricing.");
+  assert.equal(status?.material.descriptor?.model, "test-model");
+  assert.ok(status?.material.profile?.facts.some((fact) => fact.toLowerCase().includes("typescript")));
+});
+
+test("semantic retirement removes one file's active products behind rebuilt lane indexes", async () => {
+  seedCurrentCodeFile();
+
+  const result = await retireSemanticResource({
+    ref: { kind: "externalFile::text", id: "externalFiles:10" }
+  });
+
+  assert.equal(result.exactSources, 1);
+  assert.equal(result.materials, 1);
+  assert.equal(result.objects, 2);
+  assert.equal(result.generationBefore, 4);
+  assert.equal(result.generationAfter, 5);
+  assert.equal(
+    (state.tables.get("externalFiles") ?? []).some((row) => row._id === "externalFiles:10"),
+    true,
+    "retirement does not own source metadata"
+  );
+  assert.equal(
+    (state.tables.get("semanticSources") ?? []).some((row) => row._id === "semanticSources:10"),
+    false
+  );
+  assert.equal(
+    (state.tables.get("semanticMaterials") ?? []).some((row) => row._id === "semanticMaterials:10"),
+    false
+  );
+  assert.equal((state.tables.get("semanticObjectHistory") ?? []).length >= 2, true);
+  assert.equal((state.tables.get("semanticMaterialHistory") ?? []).length, 1);
+  assert.deepEqual(
+    (state.tables.get("semanticIndexes") ?? []).map((row) => row.lane).sort(),
+    ["material", "text"]
   );
 });
 
