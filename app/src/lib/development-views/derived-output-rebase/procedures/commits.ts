@@ -1,0 +1,50 @@
+import type { ReplayCommit } from "$development-views/derived-output-rebase/types";
+
+export const REPLAY_COMMITS: readonly ReplayCommit[] = [
+  { hash: "177ab49", subject: "Design derived output runtime", phase: "foundation", stops: true },
+  { hash: "51660bc", subject: "Add Jina indexed retrieval", phase: "foundation" },
+  { hash: "9bac8e7", subject: "Bridge derived outputs", phase: "foundation" },
+  { hash: "bc84c07", subject: "Capture review decisions", phase: "foundation" },
+  { hash: "f9e7423", subject: "Finalize evidence and embedding contracts", phase: "foundation" },
+  { hash: "22db654", subject: "Connect resources to derived outputs", phase: "foundation", stops: true },
+  { hash: "055327b", subject: "Add live document prompt blocks", phase: "editor" },
+  { hash: "0d96cb6", subject: "Ground editable prompt blocks", phase: "editor", stops: true },
+  { hash: "2c67e83", subject: "Stabilize prompt block gutter", phase: "editor" },
+  { hash: "361ed94", subject: "Stabilize legacy prompt selections", phase: "editor" },
+  { hash: "c45bcaf", subject: "Consolidate touching evidence spans", phase: "foundation" },
+  { hash: "0a3ed14", subject: "Map resource reading and evidence", phase: "foundation" },
+  { hash: "a10fe23", subject: "Design material discovery lane", phase: "foundation" },
+  { hash: "6d6bc27", subject: "Add material retrieval and grounded reads", phase: "foundation" },
+  { hash: "cdd38c5", subject: "Scope and reuse material facets", phase: "foundation" },
+  { hash: "7e0712c", subject: "Avoid unauthorized evidence title read", phase: "editor" },
+  { hash: "dfa07ef", subject: "Keep evidence spans content-only", phase: "foundation" },
+  { hash: "e6daa31", subject: "Coalesce refreshes on server", phase: "foundation" },
+  { hash: "59cfcb2", subject: "Expose shared refresh state", phase: "foundation" },
+  { hash: "0eb5300", subject: "Add slide prompt blocks", phase: "editor" },
+  { hash: "794c453", subject: "Map ingestion and agent tools", phase: "foundation" },
+  { hash: "0b3cb66", subject: "Build template system end to end", phase: "templates", stops: true },
+  { hash: "5015ef6", subject: "Build scope from terms", phase: "templates" },
+  { hash: "10d3c57", subject: "Ask for template parameters in one list", phase: "templates" },
+  { hash: "62a7022", subject: "Open every parameter on one row", phase: "templates" },
+  { hash: "2b374c9", subject: "Make holes explicitly", phase: "templates" },
+  { hash: "d6ad57a", subject: "Account for base and open link", phase: "templates" },
+  { hash: "6e02f2d", subject: "Treat every prompt as a hole", phase: "templates" },
+  { hash: "03895f1", subject: "Make holes; never find them", phase: "templates" },
+  { hash: "330c424", subject: "Mark a template run without editing it", phase: "templates" },
+  { hash: "98d63f7", subject: "Bind prompt scope; exclude drafts", phase: "templates" },
+  { hash: "2df8e17", subject: "Give each prompt one reading owner", phase: "templates" },
+  { hash: "8730e6e", subject: "Call a prompt a prompt", phase: "templates" },
+  { hash: "deab480", subject: "Reconcile templates with derived outputs", phase: "templates", stops: true },
+  { hash: "61cba5d", subject: "Build agents category end to end", phase: "agents" },
+  { hash: "2aaad1e", subject: "Build Explore end to end", phase: "agents", stops: true },
+  { hash: "712b5b9", subject: "Reconcile agents with audit pillars", phase: "agents" },
+  { hash: "f85b245", subject: "Work every finding off the baseline", phase: "agents", stops: true },
+  { hash: "2c0bcad", subject: "Clean agents fast-forward integration", phase: "agents" }
+] as const;
+
+export const PHASE_LABELS: Record<ReplayCommit["phase"], string> = {
+  foundation: "Semantic + derived foundation",
+  editor: "Prompt editors",
+  templates: "Templates",
+  agents: "Agents + research"
+};

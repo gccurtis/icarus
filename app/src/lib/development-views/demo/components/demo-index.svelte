@@ -5,6 +5,7 @@
   import ChartColumn from "@lucide/svelte/icons/chart-column";
   import ClipboardCheck from "@lucide/svelte/icons/clipboard-check";
   import FlaskConical from "@lucide/svelte/icons/flask-conical";
+  import GitBranch from "@lucide/svelte/icons/git-branch";
   import Library from "@lucide/svelte/icons/library";
   import MessagesSquare from "@lucide/svelte/icons/messages-square";
   import Network from "@lucide/svelte/icons/network";
@@ -31,6 +32,14 @@
       icon: Workflow,
       about:
         "A connected architecture set: exact procedure flow, agent runtime, resource reading, semantic materials, evidence protocol, and scaling seams."
+    },
+    {
+      href: "/demo/derived-output-rebase",
+      title: "Derived-output rebase control room",
+      sub: "Seven stops, four repairs, one gated operation",
+      icon: GitBranch,
+      about:
+        "A disposable replay made visible: exact branch topology, every conflict decision, checker and test reduction, plus the executable runbook for landing on current main."
     },
     {
       href: "/demo/semantic-overlay/ingestion-and-tools",
