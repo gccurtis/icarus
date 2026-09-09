@@ -467,7 +467,8 @@ test("Control-double-click adds a distinct range but comments require one contig
   await expect(inspector.getByPlaceholder("Write a comment on the selection…")).toHaveCount(0);
   await expect(inspector.getByRole("button", { name: "Add comment" })).toHaveCount(0);
 
-  await page.mouse.dblclick(first.x, first.y);
+  const single = await pointOnText(page.locator('[data-block="#bbody1"]'), "Substation");
+  await page.mouse.dblclick(single.x, single.y);
   await expect(inspector.locator("figure").first()).not.toContainText("2 selections");
   await expect(inspector.locator("figure").first()).toContainText("Substation");
   await comments.click();
@@ -478,7 +479,8 @@ test("Control-double-click adds a distinct range but comments require one contig
 
   await expect(comments).toContainText("1");
   await expect(inspector.getByTitle("Open the thread")).toHaveCount(1);
-  await page.mouse.dblclick(first.x, first.y);
+  const commented = await pointOnText(page.locator('[data-block="#bbody1"]'), "Substation");
+  await page.mouse.dblclick(commented.x, commented.y);
   await page.keyboard.press("ArrowRight");
   const caretInspector = page.locator(
     'aside[aria-label="Inspector"][data-inspected="document-editor.next-letter"]'
@@ -486,6 +488,7 @@ test("Control-double-click adds a distinct range but comments require one contig
   await expect(caretInspector).toBeVisible();
   await page.keyboard.type("!");
   await expect(caretInspector).toBeVisible();
+  await expect(page.locator('[data-block="#bbody1"]')).toContainText("Substation! 14");
 });
 
 test("Control-drag adds a distinct text range", async ({ page }) => {
@@ -519,9 +522,8 @@ test("quote Enter creates a normal body paragraph without ornamental quote chrom
   await expect(quote).toHaveAttribute("data-style", "quote");
   expect(await quote.evaluate((node) => getComputedStyle(node).borderInlineStartWidth)).toBe("0px");
 
-  const box = await quote.boundingBox();
-  if (box === null) throw new Error("The quote was not laid out.");
-  await quote.click({ position: { x: Math.max(1, box.width - 4), y: Math.max(1, box.height - 4) } });
+  const quoteEnd = await pointOnText(quote, "fails.");
+  await page.mouse.click(quoteEnd.x, quoteEnd.y);
   await page.keyboard.press("End");
   await page.keyboard.press("Enter");
 
