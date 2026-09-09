@@ -7,8 +7,8 @@ import {
   mergedPromptHoles,
   promptHolesOf,
   textHolesOf,
-  withAsks,
   withMarkedHoles,
+  withPrompts,
   withPromptHoles,
   withScopes
 } from "$representation/data/behavior/templates/prompt-holes";
@@ -23,12 +23,12 @@ const isRecord = (value: unknown): value is Fields =>
   value !== null && typeof value === "object" && !Array.isArray(value);
 
 type Definition = {
-  readonly asks: Readonly<Record<string, string>>;
+  readonly prompts: Readonly<Record<string, string>>;
   readonly scopes: Readonly<Record<string, unknown>>;
 };
 
 /**
- * What each prompt asks and what it reads, taken from the output it is linked to.
+ * Each block's prompt and what it reads, taken from the output it is linked to.
  *
  * Both belong to the output while the link exists — the block holds only the
  * answer. A template keeps neither the link nor the answer, so this is the one
@@ -46,23 +46,23 @@ const definedBy = (store: StoreModel, body: unknown): Definition => {
     if (value.type === "prompt" && typeof value.id === "string") {
       const linked = value.derivedOutputId;
       if (typeof linked === "string") wanted.set(linked, value.id);
-      else if (typeof value.asks === "string") wanted.set(`self:${value.id}`, value.id);
+      else if (typeof value.prompt === "string") wanted.set(`self:${value.id}`, value.id);
     }
     for (const nested of Object.values(value)) walk(nested);
   };
   walk(body);
-  if (wanted.size === 0) return { asks: {}, scopes: {} };
+  if (wanted.size === 0) return { prompts: {}, scopes: {} };
 
-  const asks: Record<string, string> = {};
+  const prompts: Record<string, string> = {};
   const scopes: Record<string, unknown> = {};
   for (const row of recordsIn(store, "derivedOutputs")) {
     const id = typeof row._id === "string" ? row._id : undefined;
     const blockId = id === undefined ? undefined : wanted.get(id);
     if (blockId === undefined) continue;
-    if (typeof row.prompt === "string") asks[blockId] = row.prompt;
+    if (typeof row.prompt === "string") prompts[blockId] = row.prompt;
     if (isRecord(row.scope)) scopes[blockId] = row.scope;
   }
-  return { asks, scopes };
+  return { prompts, scopes };
 };
 
 /**
@@ -90,11 +90,11 @@ export const withFreshOutputs = <T>(
     const next: Fields = {};
     for (const [field, nested] of Object.entries(value)) next[field] = walk(nested);
     if (value.type !== "prompt") return next;
-    const asks = typeof value.asks === "string" ? value.asks.trim() : "";
-    if (asks === "") return next;
+    const asked = typeof value.prompt === "string" ? value.prompt.trim() : "";
+    if (asked === "") return next;
     const id = store.create("derivedOutputs", {
       projectId: asId<"projects">(projectId),
-      prompt: asks,
+      prompt: asked,
       definitionRevision: 1,
       origin,
       ...(isRecord(value.scope) ? { scope: value.scope } : {}),
@@ -166,7 +166,7 @@ export const templatedBodyOf = <T>(
   const definition = definedBy(store, candidate);
   const scoped = withScopes(candidate, definition.scopes);
   const drafts = promptHolesOf(scoped);
-  const asked = withAsks(scoped, definition.asks);
+  const asked = withPrompts(scoped, definition.prompts);
   const portable = portableBodyOf(asked);
   let minted = 0;
   const body = withMarkedHoles(withPromptHoles(portable.body, drafts), () => {

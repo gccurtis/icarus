@@ -13,7 +13,7 @@ export type WalkScope = "project" | "kinds" | "set";
 
 export type WalkPrompt = {
   readonly id: string;
-  readonly asks: string;
+  readonly prompt: string;
   readonly name: string;
   readonly description: string;
   readonly scope: WalkScope;
@@ -38,7 +38,7 @@ export const scopeWords = (scope: WalkScope): string =>
 export type WalkHole = {
   readonly name: string;
   readonly description: string;
-  readonly asks: string;
+  readonly prompt: string;
   readonly fallback: string;
 };
 
@@ -51,7 +51,7 @@ export const holesFrom = (prompts: readonly WalkPrompt[]): readonly WalkHole[] =
           {
             name: prompt.name.trim(),
             description: prompt.description.trim(),
-            asks: prompt.asks,
+            prompt: prompt.prompt,
             fallback: scopeWords(prompt.scope)
           }
         ]
@@ -90,7 +90,7 @@ export const STAGES = [
   {
     title: "The resource is saved as a template",
     what: "On the copy — and only there — each marked run becomes the hole it was marked as. The prompt's question is copied onto the block as its link is left behind.",
-    runs: "promptHolesOf · withAsks · portableBodyOf · withPromptHoles · withMarkedHoles · textHolesOf",
+    runs: "promptHolesOf · withPrompts · portableBodyOf · withPromptHoles · withMarkedHoles · textHolesOf",
     leaves: "templates.holes, a body whose templated prompt scopes are hole terms, and an untouched original"
   },
   {

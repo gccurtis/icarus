@@ -390,7 +390,7 @@ export const MODEL_DELTA = {
     { name: "Target.context", note: "a tab can be opened straight onto a named context view" },
     { name: "Mark.hole", note: "{ name, description? } — a run of words somebody templateified, addressed like any other mark" },
     { name: "PromptBlock.hole", note: "{ name, description? } — set by Templateify, absent until then" },
-    { name: "PromptBlock.asks", note: "the prompt's own words, copied on the way into a template" },
+    { name: "PromptBlock.prompt", note: "the block's own prompt, copied on the way into a template" },
     {
       name: "PromptBlock.scope",
       note: "narrowed in meaning: a block holds one only while nothing else can — before it links, and inside a template. The derived output holds it after."

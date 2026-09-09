@@ -6,9 +6,9 @@ import {
   promptHolesOf,
   promptWordsIn,
   textHolesOf,
-  withAsks,
   withMarkedHoles,
-  withPromptHoles
+  withPromptHoles,
+  withPrompts
 } from "$representation/data/behavior/templates/prompt-holes";
 import {
   fillTemplateAtoms,
@@ -249,7 +249,7 @@ describe("prompts that ask a lot", () => {
 
   it("carries a prompt of ten thousand characters onto the block and back off it", () => {
     const held = bodyOf([prompt("q1", { hole: { name: "sources" }, scope: setScope("resourceSets:1") })]);
-    const asked = withAsks(held, { q1: long });
+    const asked = withPrompts(held, { q1: long });
     const body = withPromptHoles(asked, promptHolesOf(asked)) as unknown as TemplateBody;
     expect(long.length).toBeGreaterThan(10_000);
     expect(promptWordsIn(body).sources).toBe(long);

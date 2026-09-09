@@ -172,8 +172,8 @@ export type PromptBlock = {
   display: string;
   marks: Mark[];
   scope?: ResourceSet | TemplatedResourceSet;
-  /** The words this block asks, written onto it when the derived output it read is left behind. */
-  asks?: string;
+  /** This block's prompt, written onto it when the derived output that held it is left behind. */
+  prompt?: string;
   hole?: PromptHole;
   state: PromptState;
   error?: string;

@@ -196,7 +196,7 @@ describe("instantiating with answers", () => {
                       display: "",
                       marks: [],
                       state: "idle",
-                      asks: "What shipped this winter?"
+                      prompt: "What shipped this winter?"
                     }
                   ]
                 }

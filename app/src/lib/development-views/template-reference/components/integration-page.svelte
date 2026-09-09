@@ -120,7 +120,7 @@
         <MermaidDiagram
           source={CHAIN_DIAGRAM}
           label="Authoring a prompt, making a template from it, and placing that template"
-          caption="withAsks sits between them because a template leaves the derived output behind, and the question has to be copied onto the block while the link still exists."
+          caption="withPrompts sits between them because a template leaves the derived output behind, and the prompt has to be copied onto the block while the link still exists."
           minHeight="20rem"
         />
       </div>

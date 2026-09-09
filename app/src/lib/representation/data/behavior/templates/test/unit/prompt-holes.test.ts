@@ -9,8 +9,8 @@ import {
   promptHolesOf,
   promptWordsIn,
   textHolesOf,
-  withAsks,
-  withPromptHoles
+  withPromptHoles,
+  withPrompts
 } from "$representation/data/behavior/templates/prompt-holes";
 import type { TemplateBody, TemplateHole } from "$representation/data/types/templates/template";
 
@@ -104,8 +104,8 @@ describe("a body as a template holds it", () => {
     });
   });
 
-  it("writes each prompt's question onto the prompt, and reads it back by hole", () => {
-    const asked = withAsks(held, { a: "  What broke?  ", b: "Anything" });
+  it("writes each prompt onto the block that asks it, and reads it back by hole", () => {
+    const asked = withPrompts(held, { a: "  What broke?  ", b: "Anything" });
     const templated = withPromptHoles(asked, promptHolesOf(asked)) as unknown as TemplateBody;
     expect(promptWordsIn(templated)).toEqual({ sources: "What broke?" });
   });

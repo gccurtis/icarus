@@ -37,21 +37,21 @@
   let prompts = $state<WalkPrompt[]>([
     {
       id: "p1",
-      asks: "Summarize what happened, the customer impact, and the current operating state.",
+      prompt: "Summarize what happened, the customer impact, and the current operating state.",
       name: "",
       description: "",
       scope: "project"
     },
     {
       id: "p2",
-      asks: "List the decisions still open, and who is waiting on each.",
+      prompt: "List the decisions still open, and who is waiting on each.",
       name: "open_decisions",
       description: "Which threads the list is drawn from",
       scope: "kinds"
     },
     {
       id: "p3",
-      asks: "Quote the three most load-bearing findings, with their sources.",
+      prompt: "Quote the three most load-bearing findings, with their sources.",
       name: "",
       description: "",
       scope: "set"
@@ -63,7 +63,7 @@
 
   const holes = $derived(holesFrom(prompts));
   const rows = $derived(answerRowsFrom(holes, chosen));
-  const questions = $derived(Object.fromEntries(holes.map((hole) => [hole.name, hole.asks])));
+  const questions = $derived(Object.fromEntries(holes.map((hole) => [hole.name, hole.prompt])));
 
   const rename = (id: string, name: string) => {
     prompts = prompts.map((prompt) => (prompt.id === id ? { ...prompt, name } : prompt));
@@ -142,7 +142,7 @@
           <article class="prompt">
             <blockquote>
               <span>Prompt {index + 1} asks</span>
-              <p>{prompt.asks}</p>
+              <p>{prompt.prompt}</p>
             </blockquote>
             <div class="reads">
               <span>Reads</span>
@@ -182,7 +182,7 @@
               <tr>
                 <td><code>{hole.name}</code></td>
                 <td class="muted">{hole.description === "" ? "—" : hole.description}</td>
-                <td class="muted">{hole.asks}</td>
+                <td class="muted">{hole.prompt}</td>
                 <td>{hole.fallback}</td>
               </tr>
             {/each}

@@ -187,8 +187,8 @@
 | --- | --- | --- | --- |
 | changed | `docs/artifacts/template-dictionary/index.html` | +297 | −0 |
 | changed | `docs/artifacts/template-dictionary/index.md` | +139 | −0 |
-| changed | `docs/artifacts/template-features-changes/index.html` | +1236 | −0 |
-| changed | `docs/artifacts/template-features-changes/index.md` | +27425 | −0 |
+| changed | `docs/artifacts/template-features-changes/index.html` | +1261 | −0 |
+| changed | `docs/artifacts/template-features-changes/index.md` | +27806 | −0 |
 | changed | `docs/artifacts/template-stage-flow/index.html` | +393 | −0 |
 | changed | `docs/artifacts/template-stage-flow/index.md` | +140 | −0 |
 | changed | `docs/artifacts/template-system-concepts/index.html` | +627 | −0 |
@@ -197,7 +197,7 @@
 | changed | `docs/reference/template-features/02-model.html` | +209 | −0 |
 | changed | `docs/reference/template-features/03-capabilities.html` | +235 | −0 |
 | changed | `docs/reference/template-features/04-panels.html` | +208 | −0 |
-| changed | `docs/reference/template-features/05-changes.html` | +1325 | −0 |
+| changed | `docs/reference/template-features/05-changes.html` | +1350 | −0 |
 | changed | `docs/reference/template-features/build-diffs.mjs` | +243 | −0 |
 | changed | `docs/reference/template-features/index.html` | +167 | −0 |
 | changed | `docs/reference/template-features/reference.css` | +389 | −0 |
@@ -1523,13 +1523,13 @@
 +};
 +
 +/**
-+ * The body with each prompt's question written onto the prompt itself.
++ * The body with each prompt written onto the block that asks it.
 + *
-+ * A prompt reads its words from the derived output it is linked to, and a
++ * A block reads its prompt from the derived output it is linked to, and a
 + * template leaves the row behind — so the definition is copied onto the block
 + * on the way in and a new one is made from it wherever the template lands.
 + */
-+export const withAsks = <T>(body: T, asked: Readonly<Record<string, string>>): T => {
++export const withPrompts = <T>(body: T, asked: Readonly<Record<string, string>>): T => {
 +  const walk = (value: unknown): unknown => {
 +    if (Array.isArray(value)) return value.map(walk);
 +    if (!isRecord(value)) return value;
@@ -1538,7 +1538,7 @@
 +    if (!isPrompt(value)) return next;
 +    const words = asked[value.id as string]?.trim() ?? "";
 +    if (words === "") return next;
-+    return { ...next, asks: words };
++    return { ...next, prompt: words };
 +  };
 +  return walk(body) as T;
 +};
@@ -1592,13 +1592,13 @@
 +export const promptWordsIn = (body: TemplateBody): Readonly<Record<string, string>> => {
 +  const words: Record<string, string> = {};
 +  for (const prompt of promptsIn(body)) {
-+    const asks = typeof prompt.asks === "string" ? prompt.asks.trim() : "";
-+    if (asks === "") continue;
++    const asked = typeof prompt.prompt === "string" ? prompt.prompt.trim() : "";
++    if (asked === "") continue;
 +    const scope = prompt.scope;
 +    if (!isRecord(scope) || !Array.isArray(scope.include)) continue;
 +    for (const term of scope.include) {
 +      if (isRecord(term) && term.select === "hole" && typeof term.name === "string") {
-+        words[term.name] ??= asks;
++        words[term.name] ??= asked;
 +      }
 +    }
 +  }
@@ -2136,9 +2136,9 @@
 +  promptHolesOf,
 +  promptWordsIn,
 +  textHolesOf,
-+  withAsks,
 +  withMarkedHoles,
-+  withPromptHoles
++  withPromptHoles,
++  withPrompts
 +} from "$representation/data/behavior/templates/prompt-holes";
 +import {
 +  fillTemplateAtoms,
@@ -2379,7 +2379,7 @@
 +
 +  it("carries a prompt of ten thousand characters onto the block and back off it", () => {
 +    const held = bodyOf([prompt("q1", { hole: { name: "sources" }, scope: setScope("resourceSets:1") })]);
-+    const asked = withAsks(held, { q1: long });
++    const asked = withPrompts(held, { q1: long });
 +    const body = withPromptHoles(asked, promptHolesOf(asked)) as unknown as TemplateBody;
 +    expect(long.length).toBeGreaterThan(10_000);
 +    expect(promptWordsIn(body).sources).toBe(long);
@@ -2929,8 +2929,8 @@
 +  promptHolesOf,
 +  promptWordsIn,
 +  textHolesOf,
-+  withAsks,
-+  withPromptHoles
++  withPromptHoles,
++  withPrompts
 +} from "$representation/data/behavior/templates/prompt-holes";
 +import type { TemplateBody, TemplateHole } from "$representation/data/types/templates/template";
 +
@@ -3024,8 +3024,8 @@
 +    });
 +  });
 +
-+  it("writes each prompt's question onto the prompt, and reads it back by hole", () => {
-+    const asked = withAsks(held, { a: "  What broke?  ", b: "Anything" });
++  it("writes each prompt onto the block that asks it, and reads it back by hole", () => {
++    const asked = withPrompts(held, { a: "  What broke?  ", b: "Anything" });
 +    const templated = withPromptHoles(asked, promptHolesOf(asked)) as unknown as TemplateBody;
 +    expect(promptWordsIn(templated)).toEqual({ sources: "What broke?" });
 +  });
@@ -3301,8 +3301,8 @@
    display: string;
    marks: Mark[];
    scope?: ResourceSet | TemplatedResourceSet;
-+  /** The words this block asks, written onto it when the derived output it read is left behind. */
-+  asks?: string;
++  /** This block's prompt, written onto it when the derived output that held it is left behind. */
++  prompt?: string;
 +  hole?: PromptHole;
    state: PromptState;
    error?: string;
@@ -5067,8 +5067,8 @@
 +  mergedPromptHoles,
 +  promptHolesOf,
 +  textHolesOf,
-+  withAsks,
 +  withMarkedHoles,
++  withPrompts,
 +  withPromptHoles,
 +  withScopes
 +} from "$representation/data/behavior/templates/prompt-holes";
@@ -5083,12 +5083,12 @@
 +  value !== null && typeof value === "object" && !Array.isArray(value);
 +
 +type Definition = {
-+  readonly asks: Readonly<Record<string, string>>;
++  readonly prompts: Readonly<Record<string, string>>;
 +  readonly scopes: Readonly<Record<string, unknown>>;
 +};
 +
 +/**
-+ * What each prompt asks and what it reads, taken from the output it is linked to.
++ * Each block's prompt and what it reads, taken from the output it is linked to.
 + *
 + * Both belong to the output while the link exists — the block holds only the
 + * answer. A template keeps neither the link nor the answer, so this is the one
@@ -5106,23 +5106,23 @@
 +    if (value.type === "prompt" && typeof value.id === "string") {
 +      const linked = value.derivedOutputId;
 +      if (typeof linked === "string") wanted.set(linked, value.id);
-+      else if (typeof value.asks === "string") wanted.set(`self:${value.id}`, value.id);
++      else if (typeof value.prompt === "string") wanted.set(`self:${value.id}`, value.id);
 +    }
 +    for (const nested of Object.values(value)) walk(nested);
 +  };
 +  walk(body);
-+  if (wanted.size === 0) return { asks: {}, scopes: {} };
++  if (wanted.size === 0) return { prompts: {}, scopes: {} };
 +
-+  const asks: Record<string, string> = {};
++  const prompts: Record<string, string> = {};
 +  const scopes: Record<string, unknown> = {};
 +  for (const row of recordsIn(store, "derivedOutputs")) {
 +    const id = typeof row._id === "string" ? row._id : undefined;
 +    const blockId = id === undefined ? undefined : wanted.get(id);
 +    if (blockId === undefined) continue;
-+    if (typeof row.prompt === "string") asks[blockId] = row.prompt;
++    if (typeof row.prompt === "string") prompts[blockId] = row.prompt;
 +    if (isRecord(row.scope)) scopes[blockId] = row.scope;
 +  }
-+  return { asks, scopes };
++  return { prompts, scopes };
 +};
 +
 +/**
@@ -5150,11 +5150,11 @@
 +    const next: Fields = {};
 +    for (const [field, nested] of Object.entries(value)) next[field] = walk(nested);
 +    if (value.type !== "prompt") return next;
-+    const asks = typeof value.asks === "string" ? value.asks.trim() : "";
-+    if (asks === "") return next;
++    const asked = typeof value.prompt === "string" ? value.prompt.trim() : "";
++    if (asked === "") return next;
 +    const id = store.create("derivedOutputs", {
 +      projectId: asId<"projects">(projectId),
-+      prompt: asks,
++      prompt: asked,
 +      definitionRevision: 1,
 +      origin,
 +      ...(isRecord(value.scope) ? { scope: value.scope } : {}),
@@ -5226,7 +5226,7 @@
 +  const definition = definedBy(store, candidate);
 +  const scoped = withScopes(candidate, definition.scopes);
 +  const drafts = promptHolesOf(scoped);
-+  const asked = withAsks(scoped, definition.asks);
++  const asked = withPrompts(scoped, definition.prompts);
 +  const portable = portableBodyOf(asked);
 +  let minted = 0;
 +  const body = withMarkedHoles(withPromptHoles(portable.body, drafts), () => {
@@ -5809,7 +5809,7 @@
          "display",
          "marks",
          "scope",
-+        "asks",
++        "prompt",
 +        "hole",
          "state",
          "error",
@@ -5818,7 +5818,7 @@
        ]) &&
        (value.derivedOutputId === undefined || validIdentifier(value.derivedOutputId)) &&
 +      (value.style === undefined || validIdentifier(value.style)) &&
-+      (value.asks === undefined || validText(value.asks, MAX_BLOCK_TEXT_LENGTH, true)) &&
++      (value.prompt === undefined || validText(value.prompt, MAX_BLOCK_TEXT_LENGTH, true)) &&
 +      (value.hole === undefined || validPromptHole(value.hole)) &&
        Array.isArray(value.atoms) &&
        value.atoms.length <= MAX_BLOCKS_PER_CONTAINER &&
@@ -6859,7 +6859,7 @@
 +                      display: "",
 +                      marks: [],
 +                      state: "idle",
-+                      asks: "What shipped this winter?"
++                      prompt: "What shipped this winter?"
 +                    }
 +                  ]
 +                }
@@ -21524,7 +21524,7 @@
 +    onaccept
 +  }: {
 +    rows: readonly AnswerRow[];
-+    /** What the prompt behind a hole asks, by hole name, when a prompt is behind it. */
++    /** The prompt behind a hole, by hole name, when a prompt is behind it. */
 +    prompts?: Readonly<Record<string, string>>;
 +    disabled?: boolean;
 +    /** Open the builder for one scope hole. */
@@ -21542,7 +21542,7 @@
 +  /** A hole answered and then removed must not leave the walk past its end. */
 +  const index = $derived(Math.min(at, Math.max(rows.length - 1, 0)));
 +  const shown = $derived(rows[index]);
-+  const asks = $derived(shown === undefined ? undefined : prompts[shown.key]);
++  const asked = $derived(shown === undefined ? undefined : prompts[shown.key]);
 +  const missing = $derived(rows.filter((row) => row.missing).length);
 +  const ready = $derived(rows.length > 0 && missing === 0);
 +
@@ -21587,10 +21587,10 @@
 +          <p class="means">{shown.description}</p>
 +        {/if}
 +
-+        {#if asks}
-+          <blockquote class="asks">
++        {#if asked}
++          <blockquote class="prompt">
 +            <span>The prompt</span>
-+            <p>{asks}</p>
++            <p>{asked}</p>
 +          </blockquote>
 +        {/if}
 +
@@ -21765,7 +21765,7 @@
 +    line-height: var(--token-text-body-sm-leading);
 +  }
 +
-+  .asks {
++  .prompt {
 +    display: flex;
 +    flex-direction: column;
 +    gap: calc(var(--token-spacing-unit) * 0.5);
@@ -21775,7 +21775,7 @@
 +    background: var(--token-surface-work);
 +  }
 +
-+  .asks span,
++  .prompt span,
 +  .what {
 +    color: var(--token-ink-muted);
 +    font-size: var(--token-text-caption);
@@ -21785,7 +21785,7 @@
 +    text-transform: uppercase;
 +  }
 +
-+  .asks p {
++  .prompt p {
 +    margin: 0;
 +    color: var(--token-ink-primary);
 +    font-size: var(--token-text-body-sm);
@@ -23485,7 +23485,7 @@
 +        <MermaidDiagram
 +          source={CHAIN_DIAGRAM}
 +          label="Authoring a prompt, making a template from it, and placing that template"
-+          caption="withAsks sits between them because a template leaves the derived output behind, and the question has to be copied onto the block while the link still exists."
++          caption="withPrompts sits between them because a template leaves the derived output behind, and the prompt has to be copied onto the block while the link still exists."
 +          minHeight="20rem"
 +        />
 +      </div>
@@ -25252,21 +25252,21 @@
 +  let prompts = $state<WalkPrompt[]>([
 +    {
 +      id: "p1",
-+      asks: "Summarize what happened, the customer impact, and the current operating state.",
++      prompt: "Summarize what happened, the customer impact, and the current operating state.",
 +      name: "",
 +      description: "",
 +      scope: "project"
 +    },
 +    {
 +      id: "p2",
-+      asks: "List the decisions still open, and who is waiting on each.",
++      prompt: "List the decisions still open, and who is waiting on each.",
 +      name: "open_decisions",
 +      description: "Which threads the list is drawn from",
 +      scope: "kinds"
 +    },
 +    {
 +      id: "p3",
-+      asks: "Quote the three most load-bearing findings, with their sources.",
++      prompt: "Quote the three most load-bearing findings, with their sources.",
 +      name: "",
 +      description: "",
 +      scope: "set"
@@ -25278,7 +25278,7 @@
 +
 +  const holes = $derived(holesFrom(prompts));
 +  const rows = $derived(answerRowsFrom(holes, chosen));
-+  const questions = $derived(Object.fromEntries(holes.map((hole) => [hole.name, hole.asks])));
++  const questions = $derived(Object.fromEntries(holes.map((hole) => [hole.name, hole.prompt])));
 +
 +  const rename = (id: string, name: string) => {
 +    prompts = prompts.map((prompt) => (prompt.id === id ? { ...prompt, name } : prompt));
@@ -25357,7 +25357,7 @@
 +          <article class="prompt">
 +            <blockquote>
 +              <span>Prompt {index + 1} asks</span>
-+              <p>{prompt.asks}</p>
++              <p>{prompt.prompt}</p>
 +            </blockquote>
 +            <div class="reads">
 +              <span>Reads</span>
@@ -25397,7 +25397,7 @@
 +              <tr>
 +                <td><code>{hole.name}</code></td>
 +                <td class="muted">{hole.description === "" ? "—" : hole.description}</td>
-+                <td class="muted">{hole.asks}</td>
++                <td class="muted">{hole.prompt}</td>
 +                <td>{hole.fallback}</td>
 +              </tr>
 +            {/each}
@@ -25984,7 +25984,7 @@
 +    { name: "Target.context", note: "a tab can be opened straight onto a named context view" },
 +    { name: "Mark.hole", note: "{ name, description? } — a run of words somebody templateified, addressed like any other mark" },
 +    { name: "PromptBlock.hole", note: "{ name, description? } — set by Templateify, absent until then" },
-+    { name: "PromptBlock.asks", note: "the prompt's own words, copied on the way into a template" },
++    { name: "PromptBlock.prompt", note: "the block's own prompt, copied on the way into a template" },
 +    {
 +      name: "PromptBlock.scope",
 +      note: "narrowed in meaning: a block holds one only while nothing else can — before it links, and inside a template. The derived output holds it after."
@@ -26047,7 +26047,7 @@
 +    index: "04",
 +    step: "Making a template keeps exactly those holes",
 +    gesture: "None — it is what saving means",
-+    runs: "promptHolesOf · withAsks · portableBodyOf · withPromptHoles · withMarkedHoles · textHolesOf",
++    runs: "promptHolesOf · withPrompts · portableBodyOf · withPromptHoles · withMarkedHoles · textHolesOf",
 +    state: "works",
 +    evidence: "answers.test.ts — gives no hole to a prompt nobody templateified"
 +  },
@@ -26097,7 +26097,7 @@
 +  subgraph making["04 · Making a template"]
 +    direction TB
 +    D["promptHolesOf · textHolesOf<br/>only what was templateified"]
-+    E["withAsks<br/>copies the question onto the block"]
++    E["withPrompts<br/>copies the prompt onto the block"]
 +    F["withPromptHoles<br/>those scopes become hole terms"]
 +    D --> E --> F
 +  end
@@ -26206,7 +26206,7 @@
 +    question: "What happens to a prompt's derived output?",
 +    answer: "The template carries the definition and drops the row, like a formula.",
 +    became:
-+      "withAsks copies the question onto the block while the link still exists, and withFreshOutputs makes a derived output per prompt when the template is placed."
++      "withPrompts copies the prompt onto the block while the link still exists, and withFreshOutputs makes a derived output per prompt when the template is placed."
 +  },
 +  {
 +    round: "This round",
@@ -26380,7 +26380,7 @@
 +  {"path":"app/src/lib/development-views/template-reference/components/walkthrough-page.svelte","status":"A","area":"reference","kind":"reference","current":373,"base":0,"added":373,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/procedures/changes.ts","status":"A","area":"reference","kind":"reference","current":410,"base":0,"added":410,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/procedures/integration.ts","status":"A","area":"reference","kind":"reference","current":229,"base":0,"added":229,"deleted":0},
-+  {"path":"app/src/lib/development-views/template-reference/procedures/inventory.ts","status":"A","area":"reference","kind":"reference","current":181,"base":0,"added":181,"deleted":0},
++  {"path":"app/src/lib/development-views/template-reference/procedures/inventory.ts","status":"A","area":"reference","kind":"reference","current":186,"base":0,"added":186,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/procedures/navigation.ts","status":"A","area":"reference","kind":"reference","current":27,"base":0,"added":27,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/procedures/rebase.ts","status":"A","area":"reference","kind":"reference","current":157,"base":0,"added":157,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/procedures/scope.ts","status":"A","area":"reference","kind":"reference","current":521,"base":0,"added":521,"deleted":0},
@@ -27402,7 +27402,7 @@
 +
 +export type WalkPrompt = {
 +  readonly id: string;
-+  readonly asks: string;
++  readonly prompt: string;
 +  readonly name: string;
 +  readonly description: string;
 +  readonly scope: WalkScope;
@@ -27427,7 +27427,7 @@
 +export type WalkHole = {
 +  readonly name: string;
 +  readonly description: string;
-+  readonly asks: string;
++  readonly prompt: string;
 +  readonly fallback: string;
 +};
 +
@@ -27440,7 +27440,7 @@
 +          {
 +            name: prompt.name.trim(),
 +            description: prompt.description.trim(),
-+            asks: prompt.asks,
++            prompt: prompt.prompt,
 +            fallback: scopeWords(prompt.scope)
 +          }
 +        ]
@@ -27479,7 +27479,7 @@
 +  {
 +    title: "The resource is saved as a template",
 +    what: "On the copy — and only there — each marked run becomes the hole it was marked as. The prompt's question is copied onto the block as its link is left behind.",
-+    runs: "promptHolesOf · withAsks · portableBodyOf · withPromptHoles · withMarkedHoles · textHolesOf",
++    runs: "promptHolesOf · withPrompts · portableBodyOf · withPromptHoles · withMarkedHoles · textHolesOf",
 +    leaves: "templates.holes, a body whose templated prompt scopes are hole terms, and an untouched original"
 +  },
 +  {

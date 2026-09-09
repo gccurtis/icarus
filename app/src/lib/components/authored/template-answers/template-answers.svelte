@@ -45,7 +45,7 @@
     onaccept
   }: {
     rows: readonly AnswerRow[];
-    /** What the prompt behind a hole asks, by hole name, when a prompt is behind it. */
+    /** The prompt behind a hole, by hole name, when a prompt is behind it. */
     prompts?: Readonly<Record<string, string>>;
     disabled?: boolean;
     /** Open the builder for one scope hole. */
@@ -63,7 +63,7 @@
   /** A hole answered and then removed must not leave the walk past its end. */
   const index = $derived(Math.min(at, Math.max(rows.length - 1, 0)));
   const shown = $derived(rows[index]);
-  const asks = $derived(shown === undefined ? undefined : prompts[shown.key]);
+  const asked = $derived(shown === undefined ? undefined : prompts[shown.key]);
   const missing = $derived(rows.filter((row) => row.missing).length);
   const ready = $derived(rows.length > 0 && missing === 0);
 
@@ -108,10 +108,10 @@
           <p class="means">{shown.description}</p>
         {/if}
 
-        {#if asks}
-          <blockquote class="asks">
+        {#if asked}
+          <blockquote class="prompt">
             <span>The prompt</span>
-            <p>{asks}</p>
+            <p>{asked}</p>
           </blockquote>
         {/if}
 
@@ -286,7 +286,7 @@
     line-height: var(--token-text-body-sm-leading);
   }
 
-  .asks {
+  .prompt {
     display: flex;
     flex-direction: column;
     gap: calc(var(--token-spacing-unit) * 0.5);
@@ -296,7 +296,7 @@
     background: var(--token-surface-work);
   }
 
-  .asks span,
+  .prompt span,
   .what {
     color: var(--token-ink-muted);
     font-size: var(--token-text-caption);
@@ -306,7 +306,7 @@
     text-transform: uppercase;
   }
 
-  .asks p {
+  .prompt p {
     margin: 0;
     color: var(--token-ink-primary);
     font-size: var(--token-text-body-sm);

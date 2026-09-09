@@ -156,13 +156,13 @@ export const withPromptHoles = <T>(body: T, drafts: readonly PromptHoleDraft[]):
 };
 
 /**
- * The body with each prompt's question written onto the prompt itself.
+ * The body with each prompt written onto the block that asks it.
  *
- * A prompt reads its words from the derived output it is linked to, and a
+ * A block reads its prompt from the derived output it is linked to, and a
  * template leaves the row behind — so the definition is copied onto the block
  * on the way in and a new one is made from it wherever the template lands.
  */
-export const withAsks = <T>(body: T, asked: Readonly<Record<string, string>>): T => {
+export const withPrompts = <T>(body: T, asked: Readonly<Record<string, string>>): T => {
   const walk = (value: unknown): unknown => {
     if (Array.isArray(value)) return value.map(walk);
     if (!isRecord(value)) return value;
@@ -171,7 +171,7 @@ export const withAsks = <T>(body: T, asked: Readonly<Record<string, string>>): T
     if (!isPrompt(value)) return next;
     const words = asked[value.id as string]?.trim() ?? "";
     if (words === "") return next;
-    return { ...next, asks: words };
+    return { ...next, prompt: words };
   };
   return walk(body) as T;
 };
@@ -225,13 +225,13 @@ export const mergedPromptHoles = (
 export const promptWordsIn = (body: TemplateBody): Readonly<Record<string, string>> => {
   const words: Record<string, string> = {};
   for (const prompt of promptsIn(body)) {
-    const asks = typeof prompt.asks === "string" ? prompt.asks.trim() : "";
-    if (asks === "") continue;
+    const asked = typeof prompt.prompt === "string" ? prompt.prompt.trim() : "";
+    if (asked === "") continue;
     const scope = prompt.scope;
     if (!isRecord(scope) || !Array.isArray(scope.include)) continue;
     for (const term of scope.include) {
       if (isRecord(term) && term.select === "hole" && typeof term.name === "string") {
-        words[term.name] ??= asks;
+        words[term.name] ??= asked;
       }
     }
   }

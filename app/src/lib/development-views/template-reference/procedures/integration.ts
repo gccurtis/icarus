@@ -37,7 +37,7 @@ export const CHAIN: ChainLink[] = [
     index: "04",
     step: "Making a template keeps exactly those holes",
     gesture: "None — it is what saving means",
-    runs: "promptHolesOf · withAsks · portableBodyOf · withPromptHoles · withMarkedHoles · textHolesOf",
+    runs: "promptHolesOf · withPrompts · portableBodyOf · withPromptHoles · withMarkedHoles · textHolesOf",
     state: "works",
     evidence: "answers.test.ts — gives no hole to a prompt nobody templateified"
   },
@@ -87,7 +87,7 @@ export const CHAIN_DIAGRAM = `flowchart LR
   subgraph making["04 · Making a template"]
     direction TB
     D["promptHolesOf · textHolesOf<br/>only what was templateified"]
-    E["withAsks<br/>copies the question onto the block"]
+    E["withPrompts<br/>copies the prompt onto the block"]
     F["withPromptHoles<br/>those scopes become hole terms"]
     D --> E --> F
   end
@@ -196,7 +196,7 @@ export const SETTLED: Decision[] = [
     question: "What happens to a prompt's derived output?",
     answer: "The template carries the definition and drops the row, like a formula.",
     became:
-      "withAsks copies the question onto the block while the link still exists, and withFreshOutputs makes a derived output per prompt when the template is placed."
+      "withPrompts copies the prompt onto the block while the link still exists, and withFreshOutputs makes a derived output per prompt when the template is placed."
   },
   {
     round: "This round",

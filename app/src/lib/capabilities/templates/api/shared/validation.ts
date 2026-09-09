@@ -879,7 +879,7 @@ const validBlock = (value: unknown, depth = 0): boolean => {
         "display",
         "marks",
         "scope",
-        "asks",
+        "prompt",
         "hole",
         "state",
         "error",
@@ -888,7 +888,7 @@ const validBlock = (value: unknown, depth = 0): boolean => {
       ]) &&
       (value.derivedOutputId === undefined || validIdentifier(value.derivedOutputId)) &&
       (value.style === undefined || validIdentifier(value.style)) &&
-      (value.asks === undefined || validText(value.asks, MAX_BLOCK_TEXT_LENGTH, true)) &&
+      (value.prompt === undefined || validText(value.prompt, MAX_BLOCK_TEXT_LENGTH, true)) &&
       (value.hole === undefined || validPromptHole(value.hole)) &&
       Array.isArray(value.atoms) &&
       value.atoms.length <= MAX_BLOCKS_PER_CONTAINER &&
