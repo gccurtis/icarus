@@ -2,8 +2,8 @@
  * The source tree, read once and handed to every check.
  *
  * Parses and directory listings are cached on the instance: a run is one pass
- * over a tree nobody is editing, and sixty-seven checks asking the same file
- * the same question should pay for the answer once.
+ * over a tree nobody is editing, and many checks asking the same file the same
+ * question should pay for the answer once.
  *
  * Aliases come from `svelte.config.js` because that is the single map —
  * SvelteKit generates the TypeScript paths from it, so the compiler and the
@@ -55,7 +55,10 @@ const svelteImports = (text) => {
         specifier: node.source.value,
         line: node.source.loc?.start?.line ?? 1,
         names: (node.specifiers ?? []).map((s) => s.imported?.name ?? s.local?.name).filter(Boolean),
-        type: node.importKind === "type"
+        type:
+          node.importKind === "type" ||
+          ((node.specifiers?.length ?? 0) > 0 &&
+            node.specifiers.every((specifier) => specifier.importKind === "type"))
       });
     }
   }
@@ -73,6 +76,7 @@ export class Tree {
     this._parsed = new Map();
     this._imports = new Map();
     this._walk = new Map();
+    this._scripts = new Map();
   }
 
   // ------------------------------------------------------------ the filesystem ----
@@ -142,6 +146,40 @@ export class Tree {
     return this._parsed.get(path);
   }
 
+  /**
+   * TypeScript syntax trees for the script blocks of a Svelte component.
+   * `offset` converts a node's script-local line back to the component line.
+   */
+  scripts(path) {
+    if (!path.endsWith(".svelte")) return [{ source: this.source(path), offset: 0 }];
+    if (this._scripts.has(path)) return this._scripts.get(path);
+
+    const text = this.read(path);
+    const found = [];
+    const blocks = /<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g;
+    for (const match of text.matchAll(blocks)) {
+      const body = match[1] ?? "";
+      const start = (match.index ?? 0) + match[0].indexOf(body);
+      const offset = text.slice(0, start).split("\n").length - 1;
+      found.push({
+        source: ts.createSourceFile(
+          `${path}#${found.length}`,
+          body,
+          ts.ScriptTarget.Latest,
+          true,
+          ts.ScriptKind.TS
+        ),
+        offset
+      });
+    }
+    this._scripts.set(path, found);
+    return found;
+  }
+
+  scriptLine(path, script, node) {
+    return script.offset + script.source.getLineAndCharacterOfPosition(node.getStart(script.source)).line + 1;
+  }
+
   lineOf(path, node) {
     const file = this.source(path);
     return file.getLineAndCharacterOfPosition(node.getStart(file)).line + 1;
@@ -202,13 +240,26 @@ export class Tree {
             bindings && (ts.isNamedImports(bindings) || ts.isNamedExports(bindings))
               ? bindings.elements.map((element) => (element.propertyName ?? element.name).text)
               : [];
+          const allNamedTypes =
+            ts.isImportDeclaration(node) &&
+            !node.importClause?.name &&
+            node.importClause?.namedBindings &&
+            ts.isNamedImports(node.importClause.namedBindings) &&
+            node.importClause.namedBindings.elements.length > 0 &&
+            node.importClause.namedBindings.elements.every((element) => element.isTypeOnly);
+          const allExportedTypes =
+            ts.isExportDeclaration(node) &&
+            node.exportClause &&
+            ts.isNamedExports(node.exportClause) &&
+            node.exportClause.elements.length > 0 &&
+            node.exportClause.elements.every((element) => element.isTypeOnly);
           found.push({
             specifier: node.moduleSpecifier.text,
             line: this.lineOf(path, node),
             names,
             type: ts.isImportDeclaration(node)
-              ? Boolean(node.importClause?.isTypeOnly)
-              : /^export\s+type\b/.test(node.getText(this.source(path)))
+              ? Boolean(node.importClause?.isTypeOnly || allNamedTypes)
+              : Boolean(node.isTypeOnly || allExportedTypes)
           });
           return;
         }

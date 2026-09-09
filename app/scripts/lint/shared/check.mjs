@@ -12,11 +12,15 @@
 
 /**
  * @param {{
+ *   id?: string,
+ *   pillar?: string,
+ *   finding?: string,
+ *   baseline?: boolean,
  *   name: string,
  *   says: string,
  *   subjects?: Record<string, string>,
  *   run: (tree: import("./tree.mjs").Tree) => Array<{ ... }> | Promise<Array<{
- *     subject?: string, path: string, line?: number, message: string
+ *     subject?: string, path: string, line?: number, message: string, fingerprint?: string
  *   }>>
  * }} definition
  */

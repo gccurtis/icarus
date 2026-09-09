@@ -15,19 +15,15 @@ import { after, before, describe, test } from "node:test";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
+import { CHECKER_TREES } from "../lint/shared/checker-trees.mjs";
 import { breaking, discard, sandbox, treeIn } from "./sandbox.mjs";
 import { MUTATIONS } from "./mutations.mjs";
-
-const TREES = [
-  "capabilities", "components", "model", "representation", "runtime",
-  "styles", "surfaces", "views", "across"
-];
 
 const lintRoot = new URL("../lint/", import.meta.url).pathname;
 
 const allChecks = async () => {
   const found = [];
-  for (const tree of TREES) {
+  for (const tree of CHECKER_TREES) {
     for (const file of readdirSync(join(lintRoot, tree)).sort()) {
       if (!file.endsWith(".mjs")) continue;
       const module = await import(pathToFileURL(join(lintRoot, tree, file)).href);

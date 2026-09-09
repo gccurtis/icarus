@@ -6,6 +6,15 @@
  * mutation, the check, and the path it must name are the whole test.
  */
 
+import { MUTATIONS as ATOMIC_INVARIANTS } from "./mutations/atomic-invariants.mjs";
+import { MUTATIONS as AUTHORITATIVE_DATA } from "./mutations/authoritative-data.mjs";
+import { MUTATIONS as COHESIVE_UNITS } from "./mutations/cohesive-units.mjs";
+import { MUTATIONS as GATED_CROSSINGS } from "./mutations/gated-crossings.mjs";
+import { MUTATIONS as OWNED_LIFECYCLE } from "./mutations/owned-lifecycle.mjs";
+import { MUTATIONS as PROCEDURAL_TRANSPARENCY } from "./mutations/procedural-transparency.mjs";
+import { MUTATIONS as SCOPED_AUTHORITY } from "./mutations/scoped-authority.mjs";
+import { MUTATIONS as STATE_OWNERSHIP } from "./mutations/state-ownership.mjs";
+
 const view = (name, body) => ({ path: `src/lib/surfaces/top-bar/procedures/${name}.ts`, write: body });
 const appended = (text) => ({ edit: (before) => `${before}\n${text}\n` });
 
@@ -523,5 +532,14 @@ export const MUTATIONS = [
     says: "a name is not kebab-case",
     names: "procedures/notKebab.ts",
     changes: [{ path: "src/lib/surfaces/top-bar/procedures/notKebab.ts", write: `export const value = 1;\n` }]
-  }
+  },
+
+  ...STATE_OWNERSHIP,
+  ...PROCEDURAL_TRANSPARENCY,
+  ...SCOPED_AUTHORITY,
+  ...OWNED_LIFECYCLE,
+  ...ATOMIC_INVARIANTS,
+  ...GATED_CROSSINGS,
+  ...AUTHORITATIVE_DATA,
+  ...COHESIVE_UNITS
 ];

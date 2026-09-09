@@ -19,6 +19,8 @@
     [
       { href: "/demo", label: "Design system" },
       { href: "/demo/editor-audit", label: "Editor audit" },
+      { href: "/demo/state-behavior-audit", label: "Architecture audit" },
+      { href: "/demo/architecture-pillars", label: "Pillars" },
       { href: "/demo/vocabulary", label: "Composition" },
       { href: "/demo/templates", label: "Templates" }
     ],

@@ -21,7 +21,16 @@ import { Tree } from "../lint/shared/tree.mjs";
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
-const COPIED = ["src", "configuration", "svelte.config.js", "components.json", "package.json", "vite.config.ts"];
+const COPIED = [
+  "src",
+  "configuration",
+  "scripts/lint.mjs",
+  "scripts/lint",
+  "svelte.config.js",
+  "components.json",
+  "package.json",
+  "vite.config.ts"
+];
 
 export const sandbox = () => {
   const base = mkdtempSync(join(tmpdir(), "icarus-lint-"));
@@ -53,7 +62,22 @@ export const breaking = async (base, changes, body) => {
     if (change.write !== undefined) {
       const existed = existsSync(path);
       const before = existed ? readFileSync(path, "utf8") : null;
-      undo.push(() => (existed ? writeFileSync(path, before) : rmSync(path, { force: true })));
+      const missingParents = [];
+      if (!existed) {
+        let parent = dirname(path);
+        while (parent !== base && !existsSync(parent)) {
+          missingParents.push(parent);
+          parent = dirname(parent);
+        }
+      }
+      undo.push(() => {
+        if (existed) {
+          writeFileSync(path, before);
+          return;
+        }
+        rmSync(path, { force: true });
+        for (const parent of missingParents) rmSync(parent, { force: true, recursive: true });
+      });
       mkdirSync(dirname(path), { recursive: true });
       writeFileSync(path, change.write);
       continue;

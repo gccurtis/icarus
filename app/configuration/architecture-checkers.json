@@ -1,0 +1,138 @@
+{
+  "version": 1,
+  "contracts": {
+    "OWN-01": [
+      "state-ownership/mutable-state-has-an-instance.mjs",
+      "capabilities/capability-holds-nothing.mjs",
+      "surfaces/shared-hands-out-no-instance.mjs"
+    ],
+    "OWN-02": ["state-ownership/component-state-declares-a-lifetime.mjs"],
+    "OWN-03": ["state-ownership/remounted-views-hold-no-declared-tab-state.mjs"],
+    "OWN-04": ["state-ownership/workspace-exposes-no-store-schema.mjs"],
+    "OWN-05": ["state-ownership/constructed-client-object-has-a-consumer.mjs"],
+
+    "BEH-01": ["procedural-transparency/production-svelte-imports-no-capability.mjs"],
+    "BEH-02": [
+      "procedural-transparency/component-effects-have-a-home.mjs",
+      "model/runes-match-the-extension.mjs",
+      "surfaces/effects-declare-runes.mjs"
+    ],
+    "BEH-03": ["procedural-transparency/model-definitions-delegate.mjs"],
+    "BEH-04": [
+      "capabilities/entry-matches-directory.mjs",
+      "model/method-entry-matches-directory.mjs",
+      "cohesive-units/procedure-directory-has-one-entry-chain.mjs"
+    ],
+    "BEH-05": ["procedural-transparency/async-command-state-lives-with-command.mjs"],
+
+    "AUTH-01": ["capabilities/no-procedure-acts-outside-a-scope.mjs"],
+    "AUTH-02": ["scoped-authority/capability-scope-is-consumed.mjs"],
+    "AUTH-03": ["scoped-authority/browser-capabilities-hide-persistence-coordinates.mjs"],
+    "AUTH-04": ["scoped-authority/subject-write-proves-ownership.mjs"],
+    "AUTH-05": ["capabilities/procedure-validates-first.mjs"],
+    "AUTH-06": ["scoped-authority/generic-browser-mutations-do-not-exist.mjs"],
+
+    "LIFE-01": [
+      "model/constructor-is-called-by-the-runtime.mjs",
+      "model/nothing-builds-at-module-load.mjs",
+      "runtime/builder-is-not-exported.mjs",
+      "runtime/one-holder-of-the-instance.mjs",
+      "runtime/one-caller-of-the-initializer.mjs",
+      "runtime/graph-matches-its-aggregate.mjs",
+      "runtime/objects-are-built-in-order.mjs",
+      "runtime/accessor-refuses-twice.mjs"
+    ],
+    "LIFE-02": [
+      "owned-lifecycle/runtime-lifecycle-follows-tabs.mjs",
+      "views/runtime-through-workspace-state.mjs"
+    ],
+    "LIFE-03": ["owned-lifecycle/accessors-are-observational.mjs"],
+    "LIFE-04": ["owned-lifecycle/runtime-open-close-is-balanced.mjs"],
+    "LIFE-05": ["owned-lifecycle/stateful-client-object-has-release.mjs"],
+    "LIFE-06": ["owned-lifecycle/one-resource-one-edit-buffer.mjs"],
+
+    "TXN-01": [
+      "capabilities/storage-through-a-model.mjs",
+      "representation/store-opens-nothing.mjs"
+    ],
+    "TXN-02": ["atomic-invariants/multi-write-capability-uses-a-unit-of-work.mjs"],
+    "TXN-03": ["atomic-invariants/multi-table-intent-is-atomic.mjs"],
+    "TXN-04": ["atomic-invariants/journal-recovers-before-readiness.mjs"],
+    "TXN-05": ["atomic-invariants/revision-state-advances-together.mjs"],
+
+    "EDGE-01": [
+      "across/one-crossing.mjs",
+      "across/client-server-separation.mjs",
+      "capabilities/capability-imports.mjs",
+      "surfaces/surface-imports.mjs",
+      "views/view-imports-no-other-category.mjs",
+      "views/view-imports-no-surface.mjs"
+    ],
+    "EDGE-02": [
+      "representation/behavior-is-pure.mjs",
+      "representation/domain-graph-is-declared.mjs",
+      "representation/representation-imports-nothing-else.mjs",
+      "representation/representation-layout.mjs",
+      "representation/store-opens-nothing.mjs",
+      "representation/types-emit-nothing.mjs"
+    ],
+    "EDGE-03": [
+      "gated-crossings/production-io-has-a-model-owner.mjs",
+      "across/node-is-server-only.mjs"
+    ],
+    "EDGE-04": [
+      "components/component-takes-only-props.mjs",
+      "components/vocabulary-is-entered-at-index.mjs",
+      "components/vendor-is-unedited.mjs",
+      "components/vendor-keeps-its-own-spelling.mjs",
+      "model/object-exposes-no-component.mjs",
+      "surfaces/view-takes-ids-and-callbacks.mjs"
+    ],
+    "EDGE-05": [
+      "runtime/framework-only-at-the-root.mjs",
+      "runtime/one-caller-of-the-initializer.mjs"
+    ],
+    "EDGE-06": [
+      "capabilities/nothing-reaches-inside-a-capability.mjs",
+      "capabilities/capability-lists-its-procedures.mjs"
+    ],
+
+    "DATA-01": ["authoritative-data/production-views-have-no-fixture-repositories.mjs"],
+    "DATA-02": [
+      "authoritative-data/development-fixtures-stay-in-development.mjs",
+      "surfaces/nothing-imports-development.mjs"
+    ],
+    "DATA-03": ["authoritative-data/constructed-subject-runtime-is-reachable.mjs"],
+    "DATA-04": ["authoritative-data/resource-id-selects-the-rendered-body.mjs"],
+    "DATA-05": ["authoritative-data/unsupported-subject-is-explicit.mjs"],
+    "DATA-06": ["authoritative-data/legacy-schema-support-does-not-exist.mjs"],
+
+    "COH-01": ["cohesive-units/source-complexity-is-reviewed.mjs"],
+    "COH-02": ["cohesive-units/procedure-directory-has-one-entry-chain.mjs"],
+    "COH-03": [
+      "across/module-has-one-home.mjs",
+      "across/names-are-kebab-case.mjs",
+      "across/no-relative-imports.mjs",
+      "capabilities/capability-layout.mjs",
+      "capabilities/capability-lists-its-procedures.mjs",
+      "capabilities/tests-are-one-of-three-kinds.mjs",
+      "model/object-is-entered-at-its-index.mjs",
+      "model/object-layout.mjs",
+      "model/tests-are-one-of-three-kinds.mjs",
+      "runtime/graph-matches-its-aggregate.mjs",
+      "runtime/runtime-layout.mjs",
+      "components/vocabulary-is-entered-at-index.mjs",
+      "styles/one-stylesheet-entry.mjs",
+      "surfaces/concern-is-one-of-five.mjs",
+      "surfaces/surface-shape.mjs",
+      "views/key-vocabulary-matches-the-tree.mjs"
+    ],
+    "COH-04": [
+      "cohesive-units/architecture-docs-match-the-graph.mjs",
+      "model/method-tree-paths-resolve.mjs",
+      "surfaces/documented-paths-resolve.mjs"
+    ],
+    "COH-05": ["cohesive-units/model-admission-declares-an-invariant.mjs"],
+    "COH-06": ["cohesive-units/architecture-exceptions-expire.mjs"]
+  }
+}
