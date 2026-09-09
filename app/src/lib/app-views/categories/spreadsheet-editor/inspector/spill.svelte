@@ -4,7 +4,8 @@
   import { gridOf, indexOf, labelOf, rectLabelOf } from "$app-views/categories/spreadsheet-editor/procedures/addresses";
   import { cellAt } from "$app-views/categories/spreadsheet-editor/procedures/cells";
   import { paintOf } from "$app-views/categories/spreadsheet-editor/procedures/formatting";
-  import { cellSignal, selectedRef } from "$app-views/categories/spreadsheet-editor/procedures/selecting";
+  import { selectedRef } from "$app-views/categories/spreadsheet-editor/procedures/selection-reading";
+  import { cellSignal } from "$app-views/categories/spreadsheet-editor/procedures/selecting";
   import { spillChildOf } from "$app-views/categories/spreadsheet-editor/procedures/spans";
   import { displayOf } from "$app-views/categories/spreadsheet-editor/procedures/values";
   import { holdsTheRuntime } from "$app-views/categories/spreadsheet-editor/procedures/effects/holds-the-runtime.svelte";

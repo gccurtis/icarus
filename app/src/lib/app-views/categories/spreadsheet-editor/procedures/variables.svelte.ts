@@ -1,3 +1,5 @@
+import { getContext, setContext } from "svelte";
+
 import {
   readVariables,
   removeVariable as removeRemotely,
@@ -10,67 +12,81 @@ import type { VariableValue } from "$representation/data/types/content/variable-
 
 export type { VariableRecord, SaveVariableInput, SaveVariableResult };
 
+export type VariableRegister = {
+  readonly records: readonly VariableRecord[];
+  readonly loaded: boolean;
+  readonly revision: number;
+  readonly valueOf: (name: string) => VariableValue | undefined;
+  readonly load: () => Promise<void>;
+  readonly save: (input: SaveVariableInput) => Promise<SaveVariableResult>;
+  readonly remove: (name: string) => Promise<boolean>;
+};
+
 /**
  * One project's variables, held so every lens can answer a name.
  *
  * A formula reaches a name while an edit is being applied, which is not a moment
- * that can wait for a request, so a project's list is loaded when its first sheet
- * opens and refreshed whenever this module changes it.
+ * that can wait for a request, so the list is loaded when the first sheet opens
+ * and refreshed whenever this register changes it.
  *
- * Keyed by project, because a name is only unique inside one: two projects may
- * both hold `rate` and mean different numbers, and a single list would answer a
- * formula in one project with the other's value.
+ * One register per project rather than a module holding a map of them: a name is
+ * only unique inside a project, and an instance somebody constructed can be
+ * pointed at a test's project as easily as at the reader's.
  */
-type Held = {
-  variables: readonly VariableRecord[];
-  asked: boolean;
-  /** Bumped on every change, so a sheet can answer its formulas again. */
-  revision: number;
+export const createVariableRegister = (): VariableRegister => {
+  let records = $state<readonly VariableRecord[]>([]);
+  let loaded = $state(false);
+  let revision = $state(0);
+
+  const load = async (): Promise<void> => {
+    try {
+      const found = await readVariables({});
+      records = found.variables;
+    } catch {
+      records = [];
+    }
+    loaded = true;
+    revision += 1;
+  };
+
+  return {
+    get records(): readonly VariableRecord[] {
+      return records;
+    },
+    get loaded(): boolean {
+      return loaded;
+    },
+    get revision(): number {
+      return revision;
+    },
+    valueOf: (name) =>
+      records.find((variable) => variable.name.toLowerCase() === name.toLowerCase())?.value,
+    load,
+    save: async (input) => {
+      const answer = await saveRemotely(input);
+      if (answer.saved) await load();
+      return answer;
+    },
+    remove: async (name) => {
+      const answer = await removeRemotely({ name });
+      if (answer.removed) await load();
+      return answer.removed;
+    }
+  };
 };
 
-const projects = new Map<string, Held>();
+const REGISTER = Symbol("spreadsheet-editor.variables");
 
-const stateOf = (project: string): Held => {
-  const seen = projects.get(project);
-  if (seen !== undefined) return seen;
-  const fresh = $state<Held>({ variables: [], asked: false, revision: 0 });
-  projects.set(project, fresh);
-  return fresh;
-};
+export const provideVariableRegister = (register: VariableRegister): VariableRegister =>
+  setContext(REGISTER, register);
 
-export const variables = (project: string): readonly VariableRecord[] => stateOf(project).variables;
-
-export const variablesLoaded = (project: string): boolean => stateOf(project).asked;
-
-export const variablesRevision = (project: string): number => stateOf(project).revision;
-
-export const variableValue = (project: string, name: string): VariableValue | undefined =>
-  stateOf(project).variables.find((variable) => variable.name.toLowerCase() === name.toLowerCase())
-    ?.value;
-
-export const loadVariables = async (project: string): Promise<void> => {
-  const held = stateOf(project);
-  try {
-    const found = await readVariables({});
-    held.variables = found.variables;
-  } catch {
-    held.variables = [];
+export const variableRegister = (): VariableRegister => {
+  const held = getContext<VariableRegister | undefined>(REGISTER);
+  if (held === undefined) {
+    throw new Error(
+      "No variable register was provided for this project. " +
+        "See src/routes/app/[project]/+layout.svelte."
+    );
   }
-  held.asked = true;
-  held.revision += 1;
-};
-
-export const saveVariable = async (
-  project: string,
-  input: SaveVariableInput
-): Promise<SaveVariableResult> => {
-  const answer = await saveRemotely(input);
-  if (answer.saved) await loadVariables(project);
-  return answer;
-};
-
-export const removeVariable = async (project: string, name: string): Promise<boolean> => {
-  const answer = await removeRemotely({ name });
-  if (answer.removed) await loadVariables(project);
-  return answer.removed;
+  return held;
 };

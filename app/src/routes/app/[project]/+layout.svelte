@@ -3,6 +3,14 @@
 
   import { page } from "$app/state";
 
+  import {
+    createPickingChannel,
+    providePickingChannel
+  } from "$app-views/categories/spreadsheet-editor/procedures/picking.svelte";
+  import {
+    createVariableRegister,
+    provideVariableRegister
+  } from "$app-views/categories/spreadsheet-editor/procedures/variables.svelte";
   import { initClientModel } from "$runtime/client/start";
   import type { LayoutServerData } from "./$types";
 
@@ -44,6 +52,9 @@
     project: page.params.project ?? "",
     configuration: data.configuration
   });
+
+  providePickingChannel(createPickingChannel());
+  provideVariableRegister(createVariableRegister());
 
   $effect(() => void model.workspaceState.restore());
 

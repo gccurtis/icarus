@@ -24,7 +24,8 @@
   import { FILLS, INKS, orClear, orNone } from "$app-views/categories/spreadsheet-editor/procedures/colors";
   import { DEFAULT_FONT_SIZE, FAMILIES, type CellStyle } from "$app-views/categories/spreadsheet-editor/procedures/formatting";
   import { STYLES, type MarkStyle } from "$app-views/categories/spreadsheet-editor/procedures/marks";
-  import { STYLE, styleSignal } from "$app-views/categories/spreadsheet-editor/procedures/selecting";
+  import { STYLE } from "$app-views/categories/spreadsheet-editor/procedures/selection-kinds";
+  import { styleSignal } from "$app-views/categories/spreadsheet-editor/procedures/selecting";
   import { deletedStyle, madeDefault, newStyle, setStyleField } from "$app-views/categories/spreadsheet-editor/procedures/styles";
   import { holdsTheRuntime } from "$app-views/categories/spreadsheet-editor/procedures/effects/holds-the-runtime.svelte";
   import { isInspectorView, workspaceState } from "$model/client/workspace-state";

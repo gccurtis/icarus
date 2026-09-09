@@ -23,7 +23,8 @@
     type Mark,
     type MarkStyle
   } from "$app-views/categories/spreadsheet-editor/procedures/marks";
-  import { cellSignal, textRangeOf } from "$app-views/categories/spreadsheet-editor/procedures/selecting";
+  import { textRangeOf } from "$app-views/categories/spreadsheet-editor/procedures/selection-reading";
+  import { cellSignal } from "$app-views/categories/spreadsheet-editor/procedures/selecting";
   import { displayOf } from "$app-views/categories/spreadsheet-editor/procedures/values";
   import { holdsTheRuntime } from "$app-views/categories/spreadsheet-editor/procedures/effects/holds-the-runtime.svelte";
   import { isInspectorView, workspaceState, type SpreadsheetRuntime } from "$model/client/workspace-state";

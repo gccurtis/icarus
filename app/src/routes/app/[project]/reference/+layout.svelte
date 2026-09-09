@@ -3,8 +3,8 @@
 
   import { page } from "$app/state";
 
-  import LanguageHeader from "$development-views/formula-language-reference/components/language-header.svelte";
-  import { slugOf } from "$development-views/formula-language-reference/procedures/navigation";
+  import { LanguageHeader } from "$authored-components/reference";
+  import { NAV, slugOf } from "$app-views/general/formula-language-reference/procedures/navigation";
   import {
     APPEARANCES,
     appearance,
@@ -18,6 +18,7 @@
 
 {#if current}
   <LanguageHeader
+    nav={NAV}
     {current}
     appearance={appearance.current}
     appearances={APPEARANCES}

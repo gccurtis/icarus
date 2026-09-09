@@ -34,12 +34,8 @@
   import { people } from "$app-views/categories/project-overview/procedures/people";
   import { project } from "$app-views/categories/project-overview/procedures/project";
   import { projectId, viewerId } from "$app-views/categories/project-overview/procedures/scope";
-  import {
-    createProjectResource,
-    resourcesIn,
-    type Resource,
-    type ResourceKind
-  } from "$app-views/categories/project-overview/procedures/resources";
+  import { createsResource } from "$app-views/categories/project-overview/procedures/creating";
+  import { resourcesIn, type Resource, type ResourceKind } from "$app-views/categories/project-overview/procedures/resources";
   import { workspaceState } from "$model/client/workspace-state";
 
   const view = workspaceState();
@@ -143,31 +139,22 @@
   let creating = $state<"document" | "slides">();
   let creationError = $state<string>();
 
-  const make = async (key: (typeof CREATE)[number]["key"]) => {
+  const make = (key: (typeof CREATE)[number]["key"]) => {
     if (key === "document" || key === "slides") {
       if (creating !== undefined) return;
 
-      const originTabId = view.activeId;
-      const originSelection = view.selection;
       creating = key;
-      creationError = undefined;
-      try {
-        const { resourceId } = await createProjectResource(view, { target: key });
-        const selectionUnchanged =
-          view.selection?.kind === originSelection?.kind &&
-          view.selection?.id === originSelection?.id &&
-          view.selection?.at === originSelection?.at;
-        if (live && view.activeId === originTabId && selectionUnchanged) {
-          view.open({
-            category: key === "document" ? "document-editor" : "slide-deck-editor",
-            resourceId
-          });
+      void createsResource({
+        view,
+        target: key,
+        live: () => live,
+        refused: (message) => {
+          creationError = message;
+        },
+        ended: () => {
+          creating = undefined;
         }
-      } catch (error) {
-        creationError = error instanceof Error ? error.message : String(error);
-      } finally {
-        creating = undefined;
-      }
+      });
       return;
     }
 

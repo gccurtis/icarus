@@ -10,13 +10,11 @@
   import type { Edit } from "$app-views/categories/spreadsheet-editor/procedures/cells";
   import { recalculating } from "$app-views/categories/spreadsheet-editor/procedures/recalculation";
   import {
-    columnSignal,
-    rowSignal,
     selectedColumnIds,
     selectedRects,
-    selectedRowIds,
-    type Signal
-  } from "$app-views/categories/spreadsheet-editor/procedures/selecting";
+    selectedRowIds
+  } from "$app-views/categories/spreadsheet-editor/procedures/selection-reading";
+  import { columnSignal, rowSignal, type Signal } from "$app-views/categories/spreadsheet-editor/procedures/selecting";
   import { merged, mergeOf, unmerged } from "$app-views/categories/spreadsheet-editor/procedures/spans";
   import {
     frozenColumnsSet,
@@ -26,6 +24,7 @@
     removedRows
   } from "$app-views/categories/spreadsheet-editor/procedures/structure";
   import { holdsTheRuntime } from "$app-views/categories/spreadsheet-editor/procedures/effects/holds-the-runtime.svelte";
+  import { variableRegister } from "$app-views/categories/spreadsheet-editor/procedures/variables.svelte";
   import { isInspectorView, workspaceState } from "$model/client/workspace-state";
 
   let {
@@ -53,6 +52,7 @@
   } = $props();
 
   const view = workspaceState();
+  const register = variableRegister();
   const sheetId = $derived(view.active.resourceId);
 
   const attached = holdsTheRuntime();
@@ -63,7 +63,7 @@
 
   const apply = (ops: Edit["ops"]) => {
     if (ops.length > 0 && sheet !== undefined) {
-      runtime?.apply(recalculating(view.project, view.active.resourceId, sheet, ops));
+      runtime?.apply(recalculating(register, view.active.resourceId, sheet, ops));
     }
   };
 

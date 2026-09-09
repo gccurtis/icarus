@@ -31,11 +31,7 @@
   const query = $derived(sheetId === undefined ? undefined : titleQuery(sheetId));
   const title = $derived(titleOf(query));
 
-  const rename = async (next: string) => {
-    if (sheetId === undefined || next.trim() === "" || next === title) return;
-    await renameSheet(sheetId, next.trim());
-    await query?.refresh();
-  };
+  const rename = (next: string) => renameSheet(sheetId, next, title, query);
 </script>
 
 <Panel title="Spreadsheet">

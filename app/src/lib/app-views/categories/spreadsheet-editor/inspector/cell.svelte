@@ -18,14 +18,17 @@
   import { paintOf } from "$app-views/categories/spreadsheet-editor/procedures/formatting";
   import { dependentsOf, type Dependency } from "$app-views/categories/spreadsheet-editor/procedures/references";
   import { runsOf } from "$app-views/categories/spreadsheet-editor/procedures/scene";
-  import { cellSignal, selectedRef, textSignal } from "$app-views/categories/spreadsheet-editor/procedures/selecting";
+  import { selectedRef } from "$app-views/categories/spreadsheet-editor/procedures/selection-reading";
+  import { cellSignal, textSignal } from "$app-views/categories/spreadsheet-editor/procedures/selecting";
   import { mergeOf, spillOf, unmerged } from "$app-views/categories/spreadsheet-editor/procedures/spans";
   import { displayOf, kindOf, type SheetCell } from "$app-views/categories/spreadsheet-editor/procedures/values";
   import { holdsTheRuntime } from "$app-views/categories/spreadsheet-editor/procedures/effects/holds-the-runtime.svelte";
+  import { variableRegister } from "$app-views/categories/spreadsheet-editor/procedures/variables.svelte";
   import { listensOnTheNode } from "$app-views/categories/spreadsheet-editor/procedures/effects/listens-on-the-node.svelte";
   import { isInspectorView, workspaceState } from "$model/client/workspace-state";
 
   const view = workspaceState();
+  const register = variableRegister();
 
   const sheetId = $derived(view.active.resourceId);
 
@@ -59,7 +62,7 @@
       refusalTimer = setTimeout(() => (refusal = undefined), 5000);
       return;
     }
-    if (edit.ops.length > 0 && sheet !== undefined) runtime?.apply(recalculating(view.project, sheetId, sheet, edit.ops));
+    if (edit.ops.length > 0 && sheet !== undefined) runtime?.apply(recalculating(register, sheetId, sheet, edit.ops));
   };
 
   const unmerge = () => {

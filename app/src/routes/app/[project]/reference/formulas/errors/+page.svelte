@@ -1,5 +1,5 @@
 <script lang="ts">
-  import ErrorsPage from "$development-views/formula-language-reference/components/errors-page.svelte";
+  import ErrorsPage from "$app-views/general/formula-language-reference/components/errors-page.svelte";
 </script>
 
 <ErrorsPage />

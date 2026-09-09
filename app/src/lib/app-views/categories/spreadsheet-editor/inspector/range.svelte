@@ -15,14 +15,16 @@
   import { gridOf, rectLabelOf, refsIn, type Rect } from "$app-views/categories/spreadsheet-editor/procedures/addresses";
   import { cleared, populatedIn, type Edit } from "$app-views/categories/spreadsheet-editor/procedures/cells";
   import { recalculating } from "$app-views/categories/spreadsheet-editor/procedures/recalculation";
-  import { selectedRects } from "$app-views/categories/spreadsheet-editor/procedures/selecting";
+  import { selectedRects } from "$app-views/categories/spreadsheet-editor/procedures/selection-reading";
   import { merged } from "$app-views/categories/spreadsheet-editor/procedures/spans";
   import { aggregateOf, figure } from "$app-views/categories/spreadsheet-editor/procedures/stats";
   import { rulesOverRects } from "$app-views/categories/spreadsheet-editor/procedures/styles";
   import { holdsTheRuntime } from "$app-views/categories/spreadsheet-editor/procedures/effects/holds-the-runtime.svelte";
+  import { variableRegister } from "$app-views/categories/spreadsheet-editor/procedures/variables.svelte";
   import { isInspectorView, workspaceState } from "$model/client/workspace-state";
 
   const view = workspaceState();
+  const register = variableRegister();
 
   const sheetId = $derived(view.active.resourceId);
 
@@ -42,7 +44,7 @@
 
   const apply = (ops: Edit["ops"]) => {
     if (ops.length === 0 || sheet === undefined) return;
-    runtime?.apply(recalculating(view.project, sheetId, sheet, ops));
+    runtime?.apply(recalculating(register, sheetId, sheet, ops));
   };
 
   const mergeable = $derived(rects.length === 1 && primary !== undefined && primary.rows * primary.columns > 1);

@@ -1,69 +1,99 @@
+import { getContext, setContext } from "svelte";
+
 export type Picker = { readonly insert: (address: string, anchor: string) => void };
 
-let held: Picker | undefined;
+export type Draft = { readonly at: string; readonly text: string };
+
+export type Writing = { readonly seed: string; readonly at: number };
+
+export type PickingChannel = {
+  readonly arm: (picker: Picker) => void;
+  readonly disarm: (picker: Picker) => void;
+  readonly armed: boolean;
+  readonly pick: (address: string, anchor: string) => boolean;
+  readonly drafting: (next: Draft | undefined) => void;
+  readonly drafted: Draft | undefined;
+  readonly beginWriting: (seed: string) => void;
+  readonly begun: Writing | undefined;
+  readonly writingTaken: () => void;
+  readonly endWriting: () => void;
+  readonly ended: number | undefined;
+  readonly endingTaken: () => void;
+};
 
 /**
- * What is being typed right now, wherever it is being typed.
+ * The one caret a sheet has, and the three things that happen around it.
  *
  * The grid draws a box around every cell an expression names, and while somebody
  * is writing one the expression it should draw is the draft rather than what the
- * cell holds. One channel, because a sheet has one caret.
- */
-let draft = $state<{ readonly at: string; readonly text: string } | undefined>(undefined);
-
-export const arm = (picker: Picker): void => {
-  held = picker;
-};
-
-export const disarm = (picker: Picker): void => {
-  if (held === picker) held = undefined;
-};
-
-export const armed = (): boolean => held !== undefined;
-
-export const pick = (address: string, anchor: string): boolean => {
-  if (held === undefined) return false;
-  held.insert(address, anchor);
-  return true;
-};
-
-export const drafting = (next: { readonly at: string; readonly text: string } | undefined): void => {
-  draft = next;
-};
-
-export const drafted = (): { readonly at: string; readonly text: string } | undefined => draft;
-
-/**
- * Somebody began writing on the grid. The grid opens no editor of its own, so
- * the keystroke arrives here and the lens field picks it up and takes the caret.
- */
-let opening = $state<{ readonly seed: string; readonly at: number } | undefined>(undefined);
-
-export const beginWriting = (seed: string): void => {
-  opening = { seed, at: (opening?.at ?? 0) + 1 };
-};
-
-export const writingBegun = (): { readonly seed: string; readonly at: number } | undefined => opening;
-
-export const writingTaken = (): void => {
-  opening = undefined;
-};
-
-/**
- * Writing finished at the keyboard, so the caret belongs back on the grid.
+ * cell holds. The grid opens no editor of its own, so a keystroke on it arrives
+ * here and the lens field takes it. And writing that ends at the keyboard hands
+ * the caret back, which a click into another field must not do.
  *
- * Only Enter and Escape say this. A click into another field ends the writing
- * too, and taking the caret back from wherever the reader just put it is the
- * one thing this must not do.
+ * One instance per project, constructed where the project is, because the field
+ * doing the writing and the grid answering the clicks are in different panels
+ * and neither owns the other.
  */
-let closing = $state<number | undefined>(undefined);
+export const createPickingChannel = (): PickingChannel => {
+  let picker: Picker | undefined = undefined;
+  let draft = $state<Draft | undefined>(undefined);
+  let opening = $state<Writing | undefined>(undefined);
+  let closing = $state<number | undefined>(undefined);
 
-export const endWriting = (): void => {
-  closing = (closing ?? 0) + 1;
+  return {
+    arm: (next) => {
+      picker = next;
+    },
+    disarm: (next) => {
+      if (picker === next) picker = undefined;
+    },
+    get armed(): boolean {
+      return picker !== undefined;
+    },
+    pick: (address, anchor) => {
+      if (picker === undefined) return false;
+      picker.insert(address, anchor);
+      return true;
+    },
+    drafting: (next) => {
+      draft = next;
+    },
+    get drafted(): Draft | undefined {
+      return draft;
+    },
+    beginWriting: (seed) => {
+      opening = { seed, at: (opening?.at ?? 0) + 1 };
+    },
+    get begun(): Writing | undefined {
+      return opening;
+    },
+    writingTaken: () => {
+      opening = undefined;
+    },
+    endWriting: () => {
+      closing = (closing ?? 0) + 1;
+    },
+    get ended(): number | undefined {
+      return closing;
+    },
+    endingTaken: () => {
+      closing = undefined;
+    }
+  };
 };
 
-export const writingEnded = (): number | undefined => closing;
+const CHANNEL = Symbol("spreadsheet-editor.picking");
 
-export const endingTaken = (): void => {
-  closing = undefined;
+export const providePickingChannel = (channel: PickingChannel): PickingChannel =>
+  setContext(CHANNEL, channel);
+
+export const pickingChannel = (): PickingChannel => {
+  const held = getContext<PickingChannel | undefined>(CHANNEL);
+  if (held === undefined) {
+    throw new Error(
+      "No picking channel was provided for this project. " +
+        "See src/routes/app/[project]/+layout.svelte."
+    );
+  }
+  return held;
 };

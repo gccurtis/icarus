@@ -2,23 +2,25 @@
   import Plus from "@lucide/svelte/icons/plus";
 
   import { Panel, PanelButton, PanelEmpty, PanelRow, PanelSearch } from "$authored-components/panel";
-  import { VARIABLE, variableSignal } from "$app-views/categories/spreadsheet-editor/procedures/selecting";
+  import { VARIABLE } from "$app-views/categories/spreadsheet-editor/procedures/selection-kinds";
+  import { variableSignal } from "$app-views/categories/spreadsheet-editor/procedures/selecting";
   import { displayOf } from "$app-views/categories/spreadsheet-editor/procedures/values";
+  import { addsAVariable } from "$app-views/categories/spreadsheet-editor/procedures/editing-variables";
   import { loadsTheVariables } from "$app-views/categories/spreadsheet-editor/procedures/effects/loads-the-variables.svelte";
   import {
-    saveVariable,
-    variables,
+    variableRegister,
     type VariableRecord
   } from "$app-views/categories/spreadsheet-editor/procedures/variables.svelte";
   import { workspaceState } from "$model/client/workspace-state";
 
   const view = workspaceState();
+  const register = variableRegister();
 
-  loadsTheVariables(() => view.project);
+  loadsTheVariables(register);
 
   let filter = $state("");
 
-  const held = $derived(variables(view.project));
+  const held = $derived(register.records);
 
   const shown = $derived(
     held.filter((variable) => variable.name.toLowerCase().includes(filter.trim().toLowerCase()))
@@ -33,14 +35,7 @@
     view.inspect(signal.key, signal.selection);
   };
 
-  const create = async (): Promise<void> => {
-    const taken = new Set(held.map((variable) => variable.name.toLowerCase()));
-    let index = 1;
-    while (taken.has(`variable${index}`)) index += 1;
-    const wanted = `variable${index}`;
-    const answer = await saveVariable(view.project, { name: wanted, value: { kind: "empty" }, type: "any" });
-    if (answer.saved) open(wanted);
-  };
+  const create = () => addsAVariable(register, open);
 
   const sub = (variable: VariableRecord): string =>
     `${variable.type} · ${displayOf(variable.value) || "empty"}`;

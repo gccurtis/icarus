@@ -10,8 +10,9 @@
   } from "$app-views/categories/spreadsheet-editor/procedures/anchoring";
   import { cellAt, typed } from "$app-views/categories/spreadsheet-editor/procedures/cells";
   import { editableOf, factsOf, recalculating } from "$app-views/categories/spreadsheet-editor/procedures/recalculation";
-  import { disarm, endWriting, type Picker } from "$app-views/categories/spreadsheet-editor/procedures/picking.svelte";
-  import { selectedRef } from "$app-views/categories/spreadsheet-editor/procedures/selecting";
+  import { pickingChannel, type Picker } from "$app-views/categories/spreadsheet-editor/procedures/picking.svelte";
+  import { variableRegister } from "$app-views/categories/spreadsheet-editor/procedures/variables.svelte";
+  import { selectedRef } from "$app-views/categories/spreadsheet-editor/procedures/selection-reading";
   import { holdsTheRuntime } from "$app-views/categories/spreadsheet-editor/procedures/effects/holds-the-runtime.svelte";
   import { runsTheWritingSession } from "$app-views/categories/spreadsheet-editor/procedures/effects/runs-the-writing-session.svelte";
   import { workspaceState } from "$model/client/workspace-state";
@@ -24,6 +25,8 @@
   ];
 
   const view = workspaceState();
+  const channel = pickingChannel();
+  const register = variableRegister();
 
   const sheetId = $derived(view.active.resourceId);
 
@@ -102,6 +105,7 @@
   };
 
   runsTheWritingSession({
+    channel,
     picker,
     picking: () => picking,
     address: () => (editing && editingAt !== undefined ? keyOf(editingAt) : undefined),
@@ -120,7 +124,7 @@
     const resourceId = view.active.resourceId;
     if (!editing || at === undefined || live === undefined) return;
     editing = false;
-    disarm(picker);
+    channel.disarm(picker);
     const known = factsOf(resourceId, live);
     if (draft === editableOf(known, cellAt(live, at))) return;
     const edit = typed(live, gridOf(live.body), at, draft, known);
@@ -129,21 +133,21 @@
       return;
     }
     refusal = undefined;
-    if (edit.ops.length > 0) runtime?.apply(recalculating(view.project, resourceId, live, edit.ops));
+    if (edit.ops.length > 0) runtime?.apply(recalculating(register, resourceId, live, edit.ops));
   };
 
   const keydown = (event: KeyboardEvent) => {
     if (event.key === "Escape") {
       event.preventDefault();
       editing = false;
-      disarm(picker);
-      endWriting();
+      channel.disarm(picker);
+      channel.endWriting();
       return;
     }
     if (event.key === "Enter") {
       event.preventDefault();
       commit();
-      endWriting();
+      channel.endWriting();
       return;
     }
     if (event.key === "F4") {

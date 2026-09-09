@@ -11,14 +11,17 @@
     PanelNote,
     PanelSelect
   } from "$authored-components/panel";
-  import { VARIABLE, variableSignal } from "$app-views/categories/spreadsheet-editor/procedures/selecting";
+  import { VARIABLE } from "$app-views/categories/spreadsheet-editor/procedures/selection-kinds";
+  import { variableSignal } from "$app-views/categories/spreadsheet-editor/procedures/selecting";
   import { displayOf, parseTyped } from "$app-views/categories/spreadsheet-editor/procedures/values";
   import { loadsTheVariables } from "$app-views/categories/spreadsheet-editor/procedures/effects/loads-the-variables.svelte";
   import { seedsFromTheRecord } from "$app-views/categories/spreadsheet-editor/procedures/effects/seeds-from-the-record.svelte";
   import {
-    removeVariable,
-    saveVariable,
-    variables,
+    removesTheVariable,
+    savesTheVariable
+  } from "$app-views/categories/spreadsheet-editor/procedures/editing-variables";
+  import {
+    variableRegister,
     type VariableRecord
   } from "$app-views/categories/spreadsheet-editor/procedures/variables.svelte";
   import { workspaceState } from "$model/client/workspace-state";
@@ -38,15 +41,16 @@
   ];
 
   const view = workspaceState();
+  const register = variableRegister();
 
-  loadsTheVariables(() => view.project);
+  loadsTheVariables(register);
 
   const chosen = $derived(view.selection?.kind === VARIABLE ? view.selection.id : undefined);
 
   const held = $derived(
     chosen === undefined
       ? undefined
-      : variables(view.project).find((variable) => variable.name.toLowerCase() === chosen.toLowerCase())
+      : register.records.find((variable) => variable.name.toLowerCase() === chosen.toLowerCase())
   );
 
   let name = $state("");
@@ -63,37 +67,36 @@
     }
   );
 
-  const commit = async (): Promise<void> => {
-    const record = held;
-    if (record === undefined) return;
-    const wanted = name.trim();
-    const parsed = parseTyped(literal);
-    const answer = await saveVariable(view.project, {
-      name: wanted,
-      value: parsed.kind === "value" ? parsed.value : { kind: "empty" },
-      type
-    });
-    if (!answer.saved) {
-      refusal = answer.reason;
-      return;
-    }
-    refusal = undefined;
-    if (wanted === record.name) return;
-    if (wanted.toLowerCase() !== record.name.toLowerCase()) await removeVariable(view.project, record.name);
+  const opened = (wanted: string) => {
     const signal = variableSignal(wanted);
     view.inspect(signal.key, signal.selection);
   };
 
-  const retype = (next: string) => {
-    type = next as VariableType;
-    void commit();
-  };
-
-  const remove = async (): Promise<void> => {
+  const commit = () => {
     const record = held;
     if (record === undefined) return;
-    await removeVariable(view.project, record.name);
-    view.clear();
+    void savesTheVariable({
+      register,
+      record,
+      name,
+      type,
+      literal,
+      refused: (reason) => {
+        refusal = reason;
+      },
+      opened
+    });
+  };
+
+  const retype = (next: string) => {
+    type = next as VariableType;
+    commit();
+  };
+
+  const remove = () => {
+    const record = held;
+    if (record === undefined) return;
+    void removesTheVariable(register, record.name, () => view.clear());
   };
 </script>
 
@@ -106,7 +109,7 @@
           placeholder="perMinuteRate"
           flush
           bind:value={name}
-          onenter={() => void commit()}
+          onenter={commit}
         />
       </PanelControlRow>
       <PanelControlRow label="Type">
@@ -119,7 +122,7 @@
           mono
           flush
           bind:value={literal}
-          onenter={() => void commit()}
+          onenter={commit}
         />
       </PanelControlRow>
     </PanelControlGroup>
@@ -129,7 +132,7 @@
     {/if}
 
     <div class="actions">
-      <PanelButton label="Delete" icon={Trash2} tone="danger" onclick={() => void remove()} />
+      <PanelButton label="Delete" icon={Trash2} tone="danger" onclick={remove} />
     </div>
   {:else}
     <PanelEmpty title="Pick a variable in the Variables panel" />

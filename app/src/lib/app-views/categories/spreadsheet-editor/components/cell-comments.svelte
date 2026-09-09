@@ -4,20 +4,18 @@
   import { gridOf, labelOf } from "$app-views/categories/spreadsheet-editor/procedures/addresses";
   import { cellAt } from "$app-views/categories/spreadsheet-editor/procedures/cells";
   import {
+    addsAComment,
     ago,
     nameOf,
-    remarkBlock,
     remarksOf,
     textOf,
     threadsOf,
     threadsOnCell
   } from "$app-views/categories/spreadsheet-editor/procedures/comments";
   import { paintOf } from "$app-views/categories/spreadsheet-editor/procedures/formatting";
-  import { selectedRef } from "$app-views/categories/spreadsheet-editor/procedures/selecting";
+  import { selectedRef } from "$app-views/categories/spreadsheet-editor/procedures/selection-reading";
   import {
-    createRow,
     projectIdOf,
-    refreshAll,
     rowsOf,
     tableQuery,
     viewerId
@@ -57,28 +55,21 @@
 
   let composing = $state("");
 
-  const comment = async () => {
+  const comment = () => {
     const text = composing.trim();
     if (text === "" || sheetId === undefined || ref === undefined) return;
-    const author = { kind: "user" as const, userId: viewer };
-    const now = Date.now();
-    const made = await createRow("commentThreads", {
+    void addsAComment({
       projectId: project,
-      target: { kind: "spreadsheet", id: sheetId },
-      within: { kind: "cell", rowId: ref.rowId, columnId: ref.columnId },
+      sheetId,
+      ref,
       quote: shows,
-      createdBy: author,
-      updatedAt: now
+      viewerId: viewer,
+      text,
+      queries: [threadRows, remarkRows],
+      sent: () => {
+        composing = "";
+      }
     });
-    await createRow("comments", {
-      projectId: project,
-      threadId: made.id,
-      blocks: [remarkBlock(text)],
-      mentions: [],
-      author
-    });
-    composing = "";
-    await refreshAll(threadRows, remarkRows);
   };
 </script>
 
@@ -87,7 +78,7 @@
     <div class="composer">
       <Textarea placeholder="Comment on {label}…" bind:value={composing} class="text-body-sm field-sizing-content min-h-16 resize-none" />
       <div class="flex">
-        <PanelButton label="Add comment" tone="primary" disabled={composing.trim().length === 0} onclick={() => void comment()} />
+        <PanelButton label="Add comment" tone="primary" disabled={composing.trim().length === 0} onclick={comment} />
       </div>
     </div>
     {#each threads as thread (thread._id)}

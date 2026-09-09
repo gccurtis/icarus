@@ -12,8 +12,10 @@
   import { gridOf } from "$app-views/categories/spreadsheet-editor/procedures/addresses";
   import { factsOf, recalculating } from "$app-views/categories/spreadsheet-editor/procedures/recalculation";
   import { hitsOf, replaceOps, type Hit } from "$app-views/categories/spreadsheet-editor/procedures/find";
-  import { cellSignal, selectedRef } from "$app-views/categories/spreadsheet-editor/procedures/selecting";
+  import { selectedRef } from "$app-views/categories/spreadsheet-editor/procedures/selection-reading";
+  import { cellSignal } from "$app-views/categories/spreadsheet-editor/procedures/selecting";
   import { holdsTheRuntime } from "$app-views/categories/spreadsheet-editor/procedures/effects/holds-the-runtime.svelte";
+  import { variableRegister } from "$app-views/categories/spreadsheet-editor/procedures/variables.svelte";
   import { workspaceState, type SpreadsheetRuntime } from "$model/client/workspace-state";
 
   const MODES = [
@@ -22,6 +24,7 @@
   ];
 
   const view = workspaceState();
+  const register = variableRegister();
 
   const sheetId = $derived(view.active.resourceId);
 
@@ -45,7 +48,7 @@
 
   const commit = (ops: Parameters<SpreadsheetRuntime["apply"]>[0]) => {
     if (ops.length === 0 || sheet === undefined) return;
-    runtime?.apply(recalculating(view.project, sheetId, sheet, ops));
+    runtime?.apply(recalculating(register, sheetId, sheet, ops));
   };
 
   const show = (hit: Hit) => {

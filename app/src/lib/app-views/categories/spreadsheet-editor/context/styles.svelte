@@ -4,7 +4,9 @@
   import { Panel, PanelButton, PanelEmpty, PanelRow, PanelSearch } from "$authored-components/panel";
   import { Button } from "$vendored-components/button";
   import { gridOf } from "$app-views/categories/spreadsheet-editor/procedures/addresses";
-  import { STYLE, selectedRects, styleSignal } from "$app-views/categories/spreadsheet-editor/procedures/selecting";
+  import { STYLE } from "$app-views/categories/spreadsheet-editor/procedures/selection-kinds";
+  import { selectedRects } from "$app-views/categories/spreadsheet-editor/procedures/selection-reading";
+  import { styleSignal } from "$app-views/categories/spreadsheet-editor/procedures/selecting";
   import { appliedStyle, newStyle, styleRows } from "$app-views/categories/spreadsheet-editor/procedures/styles";
   import { holdsTheRuntime } from "$app-views/categories/spreadsheet-editor/procedures/effects/holds-the-runtime.svelte";
   import { workspaceState } from "$model/client/workspace-state";

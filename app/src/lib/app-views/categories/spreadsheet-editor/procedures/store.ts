@@ -15,8 +15,17 @@ export const titleOf = (query: FieldQuery | undefined): string => {
   return found?.kind === "field" && typeof found.value === "string" ? found.value : "";
 };
 
-export const renameSheet = async (sheetId: string, title: string): Promise<void> => {
-  await update({ path: `spreadsheets.${sheetId}.title`, value: title });
+export const renameSheet = async (
+  sheetId: string | undefined,
+  next: string,
+  title: string,
+  query: FieldQuery | undefined
+): Promise<void> => {
+  const wanted = next.trim();
+  if (sheetId === undefined || wanted === "" || wanted === title) return;
+
+  await update({ path: `spreadsheets.${sheetId}.title`, value: wanted });
+  await query?.refresh();
 };
 
 export const createRow = async <T extends TableName>(

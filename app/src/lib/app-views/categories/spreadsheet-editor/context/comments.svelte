@@ -12,7 +12,8 @@
     threadsOf,
     type Thread
   } from "$app-views/categories/spreadsheet-editor/procedures/comments";
-  import { cellSignal, selectedRef } from "$app-views/categories/spreadsheet-editor/procedures/selecting";
+  import { selectedRef } from "$app-views/categories/spreadsheet-editor/procedures/selection-reading";
+  import { cellSignal } from "$app-views/categories/spreadsheet-editor/procedures/selecting";
   import { rowsOf, tableQuery } from "$app-views/categories/spreadsheet-editor/procedures/store";
   import { holdsTheRuntime } from "$app-views/categories/spreadsheet-editor/procedures/effects/holds-the-runtime.svelte";
   import { workspaceState } from "$model/client/workspace-state";

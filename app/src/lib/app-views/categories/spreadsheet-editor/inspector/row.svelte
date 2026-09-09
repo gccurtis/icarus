@@ -11,7 +11,7 @@
   import { gridOf } from "$app-views/categories/spreadsheet-editor/procedures/addresses";
   import type { Edit } from "$app-views/categories/spreadsheet-editor/procedures/cells";
   import { recalculating } from "$app-views/categories/spreadsheet-editor/procedures/recalculation";
-  import { selectedRects, selectedRowIds } from "$app-views/categories/spreadsheet-editor/procedures/selecting";
+  import { selectedRects, selectedRowIds } from "$app-views/categories/spreadsheet-editor/procedures/selection-reading";
   import { aggregateOf } from "$app-views/categories/spreadsheet-editor/procedures/stats";
   import {
     DEFAULT_ROW_HEIGHT,
@@ -23,9 +23,11 @@
   } from "$app-views/categories/spreadsheet-editor/procedures/structure";
   import { pixelsOf, pointsOf } from "$app-views/categories/spreadsheet-editor/procedures/units";
   import { holdsTheRuntime } from "$app-views/categories/spreadsheet-editor/procedures/effects/holds-the-runtime.svelte";
+  import { variableRegister } from "$app-views/categories/spreadsheet-editor/procedures/variables.svelte";
   import { isInspectorView, workspaceState } from "$model/client/workspace-state";
 
   const view = workspaceState();
+  const register = variableRegister();
 
   const sheetId = $derived(view.active.resourceId);
 
@@ -46,7 +48,7 @@
 
   const apply = (ops: Edit["ops"]) => {
     if (ops.length === 0 || sheet === undefined) return;
-    runtime?.apply(recalculating(view.project, sheetId, sheet, ops));
+    runtime?.apply(recalculating(register, sheetId, sheet, ops));
   };
 
   const resize = (points: number) => {

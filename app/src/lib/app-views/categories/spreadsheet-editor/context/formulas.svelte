@@ -26,11 +26,14 @@
   import { typed } from "$app-views/categories/spreadsheet-editor/procedures/cells";
   import { factsOf, recalculating } from "$app-views/categories/spreadsheet-editor/procedures/recalculation";
   import { formulaRows, matchesFilter } from "$app-views/categories/spreadsheet-editor/procedures/formulas";
-  import { cellSignal, selectedRef } from "$app-views/categories/spreadsheet-editor/procedures/selecting";
+  import { selectedRef } from "$app-views/categories/spreadsheet-editor/procedures/selection-reading";
+  import { cellSignal } from "$app-views/categories/spreadsheet-editor/procedures/selecting";
   import { holdsTheRuntime } from "$app-views/categories/spreadsheet-editor/procedures/effects/holds-the-runtime.svelte";
+  import { variableRegister } from "$app-views/categories/spreadsheet-editor/procedures/variables.svelte";
   import { workspaceState } from "$model/client/workspace-state";
 
   const view = workspaceState();
+  const register = variableRegister();
 
   const sheetId = $derived(view.active.resourceId);
 
@@ -89,7 +92,7 @@
       return;
     }
     const edit = typed(sheet, grid, current, expression.startsWith("=") ? expression : `=${expression}`, facts);
-    if (edit.refused === undefined && edit.ops.length > 0) runtime?.apply(recalculating(view.project, sheetId, sheet, edit.ops));
+    if (edit.refused === undefined && edit.ops.length > 0) runtime?.apply(recalculating(register, sheetId, sheet, edit.ops));
     reset();
   };
 </script>

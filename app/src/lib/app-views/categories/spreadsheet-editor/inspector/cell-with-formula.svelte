@@ -25,14 +25,17 @@
     type Dependency,
     type Reference
   } from "$app-views/categories/spreadsheet-editor/procedures/references";
-  import { cellSignal, selectedRef } from "$app-views/categories/spreadsheet-editor/procedures/selecting";
+  import { selectedRef } from "$app-views/categories/spreadsheet-editor/procedures/selection-reading";
+  import { cellSignal } from "$app-views/categories/spreadsheet-editor/procedures/selecting";
   import { mergeOf, spillOf, unmerged } from "$app-views/categories/spreadsheet-editor/procedures/spans";
   import { rowsOf, tableQuery } from "$app-views/categories/spreadsheet-editor/procedures/store";
   import { KIND_LABEL, displayOf, kindOf, type SheetCell } from "$app-views/categories/spreadsheet-editor/procedures/values";
   import { holdsTheRuntime } from "$app-views/categories/spreadsheet-editor/procedures/effects/holds-the-runtime.svelte";
+  import { variableRegister } from "$app-views/categories/spreadsheet-editor/procedures/variables.svelte";
   import { isInspectorView, workspaceState } from "$model/client/workspace-state";
 
   const view = workspaceState();
+  const register = variableRegister();
 
   const sheetId = $derived(view.active.resourceId);
 
@@ -60,7 +63,7 @@
   const sheets = $derived(rowsOf(sheetRows, "spreadsheets"));
 
   const apply = (edit: Edit) => {
-    if (edit.refused === undefined && edit.ops.length > 0 && sheet !== undefined) runtime?.apply(recalculating(view.project, sheetId, sheet, edit.ops));
+    if (edit.refused === undefined && edit.ops.length > 0 && sheet !== undefined) runtime?.apply(recalculating(register, sheetId, sheet, edit.ops));
   };
 
   const unmerge = () => {

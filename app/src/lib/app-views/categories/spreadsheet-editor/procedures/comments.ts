@@ -11,6 +11,7 @@ import {
   type Grid
 } from "$app-views/categories/spreadsheet-editor/procedures/addresses";
 import { mint } from "$app-views/categories/spreadsheet-editor/procedures/ids";
+import { createRow, refreshAll, type TableQuery } from "$app-views/categories/spreadsheet-editor/procedures/store";
 
 export type Thread = CommentThread;
 export type Remark = Comment;
@@ -67,6 +68,47 @@ export const remarkBlock = (text: string): TextBlock => ({
   display: text,
   marks: []
 });
+
+export type NewComment = {
+  readonly projectId: string;
+  readonly sheetId: string;
+  readonly ref: CellRef;
+  readonly quote: string;
+  readonly viewerId: string;
+  readonly text: string;
+  readonly queries: readonly TableQuery[];
+  readonly sent: () => void;
+};
+
+/**
+ * A first remark on a cell, which is a thread and a remark inside it.
+ *
+ * The thread carries what the cell showed when the question was asked. A reader
+ * coming back to it later reads what was being talked about rather than what the
+ * cell has since become.
+ */
+export const addsAComment = async (asked: NewComment): Promise<void> => {
+  const author = { kind: "user" as const, userId: asked.viewerId };
+  const made = await createRow("commentThreads", {
+    projectId: asked.projectId,
+    target: { kind: "spreadsheet", id: asked.sheetId },
+    within: { kind: "cell", rowId: asked.ref.rowId, columnId: asked.ref.columnId },
+    quote: asked.quote,
+    createdBy: author,
+    updatedAt: Date.now()
+  });
+
+  await createRow("comments", {
+    projectId: asked.projectId,
+    threadId: made.id,
+    blocks: [remarkBlock(asked.text)],
+    mentions: [],
+    author
+  });
+
+  asked.sent();
+  await refreshAll(...asked.queries);
+};
 
 export const anchorOf = (thread: Thread): CellRef | undefined =>
   thread.within?.kind === "cell" ? { rowId: thread.within.rowId, columnId: thread.within.columnId } : undefined;

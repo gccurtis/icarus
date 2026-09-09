@@ -25,11 +25,13 @@
   } from "$app-views/categories/spreadsheet-editor/procedures/formatting";
   import { formatOps, paintsOf, sharedOf } from "$app-views/categories/spreadsheet-editor/procedures/painting";
   import { recalculating } from "$app-views/categories/spreadsheet-editor/procedures/recalculation";
-  import { selectedRects, selectedRef } from "$app-views/categories/spreadsheet-editor/procedures/selecting";
+  import { selectedRects, selectedRef } from "$app-views/categories/spreadsheet-editor/procedures/selection-reading";
   import { holdsTheRuntime } from "$app-views/categories/spreadsheet-editor/procedures/effects/holds-the-runtime.svelte";
+  import { variableRegister } from "$app-views/categories/spreadsheet-editor/procedures/variables.svelte";
   import { workspaceState } from "$model/client/workspace-state";
 
   const view = workspaceState();
+  const register = variableRegister();
   const sheetId = $derived(view.active.resourceId);
 
   const attached = holdsTheRuntime();
@@ -45,7 +47,7 @@
   const onchange = (next: CellBorder | null) => {
     if (sheet === undefined) return;
     const ops = formatOps(sheet, grid, rects, ref, "border", next);
-    if (ops.length > 0) runtime?.apply(recalculating(view.project, sheetId, sheet, ops));
+    if (ops.length > 0) runtime?.apply(recalculating(register, sheetId, sheet, ops));
   };
 
   const lines = (sides: readonly BorderSide[]) =>

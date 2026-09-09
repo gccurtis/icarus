@@ -19,7 +19,7 @@
   import { columnIndexOf, columnLabel, gridOf, rectLabelOf } from "$app-views/categories/spreadsheet-editor/procedures/addresses";
   import { recalculating } from "$app-views/categories/spreadsheet-editor/procedures/recalculation";
   import { problemsOf } from "$app-views/categories/spreadsheet-editor/procedures/references";
-  import { selectedRects } from "$app-views/categories/spreadsheet-editor/procedures/selecting";
+  import { selectedRects } from "$app-views/categories/spreadsheet-editor/procedures/selection-reading";
   import { formulaCount, populatedCount, usedRect } from "$app-views/categories/spreadsheet-editor/procedures/stats";
   import {
     frozenColumnsSet,
@@ -31,9 +31,11 @@
   } from "$app-views/categories/spreadsheet-editor/procedures/structure";
   import { holdsTheRuntime } from "$app-views/categories/spreadsheet-editor/procedures/effects/holds-the-runtime.svelte";
   import { mirrorsADraft } from "$app-views/categories/spreadsheet-editor/procedures/effects/mirrors-a-draft.svelte";
+  import { variableRegister } from "$app-views/categories/spreadsheet-editor/procedures/variables.svelte";
   import { workspaceState, type SpreadsheetRuntime } from "$model/client/workspace-state";
 
   const view = workspaceState();
+  const register = variableRegister();
 
   const sheetId = $derived(view.active.resourceId);
 
@@ -56,7 +58,7 @@
 
   const apply = (ops: Parameters<SpreadsheetRuntime["apply"]>[0]) => {
     if (ops.length === 0 || sheet === undefined) return;
-    runtime?.apply(recalculating(view.project, sheetId, sheet, ops));
+    runtime?.apply(recalculating(register, sheetId, sheet, ops));
   };
 
   const addRow = (where: "above" | "below") => {

@@ -11,12 +11,14 @@ import { factsOf, shownOf, toStored } from "$app-views/categories/spreadsheet-ed
 import { dependentsOf, precedentsOf, problemsOf, referencesIn } from "$app-views/categories/spreadsheet-editor/procedures/references";
 import { runsOf, sceneOf } from "$app-views/categories/spreadsheet-editor/procedures/scene";
 import {
-  cellSignal,
-  rangeSignal,
-  rowSignal,
   selectedRects,
   surfaceSelectionOf,
   textRangeOf
+} from "$app-views/categories/spreadsheet-editor/procedures/selection-reading";
+import {
+  cellSignal,
+  rangeSignal,
+  rowSignal
 } from "$app-views/categories/spreadsheet-editor/procedures/selecting";
 import { aggregateOf, usedRect } from "$app-views/categories/spreadsheet-editor/procedures/stats";
 import { appliedStyle, deletedStyle, styleRows } from "$app-views/categories/spreadsheet-editor/procedures/styles";

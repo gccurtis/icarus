@@ -28,7 +28,9 @@
   import { pasted } from "$app-views/categories/spreadsheet-editor/procedures/clipboard";
   import { anchorOf, pinsOf, threadsOf } from "$app-views/categories/spreadsheet-editor/procedures/comments";
   import { filled } from "$app-views/categories/spreadsheet-editor/procedures/fill";
-  import { armed, beginWriting, drafted, pick } from "$app-views/categories/spreadsheet-editor/procedures/picking.svelte";
+  import { createSheetState } from "$app-views/categories/spreadsheet-editor/content/sheet.state.svelte";
+  import { pickingChannel } from "$app-views/categories/spreadsheet-editor/procedures/picking.svelte";
+  import { variableRegister } from "$app-views/categories/spreadsheet-editor/procedures/variables.svelte";
   import {
     factsOf,
     recalculating,
@@ -43,17 +45,19 @@
   import { dependentsOf, referencesIn } from "$app-views/categories/spreadsheet-editor/procedures/references";
   import { sceneOf } from "$app-views/categories/spreadsheet-editor/procedures/scene";
   import {
-    cellSignal,
-    columnSignal,
     highlightedRefs,
-    rangeSignal,
-    rowSignal,
     sameSelection,
     selectedColumnIds,
     selectedRects,
     selectedRef,
     selectedRowIds,
-    surfaceSelectionOf,
+    surfaceSelectionOf
+  } from "$app-views/categories/spreadsheet-editor/procedures/selection-reading";
+  import {
+    cellSignal,
+    columnSignal,
+    rangeSignal,
+    rowSignal,
     type Signal
   } from "$app-views/categories/spreadsheet-editor/procedures/selecting";
   import {
@@ -89,6 +93,8 @@
   const ZOOM_MAX = 200;
 
   const view = workspaceState();
+  const channel = pickingChannel();
+  const register = variableRegister();
 
   const sheetId = $derived(view.active.resourceId);
 
@@ -97,10 +103,10 @@
   const attached = holdsTheRuntime();
   const runtime = $derived(attached.current);
 
-  loadsTheVariables(() => view.project);
+  loadsTheVariables(register);
 
   recalculatesOnVariables(
-    () => view.project,
+    register,
     () => ({ resourceId: sheetId, sheet, runtime })
   );
 
@@ -118,7 +124,7 @@
       : pinsOf(threads, sheet, grid, currentThread, view.selection?.kind === "cell" ? view.selection.id : undefined)
   );
 
-  const scene = $derived(sheet === undefined ? undefined : sceneOf(sheet, grid, pins, facts, drafted()));
+  const scene = $derived(sheet === undefined ? undefined : sceneOf(sheet, grid, pins, facts, channel.drafted));
   const selection = $derived.by((): SurfaceSelection | undefined => {
     const held = view.selection;
     if (held?.kind !== "comment") return surfaceSelectionOf(grid, held);
@@ -139,7 +145,7 @@
     if (ref === undefined) return found;
     const held = sheet.cells[`${ref.rowId}/${ref.columnId}`];
 
-    const writing = drafted();
+    const writing = channel.drafted;
     const draft = writing === undefined ? undefined : storedOf(facts, writing.text);
     const reading: SheetCell | undefined =
       draft === undefined
@@ -166,23 +172,17 @@
     return found;
   });
 
-  let api = $state<SurfaceApi | undefined>(undefined);
-  let wrapper = $state<HTMLDivElement>();
-  let notice = $state<string | undefined>(undefined);
-  let noticeTimer: ReturnType<typeof setTimeout> | undefined;
-  let scrollTarget = $state<{ row: number; column: number; token: number } | undefined>(undefined);
-  let scrolls = 0;
-  let hit = $state<SurfaceHit | undefined>(undefined);
+  const held = createSheetState();
 
   const say = (text: string) => {
-    notice = text;
-    if (noticeTimer !== undefined) clearTimeout(noticeTimer);
-    noticeTimer = setTimeout(() => (notice = undefined), 6000);
+    held.notice = text;
+    if (held.noticeTimer !== undefined) clearTimeout(held.noticeTimer);
+    held.noticeTimer = setTimeout(() => (held.notice = undefined), 6000);
   };
 
   const apply = (ops: Edit["ops"]) => {
     if (ops.length === 0 || sheet === undefined) return;
-    runtime?.apply(recalculating(view.project, sheetId, sheet, ops));
+    runtime?.apply(recalculating(register, sheetId, sheet, ops));
   };
 
   const perform = (edit: Edit): boolean => {
@@ -256,13 +256,16 @@
   };
 
   const picked = (next: SurfaceSelection): boolean => {
-    if (!armed()) return false;
+    if (!channel.armed) return false;
     const at = next.cell;
     const [rect] = next.ranges;
     if (at === undefined || rect === undefined || next.ranges.length > 1) return false;
     const ref = refAt(grid, at[1], at[0]);
     if (ref === undefined) return false;
-    return pick(rect.rows === 1 && rect.columns === 1 ? labelOf(grid, ref) : rectLabelOf(grid, rect), keyOf(ref));
+    return channel.pick(
+      rect.rows === 1 && rect.columns === 1 ? labelOf(grid, ref) : rectLabelOf(grid, rect),
+      keyOf(ref)
+    );
   };
 
   const select = (next: SurfaceSelection) => {
@@ -336,7 +339,7 @@
   };
 
   const pointed = (next: SurfaceHit) => {
-    hit = next;
+    held.hit = next;
     if (sheet === undefined) return;
     if (next.kind === "cell") {
       const inside = selectedRects(grid, view.selection).some(
@@ -372,7 +375,7 @@
   };
 
   const keydown = (event: KeyboardEvent) => {
-    const element = wrapper;
+    const element = held.wrapper;
     if (element === undefined || !(event.target instanceof Node) || !element.contains(event.target)) return;
     if (!(event.metaKey || event.ctrlKey)) return;
     const key = event.key.toLowerCase();
@@ -385,36 +388,34 @@
     }
   };
 
-  takesBackTheCaret(() => api?.focus());
-
-  let landed = $state<string | undefined>(undefined);
+  takesBackTheCaret(channel, () => held.api?.focus());
 
   followsTheAskedForCell({
     scrollTo: () => {
       const target = runtime?.scrollTo;
-      const held = runtime;
-      if (target === undefined || held === undefined) return undefined;
+      const open = runtime;
+      if (target === undefined || open === undefined) return undefined;
       const at = indexOf(grid, target);
       return {
         reach: () => {
           if (at === undefined) return;
-          scrolls += 1;
-          scrollTarget = { row: at.row, column: at.column, token: scrolls };
+          held.scrolls += 1;
+          held.scrollTarget = { row: at.row, column: at.column, token: held.scrolls };
         },
         taken: () => {
-          held.scrollTo = undefined;
+          open.scrollTo = undefined;
         }
       };
     },
     focused: () => {
       const focus = view.active.focus;
-      const held = runtime;
-      if (sheet === undefined || held === undefined || focus === undefined || focus === landed) return undefined;
+      const open = runtime;
+      if (sheet === undefined || open === undefined || focus === undefined || focus === held.landed) return undefined;
       const ref = parseRef(grid, focus);
       if (ref === undefined) return undefined;
       return () => {
-        landed = focus;
-        held.scrollTo = ref;
+        held.landed = focus;
+        open.scrollTo = ref;
         show(cellSignal(sheet, grid, ref));
       };
     }
@@ -424,7 +425,7 @@
 
 <svelte:window onkeydown={keydown} />
 
-<div class="sheet-editor" bind:this={wrapper}>
+<div class="sheet-editor" bind:this={held.wrapper}>
   <header class="area-title bg-surface-panel border-border-subtle border-b">
     <h1 class="text-body-sm text-ink-primary m-0 truncate font-medium">{title ?? "Loading spreadsheet..."}</h1>
   </header>
@@ -439,11 +440,11 @@
               {selection}
               {highlights}
               {zoom}
-              {scrollTarget}
-              bind:api
+              scrollTarget={held.scrollTarget}
+              bind:api={held.api}
               onselect={select}
               onedit={edited}
-              onbegin={beginWriting}
+              onbegin={(seed) => channel.beginWriting(seed)}
               ondelete={deleted}
               onfill={fill}
               onpaste={paste}
@@ -467,19 +468,19 @@
     </ContextMenu.Trigger>
 
     <SheetMenu
-      over={hit?.kind}
-      row={hit !== undefined && hit.kind !== "corner" && hit.kind !== "column" ? hit.row : 0}
-      column={hit !== undefined && hit.kind !== "corner" && hit.kind !== "row" ? hit.column : 0}
+      over={held.hit?.kind}
+      row={held.hit !== undefined && held.hit.kind !== "corner" && held.hit.kind !== "column" ? held.hit.row : 0}
+      column={held.hit !== undefined && held.hit.kind !== "corner" && held.hit.kind !== "row" ? held.hit.column : 0}
       onsay={say}
-      oncut={() => api?.cut()}
-      oncopy={() => api?.copy()}
-      onpaste={() => api?.paste()}
+      oncut={() => held.api?.cut()}
+      oncopy={() => held.api?.copy()}
+      onpaste={() => held.api?.paste()}
       onclear={clearSelection}
       onselectall={selectAll}
     />
   </ContextMenu.Root>
 
-  <SheetStrip {notice} />
+  <SheetStrip notice={held.notice} />
 </div>
 
 <style>

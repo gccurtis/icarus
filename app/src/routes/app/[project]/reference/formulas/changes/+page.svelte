@@ -1,5 +1,5 @@
 <script lang="ts">
-  import ChangesPage from "$development-views/formula-language-reference/components/changes-page.svelte";
+  import ChangesPage from "$app-views/general/formula-language-reference/components/changes-page.svelte";
 </script>
 
 <ChangesPage />

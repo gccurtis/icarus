@@ -15,7 +15,7 @@
     type NumberFormatParts,
     type Thousands
   } from "$app-views/categories/spreadsheet-editor/procedures/number-format";
-  import { selectedRects, selectedRef } from "$app-views/categories/spreadsheet-editor/procedures/selecting";
+  import { selectedRects, selectedRef } from "$app-views/categories/spreadsheet-editor/procedures/selection-reading";
   import { ruleFormatOver } from "$app-views/categories/spreadsheet-editor/procedures/styles";
   import { holdsTheRuntime } from "$app-views/categories/spreadsheet-editor/procedures/effects/holds-the-runtime.svelte";
   import { mirrorsADraft } from "$app-views/categories/spreadsheet-editor/procedures/effects/mirrors-a-draft.svelte";

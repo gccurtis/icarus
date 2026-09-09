@@ -31,7 +31,7 @@
     type Paint
   } from "$app-views/categories/spreadsheet-editor/procedures/formatting";
   import { STYLES } from "$app-views/categories/spreadsheet-editor/procedures/marks";
-  import { selectedRects, selectedRef } from "$app-views/categories/spreadsheet-editor/procedures/selecting";
+  import { selectedRects, selectedRef } from "$app-views/categories/spreadsheet-editor/procedures/selection-reading";
   import {
     DEFAULT_COLUMN_WIDTH,
     DEFAULT_ROW_HEIGHT,

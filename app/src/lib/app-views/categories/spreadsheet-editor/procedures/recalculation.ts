@@ -18,7 +18,7 @@ import type { SpreadsheetOp } from "$representation/data/types/spreadsheets/op";
 
 import { gridOf } from "$app-views/categories/spreadsheet-editor/procedures/addresses";
 import { literalOf } from "$app-views/categories/spreadsheet-editor/procedures/values";
-import { variableValue } from "$app-views/categories/spreadsheet-editor/procedures/variables.svelte";
+import type { VariableRegister } from "$app-views/categories/spreadsheet-editor/procedures/variables.svelte";
 
 export type { SheetFacts, SheetSource, Surroundings, Translated };
 export type { SheetCell } from "$representation/data/types/spreadsheets/cell";
@@ -33,8 +33,8 @@ export const sourceFor = (resourceId: string | undefined, sheet: LiveSheet): She
  * names. Another sheet is reachable only where one has been handed over, and a
  * formula that names one the reader cannot see is left alone rather than broken.
  */
-export const aroundOf = (project: string): Surroundings => ({
-  variable: (name) => variableValue(project, name)
+export const aroundOf = (register: VariableRegister): Surroundings => ({
+  variable: (name) => register.valueOf(name)
 });
 
 export const factsOf = (
@@ -75,7 +75,7 @@ export const storedOf = (
  * An edit and everything it changes, for a sheet the editor is holding open.
  */
 export const recalculating = (
-  project: string,
+  register: VariableRegister,
   resourceId: string | undefined,
   sheet: LiveSheet,
   ops: readonly SpreadsheetOp[]
@@ -83,5 +83,5 @@ export const recalculating = (
   withRecalculation(
     sourceOf((resourceId ?? "") as Id<"spreadsheets">, sheet),
     ops,
-    aroundOf(project)
+    aroundOf(register)
   );
