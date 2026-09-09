@@ -656,8 +656,13 @@ const validAtom = (value: unknown): boolean => {
   }
   if (value.kind === "template") {
     return (
-      hasOnlyKeys(value, ["id", "kind", "name"]) &&
-      validCanonicalText(value.name, MAX_HOLE_NAME_LENGTH)
+      hasOnlyKeys(value, ["id", "kind", "name", "description", "text"]) &&
+      validCanonicalText(value.name, MAX_HOLE_NAME_LENGTH) &&
+      (value.description === undefined ||
+        (isText(value.description) &&
+          value.description.length <= MAX_HOLE_DESCRIPTION_LENGTH &&
+          value.description === value.description.trim())) &&
+      (value.text === undefined || validText(value.text, MAX_BLOCK_TEXT_LENGTH, true))
     );
   }
   return (

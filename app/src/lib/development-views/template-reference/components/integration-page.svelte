@@ -38,20 +38,20 @@
         <span class="tref-kicker">04 · Integration</span>
         <h1>End to end with prompts</h1>
         <p class="tref-lede">
-          A template is a function and a prompt is what reads the project, so the two were always going
-          to meet. Write a prompt, save the thing as a template, be asked what that prompt should read
-          this time, answer, and get a copy that reads it. All {working} links carry. Nothing is
-          declared, nothing is wired up by hand, and a template made without a single thought about
-          templates still asks the right question.
+          A template is a function and a hole is where it takes an argument. One gesture makes one —
+          Templateify, on a prompt or on a run of selected text — and everything after it follows:
+          the template keeps exactly those holes, placing it asks about exactly those, and the copy
+          reads what was chosen. All {working} links carry, and a template you never templateify
+          anything in is simply a copy, which is also correct.
         </p>
       </div>
       <div class="tref-facts">
         <dl>
           <div><dt>Links in the chain</dt><dd>{CHAIN.length} of {CHAIN.length}</dd></div>
-          <div><dt>Holes per prompt</dt><dd>One, always</dd></div>
-          <div><dt>Declaring needed</dt><dd>None</dd></div>
-          <div><dt>Offered name</dt><dd>Prompt 1, Prompt 2, …</dd></div>
-          <div><dt>Can hold a placement up</dt><dd>Empty words, no default</dd></div>
+          <div><dt>Holes are</dt><dd>Made, never found</dd></div>
+          <div><dt>What can become one</dt><dd>A prompt · a selection</dd></div>
+          <div><dt>Offered name</dt><dd>Hole 1, Hole 2, …</dd></div>
+          <div><dt>Its default</dt><dd>Whatever it already is</dd></div>
         </dl>
       </div>
     </header>
@@ -95,13 +95,13 @@
       </div>
 
       <div class="tref-note success">
-        <h4>The gesture column is the point</h4>
+        <h4>One gesture, and the rest is consequence</h4>
         <p>
-          Two of the seven links have no gesture at all. Making a template turns every prompt into a
-          hole because that is what saving means, and the copy reads what was chosen because that is
-          what a resolved body is. The Template section on a prompt is worth opening — a name somebody
-          will recognise, and a sentence saying what they are choosing — but nothing breaks if nobody
-          ever does.
+          Link 02 is the only one anybody performs on purpose. Everything before it is ordinary
+          authoring, and everything after it happens because a hole exists: the template keeps it,
+          placing asks about it, resolution fills it, and the copy generates over what was chosen.
+          That is what makes placing short — the questions are the ones somebody meant to ask, and a
+          document with nine prompts and one hole asks once.
         </p>
       </div>
     </section>
@@ -128,16 +128,16 @@
 
     <section class="tref-section" id="defaults">
       <div class="tref-section-head">
-        <div><span class="tref-kicker">The rule</span><h2>Which scopes carry over, and which do not</h2></div>
+        <div><span class="tref-kicker">The rule</span><h2>What a hole defaults to</h2></div>
         <p>
-          A hole with a default can be left alone; a hole without one has to be answered. The line is
-          whether the scope means the same thing in a project that has never been seen.
+          Whatever the thing already is. Nothing is judged portable or not, because a hole that arrives
+          empty is a toll and this design does not charge one.
         </p>
       </div>
 
       <div class="tref-scroll">
         <table class="tref-table">
-          <thead><tr><th>The prompt read</th><th>The hole defaults to</th><th>Because</th></tr></thead>
+          <thead><tr><th>What was templateified</th><th>The hole defaults to</th><th>Because</th></tr></thead>
           <tbody>
             {#each DEFAULT_RULE as row (row.scope)}
               <tr>
@@ -151,13 +151,13 @@
       </div>
 
       <div class="tref-note">
-        <h4>Why this makes the common case free</h4>
+        <h4>Nothing is ever red</h4>
         <p>
-          Nobody scopes a prompt today: the base's Scope control offers one option and writes nothing,
-          so every prompt written in the editor reads the whole project. Under this rule every one of
-          those becomes a hole that already has an answer — so a person can write four prompts, save a
-          template, place it, and press Accept all defaults without ever making a decision. The rule
-          only starts asking things of you at the point where you started asking things of the project.
+          A hole always has an answer, because its answer is what the thing already said. Placing a
+          template is therefore always one press away from done, and the walk exists for the times you
+          want a copy to read something else — which is the only reason you made the hole. The Scope
+          control on a prompt is a real control now: it opens the same builder the ask modal does, and
+          what it writes is what the hole will offer.
         </p>
       </div>
     </section>

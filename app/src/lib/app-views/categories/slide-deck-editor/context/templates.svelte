@@ -30,7 +30,6 @@
     detailIn,
     discardStage,
     draftOf,
-    holeNameRefusal,
     insertionOf,
     mergedHoles,
     offeringOf,
@@ -118,10 +117,6 @@
   let choices = $state<Record<string, ScopeDraft | undefined>>({});
   let texts = $state<Record<string, string | undefined>>({});
   let answering = $state<TemplateHole | undefined>(undefined);
-  let makeOpen = $state(false);
-  let holeName = $state("");
-  let holeDescription = $state("");
-  let holeText = $state("");
 
   const askRows = $derived(answerRowsOf(insertFor?.holes ?? [], choices, texts, setNames));
   const askBlocked = $derived(
@@ -312,41 +307,6 @@
     void changeHoles(withHoleField(template.holes, defaultFor.name, { default: draft }));
   };
 
-  const openMake = () => {
-    holeName = "";
-    holeDescription = "";
-    holeText = "";
-    makeOpen = true;
-  };
-
-  /**
-   * Declaring the hole and dropping its atom are one act, because a hole nothing
-   * in the deck's text asks for is a hole that fills nothing.
-   */
-  const confirmMake = () =>
-    void run("make-hole", async () => {
-      if (template === undefined || body === undefined || runtime === undefined) return;
-      const name = holeName.trim();
-      const ops = textHoleInsertion(body, view.selection, name);
-      if (ops.length === 0) {
-        actionError = "Select some text first — that is where the hole goes.";
-        return;
-      }
-      const result = await updateHoles(
-        view,
-        template,
-        withNewTextHole(template.holes, { name, description: holeDescription, text: holeText }),
-        deckId
-      );
-      if (!live) return;
-      if (!result.accepted) {
-        actionError = result.detail;
-        return;
-      }
-      runtime.apply(ops);
-      makeOpen = false;
-      notice = [`Added the hole “${name}”.`];
-    });
 
   /**
    * The builder is its own modal rather than a second face of the ask modal.
@@ -413,7 +373,6 @@
     draft = { include: [], exclude: [] };
   };
 
-  const makeBlocked = $derived(holeNameRefusal(template?.holes ?? [], holeName));
   const busy = $derived(pending !== undefined || body === undefined);
   const unnamed = $derived(nameDraft.trim() === "");
   const scopeBlocked = $derived(
@@ -450,16 +409,12 @@
     {:else if stage !== undefined}
       <div class="after-verbs">
         <PanelSection title="Holes" count={template?.holes.length} chevron="end">
-          <div class="make">
-            <PanelButton
-              label="Create hole"
-              disabled={busy || template === undefined}
-              title="Name a text hole and drop it into the selected text"
-              onclick={openMake}
-            />
-          </div>
           {#if template === undefined}
             <PanelNote>Reading the template…</PanelNote>
+          {:else if template.holes.length === 0}
+            <PanelNote>
+              Nothing here is a hole yet. Open a prompt and press Templateify in its Template section.
+            </PanelNote>
           {:else}
             {#each template.holes as hole (hole.name)}
               <article class="hole">
@@ -592,20 +547,6 @@
   <ScopeBuilder {...view$} onmode={setMode} onadd={addTerm} ondrop={dropTerm} onclear={clearScope} />
 </OverlayModal>
 
-<OverlayModal
-  bind:open={makeOpen}
-  title="Create a hole"
-  description="A place in the deck's text that whoever places this template fills in with words."
-  confirm="Create"
-  blocked={makeBlocked}
-  onconfirm={confirmMake}
->
-  <div class="making">
-    <PanelInput label="Name" placeholder="subject_line" flush bind:value={holeName} />
-    <PanelInput label="Description" placeholder="What this hole stands for" flush bind:value={holeDescription} />
-    <PanelInput label="Default words" placeholder="What it says when nobody says otherwise" flush bind:value={holeText} />
-  </div>
-</OverlayModal>
 
 <style>
 
@@ -640,17 +581,6 @@
     margin-top: calc(var(--token-spacing-unit) * 2);
     padding-top: calc(var(--token-spacing-unit) * 1);
     border-top: 1px solid var(--token-border-subtle);
-  }
-
-  .make {
-    display: flex;
-    margin-bottom: calc(var(--token-spacing-unit) * 1.5);
-  }
-
-  .making {
-    display: flex;
-    flex-direction: column;
-    gap: calc(var(--token-spacing-unit) * 2);
   }
 
   .hole {

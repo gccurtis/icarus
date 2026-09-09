@@ -7,11 +7,10 @@ const isRecord = (value: unknown): value is Fields =>
 
 const WORDS: Record<string, [string, string]> = {
   formula: ["a formula's project binding", "formulas' project bindings"],
-  output: ["a prompt's generated output", "prompts' generated outputs"],
+  output: ["a prompt's link to its generated output", "prompts' links to their generated outputs"],
   link: ["a link to something in the project", "links to things in the project"],
   image: ["an image stored in the project", "images stored in the project"],
   background: ["an image background", "image backgrounds"],
-  scope: ["a scope term naming project resources", "scope terms naming project resources"],
   value: ["a value bound to the project", "values bound to the project"]
 };
 
@@ -28,20 +27,6 @@ export const portableBodyOf = <T>(body: T): Portable<T> => {
   const counts = new Map<string, number>();
   const drop = (kind: string): void => {
     counts.set(kind, (counts.get(kind) ?? 0) + 1);
-  };
-
-  const scope = (held: Fields): Fields => {
-    const keep = (terms: unknown): unknown[] => {
-      if (!Array.isArray(terms)) return [];
-      return terms.filter((term) => {
-        const portable =
-          isRecord(term) &&
-          (term.select === "project" || term.select === "kinds" || term.select === "hole");
-        if (!portable) drop("scope");
-        return portable;
-      });
-    };
-    return { include: keep(held.include), exclude: keep(held.exclude) };
   };
 
   const walk = (value: unknown): unknown => {
@@ -92,8 +77,7 @@ export const portableBodyOf = <T>(body: T): Portable<T> => {
 
     const next: Fields = {};
     for (const [field, nested] of Object.entries(held)) {
-      const walked =
-        held.type === "prompt" && field === "scope" && isRecord(nested) ? scope(nested) : walk(nested);
+      const walked = walk(nested);
       if (walked !== undefined) next[field] = walked;
     }
     return next;

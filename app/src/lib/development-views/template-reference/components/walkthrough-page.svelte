@@ -59,12 +59,10 @@
   ]);
 
   let chosen = $state<Record<string, string>>({});
-  let words = $state<Record<string, string>>({});
   let stage = $state(0);
 
   const holes = $derived(holesFrom(prompts));
-  const rows = $derived(answerRowsFrom(holes, chosen, words));
-  const missing = $derived(rows.filter((row) => row.missing).length);
+  const rows = $derived(answerRowsFrom(holes, chosen));
   const questions = $derived(Object.fromEntries(holes.map((hole) => [hole.name, hole.asks])));
 
   const rename = (id: string, name: string) => {
@@ -104,18 +102,18 @@
         <span class="tref-kicker">06 · Driven</span>
         <h1>Walk it yourself</h1>
         <p class="tref-lede">
-          Three prompts, written the way anybody writes them. Name them or leave them; scope them or
-          leave them; then watch the template that comes out and place it. Every control here is the
-          component the application ships, and the hole list beneath them is computed by the same pure
-          functions the capability runs — so the consequences are real even though nothing is saved.
+          Three prompts, written the way anybody writes them. Templateify the ones worth asking about,
+          change what they read, and watch the template that comes out — then place it. Every control
+          here is the component the application ships, and the hole list beneath them is computed by
+          the same pure functions the capability runs, so the consequences are real even though
+          nothing is saved.
         </p>
       </div>
       <div class="tref-facts">
         <dl>
           <div><dt>Prompts</dt><dd>{prompts.length}</dd></div>
-          <div><dt>Holes</dt><dd>{holes.length}</dd></div>
-          <div><dt>With a default</dt><dd>{holes.filter((hole) => hole.fallback !== undefined).length}</dd></div>
-          <div><dt>Still needing an answer</dt><dd>{missing}</dd></div>
+          <div><dt>Templateified</dt><dd>{holes.length}</dd></div>
+          <div><dt>Asked when placed</dt><dd>{holes.length}</dd></div>
           <div><dt>Saved anywhere</dt><dd>Nothing</dd></div>
         </dl>
       </div>
@@ -132,9 +130,10 @@
       <div class="tref-section-head">
         <div><span class="tref-kicker">Step one</span><h2>Write the prompts</h2></div>
         <p>
-          Each card is a prompt block's Template section, exactly as it appears in the inspector.
-          The name is offered rather than asked for. The context button cycles here; in the editor it
-          opens the scope builder.
+          Each card is a prompt block's Template section, exactly as it appears in the inspector. One
+          is templateified already; the other two are not, and a template built now would not ask
+          about them. What each prompt reads cycles here; in the editor that button opens the scope
+          builder.
         </p>
       </div>
 
@@ -145,15 +144,18 @@
               <span>Prompt {index + 1} asks</span>
               <p>{prompt.asks}</p>
             </blockquote>
+            <div class="reads">
+              <span>Reads</span>
+              <button type="button" onclick={() => cycleScope(prompt.id)}>{scopeWords(prompt.scope)}</button>
+            </div>
             <PromptTemplate
-              name={prompt.name}
-              offered={`Prompt ${index + 1}`}
+              name={prompt.name === "" ? undefined : prompt.name}
               description={prompt.description}
-              context={scopeWords(prompt.scope)}
-              settled={prompt.scope !== "set"}
+              offered={`Hole ${index + 1}`}
+              standing={scopeWords(prompt.scope)}
+              onmake={() => rename(prompt.id, `Hole ${index + 1}`)}
               onname={(next) => rename(prompt.id, next)}
               ondescription={(next) => describe(prompt.id, next)}
-              oncontext={() => cycleScope(prompt.id)}
             />
           </article>
         {/each}
@@ -164,8 +166,9 @@
       <div class="tref-section-head">
         <div><span class="tref-kicker">Step two</span><h2>Make the template</h2></div>
         <p>
-          Nothing is pressed. Saving turns every prompt into one hole, keeps the scope as its default
-          when the scope means the same thing anywhere, and drops the generated answer on the way in.
+          Only what was templateified becomes a hole, and its default is whatever the thing already
+          is. The prompt's question is copied onto the block as its link to the derived output is left
+          behind, so a placed copy is a working prompt rather than words about one.
         </p>
       </div>
 
@@ -180,21 +183,22 @@
                 <td><code>{hole.name}</code></td>
                 <td class="muted">{hole.description === "" ? "—" : hole.description}</td>
                 <td class="muted">{hole.asks}</td>
-                <td class:none={hole.fallback === undefined}>
-                  {hole.fallback ?? "Nothing — it has to be answered"}
-                </td>
+                <td>{hole.fallback}</td>
               </tr>
             {/each}
+            {#if holes.length === 0}
+              <tr><td class="none" colspan="4">Nothing was templateified, so this template asks nothing.</td></tr>
+            {/if}
           </tbody>
         </table>
       </div>
 
-      <div class="tref-note" class:success={missing === 0} class:attention={missing > 0}>
-        <h4>{missing === 0 ? "This template places with one press" : `${missing} hole needs an answer`}</h4>
+      <div class="tref-note success">
+        <h4>Every hole here carries a default</h4>
         <p>
-          {missing === 0
-            ? "Every hole carries a default, so whoever places it can accept everything as it stands. That is the common case, and it is free."
-            : "A prompt that read one of the project's named sets cannot carry that over, so its hole arrives empty. Cycle its context above to see the template become placeable."}
+          A hole's default is simply what the thing already is, so a template always places with one
+          press. Answering is for when this copy should read something else — which is the whole point
+          of having made the hole, and never a toll on the way past.
         </p>
       </div>
     </section>
@@ -203,9 +207,9 @@
       <div class="tref-section-head">
         <div><span class="tref-kicker">Step three</span><h2>Place it</h2></div>
         <p>
-          This is the ask modal itself. Use the tabs, or Previous and Next; a red tab is a hole that
-          still needs words. Pressing a scope opens the builder in the application — here it just
-          toggles between the default and something chosen, so the tag and the rule move.
+          This is the ask modal itself, holding only what was templateified above. Use the tabs, or
+          Previous and Next. Pressing a scope opens the builder in the application — here it toggles
+          between the default and something chosen, so the tag and the rule move.
         </p>
       </div>
 
@@ -219,7 +223,7 @@
             {rows}
             prompts={questions}
             onscope={answer}
-            ontext={(key, next) => (words = { ...words, [key]: next })}
+            ontext={() => undefined}
             onreset={reset}
             onaccept={() => (stage = STAGES.length - 1)}
           />
@@ -302,7 +306,35 @@
   }
 
   .none {
-    color: var(--token-color-danger-text);
+    color: var(--token-ink-muted);
+  }
+
+  .reads {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  .reads span {
+    color: var(--token-ink-muted);
+    font-size: 9.5px;
+    font-weight: 750;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .reads button {
+    padding: 0.25rem 0.6rem;
+    border: 1px solid var(--token-border-subtle);
+    border-radius: var(--token-radius-control);
+    background: var(--token-surface-work);
+    color: var(--token-ink-primary);
+    cursor: pointer;
+    font-size: 12px;
+  }
+
+  .reads button:hover {
+    border-color: var(--token-border-strong);
   }
 
   .modal {

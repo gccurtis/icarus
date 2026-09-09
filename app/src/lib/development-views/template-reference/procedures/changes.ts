@@ -127,12 +127,30 @@ export const SYSTEMATIC: SystematicChange[] = [
   },
   {
     index: "16",
-    title: "Every prompt is a hole",
+    title: "A hole is made, never found",
     before:
-      "A scope hole could only come from a body that already carried a hole term — which happened when a template with one was inserted into a working copy. A prompt somebody wrote kept its own sources, so a template made from it asked nothing and every copy read what the author read.",
-    now: "Making a template turns every prompt into one hole: named by what the author called it, else Prompt 1, Prompt 2; described by what they wrote beside it; and defaulting to the scope it read, when that scope means the same thing in a project nobody has seen. A prompt's Template section is where the name and the words are written, in the ordinary editor as much as in a working copy.",
-    why: "A prompt asks the project a question, and a template is that question asked again somewhere else. Nothing else in the body has to be told where it is going, so nothing about this should need declaring either.",
+      "A scope hole could only come from a body that already carried a hole term. A prompt somebody wrote kept its own sources, so a template made from it asked nothing and every copy read what the author read.",
+    now: "Templateify, in the Template section of a prompt block or of a text selection, makes one hole named Hole 1, Hole 2 with an optional description. Making a template keeps exactly those. A prompt nobody templateified keeps its scope and is never asked about.",
+    why: "Turning every prompt into a hole asks about things nobody meant to be asked about. One deliberate gesture at the thing itself keeps placing a template to the questions somebody wrote down.",
     area: "editors"
+  },
+  {
+    index: "18",
+    title: "A hole's default is whatever the thing already is",
+    before:
+      "A default was a rule somebody set through a separate control, and portability judged which scopes were allowed to travel — sets and particular resources were stripped out of a prompt's scope on the way into a template.",
+    now: "A prompt's hole defaults to the scope it reads, whatever that scope is; a text hole defaults to the words that were selected. Nothing is stripped and nothing carries a Set default button. A scope naming a set the next project lacks selects nothing there, which is what it means for it not to exist.",
+    why: "A default that has to be filled in is a toll on placing a template. Making the default what the thing already says means every template places with one press, and answering is for when a copy should read something else.",
+    area: "vocabulary"
+  },
+  {
+    index: "19",
+    title: "A template carries a prompt's definition, and gives the copy its own",
+    before:
+      "Making a template dropped a prompt's derivedOutputId and said so. A placed copy held a prompt block with no question and no link, so somebody had to type the prompt again.",
+    now: "The question is copied onto the block while the link still exists, and placing the template makes a derived output per prompt from it — the way a formula keeps its expression and regains an instance.",
+    why: "A template holds everything relevant and reattaches it wherever it lands. What it points at may not exist in the next project; that is a fact about that project, not a reason to carry less.",
+    area: "templates"
   },
   {
     index: "17",
@@ -211,7 +229,7 @@ export const DECISIONS: Decision[] = [
 export const VERIFICATION: Verification[] = [
   { check: "Types", command: "pnpm typecheck", result: "0 errors, 0 warnings across 2,924 files", clean: true },
   { check: "Structure", command: "pnpm lint", result: "56 checks, 56 clean", clean: true },
-  { check: "Unit", command: "pnpm test", result: "1,044 tests in 117 files, 2 skipped", clean: true },
+  { check: "Unit", command: "pnpm test", result: "1,046 tests in 117 files, 2 skipped", clean: true },
   { check: "Category keys", command: "pnpm category-keys -- --check", result: "10 categories and 13 content views in step", clean: true },
   {
     check: "Browser",

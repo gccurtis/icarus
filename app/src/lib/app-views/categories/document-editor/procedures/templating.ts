@@ -40,6 +40,8 @@ import type { TemplatedResourceSet } from "$representation/data/types/core/resou
 import type { DocumentBody, DocumentRow } from "$representation/data/types/documents/body";
 import type { DocumentOp } from "$representation/data/types/documents/op";
 import type { TemplateHole } from "$representation/data/types/templates/template";
+import { linearOf } from "$representation/data/behavior/content/positions";
+import { holeSplice } from "$representation/data/behavior/templates/prompt-holes";
 import { rowHolding } from "$app-views/categories/document-editor/procedures/blocks";
 import { mint, type IdKind } from "$app-views/categories/document-editor/procedures/ids";
 import { addressOf } from "$app-views/categories/document-editor/procedures/inspecting";
@@ -63,9 +65,10 @@ export {
 
 export {
   defaultScopeOf,
-  holeNameIn,
+  holeNamesIn,
+  holeSplice,
+  nextHoleName,
   offeredHoleName,
-  offeredNameIn,
   promptWordsIn
 } from "$representation/data/behavior/templates/prompt-holes";
 
@@ -271,69 +274,74 @@ export const mergedHoles = (
   return [...held, ...inserted.filter((hole) => !names.has(hole.name))];
 };
 
-/**
- * A text hole made by hand, rather than found.
- *
- * A scope hole exists because a prompt asks for one, so it cannot be authored. A
- * text hole is a place in the prose, and nothing but the author knows where it
- * goes — so the panel declares it and drops its atom at the caret in the same
- * act, and the next save finds it exactly as it finds any other.
- */
-export const withNewTextHole = (
-  holes: readonly ChosenHole[],
-  asked: { name: string; description?: string; text?: string }
-): readonly ChosenHole[] => {
-  const name = asked.name.trim();
-  const description = asked.description?.trim() ?? "";
-  const words = asked.text ?? "";
-  return [
-    ...holes,
-    {
-      name,
-      label: name,
-      kind: "text",
-      ...(description === "" ? {} : { description }),
-      ...(words.trim() === "" ? {} : { text: words })
+const blockWithAtoms = (body: DocumentBody, blockId: string) => {
+  for (const row of body.rows) {
+    if (row.kind !== "blocks") continue;
+    for (const block of row.blocks) {
+      if (block.id !== blockId) continue;
+      return block.type === "text" || block.type === "prompt" ? block : undefined;
     }
-  ];
+  }
+  return undefined;
 };
 
-/** Why a name will not do, or nothing when it will. */
-export const holeNameRefusal = (
-  holes: readonly ChosenHole[],
-  asked: string
-): string | undefined => {
-  const name = asked.trim();
-  if (name === "") return "Give the hole a name.";
-  if (!/^[\w][\w -]*$/.test(name)) return "A hole's name is letters, digits, spaces, hyphens and underscores.";
-  const taken = holes.some((hole) => hole.name.toLocaleLowerCase() === name.toLocaleLowerCase());
-  return taken ? `This template already has a hole called ${name}.` : undefined;
+/** What a selection covers, as one block and a range of its display. */
+export const selectedRange = (
+  body: DocumentBody,
+  selection: Selection | undefined
+): { readonly blockId: string; readonly from: number; readonly to: number } | undefined => {
+  if (selection === undefined || selection.at === undefined) return undefined;
+  const start = addressOf(selection.id);
+  const end = addressOf(selection.at);
+  if (start === undefined || end === undefined || start.blockId !== end.blockId) return undefined;
+  const block = blockWithAtoms(body, start.blockId);
+  if (block === undefined) return undefined;
+  const from = linearOf(block.atoms, { atom: start.atomId, offset: start.offset });
+  const to = linearOf(block.atoms, { atom: end.atomId, offset: end.offset });
+  return from === to ? undefined : { blockId: block.id, from: Math.min(from, to), to: Math.max(from, to) };
 };
 
-const holeBlockIn = (body: DocumentBody, selection: Selection | undefined) => {
-  const blockId = selection === undefined ? undefined : addressOf(selection.id)?.blockId;
-  const takes = (block: { type: string }) => block.type === "text" || block.type === "prompt";
-  const blocks = body.rows.flatMap((row) => (row.kind === "blocks" ? row.blocks : []));
-  return blocks.find((block) => block.id === blockId && takes(block)) ?? blocks.findLast(takes);
+/** The words a selection covers, which become what its hole says by default. */
+export const selectedWords = (body: DocumentBody, selection: Selection | undefined): string => {
+  const range = selectedRange(body, selection);
+  if (range === undefined) return "";
+  return blockWithAtoms(body, range.blockId)?.display.slice(range.from, range.to) ?? "";
 };
 
-/** The ops that put a text hole's atom where the caret is. */
-export const textHoleInsertion = (
+/**
+ * A run of text becoming a hole.
+ *
+ * The words are not thrown away: they become what the hole says when nobody
+ * says otherwise, so a template placed with every default reads exactly like
+ * the document it was made from.
+ */
+export const selectionHoleOps = (
   body: DocumentBody,
   selection: Selection | undefined,
   name: string
 ): readonly DocumentOp[] => {
-  const block = holeBlockIn(body, selection);
-  if (block === undefined || !("atoms" in block)) return [];
-  const atom = { id: mint("atom"), kind: "template" as const, name: name.trim() };
+  const range = selectedRange(body, selection);
+  if (range === undefined) return [];
+  const block = blockWithAtoms(body, range.blockId);
+  if (block === undefined) return [];
+  const splice = holeSplice(block.atoms, range.from, range.to, { name: name.trim() }, () => mint("atom"));
+  if (splice === undefined) return [];
   return [
     {
       op: "insert",
       target: "atom",
       path: `${block.id}/atoms`,
-      ids: [atom.id],
-      after: block.atoms.at(-1)?.id ?? null,
-      values: [atom]
+      ids: splice.values.map((atom) => atom.id),
+      after: splice.after,
+      values: [...splice.values]
+    },
+    {
+      op: "remove",
+      target: "atom",
+      path: `${block.id}/atoms`,
+      ids: [...splice.remove],
+      after: splice.after,
+      values: block.atoms.filter((atom: { id: string }) => splice.remove.includes(atom.id))
     }
   ];
 };

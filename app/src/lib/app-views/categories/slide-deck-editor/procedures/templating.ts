@@ -57,9 +57,10 @@ export type { TemplateHole } from "$representation/data/types/templates/template
 
 export {
   defaultScopeOf,
-  holeNameIn,
+  holeNamesIn,
+  holeSplice,
+  nextHoleName,
   offeredHoleName,
-  offeredNameIn,
   promptWordsIn
 } from "$representation/data/behavior/templates/prompt-holes";
 

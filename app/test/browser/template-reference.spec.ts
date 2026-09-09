@@ -131,9 +131,9 @@ test("the integration page draws the whole chain, with every link carrying", asy
   await expect(page.locator(".tref-badge.clean")).toHaveCount(7);
   await expect(page.locator(".tref-badge.known")).toHaveCount(0);
 
-  // The rule that decides whether a hole arrives with an answer.
-  await expect(page.getByRole("heading", { level: 2, name: /Which scopes carry over/ })).toBeVisible();
-  await expect(page.getByRole("cell", { name: "Nothing set" })).toBeVisible();
+  // A hole's default is whatever the thing already is, so nothing arrives empty.
+  await expect(page.getByRole("heading", { level: 2, name: "What a hole defaults to" })).toBeVisible();
+  await expect(page.getByRole("cell", { name: "A run of selected text", exact: true })).toBeVisible();
 
   await page.getByRole("link", { name: "Walk it yourself", exact: false }).first().click();
   await expect(page.getByRole("heading", { level: 1, name: "Walk it yourself" })).toBeVisible();
@@ -143,22 +143,19 @@ test("the walkthrough drives the real components, and the rules follow", async (
   await page.setViewportSize({ width: 1500, height: 1000 });
   await page.goto("/app/dev-project/reference/templates/walkthrough", { waitUntil: "networkidle" });
 
-  // Three prompts, three holes, and the one reading a named set carries no default.
+  // Three prompts, one templateified, so one hole and one question when it is placed.
   const holes = page.locator("#made tbody tr");
-  await expect(holes).toHaveCount(3);
-  await expect(holes.nth(2).locator("td.none")).toHaveText("Nothing — it has to be answered");
-  await expect(page.locator(".tab.missing")).toHaveCount(1);
+  await expect(holes).toHaveCount(1);
+  await expect(holes.nth(0).locator("code")).toHaveText("open_decisions");
+  await expect(page.locator(".tab")).toHaveCount(1);
 
-  // Naming a prompt renames its hole, everywhere at once.
+  // Templateifying another prompt adds its hole, everywhere at once.
   const first = page.locator(".prompt").first();
-  await first.getByRole("button", { name: "Prompt 1", exact: true }).click();
-  await first.getByRole("textbox", { name: "What this prompt's hole is called" }).fill("incident");
-  await first.getByRole("textbox", { name: "What this prompt's hole is called" }).press("Enter");
-  await expect(holes.nth(0).locator("code")).toHaveText("incident");
-  await expect(page.getByRole("tab", { name: "incident" })).toBeVisible();
+  await first.getByRole("button", { name: "Templateify", exact: true }).click();
+  await expect(holes).toHaveCount(2);
+  await expect(page.getByRole("tab", { name: "Hole 1" })).toBeVisible();
 
-  // Cycling the third prompt's context off the named set gives its hole a default.
-  await page.locator(".prompt").nth(2).getByRole("button", { name: "Set default context" }).click();
+  // Nothing is ever red, because a hole's default is whatever the thing already is.
   await expect(page.locator(".tab.missing")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Accept all defaults" })).toBeEnabled();
 });

@@ -1,13 +1,18 @@
 import type { StoreModel } from "$model/server/store/index.server";
+import { asId } from "$representation/data/behavior/core/id";
+import { needsRow } from "$representation/data/behavior/core/scope-draft";
 import { portableBodyOf } from "$representation/data/behavior/templates/portable";
+import type { Actor } from "$representation/data/types/core/actor";
 import {
   mergedPromptHoles,
   promptHolesOf,
+  textHolesOf,
   withAsks,
   withPromptHoles
 } from "$representation/data/behavior/templates/prompt-holes";
 import type { TemplateHole } from "$representation/data/types/templates/template";
 
+import { normalizeScope } from "$capabilities/templates/api/shared/scopes";
 import { recordsIn } from "$capabilities/templates/api/shared/store";
 
 type Fields = Record<string, unknown>;
@@ -50,6 +55,50 @@ const askedBy = (store: StoreModel, body: unknown): Readonly<Record<string, stri
   return words;
 };
 
+/**
+ * A placed copy's prompts, linked to derived outputs of their own.
+ *
+ * A template carries a prompt's definition and not the row that holds it, the
+ * way it carries a formula's expression and not its instance. Placing one makes
+ * a fresh derived output from the definition and links the copy's block to it,
+ * so the copy is a working prompt from the moment it lands rather than words
+ * somebody has to type again.
+ */
+export const withFreshOutputs = <T>(
+  store: StoreModel,
+  projectId: string,
+  actor: Actor,
+  origin: { kind: string; id: string },
+  body: T,
+  at: number
+): { readonly body: T; readonly written: readonly string[] } => {
+  const written: string[] = [];
+  const walk = (value: unknown): unknown => {
+    if (Array.isArray(value)) return value.map(walk);
+    if (!isRecord(value)) return value;
+    const next: Fields = {};
+    for (const [field, nested] of Object.entries(value)) next[field] = walk(nested);
+    if (value.type !== "prompt") return next;
+    const asks = typeof value.asks === "string" ? value.asks.trim() : "";
+    if (asks === "") return next;
+    const id = store.create("derivedOutputs", {
+      projectId: asId<"projects">(projectId),
+      prompt: asks,
+      definitionRevision: 1,
+      origin,
+      ...(isRecord(value.scope) ? { scope: value.scope } : {}),
+      queries: [],
+      evidence: [],
+      state: "idle",
+      createdBy: actor,
+      updatedAt: at
+    });
+    written.push(id);
+    return { ...next, derivedOutputId: id };
+  };
+  return { body: walk(body) as T, written };
+};
+
 export type TemplatedBody<T> = {
   readonly body: T;
   readonly dropped: readonly string[];
@@ -59,12 +108,41 @@ export type TemplatedBody<T> = {
 /**
  * A live body as a template holds it: portable, and asking rather than telling.
  *
- * The order matters. The holes are read first, because whether a prompt's scope
- * survives portability is exactly what decides whether its hole gets a default.
- * The words are copied next, while the link to the derived output still exists.
- * Only then is the body made portable and each prompt's scope replaced by the
- * hole that stands for it.
+ * The order matters. The holes are read first, so a hole's default is the scope
+ * as the prompt actually reads it. The question is copied next, while the link
+ * to the derived output still exists. Only then is the body made portable, and
+ * each templated prompt's scope replaced by the hole that stands for it.
  */
+/**
+ * A hole's default, once the template it belongs to has an identity.
+ *
+ * The default is whatever the prompt read, and what a prompt reads can name
+ * particular resources — which the templated vocabulary has no term for. Those
+ * are written as a `resourceSets` row owned by the hole and pointed at by a
+ * single `set` term, the same way a default built in the scope builder is. It
+ * has to happen after the template row exists, because the row is owned by it.
+ */
+export const settledHoleDefaults = (
+  store: StoreModel,
+  projectId: string,
+  actor: Actor,
+  templateId: string,
+  holes: readonly TemplateHole[],
+  at: number
+): readonly TemplateHole[] =>
+  holes.map((hole) => {
+    if (hole.default === undefined || !needsRow(hole.default)) return hole;
+    const written = normalizeScope(
+      store,
+      projectId,
+      actor,
+      { kind: "hole", templateId: asId<"templates">(templateId), hole: hole.name },
+      hole.default,
+      at
+    );
+    return written === undefined ? hole : { ...hole, default: written.term };
+  });
+
 export const templatedBodyOf = <T>(
   store: StoreModel,
   candidate: T,
@@ -73,9 +151,7 @@ export const templatedBodyOf = <T>(
   const drafts = promptHolesOf(candidate);
   const asked = withAsks(candidate, askedBy(store, candidate));
   const portable = portableBodyOf(asked);
-  return {
-    body: withPromptHoles(portable.body, drafts),
-    dropped: portable.dropped,
-    holes: mergedPromptHoles(known, drafts)
-  };
+  const body = withPromptHoles(portable.body, drafts);
+  const fresh = [...drafts.map((draft) => draft.hole), ...textHolesOf(body)];
+  return { body, dropped: portable.dropped, holes: mergedPromptHoles(known, fresh) };
 };

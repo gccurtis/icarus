@@ -3,46 +3,42 @@
   import { traceNode } from "$development-components/trace.svelte";
 
   /**
-   * What a prompt becomes when its resource is made a template.
+   * Turning this thing into a hole, and saying what the hole is.
    *
-   * Every prompt is one hole, so nothing here is a switch: the name is offered
-   * rather than asked for, and a template made without opening this section
-   * still places. What the section buys is a name the person placing it will
-   * recognise, and words telling them what the prompt is for.
+   * A hole is made, never found: until somebody presses the button there is
+   * none, and a template made from this body will not ask about it. That is
+   * what makes placing a template short — the questions are the ones somebody
+   * meant to ask.
    *
-   * It sits in the prompt's own inspector, in the ordinary editor as much as in
-   * a working copy, because the author of the prompt is the only person who
-   * knows what it stands for and they are here already.
+   * There is no default control. A hole's default is simply whatever the thing
+   * already is: the scope this prompt reads, or the words that were selected.
+   * Changing the default means changing the thing, which is done where the
+   * thing is.
    */
   let {
     name,
+    description = "",
     offered,
-    description,
-    context,
-    settled,
+    standing,
     disabled = false,
+    onmake,
     onname,
-    ondescription,
-    oncontext
+    ondescription
   }: {
-    /** What it is called, or empty while the offered name still stands. */
-    name: string;
-    /** The name it carries until somebody types one. */
+    /** The hole's name, or undefined while this is not a hole. */
+    name?: string;
+    description?: string;
+    /** The name the button will give it. */
     offered: string;
-    description: string;
-    /** What the hole selects by default, in words, or undefined when it has none. */
-    context?: string;
-    /** Whether that default was settled by the prompt's own scope. */
-    settled: boolean;
+    /** What it would default to, in words — the scope it reads, or the words it holds. */
+    standing: string;
     disabled?: boolean;
+    onmake: () => void;
     onname: (next: string) => void;
     ondescription: (next: string) => void;
-    oncontext: () => void;
   } = $props();
 
-  const trace = traceNode("PromptTemplate", () => ({ name, offered, settled }));
-
-  const shown = $derived(name.trim() === "" ? offered : name.trim());
+  const trace = traceNode("PromptTemplate", () => ({ name, offered }));
 
   /** Blank is not a name, so the offered one comes back rather than nothing. */
   const rename = (next: string) => {
@@ -53,48 +49,49 @@
 
 <PanelSection title="Template" chevron="end">
   <div class="template" {...trace}>
-    <div class="field">
-      <span class="label">Hole name</span>
-      <PanelEditableText
-        value={shown}
-        label="What this prompt's hole is called"
-        placeholder={offered}
-        {disabled}
-        onchange={rename}
-      />
-    </div>
-
-    <div class="field">
-      <span class="label">Description <em>optional</em></span>
-      <PanelEditableText
-        value={description}
-        label="What this prompt's hole stands for"
-        placeholder="What whoever places this is choosing"
-        multiline
-        {disabled}
-        onchange={ondescription}
-      />
-    </div>
-
-    <div class="field">
-      <span class="label">Default context</span>
-      {#if context === undefined}
-        <PanelNote tone="muted">
-          This prompt reads something particular to this project, so it cannot carry a default.
-          Whoever places the template has to choose.
-        </PanelNote>
-      {:else}
-        <p class="rule" class:settled>{context}</p>
-      {/if}
+    {#if name === undefined}
+      <PanelNote tone="muted">
+        Not a hole. Make it one and a template built from this will ask what fills it, starting from
+        what it is now — {standing}.
+      </PanelNote>
       <div class="act">
         <PanelButton
-          label="Set default context"
+          label="Templateify"
+          tone="primary"
           {disabled}
-          title="Choose what this hole selects when nobody says otherwise"
-          onclick={oncontext}
+          title={`Make this a hole called ${offered}`}
+          onclick={onmake}
         />
       </div>
-    </div>
+    {:else}
+      <div class="field">
+        <span class="label">Hole name</span>
+        <PanelEditableText
+          value={name}
+          label="What this hole is called"
+          placeholder={offered}
+          {disabled}
+          onchange={rename}
+        />
+      </div>
+
+      <div class="field">
+        <span class="label">Description <em>optional</em></span>
+        <PanelEditableText
+          value={description}
+          label="What this hole stands for"
+          placeholder="What whoever places this is choosing"
+          multiline
+          {disabled}
+          onchange={ondescription}
+        />
+      </div>
+
+      <div class="field">
+        <span class="label">Default</span>
+        <p class="standing">{standing}</p>
+      </div>
+    {/if}
   </div>
 </PanelSection>
 
@@ -126,15 +123,11 @@
     text-transform: none;
   }
 
-  .rule {
+  .standing {
     margin: 0;
-    color: var(--token-ink-secondary);
+    color: var(--token-ink-primary);
     font-size: var(--token-text-body-sm);
     line-height: var(--token-text-body-sm-leading);
-  }
-
-  .rule.settled {
-    color: var(--token-ink-primary);
   }
 
   .act {

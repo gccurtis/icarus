@@ -1,50 +1,49 @@
 import type { ChainLink, Decision, ScopeGap } from "$development-views/template-reference/types";
 
 /**
- * The chain from writing a prompt to reading a filled copy, link by link.
+ * The chain from making a hole to reading a filled copy.
  *
- * Every link carries now. The one that never existed — turning a prompt
- * somebody wrote into a hole somebody answers — is link 04, and it is built
- * the way the rest of this work is built: found rather than declared, with a
- * name offered rather than demanded, so a template made without a thought
- * still asks the right question.
+ * A hole is made, never found. Two things can become one — a prompt, and a run
+ * of selected text — and both are turned into holes by the same gesture at the
+ * thing itself. Until somebody makes it there is no hole, which is what keeps
+ * placing a template to the questions somebody meant to ask.
  */
 export const CHAIN: ChainLink[] = [
   {
     index: "01",
-    step: "A prompt is written into a document or a slide",
-    gesture: "Convert a text box or an empty line, type what it should derive",
-    runs: "The prompt-block inspector · createDerivedOutput on Generate",
+    step: "A prompt is written, and told what to read",
+    gesture: "Convert a block, type the prompt, press Scope to choose its sources",
+    runs: "The prompt-block inspector · promptScopeOps · the scope builder",
     state: "works",
-    evidence: "template-features.spec.ts — a prompt written in a document becomes a hole"
+    evidence: "document-editor.spec.ts — a Prompt Block affordance lives in the gutter"
   },
   {
     index: "02",
-    step: "The prompt says what its hole is called and what it stands for",
-    gesture: "The Template section in the prompt's own inspector",
-    runs: "promptHoleOps writes { name, description } onto the block",
+    step: "Something is templateified",
+    gesture: "Templateify, in the Template section of a prompt or of a text selection",
+    runs: "promptHoleOps on a block, or selectionHoleOps on a range",
     state: "works",
-    evidence: "prompt-holes.test.ts — what a prompt is called"
+    evidence: "template-features.spec.ts — a templateified prompt becomes a hole"
   },
   {
     index: "03",
-    step: "The prompt says what it reads, which is also its hole's default",
-    gesture: "Set default context, which opens the scope builder",
-    runs: "promptScopeOps · defaultScopeOf decides whether the scope can carry over",
+    step: "The hole is named and, if it helps, described",
+    gesture: "Two fields. Blank the name and the offered one comes back",
+    runs: "Hole 1, Hole 2 by what the body already holds",
     state: "works",
-    evidence: "prompt-holes.test.ts — what a hole selects when nobody says otherwise"
+    evidence: "prompt-holes.test.ts — a hole is made, never found"
   },
   {
     index: "04",
-    step: "Making a template turns every prompt into a hole",
+    step: "Making a template keeps exactly those holes",
     gesture: "None — it is what saving means",
-    runs: "promptHolesOf · withAsks · portableBodyOf · withPromptHoles · mergedPromptHoles",
+    runs: "promptHolesOf · textHolesOf · withAsks · portableBodyOf · withPromptHoles",
     state: "works",
-    evidence: "answers.test.ts — turns an authored prompt scope into a hole that keeps it as the default"
+    evidence: "answers.test.ts — gives no hole to a prompt nobody templateified"
   },
   {
     index: "05",
-    step: "Placing the template asks about each hole, one at a time",
+    step: "Placing it asks about each hole, one at a time",
     gesture: "Insert or Use · tabs, Previous and Next, Accept all defaults",
     runs: "answerRowsOf · promptWordsIn · the scope builder · normalizeScope",
     state: "works",
@@ -60,39 +59,43 @@ export const CHAIN: ChainLink[] = [
   },
   {
     index: "07",
-    step: "The copy's prompts generate against what was chosen",
-    gesture: "Press Generate in the copy",
-    runs: "The base's derived-output runtime, over the scope this branch resolved",
+    step: "The copy's prompts are prompts, not words about prompts",
+    gesture: "Press Generate",
+    runs: "withFreshOutputs makes a derived output per prompt from the question the template carried",
     state: "works",
-    evidence: "Follows from 06: the copy is an ordinary resource holding ordinary prompt blocks"
+    evidence: "The copy's blocks carry derivedOutputId and their scope, the way a formula regains its instance"
   }
 ];
 
 export const CHAIN_DIAGRAM = `flowchart LR
   subgraph authoring["01–03 · Authoring"]
     direction TB
-    A["A prompt block"]
-    B["Template section<br/>name · description"]
-    C["Default context<br/>whole project, kinds, or nothing"]
-    B --> A
-    C --> A
+    A["A prompt block<br/>with a scope it reads"]
+    T["A run of selected text"]
+    M{{"Templateify"}}
+    A --> M
+    T --> M
   end
   subgraph making["04 · Making a template"]
     direction TB
-    D["promptHolesOf<br/>one hole per prompt"]
+    D["promptHolesOf · textHolesOf<br/>only what was templateified"]
     E["withAsks<br/>copies the question onto the block"]
-    F["withPromptHoles<br/>each scope becomes its hole term"]
+    F["withPromptHoles<br/>those scopes become hole terms"]
     D --> E --> F
   end
-  subgraph placing["05–06 · Placing it"]
+  subgraph placing["05–07 · Placing it"]
     direction TB
-    G["One hole at a time,<br/>tabs saying which are red"]
-    H["resolveTemplateScopes<br/>answer, else default,<br/>else whole project"]
-    G --> H
+    G["One hole at a time"]
+    H["resolveTemplateScopes<br/>answer, else the default"]
+    I["withFreshOutputs<br/>a derived output per prompt"]
+    G --> H --> I
   end
-  A --> D
+  M --> D
+  A -. "not templateified" .-> K["Stays what it is,<br/>and is never asked about"]
   F --> G
-  H --> I["A copy whose prompts read<br/>what the placer chose"]`;
+  I --> J["A copy whose prompts read<br/>what the placer chose"]
+  classDef quiet stroke-dasharray: 6 4
+  class K quiet`;
 
 export const RESOLUTION_DIAGRAM = `sequenceDiagram
   autonumber
@@ -102,101 +105,108 @@ export const RESOLUTION_DIAGRAM = `sequenceDiagram
   participant R as resolveTemplateScopes
   participant D as The new copy
   P->>M: Insert "Incident one-pager"
-  M-->>P: A tab per hole — red ones still need words
+  M-->>P: A tab per hole — only what somebody templateified
   M-->>P: winter_sources — its description, its prompt, its default
   P->>M: winter_sources → Findings, minus one document
-  P->>M: subject_line → "Winter outage"
-  M->>S: answers { winter_sources } · texts { subject_line }
+  M->>S: answers { winter_sources }
   S->>S: normalizeScope — the difference cannot be said inline,<br/>so it is stored as a bound resourceSets row
   S->>R: body, holes, answers
-  R-->>S: every prompt scope settled: the answer, else the hole's default,<br/>else the whole project
-  S->>S: fillTemplateAtoms — {subject_line} becomes "Winter outage"
+  R-->>S: every hole term settled: the answer, else the default
+  S->>S: withFreshOutputs — one derived output per prompt,<br/>from the question the template carried
   S->>D: one document, revision 0, no reference back
-  D-->>P: prompts ready to generate over the scope you chose`;
+  D-->>P: prompts linked and ready to generate`;
 
 export const DEFAULT_RULE = [
   {
-    scope: "Nothing set",
-    carries: "Everything in the project",
-    because: "It is what the prompt reads and what its own inspector says it reads."
+    scope: "A prompt reading the whole project",
+    carries: "The whole project",
+    because: "The default is whatever the thing already is. There is no judgement to make."
   },
   {
-    scope: "Everything in the project",
-    carries: "Everything in the project",
-    because: "Anybody could have meant it, so it means the same thing in the next project."
-  },
-  {
-    scope: "Whole kinds — all documents, all findings",
+    scope: "A prompt reading whole kinds",
     carries: "Those kinds",
-    because: "A kind is a word about the world, not a row in this project's tables."
+    because: "The same."
   },
   {
-    scope: "One of the project's named sets",
-    carries: "Nothing — the hole arrives empty",
-    because: "The set was true of the project it was written in. Saying it again elsewhere would be a guess."
+    scope: "A prompt reading one of the project's named sets",
+    carries: "That set",
+    because:
+      "Placed in a project that has no such set, it selects nothing — which is what it means for the set not to exist there."
   },
   {
-    scope: "Particular resources, or anything with an exclusion",
-    carries: "Nothing — the hole arrives empty",
-    because: "The same, and more so: those rows may not exist wherever the template lands."
+    scope: "A prompt reading particular resources, or excluding something",
+    carries: "The same rule, stored as a row the hole owns",
+    because:
+      "The templated vocabulary has no term for particular resources, so the rule lives in a resourceSets row and a single set term points at it."
+  },
+  {
+    scope: "A run of selected text",
+    carries: "Those words",
+    because: "A template placed without changing anything reads exactly like the document it came from."
   }
 ];
 
 export const SETTLED: Decision[] = [
   {
     round: "This round",
-    question: "How does a prompt somebody wrote become a hole somebody answers?",
-    answer: "Every prompt is a hole. There is no declaring and no opting in.",
+    question: "Is a hole found or made?",
+    answer: "Made. Templateify, on the thing itself.",
     became:
-      "promptHolesOf reads one hole per prompt at save time. A template made from a document full of prompts asks about all of them, whether or not anybody opened the Template section."
+      "A prompt keeps its scope and produces no hole until somebody presses the button. Placing a template asks only about what somebody meant to be asked about."
   },
   {
     round: "This round",
-    question: "What is a hole made this way called?",
-    answer: "Prompt 1, Prompt 2, Prompt 3 — offered, and typed over when it matters.",
+    question: "What can become one?",
+    answer: "A prompt block, and a run of selected text. Both, by the same gesture.",
     became:
-      "offeredHoleName by document order, shown in the Template section as the standing value. Typing a name replaces it; blanking it brings the offer back, because a hole with no name cannot be asked about."
+      "The Template section appears in the prompt inspector and in the text-selection inspector, in the ordinary editor as much as in a working copy."
   },
   {
     round: "This round",
-    question: "Which scopes survive as a hole's default?",
-    answer: "The ones anybody could have meant: the whole project, and whole kinds.",
+    question: "What is it called?",
+    answer: "Hole 1, Hole 2 — offered, typed over when it matters.",
+    became: "nextHoleName counts across every hole the body already holds, whichever kind it is."
+  },
+  {
+    round: "This round",
+    question: "What is its default?",
+    answer: "Whatever the thing already is. There is no default control.",
     became:
-      "defaultScopeOf, and a hole with no default is the only thing besides empty words that can hold a placement up."
+      "A prompt's hole defaults to the scope it reads; a text hole defaults to the words that were selected. Changing a default means changing the thing, where the thing is."
+  },
+  {
+    round: "This round",
+    question: "What happens to a prompt's derived output?",
+    answer: "The template carries the definition and drops the row, like a formula.",
+    became:
+      "withAsks copies the question onto the block while the link still exists, and withFreshOutputs makes a derived output per prompt when the template is placed."
   },
   {
     round: "This round",
     question: "May two prompts share one hole?",
     answer: "Yes, by carrying the same name. Nothing enforces it either way.",
     became:
-      "A name is the whole of a hole's identity, and resolveTemplateScopes already memoises by name. Two prompts named the same resolve from one answer; nothing checks, because there is nothing to check."
-  },
-  {
-    round: "This round",
-    question: "How does placing a template read, now that a template can hold a dozen holes?",
-    answer: "One at a time, with tabs for the shape and a way to blaze through.",
-    became:
-      "The ask modal walks: name, description, the prompt itself, then the control. Tabs carry a red mark for a hole that still needs words, and Accept all defaults lights up the moment none do."
+      "A name is the whole of a hole's identity, and resolveTemplateScopes memoises by name. In practice each templateified thing gets its own."
   }
 ];
 
 export const LIMITS: ScopeGap[] = [
   {
+    title: "Templateifying a selection drops marks that reached into it",
+    detail:
+      "Only the atoms the selection touches are rebuilt, so formatting elsewhere in the paragraph survives. A bold run that crossed the selection's edge does not.",
+    order: "Acceptable: the words became a question. Revisit if it turns out to bite."
+  },
+  {
     title: "A hole's prompt is a snapshot",
     detail:
-      "The words shown when placing a template are copied onto the block when the template is made, because the template leaves the derived output behind. Editing the prompt in the original afterwards does not reach the template — saving the template again does.",
+      "The question shown when placing a template is copied onto the block when the template is made. Editing the prompt in the original afterwards does not reach the template — saving the template again does.",
     order: "Correct as long as a template is a copy, which is the whole model. Nothing to do."
   },
   {
-    title: "A copy's prompts arrive unlinked",
+    title: "Only the document editor templateifies a selection",
     detail:
-      "The template carries the question, so the copy's prompt inspector opens with the words already in it — but the copy has no derived output until somebody presses Generate. That is one press, not a retype.",
-    order: "Watch whether people expect a copy to generate on arrival. Nothing suggests they do yet."
-  },
-  {
-    title: "The prompt inspector's old Scope control still says one thing",
-    detail:
-      "The base's Scope select offers “Whole project” alone and writes nothing. Set default context, beside it in the Template section, is what actually writes a scope — so there are two controls where one would do.",
-    order: "Fold the select into the Template section when the base is ready to lose it."
+      "The deck's text is edited through the slide surface rather than a text-selection inspector, so a deck's holes come from its prompts. Its prose can still hold a hole carried in from an inserted template.",
+    order: "Add it when the deck grows the same inspector seam."
   }
 ];

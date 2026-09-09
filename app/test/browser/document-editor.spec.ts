@@ -869,7 +869,8 @@ test("a Prompt Block affordance lives in the gutter and keeps its inspector open
   await expect(inspector).toBeVisible();
   await inspector.getByLabel("Prompt").fill("Summarize the project sources.");
   await expect(inspector.getByLabel("Prompt")).toHaveValue("Summarize the project sources.");
-  await expect(inspector.getByRole("button", { name: "Scope" })).toContainText("Whole project");
+  // The Scope control reads what the prompt reads, and opens the builder to change it.
+  await expect(inspector.getByRole("button", { name: "Everything in the project" })).toBeVisible();
 
   await marker.click();
   await expect(inspector).toBeVisible();

@@ -2,15 +2,18 @@ import { describe, expect, it } from "vitest";
 
 import {
   defaultScopeOf,
-  holeNameIn,
+  holeNamesIn,
+  holeSplice,
+  mergedPromptHoles,
+  nextHoleName,
   offeredHoleName,
-  offeredNameIn,
   promptHolesOf,
   promptWordsIn,
+  textHolesOf,
   withAsks,
-  withPromptHoles,
-  mergedPromptHoles
+  withPromptHoles
 } from "$representation/data/behavior/templates/prompt-holes";
+import type { Atom } from "$representation/data/types/content/content-block";
 import type { TemplateBody, TemplateHole } from "$representation/data/types/templates/template";
 
 const prompt = (id: string, extra: Record<string, unknown> = {}) => ({
@@ -28,51 +31,55 @@ const body = (blocks: readonly unknown[]) => ({
   rows: [{ id: "r1", kind: "blocks", blocks }]
 });
 
-describe("what a prompt is called", () => {
-  it("is offered by where it sits until somebody names it", () => {
-    expect(offeredHoleName(0)).toBe("Prompt 1");
-    expect(offeredHoleName(2)).toBe("Prompt 3");
-    const held = body([prompt("a"), prompt("b")]);
-    expect(offeredNameIn(held, "b")).toBe("Prompt 2");
-    expect(holeNameIn(held, "b")).toBe("Prompt 2");
+describe("a hole is made, never found", () => {
+  it("gives no hole to a prompt nobody templated", () => {
+    const held = body([prompt("a"), prompt("b", { scope: { include: [{ select: "project" }], exclude: [] } })]);
+    expect(promptHolesOf(held)).toEqual([]);
+    expect(holeNamesIn(held)).toEqual([]);
   });
 
-  it("is what was typed once anything was", () => {
-    const held = body([prompt("a"), prompt("b", { hole: { name: "evidence" } })]);
-    expect(holeNameIn(held, "b")).toBe("evidence");
-  });
-
-  it("keeps the name a standing hole term already carries", () => {
+  it("gives one to each prompt somebody did", () => {
     const held = body([
-      prompt("a", { scope: { include: [{ select: "hole", name: "source_material" }], exclude: [] } })
+      prompt("a", { hole: { name: "sources" } }),
+      prompt("b", { hole: { name: "decisions", description: "Which threads" } })
     ]);
-    expect(promptHolesOf(held)[0].hole.name).toBe("source_material");
+    const drafts = promptHolesOf(held);
+    expect(drafts.map((draft) => draft.hole.name)).toEqual(["sources", "decisions"]);
+    expect(drafts[1].hole.description).toBe("Which threads");
+  });
+
+  it("offers the next name across everything the body already holds", () => {
+    expect(offeredHoleName(0)).toBe("Hole 1");
+    expect(nextHoleName(body([prompt("a")]))).toBe("Hole 1");
+    const held = body([
+      prompt("a", { hole: { name: "Hole 1" } }),
+      {
+        id: "t1",
+        type: "text",
+        variant: "paragraph",
+        atoms: [{ id: "t1-a", kind: "template", name: "Hole 2" }],
+        display: "{Hole 2}",
+        marks: []
+      }
+    ]);
+    expect([...holeNamesIn(held)].sort()).toEqual(["Hole 1", "Hole 2"]);
+    expect(nextHoleName(held)).toBe("Hole 3");
   });
 });
 
-describe("what a hole selects when nobody says otherwise", () => {
-  it("keeps a scope anybody could have meant", () => {
-    expect(defaultScopeOf({ include: [{ select: "project" }], exclude: [] })).toEqual({
-      include: [{ select: "project" }],
-      exclude: []
-    });
-    expect(defaultScopeOf({ include: [{ select: "kinds", kinds: ["document"] }], exclude: [] })).toEqual({
-      include: [{ select: "kinds", kinds: ["document"] }],
-      exclude: []
-    });
+describe("a hole's default is whatever the thing already is", () => {
+  it("is the scope the prompt reads, whatever that scope is", () => {
+    for (const scope of [
+      { include: [{ select: "project" }], exclude: [] },
+      { include: [{ select: "kinds", kinds: ["document"] }], exclude: [] },
+      { include: [{ select: "set", setId: "resourceSets:1" }], exclude: [] },
+      { include: [{ select: "project" }], exclude: [{ select: "kinds", kinds: ["finding"] }] }
+    ]) {
+      expect(defaultScopeOf(scope)).toEqual(scope);
+    }
   });
 
-  it("keeps nothing that was true only of the project it was written in", () => {
-    expect(defaultScopeOf({ include: [{ select: "set", setId: "resourceSets:1" }], exclude: [] })).toBeUndefined();
-    expect(
-      defaultScopeOf({ include: [{ select: "resources", refs: [] }], exclude: [] })
-    ).toBeUndefined();
-    expect(
-      defaultScopeOf({ include: [{ select: "project" }], exclude: [{ select: "kinds", kinds: ["finding"] }] })
-    ).toBeUndefined();
-  });
-
-  it("counts a prompt that was never scoped as the whole project", () => {
+  it("is the whole project for a prompt that was never scoped", () => {
     const whole = { include: [{ select: "project" }], exclude: [] };
     expect(defaultScopeOf(undefined)).toEqual(whole);
     expect(defaultScopeOf({ include: [], exclude: [] })).toEqual(whole);
@@ -81,57 +88,89 @@ describe("what a hole selects when nobody says otherwise", () => {
 
 describe("a body as a template holds it", () => {
   const held = body([
-    prompt("a", { scope: { include: [{ select: "project" }], exclude: [] } }),
-    prompt("b", { hole: { name: "evidence", description: "What happened" }, scope: { include: [{ select: "kinds", kinds: ["finding"] }], exclude: [] } })
+    prompt("a", { hole: { name: "sources" }, scope: { include: [{ select: "set", setId: "resourceSets:1" }], exclude: [] } }),
+    prompt("b", { scope: { include: [{ select: "project" }], exclude: [] } })
   ]);
 
-  it("gives every prompt one hole, in the order they are written", () => {
-    const drafts = promptHolesOf(held);
-    expect(drafts.map((draft) => draft.hole.name)).toEqual(["Prompt 1", "evidence"]);
-    expect(drafts[0].hole.default).toEqual({ include: [{ select: "project" }], exclude: [] });
-    expect(drafts[1].hole.description).toBe("What happened");
-  });
-
-  it("replaces each prompt's scope with the hole that stands for it", () => {
+  it("replaces a templated prompt's scope and leaves the rest alone", () => {
     const templated = withPromptHoles(held, promptHolesOf(held)) as ReturnType<typeof body>;
     const blocks = templated.rows[0].blocks as { scope: unknown }[];
-    expect(blocks[0].scope).toEqual({ include: [{ select: "hole", name: "Prompt 1" }], exclude: [] });
-    expect(blocks[1].scope).toEqual({ include: [{ select: "hole", name: "evidence" }], exclude: [] });
+    expect(blocks[0].scope).toEqual({ include: [{ select: "hole", name: "sources" }], exclude: [] });
+    expect(blocks[1].scope).toEqual({ include: [{ select: "project" }], exclude: [] });
+  });
+
+  it("keeps the set the prompt read as the hole's default", () => {
+    expect(promptHolesOf(held)[0].hole.default).toEqual({
+      include: [{ select: "set", setId: "resourceSets:1" }],
+      exclude: []
+    });
   });
 
   it("writes each prompt's question onto the prompt, and reads it back by hole", () => {
-    const asked = withAsks(held, { a: "  What broke?  ", b: "" });
+    const asked = withAsks(held, { a: "  What broke?  ", b: "Anything" });
     const templated = withPromptHoles(asked, promptHolesOf(asked)) as unknown as TemplateBody;
-    expect(promptWordsIn(templated)).toEqual({ "Prompt 1": "What broke?" });
+    expect(promptWordsIn(templated)).toEqual({ sources: "What broke?" });
+  });
+});
+
+describe("text holes", () => {
+  it("carry the words they stand in for", () => {
+    const held = body([
+      {
+        id: "t1",
+        type: "text",
+        variant: "paragraph",
+        atoms: [
+          { id: "a1", kind: "literal", text: "Dear " },
+          { id: "a2", kind: "template", name: "Hole 1", description: "Who it is for", text: "Ana" }
+        ],
+        display: "Dear {Hole 1}",
+        marks: []
+      }
+    ]);
+    expect(textHolesOf(held)).toEqual([
+      { name: "Hole 1", label: "Hole 1", kind: "text", description: "Who it is for", text: "Ana" }
+    ]);
+  });
+});
+
+describe("turning a selection into a hole", () => {
+  const atoms: Atom[] = [
+    { id: "a1", kind: "literal", text: "Dear Northwind, about winter." }
+  ];
+
+  it("splits the run and keeps the words as what the hole says", () => {
+    const splice = holeSplice(atoms, 5, 14, { name: "Hole 1" }, () => "fresh");
+    expect(splice?.remove).toEqual(["a1"]);
+    expect(splice?.after).toBeNull();
+    expect(splice?.values).toEqual([
+      { id: "fresh", kind: "literal", text: "Dear " },
+      { id: "fresh", kind: "template", name: "Hole 1", text: "Northwind" },
+      { id: "fresh", kind: "literal", text: ", about winter." }
+    ]);
+  });
+
+  it("refuses a selection that covers nothing", () => {
+    expect(holeSplice(atoms, 4, 4, { name: "Hole 1" }, () => "fresh")).toBeUndefined();
   });
 });
 
 describe("saving a template again", () => {
-  it("takes the name and the words from the prompt, and leaves a settled default alone", () => {
+  it("takes the name from the thing and leaves a description alone", () => {
     const known: TemplateHole[] = [
-      {
-        name: "evidence",
-        label: "evidence",
-        description: "Old words",
-        default: { include: [{ select: "kinds", kinds: ["finding"] }], exclude: [] }
-      }
+      { name: "sources", label: "sources", description: "Old words" }
     ];
-    const drafts = promptHolesOf(
-      body([prompt("b", { hole: { name: "evidence", description: "New words" }, scope: { include: [{ select: "project" }], exclude: [] } })])
+    const fresh = promptHolesOf(body([prompt("b", { hole: { name: "sources" } })])).map(
+      (draft) => draft.hole
     );
-    expect(mergedPromptHoles(known, drafts)).toEqual([
-      {
-        name: "evidence",
-        label: "evidence",
-        description: "New words",
-        default: { include: [{ select: "kinds", kinds: ["finding"] }], exclude: [] }
-      }
-    ]);
+    expect(mergedPromptHoles(known, fresh)[0].description).toBe("Old words");
   });
 
   it("keeps a hole nothing in the body asks for any more", () => {
     const known: TemplateHole[] = [{ name: "subject", label: "Subject", kind: "text" }];
-    const drafts = promptHolesOf(body([prompt("a")]));
-    expect(mergedPromptHoles(known, drafts).map((hole) => hole.name)).toEqual(["Prompt 1", "subject"]);
+    const fresh = promptHolesOf(body([prompt("a", { hole: { name: "sources" } })])).map(
+      (draft) => draft.hole
+    );
+    expect(mergedPromptHoles(known, fresh).map((hole) => hole.name)).toEqual(["sources", "subject"]);
   });
 });

@@ -33,7 +33,20 @@ export type FormulaAtom = {
  * whoever fills it in live on the template's parameter of that name, because two
  * atoms may name one parameter and there must be one answer.
  */
-export type TemplateAtom = { id: string; kind: "template"; name: string };
+/**
+ * A hole in the prose, made by turning a run of text into one.
+ *
+ * `text` is what the selection said, kept as what the hole says when nobody
+ * says otherwise — so a template placed with every default reads exactly like
+ * the document it was made from.
+ */
+export type TemplateAtom = {
+  id: string;
+  kind: "template";
+  name: string;
+  description?: string;
+  text?: string;
+};
 
 export type Atom = TextAtom | FormulaAtom | TemplateAtom;
 

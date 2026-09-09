@@ -146,7 +146,7 @@ test("a document is saved as a template, takes its hole from an inserted prompt,
 
   await expect(context.getByRole("button", { name: "Save", exact: true })).toBeVisible();
   await expect(context.getByRole("textbox", { name: "New variable" })).toHaveCount(0);
-  await expect(context.getByRole("button", { name: "Create hole", exact: true })).toBeVisible();
+  await expect(context.getByText("Nothing here is a hole yet.")).toBeVisible();
   await expect(context.locator(".hole")).toHaveCount(0);
 
   await context.getByTitle("Insert “Technical glossary” after the current row").click();
@@ -176,10 +176,9 @@ test("a document is saved as a template, takes its hole from an inserted prompt,
 
 /**
  * The whole chain, from a prompt somebody writes to a copy that reads what
- * somebody else chose. Nothing is declared and nothing is wired up by hand:
- * writing the prompt is the whole of the authoring.
+ * somebody else chose. One gesture makes the hole; everything after it follows.
  */
-test("a prompt written in a document becomes a hole the template asks about", async ({ page }) => {
+test("a templateified prompt becomes a hole the template asks about", async ({ page }) => {
   const name = `Browser prompt ${Date.now()}`;
 
   await page.goto("/app/dev-project", { waitUntil: "networkidle" });
@@ -199,25 +198,29 @@ test("a prompt written in a document becomes a hole the template asks about", as
   await expect(inspector).toBeVisible();
   await inspector.getByLabel("Prompt").fill("Summarize the winter filings.");
 
-  // The Template section offers a name and reads the default context off the scope.
-  await expect(inspector.getByRole("button", { name: "Prompt 1", exact: true })).toBeVisible();
-  await expect(inspector.getByText("Everything in the project", { exact: true })).toBeVisible();
+  // The Scope control is real: it reads the whole project and opens the builder.
+  await expect(inspector.getByRole("button", { name: "Everything in the project" })).toBeVisible();
 
-  await inspector.getByRole("button", { name: "Prompt 1", exact: true }).click();
-  const holeName = inspector.getByRole("textbox", { name: "What this prompt's hole is called" });
+  // Until Templateify is pressed this is not a hole.
+  await expect(inspector.getByRole("button", { name: "Templateify", exact: true })).toBeVisible();
+  await inspector.getByRole("button", { name: "Templateify", exact: true }).click();
+  await expect(inspector.getByRole("button", { name: "Hole 1", exact: true })).toBeVisible();
+
+  await inspector.getByRole("button", { name: "Hole 1", exact: true }).click();
+  const holeName = inspector.getByRole("textbox", { name: "What this hole is called" });
   await holeName.fill("winter_sources");
   await holeName.press("Enter");
   await expect(inspector.getByRole("button", { name: "winter_sources", exact: true })).toBeVisible();
 
   await inspector.getByRole("button", { name: "What whoever places this is choosing" }).click();
-  const holeMeans = inspector.getByRole("textbox", { name: "What this prompt's hole stands for" });
+  const holeMeans = inspector.getByRole("textbox", { name: "What this hole stands for" });
   await holeMeans.fill("Which filings the summary reads");
   await holeMeans.blur();
   await expect(
     inspector.getByRole("button", { name: "Which filings the summary reads", exact: true })
   ).toBeVisible();
 
-  // Save it as a template. Nothing else was declared.
+  // Save it as a template.
   await expect(page.locator(".title-bar")).toContainText("Saved", { timeout: 15_000 });
   const context = await templatesPanel(page);
   await context.getByRole("textbox", { name: "Template name" }).fill(name);
@@ -270,38 +273,37 @@ test("a prompt written in a document becomes a hole the template asks about", as
   await deleteTemplateFromLibrary(page, name);
 });
 
-test("Create hole declares a text hole and drops its atom where the caret is", async ({ page }) => {
+test("Templateify turns a run of selected text into a hole that says those words", async ({ page }) => {
   const name = `Browser holes ${Date.now()}`;
   await openDocumentFixture(page);
 
+  // Select a word in the prose, and the selection inspector offers to make it a hole.
+  const editor = page.locator(".ProseMirror");
+  const paragraph = editor.getByRole("paragraph").first();
+  await expect(paragraph).toBeVisible();
+  await paragraph.dblclick();
+
+  const selection = page.locator(
+    'aside[aria-label="Inspector"][data-inspected="document-editor.text-selection"]'
+  );
+  await expect(selection).toBeVisible();
+  const words = ((await page.evaluate(() => window.getSelection()?.toString())) ?? "").trim();
+  expect(words.length).toBeGreaterThan(0);
+
+  await selection.getByRole("button", { name: "Templateify", exact: true }).click();
+  await expect(editor.locator(".document-template-atom")).toContainText("Hole 1");
+  await expect(page.locator(".title-bar")).toContainText("Saved", { timeout: 15_000 });
+
+  // The words are not thrown away — they become what the hole says by default.
   const context = await templatesPanel(page);
   await context.getByRole("textbox", { name: "Template name" }).fill(name);
   await context.getByRole("button", { name: "Save", exact: true }).click();
   await expect(page.locator(".title-bar h1")).toContainText(`Template · ${name}`, { timeout: 15_000 });
 
-  // The caret decides where the hole goes, so put it in the prose first.
-  const editor = page.locator(".ProseMirror");
-  await editor.getByRole("paragraph").first().click();
-
-  await context.getByRole("button", { name: "Create hole", exact: true }).click();
-  const modal = page.getByRole("dialog", { name: "Create a hole" });
-  await expect(modal).toBeVisible();
-
-  await modal.getByRole("textbox", { name: "Name" }).fill("client_name");
-  await modal.getByRole("textbox", { name: "Description" }).fill("Who the note is for");
-  await modal.getByRole("textbox", { name: "Default words" }).fill("Northwind");
-  await modal.getByRole("button", { name: "Create", exact: true }).click();
-
-  await expect(context.getByText("Added the hole “client_name”.", { exact: true })).toBeVisible({
-    timeout: 15_000
-  });
-  const card = context.locator(".hole").filter({ hasText: "client_name" });
+  const card = context.locator(".hole").filter({ hasText: "Hole 1" });
   await expect(card).toBeVisible();
-  // A text hole takes words, not a scope, and both the words and the kind survive the write.
   await expect(card.getByRole("button", { name: "Default scope", exact: true })).toHaveCount(0);
-  await expect(card).toContainText("Northwind");
-  await expect(card).toContainText("Who the note is for");
-  await expect(editor.locator(".document-template-atom")).toContainText("client_name");
+  await expect(card).toContainText(words);
 
   page.once("dialog", (dialog) => void dialog.accept());
   await context.getByRole("button", { name: "Discard", exact: true }).click();

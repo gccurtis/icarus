@@ -22,6 +22,11 @@
   } from "$app-views/categories/document-editor/procedures/blocks";
   import { FILLS, INKS, orClear, orNone } from "$app-views/categories/document-editor/procedures/colours";
   import {
+    nextHoleName,
+    selectedWords,
+    selectionHoleOps
+  } from "$app-views/categories/document-editor/procedures/templating";
+  import {
     ago,
     anchorOf,
     isCommentableSelection,
@@ -273,6 +278,24 @@
   const openThread = (id: string) =>
     view.inspect("document-editor.comment", { kind: "comment", id });
   const openPerson = (id: string) => view.inspect("general.person", { kind: "person", id });
+
+  /**
+   * A run of text becoming a hole.
+   *
+   * The words are what the hole says by default, so a template placed without
+   * changing anything reads exactly like the document it came from.
+   */
+  const holeBody = $derived(runtime?.body);
+  const holeOffer = $derived(holeBody === undefined ? "Hole 1" : nextHoleName(holeBody));
+  const holeWords = $derived(
+    holeBody === undefined ? "" : selectedWords(holeBody, view.selection)
+  );
+
+  const templateify = () => {
+    if (runtime === undefined || holeBody === undefined) return;
+    const ops = selectionHoleOps(holeBody, view.selection, holeOffer);
+    if (ops.length > 0) runtime.apply(ops);
+  };
 </script>
 
 {#snippet head(title: string)}
@@ -364,6 +387,23 @@
       indent={indent.value ?? 0}
       onchange={setSpacing}
     />
+
+    {#if holeWords !== ""}
+      <PanelSection title="Template" chevron="end">
+        <div class="flex flex-col items-start gap-2">
+          <PanelNote tone="muted">
+            Make this a hole and a template built from this document will ask what fills it, starting
+            from what it says now.
+          </PanelNote>
+          <PanelButton
+            label="Templateify"
+            tone="primary"
+            title={`Turn the selection into a hole called ${holeOffer}`}
+            onclick={templateify}
+          />
+        </div>
+      </PanelSection>
+    {/if}
 
     <PanelSection title="Comments" count={here.length} open={here.length > 0} chevron="end" flush>
       {#if commentable}

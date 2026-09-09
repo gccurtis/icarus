@@ -260,7 +260,7 @@ describe("a template from a live resource", () => {
       templateId: "templates:2",
       target: "document",
       revision: 1,
-      dropped: ["Dropped a prompt's generated output."]
+      dropped: ["Dropped a prompt's link to its generated output."]
     });
     const held = model.tables.templates[1];
     assert.equal(held.name, "Winter brief shell");
@@ -274,13 +274,13 @@ describe("a template from a live resource", () => {
   });
 
   /**
-   * Every prompt is a hole, and a scope anybody could have meant is its default.
+   * A hole is made, never found.
    *
-   * Nothing was declared and nothing was named: the prompt was written, the
-   * template was made, and it asks. That is the whole of the link, and it is
-   * what makes a template from a document full of prompts worth placing.
+   * A prompt nobody templateified keeps the scope it reads and produces no
+   * hole, so placing the template asks nothing about it. That is what keeps
+   * the questions to the ones somebody meant to ask.
    */
-  test("turns an authored prompt scope into a hole that keeps it as the default", async () => {
+  test("gives no hole to a prompt nobody templateified", async () => {
     model.tables.documents.push(row("documents", "1", { projectId: "p", title: "Winter brief" }));
     model.tables.documentSnapshots.push(
       row("documentSnapshots", "1", {
@@ -317,17 +317,11 @@ describe("a template from a live resource", () => {
     });
     assert.ok(made.accepted);
     const held = model.tables.templates[1];
-    assert.deepEqual(held.holes, [
-      {
-        name: "Prompt 1",
-        label: "Prompt 1",
-        default: { include: [{ select: "project" }], exclude: [] }
-      }
-    ]);
-    assert.deepEqual(scopeOf(held), { include: [{ select: "hole", name: "Prompt 1" }], exclude: [] });
+    assert.deepEqual(held.holes, []);
+    assert.deepEqual(scopeOf(held), { include: [{ select: "project" }], exclude: [] });
   });
 
-  test("gives a hole no default when the prompt read something particular", async () => {
+  test("keeps whatever the templateified prompt reads as its hole's default", async () => {
     model.tables.documents.push(row("documents", "1", { projectId: "p", title: "Winter brief" }));
     model.tables.documentSnapshots.push(
       row("documentSnapshots", "1", {
@@ -366,7 +360,12 @@ describe("a template from a live resource", () => {
     assert.ok(made.accepted);
     const held = model.tables.templates[1];
     assert.deepEqual(held.holes, [
-      { name: "evidence", label: "evidence", description: "What happened" }
+      {
+        name: "evidence",
+        label: "evidence",
+        description: "What happened",
+        default: { include: [{ select: "set", setId: "resourceSets:1" }], exclude: [] }
+      }
     ]);
     assert.deepEqual(scopeOf(held), { include: [{ select: "hole", name: "evidence" }], exclude: [] });
   });

@@ -2,7 +2,7 @@ import { requireScope } from "$runtime/server/scope.server";
 import { serverModel } from "$runtime/server/start.server";
 import { asId } from "$representation/data/behavior/core/id";
 import { deckOfSlide } from "$representation/data/behavior/templates/deck-of-slide";
-import { templatedBodyOf } from "$capabilities/templates/api/shared/prompts";
+import { settledHoleDefaults, templatedBodyOf } from "$capabilities/templates/api/shared/prompts";
 import type { TemplateBody } from "$representation/data/types/templates/template";
 
 import { validateCreateTemplateFromResource } from "$capabilities/templates/api/create-template-from-resource/validate-create-template-from-resource";
@@ -70,7 +70,7 @@ export const createTemplateFromResource = async (
 
   const at = Date.now();
   const actor = { kind: "user" as const, userId: asId<"users">(scope.userId) };
-  const fields: RowFields<"templates"> = {
+  const fields: { -readonly [K in keyof RowFields<"templates">]: RowFields<"templates">[K] } = {
     projectId: asId<"projects">(scope.projectId),
     userId: actor.userId,
     name: asked.name,
@@ -83,6 +83,11 @@ export const createTemplateFromResource = async (
     updatedAt: at
   };
   const templateId = store.create("templates", fields);
+  const settled = settledHoleDefaults(store, scope.projectId, actor, templateId, fields.holes, at);
+  if (settled !== fields.holes) {
+    fields.holes = [...settled];
+    store.update(`templates.${templateId}.holes`, fields.holes);
+  }
   writeTemplateVersion(store, templateId, fields, at);
 
   return { accepted: true, templateId, target: asked.target, revision: 1, dropped: portable.dropped };

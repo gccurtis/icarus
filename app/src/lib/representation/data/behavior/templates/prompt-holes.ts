@@ -1,18 +1,21 @@
+import { segmentsOf } from "$representation/data/behavior/content/positions";
+import type { Atom } from "$representation/data/types/content/content-block";
 import type { TemplatedResourceSet } from "$representation/data/types/core/resource-set";
 import type { TemplateBody, TemplateHole } from "$representation/data/types/templates/template";
 
 /**
- * Every prompt is a hole.
+ * A hole is made, never found.
  *
- * A prompt asks the project a question, and a template is a question asked
- * again somewhere else — so the thing a template has to be told is what each of
- * its prompts should read this time. There is no declaring and no opting in:
- * making a template turns every prompt it holds into one hole, named by what
- * the author called it and otherwise by where it sits.
+ * Two things in a body can become one: a prompt, whose hole selects what it
+ * reads, and a run of text, whose hole says what it says. Both are turned into
+ * holes by the same gesture at the thing itself, and until somebody makes that
+ * gesture there is no hole — a document full of prompts is a document, and a
+ * template made from it asks nothing.
  *
- * Two prompts may share a name, and then they share a hole and one answer
- * fills both. Nothing enforces it either way, because a name is the whole of a
- * hole's identity and the resolver already substitutes by name.
+ * A hole's default is simply whatever the thing already is: the prompt's own
+ * scope, or the words that were selected. Nothing is judged portable or not.
+ * A scope naming something the next project does not have selects nothing
+ * there, which is what it means for that thing not to exist.
  */
 
 type Fields = Record<string, unknown>;
@@ -23,8 +26,10 @@ const isRecord = (value: unknown): value is Fields =>
 const isPrompt = (value: unknown): value is Fields =>
   isRecord(value) && value.type === "prompt" && typeof value.id === "string";
 
-/** Every prompt in the body, in the order it is written. */
-const promptsIn = (body: unknown): readonly Fields[] => {
+const isTemplateAtom = (value: unknown): value is Fields =>
+  isRecord(value) && value.kind === "template" && typeof value.name === "string";
+
+const walkFor = (body: unknown, take: (value: Fields) => boolean): readonly Fields[] => {
   const found: Fields[] = [];
   const walk = (value: unknown): void => {
     if (Array.isArray(value)) {
@@ -32,76 +37,54 @@ const promptsIn = (body: unknown): readonly Fields[] => {
       return;
     }
     if (!isRecord(value)) return;
-    if (isPrompt(value)) found.push(value);
+    if (take(value)) found.push(value);
     for (const nested of Object.values(value)) walk(nested);
   };
   walk(body);
   return found;
 };
 
-/** What a prompt's hole is called before anybody names it. */
-export const offeredHoleName = (index: number): string => `Prompt ${index + 1}`;
+const promptsIn = (body: unknown) => walkFor(body, isPrompt);
+const atomsIn = (body: unknown) => walkFor(body, isTemplateAtom);
 
-/**
- * The name a prompt's hole carries: what it was called, else where it sits.
- *
- * Ordinal rather than stable, because it is only ever a suggestion — the moment
- * somebody types a name it stops mattering where the prompt moved to.
- */
-export const offeredNameIn = (body: unknown, blockId: string): string => {
-  const at = promptsIn(body).findIndex((prompt) => prompt.id === blockId);
-  return offeredHoleName(at < 0 ? 0 : at);
+const named = (held: unknown): string => {
+  if (!isRecord(held)) return "";
+  return typeof held.name === "string" ? held.name.trim() : "";
 };
 
-export const holeNameIn = (body: unknown, blockId: string): string => {
-  const prompts = promptsIn(body);
-  const at = prompts.findIndex((prompt) => prompt.id === blockId);
-  if (at < 0) return offeredHoleName(0);
-  const held = prompts[at].hole;
-  const named = isRecord(held) && typeof held.name === "string" ? held.name.trim() : "";
-  return named === "" ? offeredHoleName(at) : named;
-};
-
-/**
- * What a hole selects when nobody says otherwise.
- *
- * A scope anybody could have meant — the whole project, or whole kinds of
- * thing — carries over as the default, so a template made without a thought
- * still places without one. A prompt that was never scoped counts as the whole
- * project, because that is what it reads and what its inspector says it reads.
- * A scope naming particular sets or particular resources does not carry over:
- * it was true of the project it was written in and saying it again somewhere
- * else would be a guess, so the hole arrives empty and has to be answered.
- */
-export const WHOLE_PROJECT: TemplatedResourceSet = { include: [{ select: "project" }], exclude: [] };
-
-export const defaultScopeOf = (scope: unknown): TemplatedResourceSet | undefined => {
-  if (!isRecord(scope)) return WHOLE_PROJECT;
-  const { include, exclude } = scope;
-  if (!Array.isArray(include) || include.length === 0) return WHOLE_PROJECT;
-  if (Array.isArray(exclude) && exclude.length > 0) return undefined;
-  const general = include.every(
-    (term) => isRecord(term) && (term.select === "project" || term.select === "kinds")
-  );
-  if (!general) return undefined;
-  const terms = include.map((term) => ({ ...(term as object) })) as unknown as TemplatedResourceSet["include"];
-  return { include: terms, exclude: [] };
-};
-
-/**
- * The hole a prompt already answers to, when it is already asking for one.
- *
- * A working copy is full of prompts whose scopes are hole terms, because
- * inserting a template into one keeps the terms rather than resolving them.
- * Saving that copy must not rename them: the name in the term is the name
- * somebody already wrote, and the answers given elsewhere are keyed to it.
- */
-const standingHoleName = (scope: unknown): string | undefined => {
-  if (!isRecord(scope) || !Array.isArray(scope.include)) return undefined;
-  for (const term of scope.include) {
-    if (isRecord(term) && term.select === "hole" && typeof term.name === "string") return term.name;
+/** Every hole this body already carries, whichever kind it is. */
+export const holeNamesIn = (body: unknown): readonly string[] => {
+  const names = new Set<string>();
+  for (const prompt of promptsIn(body)) {
+    const held = named(prompt.hole);
+    if (held !== "") names.add(held);
   }
-  return undefined;
+  for (const atom of atomsIn(body)) names.add(atom.name as string);
+  return [...names];
+};
+
+export const offeredHoleName = (index: number): string => `Hole ${index + 1}`;
+
+/**
+ * The name the next hole is offered.
+ *
+ * Counted across everything the body already holds rather than per kind, so a
+ * template's holes are numbered in one sequence however they were made.
+ */
+export const nextHoleName = (body: unknown): string => {
+  const taken = new Set(holeNamesIn(body));
+  for (let index = 0; ; index += 1) {
+    const offer = offeredHoleName(index);
+    if (!taken.has(offer)) return offer;
+  }
+};
+
+/** What a hole selects when nobody says otherwise: whatever the prompt already read. */
+export const defaultScopeOf = (scope: unknown): TemplatedResourceSet | undefined => {
+  if (!isRecord(scope) || !Array.isArray(scope.include) || scope.include.length === 0) {
+    return { include: [{ select: "project" }], exclude: [] };
+  }
+  return scope as unknown as TemplatedResourceSet;
 };
 
 export type PromptHoleDraft = {
@@ -110,36 +93,71 @@ export type PromptHoleDraft = {
 };
 
 /**
- * One hole per prompt, read off the body before it is made portable.
+ * One hole per prompt somebody templated, and none for the rest.
  *
- * Before, because portability drops the scope terms that name particular things
- * — and whether those were there is exactly what decides if the hole gets a
- * default.
+ * Read before the body is made portable, because the hole's default is the
+ * scope as the prompt actually reads it.
  */
 export const promptHolesOf = (body: unknown): readonly PromptHoleDraft[] =>
-  promptsIn(body).map((prompt, index) => {
+  promptsIn(body).flatMap((prompt) => {
+    const name = named(prompt.hole);
+    if (name === "") return [];
     const held = isRecord(prompt.hole) ? prompt.hole : {};
-    const named = typeof held.name === "string" ? held.name.trim() : "";
-    const name = named === "" ? (standingHoleName(prompt.scope) ?? offeredHoleName(index)) : named;
     const description = typeof held.description === "string" ? held.description.trim() : "";
     const fallback = defaultScopeOf(prompt.scope);
-    return {
-      blockId: prompt.id as string,
-      hole: {
-        name,
-        label: name,
-        ...(description === "" ? {} : { description }),
-        ...(fallback === undefined ? {} : { default: fallback })
+    return [
+      {
+        blockId: prompt.id as string,
+        hole: {
+          name,
+          label: name,
+          ...(description === "" ? {} : { description }),
+          ...(fallback === undefined ? {} : { default: fallback })
+        }
       }
+    ];
+  });
+
+/** One hole per template atom somebody made, carrying the words it stands in for. */
+export const textHolesOf = (body: unknown): readonly TemplateHole[] =>
+  atomsIn(body).map((atom) => {
+    const name = atom.name as string;
+    const description = typeof atom.description === "string" ? atom.description.trim() : "";
+    const words = typeof atom.text === "string" ? atom.text : "";
+    return {
+      name,
+      label: name,
+      kind: "text" as const,
+      ...(description === "" ? {} : { description }),
+      ...(words === "" ? {} : { text: words })
     };
   });
+
+/**
+ * The body with each templated prompt's scope replaced by the hole that stands
+ * for it. A prompt nobody templated keeps the scope it has.
+ */
+export const withPromptHoles = <T>(body: T, drafts: readonly PromptHoleDraft[]): T => {
+  const names = new Map(drafts.map((draft) => [draft.blockId, draft.hole.name]));
+  const walk = (value: unknown): unknown => {
+    if (Array.isArray(value)) return value.map(walk);
+    if (!isRecord(value)) return value;
+    const next: Fields = {};
+    for (const [field, nested] of Object.entries(value)) next[field] = walk(nested);
+    if (!isPrompt(value)) return next;
+    const name = names.get(value.id as string);
+    if (name === undefined) return next;
+    return { ...next, scope: { include: [{ select: "hole", name }], exclude: [] } };
+  };
+  return walk(body) as T;
+};
 
 /**
  * The body with each prompt's question written onto the prompt itself.
  *
  * A prompt reads its words from the derived output it is linked to, and a
- * template leaves that output behind — so the words are copied onto the block
- * on the way in, or the copy a template makes would ask nothing.
+ * template leaves the row behind — so the definition is copied onto the block
+ * on the way in and a new one is made from it wherever the template lands.
  */
 export const withAsks = <T>(body: T, asked: Readonly<Record<string, string>>): T => {
   const walk = (value: unknown): unknown => {
@@ -155,45 +173,27 @@ export const withAsks = <T>(body: T, asked: Readonly<Record<string, string>>): T
   return walk(body) as T;
 };
 
-/**
- * The holes a template keeps, with what the author already settled left alone.
- *
- * A prompt owns its hole's name and what it stands for, because that is where
- * they are written. A default may have been built in the Holes band since, and
- * that is not something a save should quietly undo.
- */
+/** The holes a template keeps, with what the author already settled left alone. */
 export const mergedPromptHoles = (
   known: readonly TemplateHole[],
-  drafts: readonly PromptHoleDraft[]
+  fresh: readonly TemplateHole[]
 ): readonly TemplateHole[] => {
   const held = new Map(known.map((hole) => [hole.name, hole]));
-  const fresh = drafts.map((draft) => {
-    const settled = held.get(draft.hole.name);
-    if (settled === undefined) return draft.hole;
-    const { default: fallback, ...rest } = draft.hole;
+  const next = fresh.map((hole) => {
+    const settled = held.get(hole.name);
+    if (settled === undefined) return hole;
+    const { description, ...rest } = hole;
     return {
       ...rest,
-      ...(settled.default === undefined ? (fallback === undefined ? {} : { default: fallback }) : { default: settled.default })
+      ...(description === undefined
+        ? settled.description === undefined
+          ? {}
+          : { description: settled.description }
+        : { description })
     };
   });
-  const taken = new Set(fresh.map((hole) => hole.name));
-  return [...fresh, ...known.filter((hole) => !taken.has(hole.name))];
-};
-
-/** The body with every prompt's scope replaced by the hole term that stands for it. */
-export const withPromptHoles = <T>(body: T, drafts: readonly PromptHoleDraft[]): T => {
-  const names = new Map(drafts.map((draft) => [draft.blockId, draft.hole.name]));
-  const walk = (value: unknown): unknown => {
-    if (Array.isArray(value)) return value.map(walk);
-    if (!isRecord(value)) return value;
-    const next: Fields = {};
-    for (const [field, nested] of Object.entries(value)) next[field] = walk(nested);
-    if (!isPrompt(value)) return next;
-    const name = names.get(value.id as string);
-    if (name === undefined) return next;
-    return { ...next, scope: { include: [{ select: "hole", name }], exclude: [] } };
-  };
-  return walk(body) as T;
+  const taken = new Set(next.map((hole) => hole.name));
+  return [...next, ...known.filter((hole) => !taken.has(hole.name))];
 };
 
 /** What each hole's prompt asks, so placing a template can show the question. */
@@ -211,4 +211,70 @@ export const promptWordsIn = (body: TemplateBody): Readonly<Record<string, strin
     }
   }
   return words;
+};
+
+export type AtomSplice = {
+  readonly remove: readonly string[];
+  readonly after: string | null;
+  readonly values: readonly Atom[];
+};
+
+/**
+ * A run of text becoming a hole, as the atoms that replace it.
+ *
+ * Only the atoms the selection actually touches are rebuilt: what is left of
+ * the first, the hole itself, and what is left of the last. Marks that reached
+ * into those atoms go with them, which is the cost of turning words into a
+ * question and is why the gesture is deliberate.
+ */
+export const holeSplice = (
+  atoms: readonly Atom[],
+  from: number,
+  to: number,
+  hole: { name: string; description?: string },
+  mint: () => string
+): AtomSplice | undefined => {
+  const start = Math.min(from, to);
+  const end = Math.max(from, to);
+  if (end <= start) return undefined;
+
+  const segments = segmentsOf(atoms);
+  const touched = segments.filter((segment) => segment.start < end && segment.end > start);
+  if (touched.length === 0) return undefined;
+
+  const first = touched[0];
+  const last = touched[touched.length - 1];
+  const at = segments.findIndex((segment) => segment.atom.id === first.atom.id);
+  const before = at <= 0 ? null : segments[at - 1].atom.id;
+
+  const wordsOf = (segment: (typeof segments)[number], sliceFrom: number, sliceTo: number): string =>
+    segment.atom.kind === "literal" ? segment.atom.text.slice(sliceFrom, sliceTo) : "";
+
+  const head = wordsOf(first, 0, start - first.start);
+  const tail = wordsOf(last, end - last.start, last.end - last.start);
+  const taken = touched
+    .map((segment) =>
+      segment.atom.kind === "literal"
+        ? segment.atom.text.slice(
+            Math.max(start - segment.start, 0),
+            Math.min(end - segment.start, segment.end - segment.start)
+          )
+        : ""
+    )
+    .join("");
+
+  const description = hole.description?.trim() ?? "";
+  const values: Atom[] = [
+    ...(head === "" ? [] : [{ id: mint(), kind: "literal" as const, text: head }]),
+    {
+      id: mint(),
+      kind: "template" as const,
+      name: hole.name,
+      ...(description === "" ? {} : { description }),
+      ...(taken === "" ? {} : { text: taken })
+    },
+    ...(tail === "" ? [] : [{ id: mint(), kind: "literal" as const, text: tail }])
+  ];
+
+  return { remove: touched.map((segment) => segment.atom.id), after: before, values };
 };

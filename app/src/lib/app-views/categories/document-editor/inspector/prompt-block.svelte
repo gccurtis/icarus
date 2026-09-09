@@ -5,10 +5,10 @@
     Panel,
     PanelActions,
     PanelBanner,
+    PanelButton,
     PanelCrumbs,
     PanelNote,
-    PanelProgress,
-    PanelSelect
+    PanelProgress
   } from "$authored-components/panel";
   import { Button } from "$vendored-components/button";
   import { Textarea } from "$vendored-components/textarea";
@@ -33,7 +33,7 @@
     defaultScopeOf,
     draftOf,
     narrowed,
-    offeredNameIn,
+    nextHoleName,
     offeringOf,
     projectResources,
     resourceSets,
@@ -57,7 +57,6 @@
   import type { DocumentRuntime } from "$model/client/workspace-state";
   type Phase = "creating" | "saving" | "generating";
 
-  const SCOPES = [{ value: "project", label: "Whole project" }] as const;
 
   const view = workspaceState();
   const documentId = $derived(view.active.resourceId);
@@ -171,11 +170,9 @@
   const setNames = $derived(scopeNamesOf(setItems, catalogue));
   const offering = $derived(offeringOf(setItems, catalogue));
 
-  const offered = $derived(
-    body === undefined || prompt === undefined ? "Prompt 1" : offeredNameIn(body, prompt.id)
-  );
+  const offered = $derived(body === undefined ? "Hole 1" : nextHoleName(body));
   const named = $derived(prompt?.hole);
-  const settled = $derived(defaultScopeOf(prompt?.scope));
+  const reads = $derived(ruleOf(defaultScopeOf(prompt?.scope), setNames));
 
   let contextOpen = $state(false);
   let draft = $state<ScopeDraft>(draftOf(undefined));
@@ -187,6 +184,11 @@
   const write = (ops: readonly unknown[]) => {
     if (runtime === undefined || ops.length === 0) return;
     runtime.apply(ops as Parameters<DocumentRuntime["apply"]>[0]);
+  };
+
+  const make = () => {
+    if (prompt === undefined) return;
+    write(promptHoleOps(prompt, { name: offered }));
   };
 
   const rename = (name: string) => {
@@ -253,7 +255,12 @@
         <div class="scope">
           <span>Scope</span>
           <div class="scope-control">
-            <PanelSelect label="Scope" value="project" options={SCOPES} />
+            <PanelButton
+              label={reads}
+              disabled={phase !== undefined}
+              title="Choose what this prompt reads"
+              onclick={openContext}
+            />
           </div>
         </div>
       </div>
@@ -275,24 +282,23 @@
     {/if}
 
     <PromptTemplate
-      name={named?.name ?? ""}
-      {offered}
+      name={named?.name}
       description={named?.description ?? ""}
-      context={settled === undefined ? undefined : ruleOf(settled, setNames)}
-      settled={settled !== undefined}
+      {offered}
+      standing={reads}
       disabled={phase !== undefined}
+      onmake={make}
       onname={rename}
       ondescription={describe}
-      oncontext={openContext}
     />
   {/if}
 </Panel>
 
 <OverlayModal
   bind:open={contextOpen}
-  title={`Default context for ${named?.name ?? offered}`}
-  description="What this prompt reads here, and what its hole selects until whoever places the template says otherwise."
-  confirm="Set the default context"
+  title="What this prompt reads"
+  description="The sources it is answered from. If it is a hole, this is also what the hole selects until whoever places the template says otherwise."
+  confirm="Set the scope"
   width="wide"
   blocked={scopeBlocked}
   onconfirm={confirmContext}

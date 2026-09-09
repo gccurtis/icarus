@@ -18,6 +18,7 @@ import {
 } from "$capabilities/templates/api/shared/projection";
 import { normalizeScope, unknownSetsIn } from "$capabilities/templates/api/shared/scopes";
 import { kindOf } from "$capabilities/templates/api/shared/holes";
+import { withFreshOutputs } from "$capabilities/templates/api/shared/prompts";
 import type {
   InstantiateTemplateResult,
   TemplateAnswers
@@ -137,8 +138,10 @@ export const instantiateTemplate = async (input: unknown): Promise<InstantiateTe
     answered[name] = term.term as TemplateAnswers[string];
   }
 
+  const outputs: string[] = [];
   const rollback = () => {
     for (const setId of written) store.remove(`resourceSets.${setId}`);
+    for (const outputId of outputs) store.remove(`derivedOutputs.${outputId}`);
     store.remove(`${table}.${resourceId}`);
   };
 
@@ -164,6 +167,16 @@ export const instantiateTemplate = async (input: unknown): Promise<InstantiateTe
     };
   }
   body = fillTemplateAtoms(resolved.body, texts);
+  const linked = withFreshOutputs(
+    store,
+    scope.projectId,
+    actor,
+    { kind: body.resource === "slides" ? "slideDeck" : body.resource, id: resourceId },
+    body,
+    at
+  );
+  body = linked.body;
+  outputs.push(...linked.written);
   store.update(`templates.${template._id}.lastUsedAt`, at);
 
   if (body.resource === "document") {
