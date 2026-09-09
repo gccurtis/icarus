@@ -4,8 +4,6 @@ import type { LiveSheet } from "$representation/data/types/spreadsheets/live";
 import type { SpreadsheetOp } from "$representation/data/types/spreadsheets/op";
 import type { CellStyle } from "$representation/data/types/spreadsheets/style-set";
 import {
-  contains,
-  indexOf,
   rangeOf,
   rectOf,
   sameRect,
@@ -146,16 +144,3 @@ export const setStyleField = (
   if (JSON.stringify(was) === JSON.stringify(value ?? null)) return undefined;
   return { op: "set", target: "sheet", path: `styles/styles/${key}/${field}`, value, was };
 };
-
-export const rulesOverRects = (body: SpreadsheetBody, grid: Grid, rects: readonly Rect[]): FormatRule[] =>
-  body.formatRules.filter((rule) => {
-    const held = rectOf(grid, rule);
-    return held !== undefined && rects.some((rect) => {
-      for (let row = rect.row; row < rect.row + rect.rows; row += 1) {
-        for (let column = rect.column; column < rect.column + rect.columns; column += 1) {
-          if (contains(held, row, column)) return true;
-        }
-      }
-      return false;
-    });
-  });

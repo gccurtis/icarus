@@ -8,15 +8,11 @@ import { cleared, typed } from "$app-views/categories/spreadsheet-editor/procedu
 import { pasted } from "$app-views/categories/spreadsheet-editor/procedures/clipboard";
 import { filled } from "$app-views/categories/spreadsheet-editor/procedures/fill";
 import { factsOf, shownOf, toStored } from "$app-views/categories/spreadsheet-editor/procedures/recalculation";
-import { merged, unmerged } from "$app-views/categories/spreadsheet-editor/procedures/spans";
-import {
-  frozenColumnsSet,
-  insertedRows,
-  movedColumn,
-  movedRow,
-  removedRows,
-  resizedColumn
-} from "$app-views/categories/spreadsheet-editor/procedures/structure";
+import { merged, unmerged } from "$app-views/categories/spreadsheet-editor/procedures/merge-spans";
+import { frozenColumnsSet } from "$app-views/categories/spreadsheet-editor/procedures/frozen-structure";
+import { movedColumn } from "$app-views/categories/spreadsheet-editor/procedures/column-structure";
+import { insertedRows, movedRow, removedRows } from "$app-views/categories/spreadsheet-editor/procedures/row-structure";
+import { resizedColumn } from "$app-views/categories/spreadsheet-editor/procedures/track-sizing";
 
 const body = (): SpreadsheetBody => ({
   rows: Array.from({ length: 6 }, (_, index) => ({ id: `r${index + 1}`, order: index + 1 })),

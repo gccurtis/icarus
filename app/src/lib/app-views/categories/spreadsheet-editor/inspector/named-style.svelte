@@ -22,7 +22,8 @@
   import { gridOf } from "$app-views/categories/spreadsheet-editor/procedures/addresses";
   import type { Edit } from "$app-views/categories/spreadsheet-editor/procedures/cells";
   import { FILLS, INKS, orClear, orNone } from "$app-views/categories/spreadsheet-editor/procedures/colors";
-  import { DEFAULT_FONT_SIZE, FAMILIES, type CellStyle } from "$app-views/categories/spreadsheet-editor/procedures/formatting";
+  import type { CellStyle } from "$app-views/categories/spreadsheet-editor/procedures/formatting";
+  import { DEFAULT_FONT_SIZE, FAMILIES } from "$app-views/categories/spreadsheet-editor/procedures/format-options";
   import { STYLES, type MarkStyle } from "$app-views/categories/spreadsheet-editor/procedures/marks";
   import { STYLE } from "$app-views/categories/spreadsheet-editor/procedures/selection-kinds";
   import { styleSignal } from "$app-views/categories/spreadsheet-editor/procedures/selecting";

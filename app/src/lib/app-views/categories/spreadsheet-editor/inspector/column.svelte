@@ -13,15 +13,10 @@
   import { recalculating } from "$app-views/categories/spreadsheet-editor/procedures/recalculation";
   import { selectedColumnIds, selectedRects } from "$app-views/categories/spreadsheet-editor/procedures/selection-reading";
   import { aggregateOf } from "$app-views/categories/spreadsheet-editor/procedures/stats";
-  import {
-    DEFAULT_COLUMN_WIDTH,
-    duplicatedColumns,
-    fittedColumn,
-    frozenColumnsSet,
-    insertedColumns,
-    removedColumns,
-    resizedColumn
-  } from "$app-views/categories/spreadsheet-editor/procedures/structure";
+  import { DEFAULT_COLUMN_WIDTH } from "$app-views/categories/spreadsheet-editor/procedures/structure";
+  import { duplicatedColumns, insertedColumns, removedColumns } from "$app-views/categories/spreadsheet-editor/procedures/column-structure";
+  import { frozenColumnsSet } from "$app-views/categories/spreadsheet-editor/procedures/frozen-structure";
+  import { fittedColumn, resizedColumn } from "$app-views/categories/spreadsheet-editor/procedures/track-sizing";
   import { pixelsOf, pointsOf } from "$app-views/categories/spreadsheet-editor/procedures/units";
   import { holdsTheRuntime } from "$app-views/categories/spreadsheet-editor/procedures/effects/holds-the-runtime.svelte";
   import { variableRegister } from "$app-views/categories/spreadsheet-editor/procedures/variables.svelte";

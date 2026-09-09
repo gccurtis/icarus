@@ -20,7 +20,8 @@
   import { runsOf } from "$app-views/categories/spreadsheet-editor/procedures/scene";
   import { selectedRef } from "$app-views/categories/spreadsheet-editor/procedures/selection-reading";
   import { cellSignal, textSignal } from "$app-views/categories/spreadsheet-editor/procedures/selecting";
-  import { mergeOf, spillOf, unmerged } from "$app-views/categories/spreadsheet-editor/procedures/spans";
+  import { mergeOf, unmerged } from "$app-views/categories/spreadsheet-editor/procedures/merge-spans";
+  import { spillOf } from "$app-views/categories/spreadsheet-editor/procedures/spill-spans";
   import { displayOf, kindOf, type SheetCell } from "$app-views/categories/spreadsheet-editor/procedures/values";
   import { holdsTheRuntime } from "$app-views/categories/spreadsheet-editor/procedures/effects/holds-the-runtime.svelte";
   import { variableRegister } from "$app-views/categories/spreadsheet-editor/procedures/variables.svelte";

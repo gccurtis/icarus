@@ -1,5 +1,5 @@
 import type { TableName, TableRow } from "$representation/store/tables";
-import { create, read, update } from "$capabilities/store/index.remote";
+import { read, update } from "$capabilities/store/index.remote";
 import { readStore, readUsername } from "$model/client/workspace-state";
 
 export type TableQuery = ReturnType<typeof readStore>;
@@ -28,11 +28,6 @@ export const renameSheet = async (
   await query?.refresh();
 };
 
-export const createRow = async <T extends TableName>(
-  table: T,
-  fields: Record<string, unknown>
-): Promise<{ id: string }> => create({ table, fields } as Parameters<typeof create>[0]);
-
 export const tableQuery = (table: TableName): TableQuery => readStore(table);
 
 export const rowsOf = <T extends TableName>(query: TableQuery, table: T): readonly TableRow<T>[] => {
@@ -59,6 +54,3 @@ export const viewerId = (): string => {
   const name = answer.current;
   return rowsIn("users").find((user) => user.displayName === name)?._id ?? "";
 };
-
-export const refreshAll = (...queries: readonly TableQuery[]): Promise<void> =>
-  Promise.all(queries.map((query) => query.refresh())).then(() => undefined);

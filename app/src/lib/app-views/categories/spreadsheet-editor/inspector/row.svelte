@@ -13,14 +13,9 @@
   import { recalculating } from "$app-views/categories/spreadsheet-editor/procedures/recalculation";
   import { selectedRects, selectedRowIds } from "$app-views/categories/spreadsheet-editor/procedures/selection-reading";
   import { aggregateOf } from "$app-views/categories/spreadsheet-editor/procedures/stats";
-  import {
-    DEFAULT_ROW_HEIGHT,
-    duplicatedRows,
-    fittedRow,
-    insertedRows,
-    removedRows,
-    resizedRow
-  } from "$app-views/categories/spreadsheet-editor/procedures/structure";
+  import { DEFAULT_ROW_HEIGHT } from "$app-views/categories/spreadsheet-editor/procedures/structure";
+  import { duplicatedRows, insertedRows, removedRows } from "$app-views/categories/spreadsheet-editor/procedures/row-structure";
+  import { fittedRow, resizedRow } from "$app-views/categories/spreadsheet-editor/procedures/track-sizing";
   import { pixelsOf, pointsOf } from "$app-views/categories/spreadsheet-editor/procedures/units";
   import { holdsTheRuntime } from "$app-views/categories/spreadsheet-editor/procedures/effects/holds-the-runtime.svelte";
   import { variableRegister } from "$app-views/categories/spreadsheet-editor/procedures/variables.svelte";

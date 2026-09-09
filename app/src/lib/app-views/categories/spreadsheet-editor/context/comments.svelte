@@ -2,16 +2,14 @@
   import { Panel, PanelEmpty, PanelQuote, PanelSection } from "$authored-components/panel";
   import { gridOf, indexOf } from "$app-views/categories/spreadsheet-editor/procedures/addresses";
   import {
-    ago,
     anchorLabel,
     anchorOf,
-    nameOf,
     remarksOf,
     resolvedOf,
-    textOf,
     threadsOf,
     type Thread
   } from "$app-views/categories/spreadsheet-editor/procedures/comments";
+  import { ago, nameOf, textOf } from "$app-views/categories/spreadsheet-editor/procedures/comment-copy";
   import { selectedRef } from "$app-views/categories/spreadsheet-editor/procedures/selection-reading";
   import { cellSignal } from "$app-views/categories/spreadsheet-editor/procedures/selecting";
   import { rowsOf, tableQuery } from "$app-views/categories/spreadsheet-editor/procedures/store";

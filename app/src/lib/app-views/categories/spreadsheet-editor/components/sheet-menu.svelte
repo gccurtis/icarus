@@ -15,14 +15,10 @@
     selectedRowIds
   } from "$app-views/categories/spreadsheet-editor/procedures/selection-reading";
   import { columnSignal, rowSignal, type Signal } from "$app-views/categories/spreadsheet-editor/procedures/selecting";
-  import { merged, mergeOf, unmerged } from "$app-views/categories/spreadsheet-editor/procedures/spans";
-  import {
-    frozenColumnsSet,
-    insertedColumns,
-    insertedRows,
-    removedColumns,
-    removedRows
-  } from "$app-views/categories/spreadsheet-editor/procedures/structure";
+  import { merged, mergeOf, unmerged } from "$app-views/categories/spreadsheet-editor/procedures/merge-spans";
+  import { frozenColumnsSet } from "$app-views/categories/spreadsheet-editor/procedures/frozen-structure";
+  import { insertedColumns, removedColumns } from "$app-views/categories/spreadsheet-editor/procedures/column-structure";
+  import { insertedRows, removedRows } from "$app-views/categories/spreadsheet-editor/procedures/row-structure";
   import { holdsTheRuntime } from "$app-views/categories/spreadsheet-editor/procedures/effects/holds-the-runtime.svelte";
   import { variableRegister } from "$app-views/categories/spreadsheet-editor/procedures/variables.svelte";
   import { isInspectorView, workspaceState } from "$model/client/workspace-state";

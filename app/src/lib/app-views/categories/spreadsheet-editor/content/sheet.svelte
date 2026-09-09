@@ -64,25 +64,27 @@
     merged,
     mergeAround,
     mergeOf,
-    spillChildOf,
-    spillOf,
     unmerged
-  } from "$app-views/categories/spreadsheet-editor/procedures/spans";
+  } from "$app-views/categories/spreadsheet-editor/procedures/merge-spans";
+  import { spillChildOf, spillOf } from "$app-views/categories/spreadsheet-editor/procedures/spill-spans";
   import { usedRect } from "$app-views/categories/spreadsheet-editor/procedures/stats";
   import { rowsOf, tableQuery, titleOf, titleQuery } from "$app-views/categories/spreadsheet-editor/procedures/store";
   import {
     APPEND_COLUMNS,
-    APPEND_ROWS,
-    frozenColumnsSet,
-    insertedColumns,
-    insertedRows,
-    movedColumn,
-    movedRow,
-    removedColumns,
-    removedRows,
-    resizedColumn,
-    resizedRow
+    APPEND_ROWS
   } from "$app-views/categories/spreadsheet-editor/procedures/structure";
+  import { frozenColumnsSet } from "$app-views/categories/spreadsheet-editor/procedures/frozen-structure";
+  import {
+    insertedColumns,
+    movedColumn,
+    removedColumns
+  } from "$app-views/categories/spreadsheet-editor/procedures/column-structure";
+  import {
+    insertedRows,
+    movedRow,
+    removedRows
+  } from "$app-views/categories/spreadsheet-editor/procedures/row-structure";
+  import { resizedColumn, resizedRow } from "$app-views/categories/spreadsheet-editor/procedures/track-sizing";
   import { holdsTheRuntime } from "$app-views/categories/spreadsheet-editor/procedures/effects/holds-the-runtime.svelte";
   import { workspaceState, type SyncState } from "$model/client/workspace-state";
 

@@ -6,12 +6,9 @@ import type { LiveSheet } from "$representation/data/types/spreadsheets/live";
 import { gridOf } from "$app-views/categories/spreadsheet-editor/procedures/addresses";
 import { factsOf, shownOf, toStored } from "$app-views/categories/spreadsheet-editor/procedures/recalculation";
 import { referencesIn, sheetNamed } from "$app-views/categories/spreadsheet-editor/procedures/references";
-import {
-  duplicatedColumns,
-  duplicatedRows,
-  fittedColumn,
-  fittedRow
-} from "$app-views/categories/spreadsheet-editor/procedures/structure";
+import { duplicatedColumns } from "$app-views/categories/spreadsheet-editor/procedures/column-structure";
+import { duplicatedRows } from "$app-views/categories/spreadsheet-editor/procedures/row-structure";
+import { fittedColumn, fittedRow } from "$app-views/categories/spreadsheet-editor/procedures/track-sizing";
 import { pixelsOf, pointsOf } from "$app-views/categories/spreadsheet-editor/procedures/units";
 
 const body = (): SpreadsheetBody => ({

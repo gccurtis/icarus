@@ -5,27 +5,24 @@ import type { SpreadsheetOp } from "$representation/data/types/spreadsheets/op";
 import {
   indexOf,
   keyOf,
-  refsIn,
   type CellRef,
-  type Grid,
-  type Rect
+  type Grid
 } from "$app-views/categories/spreadsheet-editor/procedures/addresses";
 import {
   isAnchor,
-  mergeSpans,
   spanCovering,
-  spillMessage,
-  spillSpans,
   type Edit
 } from "$app-views/categories/spreadsheet-editor/procedures/spans";
+import { mergeSpans } from "$app-views/categories/spreadsheet-editor/procedures/merge-spans";
+import { spillMessage, spillSpans } from "$app-views/categories/spreadsheet-editor/procedures/spill-spans";
 import {
   toStored,
   type SheetFacts,
   type Translated
 } from "$app-views/categories/spreadsheet-editor/procedures/recalculation";
 import { paintOf } from "$app-views/categories/spreadsheet-editor/procedures/formatting";
-import { PLAIN, patternOf } from "$app-views/categories/spreadsheet-editor/procedures/number-format";
-import { displayOf, parseTyped, sameValue } from "$app-views/categories/spreadsheet-editor/procedures/values";
+import { patternTyped } from "$app-views/categories/spreadsheet-editor/procedures/typed-pattern";
+import { parseTyped, sameValue } from "$app-views/categories/spreadsheet-editor/procedures/values";
 
 export type { Edit } from "$app-views/categories/spreadsheet-editor/procedures/spans";
 
@@ -165,58 +162,3 @@ export const typed = (
   }
   return { ops };
 };
-
-const TYPED = /^(-?)([$€£¥]?)([\d,]+)(?:\.(\d+))?$/;
-
-export const patternTyped = (text: string, value: number): string | null => {
-  const match = TYPED.exec(text.trim());
-  if (match === null) return null;
-  const [, , prefix, whole, fraction] = match;
-  const figures = fraction?.length ?? 0;
-  const natural = (String(Math.abs(value)).split(".")[1] ?? "").length;
-  const thousands = whole.includes(",") ? "," : "none";
-  if (figures <= natural && prefix === "" && thousands === "none") return null;
-  return patternOf({ ...PLAIN, prefix, decimals: Math.max(figures, natural), thousands });
-};
-
-export type CellKind = "number" | "text" | "logic" | "date";
-
-const asKind = (value: FormulaValue, kind: CellKind): FormulaValue | undefined => {
-  if (value.kind === kind) return value;
-  const text = value.kind === "text" ? value.value : value.kind === "number" ? String(value.value) : value.kind === "logic" ? String(value.value) : "";
-  switch (kind) {
-    case "text":
-      return { kind: "text", value: text };
-    case "number": {
-      const parsed = parseTyped(text);
-      return parsed.kind === "value" && parsed.value.kind === "number" ? parsed.value : undefined;
-    }
-    case "logic": {
-      if (value.kind === "number") return { kind: "logic", value: value.value !== 0 };
-      const word = text.trim().toLowerCase();
-      return word === "true" || word === "1" || word === "yes" ? { kind: "logic", value: true } : word === "false" || word === "0" || word === "no" || word === "" ? { kind: "logic", value: false } : undefined;
-    }
-    case "date": {
-      const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(text.trim());
-      if (match === null) return undefined;
-      const [year, month, day] = [Number(match[1]), Number(match[2]), Number(match[3])];
-      return { kind: "date", value: { calendar: "gregorian", year, month, day, utc: Date.UTC(year, month - 1, day) } };
-    }
-  }
-};
-
-export const coerced = (sheet: LiveSheet, ref: CellRef, kind: CellKind): Edit => {
-  const key = keyOf(ref);
-  const held = sheet.cells[key];
-  if (held === undefined || held.value.kind === "reference") return { ops: [] };
-  const next = asKind(held.value, kind);
-  if (next === undefined) return { ops: [], refused: `${displayOf(held.value)} does not read as a ${kind}.` };
-  if (sameValue(held.value, next)) return { ops: [] };
-  return { ops: [set(`${key}/value`, next, held.value)] };
-};
-
-export const populatedIn = (sheet: LiveSheet, grid: Grid, rect: Rect): SheetCell[] =>
-  refsIn(grid, rect).flatMap((ref) => {
-    const held = sheet.cells[keyOf(ref)];
-    return held === undefined ? [] : [held];
-  });

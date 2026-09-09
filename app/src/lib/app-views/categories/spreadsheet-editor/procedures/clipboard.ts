@@ -11,12 +11,13 @@ import { cleared, expressed, written } from "$app-views/categories/spreadsheet-e
 import { toStored, type SheetFacts } from "$app-views/categories/spreadsheet-editor/procedures/recalculation";
 import {
   isAnchor,
-  mergeSpans,
   spanCovering,
-  spillSpans,
   type Edit
 } from "$app-views/categories/spreadsheet-editor/procedures/spans";
-import { insertedColumns, insertedRows } from "$app-views/categories/spreadsheet-editor/procedures/structure";
+import { mergeSpans } from "$app-views/categories/spreadsheet-editor/procedures/merge-spans";
+import { spillSpans } from "$app-views/categories/spreadsheet-editor/procedures/spill-spans";
+import { insertedColumns } from "$app-views/categories/spreadsheet-editor/procedures/column-structure";
+import { insertedRows } from "$app-views/categories/spreadsheet-editor/procedures/row-structure";
 import { parseTyped } from "$app-views/categories/spreadsheet-editor/procedures/values";
 
 export type Pasted = Edit & { readonly summary?: string };

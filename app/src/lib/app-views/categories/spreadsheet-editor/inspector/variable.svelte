@@ -16,10 +16,8 @@
   import { displayOf, parseTyped } from "$app-views/categories/spreadsheet-editor/procedures/values";
   import { loadsTheVariables } from "$app-views/categories/spreadsheet-editor/procedures/effects/loads-the-variables.svelte";
   import { seedsFromTheRecord } from "$app-views/categories/spreadsheet-editor/procedures/effects/seeds-from-the-record.svelte";
-  import {
-    removesTheVariable,
-    savesTheVariable
-  } from "$app-views/categories/spreadsheet-editor/procedures/editing-variables";
+  import { savesTheVariable } from "$app-views/categories/spreadsheet-editor/procedures/editing-variables";
+  import { removesTheVariable } from "$app-views/categories/spreadsheet-editor/procedures/removing-variable";
   import {
     variableRegister,
     type VariableRecord

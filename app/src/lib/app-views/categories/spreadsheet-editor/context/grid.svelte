@@ -21,14 +21,9 @@
   import { problemsOf } from "$app-views/categories/spreadsheet-editor/procedures/references";
   import { selectedRects } from "$app-views/categories/spreadsheet-editor/procedures/selection-reading";
   import { formulaCount, populatedCount, usedRect } from "$app-views/categories/spreadsheet-editor/procedures/stats";
-  import {
-    frozenColumnsSet,
-    frozenRowsSet,
-    insertedColumns,
-    insertedRows,
-    removedColumns,
-    removedRows
-  } from "$app-views/categories/spreadsheet-editor/procedures/structure";
+  import { frozenColumnsSet, frozenRowsSet } from "$app-views/categories/spreadsheet-editor/procedures/frozen-structure";
+  import { insertedColumns, removedColumns } from "$app-views/categories/spreadsheet-editor/procedures/column-structure";
+  import { insertedRows, removedRows } from "$app-views/categories/spreadsheet-editor/procedures/row-structure";
   import { holdsTheRuntime } from "$app-views/categories/spreadsheet-editor/procedures/effects/holds-the-runtime.svelte";
   import { mirrorsADraft } from "$app-views/categories/spreadsheet-editor/procedures/effects/mirrors-a-draft.svelte";
   import { variableRegister } from "$app-views/categories/spreadsheet-editor/procedures/variables.svelte";

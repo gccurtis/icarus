@@ -6,7 +6,7 @@
   import { paintOf } from "$app-views/categories/spreadsheet-editor/procedures/formatting";
   import { selectedRef } from "$app-views/categories/spreadsheet-editor/procedures/selection-reading";
   import { cellSignal } from "$app-views/categories/spreadsheet-editor/procedures/selecting";
-  import { spillChildOf } from "$app-views/categories/spreadsheet-editor/procedures/spans";
+  import { spillChildOf } from "$app-views/categories/spreadsheet-editor/procedures/spill-spans";
   import { displayOf } from "$app-views/categories/spreadsheet-editor/procedures/values";
   import { holdsTheRuntime } from "$app-views/categories/spreadsheet-editor/procedures/effects/holds-the-runtime.svelte";
   import { isInspectorView, workspaceState } from "$model/client/workspace-state";

@@ -21,8 +21,6 @@
   import { setField, type Edit } from "$app-views/categories/spreadsheet-editor/procedures/cells";
   import { FILLS, INKS, orClear, orNone } from "$app-views/categories/spreadsheet-editor/procedures/colors";
   import {
-    DEFAULT_FONT_SIZE,
-    FAMILIES,
     emphasisOf,
     familyOf,
     paintOf,
@@ -30,14 +28,14 @@
     type CellFormat,
     type Paint
   } from "$app-views/categories/spreadsheet-editor/procedures/formatting";
+  import { DEFAULT_FONT_SIZE, FAMILIES } from "$app-views/categories/spreadsheet-editor/procedures/format-options";
   import { STYLES } from "$app-views/categories/spreadsheet-editor/procedures/marks";
   import { selectedRects, selectedRef } from "$app-views/categories/spreadsheet-editor/procedures/selection-reading";
   import {
     DEFAULT_COLUMN_WIDTH,
-    DEFAULT_ROW_HEIGHT,
-    resizedColumn,
-    resizedRow
+    DEFAULT_ROW_HEIGHT
   } from "$app-views/categories/spreadsheet-editor/procedures/structure";
+  import { resizedColumn, resizedRow } from "$app-views/categories/spreadsheet-editor/procedures/track-sizing";
   import { appliedStyle, ruleFormatOver } from "$app-views/categories/spreadsheet-editor/procedures/styles";
   import { pixelsOf, pointsOf } from "$app-views/categories/spreadsheet-editor/procedures/units";
   import { holdsTheRuntime } from "$app-views/categories/spreadsheet-editor/procedures/effects/holds-the-runtime.svelte";

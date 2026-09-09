@@ -10,7 +10,6 @@ import {
   type Grid,
   type Rect
 } from "$app-views/categories/spreadsheet-editor/procedures/addresses";
-import type { ValueKind } from "$app-views/categories/spreadsheet-editor/procedures/values";
 
 export type {
   BorderLine,
@@ -31,10 +30,6 @@ export type Paint = {
   readonly format: CellFormat;
   readonly own: CellFormat | undefined;
 };
-
-export const FAMILIES = ["IBM Plex Sans", "IBM Plex Serif", "IBM Plex Mono", "Georgia"] as const;
-
-export const DEFAULT_FONT_SIZE = 13;
 
 export const ruleRectOf = (grid: Grid, rule: FormatRule): Rect | undefined => rectOf(grid, rule);
 
@@ -75,22 +70,6 @@ export const paintOf = (
   };
 };
 
-export type Align = "left" | "center" | "right";
-
-export const alignOf = (paint: Paint, kind: ValueKind): Align => {
-  switch (paint.format.horizontalAlignment ?? paint.style.horizontalAlignment) {
-    case "start":
-    case "justify":
-      return "left";
-    case "center":
-      return "center";
-    case "end":
-      return "right";
-    default:
-      return kind === "number" || kind === "date" ? "right" : kind === "logic" ? "center" : "left";
-  }
-};
-
 export const weightOf = (style: CellStyle): number => style.fontWeight ?? (style.bold ? 600 : 400);
 
 export type Emphasis = {
@@ -113,19 +92,3 @@ export const cellWeightOf = (paint: Paint): number =>
 export const familyOf = (paint: Paint): string | undefined => paint.format.fontFamily ?? paint.style.fontFamily;
 
 export const sizeOf = (paint: Paint): number | undefined => paint.format.fontSize ?? paint.style.fontSize;
-
-export const ALIGNMENTS = [
-  { value: "start", label: "Left" },
-  { value: "center", label: "Center" },
-  { value: "end", label: "Right" }
-] as const;
-
-export const VERTICAL_ALIGNMENTS = [
-  { value: "top", label: "Top" },
-  { value: "middle", label: "Middle" },
-  { value: "bottom", label: "Bottom" }
-] as const;
-
-export type Valign = "top" | "middle" | "bottom";
-
-export const valignOf = (paint: Paint): Valign => paint.format.verticalAlignment ?? "middle";

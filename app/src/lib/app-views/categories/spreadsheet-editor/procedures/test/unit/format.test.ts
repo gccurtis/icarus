@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { LiveSheet } from "$representation/data/types/spreadsheets/live";
-import { coerced } from "$app-views/categories/spreadsheet-editor/procedures/cells";
+import { coerced } from "$app-views/categories/spreadsheet-editor/procedures/cell-coercion";
 import {
   PLAIN,
   formatNumber,

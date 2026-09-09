@@ -15,7 +15,7 @@ import {
   TEXT,
   VARIABLE
 } from "$app-views/categories/spreadsheet-editor/procedures/selection-kinds";
-import { spillChildOf } from "$app-views/categories/spreadsheet-editor/procedures/spans";
+import { spillChildOf } from "$app-views/categories/spreadsheet-editor/procedures/spill-spans";
 import { errorOf } from "$app-views/categories/spreadsheet-editor/procedures/values";
 
 export type { Selection } from "$representation/data/types/workspace/tab";

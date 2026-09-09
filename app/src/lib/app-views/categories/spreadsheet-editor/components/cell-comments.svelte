@@ -5,13 +5,11 @@
   import { cellAt } from "$app-views/categories/spreadsheet-editor/procedures/cells";
   import {
     addsAComment,
-    ago,
-    nameOf,
     remarksOf,
-    textOf,
     threadsOf,
     threadsOnCell
   } from "$app-views/categories/spreadsheet-editor/procedures/comments";
+  import { ago, nameOf, textOf } from "$app-views/categories/spreadsheet-editor/procedures/comment-copy";
   import { paintOf } from "$app-views/categories/spreadsheet-editor/procedures/formatting";
   import { selectedRef } from "$app-views/categories/spreadsheet-editor/procedures/selection-reading";
   import {

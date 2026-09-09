@@ -14,16 +14,17 @@ import {
   type Grid
 } from "$app-views/categories/spreadsheet-editor/procedures/addresses";
 import {
-  alignOf,
   cellWeightOf,
   emphasisOf,
   familyOf,
   paintOf,
-  sizeOf,
-  valignOf
+  sizeOf
 } from "$app-views/categories/spreadsheet-editor/procedures/formatting";
+import { alignOf, valignOf } from "$app-views/categories/spreadsheet-editor/procedures/alignment";
 import { endOf, startOf } from "$app-views/categories/spreadsheet-editor/procedures/marks";
-import { isAnchor, mergeSpans, spanCovering, spillSpans } from "$app-views/categories/spreadsheet-editor/procedures/spans";
+import { isAnchor, spanCovering } from "$app-views/categories/spreadsheet-editor/procedures/spans";
+import { mergeSpans } from "$app-views/categories/spreadsheet-editor/procedures/merge-spans";
+import { spillSpans } from "$app-views/categories/spreadsheet-editor/procedures/spill-spans";
 import { DEFAULT_COLUMN_WIDTH, DEFAULT_ROW_HEIGHT } from "$app-views/categories/spreadsheet-editor/procedures/structure";
 import { displayOf, errorOf, kindOf } from "$app-views/categories/spreadsheet-editor/procedures/values";
 import { editableOf, shownOf, type SheetFacts } from "$app-views/categories/spreadsheet-editor/procedures/recalculation";

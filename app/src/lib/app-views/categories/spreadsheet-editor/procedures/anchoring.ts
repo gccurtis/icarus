@@ -13,7 +13,6 @@ export type Anchor = {
 };
 
 export const referenceAt = (text: string, caret: number): Anchor | undefined => {
-  TOKEN.lastIndex = 0;
   for (const match of text.matchAll(TOKEN)) {
     const at = match.index ?? 0;
     const end = at + match[0].length;

@@ -27,7 +27,8 @@
   } from "$app-views/categories/spreadsheet-editor/procedures/references";
   import { selectedRef } from "$app-views/categories/spreadsheet-editor/procedures/selection-reading";
   import { cellSignal } from "$app-views/categories/spreadsheet-editor/procedures/selecting";
-  import { mergeOf, spillOf, unmerged } from "$app-views/categories/spreadsheet-editor/procedures/spans";
+  import { mergeOf, unmerged } from "$app-views/categories/spreadsheet-editor/procedures/merge-spans";
+  import { spillOf } from "$app-views/categories/spreadsheet-editor/procedures/spill-spans";
   import { rowsOf, tableQuery } from "$app-views/categories/spreadsheet-editor/procedures/store";
   import { KIND_LABEL, displayOf, kindOf, type SheetCell } from "$app-views/categories/spreadsheet-editor/procedures/values";
   import { holdsTheRuntime } from "$app-views/categories/spreadsheet-editor/procedures/effects/holds-the-runtime.svelte";

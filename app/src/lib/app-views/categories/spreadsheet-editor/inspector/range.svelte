@@ -13,12 +13,13 @@
   import FormatBand from "$app-views/categories/spreadsheet-editor/components/format-band.svelte";
   import NumberFormat from "$app-views/categories/spreadsheet-editor/components/number-format.svelte";
   import { gridOf, rectLabelOf, refsIn, type Rect } from "$app-views/categories/spreadsheet-editor/procedures/addresses";
-  import { cleared, populatedIn, type Edit } from "$app-views/categories/spreadsheet-editor/procedures/cells";
+  import { cleared, type Edit } from "$app-views/categories/spreadsheet-editor/procedures/cells";
+  import { populatedIn } from "$app-views/categories/spreadsheet-editor/procedures/populated-cells";
   import { recalculating } from "$app-views/categories/spreadsheet-editor/procedures/recalculation";
   import { selectedRects } from "$app-views/categories/spreadsheet-editor/procedures/selection-reading";
-  import { merged } from "$app-views/categories/spreadsheet-editor/procedures/spans";
+  import { merged } from "$app-views/categories/spreadsheet-editor/procedures/merge-spans";
   import { aggregateOf, figure } from "$app-views/categories/spreadsheet-editor/procedures/stats";
-  import { rulesOverRects } from "$app-views/categories/spreadsheet-editor/procedures/styles";
+  import { rulesOverRects } from "$app-views/categories/spreadsheet-editor/procedures/style-rules";
   import { holdsTheRuntime } from "$app-views/categories/spreadsheet-editor/procedures/effects/holds-the-runtime.svelte";
   import { variableRegister } from "$app-views/categories/spreadsheet-editor/procedures/variables.svelte";
   import { isInspectorView, workspaceState } from "$model/client/workspace-state";

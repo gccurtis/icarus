@@ -11,11 +11,11 @@ import { expressed, written } from "$app-views/categories/spreadsheet-editor/pro
 import { shifted } from "$representation/data/behavior/spreadsheets/translation";
 import {
   isAnchor,
-  mergeSpans,
   spanCovering,
-  spillSpans,
   type Edit
 } from "$app-views/categories/spreadsheet-editor/procedures/spans";
+import { mergeSpans } from "$app-views/categories/spreadsheet-editor/procedures/merge-spans";
+import { spillSpans } from "$app-views/categories/spreadsheet-editor/procedures/spill-spans";
 import { displayOf } from "$app-views/categories/spreadsheet-editor/procedures/values";
 
 export type Filled = Edit & { readonly summary?: string };

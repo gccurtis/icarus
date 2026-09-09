@@ -5,7 +5,7 @@
   import { VARIABLE } from "$app-views/categories/spreadsheet-editor/procedures/selection-kinds";
   import { variableSignal } from "$app-views/categories/spreadsheet-editor/procedures/selecting";
   import { displayOf } from "$app-views/categories/spreadsheet-editor/procedures/values";
-  import { addsAVariable } from "$app-views/categories/spreadsheet-editor/procedures/editing-variables";
+  import { addsAVariable } from "$app-views/categories/spreadsheet-editor/procedures/adding-variable";
   import { loadsTheVariables } from "$app-views/categories/spreadsheet-editor/procedures/effects/loads-the-variables.svelte";
   import {
     variableRegister,
