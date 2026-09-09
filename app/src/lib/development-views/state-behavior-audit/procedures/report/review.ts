@@ -186,9 +186,9 @@ export const REMEDIATION: readonly RemediationPhase[] = [
     phase: "02 — Make persistence atomic",
     objective: "Let the model that owns persistence uphold capability intent.",
     changes: [
-      "Define a transaction/unit-of-work API at StoreModel.",
+      "Move each multi-write capability onto StoreModel's transaction/unit-of-work API.",
       "Move create resource, comment, and revision commits onto it.",
-      "Add failure injection at every staged write and restart recovery tests."
+      "Add a capability-specific failure-injection contract for every migrated intent."
     ]
   },
   {

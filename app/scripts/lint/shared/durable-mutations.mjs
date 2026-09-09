@@ -2,14 +2,29 @@ import ts from "typescript";
 
 import { procedureEntries } from "./trees.mjs";
 
-const MUTATORS = new Set(["create", "update", "remove", "replace"]);
+const MUTATORS = new Set([
+  "create",
+  "createMany",
+  "remove",
+  "removeFieldFromRows",
+  "removeRows",
+  "replace",
+  "update"
+]);
 const UNITS = new Set(["transaction", "unitOfWork"]);
 
-const isStoreReceiver = (expression) => {
-  if (ts.isIdentifier(expression)) return expression.text === "store";
+const STORE_NAMES = new Set(["store", "unit", "unitOfWork"]);
+
+const isStoreReceiver = (expression, names = STORE_NAMES) => {
+  if (ts.isIdentifier(expression)) return names.has(expression.text);
   if (ts.isPropertyAccessExpression(expression)) return expression.name.text === "store";
   return false;
 };
+
+const parameterNames = (fn) =>
+  fn.parameters.flatMap((parameter) =>
+    ts.isIdentifier(parameter.name) ? [parameter.name.text] : []
+  );
 
 const calledName = (call) => {
   const callee = call.expression;
@@ -19,6 +34,11 @@ const calledName = (call) => {
       ? callee.name.text
       : undefined;
 };
+
+const isUnitBoundary = (call, storeNames) =>
+  ts.isPropertyAccessExpression(call.expression) &&
+  UNITS.has(call.expression.name.text) &&
+  isStoreReceiver(call.expression.expression, storeNames);
 
 const functionBody = (initializer) =>
   ts.isArrowFunction(initializer) || ts.isFunctionExpression(initializer)
@@ -151,13 +171,13 @@ export const reachableDurableMutations = (tree, entry) => {
     if (stack.has(key)) return;
     const nextStack = new Set(stack).add(key);
 
-    const visit = (node, enclosed) => {
+    const visit = (node, enclosed, storeNames = STORE_NAMES) => {
       if (ts.isCallExpression(node)) {
         const nameOfCall = calledName(node);
         if (
           ts.isPropertyAccessExpression(node.expression) &&
           MUTATORS.has(node.expression.name.text) &&
-          isStoreReceiver(node.expression.expression)
+          isStoreReceiver(node.expression.expression, storeNames)
         ) {
           mutations.push({
             method: node.expression.name.text,
@@ -169,12 +189,14 @@ export const reachableDurableMutations = (tree, entry) => {
           });
         }
 
-        if (nameOfCall && UNITS.has(nameOfCall)) {
+        if (isUnitBoundary(node, storeNames)) {
           for (const argument of node.arguments) {
             if (callable(argument)) {
-              if (argument.body) visit(argument.body, true);
+              if (argument.body) {
+                visit(argument.body, true, new Set([...storeNames, ...parameterNames(argument)]));
+              }
             } else {
-              visit(argument, enclosed);
+              visit(argument, enclosed, storeNames);
             }
           }
           return;
@@ -199,15 +221,15 @@ export const reachableDurableMutations = (tree, entry) => {
 
         for (const argument of node.arguments) {
           if (callable(argument)) {
-            if (argument.body) visit(argument.body, enclosed);
+            if (argument.body) visit(argument.body, enclosed, storeNames);
           } else {
-            visit(argument, enclosed);
+            visit(argument, enclosed, storeNames);
           }
         }
         return;
       }
       if (callable(node)) return;
-      node.forEachChild((child) => visit(child, enclosed));
+      node.forEachChild((child) => visit(child, enclosed, storeNames));
     };
 
     visit(body, atomic);

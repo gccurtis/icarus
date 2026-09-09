@@ -147,18 +147,20 @@ export const removeTemplate = async (input: unknown): Promise<RemoveTemplateResu
     versionIds.push(id);
   }
 
-  for (const table of resourceTables) {
-    store.removeFieldFromRows(
-      table,
-      (detach.get(table) ?? []).map((id) => asId<typeof table>(id)),
-      "templateId"
+  store.transaction((unit) => {
+    for (const table of resourceTables) {
+      unit.removeFieldFromRows(
+        table,
+        (detach.get(table) ?? []).map((id) => asId<typeof table>(id)),
+        "templateId"
+      );
+    }
+    unit.removeRows(
+      "templateVersions",
+      versionIds.map((id) => asId<"templateVersions">(id))
     );
-  }
-  store.removeRows(
-    "templateVersions",
-    versionIds.map((id) => asId<"templateVersions">(id))
-  );
-  store.remove(`templates.${template._id}`);
+    unit.remove(`templates.${template._id}`);
+  });
 
   return { accepted: true, templateId: template._id, revision: template.revision };
 };

@@ -246,7 +246,7 @@ export const backendReference: AreaReference = {
   review: [
     { tone: "settled", title: "Representation is editor-independent", detail: "The operation model, applier, inverse behavior, furniture, links, and anchors can be tested without Svelte or ProseMirror." },
     { tone: "settled", title: "Server acceptance distrusts the client", detail: "Scope, exact shapes, touched paths, revision continuity, structural application, and ownership are all revalidated." },
-    { tone: "watch", title: "Multi-record acceptance lacks a storage transaction", detail: "Anchor, change-set, snapshot, and metadata writes are ordered but not atomic under the current generic store API. A transactional capability is the principal durability follow-up." },
+    { tone: "watch", title: "Multi-record acceptance has not adopted the Store transaction", detail: "The Store now provides a recoverable unit of work, but anchor, change-set, snapshot, and metadata writes remain outside it. Moving this capability onto that boundary is the principal durability follow-up." },
     { tone: "watch", title: "The shared applier is a complexity hotspot", detail: "Its size reflects all structural roots and operation kinds. Future splits should preserve one public apply/invert contract and avoid separate client/server implementations." }
   ],
   related: ["runtime", "content", "context", "inspector"]

@@ -27,7 +27,7 @@ export const METRICS: readonly AuditMetric[] = [
   {
     value: "90 / 90",
     label: "Architecture checks clean",
-    detail: "All checks execute; 330 pre-existing findings are held by the reviewed debt ratchet.",
+    detail: "All checks execute; 327 pre-existing findings are held by the reviewed debt ratchet.",
     tone: "positive"
   },
   {
@@ -126,7 +126,7 @@ export const SCORECARD: readonly ScorecardRow[] = [
     concern: "Enforcement and reviewability",
     grade: "Strong",
     assessment: "Every pillar contract maps to an executable checker, and every checker has a mutation proving that it can fail.",
-    evidence: "90 checks cover 45 pillar contracts; 330 existing findings are explicit debt and every new finding blocks lint."
+    evidence: "90 checks cover 45 pillar contracts; 327 existing findings are explicit debt and every new finding blocks lint."
   }
 ];
 
@@ -259,13 +259,13 @@ const FINDINGS: readonly AuditFinding[] = [
     id: "ARCH-02",
     priority: "P1",
     area: "Authority and persistence",
-    title: "A capability cannot commit a multi-table change atomically",
+    title: "Multi-table capabilities do not use the atomic Store boundary",
     finding:
-      "StoreModel makes each individual table replacement atomic, but it exposes no transaction or unit-of-work spanning tables. Capabilities create resource + leader snapshot, thread + opening comment, or change set + snapshot + resource metadata as separate commits.",
+      "StoreModel now exposes a staged transaction with a durable commit journal and constructor-time recovery. Existing capabilities still create resource + leader snapshot, thread + opening comment, or change set + snapshot + resource metadata as separate commits instead of using it.",
     consequence:
-      "A later persistence failure can leave a resource without its snapshot, a thread without its first comment, or revision history that disagrees with the leader. The capability owns the intent but the state model cannot uphold all-or-nothing semantics for it.",
+      "A later persistence failure can leave a resource without its snapshot, a thread without its first comment, or revision history that disagrees with the leader. The persistence model can now uphold all-or-nothing semantics, but those capabilities have not yet placed their intent inside that boundary.",
     recommendation:
-      "Put the atomic boundary in the persistence-owning model. For the current JSON store that requires a journal or staged multi-table commit with recovery; a future database adapter should expose the same transaction-shaped model method. Do not implement capability-level best-effort rollback.",
+      "Move each multi-write capability into StoreModel.transaction, use only the callback-scoped unit, and add its path to the failpoint contract. Keep recovery in the persistence model; do not add capability-level best-effort rollback.",
     acceptance:
       "Fault injection at every write point proves each capability lands all of its rows or none, including after process restart.",
     evidence: [
@@ -431,7 +431,7 @@ const FINDINGS: readonly AuditFinding[] = [
     area: "Models and runtimes",
     title: "Model definitions do not consistently stop at state and a thin public surface",
     finding:
-      "Commands, Configuration, and much of WorkspaceState delegate cleanly to methods/. The three resource Runtime classes still implement scheduling, retry/revert entry behavior, timer management, and settling inline; StoreModel defines its full CRUD engine inside definition.ts; Storage schedules writes inside its definition.",
+      "Commands, Configuration, Store, and much of WorkspaceState delegate cleanly to methods/. The three resource Runtime classes still implement scheduling, retry/revert entry behavior, timer management, and settling inline; Storage schedules writes inside its definition.",
     consequence:
       "The file named definition is sometimes the state ledger and sometimes the procedure implementation. A reviewer cannot reliably infer where behavior lives from the tree.",
     recommendation:
@@ -442,7 +442,6 @@ const FINDINGS: readonly AuditFinding[] = [
       "document-runtimes/definition.svelte.ts:61",
       "slide-deck-runtimes/definition.svelte.ts:58",
       "spreadsheet-runtimes/definition.svelte.ts:54",
-      "model/server/store/definition.ts:11",
       "model/client/storage/definition.ts:30"
     ]
   },

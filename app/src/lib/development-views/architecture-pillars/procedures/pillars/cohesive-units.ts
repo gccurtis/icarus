@@ -115,7 +115,7 @@ export const COHESIVE_UNITS: ArchitecturePillar = {
       detects: "Missing model documents or missing required ownership/lifetime/invariant headings.",
       implementation:
         "Enumerate client/server model object directories and require <object>.md with the three structured contract headings; consumer and disposer checks remain separate executable contracts.",
-      current: "Enforced with required ownership, lifetime, and invariant contracts; Store is baselined.",
+      current: "Enforced and clean; every admitted model documents its ownership, lifetime, and invariants.",
       limit: "The initial invariant sentence is a reviewed design assertion; automation checks its consistency, not its wisdom."
     },
     {
@@ -136,7 +136,7 @@ export const COHESIVE_UNITS: ArchitecturePillar = {
     "Use the active debt baseline as a ratchet while splitting the 24 complexity hotspots.",
     "Split multiple effectful chains and over-wide pure families on intent boundaries, then remove their baseline records.",
     "Replace the four stale architecture claims with generated inventories or durable invariant prose.",
-    "Complete Store's ownership/lifetime/invariant contract and keep every exception mapped and expiring."
+    "Keep every model contract current and every remaining exception mapped, owned, and expiring."
   ],
   relatedFindings: ["ARCH-05", "ARCH-08", "ARCH-10", "ARCH-12", "ARCH-13", "ARCH-14"]
 };

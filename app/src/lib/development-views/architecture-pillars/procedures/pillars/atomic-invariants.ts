@@ -27,7 +27,7 @@ return { threadId, commentId }`,
     antagonism:
       "The capability's single intent is stronger than the model operation it can call. The server behavior looks coherent in one procedure while the durable state can expose an impossible intermediate outcome.",
     repair:
-      "Add StoreModel.transaction/unitOfWork, stage every affected table, validate the complete next state, and commit through a journal or atomic manifest swap with restart recovery. Capabilities call that model boundary once.",
+      "Use StoreModel.transaction, stage every affected table through its scoped unit, and let the existing journal and restart recovery publish the complete intent. Capabilities call that model boundary once.",
     nuance:
       "Catching the second error and deleting the first row is not equivalent: rollback can also fail, exposes intermediate state, and duplicates persistence behavior in capabilities."
   },
@@ -85,8 +85,8 @@ return { threadId, commentId }`,
       guarantee: "Every multi-table capability leaves either the old complete state or the new complete state.",
       detects: "Partial writes at each staged operation, rename, flush, manifest publication, and returned acknowledgement.",
       implementation:
-        "Use a failpoint-capable persistence adapter. Snapshot all tables, inject one failure per durable boundary, restart StoreModel, then assert a permitted whole-state outcome.",
-      current: "Enforced through executable failpoint-contract registration; eleven uncovered intents are baselined.",
+        "Require each multi-write capability entry to be imported by its own non-functional atomicity test (or an explicit shared Store contract), inject failures at durable boundaries, restart StoreModel, and assert a complete outcome.",
+      current: "Enforced through executable per-intent failpoint contracts; eleven uncovered intents remain baselined, while template removal is covered and clean.",
       limit: "The failpoint inventory must evolve with the adapter; otherwise a new durable step can escape coverage."
     },
     {
@@ -99,7 +99,7 @@ return { threadId, commentId }`,
       detects: "Unreplayed journals, partially swapped files, stale manifests, and initialization announcing ready before recovery.",
       implementation:
         "Seed every interrupted journal phase, construct ServerModel, and assert recovery completes before a capability can observe Store.",
-      current: "Enforced; missing Store recovery entry and restart contract are baselined as two findings.",
+      current: "Enforced and clean: Store recovery runs before table loading, and executable failpoint tests cover rollback, replay, repeated restart, and readiness refusal.",
       limit: "This check is adapter-specific beneath a common model contract; a database implementation will use transaction rollback tests instead."
     },
     {
@@ -117,8 +117,8 @@ return { threadId, commentId }`,
     }
   ],
   rollout: [
-    "Specify the Store unit-of-work API and fault stages before choosing the durable JSON commit mechanism.",
-    "Implement comment thread creation as the smallest atomic vertical slice, including restart recovery.",
+    "Use the implemented Store unit-of-work and durable JSON journal as the boundary for each multi-write capability.",
+    "Convert comment thread creation as the smallest atomic capability slice and register its fault contract.",
     "Move each of the eleven baselined multi-write intents inside one transaction callback and contract case.",
     "Complete revision atomicity for documents and decks, removing baseline records as each invariant passes."
   ],

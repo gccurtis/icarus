@@ -1566,32 +1566,6 @@
       "review": "2027-03-01"
     },
     {
-      "checker": "journal-recovers-before-readiness",
-      "contract": "TXN-04",
-      "pillar": "atomic-invariants",
-      "path": "src/lib/model/server/store",
-      "subject": "recovery-entry",
-      "fingerprint": "store-journal-recovery",
-      "finding": "ARCH-02",
-      "owner": "architecture-remediation",
-      "rationale": "Pre-existing structural debt captured when this checker became blocking",
-      "removal": "Remove when journal-recovers-before-readiness reports clean for this structure",
-      "review": "2027-03-01"
-    },
-    {
-      "checker": "journal-recovers-before-readiness",
-      "contract": "TXN-04",
-      "pillar": "atomic-invariants",
-      "path": "src/lib/model/server/store",
-      "subject": "restart-contract",
-      "fingerprint": "store-restart-contract",
-      "finding": "ARCH-02",
-      "owner": "architecture-remediation",
-      "rationale": "Pre-existing structural debt captured when this checker became blocking",
-      "removal": "Remove when journal-recovers-before-readiness reports clean for this structure",
-      "review": "2027-03-01"
-    },
-    {
       "checker": "legacy-schema-support-does-not-exist",
       "contract": "DATA-06",
       "pillar": "authoritative-data",
@@ -1625,18 +1599,6 @@
       "owner": "architecture-remediation",
       "rationale": "Pre-existing structural debt captured when this checker became blocking",
       "removal": "Remove when legacy-schema-support-does-not-exist reports clean for this structure",
-      "review": "2027-03-01"
-    },
-    {
-      "checker": "model-admission-declares-an-invariant",
-      "contract": "COH-05",
-      "pillar": "cohesive-units",
-      "path": "src/lib/model/server/store/store.md",
-      "fingerprint": "server/store:ownership,lifetime,invariants",
-      "finding": "ARCH-11",
-      "owner": "architecture-remediation",
-      "rationale": "Pre-existing structural debt captured when this checker became blocking",
-      "removal": "Remove when model-admission-declares-an-invariant reports clean for this structure",
       "review": "2027-03-01"
     },
     {
@@ -2604,7 +2566,7 @@
       "contract": "TXN-02",
       "pillar": "atomic-invariants",
       "path": "src/lib/capabilities/templates/api/instantiate-template/instantiate-template.ts",
-      "fingerprint": "create,create,create,create,create,create",
+      "fingerprint": "create,create,create,create,create,create,createMany",
       "finding": "ARCH-02",
       "owner": "architecture-remediation",
       "rationale": "Pre-existing structural debt captured when this checker became blocking",

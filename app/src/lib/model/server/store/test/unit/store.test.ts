@@ -4,7 +4,8 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { asId } from "$representation/data/behavior/core/id";
-import { defineStore } from "$model/server/store/definition";
+import { defineStore } from "$model/server/store/constructor";
+import type { StoreUnitOfWork } from "$model/server/store/types";
 
 const directories: string[] = [];
 
@@ -164,6 +165,96 @@ describe("remove", () => {
   });
 });
 
+describe("transaction", () => {
+  it("publishes several table changes together after every operation is admitted", () => {
+    const store = inMemory();
+    const result = store.transaction((unit) => {
+      const projectId = unit.create("projects", { name: "Q3" });
+      const documentId = unit.create("documents", { projectId, title: "Plan" });
+      expect(unit.read(`projects.${projectId}`)).toMatchObject({ kind: "row" });
+      return { projectId, documentId };
+    });
+
+    expect(store.read(`projects.${result.projectId}`)).toMatchObject({ kind: "row" });
+    expect(store.read(`documents.${result.documentId}`)).toMatchObject({ kind: "row" });
+  });
+
+  it("rolls back staged operations when a later operation is invalid", () => {
+    const store = inMemory();
+
+    expect(() =>
+      store.transaction((unit) => {
+        unit.create("projects", { name: "never committed" });
+        unit.update("documents.documents:missing.title", "invalid");
+      })
+    ).toThrow(/no 'documents' row/);
+
+    expect(store.read("projects")).toMatchObject({ kind: "table", rows: [] });
+  });
+
+  it("isolates rows read by work that later rolls back", () => {
+    const store = inMemory();
+    const id = store.create("projects", { name: "before" });
+
+    expect(() =>
+      store.transaction((unit) => {
+        const found = unit.read(`projects.${id}`);
+        if (found?.kind === "row") {
+          (found.row as unknown as { name: string }).name = "staged only";
+        }
+        throw new Error("rollback");
+      })
+    ).toThrow(/rollback/);
+
+    expect(store.read(`projects.${id}.name`)).toMatchObject({ value: "before" });
+  });
+
+  it("does not let a returned working row mutate committed state", () => {
+    const store = inMemory();
+    const staged = store.transaction((unit) => {
+      const id = unit.create("projects", { name: "committed" });
+      const found = unit.read(`projects.${id}`);
+      if (found?.kind !== "row") throw new Error("created row is missing");
+      return { id, row: found.row as unknown as { name: string } };
+    });
+
+    staged.row.name = "outside";
+    expect(store.read(`projects.${staged.id}.name`)).toMatchObject({ value: "committed" });
+  });
+
+  it("closes the scoped unit and refuses root access or async work inside it", () => {
+    const store = inMemory();
+    let retained: StoreUnitOfWork | undefined;
+
+    store.transaction((unit) => {
+      retained = unit;
+      expect(() => store.read("projects")).toThrow(/supplied Store unit/);
+    });
+    expect(() => retained?.read("projects")).toThrow(/unit of work is closed/);
+    expect(() => retained?.createMany("projects", [])).toThrow(/unit of work is closed/);
+
+    let ran = false;
+    expect(() =>
+      store.transaction(async () => {
+        ran = true;
+      })
+    ).toThrow(/must be synchronous/);
+    expect(ran).toBe(false);
+
+    expect(() =>
+      store.transaction((unit) => {
+        unit.create("projects", { name: "staged" });
+        return Promise.resolve();
+      })
+    ).toThrow(/must be synchronous/);
+    expect(store.read("projects")).toMatchObject({ kind: "table", rows: [] });
+
+    expect(() =>
+      store.transaction(() => store.transaction(() => undefined))
+    ).toThrow(/cannot be nested/);
+  });
+});
+
 describe("on disk", () => {
   it("writes the whole table on every mutation, and reads it back", () => {
     const { store, directory } = onDisk();
@@ -175,5 +266,18 @@ describe("on disk", () => {
 
     store.remove(`projects.${id}`);
     expect(JSON.parse(readFileSync(join(directory, "projects.json"), "utf8"))).toHaveLength(0);
+  });
+
+  it("persists a multi-table transaction for a later Store instance", () => {
+    const { store, directory } = onDisk();
+    const ids = store.transaction((unit) => {
+      const projectId = unit.create("projects", { name: "Q3" });
+      const documentId = unit.create("documents", { projectId, title: "Plan" });
+      return { projectId, documentId };
+    });
+
+    const reopened = defineStore({ directory });
+    expect(reopened.read(`projects.${ids.projectId}`)).toMatchObject({ kind: "row" });
+    expect(reopened.read(`documents.${ids.documentId}`)).toMatchObject({ kind: "row" });
   });
 });

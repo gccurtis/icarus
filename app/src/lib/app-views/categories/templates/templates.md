@@ -76,9 +76,10 @@ Every server procedure establishes request scope first. Mutations validate their
 payload, enforce ownership where relevant, and use the represented revision for
 compare-and-set updates. Template versions are written with creates and accepted
 updates. No view imports the generic store capability for template work. Store
-writes are failure-safe within one table, but the model has no transaction
-across the several tables touched by versioning, deletion, or instantiation; the
-reference documents that recovery decision explicitly.
+writes are failure-safe within one table, and the model provides a recoverable
+transaction across tables. Template removal uses that boundary; create, update,
+duplicate, and instantiate still need to adopt it before their multi-table
+intent is atomic.
 
 ## Availability boundary
 

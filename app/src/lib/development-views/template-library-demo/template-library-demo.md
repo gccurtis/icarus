@@ -160,9 +160,9 @@ component being reviewed.
   as a future ownership state, and Shared is absent from the current contract.
 - Scope proves project membership but carries no membership role. The reference
   uses the development owner; production writes still need role-aware scope.
-- Batched collection writes and removals are atomic within one table file, but
-  create, update, duplicate, remove and instantiate still have no transaction
-  across table files; the reference does not claim otherwise.
+- Batched collection writes and removals are atomic within one table file. Store
+  now provides a recoverable cross-table transaction and template removal uses
+  it; create, update, duplicate, and instantiate have not adopted it yet.
 - Matching pending commands share one promise per Workspace State instance, so
   sibling panes and keyed remounts cannot duplicate a write. This is not a
   durable cross-client request-id ledger, and the reference does not claim it is.

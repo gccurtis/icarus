@@ -44,13 +44,28 @@ export const MUTATIONS = [
     ]
   },
   {
+    check: "multi-table-intent-is-atomic",
+    says: "a generic failpoint test cannot claim an intent it does not import",
+    names: "save-atomicity.test.ts",
+    changes: [
+      { path: "src/lib/capabilities/atomicity-probe/index.ts", write: `export {};\n` },
+      { path: "src/lib/capabilities/atomicity-probe/api/save/save.ts", write: multiWrite },
+      {
+        path: "src/lib/capabilities/atomicity-probe/test/non-functional/save-atomicity.test.ts",
+        write:
+          `import { expect, it } from "vitest";\n` +
+          `it("mentions a failpoint without exercising save", () => expect("failpoint").toBeTruthy());\n`
+      }
+    ]
+  },
+  {
     check: "journal-recovers-before-readiness",
     subject: "recovery-entry",
-    says: "a journal-shaped store method supplies no recovery entry",
-    names: "methods/journal.server.ts",
+    says: "the Store loses its constructor-time journal recovery entry",
+    names: "methods/transaction/journal.server.ts",
     changes: [{
-      path: "src/lib/model/server/store/methods/journal.server.ts",
-      write: `export const journalStatus = (): string => "pending";\n`
+      path: "src/lib/model/server/store/methods/transaction/recover.server.ts",
+      remove: true
     }]
   },
   {
