@@ -33,6 +33,7 @@ import {
 } from "$representation/data/behavior/core/scope-draft";
 import { applyOps } from "$representation/data/behavior/slide-decks/apply-ops";
 import {
+  defaultScopeOf as defaultScope,
   holeMarkOver,
   holeNameOver
 } from "$representation/data/behavior/templates/prompt-holes";
@@ -41,7 +42,7 @@ import {
   fillTemplateAtoms,
   resolveTemplateScopes
 } from "$representation/data/behavior/templates/scopes";
-import type { TemplatedResourceSet } from "$representation/data/types/core/resource-set";
+import type { ResourceSet, TemplatedResourceSet } from "$representation/data/types/core/resource-set";
 import type { SlideDeckBody, SlideLayout } from "$representation/data/types/slide-decks/body";
 import type { SlideDeckOp } from "$representation/data/types/slide-decks/op";
 import type { TemplateHole } from "$representation/data/types/templates/template";
@@ -276,46 +277,6 @@ export const mergedHoles = (
   return [...held, ...inserted.filter((hole) => !names.has(hole.name))];
 };
 
-/**
- * A text hole made by hand, rather than found.
- *
- * A scope hole exists because a prompt asks for one, so it cannot be authored. A
- * text hole is a place in the prose, and nothing but the author knows where it
- * goes — so the panel declares it and drops its atom into the selected text in
- * the same act, and the next save finds it exactly as it finds any other.
- */
-export const withNewTextHole = (
-  holes: readonly ChosenHole[],
-  asked: { name: string; description?: string; text?: string }
-): readonly ChosenHole[] => {
-  const name = asked.name.trim();
-  const description = asked.description?.trim() ?? "";
-  const words = asked.text ?? "";
-  return [
-    ...holes,
-    {
-      name,
-      label: name,
-      kind: "text",
-      ...(description === "" ? {} : { description }),
-      ...(words.trim() === "" ? {} : { text: words })
-    }
-  ];
-};
-
-/** Why a name will not do, or nothing when it will. */
-export const holeNameRefusal = (
-  holes: readonly ChosenHole[],
-  asked: string
-): string | undefined => {
-  const name = asked.trim();
-  if (name === "") return "Give the hole a name.";
-  if (!/^[\w][\w -]*$/.test(name)) return "A hole's name is letters, digits, spaces, hyphens and underscores.";
-  const taken = holes.some((hole) => hole.name.toLocaleLowerCase() === name.toLocaleLowerCase());
-  return taken ? `This template already has a hole called ${name}.` : undefined;
-};
-
-
 const blockAt = (body: SlideDeckBody, blockId: string) => {
   for (const slide of body.slides) {
     for (const element of slide.elements) {
@@ -325,6 +286,24 @@ const blockAt = (body: SlideDeckBody, blockId: string) => {
     }
   }
   return undefined;
+};
+
+/**
+ * A prompt's scope as its generated output can hold it.
+ *
+ * The block is what the person set, so the output must be told the same thing
+ * or the agent reads the whole project while the panel says otherwise. A deck
+ * open as a template is the one exception: its scope may still name a hole,
+ * which selects nothing until the template is placed and cannot be sent.
+ */
+export const readableScope = (scope: unknown): ResourceSet | undefined => {
+  const held = defaultScope(scope);
+  if (held === undefined) return undefined;
+  const include = held.include.filter((term) => term.select !== "hole");
+  const exclude = held.exclude.filter((term) => term.select !== "hole");
+  return include.length === held.include.length && exclude.length === held.exclude.length
+    ? { include, exclude }
+    : undefined;
 };
 
 /** The words a selection covers, which become what its hole says by default. */

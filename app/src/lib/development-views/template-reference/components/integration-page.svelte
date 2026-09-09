@@ -67,7 +67,7 @@
 
     <section class="tref-section" id="chain">
       <div class="tref-section-head">
-        <div><span class="tref-kicker">Link by link</span><h2>Seven links, and every one carries</h2></div>
+        <div><span class="tref-kicker">Link by link</span><h2>Eight links, and every one carries</h2></div>
         <p>
           Each row is one thing that has to happen for a prompt written by one person to be answered by
           another. The evidence column names the test that fails if the link breaks.

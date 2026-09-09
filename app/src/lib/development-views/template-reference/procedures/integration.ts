@@ -11,11 +11,11 @@ import type { ChainLink, Decision, ScopeGap } from "$development-views/template-
 export const CHAIN: ChainLink[] = [
   {
     index: "01",
-    step: "A prompt is written, and told what to read",
+    step: "A prompt is written, told what to read, and the agent obeys it",
     gesture: "Convert a block, type the prompt, press Scope to choose its sources",
-    runs: "The prompt-block inspector · promptScopeOps · the scope builder",
+    runs: "One PromptScope control · promptScopeOps on the block · readableScope onto the derived output",
     state: "works",
-    evidence: "document-editor.spec.ts — a Prompt Block affordance lives in the gutter"
+    evidence: "document-editor.spec.ts — the Scope control reads what the prompt reads"
   },
   {
     index: "02",
@@ -63,7 +63,15 @@ export const CHAIN: ChainLink[] = [
     gesture: "Press Generate",
     runs: "withFreshOutputs makes a derived output per prompt from the question the template carried",
     state: "works",
-    evidence: "The copy's blocks carry derivedOutputId and their scope, the way a formula regains its instance"
+    evidence: "answers.test.ts — a placed deck's prompts get a derived output with a slides origin"
+  },
+  {
+    index: "08",
+    step: "The copy is material the project can find",
+    gesture: "None — it is true of the resource that lands",
+    runs: "enqueueSemanticSync on the new document, deck or spreadsheet",
+    state: "works",
+    evidence: "answers.test.ts — enqueues the copy for retrieval"
   }
 ];
 
@@ -88,12 +96,13 @@ export const CHAIN_DIAGRAM = `flowchart LR
     G["One hole at a time"]
     H["resolveTemplateScopes<br/>answer, else the default"]
     I["withFreshOutputs<br/>a derived output per prompt"]
-    G --> H --> I
+    N["enqueueSemanticSync<br/>the copy is material now"]
+    G --> H --> I --> N
   end
   M --> D
   A -. "not templateified" .-> K["Stays what it is,<br/>and is never asked about"]
   F --> G
-  I --> J["A copy whose prompts read<br/>what the placer chose"]
+  N --> J["A copy whose prompts read<br/>what the placer chose,<br/>and that the project can find"]
   classDef quiet stroke-dasharray: 6 4
   class K quiet`;
 
@@ -114,6 +123,7 @@ export const RESOLUTION_DIAGRAM = `sequenceDiagram
   R-->>S: every hole term settled: the answer, else the default
   S->>S: withFreshOutputs — one derived output per prompt,<br/>from the question the template carried
   S->>D: one document, revision 0, no reference back
+  S->>S: enqueueSemanticSync — the copy is the project's material now
   D-->>P: prompts linked and ready to generate`;
 
 export const DEFAULT_RULE = [

@@ -171,6 +171,42 @@ export const SYSTEMATIC: SystematicChange[] = [
     area: "editors"
   },
   {
+    index: "22",
+    title: "A prompt's scope reaches the agent that answers it",
+    before:
+      "The scope lived on the block and never left it. The derived output was created without one, so the agent searched the whole project while the panel said otherwise — and once the block was linked, the Scope control was a dropdown with one dead option reading Whole project.",
+    now: "The scope is sent when the output is created, sent again on every refresh, and changed from one live control that both the unlinked and the linked panel use. A body open as a template is the exception: a scope still naming a hole selects nothing yet and is not sent.",
+    why: "A control that shows a narrower scope than the search actually uses is worse than no control: it is a promise the system does not keep, and evidence arrives from places the person excluded.",
+    area: "editors"
+  },
+  {
+    index: "23",
+    title: "A template's working copy is never indexed",
+    before:
+      "A working copy is an ordinary document or deck, so saving it enqueued semantic ingestion like anything else and a backfill swept it up. Unfinished template prose became retrievable, and discarding the stage left its jobs, sources, materials and vectors behind.",
+    now: "Every path into the overlay asks whether the resource is a stage and refuses if it is. Discarding takes back anything already learned — jobs, sources, materials, placements, history and the vectors over them — while leaving the project's index rows, which belong to no one resource.",
+    why: "A draft of a template is not the project's material, and a discarded draft is material somebody deliberately abandoned. Neither should be able to reach an agent.",
+    area: "neighbours"
+  },
+  {
+    index: "24",
+    title: "A placed copy is the project's material from the moment it lands",
+    before:
+      "Instantiating wrote the snapshot and stopped. The new document or deck was invisible to retrieval until somebody happened to edit it or a backfill was run by hand. Its prompts also carried an origin kind of slideDeck, which nothing else in the vocabulary says.",
+    now: "Placing a template enqueues semantic ingestion for the resource it made, whichever of the three kinds it is, and a deck's prompts point back at it as slides.",
+    why: "A copy that nothing can find is a copy that half exists. The kind is the same word the editors, the overlay and every scope term already use.",
+    area: "templates"
+  },
+  {
+    index: "25",
+    title: "A set is not deleted out from under a live prompt",
+    before:
+      "Deletion checked the other sets and the templates. A derived output or a Prompt Block naming the set was not looked at, so deleting it left a scope that no longer resolved and the failure surfaced on some later refresh instead.",
+    now: "A generated output whose scope names it, or a Prompt Block in any leader revision that reads it, refuses the deletion and says which prompt or which resource is still reading it.",
+    why: "A refusal at the moment of deletion names the thing to fix. A failure three refreshes later names nothing.",
+    area: "sets"
+  },
+  {
     index: "17",
     title: "Placing a template walks its holes",
     before:
@@ -245,14 +281,14 @@ export const DECISIONS: Decision[] = [
 ];
 
 export const VERIFICATION: Verification[] = [
-  { check: "Types", command: "pnpm typecheck", result: "0 errors, 0 warnings across 2,926 files", clean: true },
+  { check: "Types", command: "pnpm typecheck", result: "0 errors, 0 warnings across 2,931 files", clean: true },
   { check: "Structure", command: "pnpm lint", result: "56 checks, 56 clean", clean: true },
-  { check: "Unit", command: "pnpm test", result: "1,074 tests in 119 files, 2 skipped", clean: true },
+  { check: "Unit", command: "pnpm test", result: "1,083 tests in 120 files, 2 skipped", clean: true },
   { check: "Category keys", command: "pnpm category-keys -- --check", result: "10 categories and 13 content views in step", clean: true },
   {
     check: "Browser",
     command: "pnpm test:browser, from a clean seed",
-    result: "62 of 62, with 4 skipped — the live-intelligence cases the base branch skips when no credential is configured.",
+    result: "63 of 63, with 4 skipped — the live-intelligence cases the base branch skips when no credential is configured.",
     clean: true
   }
 ];

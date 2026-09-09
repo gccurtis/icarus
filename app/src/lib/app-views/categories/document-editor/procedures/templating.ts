@@ -36,12 +36,13 @@ import {
   fillTemplateAtoms,
   resolveTemplateScopes
 } from "$representation/data/behavior/templates/scopes";
-import type { TemplatedResourceSet } from "$representation/data/types/core/resource-set";
+import type { ResourceSet, TemplatedResourceSet } from "$representation/data/types/core/resource-set";
 import type { DocumentBody, DocumentRow } from "$representation/data/types/documents/body";
 import type { DocumentOp } from "$representation/data/types/documents/op";
 import type { TemplateHole } from "$representation/data/types/templates/template";
 import { linearOf } from "$representation/data/behavior/content/positions";
 import {
+  defaultScopeOf as defaultScope,
   holeMarkOver,
   holeNameOver
 } from "$representation/data/behavior/templates/prompt-holes";
@@ -287,6 +288,24 @@ const blockWithAtoms = (body: DocumentBody, blockId: string) => {
     }
   }
   return undefined;
+};
+
+/**
+ * A prompt's scope as its generated output can hold it.
+ *
+ * The block is what the person set, so the output must be told the same thing
+ * or the agent reads the whole project while the panel says otherwise. A body
+ * open as a template is the one exception: its scope may still name a hole,
+ * which selects nothing until the template is placed and cannot be sent.
+ */
+export const readableScope = (scope: unknown): ResourceSet | undefined => {
+  const held = defaultScope(scope);
+  if (held === undefined) return undefined;
+  const include = held.include.filter((term) => term.select !== "hole");
+  const exclude = held.exclude.filter((term) => term.select !== "hole");
+  return include.length === held.include.length && exclude.length === held.exclude.length
+    ? { include, exclude }
+    : undefined;
 };
 
 /** What a selection covers, as one block and a range of its display. */

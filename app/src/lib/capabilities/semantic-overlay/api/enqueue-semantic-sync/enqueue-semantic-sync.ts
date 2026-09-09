@@ -3,6 +3,7 @@ import { serverModel } from "$runtime/server/start.server";
 import type { Id } from "$representation/data/types/core/id";
 import { readSemanticSyncTargetFor } from "$capabilities/semantic-overlay/api/shared/resource";
 import { enqueueSemanticSyncFor } from "$capabilities/semantic-overlay/api/shared/sync-queue";
+import { isStagedResource } from "$capabilities/semantic-overlay/api/shared/staged";
 import { validateEnqueueSemanticSync } from "$capabilities/semantic-overlay/api/enqueue-semantic-sync/validate-enqueue-semantic-sync";
 import type { EnqueueSemanticSyncResult } from "$capabilities/semantic-overlay/types/enqueue-semantic-sync";
 import { enqueueMaterialSyncFor } from "$capabilities/semantic-overlay/api/shared/material-queue";
@@ -16,6 +17,7 @@ export const enqueueSemanticSync = async (
   const asked = validateEnqueueSemanticSync(input);
   const model = serverModel();
   const projectId = scope.projectId as Id<"projects">;
+  if (isStagedResource(model.store, projectId, asked.ref)) return null;
   const textTarget = readSemanticSyncTargetFor(model.store, projectId, asked.ref);
   const materialTarget = readMaterialSyncTargetFor(model, projectId, asked.ref);
   const revision = textTarget?.revision ?? materialTarget?.revision;

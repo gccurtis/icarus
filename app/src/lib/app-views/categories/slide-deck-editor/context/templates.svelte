@@ -49,7 +49,6 @@
     termFor,
     updateHoles,
     withHoleField,
-    withNewTextHole,
     withTerm,
     withWholeProject,
     withoutTerm,

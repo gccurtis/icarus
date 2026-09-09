@@ -349,6 +349,60 @@ test("one slide is saved as a deck template, and a deck template is inserted int
   await deleteTemplateFromLibrary(page, name);
 });
 
+test("a slide templateifies its words and its prompt, and the deck template holds both holes", async ({ page }) => {
+  const name = `Browser deck holes ${Date.now()}`;
+  await openDeckFixture(page);
+  const context = page.locator('aside[aria-label="Context"]');
+  const inspector = page.locator('aside[aria-label="Inspector"]');
+  const surface = page.locator(".area-canvas").getByRole("application", { name: "Slide" });
+
+  // A slide's Prompt Block becomes a hole, and its Scope control reads what it reads.
+  const rail = context.getByRole("navigation", { name: "Context views" });
+  await rail.getByRole("button", { name: "Insert", exact: true }).click();
+  await context.getByRole("button", { name: "Text box", exact: true }).click();
+  await expect(inspector).toHaveAttribute("data-inspected", "slide-deck-editor.text-box");
+  await inspector.getByRole("button", { name: "Prompt", exact: true }).click();
+  const prompt = page.locator(
+    'aside[aria-label="Inspector"][data-inspected="slide-deck-editor.prompt-block"]'
+  );
+  await expect(prompt).toBeVisible();
+  await prompt.getByLabel("Prompt", { exact: true }).fill("Summarize the winter exposure.");
+  await expect(prompt.getByRole("button", { name: "Everything in the project" })).toBeVisible();
+  await prompt.getByRole("button", { name: "Templateify", exact: true }).click();
+  await expect(prompt.getByRole("button", { name: "Hole 1", exact: true })).toBeVisible();
+
+  // A run of a slide's words becomes the next hole, and the slide itself does not change.
+  await rail.getByRole("button", { name: "Insert", exact: true }).click();
+  await context.getByRole("button", { name: "Text box", exact: true }).click();
+  const words = surface.locator("[data-item]").last();
+  await expect(words).toContainText("Text");
+  await words.dblclick({ position: { x: 24, y: 18 } });
+  await page.keyboard.press("Home");
+  await page.keyboard.press("Shift+End");
+
+  const selection = page.locator(
+    'aside[aria-label="Inspector"][data-inspected="slide-deck-editor.text-selection"]'
+  );
+  await expect(selection).toBeVisible();
+  await selection.getByRole("button", { name: "Templateify", exact: true }).click();
+  await expect(selection.getByText("These words are the hole")).toBeVisible();
+  await expect(selection.getByText("Hole 2")).toBeVisible();
+  await expect(words).toContainText("Text");
+  await expect(words).not.toContainText("{Hole");
+
+  // Saved as a template, the deck carries both holes.
+  const templates = await templatesPanel(page);
+  await templates.getByRole("textbox", { name: "Template name" }).fill(name);
+  await templates.getByRole("button", { name: "Save deck", exact: true }).click();
+  await expect(page.locator(".area-title")).toContainText(`Template · ${name}`, { timeout: 15_000 });
+  await expect(templates.locator(".hole").filter({ hasText: "Hole 1" })).toBeVisible();
+  await expect(templates.locator(".hole").filter({ hasText: "Hole 2" })).toBeVisible();
+
+  page.once("dialog", (dialog) => void dialog.accept());
+  await templates.getByRole("button", { name: "Discard", exact: true }).click();
+  await deleteTemplateFromLibrary(page, name);
+});
+
 test("the project's resource sets are made, counted, and removed from the Contexts panel", async ({ page }) => {
   const name = `Browser set ${Date.now()}`;
   await page.goto("/app/dev-project", { waitUntil: "networkidle" });

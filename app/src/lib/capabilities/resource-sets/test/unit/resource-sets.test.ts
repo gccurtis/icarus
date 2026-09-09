@@ -219,6 +219,68 @@ describe("changing sets", () => {
     assert.deepEqual(model.tables.resourceSets, []);
   });
 
+  /**
+   * A set is deleted only when nothing will ask for it again.
+   *
+   * A live prompt is the case that bites: the output would keep naming a set
+   * that no longer resolves, and the failure would surface on some later
+   * refresh rather than on the deletion that caused it.
+   */
+  test("refuses to remove a set a generated output or a Prompt Block still reads", async () => {
+    model.tables.resourceSets.push(namedSet("1"));
+    model.tables.derivedOutputs = [
+      row("derivedOutputs", "1", {
+        projectId: "p",
+        prompt: "  Summarise   what winter changed  ",
+        scope: { include: [{ select: "set", setId: "resourceSets:1" }], exclude: [] }
+      })
+    ];
+
+    const reading = await removeResourceSet({ setId: "resourceSets:1", baseRevision: 1 });
+    assert.deepEqual(reading, {
+      accepted: false,
+      setId: "resourceSets:1",
+      reason: "in-use",
+      revision: 1,
+      detail: 'a prompt still reads it: "Summarise what winter changed"'
+    });
+
+    model.tables.derivedOutputs = [];
+    model.tables.documentSnapshots = [
+      row("documentSnapshots", "1", {
+        projectId: "p",
+        resourceId: "documents:1",
+        role: "leader",
+        revision: 3,
+        body: {
+          rows: [
+            {
+              id: "r1",
+              kind: "blocks",
+              blocks: [
+                {
+                  id: "b1",
+                  type: "prompt",
+                  scope: { include: [{ select: "set", setId: "resourceSets:1" }], exclude: [] }
+                }
+              ]
+            }
+          ]
+        }
+      })
+    ];
+
+    const blocked = await removeResourceSet({ setId: "resourceSets:1", baseRevision: 1 });
+    assert.equal(
+      blocked.accepted === false && blocked.detail,
+      'a Prompt Block in "Brief" still reads it'
+    );
+
+    model.tables.documentSnapshots[0].role = "follower";
+    const gone = await removeResourceSet({ setId: "resourceSets:1", baseRevision: 1 });
+    assert.deepEqual(gone, { accepted: true, setId: "resourceSets:1", revision: 1 });
+  });
+
   test("does not reach a set in another project", async () => {
     model.tables.resourceSets.push(namedSet("1", { projectId: "other" }));
 

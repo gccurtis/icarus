@@ -147,6 +147,80 @@ describe("instantiating with answers", () => {
     });
   });
 
+  /**
+   * A copy is the project's material from the moment it lands.
+   *
+   * Nothing else edits it, so without this the words are invisible to every
+   * agent until somebody happens to type in it or a backfill is run by hand.
+   */
+  test("enqueues the copy for retrieval", async () => {
+    const made = await instantiateTemplate({ templateId: "templates:1" });
+    assert.ok(made.accepted);
+    assert.deepEqual(
+      (model.tables.semanticSyncJobs ?? []).map((row) => row.ref),
+      [{ kind: "document", id: made.resourceId }]
+    );
+  });
+
+  /**
+   * A copy's prompts point back at the copy, in the vocabulary everything else
+   * speaks. A deck is `slides` — the name the editors, the overlay and every
+   * scope term already use.
+   */
+  test("gives a placed deck's prompts a derived output with a slides origin", async () => {
+    model.tables.templates.push(
+      row("templates", "2", {
+        projectId: "p",
+        userId: "u",
+        name: "Deck",
+        tags: [],
+        body: {
+          resource: "slides",
+          aspectRatio: "16:9",
+          theme: { colors: { text: "ink", accent: "blue" } },
+          styles: { defaultKey: "body", styles: { body: { name: "Body" } } },
+          layouts: [],
+          slides: [
+            {
+              id: "slide-1",
+              elements: [
+                {
+                  id: "element-1",
+                  frame: { x: 0.1, y: 0.1, width: 0.8, height: 0.2 },
+                  overflow: "shrink",
+                  blocks: [
+                    {
+                      id: "deck-prompt",
+                      type: "prompt",
+                      atoms: [{ id: "deck-prompt-a", kind: "literal", text: "" }],
+                      display: "",
+                      marks: [],
+                      state: "idle",
+                      asks: "What shipped this winter?"
+                    }
+                  ]
+                }
+              ],
+              notes: []
+            }
+          ],
+          sections: []
+        },
+        holes: [],
+        createdBy: { kind: "user", userId: "u" },
+        revision: 1,
+        updatedAt: 20
+      })
+    );
+
+    const made = await instantiateTemplate({ templateId: "templates:2" });
+    assert.ok(made.accepted);
+    const outputs = model.tables.derivedOutputs ?? [];
+    assert.equal(outputs.length, 1);
+    assert.deepEqual(outputs[0].origin, { kind: "slides", id: made.resourceId });
+    assert.equal(outputs[0].prompt, "What shipped this winter?");
+  });
+
   test("a hole without a default means the whole project", async () => {
     model.tables.templates[0].holes = [{ name: "evidence", label: "Evidence" }];
     const made = await instantiateTemplate({ templateId: "templates:1" });

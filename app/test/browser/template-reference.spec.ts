@@ -127,8 +127,8 @@ test("the integration page draws the whole chain, with every link carrying", asy
   await expect(page.locator(".mermaid-output svg")).toHaveCount(2, { timeout: 45_000 });
   await expect(page.locator(".diagram-error")).toHaveCount(0);
 
-  await expect(page.getByRole("heading", { level: 2, name: "Seven links, and every one carries" })).toBeVisible();
-  await expect(page.locator(".tref-badge.clean")).toHaveCount(7);
+  await expect(page.getByRole("heading", { level: 2, name: "Eight links, and every one carries" })).toBeVisible();
+  await expect(page.locator(".tref-badge.clean")).toHaveCount(8);
   await expect(page.locator(".tref-badge.known")).toHaveCount(0);
 
   // A hole's default is whatever the thing already is, so nothing arrives empty.

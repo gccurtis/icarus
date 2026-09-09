@@ -5,8 +5,7 @@
     PanelActions,
     PanelBanner,
     PanelProgress,
-    PanelSection,
-    PanelSelect
+    PanelSection
   } from "$authored-components/panel";
   import { Button } from "$vendored-components/button";
   import { Textarea } from "$vendored-components/textarea";
@@ -25,18 +24,19 @@
     exactEvidenceText
   } from "$app-views/categories/document-editor/procedures/evidence";
   import {
+    promptScopeOps,
     syncPromptBlockOps,
     type Id,
     type LinkedPromptBlock,
     type PromptBlock
   } from "$app-views/categories/document-editor/procedures/prompt-blocks";
+  import { readableScope } from "$app-views/categories/document-editor/procedures/templating";
+  import PromptScope from "$app-views/categories/document-editor/components/prompt-scope.svelte";
   import { rowsOf, tableQuery } from "$app-views/categories/document-editor/procedures/store";
   import { workspaceState, type DocumentRuntime } from "$model/client/workspace-state";
   import type { ResourceRef } from "$representation/data/types/core/resource";
   import type { SemanticCitation } from "$representation/data/types/semantic/derived-output";
   import { onMount } from "svelte";
-
-  const SCOPES = [{ value: "project", label: "Whole project" }] as const;
 
   let {
     blockId,
@@ -187,6 +187,40 @@
     return current;
   };
 
+  /**
+   * The block and its output are told the same thing, in that order.
+   *
+   * The block is what the panel reads back, and the output is what the agent
+   * obeys, so a scope that reached only one of them would let the two disagree.
+   */
+  const setScope = async (next: unknown) => {
+    const currentRuntime = runtime;
+    if (busy || output === undefined || currentRuntime === undefined) return;
+    running = true;
+    actionError = undefined;
+    try {
+      const ops = promptScopeOps(currentBlock(), next);
+      if (ops.length > 0) currentRuntime.apply(ops);
+      await currentRuntime.flush();
+      if (currentRuntime.failure !== undefined) throw new Error(currentRuntime.failure.detail);
+      const reading = readableScope(currentBlock().scope);
+      if (reading !== undefined) {
+        const changed = await updateDerivedOutput({
+          derivedOutputId: outputId,
+          prompt: promptDraft.trim().length === 0 ? output.prompt : promptDraft.trim(),
+          scope: reading
+        });
+        if (changed === null) throw new Error("The Derived Output no longer exists");
+      }
+      await detailQuery.refresh();
+    } catch (error) {
+      actionError = error instanceof Error ? error.message : String(error);
+    } finally {
+      announcePromptOutput(outputId);
+      running = false;
+    }
+  };
+
   const generate = async () => {
     const prompt = promptDraft.trim();
     const currentRuntime = runtime;
@@ -201,10 +235,12 @@
     running = true;
     actionError = undefined;
     try {
-      if (definitionChanged || responseChanged) {
+      const reading = readableScope(block.scope);
+      if (definitionChanged || responseChanged || reading !== undefined) {
         const changed = await updateDerivedOutput({
           derivedOutputId: outputId,
           prompt,
+          ...(reading === undefined ? {} : { scope: reading }),
           ...(responseChanged
             ? { lastResponse: currentResponse.length === 0 ? null : currentResponse }
             : {})
@@ -297,12 +333,7 @@
       disabled={running}
     />
 
-    <div class="scope">
-      <span>Scope</span>
-      <div class="scope-control">
-        <PanelSelect label="Scope" value="project" options={SCOPES} />
-      </div>
-    </div>
+    <PromptScope {blockId} disabled={busy} onconfirm={setScope} />
   </div>
 
   {#if shownError !== undefined}
@@ -360,8 +391,7 @@
     padding: calc(var(--token-spacing-unit) * 2) calc(var(--token-spacing-unit) * 3);
   }
 
-  .settings > label,
-  .scope > span {
+  .settings > label {
     color: var(--token-ink-muted);
     font-size: var(--token-text-caption);
     line-height: var(--token-text-caption-leading);
@@ -374,18 +404,6 @@
     background: var(--token-surface-panel);
     font-size: var(--token-text-body-sm);
     line-height: var(--token-text-body-sm-leading);
-  }
-
-  .scope {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: calc(var(--token-spacing-unit) * 2);
-    min-height: 2rem;
-  }
-
-  .scope-control {
-    width: 9.25rem;
   }
 
   .evidence {

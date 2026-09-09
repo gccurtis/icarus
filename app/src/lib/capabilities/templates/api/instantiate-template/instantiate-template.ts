@@ -9,6 +9,7 @@ import {
 } from "$representation/data/behavior/templates/scopes";
 import type { TemplateBody } from "$representation/data/types/templates/template";
 
+import { enqueueSemanticSync } from "$capabilities/semantic-overlay/index";
 import { validateInstantiateTemplate } from "$capabilities/templates/api/instantiate-template/validate-instantiate-template";
 import { materializeSpreadsheet } from "$capabilities/templates/api/shared/bodies";
 import {
@@ -171,7 +172,7 @@ export const instantiateTemplate = async (input: unknown): Promise<InstantiateTe
     store,
     scope.projectId,
     actor,
-    { kind: body.resource === "slides" ? "slideDeck" : body.resource, id: resourceId },
+    { kind: body.resource, id: resourceId },
     body,
     at
   );
@@ -193,6 +194,7 @@ export const instantiateTemplate = async (input: unknown): Promise<InstantiateTe
       body: readyBody,
       at
     });
+    await enqueueSemanticSync({ ref: { kind: "document", id: resourceId } });
     return {
       accepted: true,
       templateId: template._id,
@@ -215,6 +217,7 @@ export const instantiateTemplate = async (input: unknown): Promise<InstantiateTe
       body: readyBody,
       at
     });
+    await enqueueSemanticSync({ ref: { kind: "slides", id: resourceId } });
     return {
       accepted: true,
       templateId: template._id,
@@ -239,6 +242,7 @@ export const instantiateTemplate = async (input: unknown): Promise<InstantiateTe
     "sheetCells",
     materialized.cells.map((cell) => ({ projectId, resourceId, ...cell }))
   );
+  await enqueueSemanticSync({ ref: { kind: "spreadsheet", id: resourceId } });
   return {
     accepted: true,
     templateId: template._id,

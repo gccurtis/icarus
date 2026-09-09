@@ -1,6 +1,6 @@
 # Template Features Change Set
 
-161 files under app/ against 1166f8e, the commit this branch sits on — 96 created, 65 changed, 0 deleted — +20514 / −1360 lines, measured from committed and working-tree changes when this page was built.
+171 files under app/ against 1166f8e, the commit this branch sits on — 101 created, 70 changed, 0 deleted — +21317 / −1449 lines, measured from committed and working-tree changes when this page was built.
 
 | Status | File | + | − | Systematic change |
 | --- | --- | --- | --- | --- |
@@ -11,28 +11,32 @@
 | changed | `seed/spreadsheets.json` | +0 | −2 | The seeded one-slide template |
 | changed | `seed/templates.json` | +1524 | −250 | The seeded one-slide template |
 | changed | `seed/templateVersions.json` | +518 | −22 | The seeded one-slide template |
+| new | `src/lib/app-views/categories/document-editor/components/prompt-scope.svelte` | +132 | −0 | The document editor's Templates panel |
+| changed | `src/lib/app-views/categories/document-editor/components/prompt-settings.svelte` | +43 | −25 | The document editor's Templates panel |
 | changed | `src/lib/app-views/categories/document-editor/content/document.svelte` | +15 | −0 | The document editor's Templates panel |
 | new | `src/lib/app-views/categories/document-editor/context/templates.svelte` | +616 | −0 | The document editor's Templates panel |
-| changed | `src/lib/app-views/categories/document-editor/inspector/prompt-block.svelte` | +114 | −4 | The document editor's Templates panel |
+| changed | `src/lib/app-views/categories/document-editor/inspector/prompt-block.svelte` | +73 | −23 | The document editor's Templates panel |
 | changed | `src/lib/app-views/categories/document-editor/inspector/text-selection.svelte` | +50 | −0 | The document editor's Templates panel |
 | changed | `src/lib/app-views/categories/document-editor/procedures/projection.ts` | +33 | −8 | The document editor's Templates panel |
 | changed | `src/lib/app-views/categories/document-editor/procedures/prompt-blocks.ts` | +17 | −0 | The document editor's Templates panel |
 | changed | `src/lib/app-views/categories/document-editor/procedures/schema.ts` | +37 | −3 | The document editor's Templates panel |
-| new | `src/lib/app-views/categories/document-editor/procedures/templating.ts` | +417 | −0 | The document editor's Templates panel |
+| new | `src/lib/app-views/categories/document-editor/procedures/templating.ts` | +436 | −0 | The document editor's Templates panel |
 | new | `src/lib/app-views/categories/document-editor/procedures/test/unit/templating.test.ts` | +167 | −0 | The document editor's Templates panel |
 | new | `src/lib/app-views/categories/project-overview/context/contexts.svelte` | +283 | −0 | Project Overview's Contexts panel |
 | new | `src/lib/app-views/categories/project-overview/procedures/contexts.ts` | +115 | −0 | Project Overview's Contexts panel |
 | new | `src/lib/app-views/categories/project-overview/procedures/test/unit/contexts.test.ts` | +68 | −0 | Project Overview's Contexts panel |
 | changed | `src/lib/app-views/categories/project-overview/project-overview.md` | +25 | −21 | Project Overview's Contexts panel |
+| new | `src/lib/app-views/categories/slide-deck-editor/components/prompt-scope.svelte` | +131 | −0 | The slide-deck editor's Templates panel |
+| changed | `src/lib/app-views/categories/slide-deck-editor/components/prompt-settings.svelte` | +43 | −25 | The slide-deck editor's Templates panel |
 | changed | `src/lib/app-views/categories/slide-deck-editor/context/comments.svelte` | +6 | −1 | The slide-deck editor's Templates panel |
-| changed | `src/lib/app-views/categories/slide-deck-editor/context/templates.svelte` | +634 | −3 | The slide-deck editor's Templates panel |
-| changed | `src/lib/app-views/categories/slide-deck-editor/inspector/prompt-block.svelte` | +115 | −4 | The slide-deck editor's Templates panel |
+| changed | `src/lib/app-views/categories/slide-deck-editor/context/templates.svelte` | +633 | −3 | The slide-deck editor's Templates panel |
+| changed | `src/lib/app-views/categories/slide-deck-editor/inspector/prompt-block.svelte` | +74 | −24 | The slide-deck editor's Templates panel |
 | changed | `src/lib/app-views/categories/slide-deck-editor/inspector/text-selection.svelte` | +61 | −1 | The slide-deck editor's Templates panel |
 | changed | `src/lib/app-views/categories/slide-deck-editor/inspector/threads.svelte` | +8 | −1 | The slide-deck editor's Templates panel |
 | changed | `src/lib/app-views/categories/slide-deck-editor/procedures/ids.ts` | +2 | −1 | The slide-deck editor's Templates panel |
 | changed | `src/lib/app-views/categories/slide-deck-editor/procedures/prompt-blocks.ts` | +17 | −0 | The slide-deck editor's Templates panel |
 | changed | `src/lib/app-views/categories/slide-deck-editor/procedures/scene.ts` | +3 | −3 | The slide-deck editor's Templates panel |
-| new | `src/lib/app-views/categories/slide-deck-editor/procedures/templating.ts` | +450 | −0 | The slide-deck editor's Templates panel |
+| new | `src/lib/app-views/categories/slide-deck-editor/procedures/templating.ts` | +429 | −0 | The slide-deck editor's Templates panel |
 | new | `src/lib/app-views/categories/slide-deck-editor/procedures/test/unit/templating.test.ts` | +130 | −0 | The slide-deck editor's Templates panel |
 | changed | `src/lib/app-views/categories/slide-deck-editor/procedures/typing.ts` | +2 | −3 | The slide-deck editor's Templates panel |
 | changed | `src/lib/app-views/categories/slide-deck-editor/slide-deck-editor.md` | +23 | −1 | The slide-deck editor's Templates panel |
@@ -49,7 +53,7 @@
 | new | `src/lib/capabilities/resource-sets/api/create-resource-set/create-resource-set.ts` | +25 | −0 | The resource-sets capability |
 | new | `src/lib/capabilities/resource-sets/api/create-resource-set/validate-create-resource-set.ts` | +22 | −0 | The resource-sets capability |
 | new | `src/lib/capabilities/resource-sets/api/read-resource-sets/read-resource-sets.ts` | +10 | −0 | The resource-sets capability |
-| new | `src/lib/capabilities/resource-sets/api/remove-resource-set/remove-resource-set.ts` | +74 | −0 | The resource-sets capability |
+| new | `src/lib/capabilities/resource-sets/api/remove-resource-set/remove-resource-set.ts` | +130 | −0 | The resource-sets capability |
 | new | `src/lib/capabilities/resource-sets/api/remove-resource-set/validate-remove-resource-set.ts` | +16 | −0 | The resource-sets capability |
 | new | `src/lib/capabilities/resource-sets/api/shared/projection.ts` | +220 | −0 | The resource-sets capability |
 | new | `src/lib/capabilities/resource-sets/api/shared/validation.ts` | +172 | −0 | The resource-sets capability |
@@ -57,8 +61,14 @@
 | new | `src/lib/capabilities/resource-sets/api/update-resource-set/validate-update-resource-set.ts` | +41 | −0 | The resource-sets capability |
 | new | `src/lib/capabilities/resource-sets/index.remote.ts` | +39 | −0 | The resource-sets capability |
 | new | `src/lib/capabilities/resource-sets/resource-sets.md` | +27 | −0 | The resource-sets capability |
-| new | `src/lib/capabilities/resource-sets/test/unit/resource-sets.test.ts` | +230 | −0 | The resource-sets capability |
+| new | `src/lib/capabilities/resource-sets/test/unit/resource-sets.test.ts` | +292 | −0 | The resource-sets capability |
 | new | `src/lib/capabilities/resource-sets/types/resource-sets.ts` | +72 | −0 | The resource-sets capability |
+| changed | `src/lib/capabilities/semantic-overlay/api/backfill-semantic-overlay/backfill-semantic-overlay.ts` | +2 | −0 | The reference pages, and the one shared component they moved |
+| changed | `src/lib/capabilities/semantic-overlay/api/enqueue-semantic-sync/enqueue-semantic-sync.ts` | +2 | −0 | The reference pages, and the one shared component they moved |
+| new | `src/lib/capabilities/semantic-overlay/api/shared/forget.ts` | +68 | −0 | The reference pages, and the one shared component they moved |
+| new | `src/lib/capabilities/semantic-overlay/api/shared/staged.ts` | +24 | −0 | The reference pages, and the one shared component they moved |
+| changed | `src/lib/capabilities/semantic-overlay/index.ts` | +2 | −0 | The reference pages, and the one shared component they moved |
+| new | `src/lib/capabilities/semantic-overlay/test/unit/semantic-staged.test.ts` | +52 | −0 | The reference pages, and the one shared component they moved |
 | changed | `src/lib/capabilities/store/store.md` | +1 | −2 | What the other capabilities changed |
 | new | `src/lib/capabilities/templates/api/commit-template-stage/commit-template-stage.ts` | +130 | −0 | The templates capability |
 | new | `src/lib/capabilities/templates/api/commit-template-stage/validate-commit-template-stage.ts` | +16 | −0 | The templates capability |
@@ -68,7 +78,7 @@
 | new | `src/lib/capabilities/templates/api/discard-template-stage/discard-template-stage.ts` | +31 | −0 | The templates capability |
 | new | `src/lib/capabilities/templates/api/discard-template-stage/validate-discard-template-stage.ts` | +8 | −0 | The templates capability |
 | changed | `src/lib/capabilities/templates/api/duplicate-template/duplicate-template.ts` | +2 | −1 | The templates capability |
-| changed | `src/lib/capabilities/templates/api/instantiate-template/instantiate-template.ts` | +125 | −48 | The templates capability |
+| changed | `src/lib/capabilities/templates/api/instantiate-template/instantiate-template.ts` | +129 | −48 | The templates capability |
 | changed | `src/lib/capabilities/templates/api/instantiate-template/validate-instantiate-template.ts` | +8 | −3 | The templates capability |
 | new | `src/lib/capabilities/templates/api/open-template-stage/open-template-stage.ts` | +115 | −0 | The templates capability |
 | new | `src/lib/capabilities/templates/api/open-template-stage/validate-open-template-stage.ts` | +8 | −0 | The templates capability |
@@ -80,15 +90,15 @@
 | changed | `src/lib/capabilities/templates/api/shared/projection.ts` | +32 | −49 | The templates capability |
 | new | `src/lib/capabilities/templates/api/shared/prompts.ts` | +164 | −0 | The templates capability |
 | new | `src/lib/capabilities/templates/api/shared/scopes.ts` | +204 | −0 | The templates capability |
-| new | `src/lib/capabilities/templates/api/shared/stages.ts` | +141 | −0 | The templates capability |
+| new | `src/lib/capabilities/templates/api/shared/stages.ts` | +143 | −0 | The templates capability |
 | changed | `src/lib/capabilities/templates/api/shared/template-rows.ts` | +3 | −2 | The templates capability |
 | changed | `src/lib/capabilities/templates/api/shared/validation.ts` | +259 | −65 | The templates capability |
 | changed | `src/lib/capabilities/templates/api/update-template/update-template.ts` | +81 | −26 | The templates capability |
 | changed | `src/lib/capabilities/templates/api/update-template/validate-update-template.ts` | +14 | −10 | The templates capability |
 | changed | `src/lib/capabilities/templates/index.remote.ts` | +58 | −6 | The templates capability |
 | changed | `src/lib/capabilities/templates/templates.md` | +126 | −64 | The templates capability |
-| new | `src/lib/capabilities/templates/test/unit/answers.test.ts` | +655 | −0 | The templates capability |
-| new | `src/lib/capabilities/templates/test/unit/stages.test.ts` | +377 | −0 | The templates capability |
+| new | `src/lib/capabilities/templates/test/unit/answers.test.ts` | +729 | −0 | The templates capability |
+| new | `src/lib/capabilities/templates/test/unit/stages.test.ts` | +458 | −0 | The templates capability |
 | changed | `src/lib/capabilities/templates/test/unit/templates.test.ts` | +89 | −122 | The templates capability |
 | changed | `src/lib/capabilities/templates/types/templates.ts` | +118 | −22 | The templates capability |
 | changed | `src/lib/components/authored/panel/panel-section.svelte` | +13 | −1 | The reference pages, and the one shared component they moved |
@@ -116,9 +126,9 @@
 | new | `src/lib/development-views/template-reference/components/scope-page.svelte` | +468 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/development-views/template-reference/components/system-page.svelte` | +329 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/development-views/template-reference/components/walkthrough-page.svelte` | +373 | −0 | The reference pages, and the one shared component they moved |
-| new | `src/lib/development-views/template-reference/procedures/changes.ts` | +370 | −0 | The reference pages, and the one shared component they moved |
-| new | `src/lib/development-views/template-reference/procedures/integration.ts` | +219 | −0 | The reference pages, and the one shared component they moved |
-| new | `src/lib/development-views/template-reference/procedures/inventory.ts` | +171 | −0 | The reference pages, and the one shared component they moved |
+| new | `src/lib/development-views/template-reference/procedures/changes.ts` | +406 | −0 | The reference pages, and the one shared component they moved |
+| new | `src/lib/development-views/template-reference/procedures/integration.ts` | +229 | −0 | The reference pages, and the one shared component they moved |
+| new | `src/lib/development-views/template-reference/procedures/inventory.ts` | +181 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/development-views/template-reference/procedures/navigation.ts` | +27 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/development-views/template-reference/procedures/rebase.ts` | +157 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/development-views/template-reference/procedures/scope.ts` | +521 | −0 | The reference pages, and the one shared component they moved |
@@ -163,7 +173,7 @@
 | new | `src/routes/app/[project]/reference/templates/scope/+page.svelte` | +14 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/routes/app/[project]/reference/templates/walkthrough/+page.svelte` | +14 | −0 | The reference pages, and the one shared component they moved |
 | changed | `test/browser/document-editor.spec.ts` | +10 | −2 | Browser evidence |
-| new | `test/browser/template-features.spec.ts` | +440 | −0 | Browser evidence |
+| new | `test/browser/template-features.spec.ts` | +494 | −0 | Browser evidence |
 | new | `test/browser/template-reference.spec.ts` | +176 | −0 | Browser evidence |
 
 ## Outside app/
@@ -172,8 +182,8 @@
 | --- | --- | --- | --- |
 | changed | `docs/artifacts/template-dictionary/index.html` | +297 | −0 |
 | changed | `docs/artifacts/template-dictionary/index.md` | +139 | −0 |
-| changed | `docs/artifacts/template-features-changes/index.html` | +1186 | −0 |
-| changed | `docs/artifacts/template-features-changes/index.md` | +26256 | −0 |
+| changed | `docs/artifacts/template-features-changes/index.html` | +1236 | −0 |
+| changed | `docs/artifacts/template-features-changes/index.md` | +27466 | −0 |
 | changed | `docs/artifacts/template-stage-flow/index.html` | +393 | −0 |
 | changed | `docs/artifacts/template-stage-flow/index.md` | +140 | −0 |
 | changed | `docs/artifacts/template-system-concepts/index.html` | +627 | −0 |
@@ -182,7 +192,7 @@
 | changed | `docs/reference/template-features/02-model.html` | +209 | −0 |
 | changed | `docs/reference/template-features/03-capabilities.html` | +235 | −0 |
 | changed | `docs/reference/template-features/04-panels.html` | +208 | −0 |
-| changed | `docs/reference/template-features/05-changes.html` | +1275 | −0 |
+| changed | `docs/reference/template-features/05-changes.html` | +1325 | −0 |
 | changed | `docs/reference/template-features/build-diffs.mjs` | +243 | −0 |
 | changed | `docs/reference/template-features/index.html` | +167 | −0 |
 | changed | `docs/reference/template-features/reference.css` | +389 | −0 |
@@ -3956,10 +3966,10 @@
      updatedAt: at
 ~~~~
 
-### changed · `src/lib/capabilities/templates/api/instantiate-template/instantiate-template.ts` (+125 / −48)
+### changed · `src/lib/capabilities/templates/api/instantiate-template/instantiate-template.ts` (+129 / −48)
 
 ~~~~diff
-@@ -3,19 +3,38 @@ import { serverModel } from "$runtime/server/start.server";
+@@ -3,19 +3,39 @@ import { serverModel } from "$runtime/server/start.server";
  import { asId } from "$representation/data/behavior/core/id";
  import { normalizeDocumentStyleSet } from "$representation/data/behavior/documents/typography";
  import { ensureSlideDeckReady } from "$representation/data/behavior/slide-decks/normalize";
@@ -3969,6 +3979,7 @@
 +} from "$representation/data/behavior/templates/scopes";
  import type { TemplateBody } from "$representation/data/types/templates/template";
  
++import { enqueueSemanticSync } from "$capabilities/semantic-overlay/index";
  import { validateInstantiateTemplate } from "$capabilities/templates/api/instantiate-template/validate-instantiate-template";
 -import {
 -  materializeSpreadsheet,
@@ -4003,7 +4014,7 @@
  
  export const instantiateTemplate = async (input: unknown): Promise<InstantiateTemplateResult> => {
    const scope = await requireScope();
-@@ -35,11 +54,11 @@ export const instantiateTemplate = async (input: unknown): Promise<InstantiateTe
+@@ -35,11 +55,11 @@ export const instantiateTemplate = async (input: unknown): Promise<InstantiateTe
    const stored = found.template;
    let template: ReturnType<typeof admitStoredTemplate>;
    let body: TemplateBody;
@@ -4017,7 +4028,7 @@
    } catch (error) {
      return {
        accepted: false,
-@@ -49,48 +68,122 @@ export const instantiateTemplate = async (input: unknown): Promise<InstantiateTe
+@@ -49,48 +69,122 @@ export const instantiateTemplate = async (input: unknown): Promise<InstantiateTe
        detail: error instanceof Error ? error.message : String(error)
      };
    }
@@ -4139,7 +4150,7 @@
 +    store,
 +    scope.projectId,
 +    actor,
-+    { kind: body.resource === "slides" ? "slideDeck" : body.resource, id: resourceId },
++    { kind: body.resource, id: resourceId },
 +    body,
 +    at
 +  );
@@ -4165,7 +4176,15 @@
      store.create("documentSnapshots", {
        projectId,
        resourceId,
-@@ -113,14 +206,6 @@ export const instantiateTemplate = async (input: unknown): Promise<InstantiateTe
+@@ -100,6 +194,7 @@ export const instantiateTemplate = async (input: unknown): Promise<InstantiateTe
+       body: readyBody,
+       at
+     });
++    await enqueueSemanticSync({ ref: { kind: "document", id: resourceId } });
+     return {
+       accepted: true,
+       templateId: template._id,
+@@ -113,14 +208,6 @@ export const instantiateTemplate = async (input: unknown): Promise<InstantiateTe
    if (body.resource === "slides") {
      const { resource: _resource, ...slideDeckBody } = body;
      const readyBody = ensureSlideDeckReady(slideDeckBody);
@@ -4180,7 +4199,15 @@
      store.create("slideDeckSnapshots", {
        projectId,
        resourceId,
-@@ -141,14 +226,6 @@ export const instantiateTemplate = async (input: unknown): Promise<InstantiateTe
+@@ -130,6 +217,7 @@ export const instantiateTemplate = async (input: unknown): Promise<InstantiateTe
+       body: readyBody,
+       at
+     });
++    await enqueueSemanticSync({ ref: { kind: "slides", id: resourceId } });
+     return {
+       accepted: true,
+       templateId: template._id,
+@@ -141,14 +229,6 @@ export const instantiateTemplate = async (input: unknown): Promise<InstantiateTe
    }
  
    const materialized = materializeSpreadsheet(body);
@@ -4195,6 +4222,14 @@
    store.create("spreadsheetSnapshots", {
      projectId,
      resourceId,
+@@ -162,6 +242,7 @@ export const instantiateTemplate = async (input: unknown): Promise<InstantiateTe
+     "sheetCells",
+     materialized.cells.map((cell) => ({ projectId, resourceId, ...cell }))
+   );
++  await enqueueSemanticSync({ ref: { kind: "spreadsheet", id: resourceId } });
+   return {
+     accepted: true,
+     templateId: template._id,
 ~~~~
 
 ### changed · `src/lib/capabilities/templates/api/instantiate-template/validate-instantiate-template.ts` (+8 / −3)
@@ -5372,16 +5407,17 @@
 +export const scopeWords = (scope: TemplatedResourceSet | ResourceSet): string => ruleWords(scope);
 ~~~~
 
-### new · `src/lib/capabilities/templates/api/shared/stages.ts` (+141 / −0)
+### new · `src/lib/capabilities/templates/api/shared/stages.ts` (+143 / −0)
 
 ~~~~diff
-@@ -0,0 +1,141 @@
+@@ -0,0 +1,143 @@
 +import type { StoreModel, TableName, TableRow } from "$model/server/store/index.server";
 +import { asId } from "$representation/data/behavior/core/id";
 +import type { Id } from "$representation/data/types/core/id";
 +import type { DocumentBody } from "$representation/data/types/documents/body";
 +import type { SlideDeckBody } from "$representation/data/types/slide-decks/body";
 +
++import { forgetSemanticResourceFor } from "$capabilities/semantic-overlay/index";
 +import { rowsOfResource } from "$capabilities/templates/api/shared/scopes";
 +import { canonicalRowId, recordsIn } from "$capabilities/templates/api/shared/store";
 +import type { TemplateStageTarget } from "$capabilities/templates/types/templates";
@@ -5509,6 +5545,7 @@
 +      snapshots
 +    )
 +  );
++  forgetSemanticResourceFor(store, stage.projectId, { kind, id: stage.resourceId });
 +  for (const setId of rowsOfResource(store, stage.projectId, stage.resourceId)) {
 +    store.remove(`resourceSets.${setId}`);
 +  }
@@ -6579,10 +6616,10 @@
 +needs a represented transaction or explicit recovery contract.
 ~~~~
 
-### new · `src/lib/capabilities/templates/test/unit/answers.test.ts` (+655 / −0)
+### new · `src/lib/capabilities/templates/test/unit/answers.test.ts` (+729 / −0)
 
 ~~~~diff
-@@ -0,0 +1,655 @@
+@@ -0,0 +1,729 @@
 +import assert from "node:assert/strict";
 +import { beforeEach, describe, test, vi } from "vitest";
 +
@@ -6730,6 +6767,80 @@
 +      include: [{ select: "set", setId: "resourceSets:1" }],
 +      exclude: []
 +    });
++  });
++
++  /**
++   * A copy is the project's material from the moment it lands.
++   *
++   * Nothing else edits it, so without this the words are invisible to every
++   * agent until somebody happens to type in it or a backfill is run by hand.
++   */
++  test("enqueues the copy for retrieval", async () => {
++    const made = await instantiateTemplate({ templateId: "templates:1" });
++    assert.ok(made.accepted);
++    assert.deepEqual(
++      (model.tables.semanticSyncJobs ?? []).map((row) => row.ref),
++      [{ kind: "document", id: made.resourceId }]
++    );
++  });
++
++  /**
++   * A copy's prompts point back at the copy, in the vocabulary everything else
++   * speaks. A deck is `slides` — the name the editors, the overlay and every
++   * scope term already use.
++   */
++  test("gives a placed deck's prompts a derived output with a slides origin", async () => {
++    model.tables.templates.push(
++      row("templates", "2", {
++        projectId: "p",
++        userId: "u",
++        name: "Deck",
++        tags: [],
++        body: {
++          resource: "slides",
++          aspectRatio: "16:9",
++          theme: { colors: { text: "ink", accent: "blue" } },
++          styles: { defaultKey: "body", styles: { body: { name: "Body" } } },
++          layouts: [],
++          slides: [
++            {
++              id: "slide-1",
++              elements: [
++                {
++                  id: "element-1",
++                  frame: { x: 0.1, y: 0.1, width: 0.8, height: 0.2 },
++                  overflow: "shrink",
++                  blocks: [
++                    {
++                      id: "deck-prompt",
++                      type: "prompt",
++                      atoms: [{ id: "deck-prompt-a", kind: "literal", text: "" }],
++                      display: "",
++                      marks: [],
++                      state: "idle",
++                      asks: "What shipped this winter?"
++                    }
++                  ]
++                }
++              ],
++              notes: []
++            }
++          ],
++          sections: []
++        },
++        holes: [],
++        createdBy: { kind: "user", userId: "u" },
++        revision: 1,
++        updatedAt: 20
++      })
++    );
++
++    const made = await instantiateTemplate({ templateId: "templates:2" });
++    assert.ok(made.accepted);
++    const outputs = model.tables.derivedOutputs ?? [];
++    assert.equal(outputs.length, 1);
++    assert.deepEqual(outputs[0].origin, { kind: "slides", id: made.resourceId });
++    assert.equal(outputs[0].prompt, "What shipped this winter?");
 +  });
 +
 +  test("a hole without a default means the whole project", async () => {
@@ -7240,10 +7351,10 @@
 +});
 ~~~~
 
-### new · `src/lib/capabilities/templates/test/unit/stages.test.ts` (+377 / −0)
+### new · `src/lib/capabilities/templates/test/unit/stages.test.ts` (+458 / −0)
 
 ~~~~diff
-@@ -0,0 +1,377 @@
+@@ -0,0 +1,458 @@
 +import assert from "node:assert/strict";
 +import { beforeEach, describe, test, vi } from "vitest";
 +
@@ -7307,6 +7418,7 @@
 +const { discardTemplateStage } = await import(
 +  "$capabilities/templates/api/discard-template-stage/discard-template-stage"
 +);
++const { enqueueSemanticSync } = await import("$capabilities/semantic-overlay/index");
 +const { readResourceTemplate } = await import(
 +  "$capabilities/templates/api/read-resource-template/read-resource-template"
 +);
@@ -7423,6 +7535,38 @@
 +    const detail = await readTemplate({ templateId: "templates:1" });
 +    assert.ok(detail !== null && !("unavailable" in detail));
 +    assert.equal("stage" in detail, false);
++  });
++
++  /**
++   * A working copy is a draft of a template, not the project's material.
++   *
++   * The copy is an ordinary document, so saving it takes the ordinary path and
++   * would put unfinished template words in front of every agent that retrieves.
++   */
++  test("is refused by the overlay, however the question is asked", async () => {
++    await openTemplateStage({ templateId: "templates:1" });
++    model.tables.documents.push(
++      row("documents", "9", { projectId: "p", title: "A real document" })
++    );
++    model.tables.documentSnapshots.push(
++      row("documentSnapshots", "9", {
++        projectId: "p",
++        resourceId: "documents:9",
++        role: "leader",
++        revision: 1,
++        body: { rows: [] }
++      })
++    );
++
++    assert.equal(await enqueueSemanticSync({ ref: { kind: "document", id: "documents:1" } }), null);
++    assert.deepEqual(model.tables.semanticSyncJobs ?? [], []);
++
++    const real = await enqueueSemanticSync({ ref: { kind: "document", id: "documents:9" } });
++    assert.notEqual(real, null);
++    assert.deepEqual(
++      (model.tables.semanticSyncJobs ?? []).map((job) => job.ref),
++      [{ kind: "document", id: "documents:9" }]
++    );
 +  });
 +
 +  test("is shared by everyone in the project rather than kept per viewer", async () => {
@@ -7604,6 +7748,54 @@
 +    assert.deepEqual(model.tables.documentChangeSets, []);
 +    assert.deepEqual(model.tables.commentThreads.map((thread) => thread._id), ["commentThreads:2"]);
 +    assert.deepEqual(model.tables.comments.map((comment) => comment._id), ["comments:2"]);
++  });
++
++  /**
++   * A discarded draft must leave nothing an agent can still find.
++   *
++   * Ingestion refuses a stage, so in the ordinary case there is nothing here to
++   * take back. These rows are what an earlier save, or a forced backfill, could
++   * have left behind — and another resource's rows have to survive it.
++   */
++  test("takes back everything the overlay learned about the scratch resource", async () => {
++    await openTemplateStage({ templateId: "templates:1" });
++    const mine = { kind: "document", id: "documents:1" };
++    const other = { kind: "document", id: "documents:9" };
++    model.tables.semanticSyncJobs = [
++      row("semanticSyncJobs", "1", { projectId: "p", ref: mine, state: "queued" }),
++      row("semanticSyncJobs", "2", { projectId: "p", ref: other, state: "queued" })
++    ];
++    model.tables.semanticMaterialJobs = [
++      row("semanticMaterialJobs", "1", { projectId: "p", ref: mine, state: "queued" })
++    ];
++    model.tables.semanticSources = [
++      row("semanticSources", "1", { projectId: "p", ref: mine, revision: 1 }),
++      row("semanticSources", "2", { projectId: "p", ref: other, revision: 1 })
++    ];
++    model.tables.semanticMaterials = [
++      row("semanticMaterials", "1", { projectId: "p", source: { kind: "resourceContent", ref: mine } })
++    ];
++    model.tables.semanticMaterialPlacements = [
++      row("semanticMaterialPlacements", "1", { projectId: "p", ref: mine })
++    ];
++    model.tables.semanticMaterialHistory = [
++      row("semanticMaterialHistory", "1", { projectId: "p", material: { source: { ref: mine } } })
++    ];
++    model.tables.semanticObjects = [
++      row("semanticObjects", "1", { projectId: "p", lane: "text", semanticSourceId: "semanticSources:1" }),
++      row("semanticObjects", "2", { projectId: "p", lane: "material", semanticMaterialId: "semanticMaterials:1" }),
++      row("semanticObjects", "3", { projectId: "p", lane: "text", semanticSourceId: "semanticSources:2" })
++    ];
++
++    await discardTemplateStage({ stageId: "templateStages:1" });
++
++    assert.deepEqual(model.tables.semanticSyncJobs.map((job) => job._id), ["semanticSyncJobs:2"]);
++    assert.deepEqual(model.tables.semanticMaterialJobs, []);
++    assert.deepEqual(model.tables.semanticSources.map((source) => source._id), ["semanticSources:2"]);
++    assert.deepEqual(model.tables.semanticMaterials, []);
++    assert.deepEqual(model.tables.semanticMaterialPlacements, []);
++    assert.deepEqual(model.tables.semanticMaterialHistory, []);
++    assert.deepEqual(model.tables.semanticObjects.map((held) => held._id), ["semanticObjects:3"]);
 +  });
 +
 +  test("goes with the template when the template is deleted, and is out of reach from another project", async () => {
@@ -8443,12 +8635,13 @@
 +};
 ~~~~
 
-### new · `src/lib/capabilities/resource-sets/api/remove-resource-set/remove-resource-set.ts` (+74 / −0)
+### new · `src/lib/capabilities/resource-sets/api/remove-resource-set/remove-resource-set.ts` (+130 / −0)
 
 ~~~~diff
-@@ -0,0 +1,74 @@
+@@ -0,0 +1,130 @@
 +import { requireScope } from "$runtime/server/scope.server";
 +import { serverModel } from "$runtime/server/start.server";
++import type { StoreModel } from "$model/server/store/index.server";
 +
 +import {
 +  recordsIn,
@@ -8464,6 +8657,37 @@
 +  const fields = value as Record<string, unknown>;
 +  if (fields.select === "set" && fields.setId === setId) return true;
 +  return Object.values(fields).some((nested) => namesSet(nested, setId));
++};
++
++const promptWords = (value: unknown): string => {
++  const words = typeof value === "string" ? value.trim().replace(/\s+/g, " ") : "";
++  return words.length > 60 ? `${words.slice(0, 57)}…` : words;
++};
++
++/**
++ * The resource whose Prompt Block still reads this set, by title.
++ *
++ * A block carries its own scope before it is linked to anything, so the derived
++ * outputs alone do not account for every reader. Only leader revisions are
++ * looked at: an earlier revision is history, and cannot be refreshed.
++ */
++const readingResources = (
++  store: StoreModel,
++  projectId: string,
++  setId: string
++): string | undefined => {
++  for (const [snapshots, resources] of [
++    ["documentSnapshots", "documents"],
++    ["slideDeckSnapshots", "slideDecks"]
++  ] as const) {
++    const found = recordsIn(store, snapshots).find(
++      (row) => row.projectId === projectId && row.role === "leader" && namesSet(row.body, setId)
++    );
++    if (found === undefined) continue;
++    const resource = recordsIn(store, resources).find((row) => row._id === found.resourceId);
++    return typeof resource?.title === "string" ? resource.title : "an open resource";
++  }
++  return undefined;
 +};
 +
 +export const removeResourceSet = async (input: unknown): Promise<RemoveResourceSetResult> => {
@@ -8515,6 +8739,30 @@
 +      reason: "in-use",
 +      revision: reportableRevision(stored.revision),
 +      detail: `the template "${String(usedByTemplate.name)}" still names it`
++    };
++  }
++
++  const usedByOutput = recordsIn(store, "derivedOutputs").find(
++    (row) => row.projectId === scope.projectId && namesSet(row.scope, stored._id)
++  );
++  if (usedByOutput !== undefined) {
++    return {
++      accepted: false,
++      setId: asked.setId,
++      reason: "in-use",
++      revision: reportableRevision(stored.revision),
++      detail: `a prompt still reads it: "${promptWords(usedByOutput.prompt)}"`
++    };
++  }
++
++  const usedByBlock = readingResources(store, scope.projectId, stored._id);
++  if (usedByBlock !== undefined) {
++    return {
++      accepted: false,
++      setId: asked.setId,
++      reason: "in-use",
++      revision: reportableRevision(stored.revision),
++      detail: `a Prompt Block in "${usedByBlock}" still reads it`
 +    };
 +  }
 +
@@ -9152,10 +9400,10 @@
 +row cannot take the rest down. A set that would include itself is refused.
 ~~~~
 
-### new · `src/lib/capabilities/resource-sets/test/unit/resource-sets.test.ts` (+230 / −0)
+### new · `src/lib/capabilities/resource-sets/test/unit/resource-sets.test.ts` (+292 / −0)
 
 ~~~~diff
-@@ -0,0 +1,230 @@
+@@ -0,0 +1,292 @@
 +import assert from "node:assert/strict";
 +import { beforeEach, describe, test, vi } from "vitest";
 +
@@ -9375,6 +9623,68 @@
 +    const gone = await removeResourceSet({ setId: "resourceSets:1", baseRevision: 1 });
 +    assert.deepEqual(gone, { accepted: true, setId: "resourceSets:1", revision: 1 });
 +    assert.deepEqual(model.tables.resourceSets, []);
++  });
++
++  /**
++   * A set is deleted only when nothing will ask for it again.
++   *
++   * A live prompt is the case that bites: the output would keep naming a set
++   * that no longer resolves, and the failure would surface on some later
++   * refresh rather than on the deletion that caused it.
++   */
++  test("refuses to remove a set a generated output or a Prompt Block still reads", async () => {
++    model.tables.resourceSets.push(namedSet("1"));
++    model.tables.derivedOutputs = [
++      row("derivedOutputs", "1", {
++        projectId: "p",
++        prompt: "  Summarise   what winter changed  ",
++        scope: { include: [{ select: "set", setId: "resourceSets:1" }], exclude: [] }
++      })
++    ];
++
++    const reading = await removeResourceSet({ setId: "resourceSets:1", baseRevision: 1 });
++    assert.deepEqual(reading, {
++      accepted: false,
++      setId: "resourceSets:1",
++      reason: "in-use",
++      revision: 1,
++      detail: 'a prompt still reads it: "Summarise what winter changed"'
++    });
++
++    model.tables.derivedOutputs = [];
++    model.tables.documentSnapshots = [
++      row("documentSnapshots", "1", {
++        projectId: "p",
++        resourceId: "documents:1",
++        role: "leader",
++        revision: 3,
++        body: {
++          rows: [
++            {
++              id: "r1",
++              kind: "blocks",
++              blocks: [
++                {
++                  id: "b1",
++                  type: "prompt",
++                  scope: { include: [{ select: "set", setId: "resourceSets:1" }], exclude: [] }
++                }
++              ]
++            }
++          ]
++        }
++      })
++    ];
++
++    const blocked = await removeResourceSet({ setId: "resourceSets:1", baseRevision: 1 });
++    assert.equal(
++      blocked.accepted === false && blocked.detail,
++      'a Prompt Block in "Brief" still reads it'
++    );
++
++    model.tables.documentSnapshots[0].role = "follower";
++    const gone = await removeResourceSet({ setId: "resourceSets:1", baseRevision: 1 });
++    assert.deepEqual(gone, { accepted: true, setId: "resourceSets:1", revision: 1 });
 +  });
 +
 +  test("does not reach a set in another project", async () => {
@@ -11255,6 +11565,280 @@
 
 ## The document editor's Templates panel
 
+### new · `src/lib/app-views/categories/document-editor/components/prompt-scope.svelte` (+132 / −0)
+
+~~~~diff
+@@ -0,0 +1,132 @@
++<script lang="ts">
++  import { PanelButton } from "$authored-components/panel";
++  import { OverlayModal } from "$authored-components/overlay";
++  import { ScopeBuilder } from "$authored-components/scope-builder";
++  import {
++    builderView,
++    defaultScopeOf,
++    draftOf,
++    narrowed,
++    offeringOf,
++    projectResources,
++    resourceSets,
++    resourcesIn,
++    ruleOf,
++    scopeNamesOf,
++    setsIn,
++    termFor,
++    withTerm,
++    withWholeProject,
++    withoutTerm,
++    type OfferSource,
++    type ScopeDraft,
++    type ScopeSide
++  } from "$app-views/categories/document-editor/procedures/templating";
++  import { blockIn } from "$app-views/categories/document-editor/procedures/blocks";
++  import { workspaceState, type DocumentRuntime } from "$model/client/workspace-state";
++
++  /**
++   * What a prompt reads, wherever the prompt is.
++   *
++   * The same control answers for a block that has not generated yet and for one
++   * already linked to its output, so the two can never say different things.
++   */
++  let {
++    blockId,
++    disabled = false,
++    description = "The sources it is answered from. If it is a hole, this is also what the hole selects until whoever places the template says otherwise.",
++    onconfirm
++  }: {
++    blockId: string;
++    disabled?: boolean;
++    description?: string;
++    onconfirm: (next: unknown) => void;
++  } = $props();
++
++  const view = workspaceState();
++  const documentId = $derived(view.active.resourceId);
++
++  let runtime = $state<DocumentRuntime>();
++  $effect(() => {
++    runtime = documentId === undefined ? undefined : view.documentRuntime(documentId);
++  });
++
++  const held = $derived(
++    runtime?.body === undefined ? undefined : blockIn(runtime.body, blockId)
++  );
++  const scope = $derived(held?.type === "prompt" ? held.scope : undefined);
++
++  const sets = resourceSets();
++  const index = projectResources();
++  const setItems = $derived(setsIn(sets.ready ? sets.current : undefined));
++  const catalogue = $derived(resourcesIn(index.ready ? index.current : undefined));
++  const setNames = $derived(scopeNamesOf(setItems, catalogue));
++  const offering = $derived(offeringOf(setItems, catalogue));
++  const reads = $derived(ruleOf(defaultScopeOf(scope), setNames));
++
++  let open = $state(false);
++  let draft = $state<ScopeDraft>(draftOf(undefined));
++  const view$ = $derived(builderView(draft, offering));
++  const blocked = $derived(
++    draft.include.length === 0 ? "Include something, or choose everything in the project." : undefined
++  );
++
++  const start = () => {
++    draft = draftOf(scope);
++    open = true;
++  };
++
++  const confirm = () => {
++    onconfirm(narrowed(draft) ?? draft);
++    open = false;
++  };
++</script>
++
++<div class="scope">
++  <span>Scope</span>
++  <div class="scope-control">
++    <PanelButton label={reads} {disabled} title="Choose what this prompt reads" onclick={start} />
++  </div>
++</div>
++
++<OverlayModal
++  bind:open
++  title="What this prompt reads"
++  {description}
++  confirm="Set the scope"
++  width="wide"
++  {blocked}
++  onconfirm={confirm}
++>
++  <ScopeBuilder
++    {...view$}
++    onmode={(whole) => (draft = whole ? withWholeProject() : { include: [], exclude: [] })}
++    onadd={(side: ScopeSide, source: string, key: string) => {
++      const term = termFor(source as OfferSource, key);
++      if (term !== undefined) draft = withTerm(draft, side, term);
++    }}
++    ondrop={(side: ScopeSide, key: string) => (draft = withoutTerm(draft, side, key))}
++    onclear={() => (draft = { include: [], exclude: [] })}
++  />
++</OverlayModal>
++
++<style>
++  .scope {
++    display: flex;
++    align-items: center;
++    justify-content: space-between;
++    gap: calc(var(--token-spacing-unit) * 2);
++    min-height: 2rem;
++  }
++
++  .scope span {
++    color: var(--token-ink-muted);
++    font-size: var(--token-text-caption);
++    line-height: var(--token-text-caption-leading);
++    font-weight: 600;
++  }
++
++  .scope-control {
++    width: 9.25rem;
++  }
++</style>
+~~~~
+
+### changed · `src/lib/app-views/categories/document-editor/components/prompt-settings.svelte` (+43 / −25)
+
+~~~~diff
+@@ -5,8 +5,7 @@
+     PanelActions,
+     PanelBanner,
+     PanelProgress,
+-    PanelSection,
+-    PanelSelect
++    PanelSection
+   } from "$authored-components/panel";
+   import { Button } from "$vendored-components/button";
+   import { Textarea } from "$vendored-components/textarea";
+@@ -25,19 +24,20 @@
+     exactEvidenceText
+   } from "$app-views/categories/document-editor/procedures/evidence";
+   import {
++    promptScopeOps,
+     syncPromptBlockOps,
+     type Id,
+     type LinkedPromptBlock,
+     type PromptBlock
+   } from "$app-views/categories/document-editor/procedures/prompt-blocks";
++  import { readableScope } from "$app-views/categories/document-editor/procedures/templating";
++  import PromptScope from "$app-views/categories/document-editor/components/prompt-scope.svelte";
+   import { rowsOf, tableQuery } from "$app-views/categories/document-editor/procedures/store";
+   import { workspaceState, type DocumentRuntime } from "$model/client/workspace-state";
+   import type { ResourceRef } from "$representation/data/types/core/resource";
+   import type { SemanticCitation } from "$representation/data/types/semantic/derived-output";
+   import { onMount } from "svelte";
+ 
+-  const SCOPES = [{ value: "project", label: "Whole project" }] as const;
+-
+   let {
+     blockId,
+     derivedOutputId
+@@ -187,6 +187,40 @@
+     return current;
+   };
+ 
++  /**
++   * The block and its output are told the same thing, in that order.
++   *
++   * The block is what the panel reads back, and the output is what the agent
++   * obeys, so a scope that reached only one of them would let the two disagree.
++   */
++  const setScope = async (next: unknown) => {
++    const currentRuntime = runtime;
++    if (busy || output === undefined || currentRuntime === undefined) return;
++    running = true;
++    actionError = undefined;
++    try {
++      const ops = promptScopeOps(currentBlock(), next);
++      if (ops.length > 0) currentRuntime.apply(ops);
++      await currentRuntime.flush();
++      if (currentRuntime.failure !== undefined) throw new Error(currentRuntime.failure.detail);
++      const reading = readableScope(currentBlock().scope);
++      if (reading !== undefined) {
++        const changed = await updateDerivedOutput({
++          derivedOutputId: outputId,
++          prompt: promptDraft.trim().length === 0 ? output.prompt : promptDraft.trim(),
++          scope: reading
++        });
++        if (changed === null) throw new Error("The Derived Output no longer exists");
++      }
++      await detailQuery.refresh();
++    } catch (error) {
++      actionError = error instanceof Error ? error.message : String(error);
++    } finally {
++      announcePromptOutput(outputId);
++      running = false;
++    }
++  };
++
+   const generate = async () => {
+     const prompt = promptDraft.trim();
+     const currentRuntime = runtime;
+@@ -201,10 +235,12 @@
+     running = true;
+     actionError = undefined;
+     try {
+-      if (definitionChanged || responseChanged) {
++      const reading = readableScope(block.scope);
++      if (definitionChanged || responseChanged || reading !== undefined) {
+         const changed = await updateDerivedOutput({
+           derivedOutputId: outputId,
+           prompt,
++          ...(reading === undefined ? {} : { scope: reading }),
+           ...(responseChanged
+             ? { lastResponse: currentResponse.length === 0 ? null : currentResponse }
+             : {})
+@@ -297,12 +333,7 @@
+       disabled={running}
+     />
+ 
+-    <div class="scope">
+-      <span>Scope</span>
+-      <div class="scope-control">
+-        <PanelSelect label="Scope" value="project" options={SCOPES} />
+-      </div>
+-    </div>
++    <PromptScope {blockId} disabled={busy} onconfirm={setScope} />
+   </div>
+ 
+   {#if shownError !== undefined}
+@@ -360,8 +391,7 @@
+     padding: calc(var(--token-spacing-unit) * 2) calc(var(--token-spacing-unit) * 3);
+   }
+ 
+-  .settings > label,
+-  .scope > span {
++  .settings > label {
+     color: var(--token-ink-muted);
+     font-size: var(--token-text-caption);
+     line-height: var(--token-text-caption-leading);
+@@ -376,18 +406,6 @@
+     line-height: var(--token-text-body-sm-leading);
+   }
+ 
+-  .scope {
+-    display: flex;
+-    align-items: center;
+-    justify-content: space-between;
+-    gap: calc(var(--token-spacing-unit) * 2);
+-    min-height: 2rem;
+-  }
+-
+-  .scope-control {
+-    width: 9.25rem;
+-  }
+-
+   .evidence {
+     display: flex;
+     flex-direction: column;
+~~~~
+
 ### changed · `src/lib/app-views/categories/document-editor/content/document.svelte` (+15 / −0)
 
 ~~~~diff
@@ -11904,7 +12488,7 @@
 +</style>
 ~~~~
 
-### changed · `src/lib/app-views/categories/document-editor/inspector/prompt-block.svelte` (+114 / −4)
+### changed · `src/lib/app-views/categories/document-editor/inspector/prompt-block.svelte` (+73 / −23)
 
 ~~~~diff
 @@ -5,10 +5,10 @@
@@ -11920,7 +12504,7 @@
    } from "$authored-components/panel";
    import { Button } from "$vendored-components/button";
    import { Textarea } from "$vendored-components/textarea";
-@@ -21,17 +21,42 @@
+@@ -21,17 +21,32 @@
    import { blockIn } from "$app-views/categories/document-editor/procedures/blocks";
    import {
      linkPromptBlockOps,
@@ -11932,29 +12516,19 @@
      type PromptBlock
    } from "$app-views/categories/document-editor/procedures/prompt-blocks";
 +  import {
-+    builderView,
 +    defaultScopeOf,
-+    draftOf,
-+    narrowed,
 +    nextHoleName,
 +    offeringOf,
 +    projectResources,
++    readableScope,
 +    resourceSets,
 +    resourcesIn,
 +    ruleOf,
 +    scopeNamesOf,
-+    setsIn,
-+    termFor,
-+    withTerm,
-+    withWholeProject,
-+    withoutTerm,
-+    type OfferSource,
-+    type ScopeDraft,
-+    type ScopeSide
++    setsIn
 +  } from "$app-views/categories/document-editor/procedures/templating";
-+  import { OverlayModal } from "$authored-components/overlay";
++  import PromptScope from "$app-views/categories/document-editor/components/prompt-scope.svelte";
 +  import { PromptTemplate } from "$authored-components/prompt-template";
-+  import { ScopeBuilder } from "$authored-components/scope-builder";
    import { announcePromptOutput } from "$app-views/categories/document-editor/procedures/prompt-output-events";
    import { isInspectorView, workspaceState } from "$model/client/workspace-state";
    import type { DocumentRuntime } from "$model/client/workspace-state";
@@ -11964,7 +12538,20 @@
  
    const view = workspaceState();
    const documentId = $derived(view.active.resourceId);
-@@ -137,6 +162,55 @@
+@@ -89,9 +104,11 @@
+     let derivedOutputId: Id<"derivedOutputs"> | undefined;
+ 
+     try {
++      const reading = readableScope(currentPrompt().scope);
+       const created = await createDerivedOutput({
+         prompt: promptText,
+-        origin: { kind: "document", id: documentId }
++        origin: { kind: "document", id: documentId },
++        ...(reading === undefined ? {} : { scope: reading })
+       });
+       derivedOutputId = created._id;
+       const seeded =
+@@ -137,6 +154,42 @@
    const navigate = (next: string) => {
      if (isInspectorView(next)) view.inspect(next);
    };
@@ -11979,13 +12566,6 @@
 +  const offered = $derived(body === undefined ? "Hole 1" : nextHoleName(body));
 +  const named = $derived(prompt?.hole);
 +  const reads = $derived(ruleOf(defaultScopeOf(prompt?.scope), setNames));
-+
-+  let contextOpen = $state(false);
-+  let draft = $state<ScopeDraft>(draftOf(undefined));
-+  const view$ = $derived(builderView(draft, offering));
-+  const scopeBlocked = $derived(
-+    draft.include.length === 0 ? "Include something, or choose everything in the project." : undefined
-+  );
 +
 +  const write = (ops: readonly unknown[]) => {
 +    if (runtime === undefined || ops.length === 0) return;
@@ -12007,34 +12587,32 @@
 +    write(promptHoleOps(prompt, { name: named?.name ?? offered, description }));
 +  };
 +
-+  const openContext = () => {
-+    draft = draftOf(prompt?.scope);
-+    contextOpen = true;
-+  };
-+
-+  const confirmContext = () => {
++  const confirmScope = (next: unknown) => {
 +    if (prompt === undefined) return;
-+    write(promptScopeOps(prompt, narrowed(draft) ?? draft));
-+    contextOpen = false;
++    write(promptScopeOps(prompt, next));
 +  };
  </script>
  
  <Panel title="Prompt block">
-@@ -181,7 +255,12 @@
-         <div class="scope">
-           <span>Scope</span>
-           <div class="scope-control">
+@@ -178,12 +231,11 @@
+           disabled={phase !== undefined}
+         />
+ 
+-        <div class="scope">
+-          <span>Scope</span>
+-          <div class="scope-control">
 -            <PanelSelect label="Scope" value="project" options={SCOPES} />
-+            <PanelButton
-+              label={reads}
-+              disabled={phase !== undefined}
-+              title="Choose what this prompt reads"
-+              onclick={openContext}
-+            />
-           </div>
-         </div>
+-          </div>
+-        </div>
++        <PromptScope
++          blockId={prompt.id}
++          disabled={phase !== undefined}
++          onconfirm={confirmScope}
++        />
        </div>
-@@ -202,9 +281,40 @@
+ 
+       <PanelActions>
+@@ -202,6 +254,16 @@
        {/key}
      {/if}
  
@@ -12051,30 +12629,32 @@
    {/if}
  </Panel>
  
-+<OverlayModal
-+  bind:open={contextOpen}
-+  title="What this prompt reads"
-+  description="The sources it is answered from. If it is a hole, this is also what the hole selects until whoever places the template says otherwise."
-+  confirm="Set the scope"
-+  width="wide"
-+  blocked={scopeBlocked}
-+  onconfirm={confirmContext}
-+>
-+  <ScopeBuilder
-+    {...view$}
-+    onmode={(whole) => (draft = whole ? withWholeProject() : { include: [], exclude: [] })}
-+    onadd={(side: ScopeSide, source: string, key: string) => {
-+      const term = termFor(source as OfferSource, key);
-+      if (term !== undefined) draft = withTerm(draft, side, term);
-+    }}
-+    ondrop={(side: ScopeSide, key: string) => (draft = withoutTerm(draft, side, key))}
-+    onclear={() => (draft = { include: [], exclude: [] })}
-+  />
-+</OverlayModal>
-+
- <style>
-   .setup {
-     display: flex;
+@@ -213,8 +275,7 @@
+     padding: calc(var(--token-spacing-unit) * 2) calc(var(--token-spacing-unit) * 3);
+   }
+ 
+-  .setup label,
+-  .scope span {
++  .setup label {
+     color: var(--token-ink-muted);
+     font-size: var(--token-text-caption);
+     line-height: var(--token-text-caption-leading);
+@@ -228,15 +289,4 @@
+     line-height: var(--token-text-body-sm-leading);
+   }
+ 
+-  .scope {
+-    display: flex;
+-    align-items: center;
+-    justify-content: space-between;
+-    gap: calc(var(--token-spacing-unit) * 2);
+-    min-height: 2rem;
+-  }
+-
+-  .scope-control {
+-    width: 9.25rem;
+-  }
+ </style>
 ~~~~
 
 ### changed · `src/lib/app-views/categories/document-editor/inspector/text-selection.svelte` (+50 / −0)
@@ -12362,10 +12942,10 @@
        ]
 ~~~~
 
-### new · `src/lib/app-views/categories/document-editor/procedures/templating.ts` (+417 / −0)
+### new · `src/lib/app-views/categories/document-editor/procedures/templating.ts` (+436 / −0)
 
 ~~~~diff
-@@ -0,0 +1,417 @@
+@@ -0,0 +1,436 @@
 +import {
 +  readProjectResourceIndex,
 +  type ProjectResourceIndex
@@ -12404,12 +12984,13 @@
 +  fillTemplateAtoms,
 +  resolveTemplateScopes
 +} from "$representation/data/behavior/templates/scopes";
-+import type { TemplatedResourceSet } from "$representation/data/types/core/resource-set";
++import type { ResourceSet, TemplatedResourceSet } from "$representation/data/types/core/resource-set";
 +import type { DocumentBody, DocumentRow } from "$representation/data/types/documents/body";
 +import type { DocumentOp } from "$representation/data/types/documents/op";
 +import type { TemplateHole } from "$representation/data/types/templates/template";
 +import { linearOf } from "$representation/data/behavior/content/positions";
 +import {
++  defaultScopeOf as defaultScope,
 +  holeMarkOver,
 +  holeNameOver
 +} from "$representation/data/behavior/templates/prompt-holes";
@@ -12655,6 +13236,24 @@
 +    }
 +  }
 +  return undefined;
++};
++
++/**
++ * A prompt's scope as its generated output can hold it.
++ *
++ * The block is what the person set, so the output must be told the same thing
++ * or the agent reads the whole project while the panel says otherwise. A body
++ * open as a template is the one exception: its scope may still name a hole,
++ * which selects nothing until the template is placed and cannot be sent.
++ */
++export const readableScope = (scope: unknown): ResourceSet | undefined => {
++  const held = defaultScope(scope);
++  if (held === undefined) return undefined;
++  const include = held.include.filter((term) => term.select !== "hole");
++  const exclude = held.exclude.filter((term) => term.select !== "hole");
++  return include.length === held.include.length && exclude.length === held.exclude.length
++    ? { include, exclude }
++    : undefined;
 +};
 +
 +/** What a selection covers, as one block and a range of its display. */
@@ -12960,6 +13559,279 @@
 
 ## The slide-deck editor's Templates panel
 
+### new · `src/lib/app-views/categories/slide-deck-editor/components/prompt-scope.svelte` (+131 / −0)
+
+~~~~diff
+@@ -0,0 +1,131 @@
++<script lang="ts">
++  import { PanelButton } from "$authored-components/panel";
++  import { OverlayModal } from "$authored-components/overlay";
++  import { ScopeBuilder } from "$authored-components/scope-builder";
++  import {
++    builderView,
++    defaultScopeOf,
++    draftOf,
++    narrowed,
++    offeringOf,
++    projectResources,
++    resourceSets,
++    resourcesIn,
++    ruleOf,
++    scopeNamesOf,
++    setsIn,
++    termFor,
++    withTerm,
++    withWholeProject,
++    withoutTerm,
++    type OfferSource,
++    type ScopeDraft,
++    type ScopeSide
++  } from "$app-views/categories/slide-deck-editor/procedures/templating";
++  import { promptBlockIn } from "$app-views/categories/slide-deck-editor/procedures/prompt-blocks";
++  import { workspaceState, type SlideDeckRuntime } from "$model/client/workspace-state";
++
++  /**
++   * What a prompt reads, wherever the prompt is.
++   *
++   * The same control answers for a block that has not generated yet and for one
++   * already linked to its output, so the two can never say different things.
++   */
++  let {
++    blockId,
++    disabled = false,
++    description = "The sources it is answered from. If it is a hole, this is also what the hole selects until whoever places the template says otherwise.",
++    onconfirm
++  }: {
++    blockId: string;
++    disabled?: boolean;
++    description?: string;
++    onconfirm: (next: unknown) => void;
++  } = $props();
++
++  const view = workspaceState();
++  const deckId = $derived(view.active.resourceId);
++
++  let runtime = $state<SlideDeckRuntime | undefined>(undefined);
++  $effect(() => {
++    runtime = deckId === undefined ? undefined : view.slideDeckRuntime(deckId);
++  });
++
++  const scope = $derived(
++    runtime?.body === undefined ? undefined : promptBlockIn(runtime.body, blockId)?.scope
++  );
++
++  const sets = resourceSets();
++  const index = projectResources();
++  const setItems = $derived(setsIn(sets.ready ? sets.current : undefined));
++  const catalogue = $derived(resourcesIn(index.ready ? index.current : undefined));
++  const setNames = $derived(scopeNamesOf(setItems, catalogue));
++  const offering = $derived(offeringOf(setItems, catalogue));
++  const reads = $derived(ruleOf(defaultScopeOf(scope), setNames));
++
++  let open = $state(false);
++  let draft = $state<ScopeDraft>(draftOf(undefined));
++  const view$ = $derived(builderView(draft, offering));
++  const blocked = $derived(
++    draft.include.length === 0 ? "Include something, or choose everything in the project." : undefined
++  );
++
++  const start = () => {
++    draft = draftOf(scope);
++    open = true;
++  };
++
++  const confirm = () => {
++    onconfirm(narrowed(draft) ?? draft);
++    open = false;
++  };
++</script>
++
++<div class="scope">
++  <span>Scope</span>
++  <div class="scope-control">
++    <PanelButton label={reads} {disabled} title="Choose what this prompt reads" onclick={start} />
++  </div>
++</div>
++
++<OverlayModal
++  bind:open
++  title="What this prompt reads"
++  {description}
++  confirm="Set the scope"
++  width="wide"
++  {blocked}
++  onconfirm={confirm}
++>
++  <ScopeBuilder
++    {...view$}
++    onmode={(whole) => (draft = whole ? withWholeProject() : { include: [], exclude: [] })}
++    onadd={(side: ScopeSide, source: string, key: string) => {
++      const term = termFor(source as OfferSource, key);
++      if (term !== undefined) draft = withTerm(draft, side, term);
++    }}
++    ondrop={(side: ScopeSide, key: string) => (draft = withoutTerm(draft, side, key))}
++    onclear={() => (draft = { include: [], exclude: [] })}
++  />
++</OverlayModal>
++
++<style>
++  .scope {
++    display: flex;
++    align-items: center;
++    justify-content: space-between;
++    gap: calc(var(--token-spacing-unit) * 2);
++    min-height: 2rem;
++  }
++
++  .scope span {
++    color: var(--token-ink-muted);
++    font-size: var(--token-text-caption);
++    line-height: var(--token-text-caption-leading);
++    font-weight: 600;
++  }
++
++  .scope-control {
++    width: 9.25rem;
++  }
++</style>
+~~~~
+
+### changed · `src/lib/app-views/categories/slide-deck-editor/components/prompt-settings.svelte` (+43 / −25)
+
+~~~~diff
+@@ -6,8 +6,7 @@
+     PanelActions,
+     PanelBanner,
+     PanelProgress,
+-    PanelSection,
+-    PanelSelect
++    PanelSection
+   } from "$authored-components/panel";
+   import { Button } from "$vendored-components/button";
+   import { Textarea } from "$vendored-components/textarea";
+@@ -18,10 +17,13 @@
+   } from "$capabilities/derived-output/index.remote";
+   import {
+     promptBlockIn,
++    promptScopeOps,
+     syncPromptBlockOps,
+     type Id,
+     type LinkedPromptBlock
+   } from "$app-views/categories/slide-deck-editor/procedures/prompt-blocks";
++  import { readableScope } from "$app-views/categories/slide-deck-editor/procedures/templating";
++  import PromptScope from "$app-views/categories/slide-deck-editor/components/prompt-scope.svelte";
+   import {
+     rowsOf,
+     tableQuery
+@@ -41,8 +43,6 @@
+   import type { ResourceRef } from "$representation/data/types/core/resource";
+   import type { SemanticCitation } from "$representation/data/types/semantic/derived-output";
+ 
+-  const SCOPES = [{ value: "project", label: "Whole project" }] as const;
+-
+   let {
+     blockId,
+     derivedOutputId
+@@ -157,6 +157,40 @@
+     return current;
+   };
+ 
++  /**
++   * The block and its output are told the same thing, in that order.
++   *
++   * The block is what the panel reads back, and the output is what the agent
++   * obeys, so a scope that reached only one of them would let the two disagree.
++   */
++  const setScope = async (next: unknown) => {
++    const currentRuntime = runtime;
++    if (busy || output === undefined || currentRuntime === undefined) return;
++    running = true;
++    actionError = undefined;
++    try {
++      const ops = promptScopeOps(currentBlock(currentRuntime), next);
++      if (ops.length > 0) currentRuntime.apply(ops);
++      await currentRuntime.flush();
++      if (currentRuntime.sync === "error") throw new Error("The scope could not be saved");
++      const reading = readableScope(currentBlock(currentRuntime).scope);
++      if (reading !== undefined) {
++        const changed = await updateDerivedOutput({
++          derivedOutputId: outputId,
++          prompt: promptDraft.trim().length === 0 ? output.prompt : promptDraft.trim(),
++          scope: reading
++        });
++        if (changed === null) throw new Error("The Derived Output no longer exists");
++      }
++      await detailQuery.refresh();
++    } catch (error) {
++      actionError = error instanceof Error ? error.message : String(error);
++    } finally {
++      announcePromptOutput(outputId);
++      running = false;
++    }
++  };
++
+   const generate = async () => {
+     const prompt = promptDraft.trim();
+     const currentRuntime = runtime;
+@@ -171,10 +205,12 @@
+     running = true;
+     actionError = undefined;
+     try {
+-      if (definitionChanged || responseChanged) {
++      const reading = readableScope(block.scope);
++      if (definitionChanged || responseChanged || reading !== undefined) {
+         const changed = await updateDerivedOutput({
+           derivedOutputId: outputId,
+           prompt,
++          ...(reading === undefined ? {} : { scope: reading }),
+           ...(responseChanged
+             ? { lastResponse: currentResponse.length === 0 ? null : currentResponse }
+             : {})
+@@ -267,12 +303,7 @@
+       disabled={running}
+     />
+ 
+-    <div class="scope">
+-      <span>Scope</span>
+-      <div class="scope-control">
+-        <PanelSelect label="Scope" value="project" options={SCOPES} />
+-      </div>
+-    </div>
++    <PromptScope {blockId} disabled={busy} onconfirm={setScope} />
+   </div>
+ 
+   {#if shownError !== undefined}
+@@ -330,8 +361,7 @@
+     padding: calc(var(--token-spacing-unit) * 2) calc(var(--token-spacing-unit) * 3);
+   }
+ 
+-  .settings > label,
+-  .scope > span {
++  .settings > label {
+     color: var(--token-ink-muted);
+     font-size: var(--token-text-caption);
+     line-height: var(--token-text-caption-leading);
+@@ -346,18 +376,6 @@
+     line-height: var(--token-text-body-sm-leading);
+   }
+ 
+-  .scope {
+-    display: flex;
+-    align-items: center;
+-    justify-content: space-between;
+-    gap: calc(var(--token-spacing-unit) * 2);
+-    min-height: 2rem;
+-  }
+-
+-  .scope-control {
+-    width: 9.25rem;
+-  }
+-
+   .evidence {
+     display: flex;
+     flex-direction: column;
+~~~~
+
 ### changed · `src/lib/app-views/categories/slide-deck-editor/context/comments.svelte` (+6 / −1)
 
 ~~~~diff
@@ -12992,10 +13864,10 @@
          placeholder="Write a comment on {subject}…"
 ~~~~
 
-### changed · `src/lib/app-views/categories/slide-deck-editor/context/templates.svelte` (+634 / −3)
+### changed · `src/lib/app-views/categories/slide-deck-editor/context/templates.svelte` (+633 / −3)
 
 ~~~~diff
-@@ -1,8 +1,639 @@
+@@ -1,8 +1,638 @@
  <script lang="ts">
 -  import { Panel, PanelEmpty, PanelNote } from "$authored-components/panel";
 +  import { onDestroy } from "svelte";
@@ -13048,7 +13920,6 @@
 +    termFor,
 +    updateHoles,
 +    withHoleField,
-+    withNewTextHole,
 +    withTerm,
 +    withWholeProject,
 +    withoutTerm,
@@ -13640,7 +14511,7 @@
 +</style>
 ~~~~
 
-### changed · `src/lib/app-views/categories/slide-deck-editor/inspector/prompt-block.svelte` (+115 / −4)
+### changed · `src/lib/app-views/categories/slide-deck-editor/inspector/prompt-block.svelte` (+74 / −24)
 
 ~~~~diff
 @@ -5,10 +5,10 @@
@@ -13656,38 +14527,28 @@
    } from "$authored-components/panel";
    import { Button } from "$vendored-components/button";
    import { Textarea } from "$vendored-components/textarea";
-@@ -23,6 +23,30 @@
+@@ -23,6 +23,20 @@
    import ElementOrder from "$app-views/categories/slide-deck-editor/components/element-order.svelte";
    import ElementPaint from "$app-views/categories/slide-deck-editor/components/element-paint.svelte";
    import PromptSettings from "$app-views/categories/slide-deck-editor/components/prompt-settings.svelte";
 +  import {
-+    builderView,
 +    defaultScopeOf,
-+    draftOf,
-+    narrowed,
 +    nextHoleName,
 +    offeringOf,
 +    projectResources,
++    readableScope,
 +    resourceSets,
 +    resourcesIn,
 +    ruleOf,
 +    scopeNamesOf,
-+    setsIn,
-+    termFor,
-+    withTerm,
-+    withWholeProject,
-+    withoutTerm,
-+    type OfferSource,
-+    type ScopeDraft,
-+    type ScopeSide
++    setsIn
 +  } from "$app-views/categories/slide-deck-editor/procedures/templating";
-+  import { OverlayModal } from "$authored-components/overlay";
++  import PromptScope from "$app-views/categories/slide-deck-editor/components/prompt-scope.svelte";
 +  import { PromptTemplate } from "$authored-components/prompt-template";
-+  import { ScopeBuilder } from "$authored-components/scope-builder";
    import TextSpacing from "$app-views/categories/slide-deck-editor/components/text-spacing.svelte";
    import TextStyle from "$app-views/categories/slide-deck-editor/components/text-style.svelte";
    import {
-@@ -33,6 +57,8 @@
+@@ -33,6 +47,8 @@
      linkPromptBlockOps,
      promptBlockIn,
      promptElementIn,
@@ -13696,7 +14557,7 @@
      syncPromptBlockOps,
      type Id,
      type LinkedPromptBlock
-@@ -49,7 +75,6 @@
+@@ -49,7 +65,6 @@
  
    type Phase = "creating" | "saving" | "generating";
  
@@ -13704,7 +14565,7 @@
    const PHASE: Record<Phase, string> = {
      creating: "Creating Derived Output",
      saving: "Saving Prompt Block",
-@@ -85,6 +110,55 @@
+@@ -85,6 +100,42 @@
      body === undefined || slide === undefined ? 0 : slideIndexOf(body, slide.id) + 1
    );
  
@@ -13718,13 +14579,6 @@
 +  const offered = $derived(body === undefined ? "Hole 1" : nextHoleName(body));
 +  const named = $derived(block?.hole);
 +  const reads = $derived(ruleOf(defaultScopeOf(block?.scope), setNames));
-+
-+  let contextOpen = $state(false);
-+  let draft = $state<ScopeDraft>(draftOf(undefined));
-+  const view$ = $derived(builderView(draft, offering));
-+  const scopeBlocked = $derived(
-+    draft.include.length === 0 ? "Include something, or choose everything in the project." : undefined
-+  );
 +
 +  const write = (ops: readonly unknown[]) => {
 +    if (runtime === undefined || ops.length === 0) return;
@@ -13746,35 +14600,46 @@
 +    write(promptHoleOps(block, { name: named?.name ?? offered, description }));
 +  };
 +
-+  const openContext = () => {
-+    draft = draftOf(block?.scope);
-+    contextOpen = true;
-+  };
-+
-+  const confirmContext = () => {
++  const confirmScope = (next: unknown) => {
 +    if (block === undefined) return;
-+    write(promptScopeOps(block, narrowed(draft) ?? draft));
-+    contextOpen = false;
++    write(promptScopeOps(block, next));
 +  };
 +
    $effect(() => {
      const current = block;
      if (current === undefined || current.id === draftedFor) return;
-@@ -210,7 +284,12 @@
-         <div class="scope">
-           <span>Scope</span>
-           <div class="scope-control">
+@@ -119,9 +170,11 @@
+     let derivedOutputId: Id<"derivedOutputs"> | undefined;
+ 
+     try {
++      const reading = readableScope(currentPrompt(currentRuntime).scope);
+       const created = await createDerivedOutput({
+         prompt: promptText,
+-        origin: { kind: "slides", id: deckId }
++        origin: { kind: "slides", id: deckId },
++        ...(reading === undefined ? {} : { scope: reading })
+       });
+       derivedOutputId = created._id;
+       const seeded = previous.length === 0
+@@ -207,12 +260,11 @@
+           disabled={phase !== undefined}
+         />
+ 
+-        <div class="scope">
+-          <span>Scope</span>
+-          <div class="scope-control">
 -            <PanelSelect label="Scope" value="project" options={SCOPES} />
-+            <PanelButton
-+              label={reads}
-+              disabled={phase !== undefined}
-+              title="Choose what this prompt reads"
-+              onclick={openContext}
-+            />
-           </div>
-         </div>
+-          </div>
+-        </div>
++        <PromptScope
++          blockId={block.id}
++          disabled={phase !== undefined}
++          onconfirm={confirmScope}
++        />
        </div>
-@@ -231,6 +310,17 @@
+ 
+       <PanelActions>
+@@ -231,6 +283,17 @@
        {/key}
      {/if}
  
@@ -13792,34 +14657,33 @@
      <TextStyle blockId={block.id} whole wrapping />
      <ElementGeometry elementId={element.id} />
      <ElementPaint elementId={element.id} />
-@@ -240,6 +330,27 @@
-   {/if}
- </Panel>
+@@ -248,8 +311,7 @@
+     padding: calc(var(--token-spacing-unit) * 2) calc(var(--token-spacing-unit) * 3);
+   }
  
-+<OverlayModal
-+  bind:open={contextOpen}
-+  title="What this prompt reads"
-+  description="The sources it is answered from. If it is a hole, this is also what the hole selects until whoever places the template says otherwise."
-+  confirm="Set the scope"
-+  width="wide"
-+  blocked={scopeBlocked}
-+  onconfirm={confirmContext}
-+>
-+  <ScopeBuilder
-+    {...view$}
-+    onmode={(whole) => (draft = whole ? withWholeProject() : { include: [], exclude: [] })}
-+    onadd={(side: ScopeSide, source: string, key: string) => {
-+      const term = termFor(source as OfferSource, key);
-+      if (term !== undefined) draft = withTerm(draft, side, term);
-+    }}
-+    ondrop={(side: ScopeSide, key: string) => (draft = withoutTerm(draft, side, key))}
-+    onclear={() => (draft = { include: [], exclude: [] })}
-+  />
-+</OverlayModal>
-+
- <style>
-   .setup {
-     display: flex;
+-  .setup label,
+-  .scope span {
++  .setup label {
+     color: var(--token-ink-muted);
+     font-size: var(--token-text-caption);
+     line-height: var(--token-text-caption-leading);
+@@ -262,16 +324,4 @@
+     font-size: var(--token-text-body-sm);
+     line-height: var(--token-text-body-sm-leading);
+   }
+-
+-  .scope {
+-    display: flex;
+-    align-items: center;
+-    justify-content: space-between;
+-    gap: calc(var(--token-spacing-unit) * 2);
+-    min-height: 2rem;
+-  }
+-
+-  .scope-control {
+-    width: 9.25rem;
+-  }
+ </style>
 ~~~~
 
 ### changed · `src/lib/app-views/categories/slide-deck-editor/inspector/text-selection.svelte` (+61 / −1)
@@ -14021,10 +14885,10 @@
        cuts.add(offset + length);
 ~~~~
 
-### new · `src/lib/app-views/categories/slide-deck-editor/procedures/templating.ts` (+450 / −0)
+### new · `src/lib/app-views/categories/slide-deck-editor/procedures/templating.ts` (+429 / −0)
 
 ~~~~diff
-@@ -0,0 +1,450 @@
+@@ -0,0 +1,429 @@
 +import {
 +  readProjectResourceIndex,
 +  type ProjectResourceIndex
@@ -14060,6 +14924,7 @@
 +} from "$representation/data/behavior/core/scope-draft";
 +import { applyOps } from "$representation/data/behavior/slide-decks/apply-ops";
 +import {
++  defaultScopeOf as defaultScope,
 +  holeMarkOver,
 +  holeNameOver
 +} from "$representation/data/behavior/templates/prompt-holes";
@@ -14068,7 +14933,7 @@
 +  fillTemplateAtoms,
 +  resolveTemplateScopes
 +} from "$representation/data/behavior/templates/scopes";
-+import type { TemplatedResourceSet } from "$representation/data/types/core/resource-set";
++import type { ResourceSet, TemplatedResourceSet } from "$representation/data/types/core/resource-set";
 +import type { SlideDeckBody, SlideLayout } from "$representation/data/types/slide-decks/body";
 +import type { SlideDeckOp } from "$representation/data/types/slide-decks/op";
 +import type { TemplateHole } from "$representation/data/types/templates/template";
@@ -14303,46 +15168,6 @@
 +  return [...held, ...inserted.filter((hole) => !names.has(hole.name))];
 +};
 +
-+/**
-+ * A text hole made by hand, rather than found.
-+ *
-+ * A scope hole exists because a prompt asks for one, so it cannot be authored. A
-+ * text hole is a place in the prose, and nothing but the author knows where it
-+ * goes — so the panel declares it and drops its atom into the selected text in
-+ * the same act, and the next save finds it exactly as it finds any other.
-+ */
-+export const withNewTextHole = (
-+  holes: readonly ChosenHole[],
-+  asked: { name: string; description?: string; text?: string }
-+): readonly ChosenHole[] => {
-+  const name = asked.name.trim();
-+  const description = asked.description?.trim() ?? "";
-+  const words = asked.text ?? "";
-+  return [
-+    ...holes,
-+    {
-+      name,
-+      label: name,
-+      kind: "text",
-+      ...(description === "" ? {} : { description }),
-+      ...(words.trim() === "" ? {} : { text: words })
-+    }
-+  ];
-+};
-+
-+/** Why a name will not do, or nothing when it will. */
-+export const holeNameRefusal = (
-+  holes: readonly ChosenHole[],
-+  asked: string
-+): string | undefined => {
-+  const name = asked.trim();
-+  if (name === "") return "Give the hole a name.";
-+  if (!/^[\w][\w -]*$/.test(name)) return "A hole's name is letters, digits, spaces, hyphens and underscores.";
-+  const taken = holes.some((hole) => hole.name.toLocaleLowerCase() === name.toLocaleLowerCase());
-+  return taken ? `This template already has a hole called ${name}.` : undefined;
-+};
-+
-+
 +const blockAt = (body: SlideDeckBody, blockId: string) => {
 +  for (const slide of body.slides) {
 +    for (const element of slide.elements) {
@@ -14352,6 +15177,24 @@
 +    }
 +  }
 +  return undefined;
++};
++
++/**
++ * A prompt's scope as its generated output can hold it.
++ *
++ * The block is what the person set, so the output must be told the same thing
++ * or the agent reads the whole project while the panel says otherwise. A deck
++ * open as a template is the one exception: its scope may still name a hole,
++ * which selects nothing until the template is placed and cannot be sent.
++ */
++export const readableScope = (scope: unknown): ResourceSet | undefined => {
++  const held = defaultScope(scope);
++  if (held === undefined) return undefined;
++  const include = held.include.filter((term) => term.select !== "hole");
++  const exclude = held.exclude.filter((term) => term.select !== "hole");
++  return include.length === held.include.length && exclude.length === held.exclude.length
++    ? { include, exclude }
++    : undefined;
 +};
 +
 +/** The words a selection covers, which become what its hole says by default. */
@@ -18545,10 +19388,10 @@
    await expect(inspector).toBeVisible();
 ~~~~
 
-### new · `test/browser/template-features.spec.ts` (+440 / −0)
+### new · `test/browser/template-features.spec.ts` (+494 / −0)
 
 ~~~~diff
-@@ -0,0 +1,440 @@
+@@ -0,0 +1,494 @@
 +import { expect, test, type Locator, type Page, type TestInfo } from "@playwright/test";
 +
 +const unexpected: string[] = [];
@@ -18900,6 +19743,60 @@
 +  await deleteTemplateFromLibrary(page, name);
 +});
 +
++test("a slide templateifies its words and its prompt, and the deck template holds both holes", async ({ page }) => {
++  const name = `Browser deck holes ${Date.now()}`;
++  await openDeckFixture(page);
++  const context = page.locator('aside[aria-label="Context"]');
++  const inspector = page.locator('aside[aria-label="Inspector"]');
++  const surface = page.locator(".area-canvas").getByRole("application", { name: "Slide" });
++
++  // A slide's Prompt Block becomes a hole, and its Scope control reads what it reads.
++  const rail = context.getByRole("navigation", { name: "Context views" });
++  await rail.getByRole("button", { name: "Insert", exact: true }).click();
++  await context.getByRole("button", { name: "Text box", exact: true }).click();
++  await expect(inspector).toHaveAttribute("data-inspected", "slide-deck-editor.text-box");
++  await inspector.getByRole("button", { name: "Prompt", exact: true }).click();
++  const prompt = page.locator(
++    'aside[aria-label="Inspector"][data-inspected="slide-deck-editor.prompt-block"]'
++  );
++  await expect(prompt).toBeVisible();
++  await prompt.getByLabel("Prompt", { exact: true }).fill("Summarize the winter exposure.");
++  await expect(prompt.getByRole("button", { name: "Everything in the project" })).toBeVisible();
++  await prompt.getByRole("button", { name: "Templateify", exact: true }).click();
++  await expect(prompt.getByRole("button", { name: "Hole 1", exact: true })).toBeVisible();
++
++  // A run of a slide's words becomes the next hole, and the slide itself does not change.
++  await rail.getByRole("button", { name: "Insert", exact: true }).click();
++  await context.getByRole("button", { name: "Text box", exact: true }).click();
++  const words = surface.locator("[data-item]").last();
++  await expect(words).toContainText("Text");
++  await words.dblclick({ position: { x: 24, y: 18 } });
++  await page.keyboard.press("Home");
++  await page.keyboard.press("Shift+End");
++
++  const selection = page.locator(
++    'aside[aria-label="Inspector"][data-inspected="slide-deck-editor.text-selection"]'
++  );
++  await expect(selection).toBeVisible();
++  await selection.getByRole("button", { name: "Templateify", exact: true }).click();
++  await expect(selection.getByText("These words are the hole")).toBeVisible();
++  await expect(selection.getByText("Hole 2")).toBeVisible();
++  await expect(words).toContainText("Text");
++  await expect(words).not.toContainText("{Hole");
++
++  // Saved as a template, the deck carries both holes.
++  const templates = await templatesPanel(page);
++  await templates.getByRole("textbox", { name: "Template name" }).fill(name);
++  await templates.getByRole("button", { name: "Save deck", exact: true }).click();
++  await expect(page.locator(".area-title")).toContainText(`Template · ${name}`, { timeout: 15_000 });
++  await expect(templates.locator(".hole").filter({ hasText: "Hole 1" })).toBeVisible();
++  await expect(templates.locator(".hole").filter({ hasText: "Hole 2" })).toBeVisible();
++
++  page.once("dialog", (dialog) => void dialog.accept());
++  await templates.getByRole("button", { name: "Discard", exact: true }).click();
++  await deleteTemplateFromLibrary(page, name);
++});
++
 +test("the project's resource sets are made, counted, and removed from the Contexts panel", async ({ page }) => {
 +  const name = `Browser set ${Date.now()}`;
 +  await page.goto("/app/dev-project", { waitUntil: "networkidle" });
@@ -19124,8 +20021,8 @@
 +  await expect(page.locator(".mermaid-output svg")).toHaveCount(2, { timeout: 45_000 });
 +  await expect(page.locator(".diagram-error")).toHaveCount(0);
 +
-+  await expect(page.getByRole("heading", { level: 2, name: "Seven links, and every one carries" })).toBeVisible();
-+  await expect(page.locator(".tref-badge.clean")).toHaveCount(7);
++  await expect(page.getByRole("heading", { level: 2, name: "Eight links, and every one carries" })).toBeVisible();
++  await expect(page.locator(".tref-badge.clean")).toHaveCount(8);
 +  await expect(page.locator(".tref-badge.known")).toHaveCount(0);
 +
 +  // A hole's default is whatever the thing already is, so nothing arrives empty.
@@ -19305,6 +20202,224 @@
 +    `export const BASELINE = "${baseline.slice(0, 7)}";\n\n` +
 +    `export const FILES: FileRecord[] = [\n  ${encoded}\n];\n`
 +);
+~~~~
+
+### changed · `src/lib/capabilities/semantic-overlay/api/backfill-semantic-overlay/backfill-semantic-overlay.ts` (+2 / −0)
+
+~~~~diff
+@@ -3,6 +3,7 @@ import { serverModel } from "$runtime/server/start.server";
+ import type { Id } from "$representation/data/types/core/id";
+ import { enqueueSemanticSyncFor } from "$capabilities/semantic-overlay/api/shared/sync-queue";
+ import { rowsOf } from "$capabilities/semantic-overlay/api/shared/rows";
++import { isStagedResource } from "$capabilities/semantic-overlay/api/shared/staged";
+ import { processSemanticSyncQueueFor } from "$capabilities/semantic-overlay/api/shared/queue-processor";
+ import { validateBackfillSemanticOverlay } from "$capabilities/semantic-overlay/api/backfill-semantic-overlay/validate-backfill-semantic-overlay";
+ import type { BackfillSemanticOverlayResult } from "$capabilities/semantic-overlay/types/semantic-sync-queue";
+@@ -48,6 +49,7 @@ export const backfillSemanticOverlay = async (
+   ];
+ 
+   for (const resource of refs) {
++    if (isStagedResource(model.store, projectId, resource.ref)) continue;
+     if (
+       resource.ref.kind === "document" ||
+       resource.ref.kind === "slides" ||
+~~~~
+
+### changed · `src/lib/capabilities/semantic-overlay/api/enqueue-semantic-sync/enqueue-semantic-sync.ts` (+2 / −0)
+
+~~~~diff
+@@ -3,6 +3,7 @@ import { serverModel } from "$runtime/server/start.server";
+ import type { Id } from "$representation/data/types/core/id";
+ import { readSemanticSyncTargetFor } from "$capabilities/semantic-overlay/api/shared/resource";
+ import { enqueueSemanticSyncFor } from "$capabilities/semantic-overlay/api/shared/sync-queue";
++import { isStagedResource } from "$capabilities/semantic-overlay/api/shared/staged";
+ import { validateEnqueueSemanticSync } from "$capabilities/semantic-overlay/api/enqueue-semantic-sync/validate-enqueue-semantic-sync";
+ import type { EnqueueSemanticSyncResult } from "$capabilities/semantic-overlay/types/enqueue-semantic-sync";
+ import { enqueueMaterialSyncFor } from "$capabilities/semantic-overlay/api/shared/material-queue";
+@@ -16,6 +17,7 @@ export const enqueueSemanticSync = async (
+   const asked = validateEnqueueSemanticSync(input);
+   const model = serverModel();
+   const projectId = scope.projectId as Id<"projects">;
++  if (isStagedResource(model.store, projectId, asked.ref)) return null;
+   const textTarget = readSemanticSyncTargetFor(model.store, projectId, asked.ref);
+   const materialTarget = readMaterialSyncTargetFor(model, projectId, asked.ref);
+   const revision = textTarget?.revision ?? materialTarget?.revision;
+~~~~
+
+### new · `src/lib/capabilities/semantic-overlay/api/shared/forget.ts` (+68 / −0)
+
+~~~~diff
+@@ -0,0 +1,68 @@
++import type { StoreModel } from "$model/server/store/index.server";
++import type { Id } from "$representation/data/types/core/id";
++import type { ResourceRef } from "$representation/data/types/core/resource";
++
++import { rowsOf } from "$capabilities/semantic-overlay/api/shared/rows";
++import { sameResourceRef } from "$capabilities/semantic-overlay/api/shared/resource-ref";
++
++export type ForgottenSemanticResource = {
++  readonly jobs: number;
++  readonly sources: number;
++  readonly materials: number;
++  readonly objects: number;
++};
++
++/**
++ * Everything the overlay learned about one resource, unlearned.
++ *
++ * A resource that is going away leaves rows behind that retrieval would still
++ * answer from: queued work, the exact-text projection it was chunked into, the
++ * materials read out of it and the vectors over both. The project's index rows
++ * are left alone — they cluster the whole project and are rebuilt, not owned by
++ * any one resource, so removing them here would cost every other resource its
++ * index.
++ */
++export const forgetSemanticResourceFor = (
++  store: StoreModel,
++  projectId: Id<"projects">,
++  ref: ResourceRef
++): ForgottenSemanticResource => {
++  const mine = <T extends { projectId: Id<"projects">; ref: ResourceRef }>(
++    rows: readonly T[]
++  ): readonly T[] =>
++    rows.filter((row) => row.projectId === projectId && sameResourceRef(row.ref, ref));
++
++  const syncJobs = mine(rowsOf(store, "semanticSyncJobs"));
++  const materialJobs = mine(rowsOf(store, "semanticMaterialJobs"));
++  const sources = mine(rowsOf(store, "semanticSources"));
++  const placements = mine(rowsOf(store, "semanticMaterialPlacements"));
++  const materials = rowsOf(store, "semanticMaterials").filter(
++    (row) => row.projectId === projectId && sameResourceRef(row.source.ref, ref)
++  );
++  const history = rowsOf(store, "semanticMaterialHistory").filter(
++    (row) => row.projectId === projectId && sameResourceRef(row.material.source.ref, ref)
++  );
++
++  const sourceIds = new Set<string>(sources.map((row) => row._id));
++  const materialIds = new Set<string>(materials.map((row) => row._id));
++  const objects = rowsOf(store, "semanticObjects").filter(
++    (row) =>
++      row.projectId === projectId &&
++      (row.lane === "text" ? sourceIds.has(row.semanticSourceId) : materialIds.has(row.semanticMaterialId))
++  );
++
++  store.removeRows("semanticObjects", objects.map((row) => row._id));
++  store.removeRows("semanticSources", sources.map((row) => row._id));
++  store.removeRows("semanticMaterialPlacements", placements.map((row) => row._id));
++  store.removeRows("semanticMaterials", materials.map((row) => row._id));
++  store.removeRows("semanticMaterialHistory", history.map((row) => row._id));
++  store.removeRows("semanticSyncJobs", syncJobs.map((row) => row._id));
++  store.removeRows("semanticMaterialJobs", materialJobs.map((row) => row._id));
++
++  return {
++    jobs: syncJobs.length + materialJobs.length,
++    sources: sources.length,
++    materials: materials.length + placements.length + history.length,
++    objects: objects.length
++  };
++};
+~~~~
+
+### new · `src/lib/capabilities/semantic-overlay/api/shared/staged.ts` (+24 / −0)
+
+~~~~diff
+@@ -0,0 +1,24 @@
++import type { StoreModel } from "$model/server/store/index.server";
++import type { Id } from "$representation/data/types/core/id";
++import type { ResourceRef } from "$representation/data/types/core/resource";
++
++import { rowsOf } from "$capabilities/semantic-overlay/api/shared/rows";
++
++/**
++ * A template's working copy is a draft of a template, not the project's material.
++ *
++ * The copy is an ordinary document or deck, so every ordinary path would ingest
++ * it: saving enqueues, and a backfill sweeps every leader revision. Indexing one
++ * would put unfinished — and, once discarded, deliberately abandoned — words in
++ * front of every agent that retrieves, which is why the answer is no wherever
++ * the question is asked.
++ */
++export const isStagedResource = (
++  store: StoreModel,
++  projectId: Id<"projects">,
++  ref: ResourceRef
++): boolean =>
++  (ref.kind === "document" || ref.kind === "slides") &&
++  rowsOf(store, "templateStages").some(
++    (row) => row.projectId === projectId && row.resourceId === ref.id
++  );
+~~~~
+
+### changed · `src/lib/capabilities/semantic-overlay/index.ts` (+2 / −0)
+
+~~~~diff
+@@ -8,6 +8,8 @@ export {
+   readSemanticResourceForModel
+ } from "$capabilities/semantic-overlay/api/shared/resource";
+ export { materialProfileDigest } from "$capabilities/semantic-overlay/api/shared/material-facets";
++export { forgetSemanticResourceFor } from "$capabilities/semantic-overlay/api/shared/forget";
++export { isStagedResource } from "$capabilities/semantic-overlay/api/shared/staged";
+ export { processSemanticSyncQueueFor } from "$capabilities/semantic-overlay/api/shared/queue-processor";
+ export {
+   currentResourceRevisionFor,
+~~~~
+
+### new · `src/lib/capabilities/semantic-overlay/test/unit/semantic-staged.test.ts` (+52 / −0)
+
+~~~~diff
+@@ -0,0 +1,52 @@
++import { describe, expect, it } from "vitest";
++
++import { isStagedResource } from "$capabilities/semantic-overlay/api/shared/staged";
++import type { StoreModel } from "$model/server/store/index.server";
++import type { Id } from "$representation/data/types/core/id";
++
++/**
++ * A template's working copy is not the project's material.
++ *
++ * Every path into the overlay asks this one question, so the answer has to hold
++ * for the ordinary save, for a backfill, and for a resource that merely shares
++ * an id with something in another project.
++ */
++
++const storeOf = (rows: readonly Record<string, unknown>[]): StoreModel =>
++  ({
++    read: (table: string) =>
++      table === "templateStages" ? { table, kind: "table", rows } : undefined
++  }) as unknown as StoreModel;
++
++const project = "projects:1" as Id<"projects">;
++
++const stage = (projectId: string, resourceId: string) => ({
++  _id: `templateStages:${resourceId}`,
++  projectId,
++  resourceId
++});
++
++describe("what the overlay refuses", () => {
++  it("refuses a document and a deck that a template is being edited in", () => {
++    const store = storeOf([stage(project, "documents:1"), stage(project, "slideDecks:2")]);
++    expect(isStagedResource(store, project, { kind: "document", id: "documents:1" })).toBe(true);
++    expect(isStagedResource(store, project, { kind: "slides", id: "slideDecks:2" })).toBe(true);
++  });
++
++  it("takes an ordinary resource, and one staged in another project", () => {
++    const store = storeOf([stage(project, "documents:1"), stage("projects:9", "documents:7")]);
++    expect(isStagedResource(store, project, { kind: "document", id: "documents:4" })).toBe(false);
++    expect(isStagedResource(store, project, { kind: "document", id: "documents:7" })).toBe(false);
++  });
++
++  it("says nothing about kinds a stage cannot be", () => {
++    const store = storeOf([stage(project, "documents:1")]);
++    expect(isStagedResource(store, project, { kind: "spreadsheet", id: "documents:1" })).toBe(false);
++    expect(isStagedResource(store, project, { kind: "externalFile::text", id: "documents:1" })).toBe(false);
++  });
++
++  it("takes everything when nothing is staged at all", () => {
++    const store = storeOf([]);
++    expect(isStagedResource(store, project, { kind: "document", id: "documents:1" })).toBe(false);
++  });
++});
 ~~~~
 
 ### changed · `src/lib/components/authored/panel/panel-section.svelte` (+13 / −1)
@@ -21945,7 +23060,7 @@
 +
 +    <section class="tref-section" id="chain">
 +      <div class="tref-section-head">
-+        <div><span class="tref-kicker">Link by link</span><h2>Seven links, and every one carries</h2></div>
++        <div><span class="tref-kicker">Link by link</span><h2>Eight links, and every one carries</h2></div>
 +        <p>
 +          Each row is one thing that has to happen for a prompt written by one person to be answered by
 +          another. The evidence column names the test that fails if the link breaks.
@@ -24101,10 +25216,10 @@
 +</style>
 ~~~~
 
-### new · `src/lib/development-views/template-reference/procedures/changes.ts` (+370 / −0)
+### new · `src/lib/development-views/template-reference/procedures/changes.ts` (+406 / −0)
 
 ~~~~diff
-@@ -0,0 +1,370 @@
+@@ -0,0 +1,406 @@
 +import type { Decision, OpenItem, SystematicChange, Verification } from "$development-views/template-reference/types";
 +
 +export const SYSTEMATIC: SystematicChange[] = [
@@ -24278,6 +25393,42 @@
 +    area: "editors"
 +  },
 +  {
++    index: "22",
++    title: "A prompt's scope reaches the agent that answers it",
++    before:
++      "The scope lived on the block and never left it. The derived output was created without one, so the agent searched the whole project while the panel said otherwise — and once the block was linked, the Scope control was a dropdown with one dead option reading Whole project.",
++    now: "The scope is sent when the output is created, sent again on every refresh, and changed from one live control that both the unlinked and the linked panel use. A body open as a template is the exception: a scope still naming a hole selects nothing yet and is not sent.",
++    why: "A control that shows a narrower scope than the search actually uses is worse than no control: it is a promise the system does not keep, and evidence arrives from places the person excluded.",
++    area: "editors"
++  },
++  {
++    index: "23",
++    title: "A template's working copy is never indexed",
++    before:
++      "A working copy is an ordinary document or deck, so saving it enqueued semantic ingestion like anything else and a backfill swept it up. Unfinished template prose became retrievable, and discarding the stage left its jobs, sources, materials and vectors behind.",
++    now: "Every path into the overlay asks whether the resource is a stage and refuses if it is. Discarding takes back anything already learned — jobs, sources, materials, placements, history and the vectors over them — while leaving the project's index rows, which belong to no one resource.",
++    why: "A draft of a template is not the project's material, and a discarded draft is material somebody deliberately abandoned. Neither should be able to reach an agent.",
++    area: "neighbours"
++  },
++  {
++    index: "24",
++    title: "A placed copy is the project's material from the moment it lands",
++    before:
++      "Instantiating wrote the snapshot and stopped. The new document or deck was invisible to retrieval until somebody happened to edit it or a backfill was run by hand. Its prompts also carried an origin kind of slideDeck, which nothing else in the vocabulary says.",
++    now: "Placing a template enqueues semantic ingestion for the resource it made, whichever of the three kinds it is, and a deck's prompts point back at it as slides.",
++    why: "A copy that nothing can find is a copy that half exists. The kind is the same word the editors, the overlay and every scope term already use.",
++    area: "templates"
++  },
++  {
++    index: "25",
++    title: "A set is not deleted out from under a live prompt",
++    before:
++      "Deletion checked the other sets and the templates. A derived output or a Prompt Block naming the set was not looked at, so deleting it left a scope that no longer resolved and the failure surfaced on some later refresh instead.",
++    now: "A generated output whose scope names it, or a Prompt Block in any leader revision that reads it, refuses the deletion and says which prompt or which resource is still reading it.",
++    why: "A refusal at the moment of deletion names the thing to fix. A failure three refreshes later names nothing.",
++    area: "sets"
++  },
++  {
 +    index: "17",
 +    title: "Placing a template walks its holes",
 +    before:
@@ -24352,14 +25503,14 @@
 +];
 +
 +export const VERIFICATION: Verification[] = [
-+  { check: "Types", command: "pnpm typecheck", result: "0 errors, 0 warnings across 2,926 files", clean: true },
++  { check: "Types", command: "pnpm typecheck", result: "0 errors, 0 warnings across 2,931 files", clean: true },
 +  { check: "Structure", command: "pnpm lint", result: "56 checks, 56 clean", clean: true },
-+  { check: "Unit", command: "pnpm test", result: "1,074 tests in 119 files, 2 skipped", clean: true },
++  { check: "Unit", command: "pnpm test", result: "1,083 tests in 120 files, 2 skipped", clean: true },
 +  { check: "Category keys", command: "pnpm category-keys -- --check", result: "10 categories and 13 content views in step", clean: true },
 +  {
 +    check: "Browser",
 +    command: "pnpm test:browser, from a clean seed",
-+    result: "62 of 62, with 4 skipped — the live-intelligence cases the base branch skips when no credential is configured.",
++    result: "63 of 63, with 4 skipped — the live-intelligence cases the base branch skips when no credential is configured.",
 +    clean: true
 +  }
 +];
@@ -24477,10 +25628,10 @@
 +};
 ~~~~
 
-### new · `src/lib/development-views/template-reference/procedures/integration.ts` (+219 / −0)
+### new · `src/lib/development-views/template-reference/procedures/integration.ts` (+229 / −0)
 
 ~~~~diff
-@@ -0,0 +1,219 @@
+@@ -0,0 +1,229 @@
 +import type { ChainLink, Decision, ScopeGap } from "$development-views/template-reference/types";
 +
 +/**
@@ -24494,11 +25645,11 @@
 +export const CHAIN: ChainLink[] = [
 +  {
 +    index: "01",
-+    step: "A prompt is written, and told what to read",
++    step: "A prompt is written, told what to read, and the agent obeys it",
 +    gesture: "Convert a block, type the prompt, press Scope to choose its sources",
-+    runs: "The prompt-block inspector · promptScopeOps · the scope builder",
++    runs: "One PromptScope control · promptScopeOps on the block · readableScope onto the derived output",
 +    state: "works",
-+    evidence: "document-editor.spec.ts — a Prompt Block affordance lives in the gutter"
++    evidence: "document-editor.spec.ts — the Scope control reads what the prompt reads"
 +  },
 +  {
 +    index: "02",
@@ -24546,7 +25697,15 @@
 +    gesture: "Press Generate",
 +    runs: "withFreshOutputs makes a derived output per prompt from the question the template carried",
 +    state: "works",
-+    evidence: "The copy's blocks carry derivedOutputId and their scope, the way a formula regains its instance"
++    evidence: "answers.test.ts — a placed deck's prompts get a derived output with a slides origin"
++  },
++  {
++    index: "08",
++    step: "The copy is material the project can find",
++    gesture: "None — it is true of the resource that lands",
++    runs: "enqueueSemanticSync on the new document, deck or spreadsheet",
++    state: "works",
++    evidence: "answers.test.ts — enqueues the copy for retrieval"
 +  }
 +];
 +
@@ -24571,12 +25730,13 @@
 +    G["One hole at a time"]
 +    H["resolveTemplateScopes<br/>answer, else the default"]
 +    I["withFreshOutputs<br/>a derived output per prompt"]
-+    G --> H --> I
++    N["enqueueSemanticSync<br/>the copy is material now"]
++    G --> H --> I --> N
 +  end
 +  M --> D
 +  A -. "not templateified" .-> K["Stays what it is,<br/>and is never asked about"]
 +  F --> G
-+  I --> J["A copy whose prompts read<br/>what the placer chose"]
++  N --> J["A copy whose prompts read<br/>what the placer chose,<br/>and that the project can find"]
 +  classDef quiet stroke-dasharray: 6 4
 +  class K quiet`;
 +
@@ -24597,6 +25757,7 @@
 +  R-->>S: every hole term settled: the answer, else the default
 +  S->>S: withFreshOutputs — one derived output per prompt,<br/>from the question the template carried
 +  S->>D: one document, revision 0, no reference back
++  S->>S: enqueueSemanticSync — the copy is the project's material now
 +  D-->>P: prompts linked and ready to generate`;
 +
 +export const DEFAULT_RULE = [
@@ -24702,10 +25863,10 @@
 +];
 ~~~~
 
-### new · `src/lib/development-views/template-reference/procedures/inventory.ts` (+171 / −0)
+### new · `src/lib/development-views/template-reference/procedures/inventory.ts` (+181 / −0)
 
 ~~~~diff
-@@ -0,0 +1,171 @@
+@@ -0,0 +1,181 @@
 +import type { FileRecord } from "$development-views/template-reference/types";
 +
 +/**
@@ -24722,28 +25883,32 @@
 +  {"path":"app/seed/spreadsheets.json","status":"M","area":"evidence","kind":"fixture","current":20,"base":22,"added":0,"deleted":2},
 +  {"path":"app/seed/templates.json","status":"M","area":"evidence","kind":"fixture","current":2295,"base":1021,"added":1524,"deleted":250},
 +  {"path":"app/seed/templateVersions.json","status":"M","area":"evidence","kind":"fixture","current":2695,"base":2199,"added":518,"deleted":22},
++  {"path":"app/src/lib/app-views/categories/document-editor/components/prompt-scope.svelte","status":"A","area":"editors","kind":"production","current":132,"base":0,"added":132,"deleted":0},
++  {"path":"app/src/lib/app-views/categories/document-editor/components/prompt-settings.svelte","status":"M","area":"editors","kind":"production","current":459,"base":441,"added":43,"deleted":25},
 +  {"path":"app/src/lib/app-views/categories/document-editor/content/document.svelte","status":"M","area":"editors","kind":"production","current":954,"base":939,"added":15,"deleted":0},
 +  {"path":"app/src/lib/app-views/categories/document-editor/context/templates.svelte","status":"A","area":"editors","kind":"production","current":616,"base":0,"added":616,"deleted":0},
-+  {"path":"app/src/lib/app-views/categories/document-editor/inspector/prompt-block.svelte","status":"M","area":"editors","kind":"production","current":352,"base":242,"added":114,"deleted":4},
++  {"path":"app/src/lib/app-views/categories/document-editor/inspector/prompt-block.svelte","status":"M","area":"editors","kind":"production","current":292,"base":242,"added":73,"deleted":23},
 +  {"path":"app/src/lib/app-views/categories/document-editor/inspector/text-selection.svelte","status":"M","area":"editors","kind":"production","current":544,"base":494,"added":50,"deleted":0},
 +  {"path":"app/src/lib/app-views/categories/document-editor/procedures/projection.ts","status":"M","area":"editors","kind":"production","current":751,"base":726,"added":33,"deleted":8},
 +  {"path":"app/src/lib/app-views/categories/document-editor/procedures/prompt-blocks.ts","status":"M","area":"editors","kind":"production","current":104,"base":87,"added":17,"deleted":0},
 +  {"path":"app/src/lib/app-views/categories/document-editor/procedures/schema.ts","status":"M","area":"editors","kind":"production","current":255,"base":221,"added":37,"deleted":3},
-+  {"path":"app/src/lib/app-views/categories/document-editor/procedures/templating.ts","status":"A","area":"editors","kind":"production","current":417,"base":0,"added":417,"deleted":0},
++  {"path":"app/src/lib/app-views/categories/document-editor/procedures/templating.ts","status":"A","area":"editors","kind":"production","current":436,"base":0,"added":436,"deleted":0},
 +  {"path":"app/src/lib/app-views/categories/document-editor/procedures/test/unit/templating.test.ts","status":"A","area":"editors","kind":"test","current":167,"base":0,"added":167,"deleted":0},
 +  {"path":"app/src/lib/app-views/categories/project-overview/context/contexts.svelte","status":"A","area":"contexts","kind":"production","current":283,"base":0,"added":283,"deleted":0},
 +  {"path":"app/src/lib/app-views/categories/project-overview/procedures/contexts.ts","status":"A","area":"contexts","kind":"production","current":115,"base":0,"added":115,"deleted":0},
 +  {"path":"app/src/lib/app-views/categories/project-overview/procedures/test/unit/contexts.test.ts","status":"A","area":"contexts","kind":"test","current":68,"base":0,"added":68,"deleted":0},
 +  {"path":"app/src/lib/app-views/categories/project-overview/project-overview.md","status":"M","area":"contexts","kind":"documentation","current":622,"base":618,"added":25,"deleted":21},
++  {"path":"app/src/lib/app-views/categories/slide-deck-editor/components/prompt-scope.svelte","status":"A","area":"editors","kind":"production","current":131,"base":0,"added":131,"deleted":0},
++  {"path":"app/src/lib/app-views/categories/slide-deck-editor/components/prompt-settings.svelte","status":"M","area":"editors","kind":"production","current":429,"base":411,"added":43,"deleted":25},
 +  {"path":"app/src/lib/app-views/categories/slide-deck-editor/context/comments.svelte","status":"M","area":"editors","kind":"production","current":175,"base":170,"added":6,"deleted":1},
-+  {"path":"app/src/lib/app-views/categories/slide-deck-editor/context/templates.svelte","status":"M","area":"editors","kind":"production","current":639,"base":8,"added":634,"deleted":3},
-+  {"path":"app/src/lib/app-views/categories/slide-deck-editor/inspector/prompt-block.svelte","status":"M","area":"editors","kind":"production","current":388,"base":277,"added":115,"deleted":4},
++  {"path":"app/src/lib/app-views/categories/slide-deck-editor/context/templates.svelte","status":"M","area":"editors","kind":"production","current":638,"base":8,"added":633,"deleted":3},
++  {"path":"app/src/lib/app-views/categories/slide-deck-editor/inspector/prompt-block.svelte","status":"M","area":"editors","kind":"production","current":327,"base":277,"added":74,"deleted":24},
 +  {"path":"app/src/lib/app-views/categories/slide-deck-editor/inspector/text-selection.svelte","status":"M","area":"editors","kind":"production","current":96,"base":36,"added":61,"deleted":1},
 +  {"path":"app/src/lib/app-views/categories/slide-deck-editor/inspector/threads.svelte","status":"M","area":"editors","kind":"production","current":151,"base":144,"added":8,"deleted":1},
 +  {"path":"app/src/lib/app-views/categories/slide-deck-editor/procedures/ids.ts","status":"M","area":"editors","kind":"production","current":13,"base":12,"added":2,"deleted":1},
 +  {"path":"app/src/lib/app-views/categories/slide-deck-editor/procedures/prompt-blocks.ts","status":"M","area":"editors","kind":"production","current":220,"base":203,"added":17,"deleted":0},
 +  {"path":"app/src/lib/app-views/categories/slide-deck-editor/procedures/scene.ts","status":"M","area":"editors","kind":"production","current":333,"base":333,"added":3,"deleted":3},
-+  {"path":"app/src/lib/app-views/categories/slide-deck-editor/procedures/templating.ts","status":"A","area":"editors","kind":"production","current":450,"base":0,"added":450,"deleted":0},
++  {"path":"app/src/lib/app-views/categories/slide-deck-editor/procedures/templating.ts","status":"A","area":"editors","kind":"production","current":429,"base":0,"added":429,"deleted":0},
 +  {"path":"app/src/lib/app-views/categories/slide-deck-editor/procedures/test/unit/templating.test.ts","status":"A","area":"editors","kind":"test","current":130,"base":0,"added":130,"deleted":0},
 +  {"path":"app/src/lib/app-views/categories/slide-deck-editor/procedures/typing.ts","status":"M","area":"editors","kind":"production","current":206,"base":207,"added":2,"deleted":3},
 +  {"path":"app/src/lib/app-views/categories/slide-deck-editor/slide-deck-editor.md","status":"M","area":"editors","kind":"documentation","current":284,"base":262,"added":23,"deleted":1},
@@ -24760,7 +25925,7 @@
 +  {"path":"app/src/lib/capabilities/resource-sets/api/create-resource-set/create-resource-set.ts","status":"A","area":"sets","kind":"production","current":25,"base":0,"added":25,"deleted":0},
 +  {"path":"app/src/lib/capabilities/resource-sets/api/create-resource-set/validate-create-resource-set.ts","status":"A","area":"sets","kind":"production","current":22,"base":0,"added":22,"deleted":0},
 +  {"path":"app/src/lib/capabilities/resource-sets/api/read-resource-sets/read-resource-sets.ts","status":"A","area":"sets","kind":"production","current":10,"base":0,"added":10,"deleted":0},
-+  {"path":"app/src/lib/capabilities/resource-sets/api/remove-resource-set/remove-resource-set.ts","status":"A","area":"sets","kind":"production","current":74,"base":0,"added":74,"deleted":0},
++  {"path":"app/src/lib/capabilities/resource-sets/api/remove-resource-set/remove-resource-set.ts","status":"A","area":"sets","kind":"production","current":130,"base":0,"added":130,"deleted":0},
 +  {"path":"app/src/lib/capabilities/resource-sets/api/remove-resource-set/validate-remove-resource-set.ts","status":"A","area":"sets","kind":"production","current":16,"base":0,"added":16,"deleted":0},
 +  {"path":"app/src/lib/capabilities/resource-sets/api/shared/projection.ts","status":"A","area":"sets","kind":"production","current":220,"base":0,"added":220,"deleted":0},
 +  {"path":"app/src/lib/capabilities/resource-sets/api/shared/validation.ts","status":"A","area":"sets","kind":"production","current":172,"base":0,"added":172,"deleted":0},
@@ -24768,8 +25933,14 @@
 +  {"path":"app/src/lib/capabilities/resource-sets/api/update-resource-set/validate-update-resource-set.ts","status":"A","area":"sets","kind":"production","current":41,"base":0,"added":41,"deleted":0},
 +  {"path":"app/src/lib/capabilities/resource-sets/index.remote.ts","status":"A","area":"sets","kind":"production","current":39,"base":0,"added":39,"deleted":0},
 +  {"path":"app/src/lib/capabilities/resource-sets/resource-sets.md","status":"A","area":"sets","kind":"documentation","current":27,"base":0,"added":27,"deleted":0},
-+  {"path":"app/src/lib/capabilities/resource-sets/test/unit/resource-sets.test.ts","status":"A","area":"sets","kind":"test","current":230,"base":0,"added":230,"deleted":0},
++  {"path":"app/src/lib/capabilities/resource-sets/test/unit/resource-sets.test.ts","status":"A","area":"sets","kind":"test","current":292,"base":0,"added":292,"deleted":0},
 +  {"path":"app/src/lib/capabilities/resource-sets/types/resource-sets.ts","status":"A","area":"sets","kind":"production","current":72,"base":0,"added":72,"deleted":0},
++  {"path":"app/src/lib/capabilities/semantic-overlay/api/backfill-semantic-overlay/backfill-semantic-overlay.ts","status":"M","area":"cross-cutting","kind":"production","current":72,"base":70,"added":2,"deleted":0},
++  {"path":"app/src/lib/capabilities/semantic-overlay/api/enqueue-semantic-sync/enqueue-semantic-sync.ts","status":"M","area":"cross-cutting","kind":"production","current":34,"base":32,"added":2,"deleted":0},
++  {"path":"app/src/lib/capabilities/semantic-overlay/api/shared/forget.ts","status":"A","area":"cross-cutting","kind":"production","current":68,"base":0,"added":68,"deleted":0},
++  {"path":"app/src/lib/capabilities/semantic-overlay/api/shared/staged.ts","status":"A","area":"cross-cutting","kind":"production","current":24,"base":0,"added":24,"deleted":0},
++  {"path":"app/src/lib/capabilities/semantic-overlay/index.ts","status":"M","area":"cross-cutting","kind":"production","current":20,"base":18,"added":2,"deleted":0},
++  {"path":"app/src/lib/capabilities/semantic-overlay/test/unit/semantic-staged.test.ts","status":"A","area":"cross-cutting","kind":"test","current":52,"base":0,"added":52,"deleted":0},
 +  {"path":"app/src/lib/capabilities/store/store.md","status":"M","area":"neighbours","kind":"documentation","current":50,"base":51,"added":1,"deleted":2},
 +  {"path":"app/src/lib/capabilities/templates/api/commit-template-stage/commit-template-stage.ts","status":"A","area":"templates","kind":"production","current":130,"base":0,"added":130,"deleted":0},
 +  {"path":"app/src/lib/capabilities/templates/api/commit-template-stage/validate-commit-template-stage.ts","status":"A","area":"templates","kind":"production","current":16,"base":0,"added":16,"deleted":0},
@@ -24779,7 +25950,7 @@
 +  {"path":"app/src/lib/capabilities/templates/api/discard-template-stage/discard-template-stage.ts","status":"A","area":"templates","kind":"production","current":31,"base":0,"added":31,"deleted":0},
 +  {"path":"app/src/lib/capabilities/templates/api/discard-template-stage/validate-discard-template-stage.ts","status":"A","area":"templates","kind":"production","current":8,"base":0,"added":8,"deleted":0},
 +  {"path":"app/src/lib/capabilities/templates/api/duplicate-template/duplicate-template.ts","status":"M","area":"templates","kind":"production","current":73,"base":72,"added":2,"deleted":1},
-+  {"path":"app/src/lib/capabilities/templates/api/instantiate-template/instantiate-template.ts","status":"M","area":"templates","kind":"production","current":250,"base":173,"added":125,"deleted":48},
++  {"path":"app/src/lib/capabilities/templates/api/instantiate-template/instantiate-template.ts","status":"M","area":"templates","kind":"production","current":254,"base":173,"added":129,"deleted":48},
 +  {"path":"app/src/lib/capabilities/templates/api/instantiate-template/validate-instantiate-template.ts","status":"M","area":"templates","kind":"production","current":22,"base":17,"added":8,"deleted":3},
 +  {"path":"app/src/lib/capabilities/templates/api/open-template-stage/open-template-stage.ts","status":"A","area":"templates","kind":"production","current":115,"base":0,"added":115,"deleted":0},
 +  {"path":"app/src/lib/capabilities/templates/api/open-template-stage/validate-open-template-stage.ts","status":"A","area":"templates","kind":"production","current":8,"base":0,"added":8,"deleted":0},
@@ -24791,15 +25962,15 @@
 +  {"path":"app/src/lib/capabilities/templates/api/shared/projection.ts","status":"M","area":"templates","kind":"production","current":266,"base":283,"added":32,"deleted":49},
 +  {"path":"app/src/lib/capabilities/templates/api/shared/prompts.ts","status":"A","area":"templates","kind":"production","current":164,"base":0,"added":164,"deleted":0},
 +  {"path":"app/src/lib/capabilities/templates/api/shared/scopes.ts","status":"A","area":"templates","kind":"production","current":204,"base":0,"added":204,"deleted":0},
-+  {"path":"app/src/lib/capabilities/templates/api/shared/stages.ts","status":"A","area":"templates","kind":"production","current":141,"base":0,"added":141,"deleted":0},
++  {"path":"app/src/lib/capabilities/templates/api/shared/stages.ts","status":"A","area":"templates","kind":"production","current":143,"base":0,"added":143,"deleted":0},
 +  {"path":"app/src/lib/capabilities/templates/api/shared/template-rows.ts","status":"M","area":"templates","kind":"production","current":37,"base":36,"added":3,"deleted":2},
 +  {"path":"app/src/lib/capabilities/templates/api/shared/validation.ts","status":"M","area":"templates","kind":"production","current":1881,"base":1687,"added":259,"deleted":65},
 +  {"path":"app/src/lib/capabilities/templates/api/update-template/update-template.ts","status":"M","area":"templates","kind":"production","current":168,"base":113,"added":81,"deleted":26},
 +  {"path":"app/src/lib/capabilities/templates/api/update-template/validate-update-template.ts","status":"M","area":"templates","kind":"production","current":65,"base":61,"added":14,"deleted":10},
 +  {"path":"app/src/lib/capabilities/templates/index.remote.ts","status":"M","area":"templates","kind":"production","current":125,"base":73,"added":58,"deleted":6},
 +  {"path":"app/src/lib/capabilities/templates/templates.md","status":"M","area":"templates","kind":"documentation","current":153,"base":91,"added":126,"deleted":64},
-+  {"path":"app/src/lib/capabilities/templates/test/unit/answers.test.ts","status":"A","area":"templates","kind":"test","current":655,"base":0,"added":655,"deleted":0},
-+  {"path":"app/src/lib/capabilities/templates/test/unit/stages.test.ts","status":"A","area":"templates","kind":"test","current":377,"base":0,"added":377,"deleted":0},
++  {"path":"app/src/lib/capabilities/templates/test/unit/answers.test.ts","status":"A","area":"templates","kind":"test","current":729,"base":0,"added":729,"deleted":0},
++  {"path":"app/src/lib/capabilities/templates/test/unit/stages.test.ts","status":"A","area":"templates","kind":"test","current":458,"base":0,"added":458,"deleted":0},
 +  {"path":"app/src/lib/capabilities/templates/test/unit/templates.test.ts","status":"M","area":"templates","kind":"test","current":1414,"base":1447,"added":89,"deleted":122},
 +  {"path":"app/src/lib/capabilities/templates/types/templates.ts","status":"M","area":"templates","kind":"production","current":252,"base":156,"added":118,"deleted":22},
 +  {"path":"app/src/lib/components/authored/panel/panel-section.svelte","status":"M","area":"cross-cutting","kind":"production","current":126,"base":114,"added":13,"deleted":1},
@@ -24827,9 +25998,9 @@
 +  {"path":"app/src/lib/development-views/template-reference/components/scope-page.svelte","status":"A","area":"reference","kind":"reference","current":468,"base":0,"added":468,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/components/system-page.svelte","status":"A","area":"reference","kind":"reference","current":329,"base":0,"added":329,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/components/walkthrough-page.svelte","status":"A","area":"reference","kind":"reference","current":373,"base":0,"added":373,"deleted":0},
-+  {"path":"app/src/lib/development-views/template-reference/procedures/changes.ts","status":"A","area":"reference","kind":"reference","current":370,"base":0,"added":370,"deleted":0},
-+  {"path":"app/src/lib/development-views/template-reference/procedures/integration.ts","status":"A","area":"reference","kind":"reference","current":219,"base":0,"added":219,"deleted":0},
-+  {"path":"app/src/lib/development-views/template-reference/procedures/inventory.ts","status":"A","area":"reference","kind":"reference","current":173,"base":0,"added":173,"deleted":0},
++  {"path":"app/src/lib/development-views/template-reference/procedures/changes.ts","status":"A","area":"reference","kind":"reference","current":406,"base":0,"added":406,"deleted":0},
++  {"path":"app/src/lib/development-views/template-reference/procedures/integration.ts","status":"A","area":"reference","kind":"reference","current":229,"base":0,"added":229,"deleted":0},
++  {"path":"app/src/lib/development-views/template-reference/procedures/inventory.ts","status":"A","area":"reference","kind":"reference","current":181,"base":0,"added":181,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/procedures/navigation.ts","status":"A","area":"reference","kind":"reference","current":27,"base":0,"added":27,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/procedures/rebase.ts","status":"A","area":"reference","kind":"reference","current":157,"base":0,"added":157,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/procedures/scope.ts","status":"A","area":"reference","kind":"reference","current":521,"base":0,"added":521,"deleted":0},
@@ -24874,7 +26045,7 @@
 +  {"path":"app/src/routes/app/[project]/reference/templates/scope/+page.svelte","status":"A","area":"reference","kind":"reference","current":14,"base":0,"added":14,"deleted":0},
 +  {"path":"app/src/routes/app/[project]/reference/templates/walkthrough/+page.svelte","status":"A","area":"reference","kind":"reference","current":14,"base":0,"added":14,"deleted":0},
 +  {"path":"app/test/browser/document-editor.spec.ts","status":"M","area":"evidence","kind":"test","current":885,"base":877,"added":10,"deleted":2},
-+  {"path":"app/test/browser/template-features.spec.ts","status":"A","area":"evidence","kind":"test","current":440,"base":0,"added":440,"deleted":0},
++  {"path":"app/test/browser/template-features.spec.ts","status":"A","area":"evidence","kind":"test","current":494,"base":0,"added":494,"deleted":0},
 +  {"path":"app/test/browser/template-reference.spec.ts","status":"A","area":"evidence","kind":"test","current":176,"base":0,"added":176,"deleted":0}
 +];
 ~~~~

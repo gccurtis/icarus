@@ -29,29 +29,19 @@
     type PromptBlock
   } from "$app-views/categories/document-editor/procedures/prompt-blocks";
   import {
-    builderView,
     defaultScopeOf,
-    draftOf,
-    narrowed,
     nextHoleName,
     offeringOf,
     projectResources,
+    readableScope,
     resourceSets,
     resourcesIn,
     ruleOf,
     scopeNamesOf,
-    setsIn,
-    termFor,
-    withTerm,
-    withWholeProject,
-    withoutTerm,
-    type OfferSource,
-    type ScopeDraft,
-    type ScopeSide
+    setsIn
   } from "$app-views/categories/document-editor/procedures/templating";
-  import { OverlayModal } from "$authored-components/overlay";
+  import PromptScope from "$app-views/categories/document-editor/components/prompt-scope.svelte";
   import { PromptTemplate } from "$authored-components/prompt-template";
-  import { ScopeBuilder } from "$authored-components/scope-builder";
   import { announcePromptOutput } from "$app-views/categories/document-editor/procedures/prompt-output-events";
   import { isInspectorView, workspaceState } from "$model/client/workspace-state";
   import type { DocumentRuntime } from "$model/client/workspace-state";
@@ -114,9 +104,11 @@
     let derivedOutputId: Id<"derivedOutputs"> | undefined;
 
     try {
+      const reading = readableScope(currentPrompt().scope);
       const created = await createDerivedOutput({
         prompt: promptText,
-        origin: { kind: "document", id: documentId }
+        origin: { kind: "document", id: documentId },
+        ...(reading === undefined ? {} : { scope: reading })
       });
       derivedOutputId = created._id;
       const seeded =
@@ -174,13 +166,6 @@
   const named = $derived(prompt?.hole);
   const reads = $derived(ruleOf(defaultScopeOf(prompt?.scope), setNames));
 
-  let contextOpen = $state(false);
-  let draft = $state<ScopeDraft>(draftOf(undefined));
-  const view$ = $derived(builderView(draft, offering));
-  const scopeBlocked = $derived(
-    draft.include.length === 0 ? "Include something, or choose everything in the project." : undefined
-  );
-
   const write = (ops: readonly unknown[]) => {
     if (runtime === undefined || ops.length === 0) return;
     runtime.apply(ops as Parameters<DocumentRuntime["apply"]>[0]);
@@ -201,15 +186,9 @@
     write(promptHoleOps(prompt, { name: named?.name ?? offered, description }));
   };
 
-  const openContext = () => {
-    draft = draftOf(prompt?.scope);
-    contextOpen = true;
-  };
-
-  const confirmContext = () => {
+  const confirmScope = (next: unknown) => {
     if (prompt === undefined) return;
-    write(promptScopeOps(prompt, narrowed(draft) ?? draft));
-    contextOpen = false;
+    write(promptScopeOps(prompt, next));
   };
 </script>
 
@@ -252,17 +231,11 @@
           disabled={phase !== undefined}
         />
 
-        <div class="scope">
-          <span>Scope</span>
-          <div class="scope-control">
-            <PanelButton
-              label={reads}
-              disabled={phase !== undefined}
-              title="Choose what this prompt reads"
-              onclick={openContext}
-            />
-          </div>
-        </div>
+        <PromptScope
+          blockId={prompt.id}
+          disabled={phase !== undefined}
+          onconfirm={confirmScope}
+        />
       </div>
 
       <PanelActions>
@@ -294,27 +267,6 @@
   {/if}
 </Panel>
 
-<OverlayModal
-  bind:open={contextOpen}
-  title="What this prompt reads"
-  description="The sources it is answered from. If it is a hole, this is also what the hole selects until whoever places the template says otherwise."
-  confirm="Set the scope"
-  width="wide"
-  blocked={scopeBlocked}
-  onconfirm={confirmContext}
->
-  <ScopeBuilder
-    {...view$}
-    onmode={(whole) => (draft = whole ? withWholeProject() : { include: [], exclude: [] })}
-    onadd={(side: ScopeSide, source: string, key: string) => {
-      const term = termFor(source as OfferSource, key);
-      if (term !== undefined) draft = withTerm(draft, side, term);
-    }}
-    ondrop={(side: ScopeSide, key: string) => (draft = withoutTerm(draft, side, key))}
-    onclear={() => (draft = { include: [], exclude: [] })}
-  />
-</OverlayModal>
-
 <style>
   .setup {
     display: flex;
@@ -323,8 +275,7 @@
     padding: calc(var(--token-spacing-unit) * 2) calc(var(--token-spacing-unit) * 3);
   }
 
-  .setup label,
-  .scope span {
+  .setup label {
     color: var(--token-ink-muted);
     font-size: var(--token-text-caption);
     line-height: var(--token-text-caption-leading);
@@ -338,15 +289,4 @@
     line-height: var(--token-text-body-sm-leading);
   }
 
-  .scope {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: calc(var(--token-spacing-unit) * 2);
-    min-height: 2rem;
-  }
-
-  .scope-control {
-    width: 9.25rem;
-  }
 </style>

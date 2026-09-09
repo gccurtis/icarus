@@ -61,6 +61,7 @@ const { commitTemplateStage } = await import(
 const { discardTemplateStage } = await import(
   "$capabilities/templates/api/discard-template-stage/discard-template-stage"
 );
+const { enqueueSemanticSync } = await import("$capabilities/semantic-overlay/index");
 const { readResourceTemplate } = await import(
   "$capabilities/templates/api/read-resource-template/read-resource-template"
 );
@@ -177,6 +178,38 @@ describe("opening a stage", () => {
     const detail = await readTemplate({ templateId: "templates:1" });
     assert.ok(detail !== null && !("unavailable" in detail));
     assert.equal("stage" in detail, false);
+  });
+
+  /**
+   * A working copy is a draft of a template, not the project's material.
+   *
+   * The copy is an ordinary document, so saving it takes the ordinary path and
+   * would put unfinished template words in front of every agent that retrieves.
+   */
+  test("is refused by the overlay, however the question is asked", async () => {
+    await openTemplateStage({ templateId: "templates:1" });
+    model.tables.documents.push(
+      row("documents", "9", { projectId: "p", title: "A real document" })
+    );
+    model.tables.documentSnapshots.push(
+      row("documentSnapshots", "9", {
+        projectId: "p",
+        resourceId: "documents:9",
+        role: "leader",
+        revision: 1,
+        body: { rows: [] }
+      })
+    );
+
+    assert.equal(await enqueueSemanticSync({ ref: { kind: "document", id: "documents:1" } }), null);
+    assert.deepEqual(model.tables.semanticSyncJobs ?? [], []);
+
+    const real = await enqueueSemanticSync({ ref: { kind: "document", id: "documents:9" } });
+    assert.notEqual(real, null);
+    assert.deepEqual(
+      (model.tables.semanticSyncJobs ?? []).map((job) => job.ref),
+      [{ kind: "document", id: "documents:9" }]
+    );
   });
 
   test("is shared by everyone in the project rather than kept per viewer", async () => {
@@ -358,6 +391,54 @@ describe("discarding a stage", () => {
     assert.deepEqual(model.tables.documentChangeSets, []);
     assert.deepEqual(model.tables.commentThreads.map((thread) => thread._id), ["commentThreads:2"]);
     assert.deepEqual(model.tables.comments.map((comment) => comment._id), ["comments:2"]);
+  });
+
+  /**
+   * A discarded draft must leave nothing an agent can still find.
+   *
+   * Ingestion refuses a stage, so in the ordinary case there is nothing here to
+   * take back. These rows are what an earlier save, or a forced backfill, could
+   * have left behind — and another resource's rows have to survive it.
+   */
+  test("takes back everything the overlay learned about the scratch resource", async () => {
+    await openTemplateStage({ templateId: "templates:1" });
+    const mine = { kind: "document", id: "documents:1" };
+    const other = { kind: "document", id: "documents:9" };
+    model.tables.semanticSyncJobs = [
+      row("semanticSyncJobs", "1", { projectId: "p", ref: mine, state: "queued" }),
+      row("semanticSyncJobs", "2", { projectId: "p", ref: other, state: "queued" })
+    ];
+    model.tables.semanticMaterialJobs = [
+      row("semanticMaterialJobs", "1", { projectId: "p", ref: mine, state: "queued" })
+    ];
+    model.tables.semanticSources = [
+      row("semanticSources", "1", { projectId: "p", ref: mine, revision: 1 }),
+      row("semanticSources", "2", { projectId: "p", ref: other, revision: 1 })
+    ];
+    model.tables.semanticMaterials = [
+      row("semanticMaterials", "1", { projectId: "p", source: { kind: "resourceContent", ref: mine } })
+    ];
+    model.tables.semanticMaterialPlacements = [
+      row("semanticMaterialPlacements", "1", { projectId: "p", ref: mine })
+    ];
+    model.tables.semanticMaterialHistory = [
+      row("semanticMaterialHistory", "1", { projectId: "p", material: { source: { ref: mine } } })
+    ];
+    model.tables.semanticObjects = [
+      row("semanticObjects", "1", { projectId: "p", lane: "text", semanticSourceId: "semanticSources:1" }),
+      row("semanticObjects", "2", { projectId: "p", lane: "material", semanticMaterialId: "semanticMaterials:1" }),
+      row("semanticObjects", "3", { projectId: "p", lane: "text", semanticSourceId: "semanticSources:2" })
+    ];
+
+    await discardTemplateStage({ stageId: "templateStages:1" });
+
+    assert.deepEqual(model.tables.semanticSyncJobs.map((job) => job._id), ["semanticSyncJobs:2"]);
+    assert.deepEqual(model.tables.semanticMaterialJobs, []);
+    assert.deepEqual(model.tables.semanticSources.map((source) => source._id), ["semanticSources:2"]);
+    assert.deepEqual(model.tables.semanticMaterials, []);
+    assert.deepEqual(model.tables.semanticMaterialPlacements, []);
+    assert.deepEqual(model.tables.semanticMaterialHistory, []);
+    assert.deepEqual(model.tables.semanticObjects.map((held) => held._id), ["semanticObjects:3"]);
   });
 
   test("goes with the template when the template is deleted, and is out of reach from another project", async () => {

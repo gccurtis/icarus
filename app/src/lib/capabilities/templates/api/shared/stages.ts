@@ -4,6 +4,7 @@ import type { Id } from "$representation/data/types/core/id";
 import type { DocumentBody } from "$representation/data/types/documents/body";
 import type { SlideDeckBody } from "$representation/data/types/slide-decks/body";
 
+import { forgetSemanticResourceFor } from "$capabilities/semantic-overlay/index";
 import { rowsOfResource } from "$capabilities/templates/api/shared/scopes";
 import { canonicalRowId, recordsIn } from "$capabilities/templates/api/shared/store";
 import type { TemplateStageTarget } from "$capabilities/templates/types/templates";
@@ -131,6 +132,7 @@ export const removeStage = (store: StoreModel, stage: Stage): void => {
       snapshots
     )
   );
+  forgetSemanticResourceFor(store, stage.projectId, { kind, id: stage.resourceId });
   for (const setId of rowsOfResource(store, stage.projectId, stage.resourceId)) {
     store.remove(`resourceSets.${setId}`);
   }
