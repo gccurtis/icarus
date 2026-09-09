@@ -71,8 +71,8 @@
   <ReferenceSection
     id="pages"
     kicker="The suite"
-    title="Seven pages, each one thing that was built"
-    lede="The four content surfaces get a page each with the surface live. The rail and the lenses get a page each. The last page is the rows, the doors and the seed."
+    title="Fifteen pages, in three groups"
+    lede="Pages one to seven stage the built agents surfaces. Eight to eleven are the research chat as it was built: the rebase, the intelligence layer, Explore live, and what a response is made of. Twelve to fifteen are the specifications — personas, tasks, automations and research chat whole — each one state, then behaviour, then every procedure step by step, then the execution flow."
   >
     <div class="ar-cards">
       {#each PAGES.filter((candidate) => candidate.slug !== "overview") as candidate (candidate.slug)}
@@ -123,8 +123,8 @@
   <ReferenceSection
     id="questions"
     kicker="Forks"
-    title="Fifteen decisions I took while building, each still open"
-    lede="Every place the review left a choice is here with the page it lives on and what was built. Answer by number. Each is what I would do, not what was agreed."
+    title="Thirty-four decisions, each still open"
+    lede="Every place the review left a choice is here with the page it lives on and what was built. The last nineteen come from the rebase, the research chat and writing the specifications. Answer by number. Each is what I would do, not what was agreed."
   >
     <Questions questions={QUESTIONS} showPage {root} />
   </ReferenceSection>

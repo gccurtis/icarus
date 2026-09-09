@@ -25,7 +25,7 @@ import type {
 type Persona = TableRow<"personas">;
 type Task = TableRow<"agentTasks">;
 type Automation = TableRow<"automations">;
-type Chat = TableRow<"personaThreads">;
+type Chat = TableRow<"researchThreads">;
 
 export type Visible = {
   readonly personas: readonly Persona[];
@@ -40,16 +40,10 @@ const sound = (row: { readonly _id: unknown; readonly revision?: unknown }): boo
   (row.revision === undefined || (Number.isSafeInteger(row.revision) && (row.revision as number) >= 1));
 
 export const visibleIn = (store: StoreModel, scope: Scope): Visible => {
-  const mine = (row: { readonly projectId?: unknown; readonly createdBy?: unknown }) =>
-    row.projectId === scope.projectId ||
-    (row.projectId === undefined &&
-      typeof row.createdBy === "object" &&
-      row.createdBy !== null &&
-      (row.createdBy as { userId?: unknown }).userId === scope.userId);
   const inProject = (row: { readonly projectId?: unknown }) => row.projectId === scope.projectId;
 
   const personas = rowsIn(store, "personas").filter(
-    (row) => sound(row) && mine(row) && typeof row.name === "string"
+    (row) => sound(row) && inProject(row) && typeof row.name === "string"
   );
   const personaIds = new Set(personas.map((row) => row._id as string));
   const tasks = rowsIn(store, "agentTasks").filter(
@@ -70,8 +64,12 @@ export const visibleIn = (store: StoreModel, scope: Scope): Visible => {
       personaIds.has(row.personaId) &&
       typeof row.trigger === "object"
   );
-  const chats = rowsIn(store, "personaThreads").filter(
-    (row) => inProject(row) && typeof row.title === "string" && personaIds.has(row.personaId)
+  const chats = rowsIn(store, "researchThreads").filter(
+    (row) =>
+      inProject(row) &&
+      typeof row.title === "string" &&
+      row.personaId !== undefined &&
+      personaIds.has(row.personaId)
   );
   return { personas, tasks, automations, chats, names: namesIn(store, scope.projectId) };
 };
@@ -236,8 +234,8 @@ export const automationDetail = (automation: Automation, visible: Visible): Auto
 export const chatItem = (store: StoreModel, chat: Chat, visible: Visible): ChatItem => ({
   id: chat._id,
   title: chat.title,
-  personaId: chat.personaId,
-  personaName: visible.names.persona(chat.personaId),
+  personaId: chat.personaId ?? "",
+  personaName: visible.names.persona(chat.personaId ?? ""),
   createdByName: visible.names.actor(chat.createdBy),
   messageCount: messagesOf(store, chat.threadId).length,
   lastLine: lastLineOf(store, chat.threadId),

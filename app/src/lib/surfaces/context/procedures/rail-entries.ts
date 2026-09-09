@@ -9,6 +9,7 @@ import ChartColumn from "@lucide/svelte/icons/chart-column";
 import CircleQuestionMark from "@lucide/svelte/icons/circle-question-mark";
 import Clock from "@lucide/svelte/icons/clock";
 import ClockArrowLeft from "@lucide/svelte/icons/clock-arrow-left";
+import CornerDownRight from "@lucide/svelte/icons/corner-down-right";
 import FileText from "@lucide/svelte/icons/file-text";
 import Footprints from "@lucide/svelte/icons/footprints";
 import Grid3x3 from "@lucide/svelte/icons/grid-3x3";
@@ -63,6 +64,7 @@ export const RAIL_ENTRIES: Record<ContextView, RailEntry> = {
   "new-tab.recent": { label: "Recent", icon: Clock },
   "new-tab.templates": { label: "Templates", icon: LayoutTemplate },
   "research.threads": { label: "Threads", icon: MessagesSquare },
+  "research.turns": { label: "Turns", icon: CornerDownRight },
 
   "analysis.overview": { label: "Overview", icon: Info },
   "context-editor.overview": { label: "Overview", icon: Info },

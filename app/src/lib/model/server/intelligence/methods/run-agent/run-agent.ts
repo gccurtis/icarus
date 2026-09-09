@@ -183,6 +183,9 @@ const invoke = async (
 ): Promise<ProviderTurn> => {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), state.timeoutMs);
+  const cancelled = () => controller.abort();
+  input.signal?.addEventListener("abort", cancelled, { once: true });
+  if (input.signal?.aborted === true) controller.abort();
   try {
     const response = await state.request(state.endpoint, {
       method: "POST",
@@ -191,7 +194,7 @@ const invoke = async (
         "content-type": "application/json"
       },
       body: JSON.stringify({
-        model: state.model,
+        model: input.model ?? state.model,
         messages,
         ...(input.tools.length === 0
           ? {}
@@ -242,6 +245,7 @@ const invoke = async (
     throw new IntelligenceServiceError("OpenRouter request failed", { cause: error });
   } finally {
     clearTimeout(timeout);
+    input.signal?.removeEventListener("abort", cancelled);
   }
 };
 
@@ -285,7 +289,12 @@ export const runAgent = async <Value = string>(
     totalTokens: 0
   };
 
-  for (let round = 1; round <= state.maxToolRounds + 1; round += 1) {
+  // -1 means the loop is bounded by whoever aborts it rather than by a count.
+  // A caller may set its own; the configured number is the default.
+  const bound = input.maxToolRounds ?? state.maxToolRounds;
+  const unbounded = bound === -1;
+
+  for (let round = 1; unbounded || round <= bound + 1; round += 1) {
     const turn = await invoke(
       state,
       messages,
@@ -313,11 +322,12 @@ export const runAgent = async <Value = string>(
         });
       }
     }
-    if (round > state.maxToolRounds) {
+    if (!unbounded && round > bound) {
       throw new IntelligenceServiceError("Agent exceeded the configured tool-round limit");
     }
 
     messages.push({ role: "assistant", content: turn.content, tool_calls: turn.toolCalls });
+    let finished = false;
     for (const call of turn.toolCalls) {
       const parsed = parsedInput(call);
       const tool = tools.get(call.function.name);
@@ -334,6 +344,7 @@ export const runAgent = async <Value = string>(
           output = { ok: true, value: executed.value };
           images = executed.images;
           ok = true;
+          if (call.function.name === input.finalTool) finished = true;
         } catch (error) {
           output = { ok: false, error: safeError(error) };
         }
@@ -358,6 +369,8 @@ export const runAgent = async <Value = string>(
         });
       }
     }
+    // The answer arrived as a tool call, so there is nothing left to ask for.
+    if (finished) return { value: "" as Value, usage, toolCalls: calls, rounds: round };
   }
 
   throw new IntelligenceServiceError("Agent exceeded the configured tool-round limit");

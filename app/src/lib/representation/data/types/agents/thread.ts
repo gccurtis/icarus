@@ -1,7 +1,7 @@
 import type { Id } from "$representation/data/types/core/id";
 
 /** Which of the three tables owns this conversation. The way back from a bare thread id. */
-export type ThreadKind = "researchThread" | "personaThread" | "agentTask";
+export type ThreadKind = "researchThread" | "agentTask";
 
 /**
  * Where a conversation was cut to start another.

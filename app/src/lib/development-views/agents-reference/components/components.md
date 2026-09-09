@@ -26,4 +26,18 @@ or just the flank the page is about. Every stage on a page has its own state, so
 choosing in one does not move another, and every stage reads and writes the same
 store.
 
+## Specification furniture
+
+`procedure-chain.svelte` renders one procedure whole: what it takes, what it
+answers, every step with the function that performs it and the row it writes,
+what it refuses and what it refreshes. It is the unit a reader has to hold to
+follow a system, and the one thing a table of procedures cannot show.
+`diagram.svelte` frames a mermaid diagram in the suite's own border.
+
+## The one mock
+
+`response-sample.svelte` draws a table and a chart as an answer should carry
+them. It holds its own invented content because neither the table tool nor the
+chart system exists; it is the standard they are being built to.
+
 The `page-*.svelte` files are the pages themselves, one per route.

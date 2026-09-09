@@ -7,6 +7,7 @@
   import {
     createWorkspaceState,
     provideWorkspaceState,
+    type Category,
     type ContentView,
     type ContextView,
     type InspectorView
@@ -24,6 +25,7 @@
     geometry = "rail 44px · panel 248px · centre ≥ 704px · inspector 320px",
     height = "44rem",
     panes = "all",
+    category = "agents",
     content,
     focus,
     context,
@@ -34,6 +36,7 @@
     geometry?: string;
     height?: string;
     panes?: "all" | "context" | "inspector";
+    category?: Category;
     content?: ContentView;
     focus?: string;
     context?: ContextView;
@@ -54,7 +57,9 @@
     app.slideDeckRuntimes
   );
 
-  view.activate("agents");
+  untrack(() => {
+    view.open({ category });
+  });
   untrack(() => {
     if (content !== undefined) view.showContent(content, focus);
     if (context !== undefined) view.selectContext(context);

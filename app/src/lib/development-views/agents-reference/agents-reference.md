@@ -1,8 +1,14 @@
 # Agents reference
 
 The Agents category, staged live at `/app/<project>/reference/agents` and reached
-from `/demo/agents-reference`. Nine pages: an overview, one page per pane of the
-shell, one per content surface, and one for the rows and doors behind them.
+from `/demo/agents-reference`. Sixteen pages in three groups: the built agents
+surfaces staged live; the research chat as it was built; and four specifications
+— personas, tasks, automations, and research chat whole.
+
+A specification page has one shape: state, then behaviour over that state, then
+every procedure as a chain of what it takes, each step with the function that
+performs it and the row it writes, what it refuses and what it refreshes, then
+the execution flow as a diagram. It says what is not built as plainly as what is.
 
 ## What it is for
 
@@ -11,6 +17,10 @@ project's real store, so a click on a page does what a click in the app does and
 an edit is written. Under each stage sit the behaviours as tables, the writes
 each control makes, and the decisions taken while building, numbered so they can
 be answered by number.
+
+The response page carries a mock rather than a stage, because neither the table
+tool nor the chart system exists yet; what it is for is having the argument
+before either is built.
 
 It lives under the project route rather than under `/demo` because every surface
 reads the agents capability, and a remote function resolves its scope from the

@@ -19,6 +19,15 @@ const positiveInteger = (configuration: Configuration, key: string): number => {
   return value as number;
 };
 
+/** A round count, or -1 for a loop bounded only by the timeout and a person. */
+const rounds = (configuration: Configuration, key: string): number => {
+  const value = configuration.get(key);
+  if (!Number.isInteger(value) || ((value as number) < 1 && value !== -1)) {
+    throw new Error(`Configuration key '${key}' must be a positive integer, or -1 for no bound`);
+  }
+  return value as number;
+};
+
 const endpoint = (configuration: Configuration): string => {
   const key = `${OPENROUTER}.endpoint`;
   const value = requiredString(configuration, key);
@@ -62,6 +71,6 @@ export const createIntelligence = (configuration: Configuration): IntelligenceMo
     timeoutMs: positiveInteger(configuration, `${OPENROUTER}.timeoutMs`),
     maxOutputTokens: positiveInteger(configuration, `${OPENROUTER}.maxOutputTokens`),
     reasoningEffort: effort(configuration),
-    maxToolRounds: positiveInteger(configuration, `${ROOT}.agent.maxToolRounds`)
+    maxToolRounds: rounds(configuration, `${ROOT}.agent.maxToolRounds`)
   });
 };

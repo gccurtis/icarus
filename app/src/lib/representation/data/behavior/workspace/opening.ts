@@ -26,17 +26,8 @@ export const OPENING: Record<Category, Opening> = {
 
   research: {
     content: "research.thread",
-    context: "research.overview",
-    rail: [
-      "research.overview",
-      "research.history",
-      "research.inquiry",
-      "research.findings",
-      "research.sources",
-      "research.trace",
-      "research.context",
-      "research.threads"
-    ]
+    context: "research.threads",
+    rail: ["research.threads", "research.turns"]
   },
 
   templates: {

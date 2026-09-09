@@ -133,6 +133,7 @@
   margin: 2.5rem -3rem 0;
   padding: 0.5rem 3rem;
   border-block: 1px solid var(--token-border-subtle);
+  background: var(--token-surface-canvas);
   color: var(--token-ink-muted);
   font-size: var(--token-text-caption);
 }
@@ -352,6 +353,28 @@
   border-color: var(--token-color-intelligence-border);
   background: var(--token-color-intelligence-surface);
   color: var(--token-color-intelligence-text);
+}
+
+.ar-pill.query {
+  border-color: var(--token-color-active-border);
+  background: var(--token-color-active-surface);
+  color: var(--token-color-active-text);
+}
+
+.ar-pill.command {
+  border-color: var(--token-color-intelligence-border);
+  background: var(--token-color-intelligence-surface);
+  color: var(--token-color-intelligence-text);
+}
+
+.ar-pill.internal {
+  border-color: var(--token-border-strong);
+}
+
+.ar-chains {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
 .ar-cards {

@@ -16,7 +16,7 @@ export const PAGES: readonly PageRecord[] = [
       { label: "Context panels", value: "3" },
       { label: "Inspector lenses", value: "5" },
       { label: "Capability procedures", value: "17" },
-      { label: "Open forks", value: "15" },
+      { label: "Open forks", value: "34" },
       { label: "Runs an agent", value: "No" }
     ]
   },
@@ -123,6 +123,142 @@ export const PAGES: readonly PageRecord[] = [
       { label: "Procedures", value: "17" },
       { label: "Seed files", value: "6" },
       { label: "Runner", value: "Out of scope" }
+    ]
+  },
+  {
+    slug: "rebase",
+    index: "08",
+    label: "Rebase",
+    path: "/rebase",
+    title: "The rebase: nothing collided, and everything moved.",
+    eyebrow: "Migration · onto work/derived-output-architecture",
+    lede: "The category was one commit. It was replayed onto twenty-one commits of semantic overlay and derived output work and landed without a single conflict. That is the uninteresting half. The interesting half is what is now underneath it: an intelligence port, sixteen agent tools, a two-lane overlay and six new tables, none of which the category reads yet.",
+    readout: [
+      { label: "Conflicts", value: "0" },
+      { label: "Commits replayed", value: "1" },
+      { label: "Commits underneath", value: "21" },
+      { label: "Files that arrived", value: "236" },
+      { label: "Files both sides touched", value: "4" },
+      { label: "Issues to resolve", value: "5" }
+    ]
+  },
+  {
+    slug: "intelligence",
+    index: "09",
+    label: "Intelligence",
+    path: "/intelligence",
+    title: "The intelligence layer, and the doors a chat needs.",
+    eyebrow: "Model port · capability · procedures",
+    lede: "One method on one port, an agent loop that runs inside it, and a grounded synthesis that already proves the shape. What chat adds is a turn that is a row, a persona's grants translated into a tool set, and a queue that survives a reload. Nothing here needs a new provider.",
+    readout: [
+      { label: "Port methods", value: "1" },
+      { label: "Runtime tools today", value: "16" },
+      { label: "Persona grants", value: "6" },
+      { label: "Procedures to add", value: "7" },
+      { label: "Rounds per turn", value: "Per call" },
+      { label: "Streams today", value: "No" }
+    ]
+  },
+  {
+    slug: "explore",
+    index: "10",
+    label: "Explore",
+    path: "/explore",
+    title: "Explore: what you asked on top, the answer below.",
+    eyebrow: "Research chat · built and answering",
+    lede: "Built, wired to OpenRouter and answering from this project's own documents. The question sits at the top with how long ago and what it could see, the rest of the plane is the answer, and the composer holds the bottom. Threads and Turns are the left panels; findings and sources are the lens.",
+    readout: [
+      { label: "Modes shown", value: "3" },
+      { label: "Modes wired", value: "1" },
+      { label: "Tools the model has", value: "5" },
+      { label: "Tools a person toggles", value: "1, and it is unbuilt" },
+      { label: "Model", value: "moonshotai/kimi-k2.5" },
+      { label: "A turn costs", value: "about a third of a cent" }
+    ]
+  },
+  {
+    slug: "response",
+    index: "11",
+    label: "Response",
+    path: "/response",
+    title: "The response: not text in, text out.",
+    eyebrow: "Research chat · what an answer is made of",
+    lede: "An answer is a list of blocks, and today every one of them happens to be a paragraph. The point of building it that way now is that a table, a chart or a slide is then a block the plane draws rather than a rewrite of the plane. Every block above prose is made by a tool call, which is what makes it checkable.",
+    readout: [
+      { label: "Block kinds today", value: "3 drawn, 5 stored" },
+      { label: "Made by", value: "A tool call, always" },
+      { label: "Actions on a block", value: "Add · Open" },
+      { label: "Charts", value: "Not built" },
+      { label: "Unknown block", value: "Says so, never blank" },
+      { label: "Prose measure", value: "One column, 70ch" }
+    ]
+  },
+  {
+    slug: "personas",
+    index: "12",
+    label: "Personas",
+    path: "/personas",
+    title: "The persona: one row, and the root of what anyone can see.",
+    eyebrow: "Specification · state, behaviour, procedures",
+    lede: "A persona is a name, five sections of definition, a scope, a set of tool grants and a revision. It is also the visibility root of the whole agents system: a persona nobody can see hides every task, rule and chat that names it. This page is the row, the six procedures over it, and every step each one takes.",
+    readout: [
+      { label: "Fields", value: "11" },
+      { label: "Definition sections", value: "5" },
+      { label: "Procedures", value: "6" },
+      { label: "Inherited at creation", value: "tools, never scope" },
+      { label: "Refusals", value: "not-found · stale · in-use" },
+      { label: "Project-gated", value: "Always" }
+    ]
+  },
+  {
+    slug: "tasks",
+    index: "13",
+    label: "Tasks",
+    path: "/tasks",
+    title: "The task: a run with no runner.",
+    eyebrow: "Specification · state, behaviour, procedures",
+    lede: "A task is a run: it starts when it is created and is running, pending review or finished. Every field a runner would write already has its shape and every one of them is empty, because nothing dispatches. This page is that shape, the procedures that exist, and precisely what a runner would have to do.",
+    readout: [
+      { label: "Fields", value: "18" },
+      { label: "Procedures", value: "5" },
+      { label: "Written by a runner", value: "plan · outputs · questions" },
+      { label: "Dispatches", value: "Nothing" },
+      { label: "Progress", value: "Derived, never stored" },
+      { label: "Conversation", value: "threads and threadParts" }
+    ]
+  },
+  {
+    slug: "automations",
+    index: "14",
+    label: "Automations",
+    path: "/automations",
+    title: "The automation: a rule that makes tasks.",
+    eyebrow: "Specification · state, behaviour, procedures",
+    lede: "Four trigger kinds, one persona, one instruction, and a count of what it has fired. Run now makes a real task from the saved rule. Nothing else fires it, because there is no scheduler and no event dispatch, so three of the four kinds have never fired on their own.",
+    readout: [
+      { label: "Trigger kinds", value: "4" },
+      { label: "Fire on their own", value: "0" },
+      { label: "Procedures", value: "5" },
+      { label: "Run now", value: "Makes one task" },
+      { label: "Off is the safe removal", value: "Yes" },
+      { label: "Refusals", value: "not-found · stale · in-use · invalid-state" }
+    ]
+  },
+  {
+    slug: "research-chat",
+    index: "15",
+    label: "Research chat",
+    path: "/research-chat",
+    title: "Research chat, whole: state, procedures, execution.",
+    eyebrow: "Specification · a system of its own",
+    lede: "Not part of the agents system. It shares the conversation primitive and nothing else, and the persona is the one seam where the two are meant to meet. This page is the four tables, the seven procedures with every step each performs, and the order in which one question becomes an answer.",
+    readout: [
+      { label: "Tables", value: "4, two of them its own" },
+      { label: "Procedures", value: "5 remote, 2 internal" },
+      { label: "Tools", value: "6" },
+      { label: "Store writes per turn", value: "6, none during the loop" },
+      { label: "Shares with agents", value: "threads and threadParts" },
+      { label: "Steering", value: "None yet" }
     ]
   }
 ];

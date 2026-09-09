@@ -105,30 +105,30 @@
     "_id": "threads:chat-priorities",
     "_creationTime": 1788558000000,
     "projectId": "default",
-    "kind": "personaThread"
+    "kind": "researchThread"
   },
   {
     "_id": "threads:chat-tone",
     "_creationTime": 1788472200000,
     "projectId": "default",
-    "kind": "personaThread"
+    "kind": "researchThread"
   },
   {
     "_id": "threads:chat-sources",
     "_creationTime": 1788212700000,
     "projectId": "default",
-    "kind": "personaThread"
+    "kind": "researchThread"
   },
   {
     "_id": "threads:chat-undergrounding",
     "_creationTime": 1787867400000,
     "projectId": "default",
-    "kind": "personaThread"
+    "kind": "researchThread"
   },
   {
     "_id": "threads:chat-feeder12-history",
     "_creationTime": 1787608200000,
     "projectId": "default",
-    "kind": "personaThread"
+    "kind": "researchThread"
   }
 ]

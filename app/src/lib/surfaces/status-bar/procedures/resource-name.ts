@@ -22,7 +22,6 @@ const NAMED_FIELD: Partial<Record<TableName, string | null>> = {
   hypotheses: "statement",
   memberships: null,
   personas: "name",
-  personaThreads: "title",
   projects: "name",
   questions: "text",
   researchThreads: "title",

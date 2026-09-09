@@ -194,14 +194,16 @@ beforeEach(() => {
       }
     ],
     automations: [automation("m"), automation("fired", { firedCount: 2 })],
-    personaThreads: [
+    researchThreads: [
       {
-        _id: "personaThreads:c",
+        _id: "researchThreads:c",
         _creationTime: 1,
         projectId: "p",
         threadId: "threads:c",
         personaId: "personas:a",
         title: "A chat",
+        mode: { kind: "explore" },
+        findingIds: [],
         createdBy: user("v"),
         updatedAt: 20
       }
@@ -537,15 +539,16 @@ describe("scope", () => {
 });
 
 describe("chats", () => {
-  test("opens a chat as a persona thread in its own thread row", async () => {
+  test("opens a chat as a research thread in its own thread row", async () => {
     const result = await createChat({ personaId: "personas:b" });
     assert.equal(result.accepted, true);
-    const chat = model.tables.personaThreads.find(
+    const chat = model.tables.researchThreads.find(
       (row) => result.accepted && row._id === result.chatId
     );
     assert.equal(chat?.title, "Chat with Persona b");
+    assert.equal(chat?.personaId, "personas:b");
     assert.equal(
-      model.tables.threads.some((row) => row._id === chat?.threadId && row.kind === "personaThread"),
+      model.tables.threads.some((row) => row._id === chat?.threadId && row.kind === "researchThread"),
       true
     );
     const missing = await createChat({ personaId: "personas:elsewhere" });

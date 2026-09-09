@@ -37,6 +37,14 @@ import type {
 import type { QuestionStatus, RelatedItem } from "$representation/data/types/investigation/question";
 import type { ResearchMode } from "$representation/data/types/investigation/research-thread";
 import type {
+  ResearchFinding,
+  ResearchScope,
+  ResearchSource,
+  ResearchToolId,
+  ResearchTurnState,
+  ResearchTurnUsage
+} from "$representation/data/types/investigation/research-turn";
+import type {
   DerivedOutput as SemanticDerivedOutput,
   DerivedOutputFields as SemanticDerivedOutputFields,
   DerivedOutputRefreshJobFields as SemanticDerivedOutputRefreshJobFields
@@ -338,7 +346,7 @@ export type ThreadPartFields = {
 export type ThreadPart = Row<"threadParts"> & ThreadPartFields;
 
 export type PersonaFields = {
-  projectId?: Id<"projects">;
+  projectId: Id<"projects">;
   name: string;
   description?: string;
   definition: PersonaDefinition;
@@ -351,16 +359,6 @@ export type PersonaFields = {
   updatedAt: number;
 };
 export type Persona = Row<"personas"> & PersonaFields;
-
-export type PersonaThreadFields = {
-  projectId: Id<"projects">;
-  threadId: Id<"threads">;
-  personaId: Id<"personas">;
-  title: string;
-  createdBy: Actor;
-  updatedAt: number;
-};
-export type PersonaThread = Row<"personaThreads"> & PersonaThreadFields;
 
 export type AgentTaskFields = {
   projectId: Id<"projects">;
@@ -559,11 +557,39 @@ export type ResearchThreadFields = {
   title: string;
   summary?: string;
   mode: ResearchMode;
+  /** Whose definition answers here. A chat started from a persona carries one. */
+  personaId?: Id<"personas">;
   findingIds: Id<"findings">[];
   createdBy: Actor;
   updatedAt: number;
 };
 export type ResearchThread = Row<"researchThreads"> & ResearchThreadFields;
+
+export type ResearchTurnFields = {
+  projectId: Id<"projects">;
+  researchThreadId: Id<"researchThreads">;
+  threadId: Id<"threads">;
+  promptMessageId: string;
+  messageId?: string;
+  prompt: string;
+  mode: ResearchMode;
+  scope: ResearchScope;
+  tools: ResearchToolId[];
+  state: ResearchTurnState;
+  /** When a person asked it to answer now. A second ask abandons the run. */
+  stopRequestedAt?: number;
+  blocks: ContentBlock[];
+  queries: string[];
+  sources: ResearchSource[];
+  findings: ResearchFinding[];
+  usage?: ResearchTurnUsage;
+  model?: string;
+  error?: string;
+  askedAt: number;
+  answeredAt?: number;
+  updatedAt: number;
+};
+export type ResearchTurn = Row<"researchTurns"> & ResearchTurnFields;
 
 export type CommentThreadFields = {
   projectId: Id<"projects">;
@@ -637,10 +663,10 @@ export const TABLE_NAMES = [
   "hypotheses",
   "memberships",
   "personas",
-  "personaThreads",
   "projects",
   "questions",
   "researchThreads",
+  "researchTurns",
   "resourceSets",
   "semanticIndexes",
   "semanticIndexNodes",
@@ -692,10 +718,10 @@ export type TableFields = {
   hypotheses: HypothesisFields;
   memberships: MembershipFields;
   personas: PersonaFields;
-  personaThreads: PersonaThreadFields;
   projects: ProjectFields;
   questions: QuestionFields;
   researchThreads: ResearchThreadFields;
+  researchTurns: ResearchTurnFields;
   resourceSets: ResourceSetFields;
   semanticIndexes: SemanticIndexFields;
   semanticIndexNodes: SemanticIndexNodeFields;

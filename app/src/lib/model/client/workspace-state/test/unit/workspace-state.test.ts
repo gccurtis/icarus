@@ -237,7 +237,7 @@ test("two research threads are two tabs", () => {
 test("one research thread reached twice is one tab, in the state it was left", () => {
   const model = workspaceState();
   const first = model.open(thread("th-1"));
-  const where = railFor("research")[3];
+  const where = railFor("research")[1];
   model.selectContext(where);
   model.inspect(lens, selection);
   model.open(document("k57"));
@@ -318,7 +318,7 @@ test("a target with a focus and no centre says what the tab is about without mov
   // invalidated.
   const model = workspaceState();
   const first = model.open(thread("th-1"));
-  const where = railFor("research")[2];
+  const where = railFor("research")[1];
   model.selectContext(where);
   model.open(document("k57"));
 
@@ -529,7 +529,7 @@ test("a closed thread comes back as the same thread, with the subject it was on"
   // rather than as a second tab about the same thread.
   const model = workspaceState();
   const tab = model.open({ category: "research", resourceId: "th-1", focus: "q-4" });
-  const where = railFor("research")[4];
+  const where = railFor("research")[1];
   model.selectContext(where);
 
   model.close(tab.id);
@@ -679,7 +679,7 @@ test("selecting a view the rail does not offer throws", () => {
   model.open({ category: "agents" });
 
   // A rail is a category's, so what it refuses is another category's view.
-  assert.throws(() => model.selectContext(railFor("research")[2]), /does not offer/);
+  assert.throws(() => model.selectContext(railFor("research")[1]), /does not offer/);
 });
 
 test("selecting a view the rail offers moves the rail", () => {

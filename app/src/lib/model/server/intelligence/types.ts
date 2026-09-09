@@ -41,7 +41,38 @@ export type IntelligenceInput<Value = string> = {
   readonly tools: readonly IntelligenceTool[];
   /** Forces one named tool on the first provider turn; later turns remain automatic. */
   readonly firstTool?: string;
+  /**
+   * The tool that ends the run.
+   *
+   * An agent that delivers its answer by calling a tool has nothing left to say
+   * afterwards, and asking it for a closing message costs a request and invites
+   * an empty one. Calling this tool successfully returns from the loop.
+   */
+  readonly finalTool?: string;
+  /**
+   * A round bound for this call only, or -1 for none.
+   *
+   * The configured bound is one number for every caller, and callers do not all
+   * do the same work: a single grounded synthesis is not a conversation. Absent
+   * means the configured one.
+   */
+  readonly maxToolRounds?: number;
   readonly output?: IntelligenceStructuredOutput<Value>;
+  /**
+   * A model for this call only, when the caller's work is worth a different one.
+   *
+   * A name, never a provider: the endpoint, the credential and the bounds stay
+   * the port's. Absent means the configured model.
+   */
+  readonly model?: string;
+  /**
+   * Abandons the run, including the provider request in flight.
+   *
+   * The port's own timeout still applies; this is the caller's reason on top of
+   * it. A cancelled run rejects rather than answering, because a half-run has
+   * nothing to say.
+   */
+  readonly signal?: AbortSignal;
 };
 
 export type IntelligenceUsage = {

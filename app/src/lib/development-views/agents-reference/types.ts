@@ -6,7 +6,15 @@ export type PageSlug =
   | "persona"
   | "task"
   | "automation"
-  | "backend";
+  | "backend"
+  | "rebase"
+  | "intelligence"
+  | "explore"
+  | "response"
+  | "personas"
+  | "tasks"
+  | "automations"
+  | "research-chat";
 
 export type PageRecord = {
   readonly slug: PageSlug;
@@ -58,6 +66,37 @@ export type Phase = {
   readonly title: string;
   readonly produces: string;
   readonly proves: string;
+};
+
+export type ChainField = {
+  readonly name: string;
+  readonly type: string;
+  readonly note?: string;
+};
+
+export type ChainStep = {
+  readonly does: string;
+  /** The function this step calls, written as it is called in the source. */
+  readonly calls?: string;
+  /** The row or field this step changes, when it changes one. */
+  readonly writes?: string;
+};
+
+/**
+ * One procedure, end to end: what it takes, what it does, what it answers.
+ *
+ * The unit a reader has to hold to follow a system, and the one thing a table
+ * of procedures cannot show.
+ */
+export type Chain = {
+  readonly name: string;
+  readonly kind: "query" | "command" | "internal";
+  readonly file: string;
+  readonly input: readonly ChainField[];
+  readonly output: readonly ChainField[];
+  readonly steps: readonly ChainStep[];
+  readonly refuses: readonly { readonly reason: string; readonly when: string }[];
+  readonly refreshes: readonly string[];
 };
 
 export type Note = {

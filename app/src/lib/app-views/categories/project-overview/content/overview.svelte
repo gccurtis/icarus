@@ -26,6 +26,7 @@
   import * as DropdownMenu from "$vendored-components/dropdown-menu";
   import { ToggleGroup, ToggleGroupItem } from "$vendored-components/toggle-group";
   import { readProjectResourceIndex } from "$capabilities/project-resources/index.remote";
+  import { createThread, readThreads } from "$capabilities/research-chat/index.remote";
   import { actorName } from "$app-views/categories/project-overview/procedures/actor-name";
   import { activity } from "$app-views/categories/project-overview/procedures/activity";
   import { inspectionFor } from "$app-views/categories/project-overview/procedures/inspecting";
@@ -136,10 +137,15 @@
     }
   ] as const;
 
-  let creating = $state<"document" | "slides" | "spreadsheet">();
+  /**
+   * A default title belongs to represented project state, not this cached view.
+   * Omitting it asks Project Resources to allocate the first free suffix on the
+   * server immediately before the row is created.
+   */
+  let creating = $state<"document" | "slides" | "spreadsheet" | "research">();
   let creationError = $state<string>();
 
-  const make = (key: (typeof CREATE)[number]["key"]) => {
+  const make = async (key: (typeof CREATE)[number]["key"]) => {
     if (key === "document" || key === "slides" || key === "spreadsheet") {
       if (creating !== undefined) return;
 
@@ -159,7 +165,19 @@
     }
 
     if (key === "research") {
-      alert("Starting a represented research chat is not wired up yet.");
+      if (creating !== undefined) return;
+      creating = "research";
+      creationError = undefined;
+      try {
+        const { threadId } = await createThread({}).updates(readThreads);
+        // The tab bar names a chat from this query, which Overview leaves warm.
+        await view.readStore("researchThreads").refresh();
+        if (live) view.open({ category: "research", content: "research.thread", resourceId: threadId });
+      } catch (error) {
+        if (live) creationError = error instanceof Error ? error.message : "That did not start";
+      } finally {
+        if (live) creating = undefined;
+      }
       return;
     }
 
