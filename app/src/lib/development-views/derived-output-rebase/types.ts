@@ -12,7 +12,7 @@ export type RebasePage = {
 export type ReplayCommit = {
   hash: string;
   subject: string;
-  phase: "foundation" | "editor" | "templates" | "agents";
+  phase: "foundation" | "editor" | "templates" | "agents" | "audit";
   stops?: boolean;
 };
 

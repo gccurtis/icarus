@@ -62,20 +62,22 @@ export const BASELINE_RETIREMENTS = [
   ["remounted-views-hold-no-declared-tab-state", 1, "spreadsheet selected/zoom state"],
   ["resource-id-selects-the-rendered-body", 1, "spreadsheet content flow"],
   ["runtime-lifecycle-follows-tabs", 2, "document and slide runtime attachment"],
-  ["runtime-open-close-is-balanced", 10, "document, slide and spreadsheet runtime reachability"]
+  ["runtime-open-close-is-balanced", 10, "document, slide and spreadsheet runtime reachability"],
+  ["source-complexity-is-reviewed", 1, "Project Overview script split by extracted state and procedures"],
+  ["unsupported-subject-is-explicit", 1, "Context editor now has an explicit unavailable surface"]
 ] as const;
 
 export const CHECK_RESULTS = [
   {
     gate: "Architecture before cleanup",
     result: "89 / 90 clean",
-    detail: "26 findings: 24 stale baseline records plus 2 validity echoes for records whose source files were deleted.",
+    detail: "28 findings: 26 stale baseline records plus 2 validity echoes for records whose source files were deleted.",
     kind: "attention"
   },
   {
     gate: "Architecture after cleanup",
     result: "90 / 90 clean",
-    detail: "261 baselined, zero findings. No new structural exception is required by the replayed product tree.",
+    detail: "259 baselined, zero findings. No new structural exception is required by the replayed product tree.",
     kind: "pass"
   },
   {
@@ -87,13 +89,13 @@ export const CHECK_RESULTS = [
   {
     gate: "Vitest",
     result: "27 failed files",
-    detail: "All failed during module import. 134 files and 1,133 assertions passed; deleted normalizer imports block the 27 files before their tests run.",
+    detail: "All failed during module import. 138 files and 1,148 assertions passed; deleted normalizer imports block the 27 files before their tests run.",
     kind: "fail"
   },
   {
     gate: "Script tests",
     result: "2 failed assertions",
-    detail: "Only baseline.test.mjs is stale: it expects 20 state-ownership entries after the rebased tree correctly proposes 18. Category and generator suites pass.",
+    detail: "Only baseline.test.mjs is stale: 2 of 165 tests expect 20 state-ownership entries after the rebased tree correctly reports 18. The other 163 script tests pass.",
     kind: "attention"
   },
   {

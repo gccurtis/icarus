@@ -7,9 +7,9 @@ export const RUNBOOK: readonly RunbookPhase[] = [
     intent: "Make the live operation reproducible before history changes.",
     actions: [
       "Require a clean work/derived-output-architecture worktree.",
-      "Fetch main and compare its head with this audit's 3e670c5 snapshot.",
+      "Fetch main and compare its head with this audit's 06708d9 snapshot.",
       "If main moved, rerun the disposable replay; do not assume this conflict map is still exhaustive.",
-      "Create a named backup branch at the exact source head 2c0bcad."
+      "Create a named backup branch at the exact audited source head bef7239."
     ],
     files: ["No source files"],
     gates: ["git status is clean", "source and target SHAs are recorded", "backup ref resolves to source HEAD"],
@@ -18,13 +18,13 @@ export const RUNBOOK: readonly RunbookPhase[] = [
   {
     id: "R1",
     title: "Begin the replay",
-    intent: "Replay the 39 source-only commits onto the certified main head.",
+    intent: "Replay the 40 audited source-only commits onto the certified main head.",
     actions: [
       "Run git rebase main from work/derived-output-architecture.",
-      "Resolve only the seven expected stop commits in order.",
+      "Resolve only the eight expected stop commits in order.",
       "At every stop, inspect all unmerged paths before staging; an unexpected path invalidates the map and pauses the rebase."
     ],
-    files: ["39 commits", "7 expected stops", "21 unique conflict paths"],
+    files: ["40 commits", "8 expected stops", "26 unique conflict paths"],
     gates: ["git diff --name-only --diff-filter=U matches the stop ledger", "no conflict marker remains"],
     rollback: "git rebase --abort returns to the protected source head."
   },
@@ -52,11 +52,12 @@ export const RUNBOOK: readonly RunbookPhase[] = [
     intent: "Join feature semantics with current durability and route ownership.",
     actions: [
       "Preserve template stages, scopes and holes while retaining main's atomic instantiation.",
+      "Union templateStages, project-scoped template metadata, named/bound resource sets, and main's resource summary/template fields in the table schema.",
       "Move formula and variable reference routes under /demo with the other development references.",
       "Union capabilities.md; never select one inventory side wholesale.",
       "Carry a syntactically valid baseline through the replay, but postpone stale-entry deletion until the resulting tree can be linted."
     ],
-    files: ["templates capability", "capabilities.md", "architecture-baseline.json", "9 reference route paths"],
+    files: ["templates capability", "resource/seed schema", "capabilities.md", "architecture-baseline.json", "9 reference route paths"],
     gates: ["template writes remain one unit of work", "production /app imports no development view", "baseline JSON parses"],
     rollback: "Abort and replay the stop; do not patch over a half-atomic template path."
   },
@@ -68,6 +69,8 @@ export const RUNBOOK: readonly RunbookPhase[] = [
       "Keep the extracted OverviewState and makeResource procedure.",
       "Extend creation to document, slides, spreadsheet and research.",
       "Map spreadsheet to spreadsheet-editor and research to research.thread.",
+      "Keep project-overview.comment and project-overview.activity selections wired to main's delivered inspectors.",
+      "Union research fixtures without discarding summary fields or structured ResearchMode values.",
       "Retain spreadsheetRuntime, draft and keepDraft on workspace state."
     ],
     files: ["project-overview/content/overview.svelte", "project-overview/procedures/opening.ts", "workspace-state/definition.svelte.ts"],
@@ -93,7 +96,7 @@ export const RUNBOOK: readonly RunbookPhase[] = [
     title: "Reconcile the ratchet and generated artifact",
     intent: "Let the resulting source graph dictate debt and generated text.",
     actions: [
-      "Run architecture lint and remove the exact 24 stale records it reports.",
+      "Run architecture lint and remove the exact 26 stale records it reports.",
       "Update the baseline script's state-ownership expectation from 20 to the proven 18.",
       "Regenerate or mechanically clean the template-features artifact: 314 blank lines with trailing spaces and one extra EOF line.",
       "Do not add a baseline entry for any new integration finding."
@@ -122,7 +125,7 @@ export const COMMANDS = [
   ["Snapshot", "git status --short --branch"],
   ["Fetch target", "git fetch origin main"],
   ["Recertify", "git rev-parse main origin/main"],
-  ["Protect", "git branch backup/derived-output-architecture-pre-rebase-3e670c5"],
+  ["Protect", "git branch backup/derived-output-architecture-pre-rebase-06708d9"],
   ["Replay", "git rebase main"],
   ["Dependencies", "pnpm --dir app install"],
   ["Representation", "pnpm --dir app typecheck"],

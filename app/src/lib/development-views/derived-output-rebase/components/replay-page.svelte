@@ -10,7 +10,13 @@
 
   let { project }: { project: string } = $props();
   const page = pageOf("replay");
-  const phases: readonly ReplayCommit["phase"][] = ["foundation", "editor", "templates", "agents"];
+  const phases: readonly ReplayCommit["phase"][] = [
+    "foundation",
+    "editor",
+    "templates",
+    "agents",
+    "audit"
+  ];
 </script>
 
 <ReferenceShell {page} {project}>
@@ -24,7 +30,7 @@
   <ReferenceSection
     id="sequence"
     eyebrow="Stop sequence"
-    title="The seven stops are ordered dependencies"
+    title="The eight stops are ordered dependencies"
     lede="The dependency manifest lands before runtime code; resource creation before editors; template representation before route relocation; overview composition before final workspace ownership."
   >
     <div class="reb-diagram">
@@ -40,8 +46,8 @@
   <ReferenceSection
     id="stops"
     eyebrow="Resolution ledger"
-    title="Twenty-two occurrences; seven merge decisions"
-    lede="The project overview conflicts twice, so twenty-two conflict occurrences map to twenty-one unique paths. Each card is the resolution contract to use while the rebase is paused at that commit."
+    title="Twenty-eight occurrences; eight merge decisions"
+    lede="The table vocabulary and Project Overview each conflict twice, so twenty-eight conflict occurrences map to twenty-six unique paths. Each card is the resolution contract to use while the rebase is paused at that commit."
   >
     <div class="reb-conflicts">
       {#each CONFLICTS as conflict (conflict.stop)}
@@ -84,7 +90,7 @@
   <ReferenceSection
     id="history"
     eyebrow="Complete replay ledger"
-    title="All thirty-nine commits, in replay order"
+    title="All forty commits, in replay order"
     lede="A filled stop marker is where the disposable rebase paused. Commits between those markers replayed automatically; they still receive final range-diff and test coverage."
   >
     <div class="reb-commit-groups">

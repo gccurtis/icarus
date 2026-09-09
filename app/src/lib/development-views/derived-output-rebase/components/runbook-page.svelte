@@ -10,9 +10,9 @@
   const page = pageOf("runbook");
 
   const commitPlan = [
-    ["Rewritten history", "Seven conflict resolutions live in the commits where their behavior originally entered."],
+    ["Rewritten history", "Eight conflict resolutions live in the commits where their behavior originally entered."],
     ["Compatibility repair", "One bounded commit adapts current slide/document/spreadsheet contracts and literal result typing."],
-    ["Ratchet reconciliation", "One commit removes 24 stale baseline records and updates the 20 → 18 test expectation."],
+    ["Ratchet reconciliation", "One commit removes 26 stale baseline records and updates the 20 → 18 test expectation."],
     ["Artifact hygiene", "One mechanical commit regenerates or cleans the template-feature report."],
     ["Reference audit", "This served reference can remain its own documentation commit for an auditable plan/result delta."]
   ] as const;
@@ -22,7 +22,7 @@
   <div class="reb-callout warning top">
     <span>Start condition</span>
     <p>
-      This runbook is certified only for source <code>2c0bcad</code> onto main <code>3e670c5</code>. If either head moves, repeat R0 and the disposable audit before rewriting the real branch.
+      This runbook is certified only for audited source <code>bef7239</code> onto main <code>06708d9</code>. The recertification commit that updates this page is documentation-only; any later product commit or main movement requires R0 and a fresh disposable audit before rewriting the real branch.
     </p>
   </div>
 

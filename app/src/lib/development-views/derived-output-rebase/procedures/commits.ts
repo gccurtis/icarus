@@ -39,12 +39,14 @@ export const REPLAY_COMMITS: readonly ReplayCommit[] = [
   { hash: "2aaad1e", subject: "Build Explore end to end", phase: "agents", stops: true },
   { hash: "712b5b9", subject: "Reconcile agents with audit pillars", phase: "agents" },
   { hash: "f85b245", subject: "Work every finding off the baseline", phase: "agents", stops: true },
-  { hash: "2c0bcad", subject: "Clean agents fast-forward integration", phase: "agents" }
+  { hash: "2c0bcad", subject: "Clean agents fast-forward integration", phase: "agents" },
+  { hash: "bef7239", subject: "Map the derived-output landing plan", phase: "audit" }
 ] as const;
 
 export const PHASE_LABELS: Record<ReplayCommit["phase"], string> = {
   foundation: "Semantic + derived foundation",
   editor: "Prompt editors",
   templates: "Templates",
-  agents: "Agents + research"
+  agents: "Agents + research",
+  audit: "Rebase reference"
 };

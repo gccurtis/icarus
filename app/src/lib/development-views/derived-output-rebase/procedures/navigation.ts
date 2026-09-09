@@ -9,9 +9,9 @@ export const PAGES: readonly RebasePage[] = [
     index: "00",
     label: "Readiness",
     eyebrow: "Decision surface",
-    title: "A rebase with seven deliberate stops",
+    title: "A rebase with eight deliberate stops",
     lede:
-      "A disposable replay of all 39 branch commits onto main proves the path. The branch is not ready for an automatic rebase, but every conflict and every post-replay failure now has a bounded resolution."
+      "A disposable replay of all 40 audited branch commits onto main proves the path. The branch is not ready for an automatic rebase, but every conflict and every post-replay failure now has a bounded resolution."
   },
   {
     slug: "replay",
@@ -20,7 +20,7 @@ export const PAGES: readonly RebasePage[] = [
     eyebrow: "Conflict procedure",
     title: "Replay the history; preserve both architectures",
     lede:
-      "Seven commits stop. Twenty-two conflict occurrences touch twenty-one unique paths. Each stop below records what collided, which behavior wins, and what must be proved before continuing."
+      "Eight commits stop. Twenty-eight conflict occurrences touch twenty-six unique paths. Each stop below records what collided, which behavior wins, and what must be proved before continuing."
   },
   {
     slug: "checkers",

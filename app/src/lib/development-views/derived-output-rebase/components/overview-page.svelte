@@ -19,7 +19,7 @@
   ];
 
   const verdicts = [
-    ["Can Git replay it automatically?", "No", "Seven semantic stops require human resolutions."],
+    ["Can Git replay it automatically?", "No", "Eight semantic stops require human resolutions."],
     ["Is the checker system current?", "Yes", "Both branches execute the same 90-check architecture graph."],
     ["Does main introduce new architecture debt?", "No", "The trial reaches 90/90 without adding a baseline record."],
     ["Is the rebased tree compile-ready?", "Not yet", "Eighteen diagnostics reduce to four representation repairs."],
@@ -84,8 +84,8 @@
   <ReferenceSection
     id="main"
     eyebrow="Incoming main"
-    title="Fourteen commits change three integration fronts"
-    lede="Main is not merely ahead. It establishes spreadsheet ownership and formula behavior, tightens transaction and runtime boundaries, retires architecture debt, and deliberately removes legacy representation readers."
+    title="Eighteen commits change four integration fronts"
+    lede="Main is not merely ahead. It establishes spreadsheet ownership and formula behavior, tightens transaction and runtime boundaries, retires architecture debt, deliberately removes legacy representation readers, and delivers Project Overview context/inspector panels plus their reference proof."
   >
     <ol class="reb-main-rail">
       {#each MAIN_COMMITS as commit, index (commit[0])}

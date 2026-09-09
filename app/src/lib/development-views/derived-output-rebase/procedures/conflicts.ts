@@ -46,21 +46,38 @@ export const CONFLICTS: readonly ConflictCluster[] = [
     commit: "0b3cb66",
     subject: "Build the template system end to end",
     files: [
+      "app/seed/documents.json",
+      "app/seed/slideDecks.json",
+      "app/seed/spreadsheets.json",
       "app/src/lib/capabilities/templates/api/instantiate-template/instantiate-template.ts",
       "app/src/lib/capabilities/templates/api/shared/bodies.ts",
       "app/src/lib/capabilities/templates/api/shared/validation.ts",
-      "app/src/lib/capabilities/templates/templates.md"
+      "app/src/lib/capabilities/templates/templates.md",
+      "app/src/lib/representation/store/tables.ts"
     ],
     collision:
-      "The template feature introduces stages, scopes, prompt holes and multi-kind bodies over older document/slide/spreadsheet representations. Main independently makes instantiation atomic and advances the spreadsheet and schema contracts.",
+      "The template feature introduces stages, scopes, prompt holes and multi-kind bodies over older document/slide/spreadsheet representations. Main independently makes instantiation atomic, advances the spreadsheet contracts, and adds summary/template metadata to represented resource rows and seed fixtures.",
     resolution:
-      "Preserve branch template semantics, main's single transaction, and post-commit semantic publication. Port template materialization to current document, slide and spreadsheet types; never revive a deleted legacy normalizer.",
+      "Preserve branch template semantics, main's single transaction, and post-commit semantic publication. Keep main's summary and templateId fields and the matching seed metadata. Carry the branch's template files at this historical stop so their later compatibility commit can replay, then port materialization to current document, slide and spreadsheet types without reviving a deleted normalizer.",
     proof:
       "Template unit and atomicity suites pass for all three resource kinds, including formatted spreadsheet cells and rules; a failed instantiation leaves no durable rows or semantic job.",
     risk: "high"
   },
   {
     stop: 5,
+    commit: "5015ef6",
+    subject: "Build scope from terms",
+    files: ["app/src/lib/representation/store/tables.ts"],
+    collision:
+      "Main's table vocabulary now includes summary/template linkage and a named resource-set shape. The branch turns resource sets into either named sets or bound rows and adds durable template stages.",
+    resolution:
+      "Form one schema union: retain main's resource summary/template fields; retain project-scoped template metadata; add TemplateStageFields and register templateStages in TABLE_NAMES/TableFields; make resource-set name optional only when boundTo is present. Do not drop fields merely because Git shows one contiguous type block.",
+    proof:
+      "Store typing recognizes templateStages, template and resource-set projections compile, seed rows retain summaries, and named versus bound resource-set invariants have unit coverage.",
+    risk: "high"
+  },
+  {
+    stop: 6,
     commit: "deab480",
     subject: "Reconcile templates with derived outputs",
     files: [
@@ -85,23 +102,24 @@ export const CONFLICTS: readonly ConflictCluster[] = [
     risk: "high"
   },
   {
-    stop: 6,
+    stop: 7,
     commit: "2aaad1e",
     subject: "Build Explore end to end",
     files: [
+      "app/seed/researchThreads.json",
       "app/src/lib/app-views/categories/project-overview/content/overview.svelte",
       "app/src/lib/app-views/categories/project-overview/procedures/opening.ts"
     ],
     collision:
-      "Main adds spreadsheet creation and opening while the branch adds research threads to the same Project Overview surface.",
+      "Main adds spreadsheet creation/opening, project-scoped context and inspector selection keys, and summarized research fixtures while the branch adds research chat creation and its richer seeded thread set to the same Project Overview flow.",
     resolution:
-      "Model document, slides, spreadsheet and research as one creation union. Route spreadsheet to spreadsheet-editor and research to research.thread; keep async state owned by the command boundary.",
+      "Model document, slides, spreadsheet and research as one creation union. Route spreadsheet to spreadsheet-editor and research to research.thread; preserve project-overview.comment/activity inspection keys; union the research seed rows while retaining main's summary fields and the branch's current structured ResearchMode values.",
     proof:
       "The overview can create and open all four kinds and disables every competing creation affordance while one async command is active.",
     risk: "medium"
   },
   {
-    stop: 7,
+    stop: 8,
     commit: "f85b245",
     subject: "Work every finding off the baseline",
     files: [
@@ -109,11 +127,11 @@ export const CONFLICTS: readonly ConflictCluster[] = [
       "app/src/lib/model/client/workspace-state/definition.svelte.ts"
     ],
     collision:
-      "The agents refactor extracts OverviewState and makeResource while main carries spreadsheet runtime ownership. Workspace state gains agent draft methods on one side and spreadsheetRuntime on the other.",
+      "The agents refactor extracts OverviewState and makeResource while current main carries spreadsheet runtime ownership plus the newly delivered Project Overview context/inspector contracts. Its mechanical state rename also leaked into non-state literals (the kind sort key, feed CSS class and visible ‘Here now’ copy). Workspace state gains agent draft methods on one side and spreadsheetRuntime on the other.",
     resolution:
-      "Keep the extracted overview state/procedure architecture and extend its creation type and dispatcher for spreadsheets. In workspace state, retain spreadsheetRuntime together with draft and keepDraft.",
+      "Keep the extracted overview state/procedure architecture, extend its creation type and dispatcher for spreadsheets, and preserve the project-overview.comment/activity inspection targets that feed main's new panels. Limit board.* changes to actual state reads: retain the literal sort value ‘kind’, CSS class ‘feed’, and visible ‘Here now’ text. In workspace state, retain spreadsheetRuntime together with draft and keepDraft.",
     proof:
-      "Overview state tests cover four kinds, workspace lifecycle tests balance document/slide/spreadsheet runtimes, and architecture lint requires no new exception.",
+      "Overview state tests cover four kinds; kind sorting resolves a DIRECTION entry; Review retains its bounded feed styling; panel selections open; workspace lifecycle tests balance document/slide/spreadsheet runtimes; architecture lint requires no new exception.",
     risk: "high"
   }
 ] as const;

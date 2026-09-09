@@ -95,13 +95,13 @@
     id="baseline"
     eyebrow="Architecture ratchet"
     title="A baseline is reconciled, never chosen"
-    lede="The first replay reports 24 stale records. Two records naming deleted source files also trigger the non-baselinable exception-validity checker, yielding 26 displayed findings. Removing the 24 exact records produces a fully clean suite."
+    lede="The latest-head replay reports 26 stale records. Two records naming deleted source files also trigger the non-baselinable exception-validity checker, yielding 28 displayed findings. Removing the 26 exact records produces a fully clean suite."
   >
     <div class="reb-diagram compact">
       <MermaidDiagram
         source={BASELINE_DIAGRAM}
         label="Architecture baseline reconciliation after rebase"
-        caption="Main's 296 and the source branch's 285 are not unioned. The resulting source graph is authoritative and needs 261 live records."
+        caption="Main's 295 and the source branch's 285 are not unioned. The resulting source graph is authoritative and needs 259 live records."
         minHeight="22rem"
       />
     </div>
@@ -144,11 +144,11 @@
     id="tests"
     eyebrow="Test interpretation"
     title="Import the graph first; then trust behavior counts"
-    lede="Vitest discovers 162 files. Twenty-seven fail before collecting a test because four deleted module imports sit high in shared dependency graphs. The 134 files that can load run 1,133 assertions successfully."
+    lede="Vitest discovers 166 files. Twenty-seven fail before collecting a test because four deleted module imports sit high in shared dependency graphs. The 138 files that can load run 1,148 assertions successfully; one file is skipped."
   >
     <div class="reb-test-flow">
-      <div><b>162</b><span>discovered files</span></div><i>→</i>
-      <div class="pass"><b>134</b><span>passed files</span></div><i>+</i>
+      <div><b>{AUDIT.discoveredVitestFiles}</b><span>discovered files</span></div><i>→</i>
+      <div class="pass"><b>{AUDIT.passedVitestFiles}</b><span>passed files</span></div><i>+</i>
       <div class="fail"><b>27</b><span>import-blocked</span></div><i>+</i>
       <div><b>1</b><span>skipped file</span></div>
     </div>

@@ -22,5 +22,7 @@ export const STALE_BASELINE_RECORDS = [
   ["runtime-open-close-is-balanced", "src/lib/model/client/document-runtimes", "open-acquires", "document"],
   ["runtime-open-close-is-balanced", "src/lib/model/client/slide-deck-runtimes", "open-acquires", "slide-deck"],
   ["runtime-open-close-is-balanced", "src/lib/model/client/spreadsheet-runtimes", "open-acquires", "spreadsheet"],
-  ["runtime-open-close-is-balanced", "src/lib/model/client/spreadsheet-runtimes", "workspace-reaches-runtime", "spreadsheet"]
+  ["runtime-open-close-is-balanced", "src/lib/model/client/spreadsheet-runtimes", "workspace-reaches-runtime", "spreadsheet"],
+  ["source-complexity-is-reviewed", "src/lib/app-views/categories/project-overview/content/overview.svelte", "—", "svelte-script:over-300"],
+  ["unsupported-subject-is-explicit", "src/lib/app-views/categories/context-editor/content", "non-live-is-visible", "context-editor:unavailable"]
 ] as const;
