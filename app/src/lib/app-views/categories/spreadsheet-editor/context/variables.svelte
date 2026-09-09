@@ -4,20 +4,17 @@
   import { Panel, PanelButton, PanelEmpty, PanelRow, PanelSearch } from "$authored-components/panel";
   import { VARIABLE, variableSignal } from "$app-views/categories/spreadsheet-editor/procedures/selecting";
   import { displayOf } from "$app-views/categories/spreadsheet-editor/procedures/values";
+  import { loadsTheVariables } from "$app-views/categories/spreadsheet-editor/procedures/effects/loads-the-variables.svelte";
   import {
-    loadVariables,
     saveVariable,
     variables,
-    variablesLoaded,
     type VariableRecord
   } from "$app-views/categories/spreadsheet-editor/procedures/variables.svelte";
   import { workspaceState } from "$model/client/workspace-state";
 
   const view = workspaceState();
 
-  $effect(() => {
-    if (!variablesLoaded(view.project)) void loadVariables(view.project);
-  });
+  loadsTheVariables(() => view.project);
 
   let filter = $state("");
 

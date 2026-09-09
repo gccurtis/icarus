@@ -1,7 +1,4 @@
 <script lang="ts">
-  import { untrack } from "svelte";
-
-  import { read } from "$capabilities/store/index.remote";
   import {
     SheetSurface,
     type SurfaceApi,
@@ -31,28 +28,18 @@
   import { pasted } from "$app-views/categories/spreadsheet-editor/procedures/clipboard";
   import { anchorOf, pinsOf, threadsOf } from "$app-views/categories/spreadsheet-editor/procedures/comments";
   import { filled } from "$app-views/categories/spreadsheet-editor/procedures/fill";
+  import { armed, beginWriting, drafted, pick } from "$app-views/categories/spreadsheet-editor/procedures/picking.svelte";
   import {
-    armed,
-    beginWriting,
-    drafted,
-    endingTaken,
-    pick,
-    writingEnded
-  } from "$app-views/categories/spreadsheet-editor/procedures/picking.svelte";
-  import {
-    aroundOf,
     factsOf,
-    recalculated,
     recalculating,
-    sourceFor,
     storedOf,
     type SheetCell
   } from "$app-views/categories/spreadsheet-editor/procedures/recalculation";
-  import {
-    loadVariables,
-    variablesLoaded,
-    variablesRevision
-  } from "$app-views/categories/spreadsheet-editor/procedures/variables.svelte";
+  import { followsTheAskedForCell } from "$app-views/categories/spreadsheet-editor/procedures/effects/follows-the-asked-for-cell.svelte";
+  import { loadsTheVariables } from "$app-views/categories/spreadsheet-editor/procedures/effects/loads-the-variables.svelte";
+  import { recalculatesOnVariables } from "$app-views/categories/spreadsheet-editor/procedures/effects/recalculates-on-variables.svelte";
+  import { settlesTheInspector } from "$app-views/categories/spreadsheet-editor/procedures/effects/settles-the-inspector.svelte";
+  import { takesBackTheCaret } from "$app-views/categories/spreadsheet-editor/procedures/effects/takes-back-the-caret.svelte";
   import { dependentsOf, referencesIn } from "$app-views/categories/spreadsheet-editor/procedures/references";
   import { sceneOf } from "$app-views/categories/spreadsheet-editor/procedures/scene";
   import {
@@ -78,7 +65,7 @@
     unmerged
   } from "$app-views/categories/spreadsheet-editor/procedures/spans";
   import { usedRect } from "$app-views/categories/spreadsheet-editor/procedures/stats";
-  import { rowsOf, tableQuery } from "$app-views/categories/spreadsheet-editor/procedures/store";
+  import { rowsOf, tableQuery, titleOf, titleQuery } from "$app-views/categories/spreadsheet-editor/procedures/store";
   import {
     APPEND_COLUMNS,
     APPEND_ROWS,
@@ -92,7 +79,8 @@
     resizedColumn,
     resizedRow
   } from "$app-views/categories/spreadsheet-editor/procedures/structure";
-  import { workspaceState, type SpreadsheetRuntime, type SyncState } from "$model/client/workspace-state";
+  import { holdsTheRuntime } from "$app-views/categories/spreadsheet-editor/procedures/effects/holds-the-runtime.svelte";
+  import { workspaceState, type SyncState } from "$model/client/workspace-state";
 
   const WHEEL_NOTCH = 120;
   const PERCENT_PER_NOTCH = 2;
@@ -104,33 +92,17 @@
 
   const sheetId = $derived(view.active.resourceId);
 
-  const title = $derived.by(() => {
-    if (sheetId === undefined) return undefined;
-    const answer = read({ path: `spreadsheets.${sheetId}.title` });
-    if (!answer.ready) return undefined;
-    const found = answer.current;
-    return found?.kind === "field" && typeof found.value === "string" ? found.value : undefined;
-  });
+  const title = $derived(sheetId === undefined ? undefined : titleOf(titleQuery(sheetId)) || undefined);
 
-  let runtime = $state<SpreadsheetRuntime | undefined>(undefined);
+  const attached = holdsTheRuntime();
+  const runtime = $derived(attached.current);
 
-  $effect(() => {
-    runtime = sheetId === undefined ? undefined : view.spreadsheetRuntime(sheetId);
-  });
+  loadsTheVariables(() => view.project);
 
-  $effect(() => {
-    if (!variablesLoaded(view.project)) void loadVariables(view.project);
-  });
-
-  $effect(() => {
-    void variablesRevision(view.project);
-    untrack(() => {
-      const open = sheet;
-      if (open === undefined || sheetId === undefined) return;
-      const ops = recalculated(sourceFor(sheetId, open), aroundOf(view.project));
-      if (ops.length > 0) runtime?.apply(ops);
-    });
-  });
+  recalculatesOnVariables(
+    () => view.project,
+    () => ({ resourceId: sheetId, sheet, runtime })
+  );
 
   const sheet = $derived(runtime?.sheet);
   const grid = $derived(gridOf(sheet?.body));
@@ -236,17 +208,20 @@
     view.inspect(signal.key, signal.selection);
   };
 
-  $effect(() => {
-    if (sheet !== undefined && view.inspected === "empty" && view.selection === undefined) view.inspect(WHOLE);
-  });
-
-  $effect(() => {
+  const collapsed = (): Signal | undefined => {
     const held = view.selection;
-    if (sheet === undefined || held?.kind !== "range" || held.ranges !== undefined) return;
+    if (sheet === undefined || held?.kind !== "range" || held.ranges !== undefined) return undefined;
     const [only] = selectedRects(grid, held);
-    if (only === undefined) return;
+    if (only === undefined) return undefined;
     const span = mergeAround(sheet, grid, only);
-    if (span !== undefined) show(cellSignal(sheet, grid, span.anchor));
+    return span === undefined ? undefined : cellSignal(sheet, grid, span.anchor);
+  };
+
+  settlesTheInspector({
+    unset: () => sheet !== undefined && view.inspected === "empty" && view.selection === undefined,
+    whole: () => view.inspect(WHOLE),
+    collapsed,
+    show
   });
 
   const everything = (): Signal | undefined => {
@@ -410,34 +385,39 @@
     }
   };
 
-  $effect(() => {
-    if (writingEnded() === undefined) return;
-    endingTaken();
-    api?.focus();
-  });
-
-  $effect(() => {
-    const target = runtime?.scrollTo;
-    if (target === undefined || runtime === undefined) return;
-    const at = indexOf(grid, target);
-    if (at !== undefined) {
-      scrolls += 1;
-      scrollTarget = { row: at.row, column: at.column, token: scrolls };
-    }
-    runtime.scrollTo = undefined;
-  });
+  takesBackTheCaret(() => api?.focus());
 
   let landed = $state<string | undefined>(undefined);
 
-  $effect(() => {
-    const focus = view.active.focus;
-    const held = runtime;
-    if (sheet === undefined || held === undefined || focus === undefined || focus === landed) return;
-    const ref = parseRef(grid, focus);
-    if (ref === undefined) return;
-    landed = focus;
-    held.scrollTo = ref;
-    show(cellSignal(sheet, grid, ref));
+  followsTheAskedForCell({
+    scrollTo: () => {
+      const target = runtime?.scrollTo;
+      const held = runtime;
+      if (target === undefined || held === undefined) return undefined;
+      const at = indexOf(grid, target);
+      return {
+        reach: () => {
+          if (at === undefined) return;
+          scrolls += 1;
+          scrollTarget = { row: at.row, column: at.column, token: scrolls };
+        },
+        taken: () => {
+          held.scrollTo = undefined;
+        }
+      };
+    },
+    focused: () => {
+      const focus = view.active.focus;
+      const held = runtime;
+      if (sheet === undefined || held === undefined || focus === undefined || focus === landed) return undefined;
+      const ref = parseRef(grid, focus);
+      if (ref === undefined) return undefined;
+      return () => {
+        landed = focus;
+        held.scrollTo = ref;
+        show(cellSignal(sheet, grid, ref));
+      };
+    }
   });
 
 </script>

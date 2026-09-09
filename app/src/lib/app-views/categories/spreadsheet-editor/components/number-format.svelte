@@ -17,7 +17,9 @@
   } from "$app-views/categories/spreadsheet-editor/procedures/number-format";
   import { selectedRects, selectedRef } from "$app-views/categories/spreadsheet-editor/procedures/selecting";
   import { ruleFormatOver } from "$app-views/categories/spreadsheet-editor/procedures/styles";
-  import { workspaceState, type SpreadsheetRuntime } from "$model/client/workspace-state";
+  import { holdsTheRuntime } from "$app-views/categories/spreadsheet-editor/procedures/effects/holds-the-runtime.svelte";
+  import { mirrorsADraft } from "$app-views/categories/spreadsheet-editor/procedures/effects/mirrors-a-draft.svelte";
+  import { workspaceState } from "$model/client/workspace-state";
 
   const CUSTOM = "custom";
 
@@ -49,11 +51,8 @@
 
   const sheetId = $derived(view.active.resourceId);
 
-  let runtime = $state<SpreadsheetRuntime | undefined>(undefined);
-
-  $effect(() => {
-    runtime = sheetId === undefined ? undefined : view.spreadsheetRuntime(sheetId);
-  });
+  const attached = holdsTheRuntime();
+  const runtime = $derived(attached.current);
 
   const sheet = $derived(runtime?.sheet);
   const grid = $derived(gridOf(sheet?.body));
@@ -90,11 +89,7 @@
 
   let customPrefix = $state(false);
   let customSuffix = $state(false);
-  let decimalsDraft = $state("");
-
-  $effect(() => {
-    decimalsDraft = parts.decimals === undefined ? "" : String(parts.decimals);
-  });
+  const decimalsField = mirrorsADraft(() => (parts.decimals === undefined ? "" : String(parts.decimals)));
 
   const prefixChoice = $derived(customPrefix || !listedPrefix(parts.prefix) ? CUSTOM : parts.prefix);
   const suffixChoice = $derived(customSuffix || !listedSuffix(parts.suffix) ? CUSTOM : parts.suffix);
@@ -141,7 +136,7 @@
     }
     const count = Number(trimmed);
     if (!Number.isInteger(count) || count < 0 || count > 10) {
-      decimalsDraft = parts.decimals === undefined ? "" : String(parts.decimals);
+      decimalsField.current = parts.decimals === undefined ? "" : String(parts.decimals);
       return;
     }
     set({ decimals: count });
@@ -178,7 +173,7 @@
       <PanelControlRow label="Figs">
         <Input
           type="number"
-          value={decimalsDraft}
+          value={decimalsField.current}
           min={0}
           max={10}
           placeholder={String(natural)}
@@ -186,7 +181,7 @@
           aria-label="Decimal places"
           class="text-caption h-7 px-1.5 [appearance:textfield] tabular-nums [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
           oninput={(event: Event & { currentTarget: EventTarget & HTMLInputElement }) => {
-            decimalsDraft = event.currentTarget.value;
+            decimalsField.current = event.currentTarget.value;
           }}
           onchange={(event: Event & { currentTarget: EventTarget & HTMLInputElement }) => decimalsChanged(event.currentTarget.value)}
         />

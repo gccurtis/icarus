@@ -26,16 +26,14 @@
   import { formatOps, paintsOf, sharedOf } from "$app-views/categories/spreadsheet-editor/procedures/painting";
   import { recalculating } from "$app-views/categories/spreadsheet-editor/procedures/recalculation";
   import { selectedRects, selectedRef } from "$app-views/categories/spreadsheet-editor/procedures/selecting";
-  import { workspaceState, type SpreadsheetRuntime } from "$model/client/workspace-state";
+  import { holdsTheRuntime } from "$app-views/categories/spreadsheet-editor/procedures/effects/holds-the-runtime.svelte";
+  import { workspaceState } from "$model/client/workspace-state";
 
   const view = workspaceState();
   const sheetId = $derived(view.active.resourceId);
 
-  let runtime = $state<SpreadsheetRuntime | undefined>(undefined);
-
-  $effect(() => {
-    runtime = sheetId === undefined ? undefined : view.spreadsheetRuntime(sheetId);
-  });
+  const attached = holdsTheRuntime();
+  const runtime = $derived(attached.current);
 
   const sheet = $derived(runtime?.sheet);
   const grid = $derived(gridOf(sheet?.body));

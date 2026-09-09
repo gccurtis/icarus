@@ -13,12 +13,12 @@
   } from "$authored-components/panel";
   import { VARIABLE, variableSignal } from "$app-views/categories/spreadsheet-editor/procedures/selecting";
   import { displayOf, parseTyped } from "$app-views/categories/spreadsheet-editor/procedures/values";
+  import { loadsTheVariables } from "$app-views/categories/spreadsheet-editor/procedures/effects/loads-the-variables.svelte";
+  import { seedsFromTheRecord } from "$app-views/categories/spreadsheet-editor/procedures/effects/seeds-from-the-record.svelte";
   import {
-    loadVariables,
     removeVariable,
     saveVariable,
     variables,
-    variablesLoaded,
     type VariableRecord
   } from "$app-views/categories/spreadsheet-editor/procedures/variables.svelte";
   import { workspaceState } from "$model/client/workspace-state";
@@ -39,9 +39,7 @@
 
   const view = workspaceState();
 
-  $effect(() => {
-    if (!variablesLoaded(view.project)) void loadVariables(view.project);
-  });
+  loadsTheVariables(() => view.project);
 
   const chosen = $derived(view.selection?.kind === VARIABLE ? view.selection.id : undefined);
 
@@ -55,17 +53,15 @@
   let type = $state<VariableType>("any");
   let literal = $state("");
   let refusal = $state<string | undefined>(undefined);
-  let seeded = $state<string | undefined>(undefined);
-
-  $effect(() => {
-    const record = held;
-    if (record === undefined || seeded === record.id) return;
-    seeded = record.id;
-    name = record.name;
-    type = record.type;
-    literal = displayOf(record.value);
-    refusal = undefined;
-  });
+  seedsFromTheRecord(
+    () => held,
+    (record) => {
+      name = record.name;
+      type = record.type;
+      literal = displayOf(record.value);
+      refusal = undefined;
+    }
+  );
 
   const commit = async (): Promise<void> => {
     const record = held;

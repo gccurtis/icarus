@@ -40,7 +40,9 @@
   } from "$app-views/categories/spreadsheet-editor/procedures/structure";
   import { appliedStyle, ruleFormatOver } from "$app-views/categories/spreadsheet-editor/procedures/styles";
   import { pixelsOf, pointsOf } from "$app-views/categories/spreadsheet-editor/procedures/units";
-  import { workspaceState, type SpreadsheetRuntime } from "$model/client/workspace-state";
+  import { holdsTheRuntime } from "$app-views/categories/spreadsheet-editor/procedures/effects/holds-the-runtime.svelte";
+  import { mirrorsADraft } from "$app-views/categories/spreadsheet-editor/procedures/effects/mirrors-a-draft.svelte";
+  import { workspaceState } from "$model/client/workspace-state";
 
   const ALIGN = [
     { value: "start", label: "Left", icon: AlignLeft },
@@ -60,11 +62,8 @@
 
   const sheetId = $derived(view.active.resourceId);
 
-  let runtime = $state<SpreadsheetRuntime | undefined>(undefined);
-
-  $effect(() => {
-    runtime = sheetId === undefined ? undefined : view.spreadsheetRuntime(sheetId);
-  });
+  const attached = holdsTheRuntime();
+  const runtime = $derived(attached.current);
 
   const sheet = $derived(runtime?.sheet);
   const grid = $derived(gridOf(sheet?.body));
@@ -114,16 +113,8 @@
   const widths = $derived([...new Set(columnIds.map((id) => grid.columns[grid.columnAt.get(id) ?? -1]?.width ?? DEFAULT_COLUMN_WIDTH))]);
   const heights = $derived([...new Set(rowIds.map((id) => grid.rows[grid.rowAt.get(id) ?? -1]?.height ?? DEFAULT_ROW_HEIGHT))]);
 
-  let widthDraft = $state("");
-  let heightDraft = $state("");
-
-  $effect(() => {
-    widthDraft = widths.length === 1 ? String(pointsOf(widths[0])) : "";
-  });
-
-  $effect(() => {
-    heightDraft = heights.length === 1 ? String(pointsOf(heights[0])) : "";
-  });
+  const widthField = mirrorsADraft(() => (widths.length === 1 ? String(pointsOf(widths[0])) : ""));
+  const heightField = mirrorsADraft(() => (heights.length === 1 ? String(pointsOf(heights[0])) : ""));
 
   const apply = (ops: Edit["ops"]) => {
     if (ops.length > 0) runtime?.apply(ops);
@@ -155,8 +146,8 @@
   const sized = (raw: string, along: "width" | "height") => {
     const wanted = Number(raw);
     if (raw.trim() === "" || !Number.isFinite(wanted)) {
-      widthDraft = widths.length === 1 ? String(pointsOf(widths[0])) : "";
-      heightDraft = heights.length === 1 ? String(pointsOf(heights[0])) : "";
+      widthField.current = widths.length === 1 ? String(pointsOf(widths[0])) : "";
+      heightField.current = heights.length === 1 ? String(pointsOf(heights[0])) : "";
       return;
     }
     const pixels = pixelsOf(wanted);
@@ -245,7 +236,7 @@
           <span class="text-caption text-ink-muted">W</span>
           <Input
             type="number"
-            value={widthDraft}
+            value={widthField.current}
             min={18}
             max={450}
             step={0.5}
@@ -254,7 +245,7 @@
             aria-label="Width in points"
             class="text-caption h-7 px-1.5 text-center [appearance:textfield] tabular-nums [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
             oninput={(event: Event & { currentTarget: EventTarget & HTMLInputElement }) => {
-              widthDraft = event.currentTarget.value;
+              widthField.current = event.currentTarget.value;
             }}
             onchange={(event: Event & { currentTarget: EventTarget & HTMLInputElement }) => sized(event.currentTarget.value, "width")}
           />
@@ -263,7 +254,7 @@
           <span class="text-caption text-ink-muted">H</span>
           <Input
             type="number"
-            value={heightDraft}
+            value={heightField.current}
             min={12}
             max={300}
             step={0.5}
@@ -272,7 +263,7 @@
             aria-label="Height in points"
             class="text-caption h-7 px-1.5 text-center [appearance:textfield] tabular-nums [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
             oninput={(event: Event & { currentTarget: EventTarget & HTMLInputElement }) => {
-              heightDraft = event.currentTarget.value;
+              heightField.current = event.currentTarget.value;
             }}
             onchange={(event: Event & { currentTarget: EventTarget & HTMLInputElement }) => sized(event.currentTarget.value, "height")}
           />

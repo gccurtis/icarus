@@ -10,17 +10,11 @@
   } from "$app-views/categories/spreadsheet-editor/procedures/anchoring";
   import { cellAt, typed } from "$app-views/categories/spreadsheet-editor/procedures/cells";
   import { editableOf, factsOf, recalculating } from "$app-views/categories/spreadsheet-editor/procedures/recalculation";
-  import {
-    arm,
-    disarm,
-    drafting,
-    endWriting,
-    writingBegun,
-    writingTaken,
-    type Picker
-  } from "$app-views/categories/spreadsheet-editor/procedures/picking.svelte";
+  import { disarm, endWriting, type Picker } from "$app-views/categories/spreadsheet-editor/procedures/picking.svelte";
   import { selectedRef } from "$app-views/categories/spreadsheet-editor/procedures/selecting";
-  import { workspaceState, type SpreadsheetRuntime } from "$model/client/workspace-state";
+  import { holdsTheRuntime } from "$app-views/categories/spreadsheet-editor/procedures/effects/holds-the-runtime.svelte";
+  import { runsTheWritingSession } from "$app-views/categories/spreadsheet-editor/procedures/effects/runs-the-writing-session.svelte";
+  import { workspaceState } from "$model/client/workspace-state";
 
   const LOCKS = [
     { label: "free", column: false, row: false, hint: "Both halves move when this formula is copied" },
@@ -33,11 +27,8 @@
 
   const sheetId = $derived(view.active.resourceId);
 
-  let runtime = $state<SpreadsheetRuntime | undefined>(undefined);
-
-  $effect(() => {
-    runtime = sheetId === undefined ? undefined : view.spreadsheetRuntime(sheetId);
-  });
+  const attached = holdsTheRuntime();
+  const runtime = $derived(attached.current);
 
   const sheet = $derived(runtime?.sheet);
   const facts = $derived(factsOf(sheetId, sheet));
@@ -70,26 +61,9 @@
     }
   };
 
-  $effect(() => {
-    void ref;
-    editing = false;
-    refusal = undefined;
-  });
-
   const formula = (text: string) => text.trimStart().startsWith("=");
 
   const picking = $derived(editing && formula(draft));
-
-  $effect(() => {
-    if (picking) arm(picker);
-    else disarm(picker);
-    return () => disarm(picker);
-  });
-
-  $effect(() => {
-    drafting(editing && editingAt !== undefined ? { at: keyOf(editingAt), text: draft } : undefined);
-    return () => drafting(undefined);
-  });
 
   let caret = $state(0);
 
@@ -127,11 +101,17 @@
     }, 0);
   };
 
-  $effect(() => {
-    const wanted = writingBegun();
-    if (wanted === undefined) return;
-    writingTaken();
-    start(wanted.seed);
+  runsTheWritingSession({
+    picker,
+    picking: () => picking,
+    address: () => (editing && editingAt !== undefined ? keyOf(editingAt) : undefined),
+    draft: () => draft,
+    selected: () => ref,
+    abandon: () => {
+      editing = false;
+      refusal = undefined;
+    },
+    begin: (seed) => start(seed)
   });
 
   const commit = () => {

@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { create } from "$capabilities/store/index.remote";
   import { PanelButton, PanelQuote, PanelSection } from "$authored-components/panel";
   import { Textarea } from "$vendored-components/textarea";
   import { gridOf, labelOf } from "$app-views/categories/spreadsheet-editor/procedures/addresses";
@@ -16,6 +15,7 @@
   import { paintOf } from "$app-views/categories/spreadsheet-editor/procedures/formatting";
   import { selectedRef } from "$app-views/categories/spreadsheet-editor/procedures/selecting";
   import {
+    createRow,
     projectIdOf,
     refreshAll,
     rowsOf,
@@ -23,17 +23,15 @@
     viewerId
   } from "$app-views/categories/spreadsheet-editor/procedures/store";
   import { displayOf } from "$app-views/categories/spreadsheet-editor/procedures/values";
-  import { workspaceState, type SpreadsheetRuntime } from "$model/client/workspace-state";
+  import { holdsTheRuntime } from "$app-views/categories/spreadsheet-editor/procedures/effects/holds-the-runtime.svelte";
+  import { workspaceState } from "$model/client/workspace-state";
 
   const view = workspaceState();
 
   const sheetId = $derived(view.active.resourceId);
 
-  let runtime = $state<SpreadsheetRuntime | undefined>(undefined);
-
-  $effect(() => {
-    runtime = sheetId === undefined ? undefined : view.spreadsheetRuntime(sheetId);
-  });
+  const attached = holdsTheRuntime();
+  const runtime = $derived(attached.current);
 
   const sheet = $derived(runtime?.sheet);
   const grid = $derived(gridOf(sheet?.body));
@@ -64,20 +62,20 @@
     if (text === "" || sheetId === undefined || ref === undefined) return;
     const author = { kind: "user" as const, userId: viewer };
     const now = Date.now();
-    const made = await create({
-      table: "commentThreads",
-      fields: {
-        projectId: project,
-        target: { kind: "spreadsheet", id: sheetId },
-        within: { kind: "cell", rowId: ref.rowId, columnId: ref.columnId },
-        quote: shows,
-        createdBy: author,
-        updatedAt: now
-      }
+    const made = await createRow("commentThreads", {
+      projectId: project,
+      target: { kind: "spreadsheet", id: sheetId },
+      within: { kind: "cell", rowId: ref.rowId, columnId: ref.columnId },
+      quote: shows,
+      createdBy: author,
+      updatedAt: now
     });
-    await create({
-      table: "comments",
-      fields: { projectId: project, threadId: made.id, blocks: [remarkBlock(text)], mentions: [], author }
+    await createRow("comments", {
+      projectId: project,
+      threadId: made.id,
+      blocks: [remarkBlock(text)],
+      mentions: [],
+      author
     });
     composing = "";
     await refreshAll(threadRows, remarkRows);

@@ -1,10 +1,11 @@
 <script lang="ts">
-  import { read, update } from "$capabilities/store/index.remote";
+  import { renameSheet, titleOf, titleQuery } from "$app-views/categories/spreadsheet-editor/procedures/store";
   import { Panel, PanelEditableText, PanelEmpty, PanelField, PanelFields, PanelSection } from "$authored-components/panel";
   import { gridOf, rectLabelOf } from "$app-views/categories/spreadsheet-editor/procedures/addresses";
   import { problemsOf } from "$app-views/categories/spreadsheet-editor/procedures/references";
   import { formulaCount, populatedCount, usedRect } from "$app-views/categories/spreadsheet-editor/procedures/stats";
-  import { workspaceState, type SpreadsheetRuntime, type SyncState } from "$model/client/workspace-state";
+  import { holdsTheRuntime } from "$app-views/categories/spreadsheet-editor/procedures/effects/holds-the-runtime.svelte";
+  import { workspaceState, type SyncState } from "$model/client/workspace-state";
 
   const SYNC_LABEL: Record<SyncState, string> = {
     loading: "Loading",
@@ -20,28 +21,20 @@
 
   const sheetId = $derived(view.active.resourceId);
 
-  let runtime = $state<SpreadsheetRuntime | undefined>(undefined);
-
-  $effect(() => {
-    runtime = sheetId === undefined ? undefined : view.spreadsheetRuntime(sheetId);
-  });
+  const attached = holdsTheRuntime();
+  const runtime = $derived(attached.current);
 
   const sheet = $derived(runtime?.sheet);
   const grid = $derived(gridOf(sheet?.body));
   const used = $derived(sheet === undefined ? undefined : usedRect(sheet, grid));
 
-  const titleQuery = $derived(sheetId === undefined ? undefined : read({ path: `spreadsheets.${sheetId}.title` }));
-  const title = $derived.by(() => {
-    const query = titleQuery;
-    if (query === undefined || !query.ready) return "";
-    const found = query.current;
-    return found?.kind === "field" && typeof found.value === "string" ? found.value : "";
-  });
+  const query = $derived(sheetId === undefined ? undefined : titleQuery(sheetId));
+  const title = $derived(titleOf(query));
 
   const rename = async (next: string) => {
     if (sheetId === undefined || next.trim() === "" || next === title) return;
-    await update({ path: `spreadsheets.${sheetId}.title`, value: next.trim() });
-    await titleQuery?.refresh();
+    await renameSheet(sheetId, next.trim());
+    await query?.refresh();
   };
 </script>
 

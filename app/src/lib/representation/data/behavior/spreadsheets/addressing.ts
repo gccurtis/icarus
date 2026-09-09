@@ -24,10 +24,10 @@ export type Grid = {
   readonly columnAt: ReadonlyMap<string, number>;
 };
 
-export const EMPTY_GRID: Grid = { rows: [], columns: [], rowAt: new Map(), columnAt: new Map() };
+export const emptyGrid = (): Grid => ({ rows: [], columns: [], rowAt: new Map(), columnAt: new Map() });
 
 export const gridOf = (body: SpreadsheetBody | undefined): Grid => {
-  if (body === undefined) return EMPTY_GRID;
+  if (body === undefined) return emptyGrid();
   const rows = [...body.rows].sort((a, b) => a.order - b.order);
   const columns = [...body.columns].sort((a, b) => a.order - b.order);
   return {

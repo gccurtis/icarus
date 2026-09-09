@@ -5,7 +5,8 @@
   import Undo2 from "@lucide/svelte/icons/undo-2";
 
   import { Button } from "$vendored-components/button";
-  import { workspaceState, type SpreadsheetRuntime, type SyncState } from "$model/client/workspace-state";
+  import { holdsTheRuntime } from "$app-views/categories/spreadsheet-editor/procedures/effects/holds-the-runtime.svelte";
+  import { workspaceState, type SyncState } from "$model/client/workspace-state";
 
   let {
     notice
@@ -17,12 +18,8 @@
   const view = workspaceState();
   const zoom = $derived(view.zoom ?? 100);
 
-  let runtime = $state<SpreadsheetRuntime | undefined>(undefined);
-
-  $effect(() => {
-    const id = view.active.resourceId;
-    runtime = id === undefined ? undefined : view.spreadsheetRuntime(id);
-  });
+  const attached = holdsTheRuntime();
+  const runtime = $derived(attached.current);
 
   const SYNC_LABEL: Record<SyncState, string> = {
     loading: "Loading",

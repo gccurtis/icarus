@@ -26,7 +26,8 @@
   import { STYLES, type MarkStyle } from "$app-views/categories/spreadsheet-editor/procedures/marks";
   import { STYLE, styleSignal } from "$app-views/categories/spreadsheet-editor/procedures/selecting";
   import { deletedStyle, madeDefault, newStyle, setStyleField } from "$app-views/categories/spreadsheet-editor/procedures/styles";
-  import { isInspectorView, workspaceState, type SpreadsheetRuntime } from "$model/client/workspace-state";
+  import { holdsTheRuntime } from "$app-views/categories/spreadsheet-editor/procedures/effects/holds-the-runtime.svelte";
+  import { isInspectorView, workspaceState } from "$model/client/workspace-state";
 
   const FAMILY_OPTIONS = FAMILIES.map((family) => ({ value: family, label: family }));
 
@@ -40,11 +41,8 @@
 
   const sheetId = $derived(view.active.resourceId);
 
-  let runtime = $state<SpreadsheetRuntime | undefined>(undefined);
-
-  $effect(() => {
-    runtime = sheetId === undefined ? undefined : view.spreadsheetRuntime(sheetId);
-  });
+  const attached = holdsTheRuntime();
+  const runtime = $derived(attached.current);
 
   const sheet = $derived(runtime?.sheet);
   const grid = $derived(gridOf(sheet?.body));

@@ -29,17 +29,16 @@
     removedColumns,
     removedRows
   } from "$app-views/categories/spreadsheet-editor/procedures/structure";
+  import { holdsTheRuntime } from "$app-views/categories/spreadsheet-editor/procedures/effects/holds-the-runtime.svelte";
+  import { mirrorsADraft } from "$app-views/categories/spreadsheet-editor/procedures/effects/mirrors-a-draft.svelte";
   import { workspaceState, type SpreadsheetRuntime } from "$model/client/workspace-state";
 
   const view = workspaceState();
 
   const sheetId = $derived(view.active.resourceId);
 
-  let runtime = $state<SpreadsheetRuntime | undefined>(undefined);
-
-  $effect(() => {
-    runtime = sheetId === undefined ? undefined : view.spreadsheetRuntime(sheetId);
-  });
+  const attached = holdsTheRuntime();
+  const runtime = $derived(attached.current);
 
   const sheet = $derived(runtime?.sheet);
   const grid = $derived(gridOf(sheet?.body));
@@ -52,16 +51,8 @@
   const frozenColumns = $derived(sheet?.body.frozenColumns ?? 0);
   const frozenRows = $derived(sheet?.body.frozenRows ?? 0);
 
-  let columnDraft = $state("");
-  let rowDraft = $state("");
-
-  $effect(() => {
-    columnDraft = frozenColumns === 0 ? "" : columnLabel(frozenColumns - 1);
-  });
-
-  $effect(() => {
-    rowDraft = frozenRows === 0 ? "" : String(frozenRows);
-  });
+  const columnField = mirrorsADraft(() => (frozenColumns === 0 ? "" : columnLabel(frozenColumns - 1)));
+  const rowField = mirrorsADraft(() => (frozenRows === 0 ? "" : String(frozenRows)));
 
   const apply = (ops: Parameters<SpreadsheetRuntime["apply"]>[0]) => {
     if (ops.length === 0 || sheet === undefined) return;
@@ -120,12 +111,12 @@
             ? undefined
             : index + 1;
     if (count === undefined) {
-      columnDraft = frozenColumns === 0 ? "" : columnLabel(frozenColumns - 1);
+      columnField.current = frozenColumns === 0 ? "" : columnLabel(frozenColumns - 1);
       return;
     }
     const op = frozenColumnsSet(sheet.body, count);
     if (op !== undefined) apply([op]);
-    else columnDraft = frozenColumns === 0 ? "" : columnLabel(frozenColumns - 1);
+    else columnField.current = frozenColumns === 0 ? "" : columnLabel(frozenColumns - 1);
   };
 
   const freezeRows = (raw: string) => {
@@ -133,12 +124,12 @@
     const trimmed = raw.trim();
     const count = trimmed === "" || trimmed === "-" || trimmed === "–" ? 0 : /^\d+$/.test(trimmed) ? Number(trimmed) : undefined;
     if (count === undefined) {
-      rowDraft = frozenRows === 0 ? "" : String(frozenRows);
+      rowField.current = frozenRows === 0 ? "" : String(frozenRows);
       return;
     }
     const op = frozenRowsSet(sheet.body, count);
     if (op !== undefined) apply([op]);
-    else rowDraft = frozenRows === 0 ? "" : String(frozenRows);
+    else rowField.current = frozenRows === 0 ? "" : String(frozenRows);
   };
 
   const rowWord = $derived(primary === undefined || primary.rows === 1 ? "row" : `${primary.rows} rows`);
@@ -203,25 +194,25 @@
       <PanelControlGroup flush>
         <PanelControlRow label="Row">
           <Input
-            value={rowDraft}
+            value={rowField.current}
             placeholder="–"
             aria-label="Frozen rows"
             title="How many rows stay pinned at the bottom of the view"
             class="text-body-sm h-7 tabular-nums"
             oninput={(event: Event & { currentTarget: EventTarget & HTMLInputElement }) => {
-              rowDraft = event.currentTarget.value;
+              rowField.current = event.currentTarget.value;
             }}
             onchange={(event: Event & { currentTarget: EventTarget & HTMLInputElement }) => freezeRows(event.currentTarget.value)}
           />
         </PanelControlRow>
         <PanelControlRow label="Col">
           <Input
-            value={columnDraft}
+            value={columnField.current}
             placeholder="–"
             aria-label="Frozen columns"
             class="text-body-sm h-7 uppercase"
             oninput={(event: Event & { currentTarget: EventTarget & HTMLInputElement }) => {
-              columnDraft = event.currentTarget.value;
+              columnField.current = event.currentTarget.value;
             }}
             onchange={(event: Event & { currentTarget: EventTarget & HTMLInputElement }) => freezeColumns(event.currentTarget.value)}
           />

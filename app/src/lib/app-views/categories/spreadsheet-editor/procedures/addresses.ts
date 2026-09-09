@@ -1,10 +1,10 @@
 export {
-  EMPTY_GRID,
   cellsIn,
   clamped,
   columnIndexOf,
   columnLabel,
   contains,
+  emptyGrid,
   gridOf,
   indexOf,
   keyOf,
