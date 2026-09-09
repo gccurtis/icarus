@@ -1,6 +1,5 @@
 <script lang="ts">
   import ExternalLink from "@lucide/svelte/icons/external-link";
-  import { onMount } from "svelte";
 
   import {
     Panel,
@@ -14,10 +13,9 @@
     PanelQuote,
     PanelSkeleton
   } from "$authored-components/panel";
-  import {
-    readProjectActivity,
-    type ProjectActivityEntry,
-    type ProjectPanelActor
+  import type {
+    ProjectActivityEntry,
+    ProjectPanelActor
   } from "$capabilities/project/index.remote";
   import {
     isContextView,
@@ -25,16 +23,17 @@
     workspaceState
   } from "$model/client/workspace-state";
   import { activityLabel } from "$app-views/categories/project-overview/procedures/activity-label";
+  import { ticksTheClock } from "$app-views/categories/project-overview/procedures/effects/ticks-the-clock.svelte";
+  import { projectActivity } from "$app-views/categories/project-overview/procedures/read-activity";
   import { shortSince } from "$app-views/categories/project-overview/procedures/rows";
 
   const RESOURCE_KINDS = ["document", "slides", "spreadsheet", "research", "finding"];
   const view = workspaceState();
+  const clock = ticksTheClock();
   const activityId = $derived(
     view.selection?.kind === "activity" ? view.selection.id : undefined
   );
-  const answer = $derived(
-    activityId === undefined ? undefined : readProjectActivity({ activityId })
-  );
+  const answer = $derived(projectActivity(activityId));
   const event = $derived(answer?.ready ? answer.current : undefined);
   const question = $derived(
     event !== null &&
@@ -44,12 +43,7 @@
       ? event.target.label
       : undefined
   );
-  let now = $state(Date.now());
-
-  onMount(() => {
-    const timer = setInterval(() => (now = Date.now()), 60_000);
-    return () => clearInterval(timer);
-  });
+  const now = $derived(clock.current);
 
   const titleCase = (value: string): string =>
     value.length === 0 ? value : `${value[0].toLocaleUpperCase()}${value.slice(1)}`;

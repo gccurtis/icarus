@@ -1,11 +1,11 @@
-import type { StoreModel } from "$model/server/store/index.server";
 import type { Scope } from "$runtime/server/scope.server";
 
 import {
   boundedText,
   finiteTime,
   recordOf,
-  recordsIn
+  recordsIn,
+  type StoreReads
 } from "$capabilities/project/api/shared/store";
 import type {
   ProjectActivityEntry,
@@ -26,7 +26,7 @@ const targetOf = (value: unknown): ProjectActivityTarget | undefined => {
 };
 
 const userActor = (
-  store: StoreModel,
+  store: StoreReads,
   scope: Scope,
   userId: string
 ): ProjectPanelActor => {
@@ -42,7 +42,7 @@ const userActor = (
 
 /** Resolve only the actor fields safe and useful to a project panel. */
 export const actorOf = (
-  store: StoreModel,
+  store: StoreReads,
   scope: Scope,
   value: unknown
 ): ProjectPanelActor | null => {
@@ -88,7 +88,7 @@ export const isUserActor = (value: unknown, userId: string): boolean => {
 
 /** Turn one stored activity row into the immutable, bounded panel record. */
 export const activityOf = (
-  store: StoreModel,
+  store: StoreReads,
   scope: Scope,
   value: unknown
 ): ProjectActivityEntry | undefined => {
@@ -121,7 +121,7 @@ export const activityOf = (
 };
 
 export const activityIn = (
-  store: StoreModel,
+  store: StoreReads,
   scope: Scope
 ): readonly ProjectActivityEntry[] =>
   recordsIn(store, "activity")

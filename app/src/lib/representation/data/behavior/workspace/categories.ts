@@ -25,6 +25,7 @@ export const CONTENT_VIEWS = [
   "agents.persona",
   "agents.task",
   "analysis.chart",
+  "context-editor.unavailable",
   "document-editor.document",
   "new-tab.launcher",
   "project-overview.overview",

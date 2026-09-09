@@ -1,7 +1,9 @@
-import type { StoreModel, TableName, TableRow } from "$model/server/store/index.server";
+import type { StoreUnitOfWork, TableName, TableRow } from "$model/server/store/index.server";
+
+export type StoreReads = Pick<StoreUnitOfWork, "read">;
 
 export const rowsIn = <T extends TableName>(
-  store: StoreModel,
+  store: StoreReads,
   table: T
 ): readonly TableRow<T>[] => {
   const found = store.read(table);
@@ -16,7 +18,7 @@ export const recordOf = (value: unknown): Record<string, unknown> | undefined =>
     : undefined;
 
 export const recordsIn = (
-  store: StoreModel,
+  store: StoreReads,
   table: TableName
 ): readonly Record<string, unknown>[] =>
   rowsIn(store, table).flatMap((row) => {

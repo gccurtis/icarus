@@ -1,6 +1,6 @@
-import type { StoreModel, TableName } from "$model/server/store/index.server";
+import type { TableName } from "$model/server/store/index.server";
 
-import { recordsIn } from "$capabilities/project/api/shared/store";
+import { recordsIn, type StoreReads } from "$capabilities/project/api/shared/store";
 import type { ProjectResourceKind } from "$capabilities/project/types/project";
 
 export type ProjectResourceSpec = {
@@ -25,7 +25,7 @@ export type RepresentedProjectResource = {
 
 /** Resolve exactly one supported resource inside the already-resolved project. */
 export const projectResourceOf = (
-  store: StoreModel,
+  store: StoreReads,
   projectId: string,
   resourceId: string
 ): RepresentedProjectResource | undefined => {

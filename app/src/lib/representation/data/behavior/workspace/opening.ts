@@ -116,7 +116,11 @@ export const OPENING: Record<Category, Opening> = {
     ]
   },
 
-  "context-editor": { context: null, rail: [] }
+  "context-editor": {
+    content: "context-editor.unavailable",
+    context: null,
+    rail: []
+  }
 };
 
 export const railFor = (category: Category): readonly ContextView[] => OPENING[category].rail;

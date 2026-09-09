@@ -23,6 +23,7 @@ export type ContentView =
   | "agents.persona"
   | "agents.task"
   | "analysis.chart"
+  | "context-editor.unavailable"
   | "document-editor.document"
   | "new-tab.launcher"
   | "project-overview.overview"

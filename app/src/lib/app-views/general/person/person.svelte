@@ -14,11 +14,11 @@
     PanelStats,
     PanelTimeline
   } from "$authored-components/panel";
-  import { readProjectPerson } from "$capabilities/project/index.remote";
   import {
     isInspectorView,
     workspaceState
   } from "$model/client/workspace-state";
+  import { projectPerson } from "$app-views/general/person/procedures/read-person";
 
   const MINUTE = 60_000;
   const HOUR = 60 * MINUTE;
@@ -43,9 +43,7 @@
   const userId = $derived(
     view.selection?.kind === "person" ? view.selection.id : undefined
   );
-  const answer = $derived(
-    userId === undefined ? undefined : readProjectPerson({ userId })
-  );
+  const answer = $derived(projectPerson(userId));
   const person = $derived(answer?.ready ? answer.current : undefined);
   const now = Date.now();
 

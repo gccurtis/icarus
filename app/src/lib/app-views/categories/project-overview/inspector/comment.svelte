@@ -2,7 +2,6 @@
   import Check from "@lucide/svelte/icons/check";
   import Locate from "@lucide/svelte/icons/locate";
   import RotateCcw from "@lucide/svelte/icons/rotate-ccw";
-  import { onMount } from "svelte";
 
   import {
     Panel,
@@ -17,17 +16,18 @@
     PanelSkeleton
   } from "$authored-components/panel";
   import { Textarea } from "$vendored-components/textarea";
-  import { reply as replyToThread, resolveThread } from "$capabilities/comments/index.remote";
-  import {
-    readProjectComment,
-    type ProjectPanelActor,
-    type ProjectResourceKind
+  import type {
+    ProjectPanelActor,
+    ProjectResourceKind
   } from "$capabilities/project/index.remote";
   import {
     isContextView,
     isInspectorView,
     workspaceState
   } from "$model/client/workspace-state";
+  import { commentThreadCommand } from "$app-views/categories/project-overview/procedures/comment-thread-command.svelte";
+  import { ticksTheClock } from "$app-views/categories/project-overview/procedures/effects/ticks-the-clock.svelte";
+  import { projectComment } from "$app-views/categories/project-overview/procedures/read-comment";
   import { shortSince } from "$app-views/categories/project-overview/procedures/rows";
 
   type ElementNode = {
@@ -55,22 +55,14 @@
   };
 
   const view = workspaceState();
+  const clock = ticksTheClock();
+  const command = commentThreadCommand();
   const threadId = $derived(
     view.selection?.kind === "comment" ? view.selection.id : undefined
   );
-  const answer = $derived(
-    threadId === undefined ? undefined : readProjectComment({ threadId })
-  );
+  const answer = $derived(projectComment(threadId));
   const thread = $derived(answer?.ready ? answer.current : undefined);
-  let now = $state(Date.now());
-  let reply = $state("");
-  let busy = $state(false);
-  let failed = $state<string | undefined>(undefined);
-
-  onMount(() => {
-    const timer = setInterval(() => (now = Date.now()), 60_000);
-    return () => clearInterval(timer);
-  });
+  const now = $derived(clock.current);
 
   const navigate = (key: string) => {
     if (isContextView(key)) view.selectContext(key);
@@ -148,37 +140,6 @@
     view.inspect("slide-deck-editor.threads", { kind: "threads", id: anchor.elementId });
   };
 
-  const attempt = async (act: () => Promise<void>) => {
-    busy = true;
-    failed = undefined;
-    try {
-      await act();
-    } catch (error) {
-      failed = error instanceof Error ? error.message : "That did not save.";
-    } finally {
-      busy = false;
-    }
-  };
-
-  const send = () =>
-    attempt(async () => {
-      const held = thread;
-      const heldAnswer = answer;
-      const text = reply.trim();
-      if (held === null || held === undefined || heldAnswer === undefined || text.length === 0) return;
-      await replyToThread({ threadId: held.id, text });
-      reply = "";
-      await heldAnswer.refresh();
-    });
-
-  const setResolved = (resolved: boolean) =>
-    attempt(async () => {
-      const held = thread;
-      const heldAnswer = answer;
-      if (held === null || held === undefined || heldAnswer === undefined) return;
-      await resolveThread({ threadId: held.id, resolved });
-      await heldAnswer.refresh();
-    });
 </script>
 
 <Panel title="Comment">
@@ -275,25 +236,25 @@
           <Textarea
             placeholder="Write a reply…"
             aria-label="Write a reply"
-            bind:value={reply}
+            bind:value={command.draft}
             class="text-body-sm field-sizing-content max-h-40 min-h-16 resize-none overflow-y-auto"
           />
           <div class="flex flex-wrap items-center justify-between gap-2">
             <PanelButton
               label={thread.state === "open" ? "Resolve" : "Reopen"}
               icon={thread.state === "open" ? Check : RotateCcw}
-              disabled={busy}
-              onclick={() => void setResolved(thread.state !== "open")}
+              disabled={command.busy}
+              onclick={() => void command.setResolved(thread.id, thread.state !== "open", answer)}
             />
             <PanelButton
-              label={busy ? "Sending…" : "Reply"}
+              label={command.busy ? "Sending…" : "Reply"}
               tone="primary"
-              disabled={busy || reply.trim().length === 0}
-              onclick={() => void send()}
+              disabled={command.busy || command.draft.trim().length === 0}
+              onclick={() => void command.send(thread.id, answer)}
             />
           </div>
-          {#if failed !== undefined}
-            <PanelNote tone="gap">{failed}</PanelNote>
+          {#if command.error !== undefined}
+            <PanelNote tone="gap">{command.error}</PanelNote>
           {/if}
         </div>
 

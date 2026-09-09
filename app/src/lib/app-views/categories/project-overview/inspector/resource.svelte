@@ -1,6 +1,5 @@
 <script lang="ts">
   import ExternalLink from "@lucide/svelte/icons/external-link";
-  import { onMount } from "svelte";
 
   import {
     Panel,
@@ -18,11 +17,9 @@
     PanelStats,
     PanelTimeline
   } from "$authored-components/panel";
-  import {
-    readProjectResource,
-    updateProjectResourceSummary,
-    type ProjectPanelActor,
-    type ProjectResourceKind
+  import type {
+    ProjectPanelActor,
+    ProjectResourceKind
   } from "$capabilities/project/index.remote";
   import {
     isContextView,
@@ -30,6 +27,9 @@
     workspaceState
   } from "$model/client/workspace-state";
   import { activityLabel } from "$app-views/categories/project-overview/procedures/activity-label";
+  import { ticksTheClock } from "$app-views/categories/project-overview/procedures/effects/ticks-the-clock.svelte";
+  import { projectResource } from "$app-views/categories/project-overview/procedures/read-resource";
+  import { resourceSummaryCommand } from "$app-views/categories/project-overview/procedures/resource-summary-command.svelte";
   import { shortSince } from "$app-views/categories/project-overview/procedures/rows";
 
   const KIND_LABEL: Record<ProjectResourceKind, string> = {
@@ -49,19 +49,12 @@
   };
 
   const view = workspaceState();
+  const clock = ticksTheClock();
+  const summary = resourceSummaryCommand();
   const resourceId = $derived(view.selection?.id);
-  const answer = $derived(
-    resourceId === undefined ? undefined : readProjectResource({ resourceId })
-  );
+  const answer = $derived(projectResource(resourceId));
   const resource = $derived(answer?.ready ? answer.current : undefined);
-  let now = $state(Date.now());
-  let saving = $state(false);
-  let saveError = $state<string | undefined>(undefined);
-
-  onMount(() => {
-    const timer = setInterval(() => (now = Date.now()), 60_000);
-    return () => clearInterval(timer);
-  });
+  const now = $derived(clock.current);
 
   const exactTime = (at: number): string =>
     new Date(at).toLocaleString(undefined, {
@@ -94,20 +87,6 @@
       view.open({ category: "document-editor", resourceId: resource.id });
     } else if (resource.kind === "slides") {
       view.open({ category: "slide-deck-editor", resourceId: resource.id });
-    }
-  };
-
-  const saveSummary = async (summary: string) => {
-    const held = resource;
-    if (held === null || held === undefined) return;
-    saving = true;
-    saveError = undefined;
-    try {
-      await updateProjectResourceSummary({ resourceId: held.id, summary });
-    } catch (error) {
-      saveError = error instanceof Error ? error.message : "The summary did not save.";
-    } finally {
-      saving = false;
     }
   };
 
@@ -190,12 +169,12 @@
             multiline
             appearance="field"
             previewLines={3}
-            disabled={saving}
-            onchange={(next) => void saveSummary(next)}
+            disabled={summary.saving}
+            onchange={(next) => void summary.save(resource.id, next)}
           />
         </div>
-        {#if saveError !== undefined}
-          <PanelNote tone="gap">{saveError}</PanelNote>
+        {#if summary.error !== undefined}
+          <PanelNote tone="gap">{summary.error}</PanelNote>
         {/if}
       </PanelSection>
 

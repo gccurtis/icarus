@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { onMount } from "svelte";
-
   import {
     Panel,
     PanelBanner,
@@ -9,9 +7,10 @@
     PanelSkeleton,
     PanelTimeline
   } from "$authored-components/panel";
-  import { readProjectHistory } from "$capabilities/project/index.remote";
   import { workspaceState } from "$model/client/workspace-state";
   import { activityLabel } from "$app-views/categories/project-overview/procedures/activity-label";
+  import { followsHistoryFilter } from "$app-views/categories/project-overview/procedures/effects/follows-history-filter.svelte";
+  import { ticksTheClock } from "$app-views/categories/project-overview/procedures/effects/ticks-the-clock.svelte";
   import { shortSince } from "$app-views/categories/project-overview/procedures/rows";
 
   const DAY = 24 * 60 * 60 * 1_000;
@@ -23,14 +22,10 @@
   ] as const;
 
   const view = workspaceState();
+  const clock = ticksTheClock();
   let search = $state("");
   let window = $state("all");
-  let now = $state(Date.now());
-
-  onMount(() => {
-    const timer = setInterval(() => (now = Date.now()), 60_000);
-    return () => clearInterval(timer);
-  });
+  const now = $derived(clock.current);
 
   const startOfDay = (at: number): number => {
     const date = new Date(at);
@@ -47,16 +42,8 @@
           ? now - 30 * DAY
           : null
   );
-  // Keep the proxy in component state. A derived that owns a succession of
-  // query proxies can release the previous query root while downstream
-  // derivations are still settling, which Svelte correctly reports as an inert
-  // derived read during fast search input.
-  let answer = $state.raw(
-    readProjectHistory({ search: "", since: null, before: null, limit: 50 })
-  );
-  $effect(() => {
-    answer = readProjectHistory({ search, since: sinceWindow, before: null, limit: 50 });
-  });
+  const query = followsHistoryFilter(() => search, () => sinceWindow);
+  const answer = $derived(query.current);
   const history = $derived(answer.ready ? answer.current : undefined);
 
   const lineOf = (entry: NonNullable<typeof history>["entries"][number]) => ({

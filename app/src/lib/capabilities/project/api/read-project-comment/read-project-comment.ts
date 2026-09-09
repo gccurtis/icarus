@@ -7,7 +7,8 @@ import {
   boundedText,
   finiteTime,
   recordOf,
-  recordsIn
+  recordsIn,
+  type StoreReads
 } from "$capabilities/project/api/shared/store";
 import { validateReadProjectComment } from "$capabilities/project/api/read-project-comment/validate-read-project-comment";
 import type {
@@ -15,7 +16,6 @@ import type {
   ProjectCommentRemark,
   ReadProjectCommentResult
 } from "$capabilities/project/types/project";
-import type { StoreModel } from "$model/server/store/index.server";
 import type { Scope } from "$runtime/server/scope.server";
 
 const idOf = (value: unknown): string | undefined => boundedText(value, 500);
@@ -33,7 +33,7 @@ const textOf = (value: unknown): string => {
 };
 
 const remarkOf = (
-  store: StoreModel,
+  store: StoreReads,
   scope: Scope,
   value: unknown
 ): ProjectCommentRemark | undefined => {
@@ -56,8 +56,6 @@ const remarkOf = (
 const anchorOf = (value: unknown): ProjectCommentAnchor => {
   const within = recordOf(value);
   if (within?.kind === "text") {
-    const legacy = idOf(within.blockId);
-    if (legacy !== undefined) return { kind: "document-text", blockId: legacy };
     const first = Array.isArray(within.spans) ? recordOf(within.spans[0]) : undefined;
     const blockId = idOf(first?.blockId);
     return blockId === undefined ? null : { kind: "document-text", blockId };

@@ -9,7 +9,7 @@
     PanelSection,
     PanelSkeleton
   } from "$authored-components/panel";
-  import { readProjectOverview } from "$capabilities/project/index.remote";
+  import { projectOverview } from "$app-views/categories/project-overview/procedures/read-overview";
 
   const titleCase = (value: string): string =>
     value.length === 0 ? value : `${value[0].toLocaleUpperCase()}${value.slice(1)}`;
@@ -30,7 +30,7 @@
 -->
 <Panel title="Overview">
   <div class="pt-1">
-    {#await readProjectOverview()}
+    {#await projectOverview()}
       <PanelSkeleton shape="fields" count={3} />
     {:then overview}
       {#if overview === null}

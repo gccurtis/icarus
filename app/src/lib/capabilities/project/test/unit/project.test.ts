@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { StoreUnitOfWork } from "$model/server/store/index.server";
 
 const model = vi.hoisted(() => ({
   projectId: "projects:mine",
@@ -16,8 +17,8 @@ vi.mock("$runtime/server/scope.server", () => ({
 }));
 
 vi.mock("$runtime/server/start.server", () => ({
-  serverModel: () => ({
-    store: {
+  serverModel: () => {
+    const store = {
       read: (table: string) => ({
         table,
         kind: "table",
@@ -36,9 +37,12 @@ vi.mock("$runtime/server/start.server", () => ({
         const row = rows.find((candidate) => candidate._id === id);
         if (row === undefined || field === undefined) throw new Error(`No row at ${path}`);
         delete row[field];
-      }
-    }
-  })
+      },
+      transaction: <T>(work: (unit: StoreUnitOfWork) => T): T =>
+        work(store as unknown as StoreUnitOfWork)
+    };
+    return { store };
+  }
 }));
 
 const { readProjectOverview } = await import(
@@ -384,7 +388,16 @@ describe("project panel reads", () => {
         projectId: "projects:mine",
         target: { kind: "document", id: "documents:1" },
         quote: "Selected words",
-        within: { kind: "text", blockId: "block:1" },
+        within: {
+          kind: "text",
+          spans: [
+            {
+              blockId: "block:1",
+              from: { atom: "atom:1", offset: 0 },
+              to: { atom: "atom:1", offset: 14 }
+            }
+          ]
+        },
         createdBy: user("users:me"),
         updatedAt: 30
       },

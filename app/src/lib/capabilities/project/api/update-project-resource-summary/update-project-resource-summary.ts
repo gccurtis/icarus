@@ -13,23 +13,24 @@ export const updateProjectResourceSummary = async (
   const scope = await requireScope();
   const asked = validateUpdateProjectResourceSummary(input);
   const store = serverModel().store;
-  const resource = projectResourceOf(store, scope.projectId, asked.resourceId);
-  if (resource === undefined) {
-    throw new Error(`project/update-resource-summary: no resource ${asked.resourceId}`);
-  }
-
-  const path = `${resource.spec.table}.${asked.resourceId}`;
-  if (asked.summary.length === 0) store.remove(`${path}.summary`);
-  else store.update(`${path}.summary`, asked.summary);
-
   const updatedAt = Date.now();
-  store.update(`${path}.updatedAt`, updatedAt);
-  if (resource.spec.hasUpdatedBy) {
-    store.update(`${path}.updatedBy`, {
-      kind: "user",
-      userId: asId<"users">(scope.userId)
-    });
-  }
+  return store.transaction((unit) => {
+    const resource = projectResourceOf(unit, scope.projectId, asked.resourceId);
+    if (resource === undefined) {
+      throw new Error(`project/update-resource-summary: no resource ${asked.resourceId}`);
+    }
 
-  return { resourceId: asked.resourceId, summary: asked.summary, updatedAt };
+    const path = `${resource.spec.table}.${asked.resourceId}`;
+    if (asked.summary.length === 0) unit.remove(`${path}.summary`);
+    else unit.update(`${path}.summary`, asked.summary);
+    unit.update(`${path}.updatedAt`, updatedAt);
+    if (resource.spec.hasUpdatedBy) {
+      unit.update(`${path}.updatedBy`, {
+        kind: "user",
+        userId: asId<"users">(scope.userId)
+      });
+    }
+
+    return { resourceId: asked.resourceId, summary: asked.summary, updatedAt };
+  });
 };
