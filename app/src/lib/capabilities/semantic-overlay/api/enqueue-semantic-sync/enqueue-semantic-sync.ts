@@ -8,6 +8,7 @@ import { validateEnqueueSemanticSync } from "$capabilities/semantic-overlay/api/
 import type { EnqueueSemanticSyncResult } from "$capabilities/semantic-overlay/types/enqueue-semantic-sync";
 import { enqueueMaterialSyncFor } from "$capabilities/semantic-overlay/api/shared/material-queue";
 import { readMaterialSyncTargetFor } from "$capabilities/semantic-overlay/api/shared/material-resource";
+import { semanticUnitModel } from "$capabilities/semantic-overlay/api/shared/unit-of-work";
 
 /** Captures the authoritative leader revision; callers provide only a scoped resource ref. */
 export const enqueueSemanticSync = async (
@@ -23,11 +24,22 @@ export const enqueueSemanticSync = async (
   const revision = textTarget?.revision ?? materialTarget?.revision;
   if (revision === undefined || materialTarget === undefined) return null;
   const ref = textTarget?.ref ?? materialTarget?.ref ?? asked.ref;
+  const queued = model.store.transaction((unit) => {
+    const atomic = semanticUnitModel(model, unit);
+    return {
+      ...(textTarget === undefined
+        ? {}
+        : { jobId: enqueueSemanticSyncFor(atomic, projectId, textTarget.ref, textTarget.revision) }),
+      materialJobId: enqueueMaterialSyncFor(
+        atomic,
+        projectId,
+        materialTarget.ref,
+        materialTarget.revision
+      )
+    };
+  });
   return {
-    ...(textTarget === undefined
-      ? {}
-      : { jobId: enqueueSemanticSyncFor(model, projectId, textTarget.ref, textTarget.revision) }),
-    materialJobId: enqueueMaterialSyncFor(model, projectId, materialTarget.ref, materialTarget.revision),
+    ...queued,
     ref,
     revision
   };

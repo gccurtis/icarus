@@ -1,4 +1,4 @@
-import type { ServerModel } from "$runtime/server/start.server";
+import type { SemanticUnitModel } from "$capabilities/semantic-overlay/api/shared/unit-of-work";
 import type { TableRow } from "$model/server/store/index.server";
 import type { Id } from "$representation/data/types/core/id";
 import type { ResourceRef } from "$representation/data/types/core/resource";
@@ -59,7 +59,7 @@ const fields = (prepared: PreparedMaterial, projectId: Id<"projects">): Semantic
 const ownsResource = (material: TableRow<"semanticMaterials">, ref: ResourceRef): boolean =>
   sameResourceRef(material.source.ref, ref);
 
-const materialObjects = (model: ServerModel, projectId: Id<"projects">) =>
+const materialObjects = (model: SemanticUnitModel, projectId: Id<"projects">) =>
   rowsOf(model.store, "semanticObjects").flatMap((object): MaterialObjectRow[] =>
     object.projectId === projectId && object.lane === "material"
       ? [object as MaterialObjectRow]
@@ -79,7 +79,7 @@ const sameDescriptorIdentity = (
 
 /** Stages a complete material tree, then swaps records, placements, and generation synchronously. */
 export const publishSemanticMaterials = (
-  model: ServerModel,
+  model: SemanticUnitModel,
   projectId: Id<"projects">,
   ref: ResourceRef,
   revision: number,

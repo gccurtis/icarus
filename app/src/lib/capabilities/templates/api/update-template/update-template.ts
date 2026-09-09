@@ -101,32 +101,6 @@ export const updateTemplate = async (input: unknown): Promise<UpdateTemplateResu
         };
       }
     }
-    for (const held of template.holes) {
-      if (holes.some((hole) => hole.name === held.name)) continue;
-      removeRowsBoundTo(store, scope.projectId, {
-        kind: "hole",
-        templateId: template._id,
-        hole: held.name
-      });
-    }
-    holes = holes.map((hole) => {
-      const written = normalizeScope(
-        store,
-        scope.projectId,
-        actor,
-        { kind: "hole", templateId: template._id, hole: hole.name },
-        hole.default,
-        at
-      );
-      return {
-        name: hole.name,
-        label: hole.label,
-        ...(hole.description === undefined ? {} : { description: hole.description }),
-        ...(hole.kind === undefined ? {} : { kind: hole.kind }),
-        ...(hole.text === undefined ? {} : { text: hole.text }),
-        ...(written === undefined ? {} : { default: written.term })
-      };
-    });
   }
   if (asked.patch.holeDescription !== undefined) {
     const asking = asked.patch.holeDescription;
@@ -145,24 +119,56 @@ export const updateTemplate = async (input: unknown): Promise<UpdateTemplateResu
       return asking.description === null ? rest : { ...rest, description: asking.description };
     });
   }
-  const fields: RowFields<"templates"> = {
-    projectId: template.projectId,
-    userId: template.userId,
-    name: asked.patch.name ?? template.name,
-    ...(description === undefined ? {} : { description }),
-    tags: [...(asked.patch.tags ?? template.tags)],
-    body: template.body,
-    holes,
-    createdBy: template.createdBy,
-    revision: template.revision + 1,
-    updatedAt: at
-  };
-  store.update(`templates.${template._id}`, fields);
-  writeTemplateVersion(store, template._id, fields, at);
-  for (const stage of stagesIn(store)) {
-    if (stage.templateId !== template._id) continue;
-    store.update(`templateStages.${stage._id}.templateRevision`, fields.revision);
-  }
+  const fields = store.transaction((unit): RowFields<"templates"> => {
+    let storedHoles = holes;
+    if (asked.patch.holes !== undefined) {
+      for (const held of template.holes) {
+        if (holes.some((hole) => hole.name === held.name)) continue;
+        removeRowsBoundTo(unit, scope.projectId, {
+          kind: "hole",
+          templateId: template._id,
+          hole: held.name
+        });
+      }
+      storedHoles = holes.map((hole) => {
+        const written = normalizeScope(
+          unit,
+          scope.projectId,
+          actor,
+          { kind: "hole", templateId: template._id, hole: hole.name },
+          hole.default,
+          at
+        );
+        return {
+          name: hole.name,
+          label: hole.label,
+          ...(hole.description === undefined ? {} : { description: hole.description }),
+          ...(hole.kind === undefined ? {} : { kind: hole.kind }),
+          ...(hole.text === undefined ? {} : { text: hole.text }),
+          ...(written === undefined ? {} : { default: written.term })
+        };
+      });
+    }
+    const next: RowFields<"templates"> = {
+      projectId: template.projectId,
+      userId: template.userId,
+      name: asked.patch.name ?? template.name,
+      ...(description === undefined ? {} : { description }),
+      tags: [...(asked.patch.tags ?? template.tags)],
+      body: template.body,
+      holes: storedHoles,
+      createdBy: template.createdBy,
+      revision: template.revision + 1,
+      updatedAt: at
+    };
+    unit.update(`templates.${template._id}`, next);
+    writeTemplateVersion(unit, template._id, next, at);
+    for (const stage of stagesIn(unit)) {
+      if (stage.templateId !== template._id) continue;
+      unit.update(`templateStages.${stage._id}.templateRevision`, next.revision);
+    }
+    return next;
+  });
 
   return { accepted: true, templateId: template._id, revision: fields.revision };
 };

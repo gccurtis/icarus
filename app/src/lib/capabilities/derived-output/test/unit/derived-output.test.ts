@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { StoreUnitOfWork } from "$model/server/store/index.server";
 
 type Row = Record<string, unknown> & { _id: string; _creationTime: number };
 type Tool = { name: string; execute(value: unknown): Promise<unknown> };
@@ -67,6 +68,19 @@ const state = vi.hoisted(() => {
     removeRows: (table: string, ids: readonly string[]) => {
       const removed = new Set(ids);
       tables.set(table, rows(table).filter((row) => !removed.has(row._id)));
+    },
+    transaction: <T>(work: (unit: StoreUnitOfWork) => T): T => {
+      const beforeTables = structuredClone([...tables.entries()]);
+      const beforeCounters = structuredClone([...counters.entries()]);
+      try {
+        return work(store as unknown as StoreUnitOfWork);
+      } catch (error) {
+        tables.clear();
+        for (const [table, held] of beforeTables) tables.set(table, held);
+        counters.clear();
+        for (const [table, count] of beforeCounters) counters.set(table, count);
+        throw error;
+      }
     }
   };
   const source = (): Row => rows("semanticSources")[0];

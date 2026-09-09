@@ -9,7 +9,11 @@ identity arrive per request through `Scope`.
 | Object | Owns |
 | ------ | ---- |
 | [`configuration`](configuration/configuration.md) | One frozen snapshot of `configuration/*.yaml`, read once |
+| [`embedding`](../../model/server/embedding/embedding.md) | The server-only semantic embedding port |
+| [`intelligence`](../../model/server/intelligence/intelligence.md) | The bounded tool-calling model port |
+| [`material-content`](../../model/server/material-content/material-content.md) | Hash-addressed native material bytes |
 | [`observability`](observability/observability.md) | The root logger, and the log stream if it opened one |
+| [`store`](../../model/server/store/store.md) | The represented tables and their persistence boundary |
 
 They are built in that order, and released in the reverse of it. Logging is built
 first among the releasable objects and closed last, so anything released before
@@ -28,7 +32,11 @@ hooks.server.ts  init()          before the first request is answered
 └── initServerModel()
     └── buildServerModel()
         ├── configuration
-        └── observability
+        ├── observability
+        ├── store
+        ├── embedding
+        ├── intelligence
+        └── material-content
 
 serverModel()                    every later caller
 ├── throw after shutdown begins
@@ -110,6 +118,7 @@ server/
 └── test/             lifetime and composition
 ```
 
-The objects the graph is built from — `configuration` and `observability` — are
+The objects the graph is built from — `configuration`, `observability`, `store`,
+`embedding`, `intelligence`, and `material-content` — are
 definitional and live in [`model/server/`](../../model/model.md). This tree calls
 their constructors; it does not define them.

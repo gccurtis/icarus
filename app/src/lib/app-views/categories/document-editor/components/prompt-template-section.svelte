@@ -15,8 +15,9 @@
     scopeNamesOf,
     setsIn
   } from "$app-views/categories/document-editor/procedures/templating";
-  import { readDerivedOutput } from "$capabilities/derived-output/index.remote";
-  import { workspaceState, type DocumentRuntime } from "$model/client/workspace-state";
+  import { readPromptOutput } from "$app-views/categories/document-editor/procedures/read-prompt-output";
+  import { workspaceState } from "$model/client/workspace-state";
+  import type { DocumentOp } from "$representation/data/types/documents/op";
 
   /**
    * Turning a prompt into a hole, and saying what the hole is.
@@ -39,10 +40,9 @@
   const view = workspaceState();
   const documentId = $derived(view.active.resourceId);
 
-  let runtime = $state<DocumentRuntime>();
-  $effect(() => {
-    runtime = documentId === undefined ? undefined : view.documentRuntime(documentId);
-  });
+  const runtime = $derived(
+    documentId === undefined ? undefined : view.documentRuntime(documentId)
+  );
 
   const body = $derived(runtime?.body);
   const held = $derived(body === undefined ? undefined : blockIn(body, blockId));
@@ -53,7 +53,7 @@
   const outputQuery =
     derivedOutputId === undefined
       ? undefined
-      : readDerivedOutput({ derivedOutputId: derivedOutputId as Id<"derivedOutputs"> });
+      : readPromptOutput(derivedOutputId as Id<"derivedOutputs">);
   const linked = $derived(outputQuery?.ready ? outputQuery.current?.output : undefined);
 
   const sets = resourceSets();
@@ -71,9 +71,9 @@
     ruleOf(defaultScopeOf(derivedOutputId === undefined ? block?.scope : linked?.scope), setNames)
   );
 
-  const write = (ops: readonly unknown[]) => {
+  const write = (ops: readonly DocumentOp[]) => {
     if (runtime === undefined || ops.length === 0) return;
-    runtime.apply(ops as Parameters<DocumentRuntime["apply"]>[0]);
+    runtime.apply(ops);
   };
 
   const make = () => {

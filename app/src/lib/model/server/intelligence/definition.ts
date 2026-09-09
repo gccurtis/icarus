@@ -1,4 +1,4 @@
-import { runAgent } from "$model/server/intelligence/methods/run-agent/run-agent";
+import { completeWithTools } from "$model/server/intelligence/methods/run-agent/run-agent";
 import type {
   IntelligenceConfiguration,
   IntelligenceInput,
@@ -18,7 +18,7 @@ export class OpenRouterIntelligence implements IntelligenceModel {
   completeWithTools<Value = string>(
     input: IntelligenceInput<Value>
   ): Promise<IntelligenceResult<Value>> {
-    return runAgent(this.#state, input);
+    return completeWithTools(this.#state, input);
   }
 }
 

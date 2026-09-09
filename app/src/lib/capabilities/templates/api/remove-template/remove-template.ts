@@ -32,6 +32,15 @@ export const removeTemplate = async (input: unknown): Promise<RemoveTemplateResu
     };
   }
   const stored = found.template;
+  if (stored.userId !== scope.userId) {
+    return {
+      accepted: false,
+      templateId: asked.templateId,
+      reason: "forbidden",
+      revision: reportableRevision(stored.revision),
+      detail: "only the template owner can delete it"
+    };
+  }
   if (stored.revision !== asked.baseRevision) {
     return {
       accepted: false,
@@ -53,6 +62,59 @@ export const removeTemplate = async (input: unknown): Promise<RemoveTemplateResu
       revision: reportableRevision(stored.revision),
       detail: error instanceof Error ? error.message : String(error)
     };
+  }
+
+  // Resolve every provenance row before writing. A corrupt or cross-project
+  // reference must not leave the template half removed.
+  const resourceTables = ["documents", "slideDecks", "spreadsheets"] as const;
+  const detach = new Map<(typeof resourceTables)[number], readonly string[]>();
+  for (const table of resourceTables) {
+    const resources = recordsIn(store, table);
+    const claimants = new Map<string, number>();
+    for (const resource of resources) {
+      const id = canonicalRowId(resource._id, table);
+      if (id !== undefined) claimants.set(id, (claimants.get(id) ?? 0) + 1);
+    }
+    const ids: string[] = [];
+    for (const resource of resources) {
+      if (resource.templateId !== template._id) continue;
+      const id = canonicalRowId(resource._id, table);
+      if (
+        id === undefined ||
+        typeof resource.projectId !== "string" ||
+        resource.projectId !== resource.projectId.trim() ||
+        resource.projectId.length === 0 ||
+        resource.projectId.length > 500
+      ) {
+        return {
+          accepted: false,
+          templateId: template._id,
+          reason: "unsupported-body",
+          revision: template.revision,
+          detail: `a ${table} provenance row is corrupt`
+        };
+      }
+      if (claimants.get(id) !== 1) {
+        return {
+          accepted: false,
+          templateId: template._id,
+          reason: "unsupported-body",
+          revision: template.revision,
+          detail: `a ${table} provenance id is ambiguous`
+        };
+      }
+      if (resource.projectId !== scope.projectId) {
+        return {
+          accepted: false,
+          templateId: template._id,
+          reason: "in-use-elsewhere",
+          revision: template.revision,
+          detail: "this template is referenced outside the current project and cannot be deleted here"
+        };
+      }
+      ids.push(id);
+    }
+    detach.set(table, ids);
   }
 
   const stages = stagesIn(store).filter((stage) => stage.templateId === template._id);
@@ -89,9 +151,16 @@ export const removeTemplate = async (input: unknown): Promise<RemoveTemplateResu
   }
 
   store.transaction((unit) => {
-    for (const stage of stages) removeStage(unit as typeof store, stage);
+    for (const table of resourceTables) {
+      unit.removeFieldFromRows(
+        table,
+        (detach.get(table) ?? []).map((id) => asId<typeof table>(id)),
+        "templateId"
+      );
+    }
+    for (const stage of stages) removeStage(unit, stage);
     for (const hole of template.holes) {
-      removeRowsBoundTo(unit as typeof store, scope.projectId, {
+      removeRowsBoundTo(unit, scope.projectId, {
         kind: "hole",
         templateId: template._id,
         hole: hole.name

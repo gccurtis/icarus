@@ -24,8 +24,9 @@
   } from "$app-views/categories/document-editor/procedures/templating";
   import { blockIn } from "$app-views/categories/document-editor/procedures/blocks";
   import type { Id } from "$app-views/categories/document-editor/procedures/prompt-blocks";
-  import { readDerivedOutput } from "$capabilities/derived-output/index.remote";
-  import { workspaceState, type DocumentRuntime } from "$model/client/workspace-state";
+  import { readPromptOutput } from "$app-views/categories/document-editor/procedures/read-prompt-output";
+  import { confirmPromptScope } from "$app-views/categories/document-editor/procedures/confirm-prompt-scope";
+  import { workspaceState } from "$model/client/workspace-state";
 
   /**
    * What a prompt reads, read from whichever thing owns it.
@@ -52,10 +53,9 @@
   const view = workspaceState();
   const documentId = $derived(view.active.resourceId);
 
-  let runtime = $state<DocumentRuntime>();
-  $effect(() => {
-    runtime = documentId === undefined ? undefined : view.documentRuntime(documentId);
-  });
+  const runtime = $derived(
+    documentId === undefined ? undefined : view.documentRuntime(documentId)
+  );
 
   const held = $derived(
     runtime?.body === undefined ? undefined : blockIn(runtime.body, blockId)
@@ -66,7 +66,7 @@
   const outputQuery =
     derivedOutputId === undefined
       ? undefined
-      : readDerivedOutput({ derivedOutputId: derivedOutputId as Id<"derivedOutputs"> });
+      : readPromptOutput(derivedOutputId as Id<"derivedOutputs">);
   const linked = $derived(outputQuery?.ready ? outputQuery.current?.output : undefined);
 
   const scope = $derived(
@@ -97,11 +97,12 @@
     open = true;
   };
 
-  const confirm = async () => {
-    open = false;
-    await onconfirm(narrowed(draft) ?? draft);
-    await outputQuery?.refresh();
-  };
+  const confirm = () => confirmPromptScope({
+    close: () => (open = false),
+    confirm: onconfirm,
+    refresh: outputQuery === undefined ? undefined : () => outputQuery.refresh(),
+    value: narrowed(draft) ?? draft
+  });
 </script>
 
 <div class="scope">

@@ -12,18 +12,12 @@
   } from "$authored-components/panel";
   import { Button } from "$vendored-components/button";
   import { Textarea } from "$vendored-components/textarea";
-  import {
-    createDerivedOutput,
-    refreshDerivedOutput,
-    updateDerivedOutput
-  } from "$capabilities/derived-output/index.remote";
   import CommentAction from "$app-views/categories/slide-deck-editor/components/comment-action.svelte";
   import ElementEffects from "$app-views/categories/slide-deck-editor/components/element-effects.svelte";
   import ElementGeometry from "$app-views/categories/slide-deck-editor/components/element-geometry.svelte";
   import ElementOrder from "$app-views/categories/slide-deck-editor/components/element-order.svelte";
   import ElementPaint from "$app-views/categories/slide-deck-editor/components/element-paint.svelte";
   import PromptSettings from "$app-views/categories/slide-deck-editor/components/prompt-settings.svelte";
-  import { readableScope } from "$app-views/categories/slide-deck-editor/procedures/templating";
   import PromptScope from "$app-views/categories/slide-deck-editor/components/prompt-scope.svelte";
   import PromptTemplateSection from "$app-views/categories/slide-deck-editor/components/prompt-template-section.svelte";
   import TextSpacing from "$app-views/categories/slide-deck-editor/components/text-spacing.svelte";
@@ -33,28 +27,25 @@
     slideIndexOf
   } from "$app-views/categories/slide-deck-editor/procedures/deck";
   import {
-    linkPromptBlockOps,
     promptBlockIn,
     promptElementIn,
     promptHoleOps,
     promptScopeOps,
-    syncPromptBlockOps,
-    type Id,
     type LinkedPromptBlock
   } from "$app-views/categories/slide-deck-editor/procedures/prompt-blocks";
   import {
     selectedIds,
     slideSignal
   } from "$app-views/categories/slide-deck-editor/procedures/selecting";
-  import { announcePromptOutput } from "$app-views/categories/slide-deck-editor/procedures/prompt-output-events";
   import {
-    workspaceState,
-    type SlideDeckRuntime
-  } from "$model/client/workspace-state";
+    PromptBlockState,
+    type PromptBlockPhase
+  } from "$app-views/categories/slide-deck-editor/inspector/prompt-block.state.svelte";
+  import { createPromptBlock } from "$app-views/categories/slide-deck-editor/procedures/create-prompt-block";
+  import { synchronizePromptBlockDraft } from "$app-views/categories/slide-deck-editor/procedures/effects/prompt-block-draft.svelte";
+  import { workspaceState } from "$model/client/workspace-state";
 
-  type Phase = "creating" | "saving" | "generating";
-
-  const PHASE: Record<Phase, string> = {
+  const PHASE: Record<PromptBlockPhase, string> = {
     creating: "Creating Derived Output",
     saving: "Saving Prompt Block",
     generating: "Generating response"
@@ -63,15 +54,10 @@
   const view = workspaceState();
   const deckId = $derived(view.active.resourceId);
 
-  let runtime = $state<SlideDeckRuntime | undefined>(undefined);
-  let promptDraft = $state("");
-  let draftedFor = $state("");
-  let phase = $state<Phase>();
-  let actionError = $state<string>();
-
-  $effect(() => {
-    runtime = deckId === undefined ? undefined : view.slideDeckRuntime(deckId);
-  });
+  const runtime = $derived(
+    deckId === undefined ? undefined : view.slideDeckRuntime(deckId)
+  );
+  const state = new PromptBlockState();
 
   const body = $derived(runtime?.body);
   const elementId = $derived(selectedIds(view.selection)[0] ?? "");
@@ -95,83 +81,14 @@
     if (ops.length > 0) runtime.apply(ops);
   };
 
-  $effect(() => {
-    const current = block;
-    if (current === undefined || current.id === draftedFor) return;
-    draftedFor = current.id;
-    promptDraft = "";
-    actionError = undefined;
+  synchronizePromptBlockDraft(state, () => block?.id);
+
+  const create = () => createPromptBlock({
+    blockId: block?.id ?? "",
+    deckId,
+    runtime,
+    state
   });
-
-  const currentPrompt = (currentRuntime: SlideDeckRuntime) => {
-    const currentBody = currentRuntime.body;
-    if (currentBody === undefined) throw new Error("The slide deck is not loaded");
-    const current = promptBlockIn(currentBody, block?.id ?? "");
-    if (current === undefined) throw new Error("The Prompt Block is no longer in the slide deck");
-    return current;
-  };
-
-  const saveFailed = (current: SlideDeckRuntime): boolean => current.sync === "error";
-
-  const create = async () => {
-    const currentRuntime = runtime;
-    const promptText = promptDraft.trim();
-    if (
-      currentRuntime === undefined ||
-      deckId === undefined ||
-      promptText.length === 0 ||
-      phase !== undefined
-    ) return;
-    const previous = currentPrompt(currentRuntime).display;
-
-    phase = "creating";
-    actionError = undefined;
-    let derivedOutputId: Id<"derivedOutputs"> | undefined;
-
-    try {
-      const reading = readableScope(currentPrompt(currentRuntime).scope);
-      const created = await createDerivedOutput({
-        prompt: promptText,
-        origin: { kind: "slides", id: deckId },
-        ...(reading === undefined ? {} : { scope: reading })
-      });
-      derivedOutputId = created._id;
-      const seeded = previous.length === 0
-        ? created
-        : await updateDerivedOutput({
-            derivedOutputId: created._id,
-            prompt: promptText,
-            lastResponse: previous
-          });
-      if (seeded === null) throw new Error("The Derived Output disappeared during creation");
-
-      phase = "saving";
-      const before = currentPrompt(currentRuntime);
-      currentRuntime.apply([
-        ...linkPromptBlockOps(before, created._id),
-        ...syncPromptBlockOps(before, seeded)
-      ]);
-      await currentRuntime.flush();
-      if (saveFailed(currentRuntime)) throw new Error("The Prompt Block link could not be saved");
-
-      phase = "generating";
-      const refreshed = await refreshDerivedOutput({ derivedOutputId: created._id });
-      if (refreshed === null) throw new Error("The Derived Output disappeared during generation");
-      const after = currentPrompt(currentRuntime);
-      const ops = syncPromptBlockOps(after, refreshed.output);
-      if (ops.length > 0) currentRuntime.apply(ops);
-      await currentRuntime.flush();
-      if (saveFailed(currentRuntime)) throw new Error("The generated slide text could not be saved");
-      if (refreshed.outcome === "failed") {
-        throw new Error(refreshed.output.error ?? "The response could not be generated");
-      }
-    } catch (error) {
-      actionError = error instanceof Error ? error.message : String(error);
-    } finally {
-      if (derivedOutputId !== undefined) announcePromptOutput(derivedOutputId);
-      phase = undefined;
-    }
-  };
 </script>
 
 <Panel title="Prompt block">
@@ -197,13 +114,13 @@
   {#if element === undefined || block === undefined || runtime === undefined}
     <PanelEmpty title="Pick a Prompt Block on the slide" />
   {:else}
-    {#if phase !== undefined}
-      <PanelProgress label={PHASE[phase]} tone="intelligence" />
+    {#if state.phase !== undefined}
+      <PanelProgress label={PHASE[state.phase]} tone="intelligence" />
     {/if}
 
-    {#if actionError !== undefined}
+    {#if state.actionError !== undefined}
       <PanelBanner title="This Prompt Block needs attention" tone="attention">
-        {actionError}. The text box remains editable so you can try again.
+        {state.actionError}. The text box remains editable so you can try again.
       </PanelBanner>
     {/if}
 
@@ -212,16 +129,16 @@
         <label for={`new-slide-prompt-${block.id}`}>Prompt</label>
         <Textarea
           id={`new-slide-prompt-${block.id}`}
-          bind:value={promptDraft}
+          bind:value={state.promptDraft}
           rows={5}
           maxlength={8000}
           placeholder="What should this text box derive from project sources?"
-          disabled={phase !== undefined}
+          disabled={state.phase !== undefined}
         />
 
         <PromptScope
           blockId={block.id}
-          disabled={phase !== undefined}
+          disabled={state.phase !== undefined}
           onconfirm={confirmScope}
         />
       </div>
@@ -229,7 +146,7 @@
       <PanelActions>
         <Button
           size="xs"
-          disabled={phase !== undefined || promptDraft.trim().length === 0}
+          disabled={state.phase !== undefined || state.promptDraft.trim().length === 0}
           onclick={create}
         >
           <Sparkles aria-hidden="true" />
@@ -246,7 +163,7 @@
       <PromptTemplateSection
         blockId={block.id}
         derivedOutputId={linked?.derivedOutputId}
-        disabled={phase !== undefined}
+        disabled={state.phase !== undefined}
       />
     {/key}
 

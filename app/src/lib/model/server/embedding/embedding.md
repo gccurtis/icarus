@@ -19,3 +19,22 @@ Callers only receive validated vectors and normalized usage metadata. A
 
 The credential is read from `configuration/local.yaml` at startup and is never
 returned, logged, or included in an error.
+
+## Ownership Boundary
+
+One server-model instance owns the provider configuration, request transport,
+and credential. Capabilities can request embeddings through the model port but
+cannot reach the transport or provider secret.
+
+## Lifetime
+
+The object is constructed once with the server graph and remains immutable for
+that graph's lifetime. Individual calls retain no project state and require no
+release work.
+
+## Invariants
+
+- Every returned vector is finite and has the configured dimensionality.
+- Passage and query vectors use the declared asymmetric task modes.
+- One windowed request contains spans from only one semantic source.
+- Provider bodies and credentials never escape through results or errors.

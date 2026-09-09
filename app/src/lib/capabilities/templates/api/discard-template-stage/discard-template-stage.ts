@@ -20,7 +20,7 @@ export const discardTemplateStage = async (input: unknown): Promise<DiscardTempl
     };
   }
 
-  removeStage(store, stage);
+  store.transaction((unit) => removeStage(unit, stage));
   return {
     accepted: true,
     stageId: stage._id,

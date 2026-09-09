@@ -1,9 +1,9 @@
-import type { StoreModel, TableName, TableRow } from "$model/server/store/index.server";
+import type { StoreUnitOfWork, TableName, TableRow } from "$model/server/store/index.server";
 
 export type RowFields<T extends TableName> = Omit<TableRow<T>, "_id" | "_creationTime">;
 
 export const rowsIn = <T extends TableName>(
-  store: StoreModel,
+  store: StoreUnitOfWork,
   table: T
 ): readonly unknown[] => {
   const found = store.read(table);
@@ -17,7 +17,7 @@ export const recordOf = (value: unknown): Record<string, unknown> | undefined =>
     : undefined;
 
 export const recordsIn = <T extends TableName>(
-  store: StoreModel,
+  store: StoreUnitOfWork,
   table: T
 ): readonly Record<string, unknown>[] => rowsIn(store, table).flatMap((value) => {
   const record = recordOf(value);
@@ -35,7 +35,7 @@ export const canonicalRowId = (value: unknown, table: TableName): string | undef
     : undefined;
 
 export const rowIn = <T extends TableName>(
-  store: StoreModel,
+  store: StoreUnitOfWork,
   table: T,
   id: string
 ): TableRow<T> | undefined =>

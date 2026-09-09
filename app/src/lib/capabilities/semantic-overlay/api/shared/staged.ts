@@ -1,4 +1,4 @@
-import type { StoreModel } from "$model/server/store/index.server";
+import type { StoreUnitOfWork } from "$model/server/store/index.server";
 import type { Id } from "$representation/data/types/core/id";
 import type { ResourceRef } from "$representation/data/types/core/resource";
 
@@ -14,7 +14,7 @@ import { rowsOf } from "$capabilities/semantic-overlay/api/shared/rows";
  * the question is asked.
  */
 export const isStagedResource = (
-  store: StoreModel,
+  store: StoreUnitOfWork,
   projectId: Id<"projects">,
   ref: ResourceRef
 ): boolean =>

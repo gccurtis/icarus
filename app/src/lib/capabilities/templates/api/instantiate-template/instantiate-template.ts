@@ -25,6 +25,15 @@ import type {
   TemplateAnswers
 } from "$capabilities/templates/types/templates";
 
+class PlacementRejected extends Error {
+  readonly result: InstantiateTemplateResult;
+
+  constructor(result: InstantiateTemplateResult) {
+    super("Template placement was rejected");
+    this.result = result;
+  }
+}
+
 const unknownSetsInAnswers = (
   store: ReturnType<typeof serverModel>["store"],
   projectId: string,
@@ -107,148 +116,149 @@ export const instantiateTemplate = async (input: unknown): Promise<InstantiateTe
   const at = Date.now();
   const title = asked.name ?? template.name;
 
-  /**
-   * The resource is minted before its scopes are resolved, because an answer
-   * that excludes anything is stored as a row and that row is owned by the
-   * resource this call makes. Nothing else is written until resolution
-   * succeeds, and the rollback undoes exactly what was.
-   */
   const table =
     body.resource === "document" ? "documents" : body.resource === "slides" ? "slideDecks" : "spreadsheets";
-  const resourceId = store.create(table, {
-    projectId,
-    title,
-    createdBy: actor,
-    updatedBy: { ...actor },
-    updatedAt: at
-  });
-
-  const written: string[] = [];
-  const answered: Record<string, TemplateAnswers[string]> = {};
-  for (const [name, rule] of Object.entries(answers)) {
-    const term = normalizeScope(
-      store,
-      scope.projectId,
-      actor,
-      { kind: "resource", resourceId, hole: name },
-      rule,
-      at
-    );
-    if (term === undefined) continue;
-    if (term.setId !== undefined) written.push(term.setId);
-    answered[name] = term.term as TemplateAnswers[string];
-  }
-
-  const outputs: string[] = [];
-  const rollback = () => {
-    for (const setId of written) store.remove(`resourceSets.${setId}`);
-    for (const outputId of outputs) store.remove(`derivedOutputs.${outputId}`);
-    store.remove(`${table}.${resourceId}`);
+  let placed: {
+    readonly result: Extract<InstantiateTemplateResult, { accepted: true }>;
+    readonly semanticKind: "document" | "slides" | "spreadsheet";
   };
+  try {
+    placed = store.transaction((unit) => {
+      const resourceId = unit.create(table, {
+        projectId,
+        title,
+        createdBy: actor,
+        updatedBy: { ...actor },
+        updatedAt: at
+      });
+      const answered: Record<string, TemplateAnswers[string]> = {};
+      for (const [name, rule] of Object.entries(answers)) {
+        const term = normalizeScope(
+          unit,
+          scope.projectId,
+          actor,
+          { kind: "resource", resourceId, hole: name },
+          rule,
+          at
+        );
+        if (term !== undefined) answered[name] = term.term as TemplateAnswers[string];
+      }
 
-  const resolved = resolveTemplateScopes(body, holes, answered);
-  if (!resolved.accepted) {
-    rollback();
-    return {
-      accepted: false,
-      templateId: template._id,
-      reason: resolved.reason,
-      revision: template.revision,
-      detail: resolved.detail
-    };
-  }
-  if (resolved.undeclared.length > 0) {
-    rollback();
-    return {
-      accepted: false,
-      templateId: template._id,
-      reason: "unsupported-body",
-      revision: template.revision,
-      detail: `the body names a hole the template does not declare: ${resolved.undeclared.join(", ")}`
-    };
-  }
-  body = fillTemplateAtoms(resolved.body, texts);
-  const linked = withFreshOutputs(
-    store,
-    scope.projectId,
-    actor,
-    { kind: body.resource, id: resourceId },
-    body,
-    at
-  );
-  body = linked.body;
-  outputs.push(...linked.written);
-  store.update(`templates.${template._id}.lastUsedAt`, at);
+      const resolved = resolveTemplateScopes(body, holes, answered);
+      if (!resolved.accepted) {
+        throw new PlacementRejected({
+          accepted: false,
+          templateId: template._id,
+          reason: resolved.reason,
+          revision: template.revision,
+          detail: resolved.detail
+        });
+      }
+      if (resolved.undeclared.length > 0) {
+        throw new PlacementRejected({
+          accepted: false,
+          templateId: template._id,
+          reason: "unsupported-body",
+          revision: template.revision,
+          detail: `the body names a hole the template does not declare: ${resolved.undeclared.join(", ")}`
+        });
+      }
 
-  if (body.resource === "document") {
-    const { resource: _resource, ...documentBody } = body;
-    const readyBody = documentBody.styles === undefined
-      ? documentBody
-      : { ...documentBody, styles: normalizeDocumentStyleSet(documentBody.styles) };
-    store.create("documentSnapshots", {
-      projectId,
-      resourceId,
-      revision: 0,
-      role: "leader",
-      part: 0,
-      body: readyBody,
-      at
+      body = fillTemplateAtoms(resolved.body, texts);
+      body = withFreshOutputs(
+        unit,
+        scope.projectId,
+        actor,
+        { kind: body.resource, id: resourceId },
+        body,
+        at
+      ).body;
+      unit.update(`templates.${template._id}.lastUsedAt`, at);
+
+      if (body.resource === "document") {
+        const { resource: _resource, ...documentBody } = body;
+        const readyBody = documentBody.styles === undefined
+          ? documentBody
+          : { ...documentBody, styles: normalizeDocumentStyleSet(documentBody.styles) };
+        unit.create("documentSnapshots", {
+          projectId,
+          resourceId,
+          revision: 0,
+          role: "leader",
+          part: 0,
+          body: readyBody,
+          at
+        });
+        return {
+          semanticKind: "document" as const,
+          result: {
+            accepted: true as const,
+            templateId: template._id,
+            templateRevision: template.revision,
+            target: body.resource,
+            resourceId,
+            revision: 0 as const
+          }
+        };
+      }
+
+      if (body.resource === "slides") {
+        const { resource: _resource, ...slideDeckBody } = body;
+        unit.create("slideDeckSnapshots", {
+          projectId,
+          resourceId,
+          revision: 0,
+          role: "leader",
+          part: 0,
+          body: ensureSlideDeckReady(slideDeckBody),
+          at
+        });
+        return {
+          semanticKind: "slides" as const,
+          result: {
+            accepted: true as const,
+            templateId: template._id,
+            templateRevision: template.revision,
+            target: body.resource,
+            resourceId,
+            revision: 0 as const
+          }
+        };
+      }
+
+      const materialized = materializeSpreadsheet(body);
+      unit.create("spreadsheetSnapshots", {
+        projectId,
+        resourceId,
+        revision: 0,
+        role: "leader",
+        part: 0,
+        body: materialized.body,
+        at
+      });
+      unit.createMany(
+        "sheetCells",
+        materialized.cells.map((cell) => ({ projectId, resourceId, ...cell }))
+      );
+      return {
+        semanticKind: "spreadsheet" as const,
+        result: {
+          accepted: true as const,
+          templateId: template._id,
+          templateRevision: template.revision,
+          target: body.resource,
+          resourceId,
+          revision: 0 as const
+        }
+      };
     });
-    await enqueueSemanticSync({ ref: { kind: "document", id: resourceId } });
-    return {
-      accepted: true,
-      templateId: template._id,
-      templateRevision: template.revision,
-      target: body.resource,
-      resourceId,
-      revision: 0
-    };
+  } catch (error) {
+    if (error instanceof PlacementRejected) return error.result;
+    throw error;
   }
 
-  if (body.resource === "slides") {
-    const { resource: _resource, ...slideDeckBody } = body;
-    const readyBody = ensureSlideDeckReady(slideDeckBody);
-    store.create("slideDeckSnapshots", {
-      projectId,
-      resourceId,
-      revision: 0,
-      role: "leader",
-      part: 0,
-      body: readyBody,
-      at
-    });
-    await enqueueSemanticSync({ ref: { kind: "slides", id: resourceId } });
-    return {
-      accepted: true,
-      templateId: template._id,
-      templateRevision: template.revision,
-      target: body.resource,
-      resourceId,
-      revision: 0
-    };
-  }
-
-  const materialized = materializeSpreadsheet(body);
-  store.create("spreadsheetSnapshots", {
-    projectId,
-    resourceId,
-    revision: 0,
-    role: "leader",
-    part: 0,
-    body: materialized.body,
-    at
+  await enqueueSemanticSync({
+    ref: { kind: placed.semanticKind, id: placed.result.resourceId }
   });
-  store.createMany(
-    "sheetCells",
-    materialized.cells.map((cell) => ({ projectId, resourceId, ...cell }))
-  );
-  await enqueueSemanticSync({ ref: { kind: "spreadsheet", id: resourceId } });
-  return {
-    accepted: true,
-    templateId: template._id,
-    templateRevision: template.revision,
-    target: body.resource,
-    resourceId,
-    revision: 0
-  };
+  return placed.result;
 };

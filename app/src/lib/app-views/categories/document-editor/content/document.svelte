@@ -105,8 +105,10 @@
   let surface = $state<HTMLDivElement>();
   let pageFrame = $state<HTMLDivElement>();
   let available = $state(0);
-  let pins = $state<Pin[]>([]);
-  let promptPins = $state<{ readonly id: string; readonly top: number }[]>([]);
+  let pins = $state<{
+    readonly comments: readonly Pin[];
+    readonly prompts: readonly { readonly id: string; readonly top: number }[];
+  }>({ comments: [], prompts: [] });
   let appliedThreadKey = "";
 
   const threadsQuery = tableQuery("commentThreads");
@@ -213,15 +215,17 @@
           return { id: span.id, top: editor!.coordsAtPos(span.from).top - origin.top, state };
         });
 
-    pins = stacked(placed);
     const promptIds = new Set(promptBlocksIn(runtime?.body).map((block) => block.id));
-    promptPins = Array.from(
-      frame.querySelectorAll<HTMLElement>('.document-block[data-kind="prompt"][data-block]')
-    ).flatMap((element) => {
-      const id = element.dataset.block;
-      if (id === undefined || !promptIds.has(id)) return [];
-      return [{ id, top: element.getBoundingClientRect().top - origin.top }];
-    });
+    pins = {
+      comments: stacked(placed),
+      prompts: Array.from(
+        frame.querySelectorAll<HTMLElement>('.document-block[data-kind="prompt"][data-block]')
+      ).flatMap((element) => {
+        const id = element.dataset.block;
+        if (id === undefined || !promptIds.has(id)) return [];
+        return [{ id, top: element.getBoundingClientRect().top - origin.top }];
+      })
+    };
   };
 
   const dispatch = (transaction: Transaction): void => {
@@ -515,9 +519,9 @@
       >
         <div bind:this={pageFrame} class="page-frame" style="--page-drawn: {layout.drawn.width}rem">
           <div bind:this={host} class="editor" aria-label="Document editor" style={pageStyle}></div>
-          {#if pins.length > 0 || promptPins.length > 0}
+          {#if pins.comments.length > 0 || pins.prompts.length > 0}
             <div class="lane" aria-label="Document gutter">
-              {#each promptPins as prompt (prompt.id)}
+              {#each pins.prompts as prompt (prompt.id)}
                 <button
                   type="button"
                   class:current={view.inspected === "document-editor.prompt-block" && view.selection?.id === prompt.id}
@@ -530,7 +534,7 @@
                   onclick={() => openPrompt(prompt.id)}
                 >✦</button>
               {/each}
-              {#each pins as pin, index (`${pin.ids.join("|")}@${pin.top}:${index}`)}
+              {#each pins.comments as pin, index (`${pin.ids.join("|")}@${pin.top}:${index}`)}
                 <button
                   type="button"
                   class="pin {pin.state}"

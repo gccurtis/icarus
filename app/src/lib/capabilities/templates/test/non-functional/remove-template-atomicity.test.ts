@@ -38,11 +38,12 @@ afterEach(() => {
 const seeded = (directory: string) => {
   const store = storeAt(directory);
   const templateId = store.create("templates", {
+    projectId: "projects:p",
     userId: "users:u",
     name: "Plan",
     tags: [],
     body: { resource: "document", rows: [] },
-    variables: [],
+    holes: [],
     createdBy: { kind: "user", userId: "users:u" },
     revision: 2,
     updatedAt: 1000
@@ -53,7 +54,7 @@ const seeded = (directory: string) => {
     name: "Plan",
     tags: [],
     body: { resource: "document", rows: [] },
-    variables: [],
+    holes: [],
     createdBy: { kind: "user", userId: "users:u" },
     at: 1000
   });

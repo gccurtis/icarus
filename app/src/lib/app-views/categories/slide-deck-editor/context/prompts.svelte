@@ -3,18 +3,13 @@
 
   import { Panel, PanelEmpty } from "$authored-components/panel";
   import { promptBlocksIn } from "$app-views/categories/slide-deck-editor/procedures/prompt-blocks";
-  import {
-    workspaceState,
-    type SlideDeckRuntime
-  } from "$model/client/workspace-state";
+  import { workspaceState } from "$model/client/workspace-state";
 
   const view = workspaceState();
   const deckId = $derived(view.active.resourceId);
-  let runtime = $state<SlideDeckRuntime | undefined>(undefined);
-
-  $effect(() => {
-    runtime = deckId === undefined ? undefined : view.slideDeckRuntime(deckId);
-  });
+  const runtime = $derived(
+    deckId === undefined ? undefined : view.slideDeckRuntime(deckId)
+  );
 
   const prompts = $derived(promptBlocksIn(runtime?.body));
 

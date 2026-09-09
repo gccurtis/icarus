@@ -9,34 +9,25 @@
   } from "$authored-components/panel";
   import { Button } from "$vendored-components/button";
   import { Textarea } from "$vendored-components/textarea";
-  import {
-    readDerivedOutput,
-    refreshDerivedOutput,
-    updateDerivedOutput
-  } from "$capabilities/derived-output/index.remote";
   import { blockIn } from "$app-views/categories/document-editor/procedures/blocks";
-  import {
-    announcePromptOutput,
-    observePromptOutput
-  } from "$app-views/categories/document-editor/procedures/prompt-output-events";
   import {
     compactEvidenceSourceTitle,
     exactEvidenceText
   } from "$app-views/categories/document-editor/procedures/evidence";
   import {
-    promptScopeOps,
-    syncPromptBlockOps,
     type Id,
-    type LinkedPromptBlock,
-    type PromptBlock
+    type LinkedPromptBlock
   } from "$app-views/categories/document-editor/procedures/prompt-blocks";
-  import { readableScope } from "$app-views/categories/document-editor/procedures/templating";
   import PromptScope from "$app-views/categories/document-editor/components/prompt-scope.svelte";
+  import { PromptSettingsState } from "$app-views/categories/document-editor/components/prompt-settings.state.svelte";
+  import { readPromptOutput } from "$app-views/categories/document-editor/procedures/read-prompt-output";
+  import { setPromptScope } from "$app-views/categories/document-editor/procedures/set-prompt-scope";
+  import { refreshPromptBlock } from "$app-views/categories/document-editor/procedures/refresh-prompt-block";
+  import { synchronizePromptSettings } from "$app-views/categories/document-editor/procedures/effects/prompt-settings.svelte";
   import { rowsOf, tableQuery } from "$app-views/categories/document-editor/procedures/store";
-  import { workspaceState, type DocumentRuntime } from "$model/client/workspace-state";
+  import { workspaceState } from "$model/client/workspace-state";
   import type { ResourceRef } from "$representation/data/types/core/resource";
   import type { SemanticCitation } from "$representation/data/types/semantic/derived-output";
-  import { onMount } from "svelte";
 
   let {
     blockId,
@@ -47,10 +38,10 @@
   const view = workspaceState();
   const documentId = $derived(view.active.resourceId);
 
-  let runtime = $state<DocumentRuntime>();
-  $effect(() => {
-    runtime = documentId === undefined ? undefined : view.documentRuntime(documentId);
-  });
+  const runtime = $derived(
+    documentId === undefined ? undefined : view.documentRuntime(documentId)
+  );
+  const state = new PromptSettingsState();
 
   const held = $derived(
     runtime?.body === undefined ? undefined : blockIn(runtime.body, blockId)
@@ -63,16 +54,10 @@
 
   // One settings instance belongs to one immutable Derived Output identity.
   // svelte-ignore state_referenced_locally
-  const detailQuery = readDerivedOutput({ derivedOutputId: outputId });
+  const detailQuery = readPromptOutput(outputId);
   const documentsQuery = tableQuery("documents");
   const slideDecksQuery = tableQuery("slideDecks");
   const spreadsheetsQuery = tableQuery("spreadsheets");
-
-  let running = $state(false);
-  let actionError = $state<string>();
-  let promptDraft = $state("");
-  let hydratedPrompt = $state<string>();
-  let migrated = $state(false);
 
   const detail = $derived(detailQuery.ready ? detailQuery.current : undefined);
   const output = $derived(detail?.output);
@@ -84,8 +69,8 @@
   const serverRefreshing = $derived(
     refreshState === "queued" || refreshState === "running"
   );
-  const busy = $derived(running || serverRefreshing);
-  const definitionChanged = $derived(output !== undefined && promptDraft.trim() !== output.prompt);
+  const busy = $derived(state.running || serverRefreshing);
+  const definitionChanged = $derived(output !== undefined && state.promptDraft.trim() !== output.prompt);
   const responseChanged = $derived(output !== undefined && currentResponse !== storedResponse);
   const queryError = $derived(
     detailQuery.error === undefined ? undefined : String(detailQuery.error)
@@ -94,7 +79,7 @@
     detail?.refresh.state === "failed" ? detail.refresh.error : undefined
   );
   const shownError = $derived(
-    busy ? undefined : actionError ?? refreshError ?? output?.error ?? queryError
+    busy ? undefined : state.actionError ?? refreshError ?? output?.error ?? queryError
   );
   const sourceTitles = $derived.by(() => {
     const titles = new Map<string, string>();
@@ -110,159 +95,35 @@
     return titles;
   });
 
-  $effect(() => {
-    const nextPrompt = output?.prompt;
-    if (nextPrompt === undefined || nextPrompt === hydratedPrompt) return;
-    // Accept a collaborator's server revision while this browser has no local
-    // draft. Preserve an intentional local edit for the user's next refresh.
-    if (hydratedPrompt === undefined || promptDraft === hydratedPrompt) {
-      promptDraft = nextPrompt;
-    }
-    hydratedPrompt = nextPrompt;
+  synchronizePromptSettings({
+    outputId: () => outputId,
+    state,
+    prompt: () => output?.prompt,
+    refreshing: () => serverRefreshing,
+    refresh: () => detailQuery.refresh()
   });
 
-  // Blocks created by the earlier live-card prototype migrate when inspected.
-  $effect(() => {
-    const held = output;
-    const currentBlock = block;
-    const currentRuntime = runtime;
-    if (
-      migrated ||
-      held?.lastResponse?.type !== "text" ||
-      currentBlock === undefined ||
-      currentRuntime === undefined ||
-      currentBlock.display.length > 0 ||
-      currentBlock.state !== "idle"
-    ) {
-      return;
-    }
-    migrated = true;
-    const currentBody = currentRuntime.body;
-    if (currentBody === undefined) return;
-    const current = blockIn(currentBody, blockId);
-    if (current?.type !== "prompt") return;
-    const ops = syncPromptBlockOps(current, held);
-    if (ops.length === 0) return;
-    currentRuntime.apply(ops);
-    void currentRuntime.flush();
+  const setScope = (next: unknown) => setPromptScope({
+    busy,
+    outputId,
+    outputPrompt: output?.prompt,
+    next,
+    state,
+    refresh: () => detailQuery.refresh()
   });
 
-  onMount(() => {
-    const stopObserving = observePromptOutput(outputId, () => {
-      void detailQuery.refresh();
-    });
-    let stopped = false;
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    const schedule = () => {
-      if (stopped) return;
-      // Polling is the current collaboration transport. It discovers work
-      // started by another browser and then tightens while that work is live.
-      const delay = serverRefreshing ? 600 : 1_500;
-      timer = setTimeout(async () => {
-        try {
-          await detailQuery.refresh();
-        } catch {
-          // The query object owns and exposes its error. Polling must continue
-          // so a transient transport failure does not strand shared status.
-        } finally {
-          schedule();
-        }
-      }, delay);
-    };
-    schedule();
-    return () => {
-      stopped = true;
-      if (timer !== undefined) clearTimeout(timer);
-      stopObserving();
-    };
+  const generate = () => refreshPromptBlock({
+    busy,
+    block,
+    blockId,
+    output,
+    outputId,
+    currentResponse,
+    definitionChanged,
+    responseChanged,
+    runtime,
+    state
   });
-
-  const currentBlock = (): PromptBlock => {
-    const currentRuntime = runtime;
-    if (currentRuntime === undefined) throw new Error("The document is not loaded");
-    const currentBody = currentRuntime.body;
-    if (currentBody === undefined) throw new Error("The document is not loaded");
-    const current = blockIn(currentBody, blockId);
-    if (current?.type !== "prompt") throw new Error("The Prompt Block is no longer in the document");
-    return current;
-  };
-
-  /**
-   * One write, to the one thing that holds it.
-   *
-   * A linked prompt keeps no scope of its own, so there is nothing on the block
-   * to keep in step: a failure leaves the old scope everywhere, and a second
-   * editor changing it at the same time is one row's last write rather than two
-   * halves that disagree.
-   */
-  const setScope = async (next: unknown) => {
-    if (busy || output === undefined) return;
-    const reading = readableScope(next);
-    if (reading === undefined) return;
-    running = true;
-    actionError = undefined;
-    try {
-      const changed = await updateDerivedOutput({
-        derivedOutputId: outputId,
-        prompt: promptDraft.trim().length === 0 ? output.prompt : promptDraft.trim(),
-        scope: reading
-      });
-      if (changed === null) throw new Error("The Derived Output no longer exists");
-      await detailQuery.refresh();
-    } catch (error) {
-      actionError = error instanceof Error ? error.message : String(error);
-    } finally {
-      announcePromptOutput(outputId);
-      running = false;
-    }
-  };
-
-  const generate = async () => {
-    const prompt = promptDraft.trim();
-    const currentRuntime = runtime;
-    if (
-      busy ||
-      output === undefined ||
-      block === undefined ||
-      currentRuntime === undefined ||
-      prompt.length === 0
-    ) return;
-
-    running = true;
-    actionError = undefined;
-    try {
-      if (definitionChanged || responseChanged) {
-        const changed = await updateDerivedOutput({
-          derivedOutputId: outputId,
-          prompt,
-          ...(responseChanged
-            ? { lastResponse: currentResponse.length === 0 ? null : currentResponse }
-            : {})
-        });
-        if (changed === null) throw new Error("The Derived Output no longer exists");
-      }
-
-      const refreshed = await refreshDerivedOutput({
-        derivedOutputId: outputId
-      });
-      if (refreshed === null) throw new Error("The Derived Output no longer exists");
-
-      const ops = syncPromptBlockOps(currentBlock(), refreshed.output);
-      if (ops.length > 0) currentRuntime.apply(ops);
-      await currentRuntime.flush();
-      if (currentRuntime.failure !== undefined) throw new Error(currentRuntime.failure.detail);
-      if (refreshed.outcome === "failed") {
-        throw new Error(refreshed.output.error ?? "The response could not be generated");
-      }
-      promptDraft = refreshed.output.prompt;
-      hydratedPrompt = refreshed.output.prompt;
-    } catch (error) {
-      actionError = error instanceof Error ? error.message : String(error);
-    } finally {
-      announcePromptOutput(outputId);
-      running = false;
-    }
-  };
 
   const sourceTitle = (citation: SemanticCitation, ref: ResourceRef): string =>
     compactEvidenceSourceTitle(
@@ -321,10 +182,10 @@
     <label for={`prompt-${blockId}`}>Prompt</label>
     <Textarea
       id={`prompt-${blockId}`}
-      bind:value={promptDraft}
+      bind:value={state.promptDraft}
       rows={5}
       maxlength={8000}
-      disabled={running}
+      disabled={state.running}
     />
 
     <PromptScope {blockId} {derivedOutputId} disabled={busy} onconfirm={setScope} />
@@ -340,7 +201,7 @@
     <Button
       variant="outline"
       size="xs"
-      disabled={busy || promptDraft.trim().length === 0}
+      disabled={busy || state.promptDraft.trim().length === 0}
       title="Refresh from project sources"
       onclick={generate}
     >

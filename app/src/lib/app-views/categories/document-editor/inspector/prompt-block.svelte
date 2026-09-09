@@ -12,42 +12,30 @@
   } from "$authored-components/panel";
   import { Button } from "$vendored-components/button";
   import { Textarea } from "$vendored-components/textarea";
-  import {
-    createDerivedOutput,
-    refreshDerivedOutput,
-    updateDerivedOutput
-  } from "$capabilities/derived-output/index.remote";
   import PromptSettings from "$app-views/categories/document-editor/components/prompt-settings.svelte";
   import { blockIn } from "$app-views/categories/document-editor/procedures/blocks";
   import {
-    linkPromptBlockOps,
     promptScopeOps,
-    syncPromptBlockOps,
-    type Id,
-    type LinkedPromptBlock,
-    type PromptBlock
+    type LinkedPromptBlock
   } from "$app-views/categories/document-editor/procedures/prompt-blocks";
-  import { readableScope } from "$app-views/categories/document-editor/procedures/templating";
   import PromptScope from "$app-views/categories/document-editor/components/prompt-scope.svelte";
   import PromptTemplateSection from "$app-views/categories/document-editor/components/prompt-template-section.svelte";
-  import { announcePromptOutput } from "$app-views/categories/document-editor/procedures/prompt-output-events";
+  import {
+    PromptBlockState,
+    type PromptBlockPhase
+  } from "$app-views/categories/document-editor/inspector/prompt-block.state.svelte";
+  import { createPromptBlock } from "$app-views/categories/document-editor/procedures/create-prompt-block";
+  import { synchronizePromptBlockDraft } from "$app-views/categories/document-editor/procedures/effects/prompt-block-draft.svelte";
   import { isInspectorView, workspaceState } from "$model/client/workspace-state";
-  import type { DocumentRuntime } from "$model/client/workspace-state";
-  type Phase = "creating" | "saving" | "generating";
 
 
   const view = workspaceState();
   const documentId = $derived(view.active.resourceId);
 
-  let runtime = $state<DocumentRuntime>();
-  let promptDraft = $state("");
-  let draftedFor = $state("");
-  let phase = $state<Phase>();
-  let actionError = $state<string>();
-
-  $effect(() => {
-    runtime = documentId === undefined ? undefined : view.documentRuntime(documentId);
-  });
+  const runtime = $derived(
+    documentId === undefined ? undefined : view.documentRuntime(documentId)
+  );
+  const state = new PromptBlockState();
 
   const body = $derived(runtime?.body);
   const blockId = $derived(view.selection?.id ?? "");
@@ -57,87 +45,15 @@
     prompt?.derivedOutputId === undefined ? undefined : (prompt as LinkedPromptBlock)
   );
 
-  const PHASE: Record<Phase, string> = {
+  const PHASE: Record<PromptBlockPhase, string> = {
     creating: "Creating Derived Output",
     saving: "Saving Prompt Block",
     generating: "Generating response"
   };
 
-  $effect(() => {
-    const current = prompt;
-    if (current === undefined || current.id === draftedFor) return;
-    draftedFor = current.id;
-    promptDraft = "";
-    actionError = undefined;
-  });
+  synchronizePromptBlockDraft(state, () => prompt?.id);
 
-  const currentPrompt = (): PromptBlock => {
-    const currentBody = runtime?.body;
-    if (currentBody === undefined) throw new Error("The document is not loaded");
-    const current = blockIn(currentBody, blockId);
-    if (current?.type !== "prompt") throw new Error("The Prompt Block is no longer in the document");
-    return current;
-  };
-
-  const failureDetail = (held: DocumentRuntime): string | undefined => held.failure?.detail;
-
-  const create = async () => {
-    const currentRuntime = runtime;
-    const promptText = promptDraft.trim();
-    if (currentRuntime === undefined || documentId === undefined || promptText.length === 0 || phase !== undefined) return;
-    const previous = currentPrompt().display;
-
-    phase = "creating";
-    actionError = undefined;
-    let derivedOutputId: Id<"derivedOutputs"> | undefined;
-
-    try {
-      const reading = readableScope(currentPrompt().scope);
-      const created = await createDerivedOutput({
-        prompt: promptText,
-        origin: { kind: "document", id: documentId },
-        ...(reading === undefined ? {} : { scope: reading })
-      });
-      derivedOutputId = created._id;
-      const seeded =
-        previous.length === 0
-          ? created
-          : await updateDerivedOutput({
-              derivedOutputId: created._id,
-              prompt: promptText,
-              lastResponse: previous
-            });
-      if (seeded === null) throw new Error("The Derived Output disappeared during creation");
-
-      phase = "saving";
-      const before = currentPrompt();
-      currentRuntime.apply([
-        ...linkPromptBlockOps(before, created._id),
-        ...syncPromptBlockOps(before, seeded)
-      ]);
-      await currentRuntime.flush();
-      const linkFailure = failureDetail(currentRuntime);
-      if (linkFailure !== undefined) throw new Error(linkFailure);
-
-      phase = "generating";
-      const refreshed = await refreshDerivedOutput({ derivedOutputId: created._id });
-      if (refreshed === null) throw new Error("The Derived Output disappeared during generation");
-      const after = currentPrompt();
-      const ops = syncPromptBlockOps(after, refreshed.output);
-      if (ops.length > 0) currentRuntime.apply(ops);
-      await currentRuntime.flush();
-      const responseFailure = failureDetail(currentRuntime);
-      if (responseFailure !== undefined) throw new Error(responseFailure);
-      if (refreshed.outcome === "failed") {
-        throw new Error(refreshed.output.error ?? "The response could not be generated");
-      }
-    } catch (error) {
-      actionError = error instanceof Error ? error.message : String(error);
-    } finally {
-      if (derivedOutputId !== undefined) announcePromptOutput(derivedOutputId);
-      phase = undefined;
-    }
-  };
+  const create = () => createPromptBlock({ blockId, documentId, runtime, state });
 
   const navigate = (next: string) => {
     if (isInspectorView(next)) view.inspect(next);
@@ -163,16 +79,16 @@
       <PanelNote tone="muted">The Prompt Block is gone.</PanelNote>
     </div>
   {:else}
-    {#if phase !== undefined}
+    {#if state.phase !== undefined}
       <div class="pt-2">
-        <PanelProgress label={PHASE[phase]} tone="intelligence" />
+        <PanelProgress label={PHASE[state.phase]} tone="intelligence" />
       </div>
     {/if}
 
-    {#if actionError !== undefined}
+    {#if state.actionError !== undefined}
       <div class="pt-2">
         <PanelBanner title="This Prompt Block needs attention" tone="attention">
-          {actionError}. The block remains available so you can try again.
+          {state.actionError}. The block remains available so you can try again.
         </PanelBanner>
       </div>
     {/if}
@@ -182,16 +98,16 @@
         <label for={`new-prompt-${prompt.id}`}>Prompt</label>
         <Textarea
           id={`new-prompt-${prompt.id}`}
-          bind:value={promptDraft}
+          bind:value={state.promptDraft}
           rows={5}
           maxlength={8000}
           placeholder="What should this block derive from project sources?"
-          disabled={phase !== undefined}
+          disabled={state.phase !== undefined}
         />
 
         <PromptScope
           blockId={prompt.id}
-          disabled={phase !== undefined}
+          disabled={state.phase !== undefined}
           onconfirm={confirmScope}
         />
       </div>
@@ -199,7 +115,7 @@
       <PanelActions>
         <Button
           size="xs"
-          disabled={phase !== undefined || promptDraft.trim().length === 0}
+          disabled={state.phase !== undefined || state.promptDraft.trim().length === 0}
           onclick={create}
         >
           <Sparkles aria-hidden="true" />
@@ -216,7 +132,7 @@
       <PromptTemplateSection
         blockId={prompt.id}
         derivedOutputId={linked?.derivedOutputId}
-        disabled={phase !== undefined}
+        disabled={state.phase !== undefined}
       />
     {/key}
   {/if}

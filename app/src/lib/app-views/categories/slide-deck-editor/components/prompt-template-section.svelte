@@ -15,8 +15,9 @@
     scopeNamesOf,
     setsIn
   } from "$app-views/categories/slide-deck-editor/procedures/templating";
-  import { readDerivedOutput } from "$capabilities/derived-output/index.remote";
-  import { workspaceState, type SlideDeckRuntime } from "$model/client/workspace-state";
+  import { readPromptOutput } from "$app-views/categories/slide-deck-editor/procedures/read-prompt-output";
+  import { workspaceState } from "$model/client/workspace-state";
+  import type { SlideDeckOp } from "$representation/data/types/slide-decks/op";
 
   /**
    * Turning a prompt into a hole, and saying what the hole is.
@@ -39,10 +40,9 @@
   const view = workspaceState();
   const deckId = $derived(view.active.resourceId);
 
-  let runtime = $state<SlideDeckRuntime | undefined>(undefined);
-  $effect(() => {
-    runtime = deckId === undefined ? undefined : view.slideDeckRuntime(deckId);
-  });
+  const runtime = $derived(
+    deckId === undefined ? undefined : view.slideDeckRuntime(deckId)
+  );
 
   const body = $derived(runtime?.body);
   const block = $derived(body === undefined ? undefined : promptBlockIn(body, blockId));
@@ -52,7 +52,7 @@
   const outputQuery =
     derivedOutputId === undefined
       ? undefined
-      : readDerivedOutput({ derivedOutputId: derivedOutputId as Id<"derivedOutputs"> });
+      : readPromptOutput(derivedOutputId as Id<"derivedOutputs">);
   const linked = $derived(outputQuery?.ready ? outputQuery.current?.output : undefined);
 
   const sets = resourceSets();
@@ -70,9 +70,9 @@
     ruleOf(defaultScopeOf(derivedOutputId === undefined ? block?.scope : linked?.scope), setNames)
   );
 
-  const write = (ops: readonly unknown[]) => {
+  const write = (ops: readonly SlideDeckOp[]) => {
     if (runtime === undefined || ops.length === 0) return;
-    runtime.apply(ops as Parameters<SlideDeckRuntime["apply"]>[0]);
+    runtime.apply(ops);
   };
 
   const make = () => {

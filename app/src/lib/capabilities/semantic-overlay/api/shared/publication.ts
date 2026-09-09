@@ -1,4 +1,4 @@
-import type { ServerModel } from "$runtime/server/start.server";
+import type { SemanticUnitModel } from "$capabilities/semantic-overlay/api/shared/unit-of-work";
 import type { TableRow } from "$model/server/store/index.server";
 import type { Id } from "$representation/data/types/core/id";
 import type { EmbeddingSpace } from "$representation/data/types/semantic/overlay";
@@ -29,7 +29,7 @@ const sameSpace = (left: EmbeddingSpace, right: EmbeddingSpace): boolean =>
   left.dimensions === right.dimensions;
 
 export const ensureSemanticOverlay = (
-  model: ServerModel,
+  model: SemanticUnitModel,
   projectId: Id<"projects">
 ): TableRow<"semanticOverlays"> => {
   const found = rowsOf(model.store, "semanticOverlays")
@@ -63,7 +63,7 @@ export const ensureSemanticOverlay = (
  * asynchronous gap. Older citation values are archived before active rows retire.
  */
 export const publishSemanticTranslation = (
-  model: ServerModel,
+  model: SemanticUnitModel,
   projectId: Id<"projects">,
   translation: TranslationResult,
   force = false

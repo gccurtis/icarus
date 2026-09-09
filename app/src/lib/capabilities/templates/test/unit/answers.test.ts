@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { beforeEach, describe, test, vi } from "vitest";
+import type { StoreUnitOfWork } from "$model/server/store/index.server";
 
 type Row = Record<string, unknown> & { _id: string; _creationTime: number };
 
@@ -36,7 +37,16 @@ const model = vi.hoisted(() => ({
       if (index >= 0) rows.splice(index, 1);
     },
     removeRows: () => {},
-    removeFieldFromRows: () => {}
+    removeFieldFromRows: () => {},
+    transaction: <T>(work: (unit: StoreUnitOfWork) => T): T => {
+      const before = structuredClone(model.tables);
+      try {
+        return work(model.store as unknown as StoreUnitOfWork);
+      } catch (error) {
+        model.tables = before;
+        throw error;
+      }
+    }
   }
 }));
 

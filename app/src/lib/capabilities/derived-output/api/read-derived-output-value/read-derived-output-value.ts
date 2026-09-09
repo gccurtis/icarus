@@ -10,10 +10,10 @@ import { validateReadDerivedOutput } from "$capabilities/derived-output/api/read
 export const readDerivedOutputValue = async (
   input: unknown
 ): Promise<ReadDerivedOutputValueResult> => {
-  await requireScope();
+  const scope = await requireScope();
   const asked = validateReadDerivedOutput(input) as ReadDerivedOutputValueInput;
   const read = await readDerivedOutput(asked);
-  if (read === null) return null;
+  if (read === null || read.output.projectId !== scope.projectId) return null;
   const block = read.output.lastResponse ?? null;
   return {
     derivedOutputId: read.output._id,

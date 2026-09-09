@@ -1,4 +1,4 @@
-import type { StoreModel, TableRow } from "$model/server/store/index.server";
+import type { StoreUnitOfWork, TableRow } from "$model/server/store/index.server";
 
 import type { RowFields } from "$capabilities/templates/api/shared/store";
 
@@ -6,7 +6,7 @@ type TemplateFields = RowFields<"templates">;
 type Template = TableRow<"templates">;
 
 export const writeTemplateVersion = (
-  store: StoreModel,
+  store: StoreUnitOfWork,
   templateId: string,
   fields: TemplateFields,
   at: number

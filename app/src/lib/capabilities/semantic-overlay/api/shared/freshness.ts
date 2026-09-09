@@ -1,4 +1,4 @@
-import type { StoreModel, TableRow } from "$model/server/store/index.server";
+import type { StoreUnitOfWork, TableRow } from "$model/server/store/index.server";
 import { fileSubkindFor } from "$representation/data/behavior/external/file";
 import type { Id } from "$representation/data/types/core/id";
 import type { ResourceRef } from "$representation/data/types/core/resource";
@@ -11,7 +11,7 @@ import { rowsOf } from "$capabilities/semantic-overlay/api/shared/rows";
 
 /** The authoritative revision behind one editable resource, without reading its body. */
 export const currentResourceRevisionFor = (
-  store: StoreModel,
+  store: StoreUnitOfWork,
   projectId: Id<"projects">,
   ref: ResourceRef
 ): number | undefined => {
@@ -50,7 +50,7 @@ export const currentResourceRevisionFor = (
 
 /** Whether an exact-lane source still points at its authoritative revision/hash. */
 export const semanticSourceIsCurrent = (
-  store: StoreModel,
+  store: StoreUnitOfWork,
   projectId: Id<"projects">,
   source: Pick<SemanticSourceSnapshot, "ref" | "revision" | "contentHash">
 ): boolean => {
@@ -70,7 +70,7 @@ export const semanticSourceIsCurrent = (
 
 /** Whether a persisted material still points at the current native authority. */
 export const materialSourceIsCurrent = (
-  store: StoreModel,
+  store: StoreUnitOfWork,
   projectId: Id<"projects">,
   source: MaterialSource
 ): boolean => {
@@ -93,14 +93,14 @@ export const materialSourceIsCurrent = (
 };
 
 export const materialPlacementIsCurrent = (
-  store: StoreModel,
+  store: StoreUnitOfWork,
   projectId: Id<"projects">,
   placement: Pick<SemanticMaterialPlacementFields, "ref" | "revision">
 ): boolean => currentResourceRevisionFor(store, projectId, placement.ref) === placement.revision;
 
 /** Conservative pull-time gate: stale source or placement metadata is never searchable/readable. */
 export const materialRecordIsCurrent = (
-  store: StoreModel,
+  store: StoreUnitOfWork,
   projectId: Id<"projects">,
   material: TableRow<"semanticMaterials">,
   placements: readonly TableRow<"semanticMaterialPlacements">[]

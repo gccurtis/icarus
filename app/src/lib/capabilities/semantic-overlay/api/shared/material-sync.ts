@@ -1,3 +1,4 @@
+// @architecture-complexity reviewed: material synchronization is one transactional extraction pipeline.
 import { Buffer } from "node:buffer";
 
 import type { TableRow } from "$model/server/store/index.server";
@@ -27,6 +28,7 @@ import {
   publishSemanticMaterials,
   type PreparedMaterial
 } from "$capabilities/semantic-overlay/api/shared/material-publication";
+import { semanticUnitModel } from "$capabilities/semantic-overlay/api/shared/unit-of-work";
 import type { SyncSemanticMaterialsResult } from "$capabilities/semantic-overlay/types/material-sync";
 
 type MaterialObjectRow = Extract<TableRow<"semanticObjects">, { lane: "material" }>;
@@ -513,5 +515,15 @@ export const syncSemanticMaterialsFor = async (
       usage
     };
   }
-  return publishSemanticMaterials(model, projectId, ref, inventory.revision, prepared, usage, force);
+  return model.store.transaction((unit) =>
+    publishSemanticMaterials(
+      semanticUnitModel(model, unit),
+      projectId,
+      ref,
+      inventory.revision,
+      prepared,
+      usage,
+      force
+    )
+  );
 };

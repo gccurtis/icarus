@@ -1,4 +1,4 @@
-import type { StoreModel, TableName, TableRow } from "$model/server/store/index.server";
+import type { StoreUnitOfWork, TableName, TableRow } from "$model/server/store/index.server";
 import { asId } from "$representation/data/behavior/core/id";
 import type { Id } from "$representation/data/types/core/id";
 import type { DocumentBody } from "$representation/data/types/documents/body";
@@ -39,30 +39,30 @@ const admittedStage = (row: Record<string, unknown>): Stage | undefined =>
     ? (row as unknown as Stage)
     : undefined;
 
-export const stagesIn = (store: StoreModel): readonly Stage[] =>
+export const stagesIn = (store: StoreUnitOfWork): readonly Stage[] =>
   recordsIn(store, "templateStages").flatMap((row) => {
     const stage = admittedStage(row);
     return stage === undefined ? [] : [stage];
   });
 
-export const stageById = (store: StoreModel, stageId: string): Stage | undefined =>
+export const stageById = (store: StoreUnitOfWork, stageId: string): Stage | undefined =>
   stagesIn(store).find((stage) => stage._id === stageId);
 
 export const stageOf = (
-  store: StoreModel,
+  store: StoreUnitOfWork,
   projectId: string,
   templateId: string
 ): Stage | undefined =>
   stagesIn(store).find((stage) => stage.projectId === projectId && stage.templateId === templateId);
 
 export const stageOfResource = (
-  store: StoreModel,
+  store: StoreUnitOfWork,
   projectId: string,
   resourceId: string
 ): Stage | undefined =>
   stagesIn(store).find((stage) => stage.projectId === projectId && stage.resourceId === resourceId);
 
-export const stagedResourceIdsIn = (store: StoreModel, projectId: string): ReadonlySet<string> =>
+export const stagedResourceIdsIn = (store: StoreUnitOfWork, projectId: string): ReadonlySet<string> =>
   new Set(
     stagesIn(store)
       .filter((stage) => stage.projectId === projectId)
@@ -74,7 +74,7 @@ export type StageLeader =
   | { readonly target: "slides"; readonly revision: number; readonly body: SlideDeckBody };
 
 export const leaderBodyOf = (
-  store: StoreModel,
+  store: StoreUnitOfWork,
   projectId: string,
   target: TemplateStageTarget,
   resourceId: string
@@ -95,7 +95,7 @@ const idsOf = <T extends TableName>(rows: readonly Record<string, unknown>[], ta
     return id === undefined ? [] : [asId<T>(id)];
   });
 
-export const removeStage = (store: StoreModel, stage: Stage): void => {
+export const removeStage = (store: StoreUnitOfWork, stage: Stage): void => {
   const table = resourceTableOf(stage.target);
   const snapshots = stage.target === "document" ? "documentSnapshots" : "slideDeckSnapshots";
   const changeSets = stage.target === "document" ? "documentChangeSets" : "slideDeckChangeSets";

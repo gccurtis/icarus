@@ -1,3 +1,4 @@
+// @architecture-complexity reviewed: synthesis keeps one evidence ledger across the complete agent attempt.
 import type { ServerModel } from "$runtime/server/start.server";
 import type { IntelligenceModel, IntelligenceTool, IntelligenceUsage } from "$model/server/intelligence/index.server";
 import { coalesceSemanticCitations } from "$representation/data/behavior/semantic/citation";

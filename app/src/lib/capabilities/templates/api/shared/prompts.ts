@@ -1,4 +1,4 @@
-import type { StoreModel } from "$model/server/store/index.server";
+import type { StoreUnitOfWork } from "$model/server/store/index.server";
 import { asId } from "$representation/data/behavior/core/id";
 import { needsRow } from "$representation/data/behavior/core/scope-draft";
 import { portableBodyOf } from "$representation/data/behavior/templates/portable";
@@ -35,7 +35,7 @@ type Definition = {
  * moment the definition can be taken, and it has to happen while the link is
  * still there.
  */
-const definedBy = (store: StoreModel, body: unknown): Definition => {
+const definedBy = (store: StoreUnitOfWork, body: unknown): Definition => {
   const wanted = new Map<string, string>();
   const walk = (value: unknown): void => {
     if (Array.isArray(value)) {
@@ -76,7 +76,7 @@ const definedBy = (store: StoreModel, body: unknown): Definition => {
  * being copied: a linked block keeps none, so there is only ever one of it.
  */
 export const withFreshOutputs = <T>(
-  store: StoreModel,
+  store: StoreUnitOfWork,
   projectId: string,
   actor: Actor,
   origin: { kind: string; id: string },
@@ -138,7 +138,7 @@ export type TemplatedBody<T> = {
  * has to happen after the template row exists, because the row is owned by it.
  */
 export const settledHoleDefaults = (
-  store: StoreModel,
+  store: StoreUnitOfWork,
   projectId: string,
   actor: Actor,
   templateId: string,
@@ -159,7 +159,7 @@ export const settledHoleDefaults = (
   });
 
 export const templatedBodyOf = <T>(
-  store: StoreModel,
+  store: StoreUnitOfWork,
   candidate: T,
   known: readonly TemplateHole[]
 ): TemplatedBody<T> => {

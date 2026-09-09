@@ -46,8 +46,6 @@ export const PROJECT_KINDS: readonly KindOption[] = [
   { kind: "research", label: "Research threads" }
 ];
 
-const KIND_LABEL = new Map(PROJECT_KINDS.map((entry) => [entry.kind, entry.label]));
-
 export const WHOLE_PROJECT: ResourceSet = { include: [{ select: "project" }], exclude: [] };
 
 export const EMPTY_DRAFT: ScopeDraft = { include: [], exclude: [] };
@@ -199,7 +197,9 @@ const countWords = (count: number, one: string, many: string): string =>
 export const termWords = (term: AnyTerm, names: ScopeNames = {}): string => {
   if (term.select === "project") return "everything in the project";
   if (term.select === "kinds") {
-    return term.kinds.map((kind) => KIND_LABEL.get(kind) ?? kind).join(", ");
+    return term.kinds
+      .map((kind) => PROJECT_KINDS.find((entry) => entry.kind === kind)?.label ?? kind)
+      .join(", ");
   }
   if (term.select === "set") {
     return names.sets?.get(term.setId) ?? "a chosen group";

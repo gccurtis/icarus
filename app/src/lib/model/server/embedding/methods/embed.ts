@@ -198,3 +198,11 @@ export const embedQuery = async (
   const result = await dense(state, [text], "retrieval.query", "queryVector", false);
   return { value: result.value[0], usage: result.usage };
 };
+
+/** Public model-method entries keep the definition declarative. */
+export const tokenField = embedTokenField;
+export const windowedPassages = embedWindowedPassages;
+export const passage = embedPassage;
+export const passages = embedPassages;
+export const image = embedImage;
+export const query = embedQuery;

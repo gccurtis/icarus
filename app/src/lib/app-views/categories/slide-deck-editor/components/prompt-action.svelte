@@ -4,20 +4,15 @@
   import { PanelButton } from "$authored-components/panel";
   import { elementIn } from "$app-views/categories/slide-deck-editor/procedures/deck";
   import { withPromptElement } from "$app-views/categories/slide-deck-editor/procedures/prompt-blocks";
-  import {
-    workspaceState,
-    type SlideDeckRuntime
-  } from "$model/client/workspace-state";
+  import { workspaceState } from "$model/client/workspace-state";
 
   let { elementId }: { elementId: string } = $props();
 
   const view = workspaceState();
   const deckId = $derived(view.active.resourceId);
-  let runtime = $state<SlideDeckRuntime | undefined>(undefined);
-
-  $effect(() => {
-    runtime = deckId === undefined ? undefined : view.slideDeckRuntime(deckId);
-  });
+  const runtime = $derived(
+    deckId === undefined ? undefined : view.slideDeckRuntime(deckId)
+  );
 
   const makePrompt = () => {
     const current = runtime;

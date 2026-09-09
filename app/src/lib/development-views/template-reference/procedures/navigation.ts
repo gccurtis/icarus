@@ -24,4 +24,4 @@ const PATHS: Record<ReferencePage["slug"], string> = {
 };
 
 export const hrefOf = (project: string, slug: ReferencePage["slug"]): string =>
-  `/app/${project}/reference/templates${PATHS[slug]}`;
+  `/demo/${project}/reference/templates${PATHS[slug]}`;

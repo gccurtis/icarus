@@ -1,12 +1,12 @@
 import type {
-  StoreModel,
+  StoreUnitOfWork,
   TableRow
 } from "$model/server/store/index.server";
 import type { Id } from "$representation/data/types/core/id";
 import { rowsOf } from "$capabilities/semantic-overlay/api/shared/rows";
 
 export const currentOverlay = (
-  store: StoreModel,
+  store: StoreUnitOfWork,
   projectId: Id<"projects">
 ): TableRow<"semanticOverlays"> => {
   const overlay = rowsOf(store, "semanticOverlays")

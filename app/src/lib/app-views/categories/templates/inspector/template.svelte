@@ -22,20 +22,16 @@
   import { Button } from "$vendored-components/button";
   import { Input } from "$vendored-components/input";
   import { Textarea } from "$vendored-components/textarea";
+  import { TemplatePromptState } from "$app-views/categories/templates/inspector/template.state.svelte";
+  import { focusEditorAfterUpdate } from "$app-views/categories/templates/procedures/focus-editor-after-update";
   import {
-    EDITOR_CATEGORY,
     answerRowsOf,
-    answersFrom,
     builderView,
     missingIn,
-    wordsFrom,
     detailIn,
-    draftOf,
     duplicateTemplate,
-    editTemplate,
     emptyTemplateInspectorTitle,
     inspectTemplate,
-    instantiateTemplate,
     offeringOf,
     projectResources,
     removeTemplate,
@@ -47,22 +43,11 @@
     setsIn,
     templateDetail,
     templateLibrary,
-    termFor,
     unavailableTemplateIn,
     updateTemplateDescription,
     updateTemplateName,
     updateTemplateTags,
-    updateTemplateHoleDefault,
-    updateTemplateHoleDescription,
-    withTerm,
-    withWholeProject,
-    withoutTerm,
     type LibraryTemplateDetail,
-    type OfferSource,
-    type ScopeDraft,
-    type ScopeSide,
-    type TemplateAnswers,
-    type TemplateHole
   } from "$app-views/categories/templates/procedures/library.svelte";
   import { workspaceState } from "$model/client/workspace-state";
 
@@ -97,42 +82,6 @@
   });
   const template = $derived(detailIn(detailAnswer, now));
   const unavailable = $derived(unavailableTemplateIn(detailAnswer));
-  let defaultFor = $state<TemplateHole | undefined>(undefined);
-  let defaultOpen = $state(false);
-  let draft = $state<ScopeDraft>(draftOf(undefined));
-  let useOpen = $state(false);
-  let answerOpen = $state(false);
-  let useChoices = $state<Record<string, ScopeDraft | undefined>>({});
-  let useTexts = $state<Record<string, string | undefined>>({});
-  let answering = $state<TemplateHole | undefined>(undefined);
-
-  const askRows = $derived(answerRowsOf(template?.holes ?? [], useChoices, useTexts, setNames));
-  const askBlocked = $derived(
-    missingIn(askRows).length === 0 ? undefined : `${missingIn(askRows).join(", ")} still needs words.`
-  );
-  const scopeBlocked = $derived(
-    draft.include.length === 0 ? "Include something, or choose everything in the project." : undefined
-  );
-
-  /** Every builder edits this one draft, because only one is ever open. */
-  const view$ = $derived(builderView(draft, offering));
-
-  const addTerm = (side: ScopeSide, source: string, key: string) => {
-    const term = termFor(source as OfferSource, key);
-    if (term !== undefined) draft = withTerm(draft, side, term);
-  };
-
-  const dropTerm = (side: ScopeSide, key: string) => {
-    draft = withoutTerm(draft, side, key);
-  };
-
-  const setMode = (whole: boolean) => {
-    draft = whole ? withWholeProject() : { include: [], exclude: [] };
-  };
-
-  const clearScope = () => {
-    draft = { include: [], exclude: [] };
-  };
 
   let editingDescription = $state(false);
   let descriptionDraft = $state("");
@@ -144,10 +93,6 @@
   let descriptionEditor = $state<HTMLTextAreaElement | null>(null);
   let nameTrigger = $state<HTMLButtonElement | null>(null);
   let descriptionTrigger = $state<HTMLButtonElement | null>(null);
-  let editingHole = $state<string>();
-  let holeDescriptionDraft = $state("");
-  let holeBase = $state<LibraryTemplateDetail>();
-  let holeEditor = $state<HTMLTextAreaElement | null>(null);
   let tagEditor = $state<HTMLInputElement | null>(null);
   let tagDraft = $state("");
   let activeTemplateId = $state<string>();
@@ -173,9 +118,7 @@
     descriptionBase = undefined;
     tagDraft = "";
     editingDescription = false;
-    editingHole = undefined;
-    holeDescriptionDraft = "";
-    holeBase = undefined;
+    promptState.cancelHoleDescription();
     actionError = undefined;
   });
 
@@ -185,38 +128,60 @@
     view.selection?.kind === "template" &&
     view.selection.id === subjectId;
 
+  const promptState = new TemplatePromptState({
+    view,
+    template: () => template,
+    pending: () => pending,
+    setPending: (value) => (pending = value),
+    setError: (value) => (actionError = value),
+    stillInspecting,
+    prepareHoleEditing: () => {
+      editingName = false;
+      nameBase = undefined;
+      editingDescription = false;
+      descriptionBase = undefined;
+    }
+  });
+
+  const askRows = $derived(
+    answerRowsOf(template?.holes ?? [], promptState.useChoices, promptState.useTexts, setNames)
+  );
+  const askBlocked = $derived(
+    missingIn(askRows).length === 0 ? undefined : `${missingIn(askRows).join(", ")} still needs words.`
+  );
+  const scopeBlocked = $derived(
+    promptState.draft.include.length === 0
+      ? "Include something, or choose everything in the project."
+      : undefined
+  );
+  const view$ = $derived(builderView(promptState.draft, offering));
+
   const fail = (error: unknown, tabId: string, subjectId: string) => {
     if (stillInspecting(tabId, subjectId)) {
       actionError = error instanceof Error ? error.message : String(error);
     }
   };
 
-  const startDescription = async () => {
+  const startDescription = () => {
     if (template === undefined || !template.canEdit || pending !== undefined) return;
     editingName = false;
     nameBase = undefined;
-    editingHole = undefined;
-    holeBase = undefined;
+    promptState.cancelHoleDescription();
     descriptionBase = template;
     descriptionDraft = template.description;
     editingDescription = true;
-    await tick();
-    descriptionEditor?.focus();
-    descriptionEditor?.select();
+    void focusEditorAfterUpdate(() => descriptionEditor);
   };
 
-  const startName = async () => {
+  const startName = () => {
     if (template === undefined || !template.canEdit || pending !== undefined) return;
     editingDescription = false;
     descriptionBase = undefined;
-    editingHole = undefined;
-    holeBase = undefined;
+    promptState.cancelHoleDescription();
     nameBase = template;
     nameDraft = template.name;
     editingName = true;
-    await tick();
-    nameEditor?.focus();
-    nameEditor?.select();
+    void focusEditorAfterUpdate(() => nameEditor);
   };
 
   const focusNameTrigger = async () => {
@@ -364,67 +329,6 @@
     }
   };
 
-  const startHoleDescription = async (hole: TemplateHole) => {
-    if (template === undefined || !template.canEdit || pending !== undefined) return;
-    editingName = false;
-    nameBase = undefined;
-    editingDescription = false;
-    descriptionBase = undefined;
-    holeBase = template;
-    editingHole = hole.name;
-    holeDescriptionDraft = hole.description ?? "";
-    await tick();
-    holeEditor?.focus();
-    holeEditor?.select();
-  };
-
-  const cancelHoleDescription = () => {
-    editingHole = undefined;
-    holeDescriptionDraft = "";
-    holeBase = undefined;
-  };
-
-  const commitHoleDescription = async (hole: TemplateHole) => {
-    const subject = holeBase;
-    const originTabId = view.activeId;
-    if (
-      subject === undefined ||
-      template?.id !== subject.id ||
-      editingHole !== hole.name ||
-      !subject.canEdit ||
-      pending !== undefined
-    ) {
-      return;
-    }
-    if (holeDescriptionDraft.trim() === (hole.description ?? "").trim()) {
-      cancelHoleDescription();
-      return;
-    }
-
-    pending = "hole";
-    actionError = undefined;
-    try {
-      const result = await updateTemplateHoleDescription(
-        view,
-        subject,
-        hole.name,
-        holeDescriptionDraft
-      );
-      if (!stillInspecting(originTabId, subject.id)) return;
-      if (!result.accepted) actionError = result.detail;
-      else cancelHoleDescription();
-    } catch (error) {
-      fail(error, originTabId, subject.id);
-    } finally {
-      pending = undefined;
-    }
-  };
-
-  const holeKeydown = (event: KeyboardEvent) => {
-    if (event.key !== "Escape") return;
-    event.preventDefault();
-    cancelHoleDescription();
-  };
 
   const addTag = async () => {
     if (template === undefined || !template.canEdit || pending !== undefined) return;
@@ -520,147 +424,6 @@
     }
   };
 
-  const use = () => {
-    if (template === undefined || pending !== undefined) return;
-    if (template.makes === "Spreadsheet") {
-      actionError = SPREADSHEET_HANDOFF;
-      return;
-    }
-    if (template.holes.length === 0) {
-      void instantiate({});
-      return;
-    }
-    useChoices = {};
-    useTexts = {};
-    answering = undefined;
-    useOpen = true;
-  };
-
-  const confirmUse = () => void instantiate(answersFrom(useChoices), wordsFrom(useTexts));
-
-  /**
-   * The builder is its own modal rather than a second face of the ask modal.
-   * Swapping one modal's title, body and confirm while it is open replaces the
-   * footer under the pointer, and the press lands on a button that has gone.
-   */
-  const openAnswer = (name: string) => {
-    const hole = template?.holes.find((candidate) => candidate.name === name);
-    if (hole === undefined) return;
-    answering = hole;
-    draft = draftOf(useChoices[name] ?? hole.default);
-    useOpen = false;
-    answerOpen = true;
-  };
-
-  const confirmAnswer = () => {
-    if (answering !== undefined) useChoices = { ...useChoices, [answering.name]: draft };
-    answering = undefined;
-    answerOpen = false;
-    useOpen = true;
-  };
-
-  const cancelAnswer = () => {
-    answering = undefined;
-    useOpen = true;
-  };
-
-  /** Inside the ask, Default means the template's own suggestion, not the floor. */
-  const resetAnswering = () => {
-    if (answering !== undefined) clearAnswer(answering.name);
-    answering = undefined;
-    answerOpen = false;
-    useOpen = true;
-  };
-
-  const writeText = (name: string, words: string) => {
-    useTexts = { ...useTexts, [name]: words };
-  };
-
-  const clearAnswer = (name: string) => {
-    const { [name]: _chosen, ...restChoices } = useChoices;
-    const { [name]: _typed, ...restTexts } = useTexts;
-    useChoices = restChoices;
-    useTexts = restTexts;
-  };
-
-  const instantiate = async (
-    answers: TemplateAnswers,
-    words: Readonly<Record<string, string>> = {}
-  ) => {
-    if (template === undefined || pending !== undefined) return;
-    const subject = template;
-    const originTabId = view.activeId;
-
-    pending = "use";
-    actionError = undefined;
-    try {
-      const result = await instantiateTemplate(view, subject, answers, words);
-      if (!stillInspecting(originTabId, subject.id)) return;
-      if (!result.accepted) {
-        actionError = result.detail;
-        return;
-      }
-
-      if (result.target === "spreadsheet") {
-        actionError = SPREADSHEET_HANDOFF;
-        return;
-      }
-      view.open({ category: EDITOR_CATEGORY[result.target], resourceId: result.resourceId });
-    } catch (error) {
-      fail(error, originTabId, subject.id);
-    } finally {
-      pending = undefined;
-    }
-  };
-
-  const edit = async () => {
-    if (template === undefined || pending !== undefined) return;
-    const subject = template;
-    const originTabId = view.activeId;
-    if (subject.makes === "Spreadsheet") {
-      actionError = "Spreadsheet templates open for editing once the spreadsheet editor lands.";
-      return;
-    }
-
-    pending = "edit";
-    actionError = undefined;
-    try {
-      const result = await editTemplate(view, subject);
-      if (!live) return;
-      if (!result.accepted) actionError = result.detail;
-    } catch (error) {
-      fail(error, originTabId, subject.id);
-    } finally {
-      pending = undefined;
-    }
-  };
-
-  const openDefault = (hole: TemplateHole) => {
-    if (template === undefined || !template.canEdit || pending !== undefined) return;
-    defaultFor = hole;
-    draft = draftOf(hole.default);
-    defaultOpen = true;
-  };
-
-  const setDefault = async () => {
-    const hole = defaultFor;
-    if (template === undefined || hole === undefined || pending !== undefined) return;
-    const subject = template;
-    const originTabId = view.activeId;
-    const rule = draft;
-
-    pending = "default";
-    actionError = undefined;
-    try {
-      const result = await updateTemplateHoleDefault(view, subject, hole.name, rule);
-      if (!stillInspecting(originTabId, subject.id)) return;
-      if (!result.accepted) actionError = result.detail;
-    } catch (error) {
-      fail(error, originTabId, subject.id);
-    } finally {
-      pending = undefined;
-    }
-  };
 </script>
 
 {#snippet inspectorHeading()}
@@ -769,7 +532,7 @@
           title={template.makes === "Spreadsheet"
             ? SPREADSHEET_HANDOFF
             : "Use template — create an independent project resource"}
-          onclick={use}
+          onclick={() => promptState.use()}
         ><ExternalLink aria-hidden="true" /></Button>
         <Button
           variant="ghost"
@@ -780,7 +543,7 @@
           title={template.makes === "Spreadsheet"
             ? "Spreadsheet templates open for editing once the spreadsheet editor lands"
             : "Edit template — open a copy in its editor"}
-          onclick={edit}
+          onclick={() => promptState.edit()}
         ><FilePenLine aria-hidden="true" /></Button>
         <Button
           variant="ghost"
@@ -830,15 +593,15 @@
                   <ChevronDown class="disclosure-icon" size={13} aria-hidden="true" />
                 </summary>
                 <div class="hole-body">
-                  {#if editingHole === hole.name}
+                  {#if promptState.editingHole === hole.name}
                     <Textarea
-                      bind:ref={holeEditor}
+                      bind:ref={promptState.holeEditor}
                       class="hole-description-editor"
-                      bind:value={holeDescriptionDraft}
+                      bind:value={promptState.holeDescriptionDraft}
                       aria-label={`Description for ${hole.label}`}
                       rows={3}
-                      onkeydown={holeKeydown}
-                      onblur={() => commitHoleDescription(hole)}
+                      onkeydown={(event) => promptState.holeKeydown(event)}
+                      onblur={() => promptState.commitHoleDescription(hole)}
                     />
                   {:else if template.canEdit}
                     <button
@@ -846,10 +609,10 @@
                       class="hole-description"
                       title="Double-click to edit this description"
                       aria-label={`Edit description for ${hole.label}`}
-                      ondblclick={() => startHoleDescription(hole)}
+                      ondblclick={() => promptState.startHoleDescription(hole)}
                       onkeydown={(event) => {
                         if (event.key === "Enter" || event.key === " ") {
-                          startHoleDescription(hole);
+                          promptState.startHoleDescription(hole);
                         }
                       }}
                     >{hole.description ?? "Add a description"}</button>
@@ -863,7 +626,7 @@
                         size="xs"
                         title={`${ruleOf(hole.default, setNames)} — change what ${hole.label} selects by default`}
                         disabled={pending !== undefined}
-                        onclick={() => openDefault(hole)}
+                        onclick={() => promptState.openDefault(hole)}
                       >Default scope</Button>
                     {:else}
                       <span>{ruleOf(hole.default, setNames)}</span>
@@ -945,55 +708,61 @@
 </Panel>
 
 <OverlayModal
-  bind:open={useOpen}
+  bind:open={promptState.useOpen}
   title={`Use “${template?.name ?? "the template"}”`}
   description="One hole at a time. The tabs say which still need words."
   confirm="Create"
   width="wide"
   blocked={askBlocked}
-  onconfirm={confirmUse}
+  onconfirm={() => promptState.confirmUse()}
 >
   <TemplateAnswerList
     rows={askRows}
     prompts={template?.prompts ?? {}}
-    onscope={openAnswer}
-    ontext={writeText}
-    onreset={clearAnswer}
-    onaccept={confirmUse}
+    onscope={(name) => promptState.openAnswer(name)}
+    ontext={(name, words) => promptState.writeText(name, words)}
+    onreset={(name) => promptState.clearAnswer(name)}
+    onaccept={() => promptState.confirmUse()}
   />
 </OverlayModal>
 
 <OverlayModal
-  bind:open={answerOpen}
-  title={`What ${answering?.label ?? "the parameter"} selects here`}
+  bind:open={promptState.answerOpen}
+  title={`What ${promptState.answering?.label ?? "the parameter"} selects here`}
   description="For the new resource only. Nothing here changes the template."
   confirm="Use this"
   width="wide"
   blocked={scopeBlocked}
-  onconfirm={confirmAnswer}
-  oncancel={cancelAnswer}
+  onconfirm={() => promptState.confirmAnswer()}
+  oncancel={() => promptState.cancelAnswer()}
 >
   <ScopeBuilder
     {...view$}
     resettable
-    onmode={setMode}
-    onadd={addTerm}
-    ondrop={dropTerm}
-    onclear={clearScope}
-    onreset={resetAnswering}
+    onmode={(whole) => promptState.setMode(whole)}
+    onadd={(side, source, key) => promptState.addTerm(side, source, key)}
+    ondrop={(side, key) => promptState.dropTerm(side, key)}
+    onclear={() => promptState.clearScope()}
+    onreset={() => promptState.resetAnswering()}
   />
 </OverlayModal>
 
 <OverlayModal
-  bind:open={defaultOpen}
-  title={`Default scope for ${defaultFor?.label ?? "the parameter"}`}
+  bind:open={promptState.defaultOpen}
+  title={`Default scope for ${promptState.defaultFor?.label ?? "the parameter"}`}
   description="What it selects until whoever places the template says otherwise."
   confirm="Set the default scope"
   width="wide"
   blocked={scopeBlocked}
-  onconfirm={() => void setDefault()}
+  onconfirm={() => promptState.setDefault()}
 >
-  <ScopeBuilder {...view$} onmode={setMode} onadd={addTerm} ondrop={dropTerm} onclear={clearScope} />
+  <ScopeBuilder
+    {...view$}
+    onmode={(whole) => promptState.setMode(whole)}
+    onadd={(side, source, key) => promptState.addTerm(side, source, key)}
+    ondrop={(side, key) => promptState.dropTerm(side, key)}
+    onclear={() => promptState.clearScope()}
+  />
 </OverlayModal>
 
 <style>

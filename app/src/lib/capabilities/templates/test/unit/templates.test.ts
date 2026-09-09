@@ -89,7 +89,13 @@ const model = vi.hoisted(() => ({
     },
     transaction: <T>(work: (unit: StoreUnitOfWork) => T): T => {
       model.calls.push("transaction");
-      return work(model.store as unknown as StoreUnitOfWork);
+      const before = structuredClone(model.tables);
+      try {
+        return work(model.store as unknown as StoreUnitOfWork);
+      } catch (error) {
+        model.tables = before;
+        throw error;
+      }
     }
   }
 }));

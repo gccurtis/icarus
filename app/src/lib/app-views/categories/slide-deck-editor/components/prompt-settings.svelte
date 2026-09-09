@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { onMount } from "svelte";
   import RefreshCw from "@lucide/svelte/icons/refresh-cw";
 
   import {
@@ -11,19 +10,16 @@
   import { Button } from "$vendored-components/button";
   import { Textarea } from "$vendored-components/textarea";
   import {
-    readDerivedOutput,
-    refreshDerivedOutput,
-    updateDerivedOutput
-  } from "$capabilities/derived-output/index.remote";
-  import {
     promptBlockIn,
-    promptScopeOps,
-    syncPromptBlockOps,
     type Id,
     type LinkedPromptBlock
   } from "$app-views/categories/slide-deck-editor/procedures/prompt-blocks";
-  import { readableScope } from "$app-views/categories/slide-deck-editor/procedures/templating";
   import PromptScope from "$app-views/categories/slide-deck-editor/components/prompt-scope.svelte";
+  import { PromptSettingsState } from "$app-views/categories/slide-deck-editor/components/prompt-settings.state.svelte";
+  import { readPromptOutput } from "$app-views/categories/slide-deck-editor/procedures/read-prompt-output";
+  import { setPromptScope } from "$app-views/categories/slide-deck-editor/procedures/set-prompt-scope";
+  import { refreshPromptBlock } from "$app-views/categories/slide-deck-editor/procedures/refresh-prompt-block";
+  import { synchronizePromptSettings } from "$app-views/categories/slide-deck-editor/procedures/effects/prompt-settings.svelte";
   import {
     rowsOf,
     tableQuery
@@ -32,14 +28,7 @@
     compactEvidenceSourceTitle,
     exactEvidenceText
   } from "$app-views/categories/slide-deck-editor/procedures/evidence";
-  import {
-    announcePromptOutput,
-    observePromptOutput
-  } from "$app-views/categories/slide-deck-editor/procedures/prompt-output-events";
-  import {
-    workspaceState,
-    type SlideDeckRuntime
-  } from "$model/client/workspace-state";
+  import { workspaceState } from "$model/client/workspace-state";
   import type { ResourceRef } from "$representation/data/types/core/resource";
   import type { SemanticCitation } from "$representation/data/types/semantic/derived-output";
 
@@ -52,10 +41,10 @@
   const view = workspaceState();
   const deckId = $derived(view.active.resourceId);
 
-  let runtime = $state<SlideDeckRuntime | undefined>(undefined);
-  $effect(() => {
-    runtime = deckId === undefined ? undefined : view.slideDeckRuntime(deckId);
-  });
+  const runtime = $derived(
+    deckId === undefined ? undefined : view.slideDeckRuntime(deckId)
+  );
+  const state = new PromptSettingsState();
 
   const held = $derived(
     runtime?.body === undefined ? undefined : promptBlockIn(runtime.body, blockId)
@@ -66,15 +55,10 @@
 
   // A keyed component instance belongs to one immutable Derived Output identity.
   // svelte-ignore state_referenced_locally
-  const detailQuery = readDerivedOutput({ derivedOutputId: outputId });
+  const detailQuery = readPromptOutput(outputId);
   const documentsQuery = tableQuery("documents");
   const slideDecksQuery = tableQuery("slideDecks");
   const spreadsheetsQuery = tableQuery("spreadsheets");
-
-  let running = $state(false);
-  let actionError = $state<string>();
-  let promptDraft = $state("");
-  let hydratedPrompt = $state<string>();
 
   const detail = $derived(detailQuery.ready ? detailQuery.current : undefined);
   const output = $derived(detail?.output);
@@ -86,8 +70,8 @@
   const serverRefreshing = $derived(
     refreshState === "queued" || refreshState === "running"
   );
-  const busy = $derived(running || serverRefreshing);
-  const definitionChanged = $derived(output !== undefined && promptDraft.trim() !== output.prompt);
+  const busy = $derived(state.running || serverRefreshing);
+  const definitionChanged = $derived(output !== undefined && state.promptDraft.trim() !== output.prompt);
   const responseChanged = $derived(output !== undefined && currentResponse !== storedResponse);
   const queryError = $derived(
     detailQuery.error === undefined ? undefined : String(detailQuery.error)
@@ -96,7 +80,7 @@
     detail?.refresh.state === "failed" ? detail.refresh.error : undefined
   );
   const shownError = $derived(
-    busy ? undefined : actionError ?? refreshError ?? output?.error ?? queryError
+    busy ? undefined : state.actionError ?? refreshError ?? output?.error ?? queryError
   );
   const sourceTitles = $derived.by(() => {
     const titles = new Map<string, string>();
@@ -112,125 +96,35 @@
     return titles;
   });
 
-  $effect(() => {
-    const nextPrompt = output?.prompt;
-    if (nextPrompt === undefined || nextPrompt === hydratedPrompt) return;
-    if (hydratedPrompt === undefined || promptDraft === hydratedPrompt) {
-      promptDraft = nextPrompt;
-    }
-    hydratedPrompt = nextPrompt;
+  synchronizePromptSettings({
+    outputId: () => outputId,
+    state,
+    prompt: () => output?.prompt,
+    refreshing: () => serverRefreshing,
+    refresh: () => detailQuery.refresh()
   });
 
-  onMount(() => {
-    const stopObserving = observePromptOutput(outputId, () => {
-      void detailQuery.refresh();
-    });
-    let stopped = false;
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    const schedule = () => {
-      if (stopped) return;
-      const delay = serverRefreshing ? 600 : 1_500;
-      timer = setTimeout(async () => {
-        try {
-          await detailQuery.refresh();
-        } catch {
-          // The query exposes transport errors. Polling continues so a
-          // collaborator's refresh cannot strand this inspector.
-        } finally {
-          schedule();
-        }
-      }, delay);
-    };
-    schedule();
-    return () => {
-      stopped = true;
-      if (timer !== undefined) clearTimeout(timer);
-      stopObserving();
-    };
+  const setScope = (next: unknown) => setPromptScope({
+    busy,
+    outputId,
+    outputPrompt: output?.prompt,
+    next,
+    state,
+    refresh: () => detailQuery.refresh()
   });
 
-  const currentBlock = (currentRuntime: SlideDeckRuntime) => {
-    const currentBody = currentRuntime.body;
-    if (currentBody === undefined) throw new Error("The slide deck is not loaded");
-    const current = promptBlockIn(currentBody, blockId);
-    if (current === undefined) throw new Error("The Prompt Block is no longer in the slide deck");
-    return current;
-  };
-
-  /**
-   * One write, to the one thing that holds it.
-   *
-   * A linked prompt keeps no scope of its own, so there is nothing on the block
-   * to keep in step: a failure leaves the old scope everywhere, and a second
-   * editor changing it at the same time is one row's last write rather than two
-   * halves that disagree.
-   */
-  const setScope = async (next: unknown) => {
-    if (busy || output === undefined) return;
-    const reading = readableScope(next);
-    if (reading === undefined) return;
-    running = true;
-    actionError = undefined;
-    try {
-      const changed = await updateDerivedOutput({
-        derivedOutputId: outputId,
-        prompt: promptDraft.trim().length === 0 ? output.prompt : promptDraft.trim(),
-        scope: reading
-      });
-      if (changed === null) throw new Error("The Derived Output no longer exists");
-      await detailQuery.refresh();
-    } catch (error) {
-      actionError = error instanceof Error ? error.message : String(error);
-    } finally {
-      announcePromptOutput(outputId);
-      running = false;
-    }
-  };
-
-  const generate = async () => {
-    const prompt = promptDraft.trim();
-    const currentRuntime = runtime;
-    if (
-      busy ||
-      output === undefined ||
-      block === undefined ||
-      currentRuntime === undefined ||
-      prompt.length === 0
-    ) return;
-
-    running = true;
-    actionError = undefined;
-    try {
-      if (definitionChanged || responseChanged) {
-        const changed = await updateDerivedOutput({
-          derivedOutputId: outputId,
-          prompt,
-          ...(responseChanged
-            ? { lastResponse: currentResponse.length === 0 ? null : currentResponse }
-            : {})
-        });
-        if (changed === null) throw new Error("The Derived Output no longer exists");
-      }
-
-      const refreshed = await refreshDerivedOutput({ derivedOutputId: outputId });
-      if (refreshed === null) throw new Error("The Derived Output no longer exists");
-
-      const ops = syncPromptBlockOps(currentBlock(currentRuntime), refreshed.output);
-      if (ops.length > 0) currentRuntime.apply(ops);
-      await currentRuntime.flush();
-      if (currentRuntime.sync === "error") throw new Error("The refreshed slide text could not be saved");
-      if (refreshed.outcome === "failed") {
-        throw new Error(refreshed.output.error ?? "The response could not be generated");
-      }
-      promptDraft = refreshed.output.prompt;
-      hydratedPrompt = refreshed.output.prompt;
-    } catch (error) {
-      actionError = error instanceof Error ? error.message : String(error);
-    } finally {
-      announcePromptOutput(outputId);
-      running = false;
-    }
-  };
+  const generate = () => refreshPromptBlock({
+    busy,
+    block,
+    blockId,
+    output,
+    outputId,
+    currentResponse,
+    definitionChanged,
+    responseChanged,
+    runtime,
+    state
+  });
 
   const sourceTitle = (citation: SemanticCitation, ref: ResourceRef): string =>
     compactEvidenceSourceTitle(
@@ -291,10 +185,10 @@
     <label for={`slide-prompt-${blockId}`}>Prompt</label>
     <Textarea
       id={`slide-prompt-${blockId}`}
-      bind:value={promptDraft}
+      bind:value={state.promptDraft}
       rows={5}
       maxlength={8000}
-      disabled={running}
+      disabled={state.running}
     />
 
     <PromptScope {blockId} {derivedOutputId} disabled={busy} onconfirm={setScope} />
@@ -310,7 +204,7 @@
     <Button
       variant="outline"
       size="xs"
-      disabled={busy || promptDraft.trim().length === 0}
+      disabled={busy || state.promptDraft.trim().length === 0}
       title={busy ? "A shared refresh is already in progress" : "Refresh from project sources"}
       onclick={generate}
     >

@@ -80,10 +80,16 @@ const writeJob = (
   const fields = Object.fromEntries(
     Object.entries({ ...fieldsOf(job), ...patch }).filter(([, value]) => value !== undefined)
   );
-  model.store.update(`derivedOutputRefreshJobs.${job._id}`, fields);
-  const written = jobFor(model, job.projectId, job.derivedOutputId);
-  if (written === undefined) throw new Error("derived output refresh job disappeared");
-  return written;
+  return model.store.transaction((unit) => {
+    unit.update(`derivedOutputRefreshJobs.${job._id}`, fields);
+    const written = rowsOf(unit, "derivedOutputRefreshJobs").find(
+      (candidate) =>
+        candidate.projectId === job.projectId &&
+        candidate.derivedOutputId === job.derivedOutputId
+    );
+    if (written === undefined) throw new Error("derived output refresh job disappeared");
+    return written;
+  });
 };
 
 /** Coalesce every browser's refresh signal onto one durable row per output. */
@@ -105,17 +111,19 @@ export const enqueueDerivedOutputRefreshFor = (
     // settles. An identical signal in that tiny window still joins the flight
     // and must not recreate work which has already completed.
     if (flight?.requestKey === requestKey) return undefined;
-    return model.store.create("derivedOutputRefreshJobs", {
-      projectId,
-      derivedOutputId: outputId,
-      ...(selection === undefined ? {} : { selection }),
-      state: "queued",
-      requestKey,
-      requestedVersion: 1,
-      attempts: 0,
-      queuedAt: at,
-      updatedAt: at
-    });
+    return model.store.transaction((unit) =>
+      unit.create("derivedOutputRefreshJobs", {
+        projectId,
+        derivedOutputId: outputId,
+        ...(selection === undefined ? {} : { selection }),
+        state: "queued",
+        requestKey,
+        requestedVersion: 1,
+        attempts: 0,
+        queuedAt: at,
+        updatedAt: at
+      })
+    );
   }
 
   const sameRequest = existing.requestKey === requestKey;
@@ -215,7 +223,9 @@ const workQueuedRefresh = async (
       return last;
     }
 
-    model.store.removeRows("derivedOutputRefreshJobs", [current._id]);
+    model.store.transaction((unit) => {
+      unit.removeRows("derivedOutputRefreshJobs", [current._id]);
+    });
     return last;
   }
 

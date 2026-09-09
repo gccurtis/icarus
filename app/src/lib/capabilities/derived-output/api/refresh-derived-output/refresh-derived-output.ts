@@ -1,3 +1,4 @@
+// @architecture-complexity reviewed: this command owns one atomic refresh lifecycle and its state transitions.
 import { requireScope } from "$runtime/server/scope.server";
 import { serverModel, type ServerModel } from "$runtime/server/start.server";
 import { changedSemanticMaterials, changedSemanticSources } from "$representation/data/behavior/semantic/citation";
@@ -83,12 +84,14 @@ const definitionKeyOf = (output: DerivedOutput): string => JSON.stringify({
   prompt: output.prompt,
   template: output.template ?? null,
   scope: output.scope ?? null,
-  origin: output.origin ?? null,
-  // Compatibility for rows created before definitionRevision existed.
-  legacyContinuity: output.definitionRevision === undefined
-    ? (output.lastResponse ?? null)
-    : null
+  origin: output.origin ?? null
 });
+
+const updateOutput = (
+  model: ServerModel,
+  output: Parameters<typeof writeOutput>[1],
+  patch: Parameters<typeof writeOutput>[2]
+) => model.store.transaction((unit) => writeOutput(unit, output, patch));
 
 const safeFailure = (error: unknown): string =>
   (error instanceof Error ? error.message : "Derived output refresh failed")
@@ -182,7 +185,7 @@ const performDerivedOutputRefresh = async (
     // Compatibility recovery for rows stranded by the earlier design. The
     // durable refresh job now owns operation state, so the value row stays
     // readable while work runs.
-    original = writeOutput(model.store, original, {
+    original = updateOutput(model, original, {
       state: original.lastResponse === undefined ? "idle" : "stale",
       error: undefined,
       updatedAt: Date.now()
@@ -294,7 +297,7 @@ const performDerivedOutputRefresh = async (
         semanticInputsChanged
       ) {
         if (attempts <= maxRetries) continue;
-        const failed = writeOutput(model.store, current, {
+        const failed = updateOutput(model, current, {
           state: "error",
           error: unstableNegativeResult || semanticInputsChanged
             ? "The Semantic Overlay kept changing while the response was being generated"
@@ -312,7 +315,7 @@ const performDerivedOutputRefresh = async (
 
       const revision = (current.lastRevision ?? 0) + 1;
       const at = Date.now();
-      const published = writeOutput(model.store, current, {
+      const published = updateOutput(model, current, {
         queries: attempt.queries,
         evidence: attempt.evidence,
         lastVariables: attempt.variables,
@@ -346,7 +349,7 @@ const performDerivedOutputRefresh = async (
       });
       return { outcome: "superseded", output: current, attempts, toolCalls, usage };
     }
-    const failed = writeOutput(model.store, current, {
+    const failed = updateOutput(model, current, {
       state: "error",
       error: safeFailure(error),
       updatedAt: Date.now()

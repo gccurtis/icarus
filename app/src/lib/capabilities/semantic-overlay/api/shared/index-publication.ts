@@ -1,4 +1,4 @@
-import type { ServerModel } from "$runtime/server/start.server";
+import type { SemanticUnitModel } from "$capabilities/semantic-overlay/api/shared/unit-of-work";
 import type { TableRow } from "$model/server/store/index.server";
 import { buildRecursiveIndex } from "$representation/data/behavior/semantic/recursive-index";
 import type { Id } from "$representation/data/types/core/id";
@@ -22,7 +22,7 @@ export type StagedSemanticIndex = RebuildSemanticIndexResult & {
  * then chooses commit or rollback before yielding back to another request.
  */
 export const stageSemanticIndex = (
-  model: ServerModel,
+  model: SemanticUnitModel,
   projectId: Id<"projects">,
   overlay: TableRow<"semanticOverlays">,
   objects: readonly IndexableSemanticObject[],

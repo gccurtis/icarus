@@ -362,3 +362,6 @@ export const runAgent = async <Value = string>(
 
   throw new IntelligenceServiceError("Agent exceeded the configured tool-round limit");
 };
+
+/** Public model-method entry used by the declarative definition. */
+export const completeWithTools = runAgent;

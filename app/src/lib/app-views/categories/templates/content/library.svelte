@@ -24,8 +24,8 @@
   } from "$authored-components/screen";
   import { Button } from "$vendored-components/button";
   import * as DropdownMenu from "$vendored-components/dropdown-menu";
+  import { LibraryEditState } from "$app-views/categories/templates/content/library.state.svelte";
   import {
-    editTemplate,
     inspectTemplate,
     recentTemplatesIn,
     templateLibrary,
@@ -38,8 +38,7 @@
 
   const view = workspaceState();
   const library = templateLibrary();
-  let opening = $state<string | undefined>(undefined);
-  let openError = $state<string | undefined>(undefined);
+  const editState = new LibraryEditState();
   let now = $state(Date.now());
   onMount(() => {
     const timer = setInterval(() => (now = Date.now()), 60_000);
@@ -193,24 +192,7 @@
     if (row !== undefined) inspect(row);
   });
 
-  const edit = async (row: LibraryTemplate) => {
-    if (opening !== undefined) return;
-    inspect(row);
-    if (row.makes === "Spreadsheet") {
-      openError = "Spreadsheet templates open for editing once the spreadsheet editor lands.";
-      return;
-    }
-    opening = row.id;
-    openError = undefined;
-    try {
-      const result = await editTemplate(view, row);
-      if (!result.accepted) openError = result.detail;
-    } catch (error) {
-      openError = error instanceof Error ? error.message : String(error);
-    } finally {
-      opening = undefined;
-    }
-  };
+  const edit = (row: LibraryTemplate) => editState.edit(view, row);
 </script>
 
 {#snippet recentCard(row: LibraryTemplate & { readonly lastUsed: string })}
@@ -268,8 +250,8 @@
         Reading the scoped library from the representation store.
       </ScreenEmpty>
     {:else}
-      {#if openError !== undefined}
-        <ScreenNote tone="gap">{openError}</ScreenNote>
+      {#if editState.openError !== undefined}
+        <ScreenNote tone="gap">{editState.openError}</ScreenNote>
       {/if}
       {#if unavailable.length > 0}
         <ScreenNote tone="gap">

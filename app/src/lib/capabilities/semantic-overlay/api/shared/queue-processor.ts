@@ -38,27 +38,32 @@ export const processSemanticSyncQueueFor = async (
 
   for (const job of claimed) {
     const startedAt = Date.now();
-    model.store.update(`semanticSyncJobs.${job._id}.state`, "running");
-    model.store.update(`semanticSyncJobs.${job._id}.startedAt`, startedAt);
-    model.store.update(`semanticSyncJobs.${job._id}.attempts`, job.attempts + 1);
-    model.store.update(`semanticSyncJobs.${job._id}.updatedAt`, startedAt);
+    model.store.transaction((unit) => {
+      unit.update(`semanticSyncJobs.${job._id}.state`, "running");
+      unit.update(`semanticSyncJobs.${job._id}.startedAt`, startedAt);
+      unit.update(`semanticSyncJobs.${job._id}.attempts`, job.attempts + 1);
+      unit.update(`semanticSyncJobs.${job._id}.updatedAt`, startedAt);
+    });
     try {
       const result = await syncSemanticResourceFor(model, projectId, job.ref, job.force === true);
       const current = rowsOf(model.store, "semanticSyncJobs").find(
         (row) => row._id === job._id && row.projectId === projectId
       );
       if (current !== undefined) {
-        const completedRevision = result.outcome === "missing" ? current.requestedRevision : result.revision;
-        if (
-          result.outcome === "superseded" ||
-          current.requestedRevision > completedRevision
-        ) {
-          model.store.update(`semanticSyncJobs.${job._id}.state`, "queued");
-          model.store.update(`semanticSyncJobs.${job._id}.queuedAt`, Date.now());
-          model.store.update(`semanticSyncJobs.${job._id}.updatedAt`, Date.now());
-        } else {
-          model.store.removeRows("semanticSyncJobs", [job._id]);
-        }
+        model.store.transaction((unit) => {
+          const completedRevision = result.outcome === "missing" ? current.requestedRevision : result.revision;
+          if (
+            result.outcome === "superseded" ||
+            current.requestedRevision > completedRevision
+          ) {
+            const queuedAt = Date.now();
+            unit.update(`semanticSyncJobs.${job._id}.state`, "queued");
+            unit.update(`semanticSyncJobs.${job._id}.queuedAt`, queuedAt);
+            unit.update(`semanticSyncJobs.${job._id}.updatedAt`, queuedAt);
+          } else {
+            unit.removeRows("semanticSyncJobs", [job._id]);
+          }
+        });
       }
       processed.push({ jobId: job._id, ref: job.ref, result });
     } catch (error) {
@@ -67,9 +72,11 @@ export const processSemanticSyncQueueFor = async (
         (row) => row._id === job._id && row.projectId === projectId
       );
       if (current !== undefined) {
-        model.store.update(`semanticSyncJobs.${job._id}.state`, "failed");
-        model.store.update(`semanticSyncJobs.${job._id}.error`, message);
-        model.store.update(`semanticSyncJobs.${job._id}.updatedAt`, Date.now());
+        model.store.transaction((unit) => {
+          unit.update(`semanticSyncJobs.${job._id}.state`, "failed");
+          unit.update(`semanticSyncJobs.${job._id}.error`, message);
+          unit.update(`semanticSyncJobs.${job._id}.updatedAt`, Date.now());
+        });
       }
       processed.push({ jobId: job._id, ref: job.ref, error: message });
     }

@@ -4,15 +4,13 @@
   import { Panel, PanelEmpty } from "$authored-components/panel";
   import { promptBlocksIn } from "$app-views/categories/document-editor/procedures/prompt-blocks";
   import { workspaceState } from "$model/client/workspace-state";
-  import type { DocumentRuntime } from "$model/client/workspace-state";
 
   const view = workspaceState();
   const documentId = $derived(view.active.resourceId);
 
-  let runtime = $state<DocumentRuntime>();
-  $effect(() => {
-    runtime = documentId === undefined ? undefined : view.documentRuntime(documentId);
-  });
+  const runtime = $derived(
+    documentId === undefined ? undefined : view.documentRuntime(documentId)
+  );
 
   const blocks = $derived(promptBlocksIn(runtime?.body));
 

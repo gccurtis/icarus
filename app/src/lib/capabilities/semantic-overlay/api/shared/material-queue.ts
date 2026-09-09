@@ -1,4 +1,4 @@
-import type { ServerModel } from "$runtime/server/start.server";
+import type { SemanticUnitModel } from "$capabilities/semantic-overlay/api/shared/unit-of-work";
 import type { Id } from "$representation/data/types/core/id";
 import type { ResourceRef } from "$representation/data/types/core/resource";
 import { sameResourceRef } from "$capabilities/semantic-overlay/api/shared/resource-ref";
@@ -6,7 +6,7 @@ import { rowsOf } from "$capabilities/semantic-overlay/api/shared/rows";
 
 /** Coalesces one resource's material inventory work to its newest revision. */
 export const enqueueMaterialSyncFor = (
-  model: ServerModel,
+  model: SemanticUnitModel,
   projectId: Id<"projects">,
   ref: ResourceRef,
   requestedRevision: number,

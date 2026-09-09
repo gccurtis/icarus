@@ -26,8 +26,9 @@
     promptBlockIn,
     type Id
   } from "$app-views/categories/slide-deck-editor/procedures/prompt-blocks";
-  import { readDerivedOutput } from "$capabilities/derived-output/index.remote";
-  import { workspaceState, type SlideDeckRuntime } from "$model/client/workspace-state";
+  import { readPromptOutput } from "$app-views/categories/slide-deck-editor/procedures/read-prompt-output";
+  import { confirmPromptScope } from "$app-views/categories/slide-deck-editor/procedures/confirm-prompt-scope";
+  import { workspaceState } from "$model/client/workspace-state";
 
   /**
    * What a prompt reads, read from whichever thing owns it.
@@ -54,17 +55,16 @@
   const view = workspaceState();
   const deckId = $derived(view.active.resourceId);
 
-  let runtime = $state<SlideDeckRuntime | undefined>(undefined);
-  $effect(() => {
-    runtime = deckId === undefined ? undefined : view.slideDeckRuntime(deckId);
-  });
+  const runtime = $derived(
+    deckId === undefined ? undefined : view.slideDeckRuntime(deckId)
+  );
 
   // One control belongs to one immutable Derived Output identity; the parent keys it.
   // svelte-ignore state_referenced_locally
   const outputQuery =
     derivedOutputId === undefined
       ? undefined
-      : readDerivedOutput({ derivedOutputId: derivedOutputId as Id<"derivedOutputs"> });
+      : readPromptOutput(derivedOutputId as Id<"derivedOutputs">);
   const linked = $derived(outputQuery?.ready ? outputQuery.current?.output : undefined);
 
   const scope = $derived(
@@ -95,11 +95,12 @@
     open = true;
   };
 
-  const confirm = async () => {
-    open = false;
-    await onconfirm(narrowed(draft) ?? draft);
-    await outputQuery?.refresh();
-  };
+  const confirm = () => confirmPromptScope({
+    close: () => (open = false),
+    confirm: onconfirm,
+    refresh: outputQuery === undefined ? undefined : () => outputQuery.refresh(),
+    value: narrowed(draft) ?? draft
+  });
 </script>
 
 <div class="scope">

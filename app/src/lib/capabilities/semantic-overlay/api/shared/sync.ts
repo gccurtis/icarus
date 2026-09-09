@@ -9,6 +9,7 @@ import { publishSemanticTranslation } from "$capabilities/semantic-overlay/api/s
 import { readSemanticResourceForModel } from "$capabilities/semantic-overlay/api/shared/resource";
 import { sameResourceRef } from "$capabilities/semantic-overlay/api/shared/resource-ref";
 import { rowsOf } from "$capabilities/semantic-overlay/api/shared/rows";
+import { semanticUnitModel } from "$capabilities/semantic-overlay/api/shared/unit-of-work";
 import type { SyncSemanticResourceResult } from "$capabilities/semantic-overlay/types/sync-semantic-resource";
 
 const currentResult = (
@@ -99,7 +100,9 @@ export const syncSemanticResourceFor = async (
     };
   }
 
-  const published = publishSemanticTranslation(model, projectId, translation, force);
+  const published = model.store.transaction((unit) =>
+    publishSemanticTranslation(semanticUnitModel(model, unit), projectId, translation, force)
+  );
   model.observability.logger.info("semanticOverlay.resourceSynced", {
     projectId,
     ref: projection.ref,

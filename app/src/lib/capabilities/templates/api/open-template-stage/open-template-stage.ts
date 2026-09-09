@@ -68,40 +68,44 @@ export const openTemplateStage = async (input: unknown): Promise<OpenTemplateSta
   const title = stageTitleOf(template.name);
   const { resource: target, ...stageBody } = body;
 
-  const resourceId =
-    target === "document"
-      ? store.create("documents", {
+  const created = store.transaction((unit) => {
+    const resourceId =
+      target === "document"
+        ? unit.create("documents", {
           projectId,
           title,
           createdBy: actor,
           updatedBy: { ...actor },
           updatedAt: at
         })
-      : store.create("slideDecks", {
+        : unit.create("slideDecks", {
           projectId,
           title,
           createdBy: actor,
           updatedBy: { ...actor },
           updatedAt: at
         });
-  store.create(target === "document" ? "documentSnapshots" : "slideDeckSnapshots", {
-    projectId,
-    resourceId,
-    revision: 0,
-    role: "leader",
-    part: 0,
-    body: stageBody,
-    at
+    unit.create(target === "document" ? "documentSnapshots" : "slideDeckSnapshots", {
+      projectId,
+      resourceId,
+      revision: 0,
+      role: "leader",
+      part: 0,
+      body: stageBody,
+      at
+    });
+    const stageId = unit.create("templateStages", {
+      projectId,
+      templateId: template._id,
+      templateRevision: template.revision,
+      target,
+      resourceId,
+      createdBy: { ...actor },
+      updatedAt: at
+    });
+    return { resourceId, stageId };
   });
-  const stageId = store.create("templateStages", {
-    projectId,
-    templateId: template._id,
-    templateRevision: template.revision,
-    target,
-    resourceId,
-    createdBy: { ...actor },
-    updatedAt: at
-  });
+  const { resourceId, stageId } = created;
 
   return {
     accepted: true,

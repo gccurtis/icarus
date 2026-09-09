@@ -28,29 +28,36 @@ export const processSemanticMaterialQueueFor = async (
   const processed: ProcessSemanticMaterialQueueResult["processed"] = [];
   for (const job of claimed) {
     const startedAt = Date.now();
-    model.store.update(`semanticMaterialJobs.${job._id}.state`, "running");
-    model.store.update(`semanticMaterialJobs.${job._id}.startedAt`, startedAt);
-    model.store.update(`semanticMaterialJobs.${job._id}.attempts`, job.attempts + 1);
-    model.store.update(`semanticMaterialJobs.${job._id}.updatedAt`, startedAt);
+    model.store.transaction((unit) => {
+      unit.update(`semanticMaterialJobs.${job._id}.state`, "running");
+      unit.update(`semanticMaterialJobs.${job._id}.startedAt`, startedAt);
+      unit.update(`semanticMaterialJobs.${job._id}.attempts`, job.attempts + 1);
+      unit.update(`semanticMaterialJobs.${job._id}.updatedAt`, startedAt);
+    });
     try {
       const result = await syncSemanticMaterialsFor(model, projectId, job.ref, job.force === true);
       const current = rowsOf(model.store, "semanticMaterialJobs").find((row) => row._id === job._id);
       if (current !== undefined) {
-        const completed = result.revision ?? current.requestedRevision;
-        if (result.outcome === "superseded" || current.requestedRevision > completed) {
-          model.store.update(`semanticMaterialJobs.${job._id}.state`, "queued");
-          model.store.update(`semanticMaterialJobs.${job._id}.queuedAt`, Date.now());
-          model.store.update(`semanticMaterialJobs.${job._id}.updatedAt`, Date.now());
-        } else model.store.removeRows("semanticMaterialJobs", [job._id]);
+        model.store.transaction((unit) => {
+          const completed = result.revision ?? current.requestedRevision;
+          if (result.outcome === "superseded" || current.requestedRevision > completed) {
+            const queuedAt = Date.now();
+            unit.update(`semanticMaterialJobs.${job._id}.state`, "queued");
+            unit.update(`semanticMaterialJobs.${job._id}.queuedAt`, queuedAt);
+            unit.update(`semanticMaterialJobs.${job._id}.updatedAt`, queuedAt);
+          } else unit.removeRows("semanticMaterialJobs", [job._id]);
+        });
       }
       processed.push({ jobId: job._id, ref: job.ref, result });
     } catch (error) {
       const message = safeFailure(error);
       const current = rowsOf(model.store, "semanticMaterialJobs").find((row) => row._id === job._id);
       if (current !== undefined) {
-        model.store.update(`semanticMaterialJobs.${job._id}.state`, "failed");
-        model.store.update(`semanticMaterialJobs.${job._id}.error`, message);
-        model.store.update(`semanticMaterialJobs.${job._id}.updatedAt`, Date.now());
+        model.store.transaction((unit) => {
+          unit.update(`semanticMaterialJobs.${job._id}.state`, "failed");
+          unit.update(`semanticMaterialJobs.${job._id}.error`, message);
+          unit.update(`semanticMaterialJobs.${job._id}.updatedAt`, Date.now());
+        });
       }
       processed.push({ jobId: job._id, ref: job.ref, error: message });
     }

@@ -10,18 +10,19 @@ import {
 test("a Derived Output change reloads only its mounted projections", () => {
   const one = "derivedOutputs:1" as Id<"derivedOutputs">;
   const two = "derivedOutputs:2" as Id<"derivedOutputs">;
+  const target = new EventTarget();
   let seen = 0;
   const stop = observePromptOutput(one, () => {
     seen += 1;
-  });
+  }, target);
 
-  announcePromptOutput(two);
+  announcePromptOutput(two, target);
   assert.equal(seen, 0);
 
-  announcePromptOutput(one);
+  announcePromptOutput(one, target);
   assert.equal(seen, 1);
 
   stop();
-  announcePromptOutput(one);
+  announcePromptOutput(one, target);
   assert.equal(seen, 1);
 });

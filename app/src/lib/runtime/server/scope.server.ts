@@ -106,10 +106,10 @@ export const requireScope = async (): Promise<Scope> => {
   return resolveScope(event.locals.session, projectTokenIn(event.url.pathname));
 };
 
-/** `/app/<token>`, which is the only route a capability is called from. */
+/** `/app/<token>` in product, or `/demo/<token>` on an executable development surface. */
 const projectTokenIn = (pathname: string): string | undefined => {
   const [, first, token] = pathname.split("/");
-  return first === "app" ? token : undefined;
+  return first === "app" || first === "demo" ? token : undefined;
 };
 
 /**

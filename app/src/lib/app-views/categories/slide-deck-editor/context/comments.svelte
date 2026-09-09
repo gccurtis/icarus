@@ -1,6 +1,5 @@
 <script lang="ts">
   import { startThread } from "$capabilities/comments/index.remote";
-  import { readResourceTemplate } from "$capabilities/templates/index.remote";
   import { Panel, PanelButton, PanelChoice, PanelEmpty, PanelNote, PanelQuote, PanelSection } from "$authored-components/panel";
   import { Textarea } from "$vendored-components/textarea";
   import {
@@ -14,6 +13,7 @@
   } from "$app-views/categories/slide-deck-editor/procedures/comments";
   import { elementIn, labelOf, slideHolding, slideIndexOf } from "$app-views/categories/slide-deck-editor/procedures/deck";
   import { selectedIds } from "$app-views/categories/slide-deck-editor/procedures/selecting";
+  import { resourceTemplate } from "$app-views/categories/slide-deck-editor/procedures/templating";
   import { workspaceState, type SlideDeckRuntime } from "$model/client/workspace-state";
 
   const view = workspaceState();
@@ -31,7 +31,7 @@
   const threadRows = tableQuery("commentThreads");
   const commentRows = tableQuery("comments");
   const userRows = tableQuery("users");
-  const templateQuery = $derived(deckId === undefined ? undefined : readResourceTemplate({ resourceId: deckId }));
+  const templateQuery = $derived(deckId === undefined ? undefined : resourceTemplate(deckId));
   const workingCopy = $derived(templateQuery?.ready === true && templateQuery.current.stage !== null);
 
   const threads = $derived(

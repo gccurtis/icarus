@@ -5,6 +5,7 @@
   import * as Collapsible from "$vendored-components/collapsible";
   import { cn } from "$vendored-components/utils";
   import { traceNode } from "$development-components/trace.svelte";
+  import { synchronizePanelSection } from "$authored-components/panel/effects/panel-section.svelte";
 
   /**
    * One disclosure inside a panel: a heading, a count, and what it holds.
@@ -78,14 +79,12 @@
    */
   let settled = $state(false);
 
-  $effect(() => {
-    settled = true;
-  });
-
-  $effect(() => {
-    const next = open;
-    if (next && !requested) expanded = true;
-    requested = next;
+  synchronizePanelSection({
+    open: () => open,
+    requested: () => requested,
+    setExpanded: (value) => (expanded = value),
+    setRequested: (value) => (requested = value),
+    settle: () => (settled = true)
   });
 </script>
 

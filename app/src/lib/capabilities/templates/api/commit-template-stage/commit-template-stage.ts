@@ -94,31 +94,34 @@ export const commitTemplateStage = async (input: unknown): Promise<CommitTemplat
   }
 
   const at = Date.now();
-  const fields: RowFields<"templates"> = {
-    projectId: template.projectId,
-    userId: template.userId,
-    name: template.name,
-    ...(template.description === undefined ? {} : { description: template.description }),
-    tags: [...template.tags],
-    body,
-    holes: [
-      ...settledHoleDefaults(
-        store,
-        template.projectId,
-        template.createdBy,
-        template._id,
-        declaredFor(body, portable.holes),
-        at
-      )
-    ],
-    createdBy: template.createdBy,
-    revision: template.revision + 1,
-    updatedAt: at
-  };
-  store.update(`templates.${template._id}`, fields);
-  writeTemplateVersion(store, template._id, fields, at);
-  store.update(`templateStages.${stage._id}.templateRevision`, fields.revision);
-  store.update(`templateStages.${stage._id}.updatedAt`, at);
+  const fields = store.transaction((unit): RowFields<"templates"> => {
+    const next: RowFields<"templates"> = {
+      projectId: template.projectId,
+      userId: template.userId,
+      name: template.name,
+      ...(template.description === undefined ? {} : { description: template.description }),
+      tags: [...template.tags],
+      body,
+      holes: [
+        ...settledHoleDefaults(
+          unit,
+          template.projectId,
+          template.createdBy,
+          template._id,
+          declaredFor(body, portable.holes),
+          at
+        )
+      ],
+      createdBy: template.createdBy,
+      revision: template.revision + 1,
+      updatedAt: at
+    };
+    unit.update(`templates.${template._id}`, next);
+    writeTemplateVersion(unit, template._id, next, at);
+    unit.update(`templateStages.${stage._id}.templateRevision`, next.revision);
+    unit.update(`templateStages.${stage._id}.updatedAt`, at);
+    return next;
+  });
 
   return {
     accepted: true,

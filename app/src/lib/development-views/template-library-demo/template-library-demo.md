@@ -47,7 +47,7 @@ right but every remote read or mutation would be outside a project scope.
 
 All reference components and documents live under
 `src/lib/development-views/template-library-demo`. The friendly demo route
-redirects to `/app/[project]/reference/templates`, whose five-line page is only
+redirects to `/demo/[project]/reference/templates`, whose route page is only
 a project-scope adapter importing that development view. This inherits the
 application's client model and authorization boundary without copying product
 markup or moving the development implementation under app views. The reference

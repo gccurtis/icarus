@@ -1,4 +1,4 @@
-import type { StoreModel, TableName, TableRow } from "$model/server/store/index.server";
+import type { StoreUnitOfWork, TableName, TableRow } from "$model/server/store/index.server";
 import type { TextBlock } from "$representation/data/types/content/content-block";
 import type { Id } from "$representation/data/types/core/id";
 import type { DerivedOutputFields } from "$representation/data/types/semantic/derived-output";
@@ -7,7 +7,7 @@ import { fileSubkindFor } from "$representation/data/behavior/external/file";
 import { materialRecordIsCurrent } from "$capabilities/semantic-overlay";
 
 export const rowsOf = <T extends TableName>(
-  store: StoreModel,
+  store: StoreUnitOfWork,
   table: T
 ): readonly TableRow<T>[] => {
   const found = store.read(table);
@@ -16,7 +16,7 @@ export const rowsOf = <T extends TableName>(
 };
 
 export const outputOf = (
-  store: StoreModel,
+  store: StoreUnitOfWork,
   projectId: Id<"projects">,
   id: Id<"derivedOutputs">
 ): TableRow<"derivedOutputs"> | undefined =>
@@ -33,7 +33,7 @@ const fieldsOf = (output: TableRow<"derivedOutputs">): DerivedOutputFields => {
 
 /** Replaces one row in a single store write and deliberately removes undefined optionals. */
 export const writeOutput = (
-  store: StoreModel,
+  store: StoreUnitOfWork,
   output: TableRow<"derivedOutputs">,
   patch: Partial<DerivedOutputFields>
 ): TableRow<"derivedOutputs"> => {
@@ -62,7 +62,7 @@ export const responseBlock = (
 });
 
 export const activeSources = (
-  store: StoreModel,
+  store: StoreUnitOfWork,
   projectId: Id<"projects">
 ) => {
   const active = new Map<string, SemanticSourceSnapshot>(
@@ -111,7 +111,7 @@ export const activeSources = (
 };
 
 export const activeMaterials = (
-  store: StoreModel,
+  store: StoreUnitOfWork,
   projectId: Id<"projects">
 ) => {
   const placements = rowsOf(store, "semanticMaterialPlacements").filter(
@@ -135,7 +135,7 @@ export const activeMaterials = (
 };
 
 export const currentGeneration = (
-  store: StoreModel,
+  store: StoreUnitOfWork,
   projectId: Id<"projects">
 ): number => {
   const overlay = rowsOf(store, "semanticOverlays")

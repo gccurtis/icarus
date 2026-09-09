@@ -107,7 +107,7 @@ const emptyText = (): TextBlock => ({
   marks: []
 });
 
-export const emptyPrompt = (): PromptBlock => ({
+const emptyPrompt = (): PromptBlock => ({
   id: mint("block"),
   type: "prompt",
   atoms: [{ id: mint("atom"), kind: "literal", text: "" }],

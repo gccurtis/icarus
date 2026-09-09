@@ -144,7 +144,12 @@ export type RemoveTemplateResult =
   | {
       readonly accepted: false;
       readonly templateId: string;
-      readonly reason: "not-found" | "stale" | "unsupported-body";
+      readonly reason:
+        | "not-found"
+        | "forbidden"
+        | "stale"
+        | "in-use-elsewhere"
+        | "unsupported-body";
       readonly revision: number | null;
       readonly detail: string;
     };

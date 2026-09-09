@@ -1,4 +1,4 @@
-import type { StoreModel } from "$model/server/store/index.server";
+import type { StoreUnitOfWork } from "$model/server/store/index.server";
 import { asId } from "$representation/data/behavior/core/id";
 import { needsRow, ruleWords } from "$representation/data/behavior/core/scope-draft";
 import type { Actor } from "$representation/data/types/core/actor";
@@ -29,7 +29,7 @@ import { recordsIn } from "$capabilities/templates/api/shared/store";
 
 export type ScopeOwner = BoundTo;
 
-const named = (store: StoreModel, projectId: string): ReadonlySet<string> =>
+const named = (store: StoreUnitOfWork, projectId: string): ReadonlySet<string> =>
   new Set(
     recordsIn(store, "resourceSets")
       .filter(
@@ -57,7 +57,7 @@ const sameOwner = (held: unknown, owner: ScopeOwner): boolean => {
 
 /** Every row bound to one resource, whichever hole it answered. */
 export const rowsOfResource = (
-  store: StoreModel,
+  store: StoreUnitOfWork,
   projectId: string,
   resourceId: string
 ): readonly string[] =>
@@ -76,7 +76,7 @@ export const rowsOfResource = (
 
 /** The bound rows an owner holds, newest last, so a rewrite can reuse the first. */
 export const rowsBoundTo = (
-  store: StoreModel,
+  store: StoreUnitOfWork,
   projectId: string,
   owner: ScopeOwner
 ): readonly string[] =>
@@ -90,7 +90,7 @@ export const rowsBoundTo = (
     .map((row) => row._id as string);
 
 export const removeRowsBoundTo = (
-  store: StoreModel,
+  store: StoreUnitOfWork,
   projectId: string,
   owner: ScopeOwner
 ): number => {
@@ -101,7 +101,7 @@ export const removeRowsBoundTo = (
 
 /** Every set term in a rule that the project does not hold. */
 export const unknownSetsIn = (
-  store: StoreModel,
+  store: StoreUnitOfWork,
   projectId: string,
   scope: { include: readonly { select: string }[]; exclude: readonly { select: string }[] }
 ): readonly string[] => {
@@ -126,7 +126,7 @@ type Written = { readonly term: TemplatedResourceSet; readonly setId?: string };
  * rule cannot be said inline, and clearing the row when it can.
  */
 export const normalizeScope = (
-  store: StoreModel,
+  store: StoreUnitOfWork,
   projectId: string,
   actor: Actor,
   owner: ScopeOwner,
@@ -182,7 +182,7 @@ export const normalizeScope = (
  * sets is left alone, because choosing it was the point.
  */
 export const expandedScope = (
-  store: StoreModel,
+  store: StoreUnitOfWork,
   projectId: string,
   scope: TemplatedResourceSet | undefined
 ): TemplatedResourceSet | undefined => {

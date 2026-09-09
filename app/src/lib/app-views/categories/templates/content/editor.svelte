@@ -1,48 +1,30 @@
 <script lang="ts">
-  import { onDestroy } from "svelte";
   import ArrowLeft from "@lucide/svelte/icons/arrow-left";
   import FilePenLine from "@lucide/svelte/icons/file-pen-line";
 
   import { ScreenEmpty, ScreenNote, ScreenSurface } from "$authored-components/screen";
   import { Button } from "$vendored-components/button";
+  import { EditorOpenState } from "$app-views/categories/templates/content/editor.state.svelte";
   import {
-    editTemplate,
     templateLibrary,
     templatesIn
   } from "$app-views/categories/templates/procedures/library.svelte";
+  import { synchronizeEditorOpen } from "$app-views/categories/templates/procedures/effects/editor-open.svelte";
   import { workspaceState } from "$model/client/workspace-state";
 
   const view = workspaceState();
   const library = templateLibrary();
-  let live = true;
-  onDestroy(() => {
-    live = false;
-  });
-
-  let opening = $state<string | undefined>(undefined);
-  let refused = $state<string | undefined>(undefined);
+  const state = new EditorOpenState();
 
   const back = () => view.showContent("templates.library", view.active.focus);
-
-  $effect(() => {
+  synchronizeEditorOpen({
+    state,
+    view,
+    row: () => {
     const focus = view.active.focus;
-    if (!library.ready || focus === undefined || opening !== undefined || refused !== undefined) return;
-    const row = templatesIn(library.current, Date.now()).find((candidate) => candidate.id === focus);
-    if (row === undefined) return;
-    opening = row.id;
-    void editTemplate(view, row).then(
-      (result) => {
-        if (!live) return;
-        if (result.accepted) view.showContent("templates.library", focus);
-        else refused = result.detail;
-        opening = undefined;
-      },
-      (error: unknown) => {
-        if (!live) return;
-        refused = error instanceof Error ? error.message : String(error);
-        opening = undefined;
-      }
-    );
+      if (!library.ready || focus === undefined) return undefined;
+      return templatesIn(library.current, Date.now()).find((candidate) => candidate.id === focus);
+    }
   });
 </script>
 
@@ -54,9 +36,9 @@
     </Button>
   </header>
 
-  {#if refused !== undefined}
+  {#if state.refused !== undefined}
     <ScreenEmpty title="This template cannot be opened for editing" icon={FilePenLine}>
-      {refused}
+      {state.refused}
     </ScreenEmpty>
   {:else}
     <ScreenEmpty title="Opening the template in its editor" icon={FilePenLine}>

@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { onDestroy } from "svelte";
-
   import { OverlayModal } from "$authored-components/overlay";
   import {
     Panel,
@@ -17,66 +15,36 @@
   } from "$authored-components/panel";
   import { ScopeBuilder } from "$authored-components/scope-builder";
   import { TemplateAnswers as TemplateAnswerList } from "$authored-components/template-answers";
+  import { TemplatesContextState } from "$app-views/categories/document-editor/context/templates.state.svelte";
   import { rowsIn } from "$app-views/categories/document-editor/procedures/store";
   import {
     answerRowsOf,
-    answersFrom,
     builderView,
     missingIn,
-    wordsFrom,
-    commitStage,
-    currentRowId,
     detailIn,
-    discardStage,
     documentTemplatesIn,
-    draftOf,
-    insertionOf,
     promptWordsIn,
-    mergedHoles,
     offeringOf,
-    openStage,
     projectResources,
     resourceSets,
     resourceTemplate,
     resourcesIn,
     ruleOf,
-    saveAsTemplate,
     scopeNamesOf,
     setsIn,
     stageIn,
     templateDetail,
     templateLibrary,
-    termFor,
-    updateHoles,
     withHoleField,
-    withTerm,
-    withWholeProject,
-    withoutTerm,
-    type ChosenHole,
-    type OfferSource,
-    type ScopeDraft,
-    type ScopeSide,
-    type TemplateAnswers,
-    type TemplateDetail,
-    type TemplateHole,
-    type TemplateLibraryItem
   } from "$app-views/categories/document-editor/procedures/templating";
+  import { releaseTemplatesContext } from "$app-views/categories/document-editor/procedures/effects/templates-context.svelte";
   import { workspaceState } from "$model/client/workspace-state";
-  import type { DocumentRuntime } from "$model/client/workspace-state";
 
   const view = workspaceState();
-  let live = true;
-  onDestroy(() => {
-    live = false;
-  });
-
   const documentId = $derived(view.active.resourceId);
-
-  let runtime = $state<DocumentRuntime | undefined>(undefined);
-
-  $effect(() => {
-    runtime = documentId === undefined ? undefined : view.documentRuntime(documentId);
-  });
+  const runtime = $derived(
+    documentId === undefined ? undefined : view.documentRuntime(documentId)
+  );
 
   const body = $derived(runtime?.body);
   const title = $derived(rowsIn("documents").find((row) => row._id === documentId)?.title);
@@ -96,293 +64,57 @@
   const templates = $derived(documentTemplatesIn(library.ready ? library.current : undefined));
   const currentRevision = $derived(template?.revision ?? stage?.currentRevision ?? null);
 
-  let query = $state("");
-  let nameDraft = $state("");
-  let pending = $state<string | undefined>(undefined);
-  let actionError = $state<string | undefined>(undefined);
-  let notice = $state<readonly string[]>([]);
-  let defaultFor = $state<TemplateHole | undefined>(undefined);
-  let defaultOpen = $state(false);
-  let draft = $state<ScopeDraft>(draftOf(undefined));
-  let insertFor = $state<TemplateDetail | undefined>(undefined);
-  let insertOpen = $state(false);
-  let answerOpen = $state(false);
-  let choices = $state<Record<string, ScopeDraft | undefined>>({});
-  let texts = $state<Record<string, string | undefined>>({});
-  let answering = $state<TemplateHole | undefined>(undefined);
+  const state = new TemplatesContextState({
+    view,
+    documentId: () => documentId,
+    runtime: () => runtime,
+    body: () => body,
+    stage: () => stage,
+    template: () => template,
+    currentRevision: () => currentRevision,
+    setNames: () => setNames
+  });
+  releaseTemplatesContext(state);
 
-  const askRows = $derived(answerRowsOf(insertFor?.holes ?? [], choices, texts, setNames));
+  const askRows = $derived(
+    answerRowsOf(state.insertFor?.holes ?? [], state.choices, state.texts, setNames)
+  );
   const askBlocked = $derived(
     missingIn(askRows).length === 0 ? undefined : `${missingIn(askRows).join(", ")} still needs words.`
   );
 
   const shown = $derived(
-    templates.filter((item) => item.name.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()))
+    templates.filter((item) =>
+      item.name.toLocaleLowerCase().includes(state.query.trim().toLocaleLowerCase())
+    )
   );
 
-  const fail = (error: unknown) => {
-    if (live) actionError = error instanceof Error ? error.message : String(error);
-  };
-
-  const run = async (key: string, work: () => Promise<void>) => {
-    if (pending !== undefined) return;
-    pending = key;
-    actionError = undefined;
-    try {
-      await work();
-    } catch (error) {
-      fail(error);
-    } finally {
-      if (live) pending = undefined;
-    }
-  };
-
-  const settled = async (): Promise<boolean> => {
-    if (runtime === undefined) return false;
-    await runtime.flush();
-    if (runtime.pending > 0 || runtime.failure !== undefined) {
-      actionError = "The document has changes that are not saved yet. Save them first.";
-      return false;
-    }
-    return true;
-  };
-
-  const save = () =>
-    run("save", async () => {
-      if (documentId === undefined || stage === undefined || currentRevision === null) return;
-      if (!(await settled())) return;
-      const result = await commitStage(
-        view,
-        { stageId: stage.stageId, templateId: stage.templateId, baseRevision: currentRevision },
-        documentId
-      );
-      if (!live) return;
-      if (!result.accepted) {
-        actionError = result.detail;
-        return;
-      }
-      notice = result.dropped.length === 0 ? ["Saved to the template."] : ["Saved to the template.", ...result.dropped];
-    });
-
-  const discard = () =>
-    run("discard", async () => {
-      if (documentId === undefined || stage === undefined) return;
-      if (!confirm(`Discard the working copy of “${stage.templateName}”? Unsaved edits are lost.`)) return;
-      if (!(await settled())) return;
-      const tab = view.activeId;
-      const result = await discardStage(view, { stageId: stage.stageId, templateId: stage.templateId }, documentId);
-      if (!live) return;
-      if (!result.accepted) {
-        actionError = result.detail;
-        return;
-      }
-      view.close(tab);
-    });
-
-  const saveAs = () =>
-    run("save-as", async () => {
-      const name = nameDraft.trim();
-      if (documentId === undefined || name === "") return;
-      /** A template is made from the saved body, so anything still in flight has to land first. */
-      if (!(await settled())) return;
-      const made = await saveAsTemplate(view, documentId, name);
-      if (!live) return;
-      if (!made.accepted) {
-        actionError = made.detail;
-        return;
-      }
-      nameDraft = "";
-      notice = [`Saved as the template “${name}”.`, ...made.dropped];
-      const opened = await openStage(view, made.templateId);
-      if (!live) return;
-      if (!opened.accepted) {
-        actionError = opened.detail;
-        return;
-      }
-      view.open({
-        category: "document-editor",
-        resourceId: opened.resourceId,
-        context: "document-editor.templates"
-      });
-    });
-
-  const edit = (item: TemplateLibraryItem) =>
-    run(`edit:${item.id}`, async () => {
-      const result = await openStage(view, item.id);
-      if (!live) return;
-      if (!result.accepted) {
-        actionError = result.detail;
-        return;
-      }
-      view.open({
-        category: "document-editor",
-        resourceId: result.resourceId,
-        context: "document-editor.templates"
-      });
-    });
-
-  const place = async (
-    detail: TemplateDetail,
-    answers: TemplateAnswers,
-    words: Readonly<Record<string, string>> = {}
-  ) => {
-    if (body === undefined || runtime === undefined) return;
-    const insertion = insertionOf(
-      body,
-      detail,
-      currentRowId(body, view.selection),
-      stage === undefined ? "resolve" : "keep",
-      answers,
-      words
-    );
-    if (insertion.ops.length === 0) {
-      notice = ["That template has no content to insert."];
-      return;
-    }
-    runtime.apply(insertion.ops);
-    if (insertion.firstBlockId !== undefined) runtime.scrollTo = insertion.firstBlockId;
-    if (stage !== undefined && template !== undefined) {
-      const merged = mergedHoles(template.holes, detail.holes);
-      if (merged.length !== template.holes.length) {
-        const result = await updateHoles(view, template, merged, documentId);
-        if (live && !result.accepted) actionError = result.detail;
-      }
-    }
-    notice = [`Inserted “${detail.name}”.`];
-  };
-
-  const insert = (item: TemplateLibraryItem) =>
-    run(`insert:${item.id}`, async () => {
-      if (body === undefined || runtime === undefined) return;
-      const detail = detailIn(await templateDetail(item.id));
-      if (detail === undefined) {
-        actionError = "That template could not be read.";
-        return;
-      }
-      if (stage === undefined && detail.holes.length > 0) {
-        insertFor = detail;
-        choices = {};
-        texts = {};
-        answering = undefined;
-        insertOpen = true;
-        return;
-      }
-      await place(detail, {});
-    });
-
-  const confirmInsert = () => {
-    const detail = insertFor;
-    if (detail === undefined) return;
-    void run(`place:${detail.id}`, () => place(detail, answersFrom(choices), wordsFrom(texts)));
-  };
-
-  const changeHoles = (next: readonly ChosenHole[]) =>
-    run("holes", async () => {
-      if (template === undefined) return;
-      const result = await updateHoles(view, template, next, documentId);
-      if (live && !result.accepted) actionError = result.detail;
-    });
-
-  const openDefault = (hole: TemplateHole) => {
-    defaultFor = hole;
-    draft = draftOf(hole.default);
-    defaultOpen = true;
-  };
-
-  const confirmDefault = () => {
-    if (template === undefined || defaultFor === undefined) return;
-    void changeHoles(withHoleField(template.holes, defaultFor.name, { default: draft }));
-  };
-
-  /**
-   * The builder is its own modal rather than a second face of the ask modal.
-   * Swapping one modal's title, body and confirm while it is open replaces the
-   * footer under the pointer, and the press lands on a button that has gone.
-   */
-  const openAnswer = (name: string) => {
-    const hole = insertFor?.holes.find((candidate) => candidate.name === name);
-    if (hole === undefined) return;
-    answering = hole;
-    draft = draftOf(choices[name] ?? hole.default);
-    insertOpen = false;
-    answerOpen = true;
-  };
-
-  const confirmAnswer = () => {
-    if (answering !== undefined) choices = { ...choices, [answering.name]: draft };
-    answering = undefined;
-    answerOpen = false;
-    insertOpen = true;
-  };
-
-  const cancelAnswer = () => {
-    answering = undefined;
-    insertOpen = true;
-  };
-
-  /** Inside the ask, Default means the template's own suggestion, not the floor. */
-  const resetAnswering = () => {
-    if (answering !== undefined) clearAnswer(answering.name);
-    answering = undefined;
-    answerOpen = false;
-    insertOpen = true;
-  };
-
-  const writeText = (name: string, words: string) => {
-    texts = { ...texts, [name]: words };
-  };
-
-  const clearAnswer = (name: string) => {
-    const { [name]: _chosen, ...restChoices } = choices;
-    const { [name]: _typed, ...restTexts } = texts;
-    choices = restChoices;
-    texts = restTexts;
-  };
-
-
-  /** Every builder edits this one draft, because only one is ever open. */
-  const view$ = $derived(builderView(draft, offering));
-
-  const addTerm = (side: ScopeSide, source: string, key: string) => {
-    const term = termFor(source as OfferSource, key);
-    if (term !== undefined) draft = withTerm(draft, side, term);
-  };
-
-  const dropTerm = (side: ScopeSide, key: string) => {
-    draft = withoutTerm(draft, side, key);
-  };
-
-  const setMode = (whole: boolean) => {
-    draft = whole ? withWholeProject() : { include: [], exclude: [] };
-  };
-
-  const clearScope = () => {
-    draft = { include: [], exclude: [] };
-  };
-
-  const busy = $derived(pending !== undefined || body === undefined);
+  const view$ = $derived(builderView(state.draft, offering));
+  const busy = $derived(state.pending !== undefined || body === undefined);
   const scopeBlocked = $derived(
-    draft.include.length === 0 ? "Include something, or choose everything in the project." : undefined
+    state.draft.include.length === 0
+      ? "Include something, or choose everything in the project."
+      : undefined
   );
 </script>
 
 <Panel title="Templates">
   {#snippet actions()}
     {#if documentId !== undefined && stage !== undefined}
-      <PanelButton label="Save" tone="primary" disabled={busy} title="Write this copy back to the template" onclick={save} />
-      <PanelButton label="Discard" tone="danger" disabled={busy} title="Remove this copy and close it" onclick={discard} />
+      <PanelButton label="Save" tone="primary" disabled={busy} title="Write this copy back to the template" onclick={() => state.save()} />
+      <PanelButton label="Discard" tone="danger" disabled={busy} title="Remove this copy and close it" onclick={() => state.discard()} />
     {/if}
   {/snippet}
 
   {#if documentId === undefined}
     <PanelEmpty title="Open a document to work with templates" />
   {:else}
-    {#if actionError}
-      <PanelBanner title="That did not happen" tone="attention">{actionError}</PanelBanner>
+    {#if state.actionError}
+      <PanelBanner title="That did not happen" tone="attention">{state.actionError}</PanelBanner>
     {/if}
-    {#if notice.length > 0}
+    {#if state.notice.length > 0}
       <div class="notice">
-        {#each notice as line (line)}
+        {#each state.notice as line (line)}
           <PanelNote>{line}</PanelNote>
         {/each}
       </div>
@@ -413,7 +145,7 @@
                   placeholder="What this hole stands for"
                   multiline
                   disabled={busy}
-                  onchange={(next) => changeHoles(withHoleField(template.holes, hole.name, { description: next }))}
+                  onchange={(next) => state.changeHoles(withHoleField(template.holes, hole.name, { description: next }))}
                 />
                 {#if hole.kind === "text"}
                   <PanelEditableText
@@ -422,7 +154,7 @@
                     placeholder="What it says when nobody says otherwise"
                     multiline
                     disabled={busy}
-                    onchange={(next) => changeHoles(withHoleField(template.holes, hole.name, { text: next }))}
+                    onchange={(next) => state.changeHoles(withHoleField(template.holes, hole.name, { text: next }))}
                   />
                 {:else}
                   <div class="scope">
@@ -430,7 +162,7 @@
                       label="Default scope"
                       disabled={busy}
                       title={`${ruleOf(hole.default, setNames)} — change what ${hole.label} selects by default`}
-                      onclick={() => openDefault(hole)}
+                      onclick={() => state.openDefault(hole)}
                     />
                   </div>
                 {/if}
@@ -441,8 +173,8 @@
       </div>
     {:else}
       <div class="save">
-        <PanelInput label="Template name" placeholder={title ?? "Template name"} flush bind:value={nameDraft} onenter={saveAs} />
-        <PanelButton label="Save" tone="primary" disabled={busy || nameDraft.trim() === ""} title={nameDraft.trim() === "" ? "Give the template a name first" : "Copy this document into a new template and open it"} onclick={saveAs} />
+        <PanelInput label="Template name" placeholder={title ?? "Template name"} flush bind:value={state.nameDraft} onenter={() => state.saveAs()} />
+        <PanelButton label="Save" tone="primary" disabled={busy || state.nameDraft.trim() === ""} title={state.nameDraft.trim() === "" ? "Give the template a name first" : "Copy this document into a new template and open it"} onclick={() => state.saveAs()} />
       </div>
     {/if}
 
@@ -457,15 +189,15 @@
       {:else if templates.length === 0}
         <PanelEmpty title="No document templates yet" action="Save this document as one to start" />
       {:else}
-        <PanelSearch placeholder="Search templates…" matched={shown.length} flush bind:value={query}>
+        <PanelSearch placeholder="Search templates…" matched={shown.length} flush bind:value={state.query}>
           {#each shown as item (item.id)}
             <div class="item">
               <PanelRow title={item.name}>
                 <span class="item-title">{item.name}</span>
                 <span class="item-sub">{item.holeCount} {item.holeCount === 1 ? "hole" : "holes"} · revision {item.revision}</span>
                 <span class="item-actions">
-                  <PanelButton label="Insert" tone="ghost" disabled={busy} title={`Insert “${item.name}” after the current row`} onclick={() => insert(item)} />
-                  <PanelButton label="Edit" tone="ghost" disabled={busy} title={`Edit “${item.name}” in the editor`} onclick={() => edit(item)} />
+                  <PanelButton label="Insert" tone="ghost" disabled={busy} title={`Insert “${item.name}” after the current row`} onclick={() => state.insert(item)} />
+                  <PanelButton label="Edit" tone="ghost" disabled={busy} title={`Edit “${item.name}” in the editor`} onclick={() => state.edit(item)} />
                 </span>
               </PanelRow>
             </div>
@@ -478,55 +210,61 @@
 </Panel>
 
 <OverlayModal
-  bind:open={insertOpen}
-  title={`Insert “${insertFor?.name ?? "the template"}”`}
+  bind:open={state.insertOpen}
+  title={`Insert “${state.insertFor?.name ?? "the template"}”`}
   description="One hole at a time. The tabs say which still need words."
   confirm="Insert"
   width="wide"
   blocked={askBlocked}
-  onconfirm={confirmInsert}
+  onconfirm={() => state.confirmInsert()}
 >
   <TemplateAnswerList
     rows={askRows}
-    prompts={insertFor === undefined ? {} : promptWordsIn(insertFor.body)}
-    onscope={openAnswer}
-    ontext={writeText}
-    onreset={clearAnswer}
-    onaccept={confirmInsert}
+    prompts={state.insertFor === undefined ? {} : promptWordsIn(state.insertFor.body)}
+    onscope={(name) => state.openAnswer(name)}
+    ontext={(name, words) => state.writeText(name, words)}
+    onreset={(name) => state.clearAnswer(name)}
+    onaccept={() => state.confirmInsert()}
   />
 </OverlayModal>
 
 <OverlayModal
-  bind:open={answerOpen}
-  title={`What ${answering?.label ?? "the hole"} selects here`}
+  bind:open={state.answerOpen}
+  title={`What ${state.answering?.label ?? "the hole"} selects here`}
   description="For this copy only. Nothing here changes the template."
   confirm="Use this"
   width="wide"
   blocked={scopeBlocked}
-  onconfirm={confirmAnswer}
-  oncancel={cancelAnswer}
+  onconfirm={() => state.confirmAnswer()}
+  oncancel={() => state.cancelAnswer()}
 >
   <ScopeBuilder
     {...view$}
     resettable
-    onmode={setMode}
-    onadd={addTerm}
-    ondrop={dropTerm}
-    onclear={clearScope}
-    onreset={resetAnswering}
+    onmode={(whole) => state.setMode(whole)}
+    onadd={(side, source, key) => state.addTerm(side, source, key)}
+    ondrop={(side, key) => state.dropTerm(side, key)}
+    onclear={() => state.clearScope()}
+    onreset={() => state.resetAnswering()}
   />
 </OverlayModal>
 
 <OverlayModal
-  bind:open={defaultOpen}
-  title={`Default scope for ${defaultFor?.label ?? "the hole"}`}
+  bind:open={state.defaultOpen}
+  title={`Default scope for ${state.defaultFor?.label ?? "the hole"}`}
   description="What it selects until whoever places the template says otherwise."
   confirm="Set the default scope"
   width="wide"
   blocked={scopeBlocked}
-  onconfirm={confirmDefault}
+  onconfirm={() => state.confirmDefault()}
 >
-  <ScopeBuilder {...view$} onmode={setMode} onadd={addTerm} ondrop={dropTerm} onclear={clearScope} />
+  <ScopeBuilder
+    {...view$}
+    onmode={(whole) => state.setMode(whole)}
+    onadd={(side, source, key) => state.addTerm(side, source, key)}
+    ondrop={(side, key) => state.dropTerm(side, key)}
+    onclear={() => state.clearScope()}
+  />
 </OverlayModal>
 
 

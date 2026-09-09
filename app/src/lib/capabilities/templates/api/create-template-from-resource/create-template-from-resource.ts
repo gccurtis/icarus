@@ -82,13 +82,16 @@ export const createTemplateFromResource = async (
     revision: 1,
     updatedAt: at
   };
-  const templateId = store.create("templates", fields);
-  const settled = settledHoleDefaults(store, scope.projectId, actor, templateId, fields.holes, at);
-  if (settled !== fields.holes) {
-    fields.holes = [...settled];
-    store.update(`templates.${templateId}.holes`, fields.holes);
-  }
-  writeTemplateVersion(store, templateId, fields, at);
+  const templateId = store.transaction((unit) => {
+    const id = unit.create("templates", fields);
+    const settled = settledHoleDefaults(unit, scope.projectId, actor, id, fields.holes, at);
+    if (settled !== fields.holes) {
+      fields.holes = [...settled];
+      unit.update(`templates.${id}.holes`, fields.holes);
+    }
+    writeTemplateVersion(unit, id, fields, at);
+    return id;
+  });
 
   return { accepted: true, templateId, target: asked.target, revision: 1, dropped: portable.dropped };
 };

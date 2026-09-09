@@ -9,6 +9,7 @@ import { validateBackfillSemanticOverlay } from "$capabilities/semantic-overlay/
 import type { BackfillSemanticOverlayResult } from "$capabilities/semantic-overlay/types/semantic-sync-queue";
 import { enqueueMaterialSyncFor } from "$capabilities/semantic-overlay/api/shared/material-queue";
 import { fileSubkindFor } from "$representation/data/behavior/external/file";
+import { semanticUnitModel } from "$capabilities/semantic-overlay/api/shared/unit-of-work";
 
 /** Development/migration entry point: coalesce every leader revision, then drain a batch. */
 export const backfillSemanticOverlay = async (
@@ -48,25 +49,32 @@ export const backfillSemanticOverlay = async (
       }))
   ];
 
-  for (const resource of refs) {
-    if (isStagedResource(model.store, projectId, resource.ref)) continue;
-    if (
-      resource.ref.kind === "document" ||
-      resource.ref.kind === "slides" ||
-      resource.ref.kind === "externalFile::text"
-    ) {
-      enqueueSemanticSyncFor(model, projectId, resource.ref, resource.revision, asked.force);
+  const queued = model.store.transaction((unit) => {
+    const atomic = semanticUnitModel(model, unit);
+    for (const resource of refs) {
+      if (isStagedResource(unit, projectId, resource.ref)) continue;
+      if (
+        resource.ref.kind === "document" ||
+        resource.ref.kind === "slides" ||
+        resource.ref.kind === "externalFile::text"
+      ) {
+        enqueueSemanticSyncFor(atomic, projectId, resource.ref, resource.revision, asked.force);
+      }
+      enqueueMaterialSyncFor(atomic, projectId, resource.ref, resource.revision, asked.force);
     }
-    enqueueMaterialSyncFor(model, projectId, resource.ref, resource.revision, asked.force);
-  }
+    return {
+      text: rowsOf(unit, "semanticSyncJobs").filter(
+        (row) => row.projectId === projectId && row.state === "queued"
+      ).length,
+      materials: rowsOf(unit, "semanticMaterialJobs").filter(
+        (row) => row.projectId === projectId && row.state === "queued"
+      ).length
+    };
+  });
   return {
     discovered: refs.length,
-    queued: rowsOf(model.store, "semanticSyncJobs").filter(
-      (row) => row.projectId === projectId && row.state === "queued"
-    ).length,
-    materialQueued: rowsOf(model.store, "semanticMaterialJobs").filter(
-      (row) => row.projectId === projectId && row.state === "queued"
-    ).length,
+    queued: queued.text,
+    materialQueued: queued.materials,
     queue: await processSemanticSyncQueueFor(model, projectId, asked.limit)
   };
 };

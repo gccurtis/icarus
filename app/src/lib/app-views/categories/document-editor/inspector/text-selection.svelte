@@ -1,3 +1,4 @@
+<!-- @architecture-complexity reviewed: the one inspector keeps its coupled selection controls together. -->
 <script lang="ts">
   import {
     Panel,

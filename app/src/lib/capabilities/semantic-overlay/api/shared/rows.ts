@@ -1,12 +1,12 @@
 import type {
-  StoreModel,
+  StoreUnitOfWork,
   TableName,
   TableRow
 } from "$model/server/store/index.server";
 
 /** Typed table read at the capability boundary; an absent table is empty. */
 export const rowsOf = <T extends TableName>(
-  store: StoreModel,
+  store: StoreUnitOfWork,
   table: T
 ): readonly TableRow<T>[] => {
   const found = store.read(table);
