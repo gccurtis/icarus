@@ -1,6 +1,6 @@
 # Template Features Change Set
 
-138 files under app/ against 1166f8e, the commit this branch sits on — 80 created, 58 changed, 0 deleted — +16600 / −1335 lines, measured from committed and working-tree changes when this page was built.
+144 files under app/ against 1166f8e, the commit this branch sits on — 86 created, 58 changed, 0 deleted — +17706 / −1335 lines, measured from committed and working-tree changes when this page was built.
 
 | Status | File | + | − | Systematic change |
 | --- | --- | --- | --- | --- |
@@ -79,7 +79,7 @@
 | changed | `src/lib/capabilities/templates/api/update-template/validate-update-template.ts` | +14 | −10 | The templates capability |
 | changed | `src/lib/capabilities/templates/index.remote.ts` | +58 | −6 | The templates capability |
 | changed | `src/lib/capabilities/templates/templates.md` | +126 | −64 | The templates capability |
-| new | `src/lib/capabilities/templates/test/unit/answers.test.ts` | +491 | −0 | The templates capability |
+| new | `src/lib/capabilities/templates/test/unit/answers.test.ts` | +541 | −0 | The templates capability |
 | new | `src/lib/capabilities/templates/test/unit/stages.test.ts` | +377 | −0 | The templates capability |
 | changed | `src/lib/capabilities/templates/test/unit/templates.test.ts` | +89 | −122 | The templates capability |
 | changed | `src/lib/capabilities/templates/types/templates.ts` | +118 | −22 | The templates capability |
@@ -89,7 +89,7 @@
 | new | `src/lib/components/authored/template-answers/index.ts` | +8 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/components/authored/template-answers/template-answers.svelte` | +185 | −0 | The reference pages, and the one shared component they moved |
 | changed | `src/lib/development-views/demo/components/demo-index.svelte` | +3 | −3 | The reference pages, and the one shared component they moved |
-| new | `src/lib/development-views/template-reference/components/changes-page.svelte` | +285 | −0 | The reference pages, and the one shared component they moved |
+| new | `src/lib/development-views/template-reference/components/changes-page.svelte` | +288 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/development-views/template-reference/components/diagram-binding.svelte` | +168 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/development-views/template-reference/components/diagram-builder.svelte` | +274 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/development-views/template-reference/components/diagram-difference.svelte` | +128 | −0 | The reference pages, and the one shared component they moved |
@@ -99,17 +99,21 @@
 | new | `src/lib/development-views/template-reference/components/diagram-scope.svelte` | +87 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/development-views/template-reference/components/diagram-verbs.svelte` | +79 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/development-views/template-reference/components/file-ledger.svelte` | +138 | −0 | The reference pages, and the one shared component they moved |
+| new | `src/lib/development-views/template-reference/components/integration-page.svelte` | +278 | −0 | The reference pages, and the one shared component they moved |
+| new | `src/lib/development-views/template-reference/components/rebase-page.svelte` | +305 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/development-views/template-reference/components/reference-header.svelte` | +166 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/development-views/template-reference/components/reference.css` | +305 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/development-views/template-reference/components/scope-page.svelte` | +468 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/development-views/template-reference/components/system-page.svelte` | +329 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/development-views/template-reference/procedures/changes.ts` | +312 | −0 | The reference pages, and the one shared component they moved |
-| new | `src/lib/development-views/template-reference/procedures/inventory.ts` | +148 | −0 | The reference pages, and the one shared component they moved |
-| new | `src/lib/development-views/template-reference/procedures/navigation.ts` | +16 | −0 | The reference pages, and the one shared component they moved |
+| new | `src/lib/development-views/template-reference/procedures/integration.ts` | +192 | −0 | The reference pages, and the one shared component they moved |
+| new | `src/lib/development-views/template-reference/procedures/inventory.ts` | +154 | −0 | The reference pages, and the one shared component they moved |
+| new | `src/lib/development-views/template-reference/procedures/navigation.ts` | +25 | −0 | The reference pages, and the one shared component they moved |
+| new | `src/lib/development-views/template-reference/procedures/rebase.ts` | +157 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/development-views/template-reference/procedures/scope.ts` | +521 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/development-views/template-reference/procedures/system.ts` | +223 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/development-views/template-reference/template-reference.svelte` | +5 | −0 | The reference pages, and the one shared component they moved |
-| new | `src/lib/development-views/template-reference/types.ts` | +129 | −0 | The reference pages, and the one shared component they moved |
+| new | `src/lib/development-views/template-reference/types.ts` | +168 | −0 | The reference pages, and the one shared component they moved |
 | changed | `src/lib/model/client/workspace-state/methods/open.ts` | +10 | −0 | The vocabulary: one table, five functions, one field |
 | changed | `src/lib/model/client/workspace-state/methods/shared/mint-view.ts` | +5 | −1 | The vocabulary: one table, five functions, one field |
 | changed | `src/lib/model/client/workspace-state/test/unit/workspace-state.test.ts` | +23 | −0 | The vocabulary: one table, five functions, one field |
@@ -138,10 +142,12 @@
 | changed | `src/lib/representation/store/tables.ts` | +26 | −12 | The vocabulary: one table, five functions, one field |
 | changed | `src/routes/app/[project]/reference/templates/+page.svelte` | +11 | −2 | The reference pages, and the one shared component they moved |
 | new | `src/routes/app/[project]/reference/templates/changes/+page.svelte` | +14 | −0 | The reference pages, and the one shared component they moved |
+| new | `src/routes/app/[project]/reference/templates/integration/+page.svelte` | +14 | −0 | The reference pages, and the one shared component they moved |
+| new | `src/routes/app/[project]/reference/templates/rebase/+page.svelte` | +14 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/routes/app/[project]/reference/templates/scope/+page.svelte` | +14 | −0 | The reference pages, and the one shared component they moved |
 | changed | `test/browser/document-editor.spec.ts` | +8 | −1 | Browser evidence |
-| new | `test/browser/template-features.spec.ts` | +315 | −0 | Browser evidence |
-| new | `test/browser/template-reference.spec.ts` | +115 | −0 | Browser evidence |
+| new | `test/browser/template-features.spec.ts` | +318 | −0 | Browser evidence |
+| new | `test/browser/template-reference.spec.ts` | +151 | −0 | Browser evidence |
 
 ## Outside app/
 
@@ -5104,10 +5110,10 @@
 +needs a represented transaction or explicit recovery contract.
 ~~~~
 
-### new · `src/lib/capabilities/templates/test/unit/answers.test.ts` (+491 / −0)
+### new · `src/lib/capabilities/templates/test/unit/answers.test.ts` (+541 / −0)
 
 ~~~~diff
-@@ -0,0 +1,491 @@
+@@ -0,0 +1,541 @@
 +import assert from "node:assert/strict";
 +import { beforeEach, describe, test, vi } from "vitest";
 +
@@ -5381,6 +5387,56 @@
 +    assert.deepEqual(kept, { kind: "url", url: "https://example.com/plan", note: "Scope" });
 +    assert.equal("templateId" in model.tables.documents[0], false);
 +    assert.equal(model.tables.templateVersions.length, 1);
++  });
++
++  /**
++   * The one link the chain is still missing, pinned so it cannot change unseen.
++   *
++   * A prompt somebody wrote in the editor carries a settled scope, not a hole
++   * term. Making a template keeps that scope exactly as it is and declares no
++   * hole, so placing the template asks nothing and every copy reads the same
++   * sources. Turning an authored scope into a hole is a decision nobody has
++   * taken yet; when it is taken, this test is what changes.
++   */
++  test("keeps an authored prompt scope settled, and so declares no hole for it", async () => {
++    model.tables.documents.push(row("documents", "1", { projectId: "p", title: "Winter brief" }));
++    model.tables.documentSnapshots.push(
++      row("documentSnapshots", "1", {
++        projectId: "p",
++        resourceId: "documents:1",
++        role: "leader",
++        revision: 1,
++        body: {
++          rows: [
++            {
++              id: "r1",
++              kind: "blocks",
++              blocks: [
++                {
++                  id: "p1",
++                  type: "prompt",
++                  atoms: [{ id: "p1-a", kind: "literal", text: "Sum up" }],
++                  display: "Sum up",
++                  marks: [],
++                  scope: { include: [{ select: "project" }], exclude: [] },
++                  state: "idle"
++                }
++              ]
++            }
++          ]
++        }
++      })
++    );
++
++    const made = await createTemplateFromResource({
++      target: "document",
++      resourceId: "documents:1",
++      name: "Authored prompt"
++    });
++    assert.ok(made.accepted);
++    const held = model.tables.templates[1];
++    assert.deepEqual(held.holes, []);
++    assert.deepEqual(scopeOf(held), { include: [{ select: "project" }], exclude: [] });
 +  });
 +
 +  test("makes a deck template from the whole deck or from one of its slides", async () => {
@@ -16375,10 +16431,10 @@
  test("document named styles mirror the text formatting inspector without metadata clutter", async ({ page }) => {
 ~~~~
 
-### new · `test/browser/template-features.spec.ts` (+315 / −0)
+### new · `test/browser/template-features.spec.ts` (+318 / −0)
 
 ~~~~diff
-@@ -0,0 +1,315 @@
+@@ -0,0 +1,318 @@
 +import { expect, test, type Locator, type Page, type TestInfo } from "@playwright/test";
 +
 +const unexpected: string[] = [];
@@ -16574,7 +16630,10 @@
 +  });
 +  const card = context.locator(".hole").filter({ hasText: "client_name" });
 +  await expect(card).toBeVisible();
++  // A text hole takes words, not a scope, and both the words and the kind survive the write.
 +  await expect(card.getByRole("button", { name: "Default scope", exact: true })).toHaveCount(0);
++  await expect(card).toContainText("Northwind");
++  await expect(card).toContainText("Who the note is for");
 +  await expect(editor.locator(".document-template-atom")).toContainText("client_name");
 +
 +  page.once("dialog", (dialog) => void dialog.accept());
@@ -16696,16 +16755,18 @@
 +});
 ~~~~
 
-### new · `test/browser/template-reference.spec.ts` (+115 / −0)
+### new · `test/browser/template-reference.spec.ts` (+151 / −0)
 
 ~~~~diff
-@@ -0,0 +1,115 @@
+@@ -0,0 +1,151 @@
 +import { expect, test, type Page, type TestInfo } from "@playwright/test";
 +
 +const routes = [
 +  ["system", "/app/dev-project/reference/templates", "How templates work"],
 +  ["changes", "/app/dev-project/reference/templates/changes", "What changed"],
-+  ["scope", "/app/dev-project/reference/templates/scope", "What a hole selects"]
++  ["scope", "/app/dev-project/reference/templates/scope", "What a hole selects"],
++  ["integration", "/app/dev-project/reference/templates/integration", "End to end with prompts"],
++  ["rebase", "/app/dev-project/reference/templates/rebase", "Where it meets the base"]
 +] as const;
 +
 +const unexpected: string[] = [];
@@ -16814,6 +16875,40 @@
 +
 +  await page.getByRole("link", { name: "How templates work", exact: false }).first().click();
 +  await expect(page.getByRole("heading", { level: 1, name: "How templates work" })).toBeVisible();
++});
++
++test("the integration page draws its chain and names the one open link", async ({ page }) => {
++  await page.setViewportSize({ width: 1500, height: 900 });
++  await page.goto("/app/dev-project/reference/templates/integration", { waitUntil: "networkidle" });
++
++  // Both diagrams render rather than falling back to the error state.
++  await expect(page.locator(".mermaid-output svg")).toHaveCount(2, { timeout: 30_000 });
++  await expect(page.locator(".diagram-error")).toHaveCount(0);
++
++  await expect(page.getByRole("heading", { level: 2, name: "Seven links, five of them carrying" })).toBeVisible();
++  await expect(page.locator(".tref-badge.known")).toHaveCount(2);
++  await expect(page.getByRole("heading", { level: 2, name: "The one open link, exactly" })).toBeVisible();
++  await expect(
++    page.locator(".tref-note.attention").getByText("keeps an authored prompt scope settled")
++  ).toBeVisible();
++
++  await page.getByRole("link", { name: "Where it meets the base", exact: false }).first().click();
++  await expect(page.getByRole("heading", { level: 1, name: "Where it meets the base" })).toBeVisible();
++});
++
++test("the rebase page accounts for every conflict and both defects", async ({ page }) => {
++  await page.setViewportSize({ width: 1500, height: 900 });
++  await page.goto("/app/dev-project/reference/templates/rebase", { waitUntil: "networkidle" });
++
++  await expect(page.locator(".mermaid-output svg")).toHaveCount(1, { timeout: 30_000 });
++  await expect(page.locator(".diagram-error")).toHaveCount(0);
++
++  await expect(page.locator(".conflict")).toHaveCount(5);
++  await expect(page.locator(".tref-defect")).toHaveCount(2);
++  await expect(page.getByText("taking either side whole would have shipped a bug")).toBeVisible();
++
++  await page.getByRole("link", { name: "End to end with prompts", exact: false }).first().click();
++  await expect(page.getByRole("heading", { level: 1, name: "End to end with prompts" })).toBeVisible();
 +});
 ~~~~
 
@@ -17685,10 +17780,10 @@
  </script>
 ~~~~
 
-### new · `src/lib/development-views/template-reference/components/changes-page.svelte` (+285 / −0)
+### new · `src/lib/development-views/template-reference/components/changes-page.svelte` (+288 / −0)
 
 ~~~~diff
-@@ -0,0 +1,285 @@
+@@ -0,0 +1,288 @@
 +<script lang="ts">
 +  import { page } from "$app/state";
 +
@@ -17955,9 +18050,12 @@
 +        <p>
 +          {MERGE.overlap.length - MERGE.conflicts.length} of the {MERGE.overlap.length} were edited on both
 +          sides but never on the same lines, across five rebases. Every check was re-run afterwards, and the
-+          move onto derived outputs turned up one real defect of its own: the templates validator refused a
-+          Prompt Block carrying a named style, which is exactly what a text box keeps when it is converted
-+          in place.
++          move onto derived outputs turned up two real defects of its own.
++        </p>
++        <p>
++          <a href={hrefOf(project, "rebase")}>Where it meets the base</a> is the full account: every
++          conflict with what each side wanted and what was kept, both defects with their cause and what
++          proves them fixed, and what each of the two changes owns.
 +        </p>
 +      </div>
 +    </section>
@@ -19167,6 +19265,601 @@
 +  .bar i.add { background: var(--token-color-success-text); }
 +  .bar i.del { background: var(--token-color-danger-text); }
 +  .bar em { color: var(--token-ink-muted); font-size: 10px; font-style: normal; }
++</style>
+~~~~
+
+### new · `src/lib/development-views/template-reference/components/integration-page.svelte` (+278 / −0)
+
+~~~~diff
+@@ -0,0 +1,278 @@
++<script lang="ts">
++  import { page } from "$app/state";
++
++  import MermaidDiagram from "$development-components/mermaid-diagram.svelte";
++  import ReferenceHeader from "$development-views/template-reference/components/reference-header.svelte";
++  import "$development-views/template-reference/components/reference.css";
++  import {
++    CHAIN,
++    CHAIN_DIAGRAM,
++    FORKS,
++    RESOLUTION_DIAGRAM,
++    WALKTHROUGH
++  } from "$development-views/template-reference/procedures/integration";
++  import { hrefOf } from "$development-views/template-reference/procedures/navigation";
++
++  let {
++    material,
++    materials = [],
++    onmaterial
++  }: {
++    material?: string;
++    materials?: readonly string[];
++    onmaterial?: (next: string) => void;
++  } = $props();
++
++  const project = $derived(page.params.project ?? "dev-project");
++
++  const STATE_WORDS: Record<string, string> = {
++    works: "works",
++    stub: "a stub",
++    missing: "missing"
++  };
++
++  const working = CHAIN.filter((link) => link.state === "works").length;
++  const open = CHAIN.filter((link) => link.state !== "works");
++</script>
++
++<div class="tref">
++  <ReferenceHeader current="integration" {material} {materials} {onmaterial} />
++
++  <main class="tref-page">
++    <header class="tref-mast">
++      <div>
++        <span class="tref-kicker">04 · Integration</span>
++        <h1>End to end with prompts</h1>
++        <p class="tref-lede">
++          A template is a function and a prompt is what reads the project, so the two were always going
++          to meet. This page walks the whole chain — write a prompt, save the thing as a template, be
++          asked what the prompt should read, answer, and get a copy that reads it — and says exactly
++          which links carry weight today. {working} of the {CHAIN.length} do. One is a control wired to
++          nothing, and one has never been built.
++        </p>
++      </div>
++      <div class="tref-facts">
++        <dl>
++          <div><dt>Links in the chain</dt><dd>{CHAIN.length}</dd></div>
++          <div><dt>Working</dt><dd>{working}</dd></div>
++          <div><dt>Open</dt><dd>{open.length}</dd></div>
++          <div><dt>Forks to settle</dt><dd>{FORKS.length}</dd></div>
++          <div><dt>Blocking</dt><dd>Link 04 only</dd></div>
++        </dl>
++      </div>
++    </header>
++
++    <nav class="tref-jumps" aria-label="On this page">
++      <a href="#chain">The chain</a>
++      <a href="#shape">What it looks like</a>
++      <a href="#gap">The one open link</a>
++      <a href="#forks">What has to be decided</a>
++      <a href="#resolution">What already happens on placement</a>
++      <a href="#walk">Walk it yourself</a>
++    </nav>
++
++    <section class="tref-section" id="chain">
++      <div class="tref-section-head">
++        <div><span class="tref-kicker">Link by link</span><h2>Seven links, five of them carrying</h2></div>
++        <p>
++          Each row is one thing that has to happen for a prompt written by one person to be answered by
++          another. The evidence column names the test that would fail if the link broke — or, for the
++          two that are open, the code or test that pins what happens instead.
++        </p>
++      </div>
++
++      <div class="tref-scroll">
++        <table class="tref-table">
++          <thead>
++            <tr><th></th><th>What happens</th><th>The gesture</th><th>What runs</th><th>State</th><th>Evidence</th></tr>
++          </thead>
++          <tbody>
++            {#each CHAIN as link (link.index)}
++              <tr>
++                <td class="num">{link.index}</td>
++                <td>{link.step}</td>
++                <td class="muted">{link.gesture}</td>
++                <td class="muted"><code>{link.runs}</code></td>
++                <td>
++                  <span
++                    class="tref-badge"
++                    class:clean={link.state === "works"}
++                    class:known={link.state !== "works"}
++                  >{STATE_WORDS[link.state]}</span>
++                </td>
++                <td class="muted">{link.evidence}</td>
++              </tr>
++            {/each}
++          </tbody>
++        </table>
++      </div>
++    </section>
++
++    <section class="tref-section" id="shape">
++      <div class="tref-section-head">
++        <div><span class="tref-kicker">The shape of it</span><h2>Where the chain breaks</h2></div>
++        <p>
++          Everything solid is built and covered. The two dashed nodes are the open link and what happens
++          instead of it: a template made from an authored prompt keeps that prompt's own sources, so
++          every copy reads what the author read and nobody is asked anything.
++        </p>
++      </div>
++
++      <div class="tref-figure">
++        <MermaidDiagram
++          source={CHAIN_DIAGRAM}
++          label="The chain from an authored prompt to a filled copy, with the missing link drawn dashed"
++          caption="Solid: built and covered by a test. Dashed: the Scope control that writes nothing, and the copy you get because of it."
++          minHeight="20rem"
++        />
++      </div>
++    </section>
++
++    <section class="tref-section" id="gap">
++      <div class="tref-section-head">
++        <div><span class="tref-kicker">Link 04</span><h2>The one open link, exactly</h2></div>
++        <p>
++          It is worth stating precisely, because everything on either side of it works and it would be
++          easy to think the chain is whole.
++        </p>
++      </div>
++
++      <div class="tref-cards">
++        <article class="tref-card">
++          <h3>What a prompt carries</h3>
++          <p>
++            A prompt block has an optional <code>scope</code>. Written in the editor, it is settled —
++            the whole project — because the inspector's Scope control offers that and nothing else.
++          </p>
++        </article>
++        <article class="tref-card">
++          <h3>What declaring looks for</h3>
++          <p>
++            <code>declaredFor</code> walks the body for prompt scopes holding
++            <code>{"{ select: \"hole\", name }"}</code> and declares one hole per name found. A settled
++            scope holds no such term.
++          </p>
++        </article>
++        <article class="tref-card">
++          <h3>So what happens</h3>
++          <p>
++            The template is made, the prompt is carried, the generated answer is dropped — and the hole
++            list is empty. Placing it asks nothing, and every copy reads the author's own sources.
++          </p>
++        </article>
++      </div>
++
++      <div class="tref-note attention">
++        <h4>This is pinned, not merely observed</h4>
++        <p>
++          <code>capabilities/templates/test/unit/answers.test.ts</code> holds a case named <b>keeps an
++          authored prompt scope settled, and so declares no hole for it</b>. It builds a document whose
++          only block is a prompt scoped to the whole project, makes a template from it, and asserts that
++          <code>holes</code> is empty and the scope came through unchanged. When link 04 is built, that
++          test is what changes — which is the point of writing it down rather than leaving the gap to be
++          rediscovered.
++        </p>
++      </div>
++
++      <div class="tref-note">
++        <h4>Why the term exists at all, if nothing writes it</h4>
++        <p>
++          <code>{"{ select: \"hole\" }"}</code> is not speculative. A template that already holds one —
++          from the seed, or from inserting a template into a working copy, which keeps the terms rather
++          than resolving them — flows through the entire rest of the chain today. The hole is asked for,
++          answered, normalised, resolved and read. What is missing is only the gesture that puts the
++          first one there.
++        </p>
++      </div>
++    </section>
++
++    <section class="tref-section" id="forks">
++      <div class="tref-section-head">
++        <div><span class="tref-kicker">Not settled</span><h2>What has to be decided before link 04 is built</h2></div>
++        <p>
++          Three questions, each with the answer I would give and what it costs to answer otherwise.
++          None of them is settled, and none should be treated as settled because it is written here.
++        </p>
++      </div>
++
++      {#each FORKS as fork (fork.index)}
++        <article class="tref-change">
++          <span>{fork.index}</span>
++          <div>
++            <h3>{fork.question}</h3>
++            <p>{fork.because}</p>
++          </div>
++          <div class="state after"><span>Recommended</span><p>{fork.recommended}</p></div>
++          <div class="state before"><span>Instead</span><p>{fork.alternative} — {fork.cost}</p></div>
++        </article>
++      {/each}
++    </section>
++
++    <section class="tref-section" id="resolution">
++      <div class="tref-section-head">
++        <div><span class="tref-kicker">Links 05 and 06</span><h2>What already happens when a template is placed</h2></div>
++        <p>
++          This half of the chain is finished and covered. It is worth reading before deciding link 04,
++          because it says what a hole has to be for the rest to work: a name, and nothing else.
++        </p>
++      </div>
++
++      <div class="tref-figure">
++        <MermaidDiagram
++          source={RESOLUTION_DIAGRAM}
++          label="What runs between pressing Insert and the new copy appearing"
++          caption="Every step here is built. The bound resourceSets row is what makes an exclusion expressible at all — a difference cannot be substituted on a prompt's excluding side."
++          minHeight="34rem"
++        />
++      </div>
++    </section>
++
++    <section class="tref-section" id="walk">
++      <div class="tref-section-head">
++        <div><span class="tref-kicker">In the app</span><h2>Walk it yourself</h2></div>
++        <p>
++          Six steps in the running application, starting from what is seeded. The last one is where the
++          walk stops, and stopping there is the finding rather than a mistake in the instructions.
++        </p>
++      </div>
++
++      <div class="tref-scroll">
++        <table class="tref-table">
++          <thead><tr><th></th><th>Do this</th><th>You should see</th></tr></thead>
++          <tbody>
++            {#each WALKTHROUGH as step (step.index)}
++              <tr>
++                <td class="num">{step.index}</td>
++                <td>{step.does}</td>
++                <td class="muted">{step.sees}</td>
++              </tr>
++            {/each}
++          </tbody>
++        </table>
++      </div>
++
++      <div class="tref-note success">
++        <h4>What the suite walks without you</h4>
++        <p>
++          Six browser cases cover this ground from a clean seed: inserting a template and answering
++          every hole, saving a document as a template and setting a hole's default scope, making a text
++          hole with Create hole and finding its atom in the prose, saving one slide as a deck template,
++          making and counting a project's resource sets, and building a default that excludes something
++          and reading it back as the rule. They run against the system Chromium because the bundled
++          headless shell cannot load its libraries here.
++        </p>
++      </div>
++    </section>
++  </main>
++
++  <footer class="tref-footer">
++    <div>
++      <span>Icarus · templates</span>
++      <span>Link 04 is open</span>
++    </div>
++    <div>
++      <a href={hrefOf(project, "scope")}>← What a hole selects</a>
++      <a href={hrefOf(project, "rebase")}>Where it meets the base →</a>
++    </div>
++  </footer>
++</div>
+~~~~
+
+### new · `src/lib/development-views/template-reference/components/rebase-page.svelte` (+305 / −0)
+
+~~~~diff
+@@ -0,0 +1,305 @@
++<script lang="ts">
++  import { page } from "$app/state";
++
++  import MermaidDiagram from "$development-components/mermaid-diagram.svelte";
++  import ReferenceHeader from "$development-views/template-reference/components/reference-header.svelte";
++  import "$development-views/template-reference/components/reference.css";
++  import { hrefOf } from "$development-views/template-reference/procedures/navigation";
++  import {
++    DEFECTS,
++    DIVERGENCE,
++    MEETING,
++    PREREQUISITES,
++    RECONCILED,
++    TOPOLOGY
++  } from "$development-views/template-reference/procedures/rebase";
++
++  let {
++    material,
++    materials = [],
++    onmaterial
++  }: {
++    material?: string;
++    materials?: readonly string[];
++    onmaterial?: (next: string) => void;
++  } = $props();
++
++  const project = $derived(page.params.project ?? "dev-project");
++
++  const ontoBase = RECONCILED.filter((row) => row.when.includes("the base")).length;
++</script>
++
++<div class="tref">
++  <ReferenceHeader current="rebase" {material} {materials} {onmaterial} />
++
++  <main class="tref-page">
++    <header class="tref-mast">
++      <div>
++        <span class="tref-kicker">05 · The meeting</span>
++        <h1>Where it meets the base</h1>
++        <p class="tref-lede">
++          This branch no longer sits on main. It sits on <code>{MEETING.base}</code>, because that is
++          where prompt blocks are and a prompt's scope is what a hole fills. Getting there took
++          {MEETING.rebases} replays in all; {MEETING.conflicted} files have ever needed a decision, over
++          {MEETING.events} conflict events, and {ontoBase} of those decisions belong to the move onto
++          this base. Every one is written out below with what each side had wanted, what was kept, and
++          why.
++        </p>
++      </div>
++      <div class="tref-facts">
++        <dl>
++          <div><dt>Sits on</dt><dd><code>{MEETING.baseHead}</code></dd></div>
++          <div><dt>Base is ahead of main by</dt><dd>{MEETING.baseAhead} commits</dd></div>
++          <div><dt>Commits here</dt><dd>{MEETING.commits}</dd></div>
++          <div><dt>Files that ever conflicted</dt><dd>{MEETING.conflicted}</dd></div>
++          <div><dt>Defects found by the move</dt><dd>{DEFECTS.length}</dd></div>
++        </dl>
++      </div>
++    </header>
++
++    <nav class="tref-jumps" aria-label="On this page">
++      <a href="#topology">Which branch is where</a>
++      <a href="#conflicts">Every conflict</a>
++      <a href="#defects">Every defect</a>
++      <a href="#divergence">What each side owns</a>
++      <a href="#prerequisites">What the base needs to run</a>
++    </nav>
++
++    <section class="tref-section" id="topology">
++      <div class="tref-section-head">
++        <div><span class="tref-kicker">The shape</span><h2>Which branch is where</h2></div>
++        <p>
++          Both branches were cut from the same commit. The base went one way — retrieval, derived
++          outputs, prompt blocks — and this one went the other, into templates. They were replayed
++          together rather than merged, so the history stays a straight line and the branch can be read
++          as a single change on top of a known base.
++        </p>
++      </div>
++
++      <div class="tref-figure">
++        <MermaidDiagram
++          source={TOPOLOGY}
++          label="Both branches cut from one commit; the template work replayed on top of the derived-output work"
++          caption="Main appears only as the branch point, because everything it has since gained is already inside the base. Rebasing rather than merging is what keeps “what this branch adds” a question with an answer."
++          minHeight="22rem"
++        />
++      </div>
++
++      <div class="tref-note">
++        <h4>Why not main</h4>
++        <p>
++          On main, a scope hole could only ever come from a template that already had one, because
++          nothing wrote prompts. On this base, prompts exist and generate. That does not finish the
++          chain on its own — see
++          <a href={hrefOf(project, "integration")}>end to end with prompts</a> — but it is the
++          difference between one open link and two.
++        </p>
++      </div>
++    </section>
++
++    <section class="tref-section" id="conflicts">
++      <div class="tref-section-head">
++        <div><span class="tref-kicker">Reconciled by hand</span><h2>Every conflict, and what was kept</h2></div>
++        <p>
++          Five files across five replays. Four were two sides adding something adjacent, where the
++          decision was only where to put each. The fifth is the interesting one: taking either side
++          whole would have shipped a bug.
++        </p>
++      </div>
++
++      {#each RECONCILED as row (row.index)}
++        <article class="tref-change conflict">
++          <span>{row.index}</span>
++          <div>
++            <h3><code>{row.path}</code></h3>
++            <p><b>{row.when}.</b> {row.why}</p>
++          </div>
++          <div class="state before"><span>The base wanted</span><p>{row.base}</p></div>
++          <div class="state before"><span>This branch wanted</span><p>{row.branch}</p></div>
++          <div class="state after"><span>What was kept</span><p>{row.kept}</p></div>
++        </article>
++      {/each}
++
++      <div class="tref-note success">
++        <h4>And the ones that did not conflict</h4>
++        <p>
++          Twenty other files were edited on both sides and merged with no decision at all, including the
++          store's table definitions, the document editor's projection and schema, and the workspace's
++          tab type. Both later replays — onto main's newer head, and onto this base's newer head —
++          replayed every commit with nothing to reconcile. That is what a narrow branch buys.
++        </p>
++      </div>
++    </section>
++
++    <section class="tref-section" id="defects">
++      <div class="tref-section-head">
++        <div><span class="tref-kicker">Actually broken</span><h2>Two defects the move turned up</h2></div>
++        <p>
++          Neither was caused by the rebase. One had been latent since text holes were added; the other
++          was waiting for a project that had ever converted a text box into a Prompt Block, which is
++          exactly what the base makes ordinary.
++        </p>
++      </div>
++
++      {#each DEFECTS as defect (defect.index)}
++        <article class="tref-defect">
++          <header>
++            <span>{defect.index}</span>
++            <h3>{defect.title}</h3>
++          </header>
++          <dl>
++            <div><dt>How it showed</dt><dd>{defect.symptom}</dd></div>
++            <div><dt>What was wrong</dt><dd>{defect.cause}</dd></div>
++            <div><dt>The fix</dt><dd>{defect.fix}</dd></div>
++            <div><dt>What proves it</dt><dd>{defect.proof}</dd></div>
++          </dl>
++        </article>
++      {/each}
++    </section>
++
++    <section class="tref-section" id="divergence">
++      <div class="tref-section-head">
++        <div><span class="tref-kicker">Two changes, one tree</span><h2>What each side owns</h2></div>
++        <p>
++          The useful question is not what changed but where the two changes touch. In four layers out of
++          five they do not touch at all — which is why five replays needed five decisions rather than
++          fifty.
++        </p>
++      </div>
++
++      <div class="tref-scroll">
++        <table class="tref-table">
++          <thead><tr><th>Layer</th><th>The base branch</th><th>This branch</th><th>Where they meet</th></tr></thead>
++          <tbody>
++            {#each DIVERGENCE as row (row.layer)}
++              <tr>
++                <td>{row.layer}</td>
++                <td class="muted">{row.base}</td>
++                <td class="muted">{row.branch}</td>
++                <td>{row.meets}</td>
++              </tr>
++            {/each}
++          </tbody>
++        </table>
++      </div>
++
++      <div class="tref-note">
++        <h4>One shared function, and it is the one that conflicted</h4>
++        <p>
++          <code>displayOfAtom</code> in <code>behavior/content/positions.ts</code> is the whole of the
++          shared surface between the two changes: it says how wide an atom draws, so the deck's typing
++          can place a caret. The base needed it to understand a Prompt Block's atoms; this branch needed
++          it to understand a template atom. Both editors now measure through it, and nothing else in
++          either change calls into the other.
++        </p>
++      </div>
++    </section>
++
++    <section class="tref-section" id="prerequisites">
++      <div class="tref-section-head">
++        <div><span class="tref-kicker">Before it runs</span><h2>What the base needs that a fresh worktree has not got</h2></div>
++        <p>
++          Worth knowing before the first check fails in a way that looks like this branch's fault.
++        </p>
++      </div>
++
++      <div class="tref-cards">
++        {#each PREREQUISITES as item (item.what)}
++          <article class="tref-card">
++            <h3><code>{item.what}</code></h3>
++            <p>{item.why}</p>
++            <p class="tref-meta">{item.how}</p>
++          </article>
++        {/each}
++      </div>
++    </section>
++  </main>
++
++  <footer class="tref-footer">
++    <div>
++      <span>Icarus · templates</span>
++      <span>Measured against {MEETING.baseHead}</span>
++    </div>
++    <div>
++      <a href={hrefOf(project, "integration")}>← End to end with prompts</a>
++      <a href={hrefOf(project, "changes")}>What changed</a>
++    </div>
++  </footer>
++</div>
++
++<style>
++  .conflict {
++    grid-template-columns: auto minmax(0, 1.1fr) repeat(3, minmax(0, 1fr));
++  }
++
++  .conflict h3 {
++    overflow-wrap: anywhere;
++  }
++
++  .conflict .state p {
++    overflow-wrap: anywhere;
++  }
++
++  .tref-defect {
++    display: grid;
++    gap: 1rem;
++    margin-top: 1.5rem;
++    padding: 1.5rem;
++    border: 1px solid var(--token-border-subtle);
++    border-inline-start: 3px solid var(--token-color-attention-text);
++    border-radius: 8px;
++    background: var(--token-surface-panel);
++  }
++
++  .tref-defect header {
++    display: flex;
++    gap: 1rem;
++    align-items: baseline;
++  }
++
++  .tref-defect header span {
++    color: var(--token-color-attention-text);
++    font-family: "IBM Plex Mono", ui-monospace, monospace;
++    font-size: 12px;
++  }
++
++  .tref-defect h3 {
++    margin: 0;
++    font-size: 16px;
++    letter-spacing: -0.01em;
++  }
++
++  .tref-defect dl {
++    display: grid;
++    gap: 0.9rem;
++    margin: 0;
++    grid-template-columns: repeat(auto-fit, minmax(min(16rem, 100%), 1fr));
++  }
++
++  .tref-defect div {
++    display: grid;
++    gap: 0.3rem;
++    align-content: start;
++  }
++
++  .tref-defect dt {
++    color: var(--token-ink-muted);
++    font-size: 9.5px;
++    font-weight: 750;
++    letter-spacing: 0.12em;
++    text-transform: uppercase;
++  }
++
++  .tref-defect dd {
++    margin: 0;
++    color: var(--token-ink-secondary);
++    font-size: 13px;
++    overflow-wrap: anywhere;
++  }
++
++  @media (max-width: 68rem) {
++    .conflict {
++      grid-template-columns: 2rem minmax(0, 1fr);
++    }
++  }
 +</style>
 ~~~~
 
@@ -20659,14 +21352,14 @@
 +];
 +
 +export const VERIFICATION: Verification[] = [
-+  { check: "Types", command: "pnpm typecheck", result: "0 errors, 0 warnings across 2,907 files", clean: true },
++  { check: "Types", command: "pnpm typecheck", result: "0 errors, 0 warnings across 2,915 files", clean: true },
 +  { check: "Structure", command: "pnpm lint", result: "56 checks, 56 clean", clean: true },
-+  { check: "Unit", command: "pnpm test", result: "1,031 tests in 116 files, 2 skipped", clean: true },
++  { check: "Unit", command: "pnpm test", result: "1,032 tests in 116 files, 2 skipped", clean: true },
 +  { check: "Category keys", command: "pnpm category-keys -- --check", result: "10 categories and 13 content views in step", clean: true },
 +  {
 +    check: "Browser",
 +    command: "pnpm test:browser, from a clean seed",
-+    result: "58 of 58, with 4 skipped — the live-intelligence cases the base branch skips when no credential is configured.",
++    result: "60 of 60, with 4 skipped — the live-intelligence cases the base branch skips when no credential is configured.",
 +    clean: true
 +  }
 +];
@@ -20780,10 +21473,208 @@
 +};
 ~~~~
 
-### new · `src/lib/development-views/template-reference/procedures/inventory.ts` (+148 / −0)
+### new · `src/lib/development-views/template-reference/procedures/integration.ts` (+192 / −0)
 
 ~~~~diff
-@@ -0,0 +1,148 @@
+@@ -0,0 +1,192 @@
++import type { ChainLink, ScopeFork } from "$development-views/template-reference/types";
++
++/**
++ * The chain from writing a prompt to reading a filled copy, link by link.
++ *
++ * Four links are the base branch's, two are this branch's, and one — the one
++ * that turns a prompt somebody wrote into a hole somebody answers — belongs to
++ * neither yet. It is written here as plainly as the ones that work, because a
++ * chain is only as interesting as the link that is open.
++ */
++export const CHAIN: ChainLink[] = [
++  {
++    index: "01",
++    step: "A prompt is written into a document or a slide",
++    gesture: "Convert a text box, type what it should derive, press Generate",
++    runs: "createDerivedOutput · refreshDerivedOutput · the prompt-block inspector",
++    state: "works",
++    evidence: "slide-deck-editor.spec.ts — a text box becomes an editable slide Prompt Block"
++  },
++  {
++    index: "02",
++    step: "The prompt is told what to read",
++    gesture: "The Scope control in the prompt inspector",
++    runs: "Nothing. The control offers one option, “Whole project”, and is bound to no handler",
++    state: "stub",
++    evidence: "document-editor/inspector/prompt-block.svelte — SCOPES has one entry and PanelSelect takes no onchange"
++  },
++  {
++    index: "03",
++    step: "The resource is saved as a template",
++    gesture: "Templates panel · a name · Save",
++    runs: "createTemplateFromResource → portable() → declaredFor()",
++    state: "works",
++    evidence: "template-features.spec.ts — a document is saved as a template"
++  },
++  {
++    index: "04",
++    step: "The prompt's scope becomes a hole to be answered",
++    gesture: "None — nothing performs this",
++    runs: "declaredFor reads { select: \"hole\" } terms out of prompt scopes. An authored prompt has a settled scope, so nothing is declared",
++    state: "missing",
++    evidence: "templates/test/unit/answers.test.ts — keeps an authored prompt scope settled, and so declares no hole for it"
++  },
++  {
++    index: "05",
++    step: "Placing the template asks what fills each hole",
++    gesture: "Insert or Use · one modal · a scope builder or a textarea per hole",
++    runs: "answerRowsOf · the scope builder · normalizeScope",
++    state: "works",
++    evidence: "template-features.spec.ts — inserting a template asks for each hole"
++  },
++  {
++    index: "06",
++    step: "The copy reads what was said",
++    gesture: "None — it is already true of the resource that lands",
++    runs: "resolveTemplateScopes substitutes each hole term; fillTemplateAtoms fills each text hole",
++    state: "works",
++    evidence: "template-features.spec.ts — a hole's default is built with an exclusion, stored, and read back"
++  },
++  {
++    index: "07",
++    step: "The copy's prompts generate against what was said",
++    gesture: "Press Generate in the copy",
++    runs: "The base's derived-output runtime, over the scope this branch resolved",
++    state: "works",
++    evidence: "Follows from 06: the copy is an ordinary resource holding ordinary prompt blocks"
++  }
++];
++
++export const CHAIN_DIAGRAM = `flowchart LR
++  subgraph authoring["01–02 · Authoring — the base"]
++    direction TB
++    B{{"Scope control<br/>one option, not wired"}}
++    A["A prompt block<br/>scope: whole project"]
++    B -. "writes no term" .-> A
++  end
++  subgraph making["03–04 · Making a template — here"]
++    direction TB
++    C["portable()<br/>drops the generated answer"]
++    D["declaredFor()<br/>looks for hole terms"]
++    C --> D
++  end
++  subgraph placing["05–06 · Placing it — here"]
++    direction TB
++    F["One modal,<br/>one row per hole"]
++    G["resolveTemplateScopes()<br/>answer, else default,<br/>else whole project"]
++    F --> G
++  end
++  A --> C
++  D -- "a hole term is there" --> F
++  D -- "nothing found" --> X["A copy that reads<br/>the author's own sources,<br/>and asks nobody"]
++  G --> H["A copy whose prompts read<br/>what the placer chose"]
++  classDef gap stroke-dasharray: 6 4
++  class B,X gap`;
++
++export const RESOLUTION_DIAGRAM = `sequenceDiagram
++  autonumber
++  participant P as Person placing it
++  participant M as Ask modal
++  participant S as instantiateTemplate
++  participant R as resolveTemplateScopes
++  participant D as The new copy
++  P->>M: Insert "Incident one-pager"
++  M-->>P: One row per hole, each with its current value
++  P->>M: evidence → Findings, minus one document
++  P->>M: subject_line → "Winter outage"
++  M->>S: answers { evidence } · texts { subject_line }
++  S->>S: normalizeScope — the difference cannot be said inline,<br/>so it is stored as a bound resourceSets row
++  S->>R: body, holes, answers
++  R-->>S: every prompt scope settled: the answer, else the hole's default,<br/>else the whole project
++  S->>S: fillTemplateAtoms — {subject_line} becomes "Winter outage"
++  S->>D: one document, revision 0, no reference back
++  D-->>P: prompts ready to generate over the scope you chose`;
++
++export const FORKS: ScopeFork[] = [
++  {
++    index: "01",
++    question: "How does a prompt somebody wrote become a hole somebody answers?",
++    recommended:
++      "Wire the Scope control that already exists in the prompt inspector. Its options become “Whole project” and “Ask when placed…”; choosing the second names the hole and opens the scope builder to set what it should select by default, and writes { select: \"hole\", name } into the prompt's scope there and then.",
++    because:
++      "The decision belongs where the author already is, at the prompt, and it stays an explicit choice rather than something a save does behind them. It needs no new modal in the save path, it makes the existing dead control mean something, and every link after it already works — declaredFor finds the term, the ask modal lists it, resolution fills it.",
++    alternative:
++      "Making a template walks every prompt it found and asks, in one modal, which should become holes and what to call them.",
++    cost:
++      "Truest to “a hole exists because a prompt asks for one”, but it puts a modal in front of every save, including the saves that want nothing asked, and it asks the question a long way from the prompt it is about."
++  },
++  {
++    index: "02",
++    question: "What is a hole made this way called?",
++    recommended:
++      "The author types the name, the way they type a text hole's name today, with the prompt's first words offered as the default.",
++    because:
++      "The name is what the person placing the template reads. A generated one — a block id, or source_1 — is stable and meaningless, and the label would have to carry the meaning instead, which is two fields where one would do.",
++    alternative: "Slug the prompt's own text, and rename the hole whenever the prompt is edited.",
++    cost:
++      "Nothing to type, but the name moves under the description and default somebody already wrote, and two prompts that start the same way collide."
++  },
++  {
++    index: "03",
++    question: "May two prompts share one hole?",
++    recommended: "Yes, and nothing needs building for it — the name is the whole of the identity.",
++    because:
++      "resolveTemplateScopes substitutes by name and memoises the result, so two prompts naming `evidence` already resolve to the same set from one answer. This has been true since the resolver was written and is covered by its unit tests.",
++    alternative: "One hole per prompt, enforced at declaration.",
++    cost: "Would forbid the common case — a brief whose three prompts all read the same evidence."
++  }
++];
++
++/**
++ * What can be walked today, in the app, without building anything.
++ *
++ * This is the honest end-to-end: it starts from a template that already holds a
++ * hole rather than from a prompt somebody wrote, because link 04 is open.
++ */
++export const WALKTHROUGH = [
++  {
++    index: "01",
++    does: "Open the seeded document Winter readiness brief and show its Templates panel.",
++    sees: "A name field, Save, and the List of every document template with its hole count."
++  },
++  {
++    index: "02",
++    does: "Insert “Incident one-pager”.",
++    sees:
++      "One modal listing every hole: a scope hole reading its default as a sentence with a Default tag, and a text hole with an empty textarea and a red bar, because Insert is held until it has words."
++  },
++  {
++    index: "03",
++    does: "Open the scope hole.",
++    sees:
++      "The builder, Include and Exclude as tabs, kinds and sets and resources to add From on the left, what is held on the right, and Whole project · Default · Clear along the bottom."
++  },
++  {
++    index: "04",
++    does: "Exclude one document, accept, type words into the text hole, and Insert.",
++    sees:
++      "The rows now read Chosen; the prose lands with the words in place; the prompt's scope in the copy is a single set term pointing at a bound row that holds the difference."
++  },
++  {
++    index: "05",
++    does: "Save the document as a template of your own, then press Create hole with the caret in a paragraph.",
++    sees:
++      "A hole named, described and given default words, its atom dropped where the caret was, and the Holes band listing it above the rule."
++  },
++  {
++    index: "06",
++    does: "Write a prompt block into that working copy and save it.",
++    sees:
++      "The prompt is carried into the template with its generated answer dropped — and **no hole is declared for it**. This is link 04, and it is where the walk stops."
++  }
++];
+~~~~
+
+### new · `src/lib/development-views/template-reference/procedures/inventory.ts` (+154 / −0)
+
+~~~~diff
+@@ -0,0 +1,154 @@
 +import type { FileRecord } from "$development-views/template-reference/types";
 +
 +/**
@@ -20868,7 +21759,7 @@
 +  {"path":"app/src/lib/capabilities/templates/api/update-template/validate-update-template.ts","status":"M","area":"templates","kind":"production","current":65,"base":61,"added":14,"deleted":10},
 +  {"path":"app/src/lib/capabilities/templates/index.remote.ts","status":"M","area":"templates","kind":"production","current":125,"base":73,"added":58,"deleted":6},
 +  {"path":"app/src/lib/capabilities/templates/templates.md","status":"M","area":"templates","kind":"documentation","current":153,"base":91,"added":126,"deleted":64},
-+  {"path":"app/src/lib/capabilities/templates/test/unit/answers.test.ts","status":"A","area":"templates","kind":"test","current":491,"base":0,"added":491,"deleted":0},
++  {"path":"app/src/lib/capabilities/templates/test/unit/answers.test.ts","status":"A","area":"templates","kind":"test","current":541,"base":0,"added":541,"deleted":0},
 +  {"path":"app/src/lib/capabilities/templates/test/unit/stages.test.ts","status":"A","area":"templates","kind":"test","current":377,"base":0,"added":377,"deleted":0},
 +  {"path":"app/src/lib/capabilities/templates/test/unit/templates.test.ts","status":"M","area":"templates","kind":"test","current":1414,"base":1447,"added":89,"deleted":122},
 +  {"path":"app/src/lib/capabilities/templates/types/templates.ts","status":"M","area":"templates","kind":"production","current":252,"base":156,"added":118,"deleted":22},
@@ -20878,7 +21769,7 @@
 +  {"path":"app/src/lib/components/authored/template-answers/index.ts","status":"A","area":"cross-cutting","kind":"production","current":8,"base":0,"added":8,"deleted":0},
 +  {"path":"app/src/lib/components/authored/template-answers/template-answers.svelte","status":"A","area":"cross-cutting","kind":"production","current":185,"base":0,"added":185,"deleted":0},
 +  {"path":"app/src/lib/development-views/demo/components/demo-index.svelte","status":"M","area":"cross-cutting","kind":"production","current":153,"base":153,"added":3,"deleted":3},
-+  {"path":"app/src/lib/development-views/template-reference/components/changes-page.svelte","status":"A","area":"reference","kind":"reference","current":285,"base":0,"added":285,"deleted":0},
++  {"path":"app/src/lib/development-views/template-reference/components/changes-page.svelte","status":"A","area":"reference","kind":"reference","current":288,"base":0,"added":288,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/components/diagram-binding.svelte","status":"A","area":"reference","kind":"reference","current":168,"base":0,"added":168,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/components/diagram-builder.svelte","status":"A","area":"reference","kind":"reference","current":274,"base":0,"added":274,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/components/diagram-difference.svelte","status":"A","area":"reference","kind":"reference","current":128,"base":0,"added":128,"deleted":0},
@@ -20888,17 +21779,21 @@
 +  {"path":"app/src/lib/development-views/template-reference/components/diagram-scope.svelte","status":"A","area":"reference","kind":"reference","current":87,"base":0,"added":87,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/components/diagram-verbs.svelte","status":"A","area":"reference","kind":"reference","current":79,"base":0,"added":79,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/components/file-ledger.svelte","status":"A","area":"reference","kind":"reference","current":138,"base":0,"added":138,"deleted":0},
++  {"path":"app/src/lib/development-views/template-reference/components/integration-page.svelte","status":"A","area":"reference","kind":"reference","current":278,"base":0,"added":278,"deleted":0},
++  {"path":"app/src/lib/development-views/template-reference/components/rebase-page.svelte","status":"A","area":"reference","kind":"reference","current":305,"base":0,"added":305,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/components/reference-header.svelte","status":"A","area":"reference","kind":"reference","current":166,"base":0,"added":166,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/components/reference.css","status":"A","area":"reference","kind":"reference","current":305,"base":0,"added":305,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/components/scope-page.svelte","status":"A","area":"reference","kind":"reference","current":468,"base":0,"added":468,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/components/system-page.svelte","status":"A","area":"reference","kind":"reference","current":329,"base":0,"added":329,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/procedures/changes.ts","status":"A","area":"reference","kind":"reference","current":312,"base":0,"added":312,"deleted":0},
++  {"path":"app/src/lib/development-views/template-reference/procedures/integration.ts","status":"A","area":"reference","kind":"reference","current":192,"base":0,"added":192,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/procedures/inventory.ts","status":"A","area":"reference","kind":"reference","current":148,"base":0,"added":148,"deleted":0},
-+  {"path":"app/src/lib/development-views/template-reference/procedures/navigation.ts","status":"A","area":"reference","kind":"reference","current":16,"base":0,"added":16,"deleted":0},
++  {"path":"app/src/lib/development-views/template-reference/procedures/navigation.ts","status":"A","area":"reference","kind":"reference","current":25,"base":0,"added":25,"deleted":0},
++  {"path":"app/src/lib/development-views/template-reference/procedures/rebase.ts","status":"A","area":"reference","kind":"reference","current":157,"base":0,"added":157,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/procedures/scope.ts","status":"A","area":"reference","kind":"reference","current":521,"base":0,"added":521,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/procedures/system.ts","status":"A","area":"reference","kind":"reference","current":223,"base":0,"added":223,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/template-reference.svelte","status":"A","area":"reference","kind":"reference","current":5,"base":0,"added":5,"deleted":0},
-+  {"path":"app/src/lib/development-views/template-reference/types.ts","status":"A","area":"reference","kind":"reference","current":129,"base":0,"added":129,"deleted":0},
++  {"path":"app/src/lib/development-views/template-reference/types.ts","status":"A","area":"reference","kind":"reference","current":168,"base":0,"added":168,"deleted":0},
 +  {"path":"app/src/lib/model/client/workspace-state/methods/open.ts","status":"M","area":"vocabulary","kind":"production","current":56,"base":46,"added":10,"deleted":0},
 +  {"path":"app/src/lib/model/client/workspace-state/methods/shared/mint-view.ts","status":"M","area":"vocabulary","kind":"production","current":9,"base":5,"added":5,"deleted":1},
 +  {"path":"app/src/lib/model/client/workspace-state/test/unit/workspace-state.test.ts","status":"M","area":"vocabulary","kind":"test","current":1096,"base":1073,"added":23,"deleted":0},
@@ -20927,33 +21822,207 @@
 +  {"path":"app/src/lib/representation/store/tables.ts","status":"M","area":"vocabulary","kind":"production","current":698,"base":684,"added":26,"deleted":12},
 +  {"path":"app/src/routes/app/[project]/reference/templates/+page.svelte","status":"M","area":"reference","kind":"reference","current":14,"base":5,"added":11,"deleted":2},
 +  {"path":"app/src/routes/app/[project]/reference/templates/changes/+page.svelte","status":"A","area":"reference","kind":"reference","current":14,"base":0,"added":14,"deleted":0},
++  {"path":"app/src/routes/app/[project]/reference/templates/integration/+page.svelte","status":"A","area":"reference","kind":"reference","current":14,"base":0,"added":14,"deleted":0},
++  {"path":"app/src/routes/app/[project]/reference/templates/rebase/+page.svelte","status":"A","area":"reference","kind":"reference","current":14,"base":0,"added":14,"deleted":0},
 +  {"path":"app/src/routes/app/[project]/reference/templates/scope/+page.svelte","status":"A","area":"reference","kind":"reference","current":14,"base":0,"added":14,"deleted":0},
 +  {"path":"app/test/browser/document-editor.spec.ts","status":"M","area":"evidence","kind":"test","current":884,"base":877,"added":8,"deleted":1},
-+  {"path":"app/test/browser/template-features.spec.ts","status":"A","area":"evidence","kind":"test","current":315,"base":0,"added":315,"deleted":0},
-+  {"path":"app/test/browser/template-reference.spec.ts","status":"A","area":"evidence","kind":"test","current":115,"base":0,"added":115,"deleted":0}
++  {"path":"app/test/browser/template-features.spec.ts","status":"A","area":"evidence","kind":"test","current":318,"base":0,"added":318,"deleted":0},
++  {"path":"app/test/browser/template-reference.spec.ts","status":"A","area":"evidence","kind":"test","current":151,"base":0,"added":151,"deleted":0}
 +];
 ~~~~
 
-### new · `src/lib/development-views/template-reference/procedures/navigation.ts` (+16 / −0)
+### new · `src/lib/development-views/template-reference/procedures/navigation.ts` (+25 / −0)
 
 ~~~~diff
-@@ -0,0 +1,16 @@
-+export type ReferencePage = { slug: "system" | "changes" | "scope"; index: string; label: string; sub: string };
+@@ -0,0 +1,25 @@
++export type ReferencePage = {
++  slug: "system" | "changes" | "scope" | "integration" | "rebase";
++  index: string;
++  label: string;
++  sub: string;
++};
 +
 +export const PAGES: ReferencePage[] = [
 +  { slug: "system", index: "01", label: "How templates work", sub: "The model, the verbs, the panels" },
 +  { slug: "changes", index: "02", label: "What changed", sub: "Every file, decision and check" },
-+  { slug: "scope", index: "03", label: "What a hole selects", sub: "The scope builder, and what it cost" }
++  { slug: "scope", index: "03", label: "What a hole selects", sub: "The scope builder, and what it cost" },
++  { slug: "integration", index: "04", label: "End to end with prompts", sub: "The chain, and the one open link" },
++  { slug: "rebase", index: "05", label: "Where it meets the base", sub: "Every conflict, every defect" }
 +];
 +
 +const PATHS: Record<ReferencePage["slug"], string> = {
 +  system: "",
 +  changes: "/changes",
-+  scope: "/scope"
++  scope: "/scope",
++  integration: "/integration",
++  rebase: "/rebase"
 +};
 +
 +export const hrefOf = (project: string, slug: ReferencePage["slug"]): string =>
 +  `/app/${project}/reference/templates${PATHS[slug]}`;
+~~~~
+
+### new · `src/lib/development-views/template-reference/procedures/rebase.ts` (+157 / −0)
+
+~~~~diff
+@@ -0,0 +1,157 @@
++import type { Defect, Divergence, Reconciliation } from "$development-views/template-reference/types";
++
++/** The branch this work now sits on, and the one it used to sit on. */
++export const MEETING = {
++  branch: "work/template-features",
++  base: "work/derived-output-architecture",
++  baseHead: "1166f8e",
++  baseAhead: 21,
++  mainHead: "306e308",
++  branchPoint: "4c1535c",
++  commits: 5,
++  rebases: 5,
++  conflicted: 5,
++  events: 6
++};
++
++export const TOPOLOGY = `gitGraph
++  commit id: "4c1535c" tag: "branch point"
++  branch work/derived-output-architecture
++  checkout work/derived-output-architecture
++  commit id: "semantic overlay"
++  commit id: "derived outputs"
++  commit id: "prompt blocks"
++  commit id: "1166f8e"
++  branch work/template-features
++  checkout work/template-features
++  commit id: "the template system"
++  commit id: "the scope builder"
++  commit id: "one list of holes"
++  commit id: "one row per term"
++  commit id: "holes, and Create hole"`;
++
++export const RECONCILED: Reconciliation[] = [
++  {
++    index: "01",
++    path: "capabilities/templates/api/instantiate-template/instantiate-template.ts",
++    when: "Onto main, before the move",
++    base: "Normalized a document's styles and readied a deck before the leader snapshot was written, both inside the same block this branch had rewritten.",
++    branch: "Resolved every prompt scope through the caller's answers and the holes' defaults, then wrote the snapshot.",
++    kept: "Both. The style normalisation and the deck readying run where the base put them, the scope resolution runs before them, and the deck branch took the base's destructuring rather than keeping two spellings of the same read.",
++    why: "Neither side was making a claim about the other. One prepares a body to be stored; the other decides what the body says. Ordering them was the whole decision."
++  },
++  {
++    index: "02",
++    path: "capabilities/templates/test/unit/templates.test.ts",
++    when: "Onto main, before the move",
++    base: "Asserted that instantiating readies the deck it makes.",
++    branch: "Asserted that instantiating stamps lastUsedAt and that the copy carries no template id.",
++    kept: "One test with both sets of assertions, in the order the code performs them.",
++    why: "Two tests over one call, written against the same fixture, is the same test twice. Merging them keeps the fixture honest and makes a later break point at one place."
++  },
++  {
++    index: "03",
++    path: "app-views/categories/slide-deck-editor/slide-deck-editor.md",
++    when: "Twice — onto main, then onto the base",
++    base: "First cut the document from 714 lines to 221 and listed Templates as a deferred placeholder; later added a Prompts section describing the Prompt Block and how a text box converts into one.",
++    branch: "Described the Templates panel — the working copy, the Holes band, the List — in the same place, directly after Comments.",
++    kept: "The base's rewrite whole, both times, with the Templates section written again beside Prompts in the base's terse register.",
++    why: "A document is prose, so a three-way merge has nothing structural to work with and both sides had rewritten the same neighbourhood. Taking one side whole and re-adding the other by hand is the only way to end with a document that reads."
++  },
++  {
++    index: "04",
++    path: "test/browser/document-editor.spec.ts",
++    when: "Onto the base",
++    base: "Pulled Prompts out of the loop that clicks each context view, to assert the new panel's empty state on its own.",
++    branch: "Pulled Templates out of the same loop, for the same reason.",
++    kept: "The loop covers Variables alone, and both dedicated blocks stand underneath it.",
++    why: "Both sides made the same move for the same reason and git saw one line changed twice. The loop was a convenience for views with nothing to say; two of them now have something to say, so it shrank to the one that does not."
++  },
++  {
++    index: "05",
++    path: "app-views/categories/slide-deck-editor/procedures/typing.ts",
++    when: "Onto the base",
++    base: "Widened the block a person can type into from TextBlock to TextBlock | PromptBlock, and measured an atom as atom.kind === \"literal\" ? atom.text.length : atom.lastResolvedDisplay.length.",
++    branch: "Replaced that same measurement with displayOfAtom(atom).length, the shared helper, so a template atom counts as the {name} it draws.",
++    kept: "The base's EditableTextBlock union with this branch's shared measurement.",
++    why: "This is the only conflict where taking one side would have been a bug. The base's inline measurement has no case for a template atom and would have read `undefined.length`; this branch's narrower type cannot see a Prompt Block at all. Each side needed exactly the half the other had."
++  }
++];
++
++export const DEFECTS: Defect[] = [
++  {
++    index: "01",
++    title: "A text hole's kind and default words were thrown away on every write",
++    symptom:
++      "Typing default words into a text hole looked like it worked — the panel showed them — and they were gone on the next read. A text hole could also come back as a scope hole, with a Default scope button where its words had been.",
++    cause:
++      "updateTemplate rebuilds each hole after normalising its scope, and the rebuild listed name, label, description and default. It was written before text holes existed and nobody widened it when they arrived, so kind and text fell off the object on the way to the store.",
++    fix: "The rebuild carries kind and text through, both still omitted rather than written as undefined when they are absent.",
++    proof:
++      "The browser case that makes a hole with default words now reads both the words and the description back off the card after the round trip, which fails against the old rebuild."
++  },
++  {
++    index: "02",
++    title: "The template validator refused a Prompt Block that carried a named style",
++    symptom:
++      "After the move onto the base, Save deck and Save slide failed outright with “body is not a valid slides template body” — but only in a project where some text box had been converted into a Prompt Block.",
++    cause:
++      "Converting a text box into a Prompt Block keeps the element's id, frame, paint, order, text, marks, style and format; only the content kind changes. The templates validator lists every key a block may carry and rejects the rest, and its prompt branch had never listed style — the text branch always had.",
++    fix: "style joins the prompt branch's key list and is validated as an identifier, exactly as the text branch validates it.",
++    proof:
++      "The browser case that saves one slide as a deck template. It failed twice in a row before the fix — which is how it was told apart from the known load flake — and passes after it."
++  }
++];
++
++export const DIVERGENCE: Divergence[] = [
++  {
++    layer: "Vocabulary",
++    base: "The semantic overlay: derived outputs, evidence spans, material profiles, embeddings, and a PromptBlock that carries a derived output id and a generation state.",
++    branch:
++      "templateStages; templates gains projectId, lastUsedAt and holes; resourceSets gains name and boundTo; TemplatedTerm gains a hole term; Atom gains TemplateAtom; Target gains context.",
++    meets:
++      "PromptBlock.scope. The base writes prompt blocks; this branch reads their scopes to find holes and substitutes answers back into them."
++  },
++  {
++    layer: "Capabilities",
++    base: "derived-output, with grounded synthesis, agent tool rounds, citation and refresh coalescing.",
++    branch:
++      "templates rewritten as a project subject with working copies, holes and scope normalisation; a new resource-sets capability; startThread refusing a working copy.",
++    meets:
++      "Nothing calls across. A template is made from a body that already holds prompt blocks, and the generated answer is dropped on the way in."
++  },
++  {
++    layer: "Editors",
++    base: "Live Prompt Blocks in both editors: a text box converts in place, a prompt inspector generates and refreshes, a Prompts context panel indexes them.",
++    branch:
++      "A Templates context panel in both editors: save, open a working copy, the Holes band with Create hole, and the template List.",
++    meets:
++      "The document and deck bodies, and one shared measurement of an atom's width in `positions.ts`."
++  },
++  {
++    layer: "Components",
++    base: "A mermaid diagram component under components/development.",
++    branch: "scope-builder and template-answers under components/authored.",
++    meets: "These reference pages, which use all three."
++  },
++  {
++    layer: "Evidence",
++    base: "Browser cases for prompt blocks in both editors, and live-intelligence cases that skip without a credential.",
++    branch: "template-features and template-reference, plus the shared document-editor case both sides edited.",
++    meets: "One suite and one seed. 58 cases pass together; 4 skip for want of a key."
++  }
++];
++
++/** What the base branch needs that this worktree did not have. */
++export const PREREQUISITES = [
++  {
++    what: "app/configuration/local.yaml",
++    why: "The base builds an intelligence client at startup and refuses a blank OpenRouter key, so the whole server fails to boot without it. It is git-ignored, so a fresh worktree has none and every browser run dies at `Timed out waiting 120000ms from config.webServer`.",
++    how: "Copy it from a checkout that has one. Nothing in the template work reads it."
++  },
++  {
++    what: "mermaid",
++    why: "The base added it as a dependency for its own reference pages. A worktree that has not installed since the move renders no diagrams.",
++    how: "`pnpm install` runs as part of every scripted check here, so this fixes itself."
++  }
++];
 ~~~~
 
 ### new · `src/lib/development-views/template-reference/procedures/scope.ts` (+521 / −0)
@@ -21723,10 +22792,10 @@
 +<SystemPage />
 ~~~~
 
-### new · `src/lib/development-views/template-reference/types.ts` (+129 / −0)
+### new · `src/lib/development-views/template-reference/types.ts` (+168 / −0)
 
 ~~~~diff
-@@ -0,0 +1,129 @@
+@@ -0,0 +1,168 @@
 +export type Area =
 +  | "vocabulary"
 +  | "templates"
@@ -21856,6 +22925,45 @@
 +  detail: string;
 +  order: string;
 +};
++
++/** One file that ever needed a decision when the two branches were replayed together. */
++export type Reconciliation = {
++  index: string;
++  path: string;
++  when: string;
++  base: string;
++  branch: string;
++  kept: string;
++  why: string;
++};
++
++/** Something that was actually broken, and what proves it is not any more. */
++export type Defect = {
++  index: string;
++  title: string;
++  symptom: string;
++  cause: string;
++  fix: string;
++  proof: string;
++};
++
++/** What each side of the meeting owns, layer by layer. */
++export type Divergence = {
++  layer: string;
++  base: string;
++  branch: string;
++  meets: string;
++};
++
++/** One link in the chain from writing a prompt to reading a filled copy. */
++export type ChainLink = {
++  index: string;
++  step: string;
++  gesture: string;
++  runs: string;
++  state: "works" | "stub" | "missing";
++  evidence: string;
++};
 ~~~~
 
 ### changed · `src/routes/app/[project]/reference/templates/+page.svelte` (+11 / −2)
@@ -21894,6 +23002,46 @@
 +</script>
 +
 +<ChangesPage
++  material={appearance.current}
++  materials={APPEARANCES}
++  onmaterial={(next) => (appearance.current = next as Appearance)}
++/>
+~~~~
+
+### new · `src/routes/app/[project]/reference/templates/integration/+page.svelte` (+14 / −0)
+
+~~~~diff
+@@ -0,0 +1,14 @@
++<script lang="ts">
++  import IntegrationPage from "$development-views/template-reference/components/integration-page.svelte";
++  import {
++    APPEARANCES,
++    appearance,
++    type Appearance
++  } from "$surfaces/top-bar/effects/apply-appearance.svelte";
++</script>
++
++<IntegrationPage
++  material={appearance.current}
++  materials={APPEARANCES}
++  onmaterial={(next) => (appearance.current = next as Appearance)}
++/>
+~~~~
+
+### new · `src/routes/app/[project]/reference/templates/rebase/+page.svelte` (+14 / −0)
+
+~~~~diff
+@@ -0,0 +1,14 @@
++<script lang="ts">
++  import RebasePage from "$development-views/template-reference/components/rebase-page.svelte";
++  import {
++    APPEARANCES,
++    appearance,
++    type Appearance
++  } from "$surfaces/top-bar/effects/apply-appearance.svelte";
++</script>
++
++<RebasePage
 +  material={appearance.current}
 +  materials={APPEARANCES}
 +  onmaterial={(next) => (appearance.current = next as Appearance)}

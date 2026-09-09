@@ -264,9 +264,12 @@
         <p>
           {MERGE.overlap.length - MERGE.conflicts.length} of the {MERGE.overlap.length} were edited on both
           sides but never on the same lines, across five rebases. Every check was re-run afterwards, and the
-          move onto derived outputs turned up one real defect of its own: the templates validator refused a
-          Prompt Block carrying a named style, which is exactly what a text box keeps when it is converted
-          in place.
+          move onto derived outputs turned up two real defects of its own.
+        </p>
+        <p>
+          <a href={hrefOf(project, "rebase")}>Where it meets the base</a> is the full account: every
+          conflict with what each side wanted and what was kept, both defects with their cause and what
+          proves them fixed, and what each of the two changes owns.
         </p>
       </div>
     </section>

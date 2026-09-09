@@ -191,14 +191,14 @@ export const DECISIONS: Decision[] = [
 ];
 
 export const VERIFICATION: Verification[] = [
-  { check: "Types", command: "pnpm typecheck", result: "0 errors, 0 warnings across 2,907 files", clean: true },
+  { check: "Types", command: "pnpm typecheck", result: "0 errors, 0 warnings across 2,915 files", clean: true },
   { check: "Structure", command: "pnpm lint", result: "56 checks, 56 clean", clean: true },
-  { check: "Unit", command: "pnpm test", result: "1,031 tests in 116 files, 2 skipped", clean: true },
+  { check: "Unit", command: "pnpm test", result: "1,032 tests in 116 files, 2 skipped", clean: true },
   { check: "Category keys", command: "pnpm category-keys -- --check", result: "10 categories and 13 content views in step", clean: true },
   {
     check: "Browser",
     command: "pnpm test:browser, from a clean seed",
-    result: "58 of 58, with 4 skipped — the live-intelligence cases the base branch skips when no credential is configured.",
+    result: "60 of 60, with 4 skipped — the live-intelligence cases the base branch skips when no credential is configured.",
     clean: true
   }
 ];

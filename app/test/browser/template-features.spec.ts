@@ -193,7 +193,10 @@ test("Create hole declares a text hole and drops its atom where the caret is", a
   });
   const card = context.locator(".hole").filter({ hasText: "client_name" });
   await expect(card).toBeVisible();
+  // A text hole takes words, not a scope, and both the words and the kind survive the write.
   await expect(card.getByRole("button", { name: "Default scope", exact: true })).toHaveCount(0);
+  await expect(card).toContainText("Northwind");
+  await expect(card).toContainText("Who the note is for");
   await expect(editor.locator(".document-template-atom")).toContainText("client_name");
 
   page.once("dialog", (dialog) => void dialog.accept());

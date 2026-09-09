@@ -127,3 +127,42 @@ export type ScopeGap = {
   detail: string;
   order: string;
 };
+
+/** One file that ever needed a decision when the two branches were replayed together. */
+export type Reconciliation = {
+  index: string;
+  path: string;
+  when: string;
+  base: string;
+  branch: string;
+  kept: string;
+  why: string;
+};
+
+/** Something that was actually broken, and what proves it is not any more. */
+export type Defect = {
+  index: string;
+  title: string;
+  symptom: string;
+  cause: string;
+  fix: string;
+  proof: string;
+};
+
+/** What each side of the meeting owns, layer by layer. */
+export type Divergence = {
+  layer: string;
+  base: string;
+  branch: string;
+  meets: string;
+};
+
+/** One link in the chain from writing a prompt to reading a filled copy. */
+export type ChainLink = {
+  index: string;
+  step: string;
+  gesture: string;
+  runs: string;
+  state: "works" | "stub" | "missing";
+  evidence: string;
+};

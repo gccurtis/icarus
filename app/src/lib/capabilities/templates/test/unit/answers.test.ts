@@ -273,6 +273,56 @@ describe("a template from a live resource", () => {
     assert.equal(model.tables.templateVersions.length, 1);
   });
 
+  /**
+   * The one link the chain is still missing, pinned so it cannot change unseen.
+   *
+   * A prompt somebody wrote in the editor carries a settled scope, not a hole
+   * term. Making a template keeps that scope exactly as it is and declares no
+   * hole, so placing the template asks nothing and every copy reads the same
+   * sources. Turning an authored scope into a hole is a decision nobody has
+   * taken yet; when it is taken, this test is what changes.
+   */
+  test("keeps an authored prompt scope settled, and so declares no hole for it", async () => {
+    model.tables.documents.push(row("documents", "1", { projectId: "p", title: "Winter brief" }));
+    model.tables.documentSnapshots.push(
+      row("documentSnapshots", "1", {
+        projectId: "p",
+        resourceId: "documents:1",
+        role: "leader",
+        revision: 1,
+        body: {
+          rows: [
+            {
+              id: "r1",
+              kind: "blocks",
+              blocks: [
+                {
+                  id: "p1",
+                  type: "prompt",
+                  atoms: [{ id: "p1-a", kind: "literal", text: "Sum up" }],
+                  display: "Sum up",
+                  marks: [],
+                  scope: { include: [{ select: "project" }], exclude: [] },
+                  state: "idle"
+                }
+              ]
+            }
+          ]
+        }
+      })
+    );
+
+    const made = await createTemplateFromResource({
+      target: "document",
+      resourceId: "documents:1",
+      name: "Authored prompt"
+    });
+    assert.ok(made.accepted);
+    const held = model.tables.templates[1];
+    assert.deepEqual(held.holes, []);
+    assert.deepEqual(scopeOf(held), { include: [{ select: "project" }], exclude: [] });
+  });
+
   test("makes a deck template from the whole deck or from one of its slides", async () => {
     model.tables.slideDecks.push(row("slideDecks", "1", { projectId: "p", title: "Board" }));
     model.tables.slideDeckSnapshots.push(

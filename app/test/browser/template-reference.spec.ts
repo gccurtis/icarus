@@ -3,7 +3,9 @@ import { expect, test, type Page, type TestInfo } from "@playwright/test";
 const routes = [
   ["system", "/app/dev-project/reference/templates", "How templates work"],
   ["changes", "/app/dev-project/reference/templates/changes", "What changed"],
-  ["scope", "/app/dev-project/reference/templates/scope", "What a hole selects"]
+  ["scope", "/app/dev-project/reference/templates/scope", "What a hole selects"],
+  ["integration", "/app/dev-project/reference/templates/integration", "End to end with prompts"],
+  ["rebase", "/app/dev-project/reference/templates/rebase", "Where it meets the base"]
 ] as const;
 
 const unexpected: string[] = [];
@@ -112,4 +114,38 @@ test("the scope page carries its mock, its file list and its settled decisions",
 
   await page.getByRole("link", { name: "How templates work", exact: false }).first().click();
   await expect(page.getByRole("heading", { level: 1, name: "How templates work" })).toBeVisible();
+});
+
+test("the integration page draws its chain and names the one open link", async ({ page }) => {
+  await page.setViewportSize({ width: 1500, height: 900 });
+  await page.goto("/app/dev-project/reference/templates/integration", { waitUntil: "networkidle" });
+
+  // Both diagrams render rather than falling back to the error state.
+  await expect(page.locator(".mermaid-output svg")).toHaveCount(2, { timeout: 30_000 });
+  await expect(page.locator(".diagram-error")).toHaveCount(0);
+
+  await expect(page.getByRole("heading", { level: 2, name: "Seven links, five of them carrying" })).toBeVisible();
+  await expect(page.locator(".tref-badge.known")).toHaveCount(2);
+  await expect(page.getByRole("heading", { level: 2, name: "The one open link, exactly" })).toBeVisible();
+  await expect(
+    page.locator(".tref-note.attention").getByText("keeps an authored prompt scope settled")
+  ).toBeVisible();
+
+  await page.getByRole("link", { name: "Where it meets the base", exact: false }).first().click();
+  await expect(page.getByRole("heading", { level: 1, name: "Where it meets the base" })).toBeVisible();
+});
+
+test("the rebase page accounts for every conflict and both defects", async ({ page }) => {
+  await page.setViewportSize({ width: 1500, height: 900 });
+  await page.goto("/app/dev-project/reference/templates/rebase", { waitUntil: "networkidle" });
+
+  await expect(page.locator(".mermaid-output svg")).toHaveCount(1, { timeout: 30_000 });
+  await expect(page.locator(".diagram-error")).toHaveCount(0);
+
+  await expect(page.locator(".conflict")).toHaveCount(5);
+  await expect(page.locator(".tref-defect")).toHaveCount(2);
+  await expect(page.getByText("taking either side whole would have shipped a bug")).toBeVisible();
+
+  await page.getByRole("link", { name: "End to end with prompts", exact: false }).first().click();
+  await expect(page.getByRole("heading", { level: 1, name: "End to end with prompts" })).toBeVisible();
 });
