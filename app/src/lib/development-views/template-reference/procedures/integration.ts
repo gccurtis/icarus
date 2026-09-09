@@ -13,9 +13,9 @@ export const CHAIN: ChainLink[] = [
     index: "01",
     step: "A prompt is written, told what to read, and the agent obeys it",
     gesture: "Convert a block, type the prompt, press Scope to choose its sources",
-    runs: "One PromptScope control · promptScopeOps on the block · readableScope onto the derived output",
+    runs: "One PromptScope control · the block until it links, the derived output after",
     state: "works",
-    evidence: "document-editor.spec.ts — the Scope control reads what the prompt reads"
+    evidence: "prompt-blocks.test.ts — linking takes the identity and gives up the scope"
   },
   {
     index: "02",
@@ -215,9 +215,9 @@ export const LIMITS: ScopeGap[] = [
     order: "Settled. This is the only thing templating drops, and it drops it where it is harmless."
   },
   {
-    title: "A prompt's text is copied into the template when the template is made",
+    title: "A prompt's definition is copied into the template when the template is made",
     detail:
-      "A prompt's words live on the derived output it is linked to, and a template leaves that row behind. So the words are copied onto the block on the way in, and a copy made later gets a derived output of its own built from them. Editing the prompt in the original afterwards does not reach the template — saving the template again does.",
+      "A prompt's words and the scope it reads both live on the derived output it is linked to, and a template leaves that row behind. So both are copied onto the block on the way in, and a copy made later gets a derived output of its own built from them. Editing the prompt in the original afterwards does not reach the template — saving the template again does.",
     order: "Correct as long as a template is a copy, which is the whole model. Nothing to do."
   },
   {

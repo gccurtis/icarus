@@ -68,8 +68,15 @@ const output = (): DerivedOutput => ({
   updatedAt: 12
 });
 
-test("linking a Prompt Block adds only the Derived Output identity", () => {
-  const block = prompt();
+/**
+ * Linking hands the scope over, rather than copying it.
+ *
+ * Two places holding a scope is two places that can disagree, and only one of
+ * them is what the agent obeys. So the block keeps one until there is an output
+ * to keep it, and gives it up at the moment there is.
+ */
+test("linking a Prompt Block takes the Derived Output identity and gives up the scope", () => {
+  const block = { ...prompt(), scope: { include: [{ select: "project" as const }], exclude: [] } };
   const changed = applyOps(
     { rows: [{ id: "#row", kind: "blocks", blocks: [block] }] },
     linkPromptBlockOps(block, "derivedOutputs:9" as Id<"derivedOutputs">)
@@ -77,6 +84,7 @@ test("linking a Prompt Block adds only the Derived Output identity", () => {
   const linked = changed.rows[0].kind === "blocks" ? changed.rows[0].blocks[0] : undefined;
 
   assert.equal(linked?.type === "prompt" && linked.derivedOutputId, "derivedOutputs:9");
+  assert.equal(linked?.type === "prompt" && "scope" in linked, false);
   assert.equal(linked?.type === "prompt" && linked.display, "Old answer");
 });
 

@@ -176,6 +176,28 @@ export const withAsks = <T>(body: T, asked: Readonly<Record<string, string>>): T
   return walk(body) as T;
 };
 
+/**
+ * Each prompt's scope, put back on the block that asks for it.
+ *
+ * A linked prompt keeps no scope of its own: the derived output owns it, so
+ * there is one place to read and one place to write. A template leaves that row
+ * behind, so the scope comes back onto the block on the way in — the same
+ * moment, and for the same reason, as the question does.
+ */
+export const withScopes = <T>(body: T, scoped: Readonly<Record<string, unknown>>): T => {
+  const walk = (value: unknown): unknown => {
+    if (Array.isArray(value)) return value.map(walk);
+    if (!isRecord(value)) return value;
+    const next: Fields = {};
+    for (const [field, nested] of Object.entries(value)) next[field] = walk(nested);
+    if (!isPrompt(value)) return next;
+    const held = scoped[value.id as string];
+    if (!isRecord(held)) return next;
+    return { ...next, scope: held };
+  };
+  return walk(body) as T;
+};
+
 /** The holes a template keeps, with what the author already settled left alone. */
 export const mergedPromptHoles = (
   known: readonly TemplateHole[],

@@ -39,19 +39,27 @@ export const promptHoleOps = (
   return op === undefined ? [] : [op];
 };
 
-/** What this prompt reads, which is also what its hole selects by default. */
+/**
+ * What this prompt reads, while nothing else holds it.
+ *
+ * A block carries a scope only when there is no derived output to carry it: an
+ * unlinked prompt, or one in a template. Once linked, the output is the scope
+ * and this is not written again.
+ */
 export const promptScopeOps = (block: PromptBlock, scope: unknown): DocumentOp[] => {
   const op = setField(block, "scope", scope, block.scope);
   return op === undefined ? [] : [op];
 };
 
+/** Linking hands the scope to the output, which is why the block gives it up here. */
 export const linkPromptBlockOps = (
   block: PromptBlock,
   derivedOutputId: Id<"derivedOutputs">
-): DocumentOp[] => {
-  const op = setField(block, "derivedOutputId", derivedOutputId, block.derivedOutputId);
-  return op === undefined ? [] : [op];
-};
+): DocumentOp[] =>
+  [
+    setField(block, "derivedOutputId", derivedOutputId, block.derivedOutputId),
+    setField(block, "scope", undefined, block.scope)
+  ].filter((op): op is DocumentOp => op !== undefined);
 
 const responseOf = (output: DerivedOutput): string | undefined =>
   output.lastResponse?.type === "text" ? output.lastResponse.display : undefined;

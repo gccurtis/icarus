@@ -172,11 +172,11 @@ export const SYSTEMATIC: SystematicChange[] = [
   },
   {
     index: "22",
-    title: "A prompt's scope reaches the agent that answers it",
+    title: "One thing holds what a prompt reads",
     before:
-      "The scope lived on the block and never left it. The derived output was created without one, so the agent searched the whole project while the panel said otherwise — and once the block was linked, the Scope control was a dropdown with one dead option reading Whole project.",
-    now: "The scope is sent when the output is created, sent again on every refresh, and changed from one live control that both the unlinked and the linked panel use. A body open as a template is the exception: a scope still naming a hole selects nothing yet and is not sent.",
-    why: "A control that shows a narrower scope than the search actually uses is worse than no control: it is a promise the system does not keep, and evidence arrives from places the person excluded.",
+      "The scope lived on the block and never left it. The derived output was created without one, so the agent searched the whole project while the panel said otherwise — and once the block was linked, the Scope control was a dropdown with one dead option reading Whole project. Sending it from the client as a second write only moved the problem: a failure, or a second editor, could leave the block showing one scope while the agent obeyed another.",
+    now: "A block carries a scope only while nothing else can — before it has generated, and inside a template. Linking hands the scope to the derived output and drops it from the block, so changing it is one write to one row and every reader reads the same place. Making a template takes the scope back off the output, the same moment and for the same reason as the question.",
+    why: "Two copies of one fact is two things that can disagree, and only one of them is what the agent obeys. A control that shows a narrower scope than the search uses is worse than no control: it is a promise the system does not keep.",
     area: "editors"
   },
   {
@@ -281,9 +281,9 @@ export const DECISIONS: Decision[] = [
 ];
 
 export const VERIFICATION: Verification[] = [
-  { check: "Types", command: "pnpm typecheck", result: "0 errors, 0 warnings across 2,931 files", clean: true },
+  { check: "Types", command: "pnpm typecheck", result: "0 errors, 0 warnings across 2,933 files", clean: true },
   { check: "Structure", command: "pnpm lint", result: "56 checks, 56 clean", clean: true },
-  { check: "Unit", command: "pnpm test", result: "1,083 tests in 120 files, 2 skipped", clean: true },
+  { check: "Unit", command: "pnpm test", result: "1,085 tests in 120 files, 2 skipped", clean: true },
   { check: "Category keys", command: "pnpm category-keys -- --check", result: "10 categories and 13 content views in step", clean: true },
   {
     check: "Browser",
@@ -391,6 +391,10 @@ export const MODEL_DELTA = {
     { name: "Mark.hole", note: "{ name, description? } — a run of words somebody templateified, addressed like any other mark" },
     { name: "PromptBlock.hole", note: "{ name, description? } — set by Templateify, absent until then" },
     { name: "PromptBlock.asks", note: "the prompt's own words, copied on the way into a template" },
+    {
+      name: "PromptBlock.scope",
+      note: "narrowed in meaning: a block holds one only while nothing else can — before it links, and inside a template. The derived output holds it after."
+    },
     { name: "TemplateAtom", note: "kind \"template\" — a hole standing in the prose of a template's body" }
   ],
   removed: [

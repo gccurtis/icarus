@@ -158,30 +158,26 @@
   };
 
   /**
-   * The block and its output are told the same thing, in that order.
+   * One write, to the one thing that holds it.
    *
-   * The block is what the panel reads back, and the output is what the agent
-   * obeys, so a scope that reached only one of them would let the two disagree.
+   * A linked prompt keeps no scope of its own, so there is nothing on the block
+   * to keep in step: a failure leaves the old scope everywhere, and a second
+   * editor changing it at the same time is one row's last write rather than two
+   * halves that disagree.
    */
   const setScope = async (next: unknown) => {
-    const currentRuntime = runtime;
-    if (busy || output === undefined || currentRuntime === undefined) return;
+    if (busy || output === undefined) return;
+    const reading = readableScope(next);
+    if (reading === undefined) return;
     running = true;
     actionError = undefined;
     try {
-      const ops = promptScopeOps(currentBlock(currentRuntime), next);
-      if (ops.length > 0) currentRuntime.apply(ops);
-      await currentRuntime.flush();
-      if (currentRuntime.sync === "error") throw new Error("The scope could not be saved");
-      const reading = readableScope(currentBlock(currentRuntime).scope);
-      if (reading !== undefined) {
-        const changed = await updateDerivedOutput({
-          derivedOutputId: outputId,
-          prompt: promptDraft.trim().length === 0 ? output.prompt : promptDraft.trim(),
-          scope: reading
-        });
-        if (changed === null) throw new Error("The Derived Output no longer exists");
-      }
+      const changed = await updateDerivedOutput({
+        derivedOutputId: outputId,
+        prompt: promptDraft.trim().length === 0 ? output.prompt : promptDraft.trim(),
+        scope: reading
+      });
+      if (changed === null) throw new Error("The Derived Output no longer exists");
       await detailQuery.refresh();
     } catch (error) {
       actionError = error instanceof Error ? error.message : String(error);
@@ -205,12 +201,10 @@
     running = true;
     actionError = undefined;
     try {
-      const reading = readableScope(block.scope);
-      if (definitionChanged || responseChanged || reading !== undefined) {
+      if (definitionChanged || responseChanged) {
         const changed = await updateDerivedOutput({
           derivedOutputId: outputId,
           prompt,
-          ...(reading === undefined ? {} : { scope: reading }),
           ...(responseChanged
             ? { lastResponse: currentResponse.length === 0 ? null : currentResponse }
             : {})
@@ -303,7 +297,7 @@
       disabled={running}
     />
 
-    <PromptScope {blockId} disabled={busy} onconfirm={setScope} />
+    <PromptScope {blockId} {derivedOutputId} disabled={busy} onconfirm={setScope} />
   </div>
 
   {#if shownError !== undefined}

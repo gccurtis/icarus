@@ -296,7 +296,7 @@ test("a document Prompt Block resolves a Derived Output from another resource", 
   );
   await expect(inspector).toBeVisible();
   await inspector.getByLabel("Prompt").fill("What is the Atlas beacon's calibration frequency?");
-  await expect(inspector).toContainText("Whole project");
+  await expect(inspector).toContainText("Everything in the project");
   const generate = inspector.getByRole("button", { name: "Generate" });
   await expect(generate).toBeEnabled();
   await generate.click();

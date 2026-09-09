@@ -1,6 +1,6 @@
 # Template Features Change Set
 
-171 files under app/ against 1166f8e, the commit this branch sits on — 101 created, 70 changed, 0 deleted — +21317 / −1449 lines, measured from committed and working-tree changes when this page was built.
+176 files under app/ against 1166f8e, the commit this branch sits on — 103 created, 73 changed, 0 deleted — +21636 / −1456 lines, measured from committed and working-tree changes when this page was built.
 
 | Status | File | + | − | Systematic change |
 | --- | --- | --- | --- | --- |
@@ -11,32 +11,36 @@
 | changed | `seed/spreadsheets.json` | +0 | −2 | The seeded one-slide template |
 | changed | `seed/templates.json` | +1524 | −250 | The seeded one-slide template |
 | changed | `seed/templateVersions.json` | +518 | −22 | The seeded one-slide template |
-| new | `src/lib/app-views/categories/document-editor/components/prompt-scope.svelte` | +132 | −0 | The document editor's Templates panel |
-| changed | `src/lib/app-views/categories/document-editor/components/prompt-settings.svelte` | +43 | −25 | The document editor's Templates panel |
+| new | `src/lib/app-views/categories/document-editor/components/prompt-scope.svelte` | +154 | −0 | The document editor's Templates panel |
+| changed | `src/lib/app-views/categories/document-editor/components/prompt-settings.svelte` | +36 | −24 | The document editor's Templates panel |
+| new | `src/lib/app-views/categories/document-editor/components/prompt-template-section.svelte` | +104 | −0 | The document editor's Templates panel |
 | changed | `src/lib/app-views/categories/document-editor/content/document.svelte` | +15 | −0 | The document editor's Templates panel |
 | new | `src/lib/app-views/categories/document-editor/context/templates.svelte` | +616 | −0 | The document editor's Templates panel |
-| changed | `src/lib/app-views/categories/document-editor/inspector/prompt-block.svelte` | +73 | −23 | The document editor's Templates panel |
+| changed | `src/lib/app-views/categories/document-editor/inspector/prompt-block.svelte` | +28 | −23 | The document editor's Templates panel |
 | changed | `src/lib/app-views/categories/document-editor/inspector/text-selection.svelte` | +50 | −0 | The document editor's Templates panel |
 | changed | `src/lib/app-views/categories/document-editor/procedures/projection.ts` | +33 | −8 | The document editor's Templates panel |
-| changed | `src/lib/app-views/categories/document-editor/procedures/prompt-blocks.ts` | +17 | −0 | The document editor's Templates panel |
+| changed | `src/lib/app-views/categories/document-editor/procedures/prompt-blocks.ts` | +28 | −3 | The document editor's Templates panel |
 | changed | `src/lib/app-views/categories/document-editor/procedures/schema.ts` | +37 | −3 | The document editor's Templates panel |
 | new | `src/lib/app-views/categories/document-editor/procedures/templating.ts` | +436 | −0 | The document editor's Templates panel |
+| changed | `src/lib/app-views/categories/document-editor/procedures/test/unit/prompt-blocks.test.ts` | +10 | −2 | The document editor's Templates panel |
 | new | `src/lib/app-views/categories/document-editor/procedures/test/unit/templating.test.ts` | +167 | −0 | The document editor's Templates panel |
 | new | `src/lib/app-views/categories/project-overview/context/contexts.svelte` | +283 | −0 | Project Overview's Contexts panel |
 | new | `src/lib/app-views/categories/project-overview/procedures/contexts.ts` | +115 | −0 | Project Overview's Contexts panel |
 | new | `src/lib/app-views/categories/project-overview/procedures/test/unit/contexts.test.ts` | +68 | −0 | Project Overview's Contexts panel |
 | changed | `src/lib/app-views/categories/project-overview/project-overview.md` | +25 | −21 | Project Overview's Contexts panel |
-| new | `src/lib/app-views/categories/slide-deck-editor/components/prompt-scope.svelte` | +131 | −0 | The slide-deck editor's Templates panel |
-| changed | `src/lib/app-views/categories/slide-deck-editor/components/prompt-settings.svelte` | +43 | −25 | The slide-deck editor's Templates panel |
+| new | `src/lib/app-views/categories/slide-deck-editor/components/prompt-scope.svelte` | +152 | −0 | The slide-deck editor's Templates panel |
+| changed | `src/lib/app-views/categories/slide-deck-editor/components/prompt-settings.svelte` | +36 | −24 | The slide-deck editor's Templates panel |
+| new | `src/lib/app-views/categories/slide-deck-editor/components/prompt-template-section.svelte` | +103 | −0 | The slide-deck editor's Templates panel |
 | changed | `src/lib/app-views/categories/slide-deck-editor/context/comments.svelte` | +6 | −1 | The slide-deck editor's Templates panel |
 | changed | `src/lib/app-views/categories/slide-deck-editor/context/templates.svelte` | +633 | −3 | The slide-deck editor's Templates panel |
-| changed | `src/lib/app-views/categories/slide-deck-editor/inspector/prompt-block.svelte` | +74 | −24 | The slide-deck editor's Templates panel |
+| changed | `src/lib/app-views/categories/slide-deck-editor/inspector/prompt-block.svelte` | +30 | −24 | The slide-deck editor's Templates panel |
 | changed | `src/lib/app-views/categories/slide-deck-editor/inspector/text-selection.svelte` | +61 | −1 | The slide-deck editor's Templates panel |
 | changed | `src/lib/app-views/categories/slide-deck-editor/inspector/threads.svelte` | +8 | −1 | The slide-deck editor's Templates panel |
 | changed | `src/lib/app-views/categories/slide-deck-editor/procedures/ids.ts` | +2 | −1 | The slide-deck editor's Templates panel |
-| changed | `src/lib/app-views/categories/slide-deck-editor/procedures/prompt-blocks.ts` | +17 | −0 | The slide-deck editor's Templates panel |
+| changed | `src/lib/app-views/categories/slide-deck-editor/procedures/prompt-blocks.ts` | +28 | −3 | The slide-deck editor's Templates panel |
 | changed | `src/lib/app-views/categories/slide-deck-editor/procedures/scene.ts` | +3 | −3 | The slide-deck editor's Templates panel |
 | new | `src/lib/app-views/categories/slide-deck-editor/procedures/templating.ts` | +429 | −0 | The slide-deck editor's Templates panel |
+| changed | `src/lib/app-views/categories/slide-deck-editor/procedures/test/unit/prompt-blocks.test.ts` | +31 | −0 | The slide-deck editor's Templates panel |
 | new | `src/lib/app-views/categories/slide-deck-editor/procedures/test/unit/templating.test.ts` | +130 | −0 | The slide-deck editor's Templates panel |
 | changed | `src/lib/app-views/categories/slide-deck-editor/procedures/typing.ts` | +2 | −3 | The slide-deck editor's Templates panel |
 | changed | `src/lib/app-views/categories/slide-deck-editor/slide-deck-editor.md` | +23 | −1 | The slide-deck editor's Templates panel |
@@ -88,7 +92,7 @@
 | changed | `src/lib/capabilities/templates/api/shared/bodies.ts` | +17 | −171 | The templates capability |
 | new | `src/lib/capabilities/templates/api/shared/holes.ts` | +39 | −0 | The templates capability |
 | changed | `src/lib/capabilities/templates/api/shared/projection.ts` | +32 | −49 | The templates capability |
-| new | `src/lib/capabilities/templates/api/shared/prompts.ts` | +164 | −0 | The templates capability |
+| new | `src/lib/capabilities/templates/api/shared/prompts.ts` | +178 | −0 | The templates capability |
 | new | `src/lib/capabilities/templates/api/shared/scopes.ts` | +204 | −0 | The templates capability |
 | new | `src/lib/capabilities/templates/api/shared/stages.ts` | +143 | −0 | The templates capability |
 | changed | `src/lib/capabilities/templates/api/shared/template-rows.ts` | +3 | −2 | The templates capability |
@@ -97,7 +101,7 @@
 | changed | `src/lib/capabilities/templates/api/update-template/validate-update-template.ts` | +14 | −10 | The templates capability |
 | changed | `src/lib/capabilities/templates/index.remote.ts` | +58 | −6 | The templates capability |
 | changed | `src/lib/capabilities/templates/templates.md` | +126 | −64 | The templates capability |
-| new | `src/lib/capabilities/templates/test/unit/answers.test.ts` | +729 | −0 | The templates capability |
+| new | `src/lib/capabilities/templates/test/unit/answers.test.ts` | +792 | −0 | The templates capability |
 | new | `src/lib/capabilities/templates/test/unit/stages.test.ts` | +458 | −0 | The templates capability |
 | changed | `src/lib/capabilities/templates/test/unit/templates.test.ts` | +89 | −122 | The templates capability |
 | changed | `src/lib/capabilities/templates/types/templates.ts` | +118 | −22 | The templates capability |
@@ -126,9 +130,9 @@
 | new | `src/lib/development-views/template-reference/components/scope-page.svelte` | +468 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/development-views/template-reference/components/system-page.svelte` | +329 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/development-views/template-reference/components/walkthrough-page.svelte` | +373 | −0 | The reference pages, and the one shared component they moved |
-| new | `src/lib/development-views/template-reference/procedures/changes.ts` | +406 | −0 | The reference pages, and the one shared component they moved |
+| new | `src/lib/development-views/template-reference/procedures/changes.ts` | +410 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/development-views/template-reference/procedures/integration.ts` | +229 | −0 | The reference pages, and the one shared component they moved |
-| new | `src/lib/development-views/template-reference/procedures/inventory.ts` | +181 | −0 | The reference pages, and the one shared component they moved |
+| new | `src/lib/development-views/template-reference/procedures/inventory.ts` | +186 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/development-views/template-reference/procedures/navigation.ts` | +27 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/development-views/template-reference/procedures/rebase.ts` | +157 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/development-views/template-reference/procedures/scope.ts` | +521 | −0 | The reference pages, and the one shared component they moved |
@@ -150,7 +154,7 @@
 | new | `src/lib/representation/data/behavior/templates/deck-of-slide.ts` | +18 | −0 | The vocabulary: one table, five functions, one field |
 | new | `src/lib/representation/data/behavior/templates/fresh-ids.ts` | +71 | −0 | The vocabulary: one table, five functions, one field |
 | new | `src/lib/representation/data/behavior/templates/portable.ts` | +87 | −0 | The vocabulary: one table, five functions, one field |
-| new | `src/lib/representation/data/behavior/templates/prompt-holes.ts` | +403 | −0 | The vocabulary: one table, five functions, one field |
+| new | `src/lib/representation/data/behavior/templates/prompt-holes.ts` | +425 | −0 | The vocabulary: one table, five functions, one field |
 | new | `src/lib/representation/data/behavior/templates/scopes.ts` | +216 | −0 | The vocabulary: one table, five functions, one field |
 | new | `src/lib/representation/data/behavior/templates/test/unit/answers.test.ts` | +104 | −0 | The vocabulary: one table, five functions, one field |
 | new | `src/lib/representation/data/behavior/templates/test/unit/at-scale.test.ts` | +299 | −0 | The vocabulary: one table, five functions, one field |
@@ -172,6 +176,7 @@
 | new | `src/routes/app/[project]/reference/templates/rebase/+page.svelte` | +14 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/routes/app/[project]/reference/templates/scope/+page.svelte` | +14 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/routes/app/[project]/reference/templates/walkthrough/+page.svelte` | +14 | −0 | The reference pages, and the one shared component they moved |
+| changed | `test/browser/derived-output-architecture.spec.ts` | +1 | −1 | Browser evidence |
 | changed | `test/browser/document-editor.spec.ts` | +10 | −2 | Browser evidence |
 | new | `test/browser/template-features.spec.ts` | +494 | −0 | Browser evidence |
 | new | `test/browser/template-reference.spec.ts` | +176 | −0 | Browser evidence |
@@ -183,7 +188,7 @@
 | changed | `docs/artifacts/template-dictionary/index.html` | +297 | −0 |
 | changed | `docs/artifacts/template-dictionary/index.md` | +139 | −0 |
 | changed | `docs/artifacts/template-features-changes/index.html` | +1236 | −0 |
-| changed | `docs/artifacts/template-features-changes/index.md` | +27466 | −0 |
+| changed | `docs/artifacts/template-features-changes/index.md` | +27425 | −0 |
 | changed | `docs/artifacts/template-stage-flow/index.html` | +393 | −0 |
 | changed | `docs/artifacts/template-stage-flow/index.md` | +140 | −0 |
 | changed | `docs/artifacts/template-system-concepts/index.html` | +627 | −0 |
@@ -1356,10 +1361,10 @@
 +};
 ~~~~
 
-### new · `src/lib/representation/data/behavior/templates/prompt-holes.ts` (+403 / −0)
+### new · `src/lib/representation/data/behavior/templates/prompt-holes.ts` (+425 / −0)
 
 ~~~~diff
-@@ -0,0 +1,403 @@
+@@ -0,0 +1,425 @@
 +import { displayOfAtom, endAt, linearOf, segmentsOf } from "$representation/data/behavior/content/positions";
 +import type { Atom, Mark } from "$representation/data/types/content/content-block";
 +import type { TemplatedResourceSet } from "$representation/data/types/core/resource-set";
@@ -1534,6 +1539,28 @@
 +    const words = asked[value.id as string]?.trim() ?? "";
 +    if (words === "") return next;
 +    return { ...next, asks: words };
++  };
++  return walk(body) as T;
++};
++
++/**
++ * Each prompt's scope, put back on the block that asks for it.
++ *
++ * A linked prompt keeps no scope of its own: the derived output owns it, so
++ * there is one place to read and one place to write. A template leaves that row
++ * behind, so the scope comes back onto the block on the way in — the same
++ * moment, and for the same reason, as the question does.
++ */
++export const withScopes = <T>(body: T, scoped: Readonly<Record<string, unknown>>): T => {
++  const walk = (value: unknown): unknown => {
++    if (Array.isArray(value)) return value.map(walk);
++    if (!isRecord(value)) return value;
++    const next: Fields = {};
++    for (const [field, nested] of Object.entries(value)) next[field] = walk(nested);
++    if (!isPrompt(value)) return next;
++    const held = scoped[value.id as string];
++    if (!isRecord(held)) return next;
++    return { ...next, scope: held };
 +  };
 +  return walk(body) as T;
 +};
@@ -5027,10 +5054,10 @@
  };
 ~~~~
 
-### new · `src/lib/capabilities/templates/api/shared/prompts.ts` (+164 / −0)
+### new · `src/lib/capabilities/templates/api/shared/prompts.ts` (+178 / −0)
 
 ~~~~diff
-@@ -0,0 +1,164 @@
+@@ -0,0 +1,178 @@
 +import type { StoreModel } from "$model/server/store/index.server";
 +import { asId } from "$representation/data/behavior/core/id";
 +import { needsRow } from "$representation/data/behavior/core/scope-draft";
@@ -5042,7 +5069,8 @@
 +  textHolesOf,
 +  withAsks,
 +  withMarkedHoles,
-+  withPromptHoles
++  withPromptHoles,
++  withScopes
 +} from "$representation/data/behavior/templates/prompt-holes";
 +import type { TemplateHole } from "$representation/data/types/templates/template";
 +
@@ -5054,14 +5082,20 @@
 +const isRecord = (value: unknown): value is Fields =>
 +  value !== null && typeof value === "object" && !Array.isArray(value);
 +
++type Definition = {
++  readonly asks: Readonly<Record<string, string>>;
++  readonly scopes: Readonly<Record<string, unknown>>;
++};
++
 +/**
-+ * The question each prompt asks, read from the derived output it is linked to.
++ * What each prompt asks and what it reads, taken from the output it is linked to.
 + *
-+ * The words are the output's, not the block's: the block holds the answer. A
-+ * template keeps neither the link nor the answer, so this is the one moment the
-+ * words can be taken, and it has to happen while the link is still there.
++ * Both belong to the output while the link exists — the block holds only the
++ * answer. A template keeps neither the link nor the answer, so this is the one
++ * moment the definition can be taken, and it has to happen while the link is
++ * still there.
 + */
-+const askedBy = (store: StoreModel, body: unknown): Readonly<Record<string, string>> => {
++const definedBy = (store: StoreModel, body: unknown): Definition => {
 +  const wanted = new Map<string, string>();
 +  const walk = (value: unknown): void => {
 +    if (Array.isArray(value)) {
@@ -5077,16 +5111,18 @@
 +    for (const nested of Object.values(value)) walk(nested);
 +  };
 +  walk(body);
-+  if (wanted.size === 0) return {};
++  if (wanted.size === 0) return { asks: {}, scopes: {} };
 +
-+  const words: Record<string, string> = {};
++  const asks: Record<string, string> = {};
++  const scopes: Record<string, unknown> = {};
 +  for (const row of recordsIn(store, "derivedOutputs")) {
 +    const id = typeof row._id === "string" ? row._id : undefined;
 +    const blockId = id === undefined ? undefined : wanted.get(id);
 +    if (blockId === undefined) continue;
-+    if (typeof row.prompt === "string") words[blockId] = row.prompt;
++    if (typeof row.prompt === "string") asks[blockId] = row.prompt;
++    if (isRecord(row.scope)) scopes[blockId] = row.scope;
 +  }
-+  return words;
++  return { asks, scopes };
 +};
 +
 +/**
@@ -5096,7 +5132,8 @@
 + * way it carries a formula's expression and not its instance. Placing one makes
 + * a fresh derived output from the definition and links the copy's block to it,
 + * so the copy is a working prompt from the moment it lands rather than words
-+ * somebody has to type again.
++ * somebody has to type again. The scope moves with the definition rather than
++ * being copied: a linked block keeps none, so there is only ever one of it.
 + */
 +export const withFreshOutputs = <T>(
 +  store: StoreModel,
@@ -5128,7 +5165,9 @@
 +      updatedAt: at
 +    });
 +    written.push(id);
-+    return { ...next, derivedOutputId: id };
++    const { scope: _held, ...unscoped } = next;
++    void _held;
++    return { ...unscoped, derivedOutputId: id };
 +  };
 +  return { body: walk(body) as T, written };
 +};
@@ -5184,8 +5223,10 @@
 +  candidate: T,
 +  known: readonly TemplateHole[]
 +): TemplatedBody<T> => {
-+  const drafts = promptHolesOf(candidate);
-+  const asked = withAsks(candidate, askedBy(store, candidate));
++  const definition = definedBy(store, candidate);
++  const scoped = withScopes(candidate, definition.scopes);
++  const drafts = promptHolesOf(scoped);
++  const asked = withAsks(scoped, definition.asks);
 +  const portable = portableBodyOf(asked);
 +  let minted = 0;
 +  const body = withMarkedHoles(withPromptHoles(portable.body, drafts), () => {
@@ -6616,10 +6657,10 @@
 +needs a represented transaction or explicit recovery contract.
 ~~~~
 
-### new · `src/lib/capabilities/templates/test/unit/answers.test.ts` (+729 / −0)
+### new · `src/lib/capabilities/templates/test/unit/answers.test.ts` (+792 / −0)
 
 ~~~~diff
-@@ -0,0 +1,729 @@
+@@ -0,0 +1,792 @@
 +import assert from "node:assert/strict";
 +import { beforeEach, describe, test, vi } from "vitest";
 +
@@ -7082,6 +7123,69 @@
 +    const held = model.tables.templates[1];
 +    assert.deepEqual(held.holes, []);
 +    assert.deepEqual(scopeOf(held), { include: [{ select: "project" }], exclude: [] });
++  });
++
++  /**
++   * A linked prompt's scope belongs to its output, and the template takes it
++   * from there — the same moment, and for the same reason, as the question.
++   *
++   * The block is given a stale scope here on purpose: it is what an older
++   * revision would have left behind, and the output has to win.
++   */
++  test("takes a linked prompt's scope off the output, not off the block", async () => {
++    model.tables.documents.push(row("documents", "1", { projectId: "p", title: "Winter brief" }));
++    model.tables.derivedOutputs = [
++      row("derivedOutputs", "3", {
++        projectId: "p",
++        prompt: "What broke?",
++        scope: { include: [{ select: "set", setId: "resourceSets:1" }], exclude: [] }
++      })
++    ];
++    model.tables.documentSnapshots.push(
++      row("documentSnapshots", "1", {
++        projectId: "p",
++        resourceId: "documents:1",
++        role: "leader",
++        revision: 2,
++        body: {
++          rows: [
++            {
++              id: "r1",
++              kind: "blocks",
++              blocks: [
++                {
++                  id: "p1",
++                  type: "prompt",
++                  atoms: [{ id: "p1-a", kind: "literal", text: "Sum up" }],
++                  display: "Sum up",
++                  marks: [],
++                  derivedOutputId: "derivedOutputs:3",
++                  scope: { include: [{ select: "kinds", kinds: ["research"] }], exclude: [] },
++                  hole: { name: "winter" },
++                  state: "idle"
++                }
++              ]
++            }
++          ]
++        }
++      })
++    );
++
++    const made = await createTemplateFromResource({
++      target: "document",
++      resourceId: "documents:1",
++      name: "Winter shell"
++    });
++    assert.ok(made.accepted);
++    const held = model.tables.templates[1];
++    assert.deepEqual(held.holes, [
++      {
++        name: "winter",
++        label: "winter",
++        default: { include: [{ select: "set", setId: "resourceSets:1" }], exclude: [] }
++      }
++    ]);
++    assert.deepEqual(scopeOf(held), { include: [{ select: "hole", name: "winter" }], exclude: [] });
 +  });
 +
 +  test("keeps whatever the templateified prompt reads as its hole's default", async () => {
@@ -11565,10 +11669,10 @@
 
 ## The document editor's Templates panel
 
-### new · `src/lib/app-views/categories/document-editor/components/prompt-scope.svelte` (+132 / −0)
+### new · `src/lib/app-views/categories/document-editor/components/prompt-scope.svelte` (+154 / −0)
 
 ~~~~diff
-@@ -0,0 +1,132 @@
+@@ -0,0 +1,154 @@
 +<script lang="ts">
 +  import { PanelButton } from "$authored-components/panel";
 +  import { OverlayModal } from "$authored-components/overlay";
@@ -11594,24 +11698,30 @@
 +    type ScopeSide
 +  } from "$app-views/categories/document-editor/procedures/templating";
 +  import { blockIn } from "$app-views/categories/document-editor/procedures/blocks";
++  import type { Id } from "$app-views/categories/document-editor/procedures/prompt-blocks";
++  import { readDerivedOutput } from "$capabilities/derived-output/index.remote";
 +  import { workspaceState, type DocumentRuntime } from "$model/client/workspace-state";
 +
 +  /**
-+   * What a prompt reads, wherever the prompt is.
++   * What a prompt reads, read from whichever thing owns it.
 +   *
-+   * The same control answers for a block that has not generated yet and for one
-+   * already linked to its output, so the two can never say different things.
++   * A linked prompt keeps no scope of its own — the derived output is the scope,
++   * and one write changes it. An unlinked one has no output yet, so the block
++   * holds it until there is somewhere better. Either way there is exactly one
++   * of it, so the panel and the agent cannot come to disagree.
 +   */
 +  let {
 +    blockId,
++    derivedOutputId,
 +    disabled = false,
 +    description = "The sources it is answered from. If it is a hole, this is also what the hole selects until whoever places the template says otherwise.",
 +    onconfirm
 +  }: {
 +    blockId: string;
++    derivedOutputId?: string;
 +    disabled?: boolean;
 +    description?: string;
-+    onconfirm: (next: unknown) => void;
++    onconfirm: (next: unknown) => void | Promise<void>;
 +  } = $props();
 +
 +  const view = workspaceState();
@@ -11625,7 +11735,22 @@
 +  const held = $derived(
 +    runtime?.body === undefined ? undefined : blockIn(runtime.body, blockId)
 +  );
-+  const scope = $derived(held?.type === "prompt" ? held.scope : undefined);
++
++  // One control belongs to one immutable Derived Output identity; the parent keys it.
++  // svelte-ignore state_referenced_locally
++  const outputQuery =
++    derivedOutputId === undefined
++      ? undefined
++      : readDerivedOutput({ derivedOutputId: derivedOutputId as Id<"derivedOutputs"> });
++  const linked = $derived(outputQuery?.ready ? outputQuery.current?.output : undefined);
++
++  const scope = $derived(
++    derivedOutputId === undefined
++      ? held?.type === "prompt"
++        ? held.scope
++        : undefined
++      : linked?.scope
++  );
 +
 +  const sets = resourceSets();
 +  const index = projectResources();
@@ -11647,9 +11772,10 @@
 +    open = true;
 +  };
 +
-+  const confirm = () => {
-+    onconfirm(narrowed(draft) ?? draft);
++  const confirm = async () => {
 +    open = false;
++    await onconfirm(narrowed(draft) ?? draft);
++    await outputQuery?.refresh();
 +  };
 +</script>
 +
@@ -11703,7 +11829,7 @@
 +</style>
 ~~~~
 
-### changed · `src/lib/app-views/categories/document-editor/components/prompt-settings.svelte` (+43 / −25)
+### changed · `src/lib/app-views/categories/document-editor/components/prompt-settings.svelte` (+36 / −24)
 
 ~~~~diff
 @@ -5,8 +5,7 @@
@@ -11739,35 +11865,31 @@
    let {
      blockId,
      derivedOutputId
-@@ -187,6 +187,40 @@
+@@ -187,6 +187,36 @@
      return current;
    };
  
 +  /**
-+   * The block and its output are told the same thing, in that order.
++   * One write, to the one thing that holds it.
 +   *
-+   * The block is what the panel reads back, and the output is what the agent
-+   * obeys, so a scope that reached only one of them would let the two disagree.
++   * A linked prompt keeps no scope of its own, so there is nothing on the block
++   * to keep in step: a failure leaves the old scope everywhere, and a second
++   * editor changing it at the same time is one row's last write rather than two
++   * halves that disagree.
 +   */
 +  const setScope = async (next: unknown) => {
-+    const currentRuntime = runtime;
-+    if (busy || output === undefined || currentRuntime === undefined) return;
++    if (busy || output === undefined) return;
++    const reading = readableScope(next);
++    if (reading === undefined) return;
 +    running = true;
 +    actionError = undefined;
 +    try {
-+      const ops = promptScopeOps(currentBlock(), next);
-+      if (ops.length > 0) currentRuntime.apply(ops);
-+      await currentRuntime.flush();
-+      if (currentRuntime.failure !== undefined) throw new Error(currentRuntime.failure.detail);
-+      const reading = readableScope(currentBlock().scope);
-+      if (reading !== undefined) {
-+        const changed = await updateDerivedOutput({
-+          derivedOutputId: outputId,
-+          prompt: promptDraft.trim().length === 0 ? output.prompt : promptDraft.trim(),
-+          scope: reading
-+        });
-+        if (changed === null) throw new Error("The Derived Output no longer exists");
-+      }
++      const changed = await updateDerivedOutput({
++        derivedOutputId: outputId,
++        prompt: promptDraft.trim().length === 0 ? output.prompt : promptDraft.trim(),
++        scope: reading
++      });
++      if (changed === null) throw new Error("The Derived Output no longer exists");
 +      await detailQuery.refresh();
 +    } catch (error) {
 +      actionError = error instanceof Error ? error.message : String(error);
@@ -11780,21 +11902,7 @@
    const generate = async () => {
      const prompt = promptDraft.trim();
      const currentRuntime = runtime;
-@@ -201,10 +235,12 @@
-     running = true;
-     actionError = undefined;
-     try {
--      if (definitionChanged || responseChanged) {
-+      const reading = readableScope(block.scope);
-+      if (definitionChanged || responseChanged || reading !== undefined) {
-         const changed = await updateDerivedOutput({
-           derivedOutputId: outputId,
-           prompt,
-+          ...(reading === undefined ? {} : { scope: reading }),
-           ...(responseChanged
-             ? { lastResponse: currentResponse.length === 0 ? null : currentResponse }
-             : {})
-@@ -297,12 +333,7 @@
+@@ -297,12 +327,7 @@
        disabled={running}
      />
  
@@ -11804,11 +11912,11 @@
 -        <PanelSelect label="Scope" value="project" options={SCOPES} />
 -      </div>
 -    </div>
-+    <PromptScope {blockId} disabled={busy} onconfirm={setScope} />
++    <PromptScope {blockId} {derivedOutputId} disabled={busy} onconfirm={setScope} />
    </div>
  
    {#if shownError !== undefined}
-@@ -360,8 +391,7 @@
+@@ -360,8 +385,7 @@
      padding: calc(var(--token-spacing-unit) * 2) calc(var(--token-spacing-unit) * 3);
    }
  
@@ -11818,7 +11926,7 @@
      color: var(--token-ink-muted);
      font-size: var(--token-text-caption);
      line-height: var(--token-text-caption-leading);
-@@ -376,18 +406,6 @@
+@@ -376,18 +400,6 @@
      line-height: var(--token-text-body-sm-leading);
    }
  
@@ -11837,6 +11945,116 @@
    .evidence {
      display: flex;
      flex-direction: column;
+~~~~
+
+### new · `src/lib/app-views/categories/document-editor/components/prompt-template-section.svelte` (+104 / −0)
+
+~~~~diff
+@@ -0,0 +1,104 @@
++<script lang="ts">
++  import { PromptTemplate } from "$authored-components/prompt-template";
++  import { blockIn } from "$app-views/categories/document-editor/procedures/blocks";
++  import {
++    promptHoleOps,
++    type Id
++  } from "$app-views/categories/document-editor/procedures/prompt-blocks";
++  import {
++    defaultScopeOf,
++    nextHoleName,
++    projectResources,
++    resourceSets,
++    resourcesIn,
++    ruleOf,
++    scopeNamesOf,
++    setsIn
++  } from "$app-views/categories/document-editor/procedures/templating";
++  import { readDerivedOutput } from "$capabilities/derived-output/index.remote";
++  import { workspaceState, type DocumentRuntime } from "$model/client/workspace-state";
++
++  /**
++   * Turning a prompt into a hole, and saying what the hole is.
++   *
++   * What the hole would default to is the scope the prompt reads, and once the
++   * prompt is linked that lives on the derived output. This reads it from the
++   * same place the agent does, so the default shown here is the default a
++   * template would actually carry.
++   */
++  let {
++    blockId,
++    derivedOutputId,
++    disabled = false
++  }: {
++    blockId: string;
++    derivedOutputId?: string;
++    disabled?: boolean;
++  } = $props();
++
++  const view = workspaceState();
++  const documentId = $derived(view.active.resourceId);
++
++  let runtime = $state<DocumentRuntime>();
++  $effect(() => {
++    runtime = documentId === undefined ? undefined : view.documentRuntime(documentId);
++  });
++
++  const body = $derived(runtime?.body);
++  const held = $derived(body === undefined ? undefined : blockIn(body, blockId));
++  const block = $derived(held?.type === "prompt" ? held : undefined);
++
++  // One section belongs to one immutable Derived Output identity; the parent keys it.
++  // svelte-ignore state_referenced_locally
++  const outputQuery =
++    derivedOutputId === undefined
++      ? undefined
++      : readDerivedOutput({ derivedOutputId: derivedOutputId as Id<"derivedOutputs"> });
++  const linked = $derived(outputQuery?.ready ? outputQuery.current?.output : undefined);
++
++  const sets = resourceSets();
++  const index = projectResources();
++  const setNames = $derived(
++    scopeNamesOf(
++      setsIn(sets.ready ? sets.current : undefined),
++      resourcesIn(index.ready ? index.current : undefined)
++    )
++  );
++
++  const offered = $derived(body === undefined ? "Hole 1" : nextHoleName(body));
++  const named = $derived(block?.hole);
++  const reads = $derived(
++    ruleOf(defaultScopeOf(derivedOutputId === undefined ? block?.scope : linked?.scope), setNames)
++  );
++
++  const write = (ops: readonly unknown[]) => {
++    if (runtime === undefined || ops.length === 0) return;
++    runtime.apply(ops as Parameters<DocumentRuntime["apply"]>[0]);
++  };
++
++  const make = () => {
++    if (block === undefined) return;
++    write(promptHoleOps(block, { name: offered }));
++  };
++
++  const rename = (name: string) => {
++    if (block === undefined) return;
++    write(promptHoleOps(block, { name, description: named?.description }));
++  };
++
++  const describe = (description: string) => {
++    if (block === undefined) return;
++    write(promptHoleOps(block, { name: named?.name ?? offered, description }));
++  };
++</script>
++
++<PromptTemplate
++  name={named?.name}
++  description={named?.description ?? ""}
++  {offered}
++  standing={reads}
++  {disabled}
++  onmake={make}
++  onname={rename}
++  ondescription={describe}
++/>
 ~~~~
 
 ### changed · `src/lib/app-views/categories/document-editor/content/document.svelte` (+15 / −0)
@@ -12488,7 +12706,7 @@
 +</style>
 ~~~~
 
-### changed · `src/lib/app-views/categories/document-editor/inspector/prompt-block.svelte` (+73 / −23)
+### changed · `src/lib/app-views/categories/document-editor/inspector/prompt-block.svelte` (+28 / −23)
 
 ~~~~diff
 @@ -5,10 +5,10 @@
@@ -12504,31 +12722,19 @@
    } from "$authored-components/panel";
    import { Button } from "$vendored-components/button";
    import { Textarea } from "$vendored-components/textarea";
-@@ -21,17 +21,32 @@
+@@ -21,17 +21,20 @@
    import { blockIn } from "$app-views/categories/document-editor/procedures/blocks";
    import {
      linkPromptBlockOps,
-+    promptHoleOps,
 +    promptScopeOps,
      syncPromptBlockOps,
      type Id,
      type LinkedPromptBlock,
      type PromptBlock
    } from "$app-views/categories/document-editor/procedures/prompt-blocks";
-+  import {
-+    defaultScopeOf,
-+    nextHoleName,
-+    offeringOf,
-+    projectResources,
-+    readableScope,
-+    resourceSets,
-+    resourcesIn,
-+    ruleOf,
-+    scopeNamesOf,
-+    setsIn
-+  } from "$app-views/categories/document-editor/procedures/templating";
++  import { readableScope } from "$app-views/categories/document-editor/procedures/templating";
 +  import PromptScope from "$app-views/categories/document-editor/components/prompt-scope.svelte";
-+  import { PromptTemplate } from "$authored-components/prompt-template";
++  import PromptTemplateSection from "$app-views/categories/document-editor/components/prompt-template-section.svelte";
    import { announcePromptOutput } from "$app-views/categories/document-editor/procedures/prompt-output-events";
    import { isInspectorView, workspaceState } from "$model/client/workspace-state";
    import type { DocumentRuntime } from "$model/client/workspace-state";
@@ -12538,7 +12744,7 @@
  
    const view = workspaceState();
    const documentId = $derived(view.active.resourceId);
-@@ -89,9 +104,11 @@
+@@ -89,9 +92,11 @@
      let derivedOutputId: Id<"derivedOutputs"> | undefined;
  
      try {
@@ -12551,50 +12757,20 @@
        });
        derivedOutputId = created._id;
        const seeded =
-@@ -137,6 +154,42 @@
+@@ -137,6 +142,12 @@
    const navigate = (next: string) => {
      if (isInspectorView(next)) view.inspect(next);
    };
 +
-+  const sets = resourceSets();
-+  const index = projectResources();
-+  const setItems = $derived(setsIn(sets.ready ? sets.current : undefined));
-+  const catalogue = $derived(resourcesIn(index.ready ? index.current : undefined));
-+  const setNames = $derived(scopeNamesOf(setItems, catalogue));
-+  const offering = $derived(offeringOf(setItems, catalogue));
-+
-+  const offered = $derived(body === undefined ? "Hole 1" : nextHoleName(body));
-+  const named = $derived(prompt?.hole);
-+  const reads = $derived(ruleOf(defaultScopeOf(prompt?.scope), setNames));
-+
-+  const write = (ops: readonly unknown[]) => {
-+    if (runtime === undefined || ops.length === 0) return;
-+    runtime.apply(ops as Parameters<DocumentRuntime["apply"]>[0]);
-+  };
-+
-+  const make = () => {
-+    if (prompt === undefined) return;
-+    write(promptHoleOps(prompt, { name: offered }));
-+  };
-+
-+  const rename = (name: string) => {
-+    if (prompt === undefined) return;
-+    write(promptHoleOps(prompt, { name, description: named?.description }));
-+  };
-+
-+  const describe = (description: string) => {
-+    if (prompt === undefined) return;
-+    write(promptHoleOps(prompt, { name: named?.name ?? offered, description }));
-+  };
-+
 +  const confirmScope = (next: unknown) => {
-+    if (prompt === undefined) return;
-+    write(promptScopeOps(prompt, next));
++    if (prompt === undefined || runtime === undefined) return;
++    const ops = promptScopeOps(prompt, next);
++    if (ops.length > 0) runtime.apply(ops);
 +  };
  </script>
  
  <Panel title="Prompt block">
-@@ -178,12 +231,11 @@
+@@ -178,12 +189,11 @@
            disabled={phase !== undefined}
          />
  
@@ -12612,24 +12788,21 @@
        </div>
  
        <PanelActions>
-@@ -202,6 +254,16 @@
+@@ -202,6 +212,13 @@
        {/key}
      {/if}
  
-+    <PromptTemplate
-+      name={named?.name}
-+      description={named?.description ?? ""}
-+      {offered}
-+      standing={reads}
-+      disabled={phase !== undefined}
-+      onmake={make}
-+      onname={rename}
-+      ondescription={describe}
-+    />
++    {#key linked?.derivedOutputId ?? "unlinked"}
++      <PromptTemplateSection
++        blockId={prompt.id}
++        derivedOutputId={linked?.derivedOutputId}
++        disabled={phase !== undefined}
++      />
++    {/key}
    {/if}
  </Panel>
  
-@@ -213,8 +275,7 @@
+@@ -213,8 +230,7 @@
      padding: calc(var(--token-spacing-unit) * 2) calc(var(--token-spacing-unit) * 3);
    }
  
@@ -12639,7 +12812,7 @@
      color: var(--token-ink-muted);
      font-size: var(--token-text-caption);
      line-height: var(--token-text-caption-leading);
-@@ -228,15 +289,4 @@
+@@ -228,15 +244,4 @@
      line-height: var(--token-text-body-sm-leading);
    }
  
@@ -12839,33 +13012,51 @@
        pm += 1;
 ~~~~
 
-### changed · `src/lib/app-views/categories/document-editor/procedures/prompt-blocks.ts` (+17 / −0)
+### changed · `src/lib/app-views/categories/document-editor/procedures/prompt-blocks.ts` (+28 / −3)
 
 ~~~~diff
-@@ -28,6 +28,23 @@ const setField = (
+@@ -28,14 +28,39 @@ const setField = (
      ? undefined
      : { op: "set", target: "block", path: `${block.id}/${field}`, value: value ?? null, was: was ?? null };
  
+-export const linkPromptBlockOps = (
 +/** What this prompt's hole is called, and what it stands for. */
 +export const promptHoleOps = (
-+  block: PromptBlock,
+   block: PromptBlock,
+-  derivedOutputId: Id<"derivedOutputs">
 +  hole: { name: string; description?: string }
-+): DocumentOp[] => {
+ ): DocumentOp[] => {
+-  const op = setField(block, "derivedOutputId", derivedOutputId, block.derivedOutputId);
 +  const description = hole.description?.trim() ?? "";
 +  const next = { name: hole.name.trim(), ...(description === "" ? {} : { description }) };
 +  const op = setField(block, "hole", next, block.hole);
 +  return op === undefined ? [] : [op];
 +};
 +
-+/** What this prompt reads, which is also what its hole selects by default. */
++/**
++ * What this prompt reads, while nothing else holds it.
++ *
++ * A block carries a scope only when there is no derived output to carry it: an
++ * unlinked prompt, or one in a template. Once linked, the output is the scope
++ * and this is not written again.
++ */
 +export const promptScopeOps = (block: PromptBlock, scope: unknown): DocumentOp[] => {
 +  const op = setField(block, "scope", scope, block.scope);
-+  return op === undefined ? [] : [op];
-+};
+   return op === undefined ? [] : [op];
+ };
+ 
++/** Linking hands the scope to the output, which is why the block gives it up here. */
++export const linkPromptBlockOps = (
++  block: PromptBlock,
++  derivedOutputId: Id<"derivedOutputs">
++): DocumentOp[] =>
++  [
++    setField(block, "derivedOutputId", derivedOutputId, block.derivedOutputId),
++    setField(block, "scope", undefined, block.scope)
++  ].filter((op): op is DocumentOp => op !== undefined);
 +
- export const linkPromptBlockOps = (
-   block: PromptBlock,
-   derivedOutputId: Id<"derivedOutputs">
+ const responseOf = (output: DerivedOutput): string | undefined =>
+   output.lastResponse?.type === "text" ? output.lastResponse.display : undefined;
 ~~~~
 
 ### changed · `src/lib/app-views/categories/document-editor/procedures/schema.ts` (+37 / −3)
@@ -13384,6 +13575,36 @@
 +  );
 ~~~~
 
+### changed · `src/lib/app-views/categories/document-editor/procedures/test/unit/prompt-blocks.test.ts` (+10 / −2)
+
+~~~~diff
+@@ -68,8 +68,15 @@ const output = (): DerivedOutput => ({
+   updatedAt: 12
+ });
+ 
+-test("linking a Prompt Block adds only the Derived Output identity", () => {
+-  const block = prompt();
++/**
++ * Linking hands the scope over, rather than copying it.
++ *
++ * Two places holding a scope is two places that can disagree, and only one of
++ * them is what the agent obeys. So the block keeps one until there is an output
++ * to keep it, and gives it up at the moment there is.
++ */
++test("linking a Prompt Block takes the Derived Output identity and gives up the scope", () => {
++  const block = { ...prompt(), scope: { include: [{ select: "project" as const }], exclude: [] } };
+   const changed = applyOps(
+     { rows: [{ id: "#row", kind: "blocks", blocks: [block] }] },
+     linkPromptBlockOps(block, "derivedOutputs:9" as Id<"derivedOutputs">)
+@@ -77,6 +84,7 @@ test("linking a Prompt Block adds only the Derived Output identity", () => {
+   const linked = changed.rows[0].kind === "blocks" ? changed.rows[0].blocks[0] : undefined;
+ 
+   assert.equal(linked?.type === "prompt" && linked.derivedOutputId, "derivedOutputs:9");
++  assert.equal(linked?.type === "prompt" && "scope" in linked, false);
+   assert.equal(linked?.type === "prompt" && linked.display, "Old answer");
+ });
+~~~~
+
 ### new · `src/lib/app-views/categories/document-editor/procedures/test/unit/templating.test.ts` (+167 / −0)
 
 ~~~~diff
@@ -13559,10 +13780,10 @@
 
 ## The slide-deck editor's Templates panel
 
-### new · `src/lib/app-views/categories/slide-deck-editor/components/prompt-scope.svelte` (+131 / −0)
+### new · `src/lib/app-views/categories/slide-deck-editor/components/prompt-scope.svelte` (+152 / −0)
 
 ~~~~diff
-@@ -0,0 +1,131 @@
+@@ -0,0 +1,152 @@
 +<script lang="ts">
 +  import { PanelButton } from "$authored-components/panel";
 +  import { OverlayModal } from "$authored-components/overlay";
@@ -13587,25 +13808,33 @@
 +    type ScopeDraft,
 +    type ScopeSide
 +  } from "$app-views/categories/slide-deck-editor/procedures/templating";
-+  import { promptBlockIn } from "$app-views/categories/slide-deck-editor/procedures/prompt-blocks";
++  import {
++    promptBlockIn,
++    type Id
++  } from "$app-views/categories/slide-deck-editor/procedures/prompt-blocks";
++  import { readDerivedOutput } from "$capabilities/derived-output/index.remote";
 +  import { workspaceState, type SlideDeckRuntime } from "$model/client/workspace-state";
 +
 +  /**
-+   * What a prompt reads, wherever the prompt is.
++   * What a prompt reads, read from whichever thing owns it.
 +   *
-+   * The same control answers for a block that has not generated yet and for one
-+   * already linked to its output, so the two can never say different things.
++   * A linked prompt keeps no scope of its own — the derived output is the scope,
++   * and one write changes it. An unlinked one has no output yet, so the block
++   * holds it until there is somewhere better. Either way there is exactly one
++   * of it, so the panel and the agent cannot come to disagree.
 +   */
 +  let {
 +    blockId,
++    derivedOutputId,
 +    disabled = false,
 +    description = "The sources it is answered from. If it is a hole, this is also what the hole selects until whoever places the template says otherwise.",
 +    onconfirm
 +  }: {
 +    blockId: string;
++    derivedOutputId?: string;
 +    disabled?: boolean;
 +    description?: string;
-+    onconfirm: (next: unknown) => void;
++    onconfirm: (next: unknown) => void | Promise<void>;
 +  } = $props();
 +
 +  const view = workspaceState();
@@ -13616,8 +13845,20 @@
 +    runtime = deckId === undefined ? undefined : view.slideDeckRuntime(deckId);
 +  });
 +
++  // One control belongs to one immutable Derived Output identity; the parent keys it.
++  // svelte-ignore state_referenced_locally
++  const outputQuery =
++    derivedOutputId === undefined
++      ? undefined
++      : readDerivedOutput({ derivedOutputId: derivedOutputId as Id<"derivedOutputs"> });
++  const linked = $derived(outputQuery?.ready ? outputQuery.current?.output : undefined);
++
 +  const scope = $derived(
-+    runtime?.body === undefined ? undefined : promptBlockIn(runtime.body, blockId)?.scope
++    derivedOutputId === undefined
++      ? runtime?.body === undefined
++        ? undefined
++        : promptBlockIn(runtime.body, blockId)?.scope
++      : linked?.scope
 +  );
 +
 +  const sets = resourceSets();
@@ -13640,9 +13881,10 @@
 +    open = true;
 +  };
 +
-+  const confirm = () => {
-+    onconfirm(narrowed(draft) ?? draft);
++  const confirm = async () => {
 +    open = false;
++    await onconfirm(narrowed(draft) ?? draft);
++    await outputQuery?.refresh();
 +  };
 +</script>
 +
@@ -13696,7 +13938,7 @@
 +</style>
 ~~~~
 
-### changed · `src/lib/app-views/categories/slide-deck-editor/components/prompt-settings.svelte` (+43 / −25)
+### changed · `src/lib/app-views/categories/slide-deck-editor/components/prompt-settings.svelte` (+36 / −24)
 
 ~~~~diff
 @@ -6,8 +6,7 @@
@@ -13732,35 +13974,31 @@
    let {
      blockId,
      derivedOutputId
-@@ -157,6 +157,40 @@
+@@ -157,6 +157,36 @@
      return current;
    };
  
 +  /**
-+   * The block and its output are told the same thing, in that order.
++   * One write, to the one thing that holds it.
 +   *
-+   * The block is what the panel reads back, and the output is what the agent
-+   * obeys, so a scope that reached only one of them would let the two disagree.
++   * A linked prompt keeps no scope of its own, so there is nothing on the block
++   * to keep in step: a failure leaves the old scope everywhere, and a second
++   * editor changing it at the same time is one row's last write rather than two
++   * halves that disagree.
 +   */
 +  const setScope = async (next: unknown) => {
-+    const currentRuntime = runtime;
-+    if (busy || output === undefined || currentRuntime === undefined) return;
++    if (busy || output === undefined) return;
++    const reading = readableScope(next);
++    if (reading === undefined) return;
 +    running = true;
 +    actionError = undefined;
 +    try {
-+      const ops = promptScopeOps(currentBlock(currentRuntime), next);
-+      if (ops.length > 0) currentRuntime.apply(ops);
-+      await currentRuntime.flush();
-+      if (currentRuntime.sync === "error") throw new Error("The scope could not be saved");
-+      const reading = readableScope(currentBlock(currentRuntime).scope);
-+      if (reading !== undefined) {
-+        const changed = await updateDerivedOutput({
-+          derivedOutputId: outputId,
-+          prompt: promptDraft.trim().length === 0 ? output.prompt : promptDraft.trim(),
-+          scope: reading
-+        });
-+        if (changed === null) throw new Error("The Derived Output no longer exists");
-+      }
++      const changed = await updateDerivedOutput({
++        derivedOutputId: outputId,
++        prompt: promptDraft.trim().length === 0 ? output.prompt : promptDraft.trim(),
++        scope: reading
++      });
++      if (changed === null) throw new Error("The Derived Output no longer exists");
 +      await detailQuery.refresh();
 +    } catch (error) {
 +      actionError = error instanceof Error ? error.message : String(error);
@@ -13773,21 +14011,7 @@
    const generate = async () => {
      const prompt = promptDraft.trim();
      const currentRuntime = runtime;
-@@ -171,10 +205,12 @@
-     running = true;
-     actionError = undefined;
-     try {
--      if (definitionChanged || responseChanged) {
-+      const reading = readableScope(block.scope);
-+      if (definitionChanged || responseChanged || reading !== undefined) {
-         const changed = await updateDerivedOutput({
-           derivedOutputId: outputId,
-           prompt,
-+          ...(reading === undefined ? {} : { scope: reading }),
-           ...(responseChanged
-             ? { lastResponse: currentResponse.length === 0 ? null : currentResponse }
-             : {})
-@@ -267,12 +303,7 @@
+@@ -267,12 +297,7 @@
        disabled={running}
      />
  
@@ -13797,11 +14021,11 @@
 -        <PanelSelect label="Scope" value="project" options={SCOPES} />
 -      </div>
 -    </div>
-+    <PromptScope {blockId} disabled={busy} onconfirm={setScope} />
++    <PromptScope {blockId} {derivedOutputId} disabled={busy} onconfirm={setScope} />
    </div>
  
    {#if shownError !== undefined}
-@@ -330,8 +361,7 @@
+@@ -330,8 +355,7 @@
      padding: calc(var(--token-spacing-unit) * 2) calc(var(--token-spacing-unit) * 3);
    }
  
@@ -13811,7 +14035,7 @@
      color: var(--token-ink-muted);
      font-size: var(--token-text-caption);
      line-height: var(--token-text-caption-leading);
-@@ -346,18 +376,6 @@
+@@ -346,18 +370,6 @@
      line-height: var(--token-text-body-sm-leading);
    }
  
@@ -13830,6 +14054,115 @@
    .evidence {
      display: flex;
      flex-direction: column;
+~~~~
+
+### new · `src/lib/app-views/categories/slide-deck-editor/components/prompt-template-section.svelte` (+103 / −0)
+
+~~~~diff
+@@ -0,0 +1,103 @@
++<script lang="ts">
++  import { PromptTemplate } from "$authored-components/prompt-template";
++  import {
++    promptBlockIn,
++    promptHoleOps,
++    type Id
++  } from "$app-views/categories/slide-deck-editor/procedures/prompt-blocks";
++  import {
++    defaultScopeOf,
++    nextHoleName,
++    projectResources,
++    resourceSets,
++    resourcesIn,
++    ruleOf,
++    scopeNamesOf,
++    setsIn
++  } from "$app-views/categories/slide-deck-editor/procedures/templating";
++  import { readDerivedOutput } from "$capabilities/derived-output/index.remote";
++  import { workspaceState, type SlideDeckRuntime } from "$model/client/workspace-state";
++
++  /**
++   * Turning a prompt into a hole, and saying what the hole is.
++   *
++   * What the hole would default to is the scope the prompt reads, and once the
++   * prompt is linked that lives on the derived output. This reads it from the
++   * same place the agent does, so the default shown here is the default a
++   * template would actually carry.
++   */
++  let {
++    blockId,
++    derivedOutputId,
++    disabled = false
++  }: {
++    blockId: string;
++    derivedOutputId?: string;
++    disabled?: boolean;
++  } = $props();
++
++  const view = workspaceState();
++  const deckId = $derived(view.active.resourceId);
++
++  let runtime = $state<SlideDeckRuntime | undefined>(undefined);
++  $effect(() => {
++    runtime = deckId === undefined ? undefined : view.slideDeckRuntime(deckId);
++  });
++
++  const body = $derived(runtime?.body);
++  const block = $derived(body === undefined ? undefined : promptBlockIn(body, blockId));
++
++  // One section belongs to one immutable Derived Output identity; the parent keys it.
++  // svelte-ignore state_referenced_locally
++  const outputQuery =
++    derivedOutputId === undefined
++      ? undefined
++      : readDerivedOutput({ derivedOutputId: derivedOutputId as Id<"derivedOutputs"> });
++  const linked = $derived(outputQuery?.ready ? outputQuery.current?.output : undefined);
++
++  const sets = resourceSets();
++  const index = projectResources();
++  const setNames = $derived(
++    scopeNamesOf(
++      setsIn(sets.ready ? sets.current : undefined),
++      resourcesIn(index.ready ? index.current : undefined)
++    )
++  );
++
++  const offered = $derived(body === undefined ? "Hole 1" : nextHoleName(body));
++  const named = $derived(block?.hole);
++  const reads = $derived(
++    ruleOf(defaultScopeOf(derivedOutputId === undefined ? block?.scope : linked?.scope), setNames)
++  );
++
++  const write = (ops: readonly unknown[]) => {
++    if (runtime === undefined || ops.length === 0) return;
++    runtime.apply(ops as Parameters<SlideDeckRuntime["apply"]>[0]);
++  };
++
++  const make = () => {
++    if (block === undefined) return;
++    write(promptHoleOps(block, { name: offered }));
++  };
++
++  const rename = (name: string) => {
++    if (block === undefined) return;
++    write(promptHoleOps(block, { name, description: named?.description }));
++  };
++
++  const describe = (description: string) => {
++    if (block === undefined) return;
++    write(promptHoleOps(block, { name: named?.name ?? offered, description }));
++  };
++</script>
++
++<PromptTemplate
++  name={named?.name}
++  description={named?.description ?? ""}
++  {offered}
++  standing={reads}
++  {disabled}
++  onmake={make}
++  onname={rename}
++  ondescription={describe}
++/>
 ~~~~
 
 ### changed · `src/lib/app-views/categories/slide-deck-editor/context/comments.svelte` (+6 / −1)
@@ -14511,7 +14844,7 @@
 +</style>
 ~~~~
 
-### changed · `src/lib/app-views/categories/slide-deck-editor/inspector/prompt-block.svelte` (+74 / −24)
+### changed · `src/lib/app-views/categories/slide-deck-editor/inspector/prompt-block.svelte` (+30 / −24)
 
 ~~~~diff
 @@ -5,10 +5,10 @@
@@ -14527,28 +14860,17 @@
    } from "$authored-components/panel";
    import { Button } from "$vendored-components/button";
    import { Textarea } from "$vendored-components/textarea";
-@@ -23,6 +23,20 @@
+@@ -23,6 +23,9 @@
    import ElementOrder from "$app-views/categories/slide-deck-editor/components/element-order.svelte";
    import ElementPaint from "$app-views/categories/slide-deck-editor/components/element-paint.svelte";
    import PromptSettings from "$app-views/categories/slide-deck-editor/components/prompt-settings.svelte";
-+  import {
-+    defaultScopeOf,
-+    nextHoleName,
-+    offeringOf,
-+    projectResources,
-+    readableScope,
-+    resourceSets,
-+    resourcesIn,
-+    ruleOf,
-+    scopeNamesOf,
-+    setsIn
-+  } from "$app-views/categories/slide-deck-editor/procedures/templating";
++  import { readableScope } from "$app-views/categories/slide-deck-editor/procedures/templating";
 +  import PromptScope from "$app-views/categories/slide-deck-editor/components/prompt-scope.svelte";
-+  import { PromptTemplate } from "$authored-components/prompt-template";
++  import PromptTemplateSection from "$app-views/categories/slide-deck-editor/components/prompt-template-section.svelte";
    import TextSpacing from "$app-views/categories/slide-deck-editor/components/text-spacing.svelte";
    import TextStyle from "$app-views/categories/slide-deck-editor/components/text-style.svelte";
    import {
-@@ -33,6 +47,8 @@
+@@ -33,6 +36,8 @@
      linkPromptBlockOps,
      promptBlockIn,
      promptElementIn,
@@ -14557,7 +14879,7 @@
      syncPromptBlockOps,
      type Id,
      type LinkedPromptBlock
-@@ -49,7 +65,6 @@
+@@ -49,7 +54,6 @@
  
    type Phase = "creating" | "saving" | "generating";
  
@@ -14565,50 +14887,20 @@
    const PHASE: Record<Phase, string> = {
      creating: "Creating Derived Output",
      saving: "Saving Prompt Block",
-@@ -85,6 +100,42 @@
+@@ -85,6 +89,12 @@
      body === undefined || slide === undefined ? 0 : slideIndexOf(body, slide.id) + 1
    );
  
-+  const sets = resourceSets();
-+  const index = projectResources();
-+  const setItems = $derived(setsIn(sets.ready ? sets.current : undefined));
-+  const catalogue = $derived(resourcesIn(index.ready ? index.current : undefined));
-+  const setNames = $derived(scopeNamesOf(setItems, catalogue));
-+  const offering = $derived(offeringOf(setItems, catalogue));
-+
-+  const offered = $derived(body === undefined ? "Hole 1" : nextHoleName(body));
-+  const named = $derived(block?.hole);
-+  const reads = $derived(ruleOf(defaultScopeOf(block?.scope), setNames));
-+
-+  const write = (ops: readonly unknown[]) => {
-+    if (runtime === undefined || ops.length === 0) return;
-+    runtime.apply(ops as Parameters<SlideDeckRuntime["apply"]>[0]);
-+  };
-+
-+  const make = () => {
-+    if (block === undefined) return;
-+    write(promptHoleOps(block, { name: offered }));
-+  };
-+
-+  const rename = (name: string) => {
-+    if (block === undefined) return;
-+    write(promptHoleOps(block, { name, description: named?.description }));
-+  };
-+
-+  const describe = (description: string) => {
-+    if (block === undefined) return;
-+    write(promptHoleOps(block, { name: named?.name ?? offered, description }));
-+  };
-+
 +  const confirmScope = (next: unknown) => {
-+    if (block === undefined) return;
-+    write(promptScopeOps(block, next));
++    if (block === undefined || runtime === undefined) return;
++    const ops = promptScopeOps(block, next);
++    if (ops.length > 0) runtime.apply(ops);
 +  };
 +
    $effect(() => {
      const current = block;
      if (current === undefined || current.id === draftedFor) return;
-@@ -119,9 +170,11 @@
+@@ -119,9 +129,11 @@
      let derivedOutputId: Id<"derivedOutputs"> | undefined;
  
      try {
@@ -14621,7 +14913,7 @@
        });
        derivedOutputId = created._id;
        const seeded = previous.length === 0
-@@ -207,12 +260,11 @@
+@@ -207,12 +219,11 @@
            disabled={phase !== undefined}
          />
  
@@ -14639,25 +14931,22 @@
        </div>
  
        <PanelActions>
-@@ -231,6 +283,17 @@
+@@ -231,6 +242,14 @@
        {/key}
      {/if}
  
-+    <PromptTemplate
-+      name={named?.name}
-+      description={named?.description ?? ""}
-+      {offered}
-+      standing={reads}
-+      disabled={phase !== undefined}
-+      onmake={make}
-+      onname={rename}
-+      ondescription={describe}
-+    />
++    {#key linked?.derivedOutputId ?? "unlinked"}
++      <PromptTemplateSection
++        blockId={block.id}
++        derivedOutputId={linked?.derivedOutputId}
++        disabled={phase !== undefined}
++      />
++    {/key}
 +
      <TextStyle blockId={block.id} whole wrapping />
      <ElementGeometry elementId={element.id} />
      <ElementPaint elementId={element.id} />
-@@ -248,8 +311,7 @@
+@@ -248,8 +267,7 @@
      padding: calc(var(--token-spacing-unit) * 2) calc(var(--token-spacing-unit) * 3);
    }
  
@@ -14667,7 +14956,7 @@
      color: var(--token-ink-muted);
      font-size: var(--token-text-caption);
      line-height: var(--token-text-caption-leading);
-@@ -262,16 +324,4 @@
+@@ -262,16 +280,4 @@
      font-size: var(--token-text-body-sm);
      line-height: var(--token-text-body-sm-leading);
    }
@@ -14831,33 +15120,51 @@
  };
 ~~~~
 
-### changed · `src/lib/app-views/categories/slide-deck-editor/procedures/prompt-blocks.ts` (+17 / −0)
+### changed · `src/lib/app-views/categories/slide-deck-editor/procedures/prompt-blocks.ts` (+28 / −3)
 
 ~~~~diff
-@@ -87,6 +87,23 @@ const setField = (
+@@ -87,14 +87,39 @@ const setField = (
          was: was ?? null
        };
  
+-export const linkPromptBlockOps = (
 +/** What this prompt's hole is called, and what it stands for. */
 +export const promptHoleOps = (
-+  block: PromptBlock,
+   block: PromptBlock,
+-  derivedOutputId: Id<"derivedOutputs">
 +  hole: { name: string; description?: string }
-+): SlideDeckOp[] => {
+ ): SlideDeckOp[] => {
+-  const op = setField(block, "derivedOutputId", derivedOutputId, block.derivedOutputId);
 +  const description = hole.description?.trim() ?? "";
 +  const next = { name: hole.name.trim(), ...(description === "" ? {} : { description }) };
 +  const op = setField(block, "hole", next, block.hole);
 +  return op === undefined ? [] : [op];
 +};
 +
-+/** What this prompt reads, which is also what its hole selects by default. */
++/**
++ * What this prompt reads, while nothing else holds it.
++ *
++ * A block carries a scope only when there is no derived output to carry it: an
++ * unlinked prompt, or one in a template. Once linked, the output is the scope
++ * and this is not written again.
++ */
 +export const promptScopeOps = (block: PromptBlock, scope: unknown): SlideDeckOp[] => {
 +  const op = setField(block, "scope", scope, block.scope);
-+  return op === undefined ? [] : [op];
-+};
+   return op === undefined ? [] : [op];
+ };
+ 
++/** Linking hands the scope to the output, which is why the block gives it up here. */
++export const linkPromptBlockOps = (
++  block: PromptBlock,
++  derivedOutputId: Id<"derivedOutputs">
++): SlideDeckOp[] =>
++  [
++    setField(block, "derivedOutputId", derivedOutputId, block.derivedOutputId),
++    setField(block, "scope", undefined, block.scope)
++  ].filter((op): op is SlideDeckOp => op !== undefined);
 +
- export const linkPromptBlockOps = (
-   block: PromptBlock,
-   derivedOutputId: Id<"derivedOutputs">
+ const responseOf = (output: DerivedOutput): string | undefined =>
+   output.lastResponse?.type === "text" ? output.lastResponse.display : undefined;
 ~~~~
 
 ### changed · `src/lib/app-views/categories/slide-deck-editor/procedures/scene.ts` (+3 / −3)
@@ -15318,6 +15625,57 @@
 +        ...(resourceId === undefined ? [] : [readResourceTemplate({ resourceId })])
 +      )
 +  );
+~~~~
+
+### changed · `src/lib/app-views/categories/slide-deck-editor/procedures/test/unit/prompt-blocks.test.ts` (+31 / −0)
+
+~~~~diff
+@@ -5,7 +5,9 @@ import type { Id } from "$representation/data/types/core/id";
+ import type { DerivedOutput } from "$representation/data/types/semantic/derived-output";
+ import type { SlideDeckBody } from "$representation/data/types/slide-decks/body";
+ import {
++  linkPromptBlockOps,
+   promptBlocksIn,
++  promptScopeOps,
+   syncPromptBlockOps,
+   withPromptElement
+ } from "$app-views/categories/slide-deck-editor/procedures/prompt-blocks";
+@@ -74,6 +76,35 @@ const output = (display: string): DerivedOutput => ({
+ });
+ 
+ describe("slide Prompt Blocks", () => {
++  /**
++   * Linking hands the scope over, rather than copying it.
++   *
++   * Two places holding a scope is two places that can disagree, and only one of
++   * them is what the agent obeys. So the block keeps one until there is an
++   * output to keep it, and gives it up at the moment there is.
++   */
++  it("takes the Derived Output identity and gives up the scope", () => {
++    const before = withPromptElement(body(), "element-one").body;
++    const held = before.slides[0].elements[0].content;
++    if (held.type !== "prompt") throw new Error("expected a prompt element");
++    const scoped = applyOps(
++      before,
++      promptScopeOps(held.block, { include: [{ select: "project" }], exclude: [] })
++    );
++    const block = scoped.slides[0].elements[0].content;
++    if (block.type !== "prompt") throw new Error("expected a prompt element");
++    expect(block.block.scope).toEqual({ include: [{ select: "project" }], exclude: [] });
++
++    const linked = applyOps(
++      scoped,
++      linkPromptBlockOps(block.block, "derivedOutputs:slide" as Id<"derivedOutputs">)
++    );
++    const after = linked.slides[0].elements[0].content;
++    if (after.type !== "prompt") throw new Error("expected a prompt element");
++    expect(after.block.derivedOutputId).toBe("derivedOutputs:slide");
++    expect("scope" in after.block).toBe(false);
++  });
++
+   it("converts only the inner text contract and preserves the element presentation", () => {
+     const before = body();
+     const beforeScene = sceneOf(before, before.slides[0], { width: 1280, height: 720 });
 ~~~~
 
 ### new · `src/lib/app-views/categories/slide-deck-editor/procedures/test/unit/templating.test.ts` (+130 / −0)
@@ -19349,6 +19707,20 @@
 ~~~~
 
 ## Browser evidence
+
+### changed · `test/browser/derived-output-architecture.spec.ts` (+1 / −1)
+
+~~~~diff
+@@ -296,7 +296,7 @@ test("a document Prompt Block resolves a Derived Output from another resource",
+   );
+   await expect(inspector).toBeVisible();
+   await inspector.getByLabel("Prompt").fill("What is the Atlas beacon's calibration frequency?");
+-  await expect(inspector).toContainText("Whole project");
++  await expect(inspector).toContainText("Everything in the project");
+   const generate = inspector.getByRole("button", { name: "Generate" });
+   await expect(generate).toBeEnabled();
+   await generate.click();
+~~~~
 
 ### changed · `test/browser/document-editor.spec.ts` (+10 / −2)
 
@@ -25216,10 +25588,10 @@
 +</style>
 ~~~~
 
-### new · `src/lib/development-views/template-reference/procedures/changes.ts` (+406 / −0)
+### new · `src/lib/development-views/template-reference/procedures/changes.ts` (+410 / −0)
 
 ~~~~diff
-@@ -0,0 +1,406 @@
+@@ -0,0 +1,410 @@
 +import type { Decision, OpenItem, SystematicChange, Verification } from "$development-views/template-reference/types";
 +
 +export const SYSTEMATIC: SystematicChange[] = [
@@ -25394,11 +25766,11 @@
 +  },
 +  {
 +    index: "22",
-+    title: "A prompt's scope reaches the agent that answers it",
++    title: "One thing holds what a prompt reads",
 +    before:
-+      "The scope lived on the block and never left it. The derived output was created without one, so the agent searched the whole project while the panel said otherwise — and once the block was linked, the Scope control was a dropdown with one dead option reading Whole project.",
-+    now: "The scope is sent when the output is created, sent again on every refresh, and changed from one live control that both the unlinked and the linked panel use. A body open as a template is the exception: a scope still naming a hole selects nothing yet and is not sent.",
-+    why: "A control that shows a narrower scope than the search actually uses is worse than no control: it is a promise the system does not keep, and evidence arrives from places the person excluded.",
++      "The scope lived on the block and never left it. The derived output was created without one, so the agent searched the whole project while the panel said otherwise — and once the block was linked, the Scope control was a dropdown with one dead option reading Whole project. Sending it from the client as a second write only moved the problem: a failure, or a second editor, could leave the block showing one scope while the agent obeyed another.",
++    now: "A block carries a scope only while nothing else can — before it has generated, and inside a template. Linking hands the scope to the derived output and drops it from the block, so changing it is one write to one row and every reader reads the same place. Making a template takes the scope back off the output, the same moment and for the same reason as the question.",
++    why: "Two copies of one fact is two things that can disagree, and only one of them is what the agent obeys. A control that shows a narrower scope than the search uses is worse than no control: it is a promise the system does not keep.",
 +    area: "editors"
 +  },
 +  {
@@ -25503,9 +25875,9 @@
 +];
 +
 +export const VERIFICATION: Verification[] = [
-+  { check: "Types", command: "pnpm typecheck", result: "0 errors, 0 warnings across 2,931 files", clean: true },
++  { check: "Types", command: "pnpm typecheck", result: "0 errors, 0 warnings across 2,933 files", clean: true },
 +  { check: "Structure", command: "pnpm lint", result: "56 checks, 56 clean", clean: true },
-+  { check: "Unit", command: "pnpm test", result: "1,083 tests in 120 files, 2 skipped", clean: true },
++  { check: "Unit", command: "pnpm test", result: "1,085 tests in 120 files, 2 skipped", clean: true },
 +  { check: "Category keys", command: "pnpm category-keys -- --check", result: "10 categories and 13 content views in step", clean: true },
 +  {
 +    check: "Browser",
@@ -25613,6 +25985,10 @@
 +    { name: "Mark.hole", note: "{ name, description? } — a run of words somebody templateified, addressed like any other mark" },
 +    { name: "PromptBlock.hole", note: "{ name, description? } — set by Templateify, absent until then" },
 +    { name: "PromptBlock.asks", note: "the prompt's own words, copied on the way into a template" },
++    {
++      name: "PromptBlock.scope",
++      note: "narrowed in meaning: a block holds one only while nothing else can — before it links, and inside a template. The derived output holds it after."
++    },
 +    { name: "TemplateAtom", note: "kind \"template\" — a hole standing in the prose of a template's body" }
 +  ],
 +  removed: [
@@ -25647,9 +26023,9 @@
 +    index: "01",
 +    step: "A prompt is written, told what to read, and the agent obeys it",
 +    gesture: "Convert a block, type the prompt, press Scope to choose its sources",
-+    runs: "One PromptScope control · promptScopeOps on the block · readableScope onto the derived output",
++    runs: "One PromptScope control · the block until it links, the derived output after",
 +    state: "works",
-+    evidence: "document-editor.spec.ts — the Scope control reads what the prompt reads"
++    evidence: "prompt-blocks.test.ts — linking takes the identity and gives up the scope"
 +  },
 +  {
 +    index: "02",
@@ -25849,9 +26225,9 @@
 +    order: "Settled. This is the only thing templating drops, and it drops it where it is harmless."
 +  },
 +  {
-+    title: "A prompt's text is copied into the template when the template is made",
++    title: "A prompt's definition is copied into the template when the template is made",
 +    detail:
-+      "A prompt's words live on the derived output it is linked to, and a template leaves that row behind. So the words are copied onto the block on the way in, and a copy made later gets a derived output of its own built from them. Editing the prompt in the original afterwards does not reach the template — saving the template again does.",
++      "A prompt's words and the scope it reads both live on the derived output it is linked to, and a template leaves that row behind. So both are copied onto the block on the way in, and a copy made later gets a derived output of its own built from them. Editing the prompt in the original afterwards does not reach the template — saving the template again does.",
 +    order: "Correct as long as a template is a copy, which is the whole model. Nothing to do."
 +  },
 +  {
@@ -25863,10 +26239,10 @@
 +];
 ~~~~
 
-### new · `src/lib/development-views/template-reference/procedures/inventory.ts` (+181 / −0)
+### new · `src/lib/development-views/template-reference/procedures/inventory.ts` (+186 / −0)
 
 ~~~~diff
-@@ -0,0 +1,181 @@
+@@ -0,0 +1,186 @@
 +import type { FileRecord } from "$development-views/template-reference/types";
 +
 +/**
@@ -25883,32 +26259,36 @@
 +  {"path":"app/seed/spreadsheets.json","status":"M","area":"evidence","kind":"fixture","current":20,"base":22,"added":0,"deleted":2},
 +  {"path":"app/seed/templates.json","status":"M","area":"evidence","kind":"fixture","current":2295,"base":1021,"added":1524,"deleted":250},
 +  {"path":"app/seed/templateVersions.json","status":"M","area":"evidence","kind":"fixture","current":2695,"base":2199,"added":518,"deleted":22},
-+  {"path":"app/src/lib/app-views/categories/document-editor/components/prompt-scope.svelte","status":"A","area":"editors","kind":"production","current":132,"base":0,"added":132,"deleted":0},
-+  {"path":"app/src/lib/app-views/categories/document-editor/components/prompt-settings.svelte","status":"M","area":"editors","kind":"production","current":459,"base":441,"added":43,"deleted":25},
++  {"path":"app/src/lib/app-views/categories/document-editor/components/prompt-scope.svelte","status":"A","area":"editors","kind":"production","current":154,"base":0,"added":154,"deleted":0},
++  {"path":"app/src/lib/app-views/categories/document-editor/components/prompt-settings.svelte","status":"M","area":"editors","kind":"production","current":453,"base":441,"added":36,"deleted":24},
++  {"path":"app/src/lib/app-views/categories/document-editor/components/prompt-template-section.svelte","status":"A","area":"editors","kind":"production","current":104,"base":0,"added":104,"deleted":0},
 +  {"path":"app/src/lib/app-views/categories/document-editor/content/document.svelte","status":"M","area":"editors","kind":"production","current":954,"base":939,"added":15,"deleted":0},
 +  {"path":"app/src/lib/app-views/categories/document-editor/context/templates.svelte","status":"A","area":"editors","kind":"production","current":616,"base":0,"added":616,"deleted":0},
-+  {"path":"app/src/lib/app-views/categories/document-editor/inspector/prompt-block.svelte","status":"M","area":"editors","kind":"production","current":292,"base":242,"added":73,"deleted":23},
++  {"path":"app/src/lib/app-views/categories/document-editor/inspector/prompt-block.svelte","status":"M","area":"editors","kind":"production","current":247,"base":242,"added":28,"deleted":23},
 +  {"path":"app/src/lib/app-views/categories/document-editor/inspector/text-selection.svelte","status":"M","area":"editors","kind":"production","current":544,"base":494,"added":50,"deleted":0},
 +  {"path":"app/src/lib/app-views/categories/document-editor/procedures/projection.ts","status":"M","area":"editors","kind":"production","current":751,"base":726,"added":33,"deleted":8},
-+  {"path":"app/src/lib/app-views/categories/document-editor/procedures/prompt-blocks.ts","status":"M","area":"editors","kind":"production","current":104,"base":87,"added":17,"deleted":0},
++  {"path":"app/src/lib/app-views/categories/document-editor/procedures/prompt-blocks.ts","status":"M","area":"editors","kind":"production","current":112,"base":87,"added":28,"deleted":3},
 +  {"path":"app/src/lib/app-views/categories/document-editor/procedures/schema.ts","status":"M","area":"editors","kind":"production","current":255,"base":221,"added":37,"deleted":3},
 +  {"path":"app/src/lib/app-views/categories/document-editor/procedures/templating.ts","status":"A","area":"editors","kind":"production","current":436,"base":0,"added":436,"deleted":0},
++  {"path":"app/src/lib/app-views/categories/document-editor/procedures/test/unit/prompt-blocks.test.ts","status":"M","area":"editors","kind":"test","current":155,"base":147,"added":10,"deleted":2},
 +  {"path":"app/src/lib/app-views/categories/document-editor/procedures/test/unit/templating.test.ts","status":"A","area":"editors","kind":"test","current":167,"base":0,"added":167,"deleted":0},
 +  {"path":"app/src/lib/app-views/categories/project-overview/context/contexts.svelte","status":"A","area":"contexts","kind":"production","current":283,"base":0,"added":283,"deleted":0},
 +  {"path":"app/src/lib/app-views/categories/project-overview/procedures/contexts.ts","status":"A","area":"contexts","kind":"production","current":115,"base":0,"added":115,"deleted":0},
 +  {"path":"app/src/lib/app-views/categories/project-overview/procedures/test/unit/contexts.test.ts","status":"A","area":"contexts","kind":"test","current":68,"base":0,"added":68,"deleted":0},
 +  {"path":"app/src/lib/app-views/categories/project-overview/project-overview.md","status":"M","area":"contexts","kind":"documentation","current":622,"base":618,"added":25,"deleted":21},
-+  {"path":"app/src/lib/app-views/categories/slide-deck-editor/components/prompt-scope.svelte","status":"A","area":"editors","kind":"production","current":131,"base":0,"added":131,"deleted":0},
-+  {"path":"app/src/lib/app-views/categories/slide-deck-editor/components/prompt-settings.svelte","status":"M","area":"editors","kind":"production","current":429,"base":411,"added":43,"deleted":25},
++  {"path":"app/src/lib/app-views/categories/slide-deck-editor/components/prompt-scope.svelte","status":"A","area":"editors","kind":"production","current":152,"base":0,"added":152,"deleted":0},
++  {"path":"app/src/lib/app-views/categories/slide-deck-editor/components/prompt-settings.svelte","status":"M","area":"editors","kind":"production","current":423,"base":411,"added":36,"deleted":24},
++  {"path":"app/src/lib/app-views/categories/slide-deck-editor/components/prompt-template-section.svelte","status":"A","area":"editors","kind":"production","current":103,"base":0,"added":103,"deleted":0},
 +  {"path":"app/src/lib/app-views/categories/slide-deck-editor/context/comments.svelte","status":"M","area":"editors","kind":"production","current":175,"base":170,"added":6,"deleted":1},
 +  {"path":"app/src/lib/app-views/categories/slide-deck-editor/context/templates.svelte","status":"M","area":"editors","kind":"production","current":638,"base":8,"added":633,"deleted":3},
-+  {"path":"app/src/lib/app-views/categories/slide-deck-editor/inspector/prompt-block.svelte","status":"M","area":"editors","kind":"production","current":327,"base":277,"added":74,"deleted":24},
++  {"path":"app/src/lib/app-views/categories/slide-deck-editor/inspector/prompt-block.svelte","status":"M","area":"editors","kind":"production","current":283,"base":277,"added":30,"deleted":24},
 +  {"path":"app/src/lib/app-views/categories/slide-deck-editor/inspector/text-selection.svelte","status":"M","area":"editors","kind":"production","current":96,"base":36,"added":61,"deleted":1},
 +  {"path":"app/src/lib/app-views/categories/slide-deck-editor/inspector/threads.svelte","status":"M","area":"editors","kind":"production","current":151,"base":144,"added":8,"deleted":1},
 +  {"path":"app/src/lib/app-views/categories/slide-deck-editor/procedures/ids.ts","status":"M","area":"editors","kind":"production","current":13,"base":12,"added":2,"deleted":1},
-+  {"path":"app/src/lib/app-views/categories/slide-deck-editor/procedures/prompt-blocks.ts","status":"M","area":"editors","kind":"production","current":220,"base":203,"added":17,"deleted":0},
++  {"path":"app/src/lib/app-views/categories/slide-deck-editor/procedures/prompt-blocks.ts","status":"M","area":"editors","kind":"production","current":228,"base":203,"added":28,"deleted":3},
 +  {"path":"app/src/lib/app-views/categories/slide-deck-editor/procedures/scene.ts","status":"M","area":"editors","kind":"production","current":333,"base":333,"added":3,"deleted":3},
 +  {"path":"app/src/lib/app-views/categories/slide-deck-editor/procedures/templating.ts","status":"A","area":"editors","kind":"production","current":429,"base":0,"added":429,"deleted":0},
++  {"path":"app/src/lib/app-views/categories/slide-deck-editor/procedures/test/unit/prompt-blocks.test.ts","status":"M","area":"editors","kind":"test","current":182,"base":151,"added":31,"deleted":0},
 +  {"path":"app/src/lib/app-views/categories/slide-deck-editor/procedures/test/unit/templating.test.ts","status":"A","area":"editors","kind":"test","current":130,"base":0,"added":130,"deleted":0},
 +  {"path":"app/src/lib/app-views/categories/slide-deck-editor/procedures/typing.ts","status":"M","area":"editors","kind":"production","current":206,"base":207,"added":2,"deleted":3},
 +  {"path":"app/src/lib/app-views/categories/slide-deck-editor/slide-deck-editor.md","status":"M","area":"editors","kind":"documentation","current":284,"base":262,"added":23,"deleted":1},
@@ -25960,7 +26340,7 @@
 +  {"path":"app/src/lib/capabilities/templates/api/shared/bodies.ts","status":"M","area":"templates","kind":"production","current":308,"base":462,"added":17,"deleted":171},
 +  {"path":"app/src/lib/capabilities/templates/api/shared/holes.ts","status":"A","area":"templates","kind":"production","current":39,"base":0,"added":39,"deleted":0},
 +  {"path":"app/src/lib/capabilities/templates/api/shared/projection.ts","status":"M","area":"templates","kind":"production","current":266,"base":283,"added":32,"deleted":49},
-+  {"path":"app/src/lib/capabilities/templates/api/shared/prompts.ts","status":"A","area":"templates","kind":"production","current":164,"base":0,"added":164,"deleted":0},
++  {"path":"app/src/lib/capabilities/templates/api/shared/prompts.ts","status":"A","area":"templates","kind":"production","current":178,"base":0,"added":178,"deleted":0},
 +  {"path":"app/src/lib/capabilities/templates/api/shared/scopes.ts","status":"A","area":"templates","kind":"production","current":204,"base":0,"added":204,"deleted":0},
 +  {"path":"app/src/lib/capabilities/templates/api/shared/stages.ts","status":"A","area":"templates","kind":"production","current":143,"base":0,"added":143,"deleted":0},
 +  {"path":"app/src/lib/capabilities/templates/api/shared/template-rows.ts","status":"M","area":"templates","kind":"production","current":37,"base":36,"added":3,"deleted":2},
@@ -25969,7 +26349,7 @@
 +  {"path":"app/src/lib/capabilities/templates/api/update-template/validate-update-template.ts","status":"M","area":"templates","kind":"production","current":65,"base":61,"added":14,"deleted":10},
 +  {"path":"app/src/lib/capabilities/templates/index.remote.ts","status":"M","area":"templates","kind":"production","current":125,"base":73,"added":58,"deleted":6},
 +  {"path":"app/src/lib/capabilities/templates/templates.md","status":"M","area":"templates","kind":"documentation","current":153,"base":91,"added":126,"deleted":64},
-+  {"path":"app/src/lib/capabilities/templates/test/unit/answers.test.ts","status":"A","area":"templates","kind":"test","current":729,"base":0,"added":729,"deleted":0},
++  {"path":"app/src/lib/capabilities/templates/test/unit/answers.test.ts","status":"A","area":"templates","kind":"test","current":792,"base":0,"added":792,"deleted":0},
 +  {"path":"app/src/lib/capabilities/templates/test/unit/stages.test.ts","status":"A","area":"templates","kind":"test","current":458,"base":0,"added":458,"deleted":0},
 +  {"path":"app/src/lib/capabilities/templates/test/unit/templates.test.ts","status":"M","area":"templates","kind":"test","current":1414,"base":1447,"added":89,"deleted":122},
 +  {"path":"app/src/lib/capabilities/templates/types/templates.ts","status":"M","area":"templates","kind":"production","current":252,"base":156,"added":118,"deleted":22},
@@ -25998,7 +26378,7 @@
 +  {"path":"app/src/lib/development-views/template-reference/components/scope-page.svelte","status":"A","area":"reference","kind":"reference","current":468,"base":0,"added":468,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/components/system-page.svelte","status":"A","area":"reference","kind":"reference","current":329,"base":0,"added":329,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/components/walkthrough-page.svelte","status":"A","area":"reference","kind":"reference","current":373,"base":0,"added":373,"deleted":0},
-+  {"path":"app/src/lib/development-views/template-reference/procedures/changes.ts","status":"A","area":"reference","kind":"reference","current":406,"base":0,"added":406,"deleted":0},
++  {"path":"app/src/lib/development-views/template-reference/procedures/changes.ts","status":"A","area":"reference","kind":"reference","current":410,"base":0,"added":410,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/procedures/integration.ts","status":"A","area":"reference","kind":"reference","current":229,"base":0,"added":229,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/procedures/inventory.ts","status":"A","area":"reference","kind":"reference","current":181,"base":0,"added":181,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/procedures/navigation.ts","status":"A","area":"reference","kind":"reference","current":27,"base":0,"added":27,"deleted":0},
@@ -26022,7 +26402,7 @@
 +  {"path":"app/src/lib/representation/data/behavior/templates/deck-of-slide.ts","status":"A","area":"vocabulary","kind":"production","current":18,"base":0,"added":18,"deleted":0},
 +  {"path":"app/src/lib/representation/data/behavior/templates/fresh-ids.ts","status":"A","area":"vocabulary","kind":"production","current":71,"base":0,"added":71,"deleted":0},
 +  {"path":"app/src/lib/representation/data/behavior/templates/portable.ts","status":"A","area":"vocabulary","kind":"production","current":87,"base":0,"added":87,"deleted":0},
-+  {"path":"app/src/lib/representation/data/behavior/templates/prompt-holes.ts","status":"A","area":"vocabulary","kind":"production","current":403,"base":0,"added":403,"deleted":0},
++  {"path":"app/src/lib/representation/data/behavior/templates/prompt-holes.ts","status":"A","area":"vocabulary","kind":"production","current":425,"base":0,"added":425,"deleted":0},
 +  {"path":"app/src/lib/representation/data/behavior/templates/scopes.ts","status":"A","area":"vocabulary","kind":"production","current":216,"base":0,"added":216,"deleted":0},
 +  {"path":"app/src/lib/representation/data/behavior/templates/test/unit/answers.test.ts","status":"A","area":"vocabulary","kind":"test","current":104,"base":0,"added":104,"deleted":0},
 +  {"path":"app/src/lib/representation/data/behavior/templates/test/unit/at-scale.test.ts","status":"A","area":"vocabulary","kind":"test","current":299,"base":0,"added":299,"deleted":0},
@@ -26044,6 +26424,7 @@
 +  {"path":"app/src/routes/app/[project]/reference/templates/rebase/+page.svelte","status":"A","area":"reference","kind":"reference","current":14,"base":0,"added":14,"deleted":0},
 +  {"path":"app/src/routes/app/[project]/reference/templates/scope/+page.svelte","status":"A","area":"reference","kind":"reference","current":14,"base":0,"added":14,"deleted":0},
 +  {"path":"app/src/routes/app/[project]/reference/templates/walkthrough/+page.svelte","status":"A","area":"reference","kind":"reference","current":14,"base":0,"added":14,"deleted":0},
++  {"path":"app/test/browser/derived-output-architecture.spec.ts","status":"M","area":"evidence","kind":"test","current":425,"base":425,"added":1,"deleted":1},
 +  {"path":"app/test/browser/document-editor.spec.ts","status":"M","area":"evidence","kind":"test","current":885,"base":877,"added":10,"deleted":2},
 +  {"path":"app/test/browser/template-features.spec.ts","status":"A","area":"evidence","kind":"test","current":494,"base":0,"added":494,"deleted":0},
 +  {"path":"app/test/browser/template-reference.spec.ts","status":"A","area":"evidence","kind":"test","current":176,"base":0,"added":176,"deleted":0}

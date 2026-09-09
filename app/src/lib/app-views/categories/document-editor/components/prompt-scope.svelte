@@ -23,24 +23,30 @@
     type ScopeSide
   } from "$app-views/categories/document-editor/procedures/templating";
   import { blockIn } from "$app-views/categories/document-editor/procedures/blocks";
+  import type { Id } from "$app-views/categories/document-editor/procedures/prompt-blocks";
+  import { readDerivedOutput } from "$capabilities/derived-output/index.remote";
   import { workspaceState, type DocumentRuntime } from "$model/client/workspace-state";
 
   /**
-   * What a prompt reads, wherever the prompt is.
+   * What a prompt reads, read from whichever thing owns it.
    *
-   * The same control answers for a block that has not generated yet and for one
-   * already linked to its output, so the two can never say different things.
+   * A linked prompt keeps no scope of its own — the derived output is the scope,
+   * and one write changes it. An unlinked one has no output yet, so the block
+   * holds it until there is somewhere better. Either way there is exactly one
+   * of it, so the panel and the agent cannot come to disagree.
    */
   let {
     blockId,
+    derivedOutputId,
     disabled = false,
     description = "The sources it is answered from. If it is a hole, this is also what the hole selects until whoever places the template says otherwise.",
     onconfirm
   }: {
     blockId: string;
+    derivedOutputId?: string;
     disabled?: boolean;
     description?: string;
-    onconfirm: (next: unknown) => void;
+    onconfirm: (next: unknown) => void | Promise<void>;
   } = $props();
 
   const view = workspaceState();
@@ -54,7 +60,22 @@
   const held = $derived(
     runtime?.body === undefined ? undefined : blockIn(runtime.body, blockId)
   );
-  const scope = $derived(held?.type === "prompt" ? held.scope : undefined);
+
+  // One control belongs to one immutable Derived Output identity; the parent keys it.
+  // svelte-ignore state_referenced_locally
+  const outputQuery =
+    derivedOutputId === undefined
+      ? undefined
+      : readDerivedOutput({ derivedOutputId: derivedOutputId as Id<"derivedOutputs"> });
+  const linked = $derived(outputQuery?.ready ? outputQuery.current?.output : undefined);
+
+  const scope = $derived(
+    derivedOutputId === undefined
+      ? held?.type === "prompt"
+        ? held.scope
+        : undefined
+      : linked?.scope
+  );
 
   const sets = resourceSets();
   const index = projectResources();
@@ -76,9 +97,10 @@
     open = true;
   };
 
-  const confirm = () => {
-    onconfirm(narrowed(draft) ?? draft);
+  const confirm = async () => {
     open = false;
+    await onconfirm(narrowed(draft) ?? draft);
+    await outputQuery?.refresh();
   };
 </script>
 

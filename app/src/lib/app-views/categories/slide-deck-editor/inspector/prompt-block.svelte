@@ -23,20 +23,9 @@
   import ElementOrder from "$app-views/categories/slide-deck-editor/components/element-order.svelte";
   import ElementPaint from "$app-views/categories/slide-deck-editor/components/element-paint.svelte";
   import PromptSettings from "$app-views/categories/slide-deck-editor/components/prompt-settings.svelte";
-  import {
-    defaultScopeOf,
-    nextHoleName,
-    offeringOf,
-    projectResources,
-    readableScope,
-    resourceSets,
-    resourcesIn,
-    ruleOf,
-    scopeNamesOf,
-    setsIn
-  } from "$app-views/categories/slide-deck-editor/procedures/templating";
+  import { readableScope } from "$app-views/categories/slide-deck-editor/procedures/templating";
   import PromptScope from "$app-views/categories/slide-deck-editor/components/prompt-scope.svelte";
-  import { PromptTemplate } from "$authored-components/prompt-template";
+  import PromptTemplateSection from "$app-views/categories/slide-deck-editor/components/prompt-template-section.svelte";
   import TextSpacing from "$app-views/categories/slide-deck-editor/components/text-spacing.svelte";
   import TextStyle from "$app-views/categories/slide-deck-editor/components/text-style.svelte";
   import {
@@ -100,40 +89,10 @@
     body === undefined || slide === undefined ? 0 : slideIndexOf(body, slide.id) + 1
   );
 
-  const sets = resourceSets();
-  const index = projectResources();
-  const setItems = $derived(setsIn(sets.ready ? sets.current : undefined));
-  const catalogue = $derived(resourcesIn(index.ready ? index.current : undefined));
-  const setNames = $derived(scopeNamesOf(setItems, catalogue));
-  const offering = $derived(offeringOf(setItems, catalogue));
-
-  const offered = $derived(body === undefined ? "Hole 1" : nextHoleName(body));
-  const named = $derived(block?.hole);
-  const reads = $derived(ruleOf(defaultScopeOf(block?.scope), setNames));
-
-  const write = (ops: readonly unknown[]) => {
-    if (runtime === undefined || ops.length === 0) return;
-    runtime.apply(ops as Parameters<SlideDeckRuntime["apply"]>[0]);
-  };
-
-  const make = () => {
-    if (block === undefined) return;
-    write(promptHoleOps(block, { name: offered }));
-  };
-
-  const rename = (name: string) => {
-    if (block === undefined) return;
-    write(promptHoleOps(block, { name, description: named?.description }));
-  };
-
-  const describe = (description: string) => {
-    if (block === undefined) return;
-    write(promptHoleOps(block, { name: named?.name ?? offered, description }));
-  };
-
   const confirmScope = (next: unknown) => {
-    if (block === undefined) return;
-    write(promptScopeOps(block, next));
+    if (block === undefined || runtime === undefined) return;
+    const ops = promptScopeOps(block, next);
+    if (ops.length > 0) runtime.apply(ops);
   };
 
   $effect(() => {
@@ -283,16 +242,13 @@
       {/key}
     {/if}
 
-    <PromptTemplate
-      name={named?.name}
-      description={named?.description ?? ""}
-      {offered}
-      standing={reads}
-      disabled={phase !== undefined}
-      onmake={make}
-      onname={rename}
-      ondescription={describe}
-    />
+    {#key linked?.derivedOutputId ?? "unlinked"}
+      <PromptTemplateSection
+        blockId={block.id}
+        derivedOutputId={linked?.derivedOutputId}
+        disabled={phase !== undefined}
+      />
+    {/key}
 
     <TextStyle blockId={block.id} whole wrapping />
     <ElementGeometry elementId={element.id} />

@@ -9,7 +9,8 @@ import {
   textHolesOf,
   withAsks,
   withMarkedHoles,
-  withPromptHoles
+  withPromptHoles,
+  withScopes
 } from "$representation/data/behavior/templates/prompt-holes";
 import type { TemplateHole } from "$representation/data/types/templates/template";
 
@@ -21,14 +22,20 @@ type Fields = Record<string, unknown>;
 const isRecord = (value: unknown): value is Fields =>
   value !== null && typeof value === "object" && !Array.isArray(value);
 
+type Definition = {
+  readonly asks: Readonly<Record<string, string>>;
+  readonly scopes: Readonly<Record<string, unknown>>;
+};
+
 /**
- * The question each prompt asks, read from the derived output it is linked to.
+ * What each prompt asks and what it reads, taken from the output it is linked to.
  *
- * The words are the output's, not the block's: the block holds the answer. A
- * template keeps neither the link nor the answer, so this is the one moment the
- * words can be taken, and it has to happen while the link is still there.
+ * Both belong to the output while the link exists — the block holds only the
+ * answer. A template keeps neither the link nor the answer, so this is the one
+ * moment the definition can be taken, and it has to happen while the link is
+ * still there.
  */
-const askedBy = (store: StoreModel, body: unknown): Readonly<Record<string, string>> => {
+const definedBy = (store: StoreModel, body: unknown): Definition => {
   const wanted = new Map<string, string>();
   const walk = (value: unknown): void => {
     if (Array.isArray(value)) {
@@ -44,16 +51,18 @@ const askedBy = (store: StoreModel, body: unknown): Readonly<Record<string, stri
     for (const nested of Object.values(value)) walk(nested);
   };
   walk(body);
-  if (wanted.size === 0) return {};
+  if (wanted.size === 0) return { asks: {}, scopes: {} };
 
-  const words: Record<string, string> = {};
+  const asks: Record<string, string> = {};
+  const scopes: Record<string, unknown> = {};
   for (const row of recordsIn(store, "derivedOutputs")) {
     const id = typeof row._id === "string" ? row._id : undefined;
     const blockId = id === undefined ? undefined : wanted.get(id);
     if (blockId === undefined) continue;
-    if (typeof row.prompt === "string") words[blockId] = row.prompt;
+    if (typeof row.prompt === "string") asks[blockId] = row.prompt;
+    if (isRecord(row.scope)) scopes[blockId] = row.scope;
   }
-  return words;
+  return { asks, scopes };
 };
 
 /**
@@ -63,7 +72,8 @@ const askedBy = (store: StoreModel, body: unknown): Readonly<Record<string, stri
  * way it carries a formula's expression and not its instance. Placing one makes
  * a fresh derived output from the definition and links the copy's block to it,
  * so the copy is a working prompt from the moment it lands rather than words
- * somebody has to type again.
+ * somebody has to type again. The scope moves with the definition rather than
+ * being copied: a linked block keeps none, so there is only ever one of it.
  */
 export const withFreshOutputs = <T>(
   store: StoreModel,
@@ -95,7 +105,9 @@ export const withFreshOutputs = <T>(
       updatedAt: at
     });
     written.push(id);
-    return { ...next, derivedOutputId: id };
+    const { scope: _held, ...unscoped } = next;
+    void _held;
+    return { ...unscoped, derivedOutputId: id };
   };
   return { body: walk(body) as T, written };
 };
@@ -151,8 +163,10 @@ export const templatedBodyOf = <T>(
   candidate: T,
   known: readonly TemplateHole[]
 ): TemplatedBody<T> => {
-  const drafts = promptHolesOf(candidate);
-  const asked = withAsks(candidate, askedBy(store, candidate));
+  const definition = definedBy(store, candidate);
+  const scoped = withScopes(candidate, definition.scopes);
+  const drafts = promptHolesOf(scoped);
+  const asked = withAsks(scoped, definition.asks);
   const portable = portableBodyOf(asked);
   let minted = 0;
   const body = withMarkedHoles(withPromptHoles(portable.body, drafts), () => {

@@ -21,27 +21,15 @@
   import { blockIn } from "$app-views/categories/document-editor/procedures/blocks";
   import {
     linkPromptBlockOps,
-    promptHoleOps,
     promptScopeOps,
     syncPromptBlockOps,
     type Id,
     type LinkedPromptBlock,
     type PromptBlock
   } from "$app-views/categories/document-editor/procedures/prompt-blocks";
-  import {
-    defaultScopeOf,
-    nextHoleName,
-    offeringOf,
-    projectResources,
-    readableScope,
-    resourceSets,
-    resourcesIn,
-    ruleOf,
-    scopeNamesOf,
-    setsIn
-  } from "$app-views/categories/document-editor/procedures/templating";
+  import { readableScope } from "$app-views/categories/document-editor/procedures/templating";
   import PromptScope from "$app-views/categories/document-editor/components/prompt-scope.svelte";
-  import { PromptTemplate } from "$authored-components/prompt-template";
+  import PromptTemplateSection from "$app-views/categories/document-editor/components/prompt-template-section.svelte";
   import { announcePromptOutput } from "$app-views/categories/document-editor/procedures/prompt-output-events";
   import { isInspectorView, workspaceState } from "$model/client/workspace-state";
   import type { DocumentRuntime } from "$model/client/workspace-state";
@@ -155,40 +143,10 @@
     if (isInspectorView(next)) view.inspect(next);
   };
 
-  const sets = resourceSets();
-  const index = projectResources();
-  const setItems = $derived(setsIn(sets.ready ? sets.current : undefined));
-  const catalogue = $derived(resourcesIn(index.ready ? index.current : undefined));
-  const setNames = $derived(scopeNamesOf(setItems, catalogue));
-  const offering = $derived(offeringOf(setItems, catalogue));
-
-  const offered = $derived(body === undefined ? "Hole 1" : nextHoleName(body));
-  const named = $derived(prompt?.hole);
-  const reads = $derived(ruleOf(defaultScopeOf(prompt?.scope), setNames));
-
-  const write = (ops: readonly unknown[]) => {
-    if (runtime === undefined || ops.length === 0) return;
-    runtime.apply(ops as Parameters<DocumentRuntime["apply"]>[0]);
-  };
-
-  const make = () => {
-    if (prompt === undefined) return;
-    write(promptHoleOps(prompt, { name: offered }));
-  };
-
-  const rename = (name: string) => {
-    if (prompt === undefined) return;
-    write(promptHoleOps(prompt, { name, description: named?.description }));
-  };
-
-  const describe = (description: string) => {
-    if (prompt === undefined) return;
-    write(promptHoleOps(prompt, { name: named?.name ?? offered, description }));
-  };
-
   const confirmScope = (next: unknown) => {
-    if (prompt === undefined) return;
-    write(promptScopeOps(prompt, next));
+    if (prompt === undefined || runtime === undefined) return;
+    const ops = promptScopeOps(prompt, next);
+    if (ops.length > 0) runtime.apply(ops);
   };
 </script>
 
@@ -254,16 +212,13 @@
       {/key}
     {/if}
 
-    <PromptTemplate
-      name={named?.name}
-      description={named?.description ?? ""}
-      {offered}
-      standing={reads}
-      disabled={phase !== undefined}
-      onmake={make}
-      onname={rename}
-      ondescription={describe}
-    />
+    {#key linked?.derivedOutputId ?? "unlinked"}
+      <PromptTemplateSection
+        blockId={prompt.id}
+        derivedOutputId={linked?.derivedOutputId}
+        disabled={phase !== undefined}
+      />
+    {/key}
   {/if}
 </Panel>
 

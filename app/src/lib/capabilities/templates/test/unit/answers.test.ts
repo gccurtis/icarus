@@ -462,6 +462,69 @@ describe("a template from a live resource", () => {
     assert.deepEqual(scopeOf(held), { include: [{ select: "project" }], exclude: [] });
   });
 
+  /**
+   * A linked prompt's scope belongs to its output, and the template takes it
+   * from there — the same moment, and for the same reason, as the question.
+   *
+   * The block is given a stale scope here on purpose: it is what an older
+   * revision would have left behind, and the output has to win.
+   */
+  test("takes a linked prompt's scope off the output, not off the block", async () => {
+    model.tables.documents.push(row("documents", "1", { projectId: "p", title: "Winter brief" }));
+    model.tables.derivedOutputs = [
+      row("derivedOutputs", "3", {
+        projectId: "p",
+        prompt: "What broke?",
+        scope: { include: [{ select: "set", setId: "resourceSets:1" }], exclude: [] }
+      })
+    ];
+    model.tables.documentSnapshots.push(
+      row("documentSnapshots", "1", {
+        projectId: "p",
+        resourceId: "documents:1",
+        role: "leader",
+        revision: 2,
+        body: {
+          rows: [
+            {
+              id: "r1",
+              kind: "blocks",
+              blocks: [
+                {
+                  id: "p1",
+                  type: "prompt",
+                  atoms: [{ id: "p1-a", kind: "literal", text: "Sum up" }],
+                  display: "Sum up",
+                  marks: [],
+                  derivedOutputId: "derivedOutputs:3",
+                  scope: { include: [{ select: "kinds", kinds: ["research"] }], exclude: [] },
+                  hole: { name: "winter" },
+                  state: "idle"
+                }
+              ]
+            }
+          ]
+        }
+      })
+    );
+
+    const made = await createTemplateFromResource({
+      target: "document",
+      resourceId: "documents:1",
+      name: "Winter shell"
+    });
+    assert.ok(made.accepted);
+    const held = model.tables.templates[1];
+    assert.deepEqual(held.holes, [
+      {
+        name: "winter",
+        label: "winter",
+        default: { include: [{ select: "set", setId: "resourceSets:1" }], exclude: [] }
+      }
+    ]);
+    assert.deepEqual(scopeOf(held), { include: [{ select: "hole", name: "winter" }], exclude: [] });
+  });
+
   test("keeps whatever the templateified prompt reads as its hole's default", async () => {
     model.tables.documents.push(row("documents", "1", { projectId: "p", title: "Winter brief" }));
     model.tables.documentSnapshots.push(
