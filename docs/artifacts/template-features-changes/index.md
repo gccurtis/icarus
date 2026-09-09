@@ -1,6 +1,6 @@
 # Template Features Change Set
 
-144 files under app/ against 1166f8e, the commit this branch sits on — 86 created, 58 changed, 0 deleted — +17706 / −1335 lines, measured from committed and working-tree changes when this page was built.
+156 files under app/ against 1166f8e, the commit this branch sits on — 94 created, 62 changed, 0 deleted — +19440 / −1335 lines, measured from committed and working-tree changes when this page was built.
 
 | Status | File | + | − | Systematic change |
 | --- | --- | --- | --- | --- |
@@ -12,27 +12,31 @@
 | changed | `seed/templates.json` | +1524 | −250 | The seeded one-slide template |
 | changed | `seed/templateVersions.json` | +518 | −22 | The seeded one-slide template |
 | changed | `src/lib/app-views/categories/document-editor/content/document.svelte` | +15 | −0 | The document editor's Templates panel |
-| new | `src/lib/app-views/categories/document-editor/context/templates.svelte` | +683 | −0 | The document editor's Templates panel |
+| new | `src/lib/app-views/categories/document-editor/context/templates.svelte` | +688 | −0 | The document editor's Templates panel |
+| changed | `src/lib/app-views/categories/document-editor/inspector/prompt-block.svelte` | +104 | −0 | The document editor's Templates panel |
 | changed | `src/lib/app-views/categories/document-editor/procedures/projection.ts` | +33 | −8 | The document editor's Templates panel |
+| changed | `src/lib/app-views/categories/document-editor/procedures/prompt-blocks.ts` | +17 | −0 | The document editor's Templates panel |
 | changed | `src/lib/app-views/categories/document-editor/procedures/schema.ts` | +37 | −3 | The document editor's Templates panel |
-| new | `src/lib/app-views/categories/document-editor/procedures/templating.ts` | +394 | −0 | The document editor's Templates panel |
+| new | `src/lib/app-views/categories/document-editor/procedures/templating.ts` | +402 | −0 | The document editor's Templates panel |
 | new | `src/lib/app-views/categories/document-editor/procedures/test/unit/templating.test.ts` | +167 | −0 | The document editor's Templates panel |
 | new | `src/lib/app-views/categories/project-overview/context/contexts.svelte` | +283 | −0 | Project Overview's Contexts panel |
 | new | `src/lib/app-views/categories/project-overview/procedures/contexts.ts` | +115 | −0 | Project Overview's Contexts panel |
 | new | `src/lib/app-views/categories/project-overview/procedures/test/unit/contexts.test.ts` | +68 | −0 | Project Overview's Contexts panel |
 | changed | `src/lib/app-views/categories/project-overview/project-overview.md` | +25 | −21 | Project Overview's Contexts panel |
 | changed | `src/lib/app-views/categories/slide-deck-editor/context/comments.svelte` | +6 | −1 | The slide-deck editor's Templates panel |
-| changed | `src/lib/app-views/categories/slide-deck-editor/context/templates.svelte` | +700 | −3 | The slide-deck editor's Templates panel |
+| changed | `src/lib/app-views/categories/slide-deck-editor/context/templates.svelte` | +705 | −3 | The slide-deck editor's Templates panel |
+| changed | `src/lib/app-views/categories/slide-deck-editor/inspector/prompt-block.svelte` | +105 | −0 | The slide-deck editor's Templates panel |
 | changed | `src/lib/app-views/categories/slide-deck-editor/inspector/threads.svelte` | +8 | −1 | The slide-deck editor's Templates panel |
+| changed | `src/lib/app-views/categories/slide-deck-editor/procedures/prompt-blocks.ts` | +17 | −0 | The slide-deck editor's Templates panel |
 | changed | `src/lib/app-views/categories/slide-deck-editor/procedures/scene.ts` | +3 | −3 | The slide-deck editor's Templates panel |
-| new | `src/lib/app-views/categories/slide-deck-editor/procedures/templating.ts` | +418 | −0 | The slide-deck editor's Templates panel |
+| new | `src/lib/app-views/categories/slide-deck-editor/procedures/templating.ts` | +426 | −0 | The slide-deck editor's Templates panel |
 | new | `src/lib/app-views/categories/slide-deck-editor/procedures/test/unit/templating.test.ts` | +130 | −0 | The slide-deck editor's Templates panel |
 | changed | `src/lib/app-views/categories/slide-deck-editor/procedures/typing.ts` | +2 | −3 | The slide-deck editor's Templates panel |
 | changed | `src/lib/app-views/categories/slide-deck-editor/slide-deck-editor.md` | +23 | −1 | The slide-deck editor's Templates panel |
 | changed | `src/lib/app-views/categories/templates/content/editor.svelte` | +48 | −17 | The template library, editor door, and inspector |
 | changed | `src/lib/app-views/categories/templates/content/library.svelte` | +33 | −21 | The template library, editor door, and inspector |
-| changed | `src/lib/app-views/categories/templates/inspector/template.svelte` | +347 | −119 | The template library, editor door, and inspector |
-| changed | `src/lib/app-views/categories/templates/procedures/library.svelte.ts` | +177 | −45 | The template library, editor door, and inspector |
+| changed | `src/lib/app-views/categories/templates/inspector/template.svelte` | +349 | −119 | The template library, editor door, and inspector |
+| changed | `src/lib/app-views/categories/templates/procedures/library.svelte.ts` | +181 | −45 | The template library, editor door, and inspector |
 | changed | `src/lib/app-views/categories/templates/procedures/test/unit/library.test.ts` | +16 | −0 | The template library, editor door, and inspector |
 | changed | `src/lib/app-views/categories/templates/templates.md` | +46 | −75 | The template library, editor door, and inspector |
 | changed | `src/lib/capabilities/comments/api/start-thread/start-thread.ts` | +8 | −0 | What the other capabilities changed |
@@ -71,23 +75,26 @@
 | changed | `src/lib/capabilities/templates/api/shared/bodies.ts` | +17 | −171 | The templates capability |
 | new | `src/lib/capabilities/templates/api/shared/holes.ts` | +39 | −0 | The templates capability |
 | changed | `src/lib/capabilities/templates/api/shared/projection.ts` | +32 | −49 | The templates capability |
+| new | `src/lib/capabilities/templates/api/shared/prompts.ts` | +81 | −0 | The templates capability |
 | new | `src/lib/capabilities/templates/api/shared/scopes.ts` | +204 | −0 | The templates capability |
 | new | `src/lib/capabilities/templates/api/shared/stages.ts` | +141 | −0 | The templates capability |
 | changed | `src/lib/capabilities/templates/api/shared/template-rows.ts` | +3 | −2 | The templates capability |
-| changed | `src/lib/capabilities/templates/api/shared/validation.ts` | +227 | −51 | The templates capability |
+| changed | `src/lib/capabilities/templates/api/shared/validation.ts` | +241 | −51 | The templates capability |
 | changed | `src/lib/capabilities/templates/api/update-template/update-template.ts` | +81 | −26 | The templates capability |
 | changed | `src/lib/capabilities/templates/api/update-template/validate-update-template.ts` | +14 | −10 | The templates capability |
 | changed | `src/lib/capabilities/templates/index.remote.ts` | +58 | −6 | The templates capability |
 | changed | `src/lib/capabilities/templates/templates.md` | +126 | −64 | The templates capability |
-| new | `src/lib/capabilities/templates/test/unit/answers.test.ts` | +541 | −0 | The templates capability |
+| new | `src/lib/capabilities/templates/test/unit/answers.test.ts` | +589 | −0 | The templates capability |
 | new | `src/lib/capabilities/templates/test/unit/stages.test.ts` | +377 | −0 | The templates capability |
 | changed | `src/lib/capabilities/templates/test/unit/templates.test.ts` | +89 | −122 | The templates capability |
 | changed | `src/lib/capabilities/templates/types/templates.ts` | +118 | −22 | The templates capability |
 | changed | `src/lib/components/authored/panel/panel-section.svelte` | +13 | −1 | The reference pages, and the one shared component they moved |
+| new | `src/lib/components/authored/prompt-template/index.ts` | +8 | −0 | The reference pages, and the one shared component they moved |
+| new | `src/lib/components/authored/prompt-template/prompt-template.svelte` | +143 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/components/authored/scope-builder/index.ts` | +9 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/components/authored/scope-builder/scope-builder.svelte` | +455 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/components/authored/template-answers/index.ts` | +8 | −0 | The reference pages, and the one shared component they moved |
-| new | `src/lib/components/authored/template-answers/template-answers.svelte` | +185 | −0 | The reference pages, and the one shared component they moved |
+| new | `src/lib/components/authored/template-answers/template-answers.svelte` | +372 | −0 | The reference pages, and the one shared component they moved |
 | changed | `src/lib/development-views/demo/components/demo-index.svelte` | +3 | −3 | The reference pages, and the one shared component they moved |
 | new | `src/lib/development-views/template-reference/components/changes-page.svelte` | +288 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/development-views/template-reference/components/diagram-binding.svelte` | +168 | −0 | The reference pages, and the one shared component they moved |
@@ -99,19 +106,21 @@
 | new | `src/lib/development-views/template-reference/components/diagram-scope.svelte` | +87 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/development-views/template-reference/components/diagram-verbs.svelte` | +79 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/development-views/template-reference/components/file-ledger.svelte` | +138 | −0 | The reference pages, and the one shared component they moved |
-| new | `src/lib/development-views/template-reference/components/integration-page.svelte` | +278 | −0 | The reference pages, and the one shared component they moved |
+| new | `src/lib/development-views/template-reference/components/integration-page.svelte` | +241 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/development-views/template-reference/components/rebase-page.svelte` | +305 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/development-views/template-reference/components/reference-header.svelte` | +166 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/development-views/template-reference/components/reference.css` | +305 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/development-views/template-reference/components/scope-page.svelte` | +468 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/development-views/template-reference/components/system-page.svelte` | +329 | −0 | The reference pages, and the one shared component they moved |
-| new | `src/lib/development-views/template-reference/procedures/changes.ts` | +312 | −0 | The reference pages, and the one shared component they moved |
-| new | `src/lib/development-views/template-reference/procedures/integration.ts` | +192 | −0 | The reference pages, and the one shared component they moved |
-| new | `src/lib/development-views/template-reference/procedures/inventory.ts` | +154 | −0 | The reference pages, and the one shared component they moved |
-| new | `src/lib/development-views/template-reference/procedures/navigation.ts` | +25 | −0 | The reference pages, and the one shared component they moved |
+| new | `src/lib/development-views/template-reference/components/walkthrough-page.svelte` | +341 | −0 | The reference pages, and the one shared component they moved |
+| new | `src/lib/development-views/template-reference/procedures/changes.ts` | +330 | −0 | The reference pages, and the one shared component they moved |
+| new | `src/lib/development-views/template-reference/procedures/integration.ts` | +202 | −0 | The reference pages, and the one shared component they moved |
+| new | `src/lib/development-views/template-reference/procedures/inventory.ts` | +166 | −0 | The reference pages, and the one shared component they moved |
+| new | `src/lib/development-views/template-reference/procedures/navigation.ts` | +27 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/development-views/template-reference/procedures/rebase.ts` | +157 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/development-views/template-reference/procedures/scope.ts` | +521 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/development-views/template-reference/procedures/system.ts` | +223 | −0 | The reference pages, and the one shared component they moved |
+| new | `src/lib/development-views/template-reference/procedures/walkthrough.ts` | +120 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/development-views/template-reference/template-reference.svelte` | +5 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/lib/development-views/template-reference/types.ts` | +168 | −0 | The reference pages, and the one shared component they moved |
 | changed | `src/lib/model/client/workspace-state/methods/open.ts` | +10 | −0 | The vocabulary: one table, five functions, one field |
@@ -128,14 +137,16 @@
 | new | `src/lib/representation/data/behavior/templates/deck-of-slide.ts` | +18 | −0 | The vocabulary: one table, five functions, one field |
 | new | `src/lib/representation/data/behavior/templates/fresh-ids.ts` | +71 | −0 | The vocabulary: one table, five functions, one field |
 | new | `src/lib/representation/data/behavior/templates/portable.ts` | +103 | −0 | The vocabulary: one table, five functions, one field |
+| new | `src/lib/representation/data/behavior/templates/prompt-holes.ts` | +214 | −0 | The vocabulary: one table, five functions, one field |
 | new | `src/lib/representation/data/behavior/templates/scopes.ts` | +216 | −0 | The vocabulary: one table, five functions, one field |
 | new | `src/lib/representation/data/behavior/templates/test/unit/answers.test.ts` | +104 | −0 | The vocabulary: one table, five functions, one field |
 | new | `src/lib/representation/data/behavior/templates/test/unit/deck-of-slide.test.ts` | +36 | −0 | The vocabulary: one table, five functions, one field |
 | new | `src/lib/representation/data/behavior/templates/test/unit/fresh-ids.test.ts` | +81 | −0 | The vocabulary: one table, five functions, one field |
 | new | `src/lib/representation/data/behavior/templates/test/unit/portable.test.ts` | +97 | −0 | The vocabulary: one table, five functions, one field |
+| new | `src/lib/representation/data/behavior/templates/test/unit/prompt-holes.test.ts` | +137 | −0 | The vocabulary: one table, five functions, one field |
 | new | `src/lib/representation/data/behavior/templates/test/unit/scopes.test.ts` | +109 | −0 | The vocabulary: one table, five functions, one field |
 | changed | `src/lib/representation/data/behavior/workspace/opening.ts` | +5 | −1 | The vocabulary: one table, five functions, one field |
-| changed | `src/lib/representation/data/types/content/content-block.ts` | +16 | −1 | The vocabulary: one table, five functions, one field |
+| changed | `src/lib/representation/data/types/content/content-block.ts` | +31 | −1 | The vocabulary: one table, five functions, one field |
 | changed | `src/lib/representation/data/types/core/resource-set.ts` | +16 | −24 | The vocabulary: one table, five functions, one field |
 | changed | `src/lib/representation/data/types/templates/template.ts` | +12 | −27 | The vocabulary: one table, five functions, one field |
 | changed | `src/lib/representation/data/types/workspace/tab.ts` | +1 | −0 | The vocabulary: one table, five functions, one field |
@@ -145,9 +156,10 @@
 | new | `src/routes/app/[project]/reference/templates/integration/+page.svelte` | +14 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/routes/app/[project]/reference/templates/rebase/+page.svelte` | +14 | −0 | The reference pages, and the one shared component they moved |
 | new | `src/routes/app/[project]/reference/templates/scope/+page.svelte` | +14 | −0 | The reference pages, and the one shared component they moved |
+| new | `src/routes/app/[project]/reference/templates/walkthrough/+page.svelte` | +14 | −0 | The reference pages, and the one shared component they moved |
 | changed | `test/browser/document-editor.spec.ts` | +8 | −1 | Browser evidence |
-| new | `test/browser/template-features.spec.ts` | +318 | −0 | Browser evidence |
-| new | `test/browser/template-reference.spec.ts` | +151 | −0 | Browser evidence |
+| new | `test/browser/template-features.spec.ts` | +422 | −0 | Browser evidence |
+| new | `test/browser/template-reference.spec.ts` | +179 | −0 | Browser evidence |
 
 ## Outside app/
 
@@ -155,8 +167,8 @@
 | --- | --- | --- | --- |
 | changed | `docs/artifacts/template-dictionary/index.html` | +297 | −0 |
 | changed | `docs/artifacts/template-dictionary/index.md` | +139 | −0 |
-| changed | `docs/artifacts/template-features-changes/index.html` | +1071 | −0 |
-| changed | `docs/artifacts/template-features-changes/index.md` | +21922 | −0 |
+| changed | `docs/artifacts/template-features-changes/index.html` | +1101 | −0 |
+| changed | `docs/artifacts/template-features-changes/index.md` | +23070 | −0 |
 | changed | `docs/artifacts/template-stage-flow/index.html` | +393 | −0 |
 | changed | `docs/artifacts/template-stage-flow/index.md` | +140 | −0 |
 | changed | `docs/artifacts/template-system-concepts/index.html` | +627 | −0 |
@@ -165,7 +177,7 @@
 | changed | `docs/reference/template-features/02-model.html` | +209 | −0 |
 | changed | `docs/reference/template-features/03-capabilities.html` | +235 | −0 |
 | changed | `docs/reference/template-features/04-panels.html` | +208 | −0 |
-| changed | `docs/reference/template-features/05-changes.html` | +1160 | −0 |
+| changed | `docs/reference/template-features/05-changes.html` | +1190 | −0 |
 | changed | `docs/reference/template-features/build-diffs.mjs` | +243 | −0 |
 | changed | `docs/reference/template-features/index.html` | +167 | −0 |
 | changed | `docs/reference/template-features/reference.css` | +389 | −0 |
@@ -1345,6 +1357,226 @@
 +};
 ~~~~
 
+### new · `src/lib/representation/data/behavior/templates/prompt-holes.ts` (+214 / −0)
+
+~~~~diff
+@@ -0,0 +1,214 @@
++import type { TemplatedResourceSet } from "$representation/data/types/core/resource-set";
++import type { TemplateBody, TemplateHole } from "$representation/data/types/templates/template";
++
++/**
++ * Every prompt is a hole.
++ *
++ * A prompt asks the project a question, and a template is a question asked
++ * again somewhere else — so the thing a template has to be told is what each of
++ * its prompts should read this time. There is no declaring and no opting in:
++ * making a template turns every prompt it holds into one hole, named by what
++ * the author called it and otherwise by where it sits.
++ *
++ * Two prompts may share a name, and then they share a hole and one answer
++ * fills both. Nothing enforces it either way, because a name is the whole of a
++ * hole's identity and the resolver already substitutes by name.
++ */
++
++type Fields = Record<string, unknown>;
++
++const isRecord = (value: unknown): value is Fields =>
++  value !== null && typeof value === "object" && !Array.isArray(value);
++
++const isPrompt = (value: unknown): value is Fields =>
++  isRecord(value) && value.type === "prompt" && typeof value.id === "string";
++
++/** Every prompt in the body, in the order it is written. */
++const promptsIn = (body: unknown): readonly Fields[] => {
++  const found: Fields[] = [];
++  const walk = (value: unknown): void => {
++    if (Array.isArray(value)) {
++      for (const entry of value) walk(entry);
++      return;
++    }
++    if (!isRecord(value)) return;
++    if (isPrompt(value)) found.push(value);
++    for (const nested of Object.values(value)) walk(nested);
++  };
++  walk(body);
++  return found;
++};
++
++/** What a prompt's hole is called before anybody names it. */
++export const offeredHoleName = (index: number): string => `Prompt ${index + 1}`;
++
++/**
++ * The name a prompt's hole carries: what it was called, else where it sits.
++ *
++ * Ordinal rather than stable, because it is only ever a suggestion — the moment
++ * somebody types a name it stops mattering where the prompt moved to.
++ */
++export const offeredNameIn = (body: unknown, blockId: string): string => {
++  const at = promptsIn(body).findIndex((prompt) => prompt.id === blockId);
++  return offeredHoleName(at < 0 ? 0 : at);
++};
++
++export const holeNameIn = (body: unknown, blockId: string): string => {
++  const prompts = promptsIn(body);
++  const at = prompts.findIndex((prompt) => prompt.id === blockId);
++  if (at < 0) return offeredHoleName(0);
++  const held = prompts[at].hole;
++  const named = isRecord(held) && typeof held.name === "string" ? held.name.trim() : "";
++  return named === "" ? offeredHoleName(at) : named;
++};
++
++/**
++ * What a hole selects when nobody says otherwise.
++ *
++ * A scope anybody could have meant — the whole project, or whole kinds of
++ * thing — carries over as the default, so a template made without a thought
++ * still places without one. A prompt that was never scoped counts as the whole
++ * project, because that is what it reads and what its inspector says it reads.
++ * A scope naming particular sets or particular resources does not carry over:
++ * it was true of the project it was written in and saying it again somewhere
++ * else would be a guess, so the hole arrives empty and has to be answered.
++ */
++export const WHOLE_PROJECT: TemplatedResourceSet = { include: [{ select: "project" }], exclude: [] };
++
++export const defaultScopeOf = (scope: unknown): TemplatedResourceSet | undefined => {
++  if (!isRecord(scope)) return WHOLE_PROJECT;
++  const { include, exclude } = scope;
++  if (!Array.isArray(include) || include.length === 0) return WHOLE_PROJECT;
++  if (Array.isArray(exclude) && exclude.length > 0) return undefined;
++  const general = include.every(
++    (term) => isRecord(term) && (term.select === "project" || term.select === "kinds")
++  );
++  if (!general) return undefined;
++  const terms = include.map((term) => ({ ...(term as object) })) as unknown as TemplatedResourceSet["include"];
++  return { include: terms, exclude: [] };
++};
++
++/**
++ * The hole a prompt already answers to, when it is already asking for one.
++ *
++ * A working copy is full of prompts whose scopes are hole terms, because
++ * inserting a template into one keeps the terms rather than resolving them.
++ * Saving that copy must not rename them: the name in the term is the name
++ * somebody already wrote, and the answers given elsewhere are keyed to it.
++ */
++const standingHoleName = (scope: unknown): string | undefined => {
++  if (!isRecord(scope) || !Array.isArray(scope.include)) return undefined;
++  for (const term of scope.include) {
++    if (isRecord(term) && term.select === "hole" && typeof term.name === "string") return term.name;
++  }
++  return undefined;
++};
++
++export type PromptHoleDraft = {
++  readonly blockId: string;
++  readonly hole: TemplateHole;
++};
++
++/**
++ * One hole per prompt, read off the body before it is made portable.
++ *
++ * Before, because portability drops the scope terms that name particular things
++ * — and whether those were there is exactly what decides if the hole gets a
++ * default.
++ */
++export const promptHolesOf = (body: unknown): readonly PromptHoleDraft[] =>
++  promptsIn(body).map((prompt, index) => {
++    const held = isRecord(prompt.hole) ? prompt.hole : {};
++    const named = typeof held.name === "string" ? held.name.trim() : "";
++    const name = named === "" ? (standingHoleName(prompt.scope) ?? offeredHoleName(index)) : named;
++    const description = typeof held.description === "string" ? held.description.trim() : "";
++    const fallback = defaultScopeOf(prompt.scope);
++    return {
++      blockId: prompt.id as string,
++      hole: {
++        name,
++        label: name,
++        ...(description === "" ? {} : { description }),
++        ...(fallback === undefined ? {} : { default: fallback })
++      }
++    };
++  });
++
++/**
++ * The body with each prompt's question written onto the prompt itself.
++ *
++ * A prompt reads its words from the derived output it is linked to, and a
++ * template leaves that output behind — so the words are copied onto the block
++ * on the way in, or the copy a template makes would ask nothing.
++ */
++export const withAsks = <T>(body: T, asked: Readonly<Record<string, string>>): T => {
++  const walk = (value: unknown): unknown => {
++    if (Array.isArray(value)) return value.map(walk);
++    if (!isRecord(value)) return value;
++    const next: Fields = {};
++    for (const [field, nested] of Object.entries(value)) next[field] = walk(nested);
++    if (!isPrompt(value)) return next;
++    const words = asked[value.id as string]?.trim() ?? "";
++    if (words === "") return next;
++    return { ...next, asks: words };
++  };
++  return walk(body) as T;
++};
++
++/**
++ * The holes a template keeps, with what the author already settled left alone.
++ *
++ * A prompt owns its hole's name and what it stands for, because that is where
++ * they are written. A default may have been built in the Holes band since, and
++ * that is not something a save should quietly undo.
++ */
++export const mergedPromptHoles = (
++  known: readonly TemplateHole[],
++  drafts: readonly PromptHoleDraft[]
++): readonly TemplateHole[] => {
++  const held = new Map(known.map((hole) => [hole.name, hole]));
++  const fresh = drafts.map((draft) => {
++    const settled = held.get(draft.hole.name);
++    if (settled === undefined) return draft.hole;
++    const { default: fallback, ...rest } = draft.hole;
++    return {
++      ...rest,
++      ...(settled.default === undefined ? (fallback === undefined ? {} : { default: fallback }) : { default: settled.default })
++    };
++  });
++  const taken = new Set(fresh.map((hole) => hole.name));
++  return [...fresh, ...known.filter((hole) => !taken.has(hole.name))];
++};
++
++/** The body with every prompt's scope replaced by the hole term that stands for it. */
++export const withPromptHoles = <T>(body: T, drafts: readonly PromptHoleDraft[]): T => {
++  const names = new Map(drafts.map((draft) => [draft.blockId, draft.hole.name]));
++  const walk = (value: unknown): unknown => {
++    if (Array.isArray(value)) return value.map(walk);
++    if (!isRecord(value)) return value;
++    const next: Fields = {};
++    for (const [field, nested] of Object.entries(value)) next[field] = walk(nested);
++    if (!isPrompt(value)) return next;
++    const name = names.get(value.id as string);
++    if (name === undefined) return next;
++    return { ...next, scope: { include: [{ select: "hole", name }], exclude: [] } };
++  };
++  return walk(body) as T;
++};
++
++/** What each hole's prompt asks, so placing a template can show the question. */
++export const promptWordsIn = (body: TemplateBody): Readonly<Record<string, string>> => {
++  const words: Record<string, string> = {};
++  for (const prompt of promptsIn(body)) {
++    const asks = typeof prompt.asks === "string" ? prompt.asks.trim() : "";
++    if (asks === "") continue;
++    const scope = prompt.scope;
++    if (!isRecord(scope) || !Array.isArray(scope.include)) continue;
++    for (const term of scope.include) {
++      if (isRecord(term) && term.select === "hole" && typeof term.name === "string") {
++        words[term.name] ??= asks;
++      }
++    }
++  }
++  return words;
++};
+~~~~
+
 ### new · `src/lib/representation/data/behavior/templates/scopes.ts` (+216 / −0)
 
 ~~~~diff
@@ -1909,6 +2141,149 @@
 +});
 ~~~~
 
+### new · `src/lib/representation/data/behavior/templates/test/unit/prompt-holes.test.ts` (+137 / −0)
+
+~~~~diff
+@@ -0,0 +1,137 @@
++import { describe, expect, it } from "vitest";
++
++import {
++  defaultScopeOf,
++  holeNameIn,
++  offeredHoleName,
++  offeredNameIn,
++  promptHolesOf,
++  promptWordsIn,
++  withAsks,
++  withPromptHoles,
++  mergedPromptHoles
++} from "$representation/data/behavior/templates/prompt-holes";
++import type { TemplateBody, TemplateHole } from "$representation/data/types/templates/template";
++
++const prompt = (id: string, extra: Record<string, unknown> = {}) => ({
++  id,
++  type: "prompt",
++  atoms: [{ id: `${id}-a`, kind: "literal", text: "Sum up" }],
++  display: "Sum up",
++  marks: [],
++  state: "idle",
++  ...extra
++});
++
++const body = (blocks: readonly unknown[]) => ({
++  resource: "document",
++  rows: [{ id: "r1", kind: "blocks", blocks }]
++});
++
++describe("what a prompt is called", () => {
++  it("is offered by where it sits until somebody names it", () => {
++    expect(offeredHoleName(0)).toBe("Prompt 1");
++    expect(offeredHoleName(2)).toBe("Prompt 3");
++    const held = body([prompt("a"), prompt("b")]);
++    expect(offeredNameIn(held, "b")).toBe("Prompt 2");
++    expect(holeNameIn(held, "b")).toBe("Prompt 2");
++  });
++
++  it("is what was typed once anything was", () => {
++    const held = body([prompt("a"), prompt("b", { hole: { name: "evidence" } })]);
++    expect(holeNameIn(held, "b")).toBe("evidence");
++  });
++
++  it("keeps the name a standing hole term already carries", () => {
++    const held = body([
++      prompt("a", { scope: { include: [{ select: "hole", name: "source_material" }], exclude: [] } })
++    ]);
++    expect(promptHolesOf(held)[0].hole.name).toBe("source_material");
++  });
++});
++
++describe("what a hole selects when nobody says otherwise", () => {
++  it("keeps a scope anybody could have meant", () => {
++    expect(defaultScopeOf({ include: [{ select: "project" }], exclude: [] })).toEqual({
++      include: [{ select: "project" }],
++      exclude: []
++    });
++    expect(defaultScopeOf({ include: [{ select: "kinds", kinds: ["document"] }], exclude: [] })).toEqual({
++      include: [{ select: "kinds", kinds: ["document"] }],
++      exclude: []
++    });
++  });
++
++  it("keeps nothing that was true only of the project it was written in", () => {
++    expect(defaultScopeOf({ include: [{ select: "set", setId: "resourceSets:1" }], exclude: [] })).toBeUndefined();
++    expect(
++      defaultScopeOf({ include: [{ select: "resources", refs: [] }], exclude: [] })
++    ).toBeUndefined();
++    expect(
++      defaultScopeOf({ include: [{ select: "project" }], exclude: [{ select: "kinds", kinds: ["finding"] }] })
++    ).toBeUndefined();
++  });
++
++  it("counts a prompt that was never scoped as the whole project", () => {
++    const whole = { include: [{ select: "project" }], exclude: [] };
++    expect(defaultScopeOf(undefined)).toEqual(whole);
++    expect(defaultScopeOf({ include: [], exclude: [] })).toEqual(whole);
++  });
++});
++
++describe("a body as a template holds it", () => {
++  const held = body([
++    prompt("a", { scope: { include: [{ select: "project" }], exclude: [] } }),
++    prompt("b", { hole: { name: "evidence", description: "What happened" }, scope: { include: [{ select: "kinds", kinds: ["finding"] }], exclude: [] } })
++  ]);
++
++  it("gives every prompt one hole, in the order they are written", () => {
++    const drafts = promptHolesOf(held);
++    expect(drafts.map((draft) => draft.hole.name)).toEqual(["Prompt 1", "evidence"]);
++    expect(drafts[0].hole.default).toEqual({ include: [{ select: "project" }], exclude: [] });
++    expect(drafts[1].hole.description).toBe("What happened");
++  });
++
++  it("replaces each prompt's scope with the hole that stands for it", () => {
++    const templated = withPromptHoles(held, promptHolesOf(held)) as ReturnType<typeof body>;
++    const blocks = templated.rows[0].blocks as { scope: unknown }[];
++    expect(blocks[0].scope).toEqual({ include: [{ select: "hole", name: "Prompt 1" }], exclude: [] });
++    expect(blocks[1].scope).toEqual({ include: [{ select: "hole", name: "evidence" }], exclude: [] });
++  });
++
++  it("writes each prompt's question onto the prompt, and reads it back by hole", () => {
++    const asked = withAsks(held, { a: "  What broke?  ", b: "" });
++    const templated = withPromptHoles(asked, promptHolesOf(asked)) as unknown as TemplateBody;
++    expect(promptWordsIn(templated)).toEqual({ "Prompt 1": "What broke?" });
++  });
++});
++
++describe("saving a template again", () => {
++  it("takes the name and the words from the prompt, and leaves a settled default alone", () => {
++    const known: TemplateHole[] = [
++      {
++        name: "evidence",
++        label: "evidence",
++        description: "Old words",
++        default: { include: [{ select: "kinds", kinds: ["finding"] }], exclude: [] }
++      }
++    ];
++    const drafts = promptHolesOf(
++      body([prompt("b", { hole: { name: "evidence", description: "New words" }, scope: { include: [{ select: "project" }], exclude: [] } })])
++    );
++    expect(mergedPromptHoles(known, drafts)).toEqual([
++      {
++        name: "evidence",
++        label: "evidence",
++        description: "New words",
++        default: { include: [{ select: "kinds", kinds: ["finding"] }], exclude: [] }
++      }
++    ]);
++  });
++
++  it("keeps a hole nothing in the body asks for any more", () => {
++    const known: TemplateHole[] = [{ name: "subject", label: "Subject", kind: "text" }];
++    const drafts = promptHolesOf(body([prompt("a")]));
++    expect(mergedPromptHoles(known, drafts).map((hole) => hole.name)).toEqual(["Prompt 1", "subject"]);
++  });
++});
+~~~~
+
 ### new · `src/lib/representation/data/behavior/templates/test/unit/scopes.test.ts` (+109 / −0)
 
 ~~~~diff
@@ -2049,7 +2424,7 @@
      frame: { ...STARTING_FRAME },
 ~~~~
 
-### changed · `src/lib/representation/data/types/content/content-block.ts` (+16 / −1)
+### changed · `src/lib/representation/data/types/content/content-block.ts` (+31 / −1)
 
 ~~~~diff
 @@ -20,7 +20,22 @@ export type FormulaAtom = {
@@ -2075,6 +2450,36 @@
 +export type Atom = TextAtom | FormulaAtom | TemplateAtom;
  
  export type MarkStyle = "bold" | "italic" | "underline" | "strikethrough" | "code";
+ 
+@@ -112,6 +127,18 @@ export type TableBlock = {
+ 
+ export type PromptState = "idle" | "fresh" | "stale" | "generating" | "error";
+ 
++/**
++ * What this prompt becomes when its resource is made a template.
++ *
++ * Every prompt becomes one hole, so this is what the hole is called and what it
++ * says rather than whether there is one. Absent means the name is still the
++ * offered default, which is why nothing has to be filled in to make a template.
++ */
++export type PromptHole = {
++  name: string;
++  description?: string;
++};
++
+ export type PromptBlock = {
+   id: string;
+   type: "prompt";
+@@ -121,6 +148,9 @@ export type PromptBlock = {
+   display: string;
+   marks: Mark[];
+   scope?: ResourceSet | TemplatedResourceSet;
++  /** The words this block asks, written onto it when the derived output it read is left behind. */
++  asks?: string;
++  hole?: PromptHole;
+   state: PromptState;
+   error?: string;
+   refreshedAt?: number;
 ~~~~
 
 ### changed · `src/lib/representation/data/types/core/resource-set.ts` (+16 / −24)
@@ -2368,7 +2773,7 @@
 @@ -0,0 +1,121 @@
 +import { requireScope } from "$runtime/server/scope.server";
 +import { serverModel } from "$runtime/server/start.server";
-+import { portableBodyOf } from "$representation/data/behavior/templates/portable";
++import { templatedBodyOf } from "$capabilities/templates/api/shared/prompts";
 +import type { TemplateBody } from "$representation/data/types/templates/template";
 +
 +import { validateCommitTemplateStage } from "$capabilities/templates/api/commit-template-stage/validate-commit-template-stage";
@@ -2446,7 +2851,7 @@
 +      detail: "the staged copy has no body to save"
 +    };
 +  }
-+  const portable = portableBodyOf({ resource: stage.target, ...leader.body });
++  const portable = templatedBodyOf(store, { resource: stage.target, ...leader.body }, template.holes);
 +  let body: TemplateBody;
 +  try {
 +    body = bodyOf(portable.body, "commit-template-stage");
@@ -2469,7 +2874,7 @@
 +    ...(template.description === undefined ? {} : { description: template.description }),
 +    tags: [...template.tags],
 +    body,
-+    holes: declaredFor(body, template.holes),
++    holes: declaredFor(body, portable.holes),
 +    createdBy: template.createdBy,
 +    revision: template.revision + 1,
 +    updatedAt: at
@@ -2519,7 +2924,7 @@
 +import { serverModel } from "$runtime/server/start.server";
 +import { asId } from "$representation/data/behavior/core/id";
 +import { deckOfSlide } from "$representation/data/behavior/templates/deck-of-slide";
-+import { portableBodyOf } from "$representation/data/behavior/templates/portable";
++import { templatedBodyOf } from "$capabilities/templates/api/shared/prompts";
 +import type { TemplateBody } from "$representation/data/types/templates/template";
 +
 +import { validateCreateTemplateFromResource } from "$capabilities/templates/api/create-template-from-resource/validate-create-template-from-resource";
@@ -2572,7 +2977,7 @@
 +    candidate = { resource: "slides", ...slide };
 +  }
 +
-+  const portable = portableBodyOf(candidate);
++  const portable = templatedBodyOf(store, candidate, []);
 +  let body: TemplateBody;
 +  try {
 +    body = bodyOf(portable.body, "create-template-from-resource");
@@ -2594,7 +2999,7 @@
 +    ...(asked.description === undefined ? {} : { description: asked.description }),
 +    tags: [...(asked.tags ?? [])],
 +    body,
-+    holes: declaredFor(body, []),
++    holes: declaredFor(body, portable.holes),
 +    createdBy: actor,
 +    revision: 1,
 +    updatedAt: at
@@ -3770,6 +4175,93 @@
  };
 ~~~~
 
+### new · `src/lib/capabilities/templates/api/shared/prompts.ts` (+81 / −0)
+
+~~~~diff
+@@ -0,0 +1,81 @@
++import type { StoreModel } from "$model/server/store/index.server";
++import { portableBodyOf } from "$representation/data/behavior/templates/portable";
++import {
++  mergedPromptHoles,
++  promptHolesOf,
++  withAsks,
++  withPromptHoles
++} from "$representation/data/behavior/templates/prompt-holes";
++import type { TemplateHole } from "$representation/data/types/templates/template";
++
++import { recordsIn } from "$capabilities/templates/api/shared/store";
++
++type Fields = Record<string, unknown>;
++
++const isRecord = (value: unknown): value is Fields =>
++  value !== null && typeof value === "object" && !Array.isArray(value);
++
++/**
++ * The question each prompt asks, read from the derived output it is linked to.
++ *
++ * The words are the output's, not the block's: the block holds the answer. A
++ * template keeps neither the link nor the answer, so this is the one moment the
++ * words can be taken, and it has to happen while the link is still there.
++ */
++const askedBy = (store: StoreModel, body: unknown): Readonly<Record<string, string>> => {
++  const wanted = new Map<string, string>();
++  const walk = (value: unknown): void => {
++    if (Array.isArray(value)) {
++      for (const entry of value) walk(entry);
++      return;
++    }
++    if (!isRecord(value)) return;
++    if (value.type === "prompt" && typeof value.id === "string") {
++      const linked = value.derivedOutputId;
++      if (typeof linked === "string") wanted.set(linked, value.id);
++      else if (typeof value.asks === "string") wanted.set(`self:${value.id}`, value.id);
++    }
++    for (const nested of Object.values(value)) walk(nested);
++  };
++  walk(body);
++  if (wanted.size === 0) return {};
++
++  const words: Record<string, string> = {};
++  for (const row of recordsIn(store, "derivedOutputs")) {
++    const id = typeof row._id === "string" ? row._id : undefined;
++    const blockId = id === undefined ? undefined : wanted.get(id);
++    if (blockId === undefined) continue;
++    if (typeof row.prompt === "string") words[blockId] = row.prompt;
++  }
++  return words;
++};
++
++export type TemplatedBody<T> = {
++  readonly body: T;
++  readonly dropped: readonly string[];
++  readonly holes: readonly TemplateHole[];
++};
++
++/**
++ * A live body as a template holds it: portable, and asking rather than telling.
++ *
++ * The order matters. The holes are read first, because whether a prompt's scope
++ * survives portability is exactly what decides whether its hole gets a default.
++ * The words are copied next, while the link to the derived output still exists.
++ * Only then is the body made portable and each prompt's scope replaced by the
++ * hole that stands for it.
++ */
++export const templatedBodyOf = <T>(
++  store: StoreModel,
++  candidate: T,
++  known: readonly TemplateHole[]
++): TemplatedBody<T> => {
++  const drafts = promptHolesOf(candidate);
++  const asked = withAsks(candidate, askedBy(store, candidate));
++  const portable = portableBodyOf(asked);
++  return {
++    body: withPromptHoles(portable.body, drafts),
++    dropped: portable.dropped,
++    holes: mergedPromptHoles(known, drafts)
++  };
++};
+~~~~
+
 ### new · `src/lib/capabilities/templates/api/shared/scopes.ts` (+204 / −0)
 
 ~~~~diff
@@ -4154,7 +4646,7 @@
    updatedAt: template.updatedAt
 ~~~~
 
-### changed · `src/lib/capabilities/templates/api/shared/validation.ts` (+227 / −51)
+### changed · `src/lib/capabilities/templates/api/shared/validation.ts` (+241 / −51)
 
 ~~~~diff
 @@ -1,10 +1,15 @@
@@ -4249,7 +4741,7 @@
    return (
      value.kind === "formula" &&
      hasOnlyKeys(value, [
-@@ -639,7 +686,9 @@ const displayOfAtoms = (atoms: readonly unknown[]): string =>
+@@ -639,10 +686,22 @@ const displayOfAtoms = (atoms: readonly unknown[]): string =>
      .map((atom) =>
        isRecord(atom) && atom.kind === "formula"
          ? (atom.lastResolvedDisplay as string)
@@ -4260,7 +4752,20 @@
      )
      .join("");
  
-@@ -811,6 +860,7 @@ const validBlock = (value: unknown, depth = 0): boolean => {
++/** What a prompt says its hole is called, before the hole itself is declared. */
++const validPromptHole = (value: unknown): boolean =>
++  isRecord(value) &&
++  hasOnlyKeys(value, ["name", "description"]) &&
++  validCanonicalText(value.name, MAX_HOLE_NAME_LENGTH) &&
++  (value.description === undefined ||
++    (isText(value.description) &&
++      value.description.length <= MAX_HOLE_DESCRIPTION_LENGTH &&
++      value.description === value.description.trim()));
++
+ const validBlock = (value: unknown, depth = 0): boolean => {
+   if (depth > 12 || !isRecord(value) || !validIdentifier(value.id) || !isText(value.type)) {
+     return false;
+@@ -811,16 +870,22 @@ const validBlock = (value: unknown, depth = 0): boolean => {
          "id",
          "type",
          "derivedOutputId",
@@ -4268,15 +4773,22 @@
          "atoms",
          "display",
          "marks",
-@@ -821,6 +871,7 @@ const validBlock = (value: unknown, depth = 0): boolean => {
+         "scope",
++        "asks",
++        "hole",
+         "state",
+         "error",
+         "refreshedAt",
          "format"
        ]) &&
        (value.derivedOutputId === undefined || validIdentifier(value.derivedOutputId)) &&
 +      (value.style === undefined || validIdentifier(value.style)) &&
++      (value.asks === undefined || validText(value.asks, MAX_BLOCK_TEXT_LENGTH, true)) &&
++      (value.hole === undefined || validPromptHole(value.hole)) &&
        Array.isArray(value.atoms) &&
        value.atoms.length <= MAX_BLOCKS_PER_CONTAINER &&
        value.atoms.every(validAtom) &&
-@@ -1515,7 +1566,6 @@ const validSpreadsheet = (body: Fields): boolean => {
+@@ -1515,7 +1580,6 @@ const validSpreadsheet = (body: Fields): boolean => {
    return validStyles(body.styles);
  };
  
@@ -4284,7 +4796,7 @@
  const assertPortableBody = (value: unknown, subject: string): void => {
    const boundField = (step: Fields): string | undefined => {
      if (step.to === "resource" && "ref" in step) return "resource reference";
-@@ -1557,9 +1607,7 @@ export const bodyOf = (value: unknown, subject: string): TemplateBody => {
+@@ -1557,9 +1621,7 @@ export const bodyOf = (value: unknown, subject: string): TemplateBody => {
    const raw = fieldsOf(value, subject);
    const target = targetOf(raw.resource, subject);
    const normalized =
@@ -4295,7 +4807,7 @@
    const body = fieldsOf(normalized, subject);
    const valid =
      target === "document"
-@@ -1567,16 +1615,103 @@ export const bodyOf = (value: unknown, subject: string): TemplateBody => {
+@@ -1567,16 +1629,103 @@ export const bodyOf = (value: unknown, subject: string): TemplateBody => {
        : target === "slides"
          ? validSlides(body)
          : validSpreadsheet(body);
@@ -4404,7 +4916,7 @@
  const MAX_RESOURCE_KIND_LENGTH = 160;
  
  const validTerm = (value: unknown): boolean => {
-@@ -1584,11 +1719,19 @@ const validTerm = (value: unknown): boolean => {
+@@ -1584,11 +1733,19 @@ const validTerm = (value: unknown): boolean => {
    if (value.select === "project") {
      return hasOnlyKeys(value, ["select"]) && Object.keys(value).length === 1;
    }
@@ -4426,7 +4938,7 @@
      );
    }
    if (
-@@ -1618,62 +1761,95 @@ const validTemplatedSet = (value: unknown): boolean =>
+@@ -1618,62 +1775,95 @@ const validTemplatedSet = (value: unknown): boolean =>
    value.exclude.length <= MAX_TEMPLATE_TERMS_PER_SIDE &&
    value.exclude.every(validTerm);
  
@@ -5110,10 +5622,10 @@
 +needs a represented transaction or explicit recovery contract.
 ~~~~
 
-### new · `src/lib/capabilities/templates/test/unit/answers.test.ts` (+541 / −0)
+### new · `src/lib/capabilities/templates/test/unit/answers.test.ts` (+589 / −0)
 
 ~~~~diff
-@@ -0,0 +1,541 @@
+@@ -0,0 +1,589 @@
 +import assert from "node:assert/strict";
 +import { beforeEach, describe, test, vi } from "vitest";
 +
@@ -5390,15 +5902,13 @@
 +  });
 +
 +  /**
-+   * The one link the chain is still missing, pinned so it cannot change unseen.
++   * Every prompt is a hole, and a scope anybody could have meant is its default.
 +   *
-+   * A prompt somebody wrote in the editor carries a settled scope, not a hole
-+   * term. Making a template keeps that scope exactly as it is and declares no
-+   * hole, so placing the template asks nothing and every copy reads the same
-+   * sources. Turning an authored scope into a hole is a decision nobody has
-+   * taken yet; when it is taken, this test is what changes.
++   * Nothing was declared and nothing was named: the prompt was written, the
++   * template was made, and it asks. That is the whole of the link, and it is
++   * what makes a template from a document full of prompts worth placing.
 +   */
-+  test("keeps an authored prompt scope settled, and so declares no hole for it", async () => {
++  test("turns an authored prompt scope into a hole that keeps it as the default", async () => {
 +    model.tables.documents.push(row("documents", "1", { projectId: "p", title: "Winter brief" }));
 +    model.tables.documentSnapshots.push(
 +      row("documentSnapshots", "1", {
@@ -5435,8 +5945,58 @@
 +    });
 +    assert.ok(made.accepted);
 +    const held = model.tables.templates[1];
-+    assert.deepEqual(held.holes, []);
-+    assert.deepEqual(scopeOf(held), { include: [{ select: "project" }], exclude: [] });
++    assert.deepEqual(held.holes, [
++      {
++        name: "Prompt 1",
++        label: "Prompt 1",
++        default: { include: [{ select: "project" }], exclude: [] }
++      }
++    ]);
++    assert.deepEqual(scopeOf(held), { include: [{ select: "hole", name: "Prompt 1" }], exclude: [] });
++  });
++
++  test("gives a hole no default when the prompt read something particular", async () => {
++    model.tables.documents.push(row("documents", "1", { projectId: "p", title: "Winter brief" }));
++    model.tables.documentSnapshots.push(
++      row("documentSnapshots", "1", {
++        projectId: "p",
++        resourceId: "documents:1",
++        role: "leader",
++        revision: 1,
++        body: {
++          rows: [
++            {
++              id: "r1",
++              kind: "blocks",
++              blocks: [
++                {
++                  id: "p1",
++                  type: "prompt",
++                  atoms: [{ id: "p1-a", kind: "literal", text: "Sum up" }],
++                  display: "Sum up",
++                  marks: [],
++                  hole: { name: "evidence", description: "What happened" },
++                  scope: { include: [{ select: "set", setId: "resourceSets:1" }], exclude: [] },
++                  state: "idle"
++                }
++              ]
++            }
++          ]
++        }
++      })
++    );
++
++    const made = await createTemplateFromResource({
++      target: "document",
++      resourceId: "documents:1",
++      name: "Named prompt"
++    });
++    assert.ok(made.accepted);
++    const held = model.tables.templates[1];
++    assert.deepEqual(held.holes, [
++      { name: "evidence", label: "evidence", description: "What happened" }
++    ]);
++    assert.deepEqual(scopeOf(held), { include: [{ select: "hole", name: "evidence" }], exclude: [] });
 +  });
 +
 +  test("makes a deck template from the whole deck or from one of its slides", async () => {
@@ -8279,7 +8839,7 @@
      height: calc(var(--token-spacing-unit) * 16);
 ~~~~
 
-### changed · `src/lib/app-views/categories/templates/inspector/template.svelte` (+347 / −119)
+### changed · `src/lib/app-views/categories/templates/inspector/template.svelte` (+349 / −119)
 
 ~~~~diff
 @@ -4,10 +4,12 @@
@@ -8839,14 +9399,14 @@
                  </div>
                </details>
              {/each}
-@@ -759,7 +944,58 @@
+@@ -759,7 +944,60 @@
    {/if}
  </Panel>
  
 +<OverlayModal
 +  bind:open={useOpen}
 +  title={`Use “${template?.name ?? "the template"}”`}
-+  description="Every parameter this template asks for. Open one to read what it means."
++  description="One hole at a time. The tabs say which still need words."
 +  confirm="Create"
 +  width="wide"
 +  blocked={askBlocked}
@@ -8854,9 +9414,11 @@
 +>
 +  <TemplateAnswerList
 +    rows={askRows}
++    prompts={template?.prompts ?? {}}
 +    onscope={openAnswer}
 +    ontext={writeText}
 +    onreset={clearAnswer}
++    onaccept={confirmUse}
 +  />
 +</OverlayModal>
 +
@@ -8898,7 +9460,7 @@
    .inspector-stack {
      display: flex;
      flex-direction: column;
-@@ -776,7 +1012,7 @@
+@@ -776,7 +1014,7 @@
    .meta-line,
    .byline,
    .description,
@@ -8907,7 +9469,7 @@
      font-size: var(--token-text-caption);
      line-height: var(--token-text-caption-leading);
    }
-@@ -906,7 +1142,7 @@
+@@ -906,7 +1144,7 @@
  
    .template-actions {
      display: grid;
@@ -8916,7 +9478,7 @@
      align-self: stretch;
      overflow: hidden;
      width: 100%;
-@@ -987,17 +1223,17 @@
+@@ -987,17 +1225,17 @@
      font-weight: 500;
    }
  
@@ -8937,7 +9499,7 @@
      display: flex;
      min-height: calc(var(--token-spacing-unit) * 8);
      align-items: center;
-@@ -1011,75 +1247,67 @@
+@@ -1011,75 +1249,67 @@
      list-style: none;
    }
  
@@ -9030,7 +9592,7 @@
      display: block;
      width: 100%;
      margin: 0;
-@@ -1093,16 +1321,16 @@
+@@ -1093,16 +1323,16 @@
      text-align: left;
    }
  
@@ -9052,10 +9614,10 @@
      max-height: calc(var(--token-spacing-unit) * 18);
 ~~~~
 
-### changed · `src/lib/app-views/categories/templates/procedures/library.svelte.ts` (+177 / −45)
+### changed · `src/lib/app-views/categories/templates/procedures/library.svelte.ts` (+181 / −45)
 
 ~~~~diff
-@@ -2,33 +2,47 @@ import {
+@@ -2,33 +2,48 @@ import {
    createTemplate as createTemplateRemote,
    duplicateTemplate as duplicateTemplateRemote,
    instantiateTemplate as instantiateTemplateRemote,
@@ -9090,6 +9652,7 @@
 +  type ScopeNames,
 +  type ScopeOffering
 +} from "$representation/data/behavior/core/scope-draft";
++import { promptWordsIn } from "$representation/data/behavior/templates/prompt-holes";
 +import type { Category, WorkspaceStateModel } from "$model/client/workspace-state";
 +
 +export type { ResourceSetItem } from "$capabilities/resource-sets/index.remote";
@@ -9112,7 +9675,7 @@
  export type LibraryTemplate = {
    readonly id: string;
    readonly name: string;
-@@ -36,7 +50,7 @@ export type LibraryTemplate = {
+@@ -36,7 +51,7 @@ export type LibraryTemplate = {
    readonly makes: TemplateTarget;
    readonly scope: TemplateScope;
    readonly tags: readonly string[];
@@ -9121,16 +9684,18 @@
    readonly createdBy: string;
    readonly revision: number;
    readonly updatedAt: number;
-@@ -48,7 +62,7 @@ export type LibraryTemplate = {
+@@ -48,7 +63,9 @@ export type LibraryTemplate = {
  };
  
  export type LibraryTemplateDetail = LibraryTemplate & {
 -  readonly variables: readonly TemplateVariable[];
 +  readonly holes: readonly TemplateHole[];
++  /** What the prompt behind each hole asks, so placing it can show the question. */
++  readonly prompts: Readonly<Record<string, string>>;
  };
  
  export type TemplateLibrarySummary = {
-@@ -72,6 +86,16 @@ const TARGET_VALUE: Record<TemplateTarget, StoredTemplateTarget> = {
+@@ -72,6 +89,16 @@ const TARGET_VALUE: Record<TemplateTarget, StoredTemplateTarget> = {
    Spreadsheet: "spreadsheet"
  };
  
@@ -9147,7 +9712,7 @@
  const SCOPE_LABEL = {
    project: "Project",
    personal: "Personal"
-@@ -81,7 +105,6 @@ const MINUTE = 60_000;
+@@ -81,7 +108,6 @@ const MINUTE = 60_000;
  const HOUR = 60 * MINUTE;
  const DAY = 24 * HOUR;
  
@@ -9155,7 +9720,7 @@
  export const relativeTime = (at: number, now: number): string => {
    const gap = Math.max(0, now - at);
    if (gap < MINUTE) return "just now";
-@@ -109,7 +132,7 @@ const project = (row: TemplateLibraryItem, now: number): LibraryTemplate => ({
+@@ -109,7 +135,7 @@ const project = (row: TemplateLibraryItem, now: number): LibraryTemplate => ({
    makes: TARGET_LABEL[row.target],
    scope: SCOPE_LABEL[row.availability],
    tags: row.tags,
@@ -9164,7 +9729,7 @@
    createdBy: row.createdByName,
    revision: row.revision,
    updatedAt: row.updatedAt,
-@@ -120,54 +143,46 @@ const project = (row: TemplateLibraryItem, now: number): LibraryTemplate => ({
+@@ -120,54 +146,47 @@ const project = (row: TemplateLibraryItem, now: number): LibraryTemplate => ({
    canDelete: row.canDelete
  });
  
@@ -9206,6 +9771,7 @@
 -    variables: answer.variables.map((variable) => ({
 -      ...variable,
 -      id: `${answer.id}:${variable.name}`
++    prompts: promptWordsIn(answer.body),
 +    holes: answer.holes.map((hole) => ({
 +      ...hole,
 +      id: `${answer.id}:${hole.name}`
@@ -9223,7 +9789,7 @@
  export const recentTemplatesIn = (
    rows: readonly LibraryTemplate[],
    limit = 10
-@@ -184,7 +199,6 @@ export const recentTemplatesIn = (
+@@ -184,7 +203,6 @@ export const recentTemplatesIn = (
      .toSorted((a, b) => b.lastUsedAt - a.lastUsedAt)
      .slice(0, Math.max(0, limit));
  
@@ -9231,7 +9797,7 @@
  export const templateLibrarySummaryIn = (
    rows: readonly LibraryTemplate[]
  ): TemplateLibrarySummary => {
-@@ -208,7 +222,6 @@ const defaultName = (target: TemplateTarget): string =>
+@@ -208,7 +226,6 @@ const defaultName = (target: TemplateTarget): string =>
      Spreadsheet: "Untitled spreadsheet template"
    })[target];
  
@@ -9239,7 +9805,7 @@
  export const nextTemplateName = (
    target: TemplateTarget,
    rows: readonly LibraryTemplate[]
-@@ -220,13 +233,93 @@ export const nextTemplateName = (
+@@ -220,13 +237,93 @@ export const nextTemplateName = (
    return `${base} ${suffix}`;
  };
  
@@ -9335,7 +9901,7 @@
  export const createTemplate = (
    view: WorkspaceStateModel,
    target: TemplateTarget,
-@@ -241,7 +334,6 @@ export const createTemplate = (
+@@ -241,7 +338,6 @@ export const createTemplate = (
    );
  };
  
@@ -9343,7 +9909,7 @@
  export const updateTemplateName = (
    view: WorkspaceStateModel,
    row: LibraryTemplateDetail,
-@@ -259,7 +351,6 @@ export const updateTemplateName = (
+@@ -259,7 +355,6 @@ export const updateTemplateName = (
    );
  };
  
@@ -9351,7 +9917,7 @@
  export const updateTemplateDescription = (
    view: WorkspaceStateModel,
    row: LibraryTemplateDetail,
-@@ -285,11 +376,10 @@ export const updateTemplateDescription = (
+@@ -285,11 +380,10 @@ export const updateTemplateDescription = (
    );
  };
  
@@ -9365,7 +9931,7 @@
    description: string
  ) => {
    const storedDescription = description.trim() || null;
-@@ -300,8 +390,8 @@ export const updateTemplateVariableDescription = (
+@@ -300,8 +394,8 @@ export const updateTemplateVariableDescription = (
        row.id,
        "update",
        row.revision,
@@ -9376,7 +9942,7 @@
        storedDescription
      ],
      () =>
-@@ -309,13 +399,12 @@ export const updateTemplateVariableDescription = (
+@@ -309,13 +403,12 @@ export const updateTemplateVariableDescription = (
          templateId: row.id,
          baseRevision: row.revision,
          patch: {
@@ -9391,7 +9957,7 @@
  export const updateTemplateTags = (
    view: WorkspaceStateModel,
    row: LibraryTemplateDetail,
-@@ -331,13 +420,31 @@ export const updateTemplateTags = (
+@@ -331,13 +424,31 @@ export const updateTemplateTags = (
        }).updates(readTemplateLibrary, readTemplate({ templateId: row.id }))
    );
  
@@ -9425,7 +9991,7 @@
  export const removeTemplate = (view: WorkspaceStateModel, row: LibraryTemplateDetail) =>
    view.singleFlight(["template", view.project, row.id, "remove", row.revision], () =>
      removeTemplateRemote({ templateId: row.id, baseRevision: row.revision }).updates(
-@@ -346,11 +453,36 @@ export const removeTemplate = (view: WorkspaceStateModel, row: LibraryTemplateDe
+@@ -346,11 +457,36 @@ export const removeTemplate = (view: WorkspaceStateModel, row: LibraryTemplateDe
      )
    );
  
@@ -9693,10 +10259,10 @@
      text-underline-offset: 0.12em;
 ~~~~
 
-### new · `src/lib/app-views/categories/document-editor/context/templates.svelte` (+683 / −0)
+### new · `src/lib/app-views/categories/document-editor/context/templates.svelte` (+688 / −0)
 
 ~~~~diff
-@@ -0,0 +1,683 @@
+@@ -0,0 +1,688 @@
 +<script lang="ts">
 +  import { onDestroy } from "svelte";
 +
@@ -9731,6 +10297,7 @@
 +    draftOf,
 +    holeNameRefusal,
 +    insertionOf,
++    promptWordsIn,
 +    mergedHoles,
 +    offeringOf,
 +    openStage,
@@ -9888,6 +10455,8 @@
 +    run("save-as", async () => {
 +      const name = nameDraft.trim();
 +      if (documentId === undefined || name === "") return;
++      /** A template is made from the saved body, so anything still in flight has to land first. */
++      if (!(await settled())) return;
 +      const made = await saveAsTemplate(view, documentId, name);
 +      if (!live) return;
 +      if (!made.accepted) {
@@ -10223,7 +10792,7 @@
 +<OverlayModal
 +  bind:open={insertOpen}
 +  title={`Insert “${insertFor?.name ?? "the template"}”`}
-+  description="Every hole this template asks for. Open one to read what it means."
++  description="One hole at a time. The tabs say which still need words."
 +  confirm="Insert"
 +  width="wide"
 +  blocked={askBlocked}
@@ -10231,9 +10800,11 @@
 +>
 +  <TemplateAnswerList
 +    rows={askRows}
++    prompts={insertFor === undefined ? {} : promptWordsIn(insertFor.body)}
 +    onscope={openAnswer}
 +    ontext={writeText}
 +    onreset={clearAnswer}
++    onaccept={confirmInsert}
 +  />
 +</OverlayModal>
 +
@@ -10382,6 +10953,144 @@
 +</style>
 ~~~~
 
+### changed · `src/lib/app-views/categories/document-editor/inspector/prompt-block.svelte` (+104 / −0)
+
+~~~~diff
+@@ -21,11 +21,37 @@
+   import { blockIn } from "$app-views/categories/document-editor/procedures/blocks";
+   import {
+     linkPromptBlockOps,
++    promptHoleOps,
++    promptScopeOps,
+     syncPromptBlockOps,
+     type Id,
+     type LinkedPromptBlock,
+     type PromptBlock
+   } from "$app-views/categories/document-editor/procedures/prompt-blocks";
++  import {
++    builderView,
++    defaultScopeOf,
++    draftOf,
++    narrowed,
++    offeredNameIn,
++    offeringOf,
++    projectResources,
++    resourceSets,
++    resourcesIn,
++    ruleOf,
++    scopeNamesOf,
++    setsIn,
++    termFor,
++    withTerm,
++    withWholeProject,
++    withoutTerm,
++    type OfferSource,
++    type ScopeDraft,
++    type ScopeSide
++  } from "$app-views/categories/document-editor/procedures/templating";
++  import { OverlayModal } from "$authored-components/overlay";
++  import { PromptTemplate } from "$authored-components/prompt-template";
++  import { ScopeBuilder } from "$authored-components/scope-builder";
+   import { announcePromptOutput } from "$app-views/categories/document-editor/procedures/prompt-output-events";
+   import { isInspectorView, workspaceState } from "$model/client/workspace-state";
+   import type { DocumentRuntime } from "$model/client/workspace-state";
+@@ -137,6 +163,52 @@
+   const navigate = (next: string) => {
+     if (isInspectorView(next)) view.inspect(next);
+   };
++
++  const sets = resourceSets();
++  const index = projectResources();
++  const setItems = $derived(setsIn(sets.ready ? sets.current : undefined));
++  const catalogue = $derived(resourcesIn(index.ready ? index.current : undefined));
++  const setNames = $derived(scopeNamesOf(setItems, catalogue));
++  const offering = $derived(offeringOf(setItems, catalogue));
++
++  const offered = $derived(
++    body === undefined || prompt === undefined ? "Prompt 1" : offeredNameIn(body, prompt.id)
++  );
++  const named = $derived(prompt?.hole);
++  const settled = $derived(defaultScopeOf(prompt?.scope));
++
++  let contextOpen = $state(false);
++  let draft = $state<ScopeDraft>(draftOf(undefined));
++  const view$ = $derived(builderView(draft, offering));
++  const scopeBlocked = $derived(
++    draft.include.length === 0 ? "Include something, or choose everything in the project." : undefined
++  );
++
++  const write = (ops: readonly unknown[]) => {
++    if (runtime === undefined || ops.length === 0) return;
++    runtime.apply(ops as Parameters<DocumentRuntime["apply"]>[0]);
++  };
++
++  const rename = (name: string) => {
++    if (prompt === undefined) return;
++    write(promptHoleOps(prompt, { name, description: named?.description }));
++  };
++
++  const describe = (description: string) => {
++    if (prompt === undefined) return;
++    write(promptHoleOps(prompt, { name: named?.name ?? offered, description }));
++  };
++
++  const openContext = () => {
++    draft = draftOf(prompt?.scope);
++    contextOpen = true;
++  };
++
++  const confirmContext = () => {
++    if (prompt === undefined) return;
++    write(promptScopeOps(prompt, narrowed(draft) ?? draft));
++    contextOpen = false;
++  };
+ </script>
+ 
+ <Panel title="Prompt block">
+@@ -202,9 +274,41 @@
+       {/key}
+     {/if}
+ 
++    <PromptTemplate
++      name={named?.name ?? ""}
++      {offered}
++      description={named?.description ?? ""}
++      context={settled === undefined ? undefined : ruleOf(settled, setNames)}
++      settled={settled !== undefined}
++      disabled={phase !== undefined}
++      onname={rename}
++      ondescription={describe}
++      oncontext={openContext}
++    />
+   {/if}
+ </Panel>
+ 
++<OverlayModal
++  bind:open={contextOpen}
++  title={`Default context for ${named?.name ?? offered}`}
++  description="What this prompt reads here, and what its hole selects until whoever places the template says otherwise."
++  confirm="Set the default context"
++  width="wide"
++  blocked={scopeBlocked}
++  onconfirm={confirmContext}
++>
++  <ScopeBuilder
++    {...view$}
++    onmode={(whole) => (draft = whole ? withWholeProject() : { include: [], exclude: [] })}
++    onadd={(side: ScopeSide, source: string, key: string) => {
++      const term = termFor(source as OfferSource, key);
++      if (term !== undefined) draft = withTerm(draft, side, term);
++    }}
++    ondrop={(side: ScopeSide, key: string) => (draft = withoutTerm(draft, side, key))}
++    onclear={() => (draft = { include: [], exclude: [] })}
++  />
++</OverlayModal>
++
+ <style>
+   .setup {
+     display: flex;
+~~~~
+
 ### changed · `src/lib/app-views/categories/document-editor/procedures/projection.ts` (+33 / −8)
 
 ~~~~diff
@@ -10488,6 +11197,35 @@
        pm += 1;
 ~~~~
 
+### changed · `src/lib/app-views/categories/document-editor/procedures/prompt-blocks.ts` (+17 / −0)
+
+~~~~diff
+@@ -28,6 +28,23 @@ const setField = (
+     ? undefined
+     : { op: "set", target: "block", path: `${block.id}/${field}`, value: value ?? null, was: was ?? null };
+ 
++/** What this prompt's hole is called, and what it stands for. */
++export const promptHoleOps = (
++  block: PromptBlock,
++  hole: { name: string; description?: string }
++): DocumentOp[] => {
++  const description = hole.description?.trim() ?? "";
++  const next = { name: hole.name.trim(), ...(description === "" ? {} : { description }) };
++  const op = setField(block, "hole", next, block.hole);
++  return op === undefined ? [] : [op];
++};
++
++/** What this prompt reads, which is also what its hole selects by default. */
++export const promptScopeOps = (block: PromptBlock, scope: unknown): DocumentOp[] => {
++  const op = setField(block, "scope", scope, block.scope);
++  return op === undefined ? [] : [op];
++};
++
+ export const linkPromptBlockOps = (
+   block: PromptBlock,
+   derivedOutputId: Id<"derivedOutputs">
+~~~~
+
 ### changed · `src/lib/app-views/categories/document-editor/procedures/schema.ts` (+37 / −3)
 
 ~~~~diff
@@ -10562,10 +11300,10 @@
        ]
 ~~~~
 
-### new · `src/lib/app-views/categories/document-editor/procedures/templating.ts` (+394 / −0)
+### new · `src/lib/app-views/categories/document-editor/procedures/templating.ts` (+402 / −0)
 
 ~~~~diff
-@@ -0,0 +1,394 @@
+@@ -0,0 +1,402 @@
 +import {
 +  readProjectResourceIndex,
 +  type ProjectResourceIndex
@@ -10628,6 +11366,14 @@
 +  missingIn,
 +  type AnswerRow
 +} from "$representation/data/behavior/templates/answers";
++
++export {
++  defaultScopeOf,
++  holeNameIn,
++  offeredHoleName,
++  offeredNameIn,
++  promptWordsIn
++} from "$representation/data/behavior/templates/prompt-holes";
 +
 +export {
 +  PROJECT_KINDS as KINDS,
@@ -11169,10 +11915,10 @@
          placeholder="Write a comment on {subject}…"
 ~~~~
 
-### changed · `src/lib/app-views/categories/slide-deck-editor/context/templates.svelte` (+700 / −3)
+### changed · `src/lib/app-views/categories/slide-deck-editor/context/templates.svelte` (+705 / −3)
 
 ~~~~diff
-@@ -1,8 +1,705 @@
+@@ -1,8 +1,710 @@
  <script lang="ts">
 -  import { Panel, PanelEmpty, PanelNote } from "$authored-components/panel";
 +  import { onDestroy } from "svelte";
@@ -11210,6 +11956,7 @@
 +    insertionOf,
 +    mergedHoles,
 +    offeringOf,
++    promptWordsIn,
 +    openStage,
 +    projectResources,
 +    resourceSets,
@@ -11376,6 +12123,8 @@
 +    run("save-as", async () => {
 +      const name = nameDraft.trim();
 +      if (deckId === undefined || name === "") return;
++      /** A template is made from the saved body, so anything still in flight has to land first. */
++      if (!(await settled())) return;
 +      const made = await saveAsTemplate(view, deckId, name, slideId);
 +      if (!live) return;
 +      if (!made.accepted) {
@@ -11718,7 +12467,7 @@
 +<OverlayModal
 +  bind:open={insertOpen}
 +  title={`Insert “${insertFor?.name ?? "the template"}”`}
-+  description="Every hole this template asks for. Open one to read what it means."
++  description="One hole at a time. The tabs say which still need words."
 +  confirm="Insert"
 +  width="wide"
 +  blocked={askBlocked}
@@ -11726,9 +12475,11 @@
 +>
 +  <TemplateAnswerList
 +    rows={askRows}
++    prompts={insertFor === undefined ? {} : promptWordsIn(insertFor.body)}
 +    onscope={openAnswer}
 +    ontext={writeText}
 +    onreset={clearAnswer}
++    onaccept={confirmInsert}
 +  />
 +</OverlayModal>
 +
@@ -11883,6 +12634,151 @@
 +</style>
 ~~~~
 
+### changed · `src/lib/app-views/categories/slide-deck-editor/inspector/prompt-block.svelte` (+105 / −0)
+
+~~~~diff
+@@ -23,6 +23,30 @@
+   import ElementOrder from "$app-views/categories/slide-deck-editor/components/element-order.svelte";
+   import ElementPaint from "$app-views/categories/slide-deck-editor/components/element-paint.svelte";
+   import PromptSettings from "$app-views/categories/slide-deck-editor/components/prompt-settings.svelte";
++  import {
++    builderView,
++    defaultScopeOf,
++    draftOf,
++    narrowed,
++    offeredNameIn,
++    offeringOf,
++    projectResources,
++    resourceSets,
++    resourcesIn,
++    ruleOf,
++    scopeNamesOf,
++    setsIn,
++    termFor,
++    withTerm,
++    withWholeProject,
++    withoutTerm,
++    type OfferSource,
++    type ScopeDraft,
++    type ScopeSide
++  } from "$app-views/categories/slide-deck-editor/procedures/templating";
++  import { OverlayModal } from "$authored-components/overlay";
++  import { PromptTemplate } from "$authored-components/prompt-template";
++  import { ScopeBuilder } from "$authored-components/scope-builder";
+   import TextSpacing from "$app-views/categories/slide-deck-editor/components/text-spacing.svelte";
+   import TextStyle from "$app-views/categories/slide-deck-editor/components/text-style.svelte";
+   import {
+@@ -33,6 +57,8 @@
+     linkPromptBlockOps,
+     promptBlockIn,
+     promptElementIn,
++    promptHoleOps,
++    promptScopeOps,
+     syncPromptBlockOps,
+     type Id,
+     type LinkedPromptBlock
+@@ -85,6 +111,52 @@
+     body === undefined || slide === undefined ? 0 : slideIndexOf(body, slide.id) + 1
+   );
+ 
++  const sets = resourceSets();
++  const index = projectResources();
++  const setItems = $derived(setsIn(sets.ready ? sets.current : undefined));
++  const catalogue = $derived(resourcesIn(index.ready ? index.current : undefined));
++  const setNames = $derived(scopeNamesOf(setItems, catalogue));
++  const offering = $derived(offeringOf(setItems, catalogue));
++
++  const offered = $derived(
++    body === undefined || block === undefined ? "Prompt 1" : offeredNameIn(body, block.id)
++  );
++  const named = $derived(block?.hole);
++  const settled = $derived(defaultScopeOf(block?.scope));
++
++  let contextOpen = $state(false);
++  let draft = $state<ScopeDraft>(draftOf(undefined));
++  const view$ = $derived(builderView(draft, offering));
++  const scopeBlocked = $derived(
++    draft.include.length === 0 ? "Include something, or choose everything in the project." : undefined
++  );
++
++  const write = (ops: readonly unknown[]) => {
++    if (runtime === undefined || ops.length === 0) return;
++    runtime.apply(ops as Parameters<SlideDeckRuntime["apply"]>[0]);
++  };
++
++  const rename = (name: string) => {
++    if (block === undefined) return;
++    write(promptHoleOps(block, { name, description: named?.description }));
++  };
++
++  const describe = (description: string) => {
++    if (block === undefined) return;
++    write(promptHoleOps(block, { name: named?.name ?? offered, description }));
++  };
++
++  const openContext = () => {
++    draft = draftOf(block?.scope);
++    contextOpen = true;
++  };
++
++  const confirmContext = () => {
++    if (block === undefined) return;
++    write(promptScopeOps(block, narrowed(draft) ?? draft));
++    contextOpen = false;
++  };
++
+   $effect(() => {
+     const current = block;
+     if (current === undefined || current.id === draftedFor) return;
+@@ -231,6 +303,18 @@
+       {/key}
+     {/if}
+ 
++    <PromptTemplate
++      name={named?.name ?? ""}
++      {offered}
++      description={named?.description ?? ""}
++      context={settled === undefined ? undefined : ruleOf(settled, setNames)}
++      settled={settled !== undefined}
++      disabled={phase !== undefined}
++      onname={rename}
++      ondescription={describe}
++      oncontext={openContext}
++    />
++
+     <TextStyle blockId={block.id} whole wrapping />
+     <ElementGeometry elementId={element.id} />
+     <ElementPaint elementId={element.id} />
+@@ -240,6 +324,27 @@
+   {/if}
+ </Panel>
+ 
++<OverlayModal
++  bind:open={contextOpen}
++  title={`Default context for ${named?.name ?? offered}`}
++  description="What this prompt reads here, and what its hole selects until whoever places the template says otherwise."
++  confirm="Set the default context"
++  width="wide"
++  blocked={scopeBlocked}
++  onconfirm={confirmContext}
++>
++  <ScopeBuilder
++    {...view$}
++    onmode={(whole) => (draft = whole ? withWholeProject() : { include: [], exclude: [] })}
++    onadd={(side: ScopeSide, source: string, key: string) => {
++      const term = termFor(source as OfferSource, key);
++      if (term !== undefined) draft = withTerm(draft, side, term);
++    }}
++    ondrop={(side: ScopeSide, key: string) => (draft = withoutTerm(draft, side, key))}
++    onclear={() => (draft = { include: [], exclude: [] })}
++  />
++</OverlayModal>
++
+ <style>
+   .setup {
+     display: flex;
+~~~~
+
 ### changed · `src/lib/app-views/categories/slide-deck-editor/inspector/threads.svelte` (+8 / −1)
 
 ~~~~diff
@@ -11924,6 +12820,35 @@
      <div class="text-ink-secondary flex items-center gap-1.5 px-3 py-1.5 text-start">
 ~~~~
 
+### changed · `src/lib/app-views/categories/slide-deck-editor/procedures/prompt-blocks.ts` (+17 / −0)
+
+~~~~diff
+@@ -87,6 +87,23 @@ const setField = (
+         was: was ?? null
+       };
+ 
++/** What this prompt's hole is called, and what it stands for. */
++export const promptHoleOps = (
++  block: PromptBlock,
++  hole: { name: string; description?: string }
++): SlideDeckOp[] => {
++  const description = hole.description?.trim() ?? "";
++  const next = { name: hole.name.trim(), ...(description === "" ? {} : { description }) };
++  const op = setField(block, "hole", next, block.hole);
++  return op === undefined ? [] : [op];
++};
++
++/** What this prompt reads, which is also what its hole selects by default. */
++export const promptScopeOps = (block: PromptBlock, scope: unknown): SlideDeckOp[] => {
++  const op = setField(block, "scope", scope, block.scope);
++  return op === undefined ? [] : [op];
++};
++
+ export const linkPromptBlockOps = (
+   block: PromptBlock,
+   derivedOutputId: Id<"derivedOutputs">
+~~~~
+
 ### changed · `src/lib/app-views/categories/slide-deck-editor/procedures/scene.ts` (+3 / −3)
 
 ~~~~diff
@@ -11949,10 +12874,10 @@
        cuts.add(offset + length);
 ~~~~
 
-### new · `src/lib/app-views/categories/slide-deck-editor/procedures/templating.ts` (+418 / −0)
+### new · `src/lib/app-views/categories/slide-deck-editor/procedures/templating.ts` (+426 / −0)
 
 ~~~~diff
-@@ -0,0 +1,418 @@
+@@ -0,0 +1,426 @@
 +import {
 +  readProjectResourceIndex,
 +  type ProjectResourceIndex
@@ -12009,6 +12934,14 @@
 +} from "$capabilities/templates/index.remote";
 +export type { TemplatedResourceSet } from "$representation/data/types/core/resource-set";
 +export type { TemplateHole } from "$representation/data/types/templates/template";
++
++export {
++  defaultScopeOf,
++  holeNameIn,
++  offeredHoleName,
++  offeredNameIn,
++  promptWordsIn
++} from "$representation/data/behavior/templates/prompt-holes";
 +
 +export {
 +  answerRowsOf,
@@ -16431,10 +17364,10 @@
  test("document named styles mirror the text formatting inspector without metadata clutter", async ({ page }) => {
 ~~~~
 
-### new · `test/browser/template-features.spec.ts` (+318 / −0)
+### new · `test/browser/template-features.spec.ts` (+422 / −0)
 
 ~~~~diff
-@@ -0,0 +1,318 @@
+@@ -0,0 +1,422 @@
 +import { expect, test, type Locator, type Page, type TestInfo } from "@playwright/test";
 +
 +const unexpected: string[] = [];
@@ -16528,16 +17461,23 @@
 +  const modal = page.getByRole("dialog", { name: "Insert “Technical glossary”" });
 +  await expect(modal).toBeVisible();
 +
-+  // Every hole is listed, with its description and what answers it.
-+  await expect(modal.getByText("Source material", { exact: true })).toBeVisible();
-+  await expect(modal.getByRole("button", { name: /Documents, Findings/ })).toBeVisible();
++  // Every hole is a tab, and the red ones are the only thing holding Insert up.
++  await expect(modal.locator(".tab")).toHaveCount(2);
++  await expect(modal.locator(".tab.missing")).toHaveCount(1);
 +
-+  // One of them takes words, so Insert is held until it has some.
-+  await expect(modal.locator(".answer.missing")).toHaveCount(1);
++  // One hole at a time, opening on the first.
++  await expect(modal.locator(".answer h3")).toHaveText("Source material");
++  await expect(modal.locator(".scope .rule")).toContainText("Documents, Findings");
++
++  // Walk to the one that takes words and fill it.
++  await modal.getByRole("tab", { name: /Subject line/ }).click();
 +  await modal.getByRole("textbox", { name: "What Subject line says here" }).fill("Winter terms");
-+  await expect(modal.locator(".answer.missing")).toHaveCount(0);
++  await expect(modal.locator(".tab.missing")).toHaveCount(0);
++  await expect(modal.getByRole("button", { name: "Accept all defaults" })).toBeEnabled();
 +
-+  await modal.getByRole("button", { name: /Documents, Findings/ }).click();
++  await modal.getByRole("button", { name: "Previous", exact: true }).click();
++  await expect(modal.locator(".answer h3")).toHaveText("Source material");
++  await modal.locator(".scope").click();
 +  const builder = page.getByRole("dialog", { name: "What Source material selects here" });
 +  await expect(builder).toBeVisible();
 +  await builder.getByRole("button", { name: "Sets", exact: true }).click();
@@ -16549,7 +17489,8 @@
 +  await expect(builder.getByText("Winter filings").first()).toBeVisible();
 +  await builder.getByRole("button", { name: "Use this", exact: true }).click();
 +
-+  await expect(modal.getByRole("button", { name: /Winter filings/ })).toBeVisible();
++  await expect(modal.locator(".scope .rule")).toContainText("Winter filings");
++  await expect(modal.locator(".scope .tag")).toHaveText("Chosen");
 +  await modal.getByRole("button", { name: "Insert", exact: true }).click();
 +
 +  await expect(context.getByText("Inserted “Technical glossary”.", { exact: true })).toBeVisible();
@@ -16599,6 +17540,102 @@
 +  page.once("dialog", (dialog) => void dialog.accept());
 +  await context.getByRole("button", { name: "Discard", exact: true }).click();
 +  await expect(tabs(page).getByRole("button", { name: `Template · ${name}`, exact: true })).toHaveCount(0, { timeout: 15_000 });
++
++  await deleteTemplateFromLibrary(page, name);
++});
++
++/**
++ * The whole chain, from a prompt somebody writes to a copy that reads what
++ * somebody else chose. Nothing is declared and nothing is wired up by hand:
++ * writing the prompt is the whole of the authoring.
++ */
++test("a prompt written in a document becomes a hole the template asks about", async ({ page }) => {
++  const name = `Browser prompt ${Date.now()}`;
++
++  await page.goto("/app/dev-project", { waitUntil: "networkidle" });
++  await tabs(page).locator('button.tab.icon[aria-label="New tab"]').click();
++  await page.locator(".area-editors").getByRole("button", { name: "Document", exact: true }).click();
++
++  const editor = page.locator(".ProseMirror");
++  await expect(editor).toBeVisible();
++  await editor.locator('.document-block[data-kind="text"]').first().click();
++  const empty = page.locator('aside[aria-label="Inspector"][data-inspected="document-editor.empty-line"]');
++  await empty.getByRole("button", { name: "Block", exact: true }).click();
++  await page.getByRole("option", { name: "Prompt", exact: true }).click();
++
++  const inspector = page.locator(
++    'aside[aria-label="Inspector"][data-inspected="document-editor.prompt-block"]'
++  );
++  await expect(inspector).toBeVisible();
++  await inspector.getByLabel("Prompt").fill("Summarize the winter filings.");
++
++  // The Template section offers a name and reads the default context off the scope.
++  await expect(inspector.getByRole("button", { name: "Prompt 1", exact: true })).toBeVisible();
++  await expect(inspector.getByText("Everything in the project", { exact: true })).toBeVisible();
++
++  await inspector.getByRole("button", { name: "Prompt 1", exact: true }).click();
++  const holeName = inspector.getByRole("textbox", { name: "What this prompt's hole is called" });
++  await holeName.fill("winter_sources");
++  await holeName.press("Enter");
++  await expect(inspector.getByRole("button", { name: "winter_sources", exact: true })).toBeVisible();
++
++  await inspector.getByRole("button", { name: "What whoever places this is choosing" }).click();
++  const holeMeans = inspector.getByRole("textbox", { name: "What this prompt's hole stands for" });
++  await holeMeans.fill("Which filings the summary reads");
++  await holeMeans.blur();
++  await expect(
++    inspector.getByRole("button", { name: "Which filings the summary reads", exact: true })
++  ).toBeVisible();
++
++  // Save it as a template. Nothing else was declared.
++  await expect(page.locator(".title-bar")).toContainText("Saved", { timeout: 15_000 });
++  const context = await templatesPanel(page);
++  await context.getByRole("textbox", { name: "Template name" }).fill(name);
++  await context.getByRole("button", { name: "Save", exact: true }).click();
++  await expect(page.locator(".title-bar h1")).toContainText(`Template · ${name}`, { timeout: 15_000 });
++
++  // The prompt is a hole, named and described, defaulting to what it read.
++  const card = context.locator(".hole").filter({ hasText: "winter_sources" });
++  await expect(card).toBeVisible();
++  await expect(card).toContainText("Which filings the summary reads");
++  await expect(card.getByRole("button", { name: "Default scope", exact: true })).toHaveAttribute(
++    "title",
++    /^Everything in the project/
++  );
++
++  page.once("dialog", (dialog) => void dialog.accept());
++  await context.getByRole("button", { name: "Discard", exact: true }).click();
++  await expect(tabs(page).getByRole("button", { name: `Template · ${name}`, exact: true })).toHaveCount(0, {
++    timeout: 15_000
++  });
++
++  // Placing it asks about that prompt, and takes an answer for it.
++  await openDocumentFixture(page);
++  const panel = await templatesPanel(page);
++  await panel.getByTitle(`Insert “${name}” after the current row`).click();
++
++  const modal = page.getByRole("dialog", { name: `Insert “${name}”` });
++  await expect(modal).toBeVisible();
++  await expect(modal.locator(".answer h3")).toHaveText("winter_sources");
++  await expect(modal.locator(".means")).toHaveText("Which filings the summary reads");
++  await expect(modal.locator(".tab.missing")).toHaveCount(0);
++  await expect(modal.locator(".scope .tag")).toHaveText("Default");
++  await expect(modal.locator(".scope .rule")).toContainText("Everything in the project");
++
++  await modal.locator(".scope").click();
++  const builder = page.getByRole("dialog", { name: "What winter_sources selects here" });
++  await expect(builder).toBeVisible();
++  await builder.getByRole("button", { name: "Kinds", exact: true }).click();
++  await builder
++    .locator(".offer")
++    .filter({ hasText: "Findings" })
++    .getByRole("button", { name: "Add", exact: true })
++    .click();
++  await builder.getByRole("button", { name: "Use this", exact: true }).click();
++  await expect(modal.locator(".scope .tag")).toHaveText("Chosen");
++
++  await modal.getByRole("button", { name: "Insert", exact: true }).click();
++  await expect(panel.getByText(`Inserted “${name}”.`, { exact: true })).toBeVisible();
 +
 +  await deleteTemplateFromLibrary(page, name);
 +});
@@ -16755,10 +17792,10 @@
 +});
 ~~~~
 
-### new · `test/browser/template-reference.spec.ts` (+151 / −0)
+### new · `test/browser/template-reference.spec.ts` (+179 / −0)
 
 ~~~~diff
-@@ -0,0 +1,151 @@
+@@ -0,0 +1,179 @@
 +import { expect, test, type Page, type TestInfo } from "@playwright/test";
 +
 +const routes = [
@@ -16766,7 +17803,8 @@
 +  ["changes", "/app/dev-project/reference/templates/changes", "What changed"],
 +  ["scope", "/app/dev-project/reference/templates/scope", "What a hole selects"],
 +  ["integration", "/app/dev-project/reference/templates/integration", "End to end with prompts"],
-+  ["rebase", "/app/dev-project/reference/templates/rebase", "Where it meets the base"]
++  ["rebase", "/app/dev-project/reference/templates/rebase", "Where it meets the base"],
++  ["walkthrough", "/app/dev-project/reference/templates/walkthrough", "Walk it yourself"]
 +] as const;
 +
 +const unexpected: string[] = [];
@@ -16877,23 +17915,50 @@
 +  await expect(page.getByRole("heading", { level: 1, name: "How templates work" })).toBeVisible();
 +});
 +
-+test("the integration page draws its chain and names the one open link", async ({ page }) => {
++test("the integration page draws the whole chain, with every link carrying", async ({ page }) => {
++  // Two diagrams render through one serialised queue, and the sequence is a large one.
++  test.setTimeout(90_000);
 +  await page.setViewportSize({ width: 1500, height: 900 });
 +  await page.goto("/app/dev-project/reference/templates/integration", { waitUntil: "networkidle" });
 +
 +  // Both diagrams render rather than falling back to the error state.
-+  await expect(page.locator(".mermaid-output svg")).toHaveCount(2, { timeout: 30_000 });
++  await expect(page.locator(".mermaid-output svg")).toHaveCount(2, { timeout: 45_000 });
 +  await expect(page.locator(".diagram-error")).toHaveCount(0);
 +
-+  await expect(page.getByRole("heading", { level: 2, name: "Seven links, five of them carrying" })).toBeVisible();
-+  await expect(page.locator(".tref-badge.known")).toHaveCount(2);
-+  await expect(page.getByRole("heading", { level: 2, name: "The one open link, exactly" })).toBeVisible();
-+  await expect(
-+    page.locator(".tref-note.attention").getByText("keeps an authored prompt scope settled")
-+  ).toBeVisible();
++  await expect(page.getByRole("heading", { level: 2, name: "Seven links, and every one carries" })).toBeVisible();
++  await expect(page.locator(".tref-badge.clean")).toHaveCount(7);
++  await expect(page.locator(".tref-badge.known")).toHaveCount(0);
 +
-+  await page.getByRole("link", { name: "Where it meets the base", exact: false }).first().click();
-+  await expect(page.getByRole("heading", { level: 1, name: "Where it meets the base" })).toBeVisible();
++  // The rule that decides whether a hole arrives with an answer.
++  await expect(page.getByRole("heading", { level: 2, name: /Which scopes carry over/ })).toBeVisible();
++  await expect(page.getByRole("cell", { name: "Nothing set" })).toBeVisible();
++
++  await page.getByRole("link", { name: "Walk it yourself", exact: false }).first().click();
++  await expect(page.getByRole("heading", { level: 1, name: "Walk it yourself" })).toBeVisible();
++});
++
++test("the walkthrough drives the real components, and the rules follow", async ({ page }) => {
++  await page.setViewportSize({ width: 1500, height: 1000 });
++  await page.goto("/app/dev-project/reference/templates/walkthrough", { waitUntil: "networkidle" });
++
++  // Three prompts, three holes, and the one reading a named set carries no default.
++  const holes = page.locator("#made tbody tr");
++  await expect(holes).toHaveCount(3);
++  await expect(holes.nth(2).locator("td.none")).toHaveText("Nothing — it has to be answered");
++  await expect(page.locator(".tab.missing")).toHaveCount(1);
++
++  // Naming a prompt renames its hole, everywhere at once.
++  const first = page.locator(".prompt").first();
++  await first.getByRole("button", { name: "Prompt 1", exact: true }).click();
++  await first.getByRole("textbox", { name: "What this prompt's hole is called" }).fill("incident");
++  await first.getByRole("textbox", { name: "What this prompt's hole is called" }).press("Enter");
++  await expect(holes.nth(0).locator("code")).toHaveText("incident");
++  await expect(page.getByRole("tab", { name: "incident" })).toBeVisible();
++
++  // Cycling the third prompt's context off the named set gives its hole a default.
++  await page.locator(".prompt").nth(2).getByRole("button", { name: "Set default context" }).click();
++  await expect(page.locator(".tab.missing")).toHaveCount(0);
++  await expect(page.getByRole("button", { name: "Accept all defaults" })).toBeEnabled();
 +});
 +
 +test("the rebase page accounts for every conflict and both defects", async ({ page }) => {
@@ -17077,6 +18142,169 @@
      <!--
        Do not mount a closed presence layer just to have the primitive remove it
        in the same tick. Besides doing needless work for every inspector, that
+~~~~
+
+### new · `src/lib/components/authored/prompt-template/index.ts` (+8 / −0)
+
+~~~~diff
+@@ -0,0 +1,8 @@
++/**
++ * What a prompt becomes when its resource is made a template.
++ *
++ * It sits in the prompt's own inspector in both editors, because the person who
++ * wrote the prompt is the only one who knows what it stands for, and they are
++ * already looking at it.
++ */
++export { default as PromptTemplate } from "$authored-components/prompt-template/prompt-template.svelte";
+~~~~
+
+### new · `src/lib/components/authored/prompt-template/prompt-template.svelte` (+143 / −0)
+
+~~~~diff
+@@ -0,0 +1,143 @@
++<script lang="ts">
++  import { PanelButton, PanelEditableText, PanelNote, PanelSection } from "$authored-components/panel";
++  import { traceNode } from "$development-components/trace.svelte";
++
++  /**
++   * What a prompt becomes when its resource is made a template.
++   *
++   * Every prompt is one hole, so nothing here is a switch: the name is offered
++   * rather than asked for, and a template made without opening this section
++   * still places. What the section buys is a name the person placing it will
++   * recognise, and words telling them what the prompt is for.
++   *
++   * It sits in the prompt's own inspector, in the ordinary editor as much as in
++   * a working copy, because the author of the prompt is the only person who
++   * knows what it stands for and they are here already.
++   */
++  let {
++    name,
++    offered,
++    description,
++    context,
++    settled,
++    disabled = false,
++    onname,
++    ondescription,
++    oncontext
++  }: {
++    /** What it is called, or empty while the offered name still stands. */
++    name: string;
++    /** The name it carries until somebody types one. */
++    offered: string;
++    description: string;
++    /** What the hole selects by default, in words, or undefined when it has none. */
++    context?: string;
++    /** Whether that default was settled by the prompt's own scope. */
++    settled: boolean;
++    disabled?: boolean;
++    onname: (next: string) => void;
++    ondescription: (next: string) => void;
++    oncontext: () => void;
++  } = $props();
++
++  const trace = traceNode("PromptTemplate", () => ({ name, offered, settled }));
++
++  const shown = $derived(name.trim() === "" ? offered : name.trim());
++
++  /** Blank is not a name, so the offered one comes back rather than nothing. */
++  const rename = (next: string) => {
++    const trimmed = next.trim();
++    onname(trimmed === "" ? offered : trimmed);
++  };
++</script>
++
++<PanelSection title="Template" chevron="end">
++  <div class="template" {...trace}>
++    <div class="field">
++      <span class="label">Hole name</span>
++      <PanelEditableText
++        value={shown}
++        label="What this prompt's hole is called"
++        placeholder={offered}
++        {disabled}
++        onchange={rename}
++      />
++    </div>
++
++    <div class="field">
++      <span class="label">Description <em>optional</em></span>
++      <PanelEditableText
++        value={description}
++        label="What this prompt's hole stands for"
++        placeholder="What whoever places this is choosing"
++        multiline
++        {disabled}
++        onchange={ondescription}
++      />
++    </div>
++
++    <div class="field">
++      <span class="label">Default context</span>
++      {#if context === undefined}
++        <PanelNote tone="muted">
++          This prompt reads something particular to this project, so it cannot carry a default.
++          Whoever places the template has to choose.
++        </PanelNote>
++      {:else}
++        <p class="rule" class:settled>{context}</p>
++      {/if}
++      <div class="act">
++        <PanelButton
++          label="Set default context"
++          {disabled}
++          title="Choose what this hole selects when nobody says otherwise"
++          onclick={oncontext}
++        />
++      </div>
++    </div>
++  </div>
++</PanelSection>
++
++<style>
++  .template {
++    display: flex;
++    flex-direction: column;
++    gap: calc(var(--token-spacing-unit) * 2);
++  }
++
++  .field {
++    display: flex;
++    flex-direction: column;
++    gap: calc(var(--token-spacing-unit) * 0.75);
++  }
++
++  .label {
++    color: var(--token-ink-muted);
++    font-size: var(--token-text-caption);
++    font-weight: 650;
++    letter-spacing: 0.06em;
++    line-height: var(--token-text-caption-leading);
++    text-transform: uppercase;
++  }
++
++  .label em {
++    font-style: normal;
++    font-weight: 400;
++    text-transform: none;
++  }
++
++  .rule {
++    margin: 0;
++    color: var(--token-ink-secondary);
++    font-size: var(--token-text-body-sm);
++    line-height: var(--token-text-body-sm-leading);
++  }
++
++  .rule.settled {
++    color: var(--token-ink-primary);
++  }
++
++  .act {
++    display: flex;
++  }
++</style>
 ~~~~
 
 ### new · `src/lib/components/authored/scope-builder/index.ts` (+9 / −0)
@@ -17569,31 +18797,31 @@
 +export { default as TemplateAnswers } from "$authored-components/template-answers/template-answers.svelte";
 ~~~~
 
-### new · `src/lib/components/authored/template-answers/template-answers.svelte` (+185 / −0)
+### new · `src/lib/components/authored/template-answers/template-answers.svelte` (+372 / −0)
 
 ~~~~diff
-@@ -0,0 +1,185 @@
+@@ -0,0 +1,372 @@
 +<script lang="ts">
 +  import { Button } from "$vendored-components/button";
 +  import { Textarea } from "$vendored-components/textarea";
 +  import { traceNode } from "$development-components/trace.svelte";
 +
 +  /**
-+   * Every hole a template asks for, as a name, what it means, and what it
-+   * is answered with.
++   * Every hole a template asks for, one at a time.
 +   *
-+   * **All of them, always, and nothing folded away.** A template's holes are
-+   * the shape of the thing you are about to make, so the whole list is on screen
-+   * and each row reads top to bottom: the name, the sentence whoever made the
-+   * template wrote, and the value. Nothing here is a disclosure, because a hole
-+   * you have to open to see is a hole you can forget.
++   * **One question on screen, and all of them in view.** A hole is a question,
++   * and a page of twelve questions is read as a form rather than answered as
++   * one. So the body holds a single hole — its name, what it stands for, the
++   * prompt it fills if it fills one, and the control — while the tabs above
++   * keep the whole shape visible and say which still need an answer.
 +   *
-+   * **The list scrolls; the modal does not grow.** A template with twelve
-+   * holes and one with two open the same size, so nothing jumps.
++   * **Red is the only thing that stops you.** A scope always has an answer,
++   * because the whole project is the floor; only words can be missing. When no
++   * tab is red the template can be placed as it stands, and the button that
++   * does it sits right there rather than at the end of a walk.
 +   *
 +   * **The value is the control.** Text is a field you type in. A scope is a
-+   * block reading what it selects, which opens the builder when pressed. A row
-+   * with nothing in it carries a rule down its left edge.
++   * block reading what it selects, which opens the builder when pressed.
 +   */
 +
 +  export type AnswerRow = {
@@ -17612,12 +18840,16 @@
 +
 +  let {
 +    rows,
++    prompts = {},
 +    disabled = false,
 +    onscope,
 +    ontext,
-+    onreset
++    onreset,
++    onaccept
 +  }: {
 +    rows: readonly AnswerRow[];
++    /** What the prompt behind a hole asks, by hole name, when a prompt is behind it. */
++    prompts?: Readonly<Record<string, string>>;
 +    disabled?: boolean;
 +    /** Open the builder for one scope hole. */
 +    onscope: (key: string) => void;
@@ -17625,138 +18857,321 @@
 +    ontext: (key: string, words: string) => void;
 +    /** Put one hole back to what the template suggests. */
 +    onreset: (key: string) => void;
++    /** Take everything as it stands and place the template. */
++    onaccept?: () => void;
 +  } = $props();
 +
-+  const trace = traceNode("TemplateAnswers", () => ({
-+    rows: rows.length,
-+    missing: rows.filter((row) => row.missing).length
-+  }));
++  let at = $state(0);
++
++  /** A hole answered and then removed must not leave the walk past its end. */
++  const index = $derived(Math.min(at, Math.max(rows.length - 1, 0)));
++  const shown = $derived(rows[index]);
++  const asks = $derived(shown === undefined ? undefined : prompts[shown.key]);
++  const missing = $derived(rows.filter((row) => row.missing).length);
++  const ready = $derived(rows.length > 0 && missing === 0);
++
++  const trace = traceNode("TemplateAnswers", () => ({ rows: rows.length, missing, at: index }));
++
++  /** Next lands on the first hole that still needs words, if any are left after this one. */
++  const step = (by: number) => {
++    at = Math.min(Math.max(index + by, 0), Math.max(rows.length - 1, 0));
++  };
 +</script>
 +
-+<div {...trace} class="answers">
-+  {#each rows as row (row.key)}
-+    <article class="answer" class:missing={row.missing}>
-+      <header>
-+        <b>{row.label}</b>
-+        {#if row.answered}
-+          <Button
-+            variant="ghost"
-+            size="xs"
-+            {disabled}
-+            title={`Put ${row.label} back to what the template suggests`}
-+            onclick={() => onreset(row.key)}
-+          >
-+            Use the default
-+          </Button>
-+        {/if}
-+      </header>
-+
-+      <p class="what">
-+        {row.description ??
-+          (row.kind === "text" ? "Words this template asks for." : "What this hole selects.")}
-+      </p>
-+
-+      {#if row.kind === "text"}
-+        <Textarea
-+          value={row.value}
-+          rows={2}
-+          {disabled}
-+          aria-label={`What ${row.label} says here`}
-+          placeholder={`What ${row.label.toLocaleLowerCase()} says here`}
-+          oninput={(event) => ontext(row.key, event.currentTarget.value)}
-+        />
-+      {:else}
++<div class="ask" {...trace}>
++  {#if rows.length === 0}
++    <p class="none">This template asks for nothing. Place it as it is.</p>
++  {:else}
++    <div class="tabs" role="tablist" aria-label="Holes to fill">
++      {#each rows as row, position (row.key)}
 +        <button
 +          type="button"
-+          class="scope"
++          role="tab"
++          class="tab"
++          class:missing={row.missing}
++          class:here={position === index}
++          aria-selected={position === index}
 +          {disabled}
-+          title={`Choose what ${row.label} selects here`}
-+          onclick={() => onscope(row.key)}
++          onclick={() => (at = position)}
 +        >
-+          <span class="tag">{row.answered ? "Chosen" : "Default"}</span>
-+          <span class="rule">{row.value}</span>
++          <span class="tab-name">{row.label}</span>
++          {#if row.missing}<span class="dot" aria-label="needs words"></span>{/if}
 +        </button>
++      {/each}
++    </div>
++
++    {#if shown !== undefined}
++      <article class="answer" class:missing={shown.missing}>
++        <header>
++          <h3>{shown.label}</h3>
++          <span class="of">{index + 1} of {rows.length}</span>
++        </header>
++
++        {#if shown.description}
++          <p class="means">{shown.description}</p>
++        {/if}
++
++        {#if asks}
++          <blockquote class="asks">
++            <span>The prompt</span>
++            <p>{asks}</p>
++          </blockquote>
++        {/if}
++
++        {#if shown.kind === "text"}
++          <label class="words">
++            <span class="what">Words to fill it with</span>
++            <Textarea
++              value={shown.value}
++              rows={4}
++              {disabled}
++              aria-label={`What ${shown.label} says here`}
++              placeholder="What it says in this copy"
++              oninput={(event) => ontext(shown.key, (event.currentTarget as HTMLTextAreaElement).value)}
++            />
++          </label>
++        {:else}
++          <div class="selects">
++            <span class="what">What it reads here</span>
++            <button
++              type="button"
++              class="scope"
++              {disabled}
++              onclick={() => onscope(shown.key)}
++            >
++              <span class="tag">{shown.answered ? "Chosen" : "Default"}</span>
++              <span class="rule">{shown.value}</span>
++            </button>
++            {#if shown.answered}
++              <div class="undo">
++                <Button size="xs" variant="ghost" {disabled} onclick={() => onreset(shown.key)}>
++                  Back to the default
++                </Button>
++              </div>
++            {/if}
++          </div>
++        {/if}
++      </article>
++    {/if}
++
++    <footer class="walk">
++      <div class="steps">
++        <Button size="xs" variant="ghost" disabled={disabled || index === 0} onclick={() => step(-1)}>
++          Previous
++        </Button>
++        <Button
++          size="xs"
++          variant="ghost"
++          disabled={disabled || index >= rows.length - 1}
++          onclick={() => step(1)}
++        >
++          Next
++        </Button>
++      </div>
++      {#if onaccept !== undefined}
++        <Button size="xs" disabled={disabled || !ready} onclick={onaccept}>
++          {ready ? "Accept all defaults" : `${missing} still needs words`}
++        </Button>
 +      {/if}
-+    </article>
-+  {/each}
++    </footer>
++  {/if}
 +</div>
 +
 +<style>
-+  .answers {
++  .ask {
++    display: grid;
++    grid-template-rows: auto minmax(0, 1fr) auto;
++    height: 26rem;
++    gap: calc(var(--token-spacing-unit) * 2);
++  }
++
++  .none {
++    margin: 0;
++    color: var(--token-ink-muted);
++    font-size: var(--token-text-body-sm);
++  }
++
++  .tabs {
 +    display: flex;
-+    flex-direction: column;
-+    gap: calc(var(--token-spacing-unit) * 1.5);
-+    height: 24rem;
-+    padding: 0 calc(var(--token-spacing-unit) * 3);
-+    overflow-y: auto;
++    gap: calc(var(--token-spacing-unit) * 1);
++    overflow-x: auto;
++    padding-bottom: calc(var(--token-spacing-unit) * 0.5);
++    scrollbar-width: thin;
++  }
++
++  .tab {
++    display: flex;
++    flex: 0 0 auto;
++    align-items: center;
++    gap: calc(var(--token-spacing-unit) * 1);
++    padding: calc(var(--token-spacing-unit) * 1) calc(var(--token-spacing-unit) * 1.5);
++    border: 1px solid var(--token-border-subtle);
++    border-radius: var(--token-radius-control);
++    background: var(--token-surface-panel);
++    color: var(--token-ink-secondary);
++    cursor: pointer;
++    font-size: var(--token-text-caption);
++    font-weight: 650;
++    line-height: var(--token-text-caption-leading);
++  }
++
++  .tab:hover:not(:disabled) {
++    border-color: var(--token-border-strong);
++    color: var(--token-ink-primary);
++  }
++
++  .tab.here {
++    border-color: var(--token-color-interactive-text);
++    background: var(--token-color-interactive-surface);
++    color: var(--token-color-interactive-text);
++  }
++
++  .tab.missing {
++    border-color: var(--token-color-danger-text);
++    color: var(--token-color-danger-text);
++  }
++
++  .tab-name {
++    max-width: 12rem;
++    overflow: hidden;
++    text-overflow: ellipsis;
++    white-space: nowrap;
++  }
++
++  .dot {
++    width: 0.4rem;
++    height: 0.4rem;
++    border-radius: 999px;
++    background: var(--token-color-danger-text);
 +  }
 +
 +  .answer {
 +    display: flex;
 +    flex-direction: column;
-+    gap: calc(var(--token-spacing-unit) * 1);
-+    padding: calc(var(--token-spacing-unit) * 1.5);
++    gap: calc(var(--token-spacing-unit) * 1.5);
++    overflow-y: auto;
++    padding: calc(var(--token-spacing-unit) * 2.5);
 +    border: 1px solid var(--token-border-subtle);
-+    border-inline-start: 3px solid transparent;
++    border-inline-start: 3px solid var(--token-border-subtle);
 +    border-radius: var(--token-radius-control);
 +    background: var(--token-surface-elevated);
 +  }
 +
-+  .answer.missing { border-inline-start-color: var(--token-color-danger-text); }
++  .answer.missing {
++    border-inline-start-color: var(--token-color-danger-text);
++  }
 +
-+  header {
++  .answer header {
++    display: flex;
++    align-items: baseline;
++    justify-content: space-between;
++    gap: calc(var(--token-spacing-unit) * 2);
++  }
++
++  .answer h3 {
++    margin: 0;
++    color: var(--token-ink-primary);
++    font-size: var(--token-text-body);
++    font-weight: 650;
++    line-height: var(--token-text-body-leading);
++  }
++
++  .of {
++    color: var(--token-ink-muted);
++    font-size: var(--token-text-caption);
++    white-space: nowrap;
++  }
++
++  .means {
++    margin: 0;
++    color: var(--token-ink-secondary);
++    font-size: var(--token-text-body-sm);
++    line-height: var(--token-text-body-sm-leading);
++  }
++
++  .asks {
++    display: flex;
++    flex-direction: column;
++    gap: calc(var(--token-spacing-unit) * 0.5);
++    margin: 0;
++    padding: calc(var(--token-spacing-unit) * 1.5) calc(var(--token-spacing-unit) * 2);
++    border-inline-start: 2px solid var(--token-border-strong);
++    background: var(--token-surface-work);
++  }
++
++  .asks span,
++  .what {
++    color: var(--token-ink-muted);
++    font-size: var(--token-text-caption);
++    font-weight: 650;
++    letter-spacing: 0.06em;
++    line-height: var(--token-text-caption-leading);
++    text-transform: uppercase;
++  }
++
++  .asks p {
++    margin: 0;
++    color: var(--token-ink-primary);
++    font-size: var(--token-text-body-sm);
++    line-height: var(--token-text-body-sm-leading);
++  }
++
++  .words,
++  .selects {
++    display: flex;
++    flex-direction: column;
++    gap: calc(var(--token-spacing-unit) * 0.75);
++  }
++
++  .scope {
++    display: flex;
++    flex-direction: column;
++    gap: calc(var(--token-spacing-unit) * 0.75);
++    align-items: flex-start;
++    padding: calc(var(--token-spacing-unit) * 1.5);
++    border: 1px solid var(--token-border-subtle);
++    border-radius: var(--token-radius-control);
++    background: var(--token-surface-panel);
++    cursor: pointer;
++    text-align: start;
++  }
++
++  .scope:hover:not(:disabled) {
++    border-color: var(--token-border-strong);
++  }
++
++  .tag {
++    padding: 0 calc(var(--token-spacing-unit) * 1);
++    border-radius: var(--token-radius-control);
++    background: var(--token-surface-work);
++    color: var(--token-ink-muted);
++    font-size: var(--token-text-caption);
++    font-weight: 650;
++    letter-spacing: 0.04em;
++    text-transform: uppercase;
++  }
++
++  .rule {
++    color: var(--token-ink-primary);
++    font-size: var(--token-text-body-sm);
++    line-height: var(--token-text-body-sm-leading);
++  }
++
++  .undo {
++    display: flex;
++  }
++
++  .walk {
 +    display: flex;
 +    align-items: center;
 +    justify-content: space-between;
 +    gap: calc(var(--token-spacing-unit) * 2);
 +  }
 +
-+  header b {
-+    color: var(--token-ink-primary);
-+    font-size: var(--token-text-body-sm);
-+    font-weight: 600;
-+  }
-+
-+  .what {
-+    margin: 0;
-+    color: var(--token-ink-secondary);
-+    font-size: var(--token-text-caption);
-+    line-height: var(--token-text-caption-leading);
-+  }
-+
-+  /* The rule reads to four lines, then scrolls, so one long scope cannot own the modal. */
-+  .scope {
++  .steps {
 +    display: flex;
-+    gap: calc(var(--token-spacing-unit) * 1.5);
-+    align-items: flex-start;
-+    max-height: 5.5rem;
-+    padding: calc(var(--token-spacing-unit) * 1) calc(var(--token-spacing-unit) * 1.5);
-+    overflow-y: auto;
-+    border: 1px solid var(--token-border-subtle);
-+    border-radius: var(--token-radius-control);
-+    background: var(--token-surface-panel);
-+    color: var(--token-ink-primary);
-+    font-size: var(--token-text-body-sm);
-+    line-height: var(--token-text-body-sm-leading);
-+    text-align: start;
-+    cursor: pointer;
++    gap: calc(var(--token-spacing-unit) * 1);
 +  }
-+
-+  .scope:hover { border-color: var(--token-border-strong); background: var(--token-surface-work); }
-+
-+  .tag {
-+    flex: none;
-+    padding: 0 calc(var(--token-spacing-unit) * 1);
-+    border-radius: var(--token-radius-control);
-+    background: var(--token-color-accent-1-surface);
-+    color: var(--token-color-accent-1-text);
-+    font-size: 10px;
-+    font-weight: 700;
-+    letter-spacing: .04em;
-+    text-transform: uppercase;
-+  }
-+
-+  .rule { min-width: 0; }
 +</style>
 ~~~~
 
@@ -17823,7 +19238,7 @@
 +        <span class="tref-kicker">02 · The audit</span>
 +        <h1>What changed</h1>
 +        <p class="tref-lede">
-+          Fifteen systematic changes, the decisions three reviews settled, every file with its line count, what
++          Seventeen systematic changes, the decisions three reviews settled, every file with its line count, what
 +          was run to check the work, and what is still open. Measured against <code>{BASELINE}</code>, the
 +          commit this branch sits on, so it keeps saying the same thing as that branch moves on.
 +        </p>
@@ -17834,13 +19249,13 @@
 +          <div><dt>Created</dt><dd>{made}</dd></div>
 +          <div><dt>Changed</dt><dd>{changed}</dd></div>
 +          <div><dt>Lines</dt><dd>+{added.toLocaleString()} / −{deleted.toLocaleString()}</dd></div>
-+          <div><dt>Committed</dt><dd>Five commits, on derived outputs</dd></div>
++          <div><dt>Committed</dt><dd>Seven commits, on derived outputs</dd></div>
 +        </dl>
 +      </div>
 +    </header>
 +
 +    <nav class="tref-jumps" aria-label="On this page">
-+      <a href="#systematic">Fifteen changes</a>
++      <a href="#systematic">Seventeen changes</a>
 +      <a href="#model">The model, before and after</a>
 +      <a href="#decisions">What the reviews settled</a>
 +      <a href="#ledger">Every file</a>
@@ -17851,7 +19266,7 @@
 +
 +    <section class="tref-section" id="systematic">
 +      <div class="tref-section-head">
-+        <div><span class="tref-kicker">Before → now</span><h2>Fifteen systematic changes</h2></div>
++        <div><span class="tref-kicker">Before → now</span><h2>Seventeen systematic changes</h2></div>
 +        <p>
 +          Each is a decision with consequences across several files, written with what it replaced and why,
 +          so the page stays useful after the code is familiar.
@@ -18012,7 +19427,7 @@
 +      <div class="tref-section-head">
 +        <div><span class="tref-kicker">Already done</span><h2>Where it sits</h2></div>
 +        <p>
-+          Five commits on <code>work/template-features</code>, sitting on
++          Seven commits on <code>work/template-features</code>, sitting on
 +          <code>work/derived-output-architecture</code> rather than on main — because that is where
 +          prompt blocks are, and a prompt's scope is what a scope hole fills. Everything on this page
 +          is measured from there, so the numbers say what this branch adds and nothing else.
@@ -19268,10 +20683,10 @@
 +</style>
 ~~~~
 
-### new · `src/lib/development-views/template-reference/components/integration-page.svelte` (+278 / −0)
+### new · `src/lib/development-views/template-reference/components/integration-page.svelte` (+241 / −0)
 
 ~~~~diff
-@@ -0,0 +1,278 @@
+@@ -0,0 +1,241 @@
 +<script lang="ts">
 +  import { page } from "$app/state";
 +
@@ -19281,9 +20696,10 @@
 +  import {
 +    CHAIN,
 +    CHAIN_DIAGRAM,
-+    FORKS,
++    DEFAULT_RULE,
++    LIMITS,
 +    RESOLUTION_DIAGRAM,
-+    WALKTHROUGH
++    SETTLED
 +  } from "$development-views/template-reference/procedures/integration";
 +  import { hrefOf } from "$development-views/template-reference/procedures/navigation";
 +
@@ -19299,14 +20715,7 @@
 +
 +  const project = $derived(page.params.project ?? "dev-project");
 +
-+  const STATE_WORDS: Record<string, string> = {
-+    works: "works",
-+    stub: "a stub",
-+    missing: "missing"
-+  };
-+
 +  const working = CHAIN.filter((link) => link.state === "works").length;
-+  const open = CHAIN.filter((link) => link.state !== "works");
 +</script>
 +
 +<div class="tref">
@@ -19319,19 +20728,19 @@
 +        <h1>End to end with prompts</h1>
 +        <p class="tref-lede">
 +          A template is a function and a prompt is what reads the project, so the two were always going
-+          to meet. This page walks the whole chain — write a prompt, save the thing as a template, be
-+          asked what the prompt should read, answer, and get a copy that reads it — and says exactly
-+          which links carry weight today. {working} of the {CHAIN.length} do. One is a control wired to
-+          nothing, and one has never been built.
++          to meet. Write a prompt, save the thing as a template, be asked what that prompt should read
++          this time, answer, and get a copy that reads it. All {working} links carry. Nothing is
++          declared, nothing is wired up by hand, and a template made without a single thought about
++          templates still asks the right question.
 +        </p>
 +      </div>
 +      <div class="tref-facts">
 +        <dl>
-+          <div><dt>Links in the chain</dt><dd>{CHAIN.length}</dd></div>
-+          <div><dt>Working</dt><dd>{working}</dd></div>
-+          <div><dt>Open</dt><dd>{open.length}</dd></div>
-+          <div><dt>Forks to settle</dt><dd>{FORKS.length}</dd></div>
-+          <div><dt>Blocking</dt><dd>Link 04 only</dd></div>
++          <div><dt>Links in the chain</dt><dd>{CHAIN.length} of {CHAIN.length}</dd></div>
++          <div><dt>Holes per prompt</dt><dd>One, always</dd></div>
++          <div><dt>Declaring needed</dt><dd>None</dd></div>
++          <div><dt>Offered name</dt><dd>Prompt 1, Prompt 2, …</dd></div>
++          <div><dt>Can hold a placement up</dt><dd>Empty words, no default</dd></div>
 +        </dl>
 +      </div>
 +    </header>
@@ -19339,26 +20748,25 @@
 +    <nav class="tref-jumps" aria-label="On this page">
 +      <a href="#chain">The chain</a>
 +      <a href="#shape">What it looks like</a>
-+      <a href="#gap">The one open link</a>
-+      <a href="#forks">What has to be decided</a>
-+      <a href="#resolution">What already happens on placement</a>
-+      <a href="#walk">Walk it yourself</a>
++      <a href="#defaults">Which scopes carry over</a>
++      <a href="#settled">What was decided</a>
++      <a href="#resolution">What happens on placement</a>
++      <a href="#limits">Where it stops</a>
 +    </nav>
 +
 +    <section class="tref-section" id="chain">
 +      <div class="tref-section-head">
-+        <div><span class="tref-kicker">Link by link</span><h2>Seven links, five of them carrying</h2></div>
++        <div><span class="tref-kicker">Link by link</span><h2>Seven links, and every one carries</h2></div>
 +        <p>
 +          Each row is one thing that has to happen for a prompt written by one person to be answered by
-+          another. The evidence column names the test that would fail if the link broke — or, for the
-+          two that are open, the code or test that pins what happens instead.
++          another. The evidence column names the test that fails if the link breaks.
 +        </p>
 +      </div>
 +
 +      <div class="tref-scroll">
 +        <table class="tref-table">
 +          <thead>
-+            <tr><th></th><th>What happens</th><th>The gesture</th><th>What runs</th><th>State</th><th>Evidence</th></tr>
++            <tr><th></th><th>What happens</th><th>The gesture</th><th>What runs</th><th></th><th>Evidence</th></tr>
 +          </thead>
 +          <tbody>
 +            {#each CHAIN as link (link.index)}
@@ -19367,158 +20775,8 @@
 +                <td>{link.step}</td>
 +                <td class="muted">{link.gesture}</td>
 +                <td class="muted"><code>{link.runs}</code></td>
-+                <td>
-+                  <span
-+                    class="tref-badge"
-+                    class:clean={link.state === "works"}
-+                    class:known={link.state !== "works"}
-+                  >{STATE_WORDS[link.state]}</span>
-+                </td>
++                <td><span class="tref-badge clean">works</span></td>
 +                <td class="muted">{link.evidence}</td>
-+              </tr>
-+            {/each}
-+          </tbody>
-+        </table>
-+      </div>
-+    </section>
-+
-+    <section class="tref-section" id="shape">
-+      <div class="tref-section-head">
-+        <div><span class="tref-kicker">The shape of it</span><h2>Where the chain breaks</h2></div>
-+        <p>
-+          Everything solid is built and covered. The two dashed nodes are the open link and what happens
-+          instead of it: a template made from an authored prompt keeps that prompt's own sources, so
-+          every copy reads what the author read and nobody is asked anything.
-+        </p>
-+      </div>
-+
-+      <div class="tref-figure">
-+        <MermaidDiagram
-+          source={CHAIN_DIAGRAM}
-+          label="The chain from an authored prompt to a filled copy, with the missing link drawn dashed"
-+          caption="Solid: built and covered by a test. Dashed: the Scope control that writes nothing, and the copy you get because of it."
-+          minHeight="20rem"
-+        />
-+      </div>
-+    </section>
-+
-+    <section class="tref-section" id="gap">
-+      <div class="tref-section-head">
-+        <div><span class="tref-kicker">Link 04</span><h2>The one open link, exactly</h2></div>
-+        <p>
-+          It is worth stating precisely, because everything on either side of it works and it would be
-+          easy to think the chain is whole.
-+        </p>
-+      </div>
-+
-+      <div class="tref-cards">
-+        <article class="tref-card">
-+          <h3>What a prompt carries</h3>
-+          <p>
-+            A prompt block has an optional <code>scope</code>. Written in the editor, it is settled —
-+            the whole project — because the inspector's Scope control offers that and nothing else.
-+          </p>
-+        </article>
-+        <article class="tref-card">
-+          <h3>What declaring looks for</h3>
-+          <p>
-+            <code>declaredFor</code> walks the body for prompt scopes holding
-+            <code>{"{ select: \"hole\", name }"}</code> and declares one hole per name found. A settled
-+            scope holds no such term.
-+          </p>
-+        </article>
-+        <article class="tref-card">
-+          <h3>So what happens</h3>
-+          <p>
-+            The template is made, the prompt is carried, the generated answer is dropped — and the hole
-+            list is empty. Placing it asks nothing, and every copy reads the author's own sources.
-+          </p>
-+        </article>
-+      </div>
-+
-+      <div class="tref-note attention">
-+        <h4>This is pinned, not merely observed</h4>
-+        <p>
-+          <code>capabilities/templates/test/unit/answers.test.ts</code> holds a case named <b>keeps an
-+          authored prompt scope settled, and so declares no hole for it</b>. It builds a document whose
-+          only block is a prompt scoped to the whole project, makes a template from it, and asserts that
-+          <code>holes</code> is empty and the scope came through unchanged. When link 04 is built, that
-+          test is what changes — which is the point of writing it down rather than leaving the gap to be
-+          rediscovered.
-+        </p>
-+      </div>
-+
-+      <div class="tref-note">
-+        <h4>Why the term exists at all, if nothing writes it</h4>
-+        <p>
-+          <code>{"{ select: \"hole\" }"}</code> is not speculative. A template that already holds one —
-+          from the seed, or from inserting a template into a working copy, which keeps the terms rather
-+          than resolving them — flows through the entire rest of the chain today. The hole is asked for,
-+          answered, normalised, resolved and read. What is missing is only the gesture that puts the
-+          first one there.
-+        </p>
-+      </div>
-+    </section>
-+
-+    <section class="tref-section" id="forks">
-+      <div class="tref-section-head">
-+        <div><span class="tref-kicker">Not settled</span><h2>What has to be decided before link 04 is built</h2></div>
-+        <p>
-+          Three questions, each with the answer I would give and what it costs to answer otherwise.
-+          None of them is settled, and none should be treated as settled because it is written here.
-+        </p>
-+      </div>
-+
-+      {#each FORKS as fork (fork.index)}
-+        <article class="tref-change">
-+          <span>{fork.index}</span>
-+          <div>
-+            <h3>{fork.question}</h3>
-+            <p>{fork.because}</p>
-+          </div>
-+          <div class="state after"><span>Recommended</span><p>{fork.recommended}</p></div>
-+          <div class="state before"><span>Instead</span><p>{fork.alternative} — {fork.cost}</p></div>
-+        </article>
-+      {/each}
-+    </section>
-+
-+    <section class="tref-section" id="resolution">
-+      <div class="tref-section-head">
-+        <div><span class="tref-kicker">Links 05 and 06</span><h2>What already happens when a template is placed</h2></div>
-+        <p>
-+          This half of the chain is finished and covered. It is worth reading before deciding link 04,
-+          because it says what a hole has to be for the rest to work: a name, and nothing else.
-+        </p>
-+      </div>
-+
-+      <div class="tref-figure">
-+        <MermaidDiagram
-+          source={RESOLUTION_DIAGRAM}
-+          label="What runs between pressing Insert and the new copy appearing"
-+          caption="Every step here is built. The bound resourceSets row is what makes an exclusion expressible at all — a difference cannot be substituted on a prompt's excluding side."
-+          minHeight="34rem"
-+        />
-+      </div>
-+    </section>
-+
-+    <section class="tref-section" id="walk">
-+      <div class="tref-section-head">
-+        <div><span class="tref-kicker">In the app</span><h2>Walk it yourself</h2></div>
-+        <p>
-+          Six steps in the running application, starting from what is seeded. The last one is where the
-+          walk stops, and stopping there is the finding rather than a mistake in the instructions.
-+        </p>
-+      </div>
-+
-+      <div class="tref-scroll">
-+        <table class="tref-table">
-+          <thead><tr><th></th><th>Do this</th><th>You should see</th></tr></thead>
-+          <tbody>
-+            {#each WALKTHROUGH as step (step.index)}
-+              <tr>
-+                <td class="num">{step.index}</td>
-+                <td>{step.does}</td>
-+                <td class="muted">{step.sees}</td>
 +              </tr>
 +            {/each}
 +          </tbody>
@@ -19526,15 +20784,135 @@
 +      </div>
 +
 +      <div class="tref-note success">
-+        <h4>What the suite walks without you</h4>
++        <h4>The gesture column is the point</h4>
 +        <p>
-+          Six browser cases cover this ground from a clean seed: inserting a template and answering
-+          every hole, saving a document as a template and setting a hole's default scope, making a text
-+          hole with Create hole and finding its atom in the prose, saving one slide as a deck template,
-+          making and counting a project's resource sets, and building a default that excludes something
-+          and reading it back as the rule. They run against the system Chromium because the bundled
-+          headless shell cannot load its libraries here.
++          Two of the seven links have no gesture at all. Making a template turns every prompt into a
++          hole because that is what saving means, and the copy reads what was chosen because that is
++          what a resolved body is. The Template section on a prompt is worth opening — a name somebody
++          will recognise, and a sentence saying what they are choosing — but nothing breaks if nobody
++          ever does.
 +        </p>
++      </div>
++    </section>
++
++    <section class="tref-section" id="shape">
++      <div class="tref-section-head">
++        <div><span class="tref-kicker">The shape of it</span><h2>Where each piece runs</h2></div>
++        <p>
++          Three groups, and the ordering inside the middle one is the whole of the design: the holes
++          are read before the body is made portable, because whether a prompt's scope survives is
++          exactly what decides whether its hole gets a default.
++        </p>
++      </div>
++
++      <div class="tref-figure">
++        <MermaidDiagram
++          source={CHAIN_DIAGRAM}
++          label="Authoring a prompt, making a template from it, and placing that template"
++          caption="withAsks sits between them because a template leaves the derived output behind, and the question has to be copied onto the block while the link still exists."
++          minHeight="20rem"
++        />
++      </div>
++    </section>
++
++    <section class="tref-section" id="defaults">
++      <div class="tref-section-head">
++        <div><span class="tref-kicker">The rule</span><h2>Which scopes carry over, and which do not</h2></div>
++        <p>
++          A hole with a default can be left alone; a hole without one has to be answered. The line is
++          whether the scope means the same thing in a project that has never been seen.
++        </p>
++      </div>
++
++      <div class="tref-scroll">
++        <table class="tref-table">
++          <thead><tr><th>The prompt read</th><th>The hole defaults to</th><th>Because</th></tr></thead>
++          <tbody>
++            {#each DEFAULT_RULE as row (row.scope)}
++              <tr>
++                <td>{row.scope}</td>
++                <td>{row.carries}</td>
++                <td class="muted">{row.because}</td>
++              </tr>
++            {/each}
++          </tbody>
++        </table>
++      </div>
++
++      <div class="tref-note">
++        <h4>Why this makes the common case free</h4>
++        <p>
++          Nobody scopes a prompt today: the base's Scope control offers one option and writes nothing,
++          so every prompt written in the editor reads the whole project. Under this rule every one of
++          those becomes a hole that already has an answer — so a person can write four prompts, save a
++          template, place it, and press Accept all defaults without ever making a decision. The rule
++          only starts asking things of you at the point where you started asking things of the project.
++        </p>
++      </div>
++    </section>
++
++    <section class="tref-section" id="settled">
++      <div class="tref-section-head">
++        <div><span class="tref-kicker">Settled</span><h2>What was decided, and what it became</h2></div>
++        <p>
++          Five questions, answered. The previous version of this page listed the first four as open
++          forks with recommendations; these are the answers that were given.
++        </p>
++      </div>
++
++      <div class="tref-scroll">
++        <table class="tref-table">
++          <thead><tr><th>Question</th><th>Answer</th><th>What it became</th></tr></thead>
++          <tbody>
++            {#each SETTLED as row (row.question)}
++              <tr>
++                <td>{row.question}</td>
++                <td>{row.answer}</td>
++                <td class="muted">{row.became}</td>
++              </tr>
++            {/each}
++          </tbody>
++        </table>
++      </div>
++    </section>
++
++    <section class="tref-section" id="resolution">
++      <div class="tref-section-head">
++        <div><span class="tref-kicker">Links 05 and 06</span><h2>What happens when a template is placed</h2></div>
++        <p>
++          One hole at a time, and the person walking it never has to hold the whole shape in their
++          head — the tabs do that.
++          <a href={hrefOf(project, "walkthrough")}>Walk it yourself</a> to see the same modal working.
++        </p>
++      </div>
++
++      <div class="tref-figure">
++        <MermaidDiagram
++          source={RESOLUTION_DIAGRAM}
++          label="What runs between pressing Insert and the new copy appearing"
++          caption="The bound resourceSets row is what makes an exclusion expressible at all — a difference cannot be substituted on a prompt's excluding side."
++          minHeight="34rem"
++        />
++      </div>
++    </section>
++
++    <section class="tref-section" id="limits">
++      <div class="tref-section-head">
++        <div><span class="tref-kicker">Where it stops</span><h2>Three things this does not do</h2></div>
++        <p>
++          None of them blocks anything. Written down so the next person meets them as decisions rather
++          than as surprises.
++        </p>
++      </div>
++
++      <div class="tref-cards">
++        {#each LIMITS as limit (limit.title)}
++          <article class="tref-card">
++            <h3>{limit.title}</h3>
++            <p>{limit.detail}</p>
++            <p class="tref-meta">{limit.order}</p>
++          </article>
++        {/each}
 +      </div>
 +    </section>
 +  </main>
@@ -19542,11 +20920,11 @@
 +  <footer class="tref-footer">
 +    <div>
 +      <span>Icarus · templates</span>
-+      <span>Link 04 is open</span>
++      <span>Every link carries</span>
 +    </div>
 +    <div>
 +      <a href={hrefOf(project, "scope")}>← What a hole selects</a>
-+      <a href={hrefOf(project, "rebase")}>Where it meets the base →</a>
++      <a href={hrefOf(project, "walkthrough")}>Walk it yourself →</a>
 +    </div>
 +  </footer>
 +</div>
@@ -21155,10 +22533,357 @@
 +</div>
 ~~~~
 
-### new · `src/lib/development-views/template-reference/procedures/changes.ts` (+312 / −0)
+### new · `src/lib/development-views/template-reference/components/walkthrough-page.svelte` (+341 / −0)
 
 ~~~~diff
-@@ -0,0 +1,312 @@
+@@ -0,0 +1,341 @@
++<script lang="ts">
++  import { page } from "$app/state";
++
++  import { PromptTemplate } from "$authored-components/prompt-template";
++  import { TemplateAnswers } from "$authored-components/template-answers";
++  import ReferenceHeader from "$development-views/template-reference/components/reference-header.svelte";
++  import "$development-views/template-reference/components/reference.css";
++  import { hrefOf } from "$development-views/template-reference/procedures/navigation";
++  import {
++    STAGES,
++    answerRowsFrom,
++    holesFrom,
++    scopeWords,
++    type WalkPrompt
++  } from "$development-views/template-reference/procedures/walkthrough";
++
++  let {
++    material,
++    materials = [],
++    onmaterial
++  }: {
++    material?: string;
++    materials?: readonly string[];
++    onmaterial?: (next: string) => void;
++  } = $props();
++
++  const project = $derived(page.params.project ?? "dev-project");
++
++  /**
++   * The whole system, driven rather than described.
++   *
++   * Every control below is the component the application ships, with this
++   * page's own state behind it. Change a name here and the template's hole list
++   * changes, and so does what placing it asks — because the same pure functions
++   * that run in the capability run here.
++   */
++  let prompts = $state<WalkPrompt[]>([
++    {
++      id: "p1",
++      asks: "Summarize what happened, the customer impact, and the current operating state.",
++      name: "",
++      description: "",
++      scope: "project"
++    },
++    {
++      id: "p2",
++      asks: "List the decisions still open, and who is waiting on each.",
++      name: "open_decisions",
++      description: "Which threads the list is drawn from",
++      scope: "kinds"
++    },
++    {
++      id: "p3",
++      asks: "Quote the three most load-bearing findings, with their sources.",
++      name: "",
++      description: "",
++      scope: "set"
++    }
++  ]);
++
++  let chosen = $state<Record<string, string>>({});
++  let words = $state<Record<string, string>>({});
++  let stage = $state(0);
++
++  const holes = $derived(holesFrom(prompts));
++  const rows = $derived(answerRowsFrom(holes, chosen, words));
++  const missing = $derived(rows.filter((row) => row.missing).length);
++  const questions = $derived(Object.fromEntries(holes.map((hole) => [hole.name, hole.asks])));
++
++  const rename = (id: string, name: string) => {
++    prompts = prompts.map((prompt) => (prompt.id === id ? { ...prompt, name } : prompt));
++  };
++
++  const describe = (id: string, description: string) => {
++    prompts = prompts.map((prompt) => (prompt.id === id ? { ...prompt, description } : prompt));
++  };
++
++  /** The builder is a modal in the app; here it cycles, because the point is the consequence. */
++  const cycleScope = (id: string) => {
++    const order = ["project", "kinds", "set"] as const;
++    prompts = prompts.map((prompt) =>
++      prompt.id === id
++        ? { ...prompt, scope: order[(order.indexOf(prompt.scope) + 1) % order.length] }
++        : prompt
++    );
++  };
++
++  const answer = (key: string) => {
++    chosen = { ...chosen, [key]: chosen[key] === "chosen" ? "" : "chosen" };
++  };
++
++  const reset = (key: string) => {
++    const { [key]: _gone, ...rest } = chosen;
++    chosen = rest;
++  };
++</script>
++
++<div class="tref">
++  <ReferenceHeader current="walkthrough" {material} {materials} {onmaterial} />
++
++  <main class="tref-page">
++    <header class="tref-mast">
++      <div>
++        <span class="tref-kicker">06 · Driven</span>
++        <h1>Walk it yourself</h1>
++        <p class="tref-lede">
++          Three prompts, written the way anybody writes them. Name them or leave them; scope them or
++          leave them; then watch the template that comes out and place it. Every control here is the
++          component the application ships, and the hole list beneath them is computed by the same pure
++          functions the capability runs — so the consequences are real even though nothing is saved.
++        </p>
++      </div>
++      <div class="tref-facts">
++        <dl>
++          <div><dt>Prompts</dt><dd>{prompts.length}</dd></div>
++          <div><dt>Holes</dt><dd>{holes.length}</dd></div>
++          <div><dt>With a default</dt><dd>{holes.filter((hole) => hole.fallback !== undefined).length}</dd></div>
++          <div><dt>Still needing an answer</dt><dd>{missing}</dd></div>
++          <div><dt>Saved anywhere</dt><dd>Nothing</dd></div>
++        </dl>
++      </div>
++    </header>
++
++    <nav class="tref-jumps" aria-label="On this page">
++      <a href="#author">1 · Write the prompts</a>
++      <a href="#made">2 · Make the template</a>
++      <a href="#place">3 · Place it</a>
++      <a href="#stages">The same thing in words</a>
++    </nav>
++
++    <section class="tref-section" id="author">
++      <div class="tref-section-head">
++        <div><span class="tref-kicker">Step one</span><h2>Write the prompts</h2></div>
++        <p>
++          Each card is a prompt block's Template section, exactly as it appears in the inspector.
++          The name is offered rather than asked for. The context button cycles here; in the editor it
++          opens the scope builder.
++        </p>
++      </div>
++
++      <div class="authoring">
++        {#each prompts as prompt, index (prompt.id)}
++          <article class="prompt">
++            <blockquote>
++              <span>Prompt {index + 1} asks</span>
++              <p>{prompt.asks}</p>
++            </blockquote>
++            <PromptTemplate
++              name={prompt.name}
++              offered={`Prompt ${index + 1}`}
++              description={prompt.description}
++              context={scopeWords(prompt.scope)}
++              settled={prompt.scope !== "set"}
++              onname={(next) => rename(prompt.id, next)}
++              ondescription={(next) => describe(prompt.id, next)}
++              oncontext={() => cycleScope(prompt.id)}
++            />
++          </article>
++        {/each}
++      </div>
++    </section>
++
++    <section class="tref-section" id="made">
++      <div class="tref-section-head">
++        <div><span class="tref-kicker">Step two</span><h2>Make the template</h2></div>
++        <p>
++          Nothing is pressed. Saving turns every prompt into one hole, keeps the scope as its default
++          when the scope means the same thing anywhere, and drops the generated answer on the way in.
++        </p>
++      </div>
++
++      <div class="tref-scroll">
++        <table class="tref-table">
++          <thead>
++            <tr><th>Hole</th><th>Stands for</th><th>Its prompt</th><th>Default</th></tr>
++          </thead>
++          <tbody>
++            {#each holes as hole (hole.name)}
++              <tr>
++                <td><code>{hole.name}</code></td>
++                <td class="muted">{hole.description === "" ? "—" : hole.description}</td>
++                <td class="muted">{hole.asks}</td>
++                <td class:none={hole.fallback === undefined}>
++                  {hole.fallback ?? "Nothing — it has to be answered"}
++                </td>
++              </tr>
++            {/each}
++          </tbody>
++        </table>
++      </div>
++
++      <div class="tref-note" class:success={missing === 0} class:attention={missing > 0}>
++        <h4>{missing === 0 ? "This template places with one press" : `${missing} hole needs an answer`}</h4>
++        <p>
++          {missing === 0
++            ? "Every hole carries a default, so whoever places it can accept everything as it stands. That is the common case, and it is free."
++            : "A prompt that read one of the project's named sets cannot carry that over, so its hole arrives empty. Cycle its context above to see the template become placeable."}
++        </p>
++      </div>
++    </section>
++
++    <section class="tref-section" id="place">
++      <div class="tref-section-head">
++        <div><span class="tref-kicker">Step three</span><h2>Place it</h2></div>
++        <p>
++          This is the ask modal itself. Use the tabs, or Previous and Next; a red tab is a hole that
++          still needs words. Pressing a scope opens the builder in the application — here it just
++          toggles between the default and something chosen, so the tag and the rule move.
++        </p>
++      </div>
++
++      <div class="modal">
++        <header>
++          <b>Insert “Incident one-pager”</b>
++          <p>One hole at a time. The tabs say which still need words.</p>
++        </header>
++        <div class="modal-body">
++          <TemplateAnswers
++            {rows}
++            prompts={questions}
++            onscope={answer}
++            ontext={(key, next) => (words = { ...words, [key]: next })}
++            onreset={reset}
++            onaccept={() => (stage = STAGES.length - 1)}
++          />
++        </div>
++      </div>
++    </section>
++
++    <section class="tref-section" id="stages">
++      <div class="tref-section-head">
++        <div><span class="tref-kicker">In words</span><h2>The same thing, said once</h2></div>
++        <p>Five moments, and what each one leaves behind.</p>
++      </div>
++
++      {#each STAGES as step, index (step.title)}
++        <article class="tref-change" class:reached={index <= stage}>
++          <span>{String(index + 1).padStart(2, "0")}</span>
++          <div>
++            <h3>{step.title}</h3>
++            <p>{step.what}</p>
++          </div>
++          <div class="state before"><span>Runs</span><p>{step.runs}</p></div>
++          <div class="state after"><span>Leaves</span><p>{step.leaves}</p></div>
++        </article>
++      {/each}
++    </section>
++  </main>
++
++  <footer class="tref-footer">
++    <div>
++      <span>Icarus · templates</span>
++      <span>Nothing here is saved</span>
++    </div>
++    <div>
++      <a href={hrefOf(project, "integration")}>← End to end with prompts</a>
++      <a href={hrefOf(project, "rebase")}>Where it meets the base</a>
++    </div>
++  </footer>
++</div>
++
++<style>
++  .authoring {
++    display: grid;
++    gap: 1.5rem;
++    margin-top: 2rem;
++    grid-template-columns: repeat(auto-fit, minmax(min(20rem, 100%), 1fr));
++  }
++
++  .prompt {
++    display: flex;
++    flex-direction: column;
++    gap: 1rem;
++    padding: 1.25rem;
++    border: 1px solid var(--token-border-subtle);
++    border-radius: 8px;
++    background: var(--token-surface-panel);
++  }
++
++  .prompt blockquote {
++    display: flex;
++    flex-direction: column;
++    gap: 0.3rem;
++    margin: 0;
++    padding-inline-start: 0.9rem;
++    border-inline-start: 2px solid var(--token-border-strong);
++  }
++
++  .prompt blockquote span {
++    color: var(--token-ink-muted);
++    font-size: 9.5px;
++    font-weight: 750;
++    letter-spacing: 0.12em;
++    text-transform: uppercase;
++  }
++
++  .prompt blockquote p {
++    margin: 0;
++    color: var(--token-ink-primary);
++    font-size: 13px;
++    line-height: 1.5;
++  }
++
++  .none {
++    color: var(--token-color-danger-text);
++  }
++
++  .modal {
++    max-width: 46rem;
++    margin-top: 2rem;
++    border: 1px solid var(--token-border-subtle);
++    border-radius: 10px;
++    background: var(--token-surface-elevated);
++    overflow: hidden;
++  }
++
++  .modal header {
++    padding: 1.1rem 1.4rem;
++    border-bottom: 1px solid var(--token-border-subtle);
++    background: var(--token-surface-panel);
++  }
++
++  .modal header b {
++    display: block;
++    font-size: 14px;
++  }
++
++  .modal header p {
++    margin: 0.2rem 0 0;
++    color: var(--token-ink-muted);
++    font-size: 12px;
++  }
++
++  .modal-body {
++    padding: 1.4rem;
++  }
++
++  .tref-change.reached > span {
++    color: var(--token-color-success-text);
++  }
++</style>
+~~~~
+
+### new · `src/lib/development-views/template-reference/procedures/changes.ts` (+330 / −0)
+
+~~~~diff
+@@ -0,0 +1,330 @@
 +import type { Decision, OpenItem, SystematicChange, Verification } from "$development-views/template-reference/types";
 +
 +export const SYSTEMATIC: SystematicChange[] = [
@@ -21285,6 +23010,24 @@
 +    now: "Create hole, at the top of the Holes band, takes a name, a description and default words, declares the hole and drops its atom at the caret in one act. A scope hole is still found, because a prompt is what asks for one.",
 +    why: "Only the writer knows where in the prose a hole belongs, so the panel cannot find it. Declaring without placing would leave a hole nothing fills, which is why the two happen together or not at all.",
 +    area: "editors"
++  },
++  {
++    index: "16",
++    title: "Every prompt is a hole",
++    before:
++      "A scope hole could only come from a body that already carried a hole term — which happened when a template with one was inserted into a working copy. A prompt somebody wrote kept its own sources, so a template made from it asked nothing and every copy read what the author read.",
++    now: "Making a template turns every prompt into one hole: named by what the author called it, else Prompt 1, Prompt 2; described by what they wrote beside it; and defaulting to the scope it read, when that scope means the same thing in a project nobody has seen. A prompt's Template section is where the name and the words are written, in the ordinary editor as much as in a working copy.",
++    why: "A prompt asks the project a question, and a template is that question asked again somewhere else. Nothing else in the body has to be told where it is going, so nothing about this should need declaring either.",
++    area: "editors"
++  },
++  {
++    index: "17",
++    title: "Placing a template walks its holes",
++    before:
++      "Every hole was on screen at once, which read as a form. A template with a dozen was a wall, and the prompt each scope hole filled was nowhere to be seen.",
++    now: "One hole at a time: its name, what it stands for, the prompt it fills, then the control. Tabs across the top carry the shape and mark in red the holes that still need words, and Accept all defaults lights the moment none do.",
++    why: "A hole is a question, and questions are answered one at a time. The tabs keep the whole shape visible without making it the thing you read first.",
++    area: "cross-cutting"
 +  }
 +];
 +
@@ -21352,14 +23095,14 @@
 +];
 +
 +export const VERIFICATION: Verification[] = [
-+  { check: "Types", command: "pnpm typecheck", result: "0 errors, 0 warnings across 2,915 files", clean: true },
++  { check: "Types", command: "pnpm typecheck", result: "0 errors, 0 warnings across 2,924 files", clean: true },
 +  { check: "Structure", command: "pnpm lint", result: "56 checks, 56 clean", clean: true },
-+  { check: "Unit", command: "pnpm test", result: "1,032 tests in 116 files, 2 skipped", clean: true },
++  { check: "Unit", command: "pnpm test", result: "1,044 tests in 117 files, 2 skipped", clean: true },
 +  { check: "Category keys", command: "pnpm category-keys -- --check", result: "10 categories and 13 content views in step", clean: true },
 +  {
 +    check: "Browser",
 +    command: "pnpm test:browser, from a clean seed",
-+    result: "60 of 60, with 4 skipped — the live-intelligence cases the base branch skips when no credential is configured.",
++    result: "62 of 62, with 4 skipped — the live-intelligence cases the base branch skips when no credential is configured.",
 +    clean: true
 +  }
 +];
@@ -21473,72 +23216,73 @@
 +};
 ~~~~
 
-### new · `src/lib/development-views/template-reference/procedures/integration.ts` (+192 / −0)
+### new · `src/lib/development-views/template-reference/procedures/integration.ts` (+202 / −0)
 
 ~~~~diff
-@@ -0,0 +1,192 @@
-+import type { ChainLink, ScopeFork } from "$development-views/template-reference/types";
+@@ -0,0 +1,202 @@
++import type { ChainLink, Decision, ScopeGap } from "$development-views/template-reference/types";
 +
 +/**
 + * The chain from writing a prompt to reading a filled copy, link by link.
 + *
-+ * Four links are the base branch's, two are this branch's, and one — the one
-+ * that turns a prompt somebody wrote into a hole somebody answers — belongs to
-+ * neither yet. It is written here as plainly as the ones that work, because a
-+ * chain is only as interesting as the link that is open.
++ * Every link carries now. The one that never existed — turning a prompt
++ * somebody wrote into a hole somebody answers — is link 04, and it is built
++ * the way the rest of this work is built: found rather than declared, with a
++ * name offered rather than demanded, so a template made without a thought
++ * still asks the right question.
 + */
 +export const CHAIN: ChainLink[] = [
 +  {
 +    index: "01",
 +    step: "A prompt is written into a document or a slide",
-+    gesture: "Convert a text box, type what it should derive, press Generate",
-+    runs: "createDerivedOutput · refreshDerivedOutput · the prompt-block inspector",
++    gesture: "Convert a text box or an empty line, type what it should derive",
++    runs: "The prompt-block inspector · createDerivedOutput on Generate",
 +    state: "works",
-+    evidence: "slide-deck-editor.spec.ts — a text box becomes an editable slide Prompt Block"
++    evidence: "template-features.spec.ts — a prompt written in a document becomes a hole"
 +  },
 +  {
 +    index: "02",
-+    step: "The prompt is told what to read",
-+    gesture: "The Scope control in the prompt inspector",
-+    runs: "Nothing. The control offers one option, “Whole project”, and is bound to no handler",
-+    state: "stub",
-+    evidence: "document-editor/inspector/prompt-block.svelte — SCOPES has one entry and PanelSelect takes no onchange"
++    step: "The prompt says what its hole is called and what it stands for",
++    gesture: "The Template section in the prompt's own inspector",
++    runs: "promptHoleOps writes { name, description } onto the block",
++    state: "works",
++    evidence: "prompt-holes.test.ts — what a prompt is called"
 +  },
 +  {
 +    index: "03",
-+    step: "The resource is saved as a template",
-+    gesture: "Templates panel · a name · Save",
-+    runs: "createTemplateFromResource → portable() → declaredFor()",
++    step: "The prompt says what it reads, which is also its hole's default",
++    gesture: "Set default context, which opens the scope builder",
++    runs: "promptScopeOps · defaultScopeOf decides whether the scope can carry over",
 +    state: "works",
-+    evidence: "template-features.spec.ts — a document is saved as a template"
++    evidence: "prompt-holes.test.ts — what a hole selects when nobody says otherwise"
 +  },
 +  {
 +    index: "04",
-+    step: "The prompt's scope becomes a hole to be answered",
-+    gesture: "None — nothing performs this",
-+    runs: "declaredFor reads { select: \"hole\" } terms out of prompt scopes. An authored prompt has a settled scope, so nothing is declared",
-+    state: "missing",
-+    evidence: "templates/test/unit/answers.test.ts — keeps an authored prompt scope settled, and so declares no hole for it"
++    step: "Making a template turns every prompt into a hole",
++    gesture: "None — it is what saving means",
++    runs: "promptHolesOf · withAsks · portableBodyOf · withPromptHoles · mergedPromptHoles",
++    state: "works",
++    evidence: "answers.test.ts — turns an authored prompt scope into a hole that keeps it as the default"
 +  },
 +  {
 +    index: "05",
-+    step: "Placing the template asks what fills each hole",
-+    gesture: "Insert or Use · one modal · a scope builder or a textarea per hole",
-+    runs: "answerRowsOf · the scope builder · normalizeScope",
++    step: "Placing the template asks about each hole, one at a time",
++    gesture: "Insert or Use · tabs, Previous and Next, Accept all defaults",
++    runs: "answerRowsOf · promptWordsIn · the scope builder · normalizeScope",
 +    state: "works",
 +    evidence: "template-features.spec.ts — inserting a template asks for each hole"
 +  },
 +  {
 +    index: "06",
-+    step: "The copy reads what was said",
++    step: "The copy reads what was chosen",
 +    gesture: "None — it is already true of the resource that lands",
 +    runs: "resolveTemplateScopes substitutes each hole term; fillTemplateAtoms fills each text hole",
 +    state: "works",
-+    evidence: "template-features.spec.ts — a hole's default is built with an exclusion, stored, and read back"
++    evidence: "template-features.spec.ts — a hole's default is built with an exclusion and read back"
 +  },
 +  {
 +    index: "07",
-+    step: "The copy's prompts generate against what was said",
++    step: "The copy's prompts generate against what was chosen",
 +    gesture: "Press Generate in the copy",
 +    runs: "The base's derived-output runtime, over the scope this branch resolved",
 +    state: "works",
@@ -21547,30 +23291,30 @@
 +];
 +
 +export const CHAIN_DIAGRAM = `flowchart LR
-+  subgraph authoring["01–02 · Authoring — the base"]
++  subgraph authoring["01–03 · Authoring"]
 +    direction TB
-+    B{{"Scope control<br/>one option, not wired"}}
-+    A["A prompt block<br/>scope: whole project"]
-+    B -. "writes no term" .-> A
++    A["A prompt block"]
++    B["Template section<br/>name · description"]
++    C["Default context<br/>whole project, kinds, or nothing"]
++    B --> A
++    C --> A
 +  end
-+  subgraph making["03–04 · Making a template — here"]
++  subgraph making["04 · Making a template"]
 +    direction TB
-+    C["portable()<br/>drops the generated answer"]
-+    D["declaredFor()<br/>looks for hole terms"]
-+    C --> D
++    D["promptHolesOf<br/>one hole per prompt"]
++    E["withAsks<br/>copies the question onto the block"]
++    F["withPromptHoles<br/>each scope becomes its hole term"]
++    D --> E --> F
 +  end
-+  subgraph placing["05–06 · Placing it — here"]
++  subgraph placing["05–06 · Placing it"]
 +    direction TB
-+    F["One modal,<br/>one row per hole"]
-+    G["resolveTemplateScopes()<br/>answer, else default,<br/>else whole project"]
-+    F --> G
++    G["One hole at a time,<br/>tabs saying which are red"]
++    H["resolveTemplateScopes<br/>answer, else default,<br/>else whole project"]
++    G --> H
 +  end
-+  A --> C
-+  D -- "a hole term is there" --> F
-+  D -- "nothing found" --> X["A copy that reads<br/>the author's own sources,<br/>and asks nobody"]
-+  G --> H["A copy whose prompts read<br/>what the placer chose"]
-+  classDef gap stroke-dasharray: 6 4
-+  class B,X gap`;
++  A --> D
++  F --> G
++  H --> I["A copy whose prompts read<br/>what the placer chose"]`;
 +
 +export const RESOLUTION_DIAGRAM = `sequenceDiagram
 +  autonumber
@@ -21580,10 +23324,11 @@
 +  participant R as resolveTemplateScopes
 +  participant D as The new copy
 +  P->>M: Insert "Incident one-pager"
-+  M-->>P: One row per hole, each with its current value
-+  P->>M: evidence → Findings, minus one document
++  M-->>P: A tab per hole — red ones still need words
++  M-->>P: winter_sources — its description, its prompt, its default
++  P->>M: winter_sources → Findings, minus one document
 +  P->>M: subject_line → "Winter outage"
-+  M->>S: answers { evidence } · texts { subject_line }
++  M->>S: answers { winter_sources } · texts { subject_line }
 +  S->>S: normalizeScope — the difference cannot be said inline,<br/>so it is stored as a bound resourceSets row
 +  S->>R: body, holes, answers
 +  R-->>S: every prompt scope settled: the answer, else the hole's default,<br/>else the whole project
@@ -21591,90 +23336,98 @@
 +  S->>D: one document, revision 0, no reference back
 +  D-->>P: prompts ready to generate over the scope you chose`;
 +
-+export const FORKS: ScopeFork[] = [
++export const DEFAULT_RULE = [
 +  {
-+    index: "01",
-+    question: "How does a prompt somebody wrote become a hole somebody answers?",
-+    recommended:
-+      "Wire the Scope control that already exists in the prompt inspector. Its options become “Whole project” and “Ask when placed…”; choosing the second names the hole and opens the scope builder to set what it should select by default, and writes { select: \"hole\", name } into the prompt's scope there and then.",
-+    because:
-+      "The decision belongs where the author already is, at the prompt, and it stays an explicit choice rather than something a save does behind them. It needs no new modal in the save path, it makes the existing dead control mean something, and every link after it already works — declaredFor finds the term, the ask modal lists it, resolution fills it.",
-+    alternative:
-+      "Making a template walks every prompt it found and asks, in one modal, which should become holes and what to call them.",
-+    cost:
-+      "Truest to “a hole exists because a prompt asks for one”, but it puts a modal in front of every save, including the saves that want nothing asked, and it asks the question a long way from the prompt it is about."
++    scope: "Nothing set",
++    carries: "Everything in the project",
++    because: "It is what the prompt reads and what its own inspector says it reads."
 +  },
 +  {
-+    index: "02",
-+    question: "What is a hole made this way called?",
-+    recommended:
-+      "The author types the name, the way they type a text hole's name today, with the prompt's first words offered as the default.",
-+    because:
-+      "The name is what the person placing the template reads. A generated one — a block id, or source_1 — is stable and meaningless, and the label would have to carry the meaning instead, which is two fields where one would do.",
-+    alternative: "Slug the prompt's own text, and rename the hole whenever the prompt is edited.",
-+    cost:
-+      "Nothing to type, but the name moves under the description and default somebody already wrote, and two prompts that start the same way collide."
++    scope: "Everything in the project",
++    carries: "Everything in the project",
++    because: "Anybody could have meant it, so it means the same thing in the next project."
 +  },
 +  {
-+    index: "03",
-+    question: "May two prompts share one hole?",
-+    recommended: "Yes, and nothing needs building for it — the name is the whole of the identity.",
-+    because:
-+      "resolveTemplateScopes substitutes by name and memoises the result, so two prompts naming `evidence` already resolve to the same set from one answer. This has been true since the resolver was written and is covered by its unit tests.",
-+    alternative: "One hole per prompt, enforced at declaration.",
-+    cost: "Would forbid the common case — a brief whose three prompts all read the same evidence."
++    scope: "Whole kinds — all documents, all findings",
++    carries: "Those kinds",
++    because: "A kind is a word about the world, not a row in this project's tables."
++  },
++  {
++    scope: "One of the project's named sets",
++    carries: "Nothing — the hole arrives empty",
++    because: "The set was true of the project it was written in. Saying it again elsewhere would be a guess."
++  },
++  {
++    scope: "Particular resources, or anything with an exclusion",
++    carries: "Nothing — the hole arrives empty",
++    because: "The same, and more so: those rows may not exist wherever the template lands."
 +  }
 +];
 +
-+/**
-+ * What can be walked today, in the app, without building anything.
-+ *
-+ * This is the honest end-to-end: it starts from a template that already holds a
-+ * hole rather than from a prompt somebody wrote, because link 04 is open.
-+ */
-+export const WALKTHROUGH = [
++export const SETTLED: Decision[] = [
 +  {
-+    index: "01",
-+    does: "Open the seeded document Winter readiness brief and show its Templates panel.",
-+    sees: "A name field, Save, and the List of every document template with its hole count."
++    round: "This round",
++    question: "How does a prompt somebody wrote become a hole somebody answers?",
++    answer: "Every prompt is a hole. There is no declaring and no opting in.",
++    became:
++      "promptHolesOf reads one hole per prompt at save time. A template made from a document full of prompts asks about all of them, whether or not anybody opened the Template section."
 +  },
 +  {
-+    index: "02",
-+    does: "Insert “Incident one-pager”.",
-+    sees:
-+      "One modal listing every hole: a scope hole reading its default as a sentence with a Default tag, and a text hole with an empty textarea and a red bar, because Insert is held until it has words."
++    round: "This round",
++    question: "What is a hole made this way called?",
++    answer: "Prompt 1, Prompt 2, Prompt 3 — offered, and typed over when it matters.",
++    became:
++      "offeredHoleName by document order, shown in the Template section as the standing value. Typing a name replaces it; blanking it brings the offer back, because a hole with no name cannot be asked about."
 +  },
 +  {
-+    index: "03",
-+    does: "Open the scope hole.",
-+    sees:
-+      "The builder, Include and Exclude as tabs, kinds and sets and resources to add From on the left, what is held on the right, and Whole project · Default · Clear along the bottom."
++    round: "This round",
++    question: "Which scopes survive as a hole's default?",
++    answer: "The ones anybody could have meant: the whole project, and whole kinds.",
++    became:
++      "defaultScopeOf, and a hole with no default is the only thing besides empty words that can hold a placement up."
 +  },
 +  {
-+    index: "04",
-+    does: "Exclude one document, accept, type words into the text hole, and Insert.",
-+    sees:
-+      "The rows now read Chosen; the prose lands with the words in place; the prompt's scope in the copy is a single set term pointing at a bound row that holds the difference."
++    round: "This round",
++    question: "May two prompts share one hole?",
++    answer: "Yes, by carrying the same name. Nothing enforces it either way.",
++    became:
++      "A name is the whole of a hole's identity, and resolveTemplateScopes already memoises by name. Two prompts named the same resolve from one answer; nothing checks, because there is nothing to check."
 +  },
 +  {
-+    index: "05",
-+    does: "Save the document as a template of your own, then press Create hole with the caret in a paragraph.",
-+    sees:
-+      "A hole named, described and given default words, its atom dropped where the caret was, and the Holes band listing it above the rule."
++    round: "This round",
++    question: "How does placing a template read, now that a template can hold a dozen holes?",
++    answer: "One at a time, with tabs for the shape and a way to blaze through.",
++    became:
++      "The ask modal walks: name, description, the prompt itself, then the control. Tabs carry a red mark for a hole that still needs words, and Accept all defaults lights up the moment none do."
++  }
++];
++
++export const LIMITS: ScopeGap[] = [
++  {
++    title: "A hole's prompt is a snapshot",
++    detail:
++      "The words shown when placing a template are copied onto the block when the template is made, because the template leaves the derived output behind. Editing the prompt in the original afterwards does not reach the template — saving the template again does.",
++    order: "Correct as long as a template is a copy, which is the whole model. Nothing to do."
 +  },
 +  {
-+    index: "06",
-+    does: "Write a prompt block into that working copy and save it.",
-+    sees:
-+      "The prompt is carried into the template with its generated answer dropped — and **no hole is declared for it**. This is link 04, and it is where the walk stops."
++    title: "A copy's prompts arrive unlinked",
++    detail:
++      "The template carries the question, so the copy's prompt inspector opens with the words already in it — but the copy has no derived output until somebody presses Generate. That is one press, not a retype.",
++    order: "Watch whether people expect a copy to generate on arrival. Nothing suggests they do yet."
++  },
++  {
++    title: "The prompt inspector's old Scope control still says one thing",
++    detail:
++      "The base's Scope select offers “Whole project” alone and writes nothing. Set default context, beside it in the Template section, is what actually writes a scope — so there are two controls where one would do.",
++    order: "Fold the select into the Template section when the base is ready to lose it."
 +  }
 +];
 ~~~~
 
-### new · `src/lib/development-views/template-reference/procedures/inventory.ts` (+154 / −0)
+### new · `src/lib/development-views/template-reference/procedures/inventory.ts` (+166 / −0)
 
 ~~~~diff
-@@ -0,0 +1,154 @@
+@@ -0,0 +1,166 @@
 +import type { FileRecord } from "$development-views/template-reference/types";
 +
 +/**
@@ -21692,27 +23445,31 @@
 +  {"path":"app/seed/templates.json","status":"M","area":"evidence","kind":"fixture","current":2295,"base":1021,"added":1524,"deleted":250},
 +  {"path":"app/seed/templateVersions.json","status":"M","area":"evidence","kind":"fixture","current":2695,"base":2199,"added":518,"deleted":22},
 +  {"path":"app/src/lib/app-views/categories/document-editor/content/document.svelte","status":"M","area":"editors","kind":"production","current":954,"base":939,"added":15,"deleted":0},
-+  {"path":"app/src/lib/app-views/categories/document-editor/context/templates.svelte","status":"A","area":"editors","kind":"production","current":683,"base":0,"added":683,"deleted":0},
++  {"path":"app/src/lib/app-views/categories/document-editor/context/templates.svelte","status":"A","area":"editors","kind":"production","current":688,"base":0,"added":688,"deleted":0},
++  {"path":"app/src/lib/app-views/categories/document-editor/inspector/prompt-block.svelte","status":"M","area":"editors","kind":"production","current":346,"base":242,"added":104,"deleted":0},
 +  {"path":"app/src/lib/app-views/categories/document-editor/procedures/projection.ts","status":"M","area":"editors","kind":"production","current":751,"base":726,"added":33,"deleted":8},
++  {"path":"app/src/lib/app-views/categories/document-editor/procedures/prompt-blocks.ts","status":"M","area":"editors","kind":"production","current":104,"base":87,"added":17,"deleted":0},
 +  {"path":"app/src/lib/app-views/categories/document-editor/procedures/schema.ts","status":"M","area":"editors","kind":"production","current":255,"base":221,"added":37,"deleted":3},
-+  {"path":"app/src/lib/app-views/categories/document-editor/procedures/templating.ts","status":"A","area":"editors","kind":"production","current":394,"base":0,"added":394,"deleted":0},
++  {"path":"app/src/lib/app-views/categories/document-editor/procedures/templating.ts","status":"A","area":"editors","kind":"production","current":402,"base":0,"added":402,"deleted":0},
 +  {"path":"app/src/lib/app-views/categories/document-editor/procedures/test/unit/templating.test.ts","status":"A","area":"editors","kind":"test","current":167,"base":0,"added":167,"deleted":0},
 +  {"path":"app/src/lib/app-views/categories/project-overview/context/contexts.svelte","status":"A","area":"contexts","kind":"production","current":283,"base":0,"added":283,"deleted":0},
 +  {"path":"app/src/lib/app-views/categories/project-overview/procedures/contexts.ts","status":"A","area":"contexts","kind":"production","current":115,"base":0,"added":115,"deleted":0},
 +  {"path":"app/src/lib/app-views/categories/project-overview/procedures/test/unit/contexts.test.ts","status":"A","area":"contexts","kind":"test","current":68,"base":0,"added":68,"deleted":0},
 +  {"path":"app/src/lib/app-views/categories/project-overview/project-overview.md","status":"M","area":"contexts","kind":"documentation","current":622,"base":618,"added":25,"deleted":21},
 +  {"path":"app/src/lib/app-views/categories/slide-deck-editor/context/comments.svelte","status":"M","area":"editors","kind":"production","current":175,"base":170,"added":6,"deleted":1},
-+  {"path":"app/src/lib/app-views/categories/slide-deck-editor/context/templates.svelte","status":"M","area":"editors","kind":"production","current":705,"base":8,"added":700,"deleted":3},
++  {"path":"app/src/lib/app-views/categories/slide-deck-editor/context/templates.svelte","status":"M","area":"editors","kind":"production","current":710,"base":8,"added":705,"deleted":3},
++  {"path":"app/src/lib/app-views/categories/slide-deck-editor/inspector/prompt-block.svelte","status":"M","area":"editors","kind":"production","current":382,"base":277,"added":105,"deleted":0},
 +  {"path":"app/src/lib/app-views/categories/slide-deck-editor/inspector/threads.svelte","status":"M","area":"editors","kind":"production","current":151,"base":144,"added":8,"deleted":1},
++  {"path":"app/src/lib/app-views/categories/slide-deck-editor/procedures/prompt-blocks.ts","status":"M","area":"editors","kind":"production","current":220,"base":203,"added":17,"deleted":0},
 +  {"path":"app/src/lib/app-views/categories/slide-deck-editor/procedures/scene.ts","status":"M","area":"editors","kind":"production","current":333,"base":333,"added":3,"deleted":3},
-+  {"path":"app/src/lib/app-views/categories/slide-deck-editor/procedures/templating.ts","status":"A","area":"editors","kind":"production","current":418,"base":0,"added":418,"deleted":0},
++  {"path":"app/src/lib/app-views/categories/slide-deck-editor/procedures/templating.ts","status":"A","area":"editors","kind":"production","current":426,"base":0,"added":426,"deleted":0},
 +  {"path":"app/src/lib/app-views/categories/slide-deck-editor/procedures/test/unit/templating.test.ts","status":"A","area":"editors","kind":"test","current":130,"base":0,"added":130,"deleted":0},
 +  {"path":"app/src/lib/app-views/categories/slide-deck-editor/procedures/typing.ts","status":"M","area":"editors","kind":"production","current":206,"base":207,"added":2,"deleted":3},
 +  {"path":"app/src/lib/app-views/categories/slide-deck-editor/slide-deck-editor.md","status":"M","area":"editors","kind":"documentation","current":284,"base":262,"added":23,"deleted":1},
 +  {"path":"app/src/lib/app-views/categories/templates/content/editor.svelte","status":"M","area":"library","kind":"production","current":81,"base":50,"added":48,"deleted":17},
 +  {"path":"app/src/lib/app-views/categories/templates/content/library.svelte","status":"M","area":"library","kind":"production","current":555,"base":543,"added":33,"deleted":21},
-+  {"path":"app/src/lib/app-views/categories/templates/inspector/template.svelte","status":"M","area":"library","kind":"production","current":1413,"base":1185,"added":347,"deleted":119},
-+  {"path":"app/src/lib/app-views/categories/templates/procedures/library.svelte.ts","status":"M","area":"library","kind":"production","current":488,"base":356,"added":177,"deleted":45},
++  {"path":"app/src/lib/app-views/categories/templates/inspector/template.svelte","status":"M","area":"library","kind":"production","current":1415,"base":1185,"added":349,"deleted":119},
++  {"path":"app/src/lib/app-views/categories/templates/procedures/library.svelte.ts","status":"M","area":"library","kind":"production","current":492,"base":356,"added":181,"deleted":45},
 +  {"path":"app/src/lib/app-views/categories/templates/procedures/test/unit/library.test.ts","status":"M","area":"library","kind":"test","current":41,"base":25,"added":16,"deleted":0},
 +  {"path":"app/src/lib/app-views/categories/templates/templates.md","status":"M","area":"library","kind":"documentation","current":80,"base":109,"added":46,"deleted":75},
 +  {"path":"app/src/lib/capabilities/comments/api/start-thread/start-thread.ts","status":"M","area":"neighbours","kind":"production","current":44,"base":36,"added":8,"deleted":0},
@@ -21751,23 +23508,26 @@
 +  {"path":"app/src/lib/capabilities/templates/api/shared/bodies.ts","status":"M","area":"templates","kind":"production","current":308,"base":462,"added":17,"deleted":171},
 +  {"path":"app/src/lib/capabilities/templates/api/shared/holes.ts","status":"A","area":"templates","kind":"production","current":39,"base":0,"added":39,"deleted":0},
 +  {"path":"app/src/lib/capabilities/templates/api/shared/projection.ts","status":"M","area":"templates","kind":"production","current":266,"base":283,"added":32,"deleted":49},
++  {"path":"app/src/lib/capabilities/templates/api/shared/prompts.ts","status":"A","area":"templates","kind":"production","current":81,"base":0,"added":81,"deleted":0},
 +  {"path":"app/src/lib/capabilities/templates/api/shared/scopes.ts","status":"A","area":"templates","kind":"production","current":204,"base":0,"added":204,"deleted":0},
 +  {"path":"app/src/lib/capabilities/templates/api/shared/stages.ts","status":"A","area":"templates","kind":"production","current":141,"base":0,"added":141,"deleted":0},
 +  {"path":"app/src/lib/capabilities/templates/api/shared/template-rows.ts","status":"M","area":"templates","kind":"production","current":37,"base":36,"added":3,"deleted":2},
-+  {"path":"app/src/lib/capabilities/templates/api/shared/validation.ts","status":"M","area":"templates","kind":"production","current":1863,"base":1687,"added":227,"deleted":51},
++  {"path":"app/src/lib/capabilities/templates/api/shared/validation.ts","status":"M","area":"templates","kind":"production","current":1877,"base":1687,"added":241,"deleted":51},
 +  {"path":"app/src/lib/capabilities/templates/api/update-template/update-template.ts","status":"M","area":"templates","kind":"production","current":168,"base":113,"added":81,"deleted":26},
 +  {"path":"app/src/lib/capabilities/templates/api/update-template/validate-update-template.ts","status":"M","area":"templates","kind":"production","current":65,"base":61,"added":14,"deleted":10},
 +  {"path":"app/src/lib/capabilities/templates/index.remote.ts","status":"M","area":"templates","kind":"production","current":125,"base":73,"added":58,"deleted":6},
 +  {"path":"app/src/lib/capabilities/templates/templates.md","status":"M","area":"templates","kind":"documentation","current":153,"base":91,"added":126,"deleted":64},
-+  {"path":"app/src/lib/capabilities/templates/test/unit/answers.test.ts","status":"A","area":"templates","kind":"test","current":541,"base":0,"added":541,"deleted":0},
++  {"path":"app/src/lib/capabilities/templates/test/unit/answers.test.ts","status":"A","area":"templates","kind":"test","current":589,"base":0,"added":589,"deleted":0},
 +  {"path":"app/src/lib/capabilities/templates/test/unit/stages.test.ts","status":"A","area":"templates","kind":"test","current":377,"base":0,"added":377,"deleted":0},
 +  {"path":"app/src/lib/capabilities/templates/test/unit/templates.test.ts","status":"M","area":"templates","kind":"test","current":1414,"base":1447,"added":89,"deleted":122},
 +  {"path":"app/src/lib/capabilities/templates/types/templates.ts","status":"M","area":"templates","kind":"production","current":252,"base":156,"added":118,"deleted":22},
 +  {"path":"app/src/lib/components/authored/panel/panel-section.svelte","status":"M","area":"cross-cutting","kind":"production","current":126,"base":114,"added":13,"deleted":1},
++  {"path":"app/src/lib/components/authored/prompt-template/index.ts","status":"A","area":"cross-cutting","kind":"production","current":8,"base":0,"added":8,"deleted":0},
++  {"path":"app/src/lib/components/authored/prompt-template/prompt-template.svelte","status":"A","area":"cross-cutting","kind":"production","current":143,"base":0,"added":143,"deleted":0},
 +  {"path":"app/src/lib/components/authored/scope-builder/index.ts","status":"A","area":"cross-cutting","kind":"production","current":9,"base":0,"added":9,"deleted":0},
 +  {"path":"app/src/lib/components/authored/scope-builder/scope-builder.svelte","status":"A","area":"cross-cutting","kind":"production","current":455,"base":0,"added":455,"deleted":0},
 +  {"path":"app/src/lib/components/authored/template-answers/index.ts","status":"A","area":"cross-cutting","kind":"production","current":8,"base":0,"added":8,"deleted":0},
-+  {"path":"app/src/lib/components/authored/template-answers/template-answers.svelte","status":"A","area":"cross-cutting","kind":"production","current":185,"base":0,"added":185,"deleted":0},
++  {"path":"app/src/lib/components/authored/template-answers/template-answers.svelte","status":"A","area":"cross-cutting","kind":"production","current":372,"base":0,"added":372,"deleted":0},
 +  {"path":"app/src/lib/development-views/demo/components/demo-index.svelte","status":"M","area":"cross-cutting","kind":"production","current":153,"base":153,"added":3,"deleted":3},
 +  {"path":"app/src/lib/development-views/template-reference/components/changes-page.svelte","status":"A","area":"reference","kind":"reference","current":288,"base":0,"added":288,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/components/diagram-binding.svelte","status":"A","area":"reference","kind":"reference","current":168,"base":0,"added":168,"deleted":0},
@@ -21779,19 +23539,21 @@
 +  {"path":"app/src/lib/development-views/template-reference/components/diagram-scope.svelte","status":"A","area":"reference","kind":"reference","current":87,"base":0,"added":87,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/components/diagram-verbs.svelte","status":"A","area":"reference","kind":"reference","current":79,"base":0,"added":79,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/components/file-ledger.svelte","status":"A","area":"reference","kind":"reference","current":138,"base":0,"added":138,"deleted":0},
-+  {"path":"app/src/lib/development-views/template-reference/components/integration-page.svelte","status":"A","area":"reference","kind":"reference","current":278,"base":0,"added":278,"deleted":0},
++  {"path":"app/src/lib/development-views/template-reference/components/integration-page.svelte","status":"A","area":"reference","kind":"reference","current":241,"base":0,"added":241,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/components/rebase-page.svelte","status":"A","area":"reference","kind":"reference","current":305,"base":0,"added":305,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/components/reference-header.svelte","status":"A","area":"reference","kind":"reference","current":166,"base":0,"added":166,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/components/reference.css","status":"A","area":"reference","kind":"reference","current":305,"base":0,"added":305,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/components/scope-page.svelte","status":"A","area":"reference","kind":"reference","current":468,"base":0,"added":468,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/components/system-page.svelte","status":"A","area":"reference","kind":"reference","current":329,"base":0,"added":329,"deleted":0},
-+  {"path":"app/src/lib/development-views/template-reference/procedures/changes.ts","status":"A","area":"reference","kind":"reference","current":312,"base":0,"added":312,"deleted":0},
-+  {"path":"app/src/lib/development-views/template-reference/procedures/integration.ts","status":"A","area":"reference","kind":"reference","current":192,"base":0,"added":192,"deleted":0},
-+  {"path":"app/src/lib/development-views/template-reference/procedures/inventory.ts","status":"A","area":"reference","kind":"reference","current":148,"base":0,"added":148,"deleted":0},
-+  {"path":"app/src/lib/development-views/template-reference/procedures/navigation.ts","status":"A","area":"reference","kind":"reference","current":25,"base":0,"added":25,"deleted":0},
++  {"path":"app/src/lib/development-views/template-reference/components/walkthrough-page.svelte","status":"A","area":"reference","kind":"reference","current":341,"base":0,"added":341,"deleted":0},
++  {"path":"app/src/lib/development-views/template-reference/procedures/changes.ts","status":"A","area":"reference","kind":"reference","current":330,"base":0,"added":330,"deleted":0},
++  {"path":"app/src/lib/development-views/template-reference/procedures/integration.ts","status":"A","area":"reference","kind":"reference","current":202,"base":0,"added":202,"deleted":0},
++  {"path":"app/src/lib/development-views/template-reference/procedures/inventory.ts","status":"A","area":"reference","kind":"reference","current":154,"base":0,"added":154,"deleted":0},
++  {"path":"app/src/lib/development-views/template-reference/procedures/navigation.ts","status":"A","area":"reference","kind":"reference","current":27,"base":0,"added":27,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/procedures/rebase.ts","status":"A","area":"reference","kind":"reference","current":157,"base":0,"added":157,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/procedures/scope.ts","status":"A","area":"reference","kind":"reference","current":521,"base":0,"added":521,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/procedures/system.ts","status":"A","area":"reference","kind":"reference","current":223,"base":0,"added":223,"deleted":0},
++  {"path":"app/src/lib/development-views/template-reference/procedures/walkthrough.ts","status":"A","area":"reference","kind":"reference","current":120,"base":0,"added":120,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/template-reference.svelte","status":"A","area":"reference","kind":"reference","current":5,"base":0,"added":5,"deleted":0},
 +  {"path":"app/src/lib/development-views/template-reference/types.ts","status":"A","area":"reference","kind":"reference","current":168,"base":0,"added":168,"deleted":0},
 +  {"path":"app/src/lib/model/client/workspace-state/methods/open.ts","status":"M","area":"vocabulary","kind":"production","current":56,"base":46,"added":10,"deleted":0},
@@ -21808,14 +23570,16 @@
 +  {"path":"app/src/lib/representation/data/behavior/templates/deck-of-slide.ts","status":"A","area":"vocabulary","kind":"production","current":18,"base":0,"added":18,"deleted":0},
 +  {"path":"app/src/lib/representation/data/behavior/templates/fresh-ids.ts","status":"A","area":"vocabulary","kind":"production","current":71,"base":0,"added":71,"deleted":0},
 +  {"path":"app/src/lib/representation/data/behavior/templates/portable.ts","status":"A","area":"vocabulary","kind":"production","current":103,"base":0,"added":103,"deleted":0},
++  {"path":"app/src/lib/representation/data/behavior/templates/prompt-holes.ts","status":"A","area":"vocabulary","kind":"production","current":214,"base":0,"added":214,"deleted":0},
 +  {"path":"app/src/lib/representation/data/behavior/templates/scopes.ts","status":"A","area":"vocabulary","kind":"production","current":216,"base":0,"added":216,"deleted":0},
 +  {"path":"app/src/lib/representation/data/behavior/templates/test/unit/answers.test.ts","status":"A","area":"vocabulary","kind":"test","current":104,"base":0,"added":104,"deleted":0},
 +  {"path":"app/src/lib/representation/data/behavior/templates/test/unit/deck-of-slide.test.ts","status":"A","area":"vocabulary","kind":"test","current":36,"base":0,"added":36,"deleted":0},
 +  {"path":"app/src/lib/representation/data/behavior/templates/test/unit/fresh-ids.test.ts","status":"A","area":"vocabulary","kind":"test","current":81,"base":0,"added":81,"deleted":0},
 +  {"path":"app/src/lib/representation/data/behavior/templates/test/unit/portable.test.ts","status":"A","area":"vocabulary","kind":"test","current":97,"base":0,"added":97,"deleted":0},
++  {"path":"app/src/lib/representation/data/behavior/templates/test/unit/prompt-holes.test.ts","status":"A","area":"vocabulary","kind":"test","current":137,"base":0,"added":137,"deleted":0},
 +  {"path":"app/src/lib/representation/data/behavior/templates/test/unit/scopes.test.ts","status":"A","area":"vocabulary","kind":"test","current":109,"base":0,"added":109,"deleted":0},
 +  {"path":"app/src/lib/representation/data/behavior/workspace/opening.ts","status":"M","area":"vocabulary","kind":"production","current":168,"base":164,"added":5,"deleted":1},
-+  {"path":"app/src/lib/representation/data/types/content/content-block.ts","status":"M","area":"vocabulary","kind":"production","current":145,"base":130,"added":16,"deleted":1},
++  {"path":"app/src/lib/representation/data/types/content/content-block.ts","status":"M","area":"vocabulary","kind":"production","current":160,"base":130,"added":31,"deleted":1},
 +  {"path":"app/src/lib/representation/data/types/core/resource-set.ts","status":"M","area":"vocabulary","kind":"production","current":32,"base":40,"added":16,"deleted":24},
 +  {"path":"app/src/lib/representation/data/types/templates/template.ts","status":"M","area":"vocabulary","kind":"production","current":71,"base":86,"added":12,"deleted":27},
 +  {"path":"app/src/lib/representation/data/types/workspace/tab.ts","status":"M","area":"vocabulary","kind":"production","current":55,"base":54,"added":1,"deleted":0},
@@ -21825,18 +23589,19 @@
 +  {"path":"app/src/routes/app/[project]/reference/templates/integration/+page.svelte","status":"A","area":"reference","kind":"reference","current":14,"base":0,"added":14,"deleted":0},
 +  {"path":"app/src/routes/app/[project]/reference/templates/rebase/+page.svelte","status":"A","area":"reference","kind":"reference","current":14,"base":0,"added":14,"deleted":0},
 +  {"path":"app/src/routes/app/[project]/reference/templates/scope/+page.svelte","status":"A","area":"reference","kind":"reference","current":14,"base":0,"added":14,"deleted":0},
++  {"path":"app/src/routes/app/[project]/reference/templates/walkthrough/+page.svelte","status":"A","area":"reference","kind":"reference","current":14,"base":0,"added":14,"deleted":0},
 +  {"path":"app/test/browser/document-editor.spec.ts","status":"M","area":"evidence","kind":"test","current":884,"base":877,"added":8,"deleted":1},
-+  {"path":"app/test/browser/template-features.spec.ts","status":"A","area":"evidence","kind":"test","current":318,"base":0,"added":318,"deleted":0},
-+  {"path":"app/test/browser/template-reference.spec.ts","status":"A","area":"evidence","kind":"test","current":151,"base":0,"added":151,"deleted":0}
++  {"path":"app/test/browser/template-features.spec.ts","status":"A","area":"evidence","kind":"test","current":422,"base":0,"added":422,"deleted":0},
++  {"path":"app/test/browser/template-reference.spec.ts","status":"A","area":"evidence","kind":"test","current":179,"base":0,"added":179,"deleted":0}
 +];
 ~~~~
 
-### new · `src/lib/development-views/template-reference/procedures/navigation.ts` (+25 / −0)
+### new · `src/lib/development-views/template-reference/procedures/navigation.ts` (+27 / −0)
 
 ~~~~diff
-@@ -0,0 +1,25 @@
+@@ -0,0 +1,27 @@
 +export type ReferencePage = {
-+  slug: "system" | "changes" | "scope" | "integration" | "rebase";
++  slug: "system" | "changes" | "scope" | "integration" | "rebase" | "walkthrough";
 +  index: string;
 +  label: string;
 +  sub: string;
@@ -21846,8 +23611,9 @@
 +  { slug: "system", index: "01", label: "How templates work", sub: "The model, the verbs, the panels" },
 +  { slug: "changes", index: "02", label: "What changed", sub: "Every file, decision and check" },
 +  { slug: "scope", index: "03", label: "What a hole selects", sub: "The scope builder, and what it cost" },
-+  { slug: "integration", index: "04", label: "End to end with prompts", sub: "The chain, and the one open link" },
-+  { slug: "rebase", index: "05", label: "Where it meets the base", sub: "Every conflict, every defect" }
++  { slug: "integration", index: "04", label: "End to end with prompts", sub: "Every link, and the rule behind it" },
++  { slug: "rebase", index: "05", label: "Where it meets the base", sub: "Every conflict, every defect" },
++  { slug: "walkthrough", index: "06", label: "Walk it yourself", sub: "The whole design, driven" }
 +];
 +
 +const PATHS: Record<ReferencePage["slug"], string> = {
@@ -21855,7 +23621,8 @@
 +  changes: "/changes",
 +  scope: "/scope",
 +  integration: "/integration",
-+  rebase: "/rebase"
++  rebase: "/rebase",
++  walkthrough: "/walkthrough"
 +};
 +
 +export const hrefOf = (project: string, slug: ReferencePage["slug"]): string =>
@@ -22781,6 +24548,132 @@
 +];
 ~~~~
 
+### new · `src/lib/development-views/template-reference/procedures/walkthrough.ts` (+120 / −0)
+
+~~~~diff
+@@ -0,0 +1,120 @@
++import {
++  defaultScopeOf,
++  offeredHoleName
++} from "$representation/data/behavior/templates/prompt-holes";
++import type { AnswerRow } from "$representation/data/behavior/templates/answers";
++
++/**
++ * What drives the interactive page.
++ *
++ * The rules are not restated here: `defaultScopeOf` is the same function the
++ * capability calls, so a scope that would not carry over in the application
++ * does not carry over on the page either. Only the shapes are local, because a
++ * page has three prompts and no store.
++ */
++
++export type WalkScope = "project" | "kinds" | "set";
++
++export type WalkPrompt = {
++  readonly id: string;
++  readonly asks: string;
++  readonly name: string;
++  readonly description: string;
++  readonly scope: WalkScope;
++};
++
++const SCOPES: Record<WalkScope, unknown> = {
++  project: { include: [{ select: "project" }], exclude: [] },
++  kinds: { include: [{ select: "kinds", kinds: ["research"] }], exclude: [] },
++  set: { include: [{ select: "set", setId: "resourceSets:1" }], exclude: [] }
++};
++
++const WORDS: Record<WalkScope, string> = {
++  project: "Everything in the project",
++  kinds: "Research threads",
++  set: "Winter filings"
++};
++
++export const scopeWords = (scope: WalkScope): string | undefined =>
++  defaultScopeOf(SCOPES[scope]) === undefined ? undefined : WORDS[scope];
++
++export type WalkHole = {
++  readonly name: string;
++  readonly description: string;
++  readonly asks: string;
++  readonly fallback?: string;
++};
++
++export const holesFrom = (prompts: readonly WalkPrompt[]): readonly WalkHole[] =>
++  prompts.map((prompt, index) => {
++    const fallback = defaultScopeOf(SCOPES[prompt.scope]);
++    return {
++      name: prompt.name.trim() === "" ? offeredHoleName(index) : prompt.name.trim(),
++      description: prompt.description.trim(),
++      asks: prompt.asks,
++      ...(fallback === undefined ? {} : { fallback: WORDS[prompt.scope] })
++    };
++  });
++
++export const answerRowsFrom = (
++  holes: readonly WalkHole[],
++  chosen: Readonly<Record<string, string>>,
++  words: Readonly<Record<string, string>>
++): readonly AnswerRow[] =>
++  holes.map((hole) => {
++    const answered = chosen[hole.name] === "chosen";
++    const typed = words[hole.name] ?? "";
++    if (hole.fallback === undefined && !answered) {
++      return {
++        key: hole.name,
++        label: hole.name,
++        ...(hole.description === "" ? {} : { description: hole.description }),
++        kind: "text" as const,
++        value: typed,
++        answered: typed !== "",
++        missing: typed.trim() === ""
++      };
++    }
++    return {
++      key: hole.name,
++      label: hole.name,
++      ...(hole.description === "" ? {} : { description: hole.description }),
++      kind: "scope" as const,
++      value: answered ? "Findings, minus one document" : (hole.fallback ?? "Everything in the project"),
++      answered,
++      missing: false
++    };
++  });
++
++export const STAGES = [
++  {
++    title: "A prompt is written",
++    what: "Somebody converts a block and types what it should derive. Nothing about templates has happened.",
++    runs: "The prompt-block inspector, then createDerivedOutput when they press Generate",
++    leaves: "A prompt block reading the whole project, linked to a derived output"
++  },
++  {
++    title: "It is named, or it is not",
++    what: "The Template section offers Prompt 1 and takes a description. Skipping it costs nothing.",
++    runs: "promptHoleOps writes { name, description } onto the block",
++    leaves: "A block that knows what its hole will be called"
++  },
++  {
++    title: "The resource is saved as a template",
++    what: "Every prompt becomes a hole. The scope becomes the default when it means the same thing anywhere.",
++    runs: "promptHolesOf · withAsks · portableBodyOf · withPromptHoles · mergedPromptHoles",
++    leaves: "templates.holes, and a body whose prompt scopes are hole terms"
++  },
++  {
++    title: "Somebody places it",
++    what: "One hole at a time: its name, what it stands for, the prompt itself, and the control.",
++    runs: "answerRowsOf · promptWordsIn · the scope builder · normalizeScope",
++    leaves: "Answers keyed by hole name, and a bound resourceSets row for anything that excludes"
++  },
++  {
++    title: "The copy reads what was chosen",
++    what: "Every prompt scope is settled before the resource is written, and the copy knows nothing of the template.",
++    runs: "resolveTemplateScopes · fillTemplateAtoms",
++    leaves: "An ordinary document or deck whose prompts are ready to generate"
++  }
++];
+~~~~
+
 ### new · `src/lib/development-views/template-reference/template-reference.svelte` (+5 / −0)
 
 ~~~~diff
@@ -23062,6 +24955,26 @@
 +</script>
 +
 +<ScopePage
++  material={appearance.current}
++  materials={APPEARANCES}
++  onmaterial={(next) => (appearance.current = next as Appearance)}
++/>
+~~~~
+
+### new · `src/routes/app/[project]/reference/templates/walkthrough/+page.svelte` (+14 / −0)
+
+~~~~diff
+@@ -0,0 +1,14 @@
++<script lang="ts">
++  import WalkthroughPage from "$development-views/template-reference/components/walkthrough-page.svelte";
++  import {
++    APPEARANCES,
++    appearance,
++    type Appearance
++  } from "$surfaces/top-bar/effects/apply-appearance.svelte";
++</script>
++
++<WalkthroughPage
 +  material={appearance.current}
 +  materials={APPEARANCES}
 +  onmaterial={(next) => (appearance.current = next as Appearance)}

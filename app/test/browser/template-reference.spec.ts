@@ -5,7 +5,8 @@ const routes = [
   ["changes", "/app/dev-project/reference/templates/changes", "What changed"],
   ["scope", "/app/dev-project/reference/templates/scope", "What a hole selects"],
   ["integration", "/app/dev-project/reference/templates/integration", "End to end with prompts"],
-  ["rebase", "/app/dev-project/reference/templates/rebase", "Where it meets the base"]
+  ["rebase", "/app/dev-project/reference/templates/rebase", "Where it meets the base"],
+  ["walkthrough", "/app/dev-project/reference/templates/walkthrough", "Walk it yourself"]
 ] as const;
 
 const unexpected: string[] = [];
@@ -116,23 +117,50 @@ test("the scope page carries its mock, its file list and its settled decisions",
   await expect(page.getByRole("heading", { level: 1, name: "How templates work" })).toBeVisible();
 });
 
-test("the integration page draws its chain and names the one open link", async ({ page }) => {
+test("the integration page draws the whole chain, with every link carrying", async ({ page }) => {
+  // Two diagrams render through one serialised queue, and the sequence is a large one.
+  test.setTimeout(90_000);
   await page.setViewportSize({ width: 1500, height: 900 });
   await page.goto("/app/dev-project/reference/templates/integration", { waitUntil: "networkidle" });
 
   // Both diagrams render rather than falling back to the error state.
-  await expect(page.locator(".mermaid-output svg")).toHaveCount(2, { timeout: 30_000 });
+  await expect(page.locator(".mermaid-output svg")).toHaveCount(2, { timeout: 45_000 });
   await expect(page.locator(".diagram-error")).toHaveCount(0);
 
-  await expect(page.getByRole("heading", { level: 2, name: "Seven links, five of them carrying" })).toBeVisible();
-  await expect(page.locator(".tref-badge.known")).toHaveCount(2);
-  await expect(page.getByRole("heading", { level: 2, name: "The one open link, exactly" })).toBeVisible();
-  await expect(
-    page.locator(".tref-note.attention").getByText("keeps an authored prompt scope settled")
-  ).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: "Seven links, and every one carries" })).toBeVisible();
+  await expect(page.locator(".tref-badge.clean")).toHaveCount(7);
+  await expect(page.locator(".tref-badge.known")).toHaveCount(0);
 
-  await page.getByRole("link", { name: "Where it meets the base", exact: false }).first().click();
-  await expect(page.getByRole("heading", { level: 1, name: "Where it meets the base" })).toBeVisible();
+  // The rule that decides whether a hole arrives with an answer.
+  await expect(page.getByRole("heading", { level: 2, name: /Which scopes carry over/ })).toBeVisible();
+  await expect(page.getByRole("cell", { name: "Nothing set" })).toBeVisible();
+
+  await page.getByRole("link", { name: "Walk it yourself", exact: false }).first().click();
+  await expect(page.getByRole("heading", { level: 1, name: "Walk it yourself" })).toBeVisible();
+});
+
+test("the walkthrough drives the real components, and the rules follow", async ({ page }) => {
+  await page.setViewportSize({ width: 1500, height: 1000 });
+  await page.goto("/app/dev-project/reference/templates/walkthrough", { waitUntil: "networkidle" });
+
+  // Three prompts, three holes, and the one reading a named set carries no default.
+  const holes = page.locator("#made tbody tr");
+  await expect(holes).toHaveCount(3);
+  await expect(holes.nth(2).locator("td.none")).toHaveText("Nothing — it has to be answered");
+  await expect(page.locator(".tab.missing")).toHaveCount(1);
+
+  // Naming a prompt renames its hole, everywhere at once.
+  const first = page.locator(".prompt").first();
+  await first.getByRole("button", { name: "Prompt 1", exact: true }).click();
+  await first.getByRole("textbox", { name: "What this prompt's hole is called" }).fill("incident");
+  await first.getByRole("textbox", { name: "What this prompt's hole is called" }).press("Enter");
+  await expect(holes.nth(0).locator("code")).toHaveText("incident");
+  await expect(page.getByRole("tab", { name: "incident" })).toBeVisible();
+
+  // Cycling the third prompt's context off the named set gives its hole a default.
+  await page.locator(".prompt").nth(2).getByRole("button", { name: "Set default context" }).click();
+  await expect(page.locator(".tab.missing")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Accept all defaults" })).toBeEnabled();
 });
 
 test("the rebase page accounts for every conflict and both defects", async ({ page }) => {

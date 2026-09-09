@@ -274,15 +274,13 @@ describe("a template from a live resource", () => {
   });
 
   /**
-   * The one link the chain is still missing, pinned so it cannot change unseen.
+   * Every prompt is a hole, and a scope anybody could have meant is its default.
    *
-   * A prompt somebody wrote in the editor carries a settled scope, not a hole
-   * term. Making a template keeps that scope exactly as it is and declares no
-   * hole, so placing the template asks nothing and every copy reads the same
-   * sources. Turning an authored scope into a hole is a decision nobody has
-   * taken yet; when it is taken, this test is what changes.
+   * Nothing was declared and nothing was named: the prompt was written, the
+   * template was made, and it asks. That is the whole of the link, and it is
+   * what makes a template from a document full of prompts worth placing.
    */
-  test("keeps an authored prompt scope settled, and so declares no hole for it", async () => {
+  test("turns an authored prompt scope into a hole that keeps it as the default", async () => {
     model.tables.documents.push(row("documents", "1", { projectId: "p", title: "Winter brief" }));
     model.tables.documentSnapshots.push(
       row("documentSnapshots", "1", {
@@ -319,8 +317,58 @@ describe("a template from a live resource", () => {
     });
     assert.ok(made.accepted);
     const held = model.tables.templates[1];
-    assert.deepEqual(held.holes, []);
-    assert.deepEqual(scopeOf(held), { include: [{ select: "project" }], exclude: [] });
+    assert.deepEqual(held.holes, [
+      {
+        name: "Prompt 1",
+        label: "Prompt 1",
+        default: { include: [{ select: "project" }], exclude: [] }
+      }
+    ]);
+    assert.deepEqual(scopeOf(held), { include: [{ select: "hole", name: "Prompt 1" }], exclude: [] });
+  });
+
+  test("gives a hole no default when the prompt read something particular", async () => {
+    model.tables.documents.push(row("documents", "1", { projectId: "p", title: "Winter brief" }));
+    model.tables.documentSnapshots.push(
+      row("documentSnapshots", "1", {
+        projectId: "p",
+        resourceId: "documents:1",
+        role: "leader",
+        revision: 1,
+        body: {
+          rows: [
+            {
+              id: "r1",
+              kind: "blocks",
+              blocks: [
+                {
+                  id: "p1",
+                  type: "prompt",
+                  atoms: [{ id: "p1-a", kind: "literal", text: "Sum up" }],
+                  display: "Sum up",
+                  marks: [],
+                  hole: { name: "evidence", description: "What happened" },
+                  scope: { include: [{ select: "set", setId: "resourceSets:1" }], exclude: [] },
+                  state: "idle"
+                }
+              ]
+            }
+          ]
+        }
+      })
+    );
+
+    const made = await createTemplateFromResource({
+      target: "document",
+      resourceId: "documents:1",
+      name: "Named prompt"
+    });
+    assert.ok(made.accepted);
+    const held = model.tables.templates[1];
+    assert.deepEqual(held.holes, [
+      { name: "evidence", label: "evidence", description: "What happened" }
+    ]);
+    assert.deepEqual(scopeOf(held), { include: [{ select: "hole", name: "evidence" }], exclude: [] });
   });
 
   test("makes a deck template from the whole deck or from one of its slides", async () => {

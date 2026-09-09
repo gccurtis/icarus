@@ -127,6 +127,18 @@ export type TableBlock = {
 
 export type PromptState = "idle" | "fresh" | "stale" | "generating" | "error";
 
+/**
+ * What this prompt becomes when its resource is made a template.
+ *
+ * Every prompt becomes one hole, so this is what the hole is called and what it
+ * says rather than whether there is one. Absent means the name is still the
+ * offered default, which is why nothing has to be filled in to make a template.
+ */
+export type PromptHole = {
+  name: string;
+  description?: string;
+};
+
 export type PromptBlock = {
   id: string;
   type: "prompt";
@@ -136,6 +148,9 @@ export type PromptBlock = {
   display: string;
   marks: Mark[];
   scope?: ResourceSet | TemplatedResourceSet;
+  /** The words this block asks, written onto it when the derived output it read is left behind. */
+  asks?: string;
+  hole?: PromptHole;
   state: PromptState;
   error?: string;
   refreshedAt?: number;

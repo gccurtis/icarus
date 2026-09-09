@@ -2,7 +2,7 @@ import { requireScope } from "$runtime/server/scope.server";
 import { serverModel } from "$runtime/server/start.server";
 import { asId } from "$representation/data/behavior/core/id";
 import { deckOfSlide } from "$representation/data/behavior/templates/deck-of-slide";
-import { portableBodyOf } from "$representation/data/behavior/templates/portable";
+import { templatedBodyOf } from "$capabilities/templates/api/shared/prompts";
 import type { TemplateBody } from "$representation/data/types/templates/template";
 
 import { validateCreateTemplateFromResource } from "$capabilities/templates/api/create-template-from-resource/validate-create-template-from-resource";
@@ -55,7 +55,7 @@ export const createTemplateFromResource = async (
     candidate = { resource: "slides", ...slide };
   }
 
-  const portable = portableBodyOf(candidate);
+  const portable = templatedBodyOf(store, candidate, []);
   let body: TemplateBody;
   try {
     body = bodyOf(portable.body, "create-template-from-resource");
@@ -77,7 +77,7 @@ export const createTemplateFromResource = async (
     ...(asked.description === undefined ? {} : { description: asked.description }),
     tags: [...(asked.tags ?? [])],
     body,
-    holes: declaredFor(body, []),
+    holes: declaredFor(body, portable.holes),
     createdBy: actor,
     revision: 1,
     updatedAt: at

@@ -91,16 +91,23 @@ test("inserting a template into a document asks for each hole, shows its default
   const modal = page.getByRole("dialog", { name: "Insert “Technical glossary”" });
   await expect(modal).toBeVisible();
 
-  // Every hole is listed, with its description and what answers it.
-  await expect(modal.getByText("Source material", { exact: true })).toBeVisible();
-  await expect(modal.getByRole("button", { name: /Documents, Findings/ })).toBeVisible();
+  // Every hole is a tab, and the red ones are the only thing holding Insert up.
+  await expect(modal.locator(".tab")).toHaveCount(2);
+  await expect(modal.locator(".tab.missing")).toHaveCount(1);
 
-  // One of them takes words, so Insert is held until it has some.
-  await expect(modal.locator(".answer.missing")).toHaveCount(1);
+  // One hole at a time, opening on the first.
+  await expect(modal.locator(".answer h3")).toHaveText("Source material");
+  await expect(modal.locator(".scope .rule")).toContainText("Documents, Findings");
+
+  // Walk to the one that takes words and fill it.
+  await modal.getByRole("tab", { name: /Subject line/ }).click();
   await modal.getByRole("textbox", { name: "What Subject line says here" }).fill("Winter terms");
-  await expect(modal.locator(".answer.missing")).toHaveCount(0);
+  await expect(modal.locator(".tab.missing")).toHaveCount(0);
+  await expect(modal.getByRole("button", { name: "Accept all defaults" })).toBeEnabled();
 
-  await modal.getByRole("button", { name: /Documents, Findings/ }).click();
+  await modal.getByRole("button", { name: "Previous", exact: true }).click();
+  await expect(modal.locator(".answer h3")).toHaveText("Source material");
+  await modal.locator(".scope").click();
   const builder = page.getByRole("dialog", { name: "What Source material selects here" });
   await expect(builder).toBeVisible();
   await builder.getByRole("button", { name: "Sets", exact: true }).click();
@@ -112,7 +119,8 @@ test("inserting a template into a document asks for each hole, shows its default
   await expect(builder.getByText("Winter filings").first()).toBeVisible();
   await builder.getByRole("button", { name: "Use this", exact: true }).click();
 
-  await expect(modal.getByRole("button", { name: /Winter filings/ })).toBeVisible();
+  await expect(modal.locator(".scope .rule")).toContainText("Winter filings");
+  await expect(modal.locator(".scope .tag")).toHaveText("Chosen");
   await modal.getByRole("button", { name: "Insert", exact: true }).click();
 
   await expect(context.getByText("Inserted “Technical glossary”.", { exact: true })).toBeVisible();
@@ -162,6 +170,102 @@ test("a document is saved as a template, takes its hole from an inserted prompt,
   page.once("dialog", (dialog) => void dialog.accept());
   await context.getByRole("button", { name: "Discard", exact: true }).click();
   await expect(tabs(page).getByRole("button", { name: `Template · ${name}`, exact: true })).toHaveCount(0, { timeout: 15_000 });
+
+  await deleteTemplateFromLibrary(page, name);
+});
+
+/**
+ * The whole chain, from a prompt somebody writes to a copy that reads what
+ * somebody else chose. Nothing is declared and nothing is wired up by hand:
+ * writing the prompt is the whole of the authoring.
+ */
+test("a prompt written in a document becomes a hole the template asks about", async ({ page }) => {
+  const name = `Browser prompt ${Date.now()}`;
+
+  await page.goto("/app/dev-project", { waitUntil: "networkidle" });
+  await tabs(page).locator('button.tab.icon[aria-label="New tab"]').click();
+  await page.locator(".area-editors").getByRole("button", { name: "Document", exact: true }).click();
+
+  const editor = page.locator(".ProseMirror");
+  await expect(editor).toBeVisible();
+  await editor.locator('.document-block[data-kind="text"]').first().click();
+  const empty = page.locator('aside[aria-label="Inspector"][data-inspected="document-editor.empty-line"]');
+  await empty.getByRole("button", { name: "Block", exact: true }).click();
+  await page.getByRole("option", { name: "Prompt", exact: true }).click();
+
+  const inspector = page.locator(
+    'aside[aria-label="Inspector"][data-inspected="document-editor.prompt-block"]'
+  );
+  await expect(inspector).toBeVisible();
+  await inspector.getByLabel("Prompt").fill("Summarize the winter filings.");
+
+  // The Template section offers a name and reads the default context off the scope.
+  await expect(inspector.getByRole("button", { name: "Prompt 1", exact: true })).toBeVisible();
+  await expect(inspector.getByText("Everything in the project", { exact: true })).toBeVisible();
+
+  await inspector.getByRole("button", { name: "Prompt 1", exact: true }).click();
+  const holeName = inspector.getByRole("textbox", { name: "What this prompt's hole is called" });
+  await holeName.fill("winter_sources");
+  await holeName.press("Enter");
+  await expect(inspector.getByRole("button", { name: "winter_sources", exact: true })).toBeVisible();
+
+  await inspector.getByRole("button", { name: "What whoever places this is choosing" }).click();
+  const holeMeans = inspector.getByRole("textbox", { name: "What this prompt's hole stands for" });
+  await holeMeans.fill("Which filings the summary reads");
+  await holeMeans.blur();
+  await expect(
+    inspector.getByRole("button", { name: "Which filings the summary reads", exact: true })
+  ).toBeVisible();
+
+  // Save it as a template. Nothing else was declared.
+  await expect(page.locator(".title-bar")).toContainText("Saved", { timeout: 15_000 });
+  const context = await templatesPanel(page);
+  await context.getByRole("textbox", { name: "Template name" }).fill(name);
+  await context.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(page.locator(".title-bar h1")).toContainText(`Template · ${name}`, { timeout: 15_000 });
+
+  // The prompt is a hole, named and described, defaulting to what it read.
+  const card = context.locator(".hole").filter({ hasText: "winter_sources" });
+  await expect(card).toBeVisible();
+  await expect(card).toContainText("Which filings the summary reads");
+  await expect(card.getByRole("button", { name: "Default scope", exact: true })).toHaveAttribute(
+    "title",
+    /^Everything in the project/
+  );
+
+  page.once("dialog", (dialog) => void dialog.accept());
+  await context.getByRole("button", { name: "Discard", exact: true }).click();
+  await expect(tabs(page).getByRole("button", { name: `Template · ${name}`, exact: true })).toHaveCount(0, {
+    timeout: 15_000
+  });
+
+  // Placing it asks about that prompt, and takes an answer for it.
+  await openDocumentFixture(page);
+  const panel = await templatesPanel(page);
+  await panel.getByTitle(`Insert “${name}” after the current row`).click();
+
+  const modal = page.getByRole("dialog", { name: `Insert “${name}”` });
+  await expect(modal).toBeVisible();
+  await expect(modal.locator(".answer h3")).toHaveText("winter_sources");
+  await expect(modal.locator(".means")).toHaveText("Which filings the summary reads");
+  await expect(modal.locator(".tab.missing")).toHaveCount(0);
+  await expect(modal.locator(".scope .tag")).toHaveText("Default");
+  await expect(modal.locator(".scope .rule")).toContainText("Everything in the project");
+
+  await modal.locator(".scope").click();
+  const builder = page.getByRole("dialog", { name: "What winter_sources selects here" });
+  await expect(builder).toBeVisible();
+  await builder.getByRole("button", { name: "Kinds", exact: true }).click();
+  await builder
+    .locator(".offer")
+    .filter({ hasText: "Findings" })
+    .getByRole("button", { name: "Add", exact: true })
+    .click();
+  await builder.getByRole("button", { name: "Use this", exact: true }).click();
+  await expect(modal.locator(".scope .tag")).toHaveText("Chosen");
+
+  await modal.getByRole("button", { name: "Insert", exact: true }).click();
+  await expect(panel.getByText(`Inserted “${name}”.`, { exact: true })).toBeVisible();
 
   await deleteTemplateFromLibrary(page, name);
 });

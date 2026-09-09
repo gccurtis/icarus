@@ -56,6 +56,14 @@ export type { TemplatedResourceSet } from "$representation/data/types/core/resou
 export type { TemplateHole } from "$representation/data/types/templates/template";
 
 export {
+  defaultScopeOf,
+  holeNameIn,
+  offeredHoleName,
+  offeredNameIn,
+  promptWordsIn
+} from "$representation/data/behavior/templates/prompt-holes";
+
+export {
   answerRowsOf,
   missingIn,
   type AnswerRow

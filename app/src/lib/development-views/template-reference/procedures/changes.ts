@@ -124,6 +124,24 @@ export const SYSTEMATIC: SystematicChange[] = [
     now: "Create hole, at the top of the Holes band, takes a name, a description and default words, declares the hole and drops its atom at the caret in one act. A scope hole is still found, because a prompt is what asks for one.",
     why: "Only the writer knows where in the prose a hole belongs, so the panel cannot find it. Declaring without placing would leave a hole nothing fills, which is why the two happen together or not at all.",
     area: "editors"
+  },
+  {
+    index: "16",
+    title: "Every prompt is a hole",
+    before:
+      "A scope hole could only come from a body that already carried a hole term — which happened when a template with one was inserted into a working copy. A prompt somebody wrote kept its own sources, so a template made from it asked nothing and every copy read what the author read.",
+    now: "Making a template turns every prompt into one hole: named by what the author called it, else Prompt 1, Prompt 2; described by what they wrote beside it; and defaulting to the scope it read, when that scope means the same thing in a project nobody has seen. A prompt's Template section is where the name and the words are written, in the ordinary editor as much as in a working copy.",
+    why: "A prompt asks the project a question, and a template is that question asked again somewhere else. Nothing else in the body has to be told where it is going, so nothing about this should need declaring either.",
+    area: "editors"
+  },
+  {
+    index: "17",
+    title: "Placing a template walks its holes",
+    before:
+      "Every hole was on screen at once, which read as a form. A template with a dozen was a wall, and the prompt each scope hole filled was nowhere to be seen.",
+    now: "One hole at a time: its name, what it stands for, the prompt it fills, then the control. Tabs across the top carry the shape and mark in red the holes that still need words, and Accept all defaults lights the moment none do.",
+    why: "A hole is a question, and questions are answered one at a time. The tabs keep the whole shape visible without making it the thing you read first.",
+    area: "cross-cutting"
   }
 ];
 
@@ -191,14 +209,14 @@ export const DECISIONS: Decision[] = [
 ];
 
 export const VERIFICATION: Verification[] = [
-  { check: "Types", command: "pnpm typecheck", result: "0 errors, 0 warnings across 2,915 files", clean: true },
+  { check: "Types", command: "pnpm typecheck", result: "0 errors, 0 warnings across 2,924 files", clean: true },
   { check: "Structure", command: "pnpm lint", result: "56 checks, 56 clean", clean: true },
-  { check: "Unit", command: "pnpm test", result: "1,032 tests in 116 files, 2 skipped", clean: true },
+  { check: "Unit", command: "pnpm test", result: "1,044 tests in 117 files, 2 skipped", clean: true },
   { check: "Category keys", command: "pnpm category-keys -- --check", result: "10 categories and 13 content views in step", clean: true },
   {
     check: "Browser",
     command: "pnpm test:browser, from a clean seed",
-    result: "60 of 60, with 4 skipped — the live-intelligence cases the base branch skips when no credential is configured.",
+    result: "62 of 62, with 4 skipped — the live-intelligence cases the base branch skips when no credential is configured.",
     clean: true
   }
 ];

@@ -32,6 +32,7 @@
     draftOf,
     holeNameRefusal,
     insertionOf,
+    promptWordsIn,
     mergedHoles,
     offeringOf,
     openStage,
@@ -189,6 +190,8 @@
     run("save-as", async () => {
       const name = nameDraft.trim();
       if (documentId === undefined || name === "") return;
+      /** A template is made from the saved body, so anything still in flight has to land first. */
+      if (!(await settled())) return;
       const made = await saveAsTemplate(view, documentId, name);
       if (!live) return;
       if (!made.accepted) {
@@ -524,7 +527,7 @@
 <OverlayModal
   bind:open={insertOpen}
   title={`Insert “${insertFor?.name ?? "the template"}”`}
-  description="Every hole this template asks for. Open one to read what it means."
+  description="One hole at a time. The tabs say which still need words."
   confirm="Insert"
   width="wide"
   blocked={askBlocked}
@@ -532,9 +535,11 @@
 >
   <TemplateAnswerList
     rows={askRows}
+    prompts={insertFor === undefined ? {} : promptWordsIn(insertFor.body)}
     onscope={openAnswer}
     ontext={writeText}
     onreset={clearAnswer}
+    onaccept={confirmInsert}
   />
 </OverlayModal>
 

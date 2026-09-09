@@ -21,11 +21,37 @@
   import { blockIn } from "$app-views/categories/document-editor/procedures/blocks";
   import {
     linkPromptBlockOps,
+    promptHoleOps,
+    promptScopeOps,
     syncPromptBlockOps,
     type Id,
     type LinkedPromptBlock,
     type PromptBlock
   } from "$app-views/categories/document-editor/procedures/prompt-blocks";
+  import {
+    builderView,
+    defaultScopeOf,
+    draftOf,
+    narrowed,
+    offeredNameIn,
+    offeringOf,
+    projectResources,
+    resourceSets,
+    resourcesIn,
+    ruleOf,
+    scopeNamesOf,
+    setsIn,
+    termFor,
+    withTerm,
+    withWholeProject,
+    withoutTerm,
+    type OfferSource,
+    type ScopeDraft,
+    type ScopeSide
+  } from "$app-views/categories/document-editor/procedures/templating";
+  import { OverlayModal } from "$authored-components/overlay";
+  import { PromptTemplate } from "$authored-components/prompt-template";
+  import { ScopeBuilder } from "$authored-components/scope-builder";
   import { announcePromptOutput } from "$app-views/categories/document-editor/procedures/prompt-output-events";
   import { isInspectorView, workspaceState } from "$model/client/workspace-state";
   import type { DocumentRuntime } from "$model/client/workspace-state";
@@ -137,6 +163,52 @@
   const navigate = (next: string) => {
     if (isInspectorView(next)) view.inspect(next);
   };
+
+  const sets = resourceSets();
+  const index = projectResources();
+  const setItems = $derived(setsIn(sets.ready ? sets.current : undefined));
+  const catalogue = $derived(resourcesIn(index.ready ? index.current : undefined));
+  const setNames = $derived(scopeNamesOf(setItems, catalogue));
+  const offering = $derived(offeringOf(setItems, catalogue));
+
+  const offered = $derived(
+    body === undefined || prompt === undefined ? "Prompt 1" : offeredNameIn(body, prompt.id)
+  );
+  const named = $derived(prompt?.hole);
+  const settled = $derived(defaultScopeOf(prompt?.scope));
+
+  let contextOpen = $state(false);
+  let draft = $state<ScopeDraft>(draftOf(undefined));
+  const view$ = $derived(builderView(draft, offering));
+  const scopeBlocked = $derived(
+    draft.include.length === 0 ? "Include something, or choose everything in the project." : undefined
+  );
+
+  const write = (ops: readonly unknown[]) => {
+    if (runtime === undefined || ops.length === 0) return;
+    runtime.apply(ops as Parameters<DocumentRuntime["apply"]>[0]);
+  };
+
+  const rename = (name: string) => {
+    if (prompt === undefined) return;
+    write(promptHoleOps(prompt, { name, description: named?.description }));
+  };
+
+  const describe = (description: string) => {
+    if (prompt === undefined) return;
+    write(promptHoleOps(prompt, { name: named?.name ?? offered, description }));
+  };
+
+  const openContext = () => {
+    draft = draftOf(prompt?.scope);
+    contextOpen = true;
+  };
+
+  const confirmContext = () => {
+    if (prompt === undefined) return;
+    write(promptScopeOps(prompt, narrowed(draft) ?? draft));
+    contextOpen = false;
+  };
 </script>
 
 <Panel title="Prompt block">
@@ -202,8 +274,40 @@
       {/key}
     {/if}
 
+    <PromptTemplate
+      name={named?.name ?? ""}
+      {offered}
+      description={named?.description ?? ""}
+      context={settled === undefined ? undefined : ruleOf(settled, setNames)}
+      settled={settled !== undefined}
+      disabled={phase !== undefined}
+      onname={rename}
+      ondescription={describe}
+      oncontext={openContext}
+    />
   {/if}
 </Panel>
+
+<OverlayModal
+  bind:open={contextOpen}
+  title={`Default context for ${named?.name ?? offered}`}
+  description="What this prompt reads here, and what its hole selects until whoever places the template says otherwise."
+  confirm="Set the default context"
+  width="wide"
+  blocked={scopeBlocked}
+  onconfirm={confirmContext}
+>
+  <ScopeBuilder
+    {...view$}
+    onmode={(whole) => (draft = whole ? withWholeProject() : { include: [], exclude: [] })}
+    onadd={(side: ScopeSide, source: string, key: string) => {
+      const term = termFor(source as OfferSource, key);
+      if (term !== undefined) draft = withTerm(draft, side, term);
+    }}
+    ondrop={(side: ScopeSide, key: string) => (draft = withoutTerm(draft, side, key))}
+    onclear={() => (draft = { include: [], exclude: [] })}
+  />
+</OverlayModal>
 
 <style>
   .setup {

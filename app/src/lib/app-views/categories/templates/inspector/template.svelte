@@ -947,7 +947,7 @@
 <OverlayModal
   bind:open={useOpen}
   title={`Use “${template?.name ?? "the template"}”`}
-  description="Every parameter this template asks for. Open one to read what it means."
+  description="One hole at a time. The tabs say which still need words."
   confirm="Create"
   width="wide"
   blocked={askBlocked}
@@ -955,9 +955,11 @@
 >
   <TemplateAnswerList
     rows={askRows}
+    prompts={template?.prompts ?? {}}
     onscope={openAnswer}
     ontext={writeText}
     onreset={clearAnswer}
+    onaccept={confirmUse}
   />
 </OverlayModal>
 

@@ -31,6 +31,7 @@ import {
   type ScopeNames,
   type ScopeOffering
 } from "$representation/data/behavior/core/scope-draft";
+import { promptWordsIn } from "$representation/data/behavior/templates/prompt-holes";
 import type { Category, WorkspaceStateModel } from "$model/client/workspace-state";
 
 export type { ResourceSetItem } from "$capabilities/resource-sets/index.remote";
@@ -63,6 +64,8 @@ export type LibraryTemplate = {
 
 export type LibraryTemplateDetail = LibraryTemplate & {
   readonly holes: readonly TemplateHole[];
+  /** What the prompt behind each hole asks, so placing it can show the question. */
+  readonly prompts: Readonly<Record<string, string>>;
 };
 
 export type TemplateLibrarySummary = {
@@ -171,6 +174,7 @@ export const detailIn = (
   const row = project({ ...answer, holeCount: answer.holes.length }, now);
   return {
     ...row,
+    prompts: promptWordsIn(answer.body),
     holes: answer.holes.map((hole) => ({
       ...hole,
       id: `${answer.id}:${hole.name}`

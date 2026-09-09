@@ -87,6 +87,23 @@ const setField = (
         was: was ?? null
       };
 
+/** What this prompt's hole is called, and what it stands for. */
+export const promptHoleOps = (
+  block: PromptBlock,
+  hole: { name: string; description?: string }
+): SlideDeckOp[] => {
+  const description = hole.description?.trim() ?? "";
+  const next = { name: hole.name.trim(), ...(description === "" ? {} : { description }) };
+  const op = setField(block, "hole", next, block.hole);
+  return op === undefined ? [] : [op];
+};
+
+/** What this prompt reads, which is also what its hole selects by default. */
+export const promptScopeOps = (block: PromptBlock, scope: unknown): SlideDeckOp[] => {
+  const op = setField(block, "scope", scope, block.scope);
+  return op === undefined ? [] : [op];
+};
+
 export const linkPromptBlockOps = (
   block: PromptBlock,
   derivedOutputId: Id<"derivedOutputs">

@@ -62,6 +62,14 @@ export {
 } from "$representation/data/behavior/templates/answers";
 
 export {
+  defaultScopeOf,
+  holeNameIn,
+  offeredHoleName,
+  offeredNameIn,
+  promptWordsIn
+} from "$representation/data/behavior/templates/prompt-holes";
+
+export {
   PROJECT_KINDS as KINDS,
   builderView,
   draftOf,

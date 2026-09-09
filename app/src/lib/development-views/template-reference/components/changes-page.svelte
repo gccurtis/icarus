@@ -37,7 +37,7 @@
         <span class="tref-kicker">02 · The audit</span>
         <h1>What changed</h1>
         <p class="tref-lede">
-          Fifteen systematic changes, the decisions three reviews settled, every file with its line count, what
+          Seventeen systematic changes, the decisions three reviews settled, every file with its line count, what
           was run to check the work, and what is still open. Measured against <code>{BASELINE}</code>, the
           commit this branch sits on, so it keeps saying the same thing as that branch moves on.
         </p>
@@ -48,13 +48,13 @@
           <div><dt>Created</dt><dd>{made}</dd></div>
           <div><dt>Changed</dt><dd>{changed}</dd></div>
           <div><dt>Lines</dt><dd>+{added.toLocaleString()} / −{deleted.toLocaleString()}</dd></div>
-          <div><dt>Committed</dt><dd>Five commits, on derived outputs</dd></div>
+          <div><dt>Committed</dt><dd>Seven commits, on derived outputs</dd></div>
         </dl>
       </div>
     </header>
 
     <nav class="tref-jumps" aria-label="On this page">
-      <a href="#systematic">Fifteen changes</a>
+      <a href="#systematic">Seventeen changes</a>
       <a href="#model">The model, before and after</a>
       <a href="#decisions">What the reviews settled</a>
       <a href="#ledger">Every file</a>
@@ -65,7 +65,7 @@
 
     <section class="tref-section" id="systematic">
       <div class="tref-section-head">
-        <div><span class="tref-kicker">Before → now</span><h2>Fifteen systematic changes</h2></div>
+        <div><span class="tref-kicker">Before → now</span><h2>Seventeen systematic changes</h2></div>
         <p>
           Each is a decision with consequences across several files, written with what it replaced and why,
           so the page stays useful after the code is familiar.
@@ -226,7 +226,7 @@
       <div class="tref-section-head">
         <div><span class="tref-kicker">Already done</span><h2>Where it sits</h2></div>
         <p>
-          Five commits on <code>work/template-features</code>, sitting on
+          Seven commits on <code>work/template-features</code>, sitting on
           <code>work/derived-output-architecture</code> rather than on main — because that is where
           prompt blocks are, and a prompt's scope is what a scope hole fills. Everything on this page
           is measured from there, so the numbers say what this branch adds and nothing else.

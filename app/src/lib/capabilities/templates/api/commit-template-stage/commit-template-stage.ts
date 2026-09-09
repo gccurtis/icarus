@@ -1,6 +1,6 @@
 import { requireScope } from "$runtime/server/scope.server";
 import { serverModel } from "$runtime/server/start.server";
-import { portableBodyOf } from "$representation/data/behavior/templates/portable";
+import { templatedBodyOf } from "$capabilities/templates/api/shared/prompts";
 import type { TemplateBody } from "$representation/data/types/templates/template";
 
 import { validateCommitTemplateStage } from "$capabilities/templates/api/commit-template-stage/validate-commit-template-stage";
@@ -78,7 +78,7 @@ export const commitTemplateStage = async (input: unknown): Promise<CommitTemplat
       detail: "the staged copy has no body to save"
     };
   }
-  const portable = portableBodyOf({ resource: stage.target, ...leader.body });
+  const portable = templatedBodyOf(store, { resource: stage.target, ...leader.body }, template.holes);
   let body: TemplateBody;
   try {
     body = bodyOf(portable.body, "commit-template-stage");
@@ -101,7 +101,7 @@ export const commitTemplateStage = async (input: unknown): Promise<CommitTemplat
     ...(template.description === undefined ? {} : { description: template.description }),
     tags: [...template.tags],
     body,
-    holes: declaredFor(body, template.holes),
+    holes: declaredFor(body, portable.holes),
     createdBy: template.createdBy,
     revision: template.revision + 1,
     updatedAt: at

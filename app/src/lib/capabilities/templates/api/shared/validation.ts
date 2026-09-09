@@ -692,6 +692,16 @@ const displayOfAtoms = (atoms: readonly unknown[]): string =>
     )
     .join("");
 
+/** What a prompt says its hole is called, before the hole itself is declared. */
+const validPromptHole = (value: unknown): boolean =>
+  isRecord(value) &&
+  hasOnlyKeys(value, ["name", "description"]) &&
+  validCanonicalText(value.name, MAX_HOLE_NAME_LENGTH) &&
+  (value.description === undefined ||
+    (isText(value.description) &&
+      value.description.length <= MAX_HOLE_DESCRIPTION_LENGTH &&
+      value.description === value.description.trim()));
+
 const validBlock = (value: unknown, depth = 0): boolean => {
   if (depth > 12 || !isRecord(value) || !validIdentifier(value.id) || !isText(value.type)) {
     return false;
@@ -865,6 +875,8 @@ const validBlock = (value: unknown, depth = 0): boolean => {
         "display",
         "marks",
         "scope",
+        "asks",
+        "hole",
         "state",
         "error",
         "refreshedAt",
@@ -872,6 +884,8 @@ const validBlock = (value: unknown, depth = 0): boolean => {
       ]) &&
       (value.derivedOutputId === undefined || validIdentifier(value.derivedOutputId)) &&
       (value.style === undefined || validIdentifier(value.style)) &&
+      (value.asks === undefined || validText(value.asks, MAX_BLOCK_TEXT_LENGTH, true)) &&
+      (value.hole === undefined || validPromptHole(value.hole)) &&
       Array.isArray(value.atoms) &&
       value.atoms.length <= MAX_BLOCKS_PER_CONTAINER &&
       value.atoms.every(validAtom) &&

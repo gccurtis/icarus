@@ -4,21 +4,21 @@
   import { traceNode } from "$development-components/trace.svelte";
 
   /**
-   * Every hole a template asks for, as a name, what it means, and what it
-   * is answered with.
+   * Every hole a template asks for, one at a time.
    *
-   * **All of them, always, and nothing folded away.** A template's holes are
-   * the shape of the thing you are about to make, so the whole list is on screen
-   * and each row reads top to bottom: the name, the sentence whoever made the
-   * template wrote, and the value. Nothing here is a disclosure, because a hole
-   * you have to open to see is a hole you can forget.
+   * **One question on screen, and all of them in view.** A hole is a question,
+   * and a page of twelve questions is read as a form rather than answered as
+   * one. So the body holds a single hole — its name, what it stands for, the
+   * prompt it fills if it fills one, and the control — while the tabs above
+   * keep the whole shape visible and say which still need an answer.
    *
-   * **The list scrolls; the modal does not grow.** A template with twelve
-   * holes and one with two open the same size, so nothing jumps.
+   * **Red is the only thing that stops you.** A scope always has an answer,
+   * because the whole project is the floor; only words can be missing. When no
+   * tab is red the template can be placed as it stands, and the button that
+   * does it sits right there rather than at the end of a walk.
    *
    * **The value is the control.** Text is a field you type in. A scope is a
-   * block reading what it selects, which opens the builder when pressed. A row
-   * with nothing in it carries a rule down its left edge.
+   * block reading what it selects, which opens the builder when pressed.
    */
 
   export type AnswerRow = {
@@ -37,12 +37,16 @@
 
   let {
     rows,
+    prompts = {},
     disabled = false,
     onscope,
     ontext,
-    onreset
+    onreset,
+    onaccept
   }: {
     rows: readonly AnswerRow[];
+    /** What the prompt behind a hole asks, by hole name, when a prompt is behind it. */
+    prompts?: Readonly<Record<string, string>>;
     disabled?: boolean;
     /** Open the builder for one scope hole. */
     onscope: (key: string) => void;
@@ -50,136 +54,319 @@
     ontext: (key: string, words: string) => void;
     /** Put one hole back to what the template suggests. */
     onreset: (key: string) => void;
+    /** Take everything as it stands and place the template. */
+    onaccept?: () => void;
   } = $props();
 
-  const trace = traceNode("TemplateAnswers", () => ({
-    rows: rows.length,
-    missing: rows.filter((row) => row.missing).length
-  }));
+  let at = $state(0);
+
+  /** A hole answered and then removed must not leave the walk past its end. */
+  const index = $derived(Math.min(at, Math.max(rows.length - 1, 0)));
+  const shown = $derived(rows[index]);
+  const asks = $derived(shown === undefined ? undefined : prompts[shown.key]);
+  const missing = $derived(rows.filter((row) => row.missing).length);
+  const ready = $derived(rows.length > 0 && missing === 0);
+
+  const trace = traceNode("TemplateAnswers", () => ({ rows: rows.length, missing, at: index }));
+
+  /** Next lands on the first hole that still needs words, if any are left after this one. */
+  const step = (by: number) => {
+    at = Math.min(Math.max(index + by, 0), Math.max(rows.length - 1, 0));
+  };
 </script>
 
-<div {...trace} class="answers">
-  {#each rows as row (row.key)}
-    <article class="answer" class:missing={row.missing}>
-      <header>
-        <b>{row.label}</b>
-        {#if row.answered}
-          <Button
-            variant="ghost"
-            size="xs"
-            {disabled}
-            title={`Put ${row.label} back to what the template suggests`}
-            onclick={() => onreset(row.key)}
-          >
-            Use the default
-          </Button>
-        {/if}
-      </header>
-
-      <p class="what">
-        {row.description ??
-          (row.kind === "text" ? "Words this template asks for." : "What this hole selects.")}
-      </p>
-
-      {#if row.kind === "text"}
-        <Textarea
-          value={row.value}
-          rows={2}
-          {disabled}
-          aria-label={`What ${row.label} says here`}
-          placeholder={`What ${row.label.toLocaleLowerCase()} says here`}
-          oninput={(event) => ontext(row.key, event.currentTarget.value)}
-        />
-      {:else}
+<div class="ask" {...trace}>
+  {#if rows.length === 0}
+    <p class="none">This template asks for nothing. Place it as it is.</p>
+  {:else}
+    <div class="tabs" role="tablist" aria-label="Holes to fill">
+      {#each rows as row, position (row.key)}
         <button
           type="button"
-          class="scope"
+          role="tab"
+          class="tab"
+          class:missing={row.missing}
+          class:here={position === index}
+          aria-selected={position === index}
           {disabled}
-          title={`Choose what ${row.label} selects here`}
-          onclick={() => onscope(row.key)}
+          onclick={() => (at = position)}
         >
-          <span class="tag">{row.answered ? "Chosen" : "Default"}</span>
-          <span class="rule">{row.value}</span>
+          <span class="tab-name">{row.label}</span>
+          {#if row.missing}<span class="dot" aria-label="needs words"></span>{/if}
         </button>
+      {/each}
+    </div>
+
+    {#if shown !== undefined}
+      <article class="answer" class:missing={shown.missing}>
+        <header>
+          <h3>{shown.label}</h3>
+          <span class="of">{index + 1} of {rows.length}</span>
+        </header>
+
+        {#if shown.description}
+          <p class="means">{shown.description}</p>
+        {/if}
+
+        {#if asks}
+          <blockquote class="asks">
+            <span>The prompt</span>
+            <p>{asks}</p>
+          </blockquote>
+        {/if}
+
+        {#if shown.kind === "text"}
+          <label class="words">
+            <span class="what">Words to fill it with</span>
+            <Textarea
+              value={shown.value}
+              rows={4}
+              {disabled}
+              aria-label={`What ${shown.label} says here`}
+              placeholder="What it says in this copy"
+              oninput={(event) => ontext(shown.key, (event.currentTarget as HTMLTextAreaElement).value)}
+            />
+          </label>
+        {:else}
+          <div class="selects">
+            <span class="what">What it reads here</span>
+            <button
+              type="button"
+              class="scope"
+              {disabled}
+              onclick={() => onscope(shown.key)}
+            >
+              <span class="tag">{shown.answered ? "Chosen" : "Default"}</span>
+              <span class="rule">{shown.value}</span>
+            </button>
+            {#if shown.answered}
+              <div class="undo">
+                <Button size="xs" variant="ghost" {disabled} onclick={() => onreset(shown.key)}>
+                  Back to the default
+                </Button>
+              </div>
+            {/if}
+          </div>
+        {/if}
+      </article>
+    {/if}
+
+    <footer class="walk">
+      <div class="steps">
+        <Button size="xs" variant="ghost" disabled={disabled || index === 0} onclick={() => step(-1)}>
+          Previous
+        </Button>
+        <Button
+          size="xs"
+          variant="ghost"
+          disabled={disabled || index >= rows.length - 1}
+          onclick={() => step(1)}
+        >
+          Next
+        </Button>
+      </div>
+      {#if onaccept !== undefined}
+        <Button size="xs" disabled={disabled || !ready} onclick={onaccept}>
+          {ready ? "Accept all defaults" : `${missing} still needs words`}
+        </Button>
       {/if}
-    </article>
-  {/each}
+    </footer>
+  {/if}
 </div>
 
 <style>
-  .answers {
+  .ask {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    height: 26rem;
+    gap: calc(var(--token-spacing-unit) * 2);
+  }
+
+  .none {
+    margin: 0;
+    color: var(--token-ink-muted);
+    font-size: var(--token-text-body-sm);
+  }
+
+  .tabs {
     display: flex;
-    flex-direction: column;
-    gap: calc(var(--token-spacing-unit) * 1.5);
-    height: 24rem;
-    padding: 0 calc(var(--token-spacing-unit) * 3);
-    overflow-y: auto;
+    gap: calc(var(--token-spacing-unit) * 1);
+    overflow-x: auto;
+    padding-bottom: calc(var(--token-spacing-unit) * 0.5);
+    scrollbar-width: thin;
+  }
+
+  .tab {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: calc(var(--token-spacing-unit) * 1);
+    padding: calc(var(--token-spacing-unit) * 1) calc(var(--token-spacing-unit) * 1.5);
+    border: 1px solid var(--token-border-subtle);
+    border-radius: var(--token-radius-control);
+    background: var(--token-surface-panel);
+    color: var(--token-ink-secondary);
+    cursor: pointer;
+    font-size: var(--token-text-caption);
+    font-weight: 650;
+    line-height: var(--token-text-caption-leading);
+  }
+
+  .tab:hover:not(:disabled) {
+    border-color: var(--token-border-strong);
+    color: var(--token-ink-primary);
+  }
+
+  .tab.here {
+    border-color: var(--token-color-interactive-text);
+    background: var(--token-color-interactive-surface);
+    color: var(--token-color-interactive-text);
+  }
+
+  .tab.missing {
+    border-color: var(--token-color-danger-text);
+    color: var(--token-color-danger-text);
+  }
+
+  .tab-name {
+    max-width: 12rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .dot {
+    width: 0.4rem;
+    height: 0.4rem;
+    border-radius: 999px;
+    background: var(--token-color-danger-text);
   }
 
   .answer {
     display: flex;
     flex-direction: column;
-    gap: calc(var(--token-spacing-unit) * 1);
-    padding: calc(var(--token-spacing-unit) * 1.5);
+    gap: calc(var(--token-spacing-unit) * 1.5);
+    overflow-y: auto;
+    padding: calc(var(--token-spacing-unit) * 2.5);
     border: 1px solid var(--token-border-subtle);
-    border-inline-start: 3px solid transparent;
+    border-inline-start: 3px solid var(--token-border-subtle);
     border-radius: var(--token-radius-control);
     background: var(--token-surface-elevated);
   }
 
-  .answer.missing { border-inline-start-color: var(--token-color-danger-text); }
+  .answer.missing {
+    border-inline-start-color: var(--token-color-danger-text);
+  }
 
-  header {
+  .answer header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: calc(var(--token-spacing-unit) * 2);
+  }
+
+  .answer h3 {
+    margin: 0;
+    color: var(--token-ink-primary);
+    font-size: var(--token-text-body);
+    font-weight: 650;
+    line-height: var(--token-text-body-leading);
+  }
+
+  .of {
+    color: var(--token-ink-muted);
+    font-size: var(--token-text-caption);
+    white-space: nowrap;
+  }
+
+  .means {
+    margin: 0;
+    color: var(--token-ink-secondary);
+    font-size: var(--token-text-body-sm);
+    line-height: var(--token-text-body-sm-leading);
+  }
+
+  .asks {
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--token-spacing-unit) * 0.5);
+    margin: 0;
+    padding: calc(var(--token-spacing-unit) * 1.5) calc(var(--token-spacing-unit) * 2);
+    border-inline-start: 2px solid var(--token-border-strong);
+    background: var(--token-surface-work);
+  }
+
+  .asks span,
+  .what {
+    color: var(--token-ink-muted);
+    font-size: var(--token-text-caption);
+    font-weight: 650;
+    letter-spacing: 0.06em;
+    line-height: var(--token-text-caption-leading);
+    text-transform: uppercase;
+  }
+
+  .asks p {
+    margin: 0;
+    color: var(--token-ink-primary);
+    font-size: var(--token-text-body-sm);
+    line-height: var(--token-text-body-sm-leading);
+  }
+
+  .words,
+  .selects {
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--token-spacing-unit) * 0.75);
+  }
+
+  .scope {
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--token-spacing-unit) * 0.75);
+    align-items: flex-start;
+    padding: calc(var(--token-spacing-unit) * 1.5);
+    border: 1px solid var(--token-border-subtle);
+    border-radius: var(--token-radius-control);
+    background: var(--token-surface-panel);
+    cursor: pointer;
+    text-align: start;
+  }
+
+  .scope:hover:not(:disabled) {
+    border-color: var(--token-border-strong);
+  }
+
+  .tag {
+    padding: 0 calc(var(--token-spacing-unit) * 1);
+    border-radius: var(--token-radius-control);
+    background: var(--token-surface-work);
+    color: var(--token-ink-muted);
+    font-size: var(--token-text-caption);
+    font-weight: 650;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .rule {
+    color: var(--token-ink-primary);
+    font-size: var(--token-text-body-sm);
+    line-height: var(--token-text-body-sm-leading);
+  }
+
+  .undo {
+    display: flex;
+  }
+
+  .walk {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: calc(var(--token-spacing-unit) * 2);
   }
 
-  header b {
-    color: var(--token-ink-primary);
-    font-size: var(--token-text-body-sm);
-    font-weight: 600;
-  }
-
-  .what {
-    margin: 0;
-    color: var(--token-ink-secondary);
-    font-size: var(--token-text-caption);
-    line-height: var(--token-text-caption-leading);
-  }
-
-  /* The rule reads to four lines, then scrolls, so one long scope cannot own the modal. */
-  .scope {
+  .steps {
     display: flex;
-    gap: calc(var(--token-spacing-unit) * 1.5);
-    align-items: flex-start;
-    max-height: 5.5rem;
-    padding: calc(var(--token-spacing-unit) * 1) calc(var(--token-spacing-unit) * 1.5);
-    overflow-y: auto;
-    border: 1px solid var(--token-border-subtle);
-    border-radius: var(--token-radius-control);
-    background: var(--token-surface-panel);
-    color: var(--token-ink-primary);
-    font-size: var(--token-text-body-sm);
-    line-height: var(--token-text-body-sm-leading);
-    text-align: start;
-    cursor: pointer;
+    gap: calc(var(--token-spacing-unit) * 1);
   }
-
-  .scope:hover { border-color: var(--token-border-strong); background: var(--token-surface-work); }
-
-  .tag {
-    flex: none;
-    padding: 0 calc(var(--token-spacing-unit) * 1);
-    border-radius: var(--token-radius-control);
-    background: var(--token-color-accent-1-surface);
-    color: var(--token-color-accent-1-text);
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: .04em;
-    text-transform: uppercase;
-  }
-
-  .rule { min-width: 0; }
 </style>
