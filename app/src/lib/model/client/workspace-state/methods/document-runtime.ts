@@ -12,5 +12,9 @@ export const documentRuntime = (
     );
   }
 
-  return state.documents.attach(resourceId);
+  const runtime = state.documents.of(resourceId);
+  if (runtime === undefined) {
+    throw new Error(`Document runtime '${resourceId}' is not owned by an open workspace tab.`);
+  }
+  return runtime;
 };

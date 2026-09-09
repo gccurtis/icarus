@@ -6,6 +6,7 @@ import { attach } from "$model/client/slide-deck-runtimes/methods/attach";
 import { flush } from "$model/client/slide-deck-runtimes/methods/flush/flush";
 import { sync } from "$model/client/slide-deck-runtimes/methods/sync";
 import { redo, undo } from "$model/client/slide-deck-runtimes/methods/history/history";
+import { of } from "$model/client/slide-deck-runtimes/methods/of";
 import { release } from "$model/client/slide-deck-runtimes/methods/release";
 import { releaseAll } from "$model/client/slide-deck-runtimes/methods/release-all";
 import type {
@@ -152,6 +153,10 @@ export class SlideDeckRuntimes implements SlideDeckRuntimesModel {
     return [...this.#state.open.values(), ...this.#state.settling.values()]
       .filter((runtime) => runtime.inFlight)
       .map((runtime) => runtime.id);
+  }
+
+  of(id: string): SlideDeckRuntime | undefined {
+    return of(this.#state, id);
   }
 
   attach(id: string): SlideDeckRuntime {

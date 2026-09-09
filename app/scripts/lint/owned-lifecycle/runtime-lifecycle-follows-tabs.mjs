@@ -5,11 +5,14 @@ import { productionSources } from "../shared/production.mjs";
 
 const ALLOWED = new Set([
   "src/lib/runtime/client/start.ts",
-  "src/lib/model/client/workspace-state/methods/open.ts",
-  "src/lib/model/client/workspace-state/methods/restore.ts",
-  "src/lib/model/client/workspace-state/methods/close.ts"
+  "src/lib/model/client/workspace-state/methods/shared/apply.ts",
+  "src/lib/model/client/workspace-state/methods/shared/adopt.ts",
+  "src/lib/model/client/workspace-state/methods/shared/acquire-runtime.ts",
+  "src/lib/model/client/workspace-state/methods/shared/release-runtime.ts",
+  "src/lib/model/client/workspace-state/methods/shared/reconcile-runtimes.ts"
 ]);
 const LIFECYCLE = new Set(["attach", "acquire", "release", "releaseAll"]);
+const LIFECYCLE_PROCEDURES = new Set(["acquireForTarget", "releaseForTarget", "reconcileRuntimes"]);
 
 const runtimeVocabulary = (tree) => {
   const words = new Set(["runtime", "runtimes"]);
@@ -38,14 +41,24 @@ export default check({
   pillar: "owned-lifecycle",
   finding: "ARCH-03",
   name: "runtime-lifecycle-follows-tabs",
-  says: "Only workspace tab lifecycle procedures and client shutdown call resource-register acquire/release methods.",
+  says: "Only canonical workspace operation/adoption procedures and client shutdown change resource-register lifetime.",
   run(tree) {
     const found = [];
     const vocabulary = new Set([...runtimeVocabulary(tree)].map((word) => word.toLowerCase()));
     for (const path of productionSources(tree).filter((file) => file.endsWith(".ts"))) {
       if (ALLOWED.has(tree.rel(path))) continue;
       tree.eachNode(path, (node) => {
-        if (!ts.isCallExpression(node) || !ts.isPropertyAccessExpression(node.expression)) return;
+        if (!ts.isCallExpression(node)) return;
+        if (ts.isIdentifier(node.expression) && LIFECYCLE_PROCEDURES.has(node.expression.text)) {
+          found.push({
+            path,
+            line: tree.lineOf(path, node),
+            fingerprint: `${node.expression.text}:direct`,
+            message: `${node.expression.text} changes resource lifetime outside canonical workspace operation handling`
+          });
+          return;
+        }
+        if (!ts.isPropertyAccessExpression(node.expression)) return;
         const name = node.expression.name.text;
         if (!LIFECYCLE.has(name)) return;
         const receiver = node.expression.expression.getText(tree.source(path));
@@ -54,7 +67,7 @@ export default check({
           path,
           line: tree.lineOf(path, node),
           fingerprint: `${name}:${receiver}`,
-          message: `${name} changes resource lifetime outside workspace open/restore/close or client shutdown`
+          message: `${name} changes resource lifetime outside canonical workspace operation handling or client shutdown`
         });
       });
     }

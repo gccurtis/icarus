@@ -6,6 +6,7 @@ import { apply, buffer } from "$model/client/spreadsheet-runtimes/methods/apply"
 import { attach } from "$model/client/spreadsheet-runtimes/methods/attach";
 import { flush } from "$model/client/spreadsheet-runtimes/methods/flush/flush";
 import { redo, undo } from "$model/client/spreadsheet-runtimes/methods/history/history";
+import { of } from "$model/client/spreadsheet-runtimes/methods/of";
 import { release } from "$model/client/spreadsheet-runtimes/methods/release";
 import { releaseAll } from "$model/client/spreadsheet-runtimes/methods/release-all";
 import type {
@@ -136,6 +137,10 @@ export class SpreadsheetRuntimes implements SpreadsheetRuntimesModel {
     return [...this.#state.open.values(), ...this.#state.settling.values()]
       .filter((runtime) => runtime.inFlight)
       .map((runtime) => runtime.id);
+  }
+
+  of(id: string): SpreadsheetRuntime | undefined {
+    return of(this.#state, id);
   }
 
   attach(id: string): SpreadsheetRuntime {

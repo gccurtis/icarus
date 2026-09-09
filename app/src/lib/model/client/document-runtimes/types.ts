@@ -48,6 +48,7 @@ export interface DocumentRuntimesModel {
   readonly open: readonly string[];
   readonly flushing: readonly string[];
 
+  of(id: string): DocumentRuntime | undefined;
   attach(id: string): DocumentRuntime;
   release(id: string): void;
   releaseAll(): void;

@@ -12,5 +12,9 @@ export const slideDeckRuntime = (
     );
   }
 
-  return state.decks.attach(resourceId);
+  const runtime = state.decks.of(resourceId);
+  if (runtime === undefined) {
+    throw new Error(`Slide-deck runtime '${resourceId}' is not owned by an open workspace tab.`);
+  }
+  return runtime;
 };

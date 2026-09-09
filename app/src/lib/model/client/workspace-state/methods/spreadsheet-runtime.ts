@@ -12,5 +12,9 @@ export const spreadsheetRuntime = (
     );
   }
 
-  return state.sheets.attach(resourceId);
+  const runtime = state.sheets.of(resourceId);
+  if (runtime === undefined) {
+    throw new Error(`Spreadsheet runtime '${resourceId}' is not owned by an open workspace tab.`);
+  }
+  return runtime;
 };

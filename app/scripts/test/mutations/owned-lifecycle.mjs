@@ -9,6 +9,15 @@ export const MUTATIONS = [
     }]
   },
   {
+    check: "runtime-lifecycle-follows-tabs",
+    says: "a workspace helper invokes the canonical acquisition procedure outside operation handling",
+    names: "methods/acquire-helper-probe.ts",
+    changes: [{
+      path: "src/lib/model/client/workspace-state/methods/acquire-helper-probe.ts",
+      write: `import { acquireForTarget } from "./shared/acquire-runtime";\n\nexport const acquireHelperProbe = (state: never, target: never): void => acquireForTarget(state, target);\n`
+    }]
+  },
+  {
     check: "accessors-are-observational",
     says: "an accessor-shaped function secretly acquires state",
     names: "methods/probe-runtime.ts",

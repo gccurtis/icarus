@@ -32,6 +32,7 @@ export interface SpreadsheetRuntimesModel {
   readonly open: readonly string[];
   readonly flushing: readonly string[];
 
+  of(id: string): SpreadsheetRuntime | undefined;
   attach(id: string): SpreadsheetRuntime;
   release(id: string): void;
   releaseAll(): void;

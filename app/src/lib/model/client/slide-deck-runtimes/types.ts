@@ -32,6 +32,7 @@ export interface SlideDeckRuntimesModel {
   readonly open: readonly string[];
   readonly flushing: readonly string[];
 
+  of(id: string): SlideDeckRuntime | undefined;
   attach(id: string): SlideDeckRuntime;
   release(id: string): void;
   releaseAll(): void;

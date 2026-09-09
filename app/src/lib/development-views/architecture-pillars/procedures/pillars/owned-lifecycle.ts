@@ -73,11 +73,11 @@ close(tabId)
       status: "Enforced",
       wave: 1,
       mechanism: "TypeScript call-site AST + resource-receiver vocabulary",
-      guarantee: "Resource-runtime attach/acquire/release call sites appear only in workspace open/restore/close or client shutdown.",
-      detects: "Known lifecycle method calls on runtime/register-shaped receivers outside the approved lifecycle source set.",
+      guarantee: "Resource-runtime attach/acquire/release call sites appear only in canonical workspace operation/adoption procedures or client shutdown.",
+      detects: "Known lifecycle method calls and canonical lifecycle-helper calls outside the approved lifecycle source set.",
       implementation:
-        "Parse production TypeScript calls, identify resource receivers from the registered runtime subject vocabulary, and reject lifecycle calls outside the explicit tab/client lifecycle source set.",
-      current: "Enforced at every resource-runtime call site; two accessor-triggered attach calls are baselined.",
+        "Parse production TypeScript calls, identify resource receivers from the registered runtime subject vocabulary, and reject both direct lifecycle calls and canonical helper calls outside operation application, state adoption, and client shutdown.",
+      current: "Enforced at every resource-runtime and lifecycle-helper call site; the current tree is clean.",
       limit: "Allowed caller placement does not prove last-reference semantics; LIFE-04 executes the lifecycle."
     },
     {
@@ -90,7 +90,7 @@ close(tabId)
       detects: "get/read/find/lookup/of/for/runtime bodies calling attach, acquire, createRuntime, release, releaseAll, schedule, subscribe, sync, or their direct nested equivalents.",
       implementation:
         "Inspect accessor-shaped function and method bodies for a deliberately small, named lifecycle mutator set; prefer explicit acquire names wherever mutation is intended.",
-      current: "Enforced; the documentRuntime and slideDeckRuntime accessors are baselined.",
+      current: "Enforced; document, slide-deck, and spreadsheet runtime accessors are observational and the current tree is clean.",
       limit: "Naming is a design convention. Explicit annotations can replace heuristics if the type system gains effect metadata later."
     },
     {
@@ -103,7 +103,7 @@ close(tabId)
       detects: "Missing workspace reachability, open/restore acquisition, close release, or subject coverage in the lifecycle test.",
       implementation:
         "Check the workspace graph and open/restore/close procedure sources, then require an executable runtime-lifecycle test naming each subject. The test suite owns the behavioral assertions.",
-      current: "Enforced through workspace wiring and executable contract checks; ten lifecycle gaps are baselined.",
+      current: "Enforced through workspace wiring and an executable document, slide-deck, and spreadsheet lifecycle contract; the current tree is clean.",
       limit: "Use fake clocks and adapters so the contract is deterministic rather than browser-timing dependent."
     },
     {

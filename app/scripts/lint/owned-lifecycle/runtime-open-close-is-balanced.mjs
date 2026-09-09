@@ -37,8 +37,17 @@ export default check({
     const found = [];
     const workspaceRoot = tree.path("model", "client", "workspace-state");
     const allWorkspace = tree.under(workspaceRoot).filter((path) => path.endsWith(".ts"));
-    const openText = workspaceText(tree, ["open", "restore"]);
-    const closeText = workspaceText(tree, ["close"]);
+    const openText = workspaceText(tree, [
+      "shared/apply",
+      "shared/adopt",
+      "shared/acquire-runtime",
+      "shared/reconcile-runtimes"
+    ]);
+    const closeText = workspaceText(tree, [
+      "shared/apply",
+      "shared/release-runtime",
+      "shared/reconcile-runtimes"
+    ]);
     const contract = join(workspaceRoot, "test", "non-functional", "runtime-lifecycle.test.ts");
     const contractText = tree.read(contract);
 

@@ -142,7 +142,7 @@ export const GUARDRAILS: readonly Guardrail[] = [
   {
     name: "runtime-lifecycle-follows-tabs",
     catches: "Render-time attach calls, retained closed resources, and duplicate synchronization.",
-    rule: "Only workspace open/restore/close may acquire or release a resource runtime."
+    rule: "Only canonical workspace operation/adoption procedures and client shutdown may acquire or release a resource runtime."
   },
   {
     name: "generic-browser-mutations-do-not-exist",

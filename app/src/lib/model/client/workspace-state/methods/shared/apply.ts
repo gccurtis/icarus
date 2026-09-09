@@ -1,5 +1,7 @@
 import type { WorkspaceOp } from "$representation/data/types/workspace/op";
 import type { WorkspaceStateData } from "$model/client/workspace-state/definition.svelte";
+import { acquireForTarget } from "$model/client/workspace-state/methods/shared/acquire-runtime";
+import { releaseForTarget } from "$model/client/workspace-state/methods/shared/release-runtime";
 
 export const apply = (state: WorkspaceStateData, op: WorkspaceOp): void => {
   switch (op.op) {
@@ -9,11 +11,13 @@ export const apply = (state: WorkspaceStateData, op: WorkspaceOp): void => {
         { id: op.tab, category: op.target.category, resourceId: op.target.resourceId },
         op.at
       );
+      acquireForTarget(state, op.target);
       return;
 
     case "close":
       state.tabs.remove(op.tab);
       state.views.forget(op.tab);
+      releaseForTarget(state, op.target);
       return;
 
     case "activate":

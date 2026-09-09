@@ -6,6 +6,7 @@ import { attach } from "$model/client/document-runtimes/methods/attach";
 import { flush } from "$model/client/document-runtimes/methods/flush/flush";
 import { redo, undo } from "$model/client/document-runtimes/methods/history/history";
 import { discardFailedChanges } from "$model/client/document-runtimes/methods/failure";
+import { of } from "$model/client/document-runtimes/methods/of";
 import { release } from "$model/client/document-runtimes/methods/release";
 import { releaseAll } from "$model/client/document-runtimes/methods/release-all";
 import type {
@@ -157,6 +158,10 @@ export class DocumentRuntimes implements DocumentRuntimesModel {
     return [...this.#state.open.values(), ...this.#state.settling.values()]
       .filter((runtime) => runtime.inFlight)
       .map((runtime) => runtime.id);
+  }
+
+  of(id: string): DocumentRuntime | undefined {
+    return of(this.#state, id);
   }
 
   attach(id: string): DocumentRuntime {

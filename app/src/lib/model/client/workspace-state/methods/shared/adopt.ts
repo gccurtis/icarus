@@ -1,5 +1,6 @@
 import { readWorkspaceState } from "$capabilities/workspace/index.remote";
 import type { WorkspaceStateData } from "$model/client/workspace-state/definition.svelte";
+import { reconcileRuntimes } from "$model/client/workspace-state/methods/shared/reconcile-runtimes";
 
 /**
  * Replace what is open with what the server holds.
@@ -31,6 +32,7 @@ export const adopt = async (
   if (state.tabs.find(state.tabs.activeId) === undefined) {
     state.tabs.activate(state.tabs.tabs[0].id);
   }
+  reconcileRuntimes(state);
 
   state.revision = found.revision;
 
