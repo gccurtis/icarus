@@ -78,63 +78,67 @@ export const instantiateTemplate = async (input: unknown): Promise<InstantiateTe
     const readyBody = documentBody.styles === undefined
       ? documentBody
       : { ...documentBody, styles: normalizeDocumentStyleSet(documentBody.styles) };
-    const resourceId = store.create("documents", {
-      projectId,
-      title,
-      templateId: template._id,
-      createdBy: actor,
-      // The file store requires a tree rather than a graph: two properties may
-      // not share one object reference even when JSON could stringify it.
-      updatedBy: { ...actor },
-      updatedAt: at
+    return store.transaction((unit) => {
+      const resourceId = unit.create("documents", {
+        projectId,
+        title,
+        templateId: template._id,
+        createdBy: actor,
+        // The file store requires a tree rather than a graph: two properties may
+        // not share one object reference even when JSON could stringify it.
+        updatedBy: { ...actor },
+        updatedAt: at
+      });
+      unit.create("documentSnapshots", {
+        projectId,
+        resourceId,
+        revision: 0,
+        role: "leader",
+        part: 0,
+        body: readyBody,
+        at
+      });
+      return {
+        accepted: true,
+        templateId: template._id,
+        templateRevision: template.revision,
+        target: body.resource,
+        resourceId,
+        revision: 0
+      };
     });
-    store.create("documentSnapshots", {
-      projectId,
-      resourceId,
-      revision: 0,
-      role: "leader",
-      part: 0,
-      body: readyBody,
-      at
-    });
-    return {
-      accepted: true,
-      templateId: template._id,
-      templateRevision: template.revision,
-      target: body.resource,
-      resourceId,
-      revision: 0
-    };
   }
 
   if (body.resource === "slides") {
     const { resource: _resource, ...slideDeckBody } = body;
     const readyBody = ensureSlideDeckReady(slideDeckBody);
-    const resourceId = store.create("slideDecks", {
-      projectId,
-      title,
-      templateId: template._id,
-      createdBy: actor,
-      updatedBy: { ...actor },
-      updatedAt: at
+    return store.transaction((unit) => {
+      const resourceId = unit.create("slideDecks", {
+        projectId,
+        title,
+        templateId: template._id,
+        createdBy: actor,
+        updatedBy: { ...actor },
+        updatedAt: at
+      });
+      unit.create("slideDeckSnapshots", {
+        projectId,
+        resourceId,
+        revision: 0,
+        role: "leader",
+        part: 0,
+        body: readyBody,
+        at
+      });
+      return {
+        accepted: true,
+        templateId: template._id,
+        templateRevision: template.revision,
+        target: body.resource,
+        resourceId,
+        revision: 0
+      };
     });
-    store.create("slideDeckSnapshots", {
-      projectId,
-      resourceId,
-      revision: 0,
-      role: "leader",
-      part: 0,
-      body: readyBody,
-      at
-    });
-    return {
-      accepted: true,
-      templateId: template._id,
-      templateRevision: template.revision,
-      target: body.resource,
-      resourceId,
-      revision: 0
-    };
   }
 
   return {
