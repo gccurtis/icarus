@@ -107,4 +107,3 @@ export const titleFrom = (question: string): string => {
   const trimmed = question.replace(/\s+/g, " ").trim();
   return trimmed.length <= 60 ? trimmed : `${trimmed.slice(0, 57)}…`;
 };
-

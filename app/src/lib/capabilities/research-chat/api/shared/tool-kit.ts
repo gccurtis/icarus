@@ -93,4 +93,3 @@ export const askedQuery = (value: unknown, fallbackTopK: number): { query: strin
 
 export const chosen = (scope: ResearchScope, ref: ResourceRef): boolean =>
   scope.kind === "project" || (scope.ref.kind === ref.kind && scope.ref.id === ref.id);
-

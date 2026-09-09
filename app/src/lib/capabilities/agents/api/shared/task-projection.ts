@@ -101,4 +101,3 @@ export const taskDetail = (store: StoreModel, task: Task, visible: Visible): Tas
   turns: turnsOf(store, task, visible.names),
   reviewedByName: task.reviewedBy === undefined ? null : visible.names.actor(task.reviewedBy)
 });
-
