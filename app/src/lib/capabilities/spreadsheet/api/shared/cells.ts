@@ -1,12 +1,14 @@
-import type { StoreModel, TableRow } from "$model/server/store/index.server";
+import type { TableRow } from "$model/server/store/index.server";
 import type { Id } from "$representation/data/types/core/id";
 import type { SheetCell } from "$representation/data/types/spreadsheets/cell";
 import { cellKey } from "$representation/data/behavior/spreadsheets/apply-ops";
 
+import type { StoreReads } from "$capabilities/spreadsheet/api/shared/ports";
+
 export type CellRow = TableRow<"sheetCells">;
 
 export const cellRowsOf = (
-  store: StoreModel,
+  store: StoreReads,
   projectId: Id<"projects">,
   resourceId: Id<"spreadsheets">
 ): readonly CellRow[] => {

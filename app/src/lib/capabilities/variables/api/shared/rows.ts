@@ -1,10 +1,13 @@
-import type { StoreModel, TableRow } from "$model/server/store/index.server";
+import type { StoreUnitOfWork, TableRow } from "$model/server/store/index.server";
 import type { Id } from "$representation/data/types/core/id";
 import type { VariableRecord } from "$capabilities/variables/types/variables";
 
 export type VariableRow = TableRow<"variables">;
 
-export const variableRowsOf = (store: StoreModel, projectId: Id<"projects">): readonly VariableRow[] => {
+/** The smallest port a lookup needs, so the Store and a unit of work both fit. */
+export type StoreReads = Pick<StoreUnitOfWork, "read">;
+
+export const variableRowsOf = (store: StoreReads, projectId: Id<"projects">): readonly VariableRow[] => {
   const found = store.read("variables");
   if (found?.table !== "variables" || found.kind !== "table") return [];
   return found.rows.filter((row) => row.projectId === projectId);

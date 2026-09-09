@@ -24,7 +24,7 @@ describe("architecture debt is a ratchet", () => {
   test("the committed structural baseline accepts known debt", () => {
     const result = run("state-ownership");
     assert.equal(result.status, 0, result.stdout + result.stderr);
-    assert.match(result.stdout, /30 baselined/);
+    assert.match(result.stdout, /28 baselined/);
     assert.match(result.stdout, /0 findings/);
   });
 
@@ -71,6 +71,6 @@ describe("architecture debt is a ratchet", () => {
     assert.equal(result.status, 0, result.stdout + result.stderr);
     const proposal = JSON.parse(result.stdout);
     assert.equal(proposal.version, 1);
-    assert.equal(proposal.findings.length, 30);
+    assert.equal(proposal.findings.length, 28);
   });
 });

@@ -1,6 +1,7 @@
-import type { StoreModel } from "$model/server/store/index.server";
 import type { Id } from "$representation/data/types/core/id";
 import type { SpreadsheetBody } from "$representation/data/types/spreadsheets/body";
+
+import type { StoreReads } from "$capabilities/spreadsheet/api/shared/ports";
 
 export type Leader = {
   readonly _id: Id<"spreadsheetSnapshots">;
@@ -9,7 +10,7 @@ export type Leader = {
 };
 
 export const leaderOf = (
-  store: StoreModel,
+  store: StoreReads,
   projectId: Id<"projects">,
   resourceId: Id<"spreadsheets">
 ): Leader | undefined => {

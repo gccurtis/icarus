@@ -1,4 +1,4 @@
-import type { StoreModel } from "$model/server/store/index.server";
+import type { StoreUnitOfWork } from "$model/server/store/index.server";
 import type { Id } from "$representation/data/types/core/id";
 import type { SheetCell } from "$representation/data/types/spreadsheets/cell";
 import type { LiveSheet } from "$representation/data/types/spreadsheets/live";
@@ -21,7 +21,7 @@ const canon = (cell: SheetCell, rowOrder: number): string =>
   });
 
 export const writeCells = (
-  store: StoreModel,
+  unit: StoreUnitOfWork,
   projectId: Id<"projects">,
   resourceId: Id<"spreadsheets">,
   before: readonly CellRow[],
@@ -36,16 +36,16 @@ export const writeCells = (
     const existing = held.get(key);
 
     if (existing === undefined) {
-      store.create("sheetCells", fields);
+      unit.create("sheetCells", fields);
       continue;
     }
     if (canon(existing, existing.rowOrder) !== canon(cell, rowOrder)) {
-      store.update(`sheetCells.${existing._id}`, fields);
+      unit.update(`sheetCells.${existing._id}`, fields);
     }
   }
 
   for (const [key, row] of held) {
     if (key in after.cells) continue;
-    store.remove(`sheetCells.${row._id}`);
+    unit.remove(`sheetCells.${row._id}`);
   }
 };

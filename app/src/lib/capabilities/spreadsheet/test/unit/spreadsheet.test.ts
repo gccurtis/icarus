@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { beforeEach, test, vi } from "vitest";
 
+import type { StoreUnitOfWork } from "$model/server/store/index.server";
+
 type Row = Record<string, unknown> & { _id: string };
 
 const model = vi.hoisted(() => ({
@@ -51,6 +53,10 @@ const model = vi.hoisted(() => ({
       const rows = model.tableOf(path);
       const at = rows.findIndex((row) => row._id === id);
       if (at !== -1) rows.splice(at, 1);
+    },
+    transaction: <T>(work: (unit: StoreUnitOfWork) => T): T => {
+      model.calls.push("transaction");
+      return work(model.store as unknown as StoreUnitOfWork);
     }
   }
 }));

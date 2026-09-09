@@ -4,7 +4,12 @@ import { nameRefusal } from "$representation/data/behavior/formulas/names";
 import type { Id } from "$representation/data/types/core/id";
 
 import { validateSaveVariable } from "$capabilities/variables/api/save-variable/validate-save-variable";
-import { recordOf, sameName, variableRowsOf } from "$capabilities/variables/api/shared/rows";
+import {
+  recordOf,
+  sameName,
+  variableRowsOf,
+  type VariableRow
+} from "$capabilities/variables/api/shared/rows";
 import type { SaveVariableResult } from "$capabilities/variables/types/variables";
 
 /** Whether a declared type is a promise this value keeps. */
@@ -34,13 +39,24 @@ export const saveVariable = async (input: unknown): Promise<SaveVariableResult> 
     updatedAt: at
   };
 
-  const held = variableRowsOf(store, projectId).find((row) => sameName(row.name, asked.name));
-  if (held === undefined) {
-    const id = store.create("variables", fields);
-    return { saved: true, variable: recordOf({ ...fields, _id: id, _creationTime: at } as never) };
-  }
+  /**
+   * The lookup and the write it decides are one intent.
+   *
+   * Whether this is a first save or a change to one already held is read from
+   * the same rows the write lands in, so the two happen against one isolated
+   * view: a name cannot be taken between deciding it is free and taking it.
+   */
+  const saved = store.transaction((unit) => {
+    const held = variableRowsOf(unit, projectId).find((row) => sameName(row.name, asked.name));
+    if (held === undefined) {
+      const id = unit.create("variables", fields);
+      return { ...fields, _id: id, _creationTime: at } as VariableRow;
+    }
 
-  const next = { ...held, ...fields, createdBy: held.createdBy };
-  store.update(`variables.${held._id}`, next);
-  return { saved: true, variable: recordOf(next) };
+    const next = { ...held, ...fields, createdBy: held.createdBy };
+    unit.update(`variables.${held._id}`, next);
+    return next;
+  });
+
+  return { saved: true, variable: recordOf(saved) };
 };

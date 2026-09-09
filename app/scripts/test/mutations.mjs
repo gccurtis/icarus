@@ -336,6 +336,7 @@ export const MUTATIONS = [
             "    settings,\n" +
             "    documentRuntimes,\n" +
             "    slideDeckRuntimes,\n" +
+            "    spreadsheetRuntimes,\n" +
             "    read,\n" +
             "    username\n" +
             "  );";

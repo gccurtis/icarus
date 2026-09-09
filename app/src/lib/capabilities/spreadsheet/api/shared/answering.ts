@@ -1,4 +1,4 @@
-import type { StoreModel } from "$model/server/store/index.server";
+import type { StoreUnitOfWork } from "$model/server/store/index.server";
 import { addressesIn, writeAddress } from "$representation/data/behavior/formulas/addresses";
 import { applyOps } from "$representation/data/behavior/spreadsheets/apply-ops";
 import { emptyBody } from "$representation/data/behavior/spreadsheets/empty-sheet";
@@ -13,6 +13,7 @@ import type { Id } from "$representation/data/types/core/id";
 import type { LiveSheet } from "$representation/data/types/spreadsheets/live";
 
 import { cellsOf, cellRowsOf } from "$capabilities/spreadsheet/api/shared/cells";
+import type { StoreReads } from "$capabilities/spreadsheet/api/shared/ports";
 
 /**
  * Everything a formula in this project can reach.
@@ -22,7 +23,7 @@ import { cellsOf, cellRowsOf } from "$capabilities/spreadsheet/api/shared/cells"
  * open, and this sees the project.
  */
 export const surroundingsOf = (
-  store: StoreModel,
+  store: StoreReads,
   projectId: Id<"projects">,
   here: Id<"spreadsheets">
 ): Surroundings => {
@@ -54,7 +55,7 @@ export const surroundingsOf = (
 
 /** The sheet with every formula in it answered. */
 export const answered = (
-  store: StoreModel,
+  store: StoreReads,
   projectId: Id<"projects">,
   resourceId: Id<"spreadsheets">,
   sheet: LiveSheet
@@ -78,12 +79,12 @@ const usedBy = (resourceId: Id<"spreadsheets">, key: string) => ({
  * A cell learns its row's id, so nothing has to search by text later.
  */
 export const writeFormulas = (
-  store: StoreModel,
+  unit: StoreUnitOfWork,
   projectId: Id<"projects">,
   resourceId: Id<"spreadsheets">,
   sheet: LiveSheet
 ): LiveSheet => {
-  const rows = store.read("formulas");
+  const rows = unit.read("formulas");
   const held = rows?.table === "formulas" && rows.kind === "table" ? rows.rows.filter((row) => row.projectId === projectId) : [];
   const byText = new Map(held.map((row) => [row.representation, row]));
 
@@ -99,14 +100,14 @@ export const writeFormulas = (
     const uses = keys.map((key) => usedBy(resourceId, key));
     const existing = byText.get(representation);
     if (existing === undefined) {
-      const id = store.create("formulas", { projectId, representation, usedBy: uses, updatedAt: at }) as Id<"formulas">;
+      const id = unit.create("formulas", { projectId, representation, usedBy: uses, updatedAt: at }) as Id<"formulas">;
       idOf.set(representation, id);
-      writeBackReferences(store, projectId, id, representation, at);
+      writeBackReferences(unit, projectId, id, representation, at);
       continue;
     }
     idOf.set(representation, existing._id);
     if (JSON.stringify(existing.usedBy) !== JSON.stringify(uses)) {
-      store.update(`formulas.${existing._id}`, { ...existing, usedBy: uses, updatedAt: at });
+      unit.update(`formulas.${existing._id}`, { ...existing, usedBy: uses, updatedAt: at });
     }
   }
 
@@ -115,11 +116,11 @@ export const writeFormulas = (
     const kept = (row.usedBy ?? []).filter((use) => !(use.in === "resource" && use.ref.id === resourceId));
     if (kept.length === (row.usedBy ?? []).length) continue;
     if (kept.length === 0) {
-      store.remove(`formulas.${row._id}`);
-      clearBackReferences(store, row._id);
+      unit.remove(`formulas.${row._id}`);
+      clearBackReferences(unit, row._id);
       continue;
     }
-    store.update(`formulas.${row._id}`, { ...row, usedBy: kept, updatedAt: at });
+    unit.update(`formulas.${row._id}`, { ...row, usedBy: kept, updatedAt: at });
   }
 
   const cells = { ...sheet.cells };
@@ -131,17 +132,17 @@ export const writeFormulas = (
   return { ...sheet, cells };
 };
 
-const clearBackReferences = (store: StoreModel, formulaId: Id<"formulas">): void => {
-  const rows = store.read("dataBackReferences");
+const clearBackReferences = (unit: StoreUnitOfWork, formulaId: Id<"formulas">): void => {
+  const rows = unit.read("dataBackReferences");
   if (rows?.table !== "dataBackReferences" || rows.kind !== "table") return;
   for (const row of rows.rows) {
-    if (row.formulaId === formulaId) store.remove(`dataBackReferences.${row._id}`);
+    if (row.formulaId === formulaId) unit.remove(`dataBackReferences.${row._id}`);
   }
 };
 
 /** What one formula points at, stored so the graph does not have to be re-read from text. */
 const writeBackReferences = (
-  store: StoreModel,
+  unit: StoreUnitOfWork,
   projectId: Id<"projects">,
   formulaId: Id<"formulas">,
   representation: string,
@@ -149,7 +150,7 @@ const writeBackReferences = (
 ): void => {
   for (const address of addressesIn(representation)) {
     if (address.at === "resource") {
-      store.create("dataBackReferences", {
+      unit.create("dataBackReferences", {
         projectId,
         formulaId,
         targetKind: "name",
@@ -159,7 +160,7 @@ const writeBackReferences = (
       continue;
     }
     if (address.at === "cell") {
-      store.create("dataBackReferences", {
+      unit.create("dataBackReferences", {
         projectId,
         formulaId,
         targetKind: "cell",
@@ -168,7 +169,7 @@ const writeBackReferences = (
       });
       continue;
     }
-    store.create("dataBackReferences", {
+    unit.create("dataBackReferences", {
       projectId,
       formulaId,
       targetKind: "range",

@@ -2,6 +2,7 @@ import { requireScope } from "$runtime/server/scope.server";
 import { serverModel } from "$runtime/server/start.server";
 import type { StoreModel } from "$model/server/store/index.server";
 import type { Id } from "$representation/data/types/core/id";
+import type { LiveSheet } from "$representation/data/types/spreadsheets/live";
 import type { SpreadsheetOp } from "$representation/data/types/spreadsheets/op";
 import { canonicalOf } from "$representation/data/behavior/spreadsheets/history";
 
@@ -19,6 +20,10 @@ type Landed = {
   readonly ops: readonly SpreadsheetOp[];
   readonly touched: readonly string[];
 };
+
+type Prepared =
+  | { readonly canonical: ReturnType<typeof canonicalOf>; readonly applied: LiveSheet }
+  | { readonly refusal: string };
 
 const sheetExists = (
   store: StoreModel,
@@ -126,51 +131,70 @@ export const submitSpreadsheetChanges = async (
   }
 
   const rows = cellRowsOf(store, projectId, resourceId);
-  let next;
-  let canonical;
-  try {
-    const held = { body: leader.body, cells: cellsOf(rows) };
-    canonical = canonicalOf(held, changeSet.ops);
-    const applied = applyOps(held, canonical.ops);
-    next = writeFormulas(store, projectId, resourceId, answered(store, projectId, resourceId, applied));
-  } catch (error) {
-    return {
-      accepted: false,
-      reason: "unresolved",
-      revision,
-      detail: error instanceof Error ? error.message : String(error)
-    };
+
+  /**
+   * Everything the ops decide, worked out before anything is written.
+   *
+   * A sheet that cannot answer its own formulas is the client's problem and is
+   * refused. A store that cannot keep what was decided is not, so the writes
+   * below are outside this and their failures are raised rather than reported.
+   */
+  const prepared = ((): Prepared => {
+    try {
+      const held = { body: leader.body, cells: cellsOf(rows) };
+      const canonical = canonicalOf(held, changeSet.ops);
+      const applied = applyOps(held, canonical.ops);
+      return { canonical, applied: answered(store, projectId, resourceId, applied) };
+    } catch (error) {
+      return { refusal: error instanceof Error ? error.message : String(error) };
+    }
+  })();
+
+  if ("refusal" in prepared) {
+    return { accepted: false, reason: "unresolved", revision, detail: prepared.refusal };
   }
 
   const advanced = revision + 1;
   const at = Date.now();
 
-  store.create("spreadsheetChangeSets", {
-    projectId,
-    resourceId,
-    revision: advanced,
-    baseRevision: changeSet.baseRevision,
-    tier: "recent",
-    ops: canonical.ops,
-    touched: canonical.touched,
-    actor,
-    at
+  /**
+   * One revision, in one commit.
+   *
+   * The change set, the leader snapshot, the cells, the formula rows and their
+   * back references are the same fact written in six places. A reader that saw
+   * any one of them without the others would be reading a sheet that never
+   * existed, so they cross the durable boundary together or not at all.
+   */
+  store.transaction((unit) => {
+    const next = writeFormulas(unit, projectId, resourceId, prepared.applied);
+
+    unit.create("spreadsheetChangeSets", {
+      projectId,
+      resourceId,
+      revision: advanced,
+      baseRevision: changeSet.baseRevision,
+      tier: "recent",
+      ops: prepared.canonical.ops,
+      touched: prepared.canonical.touched,
+      actor,
+      at
+    });
+
+    unit.update(`spreadsheetSnapshots.${leader._id}`, {
+      projectId,
+      resourceId,
+      revision: advanced,
+      role: "leader",
+      part: 0,
+      body: next.body,
+      at
+    });
+
+    writeCells(unit, projectId, resourceId, rows, next);
+
+    unit.update(`spreadsheets.${resourceId}.updatedAt`, at);
+    unit.update(`spreadsheets.${resourceId}.updatedBy`, actor);
   });
-
-  store.update(`spreadsheetSnapshots.${leader._id}`, {
-    projectId,
-    resourceId,
-    revision: advanced,
-    role: "leader",
-    part: 0,
-    body: next.body,
-    at
-  });
-
-  writeCells(store, projectId, resourceId, rows, next);
-
-  store.update(`spreadsheets.${resourceId}.updatedAt`, at);
-  store.update(`spreadsheets.${resourceId}.updatedBy`, actor);
 
   return catchUp.length === 0
     ? { accepted: true, revision: advanced }
