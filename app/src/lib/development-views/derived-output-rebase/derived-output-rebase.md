@@ -53,9 +53,9 @@ mutation tests for them.
 
 The current representation is the only representation. Stored `generating`
 states, semantic `resourceTitle`, defaulted definition revisions, missing
-material `scopeRefs`, empty legacy Prompt Blocks, deleted document typography,
-slide normalization and collaboration anchors, and old production reference
-routes are not read back through fallbacks.
+material `scopeRefs`, empty legacy Prompt Blocks, deleted document typography
+and slide normalization readers, the legacy collaboration-anchor union, and old
+production reference routes are not read back through fallbacks.
 
 ## Pages
 

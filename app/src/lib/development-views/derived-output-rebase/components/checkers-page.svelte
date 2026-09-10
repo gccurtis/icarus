@@ -133,6 +133,7 @@
       {#each DELETED_SCHEMA_READERS as path (path)}
         <div><span>deleted on main</span><code>{path}</code></div>
       {/each}
+      <div><span>legacy branch removed</span><code>LegacyTextAnchor · representation/data/types/collaboration/anchor.ts</code></div>
     </div>
     <div class="reb-two-up">
       <article class="bad"><span>Do not</span><h3>Restore legacy normalization</h3><p>It hides the representation mismatch and will revive legacy-schema-support findings.</p></article>

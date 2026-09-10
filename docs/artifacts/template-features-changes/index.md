@@ -215,11 +215,11 @@
 +import { offersContext } from "$model/client/workspace-state/methods/shared/rails";
  import { targetKey } from "$model/client/workspace-state/methods/shared/target-key";
  import type { Tab } from "$model/client/workspace-state/types";
- 
+
 @@ -24,6 +25,15 @@ export const open = (state: WorkspaceStateData, target: Target): Tab => {
        perform(state, { op: "land", tab: existing.id, was, now: { ...was, focus: target.focus } });
      }
- 
+
 +    const held = state.views.of(existing.id);
 +    if (
 +      target.context !== undefined &&
@@ -238,7 +238,7 @@
 ~~~~diff
 @@ -2,4 +2,8 @@ import type { TabView, Target } from "$representation/data/types/workspace/tab";
  import { openingView } from "$representation/data/behavior/workspace/opening";
- 
+
  export const mintView = (target: Target): TabView =>
 -  openingView(target.category, { content: target.content, focus: target.focus });
 +  openingView(target.category, {
@@ -254,7 +254,7 @@
 @@ -288,6 +288,29 @@ test("opening an already-open permanent tab onto a centre moves it, keeps the ra
    assert.equal(model.selection, undefined);
  });
- 
+
 +test("a target may say which context view the tab opens on, if its rail offers it", () => {
 +  const model = workspaceState();
 +
@@ -289,7 +289,7 @@
 @@ -4,8 +4,16 @@ import type {
    MarkEnd
  } from "$representation/data/types/content/content-block";
- 
+
 +/**
 + * A template atom shows its parameter's name in braces, so a hole reads as one
 + * wherever prose is measured or drawn, and so its width is stable.
@@ -301,7 +301,7 @@
 +    : atom.kind === "template"
 +      ? `{${atom.name}}`
 +      : atom.lastResolvedDisplay;
- 
+
  export type AtomSegment = {
    readonly atom: Atom;
 ~~~~
@@ -1067,11 +1067,11 @@
  import type { StyleSet, TextStyle } from "$representation/data/types/documents/style-set";
 @@ -23,7 +24,7 @@ const isMarked = (block: ContentBlock): block is Marked =>
    block.type === "text" || block.type === "prompt";
- 
+
  export const displayOf = (atoms: readonly Atom[]): string =>
 -  atoms.map((atom) => (atom.kind === "literal" ? atom.text : atom.lastResolvedDisplay)).join("");
 +  atoms.map(displayOfAtom).join("");
- 
+
  const insertAfter = <T extends { id: string }>(
    items: readonly T[],
 ~~~~
@@ -1086,15 +1086,15 @@
 +import { displayOfAtom } from "$representation/data/behavior/content/positions";
  import type { SlideDeckBody } from "$representation/data/types/slide-decks/body";
  import type { SlideDeckOp } from "$representation/data/types/slide-decks/op";
- 
+
 @@ -218,8 +219,7 @@ const applyMove = (body: SlideDeckBody, op: Extract<SlideDeckOp, { op: "move" }>
      return insertAfter(withoutIds(list, [op.id]), op.after, [moving]);
    });
- 
+
 -const displayOf = (atoms: readonly Atom[]): string =>
 -  atoms.map((atom) => (atom.kind === "literal" ? atom.text : atom.lastResolvedDisplay)).join("");
 +const displayOf = (atoms: readonly Atom[]): string => atoms.map(displayOfAtom).join("");
- 
+
  const spliced = (op: Extract<SlideDeckOp, { op: "text" }>, atom: Atom): Atom => {
    if (atom.kind !== "literal") throw new Error(`Atom ${atom.id} is not a literal.`);
 ~~~~
@@ -3192,13 +3192,13 @@
 
 ~~~~diff
 @@ -145,6 +145,7 @@ export const STARTING_ZOOM: number | null = null;
- 
+
  export type Overrides = {
    readonly content?: ContentView;
 +  readonly context?: ContextView;
    readonly focus?: string;
  };
- 
+
 @@ -155,7 +156,10 @@ export const openingView = (category: Category, overrides: Overrides = {}): TabV
    return {
      content,
@@ -3219,7 +3219,7 @@
 @@ -20,7 +20,35 @@ export type FormulaAtom = {
    error?: string;
  };
- 
+
 -export type Atom = TextAtom | FormulaAtom;
 +/**
 + * A hole in a template's prose, filled with words when the template is placed.
@@ -3250,13 +3250,13 @@
 +};
 +
 +export type Atom = TextAtom | FormulaAtom | TemplateAtom;
- 
+
  export type MarkStyle = "bold" | "italic" | "underline" | "strikethrough" | "code";
- 
+
 @@ -32,6 +60,16 @@ export type MarkLink =
- 
+
  export type MarkEnd = { atom: string; offset: number };
- 
+
 +/**
 + * A run marked as a hole: a template made from this body puts one here.
 + *
@@ -3276,12 +3276,12 @@
    background?: string;
 +  hole?: MarkHole;
  };
- 
+
  export type TextVariant = "paragraph" | "heading" | "list" | "quote" | "code";
 @@ -112,6 +151,18 @@ export type TableBlock = {
- 
+
  export type PromptState = "idle" | "fresh" | "stale" | "generating" | "error";
- 
+
 +/**
 + * What this prompt becomes when its resource is made a template.
 + *
@@ -3315,13 +3315,13 @@
 @@ -1,40 +1,32 @@
  import type { Id } from "$representation/data/types/core/id";
  import type { ResourceKind, ResourceRef } from "$representation/data/types/core/resource";
- 
+
 -/** Everything in this project, including whatever is made tomorrow. */
  type ProjectTerm = { select: "project" };
- 
+
 -/** Each entry is prefix-matched, so one names a whole family. */
  type KindsTerm = { select: "kinds"; kinds: ResourceKind[] };
- 
+
 -/**
 - * A term bound to one project. Following a `set` reads another row, whose own
 - * set may name a third.
@@ -3334,7 +3334,7 @@
    | { select: "resources"; refs: ResourceRef[] }
 -  | { select: "set"; setId: Id<"resourceSets"> };
 +  | NamedSetTerm;
- 
+
 -/**
 - * A term a template body may hold. No ids, so it means the same in any project.
 - *
@@ -3344,7 +3344,7 @@
 - */
 -export type TemplatedTerm = ProjectTerm | KindsTerm | { select: "variable"; name: string };
 +export type TemplatedTerm = ProjectTerm | KindsTerm | NamedSetTerm | { select: "hole"; name: string };
- 
+
 -/**
 - * Everything in `include`, minus everything in `exclude`.
 - *
@@ -3354,7 +3354,7 @@
 - * An empty `include` selects nothing. Checked where a set is accepted.
 - */
  export type ResourceSet = { include: SetTerm[]; exclude: SetTerm[] };
- 
+
 -/** The same, as a template carries it between projects. */
  export type TemplatedResourceSet = { include: TemplatedTerm[]; exclude: TemplatedTerm[] };
 +
@@ -3376,7 +3376,7 @@
 ~~~~diff
 @@ -9,40 +9,34 @@ import type { PageSetup } from "$representation/data/types/spreadsheets/page-set
  import type { StyleSet } from "$representation/data/types/spreadsheets/style-set";
- 
+
  /**
 - * One question a template asks when it is instantiated.
 + * What a hole is answered with.
@@ -3407,7 +3407,7 @@
 +  /** What a `text` says when the caller says nothing. Absent means it must be filled in. */
 +  text?: string;
  };
- 
+
 -/**
 - * One cell as a template holds it. An expression rather than a formula id: a
 - * formula is a row scoped to one project, and the text an author wrote is the
@@ -3422,7 +3422,7 @@
 -  /** `"D4"` — the far corner of a merge. */
    merge?: string;
  };
- 
+
 -/** Addressed rather than identified, like everything else in a spreadsheet template. */
  export type TemplateFormatRule = {
    from: string;
@@ -3430,7 +3430,7 @@
 @@ -60,17 +54,8 @@ export type TemplatePrint = {
    headings?: boolean;
  };
- 
+
 -/**
 - * A spreadsheet as a template holds it: **addressed, never identified.**
 - *
@@ -3507,7 +3507,7 @@
    updatedAt: number;
 @@ -380,16 +377,17 @@ export type AgentTaskFields = {
  export type AgentTask = Row<"agentTasks"> & AgentTaskFields;
- 
+
  export type TemplateFields = {
 +  projectId: Id<"projects">;
    userId: Id<"users">;
@@ -3524,7 +3524,7 @@
 +  lastUsedAt?: number;
  };
  export type Template = Row<"templates"> & TemplateFields;
- 
+
 @@ -400,21 +398,35 @@ export type TemplateVersionFields = {
    description?: string;
    tags: string[];
@@ -3534,7 +3534,7 @@
    at: number;
  };
  export type TemplateVersion = Row<"templateVersions"> & TemplateVersionFields;
- 
+
 -export type NamedResourceSetFields = {
 +export type TemplateStageFields = {
    projectId: Id<"projects">;
@@ -3562,7 +3562,7 @@
  };
 -export type NamedResourceSet = Row<"resourceSets"> & NamedResourceSetFields;
 +export type StoredResourceSet = Row<"resourceSets"> & ResourceSetFields;
- 
+
  export type ConnectorFields = {
    projectId: Id<"projects">;
 @@ -619,6 +631,7 @@ export const TABLE_NAMES = [
@@ -4005,7 +4005,7 @@
 +  resolveTemplateScopes
 +} from "$representation/data/behavior/templates/scopes";
  import type { TemplateBody } from "$representation/data/types/templates/template";
- 
+
 +import { enqueueSemanticSync } from "$capabilities/semantic-overlay/index";
  import { validateInstantiateTemplate } from "$capabilities/templates/api/instantiate-template/validate-instantiate-template";
 -import {
@@ -4038,7 +4038,7 @@
 +  }
 +  return [...missing].sort();
 +};
- 
+
  export const instantiateTemplate = async (input: unknown): Promise<InstantiateTemplateResult> => {
    const scope = await requireScope();
 @@ -35,11 +55,11 @@ export const instantiateTemplate = async (input: unknown): Promise<InstantiateTe
@@ -4106,12 +4106,12 @@
      };
    }
 -  body = resolved.body;
- 
+
    const projectId = asId<"projects">(scope.projectId);
    const actor = { kind: "user" as const, userId: asId<"users">(scope.userId) };
    const at = Date.now();
    const title = asked.name ?? template.name;
- 
+
 +  /**
 +   * The resource is minted before its scopes are resolved, because an answer
 +   * that excludes anything is stored as a row and that row is owned by the
@@ -4236,7 +4236,7 @@
        templateId: template._id,
 @@ -141,14 +229,6 @@ export const instantiateTemplate = async (input: unknown): Promise<InstantiateTe
    }
- 
+
    const materialized = materializeSpreadsheet(body);
 -  const resourceId = store.create("spreadsheets", {
 -    projectId,
@@ -4274,7 +4274,7 @@
 +  textsOf
  } from "$capabilities/templates/api/shared/validation";
  import type { InstantiateTemplateInput } from "$capabilities/templates/types/templates";
- 
+
  export const validateInstantiateTemplate = (input: unknown): InstantiateTemplateInput => {
    const fields = fieldsOf(input, "instantiate-template");
 -  only(fields, ["templateId", "name"], "instantiate-template");
@@ -4524,7 +4524,7 @@
 @@ -62,59 +55,7 @@ export const removeTemplate = async (input: unknown): Promise<RemoveTemplateResu
      };
    }
- 
+
 -  // Resolve and validate every affected id before the first write. A corrupt
 -  // version or provenance row must not be discovered after resources have
 -  // already been detached from the template.
@@ -4579,13 +4579,13 @@
 -    detach.set(table, ids);
 -  }
 +  const stages = stagesIn(store).filter((stage) => stage.templateId === template._id);
- 
+
    const versions = recordsIn(store, "templateVersions");
    const versionClaimants = new Map<string, number>();
 @@ -147,12 +88,13 @@ export const removeTemplate = async (input: unknown): Promise<RemoveTemplateResu
      versionIds.push(id);
    }
- 
+
 -  for (const table of resourceTables) {
 -    store.removeFieldFromRows(
 -      table,
@@ -4621,12 +4621,12 @@
 -  TemplateVariable
 +  TemplateBody
  } from "$representation/data/types/templates/template";
- 
+
  import type { RowFields } from "$capabilities/templates/api/shared/store";
 @@ -27,26 +22,24 @@ const defaultStyles = {
    }
  };
- 
+
 +const emptyDeck = () => ({
 +  aspectRatio: "16:9" as const,
 +  theme: {
@@ -4669,7 +4669,7 @@
 @@ -56,153 +49,6 @@ export const emptyTemplateBody = (target: TemplateTarget): TemplateBody => {
    };
  };
- 
+
 -type ResolvedTerm = Exclude<TemplatedTerm, { select: "variable" }>;
 -type ResolvedSet = {
 -  readonly include: readonly ResolvedTerm[];
@@ -4818,7 +4818,7 @@
 -};
 -
  type MaterializedCell = Omit<RowFields<"sheetCells">, "projectId" | "resourceId">;
- 
+
  export type MaterializedSpreadsheet = {
 ~~~~
 
@@ -4873,7 +4873,7 @@
 @@ -2,6 +2,7 @@ import type { StoreModel, TableRow } from "$model/server/store/index.server";
  import type { Scope } from "$runtime/server/scope.server";
  import type { Actor } from "$representation/data/types/core/actor";
- 
+
 +import { expandedScope } from "$capabilities/templates/api/shared/scopes";
  import {
    canonicalRowId,
@@ -4890,7 +4890,7 @@
 @@ -74,10 +75,10 @@ const actorOf = (value: unknown, subject: string): Actor => {
    throw new Error(`templates/${subject}: createdBy is a represented actor`);
  };
- 
+
 -/** Admit an existing row before any projection or mutation trusts its typed claim. */
  export const admitStoredTemplate = (template: Template): Template => {
    const subject = `stored-${template._id}`;
@@ -4909,7 +4909,7 @@
 +  ) {
 +    throw new Error(`templates/${subject}: last use time is finite`);
 +  }
- 
+
    const name = nameOf(template.name, subject);
    const description =
 @@ -96,7 +103,7 @@ export const admitStoredTemplate = (template: Template): Template => {
@@ -4942,7 +4942,7 @@
 @@ -168,30 +175,6 @@ const actorName = (store: StoreModel, scope: Scope, actor: Actor): string => {
    return title === undefined ? "An agent" : `Agent · ${title}`;
  };
- 
+
 -const usesByTemplate = (store: StoreModel, projectId: string): ReadonlyMap<string, number> => {
 -  const uses = new Map<string, number>();
 -  const collect = (rows: readonly Record<string, unknown>[]) => {
@@ -4999,7 +4999,7 @@
 @@ -243,24 +225,19 @@ export const projectLibrary = (
    return { templates, unavailable };
  };
- 
+
 -const itemOf = (
 -  store: StoreModel,
 -  scope: Scope,
@@ -5609,7 +5609,7 @@
      at
    });
  };
- 
+
  export const fieldsOfTemplate = (template: Template): TemplateFields => ({
 +  projectId: template.projectId,
    userId: template.userId,
@@ -5635,7 +5635,7 @@
  } from "$representation/data/types/templates/template";
 +import type { ResourceSet, SetTerm } from "$representation/data/types/core/resource-set";
  import { normalizeSlideDeckBody } from "$representation/data/behavior/slide-decks/normalize";
- 
+
 -import type { TemplateTarget } from "$capabilities/templates/types/templates";
 +import type {
 +  TemplateAnswers,
@@ -5648,7 +5648,7 @@
 @@ -33,7 +38,6 @@ export const requiredId = (value: unknown, subject: string, field: string): stri
    return value;
  };
- 
+
 -/** A template id is one Store path segment, never another path in disguise. */
  export const templateIdOf = (value: unknown, subject: string): string => {
    const id = requiredId(value, subject, "templateId");
@@ -5656,7 +5656,7 @@
 @@ -60,6 +64,39 @@ export const targetOf = (value: unknown, subject: string): TemplateTarget => {
    return value;
  };
- 
+
 +export const stageTargetOf = (value: unknown, subject: string): TemplateStageTarget => {
 +  if (value !== "document" && value !== "slides") {
 +    throw new Error(`templates/${subject}: target is document or slides`);
@@ -5709,7 +5709,7 @@
 @@ -543,6 +584,17 @@ const markEndOf = (value: unknown): { atom: string; offset: number } | undefined
    return { atom: value.atom, offset: value.offset };
  };
- 
+
 +/** What an atom puts on the block's display, which is what a mark is measured against. */
 +const atomDisplayOf = (atom: unknown): string | undefined => {
 +  if (!isRecord(atom)) return undefined;
@@ -5756,7 +5756,7 @@
 +      (mark.hole === undefined || validPromptHole(mark.hole))
      );
    });
- 
+
 @@ -613,6 +661,17 @@ const validAtom = (value: unknown): boolean => {
        validText(value.text, MAX_BLOCK_TEXT_LENGTH, true)
      );
@@ -5777,7 +5777,7 @@
      hasOnlyKeys(value, [
 @@ -635,13 +694,17 @@ const validAtom = (value: unknown): boolean => {
  };
- 
+
  const displayOfAtoms = (atoms: readonly unknown[]): string =>
 -  atoms
 -    .map((atom) =>
@@ -5797,7 +5797,7 @@
 +    (isText(value.description) &&
 +      value.description.length <= MAX_HOLE_DESCRIPTION_LENGTH &&
 +      value.description === value.description.trim()));
- 
+
  const validBlock = (value: unknown, depth = 0): boolean => {
    if (depth > 12 || !isRecord(value) || !validIdentifier(value.id) || !isText(value.type)) {
 @@ -811,16 +874,22 @@ const validBlock = (value: unknown, depth = 0): boolean => {
@@ -5826,7 +5826,7 @@
 @@ -1515,7 +1584,6 @@ const validSpreadsheet = (body: Fields): boolean => {
    return validStyles(body.styles);
  };
- 
+
 -/** A template body must not smuggle live project/store identities into a new resource. */
  const assertPortableBody = (value: unknown, subject: string): void => {
    const boundField = (step: Fields): string | undefined => {
@@ -5852,7 +5852,7 @@
 +  }
    return normalized as TemplateBody;
  };
- 
+
 -const MAX_TEMPLATE_VARIABLES = 100;
 +const validSetTerm = (value: unknown): boolean => {
 +  if (!isRecord(value)) return false;
@@ -5949,7 +5949,7 @@
 +const MAX_HOLE_LABEL_LENGTH = 500;
 +const MAX_HOLE_DESCRIPTION_LENGTH = 4_000;
  const MAX_RESOURCE_KIND_LENGTH = 160;
- 
+
  const validTerm = (value: unknown): boolean => {
 @@ -1584,11 +1737,19 @@ const validTerm = (value: unknown): boolean => {
    if (value.select === "project") {
@@ -5976,7 +5976,7 @@
 @@ -1618,62 +1779,95 @@ const validTemplatedSet = (value: unknown): boolean =>
    value.exclude.length <= MAX_TEMPLATE_TERMS_PER_SIDE &&
    value.exclude.every(validTerm);
- 
+
 -export const variablesOf = (value: unknown, subject: string): readonly TemplateVariable[] => {
 -  if (!Array.isArray(value)) throw new Error(`templates/${subject}: variables is a list`);
 -  if (value.length > MAX_TEMPLATE_VARIABLES) {
@@ -6102,7 +6102,7 @@
 -  return value as readonly TemplateVariable[];
 +  return value as readonly TemplateHole[];
  };
- 
+
  export const has = (fields: Fields, field: string): boolean =>
 ~~~~
 
@@ -6114,7 +6114,7 @@
  import { serverModel } from "$runtime/server/start.server";
 +import { asId } from "$representation/data/behavior/core/id";
 +import { scopeHoleNamesIn } from "$representation/data/behavior/templates/scopes";
- 
+
  import {
    admitStoredTemplate,
    reportableRevision,
@@ -6259,7 +6259,7 @@
 +    if (stage.templateId !== template._id) continue;
 +    store.update(`templateStages.${stage._id}.templateRevision`, fields.revision);
 +  }
- 
+
    return { accepted: true, templateId: template._id, revision: fields.revision };
  };
 ~~~~
@@ -6284,7 +6284,7 @@
    if (Object.keys(incoming).length === 0) {
      throw new Error("templates/update-template: patch changes at least one field");
    }
- 
+
 -  const variableDescription = has(incoming, "variableDescription")
 -    ? fieldsOf(incoming.variableDescription, "update-template")
 +  const holeDescription = has(incoming, "holeDescription")
@@ -6295,7 +6295,7 @@
 +  if (holeDescription !== undefined) {
 +    only(holeDescription, ["name", "description"], "update-template");
    }
- 
+
    const patch: UpdateTemplatePatch = {
 @@ -40,15 +41,18 @@ export const validateUpdateTemplate = (input: unknown): UpdateTemplateInput => {
          }
@@ -6328,7 +6328,7 @@
 ~~~~diff
 @@ -1,28 +1,37 @@
  import { command, query } from "$app/server";
- 
+
  import { readProjectResourceIndex } from "$capabilities/project-resources/index.remote";
 +import { read as readStoreTable } from "$capabilities/store/index.remote";
 +import { commitTemplateStage as commitTemplateStageProcedure } from "$capabilities/templates/api/commit-template-stage/commit-template-stage";
@@ -6344,11 +6344,11 @@
  import { removeTemplate as removeTemplateProcedure } from "$capabilities/templates/api/remove-template/remove-template";
 +import { resourceTableOf } from "$capabilities/templates/api/shared/stages";
  import { updateTemplate as updateTemplateProcedure } from "$capabilities/templates/api/update-template/update-template";
- 
+
  export const readTemplateLibrary = query(readTemplateLibraryProcedure);
  export const readTemplate = query("unchecked", readTemplateProcedure);
 +export const readResourceTemplate = query("unchecked", readResourceTemplateProcedure);
- 
+
 -/**
 - * Commands refresh the query instances they mutate from inside the same remote
 - * request. Client `.updates(...)` calls name the mounted cache keys; these
@@ -6359,7 +6359,7 @@
    await readTemplateLibrary().refresh();
    return result;
  });
- 
+
 +export const createTemplateFromResource = command("unchecked", async (input) => {
 +  const result = await createTemplateFromResourceProcedure(input);
 +  await readTemplateLibrary().refresh();
@@ -6372,7 +6372,7 @@
 @@ -50,23 +59,66 @@ export const instantiateTemplate = command("unchecked", async (input) => {
    return result;
  });
- 
+
 +export const openTemplateStage = command("unchecked", async (input) => {
 +  const result = await openTemplateStageProcedure(input);
 +  await readTemplateLibrary().refresh();
@@ -6444,13 +6444,13 @@
 ~~~~diff
 @@ -1,57 +1,127 @@
  # templates
- 
+
 -The project-facing template library, with its mutations and the crossing that
 -turns a template into an ordinary editable resource.
 +The project's template library, its mutations, the crossing that turns a
 +template into an ordinary editable resource, and the crossing back: a template
 +opened in an ordinary editor and saved into.
- 
+
  | procedure | answers |
  | --- | --- |
 -| `readTemplateLibrary` | Every valid template visible from the scoped project, projected as library metadata with creator name, permissions, and last use, plus quarantined invalid row notices |
@@ -6599,9 +6599,9 @@
 +
 +Project Overview leaves stage resources out of its index, and a resource set
 +never counts one.
- 
+
  ## Revisions and refusals
- 
+
 -Updates and deletes require `baseRevision`. Stale, forbidden, and missing
 -requests are ordinary `accepted: false` answers, not transport errors. Invalid
 -payloads throw before the store is read. Every created or updated template
@@ -6613,11 +6613,11 @@
 +are ordinary `accepted: false` answers, not transport errors. Invalid payloads
 +throw before the store is read. Every created or updated template writes the
 +corresponding `templateVersions` row.
- 
+
  Every stored row is re-admitted before projection or mutation. A malformed
  legacy row is quarantined from the list, reported as unavailable on direct read,
 @@ -62,19 +132,12 @@ therefore cannot crash the rest of the library or be copied into new history.
- 
+
  Instantiation writes normal resource rows, not a private template-editor data
  model. Documents and decks receive their represented body as a leader snapshot.
 -Spreadsheet templates are materialized from addresses into stable row/column
@@ -6639,12 +6639,12 @@
 +and persisted as one table batch rather than rewriting the cell table once per
 +cell. Formula evaluation and derived-output creation are downstream
 +editor/runtime responsibilities, not side effects hidden in instantiation.
- 
+
  ## Persistence boundary
- 
+
 @@ -84,8 +147,7 @@ then updates live memory. This removes phantom state after a failed write and
  bounds collection creation/removal to one table persistence operation.
- 
+
  It is not yet a transaction across table files. Template/version writes,
 -provenance/template deletion, and resource/snapshot/cell instantiation cross
 -that boundary. Known validation and conflict refusals happen before writes, but
@@ -7930,7 +7930,7 @@
 +const { bodyOf, holesOf } = await import(
    "$capabilities/templates/api/shared/validation"
  );
- 
+
 @@ -168,11 +168,12 @@ const template = (
    extra: Record<string, unknown> = {}
  ): Row =>
@@ -7948,7 +7948,7 @@
 @@ -227,12 +228,12 @@ describe("the project library", () => {
      assert.equal(answer.templates[0].createdByName, "Someone");
    });
- 
+
 -  test("quarantines duplicate ids across owners and tolerates malformed resource rows", async () => {
 +  test("quarantines duplicate ids across projects and tolerates malformed resource rows", async () => {
      model.tables.templates.push(
@@ -7959,11 +7959,11 @@
 +      template("1", "v", slidesBody, { projectId: "other" })
      );
      model.tables.documents.push(null as unknown as Row);
- 
+
 @@ -262,50 +263,34 @@ describe("the project library", () => {
      assert.equal("projectId" in answer, false);
    });
- 
+
 -  test("projects only owner-visible templates with project-local recency", async () => {
 +  test("projects only this project's templates with project-local recency", async () => {
      model.tables.templates.push(
@@ -7996,9 +7996,9 @@
 +      template("2", "v", slidesBody, { name: "Shared", updatedAt: 40, lastUsedAt: 90 }),
 +      template("3", "x", documentBody, { name: "Hidden", updatedAt: 50, projectId: "other" })
      );
- 
+
      const answer = await readTemplateLibrary();
- 
+
      assert.equal(model.calls[0], "scope");
 -    assert.deepEqual(answer.templates.map((item) => item.id), ["templates:1"]);
 +    assert.deepEqual(answer.templates.map((item) => item.id), ["templates:2", "templates:1"]);
@@ -8014,7 +8014,7 @@
      assert.equal(answer.templates[0].canDelete, true);
      assert.deepEqual(answer.unavailable, []);
    });
- 
+
 -  test("reads an owned full body and does not disclose another user's template", async () => {
 -    model.tables.templates.push(template("1", "u", slidesBody), template("2", "v"));
 +  test("reads a full body and does not disclose another project's template", async () => {
@@ -8022,13 +8022,13 @@
 +      template("1", "u", slidesBody),
 +      template("2", "v", documentBody, { projectId: "other" })
 +    );
- 
+
      const answer = await readTemplate({ templateId: "templates:1" });
      assert.ok(answer !== null && !("unavailable" in answer));
 @@ -369,8 +354,11 @@ describe("template mutations", () => {
      assert.deepEqual(model.tables.templateVersions.map((version) => version.revision), [1, 1, 1]);
    });
- 
+
 -  test("updates only an owner's current revision and snapshots the accepted result", async () => {
 -    model.tables.templates.push(template("1", "u"), template("2", "v"));
 +  test("updates only this project's current revision and snapshots the accepted result", async () => {
@@ -8036,13 +8036,13 @@
 +      template("1", "u"),
 +      template("2", "v", documentBody, { projectId: "other" })
 +    );
- 
+
      assert.deepEqual(
        await updateTemplate({ templateId: "templates:1", baseRevision: 1, patch: { name: "Stale" } }),
 @@ -403,10 +391,10 @@ describe("template mutations", () => {
      assert.equal(model.tables.templateVersions[0].revision, 3);
    });
- 
+
 -  test("updates variable prose without exposing its stable key or default to editing", async () => {
 +  test("updates hole prose without exposing its stable key or default to editing", async () => {
      model.tables.templates.push(
@@ -8060,7 +8060,7 @@
 +        holeDescription: { name: "evidence", description: "  Choose the evidence set.  " }
        }
      });
- 
+
      assert.deepEqual(answer, { accepted: true, templateId: "templates:1", revision: 3 });
 -    assert.deepEqual(model.tables.templates[0].variables, [
 +    assert.deepEqual(model.tables.templates[0].holes, [
@@ -8079,11 +8079,11 @@
 +    assert.notEqual(copy?.holes, model.tables.templates[0].holes);
      assert.equal(model.tables.templateVersions.length, 1);
    });
- 
+
 @@ -508,28 +497,16 @@ describe("template mutations", () => {
      assert.equal(typeof copy?.name === "string" && copy.name.endsWith(" copy"), true);
    });
- 
+
 -  test("refuses cross-project dangling provenance, then deletes after clearing local provenance", async () => {
 +  test("deletes a template with its versions and leaves the resources made from it alone", async () => {
      model.tables.templates.push(template("1", "u"));
@@ -8096,7 +8096,7 @@
 -      row("documents", "2", { projectId: "other", templateId: "templates:1", updatedAt: 1 })
 +      row("documents", "1", { projectId: "p", title: "Made from it", updatedAt: 1 })
      );
- 
+
 -    assert.deepEqual(await removeTemplate({ templateId: "templates:1", baseRevision: 2 }), {
 -      accepted: false,
 -      templateId: "templates:1",
@@ -8120,7 +8120,7 @@
 +    assert.equal(model.tables.documents.length, 1);
 +    assert.equal(model.tables.documents[0].title, "Made from it");
    });
- 
+
 -  test("preflights corrupt version ids before detaching local provenance", async () => {
 +  test("preflights corrupt version ids before removing anything", async () => {
      model.tables.templates.push(template("1", "u"));
@@ -8138,7 +8138,7 @@
      assert.equal(model.tables.templateVersions.length, 1);
      assert.equal(model.calls.some((call) => call.startsWith("remove")), false);
    });
- 
+
 -  test("refuses ambiguous ancillary ids before a batch can touch another claimant", async () => {
 -    model.tables.templates.push(template("1", "u"));
 -    model.tables.documents.push(
@@ -8166,14 +8166,14 @@
 @@ -638,7 +590,7 @@ describe("instantiation", () => {
      assert.equal(model.tables.documentSnapshots.length, 0);
    });
- 
+
 -  test("creates ordinary document and slide-deck rows with leader snapshots and provenance", async () => {
 +  test("creates ordinary document and slide-deck rows with leader snapshots and no provenance", async () => {
      model.tables.templates.push(template("1", "u"), template("2", "u", slidesBody));
- 
+
      const document = await instantiateTemplate({ templateId: "templates:1", name: "Brief" });
 @@ -646,13 +598,15 @@ describe("instantiation", () => {
- 
+
      assert.equal(document.accepted && document.target, "document");
      assert.equal(slides.accepted && slides.target, "slides");
 -    assert.equal(model.tables.documents[0].templateId, "templates:1");
@@ -8193,7 +8193,7 @@
 @@ -702,7 +656,7 @@ describe("instantiation", () => {
      assert.equal(model.calls.some((call) => call === "create sheetCells"), false);
    });
- 
+
 -  test("does not invent a variable-answer contract", async () => {
 +  test("does not invent a hole-answer contract", async () => {
      model.tables.templates.push(
@@ -8216,9 +8216,9 @@
 +        { holes: [{ name: "region", label: "Region" }] }
        )
      );
- 
+
      const answer = await instantiateTemplate({ templateId: "templates:1" });
- 
+
 -    assert.deepEqual(answer, {
 -      accepted: false,
 -      templateId: "templates:1",
@@ -8236,7 +8236,7 @@
      });
 -    assert.equal(model.tables.documents.length, 0);
    });
- 
+
    test("uses represented defaults without asking for an invented value shape", async () => {
 @@ -766,7 +719,7 @@ describe("instantiation", () => {
                    display: "",
@@ -8267,7 +8267,7 @@
                label: "Evidence",
 @@ -821,7 +774,7 @@ describe("instantiation", () => {
    });
- 
+
    test("bounds recursively expanding represented defaults before writing", async () => {
 -    const variables = Array.from({ length: 16 }, (_, index) => ({
 +    const holes = Array.from({ length: 16 }, (_, index) => ({
@@ -8302,11 +8302,11 @@
 +        { holes }
        )
      );
- 
+
 @@ -874,7 +827,7 @@ describe("instantiation", () => {
      assert.equal(model.tables.documents.length, 0);
    });
- 
+
 -  test("refuses a variable-set difference rather than broadening its scope", async () => {
 +  test("refuses a hole-set difference rather than broadening its scope", async () => {
      model.tables.templates.push(
@@ -8333,7 +8333,7 @@
 @@ -1007,7 +960,7 @@ describe("stored template validation", () => {
      assert.doesNotThrow(() => bodyOf(body, "record-keys"));
    });
- 
+
 -  test("accepts only canonical represented variables and bounded templated defaults", () => {
 +  test("accepts only canonical represented holes and bounded templated defaults", () => {
      const valid = [
@@ -8352,7 +8352,7 @@
      ];
 -    assert.equal(variablesOf(valid, "test").length, 1);
 +    assert.equal(holesOf(valid, "test").length, 2);
- 
+
      const invalid = [
        [{ ...valid[0], invented: true }],
 @@ -1057,7 +1015,16 @@ describe("stored template validation", () => {
@@ -8383,7 +8383,7 @@
 +      assert.throws(() => holesOf(holes, "test"), /templates\/test:/);
      }
    });
- 
+
 -  test("requires exact case for one variable default referencing another", () => {
 +  test("requires exact case for one hole default referencing another", () => {
      assert.throws(
@@ -8408,11 +8408,11 @@
 +      /default names a declared hole/
      );
    });
- 
+
 @@ -1398,7 +1365,7 @@ describe("stored template validation", () => {
      }
    });
- 
+
 -  test("keeps body variable lookup exact when declarations differ only by case", async () => {
 +  test("keeps body hole lookup exact when declarations differ only by case", async () => {
      model.tables.templates.push(
@@ -8438,7 +8438,7 @@
                label: "Region",
 @@ -1441,7 +1408,7 @@ describe("stored template validation", () => {
      const answer = await instantiateTemplate({ templateId: "templates:1" });
- 
+
      assert.equal(answer.accepted, false);
 -    assert.equal(answer.accepted ? "" : answer.reason, "variables-required");
 -    assert.deepEqual(answer.accepted ? [] : answer.variables, ["Region"]);
@@ -8458,9 +8458,9 @@
 -  TemplateVariable
 +  TemplateHole
  } from "$representation/data/types/templates/template";
- 
+
  export type TemplateTarget = TemplateBody["resource"];
- 
+
 -/**
 - * `project` is reserved for a represented project-owned template set. Until
 - * that ownership model exists, the capability returns only `personal` (the
@@ -8469,7 +8469,7 @@
 +export type TemplateStageTarget = Exclude<TemplateTarget, "spreadsheet">;
 +
  export type TemplateAvailability = "project" | "personal";
- 
+
 +export type TemplateAnswers = Readonly<Record<string, ResourceSet>>;
 +
  export type TemplateLibraryItem = {
@@ -8487,19 +8487,19 @@
 @@ -28,9 +28,9 @@ export type TemplateLibraryItem = {
    readonly canDelete: boolean;
  };
- 
+
 -export type TemplateDetail = Omit<TemplateLibraryItem, "variableCount"> & {
 +export type TemplateDetail = Omit<TemplateLibraryItem, "holeCount"> & {
    readonly body: TemplateBody;
 -  readonly variables: readonly TemplateVariable[];
 +  readonly holes: readonly TemplateHole[];
  };
- 
+
  export type TemplateUnavailable = {
 @@ -62,16 +62,39 @@ export type CreateTemplateResult = {
    readonly revision: 1;
  };
- 
+
 +export type CreateTemplateFromResourceInput = {
 +  readonly target: TemplateStageTarget;
 +  readonly resourceId: string;
@@ -8537,7 +8537,7 @@
    };
 +  readonly holes?: readonly TemplateHole[];
  };
- 
+
  export type UpdateTemplateInput = {
 @@ -85,7 +108,7 @@ export type UpdateTemplateResult =
    | {
@@ -8562,7 +8562,7 @@
        readonly revision: number | null;
        readonly detail: string;
      };
- 
+
 +/** What a caller typed into the template's text holes, by name. */
 +export type TemplateTexts = Readonly<Record<string, string>>;
 +
@@ -8573,7 +8573,7 @@
 +  readonly answers?: TemplateAnswers;
 +  readonly texts?: TemplateTexts;
  };
- 
+
  export type InstantiateTemplateResult =
 @@ -149,8 +171,82 @@ export type InstantiateTemplateResult =
    | {
@@ -9887,7 +9887,7 @@
 ~~~~diff
 @@ -11,6 +11,14 @@ export const startThread = async (input: unknown): Promise<StartThreadResult> =>
    const asked = validateStartThread(input);
- 
+
    const store = serverModel().store;
 +  const stages = store.read("templateStages");
 +  if (
@@ -9908,7 +9908,7 @@
 @@ -11,5 +11,9 @@ settles a thread or reopens it.
  the scope, so a caller cannot file a remark as someone else or into a project it
  cannot open. A thread in another project is not found rather than refused.
- 
+
 +**A template's working copy takes no comments.** `startThread` refuses a target
 +that a `templateStages` row names, because a comment is one of the things that
 +does not travel with a template; the panels say so where the composer would be.
@@ -9922,7 +9922,7 @@
 ~~~~diff
 @@ -41,6 +41,18 @@ beforeEach(() => {
  });
- 
+
  describe("startThread", () => {
 +  it("refuses a thread on a template's working copy", async () => {
 +    model.tables.set("templateStages", [
@@ -9947,7 +9947,7 @@
 @@ -124,16 +124,18 @@ const timeOf = (value: unknown): number => {
    return value;
  };
- 
+
 -/**
 - * The one cache key shared by template instantiation and Project Overview.
 - * It intentionally exposes metadata only from the five listable resource
@@ -9957,7 +9957,7 @@
    const scope = await requireScope();
    const resources: ProjectResourceIndexItem[] = [];
    const unavailable: ProjectResourceUnavailable[] = [];
- 
+
 +  const staged = new Set(
 +    rowsIn("templateStages")
 +      .map(recordOf)
@@ -9971,7 +9971,7 @@
 @@ -143,9 +145,6 @@ export const readProjectResourceIndex = async (): Promise<ProjectResourceIndex>
      const rows = rowsIn(table);
      const idCounts = new Map<string, number>();
- 
+
 -    // Count canonical ids across the whole table before projecting scoped
 -    // metadata. Store mutations resolve a row by table + id, so even a
 -    // foreign or otherwise malformed claimant makes that path ambiguous.
@@ -9986,12 +9986,12 @@
 +        continue;
        }
      }
- 
+
      for (const value of rows) {
        const row = recordOf(value);
        if (row === undefined || row.projectId !== scope.projectId) continue;
 +      if (typeof row._id === "string" && staged.has(row._id)) continue;
- 
+
        try {
          const id = idOf(row._id, table);
 ~~~~
@@ -10021,7 +10021,7 @@
 +  import { onDestroy } from "svelte";
    import ArrowLeft from "@lucide/svelte/icons/arrow-left";
    import FilePenLine from "@lucide/svelte/icons/file-pen-line";
- 
+
    import { ScreenEmpty, ScreenNote, ScreenSurface } from "$authored-components/screen";
    import { Button } from "$vendored-components/button";
 +  import {
@@ -10030,7 +10030,7 @@
 +    templatesIn
 +  } from "$app-views/categories/templates/procedures/library.svelte";
    import { workspaceState } from "$model/client/workspace-state";
- 
+
 -  /**
 -   * Compatibility landing for workspace snapshots that still name `templates.editor`.
 -   *
@@ -10074,12 +10074,12 @@
 +    );
 +  });
  </script>
- 
+
  <ScreenSurface>
 @@ -28,15 +54,20 @@
      </Button>
    </header>
- 
+
 -  <ScreenEmpty title="The editor shell is intentionally deferred" icon={FilePenLine}>
 -    This remains inside the Template category. A later pass can mount the ordinary document or
 -    slide-deck runtime beneath this quiet return bar without creating another workspace tab.
@@ -10094,7 +10094,7 @@
 +      editor's Templates panel saves the copy back or discards it.
 +    </ScreenEmpty>
 +  {/if}
- 
+
    <ScreenNote tone="gap">
 -    Name, description, variable help text, and tags autosave in the Inspector today. Body authoring
 -    still needs a collaborative edit-session identity, Template blocks for variable-bearing Prompt
@@ -10117,7 +10117,7 @@
      recentTemplatesIn,
      templateLibrary,
 @@ -37,6 +38,8 @@
- 
+
    const view = workspaceState();
    const library = templateLibrary();
 +  let opening = $state<string | undefined>(undefined);
@@ -10132,12 +10132,12 @@
 -    { value: "variables", label: "Variables" }
 +    { value: "holes", label: "Holes" }
    ] as const;
- 
+
    const TARGETS: readonly TemplateTarget[] = ["Document", "Slide deck", "Spreadsheet"];
 @@ -69,7 +72,6 @@
      Spreadsheet: "1 / 1"
    };
- 
+
 -  /** One sorted union: the menu never invents a tag that no template carries. */
    const TAGS = $derived(
      [...new Set(templates.flatMap((row) => row.tags))].sort((a, b) => a.localeCompare(b))
@@ -10145,7 +10145,7 @@
 @@ -112,7 +114,6 @@
      selectedTags = [];
    };
- 
+
 -  /** A removed/retagged last template must not leave an invisible stale filter behind. */
    $effect(() => {
      if (tagMode !== "some") return;
@@ -10168,18 +10168,18 @@
 -    variables: { asc: "Fewest variables first", desc: "Most variables first" }
 +    holes: { asc: "Fewest holes first", desc: "Most holes first" }
    };
- 
+
 -  const variableCount = (row: LibraryTemplate): string =>
 -    `${row.variableCount} ${row.variableCount === 1 ? "variable" : "variables"}`;
 +  const holeCount = (row: LibraryTemplate): string =>
 +    `${row.holeCount} ${row.holeCount === 1 ? "hole" : "holes"}`;
- 
+
    const clear = () => {
      search = "";
 @@ -183,7 +184,6 @@
      inspectTemplate(view, row.id);
    };
- 
+
 -  /** A launcher can land the singleton on one template without opening the obsolete mock editor. */
    $effect(() => {
      const focus = view.active.focus;
@@ -10187,7 +10187,7 @@
 @@ -193,10 +193,23 @@
      if (row !== undefined) inspect(row);
    });
- 
+
 -  /** Authoring stays inside the singleton Template category; Use is a separate explicit action. */
 -  const edit = (row: LibraryTemplate) => {
 +  const edit = async (row: LibraryTemplate) => {
@@ -10210,7 +10210,7 @@
 +    }
    };
  </script>
- 
+
 @@ -219,12 +232,12 @@
            <ScreenThumb
              ratio={TARGET_RATIO[row.makes]}
@@ -10265,7 +10265,7 @@
 @@ -497,11 +514,6 @@
      outline-offset: 1px;
    }
- 
+
 -  /**
 -   * The preview keeps the target's shape inside a shorter, consistent card
 -   * band. Cards remain recognisable without making recent history dominate the
@@ -10287,7 +10287,7 @@
    import Plus from "@lucide/svelte/icons/plus";
    import Trash2 from "@lucide/svelte/icons/trash-2";
    import X from "@lucide/svelte/icons/x";
- 
+
 +  import { OverlayModal } from "$authored-components/overlay";
    import {
      Panel,
@@ -10346,7 +10346,7 @@
 +    type TemplateHole
    } from "$app-views/categories/templates/procedures/library.svelte";
    import { workspaceState } from "$model/client/workspace-state";
- 
+
 @@ -43,6 +71,12 @@
      view.selection?.kind === "template" ? view.selection.id : undefined
    );
@@ -10400,7 +10400,7 @@
 +  const clearScope = () => {
 +    draft = { include: [], exclude: [] };
 +  };
- 
+
    let editingDescription = $state(false);
    let descriptionDraft = $state("");
 @@ -74,15 +144,15 @@
@@ -10436,7 +10436,7 @@
 +    holeBase = undefined;
      actionError = undefined;
    });
- 
+
 @@ -125,8 +195,8 @@
      if (template === undefined || !template.canEdit || pending !== undefined) return;
      editingName = false;
@@ -10462,7 +10462,7 @@
 @@ -294,55 +364,55 @@
      }
    };
- 
+
 -  const startVariableDescription = async (variable: TemplateVariable) => {
 +  const startHoleDescription = async (hole: TemplateHole) => {
      if (template === undefined || !template.canEdit || pending !== undefined) return;
@@ -10482,7 +10482,7 @@
 +    holeEditor?.focus();
 +    holeEditor?.select();
    };
- 
+
 -  const cancelVariableDescription = () => {
 -    editingVariable = undefined;
 -    variableDescriptionDraft = "";
@@ -10492,7 +10492,7 @@
 +    holeDescriptionDraft = "";
 +    holeBase = undefined;
    };
- 
+
 -  const commitVariableDescription = async (variable: TemplateVariable) => {
 -    const subject = variableBase;
 +  const commitHoleDescription = async (hole: TemplateHole) => {
@@ -10514,7 +10514,7 @@
 +      cancelHoleDescription();
        return;
      }
- 
+
 -    pending = "variable";
 +    pending = "hole";
      actionError = undefined;
@@ -10538,7 +10538,7 @@
 @@ -350,10 +420,10 @@
      }
    };
- 
+
 -  const variableKeydown = (event: KeyboardEvent) => {
 +  const holeKeydown = (event: KeyboardEvent) => {
      if (event.key !== "Escape") return;
@@ -10546,12 +10546,12 @@
 -    cancelVariableDescription();
 +    cancelHoleDescription();
    };
- 
+
    const addTag = async () => {
 @@ -450,35 +520,114 @@
      }
    };
- 
+
 -  const use = async () => {
 +  const use = () => {
      if (template === undefined || pending !== undefined) return;
@@ -10627,7 +10627,7 @@
 +    if (template === undefined || pending !== undefined) return;
 +    const subject = template;
 +    const originTabId = view.activeId;
- 
+
      pending = "use";
      actionError = undefined;
      try {
@@ -10638,7 +10638,7 @@
          actionError = result.detail;
          return;
        }
- 
+
 -      const category = {
 -        document: "document-editor",
 -        slides: "slide-deck-editor"
@@ -10677,7 +10677,7 @@
 @@ -486,9 +635,31 @@
      }
    };
- 
+
 -  /** Placeholder for the variable settings modal; defaults stay unchanged until that contract exists. */
 -  const showVariableSettings = (variable: TemplateVariable) => {
 -    alert(`Variable settings for “${variable.label}” will open here.`);
@@ -10708,7 +10708,7 @@
 +    }
    };
  </script>
- 
+
 @@ -600,6 +771,17 @@
              : "Use template — create an independent project resource"}
            onclick={use}
@@ -10729,7 +10729,7 @@
            size="icon-sm"
 @@ -621,7 +803,7 @@
        </div>
- 
+
        {#if !template.canEdit}
 -        <p class="permission-note">Duplicate this template to edit its name, description, variables, or tags.</p>
 +        <p class="permission-note">Duplicate this template to edit its name, description, holes, or tags.</p>
@@ -10737,9 +10737,9 @@
        {#if template.makes === "Spreadsheet"}
          <p class="permission-note">{SPREADSHEET_HANDOFF}</p>
 @@ -629,61 +811,64 @@
- 
+
        <div class="divider" aria-hidden="true"></div>
- 
+
 -      <section aria-labelledby="variables-heading">
 -        <h3 id="variables-heading" class="section-heading">
 -          Variables <span>{template.variables.length}</span>
@@ -10747,7 +10747,7 @@
 +        <h3 id="holes-heading" class="section-heading">
 +          Holes <span>{template.holes.length}</span>
          </h3>
- 
+
 -        {#if template.variables.length === 0}
 -          <PanelEmpty title="This template asks for no variables." flush />
 +        {#if template.holes.length === 0}
@@ -10839,7 +10839,7 @@
 @@ -759,7 +944,60 @@
    {/if}
  </Panel>
- 
+
 +<OverlayModal
 +  bind:open={useOpen}
 +  title={`Use “${template?.name ?? "the template"}”`}
@@ -10907,7 +10907,7 @@
      line-height: var(--token-text-caption-leading);
    }
 @@ -906,7 +1144,7 @@
- 
+
    .template-actions {
      display: grid;
 -    grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -10918,19 +10918,19 @@
 @@ -987,17 +1225,17 @@
      font-weight: 500;
    }
- 
+
 -  .variable-list {
 +  .hole-list {
      overflow: hidden;
      border: 1px solid var(--token-border-subtle);
      border-radius: var(--token-radius-panel);
    }
- 
+
 -  .variable + .variable {
 +  .hole + .hole {
      border-top: 1px solid var(--token-border-subtle);
    }
- 
+
 -  .variable summary {
 +  .hole summary {
      display: flex;
@@ -10939,29 +10939,29 @@
 @@ -1011,75 +1249,67 @@
      list-style: none;
    }
- 
+
 -  .variable summary::-webkit-details-marker {
 +  .hole summary::-webkit-details-marker {
      display: none;
    }
- 
+
 -  .variable summary:hover {
 +  .hole summary:hover {
      background: var(--token-surface-panel-hover);
    }
- 
+
 -  .variable[open] > summary {
 +  .hole[open] > summary {
      background: var(--token-surface-panel-hover);
      color: var(--token-ink-primary);
    }
- 
+
 -  .variable summary:focus-visible {
 +  .hole summary:focus-visible {
      outline: 2px solid var(--token-color-interactive-border);
      outline-offset: -2px;
    }
- 
+
 -  .variable-name {
 +  .hole-name {
      display: flex;
@@ -10977,7 +10977,7 @@
      font-weight: 600;
      text-align: left;
    }
- 
+
 -  .variable-name:hover {
 -    text-decoration: underline;
 -    text-underline-offset: 2px;
@@ -10994,7 +10994,7 @@
      flex: none;
      color: var(--token-ink-muted);
    }
- 
+
 +  .hole-default {
 +    display: flex;
 +    align-items: center;
@@ -11007,23 +11007,23 @@
      color: var(--token-ink-muted);
      transition: transform var(--token-motion-small) var(--token-ease-standard);
    }
- 
+
 -  .variable[open] :global(.disclosure-icon) {
 +  .hole[open] :global(.disclosure-icon) {
      transform: rotate(180deg);
    }
- 
+
 -  .variable-body {
 +  .hole-body {
      padding: 0 calc(var(--token-spacing-unit) * 2) calc(var(--token-spacing-unit) * 2.5);
      color: var(--token-ink-muted);
    }
- 
+
 -  .variable-body p {
 +  .hole-body p {
      margin: 0;
    }
- 
+
 -  .variable-description {
 +  .hole-description {
      display: block;
@@ -11032,18 +11032,18 @@
 @@ -1093,16 +1323,16 @@
      text-align: left;
    }
- 
+
 -  .variable-description:hover {
 +  .hole-description:hover {
      color: var(--token-ink-secondary);
    }
- 
+
 -  .variable-description:focus-visible {
 +  .hole-description:focus-visible {
      outline: 2px solid var(--token-color-interactive-surface);
      outline-offset: 2px;
    }
- 
+
 -  :global(.variable-description-editor) {
 +  :global(.hole-description-editor) {
      height: calc(var(--token-spacing-unit) * 18);
@@ -11094,17 +11094,17 @@
 +
 +export type { ResourceSetItem } from "$capabilities/resource-sets/index.remote";
 +export type { TemplateAnswers } from "$capabilities/templates/index.remote";
- 
+
 -/** The target and availability words used by the library UI. */
  export type TemplateTarget = "Document" | "Slide deck" | "Spreadsheet";
  export type TemplateScope = "Project" | "Personal";
- 
+
 -export type TemplateVariable = TemplateDetail["variables"][number] & {
 -  /** Stable inside one template; represented variables are named rather than identified. */
 +export type TemplateHole = TemplateDetail["holes"][number] & {
    readonly id: string;
  };
- 
+
 -/**
 - * The compact read model shared by the content, context, and inspector surfaces.
 - * It is a projection of the Templates capability answer, never a second source of data.
@@ -11123,19 +11123,19 @@
    readonly updatedAt: number;
 @@ -48,7 +63,9 @@ export type LibraryTemplate = {
  };
- 
+
  export type LibraryTemplateDetail = LibraryTemplate & {
 -  readonly variables: readonly TemplateVariable[];
 +  readonly holes: readonly TemplateHole[];
 +  /** What the prompt behind each hole asks, so placing it can show the question. */
 +  readonly prompts: Readonly<Record<string, string>>;
  };
- 
+
  export type TemplateLibrarySummary = {
 @@ -72,6 +89,16 @@ const TARGET_VALUE: Record<TemplateTarget, StoredTemplateTarget> = {
    Spreadsheet: "spreadsheet"
  };
- 
+
 +export const EDITOR_CATEGORY: Record<Exclude<StoredTemplateTarget, "spreadsheet">, Category> = {
 +  document: "document-editor",
 +  slides: "slide-deck-editor"
@@ -11152,7 +11152,7 @@
 @@ -81,7 +108,6 @@ const MINUTE = 60_000;
  const HOUR = 60 * MINUTE;
  const DAY = 24 * HOUR;
- 
+
 -/** One timestamp, said the same way in the shelf, table, and inspector. */
  export const relativeTime = (at: number, now: number): string => {
    const gap = Math.max(0, now - at);
@@ -11169,38 +11169,38 @@
 @@ -120,54 +146,47 @@ const project = (row: TemplateLibraryItem, now: number): LibraryTemplate => ({
    canDelete: row.canDelete
  });
- 
+
 -/** Start the scoped, metadata-only library read. */
  export const templateLibrary = () => readTemplateLibrary();
- 
+
 -/** Start the body-bearing read only when a real template is selected. */
  export const templateDetail = (templateId: string | undefined) =>
    templateId === undefined ? undefined : readTemplate({ templateId });
- 
+
 -/** Keep restored legacy or deleted selections away from the strict server read boundary. */
  export const selectedTemplateIdIn = (
    templateId: string | undefined,
    availableIds: readonly string[]
  ): string | undefined =>
    templateId !== undefined && availableIds.includes(templateId) ? templateId : undefined;
- 
+
 -/** Explain an empty inspector without pretending that an absent selection is a row id. */
  export const emptyTemplateInspectorTitle = (templateCount: number | undefined): string =>
    templateCount === 0 ? "No templates exist." : "Select a template to inspect it.";
- 
+
 -/** Every template visible to the current scoped capability call. */
  export const templatesIn = (
    answer: ReadTemplateLibraryResult | undefined,
    now: number
  ): readonly LibraryTemplate[] => answer?.templates.map((row) => project(row, now)) ?? [];
- 
+
 -/** The full selected template, projected into the same display vocabulary as the table. */
  export const detailIn = (
    answer: ReadTemplateResult | undefined,
    now: number
  ): LibraryTemplateDetail | undefined => {
    if (answer === null || answer === undefined || "unavailable" in answer) return undefined;
- 
+
 -  const row = project({ ...answer, variableCount: answer.variables.length }, now);
 +  const row = project({ ...answer, holeCount: answer.holes.length }, now);
    return {
@@ -11215,13 +11215,13 @@
      }))
    };
  };
- 
+
 -/** A selected legacy row can be unavailable without taking down the library. */
  export const unavailableTemplateIn = (
    answer: ReadTemplateResult | undefined
  ): TemplateUnavailable | undefined =>
    answer !== null && answer !== undefined && "unavailable" in answer ? answer : undefined;
- 
+
 -/** The bounded usage shelf, newest use first. */
  export const recentTemplatesIn = (
    rows: readonly LibraryTemplate[],
@@ -11229,7 +11229,7 @@
 @@ -184,7 +203,6 @@ export const recentTemplatesIn = (
      .toSorted((a, b) => b.lastUsedAt - a.lastUsedAt)
      .slice(0, Math.max(0, limit));
- 
+
 -/** Counts used by the compact library overview. */
  export const templateLibrarySummaryIn = (
    rows: readonly LibraryTemplate[]
@@ -11237,7 +11237,7 @@
 @@ -208,7 +226,6 @@ const defaultName = (target: TemplateTarget): string =>
      Spreadsheet: "Untitled spreadsheet template"
    })[target];
- 
+
 -/** Give a no-name creation control a required, visibly editable unique name. */
  export const nextTemplateName = (
    target: TemplateTarget,
@@ -11245,7 +11245,7 @@
 @@ -220,13 +237,93 @@ export const nextTemplateName = (
    return `${base} ${suffix}`;
  };
- 
+
 -/** Keep a singleton Template tab's durable focus and transient inspector selection aligned. */
 +export {
 +  answerRowsOf,
@@ -11333,7 +11333,7 @@
    view.open({ category: "templates", focus: templateId });
    view.inspect("templates.template", { kind: "template", id: templateId });
  };
- 
+
 -/** Create a represented template, then refresh every mounted library query. */
  export const createTemplate = (
    view: WorkspaceStateModel,
@@ -11341,7 +11341,7 @@
 @@ -241,7 +338,6 @@ export const createTemplate = (
    );
  };
- 
+
 -/** Persist one name edit with the revision the inspector actually read. */
  export const updateTemplateName = (
    view: WorkspaceStateModel,
@@ -11349,7 +11349,7 @@
 @@ -259,7 +355,6 @@ export const updateTemplateName = (
    );
  };
- 
+
 -/** Persist one description edit with the revision the inspector actually read. */
  export const updateTemplateDescription = (
    view: WorkspaceStateModel,
@@ -11357,7 +11357,7 @@
 @@ -285,11 +380,10 @@ export const updateTemplateDescription = (
    );
  };
- 
+
 -/** Update variable help text while preserving its stable key, label, and default selection. */
 -export const updateTemplateVariableDescription = (
 +export const updateTemplateHoleDescription = (
@@ -11389,7 +11389,7 @@
        }).updates(readTemplateLibrary, readTemplate({ templateId: row.id }))
    );
  };
- 
+
 -/** Persist the complete flat tag set; the server normalizes and versions it. */
  export const updateTemplateTags = (
    view: WorkspaceStateModel,
@@ -11397,7 +11397,7 @@
 @@ -331,13 +424,31 @@ export const updateTemplateTags = (
        }).updates(readTemplateLibrary, readTemplate({ templateId: row.id }))
    );
- 
+
 -/** Copy any visible template into the current viewer's ownership. */
 +export const updateTemplateHoleDefault = (
 +  view: WorkspaceStateModel,
@@ -11423,7 +11423,7 @@
    view.singleFlight(["template", view.project, row.id, "duplicate"], () =>
      duplicateTemplateRemote({ templateId: row.id }).updates(readTemplateLibrary)
    );
- 
+
 -/** Remove an owned template at the revision currently shown. */
  export const removeTemplate = (view: WorkspaceStateModel, row: LibraryTemplateDetail) =>
    view.singleFlight(["template", view.project, row.id, "remove", row.revision], () =>
@@ -11431,7 +11431,7 @@
 @@ -346,11 +457,36 @@ export const removeTemplate = (view: WorkspaceStateModel, row: LibraryTemplateDe
      )
    );
- 
+
 -/** Materialize an independent project resource and refresh recency provenance. */
 -export const instantiateTemplate = (view: WorkspaceStateModel, row: LibraryTemplate) =>
 -  view.singleFlight(["template", view.project, row.id, "instantiate"], () =>
@@ -11477,7 +11477,7 @@
 ~~~~diff
 @@ -1,12 +1,28 @@
  import { describe, expect, it } from "vitest";
- 
+
  import {
 +  answersFrom,
    emptyTemplateInspectorTitle,
@@ -11486,7 +11486,7 @@
    selectedTemplateIdIn,
    templateDetail
  } from "$app-views/categories/templates/procedures/library.svelte";
- 
+
  describe("template library view procedures", () => {
 +  it("reads a default in the shared words and sends an answer as the rule it is", () => {
 +    const rule = { include: [{ select: "set" as const, setId: "resourceSets:1" as never }], exclude: [] };
@@ -11511,19 +11511,19 @@
 ~~~~diff
 @@ -1,109 +1,80 @@
  # Templates
- 
+
 -The singleton library for reusable document, slide-deck, and spreadsheet bodies.
 +The singleton library for reusable document, slide-deck, and spreadsheet bodies,
 +and the door into editing any of them.
- 
+
  | Content | Shows |
  | --- | --- |
  | [`library.svelte`](content/library.svelte) | Ten most recently used templates over a searchable, sortable, filterable table |
 -| [`editor.svelte`](content/editor.svelte) | Compatibility landing that explains why authoring belongs in the ordinary editors |
 +| [`editor.svelte`](content/editor.svelte) | Opens the focused template for editing in its own editor, then lands back on the library |
- 
+
  ## Library
- 
+
  The centre has one vertical stack: header, recently used shelf, then the complete
  table. Search reaches names, descriptions, and tags. Availability, target, and a
  bounded multi-select tag menu compose, and every sort has an explicit direction.
@@ -11546,7 +11546,7 @@
 +back to the template. Spreadsheet materialization exists at the capability
 +boundary, but neither Use nor Edit reaches it until the spreadsheet editor
 +consumes represented resource ids.
- 
+
  The shelf is a horizontal scrollport with a quiet bottom scrollbar. Its rows are
 -not a second seed: recency is derived by joining represented documents,
 -slide-decks, and spreadsheets back through their `templateId` provenance and
@@ -11555,9 +11555,9 @@
 +not a second seed: recency is the `lastUsedAt` a template records when it is
 +instantiated. A resource made from a template carries no reference back to it,
 +and editing a template's working copy is never a use.
- 
+
  ## Context: overview-library
- 
+
  The Overview context panel creates a represented empty template of any supported
  target. An optional name sits above three colored icon actions for Document,
 -Slide deck, and Spreadsheet. Pressing an icon creates that kind immediately;
@@ -11568,9 +11568,9 @@
 +immediately; the view supplies a unique working name only when the field is
 +blank, then moves inspection to the returned id. A compact Total section breaks
 +the library down by scope and target.
- 
+
  ## Inspector: template
- 
+
  The inspector performs a body-bearing read only for the selected template. It
 -shows target, availability, update time, creator, description, variables, and
 -tags. Name and fixed-height description fields autosave on blur; variable help
@@ -11602,9 +11602,9 @@
 +particular kinds, or one of the project's named sets. Which scope holes exist is
 +not editable here: they are the names the body's prompt scopes use, found when
 +the template is saved.
- 
+
  ## Capability seam
- 
+
  All stored reads and writes enter
  [`$capabilities/templates/index.remote.ts`](../../../capabilities/templates/index.remote.ts).
 -It exposes:
@@ -11625,9 +11625,9 @@
 -across the several tables touched by versioning, deletion, or instantiation; the
 -reference documents that recovery decision explicitly.
 +No view imports the generic store capability for template work.
- 
+
  ## Availability boundary
- 
+
 -Representation currently records a template owner but no project ownership or
 -sharing policy. The capability therefore returns only viewer-owned **Personal**
 -rows. **Project** remains a visible future scope and reports zero until its
@@ -11639,9 +11639,9 @@
 +shows is **Project** and anyone in the project may edit it. **Personal** stays
 +in the scope vocabulary as a future owner-only state and reports zero until one
 +is represented.
- 
+
  ## Authoring boundary
- 
+
 -There is no separate template editor implementation in this future state. The
 -singleton Template category owns a quiet, left-aligned Library return bar. The
 -intended authoring body stages the template under a real
@@ -11859,7 +11859,7 @@
    import type { ResourceRef } from "$representation/data/types/core/resource";
    import type { SemanticCitation } from "$representation/data/types/semantic/derived-output";
    import { onMount } from "svelte";
- 
+
 -  const SCOPES = [{ value: "project", label: "Whole project" }] as const;
 -
    let {
@@ -11868,7 +11868,7 @@
 @@ -187,6 +187,36 @@
      return current;
    };
- 
+
 +  /**
 +   * One write, to the one thing that holds it.
 +   *
@@ -11905,7 +11905,7 @@
 @@ -297,12 +327,7 @@
        disabled={running}
      />
- 
+
 -    <div class="scope">
 -      <span>Scope</span>
 -      <div class="scope-control">
@@ -11914,12 +11914,12 @@
 -    </div>
 +    <PromptScope {blockId} {derivedOutputId} disabled={busy} onconfirm={setScope} />
    </div>
- 
+
    {#if shownError !== undefined}
 @@ -360,8 +385,7 @@
      padding: calc(var(--token-spacing-unit) * 2) calc(var(--token-spacing-unit) * 3);
    }
- 
+
 -  .settings > label,
 -  .scope > span {
 +  .settings > label {
@@ -11929,7 +11929,7 @@
 @@ -376,18 +400,6 @@
      line-height: var(--token-text-body-sm-leading);
    }
- 
+
 -  .scope {
 -    display: flex;
 -    align-items: center;
@@ -12063,7 +12063,7 @@
 @@ -888,6 +888,21 @@
      color: var(--token-color-danger-text);
    }
- 
+
 +  .editor :global(.document-formula-unbound) {
 +    outline: 1px dashed var(--token-border-strong);
 +    outline-offset: 1px;
@@ -12739,14 +12739,14 @@
    import { isInspectorView, workspaceState } from "$model/client/workspace-state";
    import type { DocumentRuntime } from "$model/client/workspace-state";
    type Phase = "creating" | "saving" | "generating";
- 
+
 -  const SCOPES = [{ value: "project", label: "Whole project" }] as const;
- 
+
    const view = workspaceState();
    const documentId = $derived(view.active.resourceId);
 @@ -89,9 +92,11 @@
      let derivedOutputId: Id<"derivedOutputs"> | undefined;
- 
+
      try {
 +      const reading = readableScope(currentPrompt().scope);
        const created = await createDerivedOutput({
@@ -12768,12 +12768,12 @@
 +    if (ops.length > 0) runtime.apply(ops);
 +  };
  </script>
- 
+
  <Panel title="Prompt block">
 @@ -178,12 +189,11 @@
            disabled={phase !== undefined}
          />
- 
+
 -        <div class="scope">
 -          <span>Scope</span>
 -          <div class="scope-control">
@@ -12786,12 +12786,12 @@
 +          onconfirm={confirmScope}
 +        />
        </div>
- 
+
        <PanelActions>
 @@ -202,6 +212,13 @@
        {/key}
      {/if}
- 
+
 +    {#key linked?.derivedOutputId ?? "unlinked"}
 +      <PromptTemplateSection
 +        blockId={prompt.id}
@@ -12801,11 +12801,11 @@
 +    {/key}
    {/if}
  </Panel>
- 
+
 @@ -213,8 +230,7 @@
      padding: calc(var(--token-spacing-unit) * 2) calc(var(--token-spacing-unit) * 3);
    }
- 
+
 -  .setup label,
 -  .scope span {
 +  .setup label {
@@ -12815,7 +12815,7 @@
 @@ -228,15 +244,4 @@
      line-height: var(--token-text-body-sm-leading);
    }
- 
+
 -  .scope {
 -    display: flex;
 -    align-items: center;
@@ -12871,12 +12871,12 @@
 +    if (ops.length > 0) runtime.apply(ops);
 +  };
  </script>
- 
+
  {#snippet head(title: string)}
 @@ -365,6 +391,30 @@
        onchange={setSpacing}
      />
- 
+
 +    {#if holeWords !== ""}
 +      <PanelSection title="Template" chevron="end">
 +        <div class="flex flex-col items-start gap-2">
@@ -12912,19 +12912,19 @@
 @@ -72,8 +72,9 @@ export const emptyRow = (): DocumentRow => ({
    ]
  });
- 
+
 -export const displayOfAtom = (atom: Atom): string =>
 -  atom.kind === "literal" ? atom.text : atom.lastResolvedDisplay;
 +import { displayOfAtom } from "$representation/data/behavior/content/positions";
 +
 +export { displayOfAtom };
- 
+
  export type Segment = { readonly atom: Atom; readonly start: number; readonly end: number };
- 
+
 @@ -174,6 +175,9 @@ const formulaNode = (atom: Extract<Atom, { kind: "formula" }>, marks: readonly P
      [...marks]
    );
- 
+
 +const templateNode = (atom: Extract<Atom, { kind: "template" }>, marks: readonly ProseMirrorMark[]) =>
 +  schema.node("template_atom", { atomId: atom.id, name: atom.name }, undefined, [...marks]);
 +
@@ -12939,13 +12939,13 @@
 +      nodes.push(templateNode(segment.atom, covering(segment.start, segment.end)));
 +      continue;
 +    }
- 
+
      const cuts = new Set<number>([segment.start, segment.end]);
      for (const span of spans) {
 @@ -291,10 +299,18 @@ export const docOf = (body: DocumentBody, metrics: Metrics): ProseMirrorNode =>
    );
  };
- 
+
 +/** What one inline child stands for in the body's own text, atoms included. */
 +const displayOfChild = (child: ProseMirrorNode): string =>
 +  child.type.name === "formula_atom"
@@ -12964,7 +12964,7 @@
  };
 @@ -427,6 +443,15 @@ const atomsOf = (node: ProseMirrorNode): Walked => {
    };
- 
+
    node.forEach((child) => {
 +    if (child.type.name === "template_atom") {
 +      if (run.length > 0) flush();
@@ -12980,7 +12980,7 @@
        return;
 @@ -463,7 +488,7 @@ const gather = (node: ProseMirrorNode): Map<string, Gathered> => {
    let at = 0;
- 
+
    node.forEach((child) => {
 -    const length = child.type.name === "formula_atom" ? String(child.attrs.resolved).length : (child.text?.length ?? 0);
 +    const length = displayOfChild(child).length;
@@ -12988,7 +12988,7 @@
      const to = at + length;
      at = to;
 @@ -633,9 +658,9 @@ export const displayOffsetOf = (block: ProseMirrorNode, offset: number): number
- 
+
    for (let index = 0; index < block.childCount && pm < offset; index += 1) {
      const child = block.child(index);
 -    if (child.type.name === "formula_atom") {
@@ -12998,9 +12998,9 @@
 +      display += displayOfChild(child).length;
        continue;
      }
- 
+
 @@ -654,8 +679,8 @@ export const proseOffsetOf = (block: ProseMirrorNode, display: number): number =
- 
+
    for (let index = 0; index < block.childCount && seen < display; index += 1) {
      const child = block.child(index);
 -    if (child.type.name === "formula_atom") {
@@ -13018,7 +13018,7 @@
 @@ -28,14 +28,39 @@ const setField = (
      ? undefined
      : { op: "set", target: "block", path: `${block.id}/${field}`, value: value ?? null, was: was ?? null };
- 
+
 -export const linkPromptBlockOps = (
 +/** What this prompt's hole is called, and what it stands for. */
 +export const promptHoleOps = (
@@ -13044,7 +13044,7 @@
 +  const op = setField(block, "scope", scope, block.scope);
    return op === undefined ? [] : [op];
  };
- 
+
 +/** Linking hands the scope to the output, which is why the block gives it up here. */
 +export const linkPromptBlockOps = (
 +  block: PromptBlock,
@@ -13065,7 +13065,7 @@
 @@ -51,6 +51,9 @@ const textBlockSpec: NodeSpec = {
    ]
  };
- 
+
 +const unboundFormula = (name: string, block: unknown): boolean =>
 +  name === "formula" && ((block ?? {}) as Record<string, unknown>).formulaId === undefined;
 +
@@ -13082,9 +13082,9 @@
        style: `flex-basis: ${node.attrs.share * 100}%`
      },
 @@ -146,6 +149,32 @@ export const schema = new Schema({
- 
+
      text: { group: "inline" },
- 
+
 +    /**
 +     * A template's own hole, drawn as its name in braces.
 +     *
@@ -13581,7 +13581,7 @@
 @@ -68,8 +68,15 @@ const output = (): DerivedOutput => ({
    updatedAt: 12
  });
- 
+
 -test("linking a Prompt Block adds only the Derived Output identity", () => {
 -  const block = prompt();
 +/**
@@ -13598,7 +13598,7 @@
      linkPromptBlockOps(block, "derivedOutputs:9" as Id<"derivedOutputs">)
 @@ -77,6 +84,7 @@ test("linking a Prompt Block adds only the Derived Output identity", () => {
    const linked = changed.rows[0].kind === "blocks" ? changed.rows[0].blocks[0] : undefined;
- 
+
    assert.equal(linked?.type === "prompt" && linked.derivedOutputId, "derivedOutputs:9");
 +  assert.equal(linked?.type === "prompt" && "scope" in linked, false);
    assert.equal(linked?.type === "prompt" && linked.display, "Old answer");
@@ -13968,7 +13968,7 @@
 @@ -41,8 +43,6 @@
    import type { ResourceRef } from "$representation/data/types/core/resource";
    import type { SemanticCitation } from "$representation/data/types/semantic/derived-output";
- 
+
 -  const SCOPES = [{ value: "project", label: "Whole project" }] as const;
 -
    let {
@@ -13977,7 +13977,7 @@
 @@ -157,6 +157,36 @@
      return current;
    };
- 
+
 +  /**
 +   * One write, to the one thing that holds it.
 +   *
@@ -14014,7 +14014,7 @@
 @@ -267,12 +297,7 @@
        disabled={running}
      />
- 
+
 -    <div class="scope">
 -      <span>Scope</span>
 -      <div class="scope-control">
@@ -14023,12 +14023,12 @@
 -    </div>
 +    <PromptScope {blockId} {derivedOutputId} disabled={busy} onconfirm={setScope} />
    </div>
- 
+
    {#if shownError !== undefined}
 @@ -330,8 +355,7 @@
      padding: calc(var(--token-spacing-unit) * 2) calc(var(--token-spacing-unit) * 3);
    }
- 
+
 -  .settings > label,
 -  .scope > span {
 +  .settings > label {
@@ -14038,7 +14038,7 @@
 @@ -346,18 +370,6 @@
      line-height: var(--token-text-body-sm-leading);
    }
- 
+
 -  .scope {
 -    display: flex;
 -    align-items: center;
@@ -14181,13 +14181,13 @@
    const userRows = tableQuery("users");
 +  const templateQuery = $derived(deckId === undefined ? undefined : readResourceTemplate({ resourceId: deckId }));
 +  const workingCopy = $derived(templateQuery?.ready === true && templateQuery.current.stage !== null);
- 
+
    const threads = $derived(
      rowsOf(threadRows, "commentThreads").filter(
 @@ -113,7 +116,9 @@
      <PanelChoice label="Show" value={chip} options={chips} flush fill onchange={(value) => (wanted = value)} />
    {/snippet}
- 
+
 -  {#if body}
 +  {#if body && workingCopy}
 +    <PanelNote tone="gap">A template's working copy takes no comments; they never travel with a template.</PanelNote>
@@ -14583,7 +14583,7 @@
 +      : undefined
 +  );
  </script>
- 
+
  <Panel title="Templates">
 -  <PanelEmpty title="Slide templates are not built yet. This panel will offer the deck's own layouts as starting points, and the project's slide-deck templates behind them." />
 -  <PanelNote>Not built yet · <span class="font-mono">slide-deck-editor.templates</span></PanelNote>
@@ -14880,9 +14880,9 @@
      type Id,
      type LinkedPromptBlock
 @@ -49,7 +54,6 @@
- 
+
    type Phase = "creating" | "saving" | "generating";
- 
+
 -  const SCOPES = [{ value: "project", label: "Whole project" }] as const;
    const PHASE: Record<Phase, string> = {
      creating: "Creating Derived Output",
@@ -14890,7 +14890,7 @@
 @@ -85,6 +89,12 @@
      body === undefined || slide === undefined ? 0 : slideIndexOf(body, slide.id) + 1
    );
- 
+
 +  const confirmScope = (next: unknown) => {
 +    if (block === undefined || runtime === undefined) return;
 +    const ops = promptScopeOps(block, next);
@@ -14902,7 +14902,7 @@
      if (current === undefined || current.id === draftedFor) return;
 @@ -119,9 +129,11 @@
      let derivedOutputId: Id<"derivedOutputs"> | undefined;
- 
+
      try {
 +      const reading = readableScope(currentPrompt(currentRuntime).scope);
        const created = await createDerivedOutput({
@@ -14916,7 +14916,7 @@
 @@ -207,12 +219,11 @@
            disabled={phase !== undefined}
          />
- 
+
 -        <div class="scope">
 -          <span>Scope</span>
 -          <div class="scope-control">
@@ -14929,12 +14929,12 @@
 +          onconfirm={confirmScope}
 +        />
        </div>
- 
+
        <PanelActions>
 @@ -231,6 +242,14 @@
        {/key}
      {/if}
- 
+
 +    {#key linked?.derivedOutputId ?? "unlinked"}
 +      <PromptTemplateSection
 +        blockId={block.id}
@@ -14949,7 +14949,7 @@
 @@ -248,8 +267,7 @@
      padding: calc(var(--token-spacing-unit) * 2) calc(var(--token-spacing-unit) * 3);
    }
- 
+
 -  .setup label,
 -  .scope span {
 +  .setup label {
@@ -15017,7 +15017,7 @@
 +    if (ops.length > 0) runtime.apply(ops);
 +  };
  </script>
- 
+
  <Panel title="Text selection">
 @@ -30,7 +57,40 @@
    {#if block && range}
@@ -15075,12 +15075,12 @@
    import {
      ago,
 @@ -46,6 +47,8 @@
- 
+
    const inThread = (thread: CommentThread) => remarksOf(comments, thread._id);
    const subject = $derived(element ? labelOf(element) : `Slide ${position}`);
 +  const templateQuery = $derived(deckId === undefined ? undefined : readResourceTemplate({ resourceId: deckId }));
 +  const workingCopy = $derived(templateQuery?.ready === true && templateQuery.current.stage !== null);
- 
+
    let composing = $state("");
    let posting = $state(false);
 @@ -82,6 +85,9 @@
@@ -15098,7 +15098,7 @@
      </div>
    </div>
 +  {/if}
- 
+
    <section aria-labelledby="slide-thread-open" class="flex flex-col">
      <div class="text-ink-secondary flex items-center gap-1.5 px-3 py-1.5 text-start">
 ~~~~
@@ -15109,7 +15109,7 @@
 @@ -1,10 +1,11 @@
 -export type IdKind = "slide" | "element" | "block" | "atom" | "layout";
 +export type IdKind = "slide" | "element" | "block" | "atom" | "mark" | "layout";
- 
+
  const PREFIX: Record<IdKind, string> = {
    slide: "slide",
    element: "el",
@@ -15126,7 +15126,7 @@
 @@ -87,14 +87,39 @@ const setField = (
          was: was ?? null
        };
- 
+
 -export const linkPromptBlockOps = (
 +/** What this prompt's hole is called, and what it stands for. */
 +export const promptHoleOps = (
@@ -15152,7 +15152,7 @@
 +  const op = setField(block, "scope", scope, block.scope);
    return op === undefined ? [] : [op];
  };
- 
+
 +/** Linking hands the scope to the output, which is why the block gives it up here. */
 +export const linkPromptBlockOps = (
 +  block: PromptBlock,
@@ -15642,7 +15642,7 @@
  } from "$app-views/categories/slide-deck-editor/procedures/prompt-blocks";
 @@ -74,6 +76,35 @@ const output = (display: string): DerivedOutput => ({
  });
- 
+
  describe("slide Prompt Blocks", () => {
 +  /**
 +   * Linking hands the scope over, rather than copying it.
@@ -15825,13 +15825,13 @@
 +import { displayOfAtom, endAt, rangeOf } from "$representation/data/behavior/content/positions";
  import type { SlideDeckOp } from "$representation/data/types/slide-decks/op";
  import { mint } from "$app-views/categories/slide-deck-editor/procedures/ids";
- 
+
  type EditableTextBlock = TextBlock | PromptBlock;
- 
+
 -const lengthOf = (atom: Atom): number =>
 -  atom.kind === "literal" ? atom.text.length : atom.lastResolvedDisplay.length;
 +const lengthOf = (atom: Atom): number => displayOfAtom(atom).length;
- 
+
  export const replaced = (block: EditableTextBlock, from: number, to: number, insert: string): SlideDeckOp[] => {
    const start = Math.min(from, to);
 ~~~~
@@ -15847,11 +15847,11 @@
 +| `slide-deck-editor.templates` | Save the deck or one slide as a template, edit a template through this deck, and insert a deck template after the current slide. |
  | `slide-deck-editor.variables` | Deferred placeholder; deck variable management is not implemented here. |
  | `slide-deck-editor.prompts` | List Prompt Blocks across the deck, navigate to their slide, and open their inspector. |
- 
+
 @@ -121,6 +121,28 @@ A Prompt Block begins as a standalone text box. `Prompt` appears beside
  outer element ID, frame, paint, order, text, marks, style, and format survive.
  Only its content kind changes from `text` to `prompt`.
- 
+
 +### Templates
 +
 +An ordinary deck opens on a name field with Save deck and Save slide under it.
@@ -15875,7 +15875,7 @@
 +terms, and merges the two hole lists.
 +
  ## Inspectors
- 
+
  The registered inspector keys below are all implemented and editor-owned.
 ~~~~
 
@@ -16369,9 +16369,9 @@
 
 ~~~~diff
 @@ -84,24 +84,28 @@ since the record stores an actor as a display name —
- 
+
  ### contexts
- 
+
 -The project's saved scopes, and what each of them resolves to *now*. A Context is
 -a live rule rather than a stored list, which is why the count beside each name is
 -the whole point of the row: it is the only thing that says whether the rule still
@@ -16395,7 +16395,7 @@
 +field; each row opens into its name, description, the rule read as a sentence,
 +the count, and the toggles that make the rule — whole project, kinds included,
 +kinds excluded.
- 
+
 -Routes to `context-editor.context`.
 +A set that resolves to nothing says "matches nothing" and carries a note saying
 +why that matters: a rule with no members widens a prompt to the whole project
@@ -16411,18 +16411,18 @@
 +scopes are kept.
 +
 +Routes nowhere: the row is the editor.
- 
+
  ### contexts-library
- 
+
 @@ -276,14 +280,14 @@ Personas doing this work are managed.
- 
+
  What is available here, grouped by what comes out of it: Documents, Slide decks,
  Spreadsheets. Grouped that way because the first question about a template is
 -what it makes. Each row carries its scope and its variable count as one line,
 +what it makes. Each row carries its scope and its hole count as one line,
  because they are one decision — together they say whether the template can be
  used at all.
- 
+
  What it deliberately does not do: a row opens a template and cannot instantiate
 -one. There is no Use control, because nothing in a body carries a variable key
 -yet; a Use that ran today would hand back a document with the keys still sitting
@@ -16430,7 +16430,7 @@
 +one. There is no Use control, because nothing in a body carries a hole key yet;
 +a Use that ran today would hand back a document with the keys still sitting in
 +it, which is worse than no Use.
- 
+
  A note at the foot counts the templates that make a single slide, which has no
  group here yet.
 ~~~~
@@ -19728,7 +19728,7 @@
 @@ -724,7 +724,7 @@ test("document context panels are operational and compact", async ({ page }) =>
    await expect(context.getByText(/from edge/i)).toHaveCount(0);
    await expect(context.getByRole("button", { name: /Increase|Decrease/ })).toHaveCount(0);
- 
+
 -  for (const name of ["Variables", "Templates"] as const) {
 +  for (const name of ["Variables"] as const) {
      await context.getByRole("button", { name, exact: true }).click();
@@ -19746,7 +19746,7 @@
 +  await expect(context.getByPlaceholder("Search templates…")).toBeVisible();
 +  await expect(context.getByText("Operational readiness brief", { exact: true })).toBeVisible();
  });
- 
+
  test("document named styles mirror the text formatting inspector without metadata clutter", async ({ page }) => {
 @@ -860,7 +867,8 @@ test("a Prompt Block affordance lives in the gutter and keeps its inspector open
    await expect(inspector).toBeVisible();
@@ -19755,7 +19755,7 @@
 -  await expect(inspector.getByRole("button", { name: "Scope" })).toContainText("Whole project");
 +  // The Scope control reads what the prompt reads, and opens the builder to change it.
 +  await expect(inspector.getByRole("button", { name: "Everything in the project" })).toBeVisible();
- 
+
    await marker.click();
    await expect(inspector).toBeVisible();
 ~~~~
@@ -20589,7 +20589,7 @@
  import type { BackfillSemanticOverlayResult } from "$capabilities/semantic-overlay/types/semantic-sync-queue";
 @@ -48,6 +49,7 @@ export const backfillSemanticOverlay = async (
    ];
- 
+
    for (const resource of refs) {
 +    if (isStagedResource(model.store, projectId, resource.ref)) continue;
      if (
@@ -20800,7 +20800,7 @@
 @@ -70,6 +70,18 @@
    // svelte-ignore state_referenced_locally
    let requested = $state(open);
- 
+
 +  /**
 +   * The disclosure's body waits for the root to exist before it mounts. A
 +   * section that starts open otherwise mounts its content in the tick that
@@ -20819,7 +20819,7 @@
 @@ -101,7 +113,7 @@
      {/if}
    </Collapsible.Trigger>
- 
+
 -  {#if expanded}
 +  {#if expanded && settled}
      <!--
@@ -27695,7 +27695,7 @@
 +    type Appearance
 +  } from "$surfaces/top-bar/effects/apply-appearance.svelte";
  </script>
- 
+
 -<TemplateLibraryDemo />
 +<SystemPage
 +  material={appearance.current}
@@ -27803,4 +27803,3 @@
 +  onmaterial={(next) => (appearance.current = next as Appearance)}
 +/>
 ~~~~
-

@@ -77,7 +77,7 @@ export const CHECK_RESULTS = [
   {
     gate: "Current schema",
     result: "0 legacy readers",
-    detail: "Deleted document typography, slide normalization and collaboration-anchor readers remain deleted; consumers use only current representations.",
+    detail: "Deleted document typography and slide normalization readers remain deleted, and the current collaboration anchor type no longer carries its legacy union branch.",
     kind: "pass"
   },
   {
@@ -114,6 +114,5 @@ export const CHECK_RESULTS = [
 
 export const DELETED_SCHEMA_READERS = [
   "src/lib/representation/data/behavior/documents/typography.ts",
-  "src/lib/representation/data/behavior/slide-decks/normalize.ts",
-  "src/lib/representation/data/types/collaboration/anchor.ts"
+  "src/lib/representation/data/behavior/slide-decks/normalize.ts"
 ] as const;

@@ -67,7 +67,7 @@ export const CURRENT_SCHEMA_CUTS = [
   "No semantic locator resourceTitle fallback",
   "No defaulted definitionRevision or missing material scopeRefs",
   "No empty legacy PromptBlock interpretation",
-  "No deleted document typography, slide normalization or collaboration-anchor reader",
+  "No deleted document typography or slide normalization reader, and no legacy collaboration-anchor union",
   "No production /app reference route"
 ] as const;
 
