@@ -30,7 +30,7 @@
   <header class="reb-nav">
     <a class="reb-brand" href="/demo">
       <span class="reb-brand-mark">R</span>
-      <span><b>Rebase control room</b><small>derived output → main</small></span>
+      <span><b>Integration control room</b><small>derived output + current main</small></span>
     </a>
     <nav aria-label="Rebase reference pages">
       {#each PAGES as candidate (candidate.slug)}
@@ -43,7 +43,7 @@
         </a>
       {/each}
     </nav>
-    <div class="reb-snapshot"><span></span> audit snapshot · {AUDIT.captured}</div>
+    <div class="reb-snapshot"><span></span> as-built record · {AUDIT.captured}</div>
   </header>
 
   <main class="reb-page">
@@ -56,8 +56,8 @@
         <h1>{page.title}</h1>
         <p>{page.lede}</p>
       </div>
-      <aside class="reb-heads" aria-label="Audited branches">
-        <div class="source"><span>source</span><b>{AUDIT.sourceBranch}</b><code>{AUDIT.sourceHead}</code></div>
+      <aside class="reb-heads" aria-label="Integrated branches">
+        <div class="source"><span>protected source</span><b>{AUDIT.sourceBranch}</b><code>{AUDIT.sourceHead}</code></div>
         <i aria-hidden="true"></i>
         <div class="target"><span>target</span><b>{AUDIT.targetBranch}</b><code>{AUDIT.targetHead}</code></div>
       </aside>
@@ -67,7 +67,7 @@
   </main>
 
   <footer class="reb-footer">
-    <span>Audit only · source branch remains unre-based at {AUDIT.sourceHead}</span>
+    <span>Rebased at {AUDIT.rebasedHead} · protected source remains at {AUDIT.sourceHead}</span>
     <nav aria-label="Adjacent reference pages">
       {#if previous}<a href={hrefOf(root, previous)}>← {previous.label}</a>{/if}
       {#if next}<a href={hrefOf(root, next)}>{next.label} →</a>{/if}

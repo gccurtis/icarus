@@ -646,10 +646,10 @@ final assistant JSON
       </div>
 
       <div class="command-evidence">
-        <code>pnpm test</code><span>101 files passed · 2 skipped · 934 tests passed · 2 skipped</span>
-        <code>pnpm lint</code><span>56 / 56 checks · no findings</span>
+        <code>pnpm test</code><span>168 files passed · 2 skipped · 1,474 tests passed · 2 skipped</span>
+        <code>pnpm lint</code><span>90 / 90 checks · no findings</span>
         <code>pnpm typecheck</code><span>0 errors · 0 warnings</span>
-        <code>pnpm build</code><span>3,293 SSR modules · 4,818 client modules · production output complete</span>
+        <code>pnpm build</code><span>4,132 SSR modules · 5,785 client modules · production output complete</span>
         <code>ICARUS_LIVE_DERIVED_OUTPUT=1 …live-derived-output.test.ts</code><span>1 / 1 passed · 5.71s</span>
         <code>playwright test …derived-output-architecture.spec.ts</code><span>updated procedure diagrams · Chromium · 1 / 1 passed</span>
       </div>
@@ -661,12 +661,12 @@ final assistant JSON
         <span class="kicker">SCALING + CONSISTENCY BOUNDARY</span>
         <h2 id="boundary-title">Correct for one JSON process. Explicitly not a distributed lock.</h2>
         <p>
-          The current store keeps whole tables in memory and synchronously rewrites one JSON file per mutation. A process-wide flight registry plus one durable refresh-job row provides same-process exclusion and joined results. It does not provide an atomic lease or claim across several server processes. Likewise, source freshness currently scans the in-memory source table.
+          The current Store journals multi-table transactions and gives semantic workers atomic owner-token claims, expiring leases and bounded retries. OperationFlights on ServerModel joins calls and owns abortable provider work for this process. The JSON adapter is still a single-process persistence engine; several servers require a shared database adapter that preserves the same transactional claim contract. Source freshness currently scans the in-memory source table.
         </p>
       </div>
       <div class="caveat-grid">
-        <article><span>PROVEN NOW</span><strong>one shared in-process flight</strong><p>duplicate joins · bounded retries · definition and watermark guards</p></article>
-        <article><span>WHEN STORAGE CHANGES</span><strong>transactional lease / claim</strong><p>atomically claim the same refresh-job row with expiry and expected version</p></article>
+        <article><span>PROVEN NOW</span><strong>durable claim + owned flight</strong><p>owner tokens · lease recovery · duplicate joins · bounded retries</p></article>
+        <article><span>WHEN STORAGE CHANGES</span><strong>shared transactional adapter</strong><p>preserve claim, lease and token-owned settlement across server processes</p></article>
         <article><span>MILLION-SOURCE FOLLOW-UP</span><strong>keyed source lookup</strong><p>replace O(S) hydration with ref-key reads; no lifecycle contract changes</p></article>
       </div>
     </section>

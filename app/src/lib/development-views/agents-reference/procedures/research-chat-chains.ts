@@ -91,14 +91,14 @@ export const RESEARCH_CHAINS: readonly Chain[] = [
       { does: "Gather the last four answered turns as context for continuity, not as evidence.", calls: "turnsIn(...).filter(answered).slice(-4)" },
       { does: "Bring the project's semantic overlay up to date. A chat is a pull boundary: nothing else guarantees the overlay is current at the moment somebody asks.", calls: "prepareOverlay(model, projectId)", writes: "semanticSyncJobs · semanticSources · semanticObjects · semanticIndexes" },
       { does: "Read the three configured numbers, refusing a configuration that is out of range.", calls: "configuredInteger(model, \"intelligence.chat.topK\") · maxSources · configuredString(\"intelligence.chat.model\")" },
-      { does: "Register the run so a stop can reach it and a restart can tell it apart from a stranded row.", calls: "beginFlight(turnId)" },
-      { does: "Arm the run's deadline. The port's timeout bounds one provider request, so an unbounded loop of them is only bounded by this.", calls: "abandonAfter(flight, intelligence.chat.deadlineMs)" },
+      { does: "Register the run on the server-owned operation object so a stop can reach it and a restart can tell it apart from a stranded row.", calls: "operationFlights.beginResearch(turnId)" },
+      { does: "Arm the run's deadline. The port's timeout bounds one provider request, so an unbounded loop of them is only bounded by this.", calls: "operationFlights.armResearchDeadline(turnId, intelligence.chat.deadlineMs)" },
       { does: "Run the answer. The only step that talks to a provider, and it writes nothing. The persona's definition goes in the system prompt and its grants decide the tools.", calls: "answerQuestion({ persona: personaPrompt(persona), grants, stopping, signal, ... })" },
       { does: "Append the answer to the thread as a response message authored by the system.", calls: "textMessage(...) · append(...)", writes: "threadParts.messages" },
       { does: "Publish the turn: blocks, queries, sources, findings, usage, model and the state the model reached.", calls: "store.update(`researchTurns.${turnId}`, { ... })", writes: "researchTurns" },
       { does: "Record what happened, with the counts that diagnose a thin answer.", calls: "observability.logger.info(\"researchChat.answered\", { queries, returned, said, offered, sources, tokens })" },
       { does: "On a throw, write cancelled when the run was aborted and failed otherwise, with the message stripped of any credential.", writes: "researchTurns.state · error" },
-      { does: "Leave the registry, whatever happened.", calls: "endFlight(turnId)" }
+      { does: "Release the server-owned flight, whatever happened.", calls: "operationFlights.endResearch(turnId)" }
     ],
     refuses: [
       { reason: "not-found", when: "no chat in this project has that id" },
@@ -124,14 +124,14 @@ export const RESEARCH_CHAINS: readonly Chain[] = [
     steps: [
       { does: "Establish the scope and validate the id.", calls: "requireScope() · validateStopTurn" },
       { does: "Find the chat, then the turn running in it.", calls: "threadsIn(...) · turnsIn(...).find(running or queued)" },
-      { does: "Find the flight. A turn running in another process cannot be stopped from this one.", calls: "flightFor(turn._id)" },
-      { does: "First press: mark the flight stopping and stamp the row, so a reload still shows the control as Cancel.", calls: "flight.stopping = true", writes: "researchTurns.stopRequestedAt" },
-      { does: "Second press: abort the controller, which abandons the provider request in flight.", calls: "flight.controller.abort()" }
+      { does: "Ask the server-owned operation object to stop the flight. A turn running in another process cannot be stopped from this one.", calls: "operationFlights.requestResearchStop(turn._id)" },
+      { does: "First press: the owner marks the flight stopping and the capability stamps the row, so a reload still shows Cancel.", calls: "requestResearchStop → answering", writes: "researchTurns.stopRequestedAt" },
+      { does: "Second press: the owner aborts the controller, which abandons the provider request in flight.", calls: "requestResearchStop → cancelled" }
     ],
     refuses: [
       { reason: "no turn in this project has that id", when: "the id is not this project's" },
       { reason: "that turn is not running", when: "it already settled" },
-      { reason: "that turn is not running here", when: "no flight holds it, so it was stranded" }
+      { reason: "that turn is not running here", when: "this ServerModel owns no flight for it, so it was stranded or belongs to another process" }
     ],
     refreshes: []
   },

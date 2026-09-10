@@ -9,36 +9,45 @@ export const PAGES: readonly RebasePage[] = [
     index: "00",
     label: "Readiness",
     eyebrow: "Decision surface",
-    title: "A rebase with eight deliberate stops",
+    title: "The rebase landed; the contracts got stronger",
     lede:
-      "A disposable replay of all 40 audited branch commits onto main proves the path. The branch is not ready for an automatic rebase, but every conflict and every post-replay failure now has a bounded resolution."
+      "All 41 source commits now sit on the certified main head. Seven conflict stops preserved both feature histories, then the repair pass made writes atomic, semantic work durable and process state server-owned."
   },
   {
     slug: "replay",
     index: "01",
     label: "Replay map",
     eyebrow: "Conflict procedure",
-    title: "Replay the history; preserve both architectures",
+    title: "Seven stops preserved both architectures",
     lede:
-      "Eight commits stop. Twenty-eight conflict occurrences touch twenty-six unique paths. Each stop below records what collided, which behavior wins, and what must be proved before continuing."
+      "Twenty-seven conflict occurrences touched twenty-six unique paths. This is the exact completed replay: what collided, which behavior survived, and the proof attached to each resolution."
+  },
+  {
+    slug: "architecture",
+    index: "02",
+    label: "Runtime",
+    eyebrow: "As-built architecture",
+    title: "Commit facts first; derive them later",
+    lede:
+      "Every authored revision and its semantic intent now cross one transaction boundary. Durable jobs carry work across failure; server-owned flights only coordinate the work happening in this process."
   },
   {
     slug: "checkers",
-    index: "02",
-    label: "Checker map",
-    eyebrow: "Evidence ledger",
-    title: "Eighteen diagnostics collapse into four repairs",
+    index: "03",
+    label: "Proof",
+    eyebrow: "Verification ledger",
+    title: "Every non-browser gate is green",
     lede:
-      "The architecture suite is already current. Its apparent failures are stale baseline records. Typecheck and Vitest are blocked by a small set of representation cutovers, not twenty-seven independent broken systems."
+      "The resulting tree has no type diagnostics, no architecture findings, no failing unit or script tests, and no patch-hygiene defects. The ledger keeps both the initial diagnosis and its executed outcome."
   },
   {
     slug: "runbook",
-    index: "03",
+    index: "04",
     label: "Runbook",
-    eyebrow: "Execution contract",
-    title: "Rebase in gates, not in one leap",
+    eyebrow: "Recovery contract",
+    title: "Repeat the proof without guessing",
     lede:
-      "The runbook turns the audit into an ordered operation: protect the source, replay, resolve semantic decisions, adapt the current schema, reconcile the ratchet, and prove the integrated product."
+      "The completed operation remains reproducible: protect, replay, preserve current schema, stage semantic intent atomically, recover leases, verify server ownership, then run the gates."
   }
 ] as const;
 

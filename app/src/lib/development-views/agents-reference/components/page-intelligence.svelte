@@ -73,7 +73,7 @@
   const turn = [
     { actor: "Composer", action: "Send posts the text with the mode and the chat it belongs to.", artifact: "sendChatTurn(chatId, text, mode)" },
     { actor: "Door", action: "Scope first, then validation, then the prompt is appended to the thread.", artifact: "requireScope() · appendMessage(\"prompt\")" },
-    { actor: "Queue", action: "One durable row per chat and one in-process flight, so a second browser joins rather than starts.", artifact: "enqueueChatTurnFor · processChatTurnFor" },
+    { actor: "Queue", action: "One durable row per chat and one ServerModel-owned flight, so a second browser joins rather than starts.", artifact: "enqueueChatTurnFor · processChatTurnFor" },
     { actor: "Overlay", action: "The semantic sync queue is drained in bounded batches before retrieval runs.", artifact: "processSemanticSyncQueueFor(model, projectId, 50)" },
     { actor: "Loop", action: "The persona's prompt, the project scope and the granted tools go to the port; it answers once.", artifact: "intelligence.completeWithTools(...)" },
     { actor: "Publish", action: "The response message and its turn row are written together and the read refreshes.", artifact: "appendMessage(\"response\") · readChat().refresh()" }

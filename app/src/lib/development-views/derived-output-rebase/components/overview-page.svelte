@@ -3,7 +3,7 @@
   import MetricStrip from "$development-views/derived-output-rebase/components/metric-strip.svelte";
   import ReferenceSection from "$development-views/derived-output-rebase/components/reference-section.svelte";
   import ReferenceShell from "$development-views/derived-output-rebase/components/reference-shell.svelte";
-  import { AUDIT, DECISION, MAIN_COMMITS } from "$development-views/derived-output-rebase/procedures/audit";
+  import { AUDIT, DECISION, MAIN_COMMITS, REPAIR_COMMITS } from "$development-views/derived-output-rebase/procedures/audit";
   import { TOPOLOGY_DIAGRAM } from "$development-views/derived-output-rebase/procedures/diagrams";
   import { pageOf } from "$development-views/derived-output-rebase/procedures/navigation";
 
@@ -19,11 +19,11 @@
   ];
 
   const verdicts = [
-    ["Can Git replay it automatically?", "No", "Eight semantic stops require human resolutions."],
+    ["Did Git replay it automatically?", "No", "Seven semantic stops required deliberate resolutions."],
     ["Is the checker system current?", "Yes", "Both branches execute the same 90-check architecture graph."],
-    ["Does main introduce new architecture debt?", "No", "The trial reaches 90/90 without adding a baseline record."],
-    ["Is the rebased tree compile-ready?", "Not yet", "Eighteen diagnostics reduce to four representation repairs."],
-    ["Is the rebase path known?", "Yes", "Every stop, root failure, command and acceptance gate is recorded here."]
+    ["Did integration add architecture debt?", "No", "The tree reaches 90/90 without adding a baseline record."],
+    ["Is the rebased tree compile-ready?", "Yes", "The eighteen initial diagnostics were repaired at four roots."],
+    ["Is the operation reproducible?", "Yes", "Every stop, repair, durability invariant and gate is recorded here."]
   ] as const;
 </script>
 
@@ -42,8 +42,8 @@
   <ReferenceSection
     id="topology"
     eyebrow="Branch topology"
-    title="Two histories meet in a disposable proof"
-    lede="The audit replayed every source-only commit onto the exact local and origin/main head without touching the working branch. The result is evidence for the operation, not the operation itself."
+    title="Two histories now meet in one protected result"
+    lede="The live branch replayed every source-only commit onto the exact origin/main head. Its former head remains named as a backup, while f003ab5 records the clean post-replay boundary before integration repairs."
   >
     <div class="reb-diagram">
       <MermaidDiagram
@@ -58,23 +58,40 @@
       <i>→</i>
       <span><b>{AUDIT.conflictStops}</b><small>stops resolved</small></span>
       <i>→</i>
-      <span><b>{AUDIT.typeErrors}</b><small>diagnostics observed</small></span>
+      <span><b>{AUDIT.preRepairTypeErrors}</b><small>diagnostics observed</small></span>
       <i>→</i>
       <span class="pass"><b>{AUDIT.rootRepairs}</b><small>root fixes required</small></span>
     </div>
   </ReferenceSection>
 
   <ReferenceSection
+    id="repairs"
+    eyebrow="Landing commits"
+    title="Five commits make each repair boundary reviewable"
+    lede="The clean replay at f003ab5 remains a named diagnostic boundary. The implementation repairs then land in dependency order through 964b411, before this served record is finalized."
+  >
+    <ol class="reb-main-rail">
+      {#each REPAIR_COMMITS as commit, index (commit[0])}
+        <li>
+          <span>{String(index + 1).padStart(2, "0")}</span>
+          <code>{commit[0]}</code>
+          <p>{commit[1]}</p>
+        </li>
+      {/each}
+    </ol>
+  </ReferenceSection>
+
+  <ReferenceSection
     id="decision"
     eyebrow="Decision matrix"
-    title="What the audit does—and does not—prove"
-    lede="Counts alone overstate the risk. This matrix separates Git conflicts, architectural validity, compiler compatibility and behavior verification."
+    title="What the completed integration proves"
+    lede="Counts alone overstate the risk. This matrix separates historical Git conflicts from the current architecture, compiler and behavior result."
   >
     <div class="reb-verdict-grid">
       {#each verdicts as verdict (verdict[0])}
         <article>
           <span>{verdict[0]}</span>
-          <strong class:negative={verdict[1] === "No" || verdict[1] === "Not yet"}>{verdict[1]}</strong>
+          <strong class:negative={verdict[1] === "No"}>{verdict[1]}</strong>
           <p>{verdict[2]}</p>
         </article>
       {/each}
@@ -108,13 +125,14 @@
   <ReferenceSection
     id="reading"
     eyebrow="How to use this suite"
-    title="One decision page; three operational pages"
-    lede="Read left to right when executing. Replay names every conflict. Checkers shows which failures share a cause. Runbook gives the ordered operation and stopping conditions."
+    title="One decision page; four executable references"
+    lede="Read left to right. Replay names every conflict. Runtime shows the new durability and ownership contracts. Proof records the gates. Runbook makes the operation repeatable."
   >
     <div class="reb-page-cards">
       <a href="./derived-output-rebase/replay"><b>01</b><span>Replay map</span><p>Every stopped commit, path and merge decision.</p></a>
-      <a href="./derived-output-rebase/checkers"><b>02</b><span>Checker map</span><p>Architecture, types, tests, baseline and patch hygiene.</p></a>
-      <a href="./derived-output-rebase/runbook"><b>03</b><span>Runbook</span><p>Commands, checkpoints, rollback and acceptance.</p></a>
+      <a href="./derived-output-rebase/architecture"><b>02</b><span>Runtime</span><p>Atomic outbox, leased workers and server-owned flights.</p></a>
+      <a href="./derived-output-rebase/checkers"><b>03</b><span>Proof</span><p>Architecture, types, tests, baseline and patch hygiene.</p></a>
+      <a href="./derived-output-rebase/runbook"><b>04</b><span>Runbook</span><p>Commands, checkpoints, rollback and acceptance.</p></a>
     </div>
   </ReferenceSection>
 </ReferenceShell>

@@ -9,7 +9,7 @@ export const RUNBOOK: readonly RunbookPhase[] = [
       "Require a clean work/derived-output-architecture worktree.",
       "Fetch main and compare its head with this audit's 06708d9 snapshot.",
       "If main moved, rerun the disposable replay; do not assume this conflict map is still exhaustive.",
-      "Create a named backup branch at the exact audited source head bef7239."
+      "Create a named backup branch at the exact audited source head 7211f1c."
     ],
     files: ["No source files"],
     gates: ["git status is clean", "source and target SHAs are recorded", "backup ref resolves to source HEAD"],
@@ -18,24 +18,24 @@ export const RUNBOOK: readonly RunbookPhase[] = [
   {
     id: "R1",
     title: "Begin the replay",
-    intent: "Replay the 40 audited source-only commits onto the certified main head.",
+    intent: "Replay the 41 audited source-only commits onto the certified main head.",
     actions: [
       "Run git rebase main from work/derived-output-architecture.",
-      "Resolve only the eight expected stop commits in order.",
+      "Resolve only the seven expected stop commits in order.",
       "At every stop, inspect all unmerged paths before staging; an unexpected path invalidates the map and pauses the rebase."
     ],
-    files: ["40 commits", "8 expected stops", "26 unique conflict paths"],
+    files: ["41 commits", "7 expected stops", "26 unique conflict paths"],
     gates: ["git diff --name-only --diff-filter=U matches the stop ledger", "no conflict marker remains"],
     rollback: "git rebase --abort returns to the protected source head."
   },
   {
     id: "R2",
     title: "Resolve creation and dependency seams",
-    intent: "Keep main's atomic boundaries while reconnecting semantic publication.",
+    intent: "Keep main's atomic boundaries while making semantic intent part of the same commit.",
     actions: [
       "Union package dependencies and regenerate the lockfile.",
-      "Return created resources from the project-resource transaction.",
-      "Enqueue document/slide semantic sync only after a successful commit.",
+      "Stage created resources and their semantic outbox rows in one project-resource transaction.",
+      "Keep embedding and descriptor provider work outside that transaction; a durable worker claims it later.",
       "Keep New Tab on createsEditorResource, including spreadsheet support."
     ],
     files: [
@@ -43,7 +43,7 @@ export const RUNBOOK: readonly RunbookPhase[] = [
       "project-resources/.../create-project-resource.ts",
       "new-tab/content/launcher.svelte"
     ],
-    gates: ["dependency install is reproducible", "resource creation atomicity", "semantic enqueue happens once post-commit"],
+    gates: ["dependency install is reproducible", "resource creation atomicity", "committed revisions always include their outbox intent"],
     rollback: "Abort the rebase; no compatibility shim should be committed outside these boundaries."
   },
   {
@@ -51,7 +51,7 @@ export const RUNBOOK: readonly RunbookPhase[] = [
     title: "Resolve templates, references and baseline source",
     intent: "Join feature semantics with current durability and route ownership.",
     actions: [
-      "Preserve template stages, scopes and holes while retaining main's atomic instantiation.",
+      "Preserve template stages, scopes and holes while retaining atomic instantiation and semantic outbox writes.",
       "Union templateStages, project-scoped template metadata, named/bound resource sets, and main's resource summary/template fields in the table schema.",
       "Move formula and variable reference routes under /demo with the other development references.",
       "Union capabilities.md; never select one inventory side wholesale.",
@@ -96,9 +96,9 @@ export const RUNBOOK: readonly RunbookPhase[] = [
     title: "Reconcile the ratchet and generated artifact",
     intent: "Let the resulting source graph dictate debt and generated text.",
     actions: [
-      "Run architecture lint and remove the exact 26 stale records it reports.",
+      "Run architecture lint and remove the exact 28 stale records it reports.",
       "Update the baseline script's state-ownership expectation from 20 to the proven 18.",
-      "Regenerate or mechanically clean the template-features artifact: 314 blank lines with trailing spaces and one extra EOF line.",
+      "Regenerate or mechanically clean the template-features artifact until git diff --check is empty.",
       "Do not add a baseline entry for any new integration finding."
     ],
     files: ["architecture-baseline.json", "scripts/test/baseline.test.mjs", "docs/artifacts/template-features-changes/index.md"],
@@ -140,8 +140,8 @@ export const COMMANDS = [
 export const ACCEPTANCE = [
   "No unmerged paths, conflict markers, or unexpected empty commits.",
   "No deleted legacy schema reader is recreated or imported.",
-  "Document and slide creation publish semantic jobs only after durable commit.",
-  "Spreadsheet creation and template instantiation remain atomic.",
+  "Every committed document, slide, spreadsheet material, project creation and template instance carries its semantic outbox intent atomically.",
+  "Provider work happens only after commit through bounded, leased queue workers.",
   "Document, slide, spreadsheet and research entry points all remain reachable.",
   "Derived-output and research readers see current slide bodies with typed locators.",
   "Architecture lint remains 90/90 with zero unbaselined or stale findings.",

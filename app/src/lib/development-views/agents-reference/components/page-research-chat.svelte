@@ -48,7 +48,7 @@
   ];
 
   const capabilities = [
-    ["capabilities/research-chat", "index.remote.ts", "Seven procedures, the tools, the loop, the flight registry and the projection. Owns researchThreads and researchTurns.", "Owns"],
+    ["capabilities/research-chat", "index.remote.ts", "Seven procedures, the tools, the loop and the projection. Owns researchThreads and researchTurns; process state is delegated to ServerModel.", "Owns durable rows"],
     ["capabilities/semantic-overlay", "index.ts", "querySemanticOverlay, querySemanticMaterials, readSemanticResourceForModel, enqueueSemanticSync, processSemanticSyncQueueFor, semanticSourceIsCurrent.", "Reads through its index"],
     ["model/server/intelligence", "index.server.ts", "completeWithTools and the OpenRouter provision. The agent loop runs inside it.", "Server model object"],
     ["model/server/embedding", "index.server.ts", "The vectors. Reached only through the overlay, never directly.", "Indirect"],
@@ -124,7 +124,7 @@
     {
       n: 1,
       title: "Nothing survives a restart, so a running row is a claim to check",
-      body: "A turn runs inside the request that made it. The one thing that says it is still running is a registry in this process, and that registry is empty after a restart. A row that says running and is not in it was stranded, and the two places that notice do different things about it."
+      body: "A turn runs inside the request that made it. The one thing that says it is still running is ServerModel.operationFlights, and a fresh ServerModel is empty after restart. A row that says running and is not owned there was stranded, and the two places that notice do different things about it."
     },
     {
       n: 2,
@@ -134,7 +134,7 @@
     {
       n: 3,
       title: "The next question repairs it",
-      body: "ask checks the registry before it refuses. A running turn nobody is running is marked failed with the reason, and the new question proceeds. That is the only way a stranded turn could block somebody, and it no longer does."
+      body: "ask checks the server-owned operation object before it refuses. A running turn nobody is running is marked failed with the reason, and the new question proceeds. That is the only way a stranded turn could block somebody, and it no longer does."
     },
     {
       n: 4,
@@ -149,7 +149,7 @@
   ];
 
   const notBuilt = [
-    ["A queue", "The turn runs inside the request that created it. A crash is recovered rather than resumed, and a second browser sees nothing until the first one's request returns.", "The derived output refresh queue is the pattern: one durable job row, one in-process flight."],
+    ["A queue", "The turn runs inside the request that created it. A crash is recovered rather than resumed, and a second browser sees nothing until the first one's request returns.", "The derived output refresh queue is the pattern: one durable job row plus one ServerModel-owned coordination flight."],
     ["Streaming", "completeWithTools answers once. Message.state has a streaming value and nothing writes it.", "A second method on the port; the surfaces would not change."],
     ["Web search", "The composer shows the toggle disabled. ask accepts the tool id and no tool implements it.", "One tool, and a decision about what an unbounded source cites."],
     ["Question and Hypothesis modes", "Both are stored on the thread and neither changes what happens.", "A mode that binds the thread to a question or a hypothesis row and writes findings against it."],

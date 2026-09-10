@@ -57,7 +57,7 @@ export const BASELINE_RETIREMENTS = [
   ["constructed-client-object-has-a-consumer", 1, "spreadsheet runtimes"],
   ["constructed-subject-runtime-is-reachable", 1, "spreadsheet runtimes"],
   ["legacy-schema-support-does-not-exist", 3, "document, slide and collaboration legacy readers"],
-  ["multi-write-capability-uses-a-unit-of-work", 1, "project resource creation"],
+  ["multi-write-capability-uses-a-unit-of-work", 3, "document, slide and project-resource transactions"],
   ["production-views-have-no-fixture-repositories", 1, "spreadsheet sheet"],
   ["remounted-views-hold-no-declared-tab-state", 1, "spreadsheet selected/zoom state"],
   ["resource-id-selects-the-rendered-body", 1, "spreadsheet content flow"],
@@ -69,40 +69,46 @@ export const BASELINE_RETIREMENTS = [
 
 export const CHECK_RESULTS = [
   {
-    gate: "Architecture before cleanup",
-    result: "89 / 90 clean",
-    detail: "28 findings: 26 stale baseline records plus 2 validity echoes for records whose source files were deleted.",
-    kind: "attention"
+    gate: "Architecture",
+    result: "90 / 90 clean",
+    detail: "Zero findings and 257 live baseline records. Twenty-eight records proven stale by the resulting source graph were removed; no new exception was added.",
+    kind: "pass"
   },
   {
-    gate: "Architecture after cleanup",
-    result: "90 / 90 clean",
-    detail: "259 baselined, zero findings. No new structural exception is required by the replayed product tree.",
+    gate: "Current schema",
+    result: "0 legacy readers",
+    detail: "Deleted document typography, slide normalization and collaboration-anchor readers remain deleted; consumers use only current representations.",
     kind: "pass"
   },
   {
     gate: "Typecheck",
-    result: "18 errors · 7 files",
-    detail: "Four root repairs: slide cutover, document cutover, spreadsheet template shape, transaction literal typing.",
-    kind: "fail"
+    result: "0 errors · 0 warnings",
+    detail: "The original eighteen diagnostics collapsed into four root repairs, then the decomposed implementation was checked again.",
+    kind: "pass"
   },
   {
     gate: "Vitest",
-    result: "27 failed files",
-    detail: "All failed during module import. 138 files and 1,148 assertions passed; deleted normalizer imports block the 27 files before their tests run.",
-    kind: "fail"
+    result: "1,474 passed · 2 skipped",
+    detail: "All 168 executable files pass; two files and two assertions are intentionally gated. No suite fails or remains import-blocked.",
+    kind: "pass"
   },
   {
     gate: "Script tests",
-    result: "2 failed assertions",
-    detail: "Only baseline.test.mjs is stale: 2 of 165 tests expect 20 state-ownership entries after the rebased tree correctly reports 18. The other 163 script tests pass.",
-    kind: "attention"
+    result: "168 / 168 passed",
+    detail: "Checker contracts, mutation fixtures and baseline-ratchet assertions all pass after strengthening process-state detection.",
+    kind: "pass"
   },
   {
-    gate: "Whitespace",
-    result: "315 findings · 1 file",
-    detail: "314 whitespace-only lines plus one extra EOF line in docs/artifacts/template-features-changes/index.md.",
-    kind: "attention"
+    gate: "Production + patch",
+    result: "build clean · diff clean",
+    detail: "The Node-adapter production build completes and git diff --check reports no whitespace errors.",
+    kind: "pass"
+  },
+  {
+    gate: "Chromium",
+    result: "87 passed · 4 skipped",
+    detail: "All 91 scenarios were collected in Chromium. Every local scenario passed; the four real-provider scenarios remain explicitly opt-in because they spend external calls.",
+    kind: "pass"
   }
 ] as const;
 

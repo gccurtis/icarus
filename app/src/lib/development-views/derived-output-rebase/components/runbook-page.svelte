@@ -10,11 +10,11 @@
   const page = pageOf("runbook");
 
   const commitPlan = [
-    ["Rewritten history", "Eight conflict resolutions live in the commits where their behavior originally entered."],
-    ["Compatibility repair", "One bounded commit adapts current slide/document/spreadsheet contracts and literal result typing."],
-    ["Ratchet reconciliation", "One commit removes 26 stale baseline records and updates the 20 → 18 test expectation."],
-    ["Artifact hygiene", "One mechanical commit regenerates or cleans the template-feature report."],
-    ["Reference audit", "This served reference can remain its own documentation commit for an auditable plan/result delta."]
+    ["Rewritten history", "Seven conflict resolutions live in the commits where their behavior originally entered."],
+    ["Atomic outbox", "Current-schema writes commit authored facts and semantic intent together, with real Store rollback tests."],
+    ["Durable workers", "Lease/claim recovery, bounded retry and fail-closed consumers are one reviewable reliability slice."],
+    ["Owned operation state", "Derived-output and research flights live on ServerModel; checker mutations prove the rule."],
+    ["Reference + verification", "Served architecture and actual gate results remain a distinct documentation slice."]
   ] as const;
 </script>
 
@@ -22,7 +22,7 @@
   <div class="reb-callout warning top">
     <span>Start condition</span>
     <p>
-      This runbook is certified only for audited source <code>bef7239</code> onto main <code>06708d9</code>. The recertification commit that updates this page is documentation-only; any later product commit or main movement requires R0 and a fresh disposable audit before rewriting the real branch.
+      This completed run is certified for protected source <code>7211f1c</code> onto main <code>06708d9</code>; its clean post-replay boundary is <code>f003ab5</code>. Any later main movement requires R0 and a fresh disposable replay before another history rewrite.
     </p>
   </div>
 
@@ -80,7 +80,7 @@
     id="commits"
     eyebrow="Review shape"
     title="Keep repair intent visible in history"
-    lede="Rebase resolutions belong with their original commits. New compatibility and cleanup work should be separated so reviewers can distinguish product semantics, architecture debt and generated-file noise."
+    lede="Rebase resolutions belong with their original commits. New reliability, ownership and reference work stays sliced so reviewers can distinguish each architectural decision."
   >
     <div class="reb-commit-plan">
       {#each commitPlan as item, index (item[0])}

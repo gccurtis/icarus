@@ -179,7 +179,7 @@ export const STEER_DIAGRAM = `sequenceDiagram
   participant P as Person
   participant S as thread.svelte
   participant R as stop-turn.ts
-  participant F as flights.ts
+  participant F as ServerModel.operationFlights
   participant T as tools.ts
   participant I as intelligence port
 
@@ -204,10 +204,10 @@ export const RECOVERY_DIAGRAM = `flowchart TB
   subgraph strand["a turn that was interrupted"]
     crash(["the process stops mid-turn"]) --> row["the row still says running"]
     row --> restart["the server starts again"]
-    restart --> empty["the flight registry is empty: nothing survives a restart"]
+    restart --> empty["the new ServerModel has no active flight: nothing process-local survives"]
     empty --> reading["a read reports that turn as failed, and writes nothing"]
     empty --> asking{"somebody asks in that chat"}
-    asking --> stranded{"is the running turn in the registry?"}
+    asking --> stranded{"does operationFlights own this running turn?"}
     stranded -->|yes| refuse["refuse: it is still working"]
     stranded -->|no| reclaim["write failed with the reason, then carry on"]
   end

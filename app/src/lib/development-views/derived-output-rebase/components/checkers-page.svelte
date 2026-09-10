@@ -33,8 +33,8 @@
   <ReferenceSection
     id="matrix"
     eyebrow="Gate matrix"
-    title="Six signals, read at different layers"
-    lede="The disposable replay is architecture-clean after baseline reconciliation, but it is not type-clean or behavior-certified. Import failures explain the large Vitest file count; they do not prove twenty-seven independent regressions."
+    title="Seven signals, one integrated result"
+    lede="Every static, server-side and browser behavior gate is green. Chromium collected all 91 scenarios: 87 passed locally and the four scenarios that intentionally require paid providers were skipped."
   >
     <div class="reb-check-matrix">
       {#each CHECK_RESULTS as result (result.gate)}
@@ -48,7 +48,7 @@
     <div class="reb-callout success">
       <span>Checker-system answer</span>
       <p>
-        The branch is already on the current <strong>90-check</strong> architecture system. Main does not add a new checker graph here. The rebase exposes stale debt records because main and the branch have resolved the code they described.
+        The branch runs the current <strong>90-check</strong> architecture system. It adds stronger detection for lazily created global maps, controllers and mutable objects, then passes those checks without a new waiver.
       </p>
     </div>
   </ReferenceSection>
@@ -56,14 +56,14 @@
   <ReferenceSection
     id="types"
     eyebrow="Compiler reduction"
-    title="Do not fix eighteen lines independently"
-    lede="Five missing slide imports erase types downstream and create nine callback errors. Restoring the current readiness import should remove those cascades without a single explicit any. The other three roots remain local."
+    title="Eighteen initial diagnostics became four repairs"
+    lede="Five missing slide imports erased types downstream and created nine callback errors. Current slide readiness repaired those cascades without any annotations; the three other roots remained local and are now green."
   >
     <div class="reb-diagram">
       <MermaidDiagram
         source={CHECKER_DIAGRAM}
         label="Reduction of eighteen type diagnostics into four root repairs"
-        caption="The 14-diagnostic slide group is five missing-module diagnostics plus nine type-inference cascades."
+        caption="Historical reduction: the 14-diagnostic slide group was five missing-module diagnostics plus nine type-inference cascades. All four roots are repaired."
         minHeight="25rem"
       />
     </div>
@@ -81,7 +81,7 @@
       {/each}
     </div>
     <details class="reb-exact-ledger">
-      <summary>Exact compiler ledger · {TYPE_DIAGNOSTICS.length} diagnostics</summary>
+      <summary>Initial compiler ledger · {TYPE_DIAGNOSTICS.length} repaired diagnostics</summary>
       <div class="reb-ledger type-ledger">
         <div class="head"><span>Root</span><span>File</span><span>At</span><span>Diagnostic</span></div>
         {#each TYPE_DIAGNOSTICS as diagnostic (diagnostic[1] + diagnostic[2])}
@@ -94,14 +94,14 @@
   <ReferenceSection
     id="baseline"
     eyebrow="Architecture ratchet"
-    title="A baseline is reconciled, never chosen"
-    lede="The latest-head replay reports 26 stale records. Two records naming deleted source files also trigger the non-baselinable exception-validity checker, yielding 28 displayed findings. Removing the 26 exact records produces a fully clean suite."
+    title="A baseline was reconciled, never chosen"
+    lede="The resulting source graph proved twenty-eight records stale, including newly atomic document and slide mutations. Removing those exact records leaves 257 live entries and a fully clean suite."
   >
     <div class="reb-diagram compact">
       <MermaidDiagram
         source={BASELINE_DIAGRAM}
         label="Architecture baseline reconciliation after rebase"
-        caption="Main's 295 and the source branch's 285 are not unioned. The resulting source graph is authoritative and needs 259 live records."
+        caption="Main's 295 and the source branch's 285 were not unioned. The resulting source graph is authoritative and needs 257 live records."
         minHeight="22rem"
       />
     </div>
@@ -143,21 +143,21 @@
   <ReferenceSection
     id="tests"
     eyebrow="Test interpretation"
-    title="Import the graph first; then trust behavior counts"
-    lede="Vitest discovers 166 files. Twenty-seven fail before collecting a test because four deleted module imports sit high in shared dependency graphs. The 138 files that can load run 1,148 assertions successfully; one file is skipped."
+    title="The complete behavior graph now executes"
+    lede="Vitest discovers 170 files. Every one that is meant to execute passes: 168 files and 1,474 assertions are green, while two files and two assertions are deliberately skipped."
   >
     <div class="reb-test-flow">
       <div><b>{AUDIT.discoveredVitestFiles}</b><span>discovered files</span></div><i>→</i>
       <div class="pass"><b>{AUDIT.passedVitestFiles}</b><span>passed files</span></div><i>+</i>
-      <div class="fail"><b>27</b><span>import-blocked</span></div><i>+</i>
-      <div><b>1</b><span>skipped file</span></div>
+      <div class="pass"><b>{AUDIT.failedVitestFiles}</b><span>failed files</span></div><i>+</i>
+      <div><b>{AUDIT.skippedVitestFiles}</b><span>skipped files</span></div>
     </div>
     <div class="reb-callout attention">
-      <span>Next evidence</span>
-      <p>After F1 and F2 repair the import graph, rerun all tests. Any then-failing assertion is a new behavioral finding and must be planned separately; this audit does not pre-classify failures that have not executed.</p>
+      <span>Executed evidence</span>
+      <p>The import-blocked set below is retained as a historical diagnostic ledger. After repairing the shared imports, all twenty-seven loaded and the full suite completed without a failing assertion.</p>
     </div>
     <details class="reb-exact-ledger">
-      <summary>Import-blocked suite ledger · {IMPORT_BLOCKED_SUITES.length} files</summary>
+      <summary>Historical import-blocked ledger · {IMPORT_BLOCKED_SUITES.length} now-passing files</summary>
       <div class="reb-suite-grid">
         {#each IMPORT_BLOCKED_SUITES as suite, index (suite)}
           <div><span>{String(index + 1).padStart(2, "0")}</span><code>{suite}</code></div>
@@ -166,7 +166,7 @@
     </details>
     <div class="reb-callout plain">
       <span>Patch hygiene</span>
-      <p><code>git diff --check</code> reports 315 findings in <code>docs/artifacts/template-features-changes/index.md</code>: 314 blank lines containing spaces and one extra blank line at EOF. Regenerate the artifact if possible; otherwise make one mechanical cleanup commit.</p>
+      <p><code>git diff --check</code> is empty. The inherited template-feature artifact no longer contributes whitespace-only lines or an extra EOF line.</p>
     </div>
   </ReferenceSection>
 </ReferenceShell>

@@ -1,34 +1,53 @@
 export const AUDIT = {
   captured: "2026-09-09",
   sourceBranch: "work/derived-output-architecture",
-  sourceHead: "bef7239",
+  sourceHead: "7211f1c",
+  rebasedHead: "f003ab5",
+  implementationHead: "964b411",
   targetBranch: "main",
   targetHead: "06708d9",
   mergeBase: "8ba102e",
-  sourceOnlyCommits: 40,
+  sourceOnlyCommits: 41,
   mainOnlyCommits: 18,
-  conflictStops: 8,
-  conflictOccurrences: 28,
+  conflictStops: 7,
+  conflictOccurrences: 27,
   uniqueConflictPaths: 26,
   architectureChecks: 90,
   initialArchitectureFindings: 28,
-  staleBaselineRecords: 26,
+  staleBaselineRecords: 28,
   finalArchitectureFindings: 0,
   sourceBaseline: 285,
   mainBaseline: 295,
-  rebasedBaseline: 259,
-  typeErrors: 18,
-  typeFiles: 7,
+  rebasedBaseline: 257,
+  preRepairTypeErrors: 18,
+  typeErrors: 0,
+  typeFiles: 0,
   rootRepairs: 4,
-  discoveredVitestFiles: 166,
-  failedVitestFiles: 27,
-  passedVitestFiles: 138,
-  passedVitestAssertions: 1148,
-  scriptTests: 165,
-  passedScriptTests: 163,
-  scriptAssertionFailures: 2,
-  whitespaceFindings: 315
+  repairCommits: 5,
+  discoveredVitestFiles: 170,
+  failedVitestFiles: 0,
+  passedVitestFiles: 168,
+  skippedVitestFiles: 2,
+  passedVitestAssertions: 1474,
+  skippedVitestAssertions: 2,
+  scriptTests: 168,
+  passedScriptTests: 168,
+  scriptAssertionFailures: 0,
+  whitespaceFindings: 0,
+  chromiumScenarios: 91,
+  passedChromiumScenarios: 87,
+  skippedChromiumScenarios: 4,
+  failedChromiumScenarios: 0,
+  providerScenarios: 4
 } as const;
+
+export const REPAIR_COMMITS = [
+  ["0fe6bc8", "Make semantic indexing atomic and recoverable"],
+  ["d9ad0c4", "Move active agent operations into ServerModel"],
+  ["e88867d", "Extract the Agents task question bands"],
+  ["c525e28", "Detect ambient mutable registries and retire stale debt"],
+  ["964b411", "Preserve tab-owned runtime identity and isolate Chromium"]
+] as const;
 
 export const MAIN_COMMITS = [
   ["a195306", "Spreadsheet editor with evaluated formulas"],
@@ -52,9 +71,9 @@ export const MAIN_COMMITS = [
 ] as const;
 
 export const DECISION = {
-  status: "GO WITH REPAIRS",
+  status: "REBASED · REPAIRED",
   short:
-    "Do not run a blind rebase. The disposable replay proves that the branch can land after the eight recorded resolutions and four post-replay compatibility repairs.",
+    "The protected branch was replayed onto the certified main head, all seven conflict stops were resolved, and the integrated tree passes its compile, architecture, unit, script, build and patch-hygiene gates.",
   boundary:
-    "This reference is an audit snapshot. It does not rebase or mutate work/derived-output-architecture."
+    "7211f1c remains protected by backup/derived-output-architecture-pre-rebase-7211f1c; f003ab5 is the exact post-replay head before the implementation repairs recorded here."
 } as const;

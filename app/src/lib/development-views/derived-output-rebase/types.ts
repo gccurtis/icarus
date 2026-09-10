@@ -1,4 +1,9 @@
-export type RebasePageSlug = "overview" | "replay" | "checkers" | "runbook";
+export type RebasePageSlug =
+  | "overview"
+  | "replay"
+  | "architecture"
+  | "checkers"
+  | "runbook";
 
 export type RebasePage = {
   slug: RebasePageSlug;

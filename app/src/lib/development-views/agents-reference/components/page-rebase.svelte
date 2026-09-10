@@ -96,7 +96,7 @@
     {
       n: 4,
       title: "A queue that survives a restart",
-      body: "One durable job row per output plus one in-process flight, so every browser that asks joins the same run, a changed request supersedes the one in flight, and a process that died mid-run reclaims its own row."
+      body: "One durable job row per output plus one ServerModel-owned process flight, so every browser that asks joins the same run, a changed request supersedes the one in flight, and an expired durable claim can be reclaimed after a process dies."
     },
     {
       n: 5,

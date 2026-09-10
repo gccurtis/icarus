@@ -395,7 +395,7 @@ export const QUESTIONS: readonly Question[] = [
       "There is no queue. A process that dies mid-run leaves a row on running with nothing to reclaim it, and a second browser watching the same chat sees nothing until the first one's request returns.",
     options: [
       "Leave it. A person is waiting, and the request they are waiting on is the run.",
-      "Copy the derived output refresh queue: one durable job row, one in-process flight, reclaimed on restart."
+      "Copy the derived output refresh queue: one durable job row, one ServerModel-owned coordination flight, reclaimed after its lease expires."
     ],
     recommendation:
       "Copy the queue, and do it before steering rather than after. Steering needs somewhere to put a note that the loop can read between rounds, and that somewhere is the job row."

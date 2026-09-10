@@ -23,9 +23,9 @@ export const CONFLICTS: readonly ConflictCluster[] = [
     collision:
       "Main makes document, slide and spreadsheet creation atomic. The branch publishes document and slide text to the Semantic Overlay after creation.",
     resolution:
-      "Return the represented resource from the unit of work; after the transaction commits, enqueue semantic sync for document and slides only. Keep spreadsheet creation atomic and leave spreadsheet ingestion out until its projection is intentionally defined.",
+      "Stage the represented resource and its semantic outbox row in the same unit of work. Commit no provider work there; a durable worker claims the job later. Preserve document, slide and spreadsheet creation as one atomic boundary.",
     proof:
-      "Atomicity tests still prove no partial resource, leader or snapshot; project-resource tests prove document and slide creation each enqueue exactly once after commit.",
+      "Fault injection proves no partial resource, leader, snapshot or outbox row; restart recovery proves every committed resource leaves exactly one claimable semantic job.",
     risk: "high"
   },
   {
@@ -58,26 +58,13 @@ export const CONFLICTS: readonly ConflictCluster[] = [
     collision:
       "The template feature introduces stages, scopes, prompt holes and multi-kind bodies over older document/slide/spreadsheet representations. Main independently makes instantiation atomic, advances the spreadsheet contracts, and adds summary/template metadata to represented resource rows and seed fixtures.",
     resolution:
-      "Preserve branch template semantics, main's single transaction, and post-commit semantic publication. Keep main's summary and templateId fields and the matching seed metadata. Carry the branch's template files at this historical stop so their later compatibility commit can replay, then port materialization to current document, slide and spreadsheet types without reviving a deleted normalizer.",
+      "Preserve branch template semantics and main's single transaction, including a semantic outbox row in that same commit. Keep summary and templateId fields and matching seed metadata, then port materialization to current document, slide and spreadsheet types without reviving a deleted normalizer.",
     proof:
       "Template unit and atomicity suites pass for all three resource kinds, including formatted spreadsheet cells and rules; a failed instantiation leaves no durable rows or semantic job.",
     risk: "high"
   },
   {
     stop: 5,
-    commit: "5015ef6",
-    subject: "Build scope from terms",
-    files: ["app/src/lib/representation/store/tables.ts"],
-    collision:
-      "Main's table vocabulary now includes summary/template linkage and a named resource-set shape. The branch turns resource sets into either named sets or bound rows and adds durable template stages.",
-    resolution:
-      "Form one schema union: retain main's resource summary/template fields; retain project-scoped template metadata; add TemplateStageFields and register templateStages in TABLE_NAMES/TableFields; make resource-set name optional only when boundTo is present. Do not drop fields merely because Git shows one contiguous type block.",
-    proof:
-      "Store typing recognizes templateStages, template and resource-set projections compile, seed rows retain summaries, and named versus bound resource-set invariants have unit coverage.",
-    risk: "high"
-  },
-  {
-    stop: 6,
     commit: "deab480",
     subject: "Reconcile templates with derived outputs",
     files: [
@@ -102,7 +89,7 @@ export const CONFLICTS: readonly ConflictCluster[] = [
     risk: "high"
   },
   {
-    stop: 7,
+    stop: 6,
     commit: "2aaad1e",
     subject: "Build Explore end to end",
     files: [
@@ -119,7 +106,7 @@ export const CONFLICTS: readonly ConflictCluster[] = [
     risk: "medium"
   },
   {
-    stop: 8,
+    stop: 7,
     commit: "f85b245",
     subject: "Work every finding off the baseline",
     files: [
