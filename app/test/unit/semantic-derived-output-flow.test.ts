@@ -199,7 +199,7 @@ beforeEach(() => {
         };
       }
     },
-    materialContent: { read: async () => undefined },
+    externalFileStorage: { read: async () => undefined },
     operationFlights: createOperationFlights(),
     observability: { logger: { info: () => {}, warn: () => {} } }
   };
@@ -278,7 +278,7 @@ describe("resource text to readable Derived Output", () => {
     assert.equal(read?.output.lastResponse?.type, "text");
     assert.equal(read?.output.lastResponse?.display, "Avery is 37 years old.");
     const evidence = read?.output.evidence[0];
-    assert.ok(evidence !== undefined && "span" in evidence);
+    assert.ok(evidence !== undefined && evidence.evidenceKind === "text");
     assert.equal(evidence.span.text.includes("Avery is 37 years old."), true);
     assert.equal(
       evidence.locators?.some(
@@ -415,7 +415,7 @@ describe("resource text to readable Derived Output", () => {
     assert.equal(refreshed?.output.lastResponse?.type === "text" ? refreshed.output.lastResponse.display : "", "South has the highest regional revenue at 200.");
     assert.deepEqual(refreshed?.output.origin, { kind: "document", id: created.resourceId });
     const evidence = refreshed?.output.evidence[0];
-    assert.ok(evidence !== undefined && !("span" in evidence) && evidence.evidenceKind === "structured");
+    assert.ok(evidence !== undefined && evidence.evidenceKind === "structured");
     assert.equal(evidence.distance, 1);
     assert.equal(evidence.material.kind, "table");
     assert.deepEqual(evidence.selection, { kind: "table", rows: [0, 1, 2], columns: [0, 1] });

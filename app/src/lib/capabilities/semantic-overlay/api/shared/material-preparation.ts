@@ -9,7 +9,6 @@ import {
   describeMaterial,
   MATERIAL_DESCRIPTOR_PROMPT_VERSION,
   materialDescriptorInputHash,
-  materialDescriptorModel,
   shouldDescribeMaterial
 } from "$capabilities/semantic-overlay/api/shared/material-description";
 import { embedMaterialFacets } from "$capabilities/semantic-overlay/api/shared/material-facets";
@@ -24,6 +23,11 @@ import {
   type PreparedMaterial
 } from "$capabilities/semantic-overlay/api/shared/material-publication";
 import { rowsOf } from "$capabilities/semantic-overlay/api/shared/rows";
+import {
+  semanticMaterialDescriptorModel,
+  semanticMaterialDescriptorsEnabled,
+  semanticMaximumNativeImageBytes
+} from "$capabilities/semantic-overlay/api/shared/configuration";
 
 type MaterialObjectRow = Extract<TableRow<"semanticObjects">, { lane: "material" }>;
 
@@ -54,16 +58,20 @@ const nativeImageReader = (
       return { seed };
     }
     const source = seed.source;
+    const maximumNativeImageBytes = semanticMaximumNativeImageBytes(model.configuration);
     const file = rowsOf(model.store, "externalFiles").find(
       (row) => row.projectId === projectId && row._id === source.fileId
     );
     if (file === undefined) return { seed, error: "Original image content is unavailable" };
+    if (file.size > maximumNativeImageBytes) {
+      return { seed, error: "Original image exceeds the semantic visual-input limit" };
+    }
     let pending = pendingByHash.get(file.hash);
     if (pending === undefined) {
-      pending = model.materialContent
-        .read({ storageId: file.storageId, hash: file.hash }, signal)
+      pending = model.externalFileStorage
+        .read({ storageId: file.storageId, hash: file.hash, size: file.size }, signal)
         .then((bytes) =>
-          bytes === undefined || bytes.byteLength > 5_000_000
+          bytes === undefined || bytes.byteLength > maximumNativeImageBytes
             ? undefined
             : {
                 kind: "bytes" as const,
@@ -109,6 +117,10 @@ export const prepareMaterials = async (
         : []
   );
   const readNativeImage = nativeImageReader(model, projectId, signal);
+  const descriptionsEnabled = semanticMaterialDescriptorsEnabled(model.configuration);
+  const descriptorModel = descriptionsEnabled
+    ? semanticMaterialDescriptorModel(model.configuration)
+    : undefined;
   const prepared: PreparedMaterial[] = [];
   const usage: ProviderUsage[] = [];
   for (const candidate of normalized) {
@@ -123,8 +135,6 @@ export const prepareMaterials = async (
         ? []
         : previousObjects.filter((object) => object.semanticMaterialId === prior._id);
     const priorVisual = priorFacets.find((object) => object.facet === "nativeVisual");
-    const descriptionsEnabled =
-      model.configuration.get("semanticOverlay.materials.generateDescriptors") === true;
     const priorDescriptor = prior?.descriptor;
     let descriptor = descriptionsEnabled ? priorDescriptor : undefined;
     let error: string | undefined;
@@ -134,7 +144,7 @@ export const prepareMaterials = async (
       descriptor !== undefined &&
       (descriptor.inputHash !== descriptorInputHash ||
         descriptor.promptVersion !== MATERIAL_DESCRIPTOR_PROMPT_VERSION ||
-        descriptor.model !== materialDescriptorModel(model));
+        descriptor.model !== descriptorModel);
     const descriptorNeedsRefreshBeforeNative =
       force ||
       descriptorRemoved ||

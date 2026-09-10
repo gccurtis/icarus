@@ -52,4 +52,56 @@ describe("templated Derived Outputs", () => {
       })
     ).toThrow(/unique/);
   });
+
+  it("rejects non-JSON projections without invoking accessors", () => {
+    const inherited = Object.create({
+      variables: [{ name: "age", prompt: "Find age" }],
+      output: "{{age}}"
+    });
+    const hidden = {
+      variables: [{ name: "age", prompt: "Find age" }],
+      output: "{{age}}"
+    };
+    Object.defineProperty(hidden, "retired", { value: true });
+    const symbolic = {
+      variables: [{ name: "age", prompt: "Find age" }],
+      output: "{{age}}",
+      [Symbol("retired")]: true
+    };
+    let reads = 0;
+    const accessor = {
+      variables: [{ name: "age", prompt: "Find age" }],
+      get output() {
+        reads += 1;
+        return "{{age}}";
+      }
+    };
+
+    expect(() => derivedTemplateDefinition(inherited)).toThrow(/exact current JSON data/);
+    expect(() => derivedTemplateDefinition(hidden)).toThrow(/exact current JSON data/);
+    expect(() => derivedTemplateDefinition(symbolic)).toThrow(/exact current JSON data/);
+    expect(() => derivedTemplateDefinition(accessor)).toThrow(/exact current JSON data/);
+    expect(reads).toBe(0);
+  });
+
+  it("requires one exact current template and variable shape", () => {
+    expect(() => derivedTemplateDefinition({
+      variables: [{ name: "age", prompt: "Find age" }],
+      output: "{{age}}",
+      exampleResponse: undefined
+    })).toThrow(/exact current JSON data/);
+    expect(() => derivedTemplateDefinition({
+      variables: [{
+        name: "age",
+        prompt: "Find age",
+        origin: { kind: "document", id: "documents:one" }
+      }],
+      output: "{{age}}"
+    })).toThrow(/exactly name and prompt/);
+    expect(() => derivedTemplateDefinition({
+      variables: [{ name: "age", prompt: "Find age" }],
+      output: "{{age}}",
+      oldOutput: "legacy"
+    })).toThrow(/exactly variables, output/);
+  });
 });

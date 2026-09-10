@@ -3,7 +3,9 @@
   import { SlideSurfaceText, type SurfaceTextEdit } from "$authored-components/slide-surface";
   import TextSpacing from "$app-views/categories/slide-deck-editor/components/text-spacing.svelte";
   import TextStyle from "$app-views/categories/slide-deck-editor/components/text-style.svelte";
-  import { emptyText, notesBlock, slideIndexOf, styleOf, withNotes } from "$app-views/categories/slide-deck-editor/procedures/deck";
+  import { emptyText } from "$app-views/categories/slide-deck-editor/procedures/deck-elements";
+  import { styleOf } from "$app-views/categories/slide-deck-editor/procedures/deck-reading";
+  import { notesBlock, slideIndexOf, withNotes } from "$app-views/categories/slide-deck-editor/procedures/deck-slides";
   import { colorOf, textSceneOf } from "$app-views/categories/slide-deck-editor/procedures/scene";
   import { slideSignal } from "$app-views/categories/slide-deck-editor/procedures/selecting";
   import { replaced } from "$app-views/categories/slide-deck-editor/procedures/typing";

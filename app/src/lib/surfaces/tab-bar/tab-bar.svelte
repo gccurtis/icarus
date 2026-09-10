@@ -1,5 +1,6 @@
 <script lang="ts">
   import Bot from "@lucide/svelte/icons/bot";
+  import FolderOpen from "@lucide/svelte/icons/folder-open";
   import House from "@lucide/svelte/icons/house";
   import LayoutTemplate from "@lucide/svelte/icons/layout-template";
   import X from "@lucide/svelte/icons/x";
@@ -84,6 +85,18 @@
     onclick={() => view.open({ category: "templates" })}
   >
     <LayoutTemplate size={15} aria-hidden="true" />
+  </button>
+
+  <button
+    type="button"
+    class="tab icon"
+    class:on={here === "external"}
+    aria-current={here === "external" ? "page" : undefined}
+    title="External"
+    aria-label="External"
+    onclick={() => view.open({ category: "external" })}
+  >
+    <FolderOpen size={15} aria-hidden="true" />
   </button>
 
   <span class="divider" aria-hidden="true"></span>

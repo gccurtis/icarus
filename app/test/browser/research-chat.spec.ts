@@ -1,3 +1,7 @@
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+
 import { expect, test, type Page, type TestInfo } from "./fixtures";
 
 const diagnostics: string[] = [];
@@ -175,6 +179,82 @@ test("a deterministic provider answers from the default project-wide scope", asy
   await expect(page.locator("main")).not.toContainText("Nothing in this project answers that");
 });
 
+test("a deterministic research turn reads only one selected uploaded External file", async ({
+  page
+}) => {
+  test.skip(
+    process.env.ICARUS_BROWSER_PROVIDER_FIXTURE !== "1",
+    "The caller-owned server did not opt into the deterministic browser provider"
+  );
+  test.setTimeout(180_000);
+
+  const temporary = await mkdtemp(join(tmpdir(), "icarus-research-scope-path-"));
+  const folder = join(temporary, "research-evidence-bundle");
+  const northPath = "research-evidence-bundle/North/research-evidence.md";
+  const southPath = "research-evidence-bundle/South/research-evidence.md";
+  try {
+    await mkdir(join(folder, "North"), { recursive: true });
+    await mkdir(join(folder, "South"), { recursive: true });
+    await writeFile(
+      join(folder, "North", "research-evidence.md"),
+      "# North transformer evidence\n\nThe verified emergency transformer limit is 913 MVA.\n"
+    );
+    await writeFile(
+      join(folder, "South", "research-evidence.md"),
+      "# South transformer evidence\n\nThe planning transformer threshold is 411 MVA.\n"
+    );
+
+    await page.goto("/app/dev-project", { waitUntil: "networkidle" });
+    const tabs = page.getByRole("toolbar", { name: "Open tabs" });
+    await tabs.getByRole("button", { name: "External", exact: true }).click();
+    await page.locator('form.upload-form input[type="file"]').nth(1).setInputFiles(folder);
+    await page.getByRole("button", { name: "Upload folder", exact: true }).click();
+    await expect(page.getByText("2 uploaded · 0 already present · 0 rejected."))
+      .toBeVisible({ timeout: 30_000 });
+
+    await tabs.getByRole("button", { name: "Overview", exact: true }).click();
+    await page.locator(".area-create").getByRole("button", { name: "Research chat" }).click();
+    const context = page.getByRole("button", { name: "Context", exact: true });
+    await context.click();
+    const north = page.getByRole("option", {
+      name: `research-evidence.md — ${northPath}`,
+      exact: true
+    });
+    await expect(north).toBeVisible();
+    await expect(page.getByRole("option", {
+      name: `research-evidence.md — ${southPath}`,
+      exact: true
+    })).toBeVisible();
+    await north.click();
+    await expect(context).toContainText("research-evidence.md");
+    await expect(context).toHaveAttribute("title", northPath);
+
+    const question = "What is the verified transformer limit in the imported evidence?";
+    const answer =
+      "The imported evidence reports a verified emergency transformer limit of 913 MVA.";
+    await page.getByRole("textbox", { name: "Message" }).fill(question);
+    await page.getByRole("button", { name: "Send" }).click();
+
+    await expect(page.locator("main .answer .said")).toHaveText(answer, { timeout: 150_000 });
+    await expect(page.locator("main .asked .meta").getByTitle(northPath))
+      .toHaveText("research-evidence.md");
+    await expect(page.locator(".zone.inspector")).toContainText(/research-evidence\.md/i);
+    await expect(page.locator("main")).not.toContainText("That question did not finish");
+    await expect(page.locator("main")).not.toContainText("Nothing in this project answers that");
+
+    await page.reload({ waitUntil: "networkidle" });
+    await expect(
+      tabs.locator('button.face[aria-current="page"]')
+    ).toHaveText(/What is the verified transformer limit/);
+    await expect(page.locator("main .answer .said")).toHaveText(answer);
+    await expect(page.locator("main .asked .meta").getByTitle(northPath))
+      .toHaveText("research-evidence.md");
+    await expect(page.locator(".zone.inspector")).toContainText(/research-evidence\.md/i);
+  } finally {
+    await rm(temporary, { recursive: true, force: true });
+  }
+});
+
 test("a deterministic provider completes a real research turn across a tab switch and reload", async ({
   page,
   request
@@ -192,7 +272,10 @@ test("a deterministic provider completes a real research turn across a tab switc
   const before = (await beforeResponse.json()) as {
     calls: { jina: number; openrouter: number };
   };
-  const held = await request.post(`${providerOrigin}/control/hold`);
+  const question = "Which substation is the binding winter constraint?";
+  const held = await request.post(`${providerOrigin}/control/hold`, {
+    data: { question }
+  });
   expect(held.ok(), await held.text()).toBe(true);
 
   await page.goto("/app/dev-project", { waitUntil: "networkidle" });
@@ -201,7 +284,6 @@ test("a deterministic provider completes a real research turn across a tab switc
   await page.getByRole("button", { name: "Context" }).click();
   await page.getByRole("option", { name: "Winter readiness brief", exact: true }).click();
 
-  const question = "Which substation is the binding winter constraint?";
   const answer = "The readiness brief identifies Substation 14 as the binding constraint.";
   await page.getByRole("textbox", { name: "Message" }).fill(question);
   await page.getByRole("button", { name: "Send" }).click();

@@ -4,7 +4,10 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { defineStore } from "$model/server/store/constructor";
-import { journalPath } from "$model/server/store/methods/transaction/journal.server";
+import {
+  journalPath,
+  writeJournal
+} from "$model/server/store/methods/transaction/journal.server";
 import type { StoreFailpoint } from "$model/server/store/types";
 
 const directories: string[] = [];
@@ -122,7 +125,12 @@ describe("transaction failpoint recovery before readiness", () => {
     const path = directory();
     writeFileSync(
       journalPath(path),
-      JSON.stringify({ version: 0, state: "prepared", changes: [] })
+      JSON.stringify({
+        version: 0,
+        transactionId: "retired-schema",
+        state: "prepared",
+        changes: []
+      })
     );
 
     expect(() => defineStore({ directory: path })).toThrow(/unsupported schema/);
@@ -144,6 +152,27 @@ describe("transaction failpoint recovery before readiness", () => {
 
     expect(() => defineStore({ directory: path })).toThrow(/unknown fields/);
     expect(existsSync(journalPath(path))).toBe(true);
+  });
+
+  it("refuses hidden and symbolic fields before writing a journal", () => {
+    const path = directory();
+    for (const journal of [
+      Object.defineProperty({
+        version: 1,
+        transactionId: "decided",
+        state: "committed",
+        changes: [{ table: "projects", rows: [] }]
+      }, "retired", { value: true }),
+      Object.defineProperty({
+        version: 1,
+        transactionId: "decided",
+        state: "committed",
+        changes: [{ table: "projects", rows: [] }]
+      }, Symbol("retired"), { value: true })
+    ]) {
+      expect(() => writeJournal(path, journal as never)).toThrow(/unknown fields/);
+      expect(existsSync(journalPath(path))).toBe(false);
+    }
   });
 
   it("fails readiness rather than recovering a non-current row", () => {

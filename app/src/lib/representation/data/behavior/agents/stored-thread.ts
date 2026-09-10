@@ -40,12 +40,12 @@ const message = (value: unknown): boolean => {
   return held !== undefined &&
     hasExactFields(
       held,
-      ["id", "role", "sentAt", "blocks", "state"],
-      ["author", "attachments", "labels", "error"]
+      ["id", "role", "author", "sentAt", "blocks", "state"],
+      ["attachments", "labels"]
     ) &&
     isStoredIdentifier(held.id) &&
     (held.role === "prompt" || held.role === "response") &&
-    (held.author === undefined || isStoredActor(held.author)) &&
+    isStoredActor(held.author) &&
     isStoredTime(held.sentAt) &&
     admitContentBlocks(held.blocks) !== undefined &&
     (held.attachments === undefined || (
@@ -56,8 +56,7 @@ const message = (value: unknown): boolean => {
       held.labels.every((label) => isStoredText(label, 500)) &&
       new Set(held.labels).size === held.labels.length
     )) &&
-    (held.state === "streaming" || held.state === "complete" || held.state === "error") &&
-    (held.error === undefined || isStoredText(held.error, 10_000));
+    held.state === "complete";
 };
 
 /** One exact current message partition; no malformed member is partially admitted. */

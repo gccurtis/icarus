@@ -5,6 +5,7 @@ import {
   type StoredTemplateStage
 } from "$representation/data/behavior/templates/stored-stage";
 import type { Id } from "$representation/data/types/core/id";
+import type { ResourceRef } from "$representation/data/types/core/resource";
 import type { DocumentBody } from "$representation/data/types/documents/body";
 import type { SlideDeckBody } from "$representation/data/types/slide-decks/body";
 
@@ -21,6 +22,14 @@ export const stageTitleOf = (name: string): string => `Template · ${name}`.slic
 
 export const resourceTableOf = (target: TemplateStageTarget): ResourceTable =>
   target === "document" ? "documents" : "slideDecks";
+
+export const stageResourceRef = (
+  target: TemplateStageTarget,
+  resourceId: string
+): Extract<ResourceRef, { kind: "document" | "slides" }> =>
+  target === "document"
+    ? { kind: "document", id: asId<"documents">(resourceId) }
+    : { kind: "slides", id: asId<"slideDecks">(resourceId) };
 
 export const resourceTableOfId = (resourceId: string): ResourceTable | undefined =>
   resourceId.startsWith("documents:")
@@ -87,6 +96,7 @@ export const removeStage = (store: StoreUnitOfWork, stage: Stage): void => {
   const snapshots = stage.target === "document" ? "documentSnapshots" : "slideDeckSnapshots";
   const changeSets = stage.target === "document" ? "documentChangeSets" : "slideDeckChangeSets";
   const kind = stage.target === "document" ? "document" : "slides";
+  const ref = stageResourceRef(stage.target, stage.resourceId);
 
   const threads = recordsIn(store, "commentThreads").filter((row) => {
     const target = row.target as Record<string, unknown> | undefined;
@@ -119,12 +129,8 @@ export const removeStage = (store: StoreUnitOfWork, stage: Stage): void => {
       snapshots
     )
   );
-  if (stage.target === "document") {
-    forgetSemanticResourceFor(store, stage.projectId, { kind: "document", id: stage.resourceId });
-  } else {
-    forgetSemanticResourceFor(store, stage.projectId, { kind: "slides", id: stage.resourceId });
-  }
-  for (const setId of rowsOfResource(store, stage.projectId, stage.resourceId)) {
+  forgetSemanticResourceFor(store, stage.projectId, ref);
+  for (const setId of rowsOfResource(store, stage.projectId, ref)) {
     store.remove(`resourceSets.${setId}`);
   }
   if (recordsIn(store, table).some((row) => row._id === stage.resourceId)) {

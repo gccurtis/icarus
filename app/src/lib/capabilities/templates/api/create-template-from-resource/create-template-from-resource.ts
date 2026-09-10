@@ -6,10 +6,14 @@ import { settledHoleDefaults, templatedBodyOf } from "$capabilities/templates/ap
 import type { TemplateBody } from "$representation/data/types/templates/template";
 
 import { validateCreateTemplateFromResource } from "$capabilities/templates/api/create-template-from-resource/validate-create-template-from-resource";
-import { leaderBodyOf, resourceTableOf } from "$capabilities/templates/api/shared/stages";
+import {
+  leaderBodyOf,
+  resourceTableOf,
+  stageResourceRef
+} from "$capabilities/templates/api/shared/stages";
 import { recordsIn, type RowFields } from "$capabilities/templates/api/shared/store";
 import { writeTemplateVersion } from "$capabilities/templates/api/shared/template-rows";
-import { bodyOf } from "$capabilities/templates/api/shared/validation";
+import { bodyOf } from "$capabilities/templates/api/shared/body-validation/body-validation";
 import { declaredFor } from "$capabilities/templates/api/shared/holes";
 import { expandedScope } from "$capabilities/templates/api/shared/scopes";
 import type { CreateTemplateFromResourceResult } from "$capabilities/templates/types/templates";
@@ -71,11 +75,12 @@ export const createTemplateFromResource = async (
 
   let holes;
   try {
+    const ref = stageResourceRef(asked.target, asked.resourceId);
     holes = declaredFor(body, portable.holes).map((hole) => {
       const expanded = expandedScope(
         store,
         scope.projectId,
-        { kind: "resource", resourceId: asked.resourceId, hole: hole.name },
+        { kind: "resource", ref, hole: hole.name },
         hole.default
       );
       return expanded === undefined ? hole : { ...hole, default: expanded };

@@ -64,25 +64,35 @@ type JobTable = "semanticSyncJobs" | "semanticMaterialJobs";
 
 const semanticJob = (value: unknown, table: JobTable): boolean => {
   const row = storedFields(value);
-  return row !== undefined && hasExactFields(
-    row,
-    [
-      "_id", "_creationTime", "projectId", "ref", "requestedRevision", "state",
-      "attempts", "queuedAt", "updatedAt"
-    ],
-    ["force", "error", "startedAt", "claimId", "leaseExpiresAt"]
-  ) && isStoredRowId(row._id, table) && isStoredTime(row._creationTime) &&
-    isStoredRowId(row.projectId, "projects") && isResourceRef(row.ref) &&
-    isStoredNatural(row.requestedRevision) &&
-    (row.force === undefined || typeof row.force === "boolean") &&
-    (row.state === "queued" || row.state === "running" || row.state === "failed") &&
-    isStoredNatural(row.attempts) &&
-    (row.error === undefined || isStoredText(row.error, 10_000)) &&
-    isStoredTime(row.queuedAt) &&
-    (row.startedAt === undefined || isStoredTime(row.startedAt)) &&
-    (row.claimId === undefined || isStoredIdentifier(row.claimId)) &&
-    (row.leaseExpiresAt === undefined || isStoredTime(row.leaseExpiresAt)) &&
-    isStoredTime(row.updatedAt);
+  if (row === undefined) return false;
+  if (
+    !isStoredRowId(row._id, table) ||
+    !isStoredTime(row._creationTime) ||
+    !isStoredRowId(row.projectId, "projects") ||
+    !isResourceRef(row.ref) ||
+    !isStoredNatural(row.requestedRevision) ||
+    (row.force !== undefined && row.force !== true) ||
+    !isStoredNatural(row.attempts) ||
+    !isStoredTime(row.queuedAt) ||
+    !isStoredTime(row.updatedAt) ||
+    row.queuedAt > row.updatedAt
+  ) {
+    return false;
+  }
+  const base = [
+    "_id", "_creationTime", "projectId", "ref", "requestedRevision", "state",
+    "attempts", "queuedAt", "updatedAt"
+  ];
+  if (row.state === "queued") return hasExactFields(row, base, ["force"]);
+  if (row.state === "running") {
+    return hasExactFields(row, [...base, "startedAt", "claimId", "leaseExpiresAt"], ["force"]) &&
+      row.attempts > 0 && isStoredTime(row.startedAt) && row.startedAt >= row.queuedAt &&
+      row.startedAt <= row.updatedAt && isStoredIdentifier(row.claimId) &&
+      isStoredTime(row.leaseExpiresAt) && row.leaseExpiresAt > row.startedAt;
+  }
+  return row.state === "failed" &&
+    hasExactFields(row, [...base, "error"], ["force"]) &&
+    row.attempts > 0 && isStoredText(row.error, 10_000) && row.error.length > 0;
 };
 
 export const isStoredSemanticSyncJob = (

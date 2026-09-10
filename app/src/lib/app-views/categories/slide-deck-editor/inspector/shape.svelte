@@ -7,7 +7,10 @@
   import ElementPaint from "$app-views/categories/slide-deck-editor/components/element-paint.svelte";
   import TextSpacing from "$app-views/categories/slide-deck-editor/components/text-spacing.svelte";
   import TextStyle from "$app-views/categories/slide-deck-editor/components/text-style.svelte";
-  import { elementIn, slideHolding, slideIndexOf, withSet } from "$app-views/categories/slide-deck-editor/procedures/deck";
+  import { slideHolding } from "$app-views/categories/slide-deck-editor/procedures/deck-slide-holding";
+  import { elementIn } from "$app-views/categories/slide-deck-editor/procedures/deck-reading";
+  import { slideIndexOf } from "$app-views/categories/slide-deck-editor/procedures/deck-slides";
+  import { withSet } from "$app-views/categories/slide-deck-editor/procedures/deck-values";
   import { selectedIds, slideSignal } from "$app-views/categories/slide-deck-editor/procedures/selecting";
   import { workspaceState, type SlideDeckRuntime } from "$model/client/workspace-state";
 
@@ -34,7 +37,7 @@
 
   const set = (path: string, value: unknown) => {
     if (body === undefined) return;
-    runtime?.apply(withSet(body, path, value).ops);
+    runtime?.apply(withSet(body, "element", path, value).ops);
   };
 </script>
 

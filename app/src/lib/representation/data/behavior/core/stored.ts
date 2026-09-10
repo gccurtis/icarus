@@ -1,21 +1,53 @@
 import type { Actor } from "$representation/data/types/core/actor";
+import type { Id } from "$representation/data/types/core/id";
 import type { TableName } from "$representation/store/tables";
 
 export type StoredFields = Record<string, unknown>;
 
-export const storedFields = (value: unknown): StoredFields | undefined =>
-  value !== null && typeof value === "object" && !Array.isArray(value)
-    ? value as StoredFields
-    : undefined;
+/**
+ * Admit only an ordinary JSON object as a represented record.
+ *
+ * Store values cross a serialization boundary. Accepting a class instance,
+ * accessor, hidden property, symbol, or explicitly-present `undefined` here
+ * would give the in-memory value a shape that the durable value cannot retain.
+ * That is also an accidental compatibility surface: a validator could observe
+ * one enumerable projection while unvalidated state travelled alongside it.
+ */
+export const storedFields = (value: unknown): StoredFields | undefined => {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) return undefined;
+  const prototype = Object.getPrototypeOf(value);
+  if (prototype !== Object.prototype && prototype !== null) return undefined;
+  for (const key of Reflect.ownKeys(value)) {
+    if (typeof key !== "string") return undefined;
+    const descriptor = Object.getOwnPropertyDescriptor(value, key);
+    if (
+      descriptor === undefined ||
+      !("value" in descriptor) ||
+      !descriptor.enumerable ||
+      descriptor.value === undefined
+    ) return undefined;
+  }
+  return value as StoredFields;
+};
 
 export const hasExactFields = (
   value: StoredFields,
   required: readonly string[],
   optional: readonly string[] = []
 ): boolean => {
-  const fields = Object.keys(value);
+  const prototype = Object.getPrototypeOf(value);
+  if (prototype !== Object.prototype && prototype !== null) return false;
+  const fields = Reflect.ownKeys(value);
+  if (!fields.every((field): field is string => typeof field === "string")) return false;
   return required.every((field) => fields.includes(field)) &&
-    fields.every((field) => required.includes(field) || optional.includes(field));
+    fields.every((field) => {
+      if (!required.includes(field) && !optional.includes(field)) return false;
+      const descriptor = Object.getOwnPropertyDescriptor(value, field);
+      return descriptor !== undefined &&
+        "value" in descriptor &&
+        descriptor.enumerable &&
+        descriptor.value !== undefined;
+    });
 };
 
 export const isStoredText = (value: unknown, maximum = 100_000): value is string =>
@@ -28,7 +60,10 @@ export const isStoredIdentifier = (value: unknown, maximum = 500): value is stri
   !/[.\s]/.test(value);
 
 /** One nominal current Store id, including the represented table namespace. */
-export const isStoredRowId = (value: unknown, table: TableName | "_storage"): value is string =>
+export const isStoredRowId = <Table extends TableName | "_storage">(
+  value: unknown,
+  table: Table
+): value is Id<Table> =>
   (table === "projects" && value === "default") ||
   (table === "users" && value === "default-user") ||
   (

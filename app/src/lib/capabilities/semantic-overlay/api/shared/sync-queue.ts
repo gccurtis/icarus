@@ -1,6 +1,7 @@
 import type { SemanticUnitModel } from "$capabilities/semantic-overlay/api/shared/unit-of-work";
 import type { Id } from "$representation/data/types/core/id";
 import type { ResourceRef } from "$representation/data/types/core/resource";
+import type { SemanticSyncJobFields } from "$representation/data/types/semantic/sync";
 import { rowsOf } from "$capabilities/semantic-overlay/api/shared/rows";
 import { sameResourceRef } from "$capabilities/semantic-overlay/api/shared/resource-ref";
 
@@ -37,25 +38,29 @@ export const enqueueSemanticSyncFor = (
 
   const revisionAdvanced = requestedRevision > existing.requestedRevision;
   if (existing.state === "failed" && !revisionAdvanced && !force) return existing._id;
-
-  if (revisionAdvanced) {
-    model.store.update(
-      `semanticSyncJobs.${existing._id}.requestedRevision`,
-      requestedRevision
-    );
-  }
-  if (force && existing.force !== true) {
-    model.store.update(`semanticSyncJobs.${existing._id}.force`, true);
-  }
+  const common = {
+    projectId: existing.projectId,
+    ref: existing.ref,
+    requestedRevision: revisionAdvanced ? requestedRevision : existing.requestedRevision,
+    ...(force || existing.force === true ? { force: true as const } : {}),
+    attempts: existing.attempts,
+    queuedAt: existing.queuedAt,
+    updatedAt: at
+  };
+  let fields: SemanticSyncJobFields;
   if (existing.state === "failed") {
-    model.store.update(`semanticSyncJobs.${existing._id}.state`, "queued");
-    model.store.removeFieldFromRows("semanticSyncJobs", [existing._id], "error");
-    model.store.removeFieldFromRows("semanticSyncJobs", [existing._id], "claimId");
-    model.store.removeFieldFromRows("semanticSyncJobs", [existing._id], "leaseExpiresAt");
-    model.store.removeFieldFromRows("semanticSyncJobs", [existing._id], "startedAt");
-    model.store.update(`semanticSyncJobs.${existing._id}.attempts`, 0);
-    model.store.update(`semanticSyncJobs.${existing._id}.queuedAt`, at);
+    fields = { ...common, state: "queued", attempts: 0, queuedAt: at };
+  } else if (existing.state === "running") {
+    fields = {
+      ...common,
+      state: "running",
+      startedAt: existing.startedAt,
+      claimId: existing.claimId,
+      leaseExpiresAt: existing.leaseExpiresAt
+    };
+  } else {
+    fields = { ...common, state: "queued" };
   }
-  model.store.update(`semanticSyncJobs.${existing._id}.updatedAt`, at);
+  model.store.update(`semanticSyncJobs.${existing._id}`, fields);
   return existing._id;
 };

@@ -5,7 +5,7 @@ import { describe, expect, test } from "vitest";
 import { asId } from "$representation/data/behavior/core/id";
 import { projectResource } from "$representation/data/behavior/semantic/projection/project-resource";
 import type { SlideDeckBody, SlideElement } from "$representation/data/types/slide-decks/body";
-import { validSlideTemplateBody } from "$capabilities/templates/api/shared/validation";
+import { validSlideTemplateBody } from "$capabilities/templates/api/shared/body-validation/slides";
 
 type SeedDeck = { readonly _id: string; readonly projectId: string; readonly title: string };
 type SeedSnapshot = {

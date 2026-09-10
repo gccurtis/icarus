@@ -67,7 +67,7 @@ export const insertionOf = (
   }
   for (const [key, style] of Object.entries(source.styles.styles)) {
     if (key in body.styles.styles) continue;
-    ops.push({ op: "set", path: `styles/styles/${key}`, value: style, was: null });
+    ops.push({ op: "set", target: "deck", path: `styles/styles/${key}`, value: style, was: null });
   }
   const anchor = afterSlideId !== null && body.slides.some((slide) => slide.id === afterSlideId)
     ? afterSlideId

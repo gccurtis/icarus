@@ -1,18 +1,17 @@
 import type { ResolveThreadInput } from "$capabilities/comments/types/resolve-thread";
+import {
+  hasExactFields,
+  isStoredRowId,
+  storedFields
+} from "$representation/data/behavior/core/stored";
 
 export const validateResolveThread = (input: unknown): ResolveThreadInput => {
-  if (
-    typeof input !== "object" ||
-    input === null ||
-    Array.isArray(input) ||
-    Object.keys(input).length !== 2 ||
-    !Object.hasOwn(input, "threadId") ||
-    !Object.hasOwn(input, "resolved")
-  ) {
+  const fields = storedFields(input);
+  if (fields === undefined || !hasExactFields(fields, ["threadId", "resolved"])) {
     throw new Error("comments/resolve-thread: an exact object is required");
   }
-  const { threadId, resolved } = input as { threadId?: unknown; resolved?: unknown };
-  if (typeof threadId !== "string" || threadId.length === 0 || threadId !== threadId.trim() || /[.\s]/.test(threadId)) {
+  const { threadId, resolved } = fields;
+  if (!isStoredRowId(threadId, "commentThreads")) {
     throw new Error("comments/resolve-thread: threadId is required");
   }
   if (typeof resolved !== "boolean") {

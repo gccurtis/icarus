@@ -1,5 +1,6 @@
 import { Plugin, PluginKey } from "prosemirror-state";
 import { Decoration, DecorationSet } from "prosemirror-view";
+import { untrack } from "svelte";
 
 export const HELD = new PluginKey<boolean>("document-editor.held-selection");
 
@@ -28,11 +29,15 @@ export const heldSelection = (): Plugin<boolean> =>
       },
       handleDOMEvents: {
         blur: (view) => {
-          view.dispatch(view.state.tr.setMeta(HELD, true).setMeta("addToHistory", false));
+          untrack(() => {
+            view.dispatch(view.state.tr.setMeta(HELD, true).setMeta("addToHistory", false));
+          });
           return false;
         },
         focus: (view) => {
-          view.dispatch(view.state.tr.setMeta(HELD, false).setMeta("addToHistory", false));
+          untrack(() => {
+            view.dispatch(view.state.tr.setMeta(HELD, false).setMeta("addToHistory", false));
+          });
           return false;
         }
       }

@@ -8,15 +8,15 @@
   import { SlideSurface } from "$authored-components/slide-surface";
   import { Button } from "$vendored-components/button";
   import * as DropdownMenu from "$vendored-components/dropdown-menu";
+  import type { SlideDeckBody } from "$app-views/categories/slide-deck-editor/procedures/deck-types";
+  import type { Edit } from "$app-views/categories/slide-deck-editor/procedures/deck-edit";
+  import { withNewSlide } from "$app-views/categories/slide-deck-editor/procedures/deck-slide-layouts";
   import {
     stepped,
     withDuplicatedSlide,
     withMovedSlide,
-    withNewSlide,
-    withoutSlide,
-    type Edit,
-    type SlideDeckBody
-  } from "$app-views/categories/slide-deck-editor/procedures/deck";
+    withoutSlide
+  } from "$app-views/categories/slide-deck-editor/procedures/deck-slide-order";
   import { sceneOf } from "$app-views/categories/slide-deck-editor/procedures/scene";
   import { slideSignal } from "$app-views/categories/slide-deck-editor/procedures/selecting";
   import { ratioOf, slideUnits } from "$app-views/categories/slide-deck-editor/procedures/stage";

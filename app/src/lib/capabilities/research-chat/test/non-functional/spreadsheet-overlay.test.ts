@@ -176,11 +176,6 @@ describe("research pull-boundary spreadsheet projection", () => {
           throw new Error("Descriptors are disabled in this contract");
         }
       },
-      materialContent: {
-        read: async () => {
-          throw new Error("A spreadsheet must not read external material bytes");
-        }
-      },
       observability: { logger: { info: () => {}, warn: () => {} } }
     } as unknown as ServerModel;
 

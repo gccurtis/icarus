@@ -1,9 +1,9 @@
 import {
   fieldsOf,
   only,
-  revisionOf,
-  stageIdOf
+  revisionOf
 } from "$capabilities/templates/api/shared/validation";
+import { stageIdOf } from "$capabilities/templates/api/shared/stage-validation";
 import type { CommitTemplateStageInput } from "$capabilities/templates/types/templates";
 
 export const validateCommitTemplateStage = (input: unknown): CommitTemplateStageInput => {

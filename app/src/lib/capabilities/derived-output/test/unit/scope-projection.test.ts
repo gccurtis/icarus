@@ -13,6 +13,7 @@ const output = (scope: TableRow<"derivedOutputs">["scope"]): TableRow<"derivedOu
   definitionRevision: 1,
   origin: { kind: "document", id: asId<"documents">("documents:made") },
   scope,
+  valueSource: "none",
   queries: [],
   evidence: [],
   state: "idle",
@@ -50,7 +51,7 @@ describe("the Derived Output scope read projection", () => {
         projectId: asId<"projects">("projects:1"),
         boundTo: {
           kind: "resource",
-          resourceId: "documents:made",
+          ref: { kind: "document", id: asId<"documents">("documents:made") },
           hole: "source_material"
         },
         set: concrete,
@@ -63,7 +64,7 @@ describe("the Derived Output scope read projection", () => {
     expect(visibleScopeOf(store, output(scope))).toEqual(concrete);
   });
 
-  test("keeps a named set and a row owned by another resource opaque", () => {
+  test("keeps named, differently identified, and cross-kind owners opaque", () => {
     const scope = {
       include: [{ select: "set" as const, setId: "resourceSets:1" as never }],
       exclude: []
@@ -80,19 +81,29 @@ describe("the Derived Output scope read projection", () => {
     };
     expect(visibleScopeOf(storeWith([named]), output(scope))).toBe(scope);
 
-    const another = {
+    const { name: _name, ...another } = {
       ...named,
-      name: undefined,
       boundTo: {
         kind: "resource" as const,
-        resourceId: "documents:another",
+        ref: { kind: "document" as const, id: "documents:another" as never },
         hole: "source_material"
       }
     };
+    void _name;
     expect(visibleScopeOf(storeWith([another]), output(scope))).toBe(scope);
+
+    const otherKind = {
+      ...another,
+      boundTo: {
+        kind: "resource" as const,
+        ref: { kind: "slides" as const, id: "slideDecks:made" as never },
+        hole: "source_material"
+      }
+    };
+    expect(visibleScopeOf(storeWith([otherKind]), output(scope))).toBe(scope);
   });
 
-  test("keeps an ambiguous private id opaque", () => {
+  test("fails closed on an ambiguous private id", () => {
     const scope = {
       include: [{ select: "set" as const, setId: "resourceSets:duplicate" as never }],
       exclude: []
@@ -103,7 +114,7 @@ describe("the Derived Output scope read projection", () => {
       projectId: "projects:1" as never,
       boundTo: {
         kind: "resource" as const,
-        resourceId: "documents:made",
+        ref: { kind: "document" as const, id: "documents:made" as never },
         hole: "source_material"
       },
       set: { include: [{ select: "project" as const }], exclude: [] },
@@ -112,11 +123,11 @@ describe("the Derived Output scope read projection", () => {
       updatedAt: 1
     };
 
-    expect(visibleScopeOf(storeWith([owned, { ...owned, _creationTime: 2 }]), output(scope)))
-      .toBe(scope);
+    expect(() => visibleScopeOf(storeWith([owned, { ...owned, _creationTime: 2 }]), output(scope)))
+      .toThrow(/repeats row id/);
   });
 
-  test("keeps a private row opaque when a foreign row claims its id", () => {
+  test("fails closed when a foreign row claims the private id", () => {
     const scope = {
       include: [{ select: "set" as const, setId: "resourceSets:duplicate" as never }],
       exclude: []
@@ -127,7 +138,7 @@ describe("the Derived Output scope read projection", () => {
       projectId: "projects:1" as never,
       boundTo: {
         kind: "resource" as const,
-        resourceId: "documents:made",
+        ref: { kind: "document" as const, id: "documents:made" as never },
         hole: "source_material"
       },
       set: { include: [{ select: "project" as const }], exclude: [] },
@@ -140,15 +151,16 @@ describe("the Derived Output scope read projection", () => {
       projectId: "projects:other" as never,
       boundTo: {
         kind: "resource" as const,
-        resourceId: "documents:elsewhere",
+        ref: { kind: "document" as const, id: "documents:elsewhere" as never },
         hole: "source_material"
       }
     };
 
-    expect(visibleScopeOf(storeWith([owned, foreign]), output(scope))).toBe(scope);
+    expect(() => visibleScopeOf(storeWith([owned, foreign]), output(scope)))
+      .toThrow(/repeats row id/);
   });
 
-  test("keeps an exact-owner private row opaque when its stored rule is malformed", () => {
+  test("fails closed when the exact-owner private row is malformed", () => {
     const scope = {
       include: [{ select: "set" as const, setId: "resourceSets:broken" as never }],
       exclude: []
@@ -159,7 +171,7 @@ describe("the Derived Output scope read projection", () => {
       projectId: "projects:1",
       boundTo: {
         kind: "resource",
-        resourceId: "documents:made",
+        ref: { kind: "document", id: "documents:made" },
         hole: "source_material"
       },
       set: { include: "everything", exclude: [] },
@@ -168,6 +180,21 @@ describe("the Derived Output scope read projection", () => {
       updatedAt: 1
     } as unknown as TableRow<"resourceSets">;
 
-    expect(visibleScopeOf(storeWith([malformed]), output(scope))).toBe(scope);
+    expect(() => visibleScopeOf(storeWith([malformed]), output(scope)))
+      .toThrow(/resourceSets.*non-current field values/);
+  });
+
+  test("fails closed when the Store does not return the requested table", () => {
+    const scope = {
+      include: [{ select: "set" as const, setId: "resourceSets:missing" as never }],
+      exclude: []
+    };
+    const missing = { read: () => undefined } as unknown as StoreUnitOfWork;
+    const wrong = {
+      read: () => ({ kind: "table", table: "projects", rows: [] })
+    } as unknown as StoreUnitOfWork;
+
+    expect(() => visibleScopeOf(missing, output(scope))).toThrow(/did not return/);
+    expect(() => visibleScopeOf(wrong, output(scope))).toThrow(/did not return/);
   });
 });

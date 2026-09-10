@@ -13,7 +13,6 @@ window later — and it owns one client model for its whole life.
 | Object | Owns | Holds `$state` |
 | --- | --- | --- |
 | [`configuration`](configuration/configuration.md) | The settings the server published to this tab | no |
-| [`storage`](storage/storage.md) | This project's browser store, and the format of what survives a reload | no |
 | [`tab-list`](tab-list/tab-list.md) | What is open, in what order, and which one is active | yes |
 | [`tab-views`](tab-views/tab-views.md) | One view per open tab: its centre, rail, lens and geometry | yes |
 | [`workspace-state`](workspace-state/workspace-state.md) | The composition of those two, and every write to either | yes |
@@ -32,9 +31,10 @@ neither: a view that could reach one through the graph could move a tab without
 going through the coordinator, and the coordinator being the only writer is what
 makes an operation log over it complete.
 
-**Storage is built and read by nothing.** Nothing persists while the stored shape
-is unsettled, and storage holds exactly that one section. It stands intact and
-unused rather than being torn out and rebuilt.
+Durable workspace state has one path: the server-owned `workspaceSnapshots` and
+`workspaceRevisions` tables. `workspace-state` restores the current snapshot and
+submits every local change through the workspace capability; there is no second
+browser-local workbench schema.
 
 ## Initialization, not a lazy singleton
 
@@ -101,7 +101,7 @@ the only thing standing between a project switch and a stale graph, because ther
 is no other moment at which the layout script runs again.
 
 That is not a workaround for the initializer. A fresh client instance is what a
-project switch is: another set of open tabs, another storage key, another scope.
+project switch is: another set of open tabs, another persisted workspace, another scope.
 
 ## Why `/app` is client-rendered
 
@@ -127,7 +127,7 @@ rather than deleted, because the first route to enable SSR needs them that day.
 | | Today | Under SSR |
 | --- | --- | --- |
 | Construction | Browser-only. The layout script does not run on the server. | Runs on the server too, so no constructor may touch the DOM. |
-| `window`, `document`, `localStorage` | Read directly at construction — there is no server path that reaches them. | Only inside `browser`-guarded methods or effects, never during construction. |
+| `window`, `document`, browser storage | Not read by the client-model composition or its constructors. | Remain in browser-guarded effects and surfaces, never construction. |
 
 Writing a guard for a path that cannot run buys nothing and obscures which
 constraints are load-bearing.
@@ -137,8 +137,8 @@ constraints are load-bearing.
 Context buys per-render isolation, and there are no concurrent renders to
 isolate: the frame renders once per client instance. What it costs is
 `getContext` in every consumer, forever, to separate instances that never
-coexist. It would also cost a cookie instead of `localStorage`, because a cookie
-is the only store a server render can read — and `/app` does not server-render.
+coexist. It would not change persistence: workspace snapshots are server-owned
+and project-scoped behind the workspace capability.
 
 ## Release
 

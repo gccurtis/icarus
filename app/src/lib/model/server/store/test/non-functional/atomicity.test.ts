@@ -17,6 +17,7 @@ const coveredIntents = [
   "agents/api/create-task/create-task.ts",
   "agents/api/run-automation/run-automation.ts",
   "agents/api/send-task-message/send-task-message.ts",
+  "agents/api/update-task/update-task.ts",
   "comments/api/reply/reply.ts",
   "comments/api/resolve-thread/resolve-thread.ts",
   "comments/api/start-thread/start-thread.ts",

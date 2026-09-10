@@ -1,14 +1,17 @@
-import type { PromptBlock } from "$representation/data/types/content/content-block";
+import type {
+  LinkedPromptBlock,
+  PromptBlock
+} from "$representation/data/types/content/content-block";
 import type { Id } from "$representation/data/types/core/id";
 import type { DocumentBody } from "$representation/data/types/documents/body";
 import type { DocumentOp } from "$representation/data/types/documents/op";
 import type { DerivedOutput } from "$representation/data/types/semantic/derived-output";
 import { mint } from "$app-views/categories/document-editor/procedures/ids";
-import { linearOf } from "$app-views/categories/document-editor/procedures/projection";
+import { linearOf } from "$app-views/categories/document-editor/procedures/projection-atoms";
 
 export type { PromptBlock, PromptState } from "$representation/data/types/content/content-block";
 export type { Id } from "$representation/data/types/core/id";
-export type LinkedPromptBlock = PromptBlock & { derivedOutputId: Id<"derivedOutputs"> };
+export type { LinkedPromptBlock } from "$representation/data/types/content/content-block";
 
 /** Prompt Blocks are body content. Furniture is deliberately not a generation surface. */
 export const promptBlocksIn = (body: DocumentBody | undefined): readonly PromptBlock[] =>

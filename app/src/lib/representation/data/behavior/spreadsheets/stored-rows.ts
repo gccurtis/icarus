@@ -28,6 +28,5 @@ export const isStoredSpreadsheetChangeSet = (
     setTargets: ["cell", "mark", "formatRule", "sheet"],
     listTargets: ["gridRow", "gridColumn", "formatRule", "mark", "sheet"],
     moveTargets: ["gridRow", "gridColumn"],
-    text: false,
-    setTargetOptional: false
+    text: false
   });

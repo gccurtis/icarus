@@ -105,7 +105,7 @@ export const isStoredMaterialSource = (value: unknown): boolean => {
   if (
     held.kind !== "externalFile" ||
     !hasExactFields(held, ["kind", "ref", "fileId", "hash", "mediaType", "subkind"]) ||
-    !isStoredChoice(held.subkind, ["text", "data", "image", "audio", "video", "unknown"]) ||
+    !isStoredChoice(held.subkind, ["text", "code", "data", "image", "audio", "video", "unknown"]) ||
     !isResourceRef(held.ref) ||
     !isStoredRowId(held.fileId, "externalFiles") ||
     held.ref.kind !== externalFileResourceKind(held.subkind) ||
@@ -168,28 +168,32 @@ export const isStoredSemanticCitation = (value: unknown): value is SemanticCitat
   if (held === undefined || !selections(held.selections) || !isStoredNatural(held.overlayGeneration)) {
     return false;
   }
-  if (held.evidenceKind === undefined) {
+  if (held.evidenceKind === "text") {
     return hasExactFields(
       held,
-      ["selections", "source", "span", "overlayGeneration"],
+      ["evidenceKind", "selections", "source", "span", "overlayGeneration"],
       ["locators", "partition"]
     ) && sourceSnapshot(held.source) && span(held.span) &&
       (held.locators === undefined || (Array.isArray(held.locators) && held.locators.every(locatorSpan))) &&
       (held.partition === undefined || isStoredText(held.partition, 1_000));
   }
   if (held.evidenceKind === "descriptor") {
-    return hasExactFields(
-      held,
-      [
+    const base = held.distance === 2 && isStoredMaterialSnapshot(held.material) &&
+      isStoredText(held.text) && held.text.length > 0 &&
+      isStoredText(held.inputHash, 1_000) && held.inputHash.length > 0;
+    if (!base) return false;
+    if (held.facet === "generated") {
+      return hasExactFields(held, [
+        "evidenceKind", "distance", "selections", "material", "facet", "text", "inputHash",
+        "model", "promptVersion", "overlayGeneration"
+      ]) && isStoredText(held.model, 500) && held.model.length > 0 &&
+        isStoredText(held.promptVersion, 500) && held.promptVersion.length > 0;
+    }
+    return isStoredChoice(held.facet, ["identity", "profile", "authored", "nativeVisual"]) &&
+      hasExactFields(held, [
         "evidenceKind", "distance", "selections", "material", "facet", "text", "inputHash",
         "overlayGeneration"
-      ],
-      ["model", "promptVersion"]
-    ) && held.distance === 2 && isStoredMaterialSnapshot(held.material) &&
-      isStoredChoice(held.facet, ["identity", "profile", "authored", "generated", "nativeVisual"]) &&
-      isStoredText(held.text) && isStoredText(held.inputHash, 1_000) &&
-      (held.model === undefined || isStoredText(held.model, 500)) &&
-      (held.promptVersion === undefined || isStoredText(held.promptVersion, 500));
+      ]);
   }
   return (held.evidenceKind === "structured" || held.evidenceKind === "visual" || held.evidenceKind === "code") &&
     hasExactFields(

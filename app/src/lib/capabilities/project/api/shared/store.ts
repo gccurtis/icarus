@@ -1,4 +1,9 @@
-import type { StoreUnitOfWork, TableName, TableRow } from "$model/server/store/index.server";
+import {
+  readCurrentRows,
+  type StoreUnitOfWork,
+  type TableName,
+  type TableRow
+} from "$model/server/store/index.server";
 
 export type StoreReads = Pick<StoreUnitOfWork, "read">;
 
@@ -6,10 +11,7 @@ export const rowsIn = <T extends TableName>(
   store: StoreReads,
   table: T
 ): readonly TableRow<T>[] => {
-  const found = store.read(table);
-  return found?.kind === "table" && found.table === table && Array.isArray(found.rows)
-    ? (found.rows as readonly TableRow<T>[])
-    : [];
+  return readCurrentRows(store, table);
 };
 
 export const recordOf = (value: unknown): Record<string, unknown> | undefined =>

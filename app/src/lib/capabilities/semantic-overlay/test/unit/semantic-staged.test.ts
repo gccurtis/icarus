@@ -21,10 +21,17 @@ const storeOf = (rows: readonly Record<string, unknown>[]): StoreModel =>
 
 const project = "projects:1" as Id<"projects">;
 
+let nextStage = 0;
 const stage = (projectId: string, resourceId: string) => ({
-  _id: `templateStages:${resourceId}`,
+  _id: `templateStages:${++nextStage}`,
+  _creationTime: 1,
   projectId,
-  resourceId
+  templateId: "templates:fixture",
+  templateRevision: 1,
+  target: resourceId.startsWith("documents:") ? "document" : "slides",
+  resourceId,
+  createdBy: { kind: "system" },
+  updatedAt: 1
 });
 
 describe("what the overlay refuses", () => {

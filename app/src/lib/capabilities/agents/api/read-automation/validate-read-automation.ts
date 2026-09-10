@@ -4,5 +4,5 @@ import type { ReadAutomationInput } from "$capabilities/agents/types/agents";
 export const validateReadAutomation = (input: unknown): ReadAutomationInput => {
   const fields = fieldsOf(input, "read-automation");
   only(fields, ["automationId"], "read-automation");
-  return { automationId: idOf(fields.automationId, "read-automation", "automationId") };
+  return { automationId: idOf(fields.automationId, "automations", "read-automation", "automationId") };
 };

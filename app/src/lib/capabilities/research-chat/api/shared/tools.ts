@@ -10,12 +10,15 @@ import type { ResourceSet } from "$representation/data/types/core/resource-set";
 import type { ResearchSource } from "$representation/data/types/investigation/research-turn";
 import type { MaterialHit } from "$representation/data/types/semantic/material";
 import type { SemanticHit } from "$representation/data/types/semantic/index";
-import { querySemanticMaterials, querySemanticOverlay } from "$capabilities/semantic-overlay";
+import {
+  querySemanticMaterialsForModel,
+  querySemanticOverlayForModel
+} from "$capabilities/semantic-overlay";
 
 import { readingTools } from "$capabilities/research-chat/api/shared/reading-tools";
+import { researchResources } from "$capabilities/research-chat/api/shared/resource-catalogue";
 import { rowsIn } from "$capabilities/research-chat/api/shared/store";
 import {
-  RESOURCE_TABLES,
   STOPPED,
   asRecord,
   askedQuery,
@@ -59,13 +62,13 @@ export const createToolSession = (input: SessionInput): ToolSession => {
   const returned: number[] = [];
   let next = 1;
 
-  const names = new Map<string, string>();
-  for (const [kind, table] of RESOURCE_TABLES) {
-    for (const row of rowsIn(input.model.store, table)) {
-      if (row.projectId !== input.projectId || typeof row.title !== "string") continue;
-      names.set(`${kind}\u0000${row._id}`, row.title);
-    }
-  }
+  const resources = researchResources(input.model, input.projectId);
+  const names = new Map(
+    resources.map((resource) => [
+      `${resource.ref.kind}\u0000${resource.ref.id}`,
+      resource.name
+    ])
+  );
   const nameOf = (ref: ResourceRef): string =>
     names.get(`${ref.kind}\u0000${ref.id}`) ?? `${ref.kind} ${ref.id}`;
 
@@ -123,11 +126,16 @@ export const createToolSession = (input: SessionInput): ToolSession => {
     execute: async (value) => {
       const asked = askedQuery(value, input.topK);
       if (!queries.includes(asked.query)) queries.push(asked.query);
-      const result = await querySemanticOverlay({
-        text: asked.query,
-        topK: asked.topK,
-        ...(scoped === undefined ? {} : { scope: scoped })
-      }, input.signal);
+      const result = await querySemanticOverlayForModel(
+        input.model,
+        input.projectId,
+        {
+          text: asked.query,
+          topK: asked.topK,
+          ...(scoped === undefined ? {} : { scope: scoped })
+        },
+        input.signal
+      );
       const kept = result.hits.filter((hit: SemanticHit) => inScope(hit.source.ref));
       returned.push(kept.length);
       return {
@@ -179,12 +187,17 @@ export const createToolSession = (input: SessionInput): ToolSession => {
       const raw = asRecord(value, "the input must be an object");
       const kinds = materialKindsOf(raw.kinds);
       if (!queries.includes(asked.query)) queries.push(asked.query);
-      const result = await querySemanticMaterials({
-        text: asked.query,
-        topK: asked.topK,
-        ...(kinds === undefined ? {} : { kinds }),
-        ...(scoped === undefined ? {} : { scope: scoped })
-      }, input.signal);
+      const result = await querySemanticMaterialsForModel(
+        input.model,
+        input.projectId,
+        {
+          text: asked.query,
+          topK: asked.topK,
+          ...(kinds === undefined ? {} : { kinds }),
+          ...(scoped === undefined ? {} : { scope: scoped })
+        },
+        input.signal
+      );
       return {
         materials: result.hits
           .filter((hit: MaterialHit) => inScope(hit.material.source.ref))
@@ -225,7 +238,7 @@ export const createToolSession = (input: SessionInput): ToolSession => {
     }
   });
 
-  const context: ToolContext = { input, materials, inScope, issue, nameOf, returned };
+  const context: ToolContext = { input, resources, materials, inScope, issue, nameOf, returned };
 
   const discovery = input.grants.includes("retrieve") ? [retrieve, retrieveMaterials] : [];
   const reading = input.grants.includes("resource.read") ? readingTools(context) : [];

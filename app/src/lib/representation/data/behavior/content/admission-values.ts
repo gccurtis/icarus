@@ -1,26 +1,21 @@
 import {
+  hasExactFields,
   isStoredActor,
   isStoredChoice,
-  isStoredRowId
+  isStoredRowId,
+  storedFields
 } from "$representation/data/behavior/core/stored";
 import { isResourceRef } from "$representation/data/behavior/core/resource";
 
 export type Fields = Record<string, unknown>;
 
-export const recordOf = (value: unknown): Fields | undefined =>
-  value !== null && typeof value === "object" && !Array.isArray(value)
-    ? value as Fields
-    : undefined;
+export const recordOf = (value: unknown): Fields | undefined => storedFields(value);
 
 export const exact = (
   value: Fields,
   required: readonly string[],
   optional: readonly string[] = []
-): boolean => {
-  const keys = Object.keys(value);
-  return required.every((key) => keys.includes(key)) &&
-    keys.every((key) => required.includes(key) || optional.includes(key));
-};
+): boolean => hasExactFields(value, required, optional);
 
 export const text = (value: unknown, limit = 100_000): value is string =>
   typeof value === "string" && value.length <= limit;

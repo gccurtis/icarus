@@ -71,15 +71,13 @@ const currentBlock = (value: unknown, depth = 0): value is ContentBlock => {
     return exact(
       block,
       ["id", "type", "expression", "display", "value", "state"],
-      ["formulaId", "error", "resolvedAt", "format"]
+      ["formulaId", "format"]
     ) &&
       text(block.expression, 10_000) &&
       (block.formulaId === undefined || isStoredRowId(block.formulaId, "formulas")) &&
       text(block.display) &&
       currentFormulaValue(block.value) &&
-      isStoredChoice(block.state, ["fresh", "stale", "computing", "error"]) &&
-      (block.error === undefined || text(block.error, 10_000)) &&
-      (block.resolvedAt === undefined || (finite(block.resolvedAt) && block.resolvedAt >= 0)) &&
+      block.state === "fresh" &&
       (block.format === undefined || currentFormat(block.format));
   }
   if (block.type === "image") {
@@ -147,14 +145,30 @@ const currentBlock = (value: unknown, depth = 0): value is ContentBlock => {
     }) && (block.format === undefined || currentFormat(block.format));
   }
   if (block.type !== "prompt") return false;
-  if (!exact(
-    block,
-    ["id", "type", "atoms", "display", "marks", "state"],
-    ["derivedOutputId", "style", "scope", "prompt", "hole", "error", "refreshedAt", "format"]
-  )) return false;
-  return (block.derivedOutputId === undefined ||
-      isStoredRowId(block.derivedOutputId, "derivedOutputs")) &&
-    (block.style === undefined || identifier(block.style)) &&
+  const linked = Object.hasOwn(block, "derivedOutputId");
+  const base = ["id", "type", "atoms", "display", "marks", "state"];
+  const presentation = ["style", "hole", "format"];
+  if (!linked) {
+    if (
+      block.state !== "idle" ||
+      !exact(block, base, [...presentation, "scope", "prompt"])
+    ) return false;
+  } else {
+    if (!isStoredRowId(block.derivedOutputId, "derivedOutputs")) return false;
+    const linkedBase = [...base, "derivedOutputId"];
+    if (block.state === "idle") {
+      if (!exact(block, linkedBase, presentation)) return false;
+    } else if (block.state === "stale") {
+      if (!exact(block, linkedBase, [...presentation, "refreshedAt"])) return false;
+    } else if (block.state === "fresh") {
+      if (!exact(block, [...linkedBase, "refreshedAt"], presentation)) return false;
+    } else if (block.state === "error") {
+      if (!exact(block, [...linkedBase, "error"], [...presentation, "refreshedAt"])) {
+        return false;
+      }
+    } else return false;
+  }
+  return (block.style === undefined || identifier(block.style)) &&
     (block.prompt === undefined || text(block.prompt)) &&
     (block.scope === undefined || currentScope(block.scope)) &&
     (block.hole === undefined || currentHole(block.hole)) &&
@@ -166,8 +180,7 @@ const currentBlock = (value: unknown, depth = 0): value is ContentBlock => {
     Array.isArray(block.marks) &&
     block.marks.length <= 10_000 &&
     block.marks.every(currentMark) &&
-    isStoredChoice(block.state, ["idle", "fresh", "stale", "error"]) &&
-    (block.error === undefined || text(block.error, 10_000)) &&
+    (block.error === undefined || (text(block.error, 10_000) && block.error.trim().length > 0)) &&
     (block.refreshedAt === undefined || (finite(block.refreshedAt) && block.refreshedAt >= 0)) &&
     (block.format === undefined || currentFormat(block.format));
 };

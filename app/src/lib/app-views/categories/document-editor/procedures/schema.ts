@@ -181,13 +181,12 @@ export const schema = new Schema({
       atom: true,
       selectable: true,
       attrs: {
-        atomId: { default: null },
-        expression: { default: "" },
-        resolved: { default: "" },
-        state: { default: "fresh" },
-        error: { default: null },
-        formulaId: { default: null },
-        value: { default: null }
+        atomId: {},
+        expression: {},
+        resolved: {},
+        state: {},
+        formulaId: {},
+        value: {}
       },
       toDOM: (node) => [
         "span",

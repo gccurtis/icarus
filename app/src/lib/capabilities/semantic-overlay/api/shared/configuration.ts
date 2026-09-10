@@ -1,10 +1,15 @@
-import type { Configuration } from "$model/server/configuration/index.server";
+import {
+  requiredString,
+  type Configuration
+} from "$model/server/configuration/index.server";
 import { validateRecursiveIndexConfiguration } from "$representation/data/behavior/semantic/recursive-index";
 import type { RecursiveIndexConfiguration } from "$representation/data/types/semantic/index";
 import type { TranslationConfiguration } from "$representation/data/types/semantic/translation";
 
 const INDEX = "semanticOverlay.index";
 const TRANSLATION = "semanticOverlay.translation";
+const MATERIALS = "semanticOverlay.materials";
+const DESCRIPTOR_MODEL = "intelligence.providers.openrouter.model";
 
 const requiredNumber = (configuration: Configuration, root: string, key: string): number => {
   const path = `${root}.${key}`;
@@ -53,3 +58,31 @@ export const semanticTranslationConfiguration = (
     "attractionStationaryThreshold"
   )
 });
+
+/** Exact upper bound for ephemeral native image bytes sent to semantic providers. */
+export const semanticMaximumNativeImageBytes = (configuration: Configuration): number => {
+  const value = requiredNumber(configuration, MATERIALS, "maxNativeImageBytes");
+  if (!Number.isSafeInteger(value) || value <= 0) {
+    throw new Error(
+      "Configuration key 'semanticOverlay.materials.maxNativeImageBytes' must be a positive safe integer"
+    );
+  }
+  return value;
+};
+
+/** Whether generated material descriptions are part of the exact current policy. */
+export const semanticMaterialDescriptorsEnabled = (
+  configuration: Configuration
+): boolean => {
+  const path = `${MATERIALS}.generateDescriptors`;
+  const value = configuration.get(path);
+  if (typeof value !== "boolean") {
+    throw new Error(`Configuration key '${path}' must be a boolean`);
+  }
+  return value;
+};
+
+/** The configured provider model recorded on every generated material description. */
+export const semanticMaterialDescriptorModel = (
+  configuration: Configuration
+): string => requiredString(configuration, DESCRIPTOR_MODEL);

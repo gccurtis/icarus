@@ -21,8 +21,8 @@ and read the same library the surfaces do.
 ## The shape
 
 A task is a run. It starts the moment it is created, and it is `running`,
-`pending review` or `finished`; success or failure is the agent's to say in its
-outputs. An automation is a standing rule that makes a task each time it fires,
+`pending review` or `finished`; its grounded runner writes the plan, response,
+cited outputs and any terminal explanation. An automation is a standing rule that makes a task each time it fires,
 and a manual automation is one a person fires by hand. A persona is static data:
 what to concentrate on, what it knows, how it works, what shape it answers in,
 what must be true first.

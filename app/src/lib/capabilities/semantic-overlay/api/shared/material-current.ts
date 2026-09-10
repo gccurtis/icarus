@@ -5,9 +5,12 @@ import type { ResourceRef } from "$representation/data/types/core/resource";
 import type { MaterialSeed } from "$representation/data/types/semantic/material";
 import {
   MATERIAL_DESCRIPTOR_PROMPT_VERSION,
-  materialDescriptorInputHash,
-  materialDescriptorModel
+  materialDescriptorInputHash
 } from "$capabilities/semantic-overlay/api/shared/material-description";
+import {
+  semanticMaterialDescriptorModel,
+  semanticMaterialDescriptorsEnabled
+} from "$capabilities/semantic-overlay/api/shared/configuration";
 import { materialHash } from "$capabilities/semantic-overlay/api/shared/material-hash";
 import {
   canDescribeMaterial,
@@ -22,11 +25,12 @@ import { rowsOf } from "$capabilities/semantic-overlay/api/shared/rows";
 import { sameResourceRef } from "$capabilities/semantic-overlay/api/shared/resource-ref";
 
 const descriptorPolicyIsCurrent = (
-  model: ServerModel,
   material: TableRow<"semanticMaterials">,
-  seed: MaterialSeed
+  seed: MaterialSeed,
+  descriptionsEnabled: boolean,
+  descriptorModel: string | undefined
 ): boolean => {
-  if (model.configuration.get("semanticOverlay.materials.generateDescriptors") !== true) {
+  if (!descriptionsEnabled) {
     return material.descriptor === undefined;
   }
   const descriptor = material.descriptor;
@@ -34,7 +38,7 @@ const descriptorPolicyIsCurrent = (
     return (
       descriptor.inputHash === materialDescriptorInputHash(seed) &&
       descriptor.promptVersion === MATERIAL_DESCRIPTOR_PROMPT_VERSION &&
-      descriptor.model === materialDescriptorModel(model)
+      descriptor.model === descriptorModel
     );
   }
   return !canDescribeMaterial(seed) || material.error !== undefined;
@@ -46,6 +50,10 @@ export const materialsAreCurrent = (
   ref: ResourceRef,
   desired: readonly NormalizedMaterial[]
 ): boolean => {
+  const descriptionsEnabled = semanticMaterialDescriptorsEnabled(model.configuration);
+  const descriptorModel = descriptionsEnabled
+    ? semanticMaterialDescriptorModel(model.configuration)
+    : undefined;
   const materials = rowsOf(model.store, "semanticMaterials").filter(
     (material) => material.projectId === projectId
   );
@@ -79,7 +87,7 @@ export const materialsAreCurrent = (
       material.revisionKey !== materialRevisionKey(seed) ||
       material.profileHash !== materialHash(seed.profile) ||
       material.contextHash !== materialContextHash(seed, contextRefs) ||
-      !descriptorPolicyIsCurrent(model, material, seed)
+      !descriptorPolicyIsCurrent(material, seed, descriptionsEnabled, descriptorModel)
     ) {
       return false;
     }

@@ -33,7 +33,7 @@ describe("semantic resource text projection", () => {
                 atoms: [],
                 display: "Avery is 99 years old.",
                 marks: [],
-                state: "fresh"
+                state: "idle"
               }
             ]
           }
@@ -89,7 +89,7 @@ describe("semantic resource text projection", () => {
                   atoms: [{ id: "generated-atom", kind: "literal", text: "Do not re-ingest me" }],
                   display: "Do not re-ingest me",
                   marks: [],
-                  state: "fresh"
+                  state: "idle"
                 }
               }
             }

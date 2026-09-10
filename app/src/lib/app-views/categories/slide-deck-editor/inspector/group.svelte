@@ -4,7 +4,10 @@
   import CommentAction from "$app-views/categories/slide-deck-editor/components/comment-action.svelte";
   import ElementEffects from "$app-views/categories/slide-deck-editor/components/element-effects.svelte";
   import ElementGeometry from "$app-views/categories/slide-deck-editor/components/element-geometry.svelte";
-  import { elementIn, labelOf, slideHolding, slideIndexOf, withUngrouped } from "$app-views/categories/slide-deck-editor/procedures/deck";
+  import { withUngrouped } from "$app-views/categories/slide-deck-editor/procedures/deck-layering";
+  import { slideHolding } from "$app-views/categories/slide-deck-editor/procedures/deck-slide-holding";
+  import { elementIn, labelOf } from "$app-views/categories/slide-deck-editor/procedures/deck-reading";
+  import { slideIndexOf } from "$app-views/categories/slide-deck-editor/procedures/deck-slides";
   import { elementsSignal, selectedIds, slideSignal } from "$app-views/categories/slide-deck-editor/procedures/selecting";
   import { workspaceState, type SlideDeckRuntime } from "$model/client/workspace-state";
 

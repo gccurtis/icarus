@@ -12,14 +12,20 @@ const model = vi.hoisted(() => ({
     create: (table: string, fields: unknown) => {
       model.minted += 1;
       const id = `${table}:${model.minted}`;
-      model.variables.push({ ...(fields as Row), _id: id });
+      model.variables.push({ ...(fields as Row), _id: id, _creationTime: 1 });
       return id;
     },
     read: () => ({ table: "variables", kind: "table", rows: model.variables }),
     update: (path: string, value: unknown) => {
       const [, id] = path.split(".");
       const at = model.variables.findIndex((row) => row._id === id);
-      if (at !== -1) model.variables[at] = { ...(value as Row), _id: id };
+      if (at !== -1) {
+        model.variables[at] = {
+          ...(value as Row),
+          _id: id,
+          _creationTime: model.variables[at]._creationTime
+        };
+      }
     },
     remove: (path: string) => {
       const [, id] = path.split(".");
@@ -31,11 +37,15 @@ const model = vi.hoisted(() => ({
   }
 }));
 
-const scope = vi.hoisted(() => ({ projectId: "p1" }));
+const scope = vi.hoisted(() => ({ projectId: "projects:p1" }));
 
 vi.mock("$runtime/server/start.server", () => ({ serverModel: () => model }));
 vi.mock("$runtime/server/scope.server", () => ({
-  requireScope: () => Promise.resolve({ projectId: scope.projectId, userId: "u", username: "You" })
+  requireScope: () => Promise.resolve({
+    projectId: scope.projectId,
+    userId: "users:u",
+    username: "You"
+  })
 }));
 
 const { readVariables } = await import("$capabilities/variables/api/read-variables/read-variables");
@@ -47,13 +57,13 @@ const { removeVariable } = await import(
 beforeEach(() => {
   model.variables.length = 0;
   model.minted = 0;
-  scope.projectId = "p1";
+  scope.projectId = "projects:p1";
 });
 
 const inProject = async <T>(project: string, run: () => Promise<T>): Promise<T> => {
-  scope.projectId = project;
+  scope.projectId = `projects:${project}`;
   const answer = await run();
-  scope.projectId = "p1";
+  scope.projectId = "projects:p1";
   return answer;
 };
 

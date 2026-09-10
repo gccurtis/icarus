@@ -32,6 +32,7 @@
   import { createTask } from "$app-views/categories/agents/procedures/create-task";
   import { followShownThing } from "$app-views/categories/agents/procedures/effects/claim.svelte";
   import { startClock } from "$app-views/categories/agents/procedures/effects/clock.svelte";
+  import { refreshRunningTask } from "$app-views/categories/agents/procedures/effects/refresh-running-task.svelte";
   import { releaseWhenGone } from "$app-views/categories/agents/procedures/effects/release.svelte";
   import { inspectAgent } from "$app-views/categories/agents/procedures/inspect";
   import { isNew, presetPersonaOf } from "$app-views/categories/agents/procedures/naming";
@@ -63,6 +64,10 @@
   const personas = $derived(answer?.personas ?? []);
   const task = $derived(
     detail !== undefined && detail.ready ? (detail.current ?? undefined) : undefined
+  );
+  refreshRunningTask(
+    () => task,
+    () => detail?.refresh()
   );
 
   followShownThing(view, surface, () =>
@@ -155,7 +160,7 @@
         <SurfaceHead>
           <h2 class="heading">Ask a persona to do something once</h2>
           <p class="text-caption text-ink-muted m-0">
-            The task starts when it is created. A runner picks it up, writes its plan and reports outputs here.
+            The task starts when it is created. Its grounded runner prepares only the permitted scope, writes its plan and reports cited outputs here.
           </p>
           {#snippet actions()}
             <Button

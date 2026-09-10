@@ -1,37 +1,18 @@
-Everything below was found by reading the code against its own documents, or by what the extractor could not see. Nothing here is fixed by this wiki; the code wins, and the wiki says what the code does.
+## Scope of this record
 
-## Where documents and code disagree
+The earlier static inventory mixed historical observations with current gaps. It is not a reliable description of the integrated application: the editors persist through capabilities, the Store has a recoverable transaction boundary, and the application and live-provider workflows have executable tests. Current evidence and deliberate External product limits are recorded in [[file:app/src/lib/development-views/external-files-reference/procedures/integration.ts]] and served at `/demo/external-files/integration`.
 
-- **`README.md` at the repository root** describes a `views/` tree, links `app/docs/*` standards (now under `docs/archive/app-docs/`), says `pnpm lint` runs "four linters" and that "nothing is connected yet". There are nine trees, 63 checks in nine groups, and the editors write through capabilities to the store.
-- **[[file:app/src/lib/representation/store/store.md]]** says 35 tables and names `store.server.ts`. `tables.ts` declares 42; the store is opened by `model/server/store`.
-- **[[file:app/src/lib/capabilities/slide-deck/slide-deck.md]]** says nothing here writes. `submitSlideDeckChanges` does.
-- **[[file:app/src/lib/capabilities/workspace/workspace.md]]** is a placeholder; the capability has two procedures.
-- **[[file:app/src/lib/surfaces/content/content.md]]** mentions `$lib/app-views/workspaces/`, which does not exist; the glob reads `categories/*/content`.
-- **[[file:app/src/lib/model/client/workspace-state/workspace-state.md]]** says "Nothing here is persisted yet"; `restore`, `flush` and `methods/shared/submit.ts` persist the ledger through the workspace capability.
-- **[[file:app/configuration/README.md]]** lists `representation.yaml` as "declared, not yet read"; [[file:app/src/lib/model/server/store/constructor.ts]] reads `representation.store.directory`. It also links a `rich-content/overview.md` that does not exist.
-- **[[file:app/src/lib/styles/chromatic-themes/celestial/celestial.md]]** and **[[file:app/src/lib/styles/chromatic-themes/cyberpunk/cyberpunk.md]]** link `docs/design-preferences.md`, which is not in the repository.
-- **[[file:app/src/test/keys-route.test.ts]]** carries a comment saying "65 of 91"; the vocabulary today is 13 content, 86 context and 109 inspector keys.
-- **[[file:app/src/routes/demo/context/+page.svelte]]**, **[[file:app/src/routes/demo/inspector/+page.svelte]]** and **[[file:app/src/routes/demo/workspace/+page.svelte]]** glob `app-views/panels/**` and `app-views/workspaces/**`; neither directory exists, so the three routes render nothing.
-- **`development-views/review`** has no route under `/demo`; it is reachable only through code.
-- **`revisions.yaml`** declares `resources.rebaseWindow`, `consolidateAfter`, `historyDepth` and `checkpointEvery`; nothing under `src/` reads them, and change sets are written with `tier: "recent"` and never consolidated.
-- **`semantic-overlay.yaml`** is read by nothing through the configuration object; the algorithm takes its configuration as an argument.
-- **`general/function-builder`** is a general view with no key in the inspector vocabulary; the eight `general.*` keys have no files.
+Passing a test suite does not establish that every workflow is bug-free, or that every older module meets the desired architecture. The architecture checker's existing exceptions remain explicit in [[file:app/configuration/architecture-baseline.json]]; no new baseline debt is a separate claim from having no debt at all.
 
-## What is not verified
+## Deliberate product boundaries
 
-- This wiki was not run against the application in a browser. Every claim about runtime behaviour is read from the code, not observed.
-- The provider side of the semantic overlay — the Jina token field and the dense vectors — is outside `src/`; the alignment is verified against its unit tests, not against a live response.
-- `pnpm build` was not run for the application as part of this wiki's verification; `pnpm lint` and `pnpm test` were.
-- Which shadcn-svelte and bits-ui versions the vendored parts were generated from is not recorded in the tree; `components.json` names the target and `package.json` pins `bits-ui ^2.19.0`.
+- External manages and downloads PDF, Office, archive, audio, and video files; that does not imply parsing, OCR, preview, or semantic retrieval of their contents.
+- Supported prose, source, structured data, and images have distinct semantic lanes. Queue admission and completed semantic processing are different states.
+- Bounded buffered uploads are not resumable uploads. File History is not a version browser and does not promise to retain unreferenced predecessor bytes.
+- The development identity is not production authentication. Deployment and access-policy hardening require their own review.
 
-## What extraction does not see
+## What the wiki can and cannot prove
 
-- **Blurbs.** 443 of 971 files have no header comment, so their pages show role, imports, exports and tests but no description in the author's words.
-- **Svelte component props.** The extractor records a `.svelte` file's imports and its export names but does not parse `$props()`, so a component's contract is read from its source on its page rather than tabulated.
-- **`carousel-shelf`'s index** uses `export { Root, Item, … }` over default imports; the extractor reads that form now, but it is the one vocabulary index that does not use `export { default as X } from`.
-- **Which procedure a step belongs to** is inferred from directories, and which test exercises which file from imports. A test that imports nothing from the file it means to cover is not counted as covering it.
-- **Runtime values of tokens.** The design-system pages show declared values from the CSS and paint swatches with the live variables; they do not compute the resolved colour.
+The extractor is a navigation aid, not an executable coverage report. Import relationships identify likely test connections; they cannot prove that a test exercises a behavior. Svelte component contracts and procedure ownership still need to be read in their source, and declared design-token values do not establish their final computed appearance.
 
-## Test gaps
-
-The tests page derives coverage from imports. By tree, from the extraction: `surfaces` and `styles` have no test files; `components` has one (the tracer); `development-views` tests only `stack-builder`, `vocabulary`, `review` and `semantic-overlay` procedures; `runtime` tests the server root and the scope but not the client root; `capabilities/development` and `capabilities/store` have no tests of their own. Among model objects, `commands`, `tab-list` and `tab-views` have no tests. The full list, file by file, is on [[page:/tests#gaps|Tests]].
+Use [[page:/tests|Tests]] to find contracts, then run the relevant application, architecture, script, or Chromium suite. Deterministic local-provider tests and explicitly authorized Jina/OpenRouter runs establish different things; skipped live tests must never be counted as passing integrations. Consult the dated integration record for the actual completed runs rather than inferring runtime verification from this wiki alone.

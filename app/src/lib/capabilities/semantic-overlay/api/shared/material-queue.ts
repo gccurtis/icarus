@@ -1,6 +1,7 @@
 import type { SemanticUnitModel } from "$capabilities/semantic-overlay/api/shared/unit-of-work";
 import type { Id } from "$representation/data/types/core/id";
 import type { ResourceRef } from "$representation/data/types/core/resource";
+import type { SemanticMaterialJobFields } from "$representation/data/types/semantic/material";
 import { sameResourceRef } from "$capabilities/semantic-overlay/api/shared/resource-ref";
 import { rowsOf } from "$capabilities/semantic-overlay/api/shared/rows";
 
@@ -32,20 +33,29 @@ export const enqueueMaterialSyncFor = (
 
   const revisionAdvanced = requestedRevision > existing.requestedRevision;
   if (existing.state === "failed" && !revisionAdvanced && !force) return existing._id;
-
-  if (revisionAdvanced) {
-    model.store.update(`semanticMaterialJobs.${existing._id}.requestedRevision`, requestedRevision);
-  }
-  if (force && existing.force !== true) model.store.update(`semanticMaterialJobs.${existing._id}.force`, true);
+  const common = {
+    projectId: existing.projectId,
+    ref: existing.ref,
+    requestedRevision: revisionAdvanced ? requestedRevision : existing.requestedRevision,
+    ...(force || existing.force === true ? { force: true as const } : {}),
+    attempts: existing.attempts,
+    queuedAt: existing.queuedAt,
+    updatedAt: at
+  };
+  let fields: SemanticMaterialJobFields;
   if (existing.state === "failed") {
-    model.store.update(`semanticMaterialJobs.${existing._id}.state`, "queued");
-    model.store.removeFieldFromRows("semanticMaterialJobs", [existing._id], "error");
-    model.store.removeFieldFromRows("semanticMaterialJobs", [existing._id], "claimId");
-    model.store.removeFieldFromRows("semanticMaterialJobs", [existing._id], "leaseExpiresAt");
-    model.store.removeFieldFromRows("semanticMaterialJobs", [existing._id], "startedAt");
-    model.store.update(`semanticMaterialJobs.${existing._id}.attempts`, 0);
-    model.store.update(`semanticMaterialJobs.${existing._id}.queuedAt`, at);
+    fields = { ...common, state: "queued", attempts: 0, queuedAt: at };
+  } else if (existing.state === "running") {
+    fields = {
+      ...common,
+      state: "running",
+      startedAt: existing.startedAt,
+      claimId: existing.claimId,
+      leaseExpiresAt: existing.leaseExpiresAt
+    };
+  } else {
+    fields = { ...common, state: "queued" };
   }
-  model.store.update(`semanticMaterialJobs.${existing._id}.updatedAt`, at);
+  model.store.update(`semanticMaterialJobs.${existing._id}`, fields);
   return existing._id;
 };

@@ -24,7 +24,7 @@ export const PROJECT_RESOURCE_SPECS: readonly ProjectResourceSpec[] = [
 
 export type RepresentedProjectResource = {
   readonly spec: ProjectResourceSpec;
-  readonly row: StoredProjectResource["row"];
+  readonly row: Exclude<StoredProjectResource, { readonly table: "externalFiles" }>["row"];
 };
 
 /** Resolve exactly one supported resource inside the already-resolved project. */
@@ -41,7 +41,7 @@ export const projectResourceOf = (
   const claimed = recordsIn(store, spec.table).filter((row) => row._id === resourceId);
   if (claimed.length !== 1) return undefined;
   const stored = storedProjectResource(claimed[0], spec.table);
-  return stored !== undefined && stored.row.projectId === projectId
+  return stored !== undefined && stored.table !== "externalFiles" && stored.row.projectId === projectId
     ? { spec, row: stored.row }
     : undefined;
 };

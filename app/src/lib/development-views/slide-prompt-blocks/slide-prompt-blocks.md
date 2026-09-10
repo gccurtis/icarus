@@ -109,8 +109,9 @@ collaboration, undo, persistence, and revision machinery see the change.
 2. If the text box already contains text,
    `updateDerivedOutput({ lastResponse })` records it as ungrounded previous
    response continuity. It is not registered as evidence.
-3. `linkPromptBlockOps(block, derivedOutputId)` writes only the ID into the
-   Prompt Block.
+3. `linkPromptBlockOps(block, derivedOutputId)` replaces the block-owned
+   definition with the Derived Output ID; `prompt` and `scope` leave the block
+   in the same operation batch.
 4. `syncPromptBlockOps(block, seededOutput)` mirrors value state and any seeded
    response through deck operations.
 5. The deck runtime flushes that link before generation begins.
@@ -167,7 +168,9 @@ marks or presentation.
 2. remove existing atoms;
 3. insert the response atom;
 4. reinsert surviving marks;
-5. set the small `state`, `error`, and `refreshedAt` mirrors.
+5. replace the exact lifecycle arm: idle has neither `error` nor `refreshedAt`,
+   stale may retain a prior `refreshedAt`, fresh requires `refreshedAt`, and
+   error requires `error` and may retain a prior `refreshedAt`.
 
 Using native `remove` and `insert` operations matters. Slide list fields carry
 identified values, so the deck operation applier rejects a generic `set` of
@@ -177,8 +180,9 @@ and undo semantics used by normal slide text editing.
 Marks keep their absolute character ranges. When a response becomes shorter,
 each endpoint is clipped to the new length and an empty range is removed. This
 is the same policy as the document Prompt Block. Subsequent user typing uses the
-normal `replaced` text operation; it is not a special Prompt edit. The visible
-edited text becomes previous-response continuity on the next refresh.
+normal `replaced` text operation. In the same batch it changes a linked block to
+the exact stale arm and clears any prior error. The visible edited text becomes
+previous-response continuity on the next refresh.
 
 ## Rendering and editor chrome
 
@@ -239,7 +243,7 @@ not to the editable copy in the Prompt Block.
 | Prompt entry action | `src/lib/app-views/categories/slide-deck-editor/components/prompt-action.svelte` |
 | Unlinked setup and normal element controls | `src/lib/app-views/categories/slide-deck-editor/inspector/prompt-block.svelte` |
 | Linked refresh, shared state, and evidence | `src/lib/app-views/categories/slide-deck-editor/components/prompt-settings.svelte` |
-| Text editing and formatting support | `src/lib/app-views/categories/slide-deck-editor/procedures/typing.ts`, `src/lib/app-views/categories/slide-deck-editor/procedures/deck.ts`, and `src/lib/app-views/categories/slide-deck-editor/procedures/styles.ts` |
+| Text editing and formatting support | `src/lib/app-views/categories/slide-deck-editor/procedures/typing.ts`, `src/lib/app-views/categories/slide-deck-editor/procedures/deck-elements.ts`, `src/lib/app-views/categories/slide-deck-editor/procedures/deck-values.ts`, and `src/lib/app-views/categories/slide-deck-editor/procedures/styles.ts` |
 | Operation application | `src/lib/representation/data/behavior/slide-decks/apply-ops.ts` |
 | Editor-only marker | `src/lib/components/authored/slide-surface/slide-surface.svelte` |
 | Inspector routing | `src/lib/app-views/categories/slide-deck-editor/procedures/selecting.ts` and `src/lib/representation/data/types/workspace/views.ts` |

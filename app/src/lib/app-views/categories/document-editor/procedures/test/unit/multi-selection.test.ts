@@ -1,5 +1,6 @@
 import { expect, test } from "vitest";
-import { EditorState, TextSelection } from "prosemirror-state";
+import { EditorState, TextSelection, type Transaction } from "prosemirror-state";
+import type { EditorView } from "prosemirror-view";
 
 import { heldSelection, HELD } from "$app-views/categories/document-editor/procedures/highlight";
 import {
@@ -12,9 +13,9 @@ import {
 } from "$app-views/categories/document-editor/procedures/selection-bookmark";
 import {
   bodyOf,
-  docOf,
-  positionOf
+  docOf
 } from "$app-views/categories/document-editor/procedures/projection";
+import { positionOf } from "$app-views/categories/document-editor/procedures/projection-positions";
 import type { TextBlock } from "$representation/data/types/content/content-block";
 import type { DocumentBody } from "$representation/data/types/documents/body";
 
@@ -34,6 +35,15 @@ const BODY: DocumentBody = {
   ]
 };
 const METRICS = { charactersPerLine: 40, linesPerPage: 40 };
+
+class NodeFocusEvent extends Event implements FocusEvent {
+  readonly detail = 0;
+  readonly relatedTarget = null;
+  readonly view = null;
+  readonly which = 0;
+
+  initUIEvent(): void {}
+}
 
 const at = (state: EditorState, blockId: string, offset: number): number => {
   const found = positionOf(state.doc, { blockId, offset });
@@ -106,4 +116,24 @@ test("a backward text selection keeps its direction through a repaint", () => {
   const repainted = restoreSelection(stateOf(), selectionBookmark(before));
   expect(repainted.selection.anchor).toBe(at(repainted, "#b1", 18));
   expect(repainted.selection.head).toBe(at(repainted, "#b1", 6));
+});
+
+test("focus transitions synchronously update the held-selection plugin", () => {
+  const plugin = heldSelection();
+  let state = EditorState.create({ doc: docOf(BODY, METRICS), plugins: [plugin] });
+  const heldView = {
+    state,
+    dispatch: (transaction: Transaction) => {
+      state = state.apply(transaction);
+      heldView.state = state;
+    }
+  };
+  const view = heldView as unknown as EditorView;
+  const blur = plugin.props.handleDOMEvents?.blur;
+  const focus = plugin.props.handleDOMEvents?.focus;
+
+  expect(blur?.call(plugin, view, new NodeFocusEvent("blur"))).toBe(false);
+  expect(HELD.getState(state)).toBe(true);
+  expect(focus?.call(plugin, view, new NodeFocusEvent("focus"))).toBe(false);
+  expect(HELD.getState(state)).toBe(false);
 });

@@ -22,6 +22,7 @@ export type SemanticEvidenceSelection = {
 
 /** Stored by value so an answer remains grounded after active rows are replaced. */
 export type SemanticTextCitation = {
+  evidenceKind: "text";
   selections: SemanticEvidenceSelection[];
   source: SemanticSourceSnapshot;
   span: SemanticSpan;
@@ -32,18 +33,29 @@ export type SemanticTextCitation = {
   overlayGeneration: number;
 };
 
-export type MaterialDescriptorCitation = {
+type MaterialDescriptorCitationBase = {
   evidenceKind: "descriptor";
   distance: 2;
   selections: SemanticEvidenceSelection[];
   material: MaterialSourceSnapshot;
-  facet: MaterialFacetKind;
   text: string;
   inputHash: string;
-  model?: string;
-  promptVersion?: string;
   overlayGeneration: number;
 };
+
+/** Generated language has model provenance; deterministic/authored facets do not. */
+export type MaterialDescriptorCitation = MaterialDescriptorCitationBase & (
+  | {
+      facet: "generated";
+      model: string;
+      promptVersion: string;
+    }
+  | {
+      facet: Exclude<MaterialFacetKind, "generated">;
+      model?: never;
+      promptVersion?: never;
+    }
+);
 
 export type MaterialNativeCitation = {
   evidenceKind: "structured" | "visual" | "code";
@@ -75,7 +87,6 @@ export type DerivedOutputRefreshJobState = "queued" | "running" | "failed";
 export type DerivedVariableDefinition = {
   name: string;
   prompt: string;
-  origin?: ResourceRef;
 };
 
 /** A text format rendered by application code after every variable is grounded. */
@@ -92,7 +103,7 @@ export type DerivedVariableResolution = {
 };
 
 /** The stored Derived Output value; refresh replaces its evidence and response atomically. */
-export type DerivedOutputFields = {
+type DerivedOutputBaseFields = {
   projectId: Id<"projects">;
   prompt: string;
   /** Advances only when a user-controlled generation input changes. */
@@ -101,18 +112,60 @@ export type DerivedOutputFields = {
   origin?: ResourceRef;
   template?: DerivedTemplateDefinition;
   scope?: ResourceSet;
-  queries: string[];
-  evidence: SemanticCitation[];
-  lastVariables?: DerivedVariableResolution[];
-  lastResponse?: ContentBlock;
-  lastRevision?: number;
-  lastGeneration?: number;
-  state: DerivedState;
-  error?: string;
-  refreshedAt?: number;
   createdBy: Actor;
   updatedAt: number;
 };
+
+type DerivedOutputWithoutValue = {
+  valueSource: "none";
+  queries: [];
+  evidence: [];
+  lastVariables?: never;
+  lastResponse?: never;
+  lastRevision?: never;
+  lastGeneration?: never;
+  refreshedAt?: never;
+};
+
+type DerivedOutputWithAuthoredValue = {
+  valueSource: "authored";
+  queries: [];
+  evidence: [];
+  lastVariables?: never;
+  lastResponse: ContentBlock;
+  lastRevision: number;
+  lastGeneration?: never;
+  refreshedAt?: never;
+};
+
+type DerivedOutputWithGeneratedValue = {
+  valueSource: "generated";
+  queries: string[];
+  evidence: SemanticCitation[];
+  lastVariables?: DerivedVariableResolution[];
+  lastResponse: ContentBlock;
+  lastRevision: number;
+  lastGeneration: number;
+  refreshedAt: number;
+};
+
+type DerivedOutputValue =
+  | DerivedOutputWithoutValue
+  | DerivedOutputWithAuthoredValue
+  | DerivedOutputWithGeneratedValue;
+
+export type DerivedOutputFields = DerivedOutputBaseFields & (
+  | (DerivedOutputWithoutValue & { state: "idle"; error?: never })
+  | (DerivedOutputValue & {
+      state: "stale";
+      error?: never;
+    })
+  | (DerivedOutputWithGeneratedValue & { state: "fresh"; error?: never })
+  | (DerivedOutputValue & {
+      state: "error";
+      error: string;
+    })
+);
 
 export type DerivedOutput = Row<"derivedOutputs"> & DerivedOutputFields;
 
@@ -123,19 +176,22 @@ export type DerivedOutput = Row<"derivedOutputs"> & DerivedOutputFields;
  * changes while a worker is running. Repeated signals for the same input join
  * the existing work without manufacturing a follow-up pass.
  */
-export type DerivedOutputRefreshJobFields = {
+type DerivedOutputRefreshJobBaseFields = {
   projectId: Id<"projects">;
   derivedOutputId: Id<"derivedOutputs">;
   selection?: DerivedOutputSelection;
-  state: DerivedOutputRefreshJobState;
   requestKey: string;
   requestedVersion: number;
   attempts: number;
-  error?: string;
   queuedAt: number;
-  startedAt?: number;
   updatedAt: number;
 };
+
+export type DerivedOutputRefreshJobFields = DerivedOutputRefreshJobBaseFields & (
+  | { state: "queued"; error?: never; startedAt?: never }
+  | { state: "running"; error?: never; startedAt: number }
+  | { state: "failed"; error: string; startedAt: number }
+);
 
 export type DerivedOutputRefreshJob = Row<"derivedOutputRefreshJobs"> &
   DerivedOutputRefreshJobFields;

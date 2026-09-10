@@ -71,14 +71,13 @@ export const currentAtom = (value: unknown): boolean => {
     exact(
       atom,
       ["id", "kind", "expression", "lastResolvedValue", "lastResolvedDisplay", "state"],
-      ["formulaId", "error"]
+      ["formulaId"]
     ) &&
     text(atom.expression, 10_000) &&
     (atom.formulaId === undefined || isStoredRowId(atom.formulaId, "formulas")) &&
     currentFormulaValue(atom.lastResolvedValue) &&
     text(atom.lastResolvedDisplay) &&
-    isStoredChoice(atom.state, ["fresh", "stale", "computing", "error"]) &&
-    (atom.error === undefined || text(atom.error, 10_000));
+    atom.state === "fresh";
 };
 
 export const currentMarkLink = (value: unknown): value is MarkLink => {

@@ -1,4 +1,11 @@
-import { fieldsOf, has, idOf, only, textOf } from "$capabilities/agents/api/shared/validation";
+import {
+  entryIdOf,
+  fieldsOf,
+  has,
+  idOf,
+  only,
+  textOf
+} from "$capabilities/agents/api/shared/validation";
 import type { AnswerTaskQuestionInput } from "$capabilities/agents/types/agents";
 
 const SUBJECT = "answer-task-question";
@@ -14,8 +21,8 @@ export const validateAnswerTaskQuestion = (input: unknown): AnswerTaskQuestionIn
     throw new Error(`agents/${SUBJECT}: a rejection carries no answer`);
   }
   return {
-    taskId: idOf(fields.taskId, SUBJECT, "taskId"),
-    questionId: idOf(fields.questionId, SUBJECT, "questionId"),
+    taskId: idOf(fields.taskId, "agentTasks", SUBJECT, "taskId"),
+    questionId: entryIdOf(fields.questionId, SUBJECT, "questionId"),
     ...(rejecting ? { reject: true } : { answer: textOf(fields.answer, SUBJECT, "answer", 20_000) })
   };
 };

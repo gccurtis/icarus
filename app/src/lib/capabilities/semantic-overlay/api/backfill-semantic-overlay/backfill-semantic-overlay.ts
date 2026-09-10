@@ -46,7 +46,7 @@ export const backfillSemanticOverlay = async (
           kind: externalFileResourceKind(row.subkind),
           id: row._id
         },
-        revision: 0
+        revision: row.revision
       }))
   ];
 
@@ -61,7 +61,16 @@ export const backfillSemanticOverlay = async (
       ) {
         enqueueSemanticSyncFor(atomic, projectId, resource.ref, resource.revision, asked.force);
       }
-      enqueueMaterialSyncFor(atomic, projectId, resource.ref, resource.revision, asked.force);
+      if (
+        resource.ref.kind === "document" ||
+        resource.ref.kind === "slides" ||
+        resource.ref.kind === "spreadsheet" ||
+        resource.ref.kind === "externalFile::code" ||
+        resource.ref.kind === "externalFile::data" ||
+        resource.ref.kind === "externalFile::image"
+      ) {
+        enqueueMaterialSyncFor(atomic, projectId, resource.ref, resource.revision, asked.force);
+      }
     }
     return {
       text: rowsOf(unit, "semanticSyncJobs").filter(

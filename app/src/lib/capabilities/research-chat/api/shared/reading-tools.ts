@@ -10,7 +10,6 @@ import { readSemanticResourceForModel } from "$capabilities/semantic-overlay";
 
 import { rowsIn } from "$capabilities/research-chat/api/shared/store";
 import {
-  RESOURCE_TABLES,
   asRecord,
   type ToolContext
 } from "$capabilities/research-chat/api/shared/tool-kit";
@@ -75,16 +74,13 @@ export const readingTools = (context: ToolContext): readonly IntelligenceTool[] 
       "List what this project holds, by name and kind, when you need to know what exists before searching it.",
     inputSchema: { type: "object", properties: {}, additionalProperties: false },
     execute: async () => ({
-      resources: RESOURCE_TABLES.flatMap(([kind, table]) =>
-        rowsIn(context.input.model.store, table)
-          .filter(
-            (row) =>
-              row.projectId === context.input.projectId &&
-              typeof row.title === "string" &&
-              context.inScope(admitResourceRef({ kind, id: row._id }, "listed resource"))
-          )
-          .map((row) => ({ kind, id: row._id, name: row.title as string }))
-      )
+      resources: context.resources
+        .filter((resource) => context.inScope(resource.ref))
+        .map((resource) => ({
+          kind: resource.ref.kind,
+          id: resource.ref.id,
+          name: resource.name
+        }))
     })
   };
 

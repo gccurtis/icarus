@@ -8,6 +8,11 @@ import type {
   TemplateVersionHole
 } from "$representation/data/types/templates/template";
 import type { TemplateAnswers } from "$capabilities/templates/types/templates";
+import {
+  hasExactFields,
+  isStoredJson,
+  storedFields
+} from "$representation/data/behavior/core/stored";
 
 type Fields = Record<string, unknown>;
 
@@ -20,28 +25,17 @@ export const TEMPLATE_HOLE_DESCRIPTION_LIMIT = 4_000;
 const MAX_BLOCK_TEXT_LENGTH = 100_000;
 
 const isRecord = (value: unknown): value is Fields =>
-  value !== null && typeof value === "object" && !Array.isArray(value);
+  storedFields(value) !== undefined;
 const hasOnlyKeys = (value: Fields, allowed: readonly string[]): boolean =>
-  Object.keys(value).every((key) => allowed.includes(key));
+  hasExactFields(value, [], allowed);
 const validText = (value: unknown, maximum: number, allowEmpty = false): value is string =>
   typeof value === "string" && value.length <= maximum && (allowEmpty || value.length > 0);
 const validCanonicalText = (value: unknown, maximum: number): value is string =>
   validText(value, maximum) && value === value.trim();
 const assertStoredValue = (value: unknown, subject: string): void => {
-  const seen = new WeakSet<object>();
-  const walk = (step: unknown): void => {
-    if (step === undefined) throw new Error(`templates/${subject}: undefined is not stored`);
-    if (typeof step === "function" || typeof step === "symbol" || typeof step === "bigint") {
-      throw new Error(`templates/${subject}: ${typeof step} is not stored`);
-    }
-    if (step === null || typeof step !== "object") return;
-    if (seen.has(step)) {
-      throw new Error(`templates/${subject}: a stored value cannot contain a cycle`);
-    }
-    seen.add(step);
-    for (const nested of Object.values(step)) walk(nested);
-  };
-  walk(value);
+  if (!isStoredJson(value)) {
+    throw new Error(`templates/${subject}: value must be exact current JSON data`);
+  }
 };
 
 const validTerm = (value: unknown): boolean => {
@@ -99,6 +93,7 @@ const validSetTerm = (value: unknown): boolean => {
 };
 
 export const resourceSetOf = (value: unknown, subject: string): ResourceSet => {
+  assertStoredValue(value, subject);
   if (
     !isRecord(value) ||
     !hasOnlyKeys(value, ["include", "exclude"]) ||
@@ -120,6 +115,7 @@ export const resourceSetOf = (value: unknown, subject: string): ResourceSet => {
 };
 
 export const answersOf = (value: unknown, subject: string): TemplateAnswers => {
+  assertStoredValue(value, subject);
   if (!isRecord(value)) {
     throw new Error(`templates/${subject}: answers map hole names to resource sets`);
   }
@@ -141,6 +137,7 @@ export const textsOf = (
   value: unknown,
   subject: string
 ): Readonly<Record<string, string>> => {
+  assertStoredValue(value, subject);
   if (!isRecord(value)) throw new Error(`templates/${subject}: texts map hole names to words`);
   const entries = Object.entries(value);
   if (entries.length > MAX_TEMPLATE_HOLES) {
@@ -160,6 +157,7 @@ export const textsOf = (
 };
 
 export const validTemplatedResourceSet = (value: unknown): boolean =>
+  isStoredJson(value) &&
   isRecord(value) &&
   hasOnlyKeys(value, ["include", "exclude"]) &&
   Object.keys(value).length === 2 &&
@@ -171,6 +169,7 @@ export const validTemplatedResourceSet = (value: unknown): boolean =>
   value.exclude.every(validTerm);
 
 const validChosenSet = (value: unknown): boolean =>
+  isStoredJson(value) &&
   isRecord(value) &&
   hasOnlyKeys(value, ["include", "exclude"]) &&
   Object.keys(value).length === 2 &&
@@ -186,6 +185,7 @@ const checkedHoles = (
   subject: string,
   chosen = false
 ): readonly Fields[] => {
+  assertStoredValue(value, subject);
   if (!Array.isArray(value)) throw new Error(`templates/${subject}: holes is a list`);
   if (value.length > MAX_TEMPLATE_HOLES) {
     throw new Error(`templates/${subject}: a template has at most ${MAX_TEMPLATE_HOLES} holes`);
@@ -239,8 +239,8 @@ const checkedHoles = (
   for (const hole of value as Fields[]) {
     if (!isRecord(hole.default)) continue;
     const terms = [
-      ...((hole.default.include as unknown[]) ?? []),
-      ...((hole.default.exclude as unknown[]) ?? [])
+      ...(hole.default.include as unknown[]),
+      ...(hole.default.exclude as unknown[])
     ];
     for (const term of terms) {
       if (isRecord(term) && term.select === "hole" && !declared.has(term.name as string)) {
@@ -248,7 +248,6 @@ const checkedHoles = (
       }
     }
   }
-  assertStoredValue(value, subject);
   return value as readonly Fields[];
 };
 

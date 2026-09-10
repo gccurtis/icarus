@@ -3,6 +3,13 @@ import { describe, expect, it } from "vitest";
 import { isNew, nextName, presetPersonaOf, toolChange } from "$app-views/categories/agents/procedures/naming";
 import { filterRows, sortRows } from "$app-views/categories/agents/procedures/sorting";
 import { pendingReviewIn, taskRowOf, type TaskRow } from "$app-views/categories/agents/procedures/tasks";
+import {
+  EVERYTHING,
+  scopeRows,
+  withProject,
+  withResource,
+  withSet
+} from "$app-views/categories/agents/procedures/scope";
 import type { TaskItem } from "$capabilities/agents/index.remote";
 
 const NOW = 1_000_000;
@@ -91,5 +98,30 @@ describe("agents library procedures", () => {
     expect(nextName("Untitled persona", [])).toBe("Untitled persona");
     expect(nextName("Untitled persona", ["untitled persona"])).toBe("Untitled persona 2");
     expect(nextName("Untitled persona", ["Untitled persona", "Untitled persona 2"])).toBe("Untitled persona 3");
+  });
+
+  it("preserves and labels an exact External file scope reference", () => {
+    const ref = {
+      kind: "externalFile::code" as const,
+      id: "externalFiles:rules" as never
+    };
+    const scope = withResource(EVERYTHING, ref);
+
+    expect(scope).toEqual({
+      include: [{ select: "resources", refs: [ref] }],
+      exclude: []
+    });
+    expect(scopeRows(scope, [], [{ ref, name: "rules.ts", relativePath: "north/rules.ts" }])).toEqual([{
+      key: "resource:externalFile::code:externalFiles:rules",
+      kind: "resource",
+      refKind: "externalFile::code",
+      title: "rules.ts",
+      detail: "north/rules.ts"
+    }]);
+    expect(withProject(scope)).toEqual(EVERYTHING);
+    expect(withSet(EVERYTHING, "resourceSets:one")).toEqual({
+      include: [{ select: "set", setId: "resourceSets:one" }],
+      exclude: []
+    });
   });
 });

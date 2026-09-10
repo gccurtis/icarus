@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Panel, PanelColor, PanelCrumbs, PanelEmpty, PanelField, PanelFields, PanelToggle } from "$authored-components/panel";
-  import { slideIndexOf, withSet } from "$app-views/categories/slide-deck-editor/procedures/deck";
+  import { slideIndexOf } from "$app-views/categories/slide-deck-editor/procedures/deck-slides";
+  import { withSet } from "$app-views/categories/slide-deck-editor/procedures/deck-values";
   import { swatchesFor } from "$app-views/categories/slide-deck-editor/procedures/palette";
   import { workspaceState, type SlideDeckRuntime } from "$model/client/workspace-state";
 
@@ -20,7 +21,7 @@
 
   const set = (path: string, value: unknown) => {
     if (body === undefined) return;
-    runtime?.apply(withSet(body, path, value).ops);
+    runtime?.apply(withSet(body, "slide", path, value).ops);
   };
 </script>
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { SlideDeckBody } from "$representation/data/types/slide-decks/body";
 import { INSERT_GROUPS, frameFor, makeElement } from "$app-views/categories/slide-deck-editor/procedures/inserting";
-import { withInsertedElements } from "$app-views/categories/slide-deck-editor/procedures/deck";
+import { withInsertedElements } from "$app-views/categories/slide-deck-editor/procedures/deck-elements";
 
 const body = (): SlideDeckBody => ({
   aspectRatio: "16:9",

@@ -9,6 +9,7 @@ import type {
   TemplateHole
 } from "$representation/data/types/templates/template";
 import type { Id } from "$representation/data/types/core/id";
+import type { ResourceRef } from "$representation/data/types/core/resource";
 
 import { writeTemplateResource } from "$capabilities/templates/api/shared/template-resource";
 import { kindOf } from "$capabilities/templates/api/shared/holes";
@@ -59,6 +60,13 @@ const rejected = (
   detail
 });
 
+const placedResourceRef = (target: TemplateBody["resource"], resourceId: string): ResourceRef =>
+  target === "document"
+    ? { kind: "document", id: asId<"documents">(resourceId) }
+    : target === "slides"
+      ? { kind: "slides", id: asId<"slideDecks">(resourceId) }
+      : { kind: "spreadsheet", id: asId<"spreadsheets">(resourceId) };
+
 /** Resolves holes and commits one complete new resource revision atomically. */
 export const placeTemplate = ({
   model,
@@ -91,6 +99,7 @@ export const placeTemplate = ({
         updatedBy: { ...actor },
         updatedAt: at
       });
+      const ref = placedResourceRef(body.resource, resourceId);
       const answered: Record<string, TemplateAnswers[string]> = {};
       const setRefusal = placementSetRefusal(unit, project, answers);
       if (setRefusal !== undefined) {
@@ -102,7 +111,7 @@ export const placeTemplate = ({
           unit,
           project,
           actor,
-          { kind: "resource", resourceId, hole },
+          { kind: "resource", ref, hole },
           rule,
           at
         );
@@ -129,7 +138,7 @@ export const placeTemplate = ({
           unit,
           project,
           actor,
-          { kind: "resource", resourceId, hole: hole.name },
+          { kind: "resource", ref, hole: hole.name },
           storedDefault.rule,
           at
         );
@@ -155,16 +164,11 @@ export const placeTemplate = ({
       }
 
       const filled = fillTemplateAtoms(resolved.body, texts);
-      const origin = filled.resource === "document"
-        ? { kind: "document" as const, id: asId<"documents">(resourceId) }
-        : filled.resource === "slides"
-          ? { kind: "slides" as const, id: asId<"slideDecks">(resourceId) }
-          : { kind: "spreadsheet" as const, id: asId<"spreadsheets">(resourceId) };
       const ready = withFreshOutputs(
         unit,
         project,
         actor,
-        origin,
+        ref,
         filled,
         at
       ).body;

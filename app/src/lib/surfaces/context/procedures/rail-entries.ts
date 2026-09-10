@@ -84,6 +84,8 @@ export const RAIL_ENTRIES: Record<ContextView, RailEntry> = {
   "project-overview.variables": { label: "Variables", icon: Hash },
   "analysis.variables": { label: "Variables", icon: Hash },
   "document-editor.variables": { label: "Variables", icon: Hash },
+  "external.history": { label: "History", icon: ClockArrowLeft },
+  "external.overview": { label: "Overview", icon: Info },
   "slide-deck-editor.variables": { label: "Variables", icon: Hash },
   "spreadsheet-editor.variables": { label: "Variables", icon: Hash },
   "project-overview.variables-create": { label: "Create variable", icon: Plus },

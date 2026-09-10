@@ -12,6 +12,7 @@ import type {
   CommentTarget,
   CommentThreadRecord
 } from "$capabilities/comments/types/read-comments";
+import { rowsIn } from "$capabilities/comments/api/read-comments/store";
 
 const tableFor = (
   target: CommentTarget
@@ -29,9 +30,7 @@ const ownsTarget = (
   target: CommentTarget
 ): boolean => {
   const table = tableFor(target);
-  const found = store.read(table);
-  if (found?.kind !== "table" || found.table !== table) return false;
-  const claimed = found.rows.filter((row) => storedFields(row)?._id === target.id);
+  const claimed = rowsIn(store, table).filter((row) => row._id === target.id);
   if (claimed.length !== 1 || !isStoredEditableResource(claimed[0], table)) return false;
   const row = claimed[0];
   return row.projectId === projectId &&
@@ -46,7 +45,10 @@ export const projectThread = (
   stagedResourceIds: ReadonlySet<string>,
   value: unknown
 ): CommentThreadRecord | undefined => {
-  if (!isStoredCommentThread(value) || value.projectId !== projectId) return undefined;
+  if (!isStoredCommentThread(value)) {
+    throw new Error("the commentThreads table contains a non-current row");
+  }
+  if (value.projectId !== projectId) return undefined;
   const createdBy = projectActor(store, projectId, visibleUserIds, value.createdBy);
   if (
     createdBy === undefined ||
@@ -75,7 +77,8 @@ const mentionedUsersOf = (
   const users: string[] = [];
   for (const mention of mentions) {
     const fields = storedFields(mention);
-    if (fields?.kind !== "actor") continue;
+    if (fields === undefined) throw new Error("a comment mention is not a current mark link");
+    if (fields.kind !== "actor") continue;
     const actor = projectActor(store, projectId, visibleUserIds, fields.actor);
     if (actor === undefined) return undefined;
     if (actor.kind === "user") users.push(actor.userId);
@@ -90,11 +93,8 @@ export const projectRemark = (
   visibleUserIds: ReadonlySet<string>,
   value: unknown
 ): CommentRemarkRecord | undefined => {
-  if (
-    !isStoredComment(value) ||
-    value.projectId !== projectId ||
-    !threadIds.has(value.threadId)
-  ) return undefined;
+  if (!isStoredComment(value)) throw new Error("the comments table contains a non-current row");
+  if (value.projectId !== projectId || !threadIds.has(value.threadId)) return undefined;
   const author = projectActor(store, projectId, visibleUserIds, value.author);
   const mentionedUserIds = mentionedUsersOf(
     store,

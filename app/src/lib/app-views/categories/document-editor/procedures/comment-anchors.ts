@@ -5,7 +5,7 @@ import type { Selection } from "$representation/data/types/workspace/tab";
 import type { Thread } from "$app-views/categories/document-editor/procedures/comments";
 import { addressOf } from "$app-views/categories/document-editor/procedures/inspecting";
 import { blockOf, rangesOf, type Range } from "$app-views/categories/document-editor/procedures/marks";
-import { endAt, linearOf } from "$app-views/categories/document-editor/procedures/projection";
+import { endAt, linearOf } from "$app-views/categories/document-editor/procedures/projection-atoms";
 
 export type { AnchorWithin } from "$representation/data/types/collaboration/anchor";
 

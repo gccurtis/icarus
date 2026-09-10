@@ -62,7 +62,7 @@ describe("bounded semantic material profilers", () => {
     });
   });
 
-  it("does not misclassify ordinary prose media types as source code", () => {
+  it("keeps prose outside the code-profile language boundary", () => {
     expect(codeLanguage("notes.md", "text/markdown")).toBe("unknown");
     expect(codeLanguage("notes.txt", "text/plain")).toBe("unknown");
     expect(codeLanguage("worker.ts", "text/plain")).toBe("typescript");

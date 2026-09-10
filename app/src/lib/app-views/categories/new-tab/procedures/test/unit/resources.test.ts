@@ -5,7 +5,9 @@ import {
   recentsOf,
   resourcesOf
 } from "$app-views/categories/new-tab/procedures/resources";
+import { openingFor } from "$app-views/categories/new-tab/procedures/opening";
 import type { ProjectResourceIndex } from "$capabilities/project-resources/index.remote";
+import { asId } from "$representation/data/behavior/core/id";
 
 const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
@@ -16,22 +18,28 @@ const index: ProjectResourceIndex = {
   resources: [
     {
       id: "documents:older",
+      ref: { kind: "document", id: asId<"documents">("documents:older") },
       kind: "document",
       name: "Older memo",
+      relativePath: null,
       updatedAt: NOW - 2 * DAY,
       updatedByName: "Ana"
     },
     {
       id: "slideDecks:newer",
+      ref: { kind: "slides", id: asId<"slideDecks">("slideDecks:newer") },
       kind: "slides",
       name: "Newest deck",
+      relativePath: null,
       updatedAt: NOW - MINUTE,
       updatedByName: "Mira"
     },
     {
       id: "documents:middle",
+      ref: { kind: "document", id: asId<"documents">("documents:middle") },
       kind: "document",
       name: "Middle memo",
+      relativePath: null,
       updatedAt: NOW - HOUR,
       updatedByName: "Tomas"
     }
@@ -86,6 +94,26 @@ describe("New tab represented resources", () => {
       "slideDecks:newer",
       "documents:middle"
     ]);
+  });
+
+  it("collapses manager-only files in Recent while keeping every file searchable", () => {
+    const withFiles: ProjectResourceIndex = {
+      resources: [
+        ...index.resources,
+        { id: "externalFiles:a", ref: { kind: "externalFile::text", id: asId<"externalFiles">("externalFiles:a") }, kind: "file", name: "a.txt", relativePath: "north/a.txt", updatedAt: NOW, updatedByName: "Ana" },
+        { id: "externalFiles:b", ref: { kind: "externalFile::text", id: asId<"externalFiles">("externalFiles:b") }, kind: "file", name: "b.txt", relativePath: "south/b.txt", updatedAt: NOW - 1, updatedByName: "Ana" }
+      ],
+      unavailable: []
+    };
+
+    expect(resourcesOf(withFiles, NOW).filter((row) => row.kind === "file")).toHaveLength(2);
+    expect(recentsOf(withFiles, NOW).filter((row) => row.kind === "file")).toEqual([
+      expect.objectContaining({ id: "externalFiles:a" })
+    ]);
+    expect(openingFor("file", "externalFiles:a")).toEqual({
+      category: "external",
+      focus: "externalFiles:a"
+    });
   });
 
   it("phrases timestamps across the launcher's compact ranges", () => {

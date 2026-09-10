@@ -13,6 +13,7 @@ import {
 } from "$representation/data/behavior/agents/stored-rows";
 import { admittedReusableResourceSets } from "$representation/data/behavior/core/resource-set-rows";
 
+import { externalResourceOptionsIn } from "$capabilities/agents/api/shared/external-resource-options";
 import { namesIn, type Names } from "$capabilities/agents/api/shared/names";
 import { rowsIn } from "$capabilities/agents/api/shared/store";
 import { taskItem } from "$capabilities/agents/api/shared/task-projection";
@@ -153,8 +154,8 @@ export const chatItem = (store: StoreModel, chat: Chat, visible: Visible): ChatI
   personaId: chat.personaId ?? "",
   personaName: visible.names.persona(chat.personaId ?? ""),
   createdByName: visible.names.actor(chat.createdBy),
-  messageCount: messagesOf(store, chat.threadId).length,
-  lastLine: lastLineOf(store, chat.threadId),
+  messageCount: messagesOf(store, chat.projectId, chat.threadId, "researchThread").length,
+  lastLine: lastLineOf(store, chat.projectId, chat.threadId, "researchThread"),
   updatedAt: chat.updatedAt
 });
 
@@ -190,11 +191,12 @@ export const library = (store: StoreModel, scope: Scope): ReadAgentsLibraryResul
   const visible = visibleIn(store, scope);
   const resources: ResourceOption[] = [
     ...rowsIn(store, "documents").filter((row) => row.projectId === scope.projectId)
-      .map((row) => ({ ref: { kind: "document" as const, id: row._id }, name: row.title })),
+      .map((row) => ({ ref: { kind: "document" as const, id: row._id }, name: row.title, relativePath: null })),
     ...rowsIn(store, "slideDecks").filter((row) => row.projectId === scope.projectId)
-      .map((row) => ({ ref: { kind: "slides" as const, id: row._id }, name: row.title })),
+      .map((row) => ({ ref: { kind: "slides" as const, id: row._id }, name: row.title, relativePath: null })),
     ...rowsIn(store, "spreadsheets").filter((row) => row.projectId === scope.projectId)
-      .map((row) => ({ ref: { kind: "spreadsheet" as const, id: row._id }, name: row.title }))
+      .map((row) => ({ ref: { kind: "spreadsheet" as const, id: row._id }, name: row.title, relativePath: null })),
+    ...externalResourceOptionsIn(store, scope.projectId)
   ];
   return {
     personas: visible.personas.map((row) => personaItem(row, visible)).toSorted(byName),

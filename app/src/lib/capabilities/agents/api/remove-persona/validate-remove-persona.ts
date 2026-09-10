@@ -5,7 +5,7 @@ export const validateRemovePersona = (input: unknown): RemovePersonaInput => {
   const fields = fieldsOf(input, "remove-persona");
   only(fields, ["personaId", "baseRevision"], "remove-persona");
   return {
-    personaId: idOf(fields.personaId, "remove-persona", "personaId"),
+    personaId: idOf(fields.personaId, "personas", "remove-persona", "personaId"),
     baseRevision: revisionOf(fields.baseRevision, "remove-persona")
   };
 };

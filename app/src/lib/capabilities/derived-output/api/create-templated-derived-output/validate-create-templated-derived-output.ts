@@ -1,6 +1,7 @@
 import { derivedTemplateDefinition } from "$representation/data/behavior/semantic/derived-template";
 import {
   inputRecord,
+  onlyFields,
   resourceRef,
   resourceSet
 } from "$capabilities/derived-output/api/shared/input";
@@ -10,12 +11,11 @@ export const validateCreateTemplatedDerivedOutput = (
   input: unknown
 ): CreateTemplatedDerivedOutputInput => {
   const candidate = inputRecord(input, "templated derived output creation input must be an object");
-  const unexpected = Object.keys(candidate).find(
-    (key) => key !== "template" && key !== "scope" && key !== "origin"
+  onlyFields(
+    candidate,
+    ["template", "scope", "origin"],
+    "templated derived output creation"
   );
-  if (unexpected !== undefined) {
-    throw new Error(`templated derived output creation has unexpected field '${unexpected}'`);
-  }
   return {
     template: derivedTemplateDefinition(candidate.template),
     ...(candidate.origin === undefined ? {} : { origin: resourceRef(candidate.origin) }),

@@ -1,12 +1,14 @@
 import {
-  answersOf,
   fieldsOf,
   has,
   only,
   optionalNameOf,
-  templateIdOf,
-  textsOf
+  templateIdOf
 } from "$capabilities/templates/api/shared/validation";
+import {
+  answersOf,
+  textsOf
+} from "$capabilities/templates/api/shared/hole-validation";
 import type { InstantiateTemplateInput } from "$capabilities/templates/types/templates";
 
 export const validateInstantiateTemplate = (input: unknown): InstantiateTemplateInput => {

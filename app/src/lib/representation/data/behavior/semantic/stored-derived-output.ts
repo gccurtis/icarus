@@ -4,7 +4,6 @@ import { currentScope } from "$representation/data/behavior/content/admission-in
 import {
   hasExactFields,
   isStoredActor,
-  isStoredChoice,
   isStoredNatural,
   isStoredRowId,
   isStoredText,
@@ -35,10 +34,9 @@ const selection = (value: unknown): boolean => {
 const variableDefinition = (value: unknown): boolean => {
   const definition = storedFields(value);
   return definition !== undefined &&
-    hasExactFields(definition, ["name", "prompt"], ["origin"]) &&
+    hasExactFields(definition, ["name", "prompt"]) &&
     isStoredText(definition.name, 500) && definition.name.length > 0 &&
-    isStoredText(definition.prompt) && definition.prompt.length > 0 &&
-    (definition.origin === undefined || isResourceRef(definition.origin));
+    isStoredText(definition.prompt) && definition.prompt.length > 0;
 };
 
 const template = (value: unknown): boolean => {
@@ -79,19 +77,13 @@ export const isStoredDerivedOutput = (
   value: unknown
 ): value is TableRow<"derivedOutputs"> => {
   const row = storedFields(value);
+  const baseFields = [
+    "_id", "_creationTime", "projectId", "prompt", "definitionRevision", "valueSource",
+    "queries", "evidence", "state", "createdBy", "updatedAt"
+  ];
+  const optionalBaseFields = ["origin", "template", "scope"];
   if (
     row === undefined ||
-    !hasExactFields(
-      row,
-      [
-        "_id", "_creationTime", "projectId", "prompt", "definitionRevision", "queries",
-        "evidence", "state", "createdBy", "updatedAt"
-      ],
-      [
-        "origin", "template", "scope", "lastVariables", "lastResponse", "lastRevision",
-        "lastGeneration", "error", "refreshedAt"
-      ]
-    ) ||
     !isStoredRowId(row._id, "derivedOutputs") ||
     !isStoredTime(row._creationTime) ||
     !isStoredRowId(row.projectId, "projects") ||
@@ -100,26 +92,53 @@ export const isStoredDerivedOutput = (
     (row.origin !== undefined && !isResourceRef(row.origin)) ||
     (row.template !== undefined && !template(row.template)) ||
     (row.scope !== undefined && !resourceSet(row.scope)) ||
-    !Array.isArray(row.queries) || !row.queries.every((query) => isStoredText(query, 10_000)) ||
-    !Array.isArray(row.evidence) || !row.evidence.every(isStoredSemanticCitation) ||
-    (row.lastVariables !== undefined && (
-      !Array.isArray(row.lastVariables) || !row.lastVariables.every(variableResolution)
-    )) ||
-    (row.lastResponse !== undefined && admitContentBlocks([row.lastResponse]) === undefined) ||
-    (row.lastRevision !== undefined && !isStoredNatural(row.lastRevision)) ||
-    (row.lastGeneration !== undefined && !isStoredNatural(row.lastGeneration)) ||
-    !isStoredChoice(row.state, ["idle", "fresh", "stale", "error"]) ||
-    (row.error !== undefined && !isStoredText(row.error, 10_000)) ||
-    (row.refreshedAt !== undefined && !isStoredTime(row.refreshedAt)) ||
     !isStoredActor(row.createdBy) ||
     !isStoredTime(row.updatedAt)
   ) return false;
 
-  if (row.lastVariables !== undefined) {
-    const names = row.lastVariables.map((entry) => storedFields(entry)?.name);
+  if (!Array.isArray(row.queries) || !Array.isArray(row.evidence)) return false;
+  const lastVariables = row.lastVariables;
+  const noValue = row.valueSource === "none" &&
+    row.queries.length === 0 && row.evidence.length === 0;
+  const authoredValue = row.valueSource === "authored" &&
+    row.queries.length === 0 && row.evidence.length === 0 &&
+    admitContentBlocks([row.lastResponse]) !== undefined &&
+    isStoredNatural(row.lastRevision) && row.lastRevision > 0;
+  const generatedValue = row.valueSource === "generated" &&
+    row.queries.every((query) => isStoredText(query, 10_000)) &&
+    row.evidence.every(isStoredSemanticCitation) &&
+    admitContentBlocks([row.lastResponse]) !== undefined &&
+    isStoredNatural(row.lastRevision) && row.lastRevision > 0 &&
+    isStoredNatural(row.lastGeneration) &&
+    isStoredTime(row.refreshedAt) && row.refreshedAt <= row.updatedAt &&
+    (lastVariables === undefined || (
+      Array.isArray(lastVariables) && lastVariables.every(variableResolution)
+    ));
+  if (!noValue && !authoredValue && !generatedValue) return false;
+
+  if (generatedValue && Array.isArray(lastVariables)) {
+    const names = lastVariables.map((entry) => storedFields(entry)?.name);
     if (new Set(names).size !== names.length) return false;
   }
-  return true;
+
+  const valueFields = noValue
+    ? []
+    : authoredValue
+      ? ["lastResponse", "lastRevision"]
+      : ["lastResponse", "lastRevision", "lastGeneration", "refreshedAt"];
+  const optionalValueFields = generatedValue ? ["lastVariables"] : [];
+  if (row.state === "idle" && !noValue) return false;
+  if (row.state === "fresh" && !generatedValue) return false;
+  if (row.state !== "idle" && row.state !== "fresh" && row.state !== "stale" && row.state !== "error") {
+    return false;
+  }
+  const failed = row.state === "error";
+  if (failed && (!isStoredText(row.error, 10_000) || row.error.length === 0)) return false;
+  return hasExactFields(
+    row,
+    [...baseFields, ...valueFields, ...(failed ? ["error"] : [])],
+    [...optionalBaseFields, ...optionalValueFields]
+  );
 };
 
 /** Exact current durable refresh job; partial or old job shapes are refused. */
@@ -127,26 +146,31 @@ export const isStoredDerivedOutputRefreshJob = (
   value: unknown
 ): value is TableRow<"derivedOutputRefreshJobs"> => {
   const row = storedFields(value);
-  return row !== undefined &&
-    hasExactFields(
-      row,
-      [
-        "_id", "_creationTime", "projectId", "derivedOutputId", "state", "requestKey",
-        "requestedVersion", "attempts", "queuedAt", "updatedAt"
-      ],
-      ["selection", "error", "startedAt"]
-    ) &&
-    isStoredRowId(row._id, "derivedOutputRefreshJobs") &&
-    isStoredTime(row._creationTime) &&
-    isStoredRowId(row.projectId, "projects") &&
-    isStoredRowId(row.derivedOutputId, "derivedOutputs") &&
-    (row.selection === undefined || selection(row.selection)) &&
-    isStoredChoice(row.state, ["queued", "running", "failed"]) &&
-    isStoredText(row.requestKey, 100_000) && row.requestKey.length > 0 &&
-    isStoredNatural(row.requestedVersion) && row.requestedVersion >= 1 &&
-    isStoredNatural(row.attempts) &&
-    (row.error === undefined || isStoredText(row.error, 10_000)) &&
-    isStoredTime(row.queuedAt) &&
-    (row.startedAt === undefined || isStoredTime(row.startedAt)) &&
-    isStoredTime(row.updatedAt);
+  if (row === undefined) return false;
+  if (
+    !isStoredRowId(row._id, "derivedOutputRefreshJobs") ||
+    !isStoredTime(row._creationTime) ||
+    !isStoredRowId(row.projectId, "projects") ||
+    !isStoredRowId(row.derivedOutputId, "derivedOutputs") ||
+    (row.selection !== undefined && !selection(row.selection)) ||
+    !isStoredText(row.requestKey, 100_000) || row.requestKey.length === 0 ||
+    !isStoredNatural(row.requestedVersion) || row.requestedVersion < 1 ||
+    !isStoredNatural(row.attempts) ||
+    !isStoredTime(row.queuedAt) ||
+    !isStoredTime(row.updatedAt) || row.queuedAt > row.updatedAt
+  ) return false;
+
+  const base = [
+    "_id", "_creationTime", "projectId", "derivedOutputId", "state", "requestKey",
+    "requestedVersion", "attempts", "queuedAt", "updatedAt"
+  ];
+  if (row.state === "queued") return hasExactFields(row, base, ["selection"]);
+  if (row.state === "running") {
+    return hasExactFields(row, [...base, "startedAt"], ["selection"]) && row.attempts > 0 &&
+      isStoredTime(row.startedAt) && row.startedAt >= row.queuedAt && row.startedAt <= row.updatedAt;
+  }
+  return row.state === "failed" &&
+    hasExactFields(row, [...base, "startedAt", "error"], ["selection"]) &&
+    row.attempts > 0 && isStoredTime(row.startedAt) && row.startedAt >= row.queuedAt &&
+    row.startedAt <= row.updatedAt && isStoredText(row.error, 10_000) && row.error.length > 0;
 };

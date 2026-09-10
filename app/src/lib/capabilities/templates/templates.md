@@ -53,6 +53,17 @@ form, drawn as unbound in the editor until a formula is made for it again. The
 body is then admitted exactly as a stored one would be, so a template can never
 hold what a template may not.
 
+Admission follows the represented body shape instead of passing through one
+catch-all validator. Shared primitives and format rules sit under
+`api/shared/body-validation/`; document rows, slide elements and decks, and
+spreadsheet cells each have their own exact current-schema predicate. The
+directory's `body-validation.ts` is the one small dispatch boundary: it verifies
+stored JSON, rejects every
+project-bound identity, reads the resource discriminator, and delegates to the
+matching domain. Spreadsheet address parsing and materialization remain separate
+because one validates portable coordinates while the other builds owned runtime
+rows. There is no alternate or legacy admission path.
+
 ## Holes
 
 A hole is a place the body leaves for whoever places the template. A scope hole

@@ -3,7 +3,7 @@ import type { CurrentRowPolicies } from "$representation/store/schema/types";
 export const SEMANTIC_ROW_POLICIES = {
   derivedOutputs: {
     projectId: "required", prompt: "required", definitionRevision: "required", origin: "optional",
-    template: "optional", scope: "optional", queries: "required", evidence: "required",
+    template: "optional", scope: "optional", valueSource: "required", queries: "required", evidence: "required",
     lastVariables: "optional", lastResponse: "optional", lastRevision: "optional",
     lastGeneration: "optional", state: "required", error: "optional", refreshedAt: "optional",
     createdBy: "required", updatedAt: "required"

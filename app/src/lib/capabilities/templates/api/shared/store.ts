@@ -1,15 +1,16 @@
-import type { StoreUnitOfWork, TableName, TableRow } from "$model/server/store/index.server";
+import {
+  readCurrentRows,
+  type StoreUnitOfWork,
+  type TableName,
+  type TableRow
+} from "$model/server/store/index.server";
 
 export type RowFields<T extends TableName> = Omit<TableRow<T>, "_id" | "_creationTime">;
 
 export const rowsIn = <T extends TableName>(
   store: StoreUnitOfWork,
   table: T
-): readonly unknown[] => {
-  const found = store.read(table);
-  if (found?.table !== table || found.kind !== "table" || !Array.isArray(found.rows)) return [];
-  return found.rows;
-};
+): readonly TableRow<T>[] => readCurrentRows(store, table);
 
 export const recordOf = (value: unknown): Record<string, unknown> | undefined =>
   value !== null && typeof value === "object" && !Array.isArray(value)
@@ -19,9 +20,10 @@ export const recordOf = (value: unknown): Record<string, unknown> | undefined =>
 export const recordsIn = <T extends TableName>(
   store: StoreUnitOfWork,
   table: T
-): readonly Record<string, unknown>[] => rowsIn(store, table).flatMap((value) => {
+): readonly Record<string, unknown>[] => rowsIn(store, table).map((value) => {
   const record = recordOf(value);
-  return record === undefined ? [] : [record];
+  if (record === undefined) throw new Error(`the '${table}' table contains a non-current row`);
+  return record;
 });
 
 /** A row id is one bounded Store path segment for the table it names. */

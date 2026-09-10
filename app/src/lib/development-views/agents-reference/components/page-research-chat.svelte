@@ -149,7 +149,7 @@
 
   const notBuilt = [
     ["A queue", "The turn runs inside the request that created it. A crash is recovered rather than resumed, and a second browser sees nothing until the first one's request returns.", "The derived output refresh queue is the pattern: one durable job row plus one ServerModel-owned coordination flight."],
-    ["Streaming", "completeWithTools answers once. Message.state has a streaming value and nothing writes it.", "A second method on the port; the surfaces would not change."],
+    ["Streaming", "completeWithTools answers once, so the current Message contract admits only complete rows.", "A future stream requires a new port method and an explicit partial-message persistence contract."],
     ["Web search", "The composer shows the toggle disabled. ask accepts the tool id and no tool implements it.", "One tool, and a decision about what an unbounded source cites."],
     ["Question and Hypothesis modes", "Both are stored on the thread and neither changes what happens.", "A mode that binds the thread to a question or a hypothesis row and writes findings against it."],
     ["Made blocks", "The renderer switches on block type and only text is ever produced.", "A make_table tool, then the chart system."]

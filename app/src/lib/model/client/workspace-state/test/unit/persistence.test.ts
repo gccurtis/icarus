@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 import { beforeEach, test, vi } from "vitest";
+import { openingView } from "$representation/data/behavior/workspace/opening";
+import type { TabRecord, TabView } from "$representation/data/types/workspace/tab";
 
 const wire = vi.hoisted(() => ({
   row: null as unknown,
@@ -36,6 +38,9 @@ const { createConfiguration } = await import("$model/client/configuration");
 const { createTabList } = await import("$model/client/tab-list");
 const { createTabViews } = await import("$model/client/tab-views");
 const { createWorkspaceState } = await import("$model/client/workspace-state");
+const { startingWorkspace } = await import(
+  "$model/client/workspace-state/methods/shared/defaults"
+);
 
 const thresholds = (flushAfterOps: number, flushAfterMs: number) =>
   createConfiguration({ workspace: { changeSets: { flushAfterOps, flushAfterMs } } });
@@ -43,12 +48,15 @@ const thresholds = (flushAfterOps: number, flushAfterMs: number) =>
 const workspaceState = (afterOps = 3, afterMs = 60_000) =>
   createWorkspaceState("p1", createTabList(), createTabViews(), thresholds(afterOps, afterMs));
 
-const document = (id: string) => ({ category: "document-editor", resourceId: id }) as const;
+const document = (id: string) => ({
+  category: "document-editor",
+  resourceId: `documents:${id}`
+}) as const;
 
 const view = {
   content: "document-editor.document",
   focus: null,
-  contextId: null,
+  contextId: "document-editor.layout",
   inspected: "empty",
   selection: null,
   frame: {
@@ -56,7 +64,23 @@ const view = {
     contextCollapsed: false,
     inspectorWidth: 320,
     inspectorCollapsed: true
-  }
+  },
+  zoom: null
+} satisfies TabView;
+
+const currentWorkspace = (
+  revision: number,
+  addition?: { readonly tab: TabRecord; readonly view: TabView; readonly active?: boolean }
+) => {
+  const starting = startingWorkspace();
+  return {
+    revision,
+    tabs: addition === undefined ? [...starting.tabs] : [...starting.tabs, addition.tab],
+    activeId: addition?.active === true ? addition.tab.id : starting.activeId,
+    views: addition === undefined
+      ? { ...starting.views }
+      : { ...starting.views, [addition.tab.id]: addition.view }
+  };
 };
 
 beforeEach(() => {
@@ -215,12 +239,7 @@ test("a fault keeps its ops and says so", async () => {
 });
 
 test("a refusal is re-stated against what the server holds and resubmitted", async () => {
-  wire.row = {
-    revision: 40,
-    tabs: [{ id: "t1", category: "project-overview" }],
-    activeId: "t1",
-    views: { t1: view }
-  };
+  wire.row = currentWorkspace(40);
   wire.refusals = 1;
 
   const model = workspaceState(1000, 60_000);
@@ -234,13 +253,8 @@ test("a refusal is re-stated against what the server holds and resubmitted", asy
   assert.equal(model.sync, "saved");
 });
 
-test("a refusal the rebase cannot resolve adopts the server's workspace and says so", async () => {
-  wire.row = {
-    revision: 40,
-    tabs: [{ id: "t1", category: "project-overview" }],
-    activeId: "t1",
-    views: { t1: view }
-  };
+test("a refusal the rebase cannot resolve adopts the strict current server workspace", async () => {
+  wire.row = currentWorkspace(40);
   wire.refusals = 2;
 
   const model = workspaceState(1000, 60_000);
@@ -251,7 +265,7 @@ test("a refusal the rebase cannot resolve adopts the server's workspace and says
   assert.equal(model.sync, "needs-review");
   assert.deepEqual(
     model.tabs.map((tab) => tab.id),
-    ["t1"]
+    startingWorkspace().tabs.map((tab) => tab.id)
   );
   assert.equal(model.revision, 40);
 });
@@ -285,37 +299,31 @@ test("a first visit lands on the singletons", async () => {
 });
 
 test("a stored row comes back whole — the tabs, the widths and the tab that was in front", async () => {
-  wire.row = {
-    revision: 12,
-    tabs: [
-      { id: "t1", category: "project-overview" },
-      { id: "t7", category: "document-editor", resourceId: "k57" }
-    ],
-    activeId: "t7",
-    views: { t1: view, t7: view }
-  };
+  wire.row = currentWorkspace(12, {
+    tab: { id: "t7", category: "document-editor", resourceId: "documents:k57" },
+    view,
+    active: true
+  });
 
   const model = workspaceState();
   await model.restore();
 
   assert.deepEqual(
     model.tabs.map((tab) => tab.id),
-    ["t1", "t7"]
+    [...startingWorkspace().tabs.map((tab) => tab.id), "t7"]
   );
   assert.equal(model.activeId, "t7");
-  assert.equal(model.active.resourceId, "k57");
+  assert.equal(model.active.resourceId, "documents:k57");
   assert.equal(model.frame.contextWidth, 400);
   assert.equal(model.frame.inspectorCollapsed, true);
   assert.equal(model.revision, 12);
 });
 
 test("a restored id cannot be minted again", async () => {
-  wire.row = {
-    revision: 1,
-    tabs: [{ id: "t7", category: "project-overview" }],
-    activeId: "t7",
-    views: { t7: view }
-  };
+  wire.row = currentWorkspace(1, {
+    tab: { id: "t7", category: "new-tab" },
+    view: openingView("new-tab")
+  });
 
   const model = workspaceState();
   await model.restore();
@@ -327,12 +335,7 @@ test("a restored id cannot be minted again", async () => {
 });
 
 test("restoring does not overwrite what the person has already done", async () => {
-  wire.row = {
-    revision: 3,
-    tabs: [{ id: "t1", category: "project-overview" }],
-    activeId: "t1",
-    views: { t1: view }
-  };
+  wire.row = currentWorkspace(3);
 
   const model = workspaceState();
   const opened = model.open(document("k57"));
@@ -341,6 +344,33 @@ test("restoring does not overwrite what the person has already done", async () =
 
   assert.equal(model.tabs.some((tab) => tab.id === opened.id), true);
   assert.equal(model.revision, 0);
+});
+
+test("a malformed present snapshot is rejected whole before live state changes", async () => {
+  const exact = currentWorkspace(9);
+  const { external: _missing, ...missingView } = exact.views;
+  const hostile = [
+    { ...exact, revision: -1 },
+    { ...exact, activeId: "retired-tab" },
+    { ...exact, views: missingView },
+    { ...exact, workbench: { tabs: [] } }
+  ];
+
+  for (const row of hostile) {
+    wire.row = row;
+    const model = workspaceState();
+    const before = model.tabs.map((tab) => tab.id);
+
+    await assert.rejects(
+      model.restore(),
+      /did not return one exact current workspace state/
+    );
+
+    assert.deepEqual(model.tabs.map((tab) => tab.id), before);
+    assert.equal(model.activeId, startingWorkspace().activeId);
+    assert.equal(model.revision, 0);
+    assert.equal(model.sync, "loading");
+  }
 });
 
 test("zero thresholds buffer nothing and submit nothing", async () => {

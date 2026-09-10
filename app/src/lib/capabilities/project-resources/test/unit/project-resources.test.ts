@@ -49,6 +49,21 @@ const { renameProjectResource } = await import(
   "$capabilities/project-resources/api/rename-project-resource/rename-project-resource"
 );
 
+const titledResource = (
+  table: "documents" | "slideDecks" | "spreadsheets",
+  suffix: string,
+  projectId: string,
+  title: string
+) => ({
+  _id: `${table}:${suffix}`,
+  _creationTime: 1,
+  projectId,
+  title,
+  createdBy: { kind: "system" as const },
+  updatedBy: { kind: "system" as const },
+  updatedAt: 1
+});
+
 describe("createProjectResource", () => {
   it("derives document project and actor, then writes a leader body", async () => {
     const result = await createProjectResource({ target: "document", title: "  Memo  " });
@@ -173,11 +188,11 @@ describe("createProjectResource", () => {
 
   it("allocates the first free project-local Untitled suffix when title is omitted", async () => {
     model.tables.set("documents", [
-      { projectId: "projects:mine", title: "Untitled document 1" },
-      { projectId: "projects:mine", title: "Untitled document 2" },
-      { projectId: "projects:mine", title: "Untitled document 4" },
-      { projectId: "projects:other", title: "Untitled document 3" },
-      { projectId: "projects:mine", title: "untitled document 3" }
+      titledResource("documents", "1", "projects:mine", "Untitled document 1"),
+      titledResource("documents", "2", "projects:mine", "Untitled document 2"),
+      titledResource("documents", "4", "projects:mine", "Untitled document 4"),
+      titledResource("documents", "foreign", "projects:other", "Untitled document 3"),
+      titledResource("documents", "lower", "projects:mine", "untitled document 3")
     ]);
 
     const document = await createProjectResource({ target: "document" });
@@ -189,8 +204,8 @@ describe("createProjectResource", () => {
 
     model.writes.length = 0;
     model.tables.set("slideDecks", [
-      { projectId: "projects:mine", title: "Untitled deck 1" },
-      { projectId: "projects:mine", title: "Untitled deck 3" }
+      titledResource("slideDecks", "1", "projects:mine", "Untitled deck 1"),
+      titledResource("slideDecks", "3", "projects:mine", "Untitled deck 3")
     ]);
     const deck = await createProjectResource({ target: "slides" });
     expect(deck.title).toBe("Untitled deck 2");
@@ -201,8 +216,8 @@ describe("createProjectResource", () => {
 
     model.writes.length = 0;
     model.tables.set("spreadsheets", [
-      { projectId: "projects:mine", title: "Untitled spreadsheet 1" },
-      { projectId: "projects:mine", title: "Untitled spreadsheet 3" }
+      titledResource("spreadsheets", "1", "projects:mine", "Untitled spreadsheet 1"),
+      titledResource("spreadsheets", "3", "projects:mine", "Untitled spreadsheet 3")
     ]);
     const spreadsheet = await createProjectResource({ target: "spreadsheet" });
     expect(spreadsheet.title).toBe("Untitled spreadsheet 2");
@@ -221,7 +236,7 @@ describe("createProjectResource", () => {
     );
     await expect(
       createProjectResource({ target: "document", title: undefined })
-    ).rejects.toThrow(/when supplied/);
+    ).rejects.toThrow(/only target and title/);
     await expect(
       createProjectResource({ target: "document", title: "x".repeat(161) })
     ).rejects.toThrow(/1 to 160/);
@@ -233,6 +248,30 @@ describe("createProjectResource", () => {
       })
     ).rejects.toThrow(/only target and title/);
     expect(model.writes).toEqual([]);
+  });
+
+  it("rejects non-data input shapes without invoking accessors", async () => {
+    const inherited = Object.assign(Object.create({ retired: true }), { target: "document" });
+    await expect(createProjectResource(inherited)).rejects.toThrow(/only target and title/);
+
+    const hidden = { target: "document" };
+    Object.defineProperty(hidden, "retired", { enumerable: false, value: true });
+    await expect(createProjectResource(hidden)).rejects.toThrow(/only target and title/);
+
+    const symbolic = { target: "document", [Symbol("retired")]: true };
+    await expect(createProjectResource(symbolic)).rejects.toThrow(/only target and title/);
+
+    let reads = 0;
+    const accessor = {} as Record<string, unknown>;
+    Object.defineProperty(accessor, "target", {
+      enumerable: true,
+      get: () => {
+        reads += 1;
+        return "document";
+      }
+    });
+    await expect(createProjectResource(accessor)).rejects.toThrow(/only target and title/);
+    expect(reads).toBe(0);
   });
 });
 
@@ -271,22 +310,21 @@ describe("readProjectResourceIndex", () => {
     role: "editor"
   });
 
-  it("treats a malformed table root as unavailable input rather than crashing", async () => {
+  it("fails closed on malformed table roots and rows", async () => {
     model.tables.set("documents", { not: "an array" });
 
-    await expect(readProjectResourceIndex()).resolves.toEqual({ resources: [], unavailable: [] });
+    await expect(readProjectResourceIndex()).rejects.toThrow(/table is an array/);
 
     model.tables.set("documents", [null, 7, "row"]);
-    await expect(readProjectResourceIndex()).resolves.toEqual({ resources: [], unavailable: [] });
+    await expect(readProjectResourceIndex()).rejects.toThrow(/row.*object/);
   });
 
-  it("lists exact current rows and quarantines an unknown resource field", async () => {
+  it("lists exact current rows and fails closed on an unknown resource field", async () => {
     model.tables.set("documents", [
       editable("documents", "mine", {
         title: "Mine",
         updatedBy: { kind: "user", userId: "users:me" }
       }),
-      editable("documents", "unknown", { unknownField: true }),
       editable("documents", "other", { projectId: "projects:other", title: "Other" })
     ]);
     model.tables.set("spreadsheets", [
@@ -309,17 +347,58 @@ describe("readProjectResourceIndex", () => {
     ]);
     expect(result.resources[0]).toEqual({
       id: "documents:mine",
+      ref: { kind: "document", id: "documents:mine" },
       kind: "document",
       name: "Mine",
+      relativePath: null,
       updatedAt: 10,
       updatedByName: "Me"
     });
-    expect(result.unavailable).toEqual([
-      expect.objectContaining({ resourceId: "documents:unknown", reason: "corrupt" })
+    expect(result.unavailable).toEqual([]);
+
+    model.tables.set("documents", [
+      editable("documents", "mine"),
+      editable("documents", "unknown", { unknownField: true })
     ]);
+    await expect(readProjectResourceIndex()).rejects.toThrow(/unknown field/);
   });
 
-  it("quarantines malformed scoped rows and never forwards actor extras", async () => {
+  it("projects an external file with a file label and its exact represented subkind", async () => {
+    const hash = "a".repeat(64);
+    model.tables.set("externalFiles", [{
+      _id: "externalFiles:source",
+      _creationTime: 1,
+      projectId: "projects:mine",
+      name: "analysis.ts",
+      originalName: "analysis.ts",
+      relativePath: "sources/analysis.ts",
+      mediaType: "text/typescript",
+      subkind: "code",
+      storageId: `_storage:${hash}`,
+      hash,
+      size: 42,
+      origin: { kind: "upload" },
+      createdBy: system,
+      updatedBy: system,
+      revision: 1,
+      updatedAt: 10
+    }]);
+
+    await expect(readProjectResourceIndex()).resolves.toEqual({
+      resources: [{
+        id: "externalFiles:source",
+        ref: { kind: "externalFile::code", id: "externalFiles:source" },
+        kind: "file",
+        name: "analysis.ts",
+        relativePath: "sources/analysis.ts",
+        updatedAt: 10,
+        updatedByName: "Icarus"
+      }],
+      unavailable: []
+    });
+  });
+
+  it("fails closed on malformed scoped rows and never forwards actor extras", async () => {
     model.tables.set("documents", [
       editable("documents", "good", { title: "Good" }),
       editable("documents", "bad.actor", {
@@ -342,42 +421,19 @@ describe("readProjectResourceIndex", () => {
       exactMembership("memberships:other", "projects:other", "users:other")
     ]);
 
-    const result = await readProjectResourceIndex();
-
-    expect(result.resources).toEqual([
-      {
-        id: "documents:foreign-actor",
-        kind: "document",
-        name: "Former collaborator",
-        updatedAt: 12,
-        updatedByName: null
-      }
-    ]);
-    expect(result.unavailable).toHaveLength(4);
-    expect(result.unavailable.filter((row) => row.resourceId === "documents:good")).toHaveLength(
-      2
-    );
-    expect(JSON.stringify(result)).not.toContain("do-not-forward");
-    expect(JSON.stringify(result)).not.toContain("Other secret");
+    await expect(readProjectResourceIndex()).rejects.toThrow();
   });
 
-  it("reserves a malformed row id so a valid-looking duplicate is never exposed", async () => {
+  it("rejects a malformed duplicate row id rather than exposing either claimant", async () => {
     model.tables.set("documents", [
       editable("documents", "duplicate", { title: "" }),
       editable("documents", "duplicate", { title: "Looks valid", updatedAt: 11 })
     ]);
 
-    const result = await readProjectResourceIndex();
-
-    expect(result.resources).toEqual([]);
-    expect(result.unavailable).toHaveLength(2);
-    expect(result.unavailable.map((row) => row.resourceId)).toEqual([
-      "documents:duplicate",
-      "documents:duplicate"
-    ]);
+    await expect(readProjectResourceIndex()).rejects.toThrow();
   });
 
-  it("quarantines a scoped row when a foreign row claims the same canonical id", async () => {
+  it("fails closed when a foreign row claims the same canonical id", async () => {
     model.tables.set("documents", [
       editable("documents", "shared-path", { title: "Mine" }),
       editable("documents", "shared-path", {
@@ -387,18 +443,7 @@ describe("readProjectResourceIndex", () => {
       })
     ]);
 
-    const result = await readProjectResourceIndex();
-
-    expect(result.resources).toEqual([]);
-    expect(result.unavailable).toEqual([
-      {
-        resourceId: "documents:shared-path",
-        kind: "document",
-        reason: "corrupt",
-        detail: "documents id is unique"
-      }
-    ]);
-    expect(JSON.stringify(result)).not.toContain("Foreign");
+    await expect(readProjectResourceIndex()).rejects.toThrow(/repeats row id/);
   });
 
   it("keeps unavailable historical actors null and resolves exact related subjects", async () => {
@@ -439,7 +484,7 @@ describe("readProjectResourceIndex", () => {
     ]);
   });
 
-  it("never hides a resource through a malformed partial stage", async () => {
+  it("fails closed on a malformed partial stage", async () => {
     model.tables.set("documents", [editable("documents", "stage")]);
     model.tables.set("templateStages", [
       {
@@ -449,12 +494,7 @@ describe("readProjectResourceIndex", () => {
       }
     ]);
 
-    await expect(readProjectResourceIndex()).resolves.toMatchObject({
-      resources: [],
-      unavailable: [
-        { resourceId: "documents:stage", reason: "corrupt" }
-      ]
-    });
+    await expect(readProjectResourceIndex()).rejects.toThrow();
   });
 });
 
@@ -496,13 +536,32 @@ describe("renameProjectResource", () => {
     const ask = { resourceId: "documents:rename", title: "After" };
 
     model.tables.set("documents", [exact({ unknownField: true })]);
-    await expect(renameProjectResource(ask)).rejects.toThrow(/no resource/);
+    await expect(renameProjectResource(ask)).rejects.toThrow(/unknown field/);
 
     model.tables.set("documents", [exact(), exact()]);
-    await expect(renameProjectResource(ask)).rejects.toThrow(/no resource/);
+    await expect(renameProjectResource(ask)).rejects.toThrow(/repeats row id/);
 
     model.tables.set("documents", [exact({ projectId: "projects:other" })]);
     await expect(renameProjectResource(ask)).rejects.toThrow(/no resource/);
     expect(model.updates).toEqual([]);
+  });
+
+  it("rejects non-data commands and non-nominal resource identities", async () => {
+    await expect(renameProjectResource({ resourceId: "externalFiles:rename", title: "After" }))
+      .rejects.toThrow(/current editable resource id/);
+    await expect(renameProjectResource({ resourceId: "documents:rename", title: undefined } as never))
+      .rejects.toThrow(/exact current data object/);
+
+    let reads = 0;
+    const accessor = { resourceId: "documents:rename" } as Record<string, unknown>;
+    Object.defineProperty(accessor, "title", {
+      enumerable: true,
+      get: () => {
+        reads += 1;
+        return "After";
+      }
+    });
+    await expect(renameProjectResource(accessor)).rejects.toThrow(/exact current data object/);
+    expect(reads).toBe(0);
   });
 });

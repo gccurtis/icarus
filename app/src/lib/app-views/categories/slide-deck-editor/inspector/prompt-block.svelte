@@ -22,10 +22,8 @@
   import PromptTemplateSection from "$app-views/categories/slide-deck-editor/components/prompt-template-section.svelte";
   import TextSpacing from "$app-views/categories/slide-deck-editor/components/text-spacing.svelte";
   import TextStyle from "$app-views/categories/slide-deck-editor/components/text-style.svelte";
-  import {
-    slideHolding,
-    slideIndexOf
-  } from "$app-views/categories/slide-deck-editor/procedures/deck";
+  import { slideHolding } from "$app-views/categories/slide-deck-editor/procedures/deck-slide-holding";
+  import { slideIndexOf } from "$app-views/categories/slide-deck-editor/procedures/deck-slides";
   import {
     promptBlockIn,
     promptElementIn,

@@ -13,14 +13,24 @@ export type Weekday =
   | "Saturday"
   | "Sunday";
 
-export type AutomationTrigger =
-  | { kind: "manual" }
+type ScheduledTrigger =
   | {
       kind: "schedule";
       at: string;
-      repeats: ScheduleRepeat;
-      weekday?: Weekday;
+      repeats: "daily" | "weekdays";
+      weekday?: never;
       timezone: string;
     }
+  | {
+      kind: "schedule";
+      at: string;
+      repeats: "weekly";
+      weekday: Weekday;
+      timezone: string;
+    };
+
+export type AutomationTrigger =
+  | { kind: "manual" }
+  | ScheduledTrigger
   | { kind: "resource-edited"; kinds: ResourceSelectorKind[]; ref?: ResourceRef }
   | { kind: "resource-created"; kinds: ResourceSelectorKind[] };

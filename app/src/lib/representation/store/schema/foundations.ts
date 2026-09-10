@@ -15,9 +15,10 @@ export const FOUNDATION_ROW_POLICIES = {
     refreshIntervalMs: "optional", createdBy: "required", updatedAt: "required"
   },
   externalFiles: {
-    projectId: "required", name: "required", mediaType: "required", subkind: "required",
-    storageId: "required", hash: "required", origin: "required", createdBy: "required",
-    updatedAt: "required"
+    projectId: "required", name: "required", originalName: "required", relativePath: "required",
+    mediaType: "required", subkind: "required", storageId: "required", hash: "required",
+    size: "required", origin: "required", createdBy: "required", updatedBy: "required",
+    semanticContext: "optional", revision: "required", updatedAt: "required"
   },
   threads: { projectId: "required", kind: "required", branchedFrom: "optional" },
   threadParts: { projectId: "required", threadId: "required", part: "required", messages: "required" },

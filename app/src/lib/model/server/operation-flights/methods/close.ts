@@ -21,7 +21,8 @@ export const close = (state: OperationFlightsState): Promise<void> => {
 
   const pending = [
     ...[...state.derived.values()].map((flight) => flight.promise),
-    ...[...state.research.values()].map((flight) => flight.settled)
+    ...[...state.research.values()].map((flight) => flight.settled),
+    ...[...state.agentTasks.values()].map((flight) => flight.promise)
   ];
   for (const flight of state.derived.values()) {
     flight.controller.abort(new OperationFlightsShutdownError());
@@ -31,9 +32,14 @@ export const close = (state: OperationFlightsState): Promise<void> => {
     flight.reason ??= "shutdown";
     flight.controller.abort();
   }
+  for (const flight of state.agentTasks.values()) {
+    clearTimeout(flight.deadline);
+    flight.controller.abort(new OperationFlightsShutdownError());
+  }
   void Promise.allSettled(pending).then(() => {
     state.derived.clear();
     state.research.clear();
+    state.agentTasks.clear();
     finish();
   });
   return closePromise;

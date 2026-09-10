@@ -39,7 +39,8 @@
     ],
     [
       { href: "/demo/stack-builder", label: "Stack builder" },
-      { href: "/demo/semantic-overlay", label: "Overlay" }
+      { href: "/demo/semantic-overlay", label: "Overlay" },
+      { href: "/demo/external-files", label: "External files" }
     ]
   ];
 

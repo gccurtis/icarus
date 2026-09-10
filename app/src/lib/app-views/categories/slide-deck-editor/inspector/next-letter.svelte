@@ -2,7 +2,8 @@
   import { Panel, PanelCrumbs, PanelEmpty } from "$authored-components/panel";
   import TextSpacing from "$app-views/categories/slide-deck-editor/components/text-spacing.svelte";
   import TextStyle from "$app-views/categories/slide-deck-editor/components/text-style.svelte";
-  import { blockIn, slideIndexOf } from "$app-views/categories/slide-deck-editor/procedures/deck";
+  import { blockIn } from "$app-views/categories/slide-deck-editor/procedures/deck-reading";
+  import { slideIndexOf } from "$app-views/categories/slide-deck-editor/procedures/deck-slides";
   import { rangeOf, slideSignal } from "$app-views/categories/slide-deck-editor/procedures/selecting";
   import { workspaceState, type SlideDeckRuntime } from "$model/client/workspace-state";
 

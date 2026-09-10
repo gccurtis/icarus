@@ -7,17 +7,20 @@ import {
 import { rowsOf } from "$capabilities/derived-output/api/shared/rows";
 
 type RefreshJob = NonNullable<ReturnType<typeof derivedOutputRefreshJobFor>>;
+type RefreshJobPatch = {
+  [K in keyof DerivedOutputRefreshJobFields]?: DerivedOutputRefreshJobFields[K];
+};
 
 const chosen = <K extends keyof DerivedOutputRefreshJobFields>(
   job: RefreshJob,
-  patch: Partial<DerivedOutputRefreshJobFields>,
+  patch: RefreshJobPatch,
   field: K
 ): DerivedOutputRefreshJobFields[K] | undefined =>
   Object.hasOwn(patch, field) ? patch[field] : job[field];
 
 const fieldsFor = (
   job: RefreshJob,
-  patch: Partial<DerivedOutputRefreshJobFields>
+  patch: RefreshJobPatch
 ): DerivedOutputRefreshJobFields => {
   const candidate = Object.fromEntries(Object.entries({
     _id: job._id,
@@ -37,26 +40,17 @@ const fieldsFor = (
   if (!isStoredDerivedOutputRefreshJob(candidate)) {
     throw new Error("the refresh-job update is not a complete current row");
   }
-  return {
-    projectId: candidate.projectId,
-    derivedOutputId: candidate.derivedOutputId,
-    ...(candidate.selection === undefined ? {} : { selection: candidate.selection }),
-    state: candidate.state,
-    requestKey: candidate.requestKey,
-    requestedVersion: candidate.requestedVersion,
-    attempts: candidate.attempts,
-    ...(candidate.error === undefined ? {} : { error: candidate.error }),
-    queuedAt: candidate.queuedAt,
-    ...(candidate.startedAt === undefined ? {} : { startedAt: candidate.startedAt }),
-    updatedAt: candidate.updatedAt
-  };
+  const { _id, _creationTime, ...fields } = candidate;
+  void _id;
+  void _creationTime;
+  return fields;
 };
 
 /** Atomically replaces one exact current refresh job and removes omitted optional values. */
 export const writeRefreshJob = (
   model: ServerModel,
   job: RefreshJob,
-  patch: Partial<DerivedOutputRefreshJobFields>
+  patch: RefreshJobPatch
 ): RefreshJob => {
   if (!isStoredDerivedOutputRefreshJob(job)) {
     throw new Error("the refresh job to update is not a complete current row");

@@ -227,7 +227,7 @@
       steps: [
         { label: "Edit", detail: "update receives a nonblank lastResponse string", state: "done" },
         { label: "Version", detail: "lastRevision advances and a new TextBlock is stored", state: "done" },
-        { label: "Unground", detail: "queries, evidence, lastGeneration, refreshedAt are cleared", state: "kept" },
+        { label: "Unground", detail: "valueSource becomes authored; queries, evidence, generation and refresh time are absent", state: "kept" },
         { label: "Refresh", detail: "edited text is sent as continuity only, never factual evidence", state: "done" },
         { label: "Republish", detail: "new selected citations ground the regenerated response", state: "done" }
       ]

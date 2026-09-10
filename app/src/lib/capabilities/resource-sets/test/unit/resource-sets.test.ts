@@ -51,6 +51,9 @@ const { removeResourceSet } = await import(
 const { updateResourceSet } = await import(
   "$capabilities/resource-sets/api/update-resource-set/update-resource-set"
 );
+const { boundToOf } = await import(
+  "$capabilities/resource-sets/api/shared/validation"
+);
 
 const row = (table: string, id: string, fields: Record<string, unknown>): Row => ({
   ...fields,
@@ -69,11 +72,30 @@ const namedSet = (id: string, fields: Record<string, unknown> = {}): Row =>
     ...fields
   });
 
+const authoredResource = (
+  table: "documents" | "slideDecks" | "spreadsheets",
+  id: string,
+  projectId = "projects:p"
+): Row => row(table, id, {
+  projectId,
+  title: `${table} ${id}`,
+  createdBy: { kind: "system" },
+  updatedBy: { kind: "system" },
+  updatedAt: 1
+});
+
 beforeEach(() => {
   vi.spyOn(Date, "now").mockReturnValue(500);
   model.scope = { projectId: "projects:p", userId: "users:u", username: "Uma" };
   model.tables = {
-    users: [{ _id: "users:u", _creationTime: 1, displayName: "Uma" }],
+    users: [{
+      _id: "users:u",
+      _creationTime: 1,
+      authSubject: "auth:u",
+      displayName: "Uma",
+      settings: "{}",
+      updatedAt: 1
+    }],
     memberships: [row("memberships", "1", {
       userId: "users:u",
       projectId: "projects:p",
@@ -84,13 +106,25 @@ beforeEach(() => {
     templates: [],
     templateStages: [],
     documents: [
-      row("documents", "1", { projectId: "projects:p", title: "Brief" }),
-      row("documents", "2", { projectId: "projects:p", title: "Staged" }),
-      row("documents", "3", { projectId: "projects:other", title: "Elsewhere" })
+      { ...authoredResource("documents", "1"), title: "Brief" },
+      { ...authoredResource("documents", "2"), title: "Staged" },
+      { ...authoredResource("documents", "3", "projects:other"), title: "Elsewhere" }
     ],
-    slideDecks: [row("slideDecks", "1", { projectId: "projects:p", title: "Deck" })],
+    slideDecks: [{ ...authoredResource("slideDecks", "1"), title: "Deck" }],
     spreadsheets: [],
-    findings: [row("findings", "1", { projectId: "projects:p", title: "Relay" })],
+    findings: [row("findings", "1", {
+      projectId: "projects:p",
+      title: "Relay",
+      body: [],
+      sources: [],
+      evidenceFor: [],
+      relatedTo: [],
+      researchThreadIds: [],
+      createdBy: { kind: "system" },
+      updatedBy: { kind: "system" },
+      revision: 1,
+      updatedAt: 1
+    })],
     researchThreads: []
   };
 });
@@ -104,7 +138,12 @@ describe("reading the project's sets", () => {
     );
     model.tables.templateStages.push(row("templateStages", "1", {
       projectId: "projects:p",
-      resourceId: "documents:2"
+      templateId: "templates:stage-owner",
+      templateRevision: 1,
+      target: "document",
+      resourceId: "documents:2",
+      createdBy: { kind: "system" },
+      updatedAt: 1
     }));
 
     const answer = await readResourceSets();
@@ -119,14 +158,10 @@ describe("reading the project's sets", () => {
     assert.deepEqual(answer.unavailable, []);
   });
 
-  test("quarantines a malformed row without hiding the rest", async () => {
+  test("fails closed on a malformed row", async () => {
     model.tables.resourceSets.push(namedSet("1"), namedSet("2", { set: { include: "everything" } }));
 
-    const answer = await readResourceSets();
-
-    assert.deepEqual(answer.sets.map((set) => set.id), ["resourceSets:1"]);
-    assert.equal(answer.unavailable.length, 1);
-    assert.match(answer.unavailable[0].detail, /include list/);
+    await assert.rejects(() => readResourceSets(), /non-current field values/);
   });
 
   test("never resolves a reusable set through an unnamed private row", async () => {
@@ -136,7 +171,11 @@ describe("reading the project's sets", () => {
       }),
       row("resourceSets", "2", {
         projectId: "projects:p",
-        boundTo: { kind: "resource", resourceId: "documents:1", hole: "evidence" },
+        boundTo: {
+          kind: "resource",
+          ref: { kind: "document", id: "documents:1" },
+          hole: "evidence"
+        },
         set: { include: [{ select: "project" }], exclude: [] },
         createdBy: { kind: "user", userId: "users:u" },
         revision: 1,
@@ -179,6 +218,89 @@ describe("changing sets", () => {
       /selects project, kinds, resources, or set/
     );
     await assert.rejects(() => updateResourceSet({ setId: "resourceSets:1", baseRevision: 1, patch: {} }), /at least one field/);
+  });
+
+  test("rejects non-data command shapes and never invokes their accessors", async () => {
+    const current = {
+      name: "Field evidence",
+      set: { include: [{ select: "project" }], exclude: [] }
+    };
+    const inherited = Object.assign(Object.create({ retired: true }), current);
+    await assert.rejects(() => createResourceSet(inherited), /exact current data object/);
+
+    const symbolic = { ...current } as Record<PropertyKey, unknown>;
+    symbolic[Symbol("retired")] = true;
+    await assert.rejects(() => createResourceSet(symbolic as never), /exact current data object/);
+
+    const hidden = { ...current };
+    Object.defineProperty(hidden, "retired", { value: true, enumerable: false });
+    await assert.rejects(() => createResourceSet(hidden), /exact current data object/);
+
+    let reads = 0;
+    const accessor = { name: "Field evidence" } as Record<string, unknown>;
+    Object.defineProperty(accessor, "set", {
+      enumerable: true,
+      get: () => {
+        reads += 1;
+        return current.set;
+      }
+    });
+    await assert.rejects(() => createResourceSet(accessor as never), /exact current data object/);
+    assert.equal(reads, 0);
+
+    await assert.rejects(
+      () => createResourceSet({ ...current, description: undefined } as never),
+      /exact current data object/
+    );
+
+    const decoratedInclude = [{ select: "project" }];
+    Object.defineProperty(decoratedInclude, "retired", { value: true, enumerable: false });
+    await assert.rejects(
+      () => createResourceSet({
+        ...current,
+        set: { include: decoratedInclude, exclude: [] }
+      } as never),
+      /exact current data object/
+    );
+  });
+
+  test("requires exact nominal current identities for private owners", () => {
+    assert.deepEqual(
+      boundToOf({ kind: "hole", templateId: "templates:1", hole: "evidence" }, "test"),
+      { kind: "hole", templateId: "templates:1", hole: "evidence" }
+    );
+    assert.throws(
+      () => boundToOf({ kind: "hole", templateId: "documents:1", hole: "evidence" }, "test"),
+      /names a template/
+    );
+    assert.deepEqual(
+      boundToOf({
+        kind: "resource",
+        ref: { kind: "document", id: "documents:1" },
+        hole: "evidence"
+      }, "test"),
+      {
+        kind: "resource",
+        ref: { kind: "document", id: "documents:1" },
+        hole: "evidence"
+      }
+    );
+    assert.throws(
+      () => boundToOf({
+        kind: "resource",
+        resourceId: "documents:1",
+        hole: "evidence"
+      }, "test"),
+      /one resource and a hole/
+    );
+    assert.throws(
+      () => boundToOf({
+        kind: "resource",
+        ref: { kind: "slides", id: "documents:1" },
+        hole: "evidence"
+      }, "test"),
+      /matching row id/
+    );
   });
 
   test("rejects retired selectors and every non-current resource reference shape", async () => {
@@ -258,7 +380,11 @@ describe("changing sets", () => {
       namedSet("1"),
       row("resourceSets", "2", {
         projectId: "projects:p",
-        boundTo: { kind: "resource", resourceId: "documents:1", hole: "evidence" },
+        boundTo: {
+          kind: "resource",
+          ref: { kind: "document", id: "documents:1" },
+          hole: "evidence"
+        },
         set: { include: [{ select: "project" }], exclude: [] },
         createdBy: { kind: "user", userId: "users:u" },
         revision: 1,
@@ -327,7 +453,10 @@ describe("changing sets", () => {
     model.tables.templates.push(
       row("templates", "1", {
         projectId: "projects:p",
+        userId: "users:u",
         name: "Brief",
+        tags: [],
+        body: { resource: "document", rows: [] },
         holes: [
           {
             name: "evidence",
@@ -335,7 +464,10 @@ describe("changing sets", () => {
             kind: "scope",
             default: { include: [{ select: "set", setId: "resourceSets:1" }], exclude: [] }
           }
-        ]
+        ],
+        createdBy: { kind: "system" },
+        revision: 1,
+        updatedAt: 1
       })
     );
     const named = await removeResourceSet({ setId: "resourceSets:1", baseRevision: 1 });
@@ -360,7 +492,14 @@ describe("changing sets", () => {
       row("derivedOutputs", "1", {
         projectId: "projects:p",
         prompt: "  Summarise   what winter changed  ",
-        scope: { include: [{ select: "set", setId: "resourceSets:1" }], exclude: [] }
+        definitionRevision: 1,
+        valueSource: "none",
+        scope: { include: [{ select: "set", setId: "resourceSets:1" }], exclude: [] },
+        queries: [],
+        evidence: [],
+        state: "idle",
+        createdBy: { kind: "system" },
+        updatedAt: 1
       })
     ];
 
@@ -380,6 +519,7 @@ describe("changing sets", () => {
         resourceId: "documents:1",
         role: "leader",
         revision: 3,
+        part: 0,
         body: {
           rows: [
             {
@@ -389,12 +529,18 @@ describe("changing sets", () => {
                 {
                   id: "b1",
                   type: "prompt",
-                  scope: { include: [{ select: "set", setId: "resourceSets:1" }], exclude: [] }
+                  scope: { include: [{ select: "set", setId: "resourceSets:1" }], exclude: [] },
+                  prompt: "Summarise",
+                  atoms: [],
+                  display: "",
+                  marks: [],
+                  state: "idle"
                 }
               ]
             }
           ]
-        }
+        },
+        at: 1
       })
     ];
 
@@ -404,7 +550,7 @@ describe("changing sets", () => {
       'a Prompt Block in "Brief" still reads it'
     );
 
-    model.tables.documentSnapshots[0].role = "follower";
+    model.tables.documentSnapshots[0].role = "checkpoint";
     const gone = await removeResourceSet({ setId: "resourceSets:1", baseRevision: 1 });
     assert.deepEqual(gone, { accepted: true, setId: "resourceSets:1", revision: 1 });
   });
@@ -421,8 +567,12 @@ describe("changing sets", () => {
   test("cannot update or remove a resource-owned private set", async () => {
     const privateSet = row("resourceSets", "private", {
       projectId: "projects:p",
-      boundTo: { kind: "resource", resourceId: "documents:1", hole: "evidence" },
-      set: { include: [{ select: "resources", resources: [{ kind: "document", id: "documents:1" }] }], exclude: [] },
+      boundTo: {
+        kind: "resource",
+        ref: { kind: "document", id: "documents:1" },
+        hole: "evidence"
+      },
+      set: { include: [{ select: "resources", refs: [{ kind: "document", id: "documents:1" }] }], exclude: [] },
       createdBy: { kind: "user", userId: "users:u" },
       revision: 7,
       updatedAt: 5
@@ -464,14 +614,10 @@ describe("changing sets", () => {
     const before = structuredClone(model.tables);
     const reads = vi.spyOn(model.store, "read");
 
-    const removed = await removeResourceSet({
-      setId: "resourceSets:broken",
-      baseRevision: 1
-    });
-
-    assert.equal(removed.accepted, false);
-    assert.equal(removed.accepted ? "" : removed.reason, "corrupt");
-    assert.match(removed.accepted ? "" : removed.detail, /include list/);
+    await assert.rejects(
+      () => removeResourceSet({ setId: "resourceSets:broken", baseRevision: 1 }),
+      /non-current field values/
+    );
     assert.deepEqual(model.tables, before);
     assert.deepEqual(reads.mock.calls.map(([path]) => path), ["resourceSets"]);
     reads.mockRestore();

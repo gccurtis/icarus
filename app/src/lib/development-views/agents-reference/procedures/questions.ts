@@ -242,7 +242,7 @@ export const QUESTIONS: readonly Question[] = [
     page: "intelligence",
     title: "The first chat does not stream",
     matters:
-      "Message.state already has a streaming value and the port answers once. Streaming would be a second method on the port and a partial write on every round.",
+      "The port answers once and the current Message contract therefore admits only complete rows. Streaming would require a second method and a newly designed partial-write contract.",
     options: [
       "Publish when the turn settles; show queued and running from the turn row.",
       "Add a streaming method to the port before the first chat ships."

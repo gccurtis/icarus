@@ -20,7 +20,7 @@ export const validateCreateAutomation = (input: unknown): CreateAutomationInput 
     ? optionalTextOf(fields.instruction, SUBJECT, "instruction", 20_000)
     : undefined;
   return {
-    personaId: idOf(fields.personaId, SUBJECT, "personaId"),
+    personaId: idOf(fields.personaId, "personas", SUBJECT, "personaId"),
     name: nameOf(fields.name, SUBJECT),
     ...(instruction === undefined ? {} : { instruction }),
     ...(has(fields, "trigger") ? { trigger: triggerOf(fields.trigger, SUBJECT) } : {}),

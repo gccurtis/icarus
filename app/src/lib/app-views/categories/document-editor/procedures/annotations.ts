@@ -6,7 +6,7 @@ import {
   anchorAt,
   displayOffsetOf,
   positionOf
-} from "$app-views/categories/document-editor/procedures/projection";
+} from "$app-views/categories/document-editor/procedures/projection-positions";
 
 export type Annotations = {
   readonly anchored: readonly Anchored[];

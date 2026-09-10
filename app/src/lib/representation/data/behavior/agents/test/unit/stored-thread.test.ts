@@ -38,9 +38,19 @@ describe("current thread storage", () => {
 
   it("rejects partial messages, unknown nested fields, and duplicate message ids", () => {
     expect(isStoredThreadPart({ ...part(), messages: [{ id: "message-1" }] })).toBe(false);
+    const { author: _author, ...withoutAuthor } = part().messages[0];
+    expect(isStoredThreadPart({ ...part(), messages: [withoutAuthor] })).toBe(false);
     expect(isStoredThreadPart({
       ...part(),
       messages: [{ ...part().messages[0], citation: "retired" }]
+    })).toBe(false);
+    expect(isStoredThreadPart({
+      ...part(),
+      messages: [{ ...part().messages[0], state: "streaming" }]
+    })).toBe(false);
+    expect(isStoredThreadPart({
+      ...part(),
+      messages: [{ ...part().messages[0], state: "error", error: "old failure" }]
     })).toBe(false);
     expect(isStoredThreadPart({ ...part(), messages: [part().messages[0], part().messages[0]] })).toBe(false);
   });

@@ -394,22 +394,28 @@ type EmbeddingSpace = {
           label: "representation · derivedOutputs",
           role: "state",
           persistence: "stored",
-          code: `type DerivedOutputFields = {
+          code: `type DerivedOutputDefinition = {
   projectId: Id<"projects">;
   prompt: string;
-  definitionRevision?: number;
+  definitionRevision: number;
   scope?: ResourceSet;
-  queries: string[];
-  evidence: SemanticCitation[];
-  lastResponse?: ContentBlock;
-  lastRevision?: number;
-  lastGeneration?: number;
-  state: "idle" | "fresh" | "stale" | "error";
-  error?: string;
-  refreshedAt?: number;
   createdBy: Actor;
   updatedAt: number;
-};`,
+};
+
+type DerivedValue =
+  | { valueSource: "none"; queries: []; evidence: [] }
+  | { valueSource: "authored"; queries: []; evidence: [];
+      lastResponse: ContentBlock; lastRevision: number }
+  | { valueSource: "generated"; queries: string[];
+      evidence: SemanticCitation[]; lastResponse: ContentBlock;
+      lastRevision: number; lastGeneration: number; refreshedAt: number };
+
+// idle requires none; fresh requires generated; stale/error preserve any
+// exact value arm. Only error state carries nonblank error text.
+type DerivedOutputFields = DerivedOutputDefinition & DerivedValue &
+  ({ state: "idle" | "fresh" | "stale" } |
+   { state: "error"; error: string });`,
           note: "There is no semantic-object ID list. definitionRevision changes only with user inputs; the separate refresh job owns queued/running/failed operation state."
         },
         {

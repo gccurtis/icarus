@@ -258,6 +258,7 @@ describe.each([
       state: "running",
       attempts: 1,
       claimId: "old-worker",
+      startedAt: clock,
       leaseExpiresAt: clock + 100
     });
 
@@ -336,11 +337,7 @@ describe.each([
     seed(store, table, {
       state: "failed",
       attempts: 3,
-      error: "projection failed",
-      claimId: "finished-worker",
-      leaseExpiresAt: 900,
-      startedAt: 800,
-      updatedAt: 950
+      error: "projection failed"
     });
     const terminal = structuredClone(rowsIn(store, table));
 
@@ -364,8 +361,7 @@ describe.each([
     seed(forced, table, {
       state: "failed",
       attempts: 3,
-      error: "projection failed",
-      updatedAt: 950
+      error: "projection failed"
     });
 
     enqueue(forced, table, 1, true);

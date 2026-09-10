@@ -6,7 +6,6 @@ import {
 } from "$representation/data/behavior/core/resource";
 import {
   isStoredActor,
-  isStoredIdentifier,
   isStoredJson,
   isStoredNatural,
   isStoredRowId,
@@ -35,7 +34,6 @@ export type AdmittedResourceSetRow =
   | AdmittedReusableResourceSetRow
   | AdmittedPrivateResourceSetRow;
 
-const MAX_IDENTIFIER_LENGTH = 500;
 const MAX_NAME_LENGTH = 160;
 const MAX_DESCRIPTION_LENGTH = 4_000;
 const MAX_TERMS_PER_SIDE = 100;
@@ -58,16 +56,6 @@ const canonicalText = (value: unknown, maximum: number): value is string =>
   value === value.trim() &&
   value.length > 0 &&
   value.length <= maximum;
-
-const claimCountsOf = (rows: readonly unknown[]): ReadonlyMap<string, number> => {
-  const claims = new Map<string, number>();
-  for (const value of rows) {
-    if (value === null || typeof value !== "object" || Array.isArray(value)) continue;
-    const id = (value as Fields)._id;
-    if (typeof id === "string") claims.set(id, (claims.get(id) ?? 0) + 1);
-  }
-  return claims;
-};
 
 const rowIdOf = (value: unknown, subject: string): Id<"resourceSets"> => {
   if (!isStoredRowId(value, "resourceSets")) {
@@ -97,11 +85,14 @@ const boundToOf = (value: unknown, subject: string): BoundTo => {
   }
   if (
     owner.kind === "resource" &&
-    exact(owner, ["kind", "resourceId", "hole"]) &&
-    isStoredIdentifier(owner.resourceId, MAX_IDENTIFIER_LENGTH) &&
+    exact(owner, ["kind", "ref", "hole"]) &&
     canonicalText(owner.hole, MAX_KIND_LENGTH)
   ) {
-    return { kind: "resource", resourceId: owner.resourceId, hole: owner.hole };
+    return {
+      kind: "resource",
+      ref: admitResourceRef(owner.ref, `${subject}.boundTo.ref`),
+      hole: owner.hole
+    };
   }
   throw new Error(`${subject}.boundTo names exactly one hole or resource`);
 };
@@ -243,21 +234,28 @@ export const admitReusableResourceSetRow = (
   return row;
 };
 
+/** Re-admit one complete table image; malformed or repeated rows are never quarantined. */
+const admittedResourceSetRows = (
+  rows: readonly unknown[]
+): readonly AdmittedResourceSetRow[] => {
+  const admitted = rows.map(admitResourceSetRow);
+  const ids = new Set<string>();
+  for (const row of admitted) {
+    if (ids.has(row._id)) {
+      throw new Error(`the 'resourceSets' table repeats row id '${row._id}'`);
+    }
+    ids.add(row._id);
+  }
+  return admitted;
+};
+
 /** One globally unique, structurally admitted row claiming an exact id. */
 export const admittedResourceSetClaim = (
   rows: readonly unknown[],
   setId: string
 ): AdmittedResourceSetRow | undefined => {
-  const matching = rows.filter((value) => {
-    if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
-    return (value as Fields)._id === setId;
-  });
-  if (matching.length !== 1) return undefined;
-  try {
-    return admitResourceSetRow(matching[0]);
-  } catch {
-    return undefined;
-  }
+  const matching = admittedResourceSetRows(rows).filter((row) => row._id === setId);
+  return matching[0];
 };
 
 /** The globally unique, admitted private rows owned inside one project. */
@@ -265,22 +263,9 @@ export const admittedPrivateResourceSets = (
   rows: readonly unknown[],
   projectId: string
 ): ReadonlyMap<string, AdmittedPrivateResourceSetRow> => {
-  const claims = claimCountsOf(rows);
   const admitted = new Map<string, AdmittedPrivateResourceSetRow>();
-  for (const value of rows) {
-    if (value === null || typeof value !== "object" || Array.isArray(value)) continue;
-    const fields = value as Fields;
-    if (
-      fields.projectId !== projectId ||
-      typeof fields._id !== "string" ||
-      claims.get(fields._id) !== 1
-    ) continue;
-    try {
-      const row = admitResourceSetRow(value);
-      if (row.name === undefined) admitted.set(row._id, row);
-    } catch {
-      // Private storage is usable only after its complete represented row is proved.
-    }
+  for (const row of admittedResourceSetRows(rows)) {
+    if (row.projectId === projectId && row.name === undefined) admitted.set(row._id, row);
   }
   return admitted;
 };
@@ -288,27 +273,16 @@ export const admittedPrivateResourceSets = (
 /**
  * The only named sets generic consumers may index.
  *
- * Every id claimant is counted before admission, so a malformed or foreign
- * duplicate cannot win by row order. Invalid rows are quarantined by omission;
- * a scope that names one is then rejected by the normal missing-set boundary.
+ * The complete table image is admitted first. A malformed or duplicate row is
+ * Store corruption and fails the read rather than disappearing from a scope.
  */
 export const admittedReusableResourceSets = (
   rows: readonly unknown[],
   projectId: string
 ): ReadonlyMap<string, AdmittedReusableResourceSetRow> => {
-  const claims = claimCountsOf(rows);
   const admitted = new Map<string, AdmittedReusableResourceSetRow>();
-  for (const value of rows) {
-    if (value === null || typeof value !== "object" || Array.isArray(value)) continue;
-    const fields = value as Fields;
-    if (fields.projectId !== projectId || typeof fields._id !== "string") continue;
-    if (claims.get(fields._id) !== 1) continue;
-    try {
-      const row = admitReusableResourceSetRow(value);
-      admitted.set(row._id, row);
-    } catch {
-      // A corrupt row is data to quarantine, not permission to weaken a query.
-    }
+  for (const row of admittedResourceSetRows(rows)) {
+    if (row.projectId === projectId && row.name !== undefined) admitted.set(row._id, row);
   }
   return admitted;
 };

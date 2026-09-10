@@ -31,14 +31,21 @@ export const answerTaskQuestion = async (input: unknown): Promise<WriteResult> =
     candidate.id !== question.id
       ? candidate
       : asked.reject
-        ? { ...candidate, rejectedAt: at, answeredBy: actor }
-        : { ...candidate, answer: asked.answer, answeredAt: at, answeredBy: actor }
+        ? { ...candidate, state: "rejected" as const, rejectedAt: at, answeredBy: actor }
+        : {
+            ...candidate,
+            state: "answered" as const,
+            answer: asked.answer as string,
+            answeredAt: at,
+            answeredBy: actor
+          }
   );
   store.transaction((unit) => {
     appendMessage(
       unit,
-      scope.projectId,
+      task.projectId,
       task.threadId,
+      "agentTask",
       "prompt",
       actor,
       at,

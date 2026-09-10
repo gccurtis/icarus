@@ -1,15 +1,18 @@
 import type { ReadSlideDeckBodyInput } from "$capabilities/slide-deck/types/read-slide-deck-body";
+import {
+  hasExactFields,
+  isStoredRowId,
+  storedFields
+} from "$representation/data/behavior/core/stored";
 
 /** Refuses anything the procedure could not act on. Throws; it never returns a partial. */
 export const validateReadSlideDeckBody = (input: unknown): ReadSlideDeckBodyInput => {
-  if (typeof input !== "object" || input === null) {
-    throw new Error("slide-deck/read-slide-deck-body: an object is required");
+  const fields = storedFields(input);
+  if (fields === undefined || !hasExactFields(fields, ["resourceId"])) {
+    throw new Error("slide-deck/read-slide-deck-body: exactly one plain resourceId field is required");
   }
-
-  const { resourceId } = input as { resourceId?: unknown };
-  if (typeof resourceId !== "string" || resourceId.length === 0) {
-    throw new Error("slide-deck/read-slide-deck-body: resourceId is required");
+  if (!isStoredRowId(fields.resourceId, "slideDecks")) {
+    throw new Error("slide-deck/read-slide-deck-body: resourceId is one current slide deck id");
   }
-
-  return { resourceId };
+  return { resourceId: fields.resourceId };
 };

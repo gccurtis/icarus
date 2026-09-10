@@ -419,6 +419,65 @@ test("a text box becomes an editable slide Prompt Block without changing its ele
   await expect(context).toContainText("Text retained");
 });
 
+test("a slide Prompt Block is grounded by one exact uploaded External file", async ({ page }) => {
+  test.skip(
+    process.env.ICARUS_BROWSER_PROVIDER_FIXTURE !== "1",
+    "The caller-owned server did not opt into the deterministic browser provider"
+  );
+  test.setTimeout(180_000);
+
+  await page.goto("/app/dev-project", { waitUntil: "networkidle" });
+  const tabs = page.getByRole("toolbar", { name: "Open tabs" });
+  await tabs.getByRole("button", { name: "External", exact: true }).click();
+  await page.locator('form.upload-form input[type="file"]').first().setInputFiles({
+    name: "slide-grounding.md",
+    mimeType: "text/markdown",
+    buffer: Buffer.from(
+      "# Transfer note\n\nThe remaining transfer capability is 842 MW for the slide scenario.\n"
+    )
+  });
+  await page.getByRole("button", { name: "Upload files", exact: true }).click();
+  await expect(page.getByText("1 uploaded · 0 already present · 0 rejected.")).toBeVisible();
+
+  const surface = await openDeck(page);
+  const context = page.locator('aside[aria-label="Context"]');
+  const inspector = page.locator('aside[aria-label="Inspector"]');
+  await context.getByRole("button", { name: "Insert", exact: true }).click();
+  await context.getByRole("button", { name: "Text box", exact: true }).click();
+  const item = surface.locator("[data-item]").last();
+  await inspector.getByRole("button", { name: "Prompt", exact: true }).click();
+  await inspector
+    .getByLabel("Prompt", { exact: true })
+    .fill("State the transfer capability in the selected source.");
+
+  await inspector.locator('button[title="Choose what this prompt reads"]').click();
+  const scope = page.getByRole("dialog", { name: "What this prompt reads" });
+  await scope.getByRole("button", { name: "Clear", exact: true }).click();
+  await scope.getByRole("button", { name: "Resources", exact: true }).click();
+  const external = scope.locator(".offer").filter({ hasText: "slide-grounding.md" });
+  await expect(external).toBeVisible();
+  await external.getByRole("button", { name: "Add", exact: true }).click();
+  await scope.getByRole("button", { name: "Set the scope", exact: true }).click();
+  await expect(
+    inspector.locator('button[title="Choose what this prompt reads"]')
+  ).toHaveText(/slide-grounding\.md/i);
+
+  await inspector.getByRole("button", { name: "Generate", exact: true }).click();
+  await expect(item).toContainText("remaining transfer capability is 842 MW", {
+    timeout: 150_000
+  });
+  await expect(item).not.toContainText("Protection isolated the transformer bank");
+  await expect(inspector.getByRole("button", { name: "Refresh", exact: true })).toBeEnabled({
+    timeout: 150_000
+  });
+
+  await page.reload({ waitUntil: "networkidle" });
+  const reloaded = await openDeck(page);
+  await expect(reloaded.locator("[data-item]").last()).toContainText(
+    "remaining transfer capability is 842 MW"
+  );
+});
+
 test("a slide Prompt Block generates grounded editable text from another resource", async ({ page }) => {
   test.skip(
     process.env.ICARUS_LIVE_DERIVED_OUTPUT !== "1",

@@ -15,6 +15,7 @@ describe("current resource identity", () => {
   it("closes exact reference kinds and keeps the external family selector separate", () => {
     expect(isResourceKind("document")).toBe(true);
     expect(isResourceKind("externalFile::audio")).toBe(true);
+    expect(isResourceKind("externalFile::code")).toBe(true);
     expect(isResourceKind("externalFile")).toBe(false);
     expect(isResourceSelectorKind("externalFile")).toBe(true);
     expect(kindMatches("externalFile", "externalFile::video")).toBe(true);
@@ -33,6 +34,7 @@ describe("current resource identity", () => {
     ["finding", "findings:one"],
     ["connection", "connectors:one"],
     ["externalFile::text", "externalFiles:one"],
+    ["externalFile::code", "externalFiles:one"],
     ["externalFile::data", "externalFiles:one"],
     ["externalFile::image", "externalFiles:one"],
     ["externalFile::audio", "externalFiles:one"],
@@ -64,5 +66,19 @@ describe("current resource identity", () => {
       kind: { toString: () => "document" },
       id: "documents:one"
     })).toBe(false);
+    const hidden = { kind: "document", id: "documents:one" };
+    Object.defineProperty(hidden, "retired", { value: true });
+    const symbolic = { kind: "document", id: "documents:one" };
+    Object.defineProperty(symbolic, Symbol("retired"), { value: true });
+    const inheritedOnly = Object.assign(Object.create({ retired: true }), {
+      kind: "document",
+      id: "documents:one"
+    });
+    const accessor = { kind: "document" } as Record<string, unknown>;
+    Object.defineProperty(accessor, "id", { enumerable: true, get: () => "documents:one" });
+    expect(isResourceRef(hidden)).toBe(false);
+    expect(isResourceRef(symbolic)).toBe(false);
+    expect(isResourceRef(inheritedOnly)).toBe(false);
+    expect(isResourceRef(accessor)).toBe(false);
   });
 });

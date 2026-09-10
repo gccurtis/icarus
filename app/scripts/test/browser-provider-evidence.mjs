@@ -1,4 +1,6 @@
 export const TARGET_SENTENCE = "Substation 14 is the binding constraint";
+export const EXTERNAL_RESEARCH_SENTENCE =
+  "The verified emergency transformer limit is 913 MVA";
 export const DERIVED_QUERY = "selected source material";
 export const DERIVED_EVIDENCE = [
   "remaining transfer capability",
@@ -8,7 +10,11 @@ export const DERIVED_EVIDENCE = [
 /** The fixture gives grounded target passages and their query one exact vector. */
 export const embeddingFor = (value) => {
   const text = String(value).toLowerCase();
-  const isGroundedFixtureEvidence = [TARGET_SENTENCE, ...DERIVED_EVIDENCE]
+  const isGroundedFixtureEvidence = [
+    TARGET_SENTENCE,
+    EXTERNAL_RESEARCH_SENTENCE,
+    ...DERIVED_EVIDENCE
+  ]
     .some((needle) => text.includes(needle.toLowerCase()));
   return isGroundedFixtureEvidence || text === DERIVED_QUERY
     ? [1, 0, 0, 0]

@@ -3,6 +3,7 @@ import {
   currentResourceRef
 } from "$representation/data/behavior/content/admission";
 import { isStoredResearchThread } from "$representation/data/behavior/investigation/stored-rows";
+import { isStoredExternalFile } from "$representation/data/behavior/external/stored-row";
 import {
   hasExactFields,
   isStoredActor,
@@ -21,6 +22,7 @@ export type StoredProjectResource =
   | { readonly table: "slideDecks"; readonly row: TableRow<"slideDecks"> }
   | { readonly table: "spreadsheets"; readonly row: TableRow<"spreadsheets"> }
   | { readonly table: "researchThreads"; readonly row: TableRow<"researchThreads"> }
+  | { readonly table: "externalFiles"; readonly row: TableRow<"externalFiles"> }
   | { readonly table: "findings"; readonly row: TableRow<"findings"> };
 
 const common = (row: StoredFields): boolean =>
@@ -116,6 +118,9 @@ export const storedProjectResource = (
     isStoredEditableResource(value, table)
   ) return { table, row: value } as StoredProjectResource;
   if (table === "researchThreads" && isStoredResearchThread(value)) {
+    return { table, row: value };
+  }
+  if (table === "externalFiles" && isStoredExternalFile(value)) {
     return { table, row: value };
   }
   if (table === "findings" && isStoredFinding(value)) return { table, row: value };

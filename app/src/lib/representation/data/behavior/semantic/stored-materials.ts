@@ -1,7 +1,6 @@
 import { isResourceRef } from "$representation/data/behavior/core/resource";
 import {
   hasExactFields,
-  isStoredChoice,
   isStoredNatural,
   isStoredRowId,
   isStoredText,
@@ -72,7 +71,8 @@ const materialFields = (
     !isStoredRowId(material._id, "semanticMaterials") || !isStoredTime(material._creationTime)
   )) || !isStoredRowId(material.projectId, "projects") ||
     !isStoredText(material.identityKey, 1_000) || material.identityKey.length === 0 ||
-    !isStoredChoice(material.kind, ["table", "csv", "chart", "image", "code"]) ||
+    (material.kind !== "table" && material.kind !== "csv" && material.kind !== "chart" &&
+      material.kind !== "image" && material.kind !== "code") ||
     !isStoredText(material.name, 10_000) || material.name.length === 0 ||
     !isStoredMaterialSource(material.source) || !isStoredMaterialProfile(material.profile) ||
     storedFields(material.profile)?.kind !== material.kind ||
@@ -80,7 +80,7 @@ const materialFields = (
       (entry) => isStoredText(entry, 1_000) && entry.length > 0
     ) || (material.userDescription !== undefined && !isStoredText(material.userDescription)) ||
     (material.descriptor !== undefined && !descriptor(material.descriptor)) ||
-    !isStoredChoice(material.state, ["profiled", "describing", "ready", "stale", "error"]) ||
+    material.state !== "ready" ||
     (material.error !== undefined && !isStoredText(material.error, 10_000)) ||
     !isStoredTime(material.updatedAt)) return undefined;
   return material;

@@ -16,6 +16,7 @@ import { codeLanguage } from "$representation/data/behavior/semantic/materials/c
 import { projectSpreadsheetMaterial } from "$representation/data/behavior/semantic/materials/spreadsheet";
 import { readProjectSemanticProjectionFor } from "$capabilities/semantic-overlay/api/shared/resource";
 import { rowsOf } from "$capabilities/semantic-overlay/api/shared/rows";
+import { semanticMaximumNativeImageBytes } from "$capabilities/semantic-overlay/api/shared/configuration";
 
 export type MaterialInventory = {
   ref: ResourceRef;
@@ -65,12 +66,16 @@ export const readMaterialRevisionFor = (
         )?.revision;
   }
   if (isExternalFileResourceKind(ref.kind)) {
-    return rowsOf(model.store, "externalFiles").some(
+    const file = rowsOf(model.store, "externalFiles").find(
       (row) =>
         row.projectId === projectId &&
         row._id === ref.id &&
         externalFileResourceKind(row.subkind) === ref.kind
-    ) ? 0 : undefined;
+    );
+    return file !== undefined &&
+      (file.subkind === "code" || file.subkind === "data" || file.subkind === "image")
+      ? file.revision
+      : undefined;
   }
   return undefined;
 };
@@ -102,8 +107,15 @@ const external = async (
   const subkind = file.subkind;
   const csv = isCsvFile(file.name, file.mediaType);
   const code = codeLanguage(file.name, file.mediaType) !== "unknown";
-  const bytes = subkind === "image" || csv || code
-    ? await model.materialContent.read({ storageId: file.storageId, hash: file.hash }, signal)
+  const maximumNativeImageBytes = subkind === "image"
+    ? semanticMaximumNativeImageBytes(model.configuration)
+    : 0;
+  const bytes = csv || code || (subkind === "image" && file.size <= maximumNativeImageBytes)
+    ? await model.externalFileStorage.read({
+        storageId: file.storageId,
+        hash: file.hash,
+        size: file.size
+      }, signal)
     : undefined;
   signal?.throwIfAborted();
   let text: string | undefined;
@@ -116,7 +128,7 @@ const external = async (
     mediaType: file.mediaType,
     subkind,
     hash: file.hash,
-    ...(subkind === "image" && bytes !== undefined && bytes.byteLength <= 5_000_000
+    ...(subkind === "image" && bytes !== undefined && bytes.byteLength <= maximumNativeImageBytes
       ? {
           nativeImage: {
             kind: "bytes" as const,
@@ -129,14 +141,18 @@ const external = async (
   if (seed === undefined && subkind === "data") {
     throw new Error(`Native content for '${file.name}' is unavailable or unsupported`);
   }
-  if (seed?.kind === "image" && bytes !== undefined && bytes.byteLength <= 5_000_000) {
+  if (
+    seed?.kind === "image" &&
+    bytes !== undefined &&
+    bytes.byteLength <= maximumNativeImageBytes
+  ) {
     seed.nativeImage = {
       kind: "bytes",
       base64: Buffer.from(bytes).toString("base64"),
       mediaType: file.mediaType
     };
   }
-  return { ref, revision: 0, seeds: seed === undefined ? [] : [seed] };
+  return { ref, revision: file.revision, seeds: seed === undefined ? [] : [seed] };
 };
 
 export const readMaterialInventoryFor = async (

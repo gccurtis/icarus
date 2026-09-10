@@ -1,5 +1,6 @@
 import { readProjectResourceIndex } from "$capabilities/project-resources/index.remote";
 import type { ReadResourceTemplateResult } from "$capabilities/templates/index.remote";
+import { isExternalFileResourceKind } from "$representation/data/behavior/core/resource";
 
 export type ResourceIndexQuery = ReturnType<typeof readProjectResourceIndex>;
 
@@ -31,9 +32,10 @@ export const evidenceTitles = (query: ResourceIndexQuery): ReadonlyMap<string, s
   new Map(
     (query.current?.resources ?? [])
       .filter((resource) =>
-        resource.kind === "document" ||
-        resource.kind === "slides" ||
-        resource.kind === "spreadsheet"
+        resource.ref.kind === "document" ||
+        resource.ref.kind === "slides" ||
+        resource.ref.kind === "spreadsheet" ||
+        isExternalFileResourceKind(resource.ref.kind)
       )
-      .map((resource) => [`${resource.kind}:${resource.id}`, resource.name])
+      .map((resource) => [`${resource.ref.kind}:${resource.id}`, resource.name])
   );

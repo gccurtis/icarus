@@ -1,9 +1,10 @@
 import type { ServerModel } from "$runtime/server/start.server";
-import type { StoreUnitOfWork } from "$model/server/store/index.server";
+import type {
+  ResearchTurnUnsuccessfulFields,
+  TableRow
+} from "$model/server/store/index.server";
 import { DEFAULT_TOOLS, orderedTools } from "$representation/data/behavior/agents/tools";
 import { isStoredPersona } from "$representation/data/behavior/agents/stored-rows";
-import type { Message } from "$representation/data/types/agents/message";
-
 import { rowsIn } from "$capabilities/research-chat/api/shared/store";
 
 /**
@@ -47,35 +48,6 @@ export const safeFailure = (error: unknown): string =>
     .replace(/(?:api[-_ ]?key)\s*[:=]\s*\S+/gi, "apiKey=[redacted]")
     .slice(0, 400);
 
-type PartTarget =
-  | { readonly kind: "first" }
-  | { readonly kind: "last"; readonly id: string; readonly messages: readonly Message[] };
-
-/** Which part a message lands in, resolved before the write opens. */
-export const partTarget = (model: ServerModel, threadId: string): PartTarget => {
-  const parts = rowsIn(model.store, "threadParts")
-    .filter((part) => part.threadId === threadId)
-    .toSorted((left, right) => left.part - right.part);
-  const last = parts[parts.length - 1];
-  return last === undefined
-    ? { kind: "first" }
-    : { kind: "last", id: last._id, messages: last.messages };
-};
-
-export const append = (
-  unit: StoreUnitOfWork,
-  projectId: string,
-  threadId: string,
-  target: PartTarget,
-  message: Message
-): void => {
-  if (target.kind === "first") {
-    unit.create("threadParts", { projectId, threadId, part: 1, messages: [message] });
-    return;
-  }
-  unit.update(`threadParts.${target.id}.messages`, [...target.messages, message]);
-};
-
 export const DEFAULT_GRANTS = orderedTools([...DEFAULT_TOOLS]);
 
 export const personaFor = (model: ServerModel, projectId: string, personaId: string | undefined) =>
@@ -85,24 +57,54 @@ export const personaFor = (model: ServerModel, projectId: string, personaId: str
         (row) => isStoredPersona(row) && row._id === personaId && row.projectId === projectId
       );
 
+const unsuccessfulFields = (
+  turn: TableRow<"researchTurns">,
+  ending: {
+    readonly state: "failed" | "cancelled";
+    readonly error: string;
+    readonly at: number;
+  }
+): ResearchTurnUnsuccessfulFields => ({
+  projectId: turn.projectId,
+  researchThreadId: turn.researchThreadId,
+  threadId: turn.threadId,
+  promptMessageId: turn.promptMessageId,
+  prompt: turn.prompt,
+  mode: turn.mode,
+  scope: turn.scope,
+  tools: turn.tools,
+  state: ending.state,
+  ...(turn.stopRequestedAt === undefined ? {} : { stopRequestedAt: turn.stopRequestedAt }),
+  blocks: [],
+  queries: [],
+  sources: [],
+  findings: [],
+  error: ending.error,
+  askedAt: turn.askedAt,
+  updatedAt: ending.at
+});
+
 /**
- * A turn whose row says running that no process is running.
+ * Replaces one running row with one complete unsuccessful lifecycle arm.
  *
- * Nothing survives a restart, so this is only ever reached after a crash or a
- * deploy. Marking it failed here rather than at startup means the recovery
- * happens where somebody is waiting for it and nowhere else.
+ * A terminal row means the answer transaction committed before its caller saw
+ * an error; it is authoritative and is never rewritten as a failure.
  */
-export const reclaim = (model: ServerModel, turnId: string): void => {
-  const at = Date.now();
-  model.store.transaction((unit) => {
-    unit.update(`researchTurns.${turnId}.state`, "failed");
-    unit.update(
-      `researchTurns.${turnId}.error`,
-      "The server restarted while this was running, so it never finished."
-    );
-    unit.update(`researchTurns.${turnId}.updatedAt`, at);
-  });
-};
+export const finishRunningTurn = (
+  model: ServerModel,
+  turnId: string,
+  ending: {
+    readonly state: "failed" | "cancelled";
+    readonly error: string;
+    readonly at: number;
+  }
+): "finished" | "already-terminal" => model.store.transaction((unit) => {
+  const turn = rowsIn(unit, "researchTurns").find((row) => row._id === turnId);
+  if (turn === undefined) throw new Error(`no current Research turn has id '${turnId}'`);
+  if (turn.state !== "running") return "already-terminal";
+  unit.update(`researchTurns.${turnId}`, unsuccessfulFields(turn, ending));
+  return "finished";
+});
 
 export const titleFrom = (question: string): string => {
   const trimmed = question.replace(/\s+/g, " ").trim();

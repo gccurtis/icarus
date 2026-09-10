@@ -15,14 +15,12 @@
   import { PanelButton, PanelChoice, PanelSection } from "$authored-components/panel";
   import { Button } from "$vendored-components/button";
   import { aligned, bounds, distributed, matched, type AlignEdge, type Match } from "$app-views/categories/slide-deck-editor/procedures/arrange";
-  import {
-    elementIn,
-    placedOn,
-    slideHolding,
-    withElementFrame,
-    withRestackedSet,
-    type Restack
-  } from "$app-views/categories/slide-deck-editor/procedures/deck";
+  import type { Restack } from "$app-views/categories/slide-deck-editor/procedures/arrange";
+  import { withRestackedSet } from "$app-views/categories/slide-deck-editor/procedures/deck-layering";
+  import { placedOn } from "$app-views/categories/slide-deck-editor/procedures/deck-placement";
+  import { slideHolding } from "$app-views/categories/slide-deck-editor/procedures/deck-slide-holding";
+  import { elementIn } from "$app-views/categories/slide-deck-editor/procedures/deck-reading";
+  import { withElementFrame } from "$app-views/categories/slide-deck-editor/procedures/deck-values";
   import { selectedIds } from "$app-views/categories/slide-deck-editor/procedures/selecting";
   import { workspaceState, type SlideDeckRuntime } from "$model/client/workspace-state";
 

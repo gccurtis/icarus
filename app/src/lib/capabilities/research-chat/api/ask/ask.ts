@@ -1,6 +1,7 @@
 import { requireScope } from "$runtime/server/scope.server";
 import { serverModel } from "$runtime/server/start.server";
 import { textMessage } from "$representation/data/behavior/agents/messages";
+import { ConversationAggregateError } from "$representation/data/behavior/agents/conversation";
 import { orderedTools } from "$representation/data/behavior/agents/tools";
 import type { Id } from "$representation/data/types/core/id";
 
@@ -8,16 +9,18 @@ import { validateAsk } from "$capabilities/research-chat/api/ask/validate-ask";
 import { answerQuestion } from "$capabilities/research-chat/api/shared/answer";
 import { personaPrompt } from "$capabilities/research-chat/api/shared/prompts";
 import { prepareOverlay } from "$capabilities/research-chat/api/shared/overlay";
+import {
+  appendResearchMessage,
+  researchConversationIn
+} from "$capabilities/research-chat/api/shared/conversation";
 import { rowsIn, threadsIn, turnsIn, uniqueId, viewer } from "$capabilities/research-chat/api/shared/store";
 import {
   DEFAULT_GRANTS,
-  append,
   configuredInteger,
   configuredRounds,
   configuredString,
-  partTarget,
+  finishRunningTurn,
   personaFor,
-  reclaim,
   safeFailure,
   titleFrom
 } from "$capabilities/research-chat/api/shared/turn";
@@ -38,8 +41,9 @@ export const ask = async (input: unknown): Promise<AskResult> => {
       detail: "no chat in this project has that id"
     };
   }
+  researchConversationIn(model.store, projectId, thread);
   const running = turnsIn(model.store, projectId, thread._id).find(
-    (turn) => turn.state === "queued" || turn.state === "running"
+    (turn) => turn.state === "running"
   );
   if (running !== undefined && model.operationFlights.isResearchActive(running._id)) {
     return {
@@ -50,12 +54,16 @@ export const ask = async (input: unknown): Promise<AskResult> => {
     };
   }
   if (running !== undefined) {
-    reclaim(model, running._id);
-    model.observability.logger.warn("researchChat.reclaimed", {
+    finishRunningTurn(model, running._id, {
+      state: "failed",
+      error: "The server restarted while this was running, so it never finished.",
+      at: Date.now()
+    });
+    try { model.observability.logger.warn("researchChat.reclaimed", {
       projectId,
       threadId: thread._id,
       turnId: running._id
-    });
+    }); } catch { /* Observability cannot change the conversation lifecycle. */ }
   }
 
   const persona = personaFor(model, projectId, thread.personaId);
@@ -83,17 +91,25 @@ export const ask = async (input: unknown): Promise<AskResult> => {
     max: 3_600_000
   });
   const prompt = textMessage(`m-${uniqueId()}`, "prompt", viewer(scope), at, asked.text);
-  const promptTarget = partTarget(model, thread.threadId);
 
-  const turnId = model.store.transaction((unit) => {
-    append(unit, projectId, thread.threadId, promptTarget, prompt);
+  const opening = model.store.transaction((unit) => {
+    const current = threadsIn(unit, projectId).find((row) => row._id === thread._id);
+    if (current === undefined) {
+      throw new ConversationAggregateError(
+        "The Research conversation changed before its prompt could be appended"
+      );
+    }
+    if (turnsIn(unit, projectId, current._id).some((turn) => turn.state === "running")) {
+      return { opened: false as const };
+    }
+    appendResearchMessage(unit, projectId, current, prompt);
     const opened = unit.create("researchTurns", {
       projectId,
-      researchThreadId: thread._id,
-      threadId: thread.threadId,
+      researchThreadId: current._id,
+      threadId: current.threadId,
       promptMessageId: prompt.id,
       prompt: asked.text,
-      mode: thread.mode,
+      mode: current.mode,
       scope: asked.scope ?? { kind: "project" },
       tools: asked.tools ?? [],
       state: "running",
@@ -104,12 +120,21 @@ export const ask = async (input: unknown): Promise<AskResult> => {
       askedAt: at,
       updatedAt: at
     });
-    if (thread.title === "New chat") {
-      unit.update(`researchThreads.${thread._id}.title`, titleFrom(asked.text));
+    if (current.title === "New chat") {
+      unit.update(`researchThreads.${current._id}.title`, titleFrom(asked.text));
     }
-    unit.update(`researchThreads.${thread._id}.updatedAt`, at);
-    return opened;
+    unit.update(`researchThreads.${current._id}.updatedAt`, at);
+    return { opened: true as const, turnId: opened };
   });
+  if (!opening.opened) {
+    return {
+      accepted: false,
+      threadId: thread._id,
+      reason: "invalid-state",
+      detail: "this chat is still working on the last question"
+    };
+  }
+  const turnId = opening.turnId;
 
   const history = turnsIn(model.store, projectId, thread._id)
     .filter((turn) => turn._id !== turnId && turn.state === "answered")
@@ -156,19 +181,24 @@ export const ask = async (input: unknown): Promise<AskResult> => {
         .flatMap((block) => (block.type === "text" ? [block.display] : []))
         .join("\n\n")
     );
-    const responseTarget = partTarget(model, thread.threadId);
     const stopped = rowsIn(model.store, "researchTurns").find((row) => row._id === turnId)
       ?.stopRequestedAt;
     model.store.transaction((unit) => {
-      append(unit, projectId, thread.threadId, responseTarget, response);
+      const current = threadsIn(unit, projectId).find((row) => row._id === thread._id);
+      if (current === undefined) {
+        throw new ConversationAggregateError(
+          "The Research conversation changed before its response could be appended"
+        );
+      }
+      appendResearchMessage(unit, projectId, current, response);
       unit.update(`researchTurns.${turnId}`, {
         projectId,
-        researchThreadId: thread._id,
-        threadId: thread.threadId,
+        researchThreadId: current._id,
+        threadId: current.threadId,
         promptMessageId: prompt.id,
         messageId: response.id,
         prompt: asked.text,
-        mode: thread.mode,
+        mode: current.mode,
         scope: asked.scope ?? { kind: "project" },
         tools: asked.tools ?? [],
         state: answer.status,
@@ -183,10 +213,10 @@ export const ask = async (input: unknown): Promise<AskResult> => {
         answeredAt,
         updatedAt: answeredAt
       });
-      unit.update(`researchThreads.${thread._id}.updatedAt`, answeredAt);
+      unit.update(`researchThreads.${current._id}.updatedAt`, answeredAt);
     });
 
-    model.observability.logger.info("researchChat.answered", {
+    try { model.observability.logger.info("researchChat.answered", {
       projectId,
       threadId: thread._id,
       turnId,
@@ -198,31 +228,30 @@ export const ask = async (input: unknown): Promise<AskResult> => {
       repaired: answer.repaired,
       sources: answer.sources.length,
       tokens: answer.usage.totalTokens
-    });
+    }); } catch { /* The answer is already authoritative. */ }
     return { accepted: true, threadId: thread._id, turnId };
   } catch (error) {
     const failedAt = Date.now();
     const abandoned = flight?.signal.aborted === true;
     const ranOut = flight?.reason() === "deadline";
-    model.store.transaction((unit) => {
-      unit.update(`researchTurns.${turnId}.state`, abandoned && !ranOut ? "cancelled" : "failed");
-      unit.update(
-        `researchTurns.${turnId}.error`,
-        ranOut
-          ? "It ran past the time a turn is given and was stopped."
-          : abandoned
-            ? "Cancelled before it answered."
-            : safeFailure(error)
-      );
-      unit.update(`researchTurns.${turnId}.updatedAt`, failedAt);
+    const ending = finishRunningTurn(model, turnId, {
+      state: abandoned && !ranOut ? "cancelled" : "failed",
+      error: ranOut
+        ? "It ran past the time a turn is given and was stopped."
+        : abandoned
+          ? "Cancelled before it answered."
+          : safeFailure(error),
+      at: failedAt
     });
-    model.observability.logger.warn("researchChat.failed", {
-      projectId,
-      threadId: thread._id,
-      turnId,
-      cancelled: abandoned,
-      reason: abandoned ? "cancelled" : safeFailure(error)
-    });
+    if (ending === "finished") {
+      try { model.observability.logger.warn("researchChat.failed", {
+        projectId,
+        threadId: thread._id,
+        turnId,
+        cancelled: abandoned,
+        reason: abandoned ? "cancelled" : safeFailure(error)
+      }); } catch { /* The lifecycle row is already authoritative. */ }
+    }
     return { accepted: true, threadId: thread._id, turnId };
   } finally {
     disarm?.();

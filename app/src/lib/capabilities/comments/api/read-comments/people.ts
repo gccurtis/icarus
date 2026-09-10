@@ -3,8 +3,8 @@ import {
   isStoredMembership,
   isStoredUser
 } from "$representation/data/behavior/core/stored-project";
-import { storedFields } from "$representation/data/behavior/core/stored";
 import type { CommentPersonRecord } from "$capabilities/comments/types/read-comments";
+import { rowsIn } from "$capabilities/comments/api/read-comments/store";
 
 const countsOf = (
   rows: readonly Record<string, unknown>[],
@@ -18,16 +18,6 @@ const countsOf = (
   return counts;
 };
 
-const recordsIn = (store: StoreModel, table: "users" | "memberships"): Record<string, unknown>[] => {
-  const found = store.read(table);
-  return found?.kind === "table" && found.table === table
-    ? found.rows.flatMap((row) => {
-        const fields = storedFields(row);
-        return fields === undefined ? [] : [fields];
-      })
-    : [];
-};
-
 export type VisiblePeople = {
   readonly userIds: ReadonlySet<string>;
   readonly people: readonly CommentPersonRecord[];
@@ -35,20 +25,14 @@ export type VisiblePeople = {
 
 /** Exact users with exactly one exact membership in the active project. */
 export const visiblePeople = (store: StoreModel, projectId: string): VisiblePeople => {
-  const users = recordsIn(store, "users");
-  const userIds = countsOf(users, (row) => typeof row._id === "string" ? row._id : undefined);
-  const currentUsers = users.flatMap((row) =>
-    typeof row._id === "string" && userIds.get(row._id) === 1 && isStoredUser(row)
-      ? [row]
-      : []
-  );
-  const currentUserIds = new Set(currentUsers.map((row) => row._id as string));
+  const users = rowsIn(store, "users");
+  if (!users.every(isStoredUser)) throw new Error("the users table contains a non-current row");
+  const currentUserIds = new Set(users.map((row) => row._id));
 
-  const memberships = recordsIn(store, "memberships");
-  const membershipIds = countsOf(
-    memberships,
-    (row) => typeof row._id === "string" ? row._id : undefined
-  );
+  const memberships = rowsIn(store, "memberships");
+  if (!memberships.every(isStoredMembership)) {
+    throw new Error("the memberships table contains a non-current row");
+  }
   const projectUserClaims = countsOf(
     memberships,
     (row) => row.projectId === projectId && typeof row.userId === "string"
@@ -58,8 +42,6 @@ export const visiblePeople = (store: StoreModel, projectId: string): VisiblePeop
   const visibleIds = new Set(
     memberships.flatMap((row) =>
       typeof row._id === "string" &&
-      membershipIds.get(row._id) === 1 &&
-      isStoredMembership(row) &&
       row.projectId === projectId &&
       projectUserClaims.get(row.userId) === 1 &&
       currentUserIds.has(row.userId)
@@ -69,7 +51,7 @@ export const visiblePeople = (store: StoreModel, projectId: string): VisiblePeop
   );
   return {
     userIds: visibleIds,
-    people: currentUsers.flatMap((row) =>
+    people: users.flatMap((row) =>
       visibleIds.has(row._id)
         ? [{ _id: row._id as string, displayName: row.displayName }]
         : []

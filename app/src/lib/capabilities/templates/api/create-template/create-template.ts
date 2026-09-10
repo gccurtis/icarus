@@ -3,7 +3,7 @@ import { serverModel } from "$runtime/server/start.server";
 import { asId } from "$representation/data/behavior/core/id";
 
 import { validateCreateTemplate } from "$capabilities/templates/api/create-template/validate-create-template";
-import { emptyTemplateBody } from "$capabilities/templates/api/shared/bodies";
+import { emptyTemplateBody } from "$capabilities/templates/api/shared/empty-body";
 import type { RowFields } from "$capabilities/templates/api/shared/store";
 import { writeTemplateVersion } from "$capabilities/templates/api/shared/template-rows";
 import type { CreateTemplateResult } from "$capabilities/templates/types/templates";

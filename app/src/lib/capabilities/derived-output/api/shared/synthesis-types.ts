@@ -48,10 +48,13 @@ export type SynthesisInput = {
   query(input: QuerySemanticOverlayInput): Promise<QuerySemanticOverlayResult>;
 };
 
-export type EvidenceDraft =
-  | Omit<SemanticTextCitation, "selections">
-  | Omit<MaterialDescriptorCitation, "selections">
-  | Omit<MaterialNativeCitation, "selections">;
+type WithoutSelections<Citation> = Citation extends unknown
+  ? Omit<Citation, "selections">
+  : never;
+
+export type EvidenceDraft = WithoutSelections<
+  SemanticTextCitation | MaterialDescriptorCitation | MaterialNativeCitation
+>;
 
 export type EvidenceSelection = { evidenceId: string; use: string };
 

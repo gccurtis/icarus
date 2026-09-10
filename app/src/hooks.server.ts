@@ -1,3 +1,4 @@
+import { getEventListeners } from "node:events";
 import type { Handle, ServerInit } from "@sveltejs/kit";
 import {
   initServerModel,
@@ -5,6 +6,7 @@ import {
   serverModel
 } from "$runtime/server/start.server";
 import { resolveSession } from "$runtime/server/scope.server";
+import { serverInitialization } from "$runtime/server/initialization.server";
 
 const reportShutdownFailure = (error: unknown) => {
   process.exitCode = 1;
@@ -19,29 +21,26 @@ const reportShutdownFailure = (error: unknown) => {
  */
 const releaseBeforeInitialization = ownServerModelLifetime(
   {
+    listeners: () => getEventListeners(process, "sveltekit:shutdown").filter(
+      (listener): listener is () => void => typeof listener === "function"
+    ),
     add: (listener) => process.on("sveltekit:shutdown", listener),
     remove: (listener) => process.off("sveltekit:shutdown", listener)
   },
-  import.meta.hot,
   reportShutdownFailure
 );
 
 /**
  * Builds the one server graph, before this process answers its first request.
  *
- * This is the whole of the model's construction, and it happens once. A request
- * is the wrong moment: it would make the first caller pay for configuration,
- * logging, and the database registry, and it would mean concurrent first
- * requests could race to open the same log file — which is why `start.server.ts`
- * used to carry an in-flight promise cache and a failed-build eviction, and why
- * neither exists any more.
- *
- * A configuration error now fails startup rather than one unlucky request.
+ * Repeated framework init calls join this hook module's one command. A new
+ * module evaluation creates a new command after releasing the outgoing graph.
+ * Configuration errors remain startup failures, not request-time retries.
  */
-export const init: ServerInit = async () => {
-  await releaseBeforeInitialization;
-  await initServerModel();
-};
+export const init: ServerInit = serverInitialization(
+  releaseBeforeInitialization,
+  () => initServerModel()
+);
 
 /**
  * Per request: hand the already-built model to the request, then resolve who is

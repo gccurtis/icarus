@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 import { createServer } from "node:http";
+import { latestQuestion, toolNames, toolResult } from "./browser-provider-input.mjs";
 
 import {
   DERIVED_QUERY,
+  EXTERNAL_RESEARCH_SENTENCE,
   TARGET_SENTENCE,
   derivedDecisionFor,
   embeddingFor
@@ -17,7 +19,7 @@ const MAX_BODY_BYTES = 1_000_000;
 
 let requestNumber = 0;
 const calls = { jina: 0, openrouter: 0 };
-const barrier = { held: false, waiting: 0, releases: [] };
+const barrier = { held: false, question: undefined, waiting: 0, releases: [] };
 
 const json = (response, status, body) => {
   response.writeHead(status, {
@@ -52,43 +54,29 @@ const completionTurn = (content) => ({
   usage: { prompt_tokens: 12, completion_tokens: 8, total_tokens: 20 }
 });
 
-const toolNames = (body) =>
-  (Array.isArray(body.tools) ? body.tools : [])
-    .map((tool) => tool?.function?.name)
-    .filter((name) => typeof name === "string");
+const barrierState = () => ({
+  held: barrier.held,
+  question: barrier.question,
+  waiting: barrier.waiting
+});
 
-const toolResult = (body) => {
-  const messages = Array.isArray(body.messages) ? body.messages : [];
-  const message = [...messages].reverse().find((entry) => entry?.role === "tool");
-  if (typeof message?.content !== "string") return undefined;
-  const parsed = JSON.parse(message.content);
-  return parsed?.ok === true ? parsed.value : undefined;
-};
-
-const latestQuestion = (body) => {
-  const messages = Array.isArray(body.messages) ? body.messages : [];
-  const message = [...messages].reverse().find((entry) => entry?.role === "user");
-  if (typeof message?.content === "string") return message.content;
-  if (!Array.isArray(message?.content)) return "";
-  return message.content
-    .map((part) => (part?.type === "text" && typeof part.text === "string" ? part.text : ""))
-    .join(" ");
-};
-
-const barrierState = () => ({ held: barrier.held, waiting: barrier.waiting });
-
-const holdBarrier = () => {
+const holdBarrier = (question) => {
   if (barrier.waiting !== 0) throw new Error("cannot hold the provider barrier while a call waits");
+  if (typeof question !== "string" || question.length === 0) {
+    throw new Error("the provider barrier requires one exact research question");
+  }
   barrier.held = true;
+  barrier.question = question;
 };
 
 const releaseBarrier = () => {
   barrier.held = false;
+  barrier.question = undefined;
   for (const release of barrier.releases.splice(0)) release();
 };
 
-const waitAtBarrier = async () => {
-  if (!barrier.held) return;
+const waitAtBarrier = async (question) => {
+  if (!barrier.held || barrier.question !== question) return;
   barrier.waiting += 1;
   try {
     await new Promise((resolve) => barrier.releases.push(resolve));
@@ -99,11 +87,18 @@ const waitAtBarrier = async () => {
 
 const researchTurn = async (body) => {
   const result = toolResult(body);
-  const question = latestQuestion(body).toLowerCase();
+  const prompt = latestQuestion(body);
+  const exactQuestion = /^Question: (.+)$/mu.exec(prompt)?.[1] ?? prompt;
+  const question = exactQuestion.toLowerCase();
   const asksArithmetic =
     question.includes("five apples") &&
     question.includes("two") &&
     (question.includes("left") || question.includes("remain"));
+  const asksExternalLimit =
+    question.includes("verified") &&
+    question.includes("transformer") &&
+    question.includes("limit");
+  const target = asksExternalLimit ? EXTERNAL_RESEARCH_SENTENCE : TARGET_SENTENCE;
   if (result === undefined) {
     return providerTurn({
       role: "assistant",
@@ -115,7 +110,7 @@ const researchTurn = async (body) => {
           function: {
             name: "retrieve",
             arguments: JSON.stringify({
-              query: asksArithmetic ? "five apples take two away" : TARGET_SENTENCE,
+              query: asksArithmetic ? "five apples take two away" : target,
               topK: 6
             })
           }
@@ -129,12 +124,30 @@ const researchTurn = async (body) => {
     (passage) =>
       typeof passage?.sourceId === "string" &&
       typeof passage?.text === "string" &&
-      passage.text.toLowerCase().includes(TARGET_SENTENCE.toLowerCase())
+      passage.text.toLowerCase().includes(target.toLowerCase())
   );
   const decision =
     asksArithmetic || source === undefined
       ? { status: "insufficient", sources: [], response: "", findings: [] }
-      : {
+      : asksExternalLimit
+        ? {
+            status: "answered",
+            sources: [
+              {
+                sourceId: source.sourceId,
+                use: "Carries the exact imported transformer limit."
+              }
+            ],
+            response:
+              "The imported evidence reports a verified emergency transformer limit of 913 MVA.",
+            findings: [
+              {
+                text: "The verified emergency transformer limit is 913 MVA.",
+                sourceIds: [source.sourceId]
+              }
+            ]
+          }
+        : {
           status: "answered",
           sources: [
             {
@@ -149,10 +162,10 @@ const researchTurn = async (body) => {
               sourceIds: [source.sourceId]
             }
           ]
-        };
+          };
 
   // The browser releases this only after it observes the persisted running turn.
-  await waitAtBarrier();
+  await waitAtBarrier(exactQuestion);
   return providerTurn({
     role: "assistant",
     content: null,
@@ -174,7 +187,7 @@ const researchTurn = async (body) => {
  * so a browser assertion proves the selected Resource Set controlled retrieval
  * instead of merely proving that its pointer was persisted.
  */
-const derivedOutputTurn = (body) => {
+const derivedOutputTurn = async (body) => {
   const result = toolResult(body);
   if (result === undefined) {
     return providerTurn({
@@ -193,6 +206,9 @@ const derivedOutputTurn = (body) => {
     });
   }
 
+  const prompt = latestQuestion(body);
+  const task = /^Task: (.+)$/mu.exec(prompt)?.[1] ?? prompt;
+  await waitAtBarrier(task);
   const decision = derivedDecisionFor(result);
   return completionTurn(JSON.stringify(decision));
 };
@@ -206,7 +222,11 @@ const server = createServer(async (request, response) => {
       return json(response, 200, { calls, barrier: barrierState() });
     }
     if (request.method === "POST" && request.url === "/control/hold") {
-      holdBarrier();
+      const body = await readBody(request);
+      if (Object.keys(body).length !== 1 || !("question" in body)) {
+        throw new Error("the provider barrier accepts exactly one question field");
+      }
+      holdBarrier(body.question);
       return json(response, 200, { barrier: barrierState() });
     }
     if (request.method === "POST" && request.url === "/control/release") {
@@ -254,7 +274,7 @@ const server = createServer(async (request, response) => {
         names.includes("retrieve") &&
         body.response_format?.json_schema?.name === "semantic_derived_output"
       ) {
-        return json(response, 200, derivedOutputTurn(body));
+        return json(response, 200, await derivedOutputTurn(body));
       }
       throw new Error(
         "the deterministic fixture accepts only research-chat and grounded Derived Output contracts"

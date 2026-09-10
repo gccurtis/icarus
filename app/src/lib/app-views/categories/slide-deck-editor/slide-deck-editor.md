@@ -245,6 +245,11 @@ inline-range locate behavior.
 The deck stores an editable `PromptBlock` inside the unchanged `SlideElement`.
 The block stores its presentation text and marks, a small freshness mirror, and
 the `derivedOutputId` that links it to the server-owned definition and evidence.
+An unlinked block is exactly idle and owns its optional inline prompt/scope. A
+linked block owns neither: idle has no result metadata, stale may retain the
+last refresh time, fresh requires that time, and error requires a message while
+optionally retaining the last successful refresh time. Partial and mixed arms
+are not stored.
 Generated response text returns through native deck atom/mark operations.
 Existing absolute mark ranges are retained and clipped only when a shorter
 response no longer covers them. Direct user edits use the ordinary deck text

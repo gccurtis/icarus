@@ -544,7 +544,7 @@ describe("project panel reads", () => {
     expect(foreign).not.toHaveProperty("summary");
   });
 
-  it("quarantines activity that omits or disguises a required current field", async () => {
+  it("fails closed on activity that omits or disguises a required current field", async () => {
     const event: Record<string, unknown> = {
       _id: "activity:invalid",
       _creationTime: 30,
@@ -555,24 +555,24 @@ describe("project panel reads", () => {
     };
     model.tables.set("activity", [event]);
 
-    await expect(readProjectActivity({ activityId: "activity:invalid" })).resolves.toBeNull();
+    await expect(readProjectActivity({ activityId: "activity:invalid" })).rejects.toThrow();
     await expect(
       readProjectHistory({ search: "", since: null, before: null, limit: 10 })
-    ).resolves.toMatchObject({ entries: [], total: 0 });
+    ).rejects.toThrow();
 
     event.actorLabel = "Recorded author";
     event.retiredActorName = "Old author";
-    await expect(readProjectActivity({ activityId: "activity:invalid" })).resolves.toBeNull();
+    await expect(readProjectActivity({ activityId: "activity:invalid" })).rejects.toThrow();
   });
 
   it("rejects present malformed optional project fields instead of treating them as absent", async () => {
     const project = (model.tables.get("projects") as Record<string, unknown>[])[0];
     project.description = 7;
-    await expect(readProjectOverview()).resolves.toBeNull();
+    await expect(readProjectOverview()).rejects.toThrow();
 
     delete project.description;
     project.archivedAt = "yesterday";
-    await expect(readProjectOverview()).resolves.toBeNull();
+    await expect(readProjectOverview()).rejects.toThrow();
   });
 
   it("never substitutes an incomplete or non-leader snapshot for a current leader", async () => {
@@ -585,17 +585,17 @@ describe("project panel reads", () => {
 
     snapshot.role = "leader";
     delete snapshot.revision;
-    await expect(readProjectResource({ resourceId: "documents:1" })).resolves.toBeNull();
+    await expect(readProjectResource({ resourceId: "documents:1" })).rejects.toThrow();
 
     snapshot.revision = 3;
     snapshot.body = {};
-    await expect(readProjectResource({ resourceId: "documents:1" })).resolves.toBeNull();
+    await expect(readProjectResource({ resourceId: "documents:1" })).rejects.toThrow();
 
     delete snapshot.body;
-    await expect(readProjectResource({ resourceId: "documents:1" })).resolves.toBeNull();
+    await expect(readProjectResource({ resourceId: "documents:1" })).rejects.toThrow();
   });
 
-  it("makes a malformed current comment subject unavailable instead of repairing it", async () => {
+  it("fails closed on a malformed current comment subject", async () => {
     model.tables.set("documents", [currentDocument()]);
     const thread = {
       _id: "commentThreads:strict",
@@ -622,18 +622,18 @@ describe("project panel reads", () => {
     model.tables.set("comments", [remark]);
 
     delete remark.blocks;
-    await expect(readProjectComment({ threadId: "commentThreads:strict" })).resolves.toBeNull();
+    await expect(readProjectComment({ threadId: "commentThreads:strict" })).rejects.toThrow();
 
     remark.blocks = [paragraph("Text", "strict")];
     delete remark.author;
-    await expect(readProjectComment({ threadId: "commentThreads:strict" })).resolves.toBeNull();
+    await expect(readProjectComment({ threadId: "commentThreads:strict" })).rejects.toThrow();
 
     remark.author = user("users:me");
     thread.within.spans[0].from = { atom: "atom:1", offset: -1 };
-    await expect(readProjectComment({ threadId: "commentThreads:strict" })).resolves.toBeNull();
+    await expect(readProjectComment({ threadId: "commentThreads:strict" })).rejects.toThrow();
 
     thread.within.spans[0].from = { atom: "atom:1", offset: 0 };
     (thread as Record<string, unknown>).resolution = { at: 31 };
-    await expect(readProjectComment({ threadId: "commentThreads:strict" })).resolves.toBeNull();
+    await expect(readProjectComment({ threadId: "commentThreads:strict" })).rejects.toThrow();
   });
 });

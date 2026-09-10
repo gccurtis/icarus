@@ -94,51 +94,67 @@ describe("admittedReusableResourceSets", () => {
     const { name: _name, ...base } = row();
     const privateRow = {
       ...base,
-      boundTo: { kind: "resource", resourceId: "documents:one", hole: "evidence" }
+      boundTo: {
+        kind: "resource",
+        ref: { kind: "document", id: "documents:one" },
+        hole: "evidence"
+      }
     };
     const admitted = admitResourceSetRow(privateRow);
     expect(admitted.name).toBeUndefined();
     expect(Object.hasOwn(admitted, "name")).toBe(false);
     expect(admitted.boundTo).toEqual({
       kind: "resource",
-      resourceId: "documents:one",
+      ref: { kind: "document", id: "documents:one" },
       hole: "evidence"
     });
+    expect(() => admitResourceSetRow({
+      ...base,
+      boundTo: { kind: "resource", resourceId: "documents:one", hole: "evidence" }
+    })).toThrow(/names exactly one hole or resource/);
+    expect(() => admitResourceSetRow({
+      ...base,
+      boundTo: {
+        kind: "resource",
+        ref: { kind: "slides", id: "documents:one" },
+        hole: "evidence"
+      }
+    })).toThrow(/matching row id/);
     expect(() => admitReusableResourceSetRow(privateRow)).toThrow(/private storage/);
     expect(admittedResourceSetClaim([privateRow], "resourceSets:one")).toEqual(admitted);
-    expect(
+    expect(() =>
       admittedResourceSetClaim(
         [privateRow, row({ projectId: "projects:other" })],
         "resourceSets:one"
       )
-    ).toBeUndefined();
+    ).toThrow(/repeats row id/);
   });
 
-  it("quarantines every claimant of a duplicate id and structurally malformed rows", () => {
-    expect(
+  it("fails closed on a duplicate id or any structurally non-current row", () => {
+    expect(() =>
       admittedReusableResourceSets(
         [row(), row({ projectId: "projects:other", name: "Foreign duplicate" })],
         "projects:one"
-      ).size
-    ).toBe(0);
-    expect(
+      )
+    ).toThrow(/repeats row id/);
+    expect(() =>
       admittedReusableResourceSets(
         [row({ set: { include: "everything", exclude: [] } })],
         "projects:one"
-      ).size
-    ).toBe(0);
-    expect(
+      )
+    ).toThrow(/include list and an exclude list/);
+    expect(() =>
       admittedReusableResourceSets(
         [row({ createdBy: { kind: "user" } })],
         "projects:one"
-      ).size
-    ).toBe(0);
-    expect(
+      )
+    ).toThrow(/represented actor/);
+    expect(() =>
       admittedReusableResourceSets(
         [row({ legacyScope: { include: [] } })],
         "projects:one"
-      ).size
-    ).toBe(0);
+      )
+    ).toThrow(/unknown field legacyScope/);
     expect(() => admitResourceSetRow(row({ legacyScope: {} }))).toThrow(/unknown field legacyScope/);
     expect(() => admitResourceSetRow(row({ boundTo: undefined }))).toThrow(/storable/);
     expect(() => admitResourceSetRow({ ...row(), name: undefined })).toThrow(/storable/);

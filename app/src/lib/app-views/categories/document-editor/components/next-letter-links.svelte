@@ -15,7 +15,7 @@
     updateLinkOps,
     type PlacedLink
   } from "$app-views/categories/document-editor/procedures/marks";
-  import { linearOf } from "$app-views/categories/document-editor/procedures/projection";
+  import { linearOf } from "$app-views/categories/document-editor/procedures/projection-atoms";
   import { workspaceState } from "$model/client/workspace-state";
   import type { DocumentRuntime } from "$model/client/workspace-state";
 

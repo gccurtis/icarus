@@ -21,7 +21,7 @@ export const planProgress = (plan: readonly PlanStep[]): PlanProgress => {
 };
 
 export const isOpen = (question: TaskQuestion): boolean =>
-  question.answer === undefined && question.rejectedAt === undefined;
+  question.state === "open";
 
 export const openQuestions = (questions: readonly TaskQuestion[]): readonly TaskQuestion[] =>
   questions.filter(isOpen);

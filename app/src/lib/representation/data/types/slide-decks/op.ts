@@ -1,7 +1,9 @@
 type DeckTarget = "slide" | "element" | "section" | "layout" | "block" | "atom" | "mark";
 
+export type SlideDeckSetTarget = "deck" | DeckTarget;
+
 export type SlideDeckOp =
-  | { op: "set"; target?: DeckTarget; path: string; value: unknown; was: unknown }
+  | { op: "set"; target: SlideDeckSetTarget; path: string; value: unknown; was: unknown }
   | {
       op: "insert";
       target: DeckTarget;

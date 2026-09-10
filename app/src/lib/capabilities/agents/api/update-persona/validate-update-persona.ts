@@ -20,7 +20,7 @@ export const validateUpdatePersona = (input: unknown): UpdatePersonaInput => {
   only(fields, ["personaId", "baseRevision", "patch"], SUBJECT);
   const raw = fieldsOf(fields.patch, SUBJECT);
   only(raw, ["name", "description", "section", "scope", "cast", "tools"], SUBJECT);
-  if (Object.keys(raw).length === 0) throw new Error(`agents/${SUBJECT}: the patch changes nothing`);
+  if (Reflect.ownKeys(raw).length === 0) throw new Error(`agents/${SUBJECT}: the patch changes nothing`);
 
   const patch: UpdatePersonaPatch = {
     ...(has(raw, "name") ? { name: nameOf(raw.name, SUBJECT) } : {}),
@@ -33,7 +33,7 @@ export const validateUpdatePersona = (input: unknown): UpdatePersonaInput => {
     ...(has(raw, "tools") ? { tools: toolsOf(raw.tools, SUBJECT) } : {})
   };
   return {
-    personaId: idOf(fields.personaId, SUBJECT, "personaId"),
+    personaId: idOf(fields.personaId, "personas", SUBJECT, "personaId"),
     baseRevision: revisionOf(fields.baseRevision, SUBJECT),
     patch
   };

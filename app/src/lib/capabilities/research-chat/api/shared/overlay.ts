@@ -3,24 +3,14 @@ import type { Id } from "$representation/data/types/core/id";
 import type { ResourceRef } from "$representation/data/types/core/resource";
 import type { ResearchScope } from "$representation/data/types/investigation/research-turn";
 import {
-  enqueueSemanticSync,
+  enqueueSemanticSyncForModel,
   processSemanticSyncQueueFor
 } from "$capabilities/semantic-overlay";
 
-import { rowsIn } from "$capabilities/research-chat/api/shared/store";
+import { researchResources } from "$capabilities/research-chat/api/shared/resource-catalogue";
 
 const refsIn = (model: ServerModel, projectId: Id<"projects">): ResourceRef[] =>
-  [
-    ...rowsIn(model.store, "documents")
-      .filter((row) => row.projectId === projectId)
-      .map((row) => ({ kind: "document" as const, id: row._id })),
-    ...rowsIn(model.store, "slideDecks")
-      .filter((row) => row.projectId === projectId)
-      .map((row) => ({ kind: "slides" as const, id: row._id })),
-    ...rowsIn(model.store, "spreadsheets")
-      .filter((row) => row.projectId === projectId)
-      .map((row) => ({ kind: "spreadsheet" as const, id: row._id }))
-  ];
+  researchResources(model, projectId).map((resource) => resource.ref);
 
 type OverlayFailure = {
   readonly lane: "text" | "material";
@@ -84,7 +74,7 @@ export const prepareOverlay = async (
   const requestedMaterialJobs = new Set<string>();
   for (const ref of refs) {
     signal?.throwIfAborted();
-    const queued = await enqueueSemanticSync({ ref }, signal);
+    const queued = await enqueueSemanticSyncForModel(model, projectId, ref, signal);
     if (queued === null) {
       if (scope.kind === "resource") {
         throw new Error("The selected resource cannot be prepared for research");

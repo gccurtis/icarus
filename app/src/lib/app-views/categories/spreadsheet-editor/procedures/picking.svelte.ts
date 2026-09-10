@@ -75,7 +75,10 @@ export const createPickingChannel = (): PickingChannel => {
       return draft;
     },
     beginWriting: (seed) => {
-      opening = { seed, at: (opening?.at ?? 0) + 1 };
+      opening = {
+        seed: `${opening?.seed ?? ""}${seed}`,
+        at: (opening?.at ?? 0) + 1
+      };
     },
     get begun(): Writing | undefined {
       return opening;

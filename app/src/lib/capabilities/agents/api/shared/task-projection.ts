@@ -63,12 +63,10 @@ export const taskItem = (task: Task, visible: Visible): TaskItem => ({
 });
 
 const turnsOf = (store: StoreModel, task: Task, names: Names): readonly TaskTurn[] =>
-  messagesOf(store, task.threadId).map((message) => {
+  messagesOf(store, task.projectId, task.threadId, "agentTask").map((message) => {
     const author = message.author;
     const from =
-      author === undefined
-        ? "agent"
-        : author.kind === "agent"
+      author.kind === "agent"
           ? "agent"
           : author.kind === "system"
             ? "system"
@@ -77,7 +75,7 @@ const turnsOf = (store: StoreModel, task: Task, names: Names): readonly TaskTurn
       id: message.id,
       from,
       authorName:
-        author === undefined || author.kind === "agent"
+        author.kind === "agent"
           ? names.persona(task.personaId)
           : names.actor(author),
       text: messageText(message),

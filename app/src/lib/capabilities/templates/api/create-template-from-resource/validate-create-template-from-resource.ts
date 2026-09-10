@@ -4,11 +4,13 @@ import {
   has,
   nameOf,
   only,
-  resourceIdOf,
-  slideIdOf,
-  stageTargetOf,
   tagsOf
 } from "$capabilities/templates/api/shared/validation";
+import {
+  resourceIdOf,
+  slideIdOf,
+  stageTargetOf
+} from "$capabilities/templates/api/shared/stage-validation";
 import type { CreateTemplateFromResourceInput } from "$capabilities/templates/types/templates";
 
 export const validateCreateTemplateFromResource = (

@@ -1,15 +1,22 @@
+import type { ResourceRef } from "$representation/data/types/core/resource";
+
 export type ProjectResourceKind =
   | "document"
   | "slides"
   | "spreadsheet"
   | "research"
+  | "file"
   | "finding";
 
 /** A closed metadata projection; represented bodies and storage fields never cross this door. */
 export type ProjectResourceIndexItem = {
   readonly id: string;
+  /** Exact represented identity; `kind` below is presentation taxonomy only. */
+  readonly ref: ResourceRef;
   readonly kind: ProjectResourceKind;
   readonly name: string;
+  /** Exact External location; null for resources that do not live in External. */
+  readonly relativePath: string | null;
   readonly updatedAt: number;
   /** Null when the exact historical actor is no longer inspectable in this project. */
   readonly updatedByName: string | null;

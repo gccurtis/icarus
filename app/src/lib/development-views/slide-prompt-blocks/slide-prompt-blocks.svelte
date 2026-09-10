@@ -90,7 +90,7 @@
   const CALLS = [
     ["withPromptElement", "slide editor", "Text element → Prompt element; presentation survives"],
     ["createDerivedOutput", "server capability", "Creates the durable definition and evidence owner"],
-    ["linkPromptBlockOps", "slide adapter", "Stores only derivedOutputId on the PromptBlock"],
+    ["linkPromptBlockOps", "slide adapter", "Replaces inline definition ownership with derivedOutputId"],
     ["refreshDerivedOutput", "server capability", "Queues or joins one shared refresh flight"],
     ["querySemanticOverlay", "semantic capability", "Retrieves consolidated exact-text evidence"],
     ["syncPromptBlockOps", "slide adapter", "Publishes text through collaborative atom/mark ops"],

@@ -1,4 +1,8 @@
-import type { StoreModel, TableRow } from "$model/server/store/index.server";
+import type {
+  ResearchTurnCompletedFields,
+  StoreModel,
+  TableRow
+} from "$model/server/store/index.server";
 
 import { turnsIn } from "$capabilities/research-chat/api/shared/store";
 import type { ThreadItem, TurnItem } from "$capabilities/research-chat/types/research-chat";
@@ -9,40 +13,64 @@ import type { ThreadItem, TurnItem } from "$capabilities/research-chat/types/res
  * The row is corrected the next time somebody asks in that chat. Reading is not
  * the place to write, but it is the place to stop showing a spinner forever.
  */
-const stateOf = (
-  row: TableRow<"researchTurns">,
-  isActive: (turnId: string) => boolean
-): TurnItem["state"] =>
-  (row.state === "running" || row.state === "queued") && !isActive(row._id)
-    ? "failed"
-    : row.state;
-
 export const turnItem = (
   row: TableRow<"researchTurns">,
   isActive: (turnId: string) => boolean
-): TurnItem => ({
-  id: row._id,
-  threadId: row.researchThreadId,
-  prompt: row.prompt,
-  mode: row.mode.kind,
-  scope: row.scope,
-  tools: row.tools,
-  state: stateOf(row, isActive),
-  blocks: row.blocks,
-  queries: row.queries,
-  sources: row.sources,
-  findings: row.findings,
-  ...(row.usage === undefined ? {} : { usage: row.usage }),
-  ...(row.model === undefined ? {} : { model: row.model }),
-  ...(row.error === undefined
-    ? stateOf(row, isActive) === row.state
-      ? {}
-      : { error: "The server restarted while this was running, so it never finished." }
-    : { error: row.error }),
-  stopRequested: row.stopRequestedAt !== undefined,
-  askedAt: row.askedAt,
-  ...(row.answeredAt === undefined ? {} : { answeredAt: row.answeredAt })
-});
+): TurnItem => {
+  const common = {
+    id: row._id,
+    threadId: row.researchThreadId,
+    prompt: row.prompt,
+    mode: row.mode.kind,
+    scope: row.scope,
+    tools: row.tools,
+    stopRequested: row.stopRequestedAt !== undefined,
+    askedAt: row.askedAt
+  };
+  if (row.state === "running") {
+    return isActive(row._id)
+      ? {
+          ...common,
+          state: "running",
+          blocks: [],
+          queries: [],
+          sources: [],
+          findings: []
+        }
+      : {
+          ...common,
+          state: "failed",
+          error: "The server restarted while this was running, so it never finished.",
+          blocks: [],
+          queries: [],
+          sources: [],
+          findings: []
+        };
+  }
+  if (row.state === "failed" || row.state === "cancelled") {
+    return {
+      ...common,
+      state: row.state,
+      error: row.error,
+      blocks: [],
+      queries: [],
+      sources: [],
+      findings: []
+    };
+  }
+  const completed = row as TableRow<"researchTurns"> & ResearchTurnCompletedFields;
+  return {
+    ...common,
+    state: completed.state,
+    blocks: completed.blocks,
+    queries: completed.queries,
+    sources: completed.sources,
+    findings: completed.findings,
+    usage: completed.usage,
+    model: completed.model,
+    answeredAt: completed.answeredAt
+  };
+};
 
 export const threadItem = (
   store: StoreModel,

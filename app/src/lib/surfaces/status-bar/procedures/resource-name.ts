@@ -22,6 +22,7 @@ const RESOURCE_KIND = {
   slides: "Deck",
   spreadsheet: "Spreadsheet",
   research: "Research",
+  file: "File",
   finding: "Finding"
 } as const;
 
@@ -37,8 +38,6 @@ export const nameOf = (id: string, names: ResourceNames): string => {
   }
 
   if (!names.resourcesReady || !names.agentsReady || !names.stagesReady) return "…";
-  // A live stage is a distinct current subject. Its explicit membership wins;
-  // it is intentionally absent from the project resource projection.
   const stage = names.stages?.stages.find((candidate) => candidate.resourceId === id);
   if (stage !== undefined) return `Template · ${stage.templateName}`.slice(0, 160);
 

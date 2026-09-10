@@ -6,6 +6,8 @@ import type { ServerModel } from "$runtime/server/start.server";
 import type { Id } from "$representation/data/types/core/id";
 import type { ResourceRef } from "$representation/data/types/core/resource";
 import { semanticSourceIsCurrent } from "$capabilities/semantic-overlay/api/shared/freshness";
+import { readMaterialInventoryFor } from "$capabilities/semantic-overlay/api/shared/material-resource";
+import { readSemanticResourceForModel } from "$capabilities/semantic-overlay/api/shared/resource";
 import { syncSemanticResourceFor } from "$capabilities/semantic-overlay/api/shared/sync";
 
 const projectId = "projects:external-text" as Id<"projects">;
@@ -13,6 +15,7 @@ const projectId = "projects:external-text" as Id<"projects">;
 const fixture = () => {
   let now = 1;
   let tokenCalls = 0;
+  let nativeReads = 0;
   const store = defineStore({ now: () => now++ });
   const firstHash = "a".repeat(64);
   const secondHash = "b".repeat(64);
@@ -20,17 +23,23 @@ const fixture = () => {
     [firstHash, new TextEncoder().encode("Gary is twenty-seven.")],
     [secondHash, new TextEncoder().encode("Gary is forty-three.")]
   ]);
-  const fileId = store.create("externalFiles", {
+  const fileFields = {
     projectId,
     name: "facts.md",
+    originalName: "facts.md",
+    relativePath: "facts.md",
     mediaType: "text/markdown",
-    subkind: "text",
-    storageId: "_storage:facts",
+    subkind: "text" as const,
+    storageId: `_storage:${firstHash}`,
     hash: firstHash,
-    origin: { kind: "upload" },
-    createdBy: { kind: "system" },
+    size: 21,
+    origin: { kind: "upload" as const },
+    createdBy: { kind: "system" as const },
+    updatedBy: { kind: "system" as const },
+    revision: 1,
     updatedAt: 1
-  });
+  };
+  const fileId = store.create("externalFiles", fileFields);
   const usage = (operation: string, inputItems = 1) => ({
     operation,
     api: "deterministic-test",
@@ -73,8 +82,11 @@ const fixture = () => {
         usage: usage("windowedPassageVectors", values.length)
       })
     },
-    materialContent: {
-      read: async ({ hash }: { hash: string }) => bodies.get(hash)
+    externalFileStorage: {
+      read: async ({ hash }: { hash: string }) => {
+        nativeReads += 1;
+        return bodies.get(hash);
+      }
     },
     observability: { logger: { info: () => {}, warn: () => {} } }
   } as unknown as ServerModel;
@@ -82,14 +94,16 @@ const fixture = () => {
     model,
     store,
     fileId,
+    fileFields,
     firstHash,
     secondHash,
-    get tokenCalls() { return tokenCalls; }
+    get tokenCalls() { return tokenCalls; },
+    get nativeReads() { return nativeReads; }
   };
 };
 
 describe("external exact-text synchronization", () => {
-  it("publishes UTF-8 text by immutable hash, reuses it, and replaces it on hash change", async () => {
+  it("publishes UTF-8 text by exact revision and hash, reuses it, and replaces it", async () => {
     const held = fixture();
     const ref: ResourceRef = { kind: "externalFile::text", id: held.fileId };
 
@@ -98,26 +112,36 @@ describe("external exact-text synchronization", () => {
     const firstSource = (held.store.read("semanticSources") as unknown as {
       rows: Array<{ contentHash?: string; revision: number }>;
     }).rows[0];
-    assert.equal(firstSource.revision, 0);
+    assert.equal(firstSource.revision, 1);
     assert.equal(firstSource.contentHash, held.firstHash);
     assert.equal(semanticSourceIsCurrent(held.store, projectId, firstSource as never), true);
-    const firstObject = (held.store.read("semanticObjects") as unknown as {
-      rows: Array<{ span: { text: string } }>;
-    }).rows[0];
-    assert.equal(firstObject.span.text, "Gary is twenty-seven.");
+    assert.equal(
+      (held.store.read("semanticObjects") as unknown as {
+        rows: Array<{ span: { text: string } }>;
+      }).rows[0].span.text,
+      "Gary is twenty-seven."
+    );
 
     const calls = held.tokenCalls;
     assert.equal((await syncSemanticResourceFor(held.model, projectId, ref)).outcome, "current");
     assert.equal(held.tokenCalls, calls);
 
-    held.store.update(`externalFiles.${held.fileId}.hash`, held.secondHash);
+    held.store.update(`externalFiles.${held.fileId}`, {
+      ...held.fileFields,
+      storageId: `_storage:${held.secondHash}`,
+      hash: held.secondHash,
+      size: 20,
+      revision: 2,
+      updatedAt: 2
+    });
     assert.equal(semanticSourceIsCurrent(held.store, projectId, firstSource as never), false);
     const second = await syncSemanticResourceFor(held.model, projectId, ref);
     assert.equal(second.outcome, "published");
     const active = (held.store.read("semanticSources") as unknown as {
-      rows: Array<{ contentHash?: string }>;
+      rows: Array<{ contentHash?: string; revision: number }>;
     }).rows;
     assert.equal(active.length, 1);
+    assert.equal(active[0].revision, 2);
     assert.equal(active[0].contentHash, held.secondHash);
     assert.equal(
       (held.store.read("semanticObjects") as unknown as {
@@ -129,6 +153,32 @@ describe("external exact-text synchronization", () => {
       rows: Array<{ object: { source?: { contentHash?: string } } }>;
     }).rows;
     assert.equal(history[0].object.source?.contentHash, held.firstHash);
+  });
+
+  it("uses only the exact-text lane and rejects a mismatched concrete subkind", async () => {
+    const held = fixture();
+    const ref: ResourceRef = { kind: "externalFile::text", id: held.fileId };
+
+    const inventory = await readMaterialInventoryFor(held.model, projectId, ref);
+    assert.deepEqual(inventory?.seeds, []);
+    assert.equal(held.nativeReads, 0, "the material lane does not read prose bytes");
+
+    const exact = await readSemanticResourceForModel(held.model, projectId, ref);
+    assert.deepEqual(exact, {
+      ref,
+      revision: 1,
+      contentHash: held.firstHash,
+      text: "Gary is twenty-seven.",
+      encoding: "utf-16",
+      locators: [{ from: 0, to: 21, locator: { kind: "externalFileContent" } }],
+      hardBoundaries: []
+    });
+    assert.equal(held.nativeReads, 1);
+
+    const wrongRef: ResourceRef = { kind: "externalFile::data", id: held.fileId };
+    assert.equal(await readSemanticResourceForModel(held.model, projectId, wrongRef), undefined);
+    assert.equal(await readMaterialInventoryFor(held.model, projectId, wrongRef), undefined);
+    assert.equal(held.nativeReads, 1, "a mismatched nominal ref never reaches native storage");
   });
 
   it("rejects a lane-less semantic object at Store admission", async () => {

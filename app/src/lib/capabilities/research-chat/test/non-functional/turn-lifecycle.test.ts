@@ -25,8 +25,8 @@ vi.mock("$capabilities/semantic-overlay", () => ({
       materials: { processed: [], remaining: 0, failed: [] }
     }),
   semanticSourceIsCurrent: () => true,
-  querySemanticOverlay: () => Promise.resolve({ hits: [] }),
-  querySemanticMaterials: () => Promise.resolve({ hits: [] }),
+  querySemanticOverlayForModel: () => Promise.resolve({ hits: [] }),
+  querySemanticMaterialsForModel: () => Promise.resolve({ hits: [] }),
   readSemanticResourceForModel: () => Promise.resolve(undefined)
 }));
 

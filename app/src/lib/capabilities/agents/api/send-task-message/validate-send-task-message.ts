@@ -5,7 +5,7 @@ export const validateSendTaskMessage = (input: unknown): SendTaskMessageInput =>
   const fields = fieldsOf(input, "send-task-message");
   only(fields, ["taskId", "text"], "send-task-message");
   return {
-    taskId: idOf(fields.taskId, "send-task-message", "taskId"),
+    taskId: idOf(fields.taskId, "agentTasks", "send-task-message", "taskId"),
     text: textOf(fields.text, "send-task-message", "text", 20_000)
   };
 };

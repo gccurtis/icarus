@@ -2,6 +2,8 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, test } from "vitest";
 
+import { isStoredResearchTurn } from "$representation/data/behavior/investigation/stored-rows";
+
 type SeedThread = {
   readonly _id: string;
   readonly projectId: string;
@@ -44,7 +46,7 @@ type SeedTurn = {
   readonly promptMessageId: string;
   readonly messageId?: string;
   readonly prompt: string;
-  readonly state: "queued" | "running" | "answered" | "insufficient" | "failed" | "cancelled";
+  readonly state: "running" | "answered" | "insufficient" | "failed" | "cancelled";
   readonly blocks: readonly unknown[];
   readonly sources: readonly SeedSource[];
   readonly findings: readonly { readonly id: string; readonly text: string; readonly sourceIds: readonly string[] }[];
@@ -111,6 +113,10 @@ describe("committed research-chat records", () => {
   const researchThreads = fixture<SeedResearchThread[]>("researchThreads.json");
   const parts = fixture<SeedThreadPart[]>("threadParts.json");
   const turns = fixture<SeedTurn[]>("researchTurns.json");
+
+  test("every committed turn is exactly the current lifecycle schema", () => {
+    expect(turns.every(isStoredResearchTurn)).toBe(true);
+  });
 
   test("every chat has one real base thread, persisted messages and one turn per prompt", () => {
     const baseById = new Map(threads.map((row) => [row._id, row]));

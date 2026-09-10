@@ -5,15 +5,20 @@ import {
   admitResourceRef,
   isResourceSelectorKind
 } from "$representation/data/behavior/core/resource";
-import { isStoredRowId } from "$representation/data/behavior/core/stored";
+import {
+  hasExactFields,
+  isStoredRowId,
+  storedFields
+} from "$representation/data/behavior/core/stored";
 
 const MAX_TERMS_PER_SIDE = 100;
 const MAX_KINDS_PER_TERM = 100;
 const MAX_REFS_PER_TERM = 1_000;
 
 export const inputRecord = (value: unknown, message: string): Record<string, unknown> => {
-  if (value === null || typeof value !== "object" || Array.isArray(value)) throw new Error(message);
-  return value as Record<string, unknown>;
+  const fields = storedFields(value);
+  if (fields === undefined) throw new Error(message);
+  return fields;
 };
 
 export const onlyFields = (
@@ -21,8 +26,12 @@ export const onlyFields = (
   allowed: readonly string[],
   subject: string
 ): void => {
-  const unknown = Object.keys(value).find((field) => !allowed.includes(field));
+  if (hasExactFields(value, [], allowed)) return;
+  const unknown = Reflect.ownKeys(value).find(
+    (field): field is string => typeof field === "string" && !allowed.includes(field)
+  );
   if (unknown !== undefined) throw new Error(`${subject} has unknown field '${unknown}'`);
+  throw new Error(`${subject} must contain only exact current data fields`);
 };
 
 export const nonblank = (value: unknown, message: string): string => {

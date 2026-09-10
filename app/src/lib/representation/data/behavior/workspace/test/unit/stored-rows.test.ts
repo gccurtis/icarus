@@ -3,6 +3,7 @@ import {
   isStoredWorkspaceRevision,
   isStoredWorkspaceSnapshot
 } from "$representation/data/behavior/workspace/stored-rows";
+import { startingWorkspace } from "$representation/data/behavior/workspace/starting";
 
 const frame = {
   contextWidth: 180,
@@ -21,17 +22,23 @@ const view = () => ({
   zoom: null
 });
 
-const snapshot = () => ({
-  _id: "workspaceSnapshots:1",
-  _creationTime: 1,
-  projectId: "default",
-  userId: "default-user",
-  revision: 1,
-  tabs: [{ id: "tab-1", category: "document-editor", resourceId: "documents:1" }],
-  activeId: "tab-1",
-  views: { "tab-1": view() },
-  at: 2
-});
+const snapshot = () => {
+  const starting = startingWorkspace();
+  return {
+    _id: "workspaceSnapshots:1",
+    _creationTime: 1,
+    projectId: "default",
+    userId: "default-user",
+    revision: 1,
+    tabs: [
+      ...starting.tabs,
+      { id: "tab-1", category: "document-editor", resourceId: "documents:1" }
+    ],
+    activeId: "tab-1",
+    views: { ...starting.views, "tab-1": view() },
+    at: 2
+  };
+};
 
 const revision = () => ({
   _id: "workspaceRevisions:1",
@@ -60,9 +67,9 @@ describe("current workspace storage", () => {
         op: "inspect",
         tab: "tab-1",
         was: "empty",
-        now: "slide-deck-editor.text-box",
+        now: "document-editor.text-block",
         wasSelection: null,
-        selection: { kind: "elements", id: "element-1", ids: ["element-1"] }
+        selection: { kind: "text-block", id: "block-1" }
       }]
     })).toBe(true);
   });
@@ -75,11 +82,32 @@ describe("current workspace storage", () => {
     })).toBe(false);
     expect(isStoredWorkspaceSnapshot({
       ...snapshot(),
-      tabs: [{ id: "tab-1", category: "document-editor", resourceId: "slideDecks:1" }]
+      tabs: snapshot().tabs.map((tab) => tab.id === "tab-1"
+        ? { ...tab, resourceId: "slideDecks:1" }
+        : tab)
     })).toBe(false);
     expect(isStoredWorkspaceSnapshot({
       ...snapshot(),
-      views: { "tab-1": { ...view(), contextId: "document-editor.context" } }
+      views: {
+        ...snapshot().views,
+        "tab-1": { ...view(), contextId: "document-editor.context" }
+      }
+    })).toBe(false);
+    expect(isStoredWorkspaceSnapshot({
+      ...snapshot(),
+      views: { ...snapshot().views, "tab-1": { ...view(), contextId: null } }
+    })).toBe(false);
+  });
+
+  it("rejects a workspace that omits any current singleton instead of adopting it", () => {
+    const current = snapshot();
+    const withoutExternalView = Object.fromEntries(
+      Object.entries(current.views).filter(([id]) => id !== "external")
+    );
+    expect(isStoredWorkspaceSnapshot({
+      ...current,
+      tabs: current.tabs.filter((tab) => tab.category !== "external"),
+      views: withoutExternalView
     })).toBe(false);
   });
 
@@ -92,5 +120,16 @@ describe("current workspace storage", () => {
       ...revision(),
       ops: [{ ...revision().ops[0], op: { toString: () => "open" } }]
     })).toBe(false);
+    const hidden = revision();
+    Object.defineProperty(hidden.ops[0], "oldView", { value: true, enumerable: false });
+    expect(isStoredWorkspaceRevision(hidden)).toBe(false);
+    expect(isStoredWorkspaceRevision({
+      ...revision(),
+      [Symbol("oldRevision")]: true
+    })).toBe(false);
+
+    const decorated = snapshot();
+    Object.defineProperty(decorated.tabs, "oldTabs", { value: [], enumerable: false });
+    expect(isStoredWorkspaceSnapshot(decorated)).toBe(false);
   });
 });

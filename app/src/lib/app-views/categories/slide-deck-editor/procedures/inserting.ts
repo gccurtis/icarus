@@ -5,11 +5,8 @@ import type {
   SlideDeckBody,
   SlideElement
 } from "$representation/data/types/slide-decks/body";
-import {
-  emptyText,
-  withInsertedElements,
-  type Edit
-} from "$app-views/categories/slide-deck-editor/procedures/deck";
+import type { Edit } from "$app-views/categories/slide-deck-editor/procedures/deck-edit";
+import { emptyText, withInsertedElements } from "$app-views/categories/slide-deck-editor/procedures/deck-elements";
 import { mint } from "$app-views/categories/slide-deck-editor/procedures/ids";
 
 export type InsertKind =

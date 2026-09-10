@@ -12,8 +12,15 @@ import {
 } from "$model/server/store/methods/shared/durable-file.server";
 
 const NAME = ".store-transaction.json";
-const exact = (value: Record<string, unknown>, fields: readonly string[]): boolean =>
-  Object.keys(value).every((field) => fields.includes(field));
+const exact = (value: Record<string, unknown>, fields: readonly string[]): boolean => {
+  const keys = Reflect.ownKeys(value);
+  return keys.length === fields.length &&
+    keys.every((key): key is string => typeof key === "string" && fields.includes(key)) &&
+    fields.every((field) => {
+      const descriptor = Object.getOwnPropertyDescriptor(value, field);
+      return descriptor !== undefined && "value" in descriptor && descriptor.enumerable;
+    });
+};
 
 export type JournalChange = {
   readonly table: TableName;
@@ -77,7 +84,8 @@ const admitJournal = (value: unknown): StoreJournal => {
 };
 
 export const writeJournal = (directory: string, journal: StoreJournal): void => {
-  writeDurableFile(journalPath(directory), `${JSON.stringify(journal, null, 2)}\n`);
+  const current = admitJournal(journal);
+  writeDurableFile(journalPath(directory), `${JSON.stringify(current, null, 2)}\n`);
 };
 
 export const readJournal = (directory: string): StoreJournal | undefined => {

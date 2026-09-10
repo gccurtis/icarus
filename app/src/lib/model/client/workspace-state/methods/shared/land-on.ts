@@ -4,7 +4,6 @@ import { isContentView } from "$representation/data/behavior/workspace/categorie
 import type { WorkspaceStateData } from "$model/client/workspace-state/definition.svelte";
 import { landing } from "$model/client/workspace-state/methods/shared/landing";
 import { perform } from "$model/client/workspace-state/methods/shared/perform";
-import { defaultContext, offersContext } from "$model/client/workspace-state/methods/shared/rails";
 
 export const landOn = (
   state: WorkspaceStateData,
@@ -17,11 +16,6 @@ export const landOn = (
   }
 
   const was = landing(state.views.of(record.id));
-  const held = was.contextId;
-  const contextId =
-    held !== null && offersContext(record.category, held)
-      ? held
-      : (defaultContext(record.category) ?? null);
 
   perform(state, {
     op: "land",
@@ -30,7 +24,7 @@ export const landOn = (
     now: {
       content,
       focus: focus ?? null,
-      contextId,
+      contextId: was.contextId,
       inspected: "empty",
       selection: null
     }

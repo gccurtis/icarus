@@ -29,4 +29,4 @@ export type TemplatedResourceSet = { include: TemplatedTerm[]; exclude: Template
  */
 export type BoundTo =
   | { kind: "hole"; templateId: Id<"templates">; hole: string }
-  | { kind: "resource"; resourceId: string; hole: string };
+  | { kind: "resource"; ref: ResourceRef; hole: string };

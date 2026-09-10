@@ -13,7 +13,7 @@ type EditableTextBlock = TextBlock | PromptBlock;
 
 const lengthOf = (atom: Atom): number => displayOfAtom(atom).length;
 
-export const replaced = (block: EditableTextBlock, from: number, to: number, insert: string): SlideDeckOp[] => {
+const replacePresentation = (block: EditableTextBlock, from: number, to: number, insert: string): SlideDeckOp[] => {
   const start = Math.min(from, to);
   const end = Math.max(from, to);
 
@@ -67,6 +67,43 @@ export const replaced = (block: EditableTextBlock, from: number, to: number, ins
     pending = "";
   }
   return ops;
+};
+
+const promptEditLifecycleOps = (block: EditableTextBlock): SlideDeckOp[] => {
+  if (block.type !== "prompt" || block.derivedOutputId === undefined) return [];
+  return [
+    ...(block.state === "stale"
+      ? []
+      : [{
+          op: "set" as const,
+          target: "block" as const,
+          path: `${block.id}/state`,
+          value: "stale",
+          was: block.state
+        }]),
+    ...(block.state === "error"
+      ? [{
+          op: "set" as const,
+          target: "block" as const,
+          path: `${block.id}/error`,
+          value: null,
+          was: block.error
+        }]
+      : [])
+  ];
+};
+
+/** Editing a linked generated response makes its freshness mirror stale atomically. */
+export const replaced = (
+  block: EditableTextBlock,
+  from: number,
+  to: number,
+  insert: string
+): SlideDeckOp[] => {
+  const presentation = replacePresentation(block, from, to, insert);
+  return presentation.length === 0
+    ? []
+    : [...presentation, ...promptEditLifecycleOps(block)];
 };
 
 export const diffed = (block: EditableTextBlock, next: string): SlideDeckOp[] => {

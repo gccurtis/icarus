@@ -1,36 +1,35 @@
-import type { WorkspaceOp } from "$representation/data/types/workspace/op";
+import {
+  hasExactFields,
+  isStoredJson,
+  isStoredNatural,
+  storedFields
+} from "$representation/data/behavior/core/stored";
+import { isStoredWorkspaceOp } from "$representation/data/behavior/workspace/stored-rows";
 import type { WorkspaceChangeSetInput } from "$capabilities/workspace/types/submit-workspace-changes";
-
-const OPS = ["open", "close", "activate", "land", "context", "inspect", "resize", "zoom"];
 
 const refuse = (what: string): never => {
   throw new Error(`workspace/submit-workspace-changes: ${what}`);
 };
 
-const isOp = (value: unknown): value is WorkspaceOp => {
-  if (value === null || typeof value !== "object") return false;
-
-  const { op } = value as { op?: unknown };
-  return typeof op === "string" && OPS.includes(op);
-};
-
 export const validateSubmitWorkspaceChanges = (input: unknown): WorkspaceChangeSetInput => {
-  if (input === null || typeof input !== "object") refuse("an input is an object");
-
-  const { changeSet } = input as { changeSet?: unknown };
-  if (changeSet === null || typeof changeSet !== "object") refuse("a changeSet is required");
-
-  const { baseRevision, ops } = changeSet as Record<string, unknown>;
-
-  if (typeof baseRevision !== "number" || !Number.isInteger(baseRevision) || baseRevision < 0) {
-    refuse("baseRevision is a revision number");
+  if (!isStoredJson(input)) return refuse("an input is exact plain JSON data");
+  const envelope = storedFields(input);
+  if (envelope === undefined) return refuse("an input is exactly one changeSet");
+  if (!hasExactFields(envelope, ["changeSet"])) return refuse("an input is exactly one changeSet");
+  const changeSet = storedFields(envelope.changeSet);
+  if (changeSet === undefined) return refuse("a changeSet has exactly baseRevision and ops");
+  if (!hasExactFields(changeSet, ["baseRevision", "ops"])) {
+    return refuse("a changeSet has exactly baseRevision and ops");
   }
-  if (!Array.isArray(ops) || ops.length === 0) {
-    refuse("a change set carries at least one op");
+  const baseRevision = changeSet.baseRevision;
+  const ops = changeSet.ops;
+  if (!isStoredNatural(baseRevision)) return refuse("baseRevision is a revision number");
+  if (!Array.isArray(ops) || ops.length === 0 || ops.length > 10_000) {
+    return refuse("a change set carries at least one op");
   }
-  if (!(ops as unknown[]).every(isOp)) {
-    refuse("every op names one of the workspace operations");
+  if (!ops.every(isStoredWorkspaceOp)) {
+    return refuse("every op is exactly one current workspace operation");
   }
 
-  return { baseRevision: baseRevision as number, ops: ops as readonly WorkspaceOp[] };
+  return { baseRevision, ops: [...ops] };
 };

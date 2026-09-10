@@ -5,7 +5,8 @@ const CATEGORY: Partial<Record<ResourceKind, Category>> = {
   document: "document-editor",
   slides: "slide-deck-editor",
   spreadsheet: "spreadsheet-editor",
-  research: "research"
+  research: "research",
+  file: "external"
 };
 
 /** A research tab needs its centre named; the editors default to theirs. */
@@ -16,6 +17,7 @@ const CONTENT: Partial<Record<ResourceKind, "research.thread">> = {
 export const openingFor = ({ kind, id }: Resource): Target | undefined => {
   const category = CATEGORY[kind];
   if (category === undefined) return undefined;
+  if (category === "external") return { category, focus: id };
   const content = CONTENT[kind];
   return { category, resourceId: id, ...(content === undefined ? {} : { content }) };
 };

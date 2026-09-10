@@ -4,7 +4,7 @@ import type { Id } from "$representation/data/types/core/id";
 import { requireScope } from "$runtime/server/scope.server";
 import { serverModel } from "$runtime/server/start.server";
 
-import { leaderOf, since } from "$capabilities/workspace/api/shared/leader";
+import { historyOf, leaderOf } from "$capabilities/workspace/api/shared/leader";
 import { overlap, touched } from "$capabilities/workspace/api/shared/touched";
 import { applyOps } from "$capabilities/workspace/api/submit-workspace-changes/apply-ops";
 import { validateSubmitWorkspaceChanges } from "$capabilities/workspace/api/submit-workspace-changes/validate-submit-workspace-changes";
@@ -20,62 +20,73 @@ export const submitWorkspaceChanges = async (
   const projectId = scope.projectId as Id<"projects">;
   const userId = scope.userId as Id<"users">;
 
-  const leader = leaderOf(store, projectId, userId);
-  const revision = leader?.revision ?? 0;
-  const merged = changeSet.baseRevision !== revision;
-
-  if (merged) {
-    const ahead = since(store, projectId, userId, changeSet.baseRevision);
-    const collides = overlap(touched(changeSet.ops), touched(ahead.flatMap((row) => row.ops)));
-
-    if (collides.length > 0) {
+  const at = Date.now();
+  return store.transaction((unit) => {
+    const leader = leaderOf(unit, projectId, userId);
+    const revision = leader?.revision ?? 0;
+    const history = historyOf(unit, projectId, userId);
+    const lastRevision = history.at(-1)?.revision ?? 0;
+    if (lastRevision !== revision) {
+      throw new Error("The workspace leader and revision history do not name one current revision");
+    }
+    if (changeSet.baseRevision > revision) {
       return {
-        accepted: false,
-        reason: "conflict",
+        accepted: false as const,
+        reason: "unresolved" as const,
         revision,
-        detail: `${collides.join(", ")} moved between revision ${changeSet.baseRevision} and ${revision}`
+        detail: `base revision ${changeSet.baseRevision} is ahead of current revision ${revision}`
       };
     }
-  }
+    const merged = changeSet.baseRevision !== revision;
 
-  const held = leader ?? startingWorkspace();
+    if (merged) {
+      const ahead = history.filter((row) => row.revision > changeSet.baseRevision);
+      const collides = overlap(touched(changeSet.ops), touched(ahead.flatMap((row) => row.ops)));
+      if (collides.length > 0) {
+        return {
+          accepted: false as const,
+          reason: "conflict" as const,
+          revision,
+          detail: `${collides.join(", ")} moved between revision ${changeSet.baseRevision} and ${revision}`
+        };
+      }
+    }
 
-  let body;
-  try {
-    body = applyOps(held, changeSet.ops);
-  } catch (error) {
-    return {
-      accepted: false,
-      reason: "unresolved",
-      revision,
-      detail: error instanceof Error ? error.message : String(error)
+    let body;
+    try {
+      const held = leader === undefined
+        ? startingWorkspace()
+        : { tabs: leader.tabs, activeId: leader.activeId, views: leader.views };
+      body = applyOps(held, changeSet.ops);
+    } catch (error) {
+      return {
+        accepted: false as const,
+        reason: "unresolved" as const,
+        revision,
+        detail: error instanceof Error ? error.message : String(error)
+      };
+    }
+
+    const next = revision + 1;
+    unit.create("workspaceRevisions", {
+      projectId,
+      userId,
+      revision: next,
+      baseRevision: changeSet.baseRevision,
+      ops: changeSet.ops as WorkspaceOp[],
+      at
+    });
+    const snapshot = {
+      projectId,
+      userId,
+      revision: next,
+      tabs: body.tabs,
+      activeId: body.activeId,
+      views: body.views,
+      at
     };
-  }
-
-  const next = revision + 1;
-  const at = Date.now();
-
-  store.create("workspaceRevisions", {
-    projectId,
-    userId,
-    revision: next,
-    baseRevision: changeSet.baseRevision,
-    ops: changeSet.ops as WorkspaceOp[],
-    at
+    if (leader === undefined) unit.create("workspaceSnapshots", snapshot);
+    else unit.update(`workspaceSnapshots.${leader._id}`, snapshot);
+    return { accepted: true as const, revision: next, merged };
   });
-
-  const snapshot = {
-    projectId,
-    userId,
-    revision: next,
-    tabs: body.tabs,
-    activeId: body.activeId,
-    views: body.views,
-    at
-  };
-
-  if (leader === undefined) store.create("workspaceSnapshots", snapshot);
-  else store.update(`workspaceSnapshots.${leader._id}`, snapshot);
-
-  return { accepted: true, revision: next, merged };
 };

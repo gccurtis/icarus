@@ -6,7 +6,6 @@ import type {
   ResearchScope,
   ResearchSource,
   ResearchToolId,
-  ResearchTurnState,
   ResearchTurnUsage
 } from "$representation/data/types/investigation/research-turn";
 
@@ -21,29 +20,60 @@ export type ThreadItem = {
   readonly updatedAt: number;
 };
 
-export type TurnItem = {
+type TurnItemCommon = {
   readonly id: string;
   readonly threadId: string;
   readonly prompt: string;
   readonly mode: ResearchModeKind;
   readonly scope: ResearchScope;
   readonly tools: readonly ResearchToolId[];
-  readonly state: ResearchTurnState;
+  readonly askedAt: number;
+  readonly stopRequested: boolean;
+};
+
+export type RunningTurnItem = TurnItemCommon & {
+  readonly state: "running";
+  readonly usage?: never;
+  readonly model?: never;
+  readonly error?: never;
+  readonly answeredAt?: never;
+  readonly blocks: readonly [];
+  readonly queries: readonly [];
+  readonly sources: readonly [];
+  readonly findings: readonly [];
+};
+
+export type CompletedTurnItem = TurnItemCommon & {
+  readonly state: "answered" | "insufficient";
   readonly blocks: readonly ContentBlock[];
   readonly queries: readonly string[];
   readonly sources: readonly ResearchSource[];
   readonly findings: readonly ResearchFinding[];
-  readonly usage?: ResearchTurnUsage;
-  readonly model?: string;
-  readonly error?: string;
-  readonly askedAt: number;
-  readonly answeredAt?: number;
-  readonly stopRequested: boolean;
+  readonly usage: ResearchTurnUsage;
+  readonly model: string;
+  readonly error?: never;
+  readonly answeredAt: number;
 };
+
+export type UnsuccessfulTurnItem = TurnItemCommon & {
+  readonly state: "failed" | "cancelled";
+  readonly usage?: never;
+  readonly model?: never;
+  readonly error: string;
+  readonly answeredAt?: never;
+  readonly blocks: readonly [];
+  readonly queries: readonly [];
+  readonly sources: readonly [];
+  readonly findings: readonly [];
+};
+
+export type TurnItem = RunningTurnItem | CompletedTurnItem | UnsuccessfulTurnItem;
 
 /** One thing a turn can be narrowed to, named as the composer shows it. */
 export type ResourceOption = ResourceRef & {
   readonly name: string;
+  /** Exact uploaded path for External files; represented resources have no path. */
+  readonly relativePath: string | null;
 };
 
 export type ReadThreadsResult = {

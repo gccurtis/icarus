@@ -5,7 +5,9 @@
   import { Panel, PanelButton, PanelColor, PanelEmpty, PanelInput, PanelNumber, PanelRow, PanelSection, PanelSelect } from "$authored-components/panel";
   import { SlideSurface } from "$authored-components/slide-surface";
   import { Button } from "$vendored-components/button";
-  import { slideIndexOf, withSavedLayout, withSet, withoutLayout } from "$app-views/categories/slide-deck-editor/procedures/deck";
+  import { withSavedLayout, withoutLayout } from "$app-views/categories/slide-deck-editor/procedures/deck-slide-layouts";
+  import { slideIndexOf } from "$app-views/categories/slide-deck-editor/procedures/deck-slides";
+  import { withSet } from "$app-views/categories/slide-deck-editor/procedures/deck-values";
   import { newStyleEdit, styleOptions, styleSummary } from "$app-views/categories/slide-deck-editor/procedures/styles";
   import { sceneOf } from "$app-views/categories/slide-deck-editor/procedures/scene";
   import { asAspectRatio, ratioOf, ratioParts, slideUnits } from "$app-views/categories/slide-deck-editor/procedures/stage";
@@ -30,7 +32,7 @@
 
   const set = (path: string, value: unknown) => {
     if (body === undefined) return;
-    runtime?.apply(withSet(body, path, value).ops);
+    runtime?.apply(withSet(body, "deck", path, value).ops);
   };
 
   const setRatio = (width: number, height: number) => set("aspectRatio", asAspectRatio(width, height));

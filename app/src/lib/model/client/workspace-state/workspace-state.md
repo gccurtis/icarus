@@ -47,9 +47,9 @@ object is; these two are handed to the constructor and never returned, because a
 view reaching `tabList.add(...)` through the graph would move a tab without going
 through here — and going through here is the whole point.
 
-## Three tabs are places, and everything else is a thing
+## Four tabs are places, and everything else is a thing
 
-The permanent tabs are Overview, Agents and Templates. Each is somewhere
+The permanent tabs are Overview, Agents, Templates and External. Each is somewhere
 the project's work of one kind is gathered, and somewhere you *return* to rather
 than arrive at. Not being on one *is* closing it, so `close` refuses them.
 
@@ -119,8 +119,8 @@ Consumers own:
   four trees hold the files, and the resolution is the shell's
 - **Bounds.** The model records a width; the panel that enforces the drag knows a
   minimum, a maximum and a collapse threshold
-- **Everything stored.** A tab is client state; a document, a person, a finding
-  are rows, read with `useQuery`
+- **Resource contents.** A document, a person and a finding are domain rows;
+  workspace snapshots persist only navigation and view state
 - **Runtime lifetime.** A live resource runtime belongs to the register for its
   kind — [documents](../document-runtimes/document-runtimes.md),
   [slide decks](../slide-deck-runtimes/slide-deck-runtimes.md) or
@@ -182,13 +182,15 @@ never authored over is the one way this produces a tab nobody put there.
 
 - **Instance:** one per client instance
 - **Constructed by:** `buildClientModel`
-- **Released by:** nothing — it holds nothing releasable
+- **Released by:** `ClientModel.close()` after asking it to flush
 
-**Nothing here is persisted yet.** There is no restore path and no read that
-reports a default it never stored. The permanent tabs are built rather than
-restored, which is what makes "`activeId` names a real tab, always" an invariant
-rather than a hope. The stored shape now exists — the `workspace` domain's
-`workspaceSnapshots` and `workspaceRevisions`.
+Workspace state has one durable path: the workspace capability writes exact
+`workspaceSnapshots` and `workspaceRevisions` rows on the server. `restore`
+adopts a present snapshot only after the entire current response—revision,
+singleton set, tab/view bijection, category identities, active tab and nested
+views—passes current-schema admission. `null` means no snapshot and retains the
+constructed starting workspace. A malformed present response throws before any
+live state is changed; no legacy shape is migrated or partially repaired.
 
 ## Public Methods
 
@@ -213,8 +215,12 @@ supporting flow. Every one is still a file.
 | `pendingFlight` | file | observer | Read one matching pending command without changing its ownership or lifetime |
 | `documentRuntime` | file | accessor | The runtime a document already has. Attaching is the register's, so two tabs on one document share a buffer |
 | `slideDeckRuntime` | file | accessor | The same for a deck |
+| `spreadsheetRuntime` | file | accessor | The same for a spreadsheet |
+| `draft` / `keepDraft` | files | accessor / mutator | Hold an unsent composition draft for this workspace lifetime |
 | `undo` | file | mutator | Apply the inverse of the last op, and keep it for `redo` |
 | `redo` | file | mutator | Apply the last undone op again |
+| `restore` | file | asynchronous mutator | Adopt one exact current server snapshot before local work begins |
+| `flush` | file | asynchronous mutator | Submit the buffered operation set and rebase a refusal over exact current state |
 
 A simple method has no document of its own.
 [`methods/methods.md`](methods/methods.md) lists them.
@@ -232,11 +238,15 @@ owns the per-workspace pending-promise registry.
 | `activeId` | `readonly TabId` | Which tab everything else is about |
 | `active` | `readonly Tab` | Never undefined: a permanent tab cannot be closed, so one always remains |
 | `frame` | `readonly Frame` | The active tab's panel geometry — two widths, two collapse flags |
-| `context` | `readonly ContextId \| undefined` | The rail position, or this category's default if it has drifted |
+| `context` | `readonly ContextId \| undefined` | The exact held rail position; `undefined` only for a category with no rail |
 | `inspected` | `readonly Inspected` | Which lens, or `"empty"` |
 | `selection` | `readonly Selection \| undefined` | What the lens is about |
+| `zoom` | `readonly number \| null` | The active centre's explicit zoom, or its product default |
 | `canUndo` | `readonly boolean` | Whether the log has anything in it |
 | `canRedo` | `readonly boolean` | Whether anything has been undone and not replaced |
+| `revision` | `readonly number` | The server revision local operations are stated against |
+| `sync` | `readonly WorkspaceSync` | Loading, saving, saved, rebasing, review or error state |
+| `pending` | `readonly number` | Buffered operations not yet accepted by the server |
 
 Five of these read the active tab, so a tab switch changes all of them at once
 and no surface has to be told.
@@ -247,8 +257,9 @@ the inspector, the resizers — and every category reads them. What a centre is 
 is read by that one centre, which already has `active` in hand, and a shortcut on
 the model would suggest the shell knows what it means.
 
-**`context` is derived rather than stored.** A position written in from outside
-cannot leave the panel pointing at a view the rail does not offer.
+**`context` does not repair state on read.** Current workspace admission proves
+that a non-null position belongs to the tab's category, and only a category
+whose declared default is null may store null. The getter exposes that value.
 
 No field is a Svelte `Component` or a registry of them. This object exposes
 stable keys and the view layer resolves them, so the model stays testable without
@@ -266,9 +277,10 @@ export const createWorkspaceState = (
 ): WorkspaceStateModel => ...;
 ```
 
-Every call returns a fresh object, with its three permanent tabs already open —
-Overview, Agents and Templates. Ids are per instance and never persisted, so a
-counter on `tab-list` is enough; nothing lives at module scope.
+Every call returns a fresh object, with its four permanent tabs already open —
+Overview, Agents, Templates and External. Minted ids are persisted in the exact
+snapshot so tab/view keys remain paired; adoption advances `tab-list`'s
+instance-owned counter past every restored `t<number>` before another is minted.
 
 | Dependency | Ownership | Usage |
 | ---------- | --------- | ----- |
@@ -277,13 +289,14 @@ counter on `tab-list` is enough; nothing lives at module scope.
 | `configuration` | BORROWED | Two thresholds read at construction; not held afterwards |
 | `documents` | BORROWED | Which runtime a document already has, for `documentRuntime` |
 | `decks` | BORROWED | The same for a deck, for `slideDeckRuntime` |
+| `sheets` | BORROWED | The same for a spreadsheet, for `spreadsheetRuntime` |
 
 All are constructed by [`buildClientModel`](../../../runtime/client/start.ts)
 immediately above this one and handed in, because the model standard is that the
 runtime holds every instance. None is returned in the graph it builds: this
 object is the only reader `tabs` and `views` have.
 
-**Both registers are optional, and their accessors throw without them.** A view may
+**All three registers are optional, and their accessors throw without them.** A view may
 reach the model only through this object, so the register has to be reachable
 here — but a test that never opens a document should not have to build one, and a
 workspace state with no register genuinely cannot hand one out. The alternative,
@@ -296,18 +309,21 @@ objects that read a tab towards this one.
 
 ## Terminal Behaviour
 
-None. It holds nothing releasable, so `ClientModel.close()` passes it by. What is
-open is not a resource; the resource runtimes behind a tab are, and they are a
-different object with a different lifetime.
+`ClientModel.close()` first requests a final flush and then calls `release`.
+`release` currently owns no additional teardown; resource runtimes behind tabs
+belong to their three registers and are released by the client composition root.
 
 ## Concurrency and SSR
 
-- Tab-state methods are synchronous and nothing awaits, so no two can interleave.
+- Local tab-state methods are synchronous and nothing awaits, so no two can interleave.
 - `singleFlight` is the deliberate async exception. It registers before starting
   supplied work, shares the promise for one exact key, and releases it after
   success or failure so a later retry remains possible.
-- **The model never calls a capability.** It is testable without a network.
-- **It touches no browser API** — no storage, no timers, no `window`. The root's
+- `restore` and `flush` cross only through the workspace capability. A single
+  pending submit promise and operation buffer serialize writes and preserve
+  rejected work for retry.
+- **It touches no browser storage or `window`.** Its flush debounce is an
+  instance-owned timer. The root's
   `browser` guard is therefore not load-bearing for this object's own behaviour;
   it is load-bearing for reaching it, because `clientModel()` refuses on the
   server. That distinction is why a panel reads this through context rather than
@@ -352,7 +368,8 @@ different object with a different lifetime.
   is given, and goes on filling it, until a number takes over for good.
 - **The model holds values; views hold bounds.**
 - **No component type enters the model.** The `view-keys` rule enforces it.
-- **Nothing here is persisted.**
+- **One exact workspace schema is persisted.** Server snapshots are the sole
+  durable owner; there is no browser-local wire shape, alias or migration path.
 
 ## How a panel reaches this object
 
@@ -394,12 +411,13 @@ workspace-state/
 │   ├── open.ts · activate.ts · close.ts · reopen-closed.ts
 │   ├── show-content.ts · select-context.ts · showing.ts
 │   ├── inspect.ts · clear.ts · resize.ts · zoom.ts · single-flight.ts
-│   ├── undo.ts · redo.ts
+│   ├── undo.ts · redo.ts · restore.ts · flush.ts
 │   └── shared/
 │       ├── shared.md
 │       ├── defaults.ts · rails.ts
 │       ├── apply.ts · perform.ts · landing.ts
-│       └── compose.ts · land-on.ts · mint-view.ts · target-key.ts
+│       ├── compose.ts · land-on.ts · mint-view.ts · target-key.ts
+│       └── adopt.ts · submit.ts · reconcile-runtimes.ts
 └── test/unit/
     ├── workspace-state.test.ts
     ├── persistence.test.ts

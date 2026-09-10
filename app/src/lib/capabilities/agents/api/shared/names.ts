@@ -7,6 +7,7 @@ import {
   isStoredPersona
 } from "$representation/data/behavior/agents/stored-rows";
 
+import { externalResourceOptionsIn } from "$capabilities/agents/api/shared/external-resource-options";
 import { rowsIn } from "$capabilities/agents/api/shared/store";
 
 export type Names = {
@@ -28,17 +29,17 @@ export const namesIn = (store: StoreModel, projectId: string): Names => {
   const users = new Map(rowsIn(store, "users").map((row) => [row._id as string, row.displayName]));
   const personas = new Map(
     rowsIn(store, "personas")
-      .filter(isStoredPersona)
+      .filter((row) => isStoredPersona(row) && row.projectId === projectId)
       .map((row) => [row._id as string, row.name])
   );
   const automations = new Map(
     rowsIn(store, "automations")
-      .filter(isStoredAutomation)
+      .filter((row) => isStoredAutomation(row) && row.projectId === projectId)
       .map((row) => [row._id as string, row.name])
   );
   const tasks = new Map(
     rowsIn(store, "agentTasks")
-      .filter(isStoredAgentTask)
+      .filter((row) => isStoredAgentTask(row) && row.projectId === projectId)
       .map((row) => [row._id as string, row.personaId as string])
   );
   const resources = new Map<string, string>();
@@ -47,6 +48,9 @@ export const namesIn = (store: StoreModel, projectId: string): Names => {
       if (row.projectId !== projectId) continue;
       resources.set(`${kind}/${row._id}`, row.title);
     }
+  }
+  for (const option of externalResourceOptionsIn(store, projectId)) {
+    resources.set(`${option.ref.kind}/${option.ref.id}`, option.name);
   }
 
   const user = (userId: string) => users.get(userId) ?? "Someone";

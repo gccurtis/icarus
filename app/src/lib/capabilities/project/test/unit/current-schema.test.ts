@@ -136,15 +136,15 @@ describe("Project current-schema admission", () => {
     });
 
     model.tables.set("users", [person("users:me", "Me"), person("users:me", "Duplicate")]);
-    await expect(readProjectPerson({ userId: "users:me" })).resolves.toBeNull();
+    await expect(readProjectPerson({ userId: "users:me" })).rejects.toThrow(/repeats row id/);
 
     model.tables.set("users", [person("users:me", "Me")]);
     model.tables.set("comments", [comment({ blocks: [{ display: "partial" }] })]);
-    await expect(readProjectPerson({ userId: "users:me" })).resolves.toBeNull();
+    await expect(readProjectPerson({ userId: "users:me" })).rejects.toThrow();
 
     model.tables.set("comments", [comment()]);
     model.tables.set("documents", [{ ...document(), unknownField: true }]);
-    await expect(readProjectPerson({ userId: "users:me" })).resolves.toBeNull();
+    await expect(readProjectPerson({ userId: "users:me" })).rejects.toThrow(/unknown field/);
   });
 
   it("rejects malformed nested document bodies and comment-count claimants", async () => {
@@ -158,7 +158,7 @@ describe("Project current-schema admission", () => {
     const snapshot = documentSnapshot();
     snapshot.body.rows[0].blocks = [{ ...paragraph("partial"), atoms: [] }];
     model.tables.set("documentSnapshots", [snapshot]);
-    await expect(readProjectResource({ resourceId: "documents:one" })).resolves.toBeNull();
+    await expect(readProjectResource({ resourceId: "documents:one" })).rejects.toThrow();
 
     model.tables.set("documentSnapshots", [documentSnapshot()]);
     model.tables.set("commentThreads", [{
@@ -166,7 +166,7 @@ describe("Project current-schema admission", () => {
       projectId: "projects:mine",
       target: { kind: "document", id: "documents:one" }
     }]);
-    await expect(readProjectResource({ resourceId: "documents:one" })).resolves.toBeNull();
+    await expect(readProjectResource({ resourceId: "documents:one" })).rejects.toThrow();
   });
 
   it("validates complete spreadsheet cells and their body coordinates before counting", async () => {
@@ -211,7 +211,7 @@ describe("Project current-schema admission", () => {
     await expect(readProjectResource({ resourceId: "spreadsheets:one" })).resolves.toBeNull();
 
     model.tables.set("sheetCells", [{ ...cell, retiredValue: 7 }]);
-    await expect(readProjectResource({ resourceId: "spreadsheets:one" })).resolves.toBeNull();
+    await expect(readProjectResource({ resourceId: "spreadsheets:one" })).rejects.toThrow(/unknown field/);
   });
 
   it("enforces target/anchor families and keeps unavailable historical actors null", async () => {
@@ -222,13 +222,13 @@ describe("Project current-schema admission", () => {
     model.tables.set("commentThreads", [thread({
       within: { kind: "slide", slideId: "slide:one" }
     })]);
-    await expect(readProjectComment({ threadId: "commentThreads:one" })).resolves.toBeNull();
+    await expect(readProjectComment({ threadId: "commentThreads:one" })).rejects.toThrow();
 
     model.tables.set("commentThreads", [thread({
       target: { kind: "slides", id: "documents:one" },
       within: undefined
     })]);
-    await expect(readProjectComment({ threadId: "commentThreads:one" })).resolves.toBeNull();
+    await expect(readProjectComment({ threadId: "commentThreads:one" })).rejects.toThrow();
 
     model.tables.set("commentThreads", [thread()]);
     model.tables.set("comments", [comment({ author: actor("users:former") })]);

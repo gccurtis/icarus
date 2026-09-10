@@ -1,18 +1,10 @@
 import type { BackfillSemanticOverlayInput } from "$capabilities/semantic-overlay/types/semantic-sync-queue";
+import { semanticCommand } from "$capabilities/semantic-overlay/api/shared/command-input";
 
 export const validateBackfillSemanticOverlay = (
   input: unknown
 ): Required<BackfillSemanticOverlayInput> => {
-  if (input === null || typeof input !== "object" || Array.isArray(input)) {
-    throw new Error("backfillSemanticOverlay input must be an object");
-  }
-  const candidate = input as Record<string, unknown>;
-  const unexpected = Object.keys(candidate).find(
-    (key) => key !== "force" && key !== "limit"
-  );
-  if (unexpected !== undefined) {
-    throw new Error(`backfillSemanticOverlay input has unexpected field '${unexpected}'`);
-  }
+  const candidate = semanticCommand(input, ["force", "limit"], "backfillSemanticOverlay input");
   if (candidate.force !== undefined && typeof candidate.force !== "boolean") {
     throw new Error("backfillSemanticOverlay force must be a boolean");
   }

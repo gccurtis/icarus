@@ -1,25 +1,25 @@
 import type { StoreUnitOfWork } from "$model/server/store/index.server";
 import { admittedPrivateResourceSets } from "$representation/data/behavior/core/resource-set-rows";
+import { sameResourceRef } from "$representation/data/behavior/core/resource";
+import type { ResourceRef } from "$representation/data/types/core/resource";
 import type { BoundTo } from "$representation/data/types/core/resource-set";
 
 import { recordsIn } from "$capabilities/templates/api/shared/store";
 
 export type ScopeOwner = BoundTo;
 
-export const sameScopeOwner = (held: unknown, owner: ScopeOwner): boolean => {
-  if (held === null || typeof held !== "object") return false;
-  const record = held as Record<string, unknown>;
+export const sameScopeOwner = (held: BoundTo, owner: ScopeOwner): boolean => {
   if (owner.kind === "hole") {
     return (
-      record.kind === "hole" &&
-      record.templateId === owner.templateId &&
-      record.hole === owner.hole
+      held.kind === "hole" &&
+      held.templateId === owner.templateId &&
+      held.hole === owner.hole
     );
   }
   return (
-    record.kind === "resource" &&
-    record.resourceId === owner.resourceId &&
-    record.hole === owner.hole
+    held.kind === "resource" &&
+    sameResourceRef(held.ref, owner.ref) &&
+    held.hole === owner.hole
   );
 };
 
@@ -27,11 +27,11 @@ export const sameScopeOwner = (held: unknown, owner: ScopeOwner): boolean => {
 export const rowsOfResource = (
   store: StoreUnitOfWork,
   projectId: string,
-  resourceId: string
+  ref: ResourceRef
 ): readonly string[] =>
   [...admittedPrivateResourceSets(recordsIn(store, "resourceSets"), projectId).values()]
     .filter(
-      (row) => row.boundTo.kind === "resource" && row.boundTo.resourceId === resourceId
+      (row) => row.boundTo.kind === "resource" && sameResourceRef(row.boundTo.ref, ref)
     )
     .map((row) => row._id);
 

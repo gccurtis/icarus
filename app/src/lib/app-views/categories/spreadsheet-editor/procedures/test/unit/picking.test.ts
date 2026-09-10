@@ -30,4 +30,16 @@ describe("the project picking channel", () => {
     channel.arm(first);
     expect(channel.session).toBe(2);
   });
+
+  it("buffers a fast opening-key burst until the writing field takes it", () => {
+    const channel = createPickingChannel();
+
+    channel.beginWriting("D");
+    channel.beginWriting("u");
+    channel.beginWriting("rable");
+
+    expect(channel.begun).toEqual({ seed: "Durable", at: 3 });
+    channel.writingTaken();
+    expect(channel.begun).toBeUndefined();
+  });
 });

@@ -1,4 +1,5 @@
-import { fieldsOf, only, stageIdOf } from "$capabilities/templates/api/shared/validation";
+import { fieldsOf, only } from "$capabilities/templates/api/shared/validation";
+import { stageIdOf } from "$capabilities/templates/api/shared/stage-validation";
 import type { DiscardTemplateStageInput } from "$capabilities/templates/types/templates";
 
 export const validateDiscardTemplateStage = (input: unknown): DiscardTemplateStageInput => {

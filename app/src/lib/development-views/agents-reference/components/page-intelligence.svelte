@@ -105,8 +105,8 @@
   const streaming = [
     {
       n: 1,
-      title: "The message already has a streaming state",
-      body: "Message.state is streaming, complete or error, and it has been since before any of this. Nothing writes streaming today, because the port answers once."
+      title: "The current message is complete-only",
+      body: "Message.state admits only complete because the port answers once. There is no dormant streaming or error row shape for a writer that does not exist."
     },
     {
       n: 2,
@@ -116,7 +116,7 @@
     {
       n: 3,
       title: "When it is worth it, it is one method",
-      body: "A streaming variant belongs on the same port beside completeWithTools, returning an async iterable of deltas and settling on the same result. The capability would write partial text into the response message. No surface changes, because a surface already renders a message whose text grows."
+      body: "A streaming variant would belong beside completeWithTools and require a deliberately new partial-message contract. It is not predeclared in today's representation."
     }
   ];
 

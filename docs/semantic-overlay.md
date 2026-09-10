@@ -16,8 +16,8 @@ the exact-text contract that Derived Output depends on.
 ## Invariants
 
 1. A source never crosses a project boundary.
-2. An editable source is pinned to a leader revision; external text is pinned
-   to a content hash.
+2. An editable source is pinned to a leader revision; External text is pinned
+   to its required row revision and content hash.
 3. Translation consumes a canonical string, never editor JSON.
 4. Stored spans use absolute coordinates in that source and retain encoding.
 5. A synthetic structural label is never inserted merely to aid retrieval.
@@ -68,11 +68,12 @@ read its `exact` projection.
 
 ### External exact text
 
-`readSemanticResourceForModel` supports canonical
-`externalFile::text` sources. It reads through `MaterialContentModel`, requires
-valid UTF-8, rejects content over 5 MB, and stores the external file hash in the
-source snapshot. A code file can therefore be both exact text and a code
-material; CSV/image/data files do not enter exact retrieval.
+`readSemanticResourceForModel` supports the current
+`externalFile::text` source kind. It reads verified bytes through
+`ExternalFileStorageModel`, requires valid UTF-8, rejects content over 5 MB,
+and stores the External revision and file hash in the source snapshot.
+Programming source is a distinct `externalFile::code` material and never enters
+this exact lane; CSV/image/data files also remain outside exact retrieval.
 
 ## Entry points
 
@@ -85,8 +86,8 @@ submitDocumentChanges / submitSlideDeckChanges / createProjectResource
       → enqueueMaterialSyncFor(ref, revision)       material inventory
 ```
 
-The public procedure derives project scope from the request and canonicalizes
-external-file aliases. Enqueueing is revision-only: it does not walk the body,
+The public procedure derives project scope from the request and resolves the
+current stored External subkind. Enqueueing is revision-only: it does not walk the body,
 read native bytes, or call a provider.
 
 `backfillSemanticOverlay` is the development/maintenance path. It enumerates all

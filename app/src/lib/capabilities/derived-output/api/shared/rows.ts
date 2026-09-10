@@ -1,33 +1,26 @@
-import type { StoreUnitOfWork, TableName, TableRow } from "$model/server/store/index.server";
+import {
+  readCurrentRows,
+  type StoreUnitOfWork,
+  type TableName,
+  type TableRow
+} from "$model/server/store/index.server";
 import type { TextBlock } from "$representation/data/types/content/content-block";
 import type { Id } from "$representation/data/types/core/id";
 import type { DerivedOutputFields } from "$representation/data/types/semantic/derived-output";
 import type { SemanticSourceSnapshot } from "$representation/data/types/semantic/source";
-import {
-  isStoredDerivedOutput,
-  isStoredDerivedOutputRefreshJob
-} from "$representation/data/behavior/semantic/stored-derived-output";
+import { isStoredDerivedOutput } from "$representation/data/behavior/semantic/stored-derived-output";
 import { materialRecordIsCurrent } from "$capabilities/semantic-overlay";
+
+/** Internal transition patch; the resulting whole row is still admitted before writing. */
+export type DerivedOutputPatch = {
+  [K in keyof DerivedOutputFields]?: DerivedOutputFields[K];
+};
 
 export const rowsOf = <T extends TableName>(
   store: StoreUnitOfWork,
   table: T
 ): readonly TableRow<T>[] => {
-  const found = store.read(table);
-  if (found?.kind !== "table" || found.table !== table) return [];
-  if (table === "derivedOutputs") {
-    if (!found.rows.every(isStoredDerivedOutput)) {
-      throw new Error("the derivedOutputs table contains a non-current row");
-    }
-    return found.rows as unknown as readonly TableRow<T>[];
-  }
-  if (table === "derivedOutputRefreshJobs") {
-    if (!found.rows.every(isStoredDerivedOutputRefreshJob)) {
-      throw new Error("the derivedOutputRefreshJobs table contains a non-current row");
-    }
-    return found.rows as unknown as readonly TableRow<T>[];
-  }
-  return found.rows as unknown as readonly TableRow<T>[];
+  return readCurrentRows(store, table);
 };
 
 export const outputOf = (
@@ -41,14 +34,14 @@ export const outputOf = (
 
 const chosen = <K extends keyof DerivedOutputFields>(
   output: TableRow<"derivedOutputs">,
-  patch: Partial<DerivedOutputFields>,
+  patch: DerivedOutputPatch,
   field: K
 ): DerivedOutputFields[K] | undefined =>
   Object.hasOwn(patch, field) ? patch[field] : output[field];
 
 const outputFields = (
   output: TableRow<"derivedOutputs">,
-  patch: Partial<DerivedOutputFields>
+  patch: DerivedOutputPatch
 ): DerivedOutputFields => {
   const candidate = Object.fromEntries(Object.entries({
     _id: output._id,
@@ -59,6 +52,7 @@ const outputFields = (
     origin: chosen(output, patch, "origin"),
     template: chosen(output, patch, "template"),
     scope: chosen(output, patch, "scope"),
+    valueSource: chosen(output, patch, "valueSource"),
     queries: chosen(output, patch, "queries"),
     evidence: chosen(output, patch, "evidence"),
     lastVariables: chosen(output, patch, "lastVariables"),
@@ -74,33 +68,17 @@ const outputFields = (
   if (!isStoredDerivedOutput(candidate)) {
     throw new Error("the derived output update is not a complete current row");
   }
-  const current = candidate;
-  return {
-    projectId: current.projectId,
-    prompt: current.prompt,
-    definitionRevision: current.definitionRevision,
-    ...(current.origin === undefined ? {} : { origin: current.origin }),
-    ...(current.template === undefined ? {} : { template: current.template }),
-    ...(current.scope === undefined ? {} : { scope: current.scope }),
-    queries: current.queries,
-    evidence: current.evidence,
-    ...(current.lastVariables === undefined ? {} : { lastVariables: current.lastVariables }),
-    ...(current.lastResponse === undefined ? {} : { lastResponse: current.lastResponse }),
-    ...(current.lastRevision === undefined ? {} : { lastRevision: current.lastRevision }),
-    ...(current.lastGeneration === undefined ? {} : { lastGeneration: current.lastGeneration }),
-    state: current.state,
-    ...(current.error === undefined ? {} : { error: current.error }),
-    ...(current.refreshedAt === undefined ? {} : { refreshedAt: current.refreshedAt }),
-    createdBy: current.createdBy,
-    updatedAt: current.updatedAt
-  };
+  const { _id, _creationTime, ...current } = candidate;
+  void _id;
+  void _creationTime;
+  return current;
 };
 
 /** Replaces one row in a single store write and deliberately removes undefined optionals. */
 export const writeOutput = (
   store: StoreUnitOfWork,
   output: TableRow<"derivedOutputs">,
-  patch: Partial<DerivedOutputFields>
+  patch: DerivedOutputPatch
 ): TableRow<"derivedOutputs"> => {
   if (!isStoredDerivedOutput(output)) {
     throw new Error("the derived output to update is not a complete current row");
@@ -168,7 +146,7 @@ export const activeSources = (
     const ref = { kind: "externalFile::text" as const, id: file._id };
     active.set(`${ref.kind}\u0000${ref.id}`, {
       ref,
-      revision: 0,
+      revision: file.revision,
       contentHash: file.hash,
       encoding: "utf-16"
     });

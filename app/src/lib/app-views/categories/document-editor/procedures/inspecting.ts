@@ -4,11 +4,11 @@ import type { EditorState } from "prosemirror-state";
 import type { DocumentBody } from "$representation/data/types/documents/body";
 import type { Inspected, Selection, SelectionRange } from "$representation/data/types/workspace/tab";
 import type { InspectorView } from "$representation/data/types/workspace/views";
+import { linearOf } from "$app-views/categories/document-editor/procedures/projection-atoms";
 import {
   addressAt,
-  linearOf,
   positionOf
-} from "$app-views/categories/document-editor/procedures/projection";
+} from "$app-views/categories/document-editor/procedures/projection-positions";
 
 export type Signal = {
   readonly key: InspectorView;

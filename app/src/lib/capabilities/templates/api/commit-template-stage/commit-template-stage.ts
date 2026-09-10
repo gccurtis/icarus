@@ -9,10 +9,14 @@ import {
   reportableRevision,
   visibleTemplate
 } from "$capabilities/templates/api/shared/projection";
-import { leaderBodyOf, stageById } from "$capabilities/templates/api/shared/stages";
+import {
+  leaderBodyOf,
+  stageById,
+  stageResourceRef
+} from "$capabilities/templates/api/shared/stages";
 import type { RowFields } from "$capabilities/templates/api/shared/store";
 import { writeTemplateVersion } from "$capabilities/templates/api/shared/template-rows";
-import { bodyOf } from "$capabilities/templates/api/shared/validation";
+import { bodyOf } from "$capabilities/templates/api/shared/body-validation/body-validation";
 import { declaredFor } from "$capabilities/templates/api/shared/holes";
 import { expandedScope } from "$capabilities/templates/api/shared/scopes";
 import type { CommitTemplateStageResult } from "$capabilities/templates/types/templates";
@@ -96,11 +100,12 @@ export const commitTemplateStage = async (input: unknown): Promise<CommitTemplat
 
   let holes;
   try {
+    const ref = stageResourceRef(stage.target, stage.resourceId);
     holes = declaredFor(body, portable.holes).map((hole) => {
       const expanded = expandedScope(
         store,
         scope.projectId,
-        { kind: "resource", resourceId: stage.resourceId, hole: hole.name },
+        { kind: "resource", ref, hole: hole.name },
         hole.default
       );
       return expanded === undefined ? hole : { ...hole, default: expanded };

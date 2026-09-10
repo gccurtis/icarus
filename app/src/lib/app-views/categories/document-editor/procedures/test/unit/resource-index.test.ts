@@ -2,11 +2,12 @@ import assert from "node:assert/strict";
 import { test } from "vitest";
 import type { ReadResourceTemplateResult } from "$capabilities/templates/index.remote";
 import {
+  evidenceTitles,
   resourceName,
   type ResourceIndexQuery
 } from "$app-views/categories/document-editor/procedures/resource-index";
 
-const index = (resources: readonly { readonly id: string; readonly name: string }[]) =>
+const index = (resources: readonly object[]) =>
   ({ current: { resources } }) as unknown as ResourceIndexQuery;
 
 const stage = (templateName: string): ReadResourceTemplateResult => ({
@@ -44,4 +45,26 @@ test("a stage answer for another resource is not a name fallback", () => {
     resourceName(index([{ id: "documents:1", name: "Current document" }]), "documents:1", stage("Other")),
     "Current document"
   );
+});
+
+test("evidence titles include External files beside editable resources", () => {
+  const resources = index([
+    {
+      id: "documents:1",
+      name: "Winter brief",
+      kind: "document",
+      ref: { kind: "document", id: "documents:1" }
+    },
+    {
+      id: "externalFiles:1",
+      name: "document-prompt-evidence.md",
+      kind: "file",
+      ref: { kind: "externalFile::text", id: "externalFiles:1" }
+    }
+  ]);
+
+  assert.deepEqual([...evidenceTitles(resources)], [
+    ["document:documents:1", "Winter brief"],
+    ["externalFile::text:externalFiles:1", "document-prompt-evidence.md"]
+  ]);
 });

@@ -9,7 +9,7 @@ import type { SemanticMaterialSnapshot } from "$representation/data/types/semant
 import type { SemanticSourceSnapshot } from "$representation/data/types/semantic/source";
 
 const isText = (citation: SemanticCitation): citation is SemanticTextCitation =>
-  !("evidenceKind" in citation);
+  citation.evidenceKind === "text";
 
 const refKey = (source: SemanticSourceSnapshot): string =>
   JSON.stringify([source.ref.kind, source.ref.id]);
@@ -30,7 +30,7 @@ const materialKey = (citation: MaterialDescriptorCitation | MaterialNativeCitati
     citation.evidenceKind,
     citation.material.materialId,
     citation.material.revisionKey,
-    "facet" in citation ? citation.facet : citation.selection,
+    citation.evidenceKind === "descriptor" ? citation.facet : citation.selection,
     citation.overlayGeneration
   ]);
 
@@ -103,6 +103,7 @@ const mergeText = (citations: readonly SemanticTextCitation[]): SemanticTextCita
     locators.set(JSON.stringify(locator), locator);
   }
   return {
+    evidenceKind: "text",
     selections: mergedSelections(ordered),
     source: first.source,
     span: { from, to, text },

@@ -47,9 +47,17 @@ const definedBy = (store: StoreUnitOfWork, body: unknown): Definition => {
     }
     if (!isRecord(value)) return;
     if (value.type === "prompt" && typeof value.id === "string") {
-      const linked = value.derivedOutputId;
-      if (typeof linked === "string") wanted.set(linked, value.id);
-      else if (typeof value.prompt === "string") wanted.set(`self:${value.id}`, value.id);
+      const linked = Object.hasOwn(value, "derivedOutputId");
+      if (linked) {
+        if (
+          typeof value.derivedOutputId !== "string" ||
+          Object.hasOwn(value, "prompt") ||
+          Object.hasOwn(value, "scope")
+        ) throw new Error(`linked prompt block '${value.id}' has more than one definition owner`);
+        wanted.set(value.derivedOutputId, value.id);
+      } else if (typeof value.prompt === "string") {
+        wanted.set(`self:${value.id}`, value.id);
+      }
     }
     for (const nested of Object.values(value)) walk(nested);
   };
@@ -106,6 +114,7 @@ export const withFreshOutputs = <T>(
       definitionRevision: 1,
       origin,
       ...(isRecord(value.scope) ? { scope: value.scope } : {}),
+      valueSource: "none",
       queries: [],
       evidence: [],
       state: "idle",
@@ -113,9 +122,10 @@ export const withFreshOutputs = <T>(
       updatedAt: at
     });
     written.push(id);
-    const { scope: _held, ...unscoped } = next;
-    void _held;
-    return { ...unscoped, derivedOutputId: id };
+    const { prompt: _prompt, scope: _scope, ...linked } = next;
+    void _prompt;
+    void _scope;
+    return { ...linked, derivedOutputId: id };
   };
   return { body: walk(body) as T, written };
 };
@@ -129,12 +139,9 @@ export type TemplatedBody<T> = {
 /**
  * A live body as a template holds it: portable, and asking rather than telling.
  *
- * The order matters. The holes are read first, so a hole's default is the scope
- * as the prompt actually reads it. The prompt text is copied next, while the
- * link to the derived output still exists. Only then is the body made portable,
- * each templated prompt's scope replaced by the hole that stands for it, and
- * each marked run turned into a hole in the prose — on the copy, which is why
- * marking a run never changes the resource it was marked in.
+ * The definition is read while the link still exists. The body then becomes a
+ * current unlinked, idle template value before its prompt and scope are written
+ * onto that owner. No intermediate body carries both definition owners.
  */
 /**
  * A hole's default, once the template it belongs to has an identity.
@@ -190,12 +197,12 @@ export const templatedBodyOf = <T>(
   known: readonly TemplateHole[]
 ): TemplatedBody<T> => {
   const definition = definedBy(store, candidate);
-  const scoped = withScopes(candidate, definition.scopes);
+  const portable = portableBodyOf(candidate);
+  const scoped = withScopes(portable.body, definition.scopes);
   const drafts = promptHolesOf(scoped);
   const asked = withPrompts(scoped, definition.prompts);
-  const portable = portableBodyOf(asked);
   let minted = 0;
-  const body = withMarkedHoles(withPromptHoles(portable.body, drafts), () => {
+  const body = withMarkedHoles(withPromptHoles(asked, drafts), () => {
     minted += 1;
     return `hole-${minted}`;
   });

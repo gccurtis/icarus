@@ -1,13 +1,17 @@
 import type { RemoveVariableInput } from "$capabilities/variables/types/variables";
+import {
+  hasExactFields,
+  isStoredText,
+  storedFields
+} from "$representation/data/behavior/core/stored";
 
 export const validateRemoveVariable = (input: unknown): RemoveVariableInput => {
-  if (typeof input !== "object" || input === null) {
-    throw new Error("variables/remove-variable: an object is required");
+  const fields = storedFields(input);
+  if (fields === undefined || !hasExactFields(fields, ["name"])) {
+    throw new Error("variables/remove-variable: exactly one plain name field is required");
   }
-
-  const { name } = input as { name?: unknown };
-  if (typeof name !== "string" || name.length === 0) {
+  if (!isStoredText(fields.name, 160) || fields.name.length === 0) {
     throw new Error("variables/remove-variable: name is required");
   }
-  return { name };
+  return { name: fields.name };
 };

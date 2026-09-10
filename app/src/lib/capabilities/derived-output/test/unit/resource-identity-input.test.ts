@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { validateCreateDerivedOutput } from "$capabilities/derived-output/api/create-derived-output/validate-create-derived-output";
+import { validateCreateTemplatedDerivedOutput } from "$capabilities/derived-output/api/create-templated-derived-output/validate-create-templated-derived-output";
 import { validateReadDerivedOutput } from "$capabilities/derived-output/api/read-derived-output/validate-read-derived-output";
 import { validateRefreshDerivedOutput } from "$capabilities/derived-output/api/refresh-derived-output/validate-refresh-derived-output";
 import { resourceSet } from "$capabilities/derived-output/api/shared/input";
@@ -61,5 +62,44 @@ describe("derived output resource identity input", () => {
         retired: true
       }
     })).toThrow(/unknown field/);
+  });
+
+  it("rejects non-data records and explicit undefined at every object boundary", () => {
+    const hidden = { prompt: "Ask" };
+    Object.defineProperty(hidden, "retired", { value: true, enumerable: false });
+    const accessor = {} as { prompt: string };
+    Object.defineProperty(accessor, "prompt", {
+      enumerable: true,
+      get: () => "Ask"
+    });
+    const inherited = Object.assign(Object.create({ retired: true }), { prompt: "Ask" });
+
+    for (const input of [
+      hidden,
+      accessor,
+      inherited,
+      { prompt: "Ask", origin: undefined },
+      { prompt: "Ask", [Symbol("retired")]: true }
+    ]) {
+      expect(() => validateCreateDerivedOutput(input)).toThrow(/must be an object/);
+    }
+
+    for (const term of [
+      Object.assign(Object.create({ retired: true }), { select: "project" }),
+      { select: "project", retired: undefined },
+      { select: "project", [Symbol("retired")]: true }
+    ]) {
+      expect(() => resourceSet(setWith(term))).toThrow(/terms must be objects/);
+    }
+
+    const template = {
+      name: "Summary",
+      target: "text",
+      prompt: "Summarize",
+      output: "text"
+    };
+    const decorated = { template };
+    Object.defineProperty(decorated, "retired", { value: true, enumerable: false });
+    expect(() => validateCreateTemplatedDerivedOutput(decorated)).toThrow(/must be an object/);
   });
 });

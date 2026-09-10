@@ -4,6 +4,7 @@ import { asId } from "$representation/data/behavior/core/id";
 import type { DocumentBody } from "$representation/data/types/documents/body";
 import { applyOps, invertAll } from "$representation/data/behavior/documents/apply-ops";
 import type { TemplateDetail } from "$capabilities/templates/index.remote";
+import type { ProjectResourceIndex } from "$capabilities/project-resources/index.remote";
 import {
   answersFrom,
   currentRowId,
@@ -11,9 +12,23 @@ import {
   insertionOf,
   isWholeProject,
   mergedHoles,
+  resourcesIn,
   ruleOf,
   withHoleField
 } from "$app-views/categories/document-editor/procedures/templating";
+
+const externalIndex: ProjectResourceIndex = {
+  resources: [{
+    id: "externalFiles:source",
+    ref: { kind: "externalFile::code", id: asId<"externalFiles">("externalFiles:source") },
+    kind: "file",
+    name: "source.ts",
+    relativePath: "sources/source.ts",
+    updatedAt: 1,
+    updatedByName: "Icarus"
+  }],
+  unavailable: []
+};
 
 const text = (id: string, display: string, style?: string) => ({
   id,
@@ -171,4 +186,13 @@ test("a rule that excludes anything is sent as built, for the server to store", 
   assert.deepEqual(answers.evidence.exclude, [
     { select: "resources", refs: [{ kind: "document", id: "documents:2" }] }
   ]);
+});
+
+test("document template scope preserves the exact External subkind identity", () => {
+  assert.deepEqual(resourcesIn(externalIndex), [{
+    kind: "externalFile::code",
+    id: "externalFiles:source",
+    name: "source.ts",
+    relativePath: "sources/source.ts"
+  }]);
 });

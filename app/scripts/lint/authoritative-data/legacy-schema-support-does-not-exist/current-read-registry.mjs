@@ -15,7 +15,7 @@ const REQUIRED_CURRENT_READS = new Map([
   ["/capabilities/templates/api/shared/prompts.ts", new Set([
     "value.prompt"
   ])],
-  ["/capabilities/templates/api/shared/validation.ts", new Set([
+  ["/capabilities/templates/api/shared/body-validation/blocks.ts", new Set([
     "value.prompt"
   ])],
   ["/capabilities/agents/api/shared/projection.ts", new Set([
@@ -52,12 +52,16 @@ const REQUIRED_CURRENT_READS = new Map([
     "*.usedBy",
     "row.body"
   ])],
-  ["/model/client/storage/methods/serialize.ts", new Set([
-    "value.contextCollapsed",
-    "value.contextWidth",
-    "value.inspectorCollapsed",
-    "value.inspectorWidth",
-    "value.tabs"
+  ["/model/client/workspace-state/methods/shared/adopt.ts", new Set([
+    "row.activeId",
+    "row.revision",
+    "row.tabs",
+    "row.views"
+  ])],
+  ["/representation/data/behavior/workspace/stored-rows.ts", new Set([
+    "row.activeId",
+    "row.tabs",
+    "row.views"
   ])]
 ]);
 

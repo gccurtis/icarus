@@ -8,7 +8,7 @@ export const AGENT_ROW_POLICIES = {
   },
   agentTasks: {
     projectId: "required", threadId: "required", title: "required", instruction: "required",
-    personaId: "required", origin: "required", state: "required", scope: "optional",
+    personaId: "required", origin: "required", state: "required", execution: "optional", scope: "optional",
     tools: "required", plan: "required", outputs: "required", questions: "required",
     createdBy: "required", startedAt: "required", finishedAt: "optional",
     reviewedBy: "optional", revision: "required", updatedAt: "required"

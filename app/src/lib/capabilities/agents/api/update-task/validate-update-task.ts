@@ -18,7 +18,7 @@ export const validateUpdateTask = (input: unknown): UpdateTaskInput => {
   only(fields, ["taskId", "baseRevision", "patch"], SUBJECT);
   const raw = fieldsOf(fields.patch, SUBJECT);
   only(raw, ["title", "instruction", "scope", "tools", "state"], SUBJECT);
-  if (Object.keys(raw).length === 0) throw new Error(`agents/${SUBJECT}: the patch changes nothing`);
+  if (Reflect.ownKeys(raw).length === 0) throw new Error(`agents/${SUBJECT}: the patch changes nothing`);
   if (has(raw, "state") && raw.state !== "finished") {
     throw new Error(`agents/${SUBJECT}: a person can only finish a task`);
   }
@@ -30,7 +30,7 @@ export const validateUpdateTask = (input: unknown): UpdateTaskInput => {
     ...(has(raw, "state") ? { state: "finished" as const } : {})
   };
   return {
-    taskId: idOf(fields.taskId, SUBJECT, "taskId"),
+    taskId: idOf(fields.taskId, "agentTasks", SUBJECT, "taskId"),
     baseRevision: revisionOf(fields.baseRevision, SUBJECT),
     patch
   };

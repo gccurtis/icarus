@@ -1,5 +1,6 @@
 import { requireScope } from "$runtime/server/scope.server";
 import { serverModel } from "$runtime/server/start.server";
+import { readCurrentRows } from "$model/server/store/index.server";
 import { asId } from "$representation/data/behavior/core/id";
 import { isStoredEditableResource } from "$representation/data/behavior/project-resources/stored";
 
@@ -23,10 +24,8 @@ export const renameProjectResource = async (input: unknown): Promise<RenameProje
   const at = Date.now();
   const store = serverModel().store;
   return store.transaction((unit) => {
-    const found = unit.read(table);
-    const claims = found?.kind === "table" && found.table === table
-      ? found.rows.filter((candidate) => candidate._id === asked.resourceId)
-      : [];
+    const claims = readCurrentRows(unit, table)
+      .filter((candidate) => candidate._id === asked.resourceId);
     const row = claims.length === 1 && isStoredEditableResource(claims[0], table)
       ? claims[0]
       : undefined;

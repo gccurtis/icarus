@@ -1,5 +1,5 @@
+import { readCurrentRows } from "$model/server/store/index.server";
 import type { Id } from "$representation/data/types/core/id";
-import { isStoredSpreadsheetSnapshot } from "$representation/data/behavior/spreadsheets/stored-snapshot";
 import type { SpreadsheetBody } from "$representation/data/types/spreadsheets/body";
 
 import type { StoreReads } from "$capabilities/spreadsheet/api/shared/ports";
@@ -15,13 +15,7 @@ export const leaderOf = (
   projectId: Id<"projects">,
   resourceId: Id<"spreadsheets">
 ): Leader | undefined => {
-  const found = store.read("spreadsheetSnapshots");
-  if (found?.table !== "spreadsheetSnapshots" || found.kind !== "table") return undefined;
-
-  if (!found.rows.every(isStoredSpreadsheetSnapshot)) {
-    throw new Error("the spreadsheetSnapshots table contains a non-current row");
-  }
-  return found.rows.find(
+  return readCurrentRows(store, "spreadsheetSnapshots").find(
     (row) =>
       row.projectId === projectId &&
       row.resourceId === resourceId &&

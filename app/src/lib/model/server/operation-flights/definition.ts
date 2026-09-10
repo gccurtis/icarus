@@ -1,9 +1,13 @@
 import type {
+  AgentTaskFlight,
   OperationFlightsModel,
   ResearchFlight,
   ResearchFlightReason,
   ResearchStopOutcome
 } from "$model/server/operation-flights/types";
+import { isAgentTaskActive } from "$model/server/operation-flights/methods/is-agent-task-active";
+import { runAgentTask } from "$model/server/operation-flights/methods/run-agent-task";
+import { stopAgentTask } from "$model/server/operation-flights/methods/stop-agent-task";
 import { armResearchDeadline } from "$model/server/operation-flights/methods/arm-research-deadline";
 import { beginResearch } from "$model/server/operation-flights/methods/begin-research";
 import { close } from "$model/server/operation-flights/methods/close";
@@ -21,6 +25,12 @@ export type DerivedFlight = {
   requestKey: string;
 };
 
+export type HeldAgentTaskFlight = {
+  readonly controller: AbortController;
+  readonly promise: Promise<unknown>;
+  readonly deadline: ReturnType<typeof setTimeout>;
+};
+
 export type HeldResearchFlight = {
   readonly controller: AbortController;
   readonly settled: Promise<void>;
@@ -33,6 +43,7 @@ export type HeldResearchFlight = {
 export type OperationFlightsState = {
   readonly derived: Map<string, DerivedFlight>;
   readonly research: Map<string, HeldResearchFlight>;
+  readonly agentTasks: Map<string, HeldAgentTaskFlight>;
   closed: boolean;
   closePromise?: Promise<void>;
 };
@@ -42,6 +53,7 @@ export class OperationFlights implements OperationFlightsModel {
   readonly #state: OperationFlightsState = {
     derived: new Map(),
     research: new Map(),
+    agentTasks: new Map(),
     closed: false
   };
 
@@ -83,6 +95,22 @@ export class OperationFlights implements OperationFlightsModel {
 
   endResearch(turnId: string): void {
     return endResearch(this.#state, turnId);
+  }
+
+  runAgentTask<T>(
+    taskId: string,
+    deadlineMs: number,
+    run: (signal: AbortSignal) => Promise<T>
+  ): AgentTaskFlight<T> {
+    return runAgentTask(this.#state, taskId, deadlineMs, run);
+  }
+
+  isAgentTaskActive(taskId: string): boolean {
+    return isAgentTaskActive(this.#state, taskId);
+  }
+
+  stopAgentTask(taskId: string): boolean {
+    return stopAgentTask(this.#state, taskId);
   }
 
   close(): Promise<void> {

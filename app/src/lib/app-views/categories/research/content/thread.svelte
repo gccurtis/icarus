@@ -20,6 +20,11 @@
   import { followNewestTurn } from "$app-views/categories/research/procedures/effects/newest.svelte";
   import { refreshThreadWhenShown } from "$app-views/categories/research/procedures/effects/refresh-thread.svelte";
   import { releaseThread } from "$app-views/categories/research/procedures/effects/release.svelte";
+  import {
+    distinctResourcePath,
+    resourceOptionForKey,
+    resourceOptionForRef
+  } from "$app-views/categories/research/procedures/resource-options";
   import { setPersona } from "$app-views/categories/research/procedures/set-persona";
   import { stopTurn } from "$app-views/categories/research/procedures/stop-turn";
   import { since } from "$app-views/categories/research/procedures/time";
@@ -46,7 +51,7 @@
 
   const chat = $derived(threads.find((row) => row.id === threadId));
   const running = $derived(
-    turns.find((row) => row.state === "running" || row.state === "queued")
+    turns.find((row) => row.state === "running")
   );
   const live = $derived(running !== undefined);
   const refreshFailure = $derived.by(() => {
@@ -55,6 +60,7 @@
     return held.message;
   });
   const failure = $derived(surface.failure ?? refreshFailure);
+  const selectedResource = $derived(resourceOptionForKey(resources, surface.resource));
 
   const clock = startClock();
   releaseThread(surface);
@@ -77,8 +83,12 @@
     void setPersona(view, surface, threadId, personaId);
   };
 
+  const resourceOf = (kind: string, id: string) =>
+    resourceOptionForRef(resources, { kind, id });
   const nameOf = (kind: string, id: string): string =>
-    resources.find((entry) => entry.kind === kind && entry.id === id)?.name ?? SCOPE_LABEL.resource;
+    resourceOf(kind, id)?.name ?? SCOPE_LABEL.resource;
+  const pathOf = (kind: string, id: string): string | undefined =>
+    distinctResourcePath(resourceOf(kind, id));
 </script>
 
 <ScreenSurface>
@@ -95,11 +105,10 @@
           <p class="meta">
             <span>just now</span>
             <span aria-hidden="true">·</span>
-            <span>
+            <span title={surface.scope === "project" ? undefined : distinctResourcePath(selectedResource)}>
               {surface.scope === "project" || surface.resource === ""
                 ? SCOPE_LABEL.project
-                : (resources.find((entry) => `${entry.kind} ${entry.id}` === surface.resource)?.name ??
-                  SCOPE_LABEL.resource)}
+                : (selectedResource?.name ?? SCOPE_LABEL.resource)}
             </span>
             <span aria-hidden="true">·</span>
             <span>Explore</span>
@@ -113,7 +122,11 @@
           <p class="meta">
             <span>{since(turn.askedAt, clock.now)}</span>
             <span aria-hidden="true">·</span>
-            <span>
+            <span
+              title={turn.scope.kind === "project"
+                ? undefined
+                : pathOf(turn.scope.ref.kind, turn.scope.ref.id)}
+            >
               {turn.scope.kind === "project"
                 ? SCOPE_LABEL.project
                 : nameOf(turn.scope.ref.kind, turn.scope.ref.id)}
@@ -209,8 +222,6 @@
           persona={chat?.personaId ?? ""}
           personaIds={personas.map((entry) => entry.id).join("\n")}
           personaNames={personas.map((entry) => entry.name).join("\n")}
-          resourceIds={resources.map((entry) => `${entry.kind} ${entry.id}`).join("\n")}
-          resourceNames={resources.map((entry) => entry.name).join("\n")}
           resource={surface.resource}
           onsend={send}
           onstop={stop}

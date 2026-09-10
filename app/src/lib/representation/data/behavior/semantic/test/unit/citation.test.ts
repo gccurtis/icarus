@@ -14,6 +14,7 @@ const citation = (
   generation = 4,
   evidenceId = `evidence-${from}-${to}-${generation}`
 ): SemanticTextCitation => ({
+  evidenceKind: "text",
   selections: [{ evidenceId, use: `Supports ${text}` }],
   source: {
     ref: { kind: "document", id: asId<"documents">("documents:brief") },

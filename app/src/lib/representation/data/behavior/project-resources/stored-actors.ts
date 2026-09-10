@@ -21,7 +21,7 @@ export const isStoredProjectAgentTask = (value: unknown): value is TableRow<"age
         "origin", "state", "tools", "plan", "outputs", "questions", "createdBy", "startedAt",
         "revision", "updatedAt"
       ],
-      ["scope", "finishedAt", "reviewedBy"]
+      ["execution", "scope", "finishedAt", "reviewedBy"]
     ) &&
     isStoredAgentTask(value) &&
     isStoredRowId(row.projectId, "projects") &&

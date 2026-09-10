@@ -5,6 +5,7 @@ import { asId } from "$representation/data/behavior/core/id";
 import type { Id } from "$representation/data/types/core/id";
 import type { DerivedOutput } from "$representation/data/types/semantic/derived-output";
 import type { SlideDeckBody } from "$representation/data/types/slide-decks/body";
+import type { SlideDeckRuntime } from "$model/client/workspace-state";
 import {
   linkPromptBlockOps,
   promptBlocksIn,
@@ -13,6 +14,7 @@ import {
   withPromptElement
 } from "$app-views/categories/slide-deck-editor/procedures/prompt-blocks";
 import { promptDefinitionOps } from "$app-views/categories/slide-deck-editor/procedures/prompt-definition";
+import { publishPromptOutput } from "$app-views/categories/slide-deck-editor/procedures/publish-prompt-output";
 import { sceneOf } from "$app-views/categories/slide-deck-editor/procedures/scene";
 import { replaced } from "$app-views/categories/slide-deck-editor/procedures/typing";
 
@@ -62,6 +64,7 @@ const output = (display: string): DerivedOutput => ({
   prompt: "Give me the answer",
   definitionRevision: 1,
   origin: { kind: "slides", id: asId<"slideDecks">("slideDecks:deck-one") },
+  valueSource: "generated",
   queries: [],
   evidence: [],
   lastResponse: {
@@ -72,6 +75,8 @@ const output = (display: string): DerivedOutput => ({
     display,
     marks: []
   },
+  lastRevision: 1,
+  lastGeneration: 1,
   state: "fresh",
   refreshedAt: 20,
   createdBy: { kind: "system" },
@@ -187,7 +192,10 @@ describe("slide Prompt Blocks", () => {
   it("publishes generated text through slide ops while keeping mark ranges", () => {
     const converted = withPromptElement(body(), "element-one").body;
     const entry = promptBlocksIn(converted)[0];
-    const changed = applyOps(converted, syncPromptBlockOps(entry.block, output("A much longer answer")));
+    const changed = applyOps(converted, [
+      ...linkPromptBlockOps(entry.block, "derivedOutputs:slide" as Id<"derivedOutputs">),
+      ...syncPromptBlockOps(entry.block, output("A much longer answer"))
+    ]);
     const prompt = promptBlocksIn(changed)[0].block;
 
     expect(prompt.display).toBe("A much longer answer");
@@ -202,11 +210,52 @@ describe("slide Prompt Blocks", () => {
     expect(prompt.state).toBe("fresh");
   });
 
+  it("persists a delayed publication after the block was linked", async () => {
+    const converted = withPromptElement(body(), "element-one").body;
+    const unlinked = promptBlocksIn(converted)[0].block;
+    let current = applyOps(
+      converted,
+      linkPromptBlockOps(unlinked, "derivedOutputs:slide" as Id<"derivedOutputs">)
+    );
+    let flushes = 0;
+    const runtime = {
+      get body() { return current; },
+      apply: (ops: Parameters<typeof applyOps>[1]) => { current = applyOps(current, ops); },
+      flush: async () => { flushes += 1; },
+      sync: "saved"
+    } as unknown as SlideDeckRuntime;
+
+    await publishPromptOutput({
+      blockId: "block-one",
+      output: output("Delayed slide answer"),
+      runtime
+    });
+    await publishPromptOutput({
+      blockId: "block-one",
+      output: output("Delayed slide answer"),
+      runtime
+    });
+
+    expect(promptBlocksIn(current)[0].block).toMatchObject({
+      display: "Delayed slide answer",
+      state: "fresh"
+    });
+    expect(flushes).toBe(1);
+  });
+
   it("edits a Prompt Block with the same atom operation used by authored text", () => {
     const converted = withPromptElement(body(), "element-one").body;
-    const prompt = promptBlocksIn(converted)[0].block;
-    const changed = applyOps(converted, replaced(prompt, 9, 15, "result"));
+    const unlinked = promptBlocksIn(converted)[0].block;
+    const linked = applyOps(
+      converted,
+      linkPromptBlockOps(unlinked, "derivedOutputs:slide" as Id<"derivedOutputs">)
+    );
+    const prompt = promptBlocksIn(linked)[0].block;
+    const changed = applyOps(linked, replaced(prompt, 9, 15, "result"));
 
-    expect(promptBlocksIn(changed)[0].block.display).toBe("Editable result");
+    expect(promptBlocksIn(changed)[0].block).toMatchObject({
+      display: "Editable result",
+      state: "stale"
+    });
   });
 });

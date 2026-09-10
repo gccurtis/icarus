@@ -102,11 +102,11 @@ return serverModel().store.transaction((unit) => {
       status: "Enforced",
       wave: 2,
       mechanism: "Capability contract tests",
-      guarantee: "Possessing another project's id never grants read or write authority.",
-      detects: "Cross-project update, removal, comment anchoring, snapshot submission, and child creation.",
+      guarantee: "Possessing another project's id—or attaching a foreign child row to its aggregate—never grants read or write authority.",
+      detects: "Cross-project update, removal, comment anchoring, snapshot submission, child creation, and conversation-part claimants.",
       implementation:
-        "Generate two projects and two users, then run each subject mutator with foreign ids. Require a uniform refusal and unchanged store snapshot.",
-      current: "Enforced through executable ownership-contract registration; seven capability families are baselined.",
+        "Generate two projects and two users, then run each subject mutator with foreign ids. Require a uniform refusal and unchanged store snapshot. Conversation contracts additionally prove the stored thread, every claimed part, expected kind, and authoritative project as one exact aggregate for reads, appends, and deletion rollback.",
+      current: "Enforced through executable ownership-contract registration plus exact Research and Agents conversation-aggregate contracts.",
       limit: "Static rules narrow the surface; only execution against representative state proves ownership behavior."
     },
     {

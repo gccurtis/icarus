@@ -3,6 +3,7 @@ import { beforeEach, test, vi } from "vitest";
 import type { DocumentRuntimesModel } from "$model/client/document-runtimes";
 import type { SlideDeckRuntimesModel } from "$model/client/slide-deck-runtimes";
 import type { SpreadsheetRuntimesModel } from "$model/client/spreadsheet-runtimes";
+import { openingView } from "$representation/data/behavior/workspace/opening";
 import type { Category } from "$representation/data/types/workspace/categories";
 
 const wire = vi.hoisted(() => ({ row: null as unknown }));
@@ -16,6 +17,9 @@ const { createConfiguration } = await import("$model/client/configuration");
 const { createTabList } = await import("$model/client/tab-list");
 const { createTabViews } = await import("$model/client/tab-views");
 const { createWorkspaceState } = await import("$model/client/workspace-state");
+const { startingWorkspace } = await import(
+  "$model/client/workspace-state/methods/shared/defaults"
+);
 
 class Register<Runtime extends object> {
   readonly held = new Map<string, Runtime>();
@@ -135,40 +139,29 @@ test("restore reconciles document, slide-deck and spreadsheet runtimes to the ad
   held.decks.attach("orphan-deck");
   held.spreadsheets.attach("orphan-spreadsheet");
 
-  const view = (content: string) => ({
-    content,
-    focus: null,
-    contextId: null,
-    inspected: "empty",
-    selection: null,
-    frame: {
-      contextWidth: 320,
-      contextCollapsed: false,
-      inspectorWidth: 320,
-      inspectorCollapsed: false
-    },
-    zoom: null
-  });
+  const starting = startingWorkspace();
   wire.row = {
     revision: 7,
     tabs: [
-      { id: "document-tab", category: "document-editor", resourceId: "document-1" },
-      { id: "deck-tab", category: "slide-deck-editor", resourceId: "deck-1" },
-      { id: "sheet-tab", category: "spreadsheet-editor", resourceId: "sheet-1" }
+      ...starting.tabs,
+      { id: "document-tab", category: "document-editor", resourceId: "documents:1" },
+      { id: "deck-tab", category: "slide-deck-editor", resourceId: "slideDecks:1" },
+      { id: "sheet-tab", category: "spreadsheet-editor", resourceId: "spreadsheets:1" }
     ],
     activeId: "sheet-tab",
     views: {
-      "document-tab": view("document-editor.document"),
-      "deck-tab": view("slide-deck-editor.deck"),
-      "sheet-tab": view("spreadsheet-editor.sheet")
+      ...starting.views,
+      "document-tab": openingView("document-editor"),
+      "deck-tab": openingView("slide-deck-editor"),
+      "sheet-tab": openingView("spreadsheet-editor")
     }
   };
 
   await held.workspace.restore();
 
-  assert.deepEqual(held.documents.open, ["document-1"]);
-  assert.deepEqual(held.decks.open, ["deck-1"]);
-  assert.deepEqual(held.spreadsheets.open, ["sheet-1"]);
+  assert.deepEqual(held.documents.open, ["documents:1"]);
+  assert.deepEqual(held.decks.open, ["slideDecks:1"]);
+  assert.deepEqual(held.spreadsheets.open, ["spreadsheets:1"]);
   assert.deepEqual(held.documents.released, ["orphan-document"]);
   assert.deepEqual(held.decks.released, ["orphan-deck"]);
   assert.deepEqual(held.spreadsheets.released, ["orphan-spreadsheet"]);

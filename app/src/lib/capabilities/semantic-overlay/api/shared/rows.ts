@@ -1,15 +1,14 @@
-import type {
-  StoreUnitOfWork,
-  TableName,
-  TableRow
+import {
+  readCurrentRows,
+  type StoreUnitOfWork,
+  type TableName,
+  type TableRow
 } from "$model/server/store/index.server";
 
-/** Typed table read at the capability boundary; an absent table is empty. */
+/** Typed table read at the capability boundary; an impossible Store result fails closed. */
 export const rowsOf = <T extends TableName>(
   store: StoreUnitOfWork,
   table: T
 ): readonly TableRow<T>[] => {
-  const found = store.read(table);
-  if (found?.kind !== "table" || found.table !== table) return [];
-  return found.rows as unknown as readonly TableRow<T>[];
+  return readCurrentRows(store, table);
 };

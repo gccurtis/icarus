@@ -4,10 +4,13 @@
   import AlignVerticalJustifyStart from "@lucide/svelte/icons/align-vertical-justify-start";
 
   import { PanelAlignment, PanelChoice, PanelControlGroup, PanelControlRow, PanelInlineStyle, PanelNumber, PanelSection, PanelSelect } from "$authored-components/panel";
-  import { blockIn, holderOf, withSet, type MarkStyle } from "$app-views/categories/slide-deck-editor/procedures/deck";
+  import type { MarkStyle } from "$app-views/categories/slide-deck-editor/procedures/deck-types";
+  import { blockIn, holderOf } from "$app-views/categories/slide-deck-editor/procedures/deck-reading";
+  import { withSet } from "$app-views/categories/slide-deck-editor/procedures/deck-values";
   import { FAMILIES, swatchesFor, withNone } from "$app-views/categories/slide-deck-editor/procedures/palette";
   import { colorAt, colouredMark, stylesAt, toggledMark } from "$app-views/categories/slide-deck-editor/procedures/typing";
   import { workspaceState, type SlideDeckRuntime } from "$model/client/workspace-state";
+  import type { SlideDeckSetTarget } from "$representation/data/types/slide-decks/op";
 
   let {
     blockId,
@@ -75,12 +78,22 @@
   const rangeColor = $derived(block === undefined || !partial ? undefined : colorAt(block, range.from, range.to));
   const fontColor = $derived(rangeColor ?? format?.color ?? style?.color ?? "");
 
-  const background = $derived.by(() => {
-    if (holder === undefined) return { path: `${blockId}/format/background`, value: format?.background ?? "" };
-    if (holder.content.type === "text" || holder.content.type === "prompt" || holder.content.type === "shape") return { path: `${holder.id}/paint/fill`, value: holder.paint?.fill ?? "" };
+  const background = $derived.by((): {
+    target: SlideDeckSetTarget;
+    path: string;
+    value: string;
+  } | undefined => {
+    if (holder === undefined) {
+      return { target: "block", path: `${blockId}/format/background`, value: format?.background ?? "" };
+    }
+    if (holder.content.type === "text" || holder.content.type === "prompt" || holder.content.type === "shape") {
+      return { target: "element", path: `${holder.id}/paint/fill`, value: holder.paint?.fill ?? "" };
+    }
     if (holder.content.type === "table") {
       const cell = holder.content.block.rows.flatMap((row) => row.cells).find((held) => held.blocks.some((candidate) => candidate.id === blockId));
-      return cell === undefined ? undefined : { path: `${cell.id}/format/background`, value: cell.format?.background ?? "" };
+      return cell === undefined
+        ? undefined
+        : { target: "block", path: `${cell.id}/format/background`, value: cell.format?.background ?? "" };
     }
     return undefined;
   });
@@ -89,12 +102,13 @@
     if (ops.length > 0) runtime?.apply(ops);
   };
 
-  const set = (path: string, value: unknown) => {
+  const set = (target: SlideDeckSetTarget, path: string, value: unknown) => {
     if (body === undefined) return;
-    apply(withSet(body, path, value).ops);
+    apply(withSet(body, target, path, value).ops);
   };
 
-  const onBlock = (field: string, value: unknown) => set(`${blockId}/format/${field}`, value);
+  const onBlock = (field: string, value: unknown) =>
+    set("block", `${blockId}/format/${field}`, value);
 
   const toggle = (next: string[]) => {
     if (block === undefined || !canMark) return;
@@ -116,12 +130,14 @@
   };
 
   const setBackground = (value: string) => {
-    if (background !== undefined) set(background.path, value === "" ? null : value);
+    if (background !== undefined) {
+      set(background.target, background.path, value === "" ? null : value);
+    }
   };
 </script>
 
 <PanelSection title="Text style">
-  <PanelSelect label="Named style" value={styleKey} options={styleOptions} onchange={(value) => set(`${blockId}/style`, value)} />
+  <PanelSelect label="Named style" value={styleKey} options={styleOptions} onchange={(value) => set("block", `${blockId}/style`, value)} />
   <div class="grid grid-cols-[minmax(0,1fr)_4rem] items-center gap-1.5">
     <PanelSelect label="Font" value={format?.fontFamily ?? style?.fontFamily ?? body?.theme.fontFamily ?? "IBM Plex Sans"} options={familyOptions} onchange={(value) => onBlock("fontFamily", value)} />
     <PanelNumber label="Size" value={format?.fontSize ?? style?.fontSize ?? 20} min={6} max={200} step={1} flush onchange={(value) => onBlock("fontSize", value)} />
@@ -152,7 +168,7 @@
             options={WRAPPING}
             flush
             fill
-            onchange={(value) => set(`${holder.id}/overflow`, value)}
+            onchange={(value) => set("element", `${holder.id}/overflow`, value)}
           />
         </PanelControlRow>
       </PanelControlGroup>

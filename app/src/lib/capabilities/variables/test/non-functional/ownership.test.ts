@@ -5,7 +5,7 @@ import type { StoreUnitOfWork } from "$model/server/store/index.server";
 
 type Row = Record<string, unknown> & { _id: string };
 
-const scope = vi.hoisted(() => ({ projectId: "mine" }));
+const scope = vi.hoisted(() => ({ projectId: "projects:mine" }));
 
 const model = vi.hoisted(() => ({
   variables: [] as Row[],
@@ -14,14 +14,20 @@ const model = vi.hoisted(() => ({
     create: (table: string, fields: unknown) => {
       model.minted += 1;
       const id = `${table}:${model.minted}`;
-      model.variables.push({ ...(fields as Row), _id: id });
+      model.variables.push({ ...(fields as Row), _id: id, _creationTime: 1 });
       return id;
     },
     read: () => ({ table: "variables", kind: "table", rows: model.variables }),
     update: (path: string, value: unknown) => {
       const [, id] = path.split(".");
       const at = model.variables.findIndex((row) => row._id === id);
-      if (at !== -1) model.variables[at] = { ...(value as Row), _id: id };
+      if (at !== -1) {
+        model.variables[at] = {
+          ...(value as Row),
+          _id: id,
+          _creationTime: model.variables[at]._creationTime
+        };
+      }
     },
     remove: (path: string) => {
       const [, id] = path.split(".");
@@ -35,7 +41,11 @@ const model = vi.hoisted(() => ({
 
 vi.mock("$runtime/server/start.server", () => ({ serverModel: () => model }));
 vi.mock("$runtime/server/scope.server", () => ({
-  requireScope: () => Promise.resolve({ projectId: scope.projectId, userId: "u", username: "You" })
+  requireScope: () => Promise.resolve({
+    projectId: scope.projectId,
+    userId: "users:u",
+    username: "You"
+  })
 }));
 
 const { saveVariable } = await import("$capabilities/variables/api/save-variable/save-variable");
@@ -45,16 +55,17 @@ const { readVariables } = await import("$capabilities/variables/api/read-variabl
 const theirs = () =>
   model.variables.push({
     _id: "variables:theirs",
-    projectId: "theirs",
+    _creationTime: 1,
+    projectId: "projects:theirs",
     name: "rate",
     value: { kind: "number", value: 9 },
     type: "number",
-    createdBy: { kind: "user", userId: "them" },
+    createdBy: { kind: "user", userId: "users:them" },
     updatedAt: 1
   });
 
 beforeEach(() => {
-  scope.projectId = "mine";
+  scope.projectId = "projects:mine";
   model.variables.length = 0;
   model.minted = 0;
 });
@@ -73,7 +84,7 @@ test("saveVariable writes a cross-project name as a new row rather than over the
   assert.equal(answer.saved, true);
   assert.equal(model.variables.length, 2);
 
-  const held = model.variables.find((row) => row.projectId === "theirs");
+  const held = model.variables.find((row) => row.projectId === "projects:theirs");
   assert.deepEqual(held?.value, { kind: "number", value: 9 });
 });
 
@@ -94,7 +105,7 @@ test("readVariables answers with the asking project's rows and no others", async
   assert.equal(mine.variables.length, 1);
   assert.deepEqual(mine.variables[0]?.value, { kind: "number", value: 4 });
 
-  scope.projectId = "theirs";
+  scope.projectId = "projects:theirs";
   const other = await readVariables({});
   assert.equal(other.variables.length, 1);
   assert.deepEqual(other.variables[0]?.value, { kind: "number", value: 9 });

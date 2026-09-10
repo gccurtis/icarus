@@ -13,6 +13,7 @@ export type ExternalFileIdentity = {
   mediaType: string;
   subkind: FileSubkind;
   hash: string;
+  semanticContext?: string;
   nativeImage?: NativeImageInput;
 };
 

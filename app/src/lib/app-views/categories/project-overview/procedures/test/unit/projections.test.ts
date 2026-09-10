@@ -6,6 +6,7 @@ import type {
   ReadProjectHistoryResult,
   ReadProjectOverviewResult
 } from "$capabilities/project/index.remote";
+import { asId } from "$representation/data/behavior/core/id";
 import { activity } from "$app-views/categories/project-overview/procedures/activity";
 import { actorName } from "$app-views/categories/project-overview/procedures/actor-name";
 import { mentions } from "$app-views/categories/project-overview/procedures/mentions";
@@ -106,8 +107,10 @@ describe("Project Overview snapshot projections", () => {
       resources: [
         {
           id: "documents:1",
+          ref: { kind: "document", id: asId<"documents">("documents:1") },
           kind: "document",
           name: "Winter brief",
+          relativePath: null,
           updatedAt: NOW,
           updatedByName: "Riley"
         }

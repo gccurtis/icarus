@@ -9,6 +9,7 @@ import type {
   ResearchScope,
   ResearchSource
 } from "$representation/data/types/investigation/research-turn";
+import type { ResearchResource } from "$capabilities/research-chat/api/shared/resource-catalogue";
 
 /**
  * What every tool in a turn is built from.
@@ -19,6 +20,7 @@ import type {
  */
 export type ToolContext = {
   readonly input: SessionInput;
+  readonly resources: readonly ResearchResource[];
   readonly materials: Map<string, MaterialSourceSnapshot>;
   inScope(ref: ResourceRef): boolean;
   issue(key: string, draft: Omit<ResearchSource, "id" | "uses">): string;
@@ -68,12 +70,6 @@ export const STOPPED = {
   message:
     "The person asked you to answer now. Do not search again. Call submit_answer with what you already have."
 };
-
-export const RESOURCE_TABLES = [
-  ["document", "documents"],
-  ["slides", "slideDecks"],
-  ["spreadsheet", "spreadsheets"]
-] as const;
 
 export const asRecord = (value: unknown, message: string): Record<string, unknown> => {
   if (value === null || typeof value !== "object" || Array.isArray(value)) throw new Error(message);

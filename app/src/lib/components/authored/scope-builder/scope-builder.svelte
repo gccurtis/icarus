@@ -28,7 +28,12 @@
 
   export type ScopeSide = "include" | "exclude";
 
-  export type ScopeRow = { readonly key: string; readonly kind: string; readonly words: string };
+  export type ScopeRow = {
+    readonly key: string;
+    readonly kind: string;
+    readonly words: string;
+    readonly note: string | null;
+  };
 
   export type ScopeOffer = {
     readonly key: string;
@@ -105,7 +110,9 @@
       : current.offers.filter(
           (candidate) =>
             query.trim() === "" ||
-            candidate.label.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase())
+            `${candidate.label} ${candidate.note ?? ""}`
+              .toLocaleLowerCase()
+              .includes(query.trim().toLocaleLowerCase())
         )
   );
 </script>
@@ -195,7 +202,10 @@
         {#each held as row (row.key)}
           <div class="term">
             <code>{row.kind}</code>
-            <span>{row.words}</span>
+            <div class="term-label">
+              <span>{row.words}</span>
+              {#if row.note}<small>{row.note}</small>{/if}
+            </div>
             <Button
               variant="ghost"
               size="xs"
@@ -367,7 +377,7 @@
   }
 
   .offer-name,
-  .term span {
+  .term-label span {
     overflow: hidden;
     font-size: var(--token-text-body-sm);
     text-overflow: ellipsis;
@@ -375,6 +385,20 @@
   }
 
   .offer small { color: var(--token-ink-muted); font-size: 10px; }
+
+  .term-label {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+  }
+
+  .term-label small {
+    overflow: hidden;
+    color: var(--token-ink-muted);
+    font-size: 10px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 
   .term {
     display: grid;

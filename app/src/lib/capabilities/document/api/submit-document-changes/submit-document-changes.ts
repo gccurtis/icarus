@@ -1,6 +1,10 @@
 import { requireScope } from "$runtime/server/scope.server";
 import { serverModel } from "$runtime/server/start.server";
-import type { StoreModel, StoreUnitOfWork } from "$model/server/store/index.server";
+import {
+  readCurrentRows,
+  type StoreModel,
+  type StoreUnitOfWork
+} from "$model/server/store/index.server";
 import type { Id } from "$representation/data/types/core/id";
 import type { DocumentBody } from "$representation/data/types/documents/body";
 import type { DocumentOp } from "$representation/data/types/documents/op";
@@ -25,10 +29,7 @@ const landedBetween = (
   base: number,
   head: number
 ): readonly Landed[] | undefined => {
-  const found = store.read("documentChangeSets");
-  if (found?.table !== "documentChangeSets" || found.kind !== "table") return undefined;
-
-  const landed = found.rows
+  const landed = readCurrentRows(store, "documentChangeSets")
     .filter(
       (row) =>
         row.projectId === projectId &&
@@ -68,10 +69,7 @@ const updateCommentAnchors = (
   ops: readonly DocumentOp[],
   body: DocumentBody
 ): void => {
-  const found = store.read("commentThreads");
-  if (found?.table !== "commentThreads" || found.kind !== "table") return;
-
-  for (const thread of found.rows) {
+  for (const thread of readCurrentRows(store, "commentThreads")) {
     if (thread.projectId !== projectId) continue;
     if (thread.target.kind !== "document" || thread.target.id !== resourceId) continue;
     if (thread.within === undefined) continue;

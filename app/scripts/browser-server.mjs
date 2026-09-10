@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/** Starts Vite against a disposable copy of the committed represented seed. */
+/** Starts Vite against disposable represented and native-file repositories. */
 import { cpSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
@@ -36,6 +36,10 @@ const configurationDirectory =
   providerOrigin === undefined || providerOrigin.length === 0
     ? undefined
     : mkdtempSync(join(tmpdir(), "icarus-browser-configuration-"));
+const suppliedExternalFiles = process.env.ICARUS_BROWSER_EXTERNAL_FILE_DIRECTORY?.trim();
+const externalFileDirectory = suppliedExternalFiles ||
+  mkdtempSync(join(tmpdir(), "icarus-browser-external-files-"));
+const externalFilesOwned = suppliedExternalFiles === undefined || suppliedExternalFiles.length === 0;
 
 if (owned) cpSync(join(process.cwd(), "seed"), storeDirectory, { recursive: true });
 if (configurationDirectory !== undefined) {
@@ -72,6 +76,13 @@ const cleanup = () => {
   ) {
     rmSync(configurationDirectory, { recursive: true, force: true });
   }
+  if (
+    externalFilesOwned &&
+    dirname(externalFileDirectory) === tmpdir() &&
+    basename(externalFileDirectory).startsWith("icarus-browser-external-files-")
+  ) {
+    rmSync(externalFileDirectory, { recursive: true, force: true });
+  }
 };
 
 const child = spawn(
@@ -96,9 +107,11 @@ const child = spawn(
       ...(owned
         ? {
             ICARUS_BROWSER_RESET_DIRECTORY: storeDirectory,
-            ICARUS_BROWSER_SEED_DIRECTORY: join(process.cwd(), "seed")
+            ICARUS_BROWSER_SEED_DIRECTORY: join(process.cwd(), "seed"),
+            ICARUS_BROWSER_RESET_EXTERNAL_FILE_DIRECTORY: externalFileDirectory
           }
-        : {})
+        : {}),
+      ICARUS_EXTERNAL_FILE_DIRECTORY: externalFileDirectory
     }
   }
 );

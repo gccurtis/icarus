@@ -77,6 +77,7 @@ export const synthesisEnvironment = (input: SynthesisInput): AttemptEnvironment 
             hit.overlayGeneration
           ]);
           const evidenceId = issue(key, {
+            evidenceKind: "text",
             source: hit.source,
             span: hit.span,
             ...(hit.locators === undefined ? {} : { locators: hit.locators }),
@@ -137,6 +138,27 @@ export const synthesisEnvironment = (input: SynthesisInput): AttemptEnvironment 
         return {
           hits: result.hits.map((hit: MaterialHit) => {
             const descriptor = materialDescriptorEvidence(hit);
+            const evidence: EvidenceDraft = descriptor.facet === "generated"
+              ? {
+                  evidenceKind: "descriptor",
+                  distance: 2,
+                  material: hit.material,
+                  facet: descriptor.facet,
+                  text: descriptor.text,
+                  inputHash: descriptor.inputHash,
+                  model: descriptor.model,
+                  promptVersion: descriptor.promptVersion,
+                  overlayGeneration: hit.overlayGeneration
+                }
+              : {
+                  evidenceKind: "descriptor",
+                  distance: 2,
+                  material: hit.material,
+                  facet: descriptor.facet,
+                  text: descriptor.text,
+                  inputHash: descriptor.inputHash,
+                  overlayGeneration: hit.overlayGeneration
+                };
             const evidenceId = issue(
               JSON.stringify([
                 "material",
@@ -146,19 +168,7 @@ export const synthesisEnvironment = (input: SynthesisInput): AttemptEnvironment 
                 descriptor.inputHash,
                 hit.overlayGeneration
               ]),
-              {
-                evidenceKind: "descriptor",
-                distance: 2,
-                material: hit.material,
-                facet: descriptor.facet,
-                text: descriptor.text,
-                inputHash: descriptor.inputHash,
-                ...(descriptor.model === undefined ? {} : { model: descriptor.model }),
-                ...(descriptor.promptVersion === undefined
-                  ? {}
-                  : { promptVersion: descriptor.promptVersion }),
-                overlayGeneration: hit.overlayGeneration
-              }
+              evidence
             );
             return {
               evidenceId,

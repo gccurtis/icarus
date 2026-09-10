@@ -1,0 +1,21 @@
+import type { UploadExternalFilesResult } from "$capabilities/external-files/index.remote";
+
+/** Mutable values owned by one mounted External library surface. */
+export class ExternalLibraryState {
+  now = $state(Date.now());
+  fileCount = $state(0);
+  folderCount = $state(0);
+  filePaths = $state<string[]>([]);
+  folderPaths = $state<string[]>([]);
+  handledFiles = $state.raw<UploadExternalFilesResult>();
+  handledFolder = $state.raw<UploadExternalFilesResult>();
+  latestUploadResult = $state.raw<UploadExternalFilesResult>();
+  folderPathError = $state<string>();
+  mode = $state<"table" | "directory">("table");
+  currentDirectory = $state("");
+  search = $state("");
+  kind = $state("all");
+  semantic = $state("all");
+  sortBy = $state("updated");
+  direction = $state<"asc" | "desc">("asc");
+}

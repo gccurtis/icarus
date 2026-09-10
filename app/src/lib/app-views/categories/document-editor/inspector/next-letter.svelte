@@ -22,7 +22,7 @@
     stylesAt,
     type MarkStyle
   } from "$app-views/categories/document-editor/procedures/marks";
-  import { linearOf } from "$app-views/categories/document-editor/procedures/projection";
+  import { linearOf } from "$app-views/categories/document-editor/procedures/projection-atoms";
   import {
     applyStyleOps,
     ensureStylesOps,

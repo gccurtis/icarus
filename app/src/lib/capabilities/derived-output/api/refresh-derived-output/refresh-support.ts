@@ -1,5 +1,6 @@
 import type { ServerModel } from "$runtime/server/start.server";
 import { admittedReusableResourceSets } from "$representation/data/behavior/core/resource-set-rows";
+import { externalFileResourceKind } from "$representation/data/behavior/core/resource";
 import { resourceInScope } from "$representation/data/behavior/semantic/scope";
 import type { Id } from "$representation/data/types/core/id";
 import type { ResourceRef } from "$representation/data/types/core/resource";
@@ -128,7 +129,16 @@ const currentProjectResources = (
     .map((row) => ({ kind: "slides" as const, id: row._id })),
   ...rowsOf(model.store, "spreadsheets")
     .filter((row) => row.projectId === projectId)
-    .map((row) => ({ kind: "spreadsheet" as const, id: row._id }))
+    .map((row) => ({ kind: "spreadsheet" as const, id: row._id })),
+  ...rowsOf(model.store, "externalFiles")
+    .filter((row) =>
+      row.projectId === projectId &&
+      (row.subkind === "text" ||
+        row.subkind === "code" ||
+        row.subkind === "data" ||
+        row.subkind === "image")
+    )
+    .map((row) => ({ kind: externalFileResourceKind(row.subkind), id: row._id }))
 ];
 
 const resourcesInScope = (

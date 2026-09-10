@@ -1,4 +1,9 @@
-import type { StoreUnitOfWork, TableName, TableRow } from "$model/server/store/index.server";
+import {
+  readCurrentRows,
+  type StoreUnitOfWork,
+  type TableName,
+  type TableRow
+} from "$model/server/store/index.server";
 
 export type RowFields<T extends TableName> = Omit<TableRow<T>, "_id" | "_creationTime">;
 
@@ -6,11 +11,7 @@ export const rowsIn = <T extends TableName>(
   store: StoreUnitOfWork,
   table: T
 ): readonly TableRow<T>[] => {
-  const found = store.read(table);
-  if (found?.table !== table || found.kind !== "table" || !Array.isArray(found.rows)) return [];
-  return found.rows.filter(
-    (row) => row !== null && typeof row === "object" && !Array.isArray(row)
-  ) as readonly TableRow<T>[];
+  return readCurrentRows(store, table);
 };
 
 export const rowIn = <T extends TableName>(

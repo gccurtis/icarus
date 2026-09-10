@@ -43,9 +43,10 @@ export const mediaReadingTools = (
           Math.min(material.profile.lines, fromLine + 499)
         );
         const file = externalFile(material.source.fileId);
-        const bytes = await input.model.materialContent.read({
+        const bytes = await input.model.externalFileStorage.read({
           storageId: file.storageId,
-          hash: file.hash
+          hash: file.hash,
+          size: file.size
         }, input.signal);
         input.signal?.throwIfAborted();
         if (bytes === undefined) throw new Error("code native content is unavailable");
@@ -139,9 +140,10 @@ export const mediaReadingTools = (
           throw new Error("storage image content requires the upload object-store adapter");
         }
         const file = externalFile(source.fileId);
-        const bytes = await input.model.materialContent.read({
+        const bytes = await input.model.externalFileStorage.read({
           storageId: file.storageId,
-          hash: file.hash
+          hash: file.hash,
+          size: file.size
         }, input.signal);
         input.signal?.throwIfAborted();
         if (bytes === undefined) throw new Error("image native content is unavailable");

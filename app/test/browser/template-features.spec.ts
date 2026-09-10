@@ -584,6 +584,86 @@ test("a committed template fills text and generates only from its replacement fi
   );
 });
 
+test("a template scope can choose an uploaded External file and ground its Prompt Block", async ({ page }) => {
+  test.skip(
+    process.env.ICARUS_BROWSER_PROVIDER_FIXTURE !== "1",
+    "The caller-owned server did not opt into the deterministic browser provider"
+  );
+  test.setTimeout(180_000);
+
+  await page.goto("/app/dev-project", { waitUntil: "networkidle" });
+  await tabs(page).getByRole("button", { name: "External", exact: true }).click();
+  await page.locator('form.upload-form input[type="file"]').first().setInputFiles({
+    name: "external-grounding.md",
+    mimeType: "text/markdown",
+    buffer: Buffer.from(
+      "# Imported operating limit\n\nThe remaining transfer capability is 731 MW after imports.\n"
+    )
+  });
+  await page.getByRole("button", { name: "Upload files", exact: true }).click();
+  await expect(page.getByText("1 uploaded · 0 already present · 0 rejected.")).toBeVisible();
+
+  await tabs(page).getByRole("button", { name: "Templates", exact: true }).click();
+  await page.getByRole("button", { name: "Technical glossary", exact: true }).first().click();
+  const inspector = page.locator(
+    'aside[aria-label="Inspector"][data-inspected="templates.template"]'
+  );
+  await inspector.getByRole("button", { name: "Use template", exact: true }).click();
+
+  const use = page.getByRole("dialog", { name: "Use “Technical glossary”" });
+  await use.getByRole("tab", { name: /Subject line/ }).click();
+  await use
+    .getByRole("textbox", { name: "What Subject line says here" })
+    .fill("Imported operating limit");
+  await use.getByRole("tab", { name: /Source material/ }).click();
+  await use.locator(".scope").click();
+
+  const builder = page.getByRole("dialog", { name: "What Source material selects here" });
+  await builder
+    .locator(".term")
+    .filter({ hasText: "Interconnect glossary" })
+    .getByRole("button", { name: "×" })
+    .click();
+  await builder.getByRole("button", { name: "Resources", exact: true }).click();
+  const external = builder.locator(".offer").filter({ hasText: "external-grounding.md" });
+  await expect(external).toBeVisible();
+  await external.getByRole("button", { name: "Add", exact: true }).click();
+  await builder.getByRole("button", { name: "Use this", exact: true }).click();
+
+  await expect(use.locator(".scope .rule")).toHaveText(/external-grounding\.md/i);
+  await use.getByRole("button", { name: "Create", exact: true }).click();
+  await expect(page.locator(".ProseMirror")).toContainText(
+    "Technical glossary · Imported operating limit"
+  );
+
+  await page.getByRole("button", { name: "Edit Prompt Block", exact: true }).click();
+  const prompt = page.locator(
+    'aside[aria-label="Inspector"][data-inspected="document-editor.prompt-block"]'
+  );
+  await expect(
+    prompt.getByRole("button", { name: /external-grounding\.md/i })
+  ).toBeVisible();
+  const refresh = prompt.getByRole("button", { name: "Refresh", exact: true });
+  await refresh.click();
+  const generated = page.locator('.document-block[data-kind="prompt"]').last();
+  await expect(generated).toContainText("remaining transfer capability is 731 MW", {
+    timeout: 150_000
+  });
+  await expect(generated).not.toContainText("Protection isolated the transformer bank");
+  await expect(refresh).toBeEnabled({ timeout: 150_000 });
+
+  await page.reload({ waitUntil: "networkidle" });
+  await tabs(page).getByRole("button", { name: "Overview", exact: true }).click();
+  await page
+    .locator(".area-resources")
+    .getByRole("button", { name: "Technical glossary", exact: true })
+    .first()
+    .dblclick();
+  await expect(page.locator('.document-block[data-kind="prompt"]').last()).toContainText(
+    "remaining transfer capability is 731 MW"
+  );
+});
+
 test("a hole's default is built with an exclusion, stored, and read back as the rule", async ({ page }) => {
   await page.goto("/app/dev-project", { waitUntil: "networkidle" });
   await tabs(page).getByRole("button", { name: "Templates", exact: true }).click();

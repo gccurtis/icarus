@@ -13,7 +13,7 @@
   import Type from "@lucide/svelte/icons/type";
 
   import { Panel, PanelEmpty, PanelSearch } from "$authored-components/panel";
-  import { slideIndexOf } from "$app-views/categories/slide-deck-editor/procedures/deck";
+  import { slideIndexOf } from "$app-views/categories/slide-deck-editor/procedures/deck-slides";
   import {
     INSERT_ENTRIES,
     insertedElement,

@@ -40,7 +40,7 @@ const source = (value: unknown): boolean => {
     ["locator"]
   ) && isStoredIdentifier(held.id) && isResourceRef(held.ref) &&
     isStoredText(held.title, 10_000) &&
-    (held.locator === undefined || isStoredText(held.locator, 10_000)) &&
+    (!Object.hasOwn(held, "locator") || isStoredText(held.locator, 10_000)) &&
     isStoredText(held.excerpt) && Array.isArray(held.uses) &&
     held.uses.every((use) => isStoredText(use, 10_000));
 };
@@ -60,9 +60,33 @@ const usage = (value: unknown): boolean => {
     ["costUsd"]
   ) && isStoredNatural(held.requests) && isStoredNatural(held.promptTokens) &&
     isStoredNatural(held.completionTokens) && isStoredNatural(held.totalTokens) &&
-    (held.costUsd === undefined || (
+    held.requests > 0 && held.totalTokens === held.promptTokens + held.completionTokens &&
+    (!Object.hasOwn(held, "costUsd") || (
       typeof held.costUsd === "number" && Number.isFinite(held.costUsd) && held.costUsd >= 0
     ));
+};
+
+const TURN_IDENTITY = ["_id", "_creationTime"] as const;
+const TURN_COMMON = [
+  "projectId", "researchThreadId", "threadId", "promptMessageId", "prompt", "mode", "scope",
+  "tools", "state", "blocks", "queries", "sources", "findings", "askedAt", "updatedAt"
+] as const;
+const TURN_RUNNING = [...TURN_IDENTITY, ...TURN_COMMON] as const;
+const TURN_COMPLETED = [
+  ...TURN_RUNNING, "messageId", "usage", "model", "answeredAt"
+] as const;
+const TURN_UNSUCCESSFUL = [...TURN_RUNNING, "error"] as const;
+
+const exactTurnArm = (row: Record<string, unknown>): boolean => {
+  const optional = ["stopRequestedAt"] as const;
+  if (row.state === "running") return hasExactFields(row, TURN_RUNNING, optional);
+  if (row.state === "answered" || row.state === "insufficient") {
+    return hasExactFields(row, TURN_COMPLETED, optional);
+  }
+  if (row.state === "failed" || row.state === "cancelled") {
+    return hasExactFields(row, TURN_UNSUCCESSFUL, optional);
+  }
+  return false;
 };
 
 const exactRowIdentity = (
@@ -98,33 +122,38 @@ export const isStoredResearchTurn = (
   value: unknown
 ): value is TableRow<"researchTurns"> => {
   const row = storedFields(value);
-  if (row === undefined || !hasExactFields(
-    row,
-    [
-      "_id", "_creationTime", "projectId", "researchThreadId", "threadId", "promptMessageId",
-      "prompt", "mode", "scope", "tools", "state", "blocks", "queries", "sources",
-      "findings", "askedAt", "updatedAt"
-    ],
-    [
-      "messageId", "stopRequestedAt", "usage", "model", "error", "answeredAt"
-    ]
-  ) || !exactRowIdentity(row, "researchTurns") || !isStoredRowId(row.projectId, "projects") ||
+  if (row === undefined || !exactTurnArm(row) ||
+    !exactRowIdentity(row, "researchTurns") || !isStoredRowId(row.projectId, "projects") ||
     !isStoredRowId(row.researchThreadId, "researchThreads") || !isStoredRowId(row.threadId, "threads") ||
     !isStoredIdentifier(row.promptMessageId) ||
-    (row.messageId !== undefined && !isStoredIdentifier(row.messageId)) ||
     !isStoredText(row.prompt) || row.prompt.trim().length === 0 || !mode(row.mode) ||
     !scope(row.scope) || !Array.isArray(row.tools) ||
     !row.tools.every((tool) => tool === "web.search") ||
-    !isStoredChoice(row.state, ["queued", "running", "answered", "insufficient", "failed", "cancelled"]) ||
-    (row.stopRequestedAt !== undefined && !isStoredTime(row.stopRequestedAt)) ||
+    new Set(row.tools).size !== row.tools.length ||
+    !isStoredChoice(row.state, ["running", "answered", "insufficient", "failed", "cancelled"]) ||
+    (Object.hasOwn(row, "stopRequestedAt") && !isStoredTime(row.stopRequestedAt)) ||
     admitContentBlocks(row.blocks) === undefined || !Array.isArray(row.queries) ||
     !row.queries.every((query) => isStoredText(query, 10_000)) || !Array.isArray(row.sources) ||
     !row.sources.every(source) || !Array.isArray(row.findings) || !row.findings.every(finding) ||
-    (row.usage !== undefined && !usage(row.usage)) ||
-    (row.model !== undefined && !isStoredText(row.model, 500)) ||
-    (row.error !== undefined && !isStoredText(row.error, 10_000)) ||
-    !isStoredTime(row.askedAt) || (row.answeredAt !== undefined && !isStoredTime(row.answeredAt)) ||
-    !isStoredTime(row.updatedAt)) return false;
+    !isStoredTime(row.askedAt) || !isStoredTime(row.updatedAt) || row.updatedAt < row.askedAt ||
+    (Object.hasOwn(row, "stopRequestedAt") && (
+      (row.stopRequestedAt as number) < row.askedAt || (row.stopRequestedAt as number) > row.updatedAt
+    ))) return false;
+
+  if (row.state === "running") {
+    return (row.blocks as unknown[]).length === 0 && row.queries.length === 0 &&
+      row.sources.length === 0 && row.findings.length === 0;
+  }
+
+  if (row.state === "failed" || row.state === "cancelled") {
+    return isStoredText(row.error, 10_000) && row.error.trim().length > 0 &&
+      (row.blocks as unknown[]).length === 0 && row.queries.length === 0 && row.sources.length === 0 &&
+      row.findings.length === 0;
+  }
+
+  if (!isStoredIdentifier(row.messageId) || !usage(row.usage) ||
+    !isStoredText(row.model, 500) || row.model.trim().length === 0 ||
+    !isStoredTime(row.answeredAt) || row.answeredAt !== row.updatedAt) return false;
 
   const sources = row.sources as Array<{ id: string }>;
   const sourceIds = new Set(sources.map((entry) => entry.id));

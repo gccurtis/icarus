@@ -1,4 +1,8 @@
-import type { StoreUnitOfWork, TableRow } from "$model/server/store/index.server";
+import {
+  readCurrentRows,
+  type StoreUnitOfWork,
+  type TableRow
+} from "$model/server/store/index.server";
 import type { Id } from "$representation/data/types/core/id";
 import type { VariableRecord } from "$capabilities/variables/types/variables";
 
@@ -8,9 +12,7 @@ export type VariableRow = TableRow<"variables">;
 export type StoreReads = Pick<StoreUnitOfWork, "read">;
 
 export const variableRowsOf = (store: StoreReads, projectId: Id<"projects">): readonly VariableRow[] => {
-  const found = store.read("variables");
-  if (found?.table !== "variables" || found.kind !== "table") return [];
-  return found.rows.filter((row) => row.projectId === projectId);
+  return readCurrentRows(store, "variables").filter((row) => row.projectId === projectId);
 };
 
 export const sameName = (one: string, other: string): boolean =>

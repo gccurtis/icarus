@@ -10,25 +10,38 @@ import type {
 } from "$capabilities/derived-output/api/shared/synthesis-types";
 
 /** Turns a matched material facet into the exact descriptor text that may be cited. */
-export const materialDescriptorEvidence = (hit: MaterialHit): {
-  facet: MaterialDescriptorCitation["facet"];
-  inputHash: string;
-  text: string;
-  model?: string;
-  promptVersion?: string;
-} => {
+type MaterialDescriptorEvidence =
+  | Pick<
+      Extract<MaterialDescriptorCitation, { facet: "generated" }>,
+      "facet" | "inputHash" | "text" | "model" | "promptVersion"
+    >
+  | Pick<
+      Exclude<MaterialDescriptorCitation, { facet: "generated" }>,
+      "facet" | "inputHash" | "text"
+    >;
+
+export const materialDescriptorEvidence = (hit: MaterialHit): MaterialDescriptorEvidence => {
   const textualMatch = hit.matched.find(
     (candidate): candidate is typeof candidate & { text: string } =>
       typeof candidate.text === "string" && candidate.text.trim().length > 0
   );
   if (textualMatch !== undefined) {
+    if (textualMatch.facet === "generated") {
+      if (hit.description?.provenance !== "generated") {
+        throw new Error("generated material evidence is missing its current provenance");
+      }
+      return {
+        facet: "generated",
+        inputHash: textualMatch.inputHash,
+        text: textualMatch.text,
+        model: hit.description.model,
+        promptVersion: hit.description.promptVersion
+      };
+    }
     return {
       facet: textualMatch.facet,
       inputHash: textualMatch.inputHash,
-      text: textualMatch.text,
-      ...(textualMatch.facet === "generated" && hit.description?.provenance === "generated"
-        ? { model: hit.description.model, promptVersion: hit.description.promptVersion }
-        : {})
+      text: textualMatch.text
     };
   }
   return {

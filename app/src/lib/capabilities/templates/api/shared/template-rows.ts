@@ -3,7 +3,7 @@ import type { TemplateVersionHole } from "$representation/data/types/templates/t
 
 import { versionScopeOf } from "$capabilities/templates/api/shared/scopes";
 import type { RowFields } from "$capabilities/templates/api/shared/store";
-import { versionHolesOf } from "$capabilities/templates/api/shared/validation";
+import { versionHolesOf } from "$capabilities/templates/api/shared/hole-validation";
 
 type TemplateFields = RowFields<"templates">;
 type Template = TableRow<"templates">;

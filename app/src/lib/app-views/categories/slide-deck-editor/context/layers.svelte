@@ -17,17 +17,12 @@
 
   import { Panel, PanelEmpty, PanelRow } from "$authored-components/panel";
   import { Button } from "$vendored-components/button";
-  import {
-    elementIn,
-    labelOf,
-    placedOn,
-    slideIndexOf,
-    withReorderedElement,
-    withRestackedSet,
-    withSet,
-    type Placed,
-    type Restack
-  } from "$app-views/categories/slide-deck-editor/procedures/deck";
+  import type { Restack } from "$app-views/categories/slide-deck-editor/procedures/arrange";
+  import { withReorderedElement, withRestackedSet } from "$app-views/categories/slide-deck-editor/procedures/deck-layering";
+  import { placedOn, type Placed } from "$app-views/categories/slide-deck-editor/procedures/deck-placement";
+  import { elementIn, labelOf } from "$app-views/categories/slide-deck-editor/procedures/deck-reading";
+  import { slideIndexOf } from "$app-views/categories/slide-deck-editor/procedures/deck-slides";
+  import { withSet } from "$app-views/categories/slide-deck-editor/procedures/deck-values";
   import { elementsSignal, selectedIds } from "$app-views/categories/slide-deck-editor/procedures/selecting";
   import { workspaceState, type SlideDeckRuntime } from "$model/client/workspace-state";
 
@@ -68,7 +63,9 @@
 
   const toggleLock = (placed: Placed) => {
     if (body === undefined) return;
-    runtime?.apply(withSet(body, `${placed.element.id}/locked`, placed.element.locked ? null : true).ops);
+    runtime?.apply(
+      withSet(body, "element", `${placed.element.id}/locked`, placed.element.locked ? null : true).ops
+    );
   };
 
   let lifted = $state<string | undefined>(undefined);

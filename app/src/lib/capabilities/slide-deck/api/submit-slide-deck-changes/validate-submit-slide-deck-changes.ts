@@ -1,62 +1,74 @@
-import type { SlideDeckOp } from "$representation/data/types/slide-decks/op";
 import type {
   SlideDeckChangeSetInput,
   SubmitSlideDeckChangesInput
 } from "$capabilities/slide-deck/types/submit-slide-deck-changes";
+import {
+  hasExactFields,
+  isStoredJson,
+  isStoredNatural,
+  isStoredRowId,
+  isStoredText,
+  storedFields
+} from "$representation/data/behavior/core/stored";
+import { isStoredSlideDeckOp } from "$representation/data/behavior/slide-decks/stored-rows";
 
-const OPS: readonly string[] = ["set", "insert", "remove", "move", "text"];
-
-const asOps = (value: unknown): readonly SlideDeckOp[] => {
-  if (!Array.isArray(value) || value.length === 0) {
-    throw new Error("slide-deck/submit-slide-deck-changes: at least one op is required");
-  }
-
-  for (const op of value) {
-    if (typeof op !== "object" || op === null) {
-      throw new Error("slide-deck/submit-slide-deck-changes: an op is an object");
-    }
-
-    const { op: kind, path } = op as { op?: unknown; path?: unknown };
-    if (typeof kind !== "string" || !OPS.includes(kind)) {
-      throw new Error(`slide-deck/submit-slide-deck-changes: '${String(kind)}' is not an op`);
-    }
-    if (typeof path !== "string" || path.length === 0) {
-      throw new Error("slide-deck/submit-slide-deck-changes: an op names a path");
-    }
-  }
-
-  return value as readonly SlideDeckOp[];
+const matchingTouched = (ops: SlideDeckChangeSetInput["ops"], touched: readonly unknown[]):
+  touched is readonly string[] => {
+  if (!touched.every((path) => isStoredText(path, 10_000) && path.length > 0)) return false;
+  const expected = [...new Set(ops.map((op) => op.path))];
+  return touched.length === expected.length &&
+    touched.every((path, index) => path === expected[index]);
 };
 
-/** Refuses anything the procedure could not act on. Throws; it never returns a partial. */
+/** Refuses any projection, legacy arm, or non-durable value before the command can run. */
 export const validateSubmitSlideDeckChanges = (input: unknown): SubmitSlideDeckChangesInput => {
-  if (typeof input !== "object" || input === null) {
-    throw new Error("slide-deck/submit-slide-deck-changes: an object is required");
+  const envelope = storedFields(input);
+  if (envelope === undefined || !hasExactFields(envelope, ["changeSet"])) {
+    throw new Error(
+      "slide-deck/submit-slide-deck-changes: exactly one plain changeSet field is required"
+    );
   }
 
-  const { changeSet } = input as { changeSet?: unknown };
-  if (typeof changeSet !== "object" || changeSet === null) {
-    throw new Error("slide-deck/submit-slide-deck-changes: a changeSet is required");
+  const changeSet = storedFields(envelope.changeSet);
+  if (
+    changeSet === undefined ||
+    !hasExactFields(changeSet, ["resourceId", "baseRevision", "ops", "touched"])
+  ) {
+    throw new Error(
+      "slide-deck/submit-slide-deck-changes: changeSet has exactly the current command fields"
+    );
   }
-
-  const { resourceId, baseRevision, ops, touched } = changeSet as Record<string, unknown>;
-
-  if (typeof resourceId !== "string" || resourceId.length === 0) {
-    throw new Error("slide-deck/submit-slide-deck-changes: resourceId is required");
+  if (!isStoredRowId(changeSet.resourceId, "slideDecks")) {
+    throw new Error("slide-deck/submit-slide-deck-changes: resourceId is one current slide deck id");
   }
-  if (typeof baseRevision !== "number" || !Number.isInteger(baseRevision) || baseRevision < 0) {
+  if (!isStoredNatural(changeSet.baseRevision)) {
     throw new Error("slide-deck/submit-slide-deck-changes: baseRevision is a revision number");
   }
-  if (!Array.isArray(touched) || touched.some((path) => typeof path !== "string")) {
-    throw new Error("slide-deck/submit-slide-deck-changes: touched is the paths the ops reached");
+  if (
+    !Array.isArray(changeSet.ops) ||
+    changeSet.ops.length === 0 ||
+    !isStoredJson(changeSet.ops) ||
+    !changeSet.ops.every(isStoredSlideDeckOp)
+  ) {
+    throw new Error(
+      "slide-deck/submit-slide-deck-changes: every op has exactly one current operation shape"
+    );
+  }
+  if (
+    !Array.isArray(changeSet.touched) ||
+    !isStoredJson(changeSet.touched) ||
+    !matchingTouched(changeSet.ops, changeSet.touched)
+  ) {
+    throw new Error(
+      "slide-deck/submit-slide-deck-changes: touched exactly names each op path in first-use order"
+    );
   }
 
   const held: SlideDeckChangeSetInput = {
-    resourceId,
-    baseRevision,
-    ops: asOps(ops),
-    touched: touched as readonly string[]
+    resourceId: changeSet.resourceId,
+    baseRevision: changeSet.baseRevision,
+    ops: changeSet.ops,
+    touched: changeSet.touched
   };
-
   return { changeSet: held };
 };

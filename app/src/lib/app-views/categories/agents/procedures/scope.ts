@@ -20,7 +20,14 @@ const KIND_WORD: Record<string, string> = {
   document: "Document",
   slides: "Slide deck",
   spreadsheet: "Spreadsheet",
-  finding: "Finding"
+  finding: "Finding",
+  "externalFile::text": "External text file",
+  "externalFile::code": "External code file",
+  "externalFile::data": "External data file",
+  "externalFile::image": "External image",
+  "externalFile::audio": "External audio",
+  "externalFile::video": "External video",
+  "externalFile::unknown": "External file"
 };
 
 export const scopeRows = (
@@ -66,7 +73,7 @@ export const scopeRows = (
           kind: "resource",
           refKind: ref.kind,
           title: named?.name ?? "A resource",
-          detail: KIND_WORD[ref.kind] ?? ref.kind
+          detail: named?.relativePath ?? KIND_WORD[ref.kind] ?? ref.kind
         });
       }
     }
@@ -89,10 +96,13 @@ const rebuilt = (
 const withoutResources = (scope: ResourceSet): readonly SetTerm[] =>
   scope.include.filter((term) => term.select !== "resources");
 
+const withoutProject = (terms: readonly SetTerm[]): readonly SetTerm[] =>
+  terms.filter((term) => term.select !== "project");
+
 export const withProject = (scope: ResourceSet | null): ResourceSet => {
   const from = scope ?? { include: [], exclude: [] };
-  if (from.include.some((term) => term.select === "project")) return from;
-  return rebuilt(from, [{ select: "project" }, ...withoutResources(from)], refsOf(from));
+  if (from.include.length === 1 && from.include[0]?.select === "project") return from;
+  return { include: [{ select: "project" }], exclude: [...from.exclude] };
 };
 
 export const withSet = (scope: ResourceSet | null, setId: string): ResourceSet => {
@@ -100,7 +110,7 @@ export const withSet = (scope: ResourceSet | null, setId: string): ResourceSet =
   if (from.include.some((term) => term.select === "set" && term.setId === setId)) return from;
   return rebuilt(
     from,
-    [...withoutResources(from), { select: "set", setId: setId as never }],
+    [...withoutProject(withoutResources(from)), { select: "set", setId: setId as never }],
     refsOf(from)
   );
 };
@@ -109,7 +119,7 @@ export const withResource = (scope: ResourceSet | null, ref: ResourceRef): Resou
   const from = scope ?? { include: [], exclude: [] };
   const refs = refsOf(from);
   if (refs.some((candidate) => candidate.kind === ref.kind && candidate.id === ref.id)) return from;
-  return rebuilt(from, withoutResources(from), [...refs, ref]);
+  return rebuilt(from, withoutProject(withoutResources(from)), [...refs, ref]);
 };
 
 export const withoutRow = (scope: ResourceSet | null, key: string): ResourceSet | null => {

@@ -3,7 +3,8 @@ import type { ContentBlock, Mark } from "$representation/data/types/content/cont
 import type { DocumentBody, DocumentRow } from "$representation/data/types/documents/body";
 import type { DocumentOp } from "$representation/data/types/documents/op";
 import { isBlocks } from "$app-views/categories/document-editor/procedures/paginate";
-import { isStyled, sortedStyles } from "$app-views/categories/document-editor/procedures/projection";
+import { isStyled } from "$app-views/categories/document-editor/procedures/projection-blocks";
+import { sortedStyles } from "$app-views/categories/document-editor/procedures/projection-inline";
 import type { Styled } from "$app-views/categories/document-editor/procedures/styles";
 
 const before = <T extends { id: string }>(items: readonly T[], index: number): string | null =>

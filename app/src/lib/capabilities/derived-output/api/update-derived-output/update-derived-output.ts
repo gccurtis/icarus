@@ -44,7 +44,9 @@ export const updateDerivedOutput = async (input: unknown): Promise<UpdateDerived
   if (sameDefinition && !responseChanged) return output;
 
   const at = Date.now();
-  const editedRevision = (output.lastRevision ?? 0) + 1;
+  const editedRevision = output.valueSource === "none"
+    ? 1
+    : output.lastRevision + 1;
   const editedResponse =
     asked.lastResponse === undefined || asked.lastResponse === null || !responseChanged
       ? undefined
@@ -57,6 +59,7 @@ export const updateDerivedOutput = async (input: unknown): Promise<UpdateDerived
     ...(!responseChanged
       ? {}
       : {
+          valueSource: asked.lastResponse === null ? "none" : "authored",
           queries: [],
           evidence: [],
           lastResponse: editedResponse,

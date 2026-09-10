@@ -78,13 +78,23 @@ beforeEach(() => {
   set("slideDeckSnapshots", [{
     _id: "slideDeckSnapshots:launch", _creationTime: 1, projectId: "projects:materials",
     resourceId: "slideDecks:launch", revision: 2, role: "leader", part: 0,
-    body: { slides: [] }, at: 1
+    body: {
+      aspectRatio: "16:9",
+      theme: { colors: { text: "#111", accent: "#08f" } },
+      styles: { defaultKey: "body", styles: { body: { name: "Body" } } },
+      layouts: [],
+      slides: [],
+      sections: []
+    },
+    at: 1
   }]);
   set("externalFiles", [{
     _id: "externalFiles:logo", _creationTime: 1, projectId: "projects:materials",
-    name: "Launch diagram", mediaType: "image/png", subkind: "image",
-    storageId: "_storage:logo", hash: "a".repeat(64), origin: { kind: "upload" },
-    createdBy: { kind: "system" }, updatedAt: 1
+    name: "launch-diagram.png", originalName: "launch-diagram.png",
+    relativePath: "launch-diagram.png", mediaType: "image/png", subkind: "image",
+    storageId: `_storage:${"a".repeat(64)}`, hash: "a".repeat(64), size: 12,
+    origin: { kind: "upload" }, createdBy: { kind: "system" },
+    updatedBy: { kind: "system" }, revision: 1, updatedAt: 1
   }]);
   set("semanticMaterials", [
     {
@@ -129,7 +139,7 @@ beforeEach(() => {
       projectId: "projects:materials",
       identityKey: "logo",
       kind: "image",
-      name: "Launch diagram",
+      name: "launch-diagram.png",
       source: {
         kind: "externalFile",
         ref: { kind: "externalFile::image", id: "externalFiles:logo" },
@@ -213,6 +223,7 @@ beforeEach(() => {
       facet: "generated",
       facetText: "Revenue by region for the launch plan.",
       inputHash: "sales-generated",
+      scopeRefs: [],
       vector: [0.99, 0.01]
     },
     {
@@ -346,7 +357,11 @@ describe("semantic material query", () => {
         _id: "resourceSets:private",
         _creationTime: 2,
         projectId: "projects:materials",
-        boundTo: { kind: "resource", resourceId: "slideDecks:launch", hole: "evidence" },
+        boundTo: {
+          kind: "resource",
+          ref: { kind: "slides", id: "slideDecks:launch" },
+          hole: "evidence"
+        },
         set: {
           include: [
             { select: "resources", refs: [{ kind: "slides", id: "slideDecks:launch" }] }
@@ -374,7 +389,7 @@ describe("semantic material query", () => {
     assert.equal(state.queries, 0);
   });
 
-  it("quarantines duplicate and malformed named Resource Sets before material search", async () => {
+  it("fails closed on duplicate and malformed named Resource Sets before material search", async () => {
     const reusable = (state.tables.get("resourceSets") ?? [])[0];
     if (reusable === undefined) throw new Error("missing reusable Resource Set fixture");
     const query = () => querySemanticMaterials({
@@ -391,12 +406,12 @@ describe("semantic material query", () => {
       reusable,
       { ...reusable, projectId: "projects:other", name: "Duplicate claimant" }
     ]);
-    await assert.rejects(query, /does not exist/);
+    await assert.rejects(query, /repeats row id/);
 
     set("resourceSets", [
       { ...reusable, set: { include: "everything", exclude: [] } }
     ]);
-    await assert.rejects(query, /does not exist/);
+    await assert.rejects(query, /non-current field values/);
     assert.equal(state.queries, 0);
   });
 

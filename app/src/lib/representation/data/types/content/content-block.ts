@@ -5,19 +5,26 @@ import type { Id } from "$representation/data/types/core/id";
 import type { ResourceRef } from "$representation/data/types/core/resource";
 import type { ResourceSet, TemplatedResourceSet } from "$representation/data/types/core/resource-set";
 
-export type ResolutionState = "fresh" | "stale" | "computing" | "error";
-
 export type TextAtom = { id: string; kind: "literal"; text: string };
 
-export type FormulaAtom = {
+type FormulaBinding =
+  | { formulaId?: never }
+  | { formulaId: Id<"formulas"> };
+
+/**
+ * One currently resolved inline formula.
+ *
+ * Content has no formula evaluator today, so it has no persisted pending,
+ * stale, or failed lifecycle. A project body may bind the snapshot to its
+ * formula row; a portable template deliberately omits that binding.
+ */
+export type FormulaAtom = FormulaBinding & {
   id: string;
   kind: "formula";
   expression: string;
-  formulaId?: Id<"formulas">;
   lastResolvedValue: FormulaValue;
   lastResolvedDisplay: string;
-  state: ResolutionState;
-  error?: string;
+  state: "fresh";
 };
 
 /**
@@ -100,16 +107,14 @@ export type TextBlock = {
   format?: BlockFormat;
 };
 
-export type FormulaBlock = {
+/** A whole-block resolved formula snapshot; binding is optional only for portability. */
+export type FormulaBlock = FormulaBinding & {
   id: string;
   type: "formula";
   expression: string;
-  formulaId?: Id<"formulas">;
   display: string;
   value: FormulaValue;
-  state: ResolutionState;
-  error?: string;
-  resolvedAt?: number;
+  state: "fresh";
   format?: BlockFormat;
 };
 
@@ -163,22 +168,45 @@ export type PromptHole = {
   description?: string;
 };
 
-export type PromptBlock = {
+type PromptBlockPresentation = {
   id: string;
   type: "prompt";
-  derivedOutputId?: Id<"derivedOutputs">;
   style?: string;
   atoms: Atom[];
   display: string;
   marks: Mark[];
-  scope?: ResourceSet | TemplatedResourceSet;
-  /** This block's prompt while no linked derived output owns the question. */
-  prompt?: string;
   hole?: PromptHole;
-  state: PromptState;
-  error?: string;
-  refreshedAt?: number;
   format?: BlockFormat;
 };
+
+type UnlinkedPromptLifecycle = {
+  state: "idle";
+  error?: never;
+  refreshedAt?: never;
+};
+
+type LinkedPromptLifecycle =
+  | { state: "idle"; error?: never; refreshedAt?: never }
+  | { state: "stale"; error?: never; refreshedAt?: number }
+  | { state: "fresh"; error?: never; refreshedAt: number }
+  | { state: "error"; error: string; refreshedAt?: number };
+
+type PromptBlockBase<Lifecycle> = PromptBlockPresentation & Lifecycle;
+
+/** An editable prompt whose definition is owned by the block itself. */
+export type UnlinkedPromptBlock = PromptBlockBase<UnlinkedPromptLifecycle> & {
+  derivedOutputId?: never;
+  scope?: ResourceSet | TemplatedResourceSet;
+  prompt?: string;
+};
+
+/** A generated prompt whose definition is owned only by its Derived Output. */
+export type LinkedPromptBlock = PromptBlockBase<LinkedPromptLifecycle> & {
+  derivedOutputId: Id<"derivedOutputs">;
+  scope?: never;
+  prompt?: never;
+};
+
+export type PromptBlock = UnlinkedPromptBlock | LinkedPromptBlock;
 
 export type ContentBlock = TextBlock | FormulaBlock | ImageBlock | TableBlock | PromptBlock;

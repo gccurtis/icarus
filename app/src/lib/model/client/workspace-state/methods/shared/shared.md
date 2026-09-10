@@ -11,7 +11,7 @@ them and they preserve an invariant spanning both. Two are not methods at all.
 | [`perform.ts`](perform.ts) | Nothing changes without leaving a record | every mutator, `land-on` |
 | [`landing.ts`](landing.ts) | The `was` half of a landing is read the same way every time | `land-on`, `open` |
 | [`defaults.ts`](defaults.ts) | A category is permanent or it is not, and every tab starts the same width | `close`, `target-key`, `mint-view`, `index.ts`, the definition's constructor |
-| [`rails.ts`](rails.ts) | The rail position is one this category offers | `select-context`, `land-on`, `mint-view`, the definition's `context` getter, `index.ts` |
+| [`rails.ts`](rails.ts) | The rail position is one this category offers | `select-context`, `mint-view`, `index.ts` |
 | [`compose.ts`](compose.ts) | A record and a view are read as one tab, in one place | `open`, `reopen-closed`, the definition's four read getters |
 | [`land-on.ts`](land-on.ts) | A centre change takes its inspection with it and leaves the rail | `show-content`, `open` |
 | [`mint-view.ts`](mint-view.ts) | Every tab starts the same way | the definition's constructor, `open` |
@@ -104,8 +104,8 @@ which is a thing you do after this one.
 
 **Preserves:** a tab's `contextId` is one its category offers, or that category's
 default. `mint-view` establishes it, `land-on` carries it across a centre change,
-`select-context` refuses to break it, and the `context` getter falls back if it
-has drifted anyway.
+`select-context` refuses to break it, and stored workspace admission rejects the
+whole snapshot before an invalid value reaches the model.
 
 **Fails when:** nothing here throws. `undefined` from `defaultContext` is a real
 state — a category the documents gave no context panel — and `Tab.contextId` is
@@ -247,9 +247,8 @@ question — and a second copy of them would be a second answer to "what happens
 when the centre changes", which is the kind of pair that drifts silently because
 both halves keep working.
 
-The three: **the rail is carried across**, because it belongs to the category and
-a change of centre leaves the category alone; it is re-derived rather than
-assumed, so a position written in from outside is still corrected here. **The
+The three: **the rail is carried across exactly**, because it belongs to the category and
+a change of centre leaves the category alone. **The
 inspection clears**, because what was selected belongs to the centre the tab is
 leaving. **`focus` is assigned from the argument**, including when the argument
 is nothing — there is no switcher in the shell, so choosing a persona and
@@ -263,8 +262,7 @@ than in `showContent` is why `open` inherits it for free.
 outlives the centre it was about.
 
 **Fails when:** the content view is not one of this category's. That is a caller
-naming a centre a category has not got, which is a mistake rather than drift, so
-it throws where the two rail asymmetries fall back.
+naming a centre a category has not got, which is a mistake, so it throws.
 
 **Touches state:** one view, through `tab-views` — the active tab's when
 `showContent` calls it and the target's own when `open` does. It reads the
@@ -281,7 +279,7 @@ export const mintView = (target: Target): TabView => ...;
 view starts as is the category's, so the body is one expression and the decisions
 are all in `OPENING`.
 
-**The constructor no longer calls it.** The three permanent tabs come from
+**The constructor no longer calls it.** The four permanent tabs come from
 `startingWorkspace()`, which is `openingView` over the singleton categories — the
 same construction, reached the same way, so a singleton cannot start as something
 other than what its category opens on. The server builds the identical workspace

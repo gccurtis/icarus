@@ -803,6 +803,9 @@
       {
         "id": "m-chat-priorities-1",
         "role": "response",
+        "author": {
+          "kind": "system"
+        },
         "sentAt": 1788558300000,
         "blocks": [
           {
@@ -851,6 +854,9 @@
       {
         "id": "m-chat-priorities-3",
         "role": "response",
+        "author": {
+          "kind": "system"
+        },
         "sentAt": 1788558900000,
         "blocks": [
           {
@@ -908,6 +914,9 @@
       {
         "id": "m-chat-tone-1",
         "role": "response",
+        "author": {
+          "kind": "system"
+        },
         "sentAt": 1788472500000,
         "blocks": [
           {
@@ -965,6 +974,9 @@
       {
         "id": "m-chat-sources-1",
         "role": "response",
+        "author": {
+          "kind": "system"
+        },
         "sentAt": 1788213000000,
         "blocks": [
           {
@@ -1048,6 +1060,9 @@
       {
         "id": "m-chat-undergrounding-1",
         "role": "response",
+        "author": {
+          "kind": "system"
+        },
         "sentAt": 1787867700000,
         "blocks": [
           {
@@ -1105,6 +1120,9 @@
       {
         "id": "m-chat-feeder12-history-1",
         "role": "response",
+        "author": {
+          "kind": "system"
+        },
         "sentAt": 1787608500000,
         "blocks": [
           {

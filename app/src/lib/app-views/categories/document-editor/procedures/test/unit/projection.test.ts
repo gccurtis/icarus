@@ -11,6 +11,7 @@ import {
   rowNodesOf,
   soleLiteral
 } from "$app-views/categories/document-editor/procedures/projection";
+import { schema } from "$app-views/categories/document-editor/procedures/schema";
 
 const METRICS = { charactersPerLine: 40, linesPerPage: 10 };
 
@@ -128,7 +129,8 @@ test("a Prompt Block is ordinary styled text whose Derived Output link round-tri
         style: ["bold"]
       }
     ],
-    state: "fresh"
+    state: "fresh",
+    refreshedAt: 7
   };
   const before = body([blocks("#r1", [text("#b1", "One"), prompt], [3, 2])]);
 
@@ -173,6 +175,22 @@ test("a text block with a formula atom draws the formula as one unit, and comes 
   assert.equal(block.child(1).type.name, "formula_atom");
   assert.equal(block.child(1).attrs.resolved, "4");
   assert.deepEqual(bodyOf(doc, before), before);
+});
+
+test("the editor does not default missing current formula fields", () => {
+  const current = {
+    atomId: "#formula",
+    expression: "SUM(x)",
+    resolved: "4",
+    state: "fresh",
+    formulaId: null,
+    value: { kind: "number", value: 4 }
+  };
+  const without = (field: keyof typeof current) =>
+    Object.fromEntries(Object.entries(current).filter(([name]) => name !== field));
+
+  assert.throws(() => schema.node("formula_atom", without("state")), /No value supplied/);
+  assert.throws(() => schema.node("formula_atom", without("value")), /No value supplied/);
 });
 
 test("a mark spanning a formula atom round-trips with its ends on the atoms they name", () => {

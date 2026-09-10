@@ -1,5 +1,8 @@
 import { rangeOf } from "$representation/data/behavior/content/positions";
-import type { PromptBlock } from "$representation/data/types/content/content-block";
+import type {
+  LinkedPromptBlock,
+  PromptBlock
+} from "$representation/data/types/content/content-block";
 import type { Id } from "$representation/data/types/core/id";
 import type { DerivedOutput } from "$representation/data/types/semantic/derived-output";
 import type {
@@ -7,20 +10,14 @@ import type {
   SlideElement
 } from "$representation/data/types/slide-decks/body";
 import type { SlideDeckOp } from "$representation/data/types/slide-decks/op";
-import {
-  blockIn,
-  elementIn,
-  placedOn,
-  withSet,
-  type Edit
-} from "$app-views/categories/slide-deck-editor/procedures/deck";
+import type { Edit } from "$app-views/categories/slide-deck-editor/procedures/deck-edit";
+import { placedOn } from "$app-views/categories/slide-deck-editor/procedures/deck-placement";
+import { blockIn, elementIn } from "$app-views/categories/slide-deck-editor/procedures/deck-reading";
+import { withSet } from "$app-views/categories/slide-deck-editor/procedures/deck-values";
 import { mint } from "$app-views/categories/slide-deck-editor/procedures/ids";
 
 export type { Id } from "$representation/data/types/core/id";
-
-export type LinkedPromptBlock = PromptBlock & {
-  derivedOutputId: Id<"derivedOutputs">;
-};
+export type { LinkedPromptBlock } from "$representation/data/types/content/content-block";
 
 export type SlidePromptBlock = {
   readonly slideId: string;
@@ -68,7 +65,7 @@ export const withPromptElement = (body: SlideDeckBody, elementId: string): Edit 
     type: "prompt",
     state: "idle"
   };
-  return withSet(body, `${element.id}/content`, { type: "prompt", block });
+  return withSet(body, "element", `${element.id}/content`, { type: "prompt", block });
 };
 
 const setField = (

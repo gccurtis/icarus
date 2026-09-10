@@ -69,7 +69,10 @@ export const refreshPromptBlock = async ({
     await runtime.flush();
     if (runtime.failure !== undefined) throw new Error(runtime.failure.detail);
     if (refreshed.outcome === "failed") {
-      throw new Error(refreshed.output.error ?? "The response could not be generated");
+      if (refreshed.output.state !== "error") {
+        throw new Error("The failed refresh returned a non-error output");
+      }
+      throw new Error(refreshed.output.error);
     }
     state.promptDraft = refreshed.output.prompt;
     state.hydratedPrompt = refreshed.output.prompt;

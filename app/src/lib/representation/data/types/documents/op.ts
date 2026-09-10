@@ -1,7 +1,13 @@
 export type DocumentTarget = "row" | "block" | "atom" | "mark" | "document";
 
 export type DocumentOp =
-  | { op: "set"; target: DocumentTarget; path: string; value: unknown; was: unknown }
+  | {
+      op: "set";
+      target: Exclude<DocumentTarget, "atom">;
+      path: string;
+      value: unknown;
+      was: unknown;
+    }
   | {
       op: "insert";
       target: DocumentTarget;

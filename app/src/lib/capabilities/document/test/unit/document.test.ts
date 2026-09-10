@@ -15,10 +15,11 @@ const model = vi.hoisted(() => ({
     create: (table: string, fields: unknown) => {
       model.calls.push(`create ${table}`);
       const id = `${table}:${model.snapshots.length + model.changeSets.length + 1}`;
-      if (table === "documentSnapshots") model.snapshots.push({ ...(fields as Row), _id: id });
-      if (table === "documentChangeSets") model.changeSets.push({ ...(fields as Row), _id: id });
-      if (table === "semanticSyncJobs") model.syncJobs.push({ ...(fields as Row), _id: id });
-      if (table === "semanticMaterialJobs") model.materialJobs.push({ ...(fields as Row), _id: id });
+      const row = { ...(fields as Row), _id: id, _creationTime: Date.now() };
+      if (table === "documentSnapshots") model.snapshots.push(row);
+      if (table === "documentChangeSets") model.changeSets.push(row);
+      if (table === "semanticSyncJobs") model.syncJobs.push(row);
+      if (table === "semanticMaterialJobs") model.materialJobs.push(row);
       return id;
     },
     read: (path: string) => {
@@ -35,6 +36,9 @@ const model = vi.hoisted(() => ({
       if (path === "semanticMaterialJobs") {
         return { table: "semanticMaterialJobs", kind: "table", rows: model.materialJobs };
       }
+      if (path === "templateStages") {
+        return { table: "templateStages", kind: "table", rows: [] };
+      }
       return { table: "documentSnapshots", kind: "table", rows: model.snapshots };
     },
     update: (path: string, value: unknown) => {
@@ -48,7 +52,9 @@ const model = vi.hoisted(() => ({
       }
       const id = path.split(".")[1];
       model.snapshots = model.snapshots.map((row) =>
-        row._id === id ? { ...(value as Row), _id: id } : row
+        row._id === id
+          ? { ...(value as Row), _id: id, _creationTime: row._creationTime }
+          : row
       );
     },
     remove: (path: string) => {
@@ -70,7 +76,11 @@ const model = vi.hoisted(() => ({
 
 vi.mock("$runtime/server/start.server", () => ({ serverModel: () => model }));
 vi.mock("$runtime/server/scope.server", () => ({
-  requireScope: () => Promise.resolve({ projectId: "p", userId: "u", username: "You" })
+  requireScope: () => Promise.resolve({
+    projectId: "projects:p",
+    userId: "users:u",
+    username: "You"
+  })
 }));
 
 const { readDocumentBody } = await import(
@@ -98,7 +108,8 @@ const row = {
 const leaderAt = (revision: number, body: unknown = { rows: [row] }) =>
   model.snapshots.push({
     _id: "documentSnapshots:1",
-    projectId: "p",
+    _creationTime: 1,
+    projectId: "projects:p",
     resourceId: "documents:1",
     role: "leader",
     revision,
@@ -189,7 +200,8 @@ test("accepted text edits move structural comment anchors with their cited text"
   leaderAt(0);
   model.threads.push({
     _id: "commentThreads:1",
-    projectId: "p",
+    _creationTime: 1,
+    projectId: "projects:p",
     target: { kind: "document", id: "documents:1" },
     within: {
       kind: "text",
@@ -200,7 +212,9 @@ test("accepted text edits move structural comment anchors with their cited text"
           to: { atom: "#a1", offset: 3 }
         }
       ]
-    }
+    },
+    createdBy: { kind: "user", userId: "users:u" },
+    updatedAt: 1
   });
 
   await submitDocumentChanges(typing(0, 0, "A "));
@@ -221,7 +235,8 @@ test("an edit detaches a comment whose last live span disappeared", async () => 
   leaderAt(0);
   model.threads.push({
     _id: "commentThreads:1",
-    projectId: "p",
+    _creationTime: 1,
+    projectId: "projects:p",
     target: { kind: "document", id: "documents:1" },
     within: {
       kind: "text",
@@ -230,7 +245,9 @@ test("an edit detaches a comment whose last live span disappeared", async () => 
         from: { atom: "#gone", offset: 0 },
         to: { atom: "#gone", offset: 3 }
       }]
-    }
+    },
+    createdBy: { kind: "user", userId: "users:u" },
+    updatedAt: 1
   });
 
   await submitDocumentChanges(typing(0, 0, "A "));
@@ -346,7 +363,8 @@ test("a change set whose touched disagrees with its ops is refused", async () =>
 test("another project's leader is not this one's", async () => {
   model.snapshots.push({
     _id: "documentSnapshots:1",
-    projectId: "other",
+    _creationTime: 1,
+    projectId: "projects:other",
     resourceId: "documents:1",
     role: "leader",
     revision: 3,

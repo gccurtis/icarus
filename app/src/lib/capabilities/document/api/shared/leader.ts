@@ -1,4 +1,7 @@
-import type { StoreModel } from "$model/server/store/index.server";
+import {
+  readCurrentRows,
+  type StoreModel
+} from "$model/server/store/index.server";
 import type { Id } from "$representation/data/types/core/id";
 import type { DocumentBody } from "$representation/data/types/documents/body";
 
@@ -13,10 +16,7 @@ export const leaderOf = (
   projectId: Id<"projects">,
   resourceId: Id<"documents">
 ): Leader | undefined => {
-  const found = store.read("documentSnapshots");
-  if (found?.table !== "documentSnapshots" || found.kind !== "table") return undefined;
-
-  return found.rows.find(
+  return readCurrentRows(store, "documentSnapshots").find(
     (row) =>
       row.projectId === projectId && row.resourceId === resourceId && row.role === "leader"
   );

@@ -1,14 +1,16 @@
-import type { StoreUnitOfWork, TableRow } from "$model/server/store/index.server";
+import {
+  readCurrentRows,
+  type StoreUnitOfWork,
+  type TableRow
+} from "$model/server/store/index.server";
 import { admittedResourceSetClaim } from "$representation/data/behavior/core/resource-set-rows";
+import { sameResourceRef } from "$representation/data/behavior/core/resource";
 import type { ResourceSet } from "$representation/data/types/core/resource-set";
 
 type StoreReads = Pick<StoreUnitOfWork, "read">;
 
 const resourceSetsIn = (store: StoreReads): readonly TableRow<"resourceSets">[] => {
-  const answer = store.read("resourceSets");
-  return answer?.kind === "table" && answer.table === "resourceSets"
-    ? (answer.rows as readonly TableRow<"resourceSets">[])
-    : [];
+  return readCurrentRows(store, "resourceSets");
 };
 
 /**
@@ -40,6 +42,6 @@ export const visibleScopeOf = (
   ) {
     return scope;
   }
-  if (row.boundTo.resourceId !== output.origin?.id) return scope;
+  if (output.origin === undefined || !sameResourceRef(row.boundTo.ref, output.origin)) return scope;
   return row.set;
 };

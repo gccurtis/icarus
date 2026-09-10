@@ -53,6 +53,8 @@ const { reply } = await import("$capabilities/comments/api/reply/reply");
 const { resolveThread } = await import("$capabilities/comments/api/resolve-thread/resolve-thread");
 const { readComments } = await import("$capabilities/comments/api/read-comments/read-comments");
 const { validateStartThread } = await import("$capabilities/comments/api/start-thread/validate-start-thread");
+const { validateReply } = await import("$capabilities/comments/api/reply/validate-reply");
+const { validateResolveThread } = await import("$capabilities/comments/api/resolve-thread/validate-resolve-thread");
 
 const currentResource = (table: "documents" | "slideDecks" | "spreadsheets", id: string, title: string): Row => ({
   _id: `${table}:${id}`,
@@ -180,7 +182,7 @@ describe("startThread", () => {
     );
   });
 
-  it("refuses partial or duplicate target rows instead of repairing one", async () => {
+  it("fails closed on partial or duplicate target rows", async () => {
     model.tables.set("slideDecks", [{
       _id: "slideDecks:1",
       _creationTime: 1,
@@ -189,7 +191,7 @@ describe("startThread", () => {
     }]);
     await assert.rejects(
       startThread({ target: { kind: "slides", id: "slideDecks:1" }, text: "No" }),
-      /no slides/
+      /missing required fields/
     );
 
     model.tables.set("slideDecks", [
@@ -198,7 +200,7 @@ describe("startThread", () => {
     ]);
     await assert.rejects(
       startThread({ target: { kind: "slides", id: "slideDecks:1" }, text: "Still no" }),
-      /no slides/
+      /repeats row id/
     );
     assert.equal(model.tables.get("commentThreads"), undefined);
   });
@@ -238,9 +240,70 @@ describe("startThread", () => {
       })
     );
   });
+
+  it("rejects non-data command and anchor objects without invoking accessors", () => {
+    const command = {
+      target: { kind: "slides", id: "slideDecks:1" },
+      text: "Review"
+    };
+    const hidden = { ...command };
+    Object.defineProperty(hidden, "retired", { value: true, enumerable: false });
+    const accessor = { text: "Review" } as typeof command;
+    Object.defineProperty(accessor, "target", {
+      enumerable: true,
+      get: () => {
+        throw new Error("accessor was invoked");
+      }
+    });
+    const inherited = Object.assign(Object.create({ retired: true }), command);
+
+    for (const input of [
+      hidden,
+      accessor,
+      inherited,
+      { ...command, within: undefined },
+      { ...command, [Symbol("retired")]: true }
+    ]) {
+      assert.throws(() => validateStartThread(input), /exact object/);
+    }
+
+    const nested = { kind: "element", elementId: "element-1" };
+    Object.defineProperty(nested, "retired", { value: true, enumerable: false });
+    assert.throws(
+      () => validateStartThread({ ...command, within: nested }),
+      /within must be an anchor/
+    );
+    assert.throws(
+      () => validateStartThread({ ...command, within: null }),
+      /within must be an anchor/
+    );
+  });
 });
 
 describe("reply and resolve", () => {
+  it("admits only exact current command objects and nominal thread ids", () => {
+    const hidden = { threadId: "commentThreads:1", text: "Yes" };
+    Object.defineProperty(hidden, "retired", { value: true, enumerable: false });
+    const inherited = Object.assign(Object.create({ retired: true }), {
+      threadId: "commentThreads:1",
+      resolved: true
+    });
+
+    for (const input of [
+      hidden,
+      { threadId: "commentThreads:1", text: "Yes", retired: undefined },
+      { threadId: "commentThreads:1", text: "Yes", [Symbol("retired")]: true }
+    ]) {
+      assert.throws(() => validateReply(input), /exact object/);
+    }
+    assert.throws(() => validateReply({ threadId: "thread-1", text: "Yes" }), /threadId/);
+    assert.throws(() => validateResolveThread(inherited), /exact object/);
+    assert.throws(
+      () => validateResolveThread({ threadId: "threads:1", resolved: true }),
+      /threadId/
+    );
+  });
+
   it("replies only into a thread of the asking project", async () => {
     model.tables.set("commentThreads", [
       currentThread("1"),
@@ -283,7 +346,7 @@ describe("reply and resolve", () => {
 });
 
 describe("readComments", () => {
-  it("projects only owned current-shape threads and excludes flat text anchors", async () => {
+  it("projects owned current-shape threads", async () => {
     model.tables.set("commentThreads", [
       {
         _id: "commentThreads:1",
@@ -300,15 +363,6 @@ describe("readComments", () => {
         },
         createdBy: { kind: "user", userId: "users:1" },
         updatedAt: 1
-      },
-      {
-        _id: "commentThreads:flat",
-        _creationTime: 1,
-        projectId: "projects:p",
-        target: { kind: "document", id: "documents:1" },
-        within: { kind: "text", blockId: "block-1", from: 0, to: 2 },
-        createdBy: { kind: "user", userId: "users:1" },
-        updatedAt: 1
       }
     ]);
     model.tables.set("comments", [
@@ -320,15 +374,6 @@ describe("readComments", () => {
         blocks: [paragraph("comment-1", "Current")],
         mentions: [],
         author: { kind: "user", userId: "users:1" }
-      },
-      {
-        _id: "comments:flat",
-        _creationTime: 1,
-        projectId: "projects:p",
-        threadId: "commentThreads:flat",
-        blocks: [paragraph("comment-flat", "Retired")],
-        mentions: [],
-        author: { kind: "user", userId: "users:1" }
       }
     ]);
 
@@ -337,6 +382,20 @@ describe("readComments", () => {
     assert.deepEqual(projected.remarks.map((remark) => remark._id), ["comments:1"]);
     assert.deepEqual(projected.people, [{ _id: "users:1", displayName: "You" }]);
     assert.equal("authSubject" in projected.people[0], false);
+  });
+
+  it("fails closed on a retired flat text anchor", async () => {
+    model.tables.set("commentThreads", [{
+      _id: "commentThreads:flat",
+      _creationTime: 1,
+      projectId: "projects:p",
+      target: { kind: "document", id: "documents:1" },
+      within: { kind: "text", blockId: "block-1", from: 0, to: 2 },
+      createdBy: { kind: "user", userId: "users:1" },
+      updatedAt: 1
+    }]);
+
+    await assert.rejects(() => readComments(), /non-current field values/);
   });
 
   it("admits every current mention arm and recursively projects image and table blocks", async () => {
@@ -350,6 +409,7 @@ describe("readComments", () => {
       personaId: "personas:1",
       origin: { kind: "person" },
       state: "running",
+      execution: { kind: "grounded" },
       tools: [],
       plan: [],
       outputs: [],
@@ -410,7 +470,7 @@ describe("readComments", () => {
     assert.deepEqual(projected.remarks[0]?.mentionedUserIds, ["users:1"]);
   });
 
-  it("omits a whole conversation for a partial block, malformed claimant, or duplicate target", async () => {
+  it("fails closed on a partial comment row or duplicate target", async () => {
     model.tables.set("commentThreads", [{
       _id: "commentThreads:1",
       _creationTime: 1,
@@ -436,9 +496,7 @@ describe("readComments", () => {
       }
     ]);
 
-    let projected = await readComments();
-    assert.deepEqual(projected.threads, []);
-    assert.deepEqual(projected.remarks, []);
+    await assert.rejects(() => readComments(), /creation time|non-current field values/);
 
     model.tables.set("comments", [{
       _id: "comments:1",
@@ -453,8 +511,7 @@ describe("readComments", () => {
       currentResource("documents", "1", "Document"),
       { _id: "documents:1", projectId: "projects:p", title: "partial duplicate" }
     ]);
-    projected = await readComments();
-    assert.deepEqual(projected.threads, []);
+    await assert.rejects(() => readComments(), /creation time|repeats row id/);
   });
 
   it("does not project a foreign user id through authors or mentions", async () => {
@@ -483,7 +540,7 @@ describe("readComments", () => {
     assert.equal(JSON.stringify(projected).includes("users:2"), false);
   });
 
-  it("omits a conversation whose mention actor uses a non-nominal id", async () => {
+  it("fails closed on a mention actor with a non-nominal id", async () => {
     model.tables.set("commentThreads", [currentThread("1")]);
     model.tables.set("comments", [{
       _id: "comments:1",
@@ -495,8 +552,6 @@ describe("readComments", () => {
       author: { kind: "user", userId: "users:1" }
     }]);
 
-    const projected = await readComments();
-    assert.deepEqual(projected.threads, []);
-    assert.deepEqual(projected.remarks, []);
+    await assert.rejects(() => readComments(), /non-current field values/);
   });
 });

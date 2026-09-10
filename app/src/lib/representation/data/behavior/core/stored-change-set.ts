@@ -20,7 +20,6 @@ export type StoredChangeSetContract = {
   readonly listTargets: readonly string[];
   readonly moveTargets: readonly string[];
   readonly text: boolean;
-  readonly setTargetOptional: boolean;
 };
 
 const nullableIdentifier = (value: unknown): boolean =>
@@ -43,17 +42,16 @@ const listOperation = (
   Array.isArray(op.values) &&
   op.values.every((value) => isStoredJson(value));
 
-const operation = (value: unknown, contract: StoredChangeSetContract): boolean => {
+/** Exact admission for one current operation under a resource's change-set contract. */
+export const isStoredChangeSetOperation = (
+  value: unknown,
+  contract: StoredChangeSetContract
+): boolean => {
   const op = storedFields(value);
   if (op === undefined) return false;
   if (op.op === "set") {
-    const shape = contract.setTargetOptional
-      ? hasExactFields(op, ["op", "path", "value", "was"], ["target"])
-      : hasExactFields(op, ["op", "target", "path", "value", "was"]);
-    const target = contract.setTargetOptional && !Object.hasOwn(op, "target")
-      ? true
-      : isStoredChoice(op.target, contract.setTargets);
-    return shape && target &&
+    return hasExactFields(op, ["op", "target", "path", "value", "was"]) &&
+      isStoredChoice(op.target, contract.setTargets) &&
       isStoredText(op.path, 10_000) && op.path.length > 0 &&
       isStoredJson(op.value) && isStoredJson(op.was);
   }
@@ -104,7 +102,7 @@ export const isStoredChangeSet = (
     isStoredNatural(row.baseRevision) && row.baseRevision < row.revision &&
     (row.tier === "recent" || row.tier === "historical") &&
     Array.isArray(row.ops) && row.ops.length > 0 &&
-    row.ops.every((op) => operation(op, contract)) &&
+    row.ops.every((op) => isStoredChangeSetOperation(op, contract)) &&
     Array.isArray(row.touched) && matchingTouched(row.ops, row.touched) &&
     isStoredActor(row.actor) &&
     isStoredTime(row.at);

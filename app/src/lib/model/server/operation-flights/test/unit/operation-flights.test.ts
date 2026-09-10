@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 
 import {
+  AgentTaskCancelledError,
+  AgentTaskDeadlineError,
   createOperationFlights,
   OperationFlightsShutdownError
 } from "$model/server/operation-flights/index.server";
@@ -78,6 +80,49 @@ describe("OperationFlights", () => {
     model.endResearch("turn:duplicate");
   });
 
+  it("shares one Agent task flight and stops it with an explicit reason", async () => {
+    const model = createOperationFlights();
+    let signal: AbortSignal | undefined;
+    const first = model.runAgentTask("agentTasks:1", 60_000, async (held) => {
+      signal = held;
+      await new Promise<void>((_resolve, reject) => {
+        held.addEventListener("abort", () => reject(held.reason), { once: true });
+      });
+    });
+    const joined = model.runAgentTask("agentTasks:1", 60_000, async () => undefined);
+
+    expect(first.started).toBe(true);
+    expect(joined.started).toBe(false);
+    expect(joined.promise).toBe(first.promise);
+    await Promise.resolve();
+    expect(model.isAgentTaskActive("agentTasks:1")).toBe(true);
+    expect(model.stopAgentTask("agentTasks:1")).toBe(true);
+    expect(signal?.reason).toBeInstanceOf(AgentTaskCancelledError);
+    await expect(first.promise).rejects.toBeInstanceOf(AgentTaskCancelledError);
+    await Promise.resolve();
+    expect(model.isAgentTaskActive("agentTasks:1")).toBe(false);
+    expect(model.stopAgentTask("agentTasks:1")).toBe(false);
+  });
+
+  it("owns an Agent task deadline", async () => {
+    vi.useFakeTimers();
+    try {
+      const model = createOperationFlights();
+      const flight = model.runAgentTask("agentTasks:deadline", 250, async (signal) => {
+        await new Promise<void>((_resolve, reject) => {
+          signal.addEventListener("abort", () => reject(signal.reason), { once: true });
+        });
+      });
+
+      await vi.advanceTimersByTimeAsync(250);
+      await expect(flight.promise).rejects.toBeInstanceOf(AgentTaskDeadlineError);
+      await Promise.resolve();
+      expect(model.isAgentTaskActive("agentTasks:deadline")).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("aborts every owned controller and rejects new work at shutdown", async () => {
     const model = createOperationFlights();
     let derivedSignal: AbortSignal | undefined;
@@ -88,6 +133,13 @@ describe("OperationFlights", () => {
       return "late";
     });
     const research = model.beginResearch("turn:shutdown");
+    let agentSignal: AbortSignal | undefined;
+    const agent = model.runAgentTask("agentTasks:shutdown", 60_000, async (signal) => {
+      agentSignal = signal;
+      await new Promise<void>((_resolve, reject) => {
+        signal.addEventListener("abort", () => reject(signal.reason), { once: true });
+      });
+    });
     await Promise.resolve();
 
     const closing = model.close();
@@ -100,10 +152,13 @@ describe("OperationFlights", () => {
     expect(derivedSignal?.reason).toBeInstanceOf(OperationFlightsShutdownError);
     expect(research.signal.aborted).toBe(true);
     expect(research.reason()).toBe("shutdown");
+    expect(agentSignal?.reason).toBeInstanceOf(OperationFlightsShutdownError);
     expect(closed).toBe(false);
     expect(model.close()).toBe(closing);
     expect(() => model.beginResearch("turn:new")).toThrow(/closed/);
     expect(() => model.shareDerived("output:new", "definition:1", async () => "no"))
+      .toThrow(/closed/);
+    expect(() => model.runAgentTask("agentTasks:new", 1_000, async () => undefined))
       .toThrow(/closed/);
 
     never.resolve();
@@ -112,6 +167,7 @@ describe("OperationFlights", () => {
     expect(closed).toBe(false);
 
     model.endResearch("turn:shutdown");
+    await expect(agent.promise).rejects.toBeInstanceOf(OperationFlightsShutdownError);
     await closing;
     expect(closed).toBe(true);
   });

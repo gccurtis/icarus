@@ -1,6 +1,9 @@
 import { requireScope } from "$runtime/server/scope.server";
 import { serverModel } from "$runtime/server/start.server";
-import type { StoreUnitOfWork } from "$model/server/store/index.server";
+import {
+  readCurrentRows,
+  type StoreUnitOfWork
+} from "$model/server/store/index.server";
 import { asId } from "$representation/data/behavior/core/id";
 import { emptyBody as emptySpreadsheet } from "$representation/data/behavior/spreadsheets/empty-sheet";
 import type { DocumentBody } from "$representation/data/types/documents/body";
@@ -54,10 +57,7 @@ const representedRows = (
   store: Pick<StoreUnitOfWork, "read">,
   table: "documents" | "slideDecks" | "spreadsheets"
 ): readonly unknown[] => {
-  const found = store.read(table);
-  return found?.kind === "table" && found.table === table && Array.isArray(found.rows)
-    ? found.rows
-    : [];
+  return readCurrentRows(store, table);
 };
 
 const recordOf = (value: unknown): Record<string, unknown> | undefined =>

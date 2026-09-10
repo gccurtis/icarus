@@ -37,6 +37,7 @@ const model = vi.hoisted(() => ({
   tables: {} as Record<string, Row[]>,
   answered: [] as unknown[],
   logged: [] as { message: string; data: unknown }[],
+  requestScopes: 0,
   configuration: {
     get: (key: string): unknown =>
       key === "intelligence.chat.topK"
@@ -53,8 +54,12 @@ const model = vi.hoisted(() => ({
   },
   observability: {
     logger: {
-      info: (message: string, data: unknown) => model.logged.push({ message, data }),
-      warn: (message: string, data: unknown) => model.logged.push({ message, data })
+      info: (message: string, data: unknown) => {
+        model.logged.push({ message, data });
+      },
+      warn: (message: string, data: unknown) => {
+        model.logged.push({ message, data });
+      }
     }
   },
   intelligence: { completeWithTools: () => Promise.reject(new Error("not stubbed")) },
@@ -113,6 +118,7 @@ const model = vi.hoisted(() => ({
 }));
 
 const semantic = vi.hoisted(() => ({
+  enqueued: [] as Array<{ model: unknown; projectId: string; ref: { kind: string; id: string } }>,
   requested: [] as Array<{ kind: string; id: string } | undefined>,
   signals: [] as Array<AbortSignal | undefined>,
   querySignals: [] as Array<AbortSignal | undefined>,
@@ -144,13 +150,21 @@ const semantic = vi.hoisted(() => ({
 
 vi.mock("$runtime/server/start.server", () => ({ serverModel: () => model }));
 vi.mock("$runtime/server/scope.server", () => ({
-  requireScope: () => Promise.resolve(model.scope)
+  requireScope: () => {
+    model.requestScopes += 1;
+    return Promise.resolve(model.scope);
+  }
 }));
 vi.mock("$capabilities/semantic-overlay", () => ({
-  enqueueSemanticSync: (
-    { ref }: { ref: { kind: string; id: string } },
+  enqueueSemanticSyncForModel: (
+    explicitModel: unknown,
+    projectId: string,
+    ref: { kind: string; id: string },
     signal?: AbortSignal
-  ) => semantic.enqueue(ref, signal),
+  ) => {
+    semantic.enqueued.push({ model: explicitModel, projectId, ref });
+    return semantic.enqueue(ref, signal);
+  },
   processSemanticSyncQueueFor: (
     _model: unknown,
     _projectId: string,
@@ -162,11 +176,21 @@ vi.mock("$capabilities/semantic-overlay", () => ({
     semantic.signals.push(signal);
     return semantic.process(signal);
   },
-  querySemanticOverlay: (_input: unknown, signal?: AbortSignal) => {
+  querySemanticOverlayForModel: (
+    _model: unknown,
+    _projectId: string,
+    _input: unknown,
+    signal?: AbortSignal
+  ) => {
     semantic.querySignals.push(signal);
     return semantic.query(signal);
   },
-  querySemanticMaterials: (_input: unknown, signal?: AbortSignal) => {
+  querySemanticMaterialsForModel: (
+    _model: unknown,
+    _projectId: string,
+    _input: unknown,
+    signal?: AbortSignal
+  ) => {
     semantic.querySignals.push(signal);
     return semantic.query(signal);
   },
@@ -195,6 +219,7 @@ const { setThreadPersona } = await import(
 );
 const { stopTurn } = await import("$capabilities/research-chat/api/stop-turn/stop-turn");
 const { personaPrompt } = await import("$capabilities/research-chat/api/shared/prompts");
+const { prepareOverlay } = await import("$capabilities/research-chat/api/shared/overlay");
 
 const persona = (id: string, tools: string[], scope?: unknown): Row => ({
   ...(scope === undefined ? {} : { scope }),
@@ -228,6 +253,32 @@ const chat = (id: string, extra: Partial<Row> = {}): Row => ({
   ...extra
 });
 
+const externalText = (
+  id: string,
+  name = "field-notes.txt",
+  relativePath = `research/${name}`
+): Row => {
+  const hash = "a".repeat(64);
+  return {
+    _id: `externalFiles:${id}`,
+    _creationTime: 1,
+    projectId: "projects:p",
+    name,
+    originalName: name,
+    relativePath,
+    mediaType: "text/plain",
+    subkind: "text",
+    storageId: `_storage:${hash}`,
+    hash,
+    size: 36,
+    origin: { kind: "upload" },
+    createdBy: { kind: "user", userId: "users:u" },
+    updatedBy: { kind: "user", userId: "users:u" },
+    revision: 1,
+    updatedAt: 20
+  };
+};
+
 beforeEach(async () => {
   await model.operationFlights?.close();
   model.operationFlights = createOperationFlights();
@@ -250,10 +301,19 @@ beforeEach(async () => {
     documents: [],
     slideDecks: [],
     spreadsheets: [],
+    externalFiles: [],
     semanticSources: [],
     semanticMaterials: []
   };
   model.logged = [];
+  model.observability.logger.info = (message: string, data: unknown) => {
+    model.logged.push({ message, data });
+  };
+  model.observability.logger.warn = (message: string, data: unknown) => {
+    model.logged.push({ message, data });
+  };
+  model.requestScopes = 0;
+  semantic.enqueued = [];
   semantic.requested = [];
   semantic.signals = [];
   semantic.querySignals = [];
@@ -281,6 +341,28 @@ beforeEach(async () => {
   semantic.read = () => Promise.resolve(undefined);
 });
 
+test("shared preparation uses only its explicit model and project", async () => {
+  model.tables.externalFiles = [externalText("background")];
+
+  await prepareOverlay(
+    model as never,
+    "projects:p" as never,
+    {
+      kind: "resource",
+      ref: { kind: "externalFile::text", id: "externalFiles:background" as never }
+    }
+  );
+
+  assert.equal(model.requestScopes, 0);
+  assert.equal(semantic.enqueued.length, 1);
+  assert.equal(semantic.enqueued[0]?.model, model);
+  assert.equal(semantic.enqueued[0]?.projectId, "projects:p");
+  assert.deepEqual(semantic.enqueued[0]?.ref, {
+    kind: "externalFile::text",
+    id: "externalFiles:background"
+  });
+});
+
 const answers = (decision: Record<string, unknown>) => {
   model.intelligence = {
     completeWithTools: async (input: {
@@ -302,6 +384,20 @@ const answers = (decision: Record<string, unknown>) => {
 describe("reading", () => {
   test("lists the project's chats with their personas, newest first", async () => {
     model.tables.researchThreads.push(chat("two", { personaId: "personas:a", updatedAt: 90 }));
+    model.tables.threads.push({
+      _id: "threads:two",
+      _creationTime: 2,
+      projectId: "projects:p",
+      kind: "researchThread"
+    });
+    model.tables.threadParts.push({
+      _id: "threadParts:two",
+      _creationTime: 2,
+      projectId: "projects:p",
+      threadId: "threads:two",
+      part: 1,
+      messages: []
+    });
     const result = await readThreads();
     assert.deepEqual(
       result.threads.map((row) => row.id),
@@ -313,6 +409,46 @@ describe("reading", () => {
       result.personas.map((row) => row.name),
       ["Persona a", "Persona mute", "Persona narrow"]
     );
+  });
+
+  test("refuses reads when a current conversation part claims the thread from another project", async () => {
+    model.tables.threadParts[0].projectId = "projects:other";
+    const before = structuredClone(model.tables);
+
+    await assert.rejects(
+      () => readThread({ threadId: "researchThreads:one" }),
+      /exact current aggregate/
+    );
+    await assert.rejects(() => readThreads(), /exact current aggregate/);
+    assert.deepEqual(model.tables, before);
+  });
+
+  test("lists duplicate External filenames by exact current path and identity", async () => {
+    model.tables.externalFiles = [
+      externalText("north-evidence", "inspection.md", "evidence/North/inspection.md"),
+      externalText("south-evidence", "inspection.md", "evidence/South/inspection.md")
+    ];
+    const result = await readThreads();
+    assert.deepEqual(result.resources, [
+      {
+        kind: "externalFile::text",
+        id: "externalFiles:north-evidence",
+        name: "inspection.md",
+        relativePath: "evidence/North/inspection.md"
+      },
+      {
+        kind: "externalFile::text",
+        id: "externalFiles:south-evidence",
+        name: "inspection.md",
+        relativePath: "evidence/South/inspection.md"
+      }
+    ]);
+
+    model.tables.externalFiles[0] = {
+      ...model.tables.externalFiles[0],
+      legacyKind: "text"
+    };
+    await assert.rejects(() => readThreads(), /unknown field: legacyKind/);
   });
 
   test("a chat in another project is absent rather than refused", async () => {
@@ -336,6 +472,32 @@ describe("creating", () => {
 });
 
 describe("asking", () => {
+  test("re-resolves the append aggregate inside its transaction and rolls back a changed claimant", async () => {
+    const before = structuredClone(model.tables);
+    const transaction = model.store.transaction;
+    let injected = false;
+    model.store.transaction = ((work: (unit: unknown) => unknown): unknown =>
+      transaction((unit) => {
+        if (!injected) {
+          injected = true;
+          model.tables.threadParts[0].projectId = "projects:other";
+        }
+        return work(unit);
+      })) as typeof model.store.transaction;
+
+    try {
+      await assert.rejects(
+        () => ask({ threadId: "researchThreads:one", text: "Do not append this" }),
+        /exact current aggregate/
+      );
+    } finally {
+      model.store.transaction = transaction;
+    }
+
+    assert.equal(injected, true);
+    assert.deepEqual(model.tables, before);
+  });
+
   test("invalid deadline configuration cannot strand a running turn or flight", async () => {
     const configured = model.configuration.get;
     model.configuration.get = (key: string) =>
@@ -369,6 +531,66 @@ describe("asking", () => {
       messages.map((message) => message.role),
       ["prompt", "response"]
     );
+  });
+
+  test("an observability failure after publication cannot rewrite the answer as failed", async () => {
+    answers({ status: "answered", sources: [], response: "Authoritative.", findings: [] });
+    model.observability.logger.info = () => {
+      throw new Error("logger unavailable");
+    };
+
+    const result = await ask({ threadId: "researchThreads:one", text: "What is current?" });
+
+    assert.equal(result.accepted, true);
+    assert.equal(model.tables.researchTurns[0].state, "answered");
+    assert.equal(Object.hasOwn(model.tables.researchTurns[0], "error"), false);
+    assert.equal((model.tables.threadParts[0].messages as unknown[]).length, 2);
+  });
+
+  test("two concurrent asks can open only one running turn and one prompt", async () => {
+    let entered!: () => void;
+    const providerEntered = new Promise<void>((resolve) => {
+      entered = resolve;
+    });
+    let finish!: () => void;
+    const mayFinish = new Promise<void>((resolve) => {
+      finish = resolve;
+    });
+    model.intelligence = {
+      completeWithTools: async (input: {
+        tools: readonly { name: string; execute: (value: unknown) => Promise<unknown> }[];
+      }) => {
+        entered();
+        await mayFinish;
+        const submit = input.tools.find((tool) => tool.name === "submit_answer");
+        await submit!.execute({
+          status: "answered",
+          sources: [],
+          response: "One answer.",
+          findings: []
+        });
+        return {
+          value: "",
+          usage: { requestCount: 1, promptTokens: 1, completionTokens: 1, totalTokens: 2 },
+          toolCalls: [],
+          rounds: 1
+        };
+      }
+    } as never;
+
+    const first = ask({ threadId: "researchThreads:one", text: "First?" });
+    await providerEntered;
+    const second = await ask({ threadId: "researchThreads:one", text: "Second?" });
+
+    assert.equal(second.accepted, false);
+    assert.equal(second.accepted ? "" : second.reason, "invalid-state");
+    assert.equal(model.tables.researchTurns.length, 1);
+    assert.equal((model.tables.threadParts[0].messages as unknown[]).length, 1);
+
+    finish();
+    await first;
+    assert.equal(model.tables.researchTurns.length, 1);
+    assert.equal((model.tables.threadParts[0].messages as unknown[]).length, 2);
   });
 
   test("an answer that cites nothing is still published as the answer", async () => {
@@ -406,10 +628,10 @@ describe("asking", () => {
     model.tables.personas.push(malformed);
     model.tables.researchThreads = [chat("one", { personaId: "personas:malformed" })];
 
-    const result = await ask({ threadId: "researchThreads:one", text: "Hello" });
-
-    assert.equal(result.accepted, false);
-    assert.equal(result.accepted ? "" : result.reason, "not-found");
+    await assert.rejects(
+      () => ask({ threadId: "researchThreads:one", text: "Hello" }),
+      /missing required field: tools/
+    );
     assert.deepEqual(model.tables.researchTurns, []);
   });
 
@@ -451,6 +673,11 @@ describe("asking", () => {
     assert.equal(result.accepted, true);
     assert.equal(model.tables.researchTurns[0].state, "failed");
     assert.match(String(model.tables.researchTurns[0].error), /provider exploded/);
+    assert.equal(Object.hasOwn(model.tables.researchTurns[0], "messageId"), false);
+    assert.equal(Object.hasOwn(model.tables.researchTurns[0], "usage"), false);
+    assert.equal(Object.hasOwn(model.tables.researchTurns[0], "model"), false);
+    assert.equal(Object.hasOwn(model.tables.researchTurns[0], "answeredAt"), false);
+    assert.deepEqual(model.tables.researchTurns[0].blocks, []);
   });
 
   test("server close interrupts semantic preparation and waits for its terminal turn write", async () => {
@@ -458,7 +685,10 @@ describe("asking", () => {
       _id: "documents:slow",
       _creationTime: 1,
       projectId: "projects:p",
-      title: "Slow document"
+      title: "Slow document",
+      createdBy: { kind: "system" },
+      updatedBy: { kind: "system" },
+      updatedAt: 1
     });
     let entered!: () => void;
     const preparing = new Promise<void>((resolve) => {
@@ -525,7 +755,10 @@ describe("asking", () => {
       _id: "documents:slow-read",
       _creationTime: 1,
       projectId: "projects:p",
-      title: "Slow read"
+      title: "Slow read",
+      createdBy: { kind: "system" },
+      updatedBy: { kind: "system" },
+      updatedAt: 1
     });
     let entered!: () => void;
     const reading = new Promise<void>((resolve) => {
@@ -571,7 +804,10 @@ describe("asking", () => {
       _id: "slideDecks:broken",
       _creationTime: 1,
       projectId: "projects:p",
-      title: "Broken deck"
+      title: "Broken deck",
+      createdBy: { kind: "system" },
+      updatedBy: { kind: "system" },
+      updatedAt: 1
     });
     semantic.process = () =>
       Promise.resolve({
@@ -677,7 +913,10 @@ describe("asking", () => {
       _id: "slideDecks:current",
       _creationTime: 1,
       projectId: "projects:p",
-      title: "Current deck"
+      title: "Current deck",
+      createdBy: { kind: "system" },
+      updatedBy: { kind: "system" },
+      updatedAt: 1
     });
     semantic.enqueue = (ref) => Promise.resolve({ ref, revision: 2 });
     semantic.process = () =>
@@ -727,7 +966,10 @@ describe("asking", () => {
       _id: "slideDecks:recovered",
       _creationTime: 1,
       projectId: "projects:p",
-      title: "Recovered deck"
+      title: "Recovered deck",
+      createdBy: { kind: "system" },
+      updatedBy: { kind: "system" },
+      updatedAt: 1
     });
     let batch = 0;
     semantic.process = () => {
@@ -828,8 +1070,14 @@ describe("a scoped persona", () => {
       }
     } as never;
     model.tables.documents = [
-      { _id: "documents:1", _creationTime: 1, projectId: "projects:p", title: "In scope" },
-      { _id: "documents:2", _creationTime: 1, projectId: "projects:p", title: "Out of scope" }
+      {
+        _id: "documents:1", _creationTime: 1, projectId: "projects:p", title: "In scope",
+        createdBy: { kind: "system" }, updatedBy: { kind: "system" }, updatedAt: 1
+      },
+      {
+        _id: "documents:2", _creationTime: 1, projectId: "projects:p", title: "Out of scope",
+        createdBy: { kind: "system" }, updatedBy: { kind: "system" }, updatedAt: 1
+      }
     ];
 
     await ask({ threadId: "researchThreads:one", text: "Anything" });
@@ -843,7 +1091,10 @@ describe("a scoped persona", () => {
     }));
     model.tables.researchThreads = [chat("one", { personaId: "personas:set" })];
     model.tables.documents = [
-      { _id: "documents:private", _creationTime: 1, projectId: "projects:p", title: "Private input" }
+      {
+        _id: "documents:private", _creationTime: 1, projectId: "projects:p", title: "Private input",
+        createdBy: { kind: "system" }, updatedBy: { kind: "system" }, updatedAt: 1
+      }
     ];
     model.tables.resourceSets = [{
       _id: "resourceSets:held",
@@ -895,20 +1146,21 @@ describe("a scoped persona", () => {
 
     const first = await ask({ threadId: "researchThreads:one", text: "While reusable" });
     assert.equal(first.accepted, true);
-    model.tables.resourceSets[0] = {
+    const privateRow: Row = {
       ...model.tables.resourceSets[0],
-      name: undefined,
       boundTo: { kind: "hole", templateId: "templates:one", hole: "sources" }
     };
+    delete privateRow.name;
+    model.tables.resourceSets[0] = privateRow;
     const second = await ask({ threadId: "researchThreads:one", text: "After becoming private" });
     assert.equal(second.accepted, true);
     assert.equal(model.tables.researchTurns.at(-1)?.state, "answered");
 
-    const reusable = {
+    const reusable: Row = {
       ...model.tables.resourceSets[0],
-      name: "Reusable while named",
-      boundTo: undefined
+      name: "Reusable while named"
     };
+    delete reusable.boundTo;
     model.tables.resourceSets = [
       reusable,
       { ...reusable, projectId: "projects:other", name: "Duplicate claimant" }
@@ -924,12 +1176,12 @@ describe("a scoped persona", () => {
 
     assert.deepEqual(listOutcomes[0], ["documents:private"]);
     assert.match(String(listOutcomes[1]), /resource set 'resourceSets:held' does not exist/);
-    assert.match(String(listOutcomes[2]), /resource set 'resourceSets:held' does not exist/);
-    assert.match(String(listOutcomes[3]), /resource set 'resourceSets:held' does not exist/);
     assert.match(readFailures[0], /no readable text/);
     assert.match(readFailures[1], /resource set 'resourceSets:held' does not exist/);
-    assert.match(readFailures[2], /resource set 'resourceSets:held' does not exist/);
-    assert.match(readFailures[3], /resource set 'resourceSets:held' does not exist/);
+    assert.equal(model.tables.researchTurns.at(-2)?.state, "failed");
+    assert.match(String(model.tables.researchTurns.at(-2)?.error), /repeats row id/);
+    assert.equal(model.tables.researchTurns.at(-1)?.state, "failed");
+    assert.match(String(model.tables.researchTurns.at(-1)?.error), /non-current field values/);
   });
 });
 
@@ -967,8 +1219,14 @@ describe("the turn's own scope", () => {
       }
     } as never;
     model.tables.documents = [
-      { _id: "documents:1", _creationTime: 1, projectId: "projects:p", title: "Chosen" },
-      { _id: "documents:2", _creationTime: 1, projectId: "projects:p", title: "Not chosen" }
+      {
+        _id: "documents:1", _creationTime: 1, projectId: "projects:p", title: "Chosen",
+        createdBy: { kind: "system" }, updatedBy: { kind: "system" }, updatedAt: 1
+      },
+      {
+        _id: "documents:2", _creationTime: 1, projectId: "projects:p", title: "Not chosen",
+        createdBy: { kind: "system" }, updatedBy: { kind: "system" }, updatedAt: 1
+      }
     ];
 
     await ask({
@@ -981,6 +1239,84 @@ describe("the turn's own scope", () => {
       kind: "resource",
       ref: { kind: "document", id: "documents:1" }
     });
+  });
+
+  test("an uploaded text file keeps its exact identity through preparation, listing, and reading", async () => {
+    model.tables.externalFiles = [externalText("field-notes")];
+    const seen: Array<Record<string, unknown>> = [];
+    semantic.read = () => Promise.resolve({
+      ref: { kind: "externalFile::text", id: "externalFiles:field-notes" },
+      revision: 1,
+      contentHash: "a".repeat(64),
+      text: "Five apples minus two leaves three.",
+      encoding: "utf-16",
+      locators: [],
+      hardBoundaries: []
+    });
+    model.intelligence = {
+      completeWithTools: async (input: {
+        tools: readonly { name: string; execute: (value: unknown) => Promise<unknown> }[];
+      }) => {
+        const tool = (name: string) => {
+          const found = input.tools.find((candidate) => candidate.name === name);
+          if (found === undefined) {
+            throw new Error(`missing ${name} from ${input.tools.map((candidate) => candidate.name).join(",")}`);
+          }
+          return found;
+        };
+        const list = tool("list_resources");
+        const read = tool("read_text");
+        seen.push(await list.execute({}) as Record<string, unknown>);
+        const readResult = await read.execute({
+          kind: "externalFile::text",
+          id: "externalFiles:field-notes",
+          from: 0,
+          to: 34
+        }) as Record<string, unknown>;
+        seen.push(readResult);
+        const submit = tool("submit_answer");
+        await submit.execute({
+          status: "answered",
+          sources: [{ sourceId: readResult.sourceId, use: "Counts the remaining apples" }],
+          response: "Three apples remain.",
+          findings: []
+        });
+        return {
+          value: "",
+          usage: { requestCount: 1, promptTokens: 1, completionTokens: 1, totalTokens: 2 },
+          toolCalls: [],
+          rounds: 1
+        };
+      }
+    } as never;
+
+    const result = await ask({
+      threadId: "researchThreads:one",
+      text: "How many apples remain?",
+      scope: {
+        kind: "resource",
+        ref: { kind: "externalFile::text", id: "externalFiles:field-notes" }
+      }
+    });
+
+    assert.equal(result.accepted, true);
+    assert.equal(
+      model.tables.researchTurns[0].state,
+      "answered",
+      String(model.tables.researchTurns[0].error ?? "")
+    );
+    assert.deepEqual(semantic.requested[0], {
+      kind: "externalFile::text",
+      id: "externalFiles:field-notes"
+    });
+    assert.deepEqual(seen[0], {
+      resources: [{
+        kind: "externalFile::text",
+        id: "externalFiles:field-notes",
+        name: "field-notes.txt"
+      }]
+    });
+    assert.equal(seen[1].resource, "field-notes.txt");
   });
 });
 
@@ -1071,6 +1407,40 @@ describe("stopping", () => {
 });
 
 describe("removing", () => {
+  test("refuses a cross-project part claimant without deleting any row", async () => {
+    model.tables.threadParts[0].projectId = "projects:other";
+    const before = structuredClone(model.tables);
+
+    const result = await removeThread({ threadId: "researchThreads:one" });
+
+    assert.equal(result.accepted, false);
+    assert.match(result.accepted ? "" : result.detail, /wholly owned by this project/);
+    assert.deepEqual(model.tables, before);
+  });
+
+  test("rolls the entire deletion back when storage fails after a constituent is removed", async () => {
+    const before = structuredClone(model.tables);
+    const removeRows = model.store.removeRows;
+    let calls = 0;
+    model.store.removeRows = ((table: string, ids: readonly string[]): void => {
+      removeRows(table, ids);
+      calls += 1;
+      if (calls === 2) throw new Error("delete fault");
+    }) as typeof model.store.removeRows;
+
+    try {
+      await assert.rejects(
+        () => removeThread({ threadId: "researchThreads:one" }),
+        /delete fault/
+      );
+    } finally {
+      model.store.removeRows = removeRows;
+    }
+
+    assert.equal(calls, 2);
+    assert.deepEqual(model.tables, before);
+  });
+
   test("takes the turns, the parts, the thread and the chat", async () => {
     answers({ status: "answered", sources: [], response: "Done.", findings: [] });
     await ask({ threadId: "researchThreads:one", text: "Hello" });

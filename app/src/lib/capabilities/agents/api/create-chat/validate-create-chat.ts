@@ -6,7 +6,7 @@ export const validateCreateChat = (input: unknown): CreateChatInput => {
   only(fields, ["personaId", "title"], "create-chat");
   const title = has(fields, "title") ? optionalTextOf(fields.title, "create-chat", "title", 200) : undefined;
   return {
-    personaId: idOf(fields.personaId, "create-chat", "personaId"),
+    personaId: idOf(fields.personaId, "personas", "create-chat", "personaId"),
     ...(title === undefined ? {} : { title })
   };
 };

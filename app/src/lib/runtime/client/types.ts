@@ -3,19 +3,16 @@ import type { ConfigurationModel, ConfigurationSnapshot } from "$model/client/co
 import type { DocumentRuntimesModel } from "$model/client/document-runtimes";
 import type { SlideDeckRuntimesModel } from "$model/client/slide-deck-runtimes";
 import type { SpreadsheetRuntimesModel } from "$model/client/spreadsheet-runtimes";
-import type { ClientStorage } from "$model/client/storage";
 import type { WorkspaceStateModel } from "$model/client/workspace-state";
 
 export type ClientModelInput = {
   readonly project: string;
   readonly configuration: ConfigurationSnapshot;
-  readonly storage?: ClientStorage;
 };
 
 export interface ClientModel {
   readonly project: string;
   readonly configuration: ConfigurationModel;
-  readonly storage: ClientStorage;
 
   readonly documentRuntimes: DocumentRuntimesModel;
   readonly slideDeckRuntimes: SlideDeckRuntimesModel;

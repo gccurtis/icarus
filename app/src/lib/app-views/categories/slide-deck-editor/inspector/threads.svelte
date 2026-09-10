@@ -11,7 +11,9 @@
     type CommentThread
   } from "$app-views/categories/slide-deck-editor/procedures/comments";
   import { ago, nameOf, textOf } from "$app-views/categories/slide-deck-editor/procedures/comment-copy";
-  import { elementIn, labelOf, slideHolding, slideIndexOf } from "$app-views/categories/slide-deck-editor/procedures/deck";
+  import { slideHolding } from "$app-views/categories/slide-deck-editor/procedures/deck-slide-holding";
+  import { elementIn, labelOf } from "$app-views/categories/slide-deck-editor/procedures/deck-reading";
+  import { slideIndexOf } from "$app-views/categories/slide-deck-editor/procedures/deck-slides";
   import { elementsSignal, slideSignal } from "$app-views/categories/slide-deck-editor/procedures/selecting";
   import { resourceTemplate } from "$app-views/categories/slide-deck-editor/procedures/templating";
   import { workspaceState, type SlideDeckRuntime } from "$model/client/workspace-state";

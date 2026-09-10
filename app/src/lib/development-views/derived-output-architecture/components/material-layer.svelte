@@ -300,7 +300,7 @@
   revisionKey: string;
   userDescription?: string;
   descriptor?: GeneratedMaterialDescriptor;
-  state: "profiled" | "describing" | "ready" | "stale" | "error";
+  state: "ready"; // work-in-progress belongs to semanticMaterialJobs
   error?: string;
   updatedAt: number;
 };`;

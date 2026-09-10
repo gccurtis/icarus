@@ -67,15 +67,21 @@
     else void save({ kind, kinds: ["document"] });
   };
 
-  const setSchedule = (patch: Partial<Extract<AutomationTrigger, { kind: "schedule" }>>) => {
+  const setSchedule = (patch: Partial<{
+    at: string;
+    repeats: ScheduleRepeat;
+    weekday: Weekday;
+    timezone: string;
+  }>) => {
     if (value.kind !== "schedule") return;
-    const next = { ...value, ...patch };
-    if (next.repeats !== "weekly") {
-      const { weekday, ...rest } = next;
-      void weekday;
-      void save(rest);
+    const at = patch.at ?? value.at;
+    const repeats = patch.repeats ?? value.repeats;
+    const timezone = patch.timezone ?? value.timezone;
+    if (repeats !== "weekly") {
+      void save({ kind: "schedule", at, repeats, timezone });
     } else {
-      void save({ ...next, weekday: next.weekday ?? "Monday" });
+      const weekday = patch.weekday ?? (value.repeats === "weekly" ? value.weekday : "Monday");
+      void save({ kind: "schedule", at, repeats, weekday, timezone });
     }
   };
 

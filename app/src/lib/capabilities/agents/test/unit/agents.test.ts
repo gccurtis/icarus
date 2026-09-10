@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { beforeEach, describe, test, vi } from "vitest";
+import { asId } from "$representation/data/behavior/core/id";
 
 type Row = Record<string, unknown> & { _id: string; _creationTime: number };
 
@@ -7,6 +8,9 @@ const model = vi.hoisted(() => ({
   calls: [] as string[],
   scope: { projectId: "projects:p", userId: "users:u", username: "Uma" },
   tables: {} as Record<string, Row[]>,
+  operationFlights: {
+    stopAgentTask: () => false
+  },
   store: {
     create: (table: string, fields: unknown) => {
       model.calls.push(`create ${table}`);
@@ -59,6 +63,18 @@ vi.mock("$runtime/server/start.server", () => ({ serverModel: () => model }));
 vi.mock("$runtime/server/scope.server", () => ({
   requireScope: () => Promise.resolve(model.scope)
 }));
+vi.mock("$capabilities/agents/api/shared/runner-configuration", () => ({
+  agentRunnerConfiguration: () => ({
+    model: "test",
+    topK: 8,
+    maxSources: 12,
+    maxToolRounds: 8,
+    deadlineMs: 60_000
+  })
+}));
+vi.mock("$capabilities/agents/api/shared/dispatch-agent-task", () => ({
+  dispatchAgentTask: () => ({ started: true, promise: Promise.resolve() })
+}));
 
 const { readAgentsLibrary } = await import(
   "$capabilities/agents/api/read-agents-library/read-agents-library"
@@ -90,6 +106,7 @@ const { removeAutomation } = await import(
 );
 const { runAutomation } = await import("$capabilities/agents/api/run-automation/run-automation");
 const { createChat } = await import("$capabilities/agents/api/create-chat/create-chat");
+const { namesIn } = await import("$capabilities/agents/api/shared/names");
 
 const user = (userId: string) => ({ kind: "user", userId });
 
@@ -107,26 +124,30 @@ const persona = (id: string, extra: Record<string, unknown> = {}): Row => ({
   ...extra
 });
 
-const task = (id: string, extra: Record<string, unknown> = {}): Row => ({
-  _id: `agentTasks:${id}`,
-  _creationTime: 1,
-  projectId: "projects:p",
-  threadId: `threads:${id}`,
-  title: `Task ${id}`,
-  instruction: "Do the thing",
-  personaId: "personas:a",
-  origin: { kind: "person" },
-  state: "running",
-  tools: ["retrieve"],
-  plan: [],
-  outputs: [],
-  questions: [],
-  createdBy: user("users:u"),
-  startedAt: 5,
-  revision: 1,
-  updatedAt: 5,
-  ...extra
-});
+const task = (id: string, extra: Record<string, unknown> = {}): Row => {
+  const state = extra.state ?? "running";
+  return {
+    _id: `agentTasks:${id}`,
+    _creationTime: 1,
+    projectId: "projects:p",
+    threadId: `threads:${id}`,
+    title: `Task ${id}`,
+    instruction: "Do the thing",
+    personaId: "personas:a",
+    origin: { kind: "person" },
+    state: "running",
+    ...(state === "running" ? { execution: { kind: "grounded" } } : {}),
+    tools: ["retrieve"],
+    plan: [],
+    outputs: [],
+    questions: [],
+    createdBy: user("users:u"),
+    startedAt: 5,
+    revision: 1,
+    updatedAt: 5,
+    ...extra
+  };
+};
 
 const automation = (id: string, extra: Record<string, unknown> = {}): Row => ({
   _id: `automations:${id}`,
@@ -145,14 +166,43 @@ const automation = (id: string, extra: Record<string, unknown> = {}): Row => ({
   ...extra
 });
 
+const externalFile = (id: string, extra: Record<string, unknown> = {}): Row => {
+  const hash = "a".repeat(64);
+  return {
+    _id: `externalFiles:${id}`,
+    _creationTime: 1,
+    projectId: "projects:p",
+    name: `${id}.md`,
+    originalName: `${id}.md`,
+    relativePath: `evidence/${id}.md`,
+    mediaType: "text/markdown",
+    subkind: "text",
+    storageId: `_storage:${hash}`,
+    hash,
+    size: 24,
+    origin: { kind: "upload" },
+    createdBy: user("users:u"),
+    updatedBy: user("users:u"),
+    revision: 1,
+    updatedAt: 10,
+    ...extra
+  };
+};
+
 beforeEach(() => {
   vi.spyOn(Date, "now").mockReturnValue(500);
   model.calls.length = 0;
   model.scope = { projectId: "projects:p", userId: "users:u", username: "Uma" };
   model.tables = {
     users: [
-      { _id: "users:u", _creationTime: 1, displayName: "Uma" },
-      { _id: "users:v", _creationTime: 1, displayName: "Victor" }
+      {
+        _id: "users:u", _creationTime: 1, authSubject: "auth:u", displayName: "Uma",
+        settings: "{}", updatedAt: 1
+      },
+      {
+        _id: "users:v", _creationTime: 1, authSubject: "auth:v", displayName: "Victor",
+        settings: "{}", updatedAt: 1
+      }
     ],
     personas: [
       persona("a"),
@@ -168,7 +218,7 @@ beforeEach(() => {
           { id: "s1", title: "Read", state: "done" },
           { id: "s2", title: "Write", state: "done" }
         ],
-        questions: [{ id: "q1", text: "Which one?", askedAt: 6 }]
+        questions: [{ id: "q1", text: "Which one?", askedAt: 6, state: "open" }]
       }),
       task("3", { state: "finished", finishedAt: 60, personaId: "personas:b" }),
       task("gone", { projectId: "projects:other" })
@@ -176,7 +226,8 @@ beforeEach(() => {
     threads: [
       { _id: "threads:1", _creationTime: 1, projectId: "projects:p", kind: "agentTask" },
       { _id: "threads:2", _creationTime: 1, projectId: "projects:p", kind: "agentTask" },
-      { _id: "threads:3", _creationTime: 1, projectId: "projects:p", kind: "agentTask" }
+      { _id: "threads:3", _creationTime: 1, projectId: "projects:p", kind: "agentTask" },
+      { _id: "threads:c", _creationTime: 1, projectId: "projects:p", kind: "researchThread" }
     ],
     threadParts: [
       {
@@ -204,6 +255,30 @@ beforeEach(() => {
             state: "complete"
           }
         ]
+      },
+      {
+        _id: "threadParts:2",
+        _creationTime: 1,
+        projectId: "projects:p",
+        threadId: "threads:2",
+        part: 1,
+        messages: []
+      },
+      {
+        _id: "threadParts:3",
+        _creationTime: 1,
+        projectId: "projects:p",
+        threadId: "threads:3",
+        part: 1,
+        messages: []
+      },
+      {
+        _id: "threadParts:c",
+        _creationTime: 1,
+        projectId: "projects:p",
+        threadId: "threads:c",
+        part: 1,
+        messages: []
       }
     ],
     automations: [automation("m"), automation("fired", { firedCount: 2 })],
@@ -225,10 +300,14 @@ beforeEach(() => {
       _id: "documents:1",
       _creationTime: 1,
       projectId: "projects:p",
-      title: "Brief"
+      title: "Brief",
+      createdBy: user("users:u"),
+      updatedBy: user("users:u"),
+      updatedAt: 1
     }],
     slideDecks: [],
     spreadsheets: [],
+    externalFiles: [],
     findings: [],
     resourceSets: [],
     activity: [
@@ -305,7 +384,92 @@ describe("reading the library", () => {
     assert.equal(fired?.startedByName, "Uma");
   });
 
-  test("quarantines rows missing required current persona, task, or automation fields", async () => {
+  test("refuses cross-project conversation-part claimants instead of projecting their messages", async () => {
+    const chatPart = model.tables.threadParts.find((row) => row.threadId === "threads:c")!;
+    chatPart.projectId = "projects:other";
+    await assert.rejects(() => readAgentsLibrary(), /exact current aggregate/);
+
+    chatPart.projectId = "projects:p";
+    const taskPart = model.tables.threadParts.find((row) => row.threadId === "threads:1")!;
+    taskPart.projectId = "projects:other";
+    await assert.rejects(() => readTask({ taskId: "agentTasks:1" }), /exact current aggregate/);
+  });
+
+  test("does not resolve persona, automation, or task actor names across projects", () => {
+    model.tables.automations.push(automation("elsewhere", { projectId: "projects:other" }));
+    const names = namesIn(model.store as never, "projects:p");
+
+    assert.equal(names.persona("personas:a"), "Persona a");
+    assert.equal(names.persona("personas:elsewhere"), "A persona");
+    assert.equal(names.automation("automations:elsewhere"), "An automation");
+    assert.equal(names.actor({ kind: "agent", taskId: asId<"agentTasks">("agentTasks:gone") }), "An agent");
+  });
+
+  test("projects only exact current External files with their nominal subkind identity", async () => {
+    model.tables.externalFiles.push(
+      externalFile("grounding"),
+      externalFile("foreign", { projectId: "projects:other" })
+    );
+
+    const library = await readAgentsLibrary();
+
+    assert.deepEqual(library.resources, [
+      { ref: { kind: "document", id: "documents:1" }, name: "Brief", relativePath: null },
+      {
+        ref: { kind: "externalFile::text", id: "externalFiles:grounding" },
+        name: "grounding.md",
+        relativePath: "evidence/grounding.md"
+      }
+    ]);
+
+    const narrowed = await updateTask({
+      taskId: "agentTasks:1",
+      baseRevision: 1,
+      patch: {
+        scope: {
+          include: [{
+            select: "resources",
+            refs: [{ kind: "externalFile::text", id: "externalFiles:grounding" }]
+          }],
+          exclude: []
+        }
+      }
+    });
+    assert.equal(narrowed.accepted, true);
+    assert.deepEqual(model.tables.agentTasks[0].scope, {
+      include: [{
+        select: "resources",
+        refs: [{ kind: "externalFile::text", id: "externalFiles:grounding" }]
+      }],
+      exclude: []
+    });
+
+    const trigger = await updateAutomation({
+      automationId: "automations:m",
+      baseRevision: 3,
+      patch: {
+        trigger: {
+          kind: "resource-edited",
+          kinds: ["externalFile"],
+          ref: { kind: "externalFile::text", id: "externalFiles:grounding" }
+        }
+      }
+    });
+    assert.equal(trigger.accepted, true);
+    const after = await readAgentsLibrary();
+    assert.equal(
+      after.automations.find((row) => row.id === "automations:m")?.triggerRefName,
+      "grounding.md"
+    );
+  });
+
+  test("fails rather than projecting a visible non-current External row", async () => {
+    model.tables.externalFiles.push(externalFile("retired", { legacyKind: "file" }));
+
+    await assert.rejects(() => readAgentsLibrary(), /unknown field: legacyKind/);
+  });
+
+  test("fails closed on rows missing required current persona, task, or automation fields", async () => {
     model.tables.personas.push(
       persona("missing-definition", { definition: undefined }),
       persona("missing-tools", { tools: undefined }),
@@ -322,13 +486,15 @@ describe("reading the library", () => {
       automation("missing-count", { firedCount: undefined })
     );
 
-    const library = await readAgentsLibrary();
-
-    assert.equal(library.personas.some((row) => row.id.includes("missing-")), false);
-    assert.equal(library.tasks.some((row) => row.id.includes("missing-")), false);
-    assert.equal(library.automations.some((row) => row.id.includes("missing-")), false);
-    assert.equal(await readPersona({ personaId: "personas:missing-tools" }), null);
-    assert.equal(await readTask({ taskId: "agentTasks:missing-tools" }), null);
+    await assert.rejects(() => readAgentsLibrary(), /not storable|missing required|non-current/);
+    await assert.rejects(
+      () => readPersona({ personaId: "personas:missing-tools" }),
+      /not storable|missing required|non-current/
+    );
+    await assert.rejects(
+      () => readTask({ taskId: "agentTasks:missing-tools" }),
+      /not storable|missing required|non-current/
+    );
   });
 
   test("names what started an automation's task by its trigger", async () => {
@@ -367,7 +533,7 @@ describe("reading the library", () => {
     await assert.rejects(() => readPersona({ personaId: "personas:a", extra: 1 } as never), /unknown field/);
   });
 
-  test("offers only admitted uniquely identified named Resource Sets", async () => {
+  test("offers current named Resource Sets and omits current foreign and private sets", async () => {
     const reusable = (id: string, name: string, extra: Record<string, unknown> = {}): Row => ({
       _id: `resourceSets:${id}`,
       _creationTime: 1,
@@ -380,21 +546,47 @@ describe("reading the library", () => {
       ...extra
     });
     model.tables.resourceSets = [
-      reusable("duplicate", "First claimant"),
-      reusable("duplicate", "Foreign claimant", { projectId: "projects:other" }),
-      reusable("malformed", "Malformed", { set: { include: "everything", exclude: [] } }),
       reusable("valid", "Valid set"),
-      reusable("private", "Private", {
-        name: undefined,
-        boundTo: { kind: "resource", resourceId: "documents:1", hole: "evidence" }
-      })
+      reusable("foreign", "Foreign set", { projectId: "projects:other" }),
+      {
+        ...reusable("private", "Private", {
+        boundTo: {
+          kind: "resource",
+          ref: { kind: "document", id: "documents:1" },
+          hole: "evidence"
+        }
+        }),
+        name: undefined
+      }
     ];
+    delete model.tables.resourceSets[2].name;
 
     const library = await readAgentsLibrary();
 
     assert.deepEqual(library.resourceSets, [
       { id: "resourceSets:valid", name: "Valid set" }
     ]);
+  });
+
+  test("fails closed on duplicate or malformed Resource Set rows", async () => {
+    const reusable = (id: string, extra: Record<string, unknown> = {}): Row => ({
+      _id: `resourceSets:${id}`,
+      _creationTime: 1,
+      projectId: "projects:p",
+      name: "Evidence",
+      set: { include: [{ select: "project" }], exclude: [] },
+      createdBy: user("users:u"),
+      revision: 1,
+      updatedAt: 1,
+      ...extra
+    });
+    model.tables.resourceSets = [reusable("duplicate"), reusable("duplicate")];
+    await assert.rejects(() => readAgentsLibrary(), /repeats row id/);
+
+    model.tables.resourceSets = [reusable("malformed", {
+      set: { include: "everything", exclude: [] }
+    })];
+    await assert.rejects(() => readAgentsLibrary(), /non-current field values/);
   });
 });
 
@@ -415,7 +607,7 @@ describe("personas", () => {
       patch: {
         section: { name: "focus", text: "Only the record." },
         description: "Reads the record",
-        tools: ["web.search", "retrieve"]
+        tools: ["retrieve", "web.search"]
       }
     });
     assert.deepEqual(result, { accepted: true, id: "personas:a", revision: 3 });
@@ -469,6 +661,10 @@ describe("tasks", () => {
     assert.equal(result.accepted, true);
     const row = model.tables.agentTasks.find((candidate) => candidate._id === result.id);
     assert.equal(row?.state, "running");
+    assert.deepEqual(
+      (row?.plan as { id: string }[]).map((step) => step.id),
+      ["ground-scope", "ground-answer", "ground-publish"]
+    );
     assert.deepEqual(row?.tools, ["retrieve", "web.search"]);
     const part = model.tables.threadParts.find((candidate) => candidate.threadId === row?.threadId);
     assert.equal((part?.messages as unknown[]).length, 1);
@@ -492,6 +688,23 @@ describe("tasks", () => {
     assert.equal(result.accepted === false && result.reason, "invalid-state");
   });
 
+  test("rolls back an append command when a current part claims the task thread from another project", async () => {
+    const part = model.tables.threadParts.find((row) => row.threadId === "threads:2")!;
+    part.projectId = "projects:other";
+    const before = structuredClone(model.tables);
+
+    await assert.rejects(
+      () => answerTaskQuestion({
+        taskId: "agentTasks:2",
+        questionId: "q1",
+        answer: "Use option A"
+      }),
+      /exact current aggregate/
+    );
+
+    assert.deepEqual(model.tables, before);
+  });
+
   test("appends a message to the thread and refuses one to a finished task", async () => {
     const sent = await sendTaskMessage({ taskId: "agentTasks:1", text: "Start with the logs" });
     assert.equal(sent.accepted, true);
@@ -507,15 +720,22 @@ describe("tasks", () => {
       answer: "The first."
     });
     assert.equal(answered.accepted, true);
-    const question = (model.tables.agentTasks[1].questions as { answer?: string }[])[0];
+    const question = (model.tables.agentTasks[1].questions as { state?: string; answer?: string }[])[0];
+    assert.equal(question.state, "answered");
     assert.equal(question.answer, "The first.");
     const twice = await answerTaskQuestion({ taskId: "agentTasks:2", questionId: "q1", answer: "Again" });
     assert.equal(twice.accepted === false && twice.reason, "invalid-state");
 
-    (model.tables.agentTasks[1].questions as unknown[]).push({ id: "q2", text: "Which colour?", askedAt: 7 });
+    (model.tables.agentTasks[1].questions as unknown[]).push({
+      id: "q2",
+      text: "Which colour?",
+      askedAt: 7,
+      state: "open"
+    });
     const declined = await answerTaskQuestion({ taskId: "agentTasks:2", questionId: "q2", reject: true });
     assert.equal(declined.accepted, true);
-    const rejected = (model.tables.agentTasks[1].questions as { rejectedAt?: number }[])[1];
+    const rejected = (model.tables.agentTasks[1].questions as { state?: string; rejectedAt?: number }[])[1];
+    assert.equal(rejected.state, "rejected");
     assert.equal(rejected.rejectedAt, 500);
     await assert.rejects(
       () => answerTaskQuestion({ taskId: "agentTasks:2", questionId: "q2", answer: "x", reject: true }),
@@ -625,7 +845,11 @@ describe("scope", () => {
       _id: "resourceSets:private",
       _creationTime: 1,
       projectId: "projects:p",
-      boundTo: { kind: "resource", resourceId: "documents:1", hole: "evidence" },
+      boundTo: {
+        kind: "resource",
+        ref: { kind: "document", id: "documents:1" },
+        hole: "evidence"
+      },
       set: {
         include: [{ select: "resources", refs: [{ kind: "document", id: "documents:1" }] }],
         exclude: []

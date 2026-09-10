@@ -123,6 +123,8 @@ export type ChatItem = {
 export type ResourceOption = {
   readonly ref: ResourceRef;
   readonly name: string;
+  /** Exact External location; null for resources that do not live in External. */
+  readonly relativePath: string | null;
 };
 
 export type ResourceSetOption = {

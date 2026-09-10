@@ -2,7 +2,8 @@ import type { TableBlock, TableCell } from "$representation/data/types/content/c
 import { applyOps } from "$representation/data/behavior/slide-decks/apply-ops";
 import type { SlideDeckBody, SlideElement } from "$representation/data/types/slide-decks/body";
 import type { SlideDeckOp } from "$representation/data/types/slide-decks/op";
-import { emptyText, type Edit } from "$app-views/categories/slide-deck-editor/procedures/deck";
+import type { Edit } from "$app-views/categories/slide-deck-editor/procedures/deck-edit";
+import { emptyText } from "$app-views/categories/slide-deck-editor/procedures/deck-elements";
 import { mint } from "$app-views/categories/slide-deck-editor/procedures/ids";
 
 export type GridCell = {
@@ -134,8 +135,12 @@ export const withSplitCell = (body: SlideDeckBody, table: TableBlock, id: string
   if (anchor === undefined || (anchor.rowSpan === 1 && anchor.columnSpan === 1)) return none(body);
 
   const ops: SlideDeckOp[] = [];
-  if (anchor.rowSpan > 1) ops.push({ op: "set", path: `${id}/rowSpan`, value: null, was: anchor.rowSpan });
-  if (anchor.columnSpan > 1) ops.push({ op: "set", path: `${id}/columnSpan`, value: null, was: anchor.columnSpan });
+  if (anchor.rowSpan > 1) {
+    ops.push({ op: "set", target: "block", path: `${id}/rowSpan`, value: null, was: anchor.rowSpan });
+  }
+  if (anchor.columnSpan > 1) {
+    ops.push({ op: "set", target: "block", path: `${id}/columnSpan`, value: null, was: anchor.columnSpan });
+  }
 
   for (let r = anchor.row; r < anchor.row + anchor.rowSpan; r += 1) {
     const row = table.rows[r];
@@ -171,7 +176,13 @@ export const withRowInserted = (body: SlideDeckBody, element: SlideElement, afte
   const anchor = afterIndex < 0 ? null : (table.rows[afterIndex]?.id ?? table.rows.at(-1)?.id ?? null);
   const ops: SlideDeckOp[] = [{ op: "insert", target: "block", path: `${table.id}/rows`, ids: [row.id], after: anchor, values: [row] }];
   if (rowHeights !== undefined && rowHeights.length === table.rows.length) {
-    ops.push({ op: "set", path: `${element.id}/content/rowHeights`, value: spliced(rowHeights, Math.min(afterIndex + 1, rowHeights.length), true), was: rowHeights });
+    ops.push({
+      op: "set",
+      target: "element",
+      path: `${element.id}/content/rowHeights`,
+      value: spliced(rowHeights, Math.min(afterIndex + 1, rowHeights.length), true),
+      was: rowHeights
+    });
   }
   return finished(body, ops);
 };
@@ -186,7 +197,13 @@ export const withRowRemoved = (body: SlideDeckBody, element: SlideElement, index
     { op: "remove", target: "block", path: `${table.id}/rows`, ids: [row.id], after: index === 0 ? null : table.rows[index - 1].id, values: [row] }
   ];
   if (rowHeights !== undefined && rowHeights.length === table.rows.length) {
-    ops.push({ op: "set", path: `${element.id}/content/rowHeights`, value: spliced(rowHeights, index, false), was: rowHeights });
+    ops.push({
+      op: "set",
+      target: "element",
+      path: `${element.id}/content/rowHeights`,
+      value: spliced(rowHeights, index, false),
+      was: rowHeights
+    });
   }
   return finished(body, ops);
 };
@@ -203,7 +220,13 @@ export const withColumnInserted = (body: SlideDeckBody, element: SlideElement, a
     return { op: "insert", target: "block", path: `${row.id}/cells`, ids: [made.id], after: anchor, values: [made] };
   });
   if (table.columnWidths !== undefined && table.columnWidths.length === columns) {
-    ops.push({ op: "set", path: `${table.id}/columnWidths`, value: spliced(table.columnWidths, Math.min(afterColumn + 1, columns), true), was: table.columnWidths });
+    ops.push({
+      op: "set",
+      target: "block",
+      path: `${table.id}/columnWidths`,
+      value: spliced(table.columnWidths, Math.min(afterColumn + 1, columns), true),
+      was: table.columnWidths
+    });
   }
   return finished(body, ops);
 };
@@ -220,7 +243,13 @@ export const withColumnRemoved = (body: SlideDeckBody, element: SlideElement, co
     const found = covering(grid, row.id, column);
     if (found === undefined) continue;
     if (found.columnSpan > 1) {
-      ops.push({ op: "set", path: `${found.cell.id}/columnSpan`, value: found.columnSpan === 2 ? null : found.columnSpan - 1, was: found.columnSpan });
+      ops.push({
+        op: "set",
+        target: "block",
+        path: `${found.cell.id}/columnSpan`,
+        value: found.columnSpan === 2 ? null : found.columnSpan - 1,
+        was: found.columnSpan
+      });
       continue;
     }
     if (found.row !== table.rows.indexOf(row)) continue;
@@ -228,7 +257,13 @@ export const withColumnRemoved = (body: SlideDeckBody, element: SlideElement, co
     ops.push({ op: "remove", target: "block", path: `${row.id}/cells`, ids: [found.cell.id], after: at <= 0 ? null : row.cells[at - 1].id, values: [found.cell] });
   }
   if (table.columnWidths !== undefined && table.columnWidths.length === columns) {
-    ops.push({ op: "set", path: `${table.id}/columnWidths`, value: spliced(table.columnWidths, column, false), was: table.columnWidths });
+    ops.push({
+      op: "set",
+      target: "block",
+      path: `${table.id}/columnWidths`,
+      value: spliced(table.columnWidths, column, false),
+      was: table.columnWidths
+    });
   }
   return finished(body, ops);
 };

@@ -6,6 +6,9 @@ import { validateRunAutomation } from "$capabilities/agents/api/run-automation/v
 import { findVisible, notFound, refused, viewer } from "$capabilities/agents/api/shared/lookup";
 import type { RowFields } from "$capabilities/agents/api/shared/store";
 import { scopeReferenceRefusal } from "$capabilities/agents/api/shared/scope-references";
+import { dispatchAgentTask } from "$capabilities/agents/api/shared/dispatch-agent-task";
+import { agentRunnerConfiguration } from "$capabilities/agents/api/shared/runner-configuration";
+import { queuedRunnerPlan } from "$capabilities/agents/api/shared/runner-plan";
 import { openThread } from "$capabilities/agents/api/shared/threads";
 import type { RunAutomationResult } from "$capabilities/agents/types/agents";
 
@@ -13,7 +16,9 @@ export const runAutomation = async (input: unknown): Promise<RunAutomationResult
   const scope = await requireScope();
   const asked = validateRunAutomation(input);
 
-  const store = serverModel().store;
+  const model = serverModel();
+  agentRunnerConfiguration(model);
+  const store = model.store;
   const found = findVisible(store, scope, "automations", asked.automationId);
   if (found.kind !== "found") return notFound(asked.automationId, "automation");
   const automation = found.row;
@@ -46,9 +51,10 @@ export const runAutomation = async (input: unknown): Promise<RunAutomationResult
       personaId: automation.personaId,
       origin: { kind: "automation", automationId: automation._id, trigger: "manual" },
       state: "running",
+      execution: { kind: "grounded" },
       ...(automation.scope === undefined ? {} : { scope: automation.scope }),
       tools: [...automation.tools],
-      plan: [],
+      plan: queuedRunnerPlan(),
       outputs: [],
       questions: [],
       createdBy: actor,
@@ -62,5 +68,6 @@ export const runAutomation = async (input: unknown): Promise<RunAutomationResult
     unit.update(`automations.${automation._id}.updatedAt`, at);
     return opened;
   });
+  dispatchAgentTask(model, taskId);
   return { accepted: true, id: automation._id, taskId, revision: automation.revision };
 };

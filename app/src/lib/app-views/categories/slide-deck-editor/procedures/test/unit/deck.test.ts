@@ -1,24 +1,13 @@
 import { describe, expect, it } from "vitest";
 
 import type { SlideDeckBody, SlideElement } from "$representation/data/types/slide-decks/body";
-import {
-  labelOf,
-  placedOn,
-  stepped,
-  valueAt,
-  withDuplicatedSlide,
-  withElementFrame,
-  withGrouped,
-  withMovedSlide,
-  withNewSlide,
-  withRestacked,
-  withRestackedSet,
-  withSavedLayout,
-  withSet,
-  withUngrouped,
-  withoutElements,
-  withoutSlide
-} from "$app-views/categories/slide-deck-editor/procedures/deck";
+import { withoutElements } from "$app-views/categories/slide-deck-editor/procedures/deck-elements";
+import { withGrouped, withRestacked, withRestackedSet, withUngrouped } from "$app-views/categories/slide-deck-editor/procedures/deck-layering";
+import { placedOn } from "$app-views/categories/slide-deck-editor/procedures/deck-placement";
+import { labelOf } from "$app-views/categories/slide-deck-editor/procedures/deck-reading";
+import { withNewSlide, withSavedLayout } from "$app-views/categories/slide-deck-editor/procedures/deck-slide-layouts";
+import { stepped, withDuplicatedSlide, withMovedSlide, withoutSlide } from "$app-views/categories/slide-deck-editor/procedures/deck-slide-order";
+import { valueAt, withElementFrame, withSet } from "$app-views/categories/slide-deck-editor/procedures/deck-values";
 
 const frame = (x: number, y = 0.1, width = 0.2, height = 0.2) => ({ x, y, width, height });
 
@@ -137,11 +126,11 @@ describe("elements", () => {
   it("sets a frame by the element's own id", () => {
     const next = withElementFrame(deck(), "e2", frame(0.5));
     expect(next.body.slides[0].elements[1].frame.x).toBe(0.5);
-    expect(next.ops[0]).toMatchObject({ op: "set", path: "e2/frame" });
+    expect(next.ops[0]).toMatchObject({ op: "set", target: "element", path: "e2/frame" });
   });
 
   it("a set that changes nothing is no op", () => {
-    expect(withSet(deck(), "e2/frame", frame(0.4)).ops).toEqual([]);
+    expect(withSet(deck(), "element", "e2/frame", frame(0.4)).ops).toEqual([]);
     expect(valueAt(deck(), "theme/colors/text")).toBe("--token-ink-primary");
   });
 

@@ -26,7 +26,6 @@
   const clock = startClock();
 
   const TONE = {
-    queued: "attention",
     running: "attention",
     answered: "default",
     insufficient: "attention",
@@ -35,7 +34,6 @@
   } as const;
 
   const SUB = {
-    queued: "Waiting",
     running: "Reading the project",
     answered: "",
     insufficient: "Nothing found",

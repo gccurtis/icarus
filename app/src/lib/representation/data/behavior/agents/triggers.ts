@@ -104,7 +104,7 @@ const repeatWords = (trigger: Extract<AutomationTrigger, { kind: "schedule" }>):
     ? "every day"
     : trigger.repeats === "weekdays"
       ? "on weekdays"
-      : `every ${trigger.weekday ?? "Monday"}`;
+      : `every ${trigger.weekday}`;
 
 export const triggerClause = (trigger: AutomationTrigger, refName?: string): string => {
   if (trigger.kind === "manual") return "someone presses Run";
@@ -127,7 +127,7 @@ export const triggerSummary = (trigger: AutomationTrigger, refName?: string): st
         ? "daily"
         : trigger.repeats === "weekdays"
           ? "weekdays"
-          : `${trigger.weekday ?? "Monday"}s`;
+          : `${trigger.weekday}s`;
     return `${trigger.at} ${repeat}`;
   }
   if (trigger.kind === "resource-edited") {

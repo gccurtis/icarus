@@ -5,12 +5,9 @@ import type {
 } from "$representation/data/types/content/content-block";
 import type { SlideDeckBody } from "$representation/data/types/slide-decks/body";
 import type { TextStyle } from "$representation/data/types/slide-decks/style-set";
-import {
-  placedOn,
-  withSet,
-  withSets,
-  type Edit
-} from "$app-views/categories/slide-deck-editor/procedures/deck";
+import type { Edit } from "$app-views/categories/slide-deck-editor/procedures/deck-edit";
+import { placedOn } from "$app-views/categories/slide-deck-editor/procedures/deck-placement";
+import { withSet, withSets } from "$app-views/categories/slide-deck-editor/procedures/deck-values";
 import { FAMILIES } from "$app-views/categories/slide-deck-editor/procedures/palette";
 
 export type { TextStyle } from "$representation/data/types/slide-decks/style-set";
@@ -58,7 +55,11 @@ export const styleFieldsEdit = (
     body,
     (Object.entries(patch) as [keyof TextStyle, TextStyle[keyof TextStyle]][])
       .filter(([field, value]) => JSON.stringify(style[field] ?? null) !== JSON.stringify(value ?? null))
-      .map(([field, value]) => ({ path: `styles/styles/${key}/${field}`, value: value ?? null }))
+      .map(([field, value]) => ({
+        target: "deck" as const,
+        path: `styles/styles/${key}/${field}`,
+        value: value ?? null
+      }))
   );
 };
 
@@ -72,7 +73,7 @@ export const styleFieldEdit = <K extends keyof TextStyle>(
 export const defaultStyleEdit = (body: SlideDeckBody, key: string): Edit =>
   body.styles.styles[key] === undefined || body.styles.defaultKey === key
     ? { body, ops: [] }
-    : withSet(body, "styles/defaultKey", key);
+    : withSet(body, "deck", "styles/defaultKey", key);
 
 export const newStyleEdit = (
   body: SlideDeckBody
@@ -82,7 +83,7 @@ export const newStyleEdit = (
   const base = body.styles.styles[body.styles.defaultKey] ?? { name: "Body" };
   return {
     key,
-    edit: withSet(body, `styles/styles/${key}`, { ...base, name: "New style" })
+    edit: withSet(body, "deck", `styles/styles/${key}`, { ...base, name: "New style" })
   };
 };
 
@@ -94,7 +95,7 @@ export const duplicateStyleEdit = (
   if (style === undefined) return { edit: { body, ops: [] }, key: undefined };
   const name = `${style.name} copy`;
   const made = keyFrom(name, Object.keys(body.styles.styles));
-  return { key: made, edit: withSet(body, `styles/styles/${made}`, { ...style, name }) };
+  return { key: made, edit: withSet(body, "deck", `styles/styles/${made}`, { ...style, name }) };
 };
 
 const textBlocksIn = (body: SlideDeckBody): readonly (TextBlock | PromptBlock)[] => {
@@ -126,6 +127,9 @@ export const deleteStyleEdit = (body: SlideDeckBody, key: string): Edit => {
   const fallback = body.styles.defaultKey;
   const references = textBlocksIn(body)
     .filter((block) => block.style === key)
-    .map((block) => ({ path: `${block.id}/style`, value: fallback }));
-  return withSets(body, [...references, { path: `styles/styles/${key}`, value: null }]);
+    .map((block) => ({ target: "block" as const, path: `${block.id}/style`, value: fallback }));
+  return withSets(body, [
+    ...references,
+    { target: "deck", path: `styles/styles/${key}`, value: null }
+  ]);
 };

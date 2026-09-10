@@ -6,12 +6,10 @@
 
   import { PanelSection } from "$authored-components/panel";
   import { Button } from "$vendored-components/button";
-  import {
-    placedById,
-    slideHolding,
-    withRestacked,
-    type Restack
-  } from "$app-views/categories/slide-deck-editor/procedures/deck";
+  import type { Restack } from "$app-views/categories/slide-deck-editor/procedures/arrange";
+  import { withRestacked } from "$app-views/categories/slide-deck-editor/procedures/deck-layering";
+  import { placedById } from "$app-views/categories/slide-deck-editor/procedures/deck-placed-element";
+  import { slideHolding } from "$app-views/categories/slide-deck-editor/procedures/deck-slide-holding";
   import { workspaceState, type SlideDeckRuntime } from "$model/client/workspace-state";
 
   let { elementId }: { elementId: string } = $props();

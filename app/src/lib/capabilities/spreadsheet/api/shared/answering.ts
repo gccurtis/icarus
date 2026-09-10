@@ -1,11 +1,9 @@
-import type { StoreUnitOfWork } from "$model/server/store/index.server";
+import {
+  readCurrentRows,
+  type StoreUnitOfWork
+} from "$model/server/store/index.server";
 import { addressesIn, writeAddress } from "$representation/data/behavior/formulas/addresses";
 import { applyOps } from "$representation/data/behavior/spreadsheets/apply-ops";
-import { isStoredSpreadsheetSnapshot } from "$representation/data/behavior/spreadsheets/stored-snapshot";
-import {
-  isStoredDataBackReference,
-  isStoredFormula
-} from "$representation/data/behavior/spreadsheets/stored-formula";
 import {
   recalculated,
   sourceOf,
@@ -32,26 +30,17 @@ export const surroundingsOf = (
   here: Id<"spreadsheets">
 ): Surroundings => {
   const names = new Map<string, FormulaValue>();
-  const variables = store.read("variables");
-  if (variables?.table === "variables" && variables.kind === "table") {
-    for (const row of variables.rows) {
-      if (row.projectId !== projectId) continue;
-      names.set(row.name.toLowerCase(), row.value);
-    }
+  for (const row of readCurrentRows(store, "variables")) {
+    if (row.projectId !== projectId) continue;
+    names.set(row.name.toLowerCase(), row.value);
   }
 
   const sheets = new Map<string, SheetSource>();
-  const snapshots = store.read("spreadsheetSnapshots");
-  if (snapshots?.table === "spreadsheetSnapshots" && snapshots.kind === "table") {
-    if (!snapshots.rows.every(isStoredSpreadsheetSnapshot)) {
-      throw new Error("the spreadsheetSnapshots table contains a non-current row");
-    }
-    for (const row of snapshots.rows) {
-      if (row.projectId !== projectId || row.role !== "leader") continue;
-      if (row.resourceId === here) continue;
-      const cells = cellsOf(cellRowsOf(store, projectId, row.resourceId));
-      sheets.set(row.resourceId, sourceOf(row.resourceId, { body: row.body, cells }));
-    }
+  for (const row of readCurrentRows(store, "spreadsheetSnapshots")) {
+    if (row.projectId !== projectId || row.role !== "leader") continue;
+    if (row.resourceId === here) continue;
+    const cells = cellsOf(cellRowsOf(store, projectId, row.resourceId));
+    sheets.set(row.resourceId, sourceOf(row.resourceId, { body: row.body, cells }));
   }
 
   return {
@@ -91,11 +80,7 @@ export const writeFormulas = (
   resourceId: Id<"spreadsheets">,
   sheet: LiveSheet
 ): LiveSheet => {
-  const rows = unit.read("formulas");
-  const all = rows?.table === "formulas" && rows.kind === "table" ? rows.rows : [];
-  if (!all.every(isStoredFormula)) {
-    throw new Error("the formulas table contains a non-current row");
-  }
+  const all = readCurrentRows(unit, "formulas");
   const held = all.filter((row) => row.projectId === projectId);
   const usesById = new Map(held.map((row) => [row._id, row.usedBy]));
   const byText = new Map(held.map((row) => [row.representation, row]));
@@ -178,12 +163,7 @@ export const writeFormulas = (
 };
 
 const clearBackReferences = (unit: StoreUnitOfWork, formulaId: Id<"formulas">): void => {
-  const rows = unit.read("dataBackReferences");
-  if (rows?.table !== "dataBackReferences" || rows.kind !== "table") return;
-  if (!rows.rows.every(isStoredDataBackReference)) {
-    throw new Error("the dataBackReferences table contains a non-current row");
-  }
-  for (const row of rows.rows) {
+  for (const row of readCurrentRows(unit, "dataBackReferences")) {
     if (row.formulaId === formulaId) unit.remove(`dataBackReferences.${row._id}`);
   }
 };

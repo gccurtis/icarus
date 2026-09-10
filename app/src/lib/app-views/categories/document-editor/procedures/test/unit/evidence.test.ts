@@ -14,6 +14,7 @@ const citation = (): SemanticTextCitation => {
   const firstFrom = text.indexOf(first);
   const secondFrom = text.indexOf(second);
   return {
+    evidenceKind: "text",
     selections: [{ evidenceId: "evidence-1", use: "States Garry's age" }],
     source: {
       ref: { kind: "document", id: asId<"documents">("documents:source") },

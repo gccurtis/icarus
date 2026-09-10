@@ -196,6 +196,8 @@ export type ScopeNames = {
   readonly sets?: ReadonlyMap<string, string>;
   /** A resource's title, by id, for a term that names particular ones. */
   readonly resources?: ReadonlyMap<string, string>;
+  /** An External resource's exact project-relative location, by id. */
+  readonly relativePaths?: ReadonlyMap<string, string>;
 };
 
 const countWords = (count: number, one: string, many: string): string =>
@@ -246,7 +248,12 @@ export const ruleWords = (scope: ScopeDraft | undefined, names: ScopeNames = {})
  * keeps the four surfaces saying the same thing: they all call these.
  */
 
-export type ScopeRow = { readonly key: string; readonly kind: string; readonly words: string };
+export type ScopeRow = {
+  readonly key: string;
+  readonly kind: string;
+  readonly words: string;
+  readonly note: string | null;
+};
 
 export type ScopeOffer = {
   readonly key: string;
@@ -258,7 +265,7 @@ export type ScopeOffer = {
 
 export type NamedResourceRef = ResourceRef extends infer Ref
   ? Ref extends ResourceRef
-    ? Ref & { readonly name: string }
+    ? Ref & { readonly name: string; readonly relativePath: string | null }
     : never
   : never;
 
@@ -272,7 +279,10 @@ export const rowsOf = (
   scope[side].map((term) => ({
     key: termKey(term),
     kind: term.select,
-    words: termWords(term, names)
+    words: termWords(term, names),
+    note: term.select === "resources" && term.refs.length === 1
+      ? (names.relativePaths?.get(term.refs[0].id) ?? null)
+      : null
   }));
 
 /** A resource is offered under one key, because a term needs its kind as well. */
@@ -329,7 +339,7 @@ export const resourceOffers = (
 ): readonly ScopeOffer[] =>
   resources.map((entry) => {
     const ref = admittedNamedReference(entry);
-    return offer(scope, resourceKey(ref), entry.name, entry.kind, {
+    return offer(scope, resourceKey(ref), entry.name, entry.relativePath ?? entry.kind, {
       select: "resources",
       refs: [ref]
     });
@@ -377,7 +387,12 @@ export const builderView = (scope: ScopeDraft, offering: ScopeOffering = {}): Sc
   const known = new Map(sets.map((entry) => [entry.id, entry.set]));
   const names: ScopeNames = {
     sets: new Map(sets.map((entry) => [entry.id, entry.name])),
-    resources: new Map(resources.map((entry) => [entry.id, entry.name]))
+    resources: new Map(resources.map((entry) => [entry.id, entry.name])),
+    relativePaths: new Map(
+      resources.flatMap((entry) =>
+        entry.relativePath === null ? [] : [[entry.id, entry.relativePath] as const]
+      )
+    )
   };
   const catalogue = resources.map(admittedNamedReference);
   const selected = selectedBy(scope, catalogue, known);
@@ -392,7 +407,7 @@ export const builderView = (scope: ScopeDraft, offering: ScopeOffering = {}): Sc
     preview: selected.slice(0, 40).map((ref) => ({
       key: resourceKey(ref),
       label: titles.get(ref.id)?.name ?? ref.id,
-      note: ref.kind
+      note: titles.get(ref.id)?.relativePath ?? ref.kind
     })),
     sources: [
       { key: "kinds", label: "Kinds", offers: kindOffers(scope) },

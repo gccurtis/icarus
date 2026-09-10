@@ -49,6 +49,15 @@ export const MUTATIONS = [
     changes: [{ path: "src/lib/capabilities/ownership-probe/index.remote.ts", write: remote }]
   },
   {
+    check: "subject-write-proves-ownership",
+    says: "a conversation aggregate stops proving every part belongs to the authorized project",
+    names: "representation/data/behavior/agents/conversation.ts",
+    changes: [{
+      path: "src/lib/representation/data/behavior/agents/conversation.ts",
+      edit: (before) => before.replace("parts.some((part) => part.projectId !== projectId)", "parts.some(() => false)")
+    }]
+  },
+  {
     check: "generic-browser-mutations-do-not-exist",
     says: "a remote browser command is generic over persistence coordinates",
     names: "index.remote.ts",

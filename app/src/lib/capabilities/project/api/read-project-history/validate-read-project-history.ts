@@ -1,13 +1,9 @@
 import type { ReadProjectHistoryInput } from "$capabilities/project/types/project";
+import { projectInput } from "$capabilities/project/api/shared/input";
 
 export const validateReadProjectHistory = (input: unknown): ReadProjectHistoryInput => {
-  if (input === null || typeof input !== "object" || Array.isArray(input)) {
-    throw new Error("project/read-project-history: an object is required");
-  }
-  const asked = input as Record<string, unknown>;
-  if (!Object.keys(asked).every((key) => ["search", "since", "before", "limit"].includes(key))) {
-    throw new Error("project/read-project-history: only search, since, before, and limit are accepted");
-  }
+  const message = "project/read-project-history: only search, since, before, and limit are accepted as exact current data";
+  const asked = projectInput(input, ["search", "since", "before", "limit"], message);
   if (typeof asked.search !== "string" || asked.search.length > 160) {
     throw new Error("project/read-project-history: search is at most 160 characters");
   }

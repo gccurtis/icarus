@@ -928,7 +928,8 @@
                   "format": { "padding": { "x": 18, "y": 16 } },
                   "atoms": [{ "id": "exec-body-atom", "kind": "literal", "text": "Reliability work remains on plan. Transformer procurement is the only material schedule exception; approval of the accelerated replacement window is requested this week." }],
                   "display": "Reliability work remains on plan. Transformer procurement is the only material schedule exception; approval of the accelerated replacement window is requested this week.",
-                  "marks": []
+                  "marks": [],
+                  "format": { "background": "--token-color-intelligence-surface", "padding": { "x": 18, "y": 16 } }
                 }
               }
             }
@@ -1012,7 +1013,8 @@
                   "format": { "padding": { "x": 18, "y": 16 } },
                   "atoms": [{ "id": "options-body-atom", "kind": "literal", "text": "Covered conductor provides the strongest near-term risk reduction per dollar. Targeted undergrounding is reserved for the four highest-consequence segments." }],
                   "display": "Covered conductor provides the strongest near-term risk reduction per dollar. Targeted undergrounding is reserved for the four highest-consequence segments.",
-                  "marks": []
+                  "marks": [],
+                  "format": { "border": { "color": "--token-color-active-border", "width": 1, "style": "solid" }, "padding": { "x": 18, "y": 16 } }
                 }
               }
             }

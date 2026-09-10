@@ -33,6 +33,7 @@ export const RESOURCE_KINDS = [
   "finding",
   "connection",
   "externalFile::text",
+  "externalFile::code",
   "externalFile::data",
   "externalFile::image",
   "externalFile::audio",
@@ -42,6 +43,7 @@ export const RESOURCE_KINDS = [
 
 export const EXTERNAL_FILE_SUBKINDS = [
   "text",
+  "code",
   "data",
   "image",
   "audio",
@@ -58,6 +60,7 @@ export const RESOURCE_SELECTOR_KINDS = [
   "connection",
   "externalFile",
   "externalFile::text",
+  "externalFile::code",
   "externalFile::data",
   "externalFile::image",
   "externalFile::audio",
@@ -73,6 +76,7 @@ const RESOURCE_TABLES = {
   finding: "findings",
   connection: "connectors",
   "externalFile::text": "externalFiles",
+  "externalFile::code": "externalFiles",
   "externalFile::data": "externalFiles",
   "externalFile::image": "externalFiles",
   "externalFile::audio": "externalFiles",
@@ -100,17 +104,23 @@ export const isExternalFileResourceKind = (
   isResourceKind(kind) && kind.startsWith("externalFile::");
 
 const fieldsOf = (value: unknown): Record<string, unknown> | undefined =>
-  value !== null && typeof value === "object" && !Array.isArray(value)
+  value !== null && typeof value === "object" && !Array.isArray(value) &&
+  (Object.getPrototypeOf(value) === Object.prototype || Object.getPrototypeOf(value) === null)
     ? value as Record<string, unknown>
     : undefined;
 
 /** Exact current reference admission: closed kind, exact fields, and coherent row namespace. */
 export const isResourceRef = (value: unknown): value is ResourceRef => {
   const ref = fieldsOf(value);
-  const keys = ref === undefined ? [] : Object.keys(ref);
+  const keys = ref === undefined ? [] : Reflect.ownKeys(ref);
   if (
     ref === undefined ||
     keys.length !== 2 ||
+    !keys.every((key): key is string => typeof key === "string") ||
+    !keys.every((key) => {
+      const descriptor = Object.getOwnPropertyDescriptor(ref, key);
+      return descriptor !== undefined && "value" in descriptor && descriptor.enumerable;
+    }) ||
     !Object.hasOwn(ref, "kind") ||
     !Object.hasOwn(ref, "id") ||
     !isResourceKind(ref.kind)

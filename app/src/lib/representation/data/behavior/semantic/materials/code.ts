@@ -1,38 +1,7 @@
 import type { CodeMaterialProfile, CodeSymbolProfile } from "$representation/data/types/semantic/material";
+import { externalCodeLanguage } from "$representation/data/behavior/external/file";
 
-const EXTENSIONS: Record<string, string> = {
-  js: "javascript", jsx: "javascript", mjs: "javascript", cjs: "javascript",
-  ts: "typescript", tsx: "typescript", py: "python", rb: "ruby", rs: "rust",
-  go: "go", java: "java", c: "c", h: "c", cc: "cpp", cpp: "cpp", hpp: "cpp",
-  css: "css", html: "html", sql: "sql", sh: "shell", zsh: "shell",
-  json: "json", yaml: "yaml", yml: "yaml", toml: "toml"
-};
-
-const MEDIA_TYPES: Record<string, string> = {
-  "application/javascript": "javascript",
-  "application/x-javascript": "javascript",
-  "text/javascript": "javascript",
-  "application/typescript": "typescript",
-  "text/typescript": "typescript",
-  "application/json": "json",
-  "application/ld+json": "json",
-  "application/sql": "sql",
-  "text/css": "css",
-  "text/html": "html",
-  "text/x-python": "python",
-  "text/x-ruby": "ruby",
-  "text/x-rust": "rust",
-  "text/x-go": "go",
-  "text/x-java-source": "java",
-  "application/x-sh": "shell",
-  "text/x-shellscript": "shell"
-};
-
-export const codeLanguage = (name: string, mediaType = ""): string => {
-  const extension = name.toLowerCase().split(".").at(-1) ?? "";
-  if (EXTENSIONS[extension] !== undefined) return EXTENSIONS[extension];
-  return MEDIA_TYPES[mediaType.toLowerCase().split(";")[0].trim()] ?? "unknown";
-};
+export const codeLanguage = externalCodeLanguage;
 
 const symbolKind = (prefix: string): CodeSymbolProfile["kind"] => {
   if (/class/.test(prefix)) return "class";

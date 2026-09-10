@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { check } from "../shared/check.mjs";
 
 /**
- * Twelve files, and this is the list. Something new here is a decision about how
+ * This is the explicit runtime file list. Something new here is a decision about how
  * the application comes up, which is worth a line in a diff rather than a
  * directory that quietly grows.
  */
@@ -11,7 +11,13 @@ const LAYOUT = {
   "": { files: [], documents: ["runtime.md"], dirs: ["client", "server"] },
   client: { files: ["start.ts", "types.ts"], documents: ["client.md"], dirs: ["test"] },
   server: {
-    files: ["start.server.ts", "types.ts", "scope.server.ts"],
+    files: [
+      "start.server.ts",
+      "initialization.server.ts",
+      "lifetime.server.ts",
+      "types.ts",
+      "scope.server.ts"
+    ],
     documents: ["server.md"],
     dirs: ["test"]
   }

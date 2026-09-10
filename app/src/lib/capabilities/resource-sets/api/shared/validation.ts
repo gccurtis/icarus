@@ -1,8 +1,14 @@
-import { asId } from "$representation/data/behavior/core/id";
 import {
   admitResourceRef,
   isResourceSelectorKind
 } from "$representation/data/behavior/core/resource";
+import {
+  hasExactFields,
+  isStoredJson,
+  isStoredRowId,
+  storedFields
+} from "$representation/data/behavior/core/stored";
+import type { Id } from "$representation/data/types/core/id";
 import type { BoundTo, ResourceSet, SetTerm } from "$representation/data/types/core/resource-set";
 
 type Fields = Record<string, unknown>;
@@ -11,29 +17,35 @@ const MAX_TERMS_PER_SIDE = 100;
 const MAX_KINDS_PER_TERM = 100;
 const MAX_REFS_PER_TERM = 1_000;
 const MAX_KIND_LENGTH = 160;
-const MAX_IDENTIFIER_LENGTH = 500;
 
 export const fieldsOf = (value: unknown, subject: string): Fields => {
-  if (value === null || typeof value !== "object" || Array.isArray(value)) {
-    throw new Error(`resource-sets/${subject}: an object is required`);
+  const fields = storedFields(value);
+  if (fields === undefined || !isStoredJson(value)) {
+    throw new Error(`resource-sets/${subject}: an exact current data object is required`);
   }
-  return value as Fields;
+  return fields;
 };
 
 export const has = (fields: Fields, field: string): boolean =>
-  Object.prototype.hasOwnProperty.call(fields, field);
+  Object.hasOwn(fields, field);
 
 export const only = (fields: Fields, allowed: readonly string[], subject: string): void => {
-  const extra = Object.keys(fields).filter((field) => !allowed.includes(field));
+  if (hasExactFields(fields, [], allowed)) return;
+  const extra = Reflect.ownKeys(fields).filter(
+    (field) => typeof field !== "string" || !allowed.includes(field)
+  );
   if (extra.length > 0) {
     throw new Error(
-      `resource-sets/${subject}: unknown ${extra.length === 1 ? "field" : "fields"} ${extra.join(", ")}`
+      `resource-sets/${subject}: unknown ${extra.length === 1 ? "field" : "fields"} ${extra.map(String).join(", ")}`
     );
   }
+  throw new Error(`resource-sets/${subject}: only exact current data fields are accepted`);
 };
 
-const isRecord = (value: unknown): value is Fields =>
-  value !== null && typeof value === "object" && !Array.isArray(value);
+const exact = (value: unknown, required: readonly string[]): Fields | undefined => {
+  const fields = storedFields(value);
+  return fields !== undefined && hasExactFields(fields, required) ? fields : undefined;
+};
 
 const canonicalText = (value: unknown, maximum: number): value is string =>
   typeof value === "string" &&
@@ -41,8 +53,8 @@ const canonicalText = (value: unknown, maximum: number): value is string =>
   value.length > 0 &&
   value.length <= maximum;
 
-export const setIdOf = (value: unknown, subject: string): string => {
-  if (typeof value !== "string" || !/^resourceSets:[^.:\s]+$/.test(value)) {
+export const setIdOf = (value: unknown, subject: string): Id<"resourceSets"> => {
+  if (!isStoredRowId(value, "resourceSets")) {
     throw new Error(`resource-sets/${subject}: setId is one canonical resourceSets row id`);
   }
   return value;
@@ -71,33 +83,35 @@ export const nameOf = (value: unknown, subject: string): string => {
  * difference between a project's own set and a value something else holds.
  */
 export const boundToOf = (value: unknown, subject: string): BoundTo => {
-  if (!isRecord(value)) throw new Error(`resource-sets/${subject}: boundTo is an object`);
-  if (value.kind === "hole") {
+  const owner = storedFields(value);
+  if (owner === undefined) {
+    throw new Error(`resource-sets/${subject}: boundTo is an exact current data object`);
+  }
+  if (owner.kind === "hole") {
     if (
-      Object.keys(value).length !== 3 ||
-      !canonicalText(value.templateId, MAX_IDENTIFIER_LENGTH) ||
-      !canonicalText(value.hole, MAX_KIND_LENGTH)
+      !hasExactFields(owner, ["kind", "templateId", "hole"]) ||
+      !isStoredRowId(owner.templateId, "templates") ||
+      !canonicalText(owner.hole, MAX_KIND_LENGTH)
     ) {
       throw new Error(`resource-sets/${subject}: a hole owner names a template and a hole`);
     }
     return {
       kind: "hole",
-      templateId: asId<"templates">(value.templateId as string),
-      hole: value.hole as string
+      templateId: owner.templateId,
+      hole: owner.hole
     };
   }
-  if (value.kind === "resource") {
+  if (owner.kind === "resource") {
     if (
-      Object.keys(value).length !== 3 ||
-      !canonicalText(value.resourceId, MAX_IDENTIFIER_LENGTH) ||
-      !canonicalText(value.hole, MAX_KIND_LENGTH)
+      !hasExactFields(owner, ["kind", "ref", "hole"]) ||
+      !canonicalText(owner.hole, MAX_KIND_LENGTH)
     ) {
       throw new Error(`resource-sets/${subject}: a resource owner names one resource and a hole`);
     }
     return {
       kind: "resource",
-      resourceId: value.resourceId as string,
-      hole: value.hole as string
+      ref: admitResourceRef(owner.ref, `resource-sets/${subject}.ref`),
+      hole: owner.hole
     };
   }
   throw new Error(`resource-sets/${subject}: an owner is a hole or a resource`);
@@ -113,30 +127,31 @@ export const descriptionOf = (value: unknown, subject: string): string => {
 };
 
 const termOf = (value: unknown, subject: string): SetTerm => {
-  if (!isRecord(value)) throw new Error(`resource-sets/${subject}: a term is an object`);
-  if (value.select === "project") {
-    if (Object.keys(value).length !== 1) throw new Error(`resource-sets/${subject}: a project term carries nothing else`);
+  const term = storedFields(value);
+  if (term === undefined) throw new Error(`resource-sets/${subject}: a term is an exact current data object`);
+  if (term.select === "project") {
+    if (!hasExactFields(term, ["select"])) throw new Error(`resource-sets/${subject}: a project term carries nothing else`);
     return { select: "project" };
   }
-  if (value.select === "kinds") {
+  if (term.select === "kinds") {
     if (
-      Object.keys(value).length !== 2 ||
-      !Array.isArray(value.kinds) ||
-      value.kinds.length === 0 ||
-      value.kinds.length > MAX_KINDS_PER_TERM ||
-      !value.kinds.every(isResourceSelectorKind) ||
-      new Set(value.kinds.map((kind) => (kind as string).toLocaleLowerCase())).size !== value.kinds.length
+      !hasExactFields(term, ["select", "kinds"]) ||
+      !Array.isArray(term.kinds) ||
+      term.kinds.length === 0 ||
+      term.kinds.length > MAX_KINDS_PER_TERM ||
+      !term.kinds.every(isResourceSelectorKind) ||
+      new Set(term.kinds.map((kind) => (kind as string).toLocaleLowerCase())).size !== term.kinds.length
     ) {
       throw new Error(`resource-sets/${subject}: a kinds term lists distinct resource kinds`);
     }
-    return { select: "kinds", kinds: [...value.kinds] };
+    return { select: "kinds", kinds: [...term.kinds] };
   }
-  if (value.select === "resources") {
+  if (term.select === "resources") {
     if (
-      Object.keys(value).length !== 2 ||
-      !Array.isArray(value.refs) ||
-      value.refs.length > MAX_REFS_PER_TERM ||
-      !value.refs.every((ref) => {
+      !hasExactFields(term, ["select", "refs"]) ||
+      !Array.isArray(term.refs) ||
+      term.refs.length > MAX_REFS_PER_TERM ||
+      !term.refs.every((ref) => {
         try {
           admitResourceRef(ref);
           return true;
@@ -149,29 +164,29 @@ const termOf = (value: unknown, subject: string): SetTerm => {
     }
     return {
       select: "resources",
-      refs: value.refs.map((ref) => admitResourceRef(ref, `resource-sets/${subject}: ref`))
+      refs: term.refs.map((ref) => admitResourceRef(ref, `resource-sets/${subject}: ref`))
     };
   }
-  if (value.select === "set") {
-    if (Object.keys(value).length !== 2) throw new Error(`resource-sets/${subject}: a set term names one set`);
-    return { select: "set", setId: asId<"resourceSets">(setIdOf(value.setId, subject)) };
+  if (term.select === "set") {
+    if (!hasExactFields(term, ["select", "setId"])) throw new Error(`resource-sets/${subject}: a set term names one set`);
+    return { select: "set", setId: setIdOf(term.setId, subject) };
   }
   throw new Error(`resource-sets/${subject}: a term selects project, kinds, resources, or set`);
 };
 
 export const resourceSetOf = (value: unknown, subject: string): ResourceSet => {
+  const set = exact(value, ["include", "exclude"]);
   if (
-    !isRecord(value) ||
-    Object.keys(value).length !== 2 ||
-    !Array.isArray(value.include) ||
-    !Array.isArray(value.exclude) ||
-    value.include.length > MAX_TERMS_PER_SIDE ||
-    value.exclude.length > MAX_TERMS_PER_SIDE
+    set === undefined ||
+    !Array.isArray(set.include) ||
+    !Array.isArray(set.exclude) ||
+    set.include.length > MAX_TERMS_PER_SIDE ||
+    set.exclude.length > MAX_TERMS_PER_SIDE
   ) {
     throw new Error(`resource-sets/${subject}: a set is an include list and an exclude list`);
   }
   return {
-    include: value.include.map((term) => termOf(term, subject)),
-    exclude: value.exclude.map((term) => termOf(term, subject))
+    include: set.include.map((term) => termOf(term, subject)),
+    exclude: set.exclude.map((term) => termOf(term, subject))
   };
 };

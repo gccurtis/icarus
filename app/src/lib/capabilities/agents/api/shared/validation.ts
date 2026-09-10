@@ -1,8 +1,13 @@
 import type { PlanStep } from "$representation/data/types/agents/agent-task";
-import type { AutomationTrigger } from "$representation/data/types/agents/automation";
+import type {
+  AutomationTrigger,
+  ScheduleRepeat,
+  Weekday
+} from "$representation/data/types/agents/automation";
 import type { Cast, PersonaDefinition } from "$representation/data/types/agents/persona";
 import type { ToolId } from "$representation/data/types/agents/tool";
 import type { Id } from "$representation/data/types/core/id";
+import type { TableName } from "$model/server/store/index.server";
 import type {
   ResourceRef,
   ResourceSelectorKind
@@ -14,41 +19,38 @@ import {
 } from "$representation/data/behavior/core/resource";
 import { isToolId, orderedTools } from "$representation/data/behavior/agents/tools";
 import {
+  TRIGGER_RESOURCE_KINDS,
   isRepeat,
   isTriggerKind,
   isWeekday
 } from "$representation/data/behavior/agents/triggers";
+import { isStoredRowId } from "$representation/data/behavior/core/stored";
 
 import type { PersonaSectionName } from "$capabilities/agents/types/agents";
 
-export type Fields = Record<string, unknown>;
+import {
+  fieldsOf,
+  has,
+  only,
+  type Fields
+} from "$capabilities/agents/api/shared/validation-fields";
+
+export { fieldsOf, has, only } from "$capabilities/agents/api/shared/validation-fields";
 
 const fail = (subject: string, message: string): never => {
   throw new Error(`agents/${subject}: ${message}`);
 };
 
-export const fieldsOf = (value: unknown, subject: string): Fields => {
-  if (value === null || typeof value !== "object" || Array.isArray(value)) {
-    fail(subject, "an object is required");
+export const idOf = <Table extends TableName>(
+  value: unknown,
+  table: Table,
+  subject: string,
+  field: string
+): Id<Table> => {
+  if (!isStoredRowId(value, table)) {
+    fail(subject, `${field} is one current ${table} id`);
   }
-  return value as Fields;
-};
-
-export const has = (fields: Fields, field: string): boolean =>
-  Object.prototype.hasOwnProperty.call(fields, field);
-
-export const only = (fields: Fields, allowed: readonly string[], subject: string): void => {
-  const extra = Object.keys(fields).filter((field) => !allowed.includes(field));
-  if (extra.length > 0) {
-    fail(subject, `unknown ${extra.length === 1 ? "field" : "fields"} ${extra.join(", ")}`);
-  }
-};
-
-export const idOf = (value: unknown, subject: string, field: string): string => {
-  if (typeof value !== "string" || value.trim().length === 0 || value.length > 500) {
-    fail(subject, `${field} is required`);
-  }
-  return value as string;
+  return value as Id<Table>;
 };
 
 export const revisionOf = (value: unknown, subject: string): number => {
@@ -94,7 +96,12 @@ export const toolsOf = (value: unknown, subject: string): readonly ToolId[] => {
   for (const entry of list) {
     if (!isToolId(entry)) fail(subject, `${String(entry)} is not a tool`);
   }
-  return orderedTools(list as string[]);
+  const ordered = orderedTools(list as string[]);
+  if (
+    ordered.length !== list.length ||
+    ordered.some((entry, index) => entry !== list[index])
+  ) fail(subject, "tools contains unique ids in catalogue order");
+  return ordered;
 };
 
 export const resourceRefOf = (value: unknown, subject: string): ResourceRef => {
@@ -109,7 +116,16 @@ const kindsOf = (value: unknown, subject: string): ResourceSelectorKind[] => {
   if (!Array.isArray(value) || value.length === 0) fail(subject, "kinds names at least one kind");
   const values = value as unknown[];
   if (!values.every(isResourceSelectorKind)) fail(subject, "kinds contains only current resource selectors");
-  return [...values] as ResourceSelectorKind[];
+  if (new Set(values).size !== values.length) fail(subject, "kinds contains no duplicate selector");
+  const kinds = values as ResourceSelectorKind[];
+  const order = new Map<ResourceSelectorKind, number>(
+    TRIGGER_RESOURCE_KINDS.map((kind, index) => [kind.id, index])
+  );
+  if (kinds.some((kind) => !order.has(kind))) fail(subject, "kinds contains only trigger resource families");
+  if (kinds.some((kind, index) => index > 0 && order.get(kind)! <= order.get(kinds[index - 1])!)) {
+    fail(subject, "kinds follows catalogue order");
+  }
+  return [...kinds];
 };
 
 const termOf = (value: unknown, subject: string): SetTerm => {
@@ -132,7 +148,7 @@ const termOf = (value: unknown, subject: string): SetTerm => {
   }
   if (fields.select === "set") {
     only(fields, ["select", "setId"], subject);
-    return { select: "set", setId: idOf(fields.setId, subject, "setId") as Id<"resourceSets"> };
+    return { select: "set", setId: idOf(fields.setId, "resourceSets", subject, "setId") };
   }
   return fail(subject, "a term selects project, kinds, resources or set");
 };
@@ -162,8 +178,7 @@ export const castOf = (value: unknown, subject: string): Cast => {
     }
     return candidate as Cast["strength"];
   };
-  const label = typeof fields.label === "string" ? fields.label.trim() : "";
-  if (label.length > 80) fail(subject, "cast label is at most 80 characters");
+  const label = textOf(fields.label, subject, "cast label", 80);
   return {
     label,
     strength: level(fields.strength, "strength"),
@@ -212,24 +227,24 @@ export const triggerOf = (value: unknown, subject: string): AutomationTrigger =>
     return { kind: "manual" };
   }
   if (fields.kind === "schedule") {
-    only(fields, ["kind", "at", "repeats", "weekday", "timezone"], subject);
-    const at = fields.at;
-    if (typeof at !== "string" || !TIME.test(at)) fail(subject, "at is HH:MM");
-    const repeats = fields.repeats;
-    if (!isRepeat(repeats)) return fail(subject, "repeats is daily, weekdays or weekly");
+    if (typeof fields.at !== "string" || !TIME.test(fields.at)) fail(subject, "at is HH:MM");
+    if (!isRepeat(fields.repeats)) return fail(subject, "repeats is daily, weekdays or weekly");
+    const at = fields.at as string;
+    const repeats = fields.repeats as ScheduleRepeat;
     const timezone = textOf(fields.timezone, subject, "timezone", 80);
     const weekday = fields.weekday;
     if (repeats === "weekly") {
+      only(fields, ["kind", "at", "repeats", "weekday", "timezone"], subject);
       if (!isWeekday(weekday)) return fail(subject, "a weekly schedule names its weekday");
-      return { kind: "schedule", at: at as string, repeats: "weekly", weekday, timezone };
+      return { kind: "schedule", at, repeats: "weekly", weekday: weekday as Weekday, timezone };
     }
-    if (weekday !== undefined) fail(subject, "only a weekly schedule names a weekday");
-    return { kind: "schedule", at: at as string, repeats, timezone };
+    only(fields, ["kind", "at", "repeats", "timezone"], subject);
+    return { kind: "schedule", at, repeats, timezone };
   }
   if (fields.kind === "resource-edited") {
     only(fields, ["kind", "kinds", "ref"], subject);
     const kinds = kindsOf(fields.kinds, subject);
-    return has(fields, "ref") && fields.ref !== undefined && fields.ref !== null
+    return has(fields, "ref")
       ? { kind: "resource-edited", kinds, ref: resourceRefOf(fields.ref, subject) }
       : { kind: "resource-edited", kinds };
   }
@@ -237,16 +252,16 @@ export const triggerOf = (value: unknown, subject: string): AutomationTrigger =>
   return { kind: "resource-created", kinds: kindsOf(fields.kinds, subject) };
 };
 
-const entryId = (value: unknown, subject: string): string => {
+export const entryIdOf = (value: unknown, subject: string, field = "entry id"): string => {
   if (typeof value !== "string" || !/^[A-Za-z0-9_-]{1,64}$/.test(value)) {
-    fail(subject, "an entry id is a short identifier");
+    fail(subject, `${field} is a short identifier`);
   }
   return value as string;
 };
 
 export const planOf = (value: unknown, subject: string): readonly PlanStep[] => {
   if (!Array.isArray(value)) fail(subject, "plan is a list");
-  return (value as unknown[]).map((entry): PlanStep => {
+  const plan = (value as unknown[]).map((entry): PlanStep => {
     const fields = fieldsOf(entry, subject);
     only(fields, ["id", "title", "state", "note"], subject);
     if (fields.state !== "pending" && fields.state !== "active" && fields.state !== "done") {
@@ -254,10 +269,19 @@ export const planOf = (value: unknown, subject: string): readonly PlanStep[] => 
     }
     const note = has(fields, "note") ? optionalTextOf(fields.note, subject, "a step note", 2000) : undefined;
     return {
-      id: entryId(fields.id, subject),
+      id: entryIdOf(fields.id, subject),
       title: textOf(fields.title, subject, "a step title", 200),
       state: fields.state as PlanStep["state"],
       ...(note === undefined ? {} : { note })
     };
   });
+  if (new Set(plan.map((step) => step.id)).size !== plan.length) {
+    fail(subject, "plan step ids are unique");
+  }
+  const rank = (state: PlanStep["state"]): number => state === "done" ? 0 : state === "active" ? 1 : 2;
+  if (
+    plan.filter((step) => step.state === "active").length > 1 ||
+    plan.some((step, index) => index > 0 && rank(step.state) < rank(plan[index - 1].state))
+  ) fail(subject, "plan states proceed from done through active to pending");
+  return plan;
 };

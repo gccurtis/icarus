@@ -60,6 +60,13 @@ visual evidence. Orientation tools issue no evidence IDs.
 
 No public procedure accepts a project ID. The request scope provides the project,
 and every joined table is filtered to it before use.
+`enqueueSemanticSyncForModel`, `querySemanticOverlayForModel`, and
+`querySemanticMaterialsForModel` are the server-to-server seams for an
+already-owned background operation. They require that operation's model,
+project ID, exact current input, and cancellation signal. The authenticated
+public adapters delegate to them. Agent restart recovery and other background
+work therefore never reconstruct request scope or reach for the global server
+model.
 
 The current Store unit of work makes each multi-table authored mutation and its
 outbox intent atomic and journal-recoverable. Provider work stays outside that

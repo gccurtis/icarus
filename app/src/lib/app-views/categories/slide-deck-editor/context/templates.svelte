@@ -16,7 +16,7 @@
   import { ScopeBuilder } from "$authored-components/scope-builder";
   import { TemplateAnswers as TemplateAnswerList } from "$authored-components/template-answers";
   import { TemplatesContextState } from "$app-views/categories/slide-deck-editor/context/templates.state.svelte";
-  import { slideIndexOf } from "$app-views/categories/slide-deck-editor/procedures/deck";
+  import { slideIndexOf } from "$app-views/categories/slide-deck-editor/procedures/deck-slides";
   import {
     answerRowsOf,
     builderView,

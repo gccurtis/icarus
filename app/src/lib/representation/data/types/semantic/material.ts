@@ -5,6 +5,7 @@ import type {
   ResourceRef
 } from "$representation/data/types/core/resource";
 import type { FileSubkind } from "$representation/data/types/external/file";
+import type { SemanticJobLifecycle } from "$representation/data/types/semantic/sync";
 
 export type MaterialKind = "table" | "csv" | "chart" | "image" | "code";
 
@@ -27,9 +28,8 @@ export type IntrinsicMaterialFacetKind = Exclude<
 
 export type MaterialTrust = "exact" | "authored" | "interpreted" | "native";
 
-export type MaterialState = "profiled" | "describing" | "ready" | "stale" | "error";
-
-export type MaterialJobState = "queued" | "running" | "failed";
+/** Material work-in-progress belongs to its durable job; stored materials are usable records. */
+export type MaterialState = "ready";
 
 /** A stable path back to one material-bearing value in a represented resource. */
 export type MaterialLocator =
@@ -193,6 +193,8 @@ export type MaterialSeed = {
   profile: MaterialProfile;
   context: MaterialAuthoredContext;
   userDescription?: string;
+  /** Verified UTF-8 source available only while generating a descriptor; never persisted. */
+  sourceText?: string;
   /** Ephemeral provider input. Publication never stores base64 bytes. */
   nativeImage?: NativeImageInput;
 };
@@ -232,16 +234,11 @@ export type SemanticMaterialJobFields = {
   projectId: Id<"projects">;
   ref: ResourceRef;
   requestedRevision: number;
-  force?: boolean;
-  state: MaterialJobState;
+  force?: true;
   attempts: number;
-  error?: string;
   queuedAt: number;
-  startedAt?: number;
-  claimId?: string;
-  leaseExpiresAt?: number;
   updatedAt: number;
-};
+} & SemanticJobLifecycle;
 
 export type SemanticMaterialSnapshot = {
   materialId: Id<"semanticMaterials">;

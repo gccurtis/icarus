@@ -1,31 +1,22 @@
 import type { ResearchScope, ResearchToolId } from "$representation/data/types/investigation/research-turn";
 import { admitResourceRef } from "$representation/data/behavior/core/resource";
-import { isStoredRowId } from "$representation/data/behavior/core/stored";
+import {
+  currentRowId,
+  exactCommandInput
+} from "$capabilities/research-chat/api/shared/validation";
 import type { AskInput } from "$capabilities/research-chat/types/research-chat";
 
 const TOOLS: readonly ResearchToolId[] = ["web.search"];
 
-const only = (
-  value: Record<string, unknown>,
-  allowed: readonly string[],
-  subject: string
-): void => {
-  const unknown = Object.keys(value).find((field) => !allowed.includes(field));
-  if (unknown !== undefined) throw new Error(`${subject} has unknown field '${unknown}'`);
-};
-
 const scopeOf = (value: unknown): ResearchScope => {
-  if (value === undefined) return { kind: "project" };
-  if (value === null || typeof value !== "object" || Array.isArray(value)) {
-    throw new Error("a scope is an object");
-  }
-  const asked = value as Record<string, unknown>;
+  const discriminated = exactCommandInput(value, ["kind"], ["ref"], "a research scope");
+  const asked = discriminated;
   if (asked.kind === "project") {
-    only(asked, ["kind"], "a project scope");
+    exactCommandInput(value, ["kind"], [], "a project scope");
     return { kind: "project" };
   }
   if (asked.kind !== "resource") throw new Error("a scope is the project or one resource");
-  only(asked, ["kind", "ref"], "a resource scope");
+  exactCommandInput(value, ["kind", "ref"], [], "a resource scope");
   try {
     return { kind: "resource", ref: admitResourceRef(asked.ref, "research scope ref") };
   } catch {
@@ -34,31 +25,30 @@ const scopeOf = (value: unknown): ResearchScope => {
 };
 
 export const validateAsk = (input: unknown): AskInput => {
-  if (input === null || typeof input !== "object" || Array.isArray(input)) {
-    throw new Error("ask takes an object");
-  }
-  const asked = input as Record<string, unknown>;
-  only(asked, ["threadId", "text", "scope", "tools"], "ask input");
-  if (!isStoredRowId(asked.threadId, "researchThreads")) {
-    throw new Error("ask needs one current researchThreads row id");
-  }
+  const asked = exactCommandInput(
+    input,
+    ["threadId", "text"],
+    ["scope", "tools"],
+    "ask"
+  );
+  const threadId = currentRowId(asked.threadId, "researchThreads", "ask");
   if (typeof asked.text !== "string" || asked.text.trim() === "") {
     throw new Error("ask needs something to ask");
   }
   if (asked.text.length > 4_000) throw new Error("a question is at most four thousand characters");
   if (
-    asked.tools !== undefined &&
+    Object.hasOwn(asked, "tools") &&
     (!Array.isArray(asked.tools) ||
       asked.tools.some((tool) => !TOOLS.includes(tool as ResearchToolId)) ||
       new Set(asked.tools).size !== asked.tools.length)
   ) {
     throw new Error("tools are distinct current research tool ids");
   }
-  const tools = (asked.tools ?? []) as ResearchToolId[];
+  const tools = (Object.hasOwn(asked, "tools") ? asked.tools : []) as ResearchToolId[];
   return {
-    threadId: asked.threadId,
+    threadId,
     text: asked.text.trim(),
-    scope: scopeOf(asked.scope),
+    scope: Object.hasOwn(asked, "scope") ? scopeOf(asked.scope) : { kind: "project" },
     tools
   };
 };

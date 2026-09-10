@@ -1,3 +1,8 @@
+import {
+  hasExactFields,
+  isStoredRowId,
+  storedFields
+} from "$representation/data/behavior/core/stored";
 import type { RenameProjectResourceInput } from "$capabilities/project-resources/types/project-resources";
 
 const fail = (reason: string): never => {
@@ -5,21 +10,16 @@ const fail = (reason: string): never => {
 };
 
 export const validateRenameProjectResource = (input: unknown): RenameProjectResourceInput => {
+  const fields = storedFields(input);
+  if (fields === undefined || !hasExactFields(fields, ["resourceId", "title"])) {
+    return fail("an exact current data object is required");
+  }
+  const { resourceId, title } = fields;
   if (
-    typeof input !== "object" ||
-    input === null ||
-    Array.isArray(input) ||
-    Object.keys(input).length !== 2 ||
-    !Object.hasOwn(input, "resourceId") ||
-    !Object.hasOwn(input, "title")
-  ) return fail("an exact object is required");
-  const { resourceId, title } = input as { resourceId?: unknown; title?: unknown };
-  if (
-    typeof resourceId !== "string" ||
-    resourceId.length === 0 ||
-    resourceId !== resourceId.trim() ||
-    /[.\s]/.test(resourceId)
-  ) return fail("resourceId is required");
+    !isStoredRowId(resourceId, "documents") &&
+    !isStoredRowId(resourceId, "slideDecks") &&
+    !isStoredRowId(resourceId, "spreadsheets")
+  ) return fail("resourceId is one current editable resource id");
   if (typeof title !== "string" || title.trim().length === 0 || title.trim().length > 500) {
     return fail("title must be between 1 and 500 characters");
   }

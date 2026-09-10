@@ -1,4 +1,7 @@
-import type { StoreModel } from "$model/server/store/index.server";
+import {
+  readCurrentRows,
+  type StoreModel
+} from "$model/server/store/index.server";
 import { ensureSlideDeckReady } from "$representation/data/behavior/slide-decks/readiness";
 import type { Id } from "$representation/data/types/core/id";
 import type { SlideDeckBody } from "$representation/data/types/slide-decks/body";
@@ -14,10 +17,7 @@ export const leaderOf = (
   projectId: Id<"projects">,
   resourceId: Id<"slideDecks">
 ): Leader | undefined => {
-  const found = store.read("slideDeckSnapshots");
-  if (found?.table !== "slideDeckSnapshots" || found.kind !== "table") return undefined;
-
-  const leader = found.rows.find(
+  const leader = readCurrentRows(store, "slideDeckSnapshots").find(
     (row) =>
       row.projectId === projectId && row.resourceId === resourceId && row.role === "leader"
   );

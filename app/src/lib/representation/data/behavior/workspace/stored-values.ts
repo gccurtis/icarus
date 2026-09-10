@@ -1,5 +1,8 @@
 import { isCategory, isContentView } from "$representation/data/behavior/workspace/categories";
-import { offersContext } from "$representation/data/behavior/workspace/opening";
+import {
+  defaultContext,
+  offersContext
+} from "$representation/data/behavior/workspace/opening";
 import { isContextView, isInspectorView } from "$representation/data/behavior/workspace/views";
 import {
   hasExactFields,
@@ -9,6 +12,7 @@ import {
   isStoredRowId,
   storedFields
 } from "$representation/data/behavior/core/stored";
+import { normalizeExternalDirectoryPath } from "$representation/data/behavior/external/file";
 import type { Category } from "$representation/data/types/workspace/categories";
 import type {
   Frame,
@@ -37,6 +41,21 @@ const resourceForCategory = (category: Category, value: unknown): boolean => {
   return value === undefined;
 };
 
+const focusForCategory = (category: Category, value: unknown): boolean =>
+  category === "external"
+    ? isStoredRowId(value, "externalFiles")
+    : isStoredIdentifier(value);
+
+const inspectorForCategory = (
+  category: Category,
+  inspected: string
+): boolean => {
+  if (inspected.startsWith(`${category}.`) || inspected.startsWith("general.")) return true;
+  if (inspected === "project-overview.activity") return true;
+  return category === "project-overview" &&
+    (inspected === "agents.task" || inspected === "agents.persona");
+};
+
 export const isStoredTarget = (value: unknown): value is Target => {
   const target = storedFields(value);
   if (
@@ -55,7 +74,16 @@ export const isStoredTarget = (value: unknown): value is Target => {
       isContextView(target.context) &&
       offersContext(target.category, target.context)
     )) &&
-    (target.focus === undefined || isStoredIdentifier(target.focus));
+    (target.focus === undefined || focusForCategory(target.category as Category, target.focus));
+};
+
+/** The smaller target persisted by open/close operations after routing is resolved. */
+export const isStoredTabTarget = (value: unknown): boolean => {
+  const target = storedFields(value);
+  return target !== undefined &&
+    hasExactFields(target, ["category"], ["resourceId"]) &&
+    categoryValue(target.category) &&
+    resourceForCategory(target.category, target.resourceId);
 };
 
 export const isStoredTabRecord = (value: unknown): value is TabRecord => {
@@ -75,8 +103,43 @@ const selectionRange = (value: unknown): boolean => {
     isStoredIdentifier(range.at);
 };
 
+const currentExternalDirectory = (value: unknown): value is string => {
+  if (typeof value !== "string" || value.length === 0) return false;
+  try {
+    return normalizeExternalDirectoryPath(value) === value;
+  } catch {
+    return false;
+  }
+};
+
+const isStoredExternalSelection = (
+  value: unknown,
+  inspected: "external.file" | "external.directory"
+): value is Selection => {
+  const selection = storedFields(value);
+  if (selection === undefined || !hasExactFields(selection, ["kind", "id"])) return false;
+  return inspected === "external.file"
+    ? selection.kind === "external-file" && isStoredRowId(selection.id, "externalFiles")
+    : selection.kind === "external-directory" && currentExternalDirectory(selection.id);
+};
+
+export const isStoredExternalInspection = (
+  inspected: unknown,
+  selection: unknown
+): boolean => {
+  if (inspected === "empty") return selection === null;
+  return (inspected === "external.file" || inspected === "external.directory") &&
+    isStoredExternalSelection(selection, inspected);
+};
+
 export const isStoredSelection = (value: unknown): value is Selection => {
   const selection = storedFields(value);
+  if (selection?.kind === "external-file") {
+    return isStoredExternalSelection(value, "external.file");
+  }
+  if (selection?.kind === "external-directory") {
+    return isStoredExternalSelection(value, "external.directory");
+  }
   return selection !== undefined &&
     hasExactFields(selection, ["kind", "id"], ["at", "ranges", "ids"]) &&
     isStoredIdentifier(selection.kind) &&
@@ -123,7 +186,6 @@ const storedLanding = (
     typeof landing.content !== "string" ||
     !isContentView(landing.content) ||
     (category !== undefined && !landing.content.startsWith(`${category}.`)) ||
-    (landing.focus !== null && !isStoredIdentifier(landing.focus)) ||
     (landing.contextId !== null && (
       typeof landing.contextId !== "string" ||
       !isContextView(landing.contextId)
@@ -135,8 +197,18 @@ const storedLanding = (
   const contentCategory = landing.content.slice(0, landing.content.indexOf("."));
   if (!isCategory(contentCategory)) return false;
   const owner = category ?? contentCategory;
-  return (landing.contextId === null || offersContext(owner, landing.contextId)) &&
-    (landing.selection === null || isStoredSelection(landing.selection));
+  if (landing.focus !== null && !focusForCategory(owner, landing.focus)) return false;
+  if (
+    landing.contextId === null
+      ? defaultContext(owner) !== null
+      : !offersContext(owner, landing.contextId)
+  ) return false;
+  if (landing.inspected === "empty") return landing.selection === null;
+  if (!inspectorForCategory(owner, landing.inspected)) return false;
+  if (owner === "external") {
+    return isStoredExternalInspection(landing.inspected, landing.selection);
+  }
+  return landing.selection === null || isStoredSelection(landing.selection);
 };
 
 export const isStoredLanding = (value: unknown): value is Landing => storedLanding(value);

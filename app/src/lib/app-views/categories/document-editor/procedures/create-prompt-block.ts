@@ -76,7 +76,10 @@ export const createPromptBlock = async ({
     const responseFailure = runtime.failure as { readonly detail: string } | undefined;
     if (responseFailure !== undefined) throw new Error(responseFailure.detail);
     if (refreshed.outcome === "failed") {
-      throw new Error(refreshed.output.error ?? "The response could not be generated");
+      if (refreshed.output.state !== "error") {
+        throw new Error("The failed refresh returned a non-error output");
+      }
+      throw new Error(refreshed.output.error);
     }
   } catch (error) {
     state.fail(error);

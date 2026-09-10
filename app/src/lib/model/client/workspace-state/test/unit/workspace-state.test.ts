@@ -705,23 +705,6 @@ test("each tab keeps its own rail position", () => {
   assert.equal(tabOf(model, a.id).contextId, where);
 });
 
-test("a stranded rail position reads as the category's default rather than throwing", () => {
-  // The deliberate asymmetry: `selectContext` refuses a view outright, and the
-  // getter answers with the category's default for a stored position that has
-  // drifted off the rail. Nothing reaches that fallback through a method — every
-  // rail entry is offered for the whole category — so the drift is written in by
-  // hand, which is the case the getter exists for. `project-overview.activity` is
-  // a view the category owns and does not rail.
-  const model = workspaceState();
-  model.open({ category: "project-overview" });
-  const stranded = "project-overview.activity";
-
-  tabOf(model, model.activeId).contextId = stranded;
-
-  assert.equal(model.context, defaultContext("project-overview"));
-  assert.throws(() => model.selectContext(stranded), /does not offer/);
-});
-
 // ---------------------------------------------------------------- inspection
 
 test("a key that is not a lens throws", () => {

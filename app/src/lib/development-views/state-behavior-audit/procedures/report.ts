@@ -386,9 +386,9 @@ const FINDINGS: readonly AuditFinding[] = [
     id: "ARCH-10",
     priority: "P2",
     area: "Models and runtimes",
-    title: "Model definitions do not consistently stop at state and a thin public surface",
+    title: "Runtime definitions do not consistently stop at state and a thin public surface",
     finding:
-      "Commands, Configuration, Store, and much of WorkspaceState delegate cleanly to methods/. The three resource Runtime classes still implement scheduling, retry/revert entry behavior, timer management, and settling inline; Storage schedules writes inside its definition.",
+      "Commands, Configuration, Store, and much of WorkspaceState delegate cleanly to methods/. The three resource Runtime classes still implement scheduling, retry/revert entry behavior, timer management, and settling inline.",
     consequence:
       "The file named definition is sometimes the state ledger and sometimes the procedure implementation. A reviewer cannot reliably infer where behavior lives from the tree.",
     recommendation:
@@ -398,29 +398,25 @@ const FINDINGS: readonly AuditFinding[] = [
     evidence: [
       "document-runtimes/definition.svelte.ts:61",
       "slide-deck-runtimes/definition.svelte.ts:58",
-      "spreadsheet-runtimes/definition.svelte.ts:54",
-      "model/client/storage/definition.ts:30"
+      "spreadsheet-runtimes/definition.svelte.ts:54"
     ]
   },
   {
     id: "ARCH-11",
     priority: "P2",
     area: "Models and runtimes",
-    title: "Two mutable module globals bypass the client graph, while Storage is unused",
+    title: "Two mutable module globals bypass the client graph",
     finding:
-      "Appearance is held in module-level $state and writes localStorage directly from a surface effect. The general comment helper maintains a module-level id counter. Meanwhile Client Storage is constructed, returned, and documented as unused by production code.",
+      "Appearance is held in module-level $state and writes localStorage directly from a surface effect. The general comment helper maintains a module-level id counter.",
     consequence:
       "The client graph is not the complete inventory of client-lifetime state, test instances can leak through module state, and the one model intended to own browser persistence has no actual responsibility.",
     recommendation:
-      "Either give Storage real ownership of client preferences/workspace persistence or remove it until needed. Put appearance in a client preferences model and make transient id generation stateless or instance-owned. Permit mutable module state only for the explicit runtime graph holder and one-per-process server infrastructure.",
+      "Put appearance in a client preferences model and make transient id generation stateless or instance-owned. Permit mutable module state only for the explicit runtime graph holder and one-per-process server infrastructure.",
     acceptance:
       "Searching production modules finds no mutable module binding outside approved composition roots or factory closures, and every constructed client model has at least one production consumer.",
     evidence: [
       "top-bar/effects/apply-appearance.svelte.ts:25",
-      "app-views/general/comment/threads.ts:79",
-      "runtime/client/start.ts:42",
-      "model/client/storage/definition.ts:15",
-      "model/client/storage/storage.md"
+      "app-views/general/comment/threads.ts:79"
     ]
   },
   {

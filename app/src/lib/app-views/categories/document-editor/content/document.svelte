@@ -1,59 +1,26 @@
 <script lang="ts">
-  import { untrack } from "svelte";
-  import { baseKeymap } from "prosemirror-commands";
-  import { keymap } from "prosemirror-keymap";
-  import { EditorState, TextSelection, type Transaction } from "prosemirror-state";
-  import { EditorView } from "prosemirror-view";
-
   import MessageSquare from "@lucide/svelte/icons/message-square";
   import MessagesSquare from "@lucide/svelte/icons/messages-square";
-  import {
-    resourceName,
-    resourceIndex
-  } from "$app-views/categories/document-editor/procedures/resource-index";
 
+  import { createDocumentState } from "$app-views/categories/document-editor/content/document.state.svelte";
   import {
-    ANNOTATIONS,
-    annotationsPlugin,
-    sameAnnotations,
-    spansOf,
-    stacked,
     type Annotations,
-    type Pin,
-    type PinState
+    type Pin
   } from "$app-views/categories/document-editor/procedures/annotations";
+  import { anchoredOf } from "$app-views/categories/document-editor/procedures/comment-anchors";
   import {
     commentsQuery,
     threadsIn,
     threadsOf
   } from "$app-views/categories/document-editor/procedures/comments";
-  import { anchoredOf } from "$app-views/categories/document-editor/procedures/comment-anchors";
-  import { mergeRow, splitRow } from "$app-views/categories/document-editor/procedures/editing";
   import {
-    PAGE_NUMBERS,
-    pageNumbersOf,
-    pageNumbersPlugin,
-    samePageNumbers
-  } from "$app-views/categories/document-editor/procedures/page-numbers";
-  import { heldSelection } from "$app-views/categories/document-editor/procedures/highlight";
-  import { mint } from "$app-views/categories/document-editor/procedures/ids";
-  import { editorPointerGestures } from "$app-views/categories/document-editor/procedures/links";
-  import {
-    MultiSelection,
-    multiSelection,
-    secondarySpans
-  } from "$app-views/categories/document-editor/procedures/multi-selection";
-  import {
-    restoreSelection,
-    selectionBookmark
-  } from "$app-views/categories/document-editor/procedures/selection-bookmark";
-  import {
-    atomAt,
-    positionOfAddress,
-    sameSelection,
-    signalOf,
-    worthSending
-  } from "$app-views/categories/document-editor/procedures/inspecting";
+    createDocumentCommands,
+    createDocumentSession,
+    type DocumentSessionContext
+  } from "$app-views/categories/document-editor/procedures/document-session";
+  import { mountsDocumentSurface } from "$app-views/categories/document-editor/procedures/effects/mounts-document-surface.svelte";
+  import { syncsDocumentSession } from "$app-views/categories/document-editor/procedures/effects/syncs-document-session.svelte";
+  import { pageNumbersOf } from "$app-views/categories/document-editor/procedures/page-numbers";
   import {
     DEFAULT_PAGE_SETUP,
     clampZoom,
@@ -61,22 +28,13 @@
     guttersOf,
     layoutMetrics
   } from "$app-views/categories/document-editor/procedures/page-setup";
-  import {
-    bodyOf,
-    docOf,
-    repaginate,
-    stampIds,
-    type DocumentBody,
-    type Metrics
-  } from "$app-views/categories/document-editor/procedures/projection";
   import { promptBlocksIn } from "$app-views/categories/document-editor/procedures/prompt-blocks";
+  import {
+    resourceName,
+    resourceIndex
+  } from "$app-views/categories/document-editor/procedures/resource-index";
   import { resourceTemplate } from "$app-views/categories/document-editor/procedures/template-resources";
-  import { schema } from "$app-views/categories/document-editor/procedures/schema";
-  import { translate } from "$app-views/categories/document-editor/procedures/translate";
-  import { workspaceState } from "$model/client/workspace-state";
-  import type { DocumentRuntime, PendingMarks, SyncState } from "$model/client/workspace-state";
-
-  const LAYOUT = "document-editor.layout";
+  import { workspaceState, type SyncState } from "$model/client/workspace-state";
 
   const SYNC_LABEL: Record<SyncState, string> = {
     loading: "Loading",
@@ -88,46 +46,29 @@
     error: "Not saved"
   };
 
-  const STYLE_MARK: Record<string, string> = {
-    bold: "bold",
-    italic: "italic",
-    underline: "underline",
-    strikethrough: "strike",
-    code: "code"
-  };
+  const WHEEL_NOTCH = 120;
+  const PERCENT_PER_NOTCH = 2;
 
   const view = workspaceState();
-
+  const held = createDocumentState();
+  const session = createDocumentSession();
   const documentId = view.active.resourceId;
   const resources = resourceIndex();
   const template = documentId === undefined ? undefined : resourceTemplate(documentId);
+  const runtime = documentId === undefined ? undefined : view.documentRuntime(documentId);
 
   const documentTitle = $derived.by(() => {
     if (documentId === undefined) return undefined;
     return resourceName(resources, documentId, template?.current);
   });
 
-  let runtime = $state<DocumentRuntime | undefined>(undefined);
-
-  $effect(() => {
-    runtime = documentId === undefined ? undefined : view.documentRuntime(documentId);
-  });
-  let host = $state<HTMLDivElement>();
-  let surface = $state<HTMLDivElement>();
-  let pageFrame = $state<HTMLDivElement>();
-  let available = $state(0);
-  let pins = $state<{
-    readonly comments: readonly Pin[];
-    readonly prompts: readonly { readonly id: string; readonly top: number }[];
-  }>({ comments: [], prompts: [] });
-  let appliedThreadKey = "";
-
   const comments = commentsQuery();
-
   const threads = $derived(
     documentId === undefined ? [] : threadsOf(threadsIn(comments), documentId)
   );
-  const current = $derived(view.inspected === "document-editor.comment" ? view.selection?.id : undefined);
+  const current = $derived(
+    view.inspected === "document-editor.comment" ? view.selection?.id : undefined
+  );
   const threadKey = $derived(
     JSON.stringify(
       threads.map((thread) => [thread._id, thread.within ?? null, thread.resolution ?? null])
@@ -141,337 +82,40 @@
     annotations.anchored.length > 0 || promptBlocksIn(runtime?.body).length > 0
   );
 
-  let editor: EditorView | undefined;
-  let sent: DocumentBody | undefined;
-  let painted: DocumentBody | undefined;
-  let metrics: Metrics = layoutMetrics(DEFAULT_PAGE_SETUP);
-  let editorError = $state<string | undefined>(undefined);
+  const context = {
+    view,
+    runtime,
+    held,
+    session,
+    annotations: () => annotations,
+    threadKey: () => threadKey
+  } satisfies DocumentSessionContext;
+  const commands = createDocumentCommands(context);
 
-  const undo = () => {
-    runtime?.undo();
-    return true;
-  };
-
-  const redo = () => {
-    runtime?.redo();
-    return true;
-  };
-
-  const plugins = [
-    heldSelection(),
-    multiSelection(),
-    editorPointerGestures(),
-    pageNumbersPlugin(() => pageNumbersOf(runtime?.body)),
-    annotationsPlugin(() => untrack(() => annotations)),
-    keymap({ Enter: splitRow, Backspace: mergeRow }),
-    keymap({ "Mod-z": undo, "Shift-Mod-z": redo, "Mod-y": redo }),
-    keymap(baseKeymap)
-  ];
-
-  const lay = (state: EditorState): EditorState => {
-    const next = repaginate(stampIds(state.doc), metrics);
-    if (next.eq(state.doc)) return state;
-
-    const bookmark = selectionBookmark(state);
-    const transform = state.tr
-      .setMeta("addToHistory", false)
-      .setMeta(LAYOUT, true)
-      .replaceWith(0, state.doc.content.size, next.content);
-
-    return restoreSelection(state.apply(transform), bookmark);
-  };
-
-  const emit = (state: EditorState): void => {
-    if (sent === undefined || runtime === undefined) return;
-
-    const body = bodyOf(state.doc, sent);
-    const ops = translate(sent, body);
-    sent = body;
-
-    if (ops.length === 0) return;
-
-    try {
-      runtime.apply(ops);
-      editorError = undefined;
-    } catch (error) {
-      editorError = error instanceof Error ? error.message : String(error);
-    }
-  };
-
-  const extraRanges = (state: EditorState) =>
-    secondarySpans(state.selection).flatMap(([from, to]) => {
-      const id = atomAt(state.doc.resolve(from));
-      const at = atomAt(state.doc.resolve(to));
-      return id === undefined || at === undefined ? [] : [{ id, at }];
-    });
-
-  const signal = (state: EditorState): void => {
-    const found = signalOf(state, extraRanges(state));
-    if (found === undefined) return;
-    if (!worthSending(found, view.inspected, view.selection)) return;
-
-    view.inspect(found.key, found.selection);
-  };
-
-  const place = (): void => {
-    const frame = pageFrame;
-    if (editor === undefined || frame === undefined) return;
-
-    const held = ANNOTATIONS.getState(editor.state);
-    const origin = frame.getBoundingClientRect();
-    const placed = held === undefined
-      ? []
-      : spansOf(editor.state.doc, held).map((span) => {
-          const state: PinState = span.current ? "current" : "open";
-          return { id: span.id, top: editor!.coordsAtPos(span.from).top - origin.top, state };
-        });
-
-    const promptIds = new Set(promptBlocksIn(runtime?.body).map((block) => block.id));
-    pins = {
-      comments: stacked(placed),
-      prompts: Array.from(
-        frame.querySelectorAll<HTMLElement>('.document-block[data-kind="prompt"][data-block]')
-      ).flatMap((element) => {
-        const id = element.dataset.block;
-        if (id === undefined || !promptIds.has(id)) return [];
-        return [{ id, top: element.getBoundingClientRect().top - origin.top }];
-      })
-    };
-  };
-
-  const dispatch = (transaction: Transaction): void => {
-    if (editor === undefined) return;
-
-    const next = lay(editor.state.apply(transaction));
-    editor.updateState(next);
-    place();
-
-    if (transaction.getMeta(LAYOUT) === true) return;
-
-    signal(next);
-
-    if (transaction.docChanged) emit(next);
-  };
-
-  const paint = (body: DocumentBody): void => {
-    if (host === undefined) return;
-
-    metrics = layoutMetrics(body.pageSetup ?? DEFAULT_PAGE_SETUP);
-
-    const bookmark = editor === undefined ? undefined : selectionBookmark(editor.state);
-    const state = restoreSelection(
-      EditorState.create({ doc: docOf(body, metrics), plugins }),
-      bookmark
-    );
-    sent = bodyOf(state.doc, body);
-
-    if (editor === undefined) {
-      editor = new EditorView(host, { state, dispatchTransaction: dispatch });
-      appliedThreadKey = threadKey;
-      return;
-    }
-
-    editor.updateState(state);
-    appliedThreadKey = threadKey;
-  };
-
-  const storedMarksOf = (pending: PendingMarks) => {
-    const marks = [];
-    const id = mint("mark");
-
-    for (const style of pending.style ?? []) {
-      marks.push(schema.marks[STYLE_MARK[style]].create({ markId: id }));
-    }
-    if (pending.color !== undefined || pending.background !== undefined) {
-      marks.push(
-        schema.marks.colour.create({
-          markId: mint("mark"),
-          color: pending.color ?? null,
-          background: pending.background ?? null
-        })
-      );
-    }
-
-    return marks;
-  };
-
-  $effect(() => {
-    const body = runtime?.body;
-    if (host === undefined || body === undefined || body === painted) return;
-
-    painted = body;
-
-    const projectionSettingsChanged =
-      sent !== undefined &&
-      (JSON.stringify(sent.pageSetup ?? null) !== JSON.stringify(body.pageSetup ?? null) ||
-        JSON.stringify(sent.styles ?? null) !== JSON.stringify(body.styles ?? null));
-
-    if (sent !== undefined && translate(sent, body).length === 0 && !projectionSettingsChanged) {
-      sent = body;
-      return;
-    }
-
-    paint(body);
+  syncsDocumentSession({ ...context, commands, current: () => current });
+  mountsDocumentSurface({
+    ...context,
+    commands,
+    hasGutterLane: () => hasGutterLane,
+    zoom: () => view.zoom ?? undefined
   });
-
-  $effect(() => {
-    const spec = pageNumbersOf(runtime?.body);
-    if (editor === undefined) return;
-    if (samePageNumbers(PAGE_NUMBERS.getState(editor.state), spec)) return;
-
-    editor.dispatch(
-      editor.state.tr.setMeta(PAGE_NUMBERS, spec).setMeta("addToHistory", false).setMeta(LAYOUT, true)
-    );
-  });
-
-  $effect(() => {
-    const source = threadKey;
-    const selected = current;
-    const body = runtime?.body;
-    if (editor === undefined || body === undefined) return;
-
-    const held = ANNOTATIONS.getState(editor.state);
-    const next = source !== appliedThreadKey
-      ? { anchored: anchoredOf(threads, body), current: selected }
-      : { anchored: held?.anchored ?? [], current: selected };
-    appliedThreadKey = source;
-    if (sameAnnotations(ANNOTATIONS.getState(editor.state), next)) return;
-
-    editor.dispatch(
-      editor.state.tr.setMeta(ANNOTATIONS, next).setMeta("addToHistory", false).setMeta(LAYOUT, true)
-    );
-  });
-
-  $effect(() => {
-    void view.zoom;
-    void available;
-    void runtime?.body;
-    void hasGutterLane;
-    const frame = requestAnimationFrame(place);
-    return () => cancelAnimationFrame(frame);
-  });
-
-  $effect(() => {
-    const pending = runtime?.pendingMarks;
-    if (pending === undefined || editor === undefined || runtime === undefined) return;
-
-    editor.dispatch(
-      editor.state.tr.setStoredMarks(storedMarksOf(pending)).setMeta("addToHistory", false)
-    );
-    editor.focus();
-    runtime.pendingMarks = undefined;
-  });
-
-  $effect(() => {
-    const held = view.selection;
-    const key = view.inspected;
-    const body = untrack(() => runtime?.body);
-    if (editor === undefined || held === undefined || body === undefined) return;
-    if (typeof key !== "string" || !key.startsWith("document-editor.")) return;
-    if (held.kind !== "text-selection" && held.kind !== "next-letter" && held.kind !== "empty-line") return;
-
-    const mine = signalOf(editor.state, extraRanges(editor.state));
-    if (mine !== undefined && sameSelection(mine.selection, held)) return;
-
-    const from = positionOfAddress(editor.state.doc, body, held.id);
-    const to = held.at === undefined ? from : positionOfAddress(editor.state.doc, body, held.at);
-    if (from === undefined) return;
-
-    const extra = (held.ranges ?? []).flatMap((range) => {
-      const start = positionOfAddress(editor!.state.doc, body, range.id);
-      const end = positionOfAddress(editor!.state.doc, body, range.at);
-      return start === undefined || end === undefined ? [] : [[start, end] as const];
-    });
-    const nextSelection = extra.length === 0
-      ? TextSelection.create(editor.state.doc, from, to ?? from)
-      : MultiSelection.create(
-          editor.state.doc,
-          [[from, to ?? from] as const, ...extra],
-          from,
-          to ?? from
-        );
-
-    editor.dispatch(
-      editor.state.tr
-        .setSelection(nextSelection)
-        .setMeta("addToHistory", false)
-        .scrollIntoView()
-    );
-    editor.focus();
-  });
-
-  $effect(() => {
-    const target = runtime?.scrollTo;
-    if (target === undefined || host === undefined || runtime === undefined) return;
-
-    const element = host.querySelector(`[data-block="${target}"]`);
-    element?.scrollIntoView({ block: "center", behavior: "smooth" });
-    runtime.scrollTo = undefined;
-  });
-
-  $effect(() => () => {
-    editor?.destroy();
-    editor = undefined;
-  });
-
-  $effect(() => {
-    const element = surface;
-    if (element === undefined) return;
-
-    const measure = () => {
-      const rem = parseFloat(getComputedStyle(document.documentElement).fontSize);
-      available = element.clientWidth / (rem > 0 ? rem : 16);
-    };
-
-    const observer = new ResizeObserver(measure);
-    observer.observe(element);
-    measure();
-
-    return () => observer.disconnect();
-  });
-
-  const WHEEL_NOTCH = 120;
-  const PERCENT_PER_NOTCH = 2;
 
   const setup = $derived(runtime?.body?.pageSetup ?? DEFAULT_PAGE_SETUP);
-
   const fit = $derived(
-    available === 0
+    held.available === 0
       ? undefined
-      : fitZoom(available, layoutMetrics(setup).pageWidth, hasGutterLane)
+      : fitZoom(held.available, layoutMetrics(setup).pageWidth, hasGutterLane)
   );
-
   const layout = $derived(layoutMetrics(setup, view.zoom ?? fit));
-  const gutters = $derived(guttersOf(available, layout.drawn.width, hasGutterLane));
-
-  $effect(() => {
-    const element = surface;
-    if (element === undefined) return;
-
-    const beside = (event: MouseEvent) => {
-      const target = event.target;
-      if (host !== undefined && target instanceof Node && host.contains(target)) return;
-      if (target instanceof Element && target.closest(".lane") !== null) return;
-
-      view.clear();
-    };
-
-    element.addEventListener("mousedown", beside);
-    return () => element.removeEventListener("mousedown", beside);
-  });
+  const gutters = $derived(guttersOf(held.available, layout.drawn.width, hasGutterLane));
+  const pageNumbers = $derived(pageNumbersOf(runtime?.body));
 
   const pinch = (event: WheelEvent) => {
     if (!event.ctrlKey && !event.metaKey) return;
     event.preventDefault();
-
     const by = (event.deltaY / WHEEL_NOTCH) * PERCENT_PER_NOTCH;
     view.setZoom(clampZoom(layout.zoom - by));
   };
-
-  const pageNumberEdge = (distance: number | undefined): string =>
-    `${((distance ?? 0.4) / layout.paper.width) * 100}%`;
-
-  const pageNumbers = $derived(pageNumbersOf(runtime?.body));
 
   const openThread = (pin: Pin) => {
     const id = pin.ids.includes(current ?? "") && pin.ids.length > 1
@@ -490,7 +134,14 @@
   };
 
   const pinTitle = (pin: Pin): string =>
-    pin.count > 1 ? `${pin.count} comment threads here` : pin.state === "current" ? "This thread is open in the inspector" : "Open the thread";
+    pin.count > 1
+      ? `${pin.count} comment threads here`
+      : pin.state === "current"
+        ? "This thread is open in the inspector"
+        : "Open the thread";
+
+  const pageNumberEdge = (distance: number | undefined): string =>
+    `${((distance ?? 0.4) / layout.paper.width) * 100}%`;
 
   const pageStyle = $derived(
     `zoom: ${layout.zoom / 100}; ` +
@@ -500,6 +151,7 @@
       `--margin-bottom: ${layout.marginPercent.bottom}%; --margin-left: ${layout.marginPercent.left}%`
   );
 </script>
+
 
 <div class="document-editor">
   <header class="title-bar bg-surface-panel border-border-subtle flex items-center gap-3 border-b">
@@ -511,24 +163,24 @@
     {/if}
   </header>
 
-  {#if editorError}
+  {#if held.editorError}
     <div class="editor-error" role="alert">
-      <span>{editorError}</span>
-      <button type="button" onclick={() => (editorError = undefined)}>Dismiss</button>
+      <span>{held.editorError}</span>
+      <button type="button" onclick={() => (held.editorError = undefined)}>Dismiss</button>
     </div>
   {/if}
 
   <div class="well">
-    <div bind:this={surface} class="canvas bg-surface-pasteboard" onwheel={pinch}>
+    <div bind:this={held.surface} class="canvas bg-surface-pasteboard" onwheel={pinch}>
       <div
         class="pasteboard"
         style="--gutter-leading: {gutters.leading}rem; --gutter-trailing: {gutters.trailing}rem"
       >
-        <div bind:this={pageFrame} class="page-frame" style="--page-drawn: {layout.drawn.width}rem">
-          <div bind:this={host} class="editor" aria-label="Document editor" style={pageStyle}></div>
-          {#if pins.comments.length > 0 || pins.prompts.length > 0}
+        <div bind:this={held.pageFrame} class="page-frame" style="--page-drawn: {layout.drawn.width}rem">
+          <div bind:this={held.host} class="editor" aria-label="Document editor" style={pageStyle}></div>
+          {#if held.pins.comments.length > 0 || held.pins.prompts.length > 0}
             <div class="lane" aria-label="Document gutter">
-              {#each pins.prompts as prompt (prompt.id)}
+              {#each held.pins.prompts as prompt (prompt.id)}
                 <button
                   type="button"
                   class:current={view.inspected === "document-editor.prompt-block" && view.selection?.id === prompt.id}
@@ -541,7 +193,7 @@
                   onclick={() => openPrompt(prompt.id)}
                 >✦</button>
               {/each}
-              {#each pins.comments as pin, index (`${pin.ids.join("|")}@${pin.top}:${index}`)}
+              {#each held.pins.comments as pin, index (`${pin.ids.join("|")}@${pin.top}:${index}`)}
                 <button
                   type="button"
                   class="pin {pin.state}"
@@ -887,16 +539,6 @@
     background-color: var(--token-color-active-surface);
     color: var(--token-color-active-text);
     padding: 0 2px;
-  }
-
-  .editor :global(.document-formula-stale),
-  .editor :global(.document-formula-computing) {
-    opacity: 0.7;
-  }
-
-  .editor :global(.document-formula-error) {
-    background-color: var(--token-color-danger-surface);
-    color: var(--token-color-danger-text);
   }
 
   .editor :global(.document-formula-unbound) {

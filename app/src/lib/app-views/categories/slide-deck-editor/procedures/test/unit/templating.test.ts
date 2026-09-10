@@ -1,11 +1,27 @@
 import { describe, expect, it } from "vitest";
 
+import { asId } from "$representation/data/behavior/core/id";
 import type { SlideDeckBody } from "$representation/data/types/slide-decks/body";
 import type { TemplateDetail } from "$capabilities/templates/index.remote";
+import type { ProjectResourceIndex } from "$capabilities/project-resources/index.remote";
 import {
   deckTemplatesIn,
-  insertionOf
+  insertionOf,
+  resourcesIn
 } from "$app-views/categories/slide-deck-editor/procedures/templating";
+
+const externalIndex: ProjectResourceIndex = {
+  resources: [{
+    id: "externalFiles:source",
+    ref: { kind: "externalFile::code", id: asId<"externalFiles">("externalFiles:source") },
+    kind: "file",
+    name: "source.ts",
+    relativePath: "sources/source.ts",
+    updatedAt: 1,
+    updatedByName: "Icarus"
+  }],
+  unavailable: []
+};
 
 const text = (id: string, display: string) => ({
   id,
@@ -126,5 +142,14 @@ describe("inserting a template into a deck", () => {
       unavailable: []
     };
     expect(deckTemplatesIn(library).map((item) => item.id)).toEqual(["a"]);
+  });
+
+  it("preserves the exact External subkind identity in slide template scope", () => {
+    expect(resourcesIn(externalIndex)).toEqual([{
+      kind: "externalFile::code",
+      id: "externalFiles:source",
+      name: "source.ts",
+      relativePath: "sources/source.ts"
+    }]);
   });
 });

@@ -12,7 +12,11 @@ ungrounded, and performs substitution with `renderDerivedTemplate`.
 `stale` without erasing it. It may also replace `lastResponse` with a user edit:
 the edit advances the response revision, clears citations that can no longer be
 claimed for the edited prose, and becomes continuity context for the next
-refresh. Each real edit advances `definitionRevision`; refresh bookkeeping and
+refresh. The row names exactly one current value arm through `valueSource`:
+`none` has no response or provenance, `authored` has a response and revision but
+no generated provenance, and `generated` has the response, revision, overlay
+generation, refresh time, and optional variable resolutions together. Missing
+fields are never interpreted as an older arm. Each real edit advances `definitionRevision`; refresh bookkeeping and
 publication never do. `readDerivedOutput` compares citation snapshots to active
 source revisions and reports effective staleness without writing every output
 when one source changes.

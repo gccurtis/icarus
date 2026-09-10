@@ -23,10 +23,10 @@ import {
 } from "$representation/data/behavior/core/scope-draft";
 
 const resources = [
-  { ...admitResourceRef({ id: "documents:1", kind: "document" }), name: "Winter readiness brief" },
-  { ...admitResourceRef({ id: "documents:2", kind: "document" }), name: "Decision memo" },
-  { ...admitResourceRef({ id: "slideDecks:1", kind: "slides" }), name: "Board review" },
-  { ...admitResourceRef({ id: "findings:1", kind: "finding" }), name: "Pump housing" }
+  { ...admitResourceRef({ id: "documents:1", kind: "document" }), name: "Winter readiness brief", relativePath: null },
+  { ...admitResourceRef({ id: "documents:2", kind: "document" }), name: "Decision memo", relativePath: null },
+  { ...admitResourceRef({ id: "slideDecks:1", kind: "slides" }), name: "Board review", relativePath: null },
+  { ...admitResourceRef({ id: "findings:1", kind: "finding" }), name: "Pump housing", relativePath: null }
 ];
 
 const catalogue = resources.map((entry) => admitResourceRef({ kind: entry.kind, id: entry.id }));
@@ -182,6 +182,43 @@ describe("the builder's view", () => {
     const kinds = builderView(draft, { resources }).sources[0];
     expect(kinds.offers.find((offer) => offer.key === "document")?.held).toBe("include");
     expect(kinds.offers.find((offer) => offer.key === "slides")?.held).toBeUndefined();
+  });
+
+  it("keeps duplicate External names distinct with their exact relative paths", () => {
+    const north = {
+      ...admitResourceRef({ kind: "externalFile::text", id: "externalFiles:north" }),
+      name: "inspection.md",
+      relativePath: "yard/north/inspection.md"
+    };
+    const south = {
+      ...admitResourceRef({ kind: "externalFile::text", id: "externalFiles:south" }),
+      name: "inspection.md",
+      relativePath: "yard/south/inspection.md"
+    };
+    const draft: ScopeDraft = {
+      include: [{
+        select: "resources",
+        refs: [admitResourceRef({ kind: north.kind, id: north.id })]
+      }],
+      exclude: []
+    };
+    const view = builderView(draft, { resources: [north, south] });
+    const offers = view.sources.find((source) => source.key === "resources")?.offers ?? [];
+
+    expect(offers.map(({ key, label, note }) => ({ key, label, note }))).toEqual([
+      {
+        key: "externalFile::text/externalFiles:north",
+        label: "inspection.md",
+        note: "yard/north/inspection.md"
+      },
+      {
+        key: "externalFile::text/externalFiles:south",
+        label: "inspection.md",
+        note: "yard/south/inspection.md"
+      }
+    ]);
+    expect(view.include[0].note).toBe("yard/north/inspection.md");
+    expect(view.preview[0].note).toBe("yard/north/inspection.md");
   });
 
   it("turns an offer key back into the term it stands for", () => {

@@ -2,12 +2,15 @@ import assert from "node:assert/strict";
 import { test } from "vitest";
 
 import type { DocumentRuntime } from "$model/client/workspace-state";
-import type { PromptBlock } from "$representation/data/types/content/content-block";
+import type {
+  LinkedPromptBlock,
+  UnlinkedPromptBlock
+} from "$representation/data/types/content/content-block";
 import type { Id } from "$representation/data/types/core/id";
 import type { DocumentOp } from "$representation/data/types/documents/op";
 import { setPromptDefinition } from "$app-views/categories/document-editor/procedures/set-prompt-definition";
 
-const prompt = (): PromptBlock => ({
+const prompt = (): UnlinkedPromptBlock => ({
   id: "#prompt",
   type: "prompt",
   atoms: [{ id: "#atom", kind: "literal", text: "" }],
@@ -39,8 +42,17 @@ test("writing an unlinked draft delegates one represented document edit", () => 
 
 test("a linked Prompt Block cannot regain a second inline prompt owner", () => {
   const received: DocumentOp[][] = [];
+  const block: LinkedPromptBlock = {
+    id: "#prompt",
+    type: "prompt",
+    derivedOutputId: "derivedOutputs:1" as Id<"derivedOutputs">,
+    atoms: [{ id: "#atom", kind: "literal", text: "" }],
+    display: "",
+    marks: [],
+    state: "idle"
+  };
   setPromptDefinition({
-    block: { ...prompt(), derivedOutputId: "derivedOutputs:1" as Id<"derivedOutputs"> },
+    block,
     prompt: "A competing question",
     runtime: recordingRuntime(received)
   });

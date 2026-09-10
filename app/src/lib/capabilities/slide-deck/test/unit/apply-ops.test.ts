@@ -53,8 +53,14 @@ const body = (): SlideDeckBody => ({
   ]
 });
 
-const set = (path: string, value: unknown, was: unknown = undefined): SlideDeckOp => ({
+const set = (
+  target: Extract<SlideDeckOp, { op: "set" }>["target"],
+  path: string,
+  value: unknown,
+  was: unknown = undefined
+): SlideDeckOp => ({
   op: "set",
+  target,
   path,
   value,
   was
@@ -64,7 +70,7 @@ const shapeIn = (deck: SlideDeckBody, slide: number, index: number) => deck.slid
 
 describe("set", () => {
   it("moves an element by its own id, whichever slide holds it", () => {
-    const next = applyOps(body(), [set("e2/frame", frame(0.9))]);
+    const next = applyOps(body(), [set("element", "e2/frame", frame(0.9))]);
 
     expect(shapeIn(next, 1, 0).frame.x).toBe(0.9);
     expect(shapeIn(next, 0, 1).frame.x).toBe(0.1);
@@ -72,48 +78,56 @@ describe("set", () => {
 
   it("leaves the slide it did not touch alone", () => {
     const before = body();
-    const next = applyOps(before, [set("e1/frame", frame(0.5))]);
+    const next = applyOps(before, [set("element", "e1/frame", frame(0.5))]);
 
     expect(next.slides[1]).toBe(before.slides[1]);
   });
 
   it("reaches a field nested under an element", () => {
-    const next = applyOps(body(), [set("e1/paint/fill", "--token-color-accent-2-fill")]);
+    const next = applyOps(body(), [set("element", "e1/paint/fill", "--token-color-accent-2-fill")]);
 
     expect(shapeIn(next, 0, 1).paint?.fill).toBe("--token-color-accent-2-fill");
   });
 
   it("reaches a field on the deck itself", () => {
-    const next = applyOps(body(), [set("theme/colors/text", "--token-ink-secondary"), set("aspectRatio", "4:3")]);
+    const next = applyOps(body(), [
+      set("deck", "theme/colors/text", "--token-ink-secondary"),
+      set("deck", "aspectRatio", "4:3")
+    ]);
 
     expect(next.theme.colors.text).toBe("--token-ink-secondary");
     expect(next.aspectRatio).toBe("4:3");
   });
 
   it("reaches a field on a slide and on a section", () => {
-    const next = applyOps(body(), [set("s2/hidden", true), set("sec1/firstSlideId", "s2")]);
+    const next = applyOps(body(), [
+      set("slide", "s2/hidden", true),
+      set("section", "sec1/firstSlideId", "s2")
+    ]);
 
     expect(next.slides[1].hidden).toBe(true);
     expect(next.sections[0].firstSlideId).toBe("s2");
   });
 
   it("removes a field when the value is null", () => {
-    const withRotation = applyOps(body(), [set("e1/rotation", 45)]);
-    const next = applyOps(withRotation, [set("e1/rotation", null)]);
+    const withRotation = applyOps(body(), [set("element", "e1/rotation", 45)]);
+    const next = applyOps(withRotation, [set("element", "e1/rotation", null)]);
 
     expect("rotation" in shapeIn(next, 0, 1)).toBe(false);
   });
 
   it("refuses an id it cannot find", () => {
-    expect(() => applyOps(body(), [set("nope/frame", frame(0.5))])).toThrow(/Nothing in the deck has the id nope/);
+    expect(() => applyOps(body(), [set("element", "nope/frame", frame(0.5))]))
+      .toThrow(/Nothing in the deck has the id nope/);
   });
 
   it("refuses to set a list", () => {
-    expect(() => applyOps(body(), [set("s1/elements", [])])).toThrow(/is a list/);
+    expect(() => applyOps(body(), [set("slide", "s1/elements", [])])).toThrow(/is a list/);
   });
 
   it("refuses to walk into a primitive", () => {
-    expect(() => applyOps(body(), [set("e1/frame/x/deeper", 1)])).toThrow(/holds no fields/);
+    expect(() => applyOps(body(), [set("element", "e1/frame/x/deeper", 1)]))
+      .toThrow(/holds no fields/);
   });
 });
 
@@ -148,7 +162,7 @@ describe("elements", () => {
         values: [{ id: "g1", frame: frame(0.2), content: { type: "group", children: [shape("e2", 0), shape("e3", 0.5)] } }]
       }
     ]);
-    const next = applyOps(grouped, [set("e3/frame", frame(0.75))]);
+    const next = applyOps(grouped, [set("element", "e3/frame", frame(0.75))]);
 
     const group = next.slides[1].elements[0];
     expect(group.content.type).toBe("group");
@@ -233,7 +247,7 @@ describe("marks", () => {
         ]
       }
     ]);
-    const tuned = applyOps(added, [set("m2/style", ["bold", "italic"])]);
+    const tuned = applyOps(added, [set("mark", "m2/style", ["bold", "italic"])]);
     const content = tuned.slides[0].elements[0].content;
     if (content.type !== "text") throw new Error("not text");
     expect(content.block.marks[1]).toMatchObject({ id: "m2", style: ["bold", "italic"] });
@@ -257,7 +271,10 @@ describe("slides", () => {
   });
 
   it("applies a run of ops in order", () => {
-    const next = applyOps(body(), [set("e1/frame", frame(0.3)), set("e1/frame", frame(0.7))]);
+    const next = applyOps(body(), [
+      set("element", "e1/frame", frame(0.3)),
+      set("element", "e1/frame", frame(0.7))
+    ]);
 
     expect(shapeIn(next, 0, 1).frame.x).toBe(0.7);
   });

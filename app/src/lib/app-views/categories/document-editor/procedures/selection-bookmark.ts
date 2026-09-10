@@ -15,7 +15,7 @@ import {
   anchorAt,
   positionOf,
   type Anchor
-} from "$app-views/categories/document-editor/procedures/projection";
+} from "$app-views/categories/document-editor/procedures/projection-positions";
 
 type RangeBookmark = { readonly from: Anchor; readonly to: Anchor };
 

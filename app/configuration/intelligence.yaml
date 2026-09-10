@@ -25,3 +25,11 @@ intelligence:
     # the provider timeout only bounds one request of it.
     maxToolRounds: -1
     deadlineMs: 600000
+
+  # Agent tasks. The current runner is a grounded, project-scoped read lane.
+  task:
+    model: moonshotai/kimi-k2.5
+    topK: 8
+    maxSources: 12
+    maxToolRounds: -1
+    deadlineMs: 600000

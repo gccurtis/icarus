@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { tick, type Component } from "svelte";
+  import type { Component } from "svelte";
   import ChartColumn from "@lucide/svelte/icons/chart-column";
   import ChevronLeft from "@lucide/svelte/icons/chevron-left";
   import ChevronRight from "@lucide/svelte/icons/chevron-right";
@@ -20,78 +20,34 @@
   import {
     SlideSurface,
     type SurfaceBadge,
-    type SurfaceFrame,
-    type SurfaceGuide,
-    type SurfaceMove,
-    type SurfacePoint,
-    type SurfacePrompt,
-    type SurfaceTextEdit
+    type SurfacePrompt
   } from "$authored-components/slide-surface";
   import { Button } from "$vendored-components/button";
   import * as ContextMenu from "$vendored-components/context-menu";
+  import { createDeckState } from "$app-views/categories/slide-deck-editor/content/deck.state.svelte";
+  import { commentsQuery, threadsIn } from "$app-views/categories/slide-deck-editor/procedures/comments";
+  import type { DeckActionContext } from "$app-views/categories/slide-deck-editor/procedures/deck-action-context";
+  import { createDeckGeometryActions } from "$app-views/categories/slide-deck-editor/procedures/deck-geometry-actions";
+  import { createDeckInsertActions } from "$app-views/categories/slide-deck-editor/procedures/deck-insert-actions";
+  import { createDeckKeyboardAction } from "$app-views/categories/slide-deck-editor/procedures/deck-keyboard-actions";
+  import { placedOn } from "$app-views/categories/slide-deck-editor/procedures/deck-placement";
+  import { holderOn } from "$app-views/categories/slide-deck-editor/procedures/deck-reading";
+  import { createDeckSelectionActions } from "$app-views/categories/slide-deck-editor/procedures/deck-selection-actions";
+  import { slideIndexOf } from "$app-views/categories/slide-deck-editor/procedures/deck-slides";
+  import { createDeckZoomActions } from "$app-views/categories/slide-deck-editor/procedures/deck-zoom-actions";
+  import { mountsDeckSurface } from "$app-views/categories/slide-deck-editor/procedures/effects/mounts-deck-surface.svelte";
+  import { INSERT_GROUPS } from "$app-views/categories/slide-deck-editor/procedures/inserting";
   import {
     resourceName,
     resourceIndex
   } from "$app-views/categories/slide-deck-editor/procedures/resource-index";
-  import { commentsQuery, threadsIn } from "$app-views/categories/slide-deck-editor/procedures/comments";
-  import {
-    blockIn,
-    boundsOf,
-    elementIn,
-    emptyText,
-    placedById,
-    placedOn,
-    slideIndexOf,
-    textOf,
-    withDuplicatedElements,
-    withElementFrame,
-    withGrouped,
-    withSet,
-    withSets,
-    withUngrouped,
-    withoutElements,
-    type SlideElement
-  } from "$app-views/categories/slide-deck-editor/procedures/deck";
-  import {
-    INSERT_GROUPS,
-    insertedElement,
-    type InsertEntry,
-    type PlacedKind
-  } from "$app-views/categories/slide-deck-editor/procedures/inserting";
-  import { nudged } from "$app-views/categories/slide-deck-editor/procedures/arrange";
   import { sceneOf } from "$app-views/categories/slide-deck-editor/procedures/scene";
-  import {
-    cellsSignal,
-    elementsSignal,
-    notesSignal,
-    rangeOf,
-    sameSelection,
-    selectedCells,
-    selectedIds,
-    slideSignal,
-    textSignal,
-    threadsSignal
-  } from "$app-views/categories/slide-deck-editor/procedures/selecting";
-  import { snapped, targetsOf } from "$app-views/categories/slide-deck-editor/procedures/snapping";
-  import {
-    clampZoom,
-    drawn,
-    fitted,
-    percent,
-    slideUnits
-  } from "$app-views/categories/slide-deck-editor/procedures/stage";
+  import { notesSignal, selectedCells, selectedIds } from "$app-views/categories/slide-deck-editor/procedures/selecting";
+  import { drawn, fitted, percent, slideUnits } from "$app-views/categories/slide-deck-editor/procedures/stage";
   import { resourceTemplate } from "$app-views/categories/slide-deck-editor/procedures/template-resources";
-  import { replaced, toggledMark } from "$app-views/categories/slide-deck-editor/procedures/typing";
-  import {
-    workspaceState,
-    type SlideDeckRuntime,
-    type SyncState
-  } from "$model/client/workspace-state";
+  import { workspaceState, type SyncState } from "$model/client/workspace-state";
 
   const GUTTER = 24;
-  const WHEEL_NOTCH = 120;
-  const PERCENT_PER_NOTCH = 2;
-  const SNAP = 0.006;
 
   const ICON: Record<string, Component> = {
     text: Type,
@@ -118,101 +74,67 @@
   };
 
   const view = workspaceState();
-
+  const held = createDeckState();
   const deckId = view.active.resourceId;
   const resources = resourceIndex();
   const template = deckId === undefined ? undefined : resourceTemplate(deckId);
+  const runtime = deckId === undefined ? undefined : view.slideDeckRuntime(deckId);
 
   const deckTitle = $derived.by(() => {
     if (deckId === undefined) return undefined;
-
     return resourceName(resources, deckId, template?.current);
   });
-
-  let runtime = $state<SlideDeckRuntime | undefined>(undefined);
-
-  $effect(() => {
-    runtime = deckId === undefined ? undefined : view.slideDeckRuntime(deckId);
-  });
-
   const body = $derived(runtime?.body);
-  const index = $derived(body === undefined ? 0 : slideIndexOf(body, view.active.focus ?? undefined));
+  const index = $derived(
+    body === undefined ? 0 : slideIndexOf(body, view.active.focus ?? undefined)
+  );
   const slide = $derived(body?.slides[index]);
   const geometry = $derived(runtime?.stage);
   const units = $derived(
-    body === undefined || geometry === undefined ? { width: 1280, height: 720 } : slideUnits(body.aspectRatio, geometry)
+    body === undefined || geometry === undefined
+      ? { width: 1280, height: 720 }
+      : slideUnits(body.aspectRatio, geometry)
   );
   const scene = $derived(body === undefined ? undefined : sceneOf(body, slide, units));
-
-  let surface = $state<HTMLDivElement | null>(null);
-  let board = $state<HTMLDivElement | null>(null);
-  let available = $state({ width: 0, height: 0 });
-
-  $effect(() => {
-    const element = surface;
-    if (element === null) return;
-    const measure = () => {
-      available = { width: element.clientWidth, height: element.clientHeight };
-    };
-    const watcher = new ResizeObserver(measure);
-    watcher.observe(element);
-    measure();
-    return () => watcher.disconnect();
-  });
-
-  const fit = $derived(body === undefined ? { width: 0, height: 0 } : fitted(available, body.aspectRatio, GUTTER));
+  const fit = $derived(
+    body === undefined
+      ? { width: 0, height: 0 }
+      : fitted(held.available, body.aspectRatio, GUTTER)
+  );
   const size = $derived(drawn(fit, view.zoom));
-
-  let editing = $state<string | undefined>(undefined);
-
-  const holderOf = (blockId: string): string | undefined =>
-    slide === undefined
-      ? undefined
-      : placedOn(slide).find(({ element }) => {
-          const content = element.content;
-          if (
-            (content.type === "text" || content.type === "prompt" || content.type === "shape") &&
-            content.block?.id === blockId
-          ) return true;
-          return content.type === "table" && content.block.rows.some((row) => row.cells.some((cell) => cell.blocks.some((held) => held.id === blockId)));
-        })?.element.id;
 
   const selected = $derived.by(() => {
     if (slide === undefined) return [] as string[];
     const onSlide = new Set(placedOn(slide).map((placed) => placed.element.id));
     const chosen = selectedIds(view.selection).filter((id) => onSlide.has(id));
-    if (chosen.length === 0 && editing !== undefined) {
-      const holder = holderOf(editing);
+    if (chosen.length === 0 && held.editing !== undefined) {
+      const holder = holderOn(slide, held.editing)?.id;
       if (holder !== undefined) return [holder];
     }
     return chosen;
   });
-
   const cells = $derived(selectedCells(view.selection));
 
   const comments = commentsQuery();
-
   const threads = $derived.by(() => {
     if (deckId === undefined) return [];
     return threadsIn(comments).filter(
-      (row) =>
-        row.target.kind === "slides" &&
-        row.target.id === deckId &&
-        row.resolution === undefined
+      (row) => row.target.kind === "slides" && row.target.id === deckId && row.resolution === undefined
     );
   });
-
   const badges = $derived.by((): SurfaceBadge[] => {
     if (slide === undefined) return [];
     const counts = new Map<string, number>();
     for (const thread of threads) {
       const within = thread.within;
-      if (within?.kind === "element" && within.elementId) counts.set(within.elementId, (counts.get(within.elementId) ?? 0) + 1);
-      else if (within?.kind === "slide" && within.slideId === slide.id) counts.set("", (counts.get("") ?? 0) + 1);
+      if (within?.kind === "element" && within.elementId) {
+        counts.set(within.elementId, (counts.get(within.elementId) ?? 0) + 1);
+      } else if (within?.kind === "slide" && within.slideId === slide.id) {
+        counts.set("", (counts.get("") ?? 0) + 1);
+      }
     }
     return [...counts].map(([id, count]) => ({ id, count }));
   });
-
   const promptMarkers = $derived.by((): SurfacePrompt[] =>
     slide === undefined
       ? []
@@ -221,327 +143,29 @@
         )
   );
 
-  const apply = (ops: readonly Parameters<SlideDeckRuntime["apply"]>[0][number][]) => {
-    if (ops.length > 0) runtime?.apply(ops);
-  };
+  const actionContext = {
+    view,
+    runtime,
+    held,
+    deckId,
+    get body() { return body; },
+    get slide() { return slide; },
+    get selected() { return selected; },
+    get cells() { return cells; },
+    get units() { return units; },
+    get size() { return size; },
+    get geometry() { return geometry; },
+    get index() { return index; }
+  } satisfies DeckActionContext;
 
-  const show = (slideId: string) => {
-    if (deckId === undefined) return;
-    editing = undefined;
-    view.open({ category: "slide-deck-editor", resourceId: deckId, focus: slideId });
-    view.inspect("slide-deck-editor.slide", slideSignal(slideId).selection);
-  };
-
-  const select = (ids: string[]) => {
-    if (body === undefined) return;
-    editing = undefined;
-    const elements = ids.flatMap((id) => {
-      const element = elementIn(body, id);
-      return element ? [element] : [];
-    });
-    const signal = elementsSignal(elements);
-    if (signal) view.inspect(signal.key, signal.selection);
-  };
-
-  const pickCells = (tableId: string, ids: string[]) => {
-    editing = undefined;
-    const signal = cellsSignal(tableId, ids);
-    view.inspect(signal.key, signal.selection);
-  };
-
-  const clear = () => {
-    editing = undefined;
-    if (slide) view.inspect("slide-deck-editor.slide", slideSignal(slide.id).selection);
-    else view.clear();
-  };
-
-  const frames = (moves: SurfaceMove[]) => {
-    if (body === undefined) return;
-    let held = body;
-    const ops = [];
-    for (const move of moves) {
-      const step = withElementFrame(held, move.id, move.frame);
-      held = step.body;
-      ops.push(...step.ops);
-    }
-    apply(ops);
-  };
-
-  const grow = (id: string, height: number) => {
-    if (body === undefined || slide === undefined) return;
-    const placed = placedById(slide, id);
-    if (placed === undefined) return;
-    const next = Math.round(height * 10000) / 10000;
-    if (Math.abs(next - placed.frame.height) < 0.0005) return;
-    apply(withElementFrame(body, id, { ...placed.frame, height: next }).ops);
-  };
-
-  const rotate = (id: string, rotation: number) => {
-    if (body === undefined) return;
-    apply(withSet(body, `${id}/rotation`, rotation === 0 ? null : rotation).ops);
-  };
-
-  const line = (id: string, from: SurfacePoint, to: SurfacePoint) => {
-    if (body === undefined) return;
-    apply(
-      withSets(body, [
-        { path: `${id}/content/from`, value: from },
-        { path: `${id}/content/to`, value: to },
-        { path: `${id}/frame`, value: boundsOf([{ x: from.x, y: from.y, width: 0, height: 0 }, { x: to.x, y: to.y, width: 0, height: 0 }]) }
-      ]).ops
-    );
-  };
-
-  const enter = (id: string, blockId: string) => {
-    if (body === undefined) return;
-    const block = blockIn(body, blockId);
-    if (block === undefined) return;
-    if (!selected.includes(id)) select([id]);
-    editing = blockId;
-    const signal = textSignal(blockId, block.display.length, block.display.length);
-    view.inspect(signal.key, signal.selection);
-  };
-
-  const startTyping = (element: SlideElement, typed: string) => {
-    if (body === undefined) return;
-    const block = textOf(element);
-    if (block === undefined) {
-      const made = emptyText(body.styles.defaultKey, typed);
-      apply(withSet(body, `${element.id}/content/block`, made).ops);
-      editing = made.id;
-      const signal = textSignal(made.id, typed.length, typed.length);
-      view.inspect(signal.key, signal.selection);
-      return;
-    }
-    const at = block.display.length;
-    if (typed !== "") apply(replaced(block, at, at, typed));
-    editing = block.id;
-    const signal = textSignal(block.id, at + typed.length, at + typed.length);
-    view.inspect(signal.key, signal.selection);
-  };
-
-  const exit = () => {
-    if (editing === undefined) return;
-    const holder = holderOf(editing);
-    editing = undefined;
-    if (holder !== undefined) select([holder]);
-    else if (selected.length > 0) select(selected);
-    else clear();
-  };
-
-  const edited = (change: SurfaceTextEdit) => {
-    if (body === undefined) return;
-    const block = blockIn(body, change.blockId);
-    if (block === undefined) return;
-    apply(replaced(block, change.from, change.to, change.insert));
-  };
-
-  const caret = (blockId: string, from: number, to: number) => {
-    if (editing !== blockId) return;
-    const signal = textSignal(blockId, from, to);
-    if (sameSelection(view.selection, signal.selection) && view.inspected === signal.key) return;
-    view.inspect(signal.key, signal.selection);
-  };
-
-  const badge = (id: string) => {
-    if (slide === undefined) return;
-    const signal = threadsSignal(id === "" ? slide.id : id);
-    if (id !== "") select([id]);
-    view.inspect(signal.key, signal.selection);
-  };
-
-  const prompt = (id: string) => {
-    if (body === undefined) return;
-    const element = elementIn(body, id);
-    if (element?.content.type !== "prompt") return;
-    select([id]);
-  };
-
-  let pointed: SurfacePoint | undefined;
-  let onSlide = false;
-  let insertAt = $state<SurfacePoint | undefined>(undefined);
-
-  const pointedAt = (at: SurfacePoint) => {
-    pointed = at;
-    onSlide = true;
-  };
-
-  const armMenu = () => {
-    insertAt = onSlide ? pointed : undefined;
-    onSlide = false;
-  };
-
-  const put = (kind: PlacedKind, at: SurfacePoint | undefined) => {
-    if (body === undefined || slide === undefined) return;
-    const { element, edit } = insertedElement(kind, body, slide.id, at);
-    if (edit.ops.length === 0) return;
-    editing = undefined;
-    apply(edit.ops);
-    const signal = elementsSignal([element]);
-    if (signal) view.inspect(signal.key, signal.selection);
-  };
-
-  const insert = (entry: InsertEntry) => {
-    if (!entry.ready) return;
-    put(entry.kind as PlacedKind, insertAt);
-  };
-
-  const snap = (frame: SurfaceFrame, id: string, alt: boolean): { frame: SurfaceFrame; guides: SurfaceGuide[] } => {
-    if (alt || slide === undefined) return { frame, guides: [] };
-    const others = placedOn(slide)
-      .filter((placed) => placed.depth === 0 && placed.element.id !== id && !selected.includes(placed.element.id))
-      .map((placed) => placed.frame);
-    return snapped(frame, targetsOf(others), SNAP);
-  };
-
-  const keydown = (event: KeyboardEvent) => {
-    if (body === undefined || slide === undefined || event.defaultPrevented) return;
-    const mod = event.metaKey || event.ctrlKey;
-
-    if (editing !== undefined) {
-      const range = rangeOf(view.selection);
-      if (mod && range && ["b", "i", "u"].includes(event.key.toLowerCase())) {
-        const block = blockIn(body, range.blockId);
-        if (!block) return;
-        event.preventDefault();
-        const style = event.key.toLowerCase() === "b" ? "bold" : event.key.toLowerCase() === "i" ? "italic" : "underline";
-        apply(toggledMark(block, range.from, range.to, style));
-      }
-      return;
-    }
-
-    if (event.target instanceof HTMLElement && (["INPUT", "TEXTAREA", "SELECT"].includes(event.target.tagName) || event.target.isContentEditable)) return;
-
-    if (event.key === "Escape") {
-      if (cells.length > 0) select(selected);
-      else clear();
-      return;
-    }
-    if (selected.length === 0) return;
-
-    if (event.key === "Delete" || event.key === "Backspace") {
-      event.preventDefault();
-      apply(withoutElements(body, selected).ops);
-      clear();
-      return;
-    }
-    if (event.key.startsWith("Arrow")) {
-      event.preventDefault();
-      const stepX = (event.shiftKey ? 10 : 1) / units.width;
-      const stepY = (event.shiftKey ? 10 : 1) / units.height;
-      const dx = event.key === "ArrowLeft" ? -stepX : event.key === "ArrowRight" ? stepX : 0;
-      const dy = event.key === "ArrowUp" ? -stepY : event.key === "ArrowDown" ? stepY : 0;
-      const moves = placedOn(slide)
-        .filter((placed) => selected.includes(placed.element.id))
-        .map((placed) => ({ id: placed.element.id, frame: nudged(placed.frame, dx, dy) }));
-      frames(moves);
-      return;
-    }
-    if (mod && event.key.toLowerCase() === "g") {
-      event.preventDefault();
-      if (event.shiftKey) {
-        const edit = withUngrouped(body, selected[0]);
-        apply(edit.ops);
-        clear();
-      } else {
-        const before = slide;
-        const edit = withGrouped(body, selected);
-        const made = edit.body.slides.find((held) => held.id === before.id)?.elements.find((element) => element.content.type === "group" && !before.elements.some((was) => was.id === element.id));
-        apply(edit.ops);
-        if (made) select([made.id]);
-      }
-      return;
-    }
-    if (mod && event.key.toLowerCase() === "d") {
-      event.preventDefault();
-      const before = slide;
-      const edit = withDuplicatedElements(body, selected);
-      const fresh = edit.body.slides.find((held) => held.id === before.id)?.elements.filter((element) => !before.elements.some((was) => was.id === element.id)).map((element) => element.id) ?? [];
-      apply(edit.ops);
-      if (fresh.length > 0) select(fresh);
-      return;
-    }
-    if (mod || event.altKey || selected.length !== 1 || cells.length > 0) return;
-
-    const element = elementIn(body, selected[0]);
-    if (
-      element === undefined ||
-      (element.content.type !== "text" &&
-        element.content.type !== "prompt" &&
-        element.content.type !== "shape")
-    ) return;
-    if (event.key === "Enter") {
-      event.preventDefault();
-      const block = textOf(element);
-      if (block) enter(element.id, block.id);
-      else startTyping(element, "");
-      return;
-    }
-    if (event.key.length === 1) {
-      event.preventDefault();
-      startTyping(element, event.key);
-    }
-  };
-
-  const focusPoint = (): SurfacePoint => {
-    if (slide !== undefined && selected.length > 0) {
-      const held = boundsOf(placedOn(slide).filter((placed) => selected.includes(placed.element.id)).map((placed) => placed.frame));
-      return { x: held.x + held.width / 2, y: held.y + held.height / 2 };
-    }
-    const element = surface;
-    if (element === null || size.width === 0) return { x: 0.5, y: 0.5 };
-    const x = (element.scrollLeft + element.clientWidth / 2 - GUTTER) / size.width;
-    const y = (element.scrollTop + element.clientHeight / 2 - GUTTER) / size.height;
-    return { x: Math.min(Math.max(x, 0), 1), y: Math.min(Math.max(y, 0), 1) };
-  };
-
-  const zoomTo = (wanted: number) => {
-    if (geometry === undefined) return;
-    const focus = focusPoint();
-    view.setZoom(clampZoom(wanted, geometry));
-    void tick().then(() => {
-      const element = surface;
-      if (element === null) return;
-      element.scrollTo({
-        left: Math.max(0, GUTTER + focus.x * size.width - element.clientWidth / 2),
-        top: Math.max(0, GUTTER + focus.y * size.height - element.clientHeight / 2)
-      });
-    });
-  };
-
-  const pinch = (event: WheelEvent) => {
-    if (!event.ctrlKey && !event.metaKey) return;
-    event.preventDefault();
-    zoomTo((view.zoom ?? 100) - (event.deltaY / WHEEL_NOTCH) * PERCENT_PER_NOTCH);
-  };
-
-  const zoomBy = (direction: 1 | -1) => {
-    if (geometry === undefined) return;
-    zoomTo((view.zoom ?? 100) + direction * geometry.zoomStep);
-  };
-
-  const step = (direction: 1 | -1) => {
-    const next = body?.slides[index + direction];
-    if (next) show(next.id);
-  };
-
-  let shownSlide: string | undefined;
-
-  $effect(() => {
-    const id = slide?.id;
-    if (id === shownSlide) return;
-    shownSlide = id;
-    editing = undefined;
-  });
-
-  $effect(() => {
-    const range = rangeOf(view.selection);
-    if (range === undefined || body === undefined || slide === undefined) return;
-    if (editing === range.blockId) return;
-    if (holderOf(range.blockId) !== undefined) editing = range.blockId;
-  });
-
+  const selectionActions = createDeckSelectionActions(actionContext);
+  const geometryActions = createDeckGeometryActions(actionContext, selectionActions);
+  const insertActions = createDeckInsertActions(actionContext, selectionActions);
+  const zoomActions = createDeckZoomActions(actionContext, selectionActions);
+  const keydown = createDeckKeyboardAction(actionContext, selectionActions, geometryActions);
+  mountsDeckSurface(actionContext);
 </script>
+
 
 <svelte:window onkeydown={keydown} />
 
@@ -555,17 +179,17 @@
       {#snippet child({ props })}
         <div
           {...props}
-          bind:this={surface}
+          bind:this={held.surface}
           class="area-canvas bg-surface-pasteboard"
-          onwheel={pinch}
+          onwheel={zoomActions.pinch}
         >
           {#if scene && size.width > 0}
             <div
-              bind:this={board}
+              bind:this={held.board}
               class="pasteboard"
               style="padding: {GUTTER}px"
               role="presentation"
-              oncontextmenu={armMenu}
+              oncontextmenu={insertActions.armMenu}
             >
               <SlideSurface
                 {scene}
@@ -573,25 +197,25 @@
                 height={size.height}
                 {selected}
                 {cells}
-                {editing}
+                editing={held.editing}
                 {badges}
                 prompts={promptMarkers}
-                {board}
-                onselect={(ids) => select(ids)}
-                onselectcells={pickCells}
-                onclear={clear}
-                onframes={(moves) => frames(moves)}
-                onrotate={(id, rotation) => rotate(id, rotation)}
-                online={(id, from, to) => line(id, from, to)}
-                ongrow={grow}
-                onenter={enter}
-                onexit={exit}
-                onedit={edited}
-                oncaret={caret}
-                onbadge={badge}
-                onprompt={prompt}
-                oncontext={pointedAt}
-                {snap}
+                board={held.board}
+                onselect={selectionActions.select}
+                onselectcells={selectionActions.pickCells}
+                onclear={selectionActions.clear}
+                onframes={geometryActions.frames}
+                onrotate={geometryActions.rotate}
+                online={geometryActions.line}
+                ongrow={geometryActions.grow}
+                onenter={selectionActions.enter}
+                onexit={selectionActions.exit}
+                onedit={selectionActions.edited}
+                oncaret={selectionActions.caret}
+                onbadge={selectionActions.badge}
+                onprompt={selectionActions.prompt}
+                oncontext={insertActions.pointedAt}
+                snap={geometryActions.snap}
               />
             </div>
           {/if}
@@ -601,7 +225,7 @@
 
     <ContextMenu.Content class="w-52">
       <ContextMenu.Label class="text-caption text-ink-muted px-1.5 py-1 font-normal">
-        Add to slide {index + 1}{insertAt === undefined ? "" : ", here"}
+        Add to slide {index + 1}{held.insertAt === undefined ? "" : ", here"}
       </ContextMenu.Label>
       {#each INSERT_GROUPS as group (group.title)}
         {#if group.nested}
@@ -614,7 +238,7 @@
             <ContextMenu.SubContent class="w-40">
               {#each group.entries as entry (entry.kind)}
                 {@const Glyph = ICON[entry.kind]}
-                <ContextMenu.Item disabled={!entry.ready} onSelect={() => insert(entry)}>
+                <ContextMenu.Item disabled={!entry.ready} onSelect={() => insertActions.insert(entry)}>
                   <Glyph size={14} aria-hidden="true" />
                   {entry.label}
                 </ContextMenu.Item>
@@ -627,7 +251,7 @@
             <ContextMenu.Item
               disabled={!entry.ready}
               title={entry.ready ? undefined : entry.note}
-              onSelect={() => insert(entry)}
+              onSelect={() => insertActions.insert(entry)}
             >
               <Glyph size={14} aria-hidden="true" />
               {entry.label}
@@ -640,10 +264,10 @@
 
   <div class="area-strip bg-surface-panel border-border-subtle flex items-center gap-1 border-t">
     {#if body && slide}
-      <Button variant="outline" size="xs" disabled={index === 0} onclick={() => step(-1)}>
+      <Button variant="outline" size="xs" disabled={index === 0} onclick={() => zoomActions.step(-1)}>
         <ChevronLeft aria-hidden="true" />Previous
       </Button>
-      <Button variant="outline" size="xs" disabled={index >= body.slides.length - 1} onclick={() => step(1)}>
+      <Button variant="outline" size="xs" disabled={index >= body.slides.length - 1} onclick={() => zoomActions.step(1)}>
         Next<ChevronRight aria-hidden="true" />
       </Button>
       <Button
@@ -658,16 +282,16 @@
         <StickyNote aria-hidden="true" />Notes
       </Button>
       <span class="ms-auto flex items-center gap-1">
-        <Button variant="ghost" size="icon-xs" aria-label="Zoom out" onclick={() => zoomBy(-1)}><Minus aria-hidden="true" /></Button>
+        <Button variant="ghost" size="icon-xs" aria-label="Zoom out" onclick={() => zoomActions.zoomBy(-1)}><Minus aria-hidden="true" /></Button>
         <button
           type="button"
           class="text-caption text-ink-secondary hover:text-ink-primary w-12 rounded-control tabular-nums"
           title="Back to fit"
-          onclick={() => zoomTo(100)}
+          onclick={() => zoomActions.zoomTo(100)}
         >
           {percent(view.zoom)}
         </button>
-        <Button variant="ghost" size="icon-xs" aria-label="Zoom in" onclick={() => zoomBy(1)}><Plus aria-hidden="true" /></Button>
+        <Button variant="ghost" size="icon-xs" aria-label="Zoom in" onclick={() => zoomActions.zoomBy(1)}><Plus aria-hidden="true" /></Button>
         <span class="text-caption text-ink-muted ms-2">· {SYNC_LABEL[runtime?.sync ?? "loading"]}</span>
       </span>
     {:else}

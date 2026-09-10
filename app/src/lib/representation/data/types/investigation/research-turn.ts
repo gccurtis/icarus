@@ -7,7 +7,6 @@ import type { ResourceRef } from "$representation/data/types/core/resource";
  * stand behind. A failure is the provider, the queue or the code.
  */
 export type ResearchTurnState =
-  | "queued"
   | "running"
   | "answered"
   | "insufficient"

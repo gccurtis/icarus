@@ -9,12 +9,9 @@ import type { DocumentOp } from "$representation/data/types/documents/op";
 import type { Selection } from "$representation/data/types/workspace/tab";
 import { mint } from "$app-views/categories/document-editor/procedures/ids";
 import { addressOf } from "$app-views/categories/document-editor/procedures/inspecting";
-import {
-  endAt,
-  isStyled,
-  linearOf,
-  sortedStyles
-} from "$app-views/categories/document-editor/procedures/projection";
+import { endAt, linearOf } from "$app-views/categories/document-editor/procedures/projection-atoms";
+import { isStyled } from "$app-views/categories/document-editor/procedures/projection-blocks";
+import { sortedStyles } from "$app-views/categories/document-editor/procedures/projection-inline";
 import type { Styled } from "$app-views/categories/document-editor/procedures/styles";
 
 export type Range = { readonly blockId: string; readonly from: number; readonly to: number };

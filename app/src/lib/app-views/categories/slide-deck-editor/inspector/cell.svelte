@@ -9,7 +9,11 @@
   import { Panel, PanelButton, PanelChoice, PanelColor, PanelCrumbs, PanelEmpty, PanelNumber, PanelSection, PanelSelect } from "$authored-components/panel";
   import { Button } from "$vendored-components/button";
   import TextStyle from "$app-views/categories/slide-deck-editor/components/text-style.svelte";
-  import { elementIn, slideHolding, slideIndexOf, withSet, withSets, type TextBlock } from "$app-views/categories/slide-deck-editor/procedures/deck";
+  import type { TextBlock } from "$app-views/categories/slide-deck-editor/procedures/deck-types";
+  import { slideHolding } from "$app-views/categories/slide-deck-editor/procedures/deck-slide-holding";
+  import { elementIn } from "$app-views/categories/slide-deck-editor/procedures/deck-reading";
+  import { slideIndexOf } from "$app-views/categories/slide-deck-editor/procedures/deck-slides";
+  import { withSet, withSets } from "$app-views/categories/slide-deck-editor/procedures/deck-values";
   import { cellsSignal, elementsSignal, selectedCells, selectedIds, slideSignal } from "$app-views/categories/slide-deck-editor/procedures/selecting";
   import {
     columnsOf,
@@ -87,7 +91,10 @@
 
   const each = (make: (held: GridCell) => { path: string; value: unknown }[]) => {
     if (body === undefined) return;
-    apply(withSets(body, chosen.flatMap(make)).ops);
+    apply(withSets(
+      body,
+      chosen.flatMap(make).map((set) => ({ target: "block", ...set }))
+    ).ops);
   };
 
   const setFill = (value: string) => each((held) => [{ path: `${held.cell.id}/format/background`, value: value === "" ? null : value }]);
@@ -127,14 +134,14 @@
     if (body === undefined || table === undefined || first === undefined) return;
     const total = widths.reduce((sum, held) => sum + held, 0) || 1;
     const next = widths.map((held, index) => (index === first.column ? (percent / 100) * total : held));
-    apply(withSet(body, `${table.id}/columnWidths`, next).ops);
+    apply(withSet(body, "block", `${table.id}/columnWidths`, next).ops);
   };
 
   const setHeight = (percent: number) => {
     if (body === undefined || element === undefined || first === undefined) return;
     const total = heights.reduce((sum, held) => sum + held, 0) || 1;
     const next = heights.map((held, index) => (index === first.row ? (percent / 100) * total : held));
-    apply(withSet(body, `${element.id}/content/rowHeights`, next).ops);
+    apply(withSet(body, "element", `${element.id}/content/rowHeights`, next).ops);
   };
 
   const merge = () => {

@@ -9,6 +9,14 @@ const watchDiagnostics = (page: Page) => {
     }
   });
   page.on("pageerror", (error) => unexpected.push(`pageerror: ${error.message}`));
+  page.on("requestfailed", (request) => {
+    if (request.failure()?.errorText === "net::ERR_ABORTED" && request.url().includes("/__data.json")) {
+      return;
+    }
+    unexpected.push(
+      `requestfailed: ${request.method()} ${request.url()} ${request.failure()?.errorText ?? ""}`
+    );
+  });
   page.on("response", (response) => {
     if (response.status() >= 400) unexpected.push(`http:${response.status()}: ${response.url()}`);
   });
@@ -145,9 +153,38 @@ test("Project Overview creates durable document, deck, and spreadsheet resources
 
   await expect(page.locator(".area-canvas").getByRole("application", { name: "Slide" })).toBeVisible();
   await expect(page.locator(".area-title h1")).toHaveText(/^Untitled deck \d+$/);
+  const deckTitle = (await page.locator(".area-title h1").textContent())?.trim();
+  expect(deckTitle).toMatch(/^Untitled deck \d+$/);
   await expect(
     page.locator('aside[aria-label="Context"]').getByRole("button", { name: "Slide 1", exact: true })
   ).toHaveCount(1);
+  const deckSurface = page.locator(".area-canvas").getByRole("application", { name: "Slide" });
+  const deckContext = page.locator('aside[aria-label="Context"]');
+  await deckContext.getByRole("button", { name: "Insert", exact: true }).click();
+  await deckContext.getByRole("button", { name: "Text box", exact: true }).click();
+  const durableDeckItem = deckSurface.locator("[data-item]").last();
+  await durableDeckItem.dblclick({ position: { x: 24, y: 18 } });
+  await page.keyboard.press("End");
+  await page.keyboard.type(" durable deck proof");
+  await expect(durableDeckItem).toContainText("Text durable deck proof");
+  await expect(page.locator(".area-strip")).toContainText("Saving");
+  await expect(page.locator(".area-strip")).toContainText("Saved", { timeout: 10_000 });
+
+  await page.reload({ waitUntil: "networkidle" });
+  await expect(page.locator(".area-title h1")).toHaveText(deckTitle!);
+  await expect(page.locator(".area-canvas").getByRole("application", { name: "Slide" })
+    .locator("[data-item]").last()).toContainText("Text durable deck proof");
+  await page
+    .getByRole("toolbar", { name: "Open tabs" })
+    .getByRole("button", { name: "Overview", exact: true })
+    .click();
+  await page.locator(".area-resources").getByPlaceholder("Search this project").fill(deckTitle!);
+  await page.locator(".area-resources").getByRole("button", {
+    name: deckTitle!,
+    exact: true
+  }).dblclick();
+  await expect(page.locator(".area-canvas").getByRole("application", { name: "Slide" })
+    .locator("[data-item]").last()).toContainText("Text durable deck proof");
 
   await page
     .getByRole("toolbar", { name: "Open tabs" })
@@ -157,11 +194,49 @@ test("Project Overview creates durable document, deck, and spreadsheet resources
   await create.getByRole("button", { name: "Spreadsheet", exact: true }).click();
 
   await expect(page.locator(".area-title h1")).toHaveText(/^Untitled spreadsheet \d+$/);
-  await expect(page.locator(".sheet-surface")).toBeVisible();
+  const spreadsheetTitle = (await page.locator(".area-title h1").textContent())?.trim();
+  expect(spreadsheetTitle).toMatch(/^Untitled spreadsheet \d+$/);
+  const sheet = page.locator(".sheet-surface");
+  await expect(sheet).toBeVisible();
   await expect(page.locator("canvas").first()).toBeVisible();
   await expect(
     page.getByRole("toolbar", { name: "Open tabs" }).getByText("Disconnected", { exact: true })
   ).toHaveCount(0);
+
+  const sheetBox = await sheet.boundingBox();
+  expect(sheetBox).not.toBeNull();
+  await page.mouse.click((sheetBox?.x ?? 0) + 64, (sheetBox?.y ?? 0) + 38);
+  await expect(page.locator('aside[aria-label="Inspector"]')
+    .getByRole("heading", { level: 2, name: "A1", exact: true })).toBeVisible();
+  await page.keyboard.type("Durable sheet proof");
+  const value = page.locator('input[aria-label="Expression"], input[aria-label="Value"]').first();
+  await expect(value).toBeFocused();
+  await expect(value).toHaveValue("Durable sheet proof");
+  await value.press("Enter");
+  await page.waitForTimeout(2_800);
+  await expect(page.locator(".area-strip")).toContainText("Saved", { timeout: 10_000 });
+
+  await page.reload({ waitUntil: "networkidle" });
+  await expect(page.locator(".area-title h1")).toHaveText(spreadsheetTitle!);
+  await expect(page.locator(".sheet-surface")).toBeVisible();
+  await expect(page.locator('aside[aria-label="Inspector"]')
+    .getByRole("heading", { level: 2, name: "A1", exact: true })).toBeVisible();
+  await expect(page.locator('button[aria-label="Expression"], button[aria-label="Value"]')
+    .first()).toHaveText("Durable sheet proof");
+  await page
+    .getByRole("toolbar", { name: "Open tabs" })
+    .getByRole("button", { name: "Overview", exact: true })
+    .click();
+  await page.locator(".area-resources")
+    .getByPlaceholder("Search this project")
+    .fill(spreadsheetTitle!);
+  await page.locator(".area-resources").getByRole("button", {
+    name: spreadsheetTitle!,
+    exact: true
+  }).dblclick();
+  await expect(page.locator(".sheet-surface")).toBeVisible();
+  await expect(page.locator('button[aria-label="Expression"], button[aria-label="Value"]')
+    .first()).toHaveText("Durable sheet proof");
 });
 
 test("New Tab creates represented documents, decks, and spreadsheets instead of title-shaped IDs", async ({ page }) => {

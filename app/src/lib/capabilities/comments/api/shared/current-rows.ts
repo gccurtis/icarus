@@ -1,4 +1,7 @@
-import type { StoreUnitOfWork } from "$model/server/store/index.server";
+import {
+  readCurrentRows,
+  type StoreUnitOfWork
+} from "$model/server/store/index.server";
 import type { AnchorWithin } from "$representation/data/types/collaboration/anchor";
 import type { CommentTarget } from "$representation/data/types/collaboration/comment";
 
@@ -223,29 +226,24 @@ export const currentThreadIn = (
   projectId: string,
   threadId: string
 ): CurrentThreadRow | undefined => {
-  const found = store.read("commentThreads");
-  if (found?.kind !== "table" || found.table !== "commentThreads") return undefined;
-  const claimedThreads = found.rows.filter((row) => row._id === threadId);
+  const claimedThreads = readCurrentRows(store, "commentThreads")
+    .filter((row) => row._id === threadId);
   if (claimedThreads.length !== 1) return undefined;
   const thread = threadRowOf(claimedThreads[0], projectId, threadId);
   if (thread === undefined) return undefined;
   const table = tableFor(thread.target.kind);
   if (table === undefined) return undefined;
-  const resources = store.read(table);
+  const resources = readCurrentRows(store, table);
   if (
-    resources?.kind !== "table" ||
-    resources.table !== table ||
-    resources.rows.filter((row) => row._id === thread.target.id).length !== 1 ||
+    resources.filter((row) => row._id === thread.target.id).length !== 1 ||
     !resourceRowIsCurrent(
-      resources.rows.find((row) => row._id === thread.target.id),
+      resources.find((row) => row._id === thread.target.id),
       table,
       projectId,
       thread.target.id
     )
   ) return undefined;
-  const stages = store.read("templateStages");
-  const staged = stages?.kind === "table" &&
-    stages.table === "templateStages" &&
-    stages.rows.some((row) => currentStageResource(row, projectId) === thread.target.id);
+  const staged = readCurrentRows(store, "templateStages")
+    .some((row) => currentStageResource(row, projectId) === thread.target.id);
   return staged ? undefined : thread;
 };

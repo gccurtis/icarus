@@ -1,7 +1,11 @@
 /** Server-to-server capability entry points that must not cross a remote wrapper. */
 export { enqueueSemanticSync } from "$capabilities/semantic-overlay/api/enqueue-semantic-sync/enqueue-semantic-sync";
+export { enqueueSemanticSyncForModel } from "$capabilities/semantic-overlay/api/shared/enqueue-for-model";
 export { querySemanticOverlay } from "$capabilities/semantic-overlay/api/query-semantic-overlay/query-semantic-overlay";
 export { querySemanticMaterials } from "$capabilities/semantic-overlay/api/query-semantic-materials/query-semantic-materials";
+export { querySemanticOverlayForModel } from "$capabilities/semantic-overlay/api/shared/query-text-for-model";
+export { querySemanticMaterialsForModel } from "$capabilities/semantic-overlay/api/shared/query-materials-for-model";
+export { readSemanticStatus } from "$capabilities/semantic-overlay/api/read-semantic-status/read-semantic-status";
 /** Server-only shared contracts consumed by collaborating capabilities. */
 export {
   readSemanticResourceFor,
@@ -12,6 +16,12 @@ export { forgetSemanticResourceFor } from "$capabilities/semantic-overlay/api/sh
 export { isStagedResource } from "$capabilities/semantic-overlay/api/shared/staged";
 export { processSemanticSyncQueueFor } from "$capabilities/semantic-overlay/api/shared/queue-processor";
 export { enqueueSemanticOutboxFor } from "$capabilities/semantic-overlay/api/shared/outbox";
+export type { SemanticOutboxReceipt } from "$capabilities/semantic-overlay/api/shared/outbox";
+export {
+  readSemanticStatusFor,
+  semanticStatusReaderFor
+} from "$capabilities/semantic-overlay/api/shared/status";
+export type { SemanticStatusReader } from "$capabilities/semantic-overlay/api/shared/status";
 export {
   currentResourceRevisionFor,
   materialPlacementIsCurrent,
@@ -19,3 +29,11 @@ export {
   materialSourceIsCurrent,
   semanticSourceIsCurrent
 } from "$capabilities/semantic-overlay/api/shared/freshness";
+export type {
+  ExactSemanticStatus,
+  MaterialSemanticStatus,
+  ReadSemanticStatusInput,
+  ReadSemanticStatusResult,
+  SemanticLaneState,
+  SemanticLaneStatus
+} from "$capabilities/semantic-overlay/types/read-semantic-status";

@@ -4,7 +4,10 @@
   import ElementEffects from "$app-views/categories/slide-deck-editor/components/element-effects.svelte";
   import ElementOrder from "$app-views/categories/slide-deck-editor/components/element-order.svelte";
   import ElementPaint from "$app-views/categories/slide-deck-editor/components/element-paint.svelte";
-  import { elementIn, slideHolding, slideIndexOf, withSet } from "$app-views/categories/slide-deck-editor/procedures/deck";
+  import { slideHolding } from "$app-views/categories/slide-deck-editor/procedures/deck-slide-holding";
+  import { elementIn } from "$app-views/categories/slide-deck-editor/procedures/deck-reading";
+  import { slideIndexOf } from "$app-views/categories/slide-deck-editor/procedures/deck-slides";
+  import { withSet } from "$app-views/categories/slide-deck-editor/procedures/deck-values";
   import { selectedIds, slideSignal } from "$app-views/categories/slide-deck-editor/procedures/selecting";
   import { slideUnits } from "$app-views/categories/slide-deck-editor/procedures/stage";
   import { workspaceState, type SlideDeckRuntime } from "$model/client/workspace-state";
@@ -36,7 +39,7 @@
 
   const set = (path: string, value: unknown) => {
     if (body === undefined) return;
-    runtime?.apply(withSet(body, path, value).ops);
+    runtime?.apply(withSet(body, "element", path, value).ops);
   };
 
   const point = (held: { x: number; y: number }) => `${held.x.toFixed(3)} · ${held.y.toFixed(3)}`;

@@ -371,6 +371,24 @@ const textBlock = (text: string) => ({
   marks: []
 });
 
+const generatedValue = (
+  response = textBlock("Previously generated response"),
+  revision = 1,
+  generation = 4
+) => ({
+  valueSource: "generated" as const,
+  lastResponse: response,
+  lastRevision: revision,
+  lastGeneration: generation,
+  refreshedAt: 9
+});
+
+const editableResourceFields = {
+  createdBy: { kind: "system" as const },
+  updatedBy: { kind: "system" as const },
+  updatedAt: 1
+};
+
 const seedOutput = (overrides: Record<string, unknown> = {}): string =>
   state.store.create("derivedOutputs", {
     projectId: "projects:1",
@@ -380,6 +398,7 @@ const seedOutput = (overrides: Record<string, unknown> = {}): string =>
       include: [{ select: "resources", refs: [{ kind: "document", id: "documents:launch-brief" }] }],
       exclude: []
     },
+    valueSource: "none",
     queries: [],
     evidence: [],
     state: "idle",
@@ -444,7 +463,11 @@ describe("Derived Output lifecycle", () => {
       _id: "resourceSets:private",
       _creationTime: 1,
       projectId: "projects:1",
-      boundTo: { kind: "resource", resourceId: "documents:made", hole: "evidence" },
+      boundTo: {
+        kind: "resource",
+        ref: { kind: "document", id: "documents:made" },
+        hole: "evidence"
+      },
       set: {
         include: [{ select: "resources", refs: [{ kind: "document", id: "documents:launch-brief" }] }],
         exclude: []
@@ -487,6 +510,7 @@ describe("Derived Output lifecycle", () => {
 
   it("computes pull-time staleness from cited revisions and ignores unrelated changes", async () => {
     const citation = {
+      evidenceKind: "text" as const,
       selections: [{ evidenceId: "evidence-1", use: "Names the launch" }],
       source: {
         ref: { kind: "document", id: "documents:launch-brief" },
@@ -496,7 +520,7 @@ describe("Derived Output lifecycle", () => {
       span: { from: 0, to: 6, text: "Launch" },
       overlayGeneration: 4
     };
-    const id = seedOutput({ state: "fresh", evidence: [citation] });
+    const id = seedOutput({ state: "fresh", ...generatedValue(), evidence: [citation] });
     seed("semanticSources", {
       _id: "semanticSources:2",
       _creationTime: 2,
@@ -592,7 +616,7 @@ describe("Derived Output lifecycle", () => {
       value: [["Item", "Cost"], ["Launch", "10"]],
       overlayGeneration: 4
     };
-    const id = seedOutput({ state: "fresh", evidence: [citation], lastGeneration: 4 });
+    const id = seedOutput({ state: "fresh", ...generatedValue(), evidence: [citation] });
 
     const fresh = await readDerivedOutput({ derivedOutputId: id });
     assert.equal(fresh?.effectiveState, "fresh");
@@ -605,7 +629,7 @@ describe("Derived Output lifecycle", () => {
 
   it("edits the definition by marking a prior response stale without erasing it", async () => {
     const previous = textBlock("Old grounded response");
-    const id = seedOutput({ state: "fresh", lastResponse: previous, lastRevision: 2 });
+    const id = seedOutput({ state: "fresh", ...generatedValue(previous, 2) });
 
     const updated = await updateDerivedOutput({
       derivedOutputId: id,
@@ -631,11 +655,10 @@ describe("Derived Output lifecycle", () => {
     const previous = textBlock("Old grounded response");
     const id = seedOutput({
       state: "fresh",
-      lastResponse: previous,
-      lastRevision: 2,
-      lastGeneration: 4,
+      ...generatedValue(previous, 2),
       evidence: [
         {
+          evidenceKind: "text",
           selections: [{ evidenceId: "old-evidence", use: "Old support" }],
           source: {
             ref: { kind: "document", id: "documents:launch-brief" },
@@ -662,6 +685,7 @@ describe("Derived Output lifecycle", () => {
     assert.equal(edited?.lastResponse?.display, "Keep this shape");
     assert.equal(edited?.lastRevision, 3);
     assert.equal(edited?.state, "stale");
+    assert.equal(edited?.valueSource, "authored");
     assert.deepEqual(edited?.evidence, []);
     assert.equal(edited?.lastGeneration, undefined);
 
@@ -673,9 +697,7 @@ describe("Derived Output lifecycle", () => {
   it("can explicitly clear an edited continuity response", async () => {
     const id = seedOutput({
       state: "fresh",
-      lastResponse: textBlock("Remove this response"),
-      lastRevision: 2,
-      lastGeneration: 4
+      ...generatedValue(textBlock("Remove this response"), 2)
     });
 
     const updated = await updateDerivedOutput({
@@ -686,6 +708,7 @@ describe("Derived Output lifecycle", () => {
 
     assert.equal(updated?.lastResponse, undefined);
     assert.equal(updated?.state, "stale");
+    assert.equal(updated?.valueSource, "none");
     assert.equal(updated?.lastGeneration, undefined);
   });
 
@@ -703,7 +726,8 @@ describe("Derived Output lifecycle", () => {
     assert.equal(result?.output.lastResponse?.display, "Launch is Tuesday.");
     assert.deepEqual(result?.output.queries, ["launch schedule"]);
     const evidence = result?.output.evidence[0];
-    assert.ok(evidence !== undefined && "span" in evidence);
+    assert.ok(evidence !== undefined && evidence.evidenceKind === "text");
+    assert.equal(evidence.evidenceKind, "text");
     assert.equal(evidence.source.revision, 1);
     assert.equal(evidence.span.text, "Launch is Tuesday.");
     assert.deepEqual(evidence.selections, [
@@ -729,7 +753,11 @@ describe("Derived Output lifecycle", () => {
       _id: "resourceSets:placed",
       _creationTime: 1,
       projectId: "projects:1",
-      boundTo: { kind: "resource", resourceId: "documents:made", hole: "source_material" },
+      boundTo: {
+        kind: "resource",
+        ref: { kind: "document", id: "documents:made" },
+        hole: "source_material"
+      },
       set: {
         include: [{ select: "resources", refs: [{ kind: "document", id: "documents:launch-brief" }] }],
         exclude: []
@@ -755,10 +783,9 @@ describe("Derived Output lifecycle", () => {
   it("treats refresh as a no-op when the published answer and its evidence are current", async () => {
     const id = seedOutput({
       state: "fresh",
-      lastResponse: textBlock("Launch is Tuesday."),
-      lastRevision: 1,
-      lastGeneration: 4,
+      ...generatedValue(textBlock("Launch is Tuesday.")),
       evidence: [{
+        evidenceKind: "text",
         selections: [{ evidenceId: "evidence-1", use: "Establishes the launch day" }],
         source: {
           ref: { kind: "document", id: "documents:launch-brief" },
@@ -784,10 +811,9 @@ describe("Derived Output lifecycle", () => {
   it("drains pending semantic work before deciding that a response is current", async () => {
     const id = seedOutput({
       state: "fresh",
-      lastResponse: textBlock("Launch is Tuesday."),
-      lastRevision: 1,
-      lastGeneration: 4,
+      ...generatedValue(textBlock("Launch is Tuesday.")),
       evidence: [{
+        evidenceKind: "text",
         selections: [{ evidenceId: "evidence-1", use: "Establishes the launch day" }],
         source: {
           ref: { kind: "document", id: "documents:launch-brief" },
@@ -806,34 +832,80 @@ describe("Derived Output lifecycle", () => {
     assert.equal(state.controls.queueCalls, 1);
     assert.equal(state.controls.intelligenceCalls, 1);
     const evidence = result?.output.evidence[0];
-    assert.ok(evidence !== undefined && "span" in evidence);
+    assert.ok(evidence !== undefined && evidence.evidenceKind === "text");
     assert.equal(evidence.source.revision, 2);
   });
 
-  it("enqueues every current in-scope document, deck, and spreadsheet before draining", async () => {
+  it("enqueues every current indexable in-scope resource before draining", async () => {
     seed("documents", {
       _id: "documents:launch",
       _creationTime: 1,
       projectId: "projects:1",
-      title: "Launch brief"
+      title: "Launch brief",
+      ...editableResourceFields
     });
     seed("slideDecks", {
       _id: "slideDecks:board",
       _creationTime: 1,
       projectId: "projects:1",
-      title: "Board update"
+      title: "Board update",
+      ...editableResourceFields
     });
     seed("spreadsheets", {
       _id: "spreadsheets:forecast",
       _creationTime: 1,
       projectId: "projects:1",
-      title: "Forecast"
+      title: "Forecast",
+      ...editableResourceFields
     });
     seed("documents", {
       _id: "documents:foreign",
       _creationTime: 2,
       projectId: "projects:other",
-      title: "Foreign"
+      title: "Foreign",
+      ...editableResourceFields
+    });
+    for (const [suffix, name, mediaType, subkind, hashDigit] of [
+      ["brief", "brief.txt", "text/plain", "text", "1"],
+      ["source", "source.ts", "text/typescript", "code", "2"],
+      ["forecast", "forecast.csv", "text/csv", "data", "3"],
+      ["diagram", "diagram.png", "image/png", "image", "4"],
+      ["recording", "recording.mp3", "audio/mpeg", "audio", "5"]
+    ] as const) {
+      const hash = hashDigit.repeat(64);
+      seed("externalFiles", {
+        _id: `externalFiles:${suffix}`,
+        _creationTime: 1,
+        projectId: "projects:1",
+        name,
+        originalName: name,
+        relativePath: name,
+        mediaType,
+        subkind,
+        storageId: `_storage:${hash}`,
+        hash,
+        size: 0,
+        origin: { kind: "upload" },
+        ...editableResourceFields,
+        revision: 1
+      });
+    }
+    const foreignHash = "6".repeat(64);
+    seed("externalFiles", {
+      _id: "externalFiles:foreign",
+      _creationTime: 2,
+      projectId: "projects:other",
+      name: "foreign.txt",
+      originalName: "foreign.txt",
+      relativePath: "foreign.txt",
+      mediaType: "text/plain",
+      subkind: "text",
+      storageId: `_storage:${foreignHash}`,
+      hash: foreignHash,
+      size: 0,
+      origin: { kind: "upload" },
+      ...editableResourceFields,
+      revision: 1
     });
     const id = seedOutput({
       scope: { include: [{ select: "project" }], exclude: [] }
@@ -845,12 +917,20 @@ describe("Derived Output lifecycle", () => {
     assert.deepEqual(state.controls.enqueuedRefs, [
       { kind: "document", id: "documents:launch" },
       { kind: "slides", id: "slideDecks:board" },
-      { kind: "spreadsheet", id: "spreadsheets:forecast" }
+      { kind: "spreadsheet", id: "spreadsheets:forecast" },
+      { kind: "externalFile::text", id: "externalFiles:brief" },
+      { kind: "externalFile::code", id: "externalFiles:source" },
+      { kind: "externalFile::data", id: "externalFiles:forecast" },
+      { kind: "externalFile::image", id: "externalFiles:diagram" }
     ]);
     assert.deepEqual(state.controls.preparationEvents, [
       "enqueue:document:documents:launch",
       "enqueue:slides:slideDecks:board",
       "enqueue:spreadsheet:spreadsheets:forecast",
+      "enqueue:externalFile::text:externalFiles:brief",
+      "enqueue:externalFile::code:externalFiles:source",
+      "enqueue:externalFile::data:externalFiles:forecast",
+      "enqueue:externalFile::image:externalFiles:diagram",
       "drain"
     ]);
   });
@@ -859,9 +939,7 @@ describe("Derived Output lifecycle", () => {
     const previous = textBlock("Previously published");
     const id = seedOutput({
       state: "stale",
-      lastResponse: previous,
-      lastRevision: 3,
-      lastGeneration: 4
+      ...generatedValue(previous, 3)
     });
     state.controls.queueFailure = "semantic source indexing exhausted its retry budget";
 
@@ -879,9 +957,7 @@ describe("Derived Output lifecycle", () => {
     const previous = textBlock("Previously published");
     const id = seedOutput({
       state: "stale",
-      lastResponse: previous,
-      lastRevision: 3,
-      lastGeneration: 4
+      ...generatedValue(previous, 3)
     });
     state.controls.queueFailureRef = { kind: "document", id: "documents:launch-brief" };
     state.controls.queueFailure = "source indexing exhausted its retry budget";
@@ -906,7 +982,8 @@ describe("Derived Output lifecycle", () => {
       _id: "documents:launch-brief",
       _creationTime: 1,
       projectId: "projects:1",
-      title: "Launch brief"
+      title: "Launch brief",
+      ...editableResourceFields
     });
     seed("resourceSets", {
       _id: "resourceSets:inner",
@@ -958,13 +1035,18 @@ describe("Derived Output lifecycle", () => {
       _id: "documents:launch-brief",
       _creationTime: 1,
       projectId: "projects:1",
-      title: "Launch brief"
+      title: "Launch brief",
+      ...editableResourceFields
     });
     seed("resourceSets", {
       _id: "resourceSets:private-template-scope",
       _creationTime: 1,
       projectId: "projects:1",
-      boundTo: { kind: "resource", resourceId: "documents:made", hole: "source_material" },
+      boundTo: {
+        kind: "resource",
+        ref: { kind: "document", id: "documents:made" },
+        hole: "source_material"
+      },
       set: {
         include: [{ select: "resources", refs: [{ kind: "document", id: "documents:launch-brief" }] }],
         exclude: []
@@ -998,7 +1080,8 @@ describe("Derived Output lifecycle", () => {
       _id: "documents:launch-brief",
       _creationTime: 1,
       projectId: "projects:1",
-      title: "Launch brief"
+      title: "Launch brief",
+      ...editableResourceFields
     });
     state.controls.enqueueBlocked = true;
     const id = seedOutput();
@@ -1029,9 +1112,7 @@ describe("Derived Output lifecycle", () => {
     const previous = textBlock("Earlier answer");
     const id = seedOutput({
       state: "stale",
-      lastResponse: previous,
-      lastRevision: 3,
-      lastGeneration: 4
+      ...generatedValue(previous, 3)
     });
     const stoppedModel = state.model;
     const refresh = refreshDerivedOutput({ derivedOutputId: id });
@@ -1100,7 +1181,7 @@ describe("Derived Output lifecycle", () => {
 
     await assert.rejects(
       () => refreshDerivedOutput({ derivedOutputId: id }),
-      /contains a non-current row/
+      /missing required field: requestedVersion/
     );
     assert.equal(state.controls.intelligenceCalls, 0);
     assert.equal(state.rows("derivedOutputRefreshJobs")[0].requestedVersion, undefined);
@@ -1125,7 +1206,7 @@ describe("Derived Output lifecycle", () => {
     assert.equal(result?.outcome, "published");
     assert.equal(result?.attempts, 2);
     const evidence = result?.output.evidence[0];
-    assert.ok(evidence !== undefined && "span" in evidence);
+    assert.ok(evidence !== undefined && evidence.evidenceKind === "text");
     assert.equal(evidence.source.revision, 2);
     assert.equal(result?.usage.providerRequests, 4);
     assert.equal(result?.usage.embeddings.length, 2);
@@ -1137,6 +1218,7 @@ describe("Derived Output lifecycle", () => {
     const previous = textBlock("Previously published");
     const previousEvidence = [
       {
+        evidenceKind: "text" as const,
         selections: [{ evidenceId: "evidence-1", use: "Names the launch" }],
         source: {
           ref: { kind: "document", id: "documents:launch-brief" },
@@ -1149,8 +1231,7 @@ describe("Derived Output lifecycle", () => {
     ];
     const id = seedOutput({
       state: "stale",
-      lastResponse: previous,
-      lastRevision: 3,
+      ...generatedValue(previous, 3),
       evidence: previousEvidence
     });
 
@@ -1225,7 +1306,7 @@ describe("Derived Output lifecycle", () => {
   it("sanitizes a provider failure and preserves an earlier revision", async () => {
     state.controls.mode = "failure";
     const previous = textBlock("Earlier answer");
-    const id = seedOutput({ state: "stale", lastResponse: previous, lastRevision: 4 });
+    const id = seedOutput({ state: "stale", ...generatedValue(previous, 4) });
     const result = await refreshDerivedOutput({ derivedOutputId: id });
 
     assert.equal(result?.outcome, "failed");

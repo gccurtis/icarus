@@ -25,16 +25,22 @@ export const resourcesIn = (
   answer: ProjectResourceIndex | undefined
 ): readonly NamedResourceRef[] =>
   (answer?.resources ?? []).map((item) => ({
-    ...admitResourceRef({ kind: item.kind, id: item.id }, "project resource index item"),
-    name: item.name
+    ...admitResourceRef(item.ref, "project resource index item"),
+    name: item.name,
+    relativePath: item.relativePath
   }));
 
 export const scopeNamesOf = (
   sets: readonly ResourceSetItem[],
-  resources: readonly { readonly id: string; readonly name: string }[]
+  resources: readonly { readonly id: string; readonly name: string; readonly relativePath: string | null }[]
 ): ScopeNames => ({
   sets: new Map(sets.map((set) => [set.id, set.name])),
-  resources: new Map(resources.map((resource) => [resource.id, resource.name]))
+  resources: new Map(resources.map((resource) => [resource.id, resource.name])),
+  relativePaths: new Map(
+    resources.flatMap((resource) =>
+      resource.relativePath === null ? [] : [[resource.id, resource.relativePath] as const]
+    )
+  )
 });
 
 export const offeringOf = (

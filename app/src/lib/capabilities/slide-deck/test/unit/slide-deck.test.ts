@@ -18,7 +18,11 @@ const model = vi.hoisted(() => ({
 
 vi.mock("$runtime/server/start.server", () => ({ serverModel: () => model }));
 vi.mock("$runtime/server/scope.server", () => ({
-  requireScope: () => Promise.resolve({ projectId: "p", userId: "u", username: "You" })
+  requireScope: () => Promise.resolve({
+    projectId: "projects:p",
+    userId: "users:u",
+    username: "You"
+  })
 }));
 
 const { readSlideDeckBody } = await import(
@@ -27,18 +31,22 @@ const { readSlideDeckBody } = await import(
 const { validateReadSlideDeckBody } = await import(
   "$capabilities/slide-deck/api/read-slide-deck-body/validate-read-slide-deck-body"
 );
+const { validateSubmitSlideDeckChanges } = await import(
+  "$capabilities/slide-deck/api/submit-slide-deck-changes/validate-submit-slide-deck-changes"
+);
 
 const body = (aspectRatio: string) => ({
   aspectRatio,
   theme: { colors: { text: "--token-ink-primary", accent: "--token-color-accent-1-fill" } },
-  styles: { defaultKey: "body", styles: {} },
+  styles: { defaultKey: "body", styles: { body: { name: "Body" } } },
   layouts: [],
   sections: [],
   slides: []
 });
 
 const snapshot = (id: string, resourceId: string, projectId: string, role: string): Row => ({
-  _id: id,
+  _id: `slideDeckSnapshots:${id}`,
+  _creationTime: 1,
   projectId,
   resourceId,
   revision: 4,
@@ -55,8 +63,8 @@ beforeEach(() => {
 describe("readSlideDeckBody", () => {
   it("hands back the leader for the deck asked for", async () => {
     model.rows = [
-      snapshot("s1", "slideDecks:1", "p", "leader"),
-      snapshot("s2", "slideDecks:2", "p", "leader")
+      snapshot("s1", "slideDecks:1", "projects:p", "leader"),
+      snapshot("s2", "slideDecks:2", "projects:p", "leader")
     ];
 
     const found = await readSlideDeckBody({ resourceId: "slideDecks:2" });
@@ -66,25 +74,25 @@ describe("readSlideDeckBody", () => {
   });
 
   it("answers null for a deck with no snapshot", async () => {
-    model.rows = [snapshot("s1", "slideDecks:1", "p", "leader")];
+    model.rows = [snapshot("s1", "slideDecks:1", "projects:p", "leader")];
 
     assert.equal(await readSlideDeckBody({ resourceId: "slideDecks:9" }), null);
   });
 
   it("does not reach a deck in another project", async () => {
-    model.rows = [snapshot("s1", "slideDecks:1", "other", "leader")];
+    model.rows = [snapshot("s1", "slideDecks:1", "projects:other", "leader")];
 
     assert.equal(await readSlideDeckBody({ resourceId: "slideDecks:1" }), null);
   });
 
   it("ignores a snapshot that is not the leader", async () => {
-    model.rows = [snapshot("s1", "slideDecks:1", "p", "checkpoint")];
+    model.rows = [snapshot("s1", "slideDecks:1", "projects:p", "checkpoint")];
 
     assert.equal(await readSlideDeckBody({ resourceId: "slideDecks:1" }), null);
   });
 
   it("makes a current shape editable at the read boundary", async () => {
-    const row = snapshot("s1", "slideDecks:1", "p", "leader");
+    const row = snapshot("s1", "slideDecks:1", "projects:p", "leader");
     row.body = {
       ...body("16:9"),
       layouts: [{ id: "layout-blank", key: "blank", name: "Blank", locked: [], placeholders: [] }],
@@ -125,5 +133,59 @@ describe("validateReadSlideDeckBody", () => {
     assert.throws(() => validateReadSlideDeckBody({}));
     assert.throws(() => validateReadSlideDeckBody({ resourceId: "" }));
     assert.throws(() => validateReadSlideDeckBody({ resourceId: 7 }));
+  });
+});
+
+describe("validateSubmitSlideDeckChanges", () => {
+  const input = (op: Record<string, unknown>) => ({
+    changeSet: {
+      resourceId: "slideDecks:1",
+      baseRevision: 0,
+      ops: [op],
+      touched: ["theme/colors/accent"]
+    }
+  });
+
+  it("admits an exact set with its required target", () => {
+    const command = input({
+      op: "set",
+      target: "deck",
+      path: "theme/colors/accent",
+      value: "violet",
+      was: "blue"
+    });
+
+    assert.deepEqual(validateSubmitSlideDeckChanges(command), command);
+  });
+
+  it("rejects missing, undefined, unknown, and extra set-target forms", () => {
+    assert.throws(() => validateSubmitSlideDeckChanges(input({
+      op: "set",
+      path: "theme/colors/accent",
+      value: "violet",
+      was: "blue"
+    })));
+    assert.throws(() => validateSubmitSlideDeckChanges(input({
+      op: "set",
+      target: undefined,
+      path: "theme/colors/accent",
+      value: "violet",
+      was: "blue"
+    })));
+    assert.throws(() => validateSubmitSlideDeckChanges(input({
+      op: "set",
+      target: "legacy-deck",
+      path: "theme/colors/accent",
+      value: "violet",
+      was: "blue"
+    })));
+    assert.throws(() => validateSubmitSlideDeckChanges(input({
+      op: "set",
+      target: "deck",
+      path: "theme/colors/accent",
+      value: "violet",
+      was: "blue",
+      setTargetOptional: true
+    })));
   });
 });

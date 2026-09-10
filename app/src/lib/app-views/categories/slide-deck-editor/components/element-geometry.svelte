@@ -5,12 +5,9 @@
     PanelNumber,
     PanelSection
   } from "$authored-components/panel";
-  import {
-    placedById,
-    slideHolding,
-    withElementFrame,
-    withSet
-  } from "$app-views/categories/slide-deck-editor/procedures/deck";
+  import { placedById } from "$app-views/categories/slide-deck-editor/procedures/deck-placed-element";
+  import { slideHolding } from "$app-views/categories/slide-deck-editor/procedures/deck-slide-holding";
+  import { withElementFrame, withSet } from "$app-views/categories/slide-deck-editor/procedures/deck-values";
   import { workspaceState, type SlideDeckRuntime } from "$model/client/workspace-state";
 
   let { elementId }: { elementId: string } = $props();
@@ -38,7 +35,7 @@
   const rotate = (degrees: number) => {
     if (body === undefined) return;
     const held = ((Math.round(degrees) % 360) + 360) % 360;
-    runtime?.apply(withSet(body, `${elementId}/rotation`, held === 0 ? null : held).ops);
+    runtime?.apply(withSet(body, "element", `${elementId}/rotation`, held === 0 ? null : held).ops);
   };
 
   const shown = (value: number) => Number(value.toFixed(3));

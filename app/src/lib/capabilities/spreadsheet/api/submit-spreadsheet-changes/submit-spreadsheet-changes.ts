@@ -1,6 +1,9 @@
 import { requireScope } from "$runtime/server/scope.server";
 import { serverModel } from "$runtime/server/start.server";
-import type { StoreModel } from "$model/server/store/index.server";
+import {
+  readCurrentRows,
+  type StoreModel
+} from "$model/server/store/index.server";
 import type { Id } from "$representation/data/types/core/id";
 import type { LiveSheet } from "$representation/data/types/spreadsheets/live";
 import type { SpreadsheetOp } from "$representation/data/types/spreadsheets/op";
@@ -31,9 +34,8 @@ const sheetExists = (
   projectId: Id<"projects">,
   resourceId: Id<"spreadsheets">
 ): boolean => {
-  const found = store.read("spreadsheets");
-  if (found?.table !== "spreadsheets" || found.kind !== "table") return false;
-  return found.rows.some((row) => row._id === resourceId && row.projectId === projectId);
+  return readCurrentRows(store, "spreadsheets")
+    .some((row) => row._id === resourceId && row.projectId === projectId);
 };
 
 const related = (a: string, b: string): boolean =>
@@ -46,10 +48,7 @@ const landedBetween = (
   base: number,
   head: number
 ): readonly Landed[] | undefined => {
-  const found = store.read("spreadsheetChangeSets");
-  if (found?.table !== "spreadsheetChangeSets" || found.kind !== "table") return undefined;
-
-  const landed = found.rows
+  const landed = readCurrentRows(store, "spreadsheetChangeSets")
     .filter(
       (row) =>
         row.projectId === projectId &&

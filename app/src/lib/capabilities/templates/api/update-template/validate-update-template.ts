@@ -6,9 +6,9 @@ import {
   only,
   revisionOf,
   tagsOf,
-  holesOf,
   templateIdOf
 } from "$capabilities/templates/api/shared/validation";
+import { holesOf } from "$capabilities/templates/api/shared/hole-validation";
 import type {
   UpdateTemplateInput,
   UpdateTemplatePatch

@@ -108,20 +108,18 @@ Nine, and two of them are data rather than methods — see
 | `apply.ts` | `perform`, `undo`, `redo` | One op, one effect — the only place an op becomes a change |
 | `perform.ts` | every mutator, `land-on` | Nothing changes without leaving a record |
 | `landing.ts` | `land-on`, `open` | The `was` half of a landing is read once, the same way every time |
-| `rails.ts` | `select-context`, `land-on`, `mint-view`, the definition's `context` getter | The rail position is one this category offers |
+| `rails.ts` | `select-context`, `mint-view`, the index | The rail position is one this category offers |
 | `compose.ts` | `open`, `reopen-closed`, the definition's read getters | A record and a view are read as one tab, in one place |
 | `land-on.ts` | `show-content`, `open` | A centre change takes its inspection with it and leaves the rail |
 | `mint-view.ts` | the constructor, `open` | Every tab starts the same way |
 | `target-key.ts` | `open` | One definition of "already open" |
 
-## Two asymmetries that are deliberate
+## Two boundaries that are deliberate
 
-**`selectContext` throws; the `context` getter falls back silently.** The two
-cases are different. A remembered context can *drift* out of range when it is
-written in from outside — a stored position for a view that has since left the
-rail — and a fallback is harmless where a crash is not. A caller naming a view no
-category offers has made a mistake, and swallowing it would leave the panel blank
-with nothing to explain why.
+**`selectContext` throws and the `context` getter reports exactly what is held.**
+A caller naming a view no category offers has made a mistake, and swallowing it
+would leave the panel blank with nothing to explain why. Persisted state passes
+the same category-specific rule before adoption, so the getter needs no repair.
 
 **`resize` takes `Partial<Frame>` and cannot reach `contextId`.** That is the
 point of it being its own method over its own type: a drag can never move the

@@ -53,4 +53,29 @@ describe("research resource identity input", () => {
       tools: ["old.search"]
     })).toThrow(/current research tool ids/);
   });
+
+  it("rejects hidden, symbolic, accessor, and explicit-undefined command fields", () => {
+    const hidden = {
+      threadId: "researchThreads:one",
+      text: "What changed?"
+    };
+    Object.defineProperty(hidden, "retired", { value: true });
+    const symbolic = {
+      threadId: "researchThreads:one",
+      text: "What changed?"
+    };
+    Object.defineProperty(symbolic, Symbol("retired"), { value: true });
+    const accessor = { text: "What changed?" } as Record<string, unknown>;
+    Object.defineProperty(accessor, "threadId", {
+      enumerable: true,
+      get: () => "researchThreads:one"
+    });
+    for (const input of [hidden, symbolic, accessor, {
+      threadId: "researchThreads:one",
+      text: "What changed?",
+      scope: undefined
+    }]) {
+      expect(() => validateAsk(input)).toThrow();
+    }
+  });
 });

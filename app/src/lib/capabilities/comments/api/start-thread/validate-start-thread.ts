@@ -5,6 +5,13 @@ import type {
 } from "$representation/data/types/collaboration/anchor";
 import type { CommentTarget } from "$representation/data/types/collaboration/comment";
 import type { StartThreadInput } from "$capabilities/comments/types/start-thread";
+import {
+  hasExactFields,
+  isStoredIdentifier,
+  isStoredRowId,
+  storedFields,
+  type StoredFields
+} from "$representation/data/behavior/core/stored";
 
 const TARGETS: readonly string[] = ["document", "slides", "spreadsheet"];
 
@@ -12,25 +19,18 @@ const refuse = (reason: string): never => {
   throw new Error(`comments/start-thread: ${reason}`);
 };
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  value !== null && typeof value === "object" && !Array.isArray(value);
+const isRecord = (value: unknown): value is StoredFields => storedFields(value) !== undefined;
 
 const exact = (
   value: Record<string, unknown>,
   required: readonly string[],
   optional: readonly string[] = []
 ): boolean => {
-  const keys = Object.keys(value);
-  return required.every((key) => keys.includes(key)) &&
-    keys.every((key) => required.includes(key) || optional.includes(key));
+  return hasExactFields(value, required, optional);
 };
 
 const identifier = (value: unknown): value is string =>
-  typeof value === "string" &&
-  value.length > 0 &&
-  value.length <= 500 &&
-  value === value.trim() &&
-  !/[.\s]/.test(value);
+  isStoredIdentifier(value);
 
 const asTarget = (value: unknown): CommentTarget => {
   if (!isRecord(value) || !exact(value, ["kind", "id"])) return refuse("target is required");
@@ -38,11 +38,9 @@ const asTarget = (value: unknown): CommentTarget => {
   if (typeof kind !== "string" || !TARGETS.includes(kind)) return refuse("target.kind is not a resource kind");
   if (!identifier(id)) return refuse("target.id is required");
   const table = kind === "document" ? "documents" : kind === "slides" ? "slideDecks" : "spreadsheets";
-  if (
-    !id.startsWith(`${table}:`) ||
-    id.length === table.length + 1 ||
-    /[.:\s]/.test(id.slice(table.length + 1))
-  ) return refuse("target.kind and target.id must name the same current resource table");
+  if (!isStoredRowId(id, table)) {
+    return refuse("target.kind and target.id must name the same current resource table");
+  }
   return { kind, id } as CommentTarget;
 };
 
@@ -69,7 +67,7 @@ const asSpan = (value: unknown, at: number): TextAnchorSpan => {
 };
 
 const asWithin = (value: unknown): AnchorWithin | undefined => {
-  if (value === undefined || value === null) return undefined;
+  if (value === undefined) return undefined;
   if (!isRecord(value)) return refuse("within must be an anchor");
   const held = value;
   switch (held.kind) {

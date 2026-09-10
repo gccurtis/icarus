@@ -6,7 +6,7 @@ import type { TemplateBody } from "$representation/data/types/templates/template
 import type { Id } from "$representation/data/types/core/id";
 
 import { enqueueSemanticOutboxFor } from "$capabilities/semantic-overlay/index";
-import { materializeSpreadsheet } from "$capabilities/templates/api/shared/bodies";
+import { materializeSpreadsheet } from "$capabilities/templates/api/shared/spreadsheet-materialization";
 import type { InstantiateTemplateResult } from "$capabilities/templates/types/templates";
 
 type AcceptedPlacement = Extract<InstantiateTemplateResult, { accepted: true }>;

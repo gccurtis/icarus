@@ -4,7 +4,7 @@ import { TextSelection } from "prosemirror-state";
 import type { EditorView } from "prosemirror-view";
 
 import { mint } from "$app-views/categories/document-editor/procedures/ids";
-import { withFreshMarkIds } from "$app-views/categories/document-editor/procedures/projection";
+import { withFreshMarkIds } from "$app-views/categories/document-editor/procedures/projection-positions";
 import { schema } from "$app-views/categories/document-editor/procedures/schema";
 import {
   DEFAULT_STYLES,

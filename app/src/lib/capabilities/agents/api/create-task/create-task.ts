@@ -6,6 +6,9 @@ import { validateCreateTask } from "$capabilities/agents/api/create-task/validat
 import { findVisible, notFound, refused, viewer } from "$capabilities/agents/api/shared/lookup";
 import type { RowFields } from "$capabilities/agents/api/shared/store";
 import { scopeReferenceRefusal } from "$capabilities/agents/api/shared/scope-references";
+import { dispatchAgentTask } from "$capabilities/agents/api/shared/dispatch-agent-task";
+import { agentRunnerConfiguration } from "$capabilities/agents/api/shared/runner-configuration";
+import { queuedRunnerPlan } from "$capabilities/agents/api/shared/runner-plan";
 import { openThread } from "$capabilities/agents/api/shared/threads";
 import type { WriteResult } from "$capabilities/agents/types/agents";
 
@@ -13,7 +16,9 @@ export const createTask = async (input: unknown): Promise<WriteResult> => {
   const scope = await requireScope();
   const asked = validateCreateTask(input);
 
-  const store = serverModel().store;
+  const model = serverModel();
+  agentRunnerConfiguration(model);
+  const store = model.store;
   const found = findVisible(store, scope, "personas", asked.personaId);
   if (found.kind !== "found") return notFound(asked.personaId, "persona");
   const persona = found.row;
@@ -37,9 +42,10 @@ export const createTask = async (input: unknown): Promise<WriteResult> => {
       personaId: persona._id,
       origin: { kind: "person" },
       state: "running",
+      execution: { kind: "grounded" },
       ...(asked.scope === undefined ? {} : { scope: asked.scope }),
       tools: [...(asked.tools ?? persona.tools)],
-      plan: [],
+      plan: queuedRunnerPlan(),
       outputs: [],
       questions: [],
       createdBy: actor,
@@ -49,5 +55,6 @@ export const createTask = async (input: unknown): Promise<WriteResult> => {
     };
     return unit.create("agentTasks", fields);
   });
+  dispatchAgentTask(model, id);
   return { accepted: true, id, revision: 1 };
 };

@@ -24,11 +24,15 @@
   import { setPromptScope } from "$app-views/categories/slide-deck-editor/procedures/set-prompt-scope";
   import { refreshPromptBlock } from "$app-views/categories/slide-deck-editor/procedures/refresh-prompt-block";
   import { synchronizePromptSettings } from "$app-views/categories/slide-deck-editor/procedures/effects/prompt-settings.svelte";
+  import { publishesPromptOutput } from "$app-views/categories/slide-deck-editor/procedures/effects/publishes-prompt-output.svelte";
+  import { publishPromptOutput } from "$app-views/categories/slide-deck-editor/procedures/publish-prompt-output";
+  import { inspectExternalFile } from "$app-views/categories/external/procedures/inspect-file";
   import {
     compactEvidenceSourceTitle,
     exactEvidenceText
   } from "$app-views/categories/slide-deck-editor/procedures/evidence";
   import { workspaceState } from "$model/client/workspace-state";
+  import { isExternalFileResourceKind } from "$representation/data/behavior/core/resource";
   import type { ResourceRef } from "$representation/data/types/core/resource";
   import type { SemanticCitation } from "$representation/data/types/semantic/derived-output";
 
@@ -87,6 +91,13 @@
     refreshing: () => serverRefreshing,
     refresh: () => detailQuery.refresh()
   });
+  publishesPromptOutput({
+    output: () => output,
+    publish: (current) => runtime === undefined
+      ? Promise.resolve()
+      : publishPromptOutput({ blockId, output: current, runtime }),
+    fail: (error) => state.fail(error)
+  });
 
   const setScope = (next: unknown) => setPromptScope({
     busy,
@@ -113,23 +124,23 @@
   const sourceTitle = (citation: SemanticCitation, ref: ResourceRef): string =>
     compactEvidenceSourceTitle(
       sourceTitles.get(`${ref.kind}:${ref.id}`) ??
-      ("material" in citation ? citation.material.name : "Open source")
+      (citation.evidenceKind === "text" ? "Open source" : citation.material.name)
     );
 
   const citationRef = (citation: SemanticCitation): ResourceRef =>
-    "span" in citation
+    citation.evidenceKind === "text"
       ? citation.source.ref
       : citation.material.placement?.ref ?? citation.material.source.ref;
 
   const citationKey = (citation: SemanticCitation): string => {
-    if ("span" in citation) {
+    if (citation.evidenceKind === "text") {
       return `text:${citation.source.ref.kind}:${citation.source.ref.id}:${citation.span.from}`;
     }
-    return `${citation.evidenceKind}:${citation.material.materialId}:${JSON.stringify("facet" in citation ? citation.facet : citation.selection)}`;
+    return `${citation.evidenceKind}:${citation.material.materialId}:${JSON.stringify(citation.evidenceKind === "descriptor" ? citation.facet : citation.selection)}`;
   };
 
   const citationLabel = (citation: SemanticCitation): string => {
-    if ("span" in citation) return exactEvidenceText(citation);
+    if (citation.evidenceKind === "text") return exactEvidenceText(citation);
     if (citation.evidenceKind === "descriptor") return citation.text;
     if (citation.evidenceKind === "visual") {
       return `Original image${citation.selection.kind === "image" && citation.selection.crop !== undefined ? " crop" : ""}`;
@@ -140,17 +151,18 @@
   };
 
   const citationKind = (citation: SemanticCitation): string => {
-    if ("span" in citation) return "Exact text";
+    if (citation.evidenceKind === "text") return "Exact text";
     if (citation.evidenceKind === "descriptor") return "Interpreted summary";
     if (citation.evidenceKind === "visual") return "Visual evidence";
     if (citation.evidenceKind === "code") return "Exact code";
     return "Structured evidence";
   };
 
-  const openSource = (kind: string, id: string) => {
+  const openSource = (kind: ResourceRef["kind"], id: string) => {
     if (kind === "document") view.open({ category: "document-editor", resourceId: id });
     else if (kind === "slides") view.open({ category: "slide-deck-editor", resourceId: id });
     else if (kind === "spreadsheet") view.open({ category: "spreadsheet-editor", resourceId: id });
+    else if (isExternalFileResourceKind(kind)) inspectExternalFile(view, id);
   };
 </script>
 

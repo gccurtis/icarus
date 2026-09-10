@@ -8,14 +8,14 @@ import {
   recordsIn
 } from "$capabilities/templates/api/shared/store";
 import {
-  bodyOf,
   descriptionOf,
   nameOf,
   requiredId,
   tagsOf,
-  templateIdOf,
-  holesOf
+  templateIdOf
 } from "$capabilities/templates/api/shared/validation";
+import { bodyOf } from "$capabilities/templates/api/shared/body-validation/body-validation";
+import { holesOf } from "$capabilities/templates/api/shared/hole-validation";
 import type {
   TemplateDetail,
   TemplateLibraryItem,

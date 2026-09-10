@@ -1,5 +1,6 @@
 import { requireScope } from "$runtime/server/scope.server";
 import { serverModel } from "$runtime/server/start.server";
+import { readCurrentRows } from "$model/server/store/index.server";
 import { asId } from "$representation/data/behavior/core/id";
 
 import { paragraphOf } from "$capabilities/comments/api/shared/paragraph";
@@ -25,24 +26,16 @@ export const startThread = async (input: unknown): Promise<StartThreadResult> =>
       : asked.target.kind === "slides"
         ? "slideDecks"
         : "spreadsheets";
-    const resources = unit.read(table);
-    const claimedResources = resources?.kind === "table" && resources.table === table
-      ? resources.rows.filter((row) => row._id === asked.target.id)
-      : [];
+    const claimedResources = readCurrentRows(unit, table)
+      .filter((row) => row._id === asked.target.id);
     if (
-      resources?.kind !== "table" ||
-      resources.table !== table ||
       claimedResources.length !== 1 ||
       !resourceRowIsCurrent(claimedResources[0], table, projectId, asked.target.id)
     ) {
       throw new Error(`comments/start-thread: no ${asked.target.kind} ${asked.target.id}`);
     }
-    const stages = unit.read("templateStages");
-    if (
-      stages?.table === "templateStages" &&
-      stages.kind === "table" &&
-      stages.rows.some((row) => currentStageResource(row, projectId) === asked.target.id)
-    ) {
+    if (readCurrentRows(unit, "templateStages")
+      .some((row) => currentStageResource(row, projectId) === asked.target.id)) {
       throw new Error("comments/start-thread: a template's working copy takes no comments");
     }
     const threadId = unit.create("commentThreads", {

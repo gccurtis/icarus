@@ -4,7 +4,6 @@ import type { DocumentBody } from "$representation/data/types/documents/body";
 import type { SlideDeckBody } from "$representation/data/types/slide-decks/body";
 import { asId } from "$representation/data/behavior/core/id";
 import { portableBodyOf } from "$representation/data/behavior/templates/portable";
-import type { ResourceSet } from "$representation/data/types/core/resource-set";
 
 const documentBody = (): DocumentBody => ({
   rows: [
@@ -42,14 +41,9 @@ const documentBody = (): DocumentBody => ({
           atoms: [{ id: "a3", kind: "literal", text: "Sum up" }],
           display: "Sum up",
           marks: [],
-          scope: {
-            include: [{ select: "kinds", kinds: ["finding"] }, { select: "set", setId: "resourceSets:1" as never }],
-            exclude: [{
-              select: "resources",
-              refs: [{ kind: "document", id: asId<"documents">("documents:2") }]
-            }]
-          } satisfies ResourceSet,
-          state: "idle"
+          state: "error",
+          error: "Generation failed",
+          refreshedAt: 12
         }
       ]
     }
@@ -70,16 +64,10 @@ describe("portableBodyOf", () => {
     expect(text.marks[1]).toEqual({ id: "m2", from: { atom: "a1", offset: 0 }, to: { atom: "a1", offset: 2 }, style: ["bold"] });
     expect("source" in image).toBe(false);
     expect("derivedOutputId" in prompt).toBe(false);
-    /**
-     * A prompt's scope is carried whole, sets and resources included. It says
-     * what this prompt reads, and a template placed where those rows do not
-     * exist reads nothing from them — which is what it means for them not to
-     * exist there.
-     */
-    expect(prompt.scope).toEqual({
-      include: [{ select: "kinds", kinds: ["finding"] }, { select: "set", setId: "resourceSets:1" }],
-      exclude: [{ select: "resources", refs: [{ kind: "document", id: "documents:2" }] }]
-    });
+    expect(prompt.scope).toBeUndefined();
+    expect(prompt.state).toBe("idle");
+    expect("error" in prompt).toBe(false);
+    expect("refreshedAt" in prompt).toBe(false);
     expect(dropped).toEqual([
       "Dropped a formula's project binding.",
       "Dropped a link to something in the project.",

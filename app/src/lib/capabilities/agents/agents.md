@@ -13,9 +13,9 @@ asked, and the chats a person has with one.
 | `updatePersona` | A compare-and-swap patch of name, description, one definition section, scope, cast or tools |
 | `duplicatePersona` | A viewer-owned copy at revision one |
 | `removePersona` | Removal, refused while any task, automation or chat still names it |
-| `createTask` | A running task with its own thread, opened on the instruction as its first message |
+| `createTask` | A running task with its own thread and grounded runner plan, opened on the instruction and dispatched immediately |
 | `updateTask` | A compare-and-swap patch of title, scope, tools, the instruction while no plan exists, or finishing it |
-| `sendTaskMessage` | A person's message appended to the task's thread |
+| `sendTaskMessage` | A person's message appended to the task's thread; a reviewed task reopens and new direction is dispatched |
 | `answerTaskQuestion` | An answer or a rejection recorded on one open question; either way the thread hears it, so the runner is never left waiting |
 | `createAutomation` | A rule for one persona; without an instruction it is created switched off |
 | `updateAutomation` | A compare-and-swap patch of name, instruction, persona, trigger, scope, tools or enabled |
@@ -41,7 +41,7 @@ or counter.
 
 There is no separate run table. A task starts running the moment it is created
 and moves through `running`, `review` and `finished`. Its plan, outputs and
-questions are written by a runner; this capability reads them and lets a person
+questions are written by the grounded runner; this capability reads them and lets a person
 answer or reject a question, message the thread, stop the task or mark it
 reviewed. The percentage a surface shows is derived from the plan, never stored.
 What started a task is read from its origin: the person, or the schedule, edit
@@ -63,8 +63,29 @@ errors. Invalid payloads throw before the store is read. Running an automation
 and appending to a thread do not bump the row's revision, because they change
 nothing a person edits.
 
-## What is not here
+## Grounded execution
 
-Nothing dispatches an agent. A created task waits for a runner that does not
-exist yet, which is why it shows no plan. There are no skills: the table, its
-procedures and every reference to one were removed.
+The current runner is the production read lane. It resolves the task's scope or,
+when the task has none of its own, the persona's exact scope. It prepares only
+resources inside that boundary, then uses the same exact Semantic Overlay search
+and authoritative resource-reading tools as Research Chat. Nominal External
+references retain their subkind from scope through retrieval, response
+attachments and outputs; no generic file identity is accepted or reconstructed.
+Scope is optional in the current task and persona schema. When neither row has
+one, the runner binds itself to one explicit empty `resources` term and reads
+nothing. It does not use an empty `include`, because Semantic scope deliberately
+means the whole project in that shape. Absence never widens to the project and
+is not repaired into another stored shape.
+
+The three-step runner plan is its durable ownership signature. Creation and a
+manual automation fire write that plan in the same transaction as the task and
+thread, then dispatch one process-owned flight. A server restart resumes only a
+running task with that exact signature. Shutdown leaves it running for that
+resume; a person's Stop aborts immediately and terminalizes the task. Provider,
+deadline and preparation failures write a redacted explanation. A successful
+publication writes the response, cited outputs, completed plan, review state and
+activity atomically.
+
+`retrieve` and `resource.read` are executable now. The other represented grants
+remain explicit future tool families; this runner never silently substitutes,
+widens scope or invents an implementation for them. There are no skills.

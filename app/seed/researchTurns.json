@@ -46,6 +46,13 @@
         "sourceIds": ["s1"]
       }
     ],
+    "usage": {
+      "requests": 1,
+      "promptTokens": 846,
+      "completionTokens": 58,
+      "totalTokens": 904
+    },
+    "model": "moonshotai/kimi-k2.5",
     "askedAt": 1788558000000,
     "answeredAt": 1788558300000,
     "updatedAt": 1788558300000
@@ -97,6 +104,13 @@
         "sourceIds": ["s1"]
       }
     ],
+    "usage": {
+      "requests": 1,
+      "promptTokens": 912,
+      "completionTokens": 73,
+      "totalTokens": 985
+    },
+    "model": "moonshotai/kimi-k2.5",
     "askedAt": 1788558600000,
     "answeredAt": 1788558900000,
     "updatedAt": 1788558900000
@@ -148,6 +162,13 @@
         "sourceIds": ["s1"]
       }
     ],
+    "usage": {
+      "requests": 1,
+      "promptTokens": 704,
+      "completionTokens": 69,
+      "totalTokens": 773
+    },
+    "model": "moonshotai/kimi-k2.5",
     "askedAt": 1788472200000,
     "answeredAt": 1788472800000,
     "updatedAt": 1788472800000
@@ -184,6 +205,13 @@
     "queries": ["NERC winter review"],
     "sources": [],
     "findings": [],
+    "usage": {
+      "requests": 1,
+      "promptTokens": 622,
+      "completionTokens": 47,
+      "totalTokens": 669
+    },
+    "model": "moonshotai/kimi-k2.5",
     "askedAt": 1788212700000,
     "answeredAt": 1788213000000,
     "updatedAt": 1788213000000
@@ -255,6 +283,13 @@
         "sourceIds": ["s1"]
       }
     ],
+    "usage": {
+      "requests": 1,
+      "promptTokens": 788,
+      "completionTokens": 64,
+      "totalTokens": 852
+    },
+    "model": "moonshotai/kimi-k2.5",
     "askedAt": 1787867400000,
     "answeredAt": 1787868000000,
     "updatedAt": 1787868000000
@@ -306,6 +341,13 @@
         "sourceIds": ["s1"]
       }
     ],
+    "usage": {
+      "requests": 1,
+      "promptTokens": 731,
+      "completionTokens": 61,
+      "totalTokens": 792
+    },
+    "model": "moonshotai/kimi-k2.5",
     "askedAt": 1787608200000,
     "answeredAt": 1787608800000,
     "updatedAt": 1787608800000

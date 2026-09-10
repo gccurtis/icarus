@@ -8,7 +8,9 @@
   import ElementPaint from "$app-views/categories/slide-deck-editor/components/element-paint.svelte";
   import TextSpacing from "$app-views/categories/slide-deck-editor/components/text-spacing.svelte";
   import TextStyle from "$app-views/categories/slide-deck-editor/components/text-style.svelte";
-  import { elementIn, slideHolding, slideIndexOf } from "$app-views/categories/slide-deck-editor/procedures/deck";
+  import { slideHolding } from "$app-views/categories/slide-deck-editor/procedures/deck-slide-holding";
+  import { elementIn } from "$app-views/categories/slide-deck-editor/procedures/deck-reading";
+  import { slideIndexOf } from "$app-views/categories/slide-deck-editor/procedures/deck-slides";
   import { selectedIds, slideSignal } from "$app-views/categories/slide-deck-editor/procedures/selecting";
   import { workspaceState, type SlideDeckRuntime } from "$model/client/workspace-state";
 

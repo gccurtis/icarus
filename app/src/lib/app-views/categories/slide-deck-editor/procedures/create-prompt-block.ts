@@ -77,7 +77,10 @@ export const createPromptBlock = async ({
       throw new Error("The generated slide text could not be saved");
     }
     if (refreshed.outcome === "failed") {
-      throw new Error(refreshed.output.error ?? "The response could not be generated");
+      if (refreshed.output.state !== "error") {
+        throw new Error("The failed refresh returned a non-error output");
+      }
+      throw new Error(refreshed.output.error);
     }
   } catch (error) {
     state.fail(error);

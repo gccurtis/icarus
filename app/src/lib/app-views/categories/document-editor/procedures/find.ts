@@ -1,7 +1,7 @@
 import type { DocumentBody } from "$representation/data/types/documents/body";
 import type { DocumentOp } from "$representation/data/types/documents/op";
 import { blocksOf } from "$app-views/categories/document-editor/procedures/marks";
-import { segmentsOf } from "$app-views/categories/document-editor/procedures/projection";
+import { segmentsOf } from "$app-views/categories/document-editor/procedures/projection-atoms";
 
 export type Hit = {
   readonly id: string;

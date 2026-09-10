@@ -14,10 +14,8 @@ listing them.
 
 ## Nothing is running, and the page says so four times
 
-`$messages` exists and defines what a message is — `Message`, `MessageRole`,
-`MessageState` and a factory — but nothing in it is callable: its own overview
-says a message is written by whichever capability owns the thread, and no thread
-table exists to hold one yet. So the replies are four fixed samples served in
+The current represented `Message` is complete-only; this development page does
+not persist or exercise a streaming message contract. Its replies are four fixed samples served in
 rotation from a `setTimeout`, and that is stated in the screen note, in every
 sample's own annotation, in the pending indicator's label, and here. Send the same
 message twice and you get different samples; send it five times and the first one

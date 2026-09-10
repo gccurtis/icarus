@@ -32,6 +32,7 @@ export const createDerivedOutput = async (input: unknown): Promise<CreateDerived
     ...(createDerivedOutputInput.scope === undefined
       ? {}
       : { scope: createDerivedOutputInput.scope }),
+    valueSource: "none",
     queries: [],
     evidence: [],
     state: "idle",

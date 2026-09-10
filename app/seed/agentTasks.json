@@ -11,6 +11,9 @@
       "kind": "person"
     },
     "state": "running",
+    "execution": {
+      "kind": "grounded"
+    },
     "tools": [
       "retrieve",
       "resource.read",
@@ -119,6 +122,9 @@
       }
     },
     "state": "running",
+    "execution": {
+      "kind": "grounded"
+    },
     "tools": [
       "retrieve",
       "resource.read",
@@ -168,6 +174,9 @@
       "kind": "person"
     },
     "state": "running",
+    "execution": {
+      "kind": "grounded"
+    },
     "tools": [
       "resource.read",
       "resource.write"
@@ -206,6 +215,7 @@
         "id": "q1",
         "text": "Two findings on the transformer bank are still marked proposed. Should I draft around them, or wait until they are accepted?",
         "askedAt": 1788644400000,
+        "state": "open",
         "stepId": "position",
         "options": [
           "Draft around them and mark the gaps",
@@ -217,6 +227,7 @@
         "id": "q2",
         "text": "The register numbering for section 4 changed in the last filing. Keep the old numbering the accepted findings cite, or renumber to match?",
         "askedAt": 1788644520000,
+        "state": "open",
         "stepId": "position",
         "options": [
           "Keep the numbering the findings cite",
@@ -698,11 +709,7 @@
     "origin": {
       "kind": "automation",
       "automationId": "automations:glossary",
-      "trigger": "resource-created",
-      "ref": {
-        "kind": "document",
-        "id": "documents:4"
-      }
+      "trigger": "resource-created"
     },
     "state": "review",
     "tools": [

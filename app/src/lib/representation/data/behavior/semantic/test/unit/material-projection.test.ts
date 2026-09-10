@@ -26,7 +26,7 @@ const prompt = (id: string, display: string): PromptBlock => ({
   atoms: [{ id: `${id}:atom`, kind: "literal", text: display }],
   display,
   marks: [],
-  state: "fresh"
+  state: "idle"
 });
 
 const table = (): TableBlock => ({

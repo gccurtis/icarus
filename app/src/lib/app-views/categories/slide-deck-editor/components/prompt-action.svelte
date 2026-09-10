@@ -2,7 +2,7 @@
   import Sparkles from "@lucide/svelte/icons/sparkles";
 
   import { PanelButton } from "$authored-components/panel";
-  import { elementIn } from "$app-views/categories/slide-deck-editor/procedures/deck";
+  import { elementIn } from "$app-views/categories/slide-deck-editor/procedures/deck-reading";
   import { withPromptElement } from "$app-views/categories/slide-deck-editor/procedures/prompt-blocks";
   import { workspaceState } from "$model/client/workspace-state";
 

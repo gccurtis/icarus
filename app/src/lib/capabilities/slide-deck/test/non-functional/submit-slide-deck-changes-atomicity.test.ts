@@ -70,6 +70,7 @@ const writing = (resourceId: string) => ({
     baseRevision: 0,
     ops: [{
       op: "set",
+      target: "deck",
       path: "theme/colors/accent",
       value: "violet",
       was: "blue"

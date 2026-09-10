@@ -3,18 +3,40 @@ import type { Message, MessageRole } from "$representation/data/types/agents/mes
 import type { ThreadKind } from "$representation/data/types/agents/thread";
 import type { Actor } from "$representation/data/types/core/actor";
 import type { Id } from "$representation/data/types/core/id";
+import type { ResourceRef } from "$representation/data/types/core/resource";
 import { messageText, textMessage } from "$representation/data/behavior/agents/messages";
+import { conversationAggregate } from "$representation/data/behavior/agents/conversation";
 
 import { rowsIn, uniqueId } from "$capabilities/agents/api/shared/store";
 
-export const messagesOf = (store: StoreUnitOfWork, threadId: string): readonly Message[] =>
-  rowsIn(store, "threadParts")
-    .filter((part) => part.threadId === threadId && Array.isArray(part.messages))
-    .toSorted((left, right) => left.part - right.part)
-    .flatMap((part) => part.messages);
+const aggregateOf = (
+  store: StoreUnitOfWork,
+  projectId: Id<"projects">,
+  threadId: Id<"threads">,
+  expectedKind: ThreadKind
+) => conversationAggregate(
+  rowsIn(store, "threads"),
+  rowsIn(store, "threadParts"),
+  projectId,
+  threadId,
+  expectedKind
+);
 
-export const lastLineOf = (store: StoreUnitOfWork, threadId: string): string | null => {
-  const messages = messagesOf(store, threadId);
+export const messagesOf = (
+  store: StoreUnitOfWork,
+  projectId: Id<"projects">,
+  threadId: Id<"threads">,
+  expectedKind: ThreadKind
+): readonly Message[] =>
+  aggregateOf(store, projectId, threadId, expectedKind).parts.flatMap((part) => part.messages);
+
+export const lastLineOf = (
+  store: StoreUnitOfWork,
+  projectId: Id<"projects">,
+  threadId: Id<"threads">,
+  expectedKind: ThreadKind
+): string | null => {
+  const messages = messagesOf(store, projectId, threadId, expectedKind);
   const last = messages[messages.length - 1];
   if (last === undefined) return null;
   const text = messageText(last);
@@ -39,22 +61,22 @@ export const openThread = (
 
 export const appendMessage = (
   store: StoreUnitOfWork,
-  projectId: string,
-  threadId: string,
+  projectId: Id<"projects">,
+  threadId: Id<"threads">,
+  expectedKind: ThreadKind,
   role: MessageRole,
   author: Actor,
   at: number,
-  text: string
+  text: string,
+  attachments: readonly ResourceRef[] = []
 ): Message => {
-  const message = textMessage(`m-${uniqueId()}`, role, author, at, text);
-  const parts = rowsIn(store, "threadParts")
-    .filter((part) => part.threadId === threadId)
-    .toSorted((left, right) => left.part - right.part);
+  const written = textMessage(`m-${uniqueId()}`, role, author, at, text);
+  const message: Message = attachments.length === 0
+    ? written
+    : { ...written, attachments: [...attachments] };
+  const parts = aggregateOf(store, projectId, threadId, expectedKind).parts;
   const last: TableRow<"threadParts"> | undefined = parts[parts.length - 1];
-  if (last === undefined) {
-    store.create("threadParts", { projectId, threadId, part: 1, messages: [message] });
-  } else {
-    store.update(`threadParts.${last._id}.messages`, [...last.messages, message]);
-  }
+  if (last === undefined) throw new Error("The conversation has no current message part");
+  store.update(`threadParts.${last._id}.messages`, [...last.messages, message]);
   return message;
 };

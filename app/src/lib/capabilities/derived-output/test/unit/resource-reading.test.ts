@@ -8,6 +8,7 @@ import type { Id } from "$representation/data/types/core/id";
 import type { ResourceSet } from "$representation/data/types/core/resource-set";
 import type { MaterialHit, MaterialSourceSnapshot } from "$representation/data/types/semantic/material";
 import { createResourceReadingSession } from "$capabilities/derived-output/api/shared/resource-reading";
+import { activeSources } from "$capabilities/derived-output/api/shared/rows";
 import { materialDescriptorEvidence } from "$capabilities/derived-output/api/shared/synthesis";
 
 type Row = Record<string, unknown> & { _id: string; _creationTime: number };
@@ -147,7 +148,16 @@ describe("Derived Output resource-reading session", () => {
               id: "prompt", frame: { x: 0.05, y: 0.8, width: 0.5, height: 0.1 },
               content: {
                 type: "prompt",
-                block: { id: "prompt-block", type: "prompt", atoms: [], display: "SECRET GENERATED VALUE", marks: [], state: "fresh" }
+                block: {
+                  id: "prompt-block",
+                  type: "prompt",
+                  atoms: [{ id: "prompt-atom", kind: "literal", text: "SECRET GENERATED VALUE" }],
+                  display: "SECRET GENERATED VALUE",
+                  marks: [],
+                  derivedOutputId: "derivedOutputs:slide-prompt",
+                  refreshedAt: 1,
+                  state: "fresh"
+                }
               }
             },
             {
@@ -169,15 +179,24 @@ describe("Derived Output resource-reading session", () => {
     put("externalFiles", [
       {
         _id: "externalFiles:csv", _creationTime: 1, projectId, name: "sales.csv",
-        mediaType: "text/csv", subkind: "data", storageId: "_storage:csv", hash: hash("a")
+        originalName: "sales.csv", relativePath: "sales.csv", mediaType: "text/csv",
+        subkind: "data", storageId: `_storage:${hash("a")}`, hash: hash("a"), size: 35,
+        origin: { kind: "upload" }, createdBy: { kind: "system" },
+        updatedBy: { kind: "system" }, revision: 1, updatedAt: 1
       },
       {
         _id: "externalFiles:code", _creationTime: 2, projectId, name: "answer.ts",
-        mediaType: "text/typescript", subkind: "text", storageId: "_storage:code", hash: hash("b")
+        originalName: "answer.ts", relativePath: "answer.ts", mediaType: "text/typescript",
+        subkind: "code", storageId: `_storage:${hash("b")}`, hash: hash("b"), size: 46,
+        origin: { kind: "upload" }, createdBy: { kind: "system" },
+        updatedBy: { kind: "system" }, revision: 1, updatedAt: 2
       },
       {
         _id: "externalFiles:image", _creationTime: 3, projectId, name: "diagram.png",
-        mediaType: "image/png", subkind: "image", storageId: "_storage:image", hash: hash("c")
+        originalName: "diagram.png", relativePath: "diagram.png", mediaType: "image/png",
+        subkind: "image", storageId: `_storage:${hash("c")}`, hash: hash("c"), size: 4,
+        origin: { kind: "upload" }, createdBy: { kind: "system" },
+        updatedBy: { kind: "system" }, revision: 1, updatedAt: 3
       }
     ]);
     put("semanticMaterials", [
@@ -191,7 +210,7 @@ describe("Derived Output resource-reading session", () => {
       {
         _id: "semanticMaterials:code", _creationTime: 2, projectId, identityKey: "code",
         kind: "code", name: "answer.ts",
-        source: { kind: "externalFile", ref: { kind: "externalFile::text", id: "externalFiles:code" }, fileId: "externalFiles:code", hash: hash("b"), mediaType: "text/typescript", subkind: "text" },
+        source: { kind: "externalFile", ref: { kind: "externalFile::code", id: "externalFiles:code" }, fileId: "externalFiles:code", hash: hash("b"), mediaType: "text/typescript", subkind: "code" },
         profile: { kind: "code", language: "typescript", lines: 2, imports: [], exports: ["answer"], symbols: [{ name: "answer", kind: "variable", fromLine: 1, toLine: 1 }], parser: "bounded-regex", truncated: false, warnings: [] },
         profileHash: "code-profile", contextHash: "code-context", revisionKey: `hash:${hash("b")}`, state: "ready", updatedAt: 1
       },
@@ -219,9 +238,9 @@ describe("Derived Output resource-reading session", () => {
     put("spreadsheets", []);
     put("resourceSets", []);
     const content = new Map([
-      ["_storage:csv", new TextEncoder().encode("Region,Revenue\nNorth,120\nSouth,200\n")],
-      ["_storage:code", new TextEncoder().encode("export const answer = 42;\nconsole.log(answer);")],
-      ["_storage:image", new Uint8Array([137, 80, 78, 71])]
+      [`_storage:${hash("a")}`, new TextEncoder().encode("Region,Revenue\nNorth,120\nSouth,200\n")],
+      [`_storage:${hash("b")}`, new TextEncoder().encode("export const answer = 42;\nconsole.log(answer);")],
+      [`_storage:${hash("c")}`, new Uint8Array([137, 80, 78, 71])]
     ]);
     model = {
       store: {
@@ -230,7 +249,7 @@ describe("Derived Output resource-reading session", () => {
           return { kind: "table", table, rows: tables.get(table) ?? [] } as never;
         }
       },
-      materialContent: {
+      externalFileStorage: {
         read: async (ref: { storageId: Id<"_storage"> }) => content.get(ref.storageId)
       }
     } as unknown as ServerModel;
@@ -252,6 +271,10 @@ describe("Derived Output resource-reading session", () => {
     const selected = await tool("read_selection").execute({}) as { evidenceId: string; span: { text: string } };
     assert.equal(selected.span.text, "Selected fact");
     assert.equal(issued.size, 1);
+    assert.equal(
+      (issued.get(selected.evidenceId) as { evidenceKind: string }).evidenceKind,
+      "text"
+    );
     const inspected = await tool("inspect_slide").execute({ resourceId: "slideDecks:deck", slideId: "slide-one" }) as {
       items: Array<{ id: string; frame: { x: number; y: number; width: number; height: number }; ranges: unknown[]; materialHandle: string | null }>;
     };
@@ -315,7 +338,16 @@ describe("Derived Output resource-reading session", () => {
               { id: "data", cells: [{ id: "data-cell", blocks: [textBlock("raw-value", "900")] }] }
             ]
           },
-          { id: "generated", type: "prompt", atoms: [], display: "MODEL VALUE", marks: [], state: "fresh" }
+          {
+            id: "generated",
+            type: "prompt",
+            atoms: [{ id: "generated-atom", kind: "literal", text: "MODEL VALUE" }],
+            display: "MODEL VALUE",
+            marks: [],
+            derivedOutputId: "derivedOutputs:document-prompt",
+            refreshedAt: 1,
+            state: "fresh"
+          }
         ]
       }]
     };
@@ -543,18 +575,6 @@ describe("Derived Output resource-reading session", () => {
       /content-addressed storage/
     );
 
-    const exactCode = await tool("read_text").execute({
-      kind: "externalFile::text",
-      resourceId: "externalFiles:code",
-      from: 0,
-      to: 6
-    }) as { source: { contentHash: string }; span: { text: string }; evidenceId: string };
-    assert.equal(exactCode.span.text, "export");
-    assert.equal(exactCode.source.contentHash, hash("b"));
-    assert.equal(
-      (issued.get(exactCode.evidenceId) as { source: { contentHash: string } }).source.contentHash,
-      hash("b")
-    );
   });
 
   it("rechecks the Resource Set even for an attempt-local material handle", async () => {
@@ -576,8 +596,8 @@ describe("Derived Output resource-reading session", () => {
 
     const controller = new AbortController();
     let received: AbortSignal | undefined;
-    const originalRead = model.materialContent.read;
-    model.materialContent.read = async (ref, signal) => {
+    const originalRead = model.externalFileStorage.read;
+    model.externalFileStorage.read = async (ref, signal) => {
       received = signal;
       const bytes = await originalRead(ref, signal);
       controller.abort();
@@ -600,7 +620,11 @@ describe("Derived Output resource-reading session", () => {
         _id: "resourceSets:private",
         _creationTime: 1,
         projectId,
-        boundTo: { kind: "resource", resourceId: "documents:doc", hole: "evidence" },
+        boundTo: {
+          kind: "resource",
+          ref: { kind: "document", id: "documents:doc" },
+          hole: "evidence"
+        },
         set: {
           include: [{ select: "resources", refs: [{ kind: "document", id: "documents:doc" }] }],
           exclude: []
@@ -622,7 +646,7 @@ describe("Derived Output resource-reading session", () => {
     );
   });
 
-  it("does not resolve duplicate or malformed named Resource Sets while reading", async () => {
+  it("fails closed on duplicate or malformed named Resource Sets while reading", async () => {
     const reusable: Row = {
       _id: "resourceSets:evidence",
       _creationTime: 1,
@@ -657,12 +681,12 @@ describe("Derived Output resource-reading session", () => {
       reusable,
       { ...reusable, projectId: "projects:other", name: "Duplicate claimant" }
     ]);
-    await assert.rejects(read, /resource set 'resourceSets:evidence' does not exist/);
+    assert.throws(read, /repeats row id/);
 
     put("resourceSets", [
       { ...reusable, createdBy: { kind: "user" } }
     ]);
-    await assert.rejects(read, /resource set 'resourceSets:evidence' does not exist/);
+    assert.throws(read, /non-current field values/);
   });
 
   it("rejects a material handle as soon as its native resource revision advances", async () => {
@@ -678,6 +702,38 @@ describe("Derived Output resource-reading session", () => {
       () => read.execute({ materialHandle: handle, series: ["Revenue"] }),
       /materialHandle is stale/
     );
+  });
+
+  it("projects an External text authority with its current represented revision", () => {
+    (tables.get("externalFiles") ?? []).push({
+      _id: "externalFiles:notes",
+      _creationTime: 4,
+      projectId,
+      name: "notes.md",
+      originalName: "notes.md",
+      relativePath: "notes.md",
+      mediaType: "text/markdown",
+      subkind: "text",
+      storageId: `_storage:${hash("d")}`,
+      hash: hash("d"),
+      size: 12,
+      origin: { kind: "upload" },
+      createdBy: { kind: "system" },
+      updatedBy: { kind: "system" },
+      revision: 7,
+      updatedAt: 4
+    });
+
+    const source = activeSources(model.store, projectId).find(
+      (candidate) => candidate.ref.id === "externalFiles:notes"
+    );
+
+    assert.deepEqual(source, {
+      ref: { kind: "externalFile::text", id: "externalFiles:notes" },
+      revision: 7,
+      contentHash: hash("d"),
+      encoding: "utf-16"
+    });
   });
 });
 

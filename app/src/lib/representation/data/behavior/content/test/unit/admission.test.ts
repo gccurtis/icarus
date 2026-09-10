@@ -50,7 +50,6 @@ describe("current content identity admission", () => {
     const prompt = {
       id: "prompt",
       type: "prompt",
-      derivedOutputId: "derivedOutputs:1",
       atoms: [],
       display: "",
       marks: [],
@@ -129,5 +128,174 @@ describe("current content identity admission", () => {
       state: "idle"
     }])).toBeDefined();
     expect(admitContentBlocks([{ ...prompt, derivedOutputId: "outputs:1" }])).toBeUndefined();
+    expect(admitContentBlocks([{
+      ...prompt,
+      prompt: "What changed?",
+      derivedOutputId: "derivedOutputs:1"
+    }])).toBeUndefined();
+    expect(admitContentBlocks([{
+      ...prompt,
+      scope: { include: [{ select: "project" }], exclude: [] },
+      derivedOutputId: "derivedOutputs:1"
+    }])).toBeUndefined();
+    expect(admitContentBlocks([{
+      ...prompt,
+      derivedOutputId: undefined
+    }])).toBeUndefined();
+  });
+
+  it("admits only the current resolved formula snapshot", () => {
+    const atom = {
+      id: "formula-atom",
+      kind: "formula",
+      expression: "revenue - cost",
+      formulaId: "formulas:margin",
+      lastResolvedValue: { kind: "number", value: 12 },
+      lastResolvedDisplay: "12",
+      state: "fresh"
+    };
+    const text = {
+      id: "text",
+      type: "text",
+      variant: "paragraph",
+      atoms: [atom],
+      display: "12",
+      marks: []
+    };
+    const block = {
+      id: "formula-block",
+      type: "formula",
+      expression: "revenue - cost",
+      formulaId: "formulas:margin",
+      value: { kind: "number", value: 12 },
+      display: "12",
+      state: "fresh"
+    };
+
+    expect(admitContentBlocks([text, block])).toBeDefined();
+    expect(admitContentBlocks([{
+      ...text,
+      atoms: [{ ...atom, formulaId: undefined }]
+    }])).toBeUndefined();
+    expect(admitContentBlocks([{ ...block, formulaId: undefined }])).toBeUndefined();
+
+    for (const state of ["stale", "computing", "error"]) {
+      expect(admitContentBlocks([{
+        ...text,
+        atoms: [{ ...atom, state }]
+      }])).toBeUndefined();
+      expect(admitContentBlocks([{ ...block, state }])).toBeUndefined();
+    }
+
+    expect(admitContentBlocks([{
+      ...text,
+      atoms: [{ ...atom, error: "division by zero" }]
+    }])).toBeUndefined();
+    expect(admitContentBlocks([{ ...block, error: "division by zero" }])).toBeUndefined();
+    expect(admitContentBlocks([{ ...block, resolvedAt: 10 }])).toBeUndefined();
+    expect(admitContentBlocks([{
+      ...text,
+      atoms: [{
+        id: atom.id,
+        kind: atom.kind,
+        expression: atom.expression,
+        lastResolvedDisplay: atom.lastResolvedDisplay,
+        state: atom.state
+      }]
+    }])).toBeUndefined();
+  });
+
+  it("admits each complete prompt lifecycle arm and rejects partial or mixed arms", () => {
+    const presentation = {
+      id: "prompt",
+      type: "prompt",
+      atoms: [{ id: "prompt-atom", kind: "literal", text: "Answer" }],
+      display: "Answer",
+      marks: []
+    };
+    const linked = {
+      ...presentation,
+      derivedOutputId: "derivedOutputs:answer"
+    };
+
+    expect(admitContentBlocks([{ ...presentation, state: "idle" }])).toBeDefined();
+    expect(admitContentBlocks([{ ...linked, state: "idle" }])).toBeDefined();
+    expect(admitContentBlocks([{ ...linked, state: "stale" }])).toBeDefined();
+    expect(admitContentBlocks([{
+      ...linked,
+      state: "stale",
+      refreshedAt: 10
+    }])).toBeDefined();
+    expect(admitContentBlocks([{
+      ...linked,
+      state: "fresh",
+      refreshedAt: 10
+    }])).toBeDefined();
+    expect(admitContentBlocks([{
+      ...linked,
+      state: "error",
+      error: "generation failed"
+    }])).toBeDefined();
+    expect(admitContentBlocks([{
+      ...linked,
+      state: "error",
+      error: "generation failed",
+      refreshedAt: 10
+    }])).toBeDefined();
+
+    expect(admitContentBlocks([{ ...presentation, state: "fresh", refreshedAt: 10 }])).toBeUndefined();
+    expect(admitContentBlocks([{ ...presentation, state: "stale" }])).toBeUndefined();
+    expect(admitContentBlocks([{
+      ...presentation,
+      state: "error",
+      error: "generation failed"
+    }])).toBeUndefined();
+    expect(admitContentBlocks([{ ...linked, state: "fresh" }])).toBeUndefined();
+    expect(admitContentBlocks([{ ...linked, state: "error" }])).toBeUndefined();
+    expect(admitContentBlocks([{ ...linked, state: "idle", refreshedAt: 10 }])).toBeUndefined();
+    expect(admitContentBlocks([{
+      ...linked,
+      state: "stale",
+      error: "old failure"
+    }])).toBeUndefined();
+    expect(admitContentBlocks([{
+      ...linked,
+      state: "fresh",
+      refreshedAt: 10,
+      error: "old failure"
+    }])).toBeUndefined();
+    expect(admitContentBlocks([{
+      ...linked,
+      state: "error",
+      error: "   "
+    }])).toBeUndefined();
+    expect(admitContentBlocks([{ ...linked, state: "generating" }])).toBeUndefined();
+  });
+
+  it("rejects non-JSON object mechanics rather than reading a partial shape", () => {
+    const current = {
+      id: "text",
+      type: "text",
+      variant: "paragraph",
+      atoms: [{ id: "atom", kind: "literal", text: "Current" }],
+      display: "Current",
+      marks: []
+    };
+    const hidden = { ...current };
+    Object.defineProperty(hidden, "oldFormat", { value: true, enumerable: false });
+    const symbol = { ...current, [Symbol("oldFormat")]: true };
+    const accessor = { ...current };
+    Object.defineProperty(accessor, "variant", {
+      enumerable: true,
+      get: () => "paragraph"
+    });
+    const inherited = Object.assign(Object.create({ retired: true }), current);
+    const explicitUndefined = { ...current, format: undefined };
+
+    expect(admitContentBlocks([hidden])).toBeUndefined();
+    expect(admitContentBlocks([symbol])).toBeUndefined();
+    expect(admitContentBlocks([accessor])).toBeUndefined();
+    expect(admitContentBlocks([inherited])).toBeUndefined();
+    expect(admitContentBlocks([explicitUndefined])).toBeUndefined();
   });
 });

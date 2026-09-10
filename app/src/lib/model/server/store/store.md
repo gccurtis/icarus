@@ -40,6 +40,9 @@ named by `configuration/representation.yaml`.
 ## Invariants
 
 - A public mutation admits every path and value before changing live state.
+- A capability table read goes through `readCurrentRows`, which rejects an
+  impossible Store result and re-admits the complete current table image before
+  handing it across the model boundary.
 - A direct mutation replaces one complete table file durably, then adopts the
   same immutable row array in memory.
 - A transaction stages every table in an isolated map. Invalid work, a thrown

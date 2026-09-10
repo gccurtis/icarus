@@ -93,9 +93,19 @@ const body = () => ({
   styles: { styles: { body: { name: "Body" } }, defaultKey: "body" }
 });
 
+const sheetRow = (): Row => ({
+  _id: "spreadsheets:1",
+  _creationTime: 1,
+  projectId: "default",
+  title: "Sheet",
+  createdBy: { kind: "system" },
+  updatedBy: { kind: "system" },
+  updatedAt: 1
+});
+
 const leaderAt = (revision: number) => {
   if (!model.sheets.some((row) => row._id === "spreadsheets:1")) {
-    model.sheets.push({ _id: "spreadsheets:1", _creationTime: 1, projectId: "default", title: "Sheet" });
+    model.sheets.push(sheetRow());
   }
   return model.snapshots.push({
     _id: "spreadsheetSnapshots:1",
@@ -157,6 +167,36 @@ test("a read without a resourceId is refused", async () => {
   await assert.rejects(() => readSpreadsheet({}), /resourceId is required/);
 });
 
+test("the read boundary accepts only the exact current data shape", async () => {
+  const hidden = { resourceId: "spreadsheets:1" };
+  Object.defineProperty(hidden, "retired", { value: true, enumerable: false });
+  const accessor = {} as { resourceId: string };
+  Object.defineProperty(accessor, "resourceId", {
+    enumerable: true,
+    get: () => "spreadsheets:1"
+  });
+  const inherited = Object.assign(Object.create({ retired: true }), {
+    resourceId: "spreadsheets:1"
+  });
+
+  for (const input of [
+    { resourceId: "spreadsheets:1", retired: true },
+    { resourceId: undefined },
+    { resourceId: "spreadsheets:1", [Symbol("retired")]: true },
+    hidden,
+    accessor,
+    inherited
+  ]) {
+    await assert.rejects(() => readSpreadsheet(input), /exact data object|only current field/);
+  }
+  for (const resourceId of ["spreadsheet:1", "documents:1", "spreadsheets:", "spreadsheets:a:b"] as const) {
+    await assert.rejects(
+      () => readSpreadsheet({ resourceId }),
+      /current spreadsheets row id/
+    );
+  }
+});
+
 test("a read answers the leader body and the sheet's cells without their row fields", async () => {
   leaderAt(3);
   cellRow("r1", "c1", { kind: "text", value: "Feeder" });
@@ -192,7 +232,7 @@ test("a change set for a sheet that is not there writes nothing", async () => {
 });
 
 test("a sheet with no leader snapshot is not written into existence", async () => {
-  model.sheets.push({ _id: "spreadsheets:1", _creationTime: 1, projectId: "default", title: "Sheet" });
+  model.sheets.push(sheetRow());
 
   const answer = await submitSpreadsheetChanges(typing(0, "r3/c2/value", 42));
 
@@ -203,7 +243,7 @@ test("a sheet with no leader snapshot is not written into existence", async () =
 });
 
 test("a leader missing its current body fails closed", async () => {
-  model.sheets.push({ _id: "spreadsheets:1", _creationTime: 1, projectId: "default", title: "Sheet" });
+  model.sheets.push(sheetRow());
   model.snapshots.push({
     _id: "spreadsheetSnapshots:1",
     _creationTime: 1,
@@ -217,11 +257,11 @@ test("a leader missing its current body fails closed", async () => {
 
   await assert.rejects(
     () => readSpreadsheet({ resourceId: "spreadsheets:1" }),
-    /spreadsheetSnapshots table contains a non-current row/
+    /spreadsheetSnapshots.*missing required field/
   );
   await assert.rejects(
     () => submitSpreadsheetChanges(typing(3, "r1/c1/value", 42)),
-    /spreadsheetSnapshots table contains a non-current row/
+    /spreadsheetSnapshots.*missing required field/
   );
   assert.equal(model.changeSets.length, 0);
   assert.equal(model.cells.length, 0);
@@ -245,7 +285,7 @@ test("a malformed neighbouring snapshot fails formula surroundings closed", () =
       "default" as never,
       "spreadsheets:1" as never
     ),
-    /spreadsheetSnapshots table contains a non-current row/
+    /spreadsheetSnapshots.*missing required field/
   );
 });
 
@@ -486,7 +526,7 @@ test("a stored formula missing its current usedBy list rejects the whole change"
           }
         ])
       ),
-    /formulas table contains a non-current row/
+    /a 'formulas' row/
   );
   assert.deepEqual(model.snapshots, before.snapshots);
   assert.deepEqual(model.formulas, before.formulas);
@@ -561,21 +601,71 @@ test("an incorrect wasAfter is replaced by where the track really sat", async ()
   assert.equal(op.wasAfter, "r1");
 });
 
-test("touched is worked out from the ops rather than taken", async () => {
+test("a submission whose touched paths disagree with its ops is refused", async () => {
   leaderAt(0);
 
-  await submitSpreadsheetChanges({
-    changeSet: {
-      resourceId: "spreadsheets:1",
-      baseRevision: 0,
-      ops: [
-        { op: "set", target: "cell", path: "r1/c1/value", value: { kind: "number", value: 1 }, was: null }
-      ],
-      touched: ["r5/c5/value", "something/else"]
-    }
-  });
+  await assert.rejects(
+    () => submitSpreadsheetChanges({
+      changeSet: {
+        resourceId: "spreadsheets:1",
+        baseRevision: 0,
+        ops: [
+          { op: "set", target: "cell", path: "r1/c1/value", value: { kind: "number", value: 1 }, was: null }
+        ],
+        touched: ["r5/c5/value", "something/else"]
+      }
+    }),
+    /touched exactly matches/
+  );
 
-  assert.deepEqual(model.changeSets[0].touched, ["r1/c1/value"]);
+  assert.equal(model.changeSets.length, 0);
+});
+
+test("the submit boundary rejects partial, decorated, and non-nominal current shapes", async () => {
+  leaderAt(0);
+  const exact = typing(0, "r1/c1/value", 1);
+
+  await assert.rejects(
+    () => submitSpreadsheetChanges({
+      ...exact,
+      retired: true
+    }),
+    /exactly one changeSet/
+  );
+  await assert.rejects(
+    () => submitSpreadsheetChanges({
+      changeSet: { ...exact.changeSet, retired: true }
+    }),
+    /exactly the current fields/
+  );
+  await assert.rejects(
+    () => submitSpreadsheetChanges({
+      changeSet: {
+        ...exact.changeSet,
+        resourceId: "sheet-1"
+      }
+    }),
+    /spreadsheet id/
+  );
+  await assert.rejects(
+    () => submitSpreadsheetChanges({
+      changeSet: {
+        ...exact.changeSet,
+        ops: [{ op: "set", target: "cell", path: "r1/c1/value", value: null }]
+      }
+    }),
+    /current set shape/
+  );
+  await assert.rejects(
+    () => submitSpreadsheetChanges({
+      changeSet: {
+        ...exact.changeSet,
+        ops: [{ ...(exact.changeSet.ops[0] as Record<string, unknown>), retired: true }]
+      }
+    }),
+    /current set shape/
+  );
+  assert.equal(model.changeSets.length, 0);
 });
 
 test("a change set authored against a revision ahead of the leader is stale", async () => {
@@ -606,7 +696,7 @@ test("an op that names no known target is refused", async () => {
       submitSpreadsheetChanges(
         sending(0, [{ op: "set", target: "everything", path: "r1", value: 1 }])
       ),
-    /is not a target/
+    /current set shape/
   );
 });
 

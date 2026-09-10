@@ -1,10 +1,16 @@
 <script lang="ts">
+  import Braces from "@lucide/svelte/icons/braces";
+  import File from "@lucide/svelte/icons/file";
+  import FileImage from "@lucide/svelte/icons/file-image";
+  import FileMusic from "@lucide/svelte/icons/file-music";
   import FileText from "@lucide/svelte/icons/file-text";
+  import FileVideo from "@lucide/svelte/icons/file-video";
   import FolderTree from "@lucide/svelte/icons/folder-tree";
   import Globe from "@lucide/svelte/icons/globe";
   import Plus from "@lucide/svelte/icons/plus";
   import Presentation from "@lucide/svelte/icons/presentation";
   import Sheet from "@lucide/svelte/icons/sheet";
+  import Table2 from "@lucide/svelte/icons/table-2";
   import Target from "@lucide/svelte/icons/target";
   import X from "@lucide/svelte/icons/x";
 
@@ -67,7 +73,14 @@
     ["document", FileText],
     ["slides", Presentation],
     ["spreadsheet", Sheet],
-    ["finding", Target]
+    ["finding", Target],
+    ["externalFile::text", FileText],
+    ["externalFile::code", Braces],
+    ["externalFile::data", Table2],
+    ["externalFile::image", FileImage],
+    ["externalFile::audio", FileMusic],
+    ["externalFile::video", FileVideo],
+    ["externalFile::unknown", File]
   ]);
 
   const iconOf = (refKind: string) => ICON.get(refKind) ?? FileText;
@@ -108,7 +121,12 @@
             {@const Icon = iconOf(option.ref.kind)}
             <DropdownMenu.Item onSelect={() => write(withResource(shown, option.ref))}>
               <Icon size={14} aria-hidden="true" />
-              <span class="truncate">{option.name}</span>
+              <span class="option">
+                <span>{option.name}</span>
+                {#if option.relativePath && option.relativePath !== option.name}
+                  <small>{option.relativePath}</small>
+                {/if}
+              </span>
             </DropdownMenu.Item>
           {/each}
         {/if}
@@ -122,7 +140,12 @@
       <span class="mark kind-{row.refKind}">
         <Icon size={15} aria-hidden="true" />
       </span>
-      <span class="name" title={row.title}>{row.title}</span>
+      <span class="name" title={row.title}>
+        <span>{row.title}</span>
+        {#if row.refKind.startsWith("externalFile::") && row.detail !== row.title}
+          <small>{row.detail}</small>
+        {/if}
+      </span>
       {#if !frozen}
         <Button
           variant="ghost"
@@ -215,12 +238,40 @@
     color: var(--token-color-attention-text);
   }
 
+  .mark[class*="kind-externalFile::"] {
+    background: var(--token-color-interactive-surface);
+    color: var(--token-color-interactive-text);
+  }
+
   .name {
+    display: flex;
     overflow: hidden;
+    flex-direction: column;
     color: var(--token-ink-primary);
     font-size: var(--token-text-body-sm);
     line-height: var(--token-text-body-sm-leading);
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .name span,
+  .name small,
+  .option span,
+  .option small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .name small,
+  .option small {
+    color: var(--token-ink-muted);
+    font-size: 10px;
+  }
+
+  .option {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
   }
 </style>

@@ -5,7 +5,7 @@ export const validateRemoveAutomation = (input: unknown): RemoveAutomationInput 
   const fields = fieldsOf(input, "remove-automation");
   only(fields, ["automationId", "baseRevision"], "remove-automation");
   return {
-    automationId: idOf(fields.automationId, "remove-automation", "automationId"),
+    automationId: idOf(fields.automationId, "automations", "remove-automation", "automationId"),
     baseRevision: revisionOf(fields.baseRevision, "remove-automation")
   };
 };

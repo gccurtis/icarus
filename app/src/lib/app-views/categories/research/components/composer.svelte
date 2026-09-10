@@ -8,6 +8,13 @@
   import { Button } from "$vendored-components/button";
   import * as Select from "$vendored-components/select";
   import { Textarea } from "$vendored-components/textarea";
+  import {
+    distinctResourcePath,
+    resourceOptionForKey,
+    resourceOptionKey,
+    resourceOptionLabel
+  } from "$app-views/categories/research/procedures/resource-options";
+  import { threadList } from "$app-views/categories/research/procedures/chat";
 
   let {
     value = $bindable(""),
@@ -20,8 +27,6 @@
     personaNames = "",
     personaIds = "",
     resource = "",
-    resourceNames = "",
-    resourceIds = "",
     placeholder = "Ask anything about this project",
     onsend,
     onmode,
@@ -40,10 +45,8 @@
     /** The choosable personas, as two aligned newline-separated lists. */
     personaNames?: string;
     personaIds?: string;
-    /** The chosen resource as "kind id", and the choosable ones, aligned. */
+    /** The chosen resource as its exact "kind id" identity. */
     resource?: string;
-    resourceNames?: string;
-    resourceIds?: string;
     placeholder?: string;
     onsend: (text: string) => void;
     onmode?: (mode: string) => void;
@@ -67,16 +70,14 @@
     persona === "" ? "Default" : (people.find((entry) => entry.id === persona)?.name ?? "Default")
   );
   const modeLabel = $derived(MODES.find((entry) => entry.id === mode)?.label ?? "Explore");
-  const things = $derived(
-    resourceIds === ""
-      ? []
-      : resourceIds
-          .split("\n")
-          .map((id, index) => ({ id, name: resourceNames.split("\n")[index] ?? id }))
-  );
+
+  const list = threadList();
+  const resources = $derived(list.ready ? list.current.resources : []);
+  const selectedResource = $derived(resourceOptionForKey(resources, resource));
   const scopeLabel = $derived(
-    resource === "" ? "All project" : (things.find((entry) => entry.id === resource)?.name ?? "One resource")
+    resource === "" ? "All project" : (selectedResource?.name ?? "One resource")
   );
+  const scopeTitle = $derived(distinctResourcePath(selectedResource));
   const written = $derived(value.trim());
 
   const send = () => {
@@ -124,13 +125,23 @@
       value={resource === "" ? "project" : resource}
       onValueChange={(chosen: string) => onscope?.(chosen)}
     >
-      <Select.Trigger size="sm" aria-label="Context" class="blend">
+      <Select.Trigger size="sm" aria-label="Context" class="blend" title={scopeTitle}>
         {scopeLabel}
       </Select.Trigger>
       <Select.Content>
         <Select.Item value="project" label="All project">All project</Select.Item>
-        {#each things as thing (thing.id)}
-          <Select.Item value={thing.id} label={thing.name}>{thing.name}</Select.Item>
+        {#each resources as thing (resourceOptionKey(thing))}
+          {@const path = distinctResourcePath(thing)}
+          <Select.Item
+            value={resourceOptionKey(thing)}
+            label={resourceOptionLabel(thing)}
+            aria-label={resourceOptionLabel(thing)}
+          >
+            <span class="resource-option">
+              <span>{thing.name}</span>
+              {#if path !== undefined}<small>{path}</small>{/if}
+            </span>
+          </Select.Item>
         {/each}
       </Select.Content>
     </Select.Root>
@@ -233,6 +244,28 @@
   .composer :global(.send) {
     margin-inline-start: auto;
     border-radius: 999px;
+  }
+
+  .resource-option {
+    display: flex;
+    min-width: 0;
+    flex: 1;
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: start;
+  }
+
+  .resource-option > span,
+  .resource-option > small {
+    overflow: hidden;
+    max-width: min(32rem, calc(100vw - 5rem));
+    text-overflow: ellipsis;
+  }
+
+  .resource-option > small {
+    color: var(--token-ink-muted);
+    font-size: var(--token-text-caption);
+    line-height: var(--token-text-caption-leading);
   }
 
   .composer :global(.spin) {

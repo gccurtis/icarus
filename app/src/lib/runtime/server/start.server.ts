@@ -4,8 +4,10 @@ import { createStore } from "$model/server/store/index.server";
 import type { ServerModel } from "$runtime/server/types";
 import { createEmbedding } from "$model/server/embedding/index.server";
 import { createIntelligence } from "$model/server/intelligence/index.server";
-import { createMaterialContent } from "$model/server/material-content/index.server";
 import { createOperationFlights } from "$model/server/operation-flights/index.server";
+import { createExternalFileStorage } from "$model/server/external-file-storage/index.server";
+import { resumeAgentTasks } from "$capabilities/agents";
+import { ownProcessLifetime, type ProcessShutdownChannel } from "$runtime/server/lifetime.server";
 
 export type { ServerModel } from "$runtime/server/types";
 export type { Scope, Session } from "$runtime/server/scope.server";
@@ -36,10 +38,9 @@ export type { Logger } from "$model/server/observability/index.server";
  * wrapped: a failure in either has nothing to log with, so it rejects to the
  * caller and fails startup at `hooks.server.ts`'s `init`.
  *
- * **There is no release path, and that is a fact about what the graph holds
- * rather than an omission.** Nothing is acquired after the last step that can
- * fail, so a failure has nothing to strand. Adding an object that acquires
- * something before a later step can throw means adding the release path with it.
+ * Observability owns a native stream before Store recovery and External storage
+ * reconciliation run. A later startup failure therefore closes observability
+ * before it rejects; no half-built graph remains reachable.
  *
  * Not exported: `initServerModel` is the only way to build one, and it returns
  * what it built, so a test asserts on the returned graph rather than needing a
@@ -50,27 +51,46 @@ const buildServerModel = async (): Promise<ServerModel> => {
   const intelligence = createIntelligence(configuration);
   const embedding = createEmbedding(configuration);
   const observability = createObservability(configuration);
-  // Browser suites may point the process at a disposable represented store.
-  // Production and ordinary development continue to use configured data/.
-  const store = createStore(configuration, process.env.ICARUS_STORE_DIRECTORY);
-  const materialContent = createMaterialContent(configuration);
-  const operationFlights = createOperationFlights();
-
-  observability.logger.info("model.started");
-
-  return {
-    operationFlights,
-    intelligence,
-    embedding,
-    configuration,
-    observability,
-    store,
-    materialContent,
-    close: async () => {
-      await operationFlights.close();
-      await observability.close();
+  try {
+    // Browser suites may point the process at disposable represented and native
+    // stores. Production and ordinary development use the configured locations.
+    const store = createStore(configuration, process.env.ICARUS_STORE_DIRECTORY);
+    const externalFileStorage = createExternalFileStorage(
+      configuration,
+      process.env.ICARUS_EXTERNAL_FILE_DIRECTORY
+    );
+    const heldExternalFiles = store.read("externalFiles");
+    if (
+      heldExternalFiles?.kind !== "table" ||
+      heldExternalFiles.table !== "externalFiles"
+    ) {
+      throw new Error("The Store did not return its admitted External file table");
     }
-  };
+    await externalFileStorage.reconcile(heldExternalFiles.rows.map((row) => ({
+      ownerId: row._id,
+      storageId: row.storageId,
+      hash: row.hash,
+      size: row.size
+    })));
+    const operationFlights = createOperationFlights();
+
+    return {
+      operationFlights,
+      intelligence,
+      embedding,
+      configuration,
+      observability,
+      store,
+      externalFileStorage,
+      close: async () => {
+        await operationFlights.close();
+        await observability.close();
+      }
+    };
+  } catch (error) {
+    await observability.close();
+    throw error;
+  }
 };
 
 /**
@@ -80,6 +100,9 @@ const buildServerModel = async (): Promise<ServerModel> => {
  * process infrastructure; identity arrives per request as `Scope`.
  */
 let instance: ServerModel | undefined;
+
+/** Concurrent startup callers join one build; a completed build cannot be replaced by init. */
+let initializationPromise: Promise<ServerModel> | undefined;
 
 /**
  * Once shutdown begins the graph is gone for good.
@@ -105,21 +128,6 @@ let browserResetMayRebuild = false;
 /** Every shutdown caller joins the one release rather than returning mid-drain. */
 let shutdownPromise: Promise<void> | undefined;
 
-type ServerShutdownChannel = {
-  readonly add: (listener: () => void) => void;
-  readonly remove: (listener: () => void) => void;
-};
-
-type ServerModelHotData = {
-  icarusServerModelRelease?: Promise<void>;
-  icarusServerShutdownListener?: () => void;
-};
-
-type ServerModelHotContext = {
-  readonly data: ServerModelHotData;
-  readonly dispose: (callback: (data: ServerModelHotData) => void) => void;
-};
-
 /**
  * Builds the one graph. Called once by `hooks.server.ts`'s `init` hook, which
  * SvelteKit invokes before the server answers its first request.
@@ -127,11 +135,47 @@ type ServerModelHotContext = {
  * Building here rather than at module load means a configuration error is a
  * startup failure with a logger to report it, rather than a module-load failure
  * without one. Building here rather than on first request means there is exactly
- * one build, at a known moment — so there is no in-flight promise to cache, no
- * race between concurrent first callers, and no failed build to evict.
+ * one build, at a known moment. The explicit in-flight promise makes accidental
+ * concurrent initializers join that build; a later initializer is refused.
  */
-export const initServerModel = async (): Promise<ServerModel> =>
-  (instance = await buildServerModel());
+const activateServerModel = (model: ServerModel): ServerModel => {
+  const resumedAgentTasks = resumeAgentTasks(model);
+  model.observability.logger.info("model.started", { resumedAgentTasks });
+  return model;
+};
+
+/** Activation owns its partially built graph and releases it on every failure. */
+const buildActivatedServerModel = async (): Promise<ServerModel> => {
+  const model = await buildServerModel();
+  try {
+    return activateServerModel(model);
+  } catch (error) {
+    await model.close();
+    throw error;
+  }
+};
+
+export const initServerModel = async (): Promise<ServerModel> => {
+  if (closed) throw new Error("The server model is shutting down and cannot be initialized");
+  if (instance !== undefined) throw new Error("The server model has already been initialized");
+  if (initializationPromise !== undefined) return initializationPromise;
+
+  const initialize = (async () => {
+    const model = await buildActivatedServerModel();
+    if (closed) {
+      await model.close();
+      throw new Error("The server model began shutting down during initialization");
+    }
+    instance = model;
+    return model;
+  })();
+  initializationPromise = initialize;
+  try {
+    return await initialize;
+  } finally {
+    if (initializationPromise === initialize) initializationPromise = undefined;
+  }
+};
 
 export const serverModel = (): ServerModel => {
   if (closed) {
@@ -174,7 +218,7 @@ export const resetServerModelForBrowserHarness = (
     browserResetMayRebuild = true;
     if (model !== undefined) await model.close();
     restoreDisposableStore();
-    instance = await buildServerModel();
+    instance = await buildActivatedServerModel();
     browserResetMayRebuild = false;
   });
   browserResetSequence = reset.catch(() => undefined);
@@ -195,6 +239,14 @@ export const closeServerModel = (): Promise<void> => {
   closed = true;
 
   shutdownPromise = browserResetSequence.then(async () => {
+    const initializing = initializationPromise;
+    if (initializing !== undefined) {
+      try {
+        await initializing;
+      } catch {
+        // The initializer owns cleanup of its incomplete graph.
+      }
+    }
     const model = instance;
     if (!model) return;
 
@@ -212,11 +264,19 @@ export const closeServerModel = (): Promise<void> => {
  * into terminal process shutdown. The replacement hook waits for this promise
  * before asking the (possibly cached) runtime module to initialize again.
  */
-const releaseServerModelForHotReplacement = (): Promise<void> => {
+const releaseServerModelForDevelopmentReplacement = (): Promise<void> => {
   if (closed) return closeServerModel();
 
   const release = browserResetSequence.then(async () => {
     if (closed) return;
+    const initializing = initializationPromise;
+    if (initializing !== undefined) {
+      try {
+        await initializing;
+      } catch {
+        // The initializer owns cleanup of its incomplete graph.
+      }
+    }
     const model = instance;
     instance = undefined;
     if (model !== undefined) await model.close();
@@ -225,40 +285,13 @@ const releaseServerModelForHotReplacement = (): Promise<void> => {
   return release;
 };
 
-/**
- * Owns the adapter shutdown listener and the Vite replacement hand-off.
- *
- * Hot data belongs to this exact module identity across replacements. It lets
- * the outgoing hook remove its process-global listener, release the graph it
- * was using, and make the incoming hook wait for that release. Production has
- * no hot context, so its one listener retains terminal, one-way shutdown.
- */
 export const ownServerModelLifetime = (
-  channel: ServerShutdownChannel,
-  hot: ServerModelHotContext | undefined,
+  channel: ProcessShutdownChannel,
   reportFailure: (error: unknown) => void
-): Promise<void> | undefined => {
-  const pendingRelease = hot?.data.icarusServerModelRelease;
-  const previousListener = hot?.data.icarusServerShutdownListener;
-  if (previousListener !== undefined) channel.remove(previousListener);
-
-  const shutdown = () => {
-    void closeServerModel().catch(reportFailure);
-  };
-  channel.add(shutdown);
-
-  if (hot !== undefined) {
-    hot.data.icarusServerShutdownListener = shutdown;
-    hot.dispose((data) => {
-      channel.remove(shutdown);
-      if (data.icarusServerShutdownListener === shutdown) {
-        delete data.icarusServerShutdownListener;
-      }
-      const release = releaseServerModelForHotReplacement();
-      data.icarusServerModelRelease = release;
-      void release.catch(reportFailure);
-    });
-  }
-
-  return pendingRelease;
-};
+): Promise<void> | undefined =>
+  ownProcessLifetime(
+    channel,
+    releaseServerModelForDevelopmentReplacement,
+    closeServerModel,
+    reportFailure
+  );

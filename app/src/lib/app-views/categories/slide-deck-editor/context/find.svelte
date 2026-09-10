@@ -1,13 +1,9 @@
 <script lang="ts">
   import { Panel, PanelButton, PanelChoice, PanelEmpty, PanelInput, PanelRow, PanelSearch } from "$authored-components/panel";
-  import {
-    notesBlock,
-    placedOn,
-    textOf,
-    type EditableTextBlock,
-    type SlideDeckBody,
-    type TextBlock
-  } from "$app-views/categories/slide-deck-editor/procedures/deck";
+  import type { SlideDeckBody, TextBlock } from "$app-views/categories/slide-deck-editor/procedures/deck-types";
+  import { placedOn } from "$app-views/categories/slide-deck-editor/procedures/deck-placement";
+  import { textOf, type EditableTextBlock } from "$app-views/categories/slide-deck-editor/procedures/deck-reading";
+  import { notesBlock } from "$app-views/categories/slide-deck-editor/procedures/deck-slides";
   import { elementsSignal, textSignal } from "$app-views/categories/slide-deck-editor/procedures/selecting";
   import { replaced } from "$app-views/categories/slide-deck-editor/procedures/typing";
   import { workspaceState, type SlideDeckRuntime } from "$model/client/workspace-state";

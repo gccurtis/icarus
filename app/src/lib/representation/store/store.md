@@ -1,25 +1,25 @@
 # store
 
-What a table is, what a read and a write are, and what it takes to open one.
+The current table definitions and admission contracts. This directory owns no
+open files, mutable Store instance, or persistence workflows.
 
-One JSON file per table, read whole on open and rewritten whole on every
-mutation — so there is nothing to keep in step, and a crash cannot land between a
-change and its write. There are no indexes; `where` is the scan that replaces
-one.
-
-| | |
+| Home | Responsibility |
 | --- | --- |
-| `tables.ts` | all 35 table declarations, their names, and the set of stores over them |
-| `store.server.ts` | what a read and a write are, and where a table's file sits |
-| `admission.ts` | the two claims that cannot be left as claims — a table name becomes a path segment, a row id becomes a map key |
+| `tables.ts` | Public table vocabulary, exported from the domain modules |
+| `tables/{agents,collaboration,data,editors,foundations,investigation,semantic,templates,workspace}.ts` | Current row fields and branded row types, grouped by domain |
+| `tables/names.ts` | Exact table-name vocabulary |
+| `tables/registry.ts` | Compile-time mapping from table names to row fields |
+| `schema/` | Required and optional field policies for each current table |
+| `current-schema.ts` and `current-values.ts` | Exhaustive field-policy and recursive-value validator registries |
+| `current-row.ts` | Exact current-row admission, including own keys and nested values |
+| `admission.ts` | Canonical table names and row IDs |
 
-**Definitional, like everything outside `runtime/`.** This says what a store is;
-it does not open one and does not hold one open. The directory it reads from is
-`representation.store.directory` in configuration, and the object that takes both
-— the declarations and the directory — and turns them into an open store belongs
-in `runtime/server/`.
+The server Store model in `model/server/store/` owns loaded state and delegates
+reads, writes, transactions, and journal recovery to its method modules. The
+server runtime constructs that model using the configured data directory.
+Transactions publish related table changes together; their durable journal
+supports recovery after interrupted publication.
 
-Two functions here have not made that move yet: `createStore` in
-`store.server.ts` and `createJsonStore` in `tables.ts` still do the opening. They
-are the last non-definitional code outside `runtime/`, named here so that is a
-known gap rather than something to discover.
+Only the current representation is admitted. Malformed rows and obsolete fields
+are rejected at load, read, commit, and recovery boundaries. There are no schema
+migrations or compatibility readers.

@@ -26,7 +26,8 @@ const externalFileLookup = (store: StoreModel, projectId: Id<"projects">) => {
       name: file.name,
       mediaType: file.mediaType,
       subkind: file.subkind,
-      hash: file.hash
+      hash: file.hash,
+      ...(file.semanticContext === undefined ? {} : { semanticContext: file.semanticContext })
     };
   };
 };
@@ -63,7 +64,9 @@ export const readSemanticResourceRevisionFor = (
     );
     if (file === undefined) return undefined;
     const subkind = file.subkind;
-    return subkind === "text" && ref.kind === externalFileResourceKind(subkind) ? 0 : undefined;
+    return subkind === "text" && ref.kind === externalFileResourceKind(subkind)
+      ? file.revision
+      : undefined;
   }
   return undefined;
 };
@@ -157,10 +160,11 @@ export const readSemanticResourceForModel = async (
   if (file === undefined) return undefined;
   const subkind = file.subkind;
   if (subkind !== "text" || ref.kind !== externalFileResourceKind(subkind)) return undefined;
-  const bytes = await model.materialContent.read(
-    { storageId: file.storageId, hash: file.hash },
-    signal
-  );
+  const bytes = await model.externalFileStorage.read({
+    storageId: file.storageId,
+    hash: file.hash,
+    size: file.size
+  }, signal);
   signal?.throwIfAborted();
   if (bytes === undefined) throw new Error(`Native text for '${file.name}' is unavailable`);
   if (bytes.byteLength > MAX_EXTERNAL_TEXT_BYTES) {
@@ -174,7 +178,7 @@ export const readSemanticResourceForModel = async (
   }
   return {
     ref,
-    revision: 0,
+    revision: file.revision,
     contentHash: file.hash,
     text: content,
     encoding: "utf-16",

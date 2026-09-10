@@ -1,7 +1,12 @@
 <script lang="ts">
   import { Panel, PanelButton, PanelCrumbs, PanelEmpty, PanelRow, PanelSection } from "$authored-components/panel";
   import ArrangeSection from "$app-views/categories/slide-deck-editor/components/arrange-section.svelte";
-  import { elementIn, labelOf, placedOn, slideHolding, slideIndexOf, withDuplicatedElements, withGrouped, withoutElements } from "$app-views/categories/slide-deck-editor/procedures/deck";
+  import { withDuplicatedElements, withoutElements } from "$app-views/categories/slide-deck-editor/procedures/deck-elements";
+  import { withGrouped } from "$app-views/categories/slide-deck-editor/procedures/deck-layering";
+  import { placedOn } from "$app-views/categories/slide-deck-editor/procedures/deck-placement";
+  import { slideHolding } from "$app-views/categories/slide-deck-editor/procedures/deck-slide-holding";
+  import { elementIn, labelOf } from "$app-views/categories/slide-deck-editor/procedures/deck-reading";
+  import { slideIndexOf } from "$app-views/categories/slide-deck-editor/procedures/deck-slides";
   import { elementsSignal, selectedIds, slideSignal } from "$app-views/categories/slide-deck-editor/procedures/selecting";
   import { workspaceState, type SlideDeckRuntime } from "$model/client/workspace-state";
 

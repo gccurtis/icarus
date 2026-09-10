@@ -13,7 +13,8 @@
   import { PanelNumber, PanelSection } from "$authored-components/panel";
   import { Button } from "$vendored-components/button";
   import * as Popover from "$vendored-components/popover";
-  import { elementIn, withSet } from "$app-views/categories/slide-deck-editor/procedures/deck";
+  import { elementIn } from "$app-views/categories/slide-deck-editor/procedures/deck-reading";
+  import { withSet } from "$app-views/categories/slide-deck-editor/procedures/deck-values";
   import {
     DEFAULT_SHADOW_INTENSITY,
     SHADOW_DIRECTIONS,
@@ -56,7 +57,7 @@
 
   const set = (field: string, value: unknown) => {
     if (body === undefined) return;
-    runtime?.apply(withSet(body, `${elementId}/paint/${field}`, value).ops);
+    runtime?.apply(withSet(body, "element", `${elementId}/paint/${field}`, value).ops);
   };
 
   let open = $state(false);

@@ -213,9 +213,12 @@ export const performDerivedOutputRefresh = async (
         return { outcome: "failed", output: failed, attempts, toolCalls, usage };
       }
 
-      const revision = (current.lastRevision ?? 0) + 1;
+      const revision = current.valueSource === "none"
+        ? 1
+        : current.lastRevision + 1;
       const at = Date.now();
       const published = updateOutput(model, current, {
+        valueSource: "generated",
         queries: attempt.queries,
         evidence: attempt.evidence,
         lastVariables: attempt.variables,

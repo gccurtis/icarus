@@ -20,7 +20,8 @@ import type {
   SlideElement
 } from "$representation/data/types/slide-decks/body";
 import type { TextStyle } from "$representation/data/types/slide-decks/style-set";
-import { placedOn, styleOf } from "$app-views/categories/slide-deck-editor/procedures/deck";
+import { placedOn } from "$app-views/categories/slide-deck-editor/procedures/deck-placement";
+import { styleOf } from "$app-views/categories/slide-deck-editor/procedures/deck-reading";
 import type { Size } from "$app-views/categories/slide-deck-editor/procedures/stage";
 import { columnsOf, gridOf, type GridCell } from "$app-views/categories/slide-deck-editor/procedures/tables";
 

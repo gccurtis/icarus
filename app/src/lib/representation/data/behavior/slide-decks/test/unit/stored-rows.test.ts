@@ -17,9 +17,9 @@ const row = (ops: Array<Record<string, unknown>>) => ({
 });
 
 describe("stored slide-deck change sets", () => {
-  it("admits every exact operation arm and both current set shapes", () => {
+  it("admits every exact operation arm with a required set target", () => {
     expect(isStoredSlideDeckChangeSet(row([
-      { op: "set", path: "slide/frame", value: { x: 1 }, was: null },
+      { op: "set", target: "deck", path: "theme/background", value: { kind: "color" }, was: null },
       { op: "set", target: "element", path: "element/frame", value: { y: 1 }, was: null },
       { op: "insert", target: "slide", path: "slides", ids: ["slide"], after: null, values: [{}] },
       { op: "remove", target: "atom", path: "block/atoms", ids: ["atom"], after: null, values: [] },
@@ -28,10 +28,19 @@ describe("stored slide-deck change sets", () => {
     ]))).toBe(true);
   });
 
-  it("rejects an explicit undefined optional target and unknown operation fields", () => {
+  it("rejects a missing, undefined or unknown set target", () => {
+    expect(isStoredSlideDeckChangeSet(row([
+      { op: "set", path: "slide/frame", value: {}, was: null }
+    ]))).toBe(false);
     expect(isStoredSlideDeckChangeSet(row([
       { op: "set", target: undefined, path: "slide/frame", value: {}, was: null }
     ]))).toBe(false);
+    expect(isStoredSlideDeckChangeSet(row([
+      { op: "set", target: "legacy-deck", path: "slide/frame", value: {}, was: null }
+    ]))).toBe(false);
+  });
+
+  it("rejects unknown operation fields", () => {
     expect(isStoredSlideDeckChangeSet(row([
       { op: "text", target: "atom", path: "atom", at: 0, insert: "a", remove: "", oldText: "" }
     ]))).toBe(false);

@@ -1,4 +1,9 @@
-import type { StoreModel, TableName, TableRow } from "$model/server/store/index.server";
+import {
+  readCurrentRows,
+  type StoreModel,
+  type TableName,
+  type TableRow
+} from "$model/server/store/index.server";
 import type { Scope } from "$runtime/server/scope.server";
 import { resolveResourceSet } from "$representation/data/behavior/core/resource-set";
 import {
@@ -7,7 +12,10 @@ import {
 } from "$representation/data/behavior/core/resource-set-rows";
 import type { Actor } from "$representation/data/types/core/actor";
 import type { ResourceRef } from "$representation/data/types/core/resource";
-import { isResourceRef } from "$representation/data/behavior/core/resource";
+import {
+  externalFileResourceKind,
+  isResourceRef
+} from "$representation/data/behavior/core/resource";
 import type { ResourceSet } from "$representation/data/types/core/resource-set";
 
 import type {
@@ -27,15 +35,21 @@ const recordOf = (value: unknown): Record<string, unknown> | undefined =>
     ? (value as Record<string, unknown>)
     : undefined;
 
+const currentRowsIn = <T extends TableName>(
+  store: StoreModel,
+  table: T
+): readonly TableRow<T>[] => {
+  return readCurrentRows(store, table);
+};
+
 export const recordsIn = (
   store: StoreModel,
   table: TableName
 ): readonly Record<string, unknown>[] => {
-  const found = store.read(table);
-  if (found?.table !== table || found.kind !== "table" || !Array.isArray(found.rows)) return [];
-  return found.rows.flatMap((value) => {
+  return currentRowsIn(store, table).map((value) => {
     const record = recordOf(value);
-    return record === undefined ? [] : [record];
+    if (record === undefined) throw new Error(`the '${table}' table contains a non-current row`);
+    return record;
   });
 };
 
@@ -77,9 +91,9 @@ export const catalogueOf = (store: StoreModel, projectId: string): readonly Reso
       .map((row) => ({ kind: "research", id: row._id })),
     ...recordsIn(store, "connectors").filter((row) => row.projectId === projectId)
       .map((row) => ({ kind: "connection", id: row._id })),
-    ...recordsIn(store, "externalFiles").filter((row) => row.projectId === projectId)
+    ...currentRowsIn(store, "externalFiles").filter((row) => row.projectId === projectId)
       .map((row) => ({
-      kind: typeof row.subkind === "string" ? `externalFile::${row.subkind}` : undefined,
+      kind: externalFileResourceKind(row.subkind),
       id: row._id
     }))
   ];
@@ -149,30 +163,12 @@ export const projectSets = (
   const catalogue = catalogueOf(store, scope.projectId);
   const named = namedSetsIn(store, scope.projectId);
   const sets: ResourceSetItem[] = [];
-  const unavailable: ResourceSetUnavailable[] = [];
   const rows = recordsIn(store, "resourceSets");
-  const claims = new Map<string, number>();
   for (const row of rows) {
-    if (typeof row._id === "string") claims.set(row._id, (claims.get(row._id) ?? 0) + 1);
-  }
-  for (const [index, row] of rows.entries()) {
     if (row.projectId !== scope.projectId) continue;
     if (row.name === undefined) continue;
-    const reportId = typeof row._id === "string" && row._id.length <= 500 ? row._id : `resourceSets:invalid-${index + 1}`;
-    if (typeof row._id === "string" && (claims.get(row._id) ?? 0) > 1) {
-      unavailable.push({ setId: reportId, reason: "corrupt", detail: "more than one stored row claims this set id" });
-      continue;
-    }
-    try {
-      sets.push(itemOf(store, scope, admitStoredSet(row as unknown as NamedSet), catalogue, named));
-    } catch (error) {
-      unavailable.push({
-        setId: reportId,
-        reason: "corrupt",
-        detail: error instanceof Error ? error.message : String(error)
-      });
-    }
+    sets.push(itemOf(store, scope, admitStoredSet(row as unknown as NamedSet), catalogue, named));
   }
   sets.sort((left, right) => left.name.localeCompare(right.name));
-  return { sets, unavailable };
+  return { sets, unavailable: [] };
 };

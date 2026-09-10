@@ -30,7 +30,7 @@ const model = vi.hoisted(() => ({
     create: (table: string, fields: unknown) => {
       model.minted += 1;
       const id = `${table}:${model.minted}`;
-      model.tableOf(table).push({ ...(fields as Row), _id: id });
+      model.tableOf(table).push({ ...(fields as Row), _id: id, _creationTime: 1 });
       return id;
     },
     read: (path: string) => ({ table: path.split(".")[0], kind: "table", rows: model.tableOf(path) }),
@@ -39,7 +39,9 @@ const model = vi.hoisted(() => ({
       const rows = model.tableOf(path);
       const at = rows.findIndex((row) => row._id === id);
       if (at === -1) return;
-      rows[at] = field === undefined ? { ...(value as Row), _id: id } : { ...rows[at], [field]: value };
+      rows[at] = field === undefined
+        ? { ...(value as Row), _id: id, _creationTime: rows[at]._creationTime }
+        : { ...rows[at], [field]: value };
     },
     remove: (path: string) => {
       const [, id] = path.split(".");
@@ -92,7 +94,15 @@ const body = () => ({
 
 /** A sheet somebody owns, with the leader snapshot a change set is measured against. */
 const sheetOwnedBy = (projectId: string) => {
-  model.sheets.push({ _id: "spreadsheets:1", projectId, title: "Sheet" });
+  model.sheets.push({
+    _id: "spreadsheets:1",
+    _creationTime: 1,
+    projectId,
+    title: "Sheet",
+    createdBy: { kind: "system" },
+    updatedBy: { kind: "system" },
+    updatedAt: 1
+  });
   model.snapshots.push({
     _id: "spreadsheetSnapshots:1",
     _creationTime: 1,

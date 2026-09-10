@@ -1,7 +1,8 @@
 <script lang="ts">
   import { Input } from "$vendored-components/input";
   import { cn } from "$vendored-components/utils";
-  import { gridOf, keyOf, type CellRef } from "$app-views/categories/spreadsheet-editor/procedures/addresses";
+  import { CellHeadState } from "$app-views/categories/spreadsheet-editor/components/cell-head.state.svelte";
+  import { gridOf, keyOf } from "$app-views/categories/spreadsheet-editor/procedures/addresses";
   import {
     anchorLabel,
     anchored,
@@ -11,9 +12,10 @@
   import { cellAt, typed } from "$app-views/categories/spreadsheet-editor/procedures/cells";
   import { editableOf, factsOf, recalculating } from "$app-views/categories/spreadsheet-editor/procedures/recalculation";
   import { pickingChannel, type Picker } from "$app-views/categories/spreadsheet-editor/procedures/picking.svelte";
-  import { insertedReference, type ReferenceSpan } from "$app-views/categories/spreadsheet-editor/procedures/reference-picking";
+  import { insertedReference } from "$app-views/categories/spreadsheet-editor/procedures/reference-picking";
   import { variableRegister } from "$app-views/categories/spreadsheet-editor/procedures/variables.svelte";
   import { selectedRef } from "$app-views/categories/spreadsheet-editor/procedures/selection-reading";
+  import { continueWritingHandoff } from "$app-views/categories/spreadsheet-editor/procedures/writing-handoff";
   import { holdsTheRuntime } from "$app-views/categories/spreadsheet-editor/procedures/effects/holds-the-runtime.svelte";
   import { runsTheWritingSession } from "$app-views/categories/spreadsheet-editor/procedures/effects/runs-the-writing-session.svelte";
   import { workspaceState } from "$model/client/workspace-state";
@@ -41,28 +43,23 @@
   const shown = $derived(editableOf(facts, held));
   const expression = $derived(held?.expression !== undefined);
 
-  let editing = $state(false);
-  let editingAt = $state<CellRef | undefined>(undefined);
-  let draft = $state("");
-  let field = $state<HTMLInputElement | null>(null);
-  let span = $state<ReferenceSpan | undefined>(undefined);
-  let refusal = $state<string | undefined>(undefined);
+  const state = new CellHeadState();
 
   const picker: Picker = {
     insert: (address, anchor, gesture) => {
-      const input = field;
+      const input = state.field;
       if (input === null) return;
-      const from = input.selectionStart ?? draft.length;
+      const from = input.selectionStart ?? state.draft.length;
       const insertion = insertedReference(
-        draft,
+        state.draft,
         address,
         anchor,
         gesture,
         { from, to: input.selectionEnd ?? from },
-        span
+        state.span
       );
-      draft = insertion.text;
-      span = insertion.span;
+      state.draft = insertion.text;
+      state.span = insertion.span;
       setTimeout(() => {
         input.focus();
         input.setSelectionRange(insertion.caret, insertion.caret);
@@ -72,41 +69,44 @@
 
   const formula = (text: string) => text.trimStart().startsWith("=");
 
-  const picking = $derived(editing && formula(draft));
+  const picking = $derived(state.editing && formula(state.draft));
 
-  let caret = $state(0);
-
-  const anchor = $derived(picking ? referenceAt(draft, caret) : undefined);
+  const anchor = $derived(picking ? referenceAt(state.draft, state.caret) : undefined);
 
   const relock = (column: boolean, row: boolean) => {
-    const input = field;
+    const input = state.field;
     if (input === null) return;
-    const next = lockedAt(draft, caret, column, row);
+    const next = lockedAt(state.draft, state.caret, column, row);
     if (next === undefined) return;
-    draft = next.text;
-    span = undefined;
+    state.draft = next.text;
+    state.span = undefined;
     setTimeout(() => {
       input.focus();
       input.setSelectionRange(next.caret, next.caret);
-      caret = next.caret;
+      state.caret = next.caret;
     }, 0);
   };
 
   const track = () => {
-    caret = field?.selectionStart ?? draft.length;
+    state.caret = state.field?.selectionStart ?? state.draft.length;
   };
 
   const start = (seed?: string) => {
     if (sheet === undefined || ref === undefined) return;
-    draft = seed === undefined || seed === "" ? shown : seed;
-    span = undefined;
-    editingAt = ref;
-    editing = true;
+    state.handoff = continueWritingHandoff(state.handoff, shown, seed ?? "");
+    state.draft = state.handoff.text;
+    state.span = undefined;
+    state.editingAt = ref;
+    state.editing = true;
     setTimeout(() => {
-      field?.focus();
-      if (seed === undefined || seed === "") field?.select();
-      else field?.setSelectionRange(draft.length, draft.length);
-      caret = draft.length;
+      const pending = state.handoff;
+      const input = state.field;
+      if (pending === undefined || input === null) return;
+      input.focus();
+      if (pending.selectAll) input.select();
+      else input.setSelectionRange(pending.text.length, pending.text.length);
+      state.handoff = undefined;
+      state.caret = state.draft.length;
     }, 0);
   };
 
@@ -114,38 +114,41 @@
     channel,
     picker,
     picking: () => picking,
-    address: () => (editing && editingAt !== undefined ? keyOf(editingAt) : undefined),
-    draft: () => draft,
+    address: () => (
+      state.editing && state.editingAt !== undefined ? keyOf(state.editingAt) : undefined
+    ),
+    draft: () => state.draft,
     selected: () => ref,
     abandon: () => {
-      editing = false;
-      refusal = undefined;
+      state.editing = false;
+      state.handoff = undefined;
+      state.refusal = undefined;
     },
     begin: (seed) => start(seed)
   });
 
   const commit = () => {
-    const at = editingAt;
+    const at = state.editingAt;
     const live = runtime?.sheet;
     const resourceId = view.active.resourceId;
-    if (!editing || at === undefined || live === undefined) return;
-    editing = false;
+    if (!state.editing || at === undefined || live === undefined) return;
+    state.editing = false;
     channel.disarm(picker);
     const known = factsOf(resourceId, live);
-    if (draft === editableOf(known, cellAt(live, at))) return;
-    const edit = typed(live, gridOf(live.body), at, draft, known);
+    if (state.draft === editableOf(known, cellAt(live, at))) return;
+    const edit = typed(live, gridOf(live.body), at, state.draft, known);
     if (edit.refused !== undefined) {
-      refusal = edit.refused;
+      state.refusal = edit.refused;
       return;
     }
-    refusal = undefined;
+    state.refusal = undefined;
     if (edit.ops.length > 0) runtime?.apply(recalculating(register, resourceId, live, edit.ops));
   };
 
   const keydown = (event: KeyboardEvent) => {
     if (event.key === "Escape") {
       event.preventDefault();
-      editing = false;
+      state.editing = false;
       channel.disarm(picker);
       channel.endWriting();
       return;
@@ -157,13 +160,13 @@
       return;
     }
     if (event.key === "F4") {
-      const input = field;
+      const input = state.field;
       if (input === null) return;
       event.preventDefault();
-      const held = anchored(draft, input.selectionStart ?? draft.length);
+      const held = anchored(state.draft, input.selectionStart ?? state.draft.length);
       if (held === undefined) return;
-      draft = held.text;
-      span = undefined;
+      state.draft = held.text;
+      state.span = undefined;
       setTimeout(() => input.setSelectionRange(held.caret, held.caret), 0);
     }
   };
@@ -171,22 +174,22 @@
 
 {#if sheet && ref}
   <div class="head">
-    {#if editing}
+    {#if state.editing}
       <Input
-        bind:ref={field}
-        bind:value={draft}
+        bind:ref={state.field}
+        bind:value={state.draft}
         aria-label={expression ? "Expression" : "Value"}
         class="text-body h-9 w-full font-mono"
         onkeydown={keydown}
         oninput={() => {
-          span = undefined;
+          state.span = undefined;
           track();
         }}
         onkeyup={track}
         onclick={track}
         onselect={track}
         onblur={() => {
-          if (!formula(draft)) commit();
+          if (!formula(state.draft)) commit();
         }}
       />
       {#if anchor !== undefined}
@@ -219,8 +222,8 @@
         <span class="min-w-0 flex-1 truncate">{shown === "" ? "Empty" : shown}</span>
       </button>
     {/if}
-    {#if refusal}
-      <span class="text-caption text-danger-text">{refusal}</span>
+    {#if state.refusal}
+      <span class="text-caption text-danger-text">{state.refusal}</span>
     {/if}
   </div>
 {/if}

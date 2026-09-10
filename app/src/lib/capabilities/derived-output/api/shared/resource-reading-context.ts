@@ -177,6 +177,7 @@ export const createResourceReadingContext = (input: ResourceReadingSessionInput)
         to
       ]),
       {
+        evidenceKind: "text",
         source: {
           ref: projection.ref,
           revision: projection.revision,

@@ -2,6 +2,11 @@ import type {
   DerivedTemplateDefinition,
   DerivedVariableResolution
 } from "$representation/data/types/semantic/derived-output";
+import {
+  hasExactFields,
+  isStoredJson,
+  storedFields
+} from "$representation/data/behavior/core/stored";
 
 const VARIABLE = /^[A-Za-z][A-Za-z0-9_]*$/;
 const PLACEHOLDER = /{{\s*([A-Za-z][A-Za-z0-9_]*)\s*}}/g;
@@ -14,20 +19,19 @@ const text = (value: unknown, message: string, max: number): string => {
 };
 
 const record = (value: unknown, message: string): Record<string, unknown> => {
-  if (value === null || typeof value !== "object" || Array.isArray(value)) {
-    throw new Error(message);
-  }
-  return value as Record<string, unknown>;
+  const fields = storedFields(value);
+  if (fields === undefined) throw new Error(message);
+  return fields;
 };
 
 /** Validates and copies the browser-authored variable/template definition. */
 export const derivedTemplateDefinition = (value: unknown): DerivedTemplateDefinition => {
+  if (!isStoredJson(value)) {
+    throw new Error("derived output template must be exact current JSON data");
+  }
   const candidate = record(value, "derived output template must be an object");
-  const unexpected = Object.keys(candidate).find(
-    (key) => key !== "variables" && key !== "output" && key !== "exampleResponse"
-  );
-  if (unexpected !== undefined) {
-    throw new Error(`derived output template has unexpected field '${unexpected}'`);
+  if (!hasExactFields(candidate, ["variables", "output"], ["exampleResponse"])) {
+    throw new Error("derived output template has exactly variables, output, and optional exampleResponse");
   }
   if (
     !Array.isArray(candidate.variables) ||
@@ -38,9 +42,8 @@ export const derivedTemplateDefinition = (value: unknown): DerivedTemplateDefini
   }
   const variables = candidate.variables.map((value) => {
     const variable = record(value, "derived output variables must be objects");
-    const extra = Object.keys(variable).find((key) => key !== "name" && key !== "prompt");
-    if (extra !== undefined) {
-      throw new Error(`derived output variable has unexpected field '${extra}'`);
+    if (!hasExactFields(variable, ["name", "prompt"])) {
+      throw new Error("derived output variable has exactly name and prompt");
     }
     const name = text(variable.name, "derived output variable name must not be blank", 80);
     if (!VARIABLE.test(name)) {

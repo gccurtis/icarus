@@ -1,18 +1,17 @@
 import type { ReplyInput } from "$capabilities/comments/types/reply";
+import {
+  hasExactFields,
+  isStoredRowId,
+  storedFields
+} from "$representation/data/behavior/core/stored";
 
 export const validateReply = (input: unknown): ReplyInput => {
-  if (
-    typeof input !== "object" ||
-    input === null ||
-    Array.isArray(input) ||
-    Object.keys(input).length !== 2 ||
-    !Object.hasOwn(input, "threadId") ||
-    !Object.hasOwn(input, "text")
-  ) {
+  const fields = storedFields(input);
+  if (fields === undefined || !hasExactFields(fields, ["threadId", "text"])) {
     throw new Error("comments/reply: an exact object is required");
   }
-  const { threadId, text } = input as { threadId?: unknown; text?: unknown };
-  if (typeof threadId !== "string" || threadId.length === 0 || threadId !== threadId.trim() || /[.\s]/.test(threadId)) {
+  const { threadId, text } = fields;
+  if (!isStoredRowId(threadId, "commentThreads")) {
     throw new Error("comments/reply: threadId is required");
   }
   if (typeof text !== "string" || text.trim().length === 0) {

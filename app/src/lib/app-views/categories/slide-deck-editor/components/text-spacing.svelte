@@ -5,10 +5,8 @@
     PanelNumber,
     PanelSection
   } from "$authored-components/panel";
-  import {
-    blockIn,
-    withSet
-  } from "$app-views/categories/slide-deck-editor/procedures/deck";
+  import { blockIn } from "$app-views/categories/slide-deck-editor/procedures/deck-reading";
+  import { withSet } from "$app-views/categories/slide-deck-editor/procedures/deck-values";
   import { workspaceState, type SlideDeckRuntime } from "$model/client/workspace-state";
 
   let { blockId, open = false }: { blockId: string; open?: boolean } = $props();
@@ -29,7 +27,7 @@
 
   const set = (field: string, value: number) => {
     if (body === undefined) return;
-    const edit = withSet(body, `${blockId}/format/${field}`, value);
+    const edit = withSet(body, "block", `${blockId}/format/${field}`, value);
     if (edit.ops.length > 0) runtime?.apply(edit.ops);
   };
 </script>

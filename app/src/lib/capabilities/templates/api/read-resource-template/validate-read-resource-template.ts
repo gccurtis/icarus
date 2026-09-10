@@ -1,4 +1,5 @@
-import { fieldsOf, only, resourceIdOf } from "$capabilities/templates/api/shared/validation";
+import { fieldsOf, only } from "$capabilities/templates/api/shared/validation";
+import { resourceIdOf } from "$capabilities/templates/api/shared/stage-validation";
 import type { ReadResourceTemplateInput } from "$capabilities/templates/types/templates";
 
 export const validateReadResourceTemplate = (input: unknown): ReadResourceTemplateInput => {

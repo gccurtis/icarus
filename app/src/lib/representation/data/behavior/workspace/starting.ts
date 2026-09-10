@@ -14,7 +14,7 @@ import { openingView } from "$representation/data/behavior/workspace/opening";
  * What each one opens on is not here. That is `OPENING`'s, the same as for every
  * other category, so a singleton cannot drift from the category it is one of.
  */
-export const SINGLETONS = ["project-overview", "agents", "templates"] as const;
+export const SINGLETONS = ["project-overview", "agents", "templates", "external"] as const;
 
 export type Singleton = (typeof SINGLETONS)[number];
 

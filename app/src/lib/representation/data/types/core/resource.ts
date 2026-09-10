@@ -1,7 +1,14 @@
 import type { Id } from "$representation/data/types/core/id";
 
 /** The complete current taxonomy persisted on an external-file row. */
-export type ExternalFileSubkind = "text" | "data" | "image" | "audio" | "video" | "unknown";
+export type ExternalFileSubkind =
+  | "text"
+  | "code"
+  | "data"
+  | "image"
+  | "audio"
+  | "video"
+  | "unknown";
 
 /** An external-file reference always names the persisted file's exact current subkind. */
 export type ExternalFileResourceKind = `externalFile::${ExternalFileSubkind}`;

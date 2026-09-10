@@ -24,6 +24,12 @@ export const OPENING: Record<Category, Opening> = {
     rail: ["analysis.overview", "analysis.variables", "analysis.analyses"]
   },
 
+  external: {
+    content: "external.library",
+    context: "external.overview",
+    rail: ["external.overview", "external.history"]
+  },
+
   research: {
     content: "research.thread",
     context: "research.threads",

@@ -1,4 +1,8 @@
-import type { StoreUnitOfWork, TableName } from "$model/server/store/index.server";
+import {
+  readCurrentRows,
+  type StoreUnitOfWork,
+  type TableName
+} from "$model/server/store/index.server";
 import {
   isStoredActor,
   storedFields
@@ -15,9 +19,7 @@ import {
 type StoreReads = Pick<StoreUnitOfWork, "read">;
 
 const rowsIn = (store: StoreReads, table: TableName): readonly Record<string, unknown>[] => {
-  const found = store.read(table);
-  if (found?.kind !== "table" || found.table !== table || !Array.isArray(found.rows)) return [];
-  return found.rows.flatMap((value) => {
+  return readCurrentRows(store, table).flatMap((value) => {
     const row = storedFields(value);
     return row === undefined ? [] : [row];
   });

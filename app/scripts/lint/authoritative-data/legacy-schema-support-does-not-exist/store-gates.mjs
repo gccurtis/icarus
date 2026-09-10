@@ -1,26 +1,24 @@
 import ts from "typescript";
+import { STORE_GATES } from "./store-gates/store.mjs";
+import { CORE_GATES } from "./store-gates/core.mjs";
+import { CONTENT_GATES } from "./store-gates/content.mjs";
+import { EDITORS_GATES } from "./store-gates/editors.mjs";
+import { AGENTS_GATES } from "./store-gates/agents.mjs";
+import { SEMANTIC_GATES } from "./store-gates/semantic.mjs";
+import { TEMPLATES_GATES } from "./store-gates/templates.mjs";
+import { RESEARCH_GATES } from "./store-gates/research.mjs";
+import { EXTERNAL_GATES } from "./store-gates/external.mjs";
 
-const STORE_GATE_ROUTES = [
-  {
-    path: ["model", "server", "store", "methods", "shared", "load.server.ts"],
-    name: "load",
-    required: /tables\.set\(table,\s*admitAnyRows\(table,\s*stored\)\)/
-  },
-  {
-    path: ["model", "server", "store", "methods", "shared", "state.ts"],
-    name: "replaceRows",
-    required: /const current = admitAnyRows\(table,\s*rows\)/
-  },
-  {
-    path: ["model", "server", "store", "methods", "transaction", "commit.server.ts"],
-    name: "commit",
-    required: /rows:\s*admitAnyRows\(table,\s*unit\.tables\.get\(table\) \?\? \[\]\)/
-  },
-  {
-    path: ["model", "server", "store", "methods", "transaction", "journal.server.ts"],
-    name: "recovery",
-    required: /return admitAnyRows\(table,\s*value\)/
-  }
+const CURRENT_ADMISSION_GATES = [
+  ...STORE_GATES,
+  ...CORE_GATES,
+  ...CONTENT_GATES,
+  ...EDITORS_GATES,
+  ...AGENTS_GATES,
+  ...SEMANTIC_GATES,
+  ...TEMPLATES_GATES,
+  ...RESEARCH_GATES,
+  ...EXTERNAL_GATES
 ];
 
 const stringArrayFor = (source, name) => {
@@ -63,17 +61,20 @@ const objectKeysFor = (source, name) => {
 
 export const storeGateFindings = (tree) => {
   const found = [];
-  for (const route of STORE_GATE_ROUTES) {
+  for (const route of CURRENT_ADMISSION_GATES) {
     const path = tree.path(...route.path);
-    if (route.required.test(tree.read(path))) continue;
+    const text = tree.read(path);
+    if (route.required.test(text) && (route.forbidden === undefined || !route.forbidden.test(text))) {
+      continue;
+    }
     found.push({
       path,
       fingerprint: `current-store-gate:${route.name}`,
-      message: `the Store ${route.name} path bypasses exact current-row admission`
+      message: route.message
     });
   }
 
-  const tablesPath = tree.path("representation", "store", "tables.ts");
+  const tablesPath = tree.path("representation", "store", "tables", "names.ts");
   const valuesPath = tree.path("representation", "store", "current-values.ts");
   const tables = stringArrayFor(tree.source(tablesPath), "TABLE_NAMES").sort();
   const validators = objectKeysFor(tree.source(valuesPath), "CURRENT_ROW_VALUE_VALIDATORS").sort();

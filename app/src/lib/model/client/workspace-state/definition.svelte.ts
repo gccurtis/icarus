@@ -33,7 +33,6 @@ import { selectContext } from "$model/client/workspace-state/methods/select-cont
 import { singleFlight } from "$model/client/workspace-state/methods/single-flight";
 import { compose } from "$model/client/workspace-state/methods/shared/compose";
 import { startingWorkspace } from "$model/client/workspace-state/methods/shared/defaults";
-import { defaultContext, offersContext } from "$model/client/workspace-state/methods/shared/rails";
 import { showContent } from "$model/client/workspace-state/methods/show-content";
 import { showing } from "$model/client/workspace-state/methods/showing";
 import { undo } from "$model/client/workspace-state/methods/undo";
@@ -144,13 +143,7 @@ export class WorkspaceState implements WorkspaceStateModel {
   }
 
   get context(): ContextView | undefined {
-    const record = this.#state.tabs.active;
-    const { contextId } = this.#state.views.of(record.id);
-    return (
-      (contextId !== null && offersContext(record.category, contextId)
-        ? contextId
-        : defaultContext(record.category)) ?? undefined
-    );
+    return this.#state.views.of(this.#state.tabs.activeId).contextId ?? undefined;
   }
 
   get inspected(): Inspected {

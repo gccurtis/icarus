@@ -17,3 +17,8 @@ no reader of a stored row consults it.
 
 A constant, a lookup table, a guard — anything still there at runtime — belongs
 in `../behavior/`, however small it is.
+
+Content formula atoms and blocks are resolved snapshots in the current product:
+their only stored state is `fresh`. A project body may carry a `formulaId`; a
+portable template always omits it. No pending, stale, error, or timestamp shape
+is admitted until a writer for such a lifecycle exists.

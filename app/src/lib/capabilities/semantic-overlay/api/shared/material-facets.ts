@@ -37,8 +37,9 @@ const profileFacts = (profile: MaterialProfile): string[] => {
     "image",
     ...(profile.mediaType ? [profile.mediaType] : [])
   ];
+  const textual = ["plain-text", "markdown", "xml"].includes(profile.language);
   return [
-    `${profile.language} code`,
+    textual ? `${profile.language} text` : `${profile.language} code`,
     `${profile.lines} lines`,
     ...(profile.imports.length ? [`imports ${profile.imports.join(", ")}`] : []),
     ...(profile.exports.length ? [`exports ${profile.exports.join(", ")}`] : []),
@@ -114,7 +115,9 @@ export const embedMaterialFacets = async (
   signal?: AbortSignal
 ): Promise<{ facets: EmbeddedMaterialFacet[]; usage: ProviderUsage[]; visualError?: string }> => {
   signal?.throwIfAborted();
-  const values = textFacets(seed, descriptor, contextRefs);
+  const directExternalImage =
+    seed.kind === "image" && seed.source.kind === "externalFile" && seed.placement === undefined;
+  const values = directExternalImage ? [] : textFacets(seed, descriptor, contextRefs);
   const drafts = values.map((value) => ({
     ...value,
     inputHash: materialHash([value.facet, value.text])

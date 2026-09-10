@@ -1,14 +1,17 @@
 import { describe, expect, test } from "vitest";
 
 import { nameOf, type ResourceNames } from "$surfaces/tab-bar/procedures/resource-name";
+import { asId } from "$representation/data/behavior/core/id";
 
 const names = (ready = true): ResourceNames => ({
   ready,
   resources: {
     resources: [{
       id: "documents:1",
+      ref: { kind: "document", id: asId<"documents">("documents:1") },
       kind: "document",
       name: "Durable title that must not win",
+      relativePath: null,
       updatedAt: 1,
       updatedByName: "Uma"
     }],

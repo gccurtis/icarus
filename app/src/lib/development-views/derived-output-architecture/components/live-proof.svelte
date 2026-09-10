@@ -260,7 +260,7 @@
           <h3>Evidence copied by value</h3>
           {#each result.evidence as citation}
             <div>
-              {#if "span" in citation}
+              {#if citation.evidenceKind === "text"}
                 <span>{citation.source.ref.kind} · rev {citation.source.revision}{citation.locators?.length ? ` · ${citation.locators.map((entry) => entry.locator.kind).join(" + ")}` : ""}</span>
                 <p>{citation.span.text}</p>
               {:else}

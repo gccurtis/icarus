@@ -13,7 +13,8 @@ import {
 } from "$app-views/categories/document-editor/procedures/annotations";
 import { anchoredOf } from "$app-views/categories/document-editor/procedures/comment-anchors";
 import type { Thread } from "$app-views/categories/document-editor/procedures/comments";
-import { docOf, positionOf } from "$app-views/categories/document-editor/procedures/projection";
+import { docOf } from "$app-views/categories/document-editor/procedures/projection";
+import { positionOf } from "$app-views/categories/document-editor/procedures/projection-positions";
 
 const text = (id: string, display: string): TextBlock => ({
   id,

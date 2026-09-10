@@ -4,7 +4,6 @@ import { createConfiguration } from "$model/client/configuration";
 import { createDocumentRuntimes } from "$model/client/document-runtimes";
 import { createSlideDeckRuntimes } from "$model/client/slide-deck-runtimes";
 import { createSpreadsheetRuntimes } from "$model/client/spreadsheet-runtimes";
-import { createBrowserStorage } from "$model/client/storage";
 import { createTabList } from "$model/client/tab-list";
 import { createTabViews } from "$model/client/tab-views";
 import { createWorkspaceState } from "$model/client/workspace-state";
@@ -21,23 +20,9 @@ export type {
 export { COMMAND_IDS, DEFAULT_BINDINGS, chordOf, isCommandId } from "$model/client/commands";
 export type { ConfigurationModel, ConfigurationSnapshot } from "$model/client/configuration";
 export { requiredNumber } from "$model/client/configuration";
-export type {
-  ClientStorage,
-  PersistedClient,
-  PersistedPanels,
-  PersistedTab,
-  PersistedTabOptions,
-  PersistedWorkbench
-} from "$model/client/storage";
 
-const buildClientModel = ({
-  project,
-  configuration,
-  storage
-}: ClientModelInput): ClientModel => {
+const buildClientModel = ({ project, configuration }: ClientModelInput): ClientModel => {
   const settings = createConfiguration(configuration);
-
-  const store = storage ?? createBrowserStorage(project);
 
   const documentRuntimes = createDocumentRuntimes(settings);
   const slideDeckRuntimes = createSlideDeckRuntimes(settings);
@@ -59,7 +44,6 @@ const buildClientModel = ({
     project,
     workspaceState,
     configuration: settings,
-    storage: store,
     documentRuntimes,
     slideDeckRuntimes,
     spreadsheetRuntimes,

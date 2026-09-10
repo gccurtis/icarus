@@ -57,7 +57,10 @@ export const portableBodyOf = <T>(body: T): Portable<T> => {
     }
     if (held.type === "prompt" && "derivedOutputId" in held) {
       drop("output");
-      held = without(held, ["derivedOutputId"]);
+      held = {
+        ...without(held, ["derivedOutputId", "error", "refreshedAt"]),
+        state: "idle"
+      };
     }
     if (
       isRecord(held.link) &&

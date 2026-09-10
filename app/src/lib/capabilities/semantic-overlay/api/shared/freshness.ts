@@ -1,7 +1,10 @@
 import type { StoreUnitOfWork, TableRow } from "$model/server/store/index.server";
 import type { Id } from "$representation/data/types/core/id";
 import type { ResourceRef } from "$representation/data/types/core/resource";
-import { externalFileResourceKind } from "$representation/data/behavior/core/resource";
+import {
+  externalFileResourceKind,
+  isExternalFileResourceKind
+} from "$representation/data/behavior/core/resource";
 import type {
   MaterialSource,
   SemanticMaterialPlacementFields
@@ -45,6 +48,14 @@ export const currentResourceRevisionFor = (
         )?.revision
       : undefined;
   }
+  if (isExternalFileResourceKind(ref.kind)) {
+    const file = rowsOf(store, "externalFiles").find(
+      (row) => row.projectId === projectId && row._id === ref.id
+    );
+    return file !== undefined && externalFileResourceKind(file.subkind) === ref.kind
+      ? file.revision
+      : undefined;
+  }
   return undefined;
 };
 
@@ -63,9 +74,9 @@ export const semanticSourceIsCurrent = (
     );
     if (file === undefined) return false;
     const subkind = file.subkind;
-    return subkind === "text" && source.revision === 0 && source.contentHash === file.hash;
+    return subkind === "text" && source.revision === file.revision && source.contentHash === file.hash;
   }
-  return true;
+  return false;
 };
 
 /** Whether a persisted material still points at the current native authority. */

@@ -3,6 +3,7 @@ categories:
   analysis: prototype
   context-editor: unavailable
   document-editor: live
+  external: live
   new-tab: live
   project-overview: live
   research: prototype
