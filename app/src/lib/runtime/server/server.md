@@ -13,11 +13,12 @@ identity arrive per request through `Scope`.
 | [`intelligence`](../../model/server/intelligence/intelligence.md) | The bounded tool-calling model port |
 | [`material-content`](../../model/server/material-content/material-content.md) | Hash-addressed native material bytes |
 | [`observability`](observability/observability.md) | The root logger, and the log stream if it opened one |
+| [`operation-flights`](../../model/server/operation-flights/operation-flights.md) | Process-local promises, abort controllers, and deadlines |
 | [`store`](../../model/server/store/store.md) | The represented tables and their persistence boundary |
 
-They are built in that order, and released in the reverse of it. Logging is built
-first among the releasable objects and closed last, so anything released before
-it still has somewhere to record that it was.
+The composition root builds each object once. Shutdown closes operation flights
+before observability, so active provider calls are aborted while there is still a
+logger available to record their completion.
 
 ## Three verbs, and who calls each
 
@@ -36,7 +37,8 @@ hooks.server.ts  init()          before the first request is answered
         ├── store
         ├── embedding
         ├── intelligence
-        └── material-content
+        ├── material-content
+        └── operation-flights
 
 serverModel()                    every later caller
 ├── throw after shutdown begins
@@ -74,9 +76,9 @@ tell a request arriving mid-drain from one arriving before startup — and the
 window is real: the Node adapter drains in-flight requests for up to thirty
 seconds after the signal, and keep-alive connections keep delivering.
 
-Shutdown releases what the graph holds — today the log stream, and nothing
-else. It is idempotent: a second call does nothing, and no call after it revives
-the graph.
+Shutdown releases what the graph holds: operation flights abort active provider
+work and clear their deadlines, then observability closes its log stream. It is
+idempotent: a second call does nothing, and no call after it revives the graph.
 
 ## Scoped accessors live on this root
 
@@ -119,6 +121,6 @@ server/
 ```
 
 The objects the graph is built from — `configuration`, `observability`, `store`,
-`embedding`, `intelligence`, and `material-content` — are
+`embedding`, `intelligence`, `material-content`, and `operation-flights` — are
 definitional and live in [`model/server/`](../../model/model.md). This tree calls
 their constructors; it does not define them.

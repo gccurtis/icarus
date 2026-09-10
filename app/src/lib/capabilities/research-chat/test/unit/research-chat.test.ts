@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 import { beforeEach, describe, test, vi } from "vitest";
+import { createOperationFlights } from "$model/server/operation-flights/index.server";
+import type { OperationFlightsModel } from "$model/server/operation-flights/index.server";
 
 type Row = Record<string, unknown> & { _id: string; _creationTime: number };
 
@@ -29,6 +31,7 @@ const model = vi.hoisted(() => ({
     }
   },
   intelligence: { completeWithTools: () => Promise.reject(new Error("not stubbed")) },
+  operationFlights: undefined as unknown as OperationFlightsModel,
   store: {
     create: (table: string, fields: unknown) => {
       const rows = (model.tables[table] ??= []);
@@ -89,7 +92,12 @@ vi.mock("$runtime/server/scope.server", () => ({
 vi.mock("$capabilities/semantic-overlay", () => ({
   enqueueSemanticSync: () => Promise.resolve(null),
   processSemanticSyncQueueFor: () =>
-    Promise.resolve({ processed: [], remaining: 0, materials: { processed: [], remaining: 0 } }),
+    Promise.resolve({
+      processed: [],
+      remaining: 0,
+      failed: [],
+      materials: { processed: [], remaining: 0, failed: [] }
+    }),
   semanticSourceIsCurrent: () => true,
   querySemanticOverlay: () => Promise.resolve({ overlayGeneration: 1, hits: [], usage: [], diagnostics: {} }),
   querySemanticMaterials: () => Promise.resolve({ overlayGeneration: 1, hits: [], usage: [], diagnostics: {} }),
@@ -144,6 +152,8 @@ const chat = (id: string, extra: Partial<Row> = {}): Row => ({
 });
 
 beforeEach(() => {
+  model.operationFlights?.close();
+  model.operationFlights = createOperationFlights();
   model.tables = {
     personas: [
       persona("a", ["retrieve", "resource.read"]),

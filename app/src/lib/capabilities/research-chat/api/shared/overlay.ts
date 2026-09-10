@@ -51,7 +51,7 @@ export const prepareOverlay = async (
 
   for (let batch = 0; batch < 20; batch += 1) {
     const processed = await processSemanticSyncQueueFor(model, projectId, 25);
-    const failed = processed.processed.find((job) => job.error !== undefined);
+    const failed = processed.failed[0] ?? processed.materials.failed[0];
     if (failed?.error !== undefined) throw new Error(failed.error);
     if (processed.remaining === 0 && processed.materials.remaining === 0) return { indexed };
   }

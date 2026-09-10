@@ -1,7 +1,6 @@
 import type { IntelligenceTool } from "$model/server/intelligence/index.server";
 import { sliceByCoordinates } from "$representation/data/behavior/semantic/encoding";
 import { tableMatrix } from "$representation/data/behavior/semantic/materials/profile";
-import { normalizeSlideDeckBody } from "$representation/data/behavior/slide-decks/normalize";
 import type { ContentBlock } from "$representation/data/types/content/content-block";
 import type { SlideElement } from "$representation/data/types/slide-decks/body";
 import type { MaterialLocator } from "$representation/data/types/semantic/material";
@@ -132,7 +131,7 @@ export const readingTools = (context: ToolContext): readonly IntelligenceTool[] 
       (row) => row.projectId === context.input.projectId && row.resourceId === ref.id && row.role === "leader"
     );
     if (leader === undefined) throw new Error("that slide deck is unavailable");
-    const body = normalizeSlideDeckBody(leader.body);
+    const body = leader.body;
     const slide = body.slides.find((candidate) => candidate.id === locator.slideId);
     const element = slide === undefined ? undefined : findElement(slide.elements, locator.elementPath);
     if (element === undefined) throw new Error("that slide element is unavailable");

@@ -9,29 +9,9 @@ import type { RefreshDerivedOutputResult } from "$capabilities/derived-output/ty
 import { outputOf, rowsOf } from "$capabilities/derived-output/api/shared/rows";
 
 type RefreshRun = (
-  selection: DerivedOutputSelection | undefined
+  selection: DerivedOutputSelection | undefined,
+  signal: AbortSignal
 ) => Promise<RefreshDerivedOutputResult>;
-
-type RefreshFlight = {
-  promise: Promise<RefreshDerivedOutputResult>;
-  /** The newest explicit request this flight has accepted. */
-  requestKey: string;
-};
-
-const globalState = globalThis as typeof globalThis & {
-  __icarusDerivedOutputRefreshFlightsV2?: Map<string, RefreshFlight>;
-};
-
-// Keep live server flights through development module replacement. The lazy
-// accessor also preserves the capability rule that importing a module creates
-// no runtime object or hidden lifetime.
-const refreshFlights = (): Map<string, RefreshFlight> => {
-  const held = globalState.__icarusDerivedOutputRefreshFlightsV2;
-  if (held !== undefined) return held;
-  const created = new Map<string, RefreshFlight>();
-  globalState.__icarusDerivedOutputRefreshFlightsV2 = created;
-  return created;
-};
 
 const keyFor = (projectId: Id<"projects">, outputId: Id<"derivedOutputs">): string =>
   `${projectId}\u0000${outputId}`;
@@ -40,7 +20,7 @@ const requestKeyFor = (
   output: DerivedOutput,
   selection: DerivedOutputSelection | undefined
 ): string => JSON.stringify({
-  definitionRevision: output.definitionRevision ?? 0,
+  definitionRevision: output.definitionRevision,
   selection: selection === undefined
     ? null
     : {
@@ -104,13 +84,13 @@ export const enqueueDerivedOutputRefreshFor = (
   if (output === undefined) return undefined;
   const requestKey = requestKeyFor(output, selection);
   const flightKey = keyFor(projectId, outputId);
-  const flight = refreshFlights().get(flightKey);
+  const activeRequestKey = model.operationFlights.derivedRequestKey(flightKey);
   const existing = jobFor(model, projectId, outputId);
   if (existing === undefined) {
     // The worker removes its durable row immediately before its promise
     // settles. An identical signal in that tiny window still joins the flight
     // and must not recreate work which has already completed.
-    if (flight?.requestKey === requestKey) return undefined;
+    if (activeRequestKey === requestKey) return undefined;
     return model.store.transaction((unit) =>
       unit.create("derivedOutputRefreshJobs", {
         projectId,
@@ -143,7 +123,7 @@ export const enqueueDerivedOutputRefreshFor = (
     startedAt: existing.state === "failed" ? undefined : existing.startedAt,
     updatedAt: at
   });
-  if (flight !== undefined) flight.requestKey = requestKey;
+  model.operationFlights.updateDerivedRequestKey(flightKey, requestKey);
   return existing._id;
 };
 
@@ -157,7 +137,8 @@ const workQueuedRefresh = async (
   model: ServerModel,
   projectId: Id<"projects">,
   outputId: Id<"derivedOutputs">,
-  run: RefreshRun
+  run: RefreshRun,
+  signal: AbortSignal
 ): Promise<RefreshDerivedOutputResult> => {
   let last: RefreshDerivedOutputResult = null;
 
@@ -189,7 +170,7 @@ const workQueuedRefresh = async (
     });
 
     try {
-      last = await run(job.selection);
+      last = await run(job.selection, signal);
     } catch (error) {
       const current = jobFor(model, projectId, outputId);
       if (current !== undefined) {
@@ -252,10 +233,14 @@ export const processDerivedOutputRefreshFor = (
   run: RefreshRun
 ): Promise<RefreshDerivedOutputResult> => {
   const key = keyFor(projectId, outputId);
-  const flights = refreshFlights();
-  const current = flights.get(key);
-  if (current !== undefined) {
-    return current.promise.then(async (result) => {
+  const queued = jobFor(model, projectId, outputId);
+  const shared = model.operationFlights.shareDerived(
+    key,
+    queued?.requestKey ?? "",
+    async (signal) => await workQueuedRefresh(model, projectId, outputId, run, signal)
+  );
+  if (!shared.started) {
+    return shared.promise.then(async (result) => {
       // Usually the active worker observes the advanced requestedVersion before
       // it publishes. This post-flight check closes the much smaller race in
       // which a signal lands after the worker removed its job but before all
@@ -266,19 +251,5 @@ export const processDerivedOutputRefreshFor = (
         : result;
     });
   }
-
-  const started = Promise.resolve().then(
-    async () => await workQueuedRefresh(model, projectId, outputId, run)
-  );
-  const queued = jobFor(model, projectId, outputId);
-  const flight: RefreshFlight = {
-    promise: started,
-    requestKey: queued?.requestKey ?? ""
-  };
-  flights.set(key, flight);
-  const release = () => {
-    if (flights.get(key) === flight) flights.delete(key);
-  };
-  void started.then(release, release);
-  return started;
+  return shared.promise;
 };

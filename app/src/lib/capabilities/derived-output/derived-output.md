@@ -25,10 +25,11 @@ operation state. An identical signal changes nothing and simply awaits that
 flight. Only a different definition revision or selection advances the request
 version and causes one follow-up pass. The worker drains pending exact-text and
 material semantic jobs before it asks the freshness gate whether provider work
-is necessary. It snapshots project semantic inputs around synthesis; a source
+is necessary, and it fails closed when required newer work is terminally
+failed. It snapshots project semantic inputs around synthesis; a source
 revision, material revision, pending semantic job, or overlay-generation change
-causes one bounded retry after another drain. It gives one bounded agent a
-single `retrieve` tool. Retrieval returns
+causes one bounded retry after another drain. It gives one bounded agent the
+sixteen tools in `api/shared/tool-catalog.ts`. `retrieve` returns
 exact source spans and overlapping document/slide locator spans plus
 application-issued, attempt-local evidence IDs. Each query consolidates
 overlapping or exactly adjacent spans
@@ -36,11 +37,13 @@ from the same source snapshot before final `topK`. Citation resolution repeats
 that consolidation across the agent's selected evidence from all retrieval
 calls while preserving every evidence ID and use annotation.
 
-The executable instruction is application-owned in `api/shared/agent-instructions.ts` and
-shared with the development reference surface. The intended expanded tool set
-keeps its authority boundaries sharp: only `retrieve` queries the Semantic
-Overlay; `read_selection` and `read` will read authoritative project resources
-directly, and `find_resources` will return navigation metadata without evidence.
+The executable instruction is application-owned in
+`api/shared/agent-instructions.ts` and shared with the development reference
+surface. Authority boundaries stay explicit: `retrieve` searches exact text;
+`retrieve_materials` searches inferred descriptors; `read_selection`,
+`read_text`, `read_table`, `read_csv`, `read_chart`, `read_code`, and
+`read_image` issue evidence from authoritative content; find/list/inspect/view
+tools return orientation without minting evidence.
 
 The final provider turn must match a strict structured-output schema containing
 an `answered`/`insufficient` status, response text, and selected evidence IDs
@@ -83,7 +86,10 @@ job is active), disables duplicate refresh interaction, and uses its local flag
 only to bridge the initiating request before the first poll. A later push or
 subscription transport can replace polling without changing the capability
 contract.
-The current JSON-backed runtime serializes workers inside one server process;
-the same table is the lease/atomic-claim seam a multi-process database adapter
-must implement. An always-on worker host, selected-text focus, and placement
-adapters for decks and other editors remain separate follow-ups.
+The durable job row and claim token are the authority boundary; the shared
+promise that joins callers belongs to `ServerModel.operationFlights`, not this
+capability or `globalThis`. Server shutdown aborts those active provider calls.
+The JSON-backed Store serializes claims inside one server instance; a
+multi-process database adapter must preserve the same transactional claim and
+lease contract. An always-on worker host and additional editor placement
+adapters remain separate follow-ups.

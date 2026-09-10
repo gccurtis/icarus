@@ -58,6 +58,7 @@ test.runIf(live)("real Jina retrieval grounds a real OpenRouter tool loop", asyn
     _creationTime: Date.now(),
     projectId: "projects:live" as Id<"projects">,
     prompt: "When is Project Aster's launch review, and who leads it?",
+    definitionRevision: 1,
     queries: [],
     evidence: [],
     state: "idle",

@@ -2,7 +2,6 @@ import { requireScope } from "$runtime/server/scope.server";
 import { serverModel } from "$runtime/server/start.server";
 
 import { validateStopTurn } from "$capabilities/research-chat/api/stop-turn/validate-stop-turn";
-import { flightFor } from "$capabilities/research-chat/api/shared/flights";
 import { threadsIn, turnsIn } from "$capabilities/research-chat/api/shared/store";
 import type { StopTurnResult } from "$capabilities/research-chat/types/research-chat";
 
@@ -40,8 +39,8 @@ export const stopTurn = async (input: unknown): Promise<StopTurnResult> => {
     return { accepted: false, threadId: asked.threadId, detail: "nothing is running in this chat" };
   }
 
-  const flight = flightFor(turn._id);
-  if (flight === undefined) {
+  const outcome = model.operationFlights.requestResearchStop(turn._id);
+  if (outcome === "missing") {
     return {
       accepted: false,
       threadId: asked.threadId,
@@ -49,13 +48,9 @@ export const stopTurn = async (input: unknown): Promise<StopTurnResult> => {
     };
   }
 
-  if (!flight.stopping) {
-    flight.stopping = true;
+  if (outcome === "answering") {
     model.store.update(`researchTurns.${turn._id}.stopRequestedAt`, Date.now());
     return { accepted: true, threadId: thread._id, turnId: turn._id, outcome: "answering" };
   }
-
-  flight.reason ??= "cancelled";
-  flight.controller.abort();
   return { accepted: true, threadId: thread._id, turnId: turn._id, outcome: "cancelled" };
 };

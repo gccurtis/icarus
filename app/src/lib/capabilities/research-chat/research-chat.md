@@ -32,3 +32,7 @@ as insufficient rather than as prose.
 
 This capability owns chats, turns and the loop that fills them. It does not own
 the overlay it reads, the intelligence it calls, or the surfaces that show them.
+Process-local controllers, stopping flags and deadline timers belong to
+`ServerModel.operationFlights`. A first stop asks the active turn to answer; a
+second stop aborts it. Server shutdown aborts and releases every active turn,
+while durable recovery continues to use the turn rows.

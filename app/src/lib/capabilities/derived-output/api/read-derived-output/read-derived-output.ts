@@ -47,15 +47,12 @@ export const readDerivedOutput = async (input: unknown): Promise<ReadDerivedOutp
     output.evidence.length === 0 &&
     output.lastGeneration !== undefined &&
     output.lastGeneration !== currentGeneration(model.store, projectId);
-  const storedValueState = String(output.state) === "generating"
-    ? (output.lastResponse === undefined ? "idle" : "stale")
-    : output.state;
   return {
     output,
     effectiveState:
-      storedValueState === "fresh" && (changedSources.length > 0 || changedMaterials.length > 0 || negativeResultChanged)
+      output.state === "fresh" && (changedSources.length > 0 || changedMaterials.length > 0 || negativeResultChanged)
         ? "stale"
-        : storedValueState,
+        : output.state,
     refresh: refreshJob === undefined
       ? { state: "idle" }
       : {

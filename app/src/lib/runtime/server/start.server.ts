@@ -5,6 +5,7 @@ import type { ServerModel } from "$runtime/server/types";
 import { createEmbedding } from "$model/server/embedding/index.server";
 import { createIntelligence } from "$model/server/intelligence/index.server";
 import { createMaterialContent } from "$model/server/material-content/index.server";
+import { createOperationFlights } from "$model/server/operation-flights/index.server";
 
 export type { ServerModel } from "$runtime/server/types";
 export type { Scope, Session } from "$runtime/server/scope.server";
@@ -53,17 +54,22 @@ const buildServerModel = async (): Promise<ServerModel> => {
   // Production and ordinary development continue to use configured data/.
   const store = createStore(configuration, process.env.ICARUS_STORE_DIRECTORY);
   const materialContent = createMaterialContent(configuration);
+  const operationFlights = createOperationFlights();
 
   observability.logger.info("model.started");
 
   return {
+    operationFlights,
     intelligence,
     embedding,
     configuration,
     observability,
     store,
     materialContent,
-    close: () => observability.close()
+    close: async () => {
+      operationFlights.close();
+      await observability.close();
+    }
   };
 };
 
@@ -109,6 +115,33 @@ export const serverModel = (): ServerModel => {
     );
   }
   return instance;
+};
+
+/**
+ * Rebuilds the process graph around a freshly restored disposable browser Store.
+ *
+ * This seam is admitted only by the development browser harness. Production
+ * startup remains one-way, and callers cannot use it without the harness token
+ * and validated temporary directory enforced by the route that invokes it.
+ */
+export const resetServerModelForBrowserHarness = async (
+  restoreDisposableStore: () => void
+): Promise<void> => {
+  if (
+    process.env.ICARUS_BROWSER_RESET_TOKEN === undefined ||
+    process.env.ICARUS_BROWSER_RESET_DIRECTORY === undefined
+  ) {
+    throw new Error("The browser reset seam is unavailable outside its disposable harness");
+  }
+  if (closed) throw new Error("The server model is shutting down and cannot be reset");
+
+  const model = instance;
+  if (model === undefined) throw new Error("The server model has not been built");
+
+  instance = undefined;
+  await model.close();
+  restoreDisposableStore();
+  instance = await buildServerModel();
 };
 
 /**

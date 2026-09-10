@@ -16,7 +16,7 @@ export const readThread = query("unchecked", readThreadProcedure);
 export const createThread = command("unchecked", async (input) => {
   const result = await createThreadProcedure(input);
   await readThreads().refresh();
-  await read("researchThreads").refresh();
+  await read({ path: "researchThreads" }).refresh();
   return result;
 });
 
@@ -24,7 +24,7 @@ export const ask = command("unchecked", async (input) => {
   const result = await askProcedure(input);
   await readThreads().refresh();
   await readThread({ threadId: result.threadId }).refresh();
-  await read("researchThreads").refresh();
+  await read({ path: "researchThreads" }).refresh();
   return result;
 });
 
@@ -40,7 +40,7 @@ export const setThreadPersona = command("unchecked", async (input) => {
 export const removeThread = command("unchecked", async (input) => {
   const result = await removeThreadProcedure(input);
   await readThreads().refresh();
-  await read("researchThreads").refresh();
+  await read({ path: "researchThreads" }).refresh();
   return result;
 });
 

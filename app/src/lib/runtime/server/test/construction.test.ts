@@ -68,6 +68,7 @@ test("the graph names every object it built", async () => {
   const model = await initServerModel();
 
   assert.ok(model.intelligence);
+  assert.ok(model.operationFlights);
   assert.ok(model.embedding);
   assert.ok(model.configuration);
   assert.ok(model.observability);

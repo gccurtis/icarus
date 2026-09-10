@@ -1,3 +1,4 @@
+import type { OperationFlightsModel } from "$model/server/operation-flights/index.server";
 import type { IntelligenceModel } from "$model/server/intelligence/index.server";
 import type { EmbeddingModel } from "$model/server/embedding/index.server";
 import type { Configuration } from "$model/server/configuration/index.server";
@@ -22,6 +23,7 @@ import type { MaterialContentModel } from "$model/server/material-content/index.
  * access.
  */
 export interface ServerModel {
+  readonly operationFlights: OperationFlightsModel;
   readonly intelligence: IntelligenceModel;
   readonly embedding: EmbeddingModel;
   readonly configuration: Configuration;

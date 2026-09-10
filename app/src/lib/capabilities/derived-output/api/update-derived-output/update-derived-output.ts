@@ -48,7 +48,7 @@ export const updateDerivedOutput = async (input: unknown): Promise<UpdateDerived
 
   return writeOutput(model.store, output, {
     prompt: asked.prompt,
-    definitionRevision: (output.definitionRevision ?? 0) + 1,
+    definitionRevision: output.definitionRevision + 1,
     scope: nextScope,
     ...(!responseChanged
       ? {}

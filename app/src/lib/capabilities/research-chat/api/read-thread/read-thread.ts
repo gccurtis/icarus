@@ -9,7 +9,8 @@ import type { ReadThreadResult } from "$capabilities/research-chat/types/researc
 export const readThread = async (input: unknown): Promise<ReadThreadResult> => {
   const scope = await requireScope();
   const asked = validateReadThread(input);
-  const store = serverModel().store;
+  const model = serverModel();
+  const store = model.store;
   const row = threadsIn(store, scope.projectId).find(
     (candidate) => candidate._id === asked.threadId
   );
@@ -21,6 +22,8 @@ export const readThread = async (input: unknown): Promise<ReadThreadResult> => {
   );
   return {
     thread: threadItem(store, row, (id) => named.get(id) ?? null),
-    turns: turnsIn(store, scope.projectId, row._id).map(turnItem)
+    turns: turnsIn(store, scope.projectId, row._id).map((turn) =>
+      turnItem(turn, (turnId) => model.operationFlights.isResearchActive(turnId))
+    )
   };
 };

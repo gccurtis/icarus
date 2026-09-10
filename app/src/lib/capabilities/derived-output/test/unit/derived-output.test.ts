@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { StoreUnitOfWork } from "$model/server/store/index.server";
+import { createOperationFlights } from "$model/server/operation-flights/index.server";
+import type { OperationFlightsModel } from "$model/server/operation-flights/index.server";
 
 type Row = Record<string, unknown> & { _id: string; _creationTime: number };
 type Tool = { name: string; execute(value: unknown): Promise<unknown> };
@@ -26,6 +28,7 @@ const state = vi.hoisted(() => {
     firstTools: [] as (string | undefined)[],
     userPrompts: [] as string[],
     queueCalls: 0,
+    queueFailure: undefined as string | undefined,
     queuedSourceRevision: undefined as number | undefined,
     release: undefined as (() => void) | undefined
   };
@@ -158,7 +161,8 @@ const state = vi.hoisted(() => {
           : key === "intelligence.agent.defaultTopK"
             ? controls.defaultTopK
             : undefined
-    }
+    },
+    operationFlights: undefined as unknown as OperationFlightsModel
   };
   return { tables, counters, rows, controls, store, source, model };
 });
@@ -228,7 +232,15 @@ vi.mock("$capabilities/semantic-overlay/api/shared/queue-processor", () => ({
       state.source().revision = state.controls.queuedSourceRevision;
       state.controls.queuedSourceRevision = undefined;
     }
-    return { processed: [], remaining: 0, materials: { processed: [], remaining: 0 } };
+    return {
+      processed: [],
+      remaining: 0,
+      failed:
+        state.controls.queueFailure === undefined
+          ? []
+          : [{ error: state.controls.queueFailure }],
+      materials: { processed: [], remaining: 0, failed: [] }
+    };
   }
 }));
 
@@ -301,6 +313,8 @@ const seedOutput = (overrides: Record<string, unknown> = {}): string =>
   });
 
 beforeEach(() => {
+  state.model.operationFlights?.close();
+  state.model.operationFlights = createOperationFlights();
   state.tables.clear();
   state.counters.clear();
   state.controls.mode = "normal";
@@ -312,6 +326,7 @@ beforeEach(() => {
   state.controls.firstTools.length = 0;
   state.controls.userPrompts.length = 0;
   state.controls.queueCalls = 0;
+  state.controls.queueFailure = undefined;
   state.controls.queuedSourceRevision = undefined;
   state.controls.release = undefined;
   baseRows();
@@ -467,7 +482,6 @@ describe("Derived Output lifecycle", () => {
       exclude: []
     });
 
-    state.rows("derivedOutputs")[0].state = "generating";
     const concurrentEdit = await updateDerivedOutput({
       derivedOutputId: id,
       prompt: "Another edit"
@@ -623,6 +637,30 @@ describe("Derived Output lifecycle", () => {
     const evidence = result?.output.evidence[0];
     assert.ok(evidence !== undefined && "span" in evidence);
     assert.equal(evidence.source.revision, 2);
+  });
+
+  it("fails closed on terminal semantic work without publishing a stale response", async () => {
+    const previous = textBlock("Previously published");
+    const id = seedOutput({
+      state: "stale",
+      lastResponse: previous,
+      lastRevision: 3,
+      lastGeneration: 4
+    });
+    state.controls.queueFailure = "semantic source indexing exhausted its retry budget";
+
+    await assert.rejects(
+      () => refreshDerivedOutput({ derivedOutputId: id }),
+      /exhausted its retry budget/
+    );
+
+    const output = state.rows("derivedOutputs")[0];
+    assert.deepEqual(output.lastResponse, previous);
+    assert.equal(output.lastRevision, 3);
+    assert.equal(output.state, "stale");
+    assert.equal(state.controls.intelligenceCalls, 0);
+    const projected = await readDerivedOutput({ derivedOutputId: id });
+    assert.equal(projected?.refresh.state, "failed");
   });
 
   it("restarts synthesis when a cited revision changes before publication", async () => {
