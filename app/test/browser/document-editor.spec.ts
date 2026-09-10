@@ -524,6 +524,11 @@ test("quote Enter creates a normal body paragraph without ornamental quote chrom
 
   const quoteEnd = await pointOnText(quote, "fails.");
   await page.mouse.click(quoteEnd.x, quoteEnd.y);
+  await expect(
+    page.locator(
+      'aside[aria-label="Inspector"][data-inspected="document-editor.next-letter"]'
+    )
+  ).toBeVisible();
   await page.keyboard.press("End");
   await page.keyboard.press("Enter");
 

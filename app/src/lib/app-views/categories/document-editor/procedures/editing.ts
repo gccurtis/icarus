@@ -1,6 +1,7 @@
 import type { Node as ProseMirrorNode } from "prosemirror-model";
 import type { Command } from "prosemirror-state";
 import { TextSelection } from "prosemirror-state";
+import type { EditorView } from "prosemirror-view";
 
 import { mint } from "$app-views/categories/document-editor/procedures/ids";
 import { withFreshMarkIds } from "$app-views/categories/document-editor/procedures/projection";
@@ -77,8 +78,31 @@ const continuation = (block: ProseMirrorNode) => {
   };
 };
 
-export const splitRow: Command = (state, dispatch) => {
+const visibleCaret = (view: EditorView | undefined): number | undefined => {
+  if (view === undefined || !view.hasFocus()) return undefined;
+
+  const selection = view.dom.ownerDocument.getSelection();
+  const node = selection?.anchorNode;
+  if (
+    selection?.isCollapsed !== true ||
+    node === null ||
+    node === undefined ||
+    !view.dom.contains(node)
+  ) return undefined;
+
+  try {
+    return view.posAtDOM(node, selection.anchorOffset);
+  } catch {
+    return undefined;
+  }
+};
+
+export const splitRow: Command = (state, dispatch, view) => {
   const tr = state.tr;
+  const caret = state.selection.empty ? visibleCaret(view) : undefined;
+  if (caret !== undefined && caret !== tr.selection.from) {
+    tr.setSelection(TextSelection.create(tr.doc, caret));
+  }
   if (!state.selection.empty) tr.deleteSelection();
 
   const $from = tr.selection.$from;
