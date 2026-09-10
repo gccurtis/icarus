@@ -1,7 +1,7 @@
 import type { Node as ProseMirrorNode } from "prosemirror-model";
 import { Plugin, PluginKey, type EditorState, type Transaction } from "prosemirror-state";
 import { Decoration, DecorationSet } from "prosemirror-view";
-import type { Anchored } from "$app-views/categories/document-editor/procedures/comments";
+import type { Anchored } from "$app-views/categories/document-editor/procedures/comment-anchors";
 import {
   anchorAt,
   displayOffsetOf,

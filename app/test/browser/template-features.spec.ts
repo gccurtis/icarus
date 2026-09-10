@@ -24,6 +24,16 @@ const watchDiagnostics = (page: Page) => {
 
 const tabs = (page: Page) => page.getByRole("toolbar", { name: "Open tabs" });
 
+const expectStageChrome = async (page: Page, name: string, kind: "Document" | "Deck") => {
+  const title = `Template · ${name}`;
+  await expect(tabs(page).getByRole("button", { name: title, exact: true })).toBeVisible({
+    timeout: 15_000
+  });
+  const status = page.locator("footer.status-bar .part.start");
+  await expect(status.locator(".subject")).toHaveText(title, { timeout: 15_000 });
+  await expect(status.locator(".label")).toHaveText(kind);
+};
+
 const openDocumentFixture = async (page: Page) => {
   await page.goto("/app/dev-project", { waitUntil: "networkidle" });
   const tab = tabs(page).getByRole("button", { name: "Winter readiness brief", exact: true });
@@ -97,7 +107,7 @@ test("inserting a template into a document asks for each hole, shows its default
 
   // One hole at a time, opening on the first.
   await expect(modal.locator(".answer h3")).toHaveText("Source material");
-  await expect(modal.locator(".scope .rule")).toContainText("Documents, Findings");
+  await expect(modal.locator(".scope .rule")).toContainText("Interconnect glossary");
 
   // Walk to the one that takes words and fill it.
   await modal.getByRole("tab", { name: /Subject line/ }).click();
@@ -143,6 +153,7 @@ test("a document is saved as a template, takes its hole from an inserted prompt,
   await context.getByRole("textbox", { name: "Template name" }).fill(name);
   await context.getByRole("button", { name: "Save", exact: true }).click();
   await expect(page.locator(".title-bar h1")).toContainText(`Template · ${name}`, { timeout: 15_000 });
+  await expectStageChrome(page, name, "Document");
 
   await expect(context.getByRole("button", { name: "Save", exact: true })).toBeVisible();
   await expect(context.getByRole("textbox", { name: "New variable" })).toHaveCount(0);
@@ -337,6 +348,7 @@ test("one slide is saved as a deck template, and a deck template is inserted int
   await context.getByRole("textbox", { name: "Template name" }).fill(name);
   await context.getByRole("button", { name: "Save slide", exact: true }).click();
   await expect(page.locator(".area-title")).toContainText(`Template · ${name}`, { timeout: 15_000 });
+  await expectStageChrome(page, name, "Deck");
   await expect(context.getByRole("button", { name: "Save", exact: true })).toBeVisible();
 
   await context.getByTitle(new RegExp("^Insert “Board review” after slide")).click();
@@ -403,40 +415,173 @@ test("a slide templateifies its words and its prompt, and the deck template hold
   await deleteTemplateFromLibrary(page, name);
 });
 
-test("the project's resource sets are made, counted, and removed from the Contexts panel", async ({ page }) => {
-  const name = `Browser set ${Date.now()}`;
+test("a committed template fills text and generates only from its default file", async ({ page }) => {
+  test.skip(
+    process.env.ICARUS_BROWSER_PROVIDER_FIXTURE !== "1",
+    "The caller-owned server did not opt into the deterministic browser provider"
+  );
+  test.setTimeout(180_000);
+
   await page.goto("/app/dev-project", { waitUntil: "networkidle" });
+  await tabs(page).getByRole("button", { name: "Templates", exact: true }).click();
+  await page.getByRole("button", { name: "Technical glossary", exact: true }).first().click();
+
+  const libraryInspector = page.locator(
+    'aside[aria-label="Inspector"][data-inspected="templates.template"]'
+  );
+  await libraryInspector.getByRole("button", { name: "Use template", exact: true }).click();
+  const use = page.getByRole("dialog", { name: "Use “Technical glossary”" });
+  await expect(use.locator(".scope .rule")).toHaveText("Interconnect glossary");
+  await use.getByRole("tab", { name: /Subject line/ }).click();
+  await use
+    .getByRole("textbox", { name: "What Subject line says here" })
+    .fill("Default source terms");
+  await use.getByRole("button", { name: "Create", exact: true }).click();
+
+  await expect(page.locator(".ProseMirror")).toContainText(
+    "Technical glossary · Default source terms"
+  );
+  await page.getByRole("button", { name: "Edit Prompt Block", exact: true }).click();
+  const prompt = page.locator(
+    'aside[aria-label="Inspector"][data-inspected="document-editor.prompt-block"]'
+  );
+  await expect(
+    prompt.getByRole("button", { name: "Interconnect glossary", exact: true })
+  ).toBeVisible();
+  await expect(
+    prompt.getByRole("button", { name: "Substation 14 incident write-up", exact: true })
+  ).toHaveCount(0);
+
+  const refresh = prompt.getByRole("button", { name: "Refresh", exact: true });
+  await refresh.click();
+  const generated = page.locator('.document-block[data-kind="prompt"]').last();
+  await expect(generated).toContainText("remaining transfer capability", {
+    timeout: 150_000
+  });
+  await expect(generated).not.toContainText("Protection isolated the transformer bank");
+
+  await page.reload({ waitUntil: "networkidle" });
   await tabs(page).getByRole("button", { name: "Overview", exact: true }).click();
+  await page
+    .locator(".area-resources")
+    .getByRole("button", { name: "Technical glossary", exact: true })
+    .first()
+    .dblclick();
+  await expect(page.locator(".ProseMirror")).toContainText(
+    "Technical glossary · Default source terms"
+  );
+  await expect(page.locator('.document-block[data-kind="prompt"]').last()).toContainText(
+    "remaining transfer capability"
+  );
+});
 
-  const context = page.locator('aside[aria-label="Context"]');
-  await context.getByRole("button", { name: "Context", exact: true }).click();
-  await expect(context.getByRole("heading", { name: "Contexts" })).toBeVisible();
-  await expect(context.getByRole("button", { name: /^Winter filings/ }).first()).toBeVisible();
+test("a committed template fills text and generates only from its replacement file", async ({ page }) => {
+  test.skip(
+    process.env.ICARUS_BROWSER_PROVIDER_FIXTURE !== "1",
+    "The caller-owned server did not opt into the deterministic browser provider"
+  );
+  test.setTimeout(180_000);
 
-  await context.getByRole("button", { name: "New set", exact: true }).click();
-  await context.getByRole("textbox", { name: "Set name" }).fill(name);
-  await context.getByRole("button", { name: "Choose what it selects", exact: true }).click();
+  await page.goto("/app/dev-project", { waitUntil: "networkidle" });
+  await tabs(page).getByRole("button", { name: "Templates", exact: true }).click();
+  await page.getByRole("button", { name: "Technical glossary", exact: true }).first().click();
 
-  const builder = page.getByRole("dialog", { name: "A set of resources" });
+  const inspector = page.locator('aside[aria-label="Inspector"][data-inspected="templates.template"]');
+  await expect(inspector).toBeVisible();
+  await inspector.getByRole("button", { name: "Use template", exact: true }).click();
+
+  const use = page.getByRole("dialog", { name: "Use “Technical glossary”" });
+  await expect(use).toBeVisible();
+  await expect(use.locator(".scope .rule")).toHaveText("Interconnect glossary");
+
+  await use.getByRole("tab", { name: /Subject line/ }).click();
+  await use
+    .getByRole("textbox", { name: "What Subject line says here" })
+    .fill("Substation response terms");
+  await use.getByRole("tab", { name: /Source material/ }).click();
+  await use.locator(".scope").click();
+
+  const builder = page.getByRole("dialog", { name: "What Source material selects here" });
   await expect(builder).toBeVisible();
+  await expect(builder.locator(".term").filter({ hasText: "Interconnect glossary" })).toHaveCount(1);
+  await builder
+    .locator(".term")
+    .filter({ hasText: "Interconnect glossary" })
+    .getByRole("button", { name: "×" })
+    .click();
+  await builder.getByRole("button", { name: "Resources", exact: true }).click();
   await builder
     .locator(".offer")
-    .filter({ hasText: "Findings" })
+    .filter({ hasText: "Substation 14 incident write-up" })
     .getByRole("button", { name: "Add", exact: true })
     .click();
-  await expect(builder.getByText("Findings", { exact: true }).first()).toBeVisible();
+  await expect(
+    builder.locator(".term").filter({ hasText: "Substation 14 incident write-up" })
+  ).toHaveCount(1);
+  await expect(builder.locator(".term").filter({ hasText: "Interconnect glossary" })).toHaveCount(0);
   await builder.getByRole("button", { name: "Use this", exact: true }).click();
 
-  await expect(context.getByText("Findings.", { exact: true })).toBeVisible();
-  await context.getByRole("button", { name: "Create", exact: true }).click();
+  await expect(use.locator(".scope .tag")).toHaveText("Chosen");
+  await expect(use.locator(".scope .rule")).toHaveText("Substation 14 incident write-up");
+  await use.getByRole("button", { name: "Create", exact: true }).click();
 
-  const made = context.getByRole("button", { name: new RegExp(`^${name}`) }).first();
-  await expect(made).toBeVisible();
-  await expect(made).toContainText("2 resources");
-  await made.click();
-  page.once("dialog", (dialog) => void dialog.accept());
-  await context.getByTitle(new RegExp(`^Delete “${name}”`)).click();
-  await expect(context.getByRole("button", { name: new RegExp(`^${name}`) })).toHaveCount(0);
+  await expect(page.locator(".title-bar h1")).toHaveText("Technical glossary");
+  await expect(page.locator(".ProseMirror")).toContainText(
+    "Technical glossary · Substation response terms"
+  );
+  await expect(page.locator(".title-bar")).toContainText("Saved", { timeout: 15_000 });
+
+  await page.reload({ waitUntil: "networkidle" });
+  await tabs(page).getByRole("button", { name: "Overview", exact: true }).click();
+  await page
+    .locator(".area-resources")
+    .getByRole("button", { name: "Technical glossary", exact: true })
+    .first()
+    .dblclick();
+  await expect(page.locator(".ProseMirror")).toContainText(
+    "Technical glossary · Substation response terms"
+  );
+
+  await page.getByRole("button", { name: "Edit Prompt Block", exact: true }).click();
+  const prompt = page.locator(
+    'aside[aria-label="Inspector"][data-inspected="document-editor.prompt-block"]'
+  );
+  await expect(prompt).toBeVisible();
+  await expect(
+    prompt.getByRole("button", { name: "Substation 14 incident write-up", exact: true })
+  ).toBeVisible();
+  await expect(
+    prompt.getByRole("button", { name: "Interconnect glossary", exact: true })
+  ).toHaveCount(0);
+
+  const refresh = prompt.getByRole("button", { name: "Refresh", exact: true });
+  await expect(refresh).toBeEnabled();
+  await refresh.click();
+
+  const generated = page.locator('.document-block[data-kind="prompt"]').last();
+  await expect(generated).toContainText(
+    "Protection isolated the transformer bank at 14:18",
+    { timeout: 150_000 }
+  );
+  await expect(generated).not.toContainText("remaining transfer capability");
+  await expect(refresh).toBeEnabled({ timeout: 150_000 });
+  await expect(
+    prompt.locator('button[title="Choose what this prompt reads"]')
+  ).toHaveText("Substation 14 incident write-up");
+  await expect(
+    prompt.getByRole("button", { name: "Interconnect glossary", exact: true })
+  ).toHaveCount(0);
+
+  await page.reload({ waitUntil: "networkidle" });
+  await tabs(page).getByRole("button", { name: "Overview", exact: true }).click();
+  await page
+    .locator(".area-resources")
+    .getByRole("button", { name: "Technical glossary", exact: true })
+    .first()
+    .dblclick();
+  await expect(page.locator('.document-block[data-kind="prompt"]').last()).toContainText(
+    "Protection isolated the transformer bank at 14:18"
+  );
 });
 
 test("a hole's default is built with an exclusion, stored, and read back as the rule", async ({ page }) => {

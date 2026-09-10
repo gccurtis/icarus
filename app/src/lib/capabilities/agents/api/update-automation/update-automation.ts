@@ -4,6 +4,7 @@ import { asId } from "$representation/data/behavior/core/id";
 
 import { findVisible, notFound, refused, stale } from "$capabilities/agents/api/shared/lookup";
 import type { RowFields } from "$capabilities/agents/api/shared/store";
+import { scopeReferenceRefusal } from "$capabilities/agents/api/shared/scope-references";
 import { validateUpdateAutomation } from "$capabilities/agents/api/update-automation/validate-update-automation";
 import type { WriteResult } from "$capabilities/agents/types/agents";
 
@@ -35,12 +36,14 @@ export const updateAutomation = async (input: unknown): Promise<WriteResult> => 
     );
   }
 
-  const { _id, _creationTime, lastFiredAt, scope: reach, ...rest } = automation;
-  void _id;
-  void _creationTime;
+  const { lastFiredAt, scope: reach } = automation;
   const nextScope = patch.scope === undefined ? reach : (patch.scope ?? undefined);
+  const scopeRefusal = scopeReferenceRefusal(store, scope.projectId, nextScope);
+  if (scopeRefusal !== undefined) {
+    return refused(automation._id, "invalid-state", scopeRefusal, automation.revision);
+  }
   const fields: RowFields<"automations"> = {
-    ...rest,
+    projectId: automation.projectId,
     name: patch.name ?? automation.name,
     instruction,
     personaId: patch.personaId === undefined ? automation.personaId : asId<"personas">(patch.personaId),
@@ -48,7 +51,9 @@ export const updateAutomation = async (input: unknown): Promise<WriteResult> => 
     ...(nextScope === undefined ? {} : { scope: nextScope }),
     tools: [...(patch.tools ?? automation.tools)],
     enabled: patch.enabled ?? automation.enabled,
+    firedCount: automation.firedCount,
     ...(lastFiredAt === undefined ? {} : { lastFiredAt }),
+    createdBy: automation.createdBy,
     revision: automation.revision + 1,
     updatedAt: Date.now()
   };

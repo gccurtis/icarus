@@ -15,8 +15,7 @@ export const editTemplate = async (view: WorkspaceStateModel, row: LibraryTempla
   const result = await view.singleFlight(["template", view.project, row.id, "stage"], () =>
     openTemplateStage({ templateId: row.id }).updates(
       readTemplateLibrary,
-      readTemplate({ templateId: row.id }),
-      view.readStore(row.makes === "Document" ? "documents" : "slideDecks")
+      readTemplate({ templateId: row.id })
     )
   );
   if (result.accepted) {

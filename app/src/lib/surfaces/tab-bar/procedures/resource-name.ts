@@ -1,68 +1,34 @@
-import type { TableName } from "$representation/store/tables";
-import { readStore } from "$model/client/workspace-state";
+import type { ReadAgentsLibraryResult } from "$capabilities/agents/index.remote";
+import type { ProjectResourceIndex } from "$capabilities/project-resources/index.remote";
+import type { ReadTemplateStageIndexResult } from "$capabilities/templates/index.remote";
 
-/**
- * The field for each table a tab may ask this surface to name.
- * Omitted tables are internal representation state, not tab resources.
- */
-const NAMED_FIELD: Partial<Record<TableName, string | null>> = {
-  activity: null,
-  agentTasks: "title",
-  comments: null,
-  commentThreads: null,
-  connectors: "name",
-  dataBackReferences: null,
-  derivedOutputs: null,
-  documentChangeSets: null,
-  documents: "title",
-  documentSnapshots: null,
-  findings: "title",
-  formulas: null,
-  hypotheses: "statement",
-  memberships: null,
-  personas: "name",
-  projects: "name",
-  questions: "text",
-  researchThreads: "title",
-  resourceSets: "name",
-  sheetCells: null,
-  slideDeckChangeSets: null,
-  slideDecks: "title",
-  slideDeckSnapshots: null,
-  spreadsheetChangeSets: null,
-  spreadsheets: "title",
-  spreadsheetSnapshots: null,
-  templates: null,
-  templateVersions: null,
-  threadParts: null,
-  threads: null,
-  users: "displayName",
-  variables: "name",
-  workspaceRevisions: null,
-  workspaceSnapshots: null
+/** The component-owned query snapshots needed to name an opened subject. */
+export type ResourceNames = {
+  readonly ready: boolean;
+  readonly resources: ProjectResourceIndex | undefined;
+  readonly agents: ReadAgentsLibraryResult | undefined;
+  readonly stages: ReadTemplateStageIndexResult | undefined;
 };
 
-const isTable = (value: string): value is TableName => Object.hasOwn(NAMED_FIELD, value);
+/** Name an open browser subject from scoped subject projections only. */
+export const nameOf = (id: string, names: ResourceNames): string => {
+  if (!names.ready) return "…";
 
-/** Resource ids keep the table before one opaque suffix. */
-const tableOf = (id: string): TableName | undefined => {
-  const [table] = id.split(":");
-  return table !== undefined && isTable(table) ? table : undefined;
-};
+  // Membership in the current stage projection owns this distinct subject's
+  // identity; the normal resource index intentionally never lists it.
+  const stage = names.stages?.stages.find((candidate) => candidate.resourceId === id);
+  if (stage !== undefined) return `Template · ${stage.templateName}`.slice(0, 160);
 
-/** What a row is called. `…` while the read is out, `Disconnected` when it answers empty. */
-export const nameOf = (id: string): string => {
-  const table = tableOf(id);
-  const field = table === undefined ? undefined : NAMED_FIELD[table];
-  if (table === undefined || field == null) return "Disconnected";
+  const resource = names.resources?.resources.find((candidate) => candidate.id === id);
+  if (resource !== undefined) return resource.name;
 
-  const answer = readStore(table);
-  if (!answer.ready) return "…";
-
-  const found = answer.current;
-  if (found?.kind !== "table" || found.table !== table) return "Disconnected";
-
-  const row = found.rows.find((candidate) => candidate._id === id);
-  const value = (row as unknown as Record<string, unknown> | undefined)?.[field];
-  return typeof value === "string" ? value : "Disconnected";
+  const library = names.agents;
+  const persona = library?.personas.find((candidate) => candidate.id === id);
+  if (persona !== undefined) return persona.name;
+  const task = library?.tasks.find((candidate) => candidate.id === id);
+  if (task !== undefined) return task.title;
+  const automation = library?.automations.find((candidate) => candidate.id === id);
+  if (automation !== undefined) return automation.name;
+  const chat = library?.chats.find((candidate) => candidate.id === id);
+  return chat?.title ?? "Disconnected";
 };

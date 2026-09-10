@@ -11,6 +11,7 @@ import { recordsIn, type RowFields } from "$capabilities/templates/api/shared/st
 import { writeTemplateVersion } from "$capabilities/templates/api/shared/template-rows";
 import { bodyOf } from "$capabilities/templates/api/shared/validation";
 import { declaredFor } from "$capabilities/templates/api/shared/holes";
+import { expandedScope } from "$capabilities/templates/api/shared/scopes";
 import type { CreateTemplateFromResourceResult } from "$capabilities/templates/types/templates";
 
 export const createTemplateFromResource = async (
@@ -68,6 +69,26 @@ export const createTemplateFromResource = async (
     };
   }
 
+  let holes;
+  try {
+    holes = declaredFor(body, portable.holes).map((hole) => {
+      const expanded = expandedScope(
+        store,
+        scope.projectId,
+        { kind: "resource", resourceId: asked.resourceId, hole: hole.name },
+        hole.default
+      );
+      return expanded === undefined ? hole : { ...hole, default: expanded };
+    });
+  } catch (error) {
+    return {
+      accepted: false,
+      resourceId: asked.resourceId,
+      reason: "unsupported-body",
+      detail: error instanceof Error ? error.message : String(error)
+    };
+  }
+
   const at = Date.now();
   const actor = { kind: "user" as const, userId: asId<"users">(scope.userId) };
   const fields: { -readonly [K in keyof RowFields<"templates">]: RowFields<"templates">[K] } = {
@@ -77,7 +98,7 @@ export const createTemplateFromResource = async (
     ...(asked.description === undefined ? {} : { description: asked.description }),
     tags: [...(asked.tags ?? [])],
     body,
-    holes: declaredFor(body, portable.holes),
+    holes,
     createdBy: actor,
     revision: 1,
     updatedAt: at

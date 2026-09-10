@@ -1,49 +1,15 @@
 import { requireScope } from "$runtime/server/scope.server";
 import { serverModel } from "$runtime/server/start.server";
-import { asId } from "$representation/data/behavior/core/id";
-import { ensureSlideDeckReady } from "$representation/data/behavior/slide-decks/readiness";
-import {
-  fillTemplateAtoms,
-  resolveTemplateScopes
-} from "$representation/data/behavior/templates/scopes";
-import type { TemplateBody } from "$representation/data/types/templates/template";
 
-import { enqueueSemanticOutboxFor } from "$capabilities/semantic-overlay/index";
+import { placeTemplate } from "$capabilities/templates/api/shared/template-placement";
 import { validateInstantiateTemplate } from "$capabilities/templates/api/instantiate-template/validate-instantiate-template";
-import { materializeSpreadsheet } from "$capabilities/templates/api/shared/bodies";
+import { placementInputsOf } from "$capabilities/templates/api/shared/placement-inputs";
 import {
   admitStoredTemplate,
   reportableRevision,
   visibleTemplate
 } from "$capabilities/templates/api/shared/projection";
-import { normalizeScope, unknownSetsIn } from "$capabilities/templates/api/shared/scopes";
-import { kindOf } from "$capabilities/templates/api/shared/holes";
-import { withFreshOutputs } from "$capabilities/templates/api/shared/prompts";
-import type {
-  InstantiateTemplateResult,
-  TemplateAnswers
-} from "$capabilities/templates/types/templates";
-
-class PlacementRejected extends Error {
-  readonly result: InstantiateTemplateResult;
-
-  constructor(result: InstantiateTemplateResult) {
-    super("Template placement was rejected");
-    this.result = result;
-  }
-}
-
-const unknownSetsInAnswers = (
-  store: ReturnType<typeof serverModel>["store"],
-  projectId: string,
-  answers: TemplateAnswers
-): readonly string[] => {
-  const missing = new Set<string>();
-  for (const answer of Object.values(answers)) {
-    for (const id of unknownSetsIn(store, projectId, answer)) missing.add(id);
-  }
-  return [...missing].sort();
-};
+import type { InstantiateTemplateResult } from "$capabilities/templates/types/templates";
 
 export const instantiateTemplate = async (input: unknown): Promise<InstantiateTemplateResult> => {
   const scope = await requireScope();
@@ -63,12 +29,8 @@ export const instantiateTemplate = async (input: unknown): Promise<InstantiateTe
   }
   const stored = found.template;
   let template: ReturnType<typeof admitStoredTemplate>;
-  let body: TemplateBody;
-  let holes;
   try {
     template = admitStoredTemplate(stored);
-    body = template.body;
-    holes = template.holes;
   } catch (error) {
     return {
       accepted: false,
@@ -79,201 +41,28 @@ export const instantiateTemplate = async (input: unknown): Promise<InstantiateTe
     };
   }
 
-  /** A text hole untouched by the caller falls back to its own default words. */
-  const texts: Record<string, string> = { ...asked.texts };
-  for (const hole of holes) {
-    if (kindOf(hole) !== "text" || hole.text === undefined) continue;
-    if (texts[hole.name] === undefined) texts[hole.name] = hole.text;
-  }
-  const unfilled = holes
-    .filter((hole) => kindOf(hole) === "text")
-    .map((hole) => hole.name)
-    .filter((name) => texts[name] === undefined || texts[name].trim() === "");
-  if (unfilled.length > 0) {
+  const inputs = placementInputsOf(template.holes, asked.answers ?? {}, asked.texts ?? {});
+  if (!inputs.accepted) {
     return {
       accepted: false,
       templateId: template._id,
       reason: "unsupported-body",
       revision: template.revision,
-      detail: `these need words before the template can be placed: ${unfilled.join(", ")}`
+      detail: inputs.detail
     };
   }
 
-  const answers = asked.answers ?? {};
-  const unknownSets = unknownSetsInAnswers(store, scope.projectId, answers);
-  if (unknownSets.length > 0) {
-    return {
-      accepted: false,
-      templateId: template._id,
-      reason: "unsupported-body",
-      revision: template.revision,
-      detail: `this project holds no resource set ${unknownSets.join(", ")}`
-    };
-  }
-
-  const projectId = asId<"projects">(scope.projectId);
-  const actor = { kind: "user" as const, userId: asId<"users">(scope.userId) };
-  const at = Date.now();
-  const title = asked.name ?? template.name;
-
-  const table =
-    body.resource === "document" ? "documents" : body.resource === "slides" ? "slideDecks" : "spreadsheets";
-  let placed: {
-    readonly result: Extract<InstantiateTemplateResult, { accepted: true }>;
-    readonly semanticKind: "document" | "slides" | "spreadsheet";
-  };
-  try {
-    placed = store.transaction((unit) => {
-      const resourceId = unit.create(table, {
-        projectId,
-        title,
-        createdBy: actor,
-        updatedBy: { ...actor },
-        updatedAt: at
-      });
-      const answered: Record<string, TemplateAnswers[string]> = {};
-      for (const [name, rule] of Object.entries(answers)) {
-        const term = normalizeScope(
-          unit,
-          scope.projectId,
-          actor,
-          { kind: "resource", resourceId, hole: name },
-          rule,
-          at
-        );
-        if (term !== undefined) answered[name] = term.term as TemplateAnswers[string];
-      }
-
-      const resolved = resolveTemplateScopes(body, holes, answered);
-      if (!resolved.accepted) {
-        throw new PlacementRejected({
-          accepted: false,
-          templateId: template._id,
-          reason: resolved.reason,
-          revision: template.revision,
-          detail: resolved.detail
-        });
-      }
-      if (resolved.undeclared.length > 0) {
-        throw new PlacementRejected({
-          accepted: false,
-          templateId: template._id,
-          reason: "unsupported-body",
-          revision: template.revision,
-          detail: `the body names a hole the template does not declare: ${resolved.undeclared.join(", ")}`
-        });
-      }
-
-      body = fillTemplateAtoms(resolved.body, texts);
-      body = withFreshOutputs(
-        unit,
-        scope.projectId,
-        actor,
-        { kind: body.resource, id: resourceId },
-        body,
-        at
-      ).body;
-      unit.update(`templates.${template._id}.lastUsedAt`, at);
-
-      if (body.resource === "document") {
-        const { resource: _resource, ...documentBody } = body;
-        unit.create("documentSnapshots", {
-          projectId,
-          resourceId,
-          revision: 0,
-          role: "leader",
-          part: 0,
-          body: documentBody,
-          at
-        });
-        enqueueSemanticOutboxFor(
-          model,
-          unit,
-          projectId,
-          { kind: "document", id: resourceId },
-          0
-        );
-        return {
-          semanticKind: "document" as const,
-          result: {
-            accepted: true as const,
-            templateId: template._id,
-            templateRevision: template.revision,
-            target: body.resource,
-            resourceId,
-            revision: 0 as const
-          }
-        };
-      }
-
-      if (body.resource === "slides") {
-        const { resource: _resource, ...slideDeckBody } = body;
-        unit.create("slideDeckSnapshots", {
-          projectId,
-          resourceId,
-          revision: 0,
-          role: "leader",
-          part: 0,
-          body: ensureSlideDeckReady(slideDeckBody),
-          at
-        });
-        enqueueSemanticOutboxFor(
-          model,
-          unit,
-          projectId,
-          { kind: "slides", id: resourceId },
-          0
-        );
-        return {
-          semanticKind: "slides" as const,
-          result: {
-            accepted: true as const,
-            templateId: template._id,
-            templateRevision: template.revision,
-            target: body.resource,
-            resourceId,
-            revision: 0 as const
-          }
-        };
-      }
-
-      const materialized = materializeSpreadsheet(body);
-      unit.create("spreadsheetSnapshots", {
-        projectId,
-        resourceId,
-        revision: 0,
-        role: "leader",
-        part: 0,
-        body: materialized.body,
-        at
-      });
-      unit.createMany(
-        "sheetCells",
-        materialized.cells.map((cell) => ({ projectId, resourceId, ...cell }))
-      );
-      enqueueSemanticOutboxFor(
-        model,
-        unit,
-        projectId,
-        { kind: "spreadsheet", id: resourceId },
-        0
-      );
-      return {
-        semanticKind: "spreadsheet" as const,
-        result: {
-          accepted: true as const,
-          templateId: template._id,
-          templateRevision: template.revision,
-          target: body.resource,
-          resourceId,
-          revision: 0 as const
-        }
-      };
-    });
-  } catch (error) {
-    if (error instanceof PlacementRejected) return error.result;
-    throw error;
-  }
-
-  return placed.result;
+  return placeTemplate({
+    model,
+    projectId: scope.projectId,
+    userId: scope.userId,
+    templateId: template._id,
+    templateRevision: template.revision,
+    templateName: template.name,
+    body: template.body,
+    holes: template.holes,
+    answers: asked.answers ?? {},
+    texts: inputs.texts,
+    ...(asked.name === undefined ? {} : { name: asked.name })
+  });
 };

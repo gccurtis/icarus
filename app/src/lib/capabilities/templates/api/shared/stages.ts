@@ -1,15 +1,19 @@
-import type { StoreUnitOfWork, TableName, TableRow } from "$model/server/store/index.server";
+import type { StoreUnitOfWork, TableName } from "$model/server/store/index.server";
 import { asId } from "$representation/data/behavior/core/id";
+import {
+  isStoredTemplateStage,
+  type StoredTemplateStage
+} from "$representation/data/behavior/templates/stored-stage";
 import type { Id } from "$representation/data/types/core/id";
 import type { DocumentBody } from "$representation/data/types/documents/body";
 import type { SlideDeckBody } from "$representation/data/types/slide-decks/body";
 
 import { forgetSemanticResourceFor } from "$capabilities/semantic-overlay/index";
-import { rowsOfResource } from "$capabilities/templates/api/shared/scopes";
+import { rowsOfResource } from "$capabilities/templates/api/shared/scope-rows";
 import { canonicalRowId, recordsIn } from "$capabilities/templates/api/shared/store";
 import type { TemplateStageTarget } from "$capabilities/templates/types/templates";
 
-export type Stage = TableRow<"templateStages">;
+export type Stage = StoredTemplateStage;
 
 export type ResourceTable = "documents" | "slideDecks";
 
@@ -25,25 +29,8 @@ export const resourceTableOfId = (resourceId: string): ResourceTable | undefined
       ? "slideDecks"
       : undefined;
 
-const isStageTarget = (value: unknown): value is TemplateStageTarget =>
-  value === "document" || value === "slides";
-
-const admittedStage = (row: Record<string, unknown>): Stage | undefined =>
-  canonicalRowId(row._id, "templateStages") !== undefined &&
-  typeof row.projectId === "string" &&
-  typeof row.templateId === "string" &&
-  Number.isSafeInteger(row.templateRevision) &&
-  isStageTarget(row.target) &&
-  typeof row.resourceId === "string" &&
-  resourceTableOfId(row.resourceId) === resourceTableOf(row.target)
-    ? (row as unknown as Stage)
-    : undefined;
-
 export const stagesIn = (store: StoreUnitOfWork): readonly Stage[] =>
-  recordsIn(store, "templateStages").flatMap((row) => {
-    const stage = admittedStage(row);
-    return stage === undefined ? [] : [stage];
-  });
+  recordsIn(store, "templateStages").filter(isStoredTemplateStage);
 
 export const stageById = (store: StoreUnitOfWork, stageId: string): Stage | undefined =>
   stagesIn(store).find((stage) => stage._id === stageId);
@@ -132,7 +119,11 @@ export const removeStage = (store: StoreUnitOfWork, stage: Stage): void => {
       snapshots
     )
   );
-  forgetSemanticResourceFor(store, stage.projectId, { kind, id: stage.resourceId });
+  if (stage.target === "document") {
+    forgetSemanticResourceFor(store, stage.projectId, { kind: "document", id: stage.resourceId });
+  } else {
+    forgetSemanticResourceFor(store, stage.projectId, { kind: "slides", id: stage.resourceId });
+  }
   for (const setId of rowsOfResource(store, stage.projectId, stage.resourceId)) {
     store.remove(`resourceSets.${setId}`);
   }

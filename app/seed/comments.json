@@ -9,7 +9,7 @@
         "id": "b1",
         "type": "text",
         "variant": "paragraph",
-        "atoms": [],
+        "atoms": [{ "id": "comment1-atom", "kind": "literal", "text": "Mira — is 41 minutes the restore or the dispatch? The log reads differently." }],
         "display": "Mira — is 41 minutes the restore or the dispatch? The log reads differently.",
         "marks": []
       }
@@ -38,7 +38,7 @@
         "id": "b1",
         "type": "text",
         "variant": "paragraph",
-        "atoms": [],
+        "atoms": [{ "id": "comment2-atom", "kind": "literal", "text": "This feeder is double-counted against the 2026 baseline." }],
         "display": "This feeder is double-counted against the 2026 baseline.",
         "marks": []
       }
@@ -67,7 +67,7 @@
         "id": "b1",
         "type": "text",
         "variant": "paragraph",
-        "atoms": [],
+        "atoms": [{ "id": "comment3-atom", "kind": "literal", "text": "Slide 6 still says Q4. Worth a pass before Thursday." }],
         "display": "Slide 6 still says Q4. Worth a pass before Thursday.",
         "marks": []
       }
@@ -96,7 +96,7 @@
         "id": "b1",
         "type": "text",
         "variant": "paragraph",
-        "atoms": [],
+        "atoms": [{ "id": "comment4-atom", "kind": "literal", "text": "Dispatch. I will split the two columns." }],
         "display": "Dispatch. I will split the two columns.",
         "marks": []
       }

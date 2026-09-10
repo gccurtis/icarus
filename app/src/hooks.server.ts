@@ -1,6 +1,30 @@
 import type { Handle, ServerInit } from "@sveltejs/kit";
-import { closeServerModel, initServerModel, serverModel } from "$runtime/server/start.server";
+import {
+  initServerModel,
+  ownServerModelLifetime,
+  serverModel
+} from "$runtime/server/start.server";
 import { resolveSession } from "$runtime/server/scope.server";
+
+const reportShutdownFailure = (error: unknown) => {
+  process.exitCode = 1;
+  console.error("model shutdown failed", error);
+};
+
+/**
+ * Release what the model holds after the adapter has stopped accepting work.
+ * During development, replacement removes this exact listener and releases its
+ * current graph before the incoming hook initializes. Raw process listeners
+ * otherwise survive Vite invalidation and accumulate across source changes.
+ */
+const releaseBeforeInitialization = ownServerModelLifetime(
+  {
+    add: (listener) => process.on("sveltekit:shutdown", listener),
+    remove: (listener) => process.off("sveltekit:shutdown", listener)
+  },
+  import.meta.hot,
+  reportShutdownFailure
+);
 
 /**
  * Builds the one server graph, before this process answers its first request.
@@ -15,6 +39,7 @@ import { resolveSession } from "$runtime/server/scope.server";
  * A configuration error now fails startup rather than one unlucky request.
  */
 export const init: ServerInit = async () => {
+  await releaseBeforeInitialization;
   await initServerModel();
 };
 
@@ -35,22 +60,3 @@ export const handle: Handle = async ({ event, resolve }) => {
 
   return resolve(event);
 };
-
-/**
- * Release what the model holds, after the server has stopped accepting work.
- *
- * `sveltekit:shutdown` rather than SIGTERM: the Node adapter installs its own
- * signal handler that closes the listener, drains in-flight requests, and only
- * then emits this event. Releasing on the raw signal would pull what the model
- * holds out from under requests still being served — today that is the log
- * stream, and a record written after close is a record nobody reads.
- *
- * `once` is wrong here for the same reason: the adapter's handler is permanent,
- * so a second signal never reaches Node's default disposition anyway.
- */
-process.on("sveltekit:shutdown", () => {
-  void closeServerModel().catch((error: unknown) => {
-    process.exitCode = 1;
-    console.error("model shutdown failed", error);
-  });
-});

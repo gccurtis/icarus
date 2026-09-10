@@ -12,7 +12,11 @@ export type {
   Weekday
 } from "$representation/data/types/agents/automation";
 export type { Tool, ToolId } from "$representation/data/types/agents/tool";
-export type { ResourceKind, ResourceRef } from "$representation/data/types/core/resource";
+export type {
+  ResourceKind,
+  ResourceRef,
+  ResourceSelectorKind
+} from "$representation/data/types/core/resource";
 export type { ResourceSet, SetTerm } from "$representation/data/types/core/resource-set";
 export {
   DEFAULT_TOOLS,

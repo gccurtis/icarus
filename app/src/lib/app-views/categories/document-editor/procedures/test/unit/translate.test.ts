@@ -33,7 +33,7 @@ test("the editor translator ignores represented header and footer roots", () => 
   const before: DocumentBody = {
     ...body([blocks("#r1", [text("#b1", "One")])]),
     header: {
-      rows: [blocks("#hr1", [text("#hb1", "Legacy header")])],
+      rows: [blocks("#hr1", [text("#hb1", "Reserved header")])],
       distanceFromEdge: 0.4
     }
   };

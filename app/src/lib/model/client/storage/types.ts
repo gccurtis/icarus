@@ -1,16 +1,11 @@
 /**
  * What survives a reload — the contract, and the shape it is written in.
  *
- * Importing nothing. The objects that persist depend on these types;
- * these depend on nothing, which is what stops a storage format quietly
- * acquiring a dependency on a domain type that then cannot change without
- * invalidating everyone's saved state.
- *
- * That direction is why a persisted tab carries a bare `string` kind rather than
- * a `ResourceKind`: the stored value is whatever was written last time, possibly
- * by an older build, and treating it as a current domain type would be a lie the
- * compiler cannot catch. The same holds for a stored context id.
+ * The stored discriminator is the current closed UI Category vocabulary. Reads
+ * prove it again at the boundary; a stale or unknown value discards the whole
+ * cache rather than entering the workbench as a partially understood tab.
  */
+import type { Id } from "$representation/data/types/core/id";
 
 /** Every project's key begins with this, so one prefix finds them all. */
 export const STORAGE_KEY_PREFIX = "icarus.client";
@@ -26,12 +21,6 @@ export const storageKey = (project: string): string => `${STORAGE_KEY_PREFIX}.${
  * Bumped when a shape changes incompatibly. A mismatch discards rather than
  * migrating — this is a cache of panel widths and open tabs, so being wrong
  * costs one re-drag, and migration code for it would outlive its usefulness.
- *
- * Version 2 was the first with panel geometry on the tab rather than in a
- * document-wide preferences section. Version 3 renamed a tab's remembered rail
- * position from `activityId` to `contextId`, which is a rename in the stored
- * document as much as in the code — discarding costs one rail position per tab,
- * which is exactly the kind of loss this policy exists to accept.
  */
 export const STORAGE_VERSION = 3;
 
@@ -67,12 +56,26 @@ export type PersistedTabOptions = {
  * minted `tab-1` makes lookups return the wrong tab. Restoring replays the
  * resource ref through `open()` instead, which is the same path a click takes.
  */
-export type PersistedTab = readonly [kind: string, id: string, options?: PersistedTabOptions];
+export type PersistedTabIdentity =
+  | readonly [category: "document-editor", id: Id<"documents">]
+  | readonly [category: "slide-deck-editor", id: Id<"slideDecks">]
+  | readonly [category: "spreadsheet-editor", id: Id<"spreadsheets">]
+  | readonly [category: "research", id: Id<"researchThreads">]
+  | readonly [category: "analysis", id: string]
+  | readonly [category: "project-overview", id: "project-overview"]
+  | readonly [category: "agents", id: "agents"]
+  | readonly [category: "templates", id: "templates"]
+  | readonly [category: "new-tab", id: "new-tab"]
+  | readonly [category: "context-editor", id: "context-editor"];
+
+export type PersistedTab =
+  | PersistedTabIdentity
+  | readonly [...PersistedTabIdentity, options: PersistedTabOptions];
 
 export type PersistedWorkbench = {
   readonly tabs: readonly PersistedTab[];
   /** A ref rather than an index, so a dropped tab cannot silently activate its neighbour. */
-  readonly active?: readonly [kind: string, id: string];
+  readonly active?: PersistedTabIdentity;
 };
 
 /**
@@ -83,7 +86,7 @@ export type PersistedWorkbench = {
  * persisted that is not workbench state.
  */
 export type PersistedClient = {
-  readonly v: number;
+  readonly v: typeof STORAGE_VERSION;
   readonly workbench?: PersistedWorkbench;
 };
 

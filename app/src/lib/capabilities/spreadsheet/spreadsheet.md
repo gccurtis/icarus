@@ -20,6 +20,11 @@ cell whose row changed, appeared or vanished is written to `sheetCells` on its
 own, carrying its row's sort key. Nothing partial is written: the whole result is
 computed before any row is touched.
 
+**Stored state is admitted, never completed by a reader.** A leader or
+neighbouring snapshot without the complete current body is quarantined rather
+than treated as a new empty sheet. A formula without a valid `usedBy` list
+rejects the transaction, so an edit cannot erase or invent formula ownership.
+
 **A refusal is an answer, not a throw.** `accepted: false` with `stale` or
 `unresolved` and the revision the leader is actually at. Only a genuine fault
 throws.

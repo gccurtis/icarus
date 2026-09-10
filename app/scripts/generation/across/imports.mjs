@@ -15,12 +15,6 @@ import { relative, resolve, sep } from "node:path";
 import { loadTree } from "../../lint/shared/tree.mjs";
 import { invocation, usage } from "../shared/cli.mjs";
 
-/** Aliases that no longer exist, so a specifier still using one can be resolved. */
-const RETIRED = {
-  $components: "src/lib/components",
-  "$lib/components/vendor": "src/lib/components/vendored"
-};
-
 /** Provided by SvelteKit; there is no file to resolve and no alias to rewrite to. */
 const PROVIDED = /^\$(app|env|service-worker)\b/;
 
@@ -57,15 +51,6 @@ const canonical = (file) => {
   return null;
 };
 
-const viaRetired = (specifier, from) => {
-  const alias = Object.keys(RETIRED)
-    .sort((a, b) => b.length - a.length)
-    .find((name) => specifier === name || specifier.startsWith(`${name}/`));
-  if (!alias) return null;
-  const mapped = `${RETIRED[alias]}${specifier.slice(alias.length)}`;
-  return tree.resolve(`$lib/${mapped.slice("src/lib/".length)}`, from);
-};
-
 const rewritten = [];
 const unresolved = [];
 const broken = [];
@@ -83,7 +68,7 @@ for (const path of tree.files) {
     if (inRoutes && framework(specifier)) continue;
     if (PROVIDED.test(specifier)) continue;
 
-    const file = tree.resolve(specifier, path) ?? viaRetired(specifier, path);
+    const file = tree.resolve(specifier, path);
     if (!file) {
       if (specifier.startsWith(".") || specifier.startsWith("$")) {
         unresolved.push({ path, specifier });

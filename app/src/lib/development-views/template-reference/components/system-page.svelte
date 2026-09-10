@@ -212,10 +212,10 @@
       </div>
 
       <p class="tref-prose">
-        A <b>resource set</b> — “Winter filings”, “Field evidence” — is a named selection of the project's
-        things, made in Project Overview's Contexts panel. Those are the names in the Insert modal's
-        dropdown, offered beside “everything in the project” and the five kinds. A set that a hole's
-        default names cannot be deleted while it does.
+        A <b>resource set</b> persists a scope rule. The current UI creates private, owned rows at the
+        point a template hole or a placed Prompt Block needs a rule that cannot be written inline.
+        Existing named rows remain explicit reusable choices in scope builders, but Project Overview
+        no longer exposes a global place to create or manage them.
       </p>
     </section>
 
@@ -269,9 +269,10 @@
       <div class="tref-figure"><DiagramPanel /></div>
 
       <p class="tref-prose">
-        Project Overview carries the third panel, <b>Contexts</b>, where resource sets are made and
-        counted; the templates library carries the fourth surface, the inspector, where a template's name,
-        description, tags and holes are read and Use, Edit, Duplicate and Delete sit in one row.
+        Project Overview carries no Resource Sets panel. The templates library carries the other
+        surface, the inspector, where a template's name, description, tags and holes are read and Use,
+        Edit, Duplicate and Delete sit in one row. Scope rules are created from the control that needs
+        them, not curated globally first.
       </p>
     </section>
 

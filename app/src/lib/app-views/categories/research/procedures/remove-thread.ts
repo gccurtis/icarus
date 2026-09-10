@@ -1,4 +1,5 @@
 import { readThreads, removeThread as removeThreadRemote } from "$capabilities/research-chat/index.remote";
+import { readProjectResourceIndex } from "$capabilities/project-resources/index.remote";
 import type { WorkspaceStateModel } from "$model/client/workspace-state";
 
 import { flightKey, type Working } from "$app-views/categories/research/procedures/chat";
@@ -12,7 +13,7 @@ export const removeThread = async (
 ): Promise<void> => {
   try {
     const result = await view.singleFlight(flightKey(view, "remove", threadId), () =>
-      removeThreadRemote({ threadId }).updates(readThreads)
+      removeThreadRemote({ threadId }).updates(readThreads, readProjectResourceIndex)
     );
     if (state.mounted && !result.accepted) state.failure = result.detail;
   } catch (error) {

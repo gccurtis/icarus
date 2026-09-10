@@ -81,7 +81,8 @@ const dense = async (
   texts: readonly string[],
   task: "retrieval.passage" | "retrieval.query",
   operation: Operation,
-  lateChunking: boolean
+  lateChunking: boolean,
+  signal?: AbortSignal
 ): Promise<EmbeddingResult<number[][]>> => {
   const input = requiredTexts(texts, operation);
   const response = await requestJina(state, {
@@ -92,7 +93,7 @@ const dense = async (
     embedding_type: "float",
     truncate: false,
     ...(lateChunking ? { late_chunking: true } : {})
-  });
+  }, signal);
   const value = orderedData(response, input.length).map((item) =>
     finiteVector(item.embedding, state.dimensions)
   );
@@ -102,7 +103,8 @@ const dense = async (
 /** Contextual token rows used only for boundary detection. */
 export const embedTokenField = async (
   state: EmbeddingState,
-  text: string
+  text: string,
+  signal?: AbortSignal
 ): Promise<EmbeddingResult<TokenEmbeddingField>> => {
   requiredTexts([text], "tokenField");
   const response = await requestJina(state, {
@@ -113,7 +115,7 @@ export const embedTokenField = async (
     return_tokenized_input: true,
     embedding_type: "float",
     truncate: false
-  });
+  }, signal);
   const [row] = orderedData(response, 1);
   const labels = row.tokenized_input;
   const embeddings = row.embeddings;
@@ -137,29 +139,33 @@ export const embedTokenField = async (
 /** Final spans from one source are contextualized together through late chunking. */
 export const embedWindowedPassages = (
   state: EmbeddingState,
-  texts: readonly string[]
+  texts: readonly string[],
+  signal?: AbortSignal
 ): Promise<EmbeddingResult<number[][]>> =>
-  dense(state, texts, "retrieval.passage", "windowedPassageVectors", true);
+  dense(state, texts, "retrieval.passage", "windowedPassageVectors", true, signal);
 
 /** One complete passage receives one vector without contextual late chunking. */
 export const embedPassage = async (
   state: EmbeddingState,
-  text: string
+  text: string,
+  signal?: AbortSignal
 ): Promise<EmbeddingResult<number[]>> => {
-  const result = await dense(state, [text], "retrieval.passage", "passageVector", false);
+  const result = await dense(state, [text], "retrieval.passage", "passageVector", false, signal);
   return { value: result.value[0], usage: result.usage };
 };
 
 export const embedPassages = (
   state: EmbeddingState,
-  texts: readonly string[]
+  texts: readonly string[],
+  signal?: AbortSignal
 ): Promise<EmbeddingResult<number[][]>> =>
-  dense(state, texts, "retrieval.passage", "passageVectors", false);
+  dense(state, texts, "retrieval.passage", "passageVectors", false, signal);
 
 /** Native image vector. Jina v4 accepts a URL or raw base64 under an image input object. */
 export const embedImage = async (
   state: EmbeddingState,
-  input: ImageEmbeddingInput
+  input: ImageEmbeddingInput,
+  signal?: AbortSignal
 ): Promise<EmbeddingResult<number[]>> => {
   const image = input.kind === "url" ? input.url.trim() : input.base64.trim();
   if (!image) throw new Error("image embedding input must not be blank");
@@ -181,7 +187,7 @@ export const embedImage = async (
     dimensions: state.dimensions,
     embedding_type: "float",
     truncate: false
-  });
+  }, signal);
   const [row] = orderedData(response, 1);
   return {
     value: finiteVector(row.embedding, state.dimensions),
@@ -192,10 +198,11 @@ export const embedImage = async (
 /** A query is embedded on the asymmetric query side of the same vector space. */
 export const embedQuery = async (
   state: EmbeddingState,
-  text: string
+  text: string,
+  signal?: AbortSignal
 ): Promise<EmbeddingResult<number[]>> => {
   if (!text.trim()) throw new Error("query text must not be blank");
-  const result = await dense(state, [text], "retrieval.query", "queryVector", false);
+  const result = await dense(state, [text], "retrieval.query", "queryVector", false, signal);
   return { value: result.value[0], usage: result.usage };
 };
 

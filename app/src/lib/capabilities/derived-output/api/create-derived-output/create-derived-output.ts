@@ -5,6 +5,7 @@ import type { Id } from "$representation/data/types/core/id";
 import type { CreateDerivedOutputInput, CreateDerivedOutputResult } from "$capabilities/derived-output/types/create-derived-output";
 import { validateCreateDerivedOutput } from "$capabilities/derived-output/api/create-derived-output/validate-create-derived-output";
 import { outputOf } from "$capabilities/derived-output/api/shared/rows";
+import { assertReusableScopeReferences } from "$capabilities/derived-output/api/shared/scope-references";
 
 /**
  * create-derived-output.
@@ -19,6 +20,7 @@ export const createDerivedOutput = async (input: unknown): Promise<CreateDerived
   const createDerivedOutputInput = validateCreateDerivedOutput(input);
   const model = serverModel();
   const projectId = scope.projectId as Id<"projects">;
+  assertReusableScopeReferences(model.store, projectId, createDerivedOutputInput.scope);
   const now = Date.now();
   const id = model.store.create("derivedOutputs", {
     projectId,

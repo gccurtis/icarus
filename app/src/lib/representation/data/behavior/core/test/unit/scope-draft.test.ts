@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { ResourceSet } from "$representation/data/types/core/resource-set";
+import { admitResourceRef } from "$representation/data/behavior/core/resource";
 import {
   builderView,
   closesLoop,
@@ -22,13 +23,13 @@ import {
 } from "$representation/data/behavior/core/scope-draft";
 
 const resources = [
-  { id: "documents:1", kind: "document", name: "Winter readiness brief" },
-  { id: "documents:2", kind: "document", name: "Decision memo" },
-  { id: "slideDecks:1", kind: "slides", name: "Board review" },
-  { id: "findings:1", kind: "finding", name: "Pump housing" }
+  { ...admitResourceRef({ id: "documents:1", kind: "document" }), name: "Winter readiness brief" },
+  { ...admitResourceRef({ id: "documents:2", kind: "document" }), name: "Decision memo" },
+  { ...admitResourceRef({ id: "slideDecks:1", kind: "slides" }), name: "Board review" },
+  { ...admitResourceRef({ id: "findings:1", kind: "finding" }), name: "Pump housing" }
 ];
 
-const catalogue = resources.map((entry) => ({ kind: entry.kind, id: entry.id }));
+const catalogue = resources.map((entry) => admitResourceRef({ kind: entry.kind, id: entry.id }));
 
 const named = new Map<string, ResourceSet>([
   ["resourceSets:1", { include: [{ select: "kinds", kinds: ["document"] }], exclude: [] }],
@@ -70,7 +71,7 @@ describe("a draft", () => {
         { select: "kinds", kinds: ["document"] },
         { select: "set", setId: "resourceSets:1" as never }
       ],
-      exclude: [{ select: "resources", refs: [{ kind: "document", id: "documents:2" }] }]
+      exclude: [{ select: "resources", refs: [admitResourceRef({ kind: "document", id: "documents:2" })] }]
     };
     expect(
       ruleWords(draft, {
@@ -104,7 +105,7 @@ describe("whether a rule needs a row", () => {
   it("does for a particular resource, which a template cannot name", () => {
     expect(
       needsRow({
-        include: [{ select: "resources", refs: [{ kind: "document", id: "documents:1" }] }],
+        include: [{ select: "resources", refs: [admitResourceRef({ kind: "document", id: "documents:1" })] }],
         exclude: []
       })
     ).toBe(true);
@@ -114,7 +115,7 @@ describe("whether a rule needs a row", () => {
 describe("the two doors out of a draft", () => {
   it("narrows to a concrete set when nothing names a hole", () => {
     const draft: ScopeDraft = {
-      include: [{ select: "resources", refs: [{ kind: "document", id: "documents:1" }] }],
+      include: [{ select: "resources", refs: [admitResourceRef({ kind: "document", id: "documents:1" })] }],
       exclude: []
     };
     expect(narrowed(draft)).not.toBeUndefined();
@@ -165,7 +166,7 @@ describe("the builder's view", () => {
   it("hands over rows, a sentence, a count and three sources", () => {
     const draft: ScopeDraft = {
       include: [{ select: "kinds", kinds: ["document"] }],
-      exclude: [{ select: "resources", refs: [{ kind: "document", id: "documents:2" }] }]
+      exclude: [{ select: "resources", refs: [admitResourceRef({ kind: "document", id: "documents:2" })] }]
     };
     const view = builderView(draft, { resources, sets: [] });
     expect(view.whole).toBe(false);

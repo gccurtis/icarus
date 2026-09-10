@@ -4,6 +4,7 @@ import { describe, it } from "vitest";
 import { defineStore } from "$model/server/store/index.server";
 import type { ServerModel } from "$runtime/server/start.server";
 import type { Id } from "$representation/data/types/core/id";
+import type { ResourceRef } from "$representation/data/types/core/resource";
 import type { DocumentBody } from "$representation/data/types/documents/body";
 import { syncSemanticMaterialsFor } from "$capabilities/semantic-overlay/api/shared/material-sync";
 
@@ -56,14 +57,13 @@ const fixture = (
   // Store IDs are opaque, so make the document row addressable by the ref used
   // in the snapshot through a second explicitly linked resource.
   const documents = store.read("documents") as unknown as { rows: Array<{ _id: string }> };
-  const createdDocumentId = documents.rows[0]._id;
+  const createdDocumentId = documents.rows[0]._id as Id<"documents">;
   store.update(`documentSnapshots.${snapshotId}.resourceId`, createdDocumentId);
   const createdFileId = store.create("externalFiles", {
     projectId,
     name: "logo.png",
     mediaType: "image/png",
     subkind: "image",
-    size: 128,
     storageId: "_storage:logo",
     hash: "a".repeat(64),
     origin: { kind: "upload" },
@@ -72,7 +72,7 @@ const fixture = (
   });
   const rewired = body(2, createdFileId);
   store.update(`documentSnapshots.${snapshotId}.body`, rewired);
-  const ref = { kind: "document", id: createdDocumentId };
+  const ref: ResourceRef = { kind: "document", id: createdDocumentId };
   const usage = (operation: string, inputItems = 1) => ({
     operation,
     api: "deterministic-test",

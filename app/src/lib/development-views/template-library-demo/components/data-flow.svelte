@@ -8,7 +8,7 @@
   import ServerCog from "@lucide/svelte/icons/server-cog";
 
   const LIBRARY = [
-    { label: "Seed", detail: "templates + provenance resources", icon: FileJson2 },
+    { label: "Seed", detail: "templates + independent example resources", icon: FileJson2 },
     { label: "State", detail: "templates · versions · created resources", icon: Database },
     { label: "Door", detail: "Templates capability", icon: ServerCog },
     { label: "Read model", detail: "library procedures", icon: Braces },

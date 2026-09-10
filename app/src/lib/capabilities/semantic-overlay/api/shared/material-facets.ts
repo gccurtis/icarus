@@ -110,8 +110,10 @@ export const embedMaterialFacets = async (
   seed: MaterialSeed,
   descriptor?: GeneratedMaterialDescriptor,
   contextRefs: readonly ResourceRef[] = [],
-  reusable: readonly ReusableMaterialFacet[] = []
+  reusable: readonly ReusableMaterialFacet[] = [],
+  signal?: AbortSignal
 ): Promise<{ facets: EmbeddedMaterialFacet[]; usage: ProviderUsage[]; visualError?: string }> => {
+  signal?.throwIfAborted();
   const values = textFacets(seed, descriptor, contextRefs);
   const drafts = values.map((value) => ({
     ...value,
@@ -122,7 +124,10 @@ export const embedMaterialFacets = async (
   const usage: ProviderUsage[] = [];
   const newlyEmbedded = new Map<string, number[]>();
   if (missing.length > 0) {
-    const embedded = await model.embedding.passages(missing.map((value) => value.text));
+    const embedded = await model.embedding.passages(
+      missing.map((value) => value.text),
+      signal
+    );
     for (const [index, facet] of missing.entries()) {
       newlyEmbedded.set(facetKey(facet), embedded.value[index]);
     }
@@ -148,7 +153,7 @@ export const embedMaterialFacets = async (
     });
   } else if (seed.kind === "image" && seed.nativeImage !== undefined) {
     try {
-      const visual = await model.embedding.image(seed.nativeImage);
+      const visual = await model.embedding.image(seed.nativeImage, signal);
       facets.push({
         facet: "nativeVisual",
         trust: "native",
@@ -157,6 +162,7 @@ export const embedMaterialFacets = async (
       });
       usage.push(visual.usage);
     } catch (error) {
+      if (signal?.aborted === true) throw error;
       const visualError = (error instanceof Error ? error.message : "Native image embedding failed")
         .replace(/Bearer\s+\S+/gi, "Bearer [redacted]")
         .replace(/(?:api[-_ ]?key)\s*[:=]\s*\S+/gi, "apiKey=[redacted]")

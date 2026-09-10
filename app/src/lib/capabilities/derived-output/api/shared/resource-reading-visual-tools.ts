@@ -1,4 +1,5 @@
 import { Buffer } from "node:buffer";
+import { admitResourceRef } from "$representation/data/behavior/core/resource";
 
 import {
   intelligenceToolOutput,
@@ -28,7 +29,10 @@ export const visualReadingTools = (
     },
     execute: async (value) => {
       const held = record(value, "view_slide input must be an object");
-      const ref = { kind: "slides", id: text(held.resourceId, "resourceId") };
+      const ref = admitResourceRef(
+        { kind: "slides", id: text(held.resourceId, "resourceId") },
+        "slide-deck resource"
+      );
       if (!context.allowed(ref)) {
         throw new Error("slide is outside the Derived Output Resource Set");
       }

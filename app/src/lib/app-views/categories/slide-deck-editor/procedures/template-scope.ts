@@ -10,10 +10,12 @@ import {
 import type { TemplateAnswers } from "$capabilities/templates/index.remote";
 import {
   narrowed,
+  type NamedResourceRef,
   type ScopeDraft,
   type ScopeNames,
   type ScopeOffering
 } from "$representation/data/behavior/core/scope-draft";
+import { admitResourceRef } from "$representation/data/behavior/core/resource";
 
 export const resourceSets = () => readResourceSets();
 export const setsIn = (answer: ReadResourceSetsResult | undefined): readonly ResourceSetItem[] =>
@@ -21,8 +23,11 @@ export const setsIn = (answer: ReadResourceSetsResult | undefined): readonly Res
 export const projectResources = () => readProjectResourceIndex();
 export const resourcesIn = (
   answer: ProjectResourceIndex | undefined
-): readonly { readonly id: string; readonly kind: string; readonly name: string }[] =>
-  (answer?.resources ?? []).map((item) => ({ id: item.id, kind: item.kind, name: item.name }));
+): readonly NamedResourceRef[] =>
+  (answer?.resources ?? []).map((item) => ({
+    ...admitResourceRef({ kind: item.kind, id: item.id }, "project resource index item"),
+    name: item.name
+  }));
 
 export const scopeNamesOf = (
   sets: readonly ResourceSetItem[],
@@ -34,7 +39,7 @@ export const scopeNamesOf = (
 
 export const offeringOf = (
   sets: readonly ResourceSetItem[],
-  resources: readonly { readonly id: string; readonly kind: string; readonly name: string }[]
+  resources: readonly NamedResourceRef[]
 ): ScopeOffering => ({
   sets: sets.map((set) => ({ id: set.id, name: set.name, set: set.set })),
   resources

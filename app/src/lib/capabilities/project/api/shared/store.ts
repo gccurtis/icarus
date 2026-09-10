@@ -17,6 +17,16 @@ export const recordOf = (value: unknown): Record<string, unknown> | undefined =>
     ? (value as Record<string, unknown>)
     : undefined;
 
+export const exact = (
+  value: Record<string, unknown>,
+  required: readonly string[],
+  optional: readonly string[] = []
+): boolean => {
+  const keys = Object.keys(value);
+  return required.every((field) => keys.includes(field)) &&
+    keys.every((field) => required.includes(field) || optional.includes(field));
+};
+
 export const recordsIn = (
   store: StoreReads,
   table: TableName

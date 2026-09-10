@@ -8,7 +8,7 @@ import Sheet from "@lucide/svelte/icons/sheet";
 import Target from "@lucide/svelte/icons/target";
 
 import { isSingleton, type Category, type Singleton, type Tab } from "$model/client/workspace-state";
-import { nameOf } from "$surfaces/tab-bar/procedures/resource-name";
+import { nameOf, type ResourceNames } from "$surfaces/tab-bar/procedures/resource-name";
 
 /**
  * What an opened tab is called, and what it looks like.
@@ -28,12 +28,12 @@ export type OpenedTab = Tab & { readonly category: OpenedCategory };
 export const isOpened = (tab: Tab): tab is OpenedTab => !isSingleton(tab.category);
 
 export type CategoryEntry = {
-  readonly label: (tab: OpenedTab) => string;
+  readonly label: (tab: OpenedTab, names: ResourceNames) => string;
   readonly icon: Component;
 };
 
-const subject = (tab: OpenedTab): string =>
-  tab.resourceId === undefined ? "Untitled" : nameOf(tab.resourceId);
+const subject = (tab: OpenedTab, names: ResourceNames): string =>
+  tab.resourceId === undefined ? "Untitled" : nameOf(tab.resourceId, names);
 
 export const CATEGORY_ENTRIES: Record<OpenedCategory, CategoryEntry> = {
   // Named by what they hold: two tabs both reading "Analysis" would be a strip
@@ -48,4 +48,5 @@ export const CATEGORY_ENTRIES: Record<OpenedCategory, CategoryEntry> = {
   "new-tab": { label: () => "New tab", icon: Plus }
 };
 
-export const labelOf = (tab: OpenedTab): string => CATEGORY_ENTRIES[tab.category].label(tab);
+export const labelOf = (tab: OpenedTab, names: ResourceNames): string =>
+  CATEGORY_ENTRIES[tab.category].label(tab, names);

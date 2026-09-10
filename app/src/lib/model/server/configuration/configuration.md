@@ -64,13 +64,15 @@ The directory is resolved from the process working directory, deliberately not
 from this module's own location. Under Vite these modules are bundled into a
 chunk under `build/server/`, so `import.meta.url` would resolve to a directory
 that exists and is wrong — producing an empty configuration rather than an error.
-The backend derived it that way, and it was one of three path derivations this
-migration had to repair.
+The backend once derived it that way; this is one of three path derivation
+defects corrected in the current implementation.
 
-Sections merge in lexicographic order; optional `local.yaml` merges last, which
-is what makes it the place for a real API key without touching a tracked file.
-Nested mappings merge; arrays and scalars replace, so a configured list is the
-list rather than an append to a default.
+Sections merge in lexicographic order; optional `local.yaml` merges after them,
+which is what makes it the place for a real API key without touching a tracked
+file. A process can explicitly select one file directly under
+`configuration/overlays/`; that confined overlay merges last and is otherwise
+inert. Nested mappings merge; arrays and scalars replace, so a configured list
+is the list rather than an append to a default.
 
 ## Terminal Behaviour
 

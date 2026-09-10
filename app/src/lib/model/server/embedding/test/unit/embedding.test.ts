@@ -183,6 +183,65 @@ test("HTTP errors are bounded and carry the provider status", async () => {
   await assert.rejects(() => embedding.query("test"), /HTTP 422: invalid request/);
 });
 
+test("a caller abort reaches the active Jina request", async () => {
+  let providerSignal: AbortSignal | undefined;
+  let entered!: () => void;
+  const active = new Promise<void>((resolve) => {
+    entered = resolve;
+  });
+  const embedding = defineEmbedding(
+    input(async (_url, init) => {
+      const signal = init?.signal;
+      assert.ok(signal instanceof AbortSignal);
+      providerSignal = signal;
+      entered();
+      await new Promise<never>((_resolve, reject) => {
+        signal.addEventListener("abort", () => reject(signal.reason), {
+          once: true
+        });
+      });
+      throw new Error("unreachable");
+    })
+  );
+  const controller = new AbortController();
+  const pending = embedding.query("interrupt this", controller.signal);
+  await active;
+
+  controller.abort();
+
+  await assert.rejects(pending, (error: Error) => error.name === "AbortError");
+  assert.equal(providerSignal?.aborted, true);
+});
+
+test("a caller abort remains attached while the provider response body is read", async () => {
+  let entered!: () => void;
+  const reading = new Promise<void>((resolve) => {
+    entered = resolve;
+  });
+  const embedding = defineEmbedding(
+    input(async (_url, init) => ({
+      ok: true,
+      status: 200,
+      headers: new Headers(),
+      json: async () => {
+        const signal = init?.signal;
+        assert.ok(signal instanceof AbortSignal);
+        entered();
+        await new Promise<never>((_resolve, reject) => {
+          signal.addEventListener("abort", () => reject(signal.reason), { once: true });
+        });
+      }
+    }) as Response)
+  );
+  const controller = new AbortController();
+  const pending = embedding.query("interrupt the response body", controller.signal);
+  await reading;
+
+  controller.abort();
+
+  await assert.rejects(pending, (error: Error) => error.name === "AbortError");
+});
+
 test("constructor validates the complete Jina coordinate space", () => {
   const values: Record<string, unknown> = {
     "semanticOverlay.embedding.api": "jina",

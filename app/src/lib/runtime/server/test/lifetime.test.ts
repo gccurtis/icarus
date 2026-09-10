@@ -133,3 +133,88 @@ test("shutdown with nothing built still refuses a later caller", async () => {
   assert.throws(() => serverModel(), /shutting down and cannot be rebuilt/);
   assert.equal(build.calls, 0);
 });
+
+test("hot replacement removes its listener and releases before reinitialization", async () => {
+  const {
+    closeServerModel,
+    initServerModel,
+    ownServerModelLifetime
+  } = await entry();
+  await initServerModel();
+
+  const listeners = new Set<() => void>();
+  const data: {
+    icarusServerModelRelease?: Promise<void>;
+    icarusServerShutdownListener?: () => void;
+  } = {};
+  const disposals: Array<(held: typeof data) => void> = [];
+  const failures: unknown[] = [];
+  const hot = {
+    data,
+    dispose: (callback: (held: typeof data) => void) => {
+      disposals.push(callback);
+    }
+  };
+  const channel = {
+    add: (listener: () => void) => {
+      listeners.add(listener);
+    },
+    remove: (listener: () => void) => {
+      listeners.delete(listener);
+    }
+  };
+  const reportFailure = (error: unknown) => {
+    failures.push(error);
+  };
+
+  const firstPendingRelease = ownServerModelLifetime(channel, hot, reportFailure);
+  assert.equal(firstPendingRelease, undefined);
+  assert.equal(listeners.size, 1);
+  assert.equal(disposals.length, 1);
+
+  disposals[0]?.(data);
+  assert.equal(listeners.size, 0);
+  assert.ok(data.icarusServerModelRelease instanceof Promise);
+  await data.icarusServerModelRelease;
+  assert.equal(build.closes, 1);
+
+  await initServerModel();
+  assert.equal(build.calls, 2);
+
+  const secondPendingRelease = ownServerModelLifetime(channel, hot, reportFailure);
+  assert.equal(secondPendingRelease, data.icarusServerModelRelease);
+  assert.equal(listeners.size, 1);
+
+  for (const listener of listeners) listener();
+  await closeServerModel();
+
+  assert.equal(build.closes, 2);
+  assert.deepEqual(failures, []);
+});
+
+test("hot registration replaces a surviving listener instead of accumulating", async () => {
+  const { ownServerModelLifetime } = await entry();
+  const listeners = new Set<() => void>();
+  const data: {
+    icarusServerModelRelease?: Promise<void>;
+    icarusServerShutdownListener?: () => void;
+  } = {};
+  const hot = {
+    data,
+    dispose: (_callback: (held: typeof data) => void) => {}
+  };
+  const channel = {
+    add: (listener: () => void) => {
+      listeners.add(listener);
+    },
+    remove: (listener: () => void) => {
+      listeners.delete(listener);
+    }
+  };
+
+  ownServerModelLifetime(channel, hot, () => {});
+  ownServerModelLifetime(channel, hot, () => {});
+
+  assert.equal(listeners.size, 1);
+  assert.equal(listeners.has(data.icarusServerShutdownListener!), true);
+});

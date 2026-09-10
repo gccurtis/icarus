@@ -93,7 +93,7 @@ export const DOCUMENT_FINDINGS: readonly Finding[] = [
     title: "The style schema could not express strike cleanly",
     symptom: "Inline text supported strikethrough but document named styles did not, while bold and fontWeight competed.",
     cause: "The style-set type lacked strikethrough and did not define precedence for two bold representations.",
-    fix: "Add strikethrough across schema/renderer and define explicit Boolean-bold precedence while clearing legacy weight through the control.",
+    fix: "Add strikethrough across schema/renderer and define explicit Boolean-bold precedence while clearing numeric weight through the control.",
     acceptance: "Every visible style toggle round-trips through snapshot, template, renderer, and editor.",
     evidence: ["representation/data/types/documents/style-set.ts", "document-editor/procedures/styles.ts"]
   },
@@ -117,7 +117,7 @@ export const DOCUMENT_FINDINGS: readonly Finding[] = [
     title: "Header/footer authoring shipped two visibly different renderers",
     symptom: "The editable first-page content retained rich blocks while later pages flattened it into generic text.",
     cause: "One partial feature combined canonical ProseMirror nodes with a separate lossy decoration renderer.",
-    fix: "Withdraw header/footer controls, schema nodes, projections, selection lookup, and editor translation. Retain the representation for compatibility and isolate page numbers in their own read-only projection.",
+    fix: "Withdraw header/footer controls, schema nodes, projections, selection lookup, and editor translation. Keep reserved page furniture in the current representation and isolate page numbers in their own read-only projection.",
     acceptance: "No header/footer content or controls appear in the editor, no editor operation targets those roots, and existing page numbers remain visible.",
     evidence: ["document-editor/context/layout.svelte", "document-editor/procedures/page-numbers.ts", "document-editor/procedures/translate.ts"]
   },

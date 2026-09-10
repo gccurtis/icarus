@@ -1,8 +1,12 @@
 import type { PromptBlockState } from "$app-views/categories/slide-deck-editor/inspector/prompt-block.state.svelte";
+import type { PromptBlock } from "$representation/data/types/content/content-block";
 
 export const synchronizePromptBlockDraft = (
   state: PromptBlockState,
-  selected: () => string | undefined
+  selected: () => PromptBlock | undefined
 ): void => {
-  $effect(() => state.select(selected()));
+  $effect(() => {
+    const block = selected();
+    state.select(block?.id, block?.prompt);
+  });
 };

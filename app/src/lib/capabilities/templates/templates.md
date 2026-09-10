@@ -9,6 +9,7 @@ opened in an ordinary editor and saved into.
 | `readTemplateLibrary` | Every valid template in the scoped project, projected as library metadata with creator name, permissions and last use, plus quarantined invalid row notices |
 | `readTemplate` | The full body and holes for one valid template in the project, `unavailable` for a corrupt row, or `null` |
 | `readResourceTemplate` | For one document or deck: the stage it is, if any |
+| `readTemplateStageIndex` | Every exact current template working-copy identity in the scoped project, for chrome that must name editor subjects without making them listable project material |
 | `createTemplate` | A template in the scoped project with a server-built valid empty body and revision-one history |
 | `createTemplateFromResource` | A template from a live document, a live deck, or one slide of a deck as a one-slide deck, its body made portable first; says what could not travel |
 | `updateTemplate` | A compare-and-swap name, description, tag, hole-help or hole-list update plus an immutable version snapshot |
@@ -68,6 +69,8 @@ because the whole project is the floor. A template atom in the prose makes it a
 That last case is the only thing that can hold a placement up, and
 `instantiateTemplate` refuses it with the names of what is still empty. A name
 used both ways is a scope, because otherwise the template could never be placed.
+Every hole represents that distinction explicitly as `kind: "scope"` or
+`kind: "text"`; an absent kind is malformed and is never inferred.
 
 A hole's `default` is what it selects when the caller says nothing: the whole
 project, kinds, one of the project's named sets, or another hole. A hole
@@ -114,7 +117,10 @@ thread that reaches one goes with the stage when it is discarded. A spreadsheet
 template cannot be staged until its editor lands.
 
 Project Overview leaves stage resources out of its index, and a resource set
-never counts one.
+never counts one. Global editor chrome names those subjects through the separate
+stage index, which admits a stage, its target-specific scratch resource, and its
+current template together. This is stage identity, not a missing-resource name
+fallback, and it never makes a working copy discoverable as project material.
 
 ## Revisions and refusals
 
@@ -124,7 +130,7 @@ throw before the store is read. Every created or updated template writes the
 corresponding `templateVersions` row.
 
 Every stored row is re-admitted before projection or mutation. A malformed
-legacy row is quarantined from the list, reported as unavailable on direct read,
+current-schema row is quarantined from the list, reported as unavailable on direct read,
 and refused by update, duplicate, remove, and instantiate. One corrupt row
 therefore cannot crash the rest of the library or be copied into new history.
 
@@ -141,13 +147,11 @@ editor/runtime responsibilities, not side effects hidden in instantiation.
 
 ## Persistence boundary
 
-The store makes each individual table replacement failure-safe: it admits a
-batch first, writes a sibling next-file, renames that file into place, and only
-then updates live memory. This removes phantom state after a failed write and
-bounds collection creation/removal to one table persistence operation.
-
-It is not yet a transaction across table files. Template/version writes,
-provenance/template deletion, stage creation and discard, and
-resource/snapshot/cell instantiation cross that boundary. Known validation and
-conflict refusals happen before writes, but a later-table I/O failure still
-needs a represented transaction or explicit recovery contract.
+The store transaction stages one synchronous intent against isolated working
+state, admits every changed table before publishing any of it, and records one
+durable journal as the commit decision. A failure before that decision leaves
+the held tables untouched; a restart after it replays every table replacement
+before removing the journal. Template/version writes, deletion cleanup, stage
+creation and discard, and resource/snapshot/cell instantiation each use that
+boundary, so their related rows are recovered together rather than exposing a
+partly persisted operation.

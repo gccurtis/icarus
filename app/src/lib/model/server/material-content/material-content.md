@@ -20,4 +20,6 @@ additional release work.
 - A requested hash is a canonical SHA-256 value before it becomes a path.
 - Returned bytes hash to the requested identity.
 - Missing content returns `undefined`; malformed or corrupted content fails.
+- A caller-owned abort signal reaches the filesystem read, so the operation that
+  owns a semantic preparation can end without waiting for unrelated I/O.
 - No legacy filename or unhashed lookup path is accepted.

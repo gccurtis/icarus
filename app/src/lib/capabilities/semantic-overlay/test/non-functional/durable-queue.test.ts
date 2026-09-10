@@ -6,19 +6,31 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { defineStore, type StoreFailpoint, type StoreModel } from "$model/server/store/index.server";
 import type { ServerModel } from "$runtime/server/start.server";
 import type { Id } from "$representation/data/types/core/id";
+import type { ResourceRef } from "$representation/data/types/core/resource";
 import { processDurableSemanticQueue } from "$capabilities/semantic-overlay/api/shared/durable-queue";
+import { enqueueMaterialSyncFor } from "$capabilities/semantic-overlay/api/shared/material-queue";
+import { enqueueSemanticSyncFor } from "$capabilities/semantic-overlay/api/shared/sync-queue";
+import { semanticUnitModel } from "$capabilities/semantic-overlay/api/shared/unit-of-work";
 
 type QueueTable = "semanticSyncJobs" | "semanticMaterialJobs";
 type QueueRow = {
   _id: string;
+  projectId: string;
+  ref: { kind: string; id: string };
   requestedRevision: number;
   state: string;
   attempts: number;
+  error?: string;
+  force?: boolean;
   claimId?: string;
   leaseExpiresAt?: number;
+  queuedAt?: number;
+  startedAt?: number;
+  updatedAt?: number;
 };
 
 const projectId = "projects:queue" as Id<"projects">;
+const ref: ResourceRef = { kind: "document", id: "documents:queue" as Id<"documents"> };
 const directories: string[] = [];
 let clock = 1_000;
 
@@ -41,7 +53,7 @@ const seed = (
   fields: Partial<QueueRow> = {}
 ): string => store.create(table, {
   projectId,
-  ref: { kind: "document", id: "documents:queue" },
+  ref,
   requestedRevision: 1,
   state: "queued",
   attempts: 0,
@@ -53,14 +65,30 @@ const seed = (
 const process = (
   store: StoreModel,
   table: QueueTable,
-  run: Parameters<typeof processDurableSemanticQueue>[0]["run"]
+  run: Parameters<typeof processDurableSemanticQueue>[0]["run"],
+  only?: ResourceRef,
+  signal?: AbortSignal
 ) => processDurableSemanticQueue({
   model: modelOf(store),
   table,
   projectId,
   limit: 10,
+  ...(only === undefined ? {} : { ref: only }),
+  ...(signal === undefined ? {} : { signal }),
   run
 });
+
+const enqueue = (
+  store: StoreModel,
+  table: QueueTable,
+  revision: number,
+  force = false
+): string => {
+  const model = semanticUnitModel(modelOf(store), store);
+  return table === "semanticSyncJobs"
+    ? enqueueSemanticSyncFor(model, projectId, ref, revision, force)
+    : enqueueMaterialSyncFor(model, projectId, ref, revision, force);
+};
 
 const deferred = () => {
   let resolve!: () => void;
@@ -149,6 +177,47 @@ describe.each([
     expect(rowsIn(store, table)).toEqual([]);
   });
 
+  it("returns an interrupted provider claim without spending an attempt", async () => {
+    vi.spyOn(Date, "now").mockImplementation(() => clock++);
+    const store = defineStore({ directory: directory() });
+    seed(store, table);
+    const controller = new AbortController();
+    let entered!: () => void;
+    const running = new Promise<void>((resolve) => {
+      entered = resolve;
+    });
+    const active = process(
+      store,
+      table,
+      async () => {
+        entered();
+        await new Promise<never>((_resolve, reject) => {
+          controller.signal.addEventListener(
+            "abort",
+            () => reject(controller.signal.reason),
+            { once: true }
+          );
+        });
+        throw new Error("unreachable");
+      },
+      undefined,
+      controller.signal
+    );
+    await running;
+
+    controller.abort();
+    await expect(active).rejects.toMatchObject({ name: "AbortError" });
+
+    expect(rowsIn(store, table)).toMatchObject([
+      {
+        state: "queued",
+        attempts: 0
+      }
+    ]);
+    expect(rowsIn(store, table)[0].claimId).toBeUndefined();
+    expect(rowsIn(store, table)[0].leaseExpiresAt).toBeUndefined();
+  });
+
   it("prevents an expired owner from publishing after another worker takes the claim", async () => {
     vi.spyOn(Date, "now").mockImplementation(() => clock);
     const store = defineStore({ directory: directory() });
@@ -222,6 +291,92 @@ describe.each([
     expect(three).toMatchObject({ remaining: 0 });
     expect(three.failed).toHaveLength(1);
     expect(rowsIn(store, table)[0]).toMatchObject({ state: "failed", attempts: 3 });
+  });
+
+  it("claims and accounts for only the requested resource", async () => {
+    vi.spyOn(Date, "now").mockImplementation(() => clock++);
+    const store = defineStore({ directory: directory() });
+    const wanted: ResourceRef = {
+      kind: "document",
+      id: "documents:wanted" as Id<"documents">
+    };
+    const unrelated: ResourceRef = {
+      kind: "document",
+      id: "documents:unrelated" as Id<"documents">
+    };
+    seed(store, table, { ref: wanted });
+    seed(store, table, { ref: unrelated });
+    seed(store, table, {
+      ref: unrelated,
+      state: "failed",
+      attempts: 3,
+      error: "Unrelated terminal failure"
+    });
+
+    const result = await process(
+      store,
+      table,
+      async (job) => ({ outcome: "published" as const, revision: job.requestedRevision }),
+      wanted
+    );
+
+    expect(result.processed.map((entry) => entry.ref)).toEqual([wanted]);
+    expect(result).toMatchObject({ remaining: 0, failed: [] });
+    expect(rowsIn(store, table)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ ref: unrelated, state: "queued" }),
+        expect.objectContaining({ ref: unrelated, state: "failed" })
+      ])
+    );
+  });
+
+  it("keeps a terminal same-revision failure quarantined until revision or force changes", () => {
+    vi.spyOn(Date, "now").mockImplementation(() => clock++);
+    const store = defineStore({ directory: directory() });
+    seed(store, table, {
+      state: "failed",
+      attempts: 3,
+      error: "projection failed",
+      claimId: "finished-worker",
+      leaseExpiresAt: 900,
+      startedAt: 800,
+      updatedAt: 950
+    });
+    const terminal = structuredClone(rowsIn(store, table));
+
+    enqueue(store, table, 1);
+
+    expect(rowsIn(store, table)).toEqual(terminal);
+
+    enqueue(store, table, 2);
+
+    expect(rowsIn(store, table)[0]).toMatchObject({
+      requestedRevision: 2,
+      state: "queued",
+      attempts: 0
+    });
+    expect(rowsIn(store, table)[0]).not.toHaveProperty("error");
+    expect(rowsIn(store, table)[0]).not.toHaveProperty("claimId");
+    expect(rowsIn(store, table)[0]).not.toHaveProperty("leaseExpiresAt");
+    expect(rowsIn(store, table)[0]).not.toHaveProperty("startedAt");
+
+    const forced = defineStore({ directory: directory() });
+    seed(forced, table, {
+      state: "failed",
+      attempts: 3,
+      error: "projection failed",
+      updatedAt: 950
+    });
+
+    enqueue(forced, table, 1, true);
+
+    expect(rowsIn(forced, table)[0]).toMatchObject({
+      requestedRevision: 1,
+      state: "queued",
+      attempts: 0,
+      force: true
+    });
+    expect(rowsIn(forced, table)[0]).not.toHaveProperty("error");
   });
 
   it("requeues a newer revision without spending its retry budget", async () => {

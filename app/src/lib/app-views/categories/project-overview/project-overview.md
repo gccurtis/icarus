@@ -25,9 +25,10 @@ navigating somewhere. That is the property the whole subject is built on: you ca
 look through eight resources, three people and a task without losing the place
 you were working.
 
-The nine panels fall into three groups.
+Eight of the nine panels fall into three groups. Overview is the category's
+resting panel and is described separately below.
 
-**What the project holds** — Resources, Contexts, Templates, Variables. Each is
+**What the project holds** — Resources, Templates, Variables. Each is
 an inventory of one kind of thing, grouped by the first question a person asks
 about that thing: what a resource *is*, what a template *makes*, whether a
 variable has rows or holds a value or gets called.
@@ -81,44 +82,6 @@ confidently.
 Routes to `project-overview.activity` for the event, and — following the actor's name,
 since the record stores an actor as a display name —
 `general.person`, `agents.persona` or `project-overview.connector`.
-
-### contexts
-
-The project's saved resource sets, and what each of them resolves to *now*. A
-set is a live rule rather than a stored list, which is why the count beside each
-name is the whole point of the row: it is the only thing that says whether the
-rule still means what it meant when it was written. One list under a search
-field; each row opens into its name, description, the rule read as a sentence,
-the count, and the toggles that make the rule — whole project, kinds included,
-kinds excluded.
-
-A set that resolves to nothing says "matches nothing" and carries a note saying
-why that matters: a rule with no members widens a prompt to the whole project
-instead of narrowing it, which is the opposite of what its author asked for.
-There is no way yet to record that an author *meant* an empty scope, so an empty
-result and a deliberate emptiness look the same.
-
-New set is the one control in the header. It opens a name field and the same
-toggles, and creates on Enter. Deleting is refused while another set in this
-project still names the set, and the refusal is said back in the panel.
-
-These sets are what a prompt's scope names, so this panel is where a project's
-scopes are kept.
-
-Routes nowhere: the row is the editor.
-
-### contexts-library
-
-Headed *Contexts*. Every saved scope in the project: its rule, and how many
-things that rule currently resolves to. New, Open and Duplicate in the action
-row, the last two dead until a row is chosen.
-
-A Context is a rule rather than a list, so the count beside each one is resolved
-now and not stored. Zero is therefore a real answer, and the row says "matches
-nothing" out loud and takes an attention tone, because a bare 0 beside a rule
-reads as a count that has not loaded yet.
-
-Routes to `context-editor.context`.
 
 ### history
 
@@ -568,14 +531,14 @@ Activity, People — put their search and their controls above the list rather t
 below it for the same reason, and the narrowing in Activity is written knowing
 that the real answer is a query that takes when, actor and target as parameters.
 
-**Three places where the data has a shape the grouping does not**, each recorded
+**Two places where the data has a shape the grouping does not**, each recorded
 on the panel rather than hidden: resources of a kind with no group, templates
-that make a single slide, and Contexts that resolve to nothing. In all three the
+that make a single slide. In both the
 panel states the count and the consequence instead of quietly dropping the rows
 or inventing a band for them.
 
-**No panel edits its subject.** Contexts are edited in the Context category,
-Personas in the Agents category, templates in the Templates category. A panel that
+**No panel edits its subject.** Personas are edited in the Agents category and
+templates in the Templates category. A panel that
 began editing in place would be a second, smaller version of a category that
 already exists.
 

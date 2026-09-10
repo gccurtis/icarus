@@ -14,6 +14,15 @@ and everything below is the answer. The composer holds the foot, because this is
 already a conversation with an agent and the category owns its input rather than
 borrowing one from the shell.
 
+A provider run may outlive the mounted centre when somebody changes tabs. On
+each mount, the centre refreshes the open chat detail so the durable
+queued/running turn becomes visible again. Usually this is one lifecycle read.
+If the centre remounts while the same workspace-owned Send command is still
+crossing the server boundary, a bounded backoff reconciles only until that
+running row appears or the command settles, followed by one final read. Every
+completion and failure is correlated with the still-mounted thread and query;
+an old tab cannot mark a new tab refreshed or failed.
+
 ## Context
 
 Two panels, both flat.

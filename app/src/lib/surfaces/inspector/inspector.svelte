@@ -1,10 +1,15 @@
 <script lang="ts">
-  import type { Component } from "svelte";
   import PanelRight from "@lucide/svelte/icons/panel-right";
 
   import { PanelPlaceholder } from "$authored-components/panel";
   import { ResizeHandle } from "$authored-components/resize-handle";
   import { workspaceState } from "$model/client/workspace-state";
+  import { loadLens } from "$surfaces/inspector/effects/loads-lens.svelte";
+  import { lensFailureFor } from "$surfaces/inspector/procedures/lens-failure-for";
+  import {
+    InspectorState,
+    type LensLoader
+  } from "$surfaces/inspector/shared/inspector-state.svelte";
   import {
     COLLAPSE_BELOW,
     COLLAPSED_WIDTH,
@@ -38,9 +43,10 @@
   const LENSES = import.meta.glob([
     "$lib/app-views/categories/*/inspector/*.svelte",
     "$lib/app-views/general/*/*.svelte"
-  ]) as Record<string, () => Promise<{ default: Component }>>;
+  ]) as Record<string, LensLoader>;
 
   const view = workspaceState();
+  const state = new InspectorState();
 
   /** A general lens is a directory of its own; a category's sits in its inspector stack. */
   const pathOf = (key: string): string => {
@@ -83,26 +89,23 @@
     return `${view.activeId}:${inspected}:${selection.id}:${selection.at ?? ""}`;
   });
 
-  const load = $derived(
+  const path = $derived(
     inspected === "empty"
       ? undefined
-      : LENSES[pathOf(inspected)]
+      : pathOf(inspected)
   );
+  const load = $derived(path === undefined ? undefined : LENSES[path]);
 
-  let Lens = $state<Component | undefined>(undefined);
+  // Selection and tab state rekey the lens before an import effect can clear
+  // its previous result. A lens may only be mounted for the route that loaded
+  // it, never temporarily against a different category's subject.
+  const CurrentLens = $derived(state.loadedPath === path ? state.lens : undefined);
+  const CurrentFailure = $derived(lensFailureFor(state.failure, path));
 
-  $effect(() => {
-    const loader = load;
-    Lens = undefined;
-    if (!loader) return;
-
-    let current = true;
-    void loader().then((module) => {
-      if (current) Lens = module.default;
-    });
-    return () => {
-      current = false;
-    };
+  loadLens({
+    state,
+    path: () => path,
+    loader: () => load
   });
 </script>
 
@@ -117,10 +120,12 @@
     >
       <PanelRight size={16} aria-hidden="true" />
     </button>
-  {:else if Lens}
+  {:else if CurrentLens}
     {#key structuralSubject}
-      <div class="body"><Lens /></div>
+      <div class="body"><CurrentLens /></div>
     {/key}
+  {:else if CurrentFailure}
+    <p class="text-body-sm text-danger-text p-4 font-mono">{path}<br />{CurrentFailure.reason}</p>
   {:else if inspected === "empty"}
     <p class="empty">
       <strong>Nothing selected</strong>

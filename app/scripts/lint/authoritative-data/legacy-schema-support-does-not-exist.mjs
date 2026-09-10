@@ -1,37 +1,34 @@
-import ts from "typescript";
+import { join } from "node:path";
 
 import { check } from "../shared/check.mjs";
 import { productionSources } from "../shared/production.mjs";
+import {
+  hasLegacyPathPart,
+  schemaMarkersIn
+} from "./legacy-schema-support-does-not-exist/schema-markers.mjs";
+import { storeGateFindings } from "./legacy-schema-support-does-not-exist/store-gates.mjs";
 
-const LEGACY = /legacy|deprecated|compatibility|migration|migrate/i;
-
-const markersIn = (tree, path) => {
-  const found = new Set();
-  for (const script of tree.scripts(path)) {
-    const visit = (node) => {
-      if (
-        (ts.isIdentifier(node) || ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) &&
-        LEGACY.test(node.text)
-      ) found.add(node.text);
-      node.forEachChild(visit);
-    };
-    visit(script.source);
-  }
-  return [...found].sort();
-};
+const currentSources = (tree) => [
+  ...productionSources(tree),
+  ...tree.under(join(tree.base, "scripts"))
+    .filter((path) =>
+      /\.(?:js|mjs|ts)$/.test(path) &&
+      !tree.within(join(tree.base, "scripts", "lint"), path) &&
+      !tree.within(join(tree.base, "scripts", "test"), path)
+    )
+];
 
 export default check({
   id: "DATA-06",
   pillar: "authoritative-data",
   finding: "ARCH-07",
   name: "legacy-schema-support-does-not-exist",
-  says: "Production source has one current schema and contains no executable legacy, compatibility, deprecated, or migration branch marker.",
+  says: "Production source has one current schema, contains no executable legacy branch marker, cannot re-admit a registered retired field, cannot make or absence-repair a registered required current field, keeps exact resource kinds and nominal resource references closed, and routes Store load, replacement, commit, and recovery through one exhaustive recursive admission registry.",
   run(tree) {
-    const found = [];
-    for (const path of productionSources(tree)) {
-      const relative = tree.rel(path);
-      const pathMarker = relative.split("/").some((part) => LEGACY.test(part));
-      const markers = markersIn(tree, path);
+    const found = storeGateFindings(tree);
+    for (const path of currentSources(tree)) {
+      const pathMarker = hasLegacyPathPart(tree.rel(path));
+      const markers = schemaMarkersIn(tree, path);
       if (!pathMarker && markers.length === 0) continue;
       found.push({
         path,

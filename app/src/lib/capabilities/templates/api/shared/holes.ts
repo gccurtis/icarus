@@ -27,13 +27,14 @@ export const declaredFor = (
 
   return [
     ...known,
-    ...scopes.filter((name) => !declared.has(name)).map((name) => ({ name, label: name })),
+    ...scopes
+      .filter((name) => !declared.has(name))
+      .map((name) => ({ name, label: name, kind: "scope" as const })),
     ...texts
       .filter((name) => !declared.has(name))
       .map((name) => ({ name, label: name, kind: "text" as const }))
   ];
 };
 
-/** What a hole is answered with, treating an older one with no kind as a scope. */
-export const kindOf = (hole: TemplateHole): "scope" | "text" =>
-  hole.kind === "text" ? "text" : "scope";
+/** What a hole is answered with. */
+export const kindOf = (hole: TemplateHole): "scope" | "text" => hole.kind;

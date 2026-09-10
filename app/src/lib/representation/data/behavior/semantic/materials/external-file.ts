@@ -4,6 +4,7 @@ import { profileCsv } from "$representation/data/behavior/semantic/materials/csv
 import { codeLanguage, profileCode } from "$representation/data/behavior/semantic/materials/code";
 import { profileImage } from "$representation/data/behavior/semantic/materials/profile";
 import type { ExternalFileIdentity } from "$representation/data/behavior/semantic/projection/contract";
+import { externalFileResourceKind } from "$representation/data/behavior/core/resource";
 
 export const isCsvFile = (name: string, mediaType: string): boolean =>
   mediaType.toLowerCase().includes("csv") || /\.(csv|tsv)$/i.test(name);
@@ -11,7 +12,7 @@ export const isCsvFile = (name: string, mediaType: string): boolean =>
 const source = (file: ExternalFileIdentity) => ({
   kind: "externalFile" as const,
   /** Resource kinds follow the persisted file taxonomy; material.kind is more specific. */
-  ref: { kind: `externalFile::${file.subkind}`, id: file.fileId },
+  ref: { kind: externalFileResourceKind(file.subkind), id: file.fileId },
   fileId: file.fileId,
   hash: file.hash,
   mediaType: file.mediaType,

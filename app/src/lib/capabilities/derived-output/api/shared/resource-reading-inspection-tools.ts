@@ -3,6 +3,7 @@ import type { MaterialSourceSnapshot } from "$representation/data/types/semantic
 import { materialRecordIsCurrent } from "$capabilities/semantic-overlay";
 import { rowsOf } from "$capabilities/derived-output/api/shared/rows";
 import type { ResourceReadingContext } from "$capabilities/derived-output/api/shared/resource-reading-context";
+import { admitResourceRef } from "$representation/data/behavior/core/resource";
 import { describedAgentTool } from "$capabilities/derived-output/api/shared/tool-catalog";
 import {
   placedElements,
@@ -93,7 +94,10 @@ export const materialInspectionTools = (
       },
       execute: async (value) => {
         const held = record(value, "inspect_slide input must be an object");
-        const ref = { kind: "slides", id: text(held.resourceId, "resourceId") };
+        const ref = admitResourceRef(
+          { kind: "slides", id: text(held.resourceId, "resourceId") },
+          "slide-deck resource"
+        );
         if (!allowed(ref)) throw new Error("slide is outside the Derived Output Resource Set");
         const slideId = text(held.slideId, "slideId");
         const { leader, body } = slideDeck(ref);

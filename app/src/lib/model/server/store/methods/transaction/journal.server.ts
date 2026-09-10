@@ -2,7 +2,8 @@ import { existsSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 
 import { asTable } from "$representation/store/admission";
-import { asStorable, type AnyRow } from "$representation/store/path";
+import { admitAnyRows } from "$representation/store/current-row";
+import type { AnyRow } from "$representation/store/path";
 import type { TableName } from "$representation/store/tables";
 
 import {
@@ -11,6 +12,8 @@ import {
 } from "$model/server/store/methods/shared/durable-file.server";
 
 const NAME = ".store-transaction.json";
+const exact = (value: Record<string, unknown>, fields: readonly string[]): boolean =>
+  Object.keys(value).every((field) => fields.includes(field));
 
 export type JournalChange = {
   readonly table: TableName;
@@ -27,20 +30,11 @@ export type StoreJournal = {
 export const journalPath = (directory: string): string => join(directory, NAME);
 
 const asRows = (value: unknown, table: TableName): readonly AnyRow[] => {
-  if (!Array.isArray(value)) throw new Error(`Store journal '${table}' rows are not an array`);
-  asStorable(value);
-  for (const row of value) {
-    if (row === null || typeof row !== "object" || Array.isArray(row)) {
-      throw new Error(`Store journal '${table}' contains an invalid row`);
-    }
-    const record = row as Record<string, unknown>;
-    if (
-      typeof record._id !== "string" ||
-      !record._id.startsWith(`${table}:`) ||
-      typeof record._creationTime !== "number"
-    ) throw new Error(`Store journal '${table}' contains an invalid row`);
+  try {
+    return admitAnyRows(table, value);
+  } catch (error) {
+    throw new Error(`Store journal '${table}' contains a non-current row`, { cause: error });
   }
-  return value as AnyRow[];
 };
 
 const admitJournal = (value: unknown): StoreJournal => {
@@ -48,6 +42,9 @@ const admitJournal = (value: unknown): StoreJournal => {
     throw new Error("Store journal is not an object");
   }
   const record = value as Record<string, unknown>;
+  if (!exact(record, ["version", "transactionId", "state", "changes"])) {
+    throw new Error("Store journal has unknown fields");
+  }
   if (record.version !== 1 || record.state !== "committed") {
     throw new Error("Store journal has an unsupported schema");
   }
@@ -63,6 +60,9 @@ const admitJournal = (value: unknown): StoreJournal => {
       throw new Error("Store journal contains an invalid table change");
     }
     const change = entry as Record<string, unknown>;
+    if (!exact(change, ["table", "rows"])) {
+      throw new Error("Store journal contains a table change with unknown fields");
+    }
     const table = asTable(change.table);
     if (seen.has(table)) throw new Error(`Store journal repeats '${table}'`);
     seen.add(table);

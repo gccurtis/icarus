@@ -7,5 +7,5 @@ export type MaterialContentRef = {
 
 /** Native byte authority. A future upload/object-store adapter implements this same port. */
 export interface MaterialContentModel {
-  read(ref: MaterialContentRef): Promise<Uint8Array | undefined>;
+  read(ref: MaterialContentRef, signal?: AbortSignal): Promise<Uint8Array | undefined>;
 }

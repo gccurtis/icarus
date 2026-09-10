@@ -1,4 +1,5 @@
 import type { Id } from "$representation/data/types/core/id";
+import { isResourceRef } from "$representation/data/behavior/core/resource";
 import type { Address } from "$representation/data/types/formulas/expression";
 
 /**
@@ -45,7 +46,8 @@ export const readAddress = (source: string): Address | undefined => {
 
   const [tag, ...rest] = parts;
   if (tag === "resource" && rest.length === 2) {
-    return { at: "resource", ref: { kind: rest[0], id: rest[1] } };
+    const ref = { kind: rest[0], id: rest[1] };
+    return isResourceRef(ref) ? { at: "resource", ref } : undefined;
   }
   if (tag === "cell" && rest.length === 3) {
     return {

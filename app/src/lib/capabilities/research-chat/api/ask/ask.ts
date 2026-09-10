@@ -67,7 +67,7 @@ export const ask = async (input: unknown): Promise<AskResult> => {
       detail: "the persona this chat answers as is not in this project any more"
     };
   }
-  const grants = persona === undefined ? DEFAULT_GRANTS : orderedTools(persona.tools ?? []);
+  const grants = persona === undefined ? DEFAULT_GRANTS : orderedTools(persona.tools);
   if (!grants.includes("retrieve") && !grants.includes("resource.read")) {
     return {
       accepted: false,
@@ -78,6 +78,10 @@ export const ask = async (input: unknown): Promise<AskResult> => {
   }
 
   const at = Date.now();
+  const deadlineMs = configuredInteger(model, "intelligence.chat.deadlineMs", {
+    min: 1_000,
+    max: 3_600_000
+  });
   const prompt = textMessage(`m-${uniqueId()}`, "prompt", viewer(scope), at, asked.text);
   const promptTarget = partTarget(model, thread.threadId);
 
@@ -118,17 +122,17 @@ export const ask = async (input: unknown): Promise<AskResult> => {
         .slice(0, 600)
     }));
 
-  const flight = model.operationFlights.beginResearch(turnId);
-  const disarm = model.operationFlights.armResearchDeadline(
-    turnId,
-    configuredInteger(model, "intelligence.chat.deadlineMs", { min: 1_000, max: 3_600_000 })
-  );
+  let flight: ReturnType<typeof model.operationFlights.beginResearch> | undefined;
+  let disarm: (() => void) | undefined;
   try {
-    await prepareOverlay(model, projectId);
+    flight = model.operationFlights.beginResearch(turnId);
+    disarm = model.operationFlights.armResearchDeadline(turnId, deadlineMs);
+    const turnScope = asked.scope ?? { kind: "project" as const };
+    await prepareOverlay(model, projectId, turnScope, flight.signal);
     const answer = await answerQuestion({
       model,
       projectId,
-      scope: asked.scope ?? { kind: "project" },
+      scope: turnScope,
       question: asked.text,
       history,
       topK: configuredInteger(model, "intelligence.chat.topK", { min: 1, max: 20 }),
@@ -198,8 +202,8 @@ export const ask = async (input: unknown): Promise<AskResult> => {
     return { accepted: true, threadId: thread._id, turnId };
   } catch (error) {
     const failedAt = Date.now();
-    const abandoned = flight.signal.aborted;
-    const ranOut = flight.reason() === "deadline";
+    const abandoned = flight?.signal.aborted === true;
+    const ranOut = flight?.reason() === "deadline";
     model.store.transaction((unit) => {
       unit.update(`researchTurns.${turnId}.state`, abandoned && !ranOut ? "cancelled" : "failed");
       unit.update(
@@ -221,7 +225,7 @@ export const ask = async (input: unknown): Promise<AskResult> => {
     });
     return { accepted: true, threadId: thread._id, turnId };
   } finally {
-    disarm();
-    model.operationFlights.endResearch(turnId);
+    disarm?.();
+    if (flight !== undefined) model.operationFlights.endResearch(turnId);
   }
 };

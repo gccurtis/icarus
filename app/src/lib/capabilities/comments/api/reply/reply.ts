@@ -12,18 +12,18 @@ export const reply = async (input: unknown): Promise<ReplyResult> => {
   const asked = validateReply(input);
 
   const store = serverModel().store;
-  const thread = threadOf(store, scope.projectId, asked.threadId);
-  if (thread === undefined) throw new Error(`comments/reply: no thread ${asked.threadId}`);
-
   const at = Date.now();
-  const commentId = store.create("comments", {
-    projectId: thread.projectId,
-    threadId: thread._id,
-    blocks: [paragraphOf(asked.text)],
-    mentions: [],
-    author: { kind: "user" as const, userId: asId<"users">(scope.userId) }
+  return store.transaction((unit) => {
+    const thread = threadOf(unit, scope.projectId, asked.threadId);
+    if (thread === undefined) throw new Error(`comments/reply: no thread ${asked.threadId}`);
+    const commentId = unit.create("comments", {
+      projectId: thread.projectId,
+      threadId: thread._id,
+      blocks: [paragraphOf(asked.text)],
+      mentions: [],
+      author: { kind: "user" as const, userId: asId<"users">(scope.userId) }
+    });
+    unit.update(`commentThreads.${thread._id}.updatedAt`, at);
+    return { commentId };
   });
-  store.update(`commentThreads.${thread._id}.updatedAt`, at);
-
-  return { commentId };
 };

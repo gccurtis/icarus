@@ -281,6 +281,164 @@ test("a formula computes, follows its precedent, and undo takes both halves back
   await expect(inspector(page).getByText("20", { exact: true }).first()).toBeVisible();
 });
 
+test("dragging cells while writing a formula inserts one growing range", async ({ page }) => {
+  await openSheet(page);
+  await atFullSize(page);
+
+  await write(page, "E22", "1");
+  await write(page, "E23", "2");
+  await write(page, "F22", "3");
+  await write(page, "F23", "4");
+
+  await focusCell(page, "H25");
+  await page.keyboard.type("=");
+  const field = expressionBox(page).first();
+  await expect(field).toBeFocused();
+  await expect(field).toHaveValue("=");
+  await field.type("SUM(");
+  await expect(field).toHaveValue("=SUM(");
+
+  // Pointer-down inserts the first cell; the uninterrupted drag then grows that
+  // same inserted span on every move rather than appending fragments.
+  const start = await cellAt(page, "E22");
+  const across = await cellAt(page, "F22");
+  const down = await cellAt(page, "F23");
+  await page.mouse.move(start.x, start.y);
+  await page.mouse.down();
+  await expect(field).toHaveValue("=SUM(E22");
+  await page.mouse.move(across.x, across.y, { steps: 4 });
+  await expect(field).toHaveValue("=SUM(E22:F22");
+  await page.mouse.move(down.x, down.y, { steps: 4 });
+  await expect(field).toHaveValue("=SUM(E22:F23");
+  await page.mouse.up();
+
+  await field.type(")");
+  await field.press("Enter");
+  await dragRange(page, "H24", "H25");
+  await openStatistics(page);
+  await expect(inspector(page).getByText("10", { exact: true }).first()).toBeVisible();
+
+  // A reverse drag uses the same stable origin and normalizes the rectangle.
+  await focusCell(page, "H26");
+  await page.keyboard.type("=");
+  const reverse = expressionBox(page).first();
+  await expect(reverse).toBeFocused();
+  await reverse.type("SUM(");
+  await page.mouse.move(down.x, down.y);
+  await page.mouse.down();
+  await expect(reverse).toHaveValue("=SUM(F23");
+  await page.mouse.move(start.x, start.y, { steps: 4 });
+  await expect(reverse).toHaveValue("=SUM(E22:F23");
+  await page.mouse.up();
+  await reverse.type(")");
+  await reverse.press("Enter");
+  expect(await cellText(page, "H26")).toBe("=SUM(E22:F23)");
+
+  // Moving the caret is a boundary even when the next pointer gesture begins
+  // on the same cell as the previous one. The second drag replaces D1, not the
+  // E22:F22 reference inserted by the first drag.
+  await focusCell(page, "H20");
+  await page.keyboard.type("=");
+  const repeated = expressionBox(page).first();
+  await expect(repeated).toBeFocused();
+  await repeated.type("SUM(C1)+SUM(D1)");
+  await expect(repeated).toHaveValue("=SUM(C1)+SUM(D1)");
+  await repeated.press("Home");
+  for (let index = 0; index < 5; index += 1) await repeated.press("ArrowRight");
+  await repeated.press("Shift+ArrowRight");
+  await repeated.press("Shift+ArrowRight");
+  await dragRange(page, "E22", "F22");
+  await expect(repeated).toHaveValue("=SUM(E22:F22)+SUM(D1)");
+
+  await repeated.press("End");
+  await repeated.press("ArrowLeft");
+  await repeated.press("Shift+ArrowLeft");
+  await repeated.press("Shift+ArrowLeft");
+  await dragRange(page, "E22", "F23");
+  await expect(repeated).toHaveValue("=SUM(E22:F22)+SUM(E22:F23)");
+  await repeated.press("Enter");
+  expect(await cellText(page, "H20")).toBe("=SUM(E22:F22)+SUM(E22:F23)");
+
+  await settled(page);
+  await page.reload({ waitUntil: "networkidle" });
+  await expect(surface(page)).toBeVisible();
+  await atFullSize(page);
+  expect(await cellText(page, "H25")).toBe("=SUM(E22:F23)");
+  expect(await cellText(page, "H26")).toBe("=SUM(E22:F23)");
+  expect(await cellText(page, "H20")).toBe("=SUM(E22:F22)+SUM(E22:F23)");
+  await dragRange(page, "H24", "H25");
+  await openStatistics(page);
+  await expect(inspector(page).getByText("10", { exact: true }).first()).toBeVisible();
+});
+
+test("a selected spreadsheet yields to another tab and can be reopened", async ({ page }) => {
+  await page.goto("/app/dev-project", { waitUntil: "networkidle" });
+  const tabs = page.getByRole("toolbar", { name: "Open tabs" });
+  await page.getByRole("button", { name: "Transformer bank replacement decision", exact: true }).dblclick();
+  await expect(page.locator(".document-editor")).toBeVisible();
+
+  await tabs.getByRole("button", { name: "Overview", exact: true }).click();
+  await page.getByRole("button", { name: SHEET_TITLE, exact: true }).last().dblclick();
+  await expect(surface(page)).toBeVisible();
+  await atFullSize(page);
+  await focusCell(page, "C4");
+  const before = await cellText(page, "C4");
+  await focusCell(page, "C4");
+  await page.keyboard.type("=");
+  await expect(expressionBox(page).first()).toBeFocused();
+
+  await tabs.getByRole("button", { name: "Transformer bank replacement decision", exact: true }).click();
+  await expect(page.locator(".sheet-editor")).toHaveCount(0);
+  await expect(page.locator(".document-editor")).toBeVisible();
+  await expect(
+    page.locator('aside[aria-label="Context"]').getByRole("button", { name: "Layout", exact: true })
+  ).toBeVisible();
+  await page
+    .locator(".ProseMirror")
+    .getByText("Authorize the accelerated replacement window", { exact: false })
+    .click();
+  await expect(
+    page.locator('aside[aria-label="Inspector"][data-inspected="document-editor.next-letter"]')
+  ).toBeVisible();
+  await expect(inspector(page).getByRole("heading", { level: 2, name: "Next letter", exact: true })).toBeVisible();
+
+  await tabs.getByRole("button", { name: SHEET_TITLE, exact: true }).click();
+  await expect(surface(page)).toBeVisible();
+  await expect(page.locator("canvas").first()).toBeVisible();
+  await expect.poll(() => selected(page)).toBe("C4");
+  expect(await cellText(page, "C4")).toBe(before);
+  await expect(
+    page.locator('aside[aria-label="Context"]').getByRole("button", { name: "Grid", exact: true })
+  ).toBeVisible();
+  await expect(
+    page.locator('aside[aria-label="Inspector"][data-inspected="spreadsheet-editor.cell"]')
+  ).toBeVisible();
+  await expect(inspector(page).getByRole("heading", { level: 2, name: "C4", exact: true })).toBeVisible();
+
+  await tabs.getByRole("button", { name: "Agents", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Agents", exact: true }).first()).toBeVisible();
+  await expect(page.locator(".sheet-editor")).toHaveCount(0);
+  const agentsContext = page.locator('aside[aria-label="Context"]');
+  await expect(agentsContext.getByRole("heading", { level: 2, name: "Personas", exact: true })).toBeVisible();
+  await agentsContext.getByRole("button", { name: /Grid Analyst/ }).click();
+  await expect(inspector(page).getByRole("heading", { level: 2, name: "Persona", exact: true })).toBeVisible();
+  await expect(inspector(page).getByRole("textbox", { name: "Persona name", exact: true })).toHaveValue("Grid Analyst");
+  await expect(
+    page.locator('aside[aria-label="Inspector"][data-inspected^="spreadsheet-editor."]')
+  ).toHaveCount(0);
+
+  await tabs.getByRole("button", { name: SHEET_TITLE, exact: true }).click();
+  await expect(surface(page)).toBeVisible();
+  await expect(page.locator("canvas").first()).toBeVisible();
+  await expect(
+    page.locator('aside[aria-label="Context"]').getByRole("button", { name: "Grid", exact: true })
+  ).toBeVisible();
+  await expect(
+    page.locator('aside[aria-label="Inspector"][data-inspected="spreadsheet-editor.cell"]')
+  ).toBeVisible();
+  await expect(inspector(page).getByRole("heading", { level: 2, name: "C4", exact: true })).toBeVisible();
+});
+
 test("shift picks a range and control adds a second one", async ({ page }) => {
   await openSheet(page);
   await atFullSize(page);

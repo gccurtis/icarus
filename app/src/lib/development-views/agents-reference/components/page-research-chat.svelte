@@ -54,8 +54,7 @@
     ["model/server/embedding", "index.server.ts", "The vectors. Reached only through the overlay, never directly.", "Indirect"],
     ["model/server/store", "index.server.ts", "read, create, update, removeRows.", "Server model object"],
     ["runtime/server", "scope.server · start.server", "requireScope for who is asking, serverModel for the one graph.", "The two entries a procedure may use"],
-    ["capabilities/store", "index.remote.ts", "read, refreshed after a write so a tab's title follows the chat.", "Refreshes"],
-    ["capabilities/agents", "—", "Nothing is imported either way. It reads the personas table directly, gated by project, and agents writes a researchThreads row when a chat is started from a persona.", "Shares two tables"]
+    ["capabilities/agents", "index.remote.ts", "The agents projection names persona-backed chats; its create-chat intent writes a researchThreads row atomically with the shared conversation rows.", "Shares current projections"]
   ];
 
   const tables = [

@@ -27,8 +27,22 @@ const state = vi.hoisted(() => {
     retrieveResults: [] as unknown[],
     firstTools: [] as (string | undefined)[],
     userPrompts: [] as string[],
+    enqueuedRefs: [] as { kind: string; id: string }[],
+    preparationEvents: [] as string[],
+    enqueueBlocked: false,
+    enqueueStarted: false,
     queueCalls: 0,
     queueFailure: undefined as string | undefined,
+    queueFailureRef: {
+      kind: "document",
+      id: "documents:unrelated-quarantined-resource"
+    } as { kind: string; id: string },
+    materialQueueFailure: undefined as string | undefined,
+    queueBlocked: false,
+    queueStarted: false,
+    queryBlocked: false,
+    queryStarted: false,
+    queryOrdinaryAbort: false,
     queuedSourceRevision: undefined as number | undefined,
     release: undefined as (() => void) | undefined
   };
@@ -171,9 +185,38 @@ vi.mock("$runtime/server/scope.server", () => ({
   requireScope: async () => ({ projectId: "projects:1", userId: "users:1", username: "You" })
 }));
 vi.mock("$runtime/server/start.server", () => ({ serverModel: () => state.model }));
+vi.mock("$capabilities/semantic-overlay/api/enqueue-semantic-sync/enqueue-semantic-sync", () => ({
+  enqueueSemanticSync: async (
+    input: { ref: { kind: string; id: string } },
+    signal?: AbortSignal
+  ) => {
+    signal?.throwIfAborted();
+    state.controls.enqueuedRefs.push(input.ref);
+    state.controls.preparationEvents.push(`enqueue:${input.ref.kind}:${input.ref.id}`);
+    if (state.controls.enqueueBlocked) {
+      state.controls.enqueueStarted = true;
+      await new Promise<void>((_resolve, reject) => {
+        signal?.addEventListener("abort", () => reject(signal.reason), { once: true });
+      });
+    }
+    signal?.throwIfAborted();
+    return { ref: input.ref, revision: 1 };
+  }
+}));
 vi.mock("$capabilities/semantic-overlay/api/query-semantic-overlay/query-semantic-overlay", () => ({
-  querySemanticOverlay: async (input: Record<string, unknown>) => {
+  querySemanticOverlay: async (input: Record<string, unknown>, signal?: AbortSignal) => {
+    signal?.throwIfAborted();
     state.controls.queryInputs.push(input);
+    if (state.controls.queryOrdinaryAbort) {
+      throw new DOMException("The user cancelled this refresh", "AbortError");
+    }
+    if (state.controls.queryBlocked) {
+      state.controls.queryStarted = true;
+      await new Promise<void>((_resolve, reject) => {
+        signal?.addEventListener("abort", () => reject(signal.reason), { once: true });
+      });
+    }
+    signal?.throwIfAborted();
     const source = state.source();
     const overlay = state.rows("semanticOverlays")[0];
     const text = "Launch is Tuesday.";
@@ -226,8 +269,23 @@ vi.mock("$capabilities/semantic-overlay/api/query-semantic-materials/query-seman
   })
 }));
 vi.mock("$capabilities/semantic-overlay/api/shared/queue-processor", () => ({
-  processSemanticSyncQueueFor: async () => {
+  processSemanticSyncQueueFor: async (
+    _model: unknown,
+    _projectId: unknown,
+    _limit: unknown,
+    _ref?: unknown,
+    signal?: AbortSignal
+  ) => {
+    signal?.throwIfAborted();
     state.controls.queueCalls += 1;
+    state.controls.preparationEvents.push("drain");
+    if (state.controls.queueBlocked) {
+      state.controls.queueStarted = true;
+      await new Promise<void>((_resolve, reject) => {
+        signal?.addEventListener("abort", () => reject(signal.reason), { once: true });
+      });
+    }
+    signal?.throwIfAborted();
     if (state.controls.queuedSourceRevision !== undefined) {
       state.source().revision = state.controls.queuedSourceRevision;
       state.controls.queuedSourceRevision = undefined;
@@ -238,14 +296,32 @@ vi.mock("$capabilities/semantic-overlay/api/shared/queue-processor", () => ({
       failed:
         state.controls.queueFailure === undefined
           ? []
-          : [{ error: state.controls.queueFailure }],
-      materials: { processed: [], remaining: 0, failed: [] }
+          : [{
+              jobId: "semanticSyncJobs:failed",
+              ref: state.controls.queueFailureRef,
+              error: state.controls.queueFailure
+            }],
+      materials: {
+        processed: [],
+        remaining: 0,
+        failed:
+          state.controls.materialQueueFailure === undefined
+            ? []
+            : [{
+                jobId: "semanticMaterialJobs:failed",
+                ref: state.controls.queueFailureRef,
+                error: state.controls.materialQueueFailure
+              }]
+      }
     };
   }
 }));
 
 const { createDerivedOutput } = await import(
   "$capabilities/derived-output/api/create-derived-output/create-derived-output"
+);
+const { createTemplatedDerivedOutput } = await import(
+  "$capabilities/derived-output/api/create-templated-derived-output/create-templated-derived-output"
 );
 const { readDerivedOutput } = await import(
   "$capabilities/derived-output/api/read-derived-output/read-derived-output"
@@ -279,7 +355,7 @@ const baseRows = (): void => {
     _id: "semanticSources:1",
     _creationTime: 1,
     projectId: "projects:1",
-    ref: { kind: "document", id: "launch-brief" },
+    ref: { kind: "document", id: "documents:launch-brief" },
     revision: 1,
     encoding: "utf-16",
     updatedAt: 1
@@ -301,7 +377,7 @@ const seedOutput = (overrides: Record<string, unknown> = {}): string =>
     prompt: "Summarize the launch schedule",
     definitionRevision: 1,
     scope: {
-      include: [{ select: "resources", refs: [{ kind: "document", id: "launch-brief" }] }],
+      include: [{ select: "resources", refs: [{ kind: "document", id: "documents:launch-brief" }] }],
       exclude: []
     },
     queries: [],
@@ -312,8 +388,8 @@ const seedOutput = (overrides: Record<string, unknown> = {}): string =>
     ...overrides
   });
 
-beforeEach(() => {
-  state.model.operationFlights?.close();
+beforeEach(async () => {
+  await state.model.operationFlights?.close();
   state.model.operationFlights = createOperationFlights();
   state.tables.clear();
   state.counters.clear();
@@ -325,8 +401,22 @@ beforeEach(() => {
   state.controls.retrieveResults.length = 0;
   state.controls.firstTools.length = 0;
   state.controls.userPrompts.length = 0;
+  state.controls.enqueuedRefs.length = 0;
+  state.controls.preparationEvents.length = 0;
+  state.controls.enqueueBlocked = false;
+  state.controls.enqueueStarted = false;
   state.controls.queueCalls = 0;
   state.controls.queueFailure = undefined;
+  state.controls.queueFailureRef = {
+    kind: "document",
+    id: "documents:unrelated-quarantined-resource"
+  };
+  state.controls.materialQueueFailure = undefined;
+  state.controls.queueBlocked = false;
+  state.controls.queueStarted = false;
+  state.controls.queryBlocked = false;
+  state.controls.queryStarted = false;
+  state.controls.queryOrdinaryAbort = false;
   state.controls.queuedSourceRevision = undefined;
   state.controls.release = undefined;
   baseRows();
@@ -349,11 +439,57 @@ describe("Derived Output lifecycle", () => {
     await assert.rejects(() => createDerivedOutput({ prompt: " " }), /must not be blank/);
   });
 
+  it("refuses private Resource Set pointers at every caller-authored definition boundary", async () => {
+    seed("resourceSets", {
+      _id: "resourceSets:private",
+      _creationTime: 1,
+      projectId: "projects:1",
+      boundTo: { kind: "resource", resourceId: "documents:made", hole: "evidence" },
+      set: {
+        include: [{ select: "resources", refs: [{ kind: "document", id: "documents:launch-brief" }] }],
+        exclude: []
+      },
+      createdBy: { kind: "system" },
+      revision: 1,
+      updatedAt: 1
+    });
+    const privateScope = {
+      include: [{ select: "set" as const, setId: "resourceSets:private" }],
+      exclude: []
+    };
+    const id = seedOutput();
+    const before = structuredClone(state.rows("derivedOutputs"));
+
+    await assert.rejects(
+      () => createDerivedOutput({ prompt: "Unsafe", scope: privateScope }),
+      /not one reusable set/
+    );
+    await assert.rejects(
+      () => createTemplatedDerivedOutput({
+        template: {
+          variables: [{ name: "answer", prompt: "Find the answer" }],
+          output: "{{answer}}"
+        },
+        scope: privateScope
+      }),
+      /not one reusable set/
+    );
+    await assert.rejects(
+      () => updateDerivedOutput({
+        derivedOutputId: id,
+        prompt: "Unsafe update",
+        scope: privateScope
+      }),
+      /not one reusable set/
+    );
+    assert.deepEqual(state.rows("derivedOutputs"), before);
+  });
+
   it("computes pull-time staleness from cited revisions and ignores unrelated changes", async () => {
     const citation = {
       selections: [{ evidenceId: "evidence-1", use: "Names the launch" }],
       source: {
-        ref: { kind: "document", id: "launch-brief" },
+        ref: { kind: "document", id: "documents:launch-brief" },
         revision: 1,
         encoding: "utf-16" as const
       },
@@ -365,7 +501,7 @@ describe("Derived Output lifecycle", () => {
       _id: "semanticSources:2",
       _creationTime: 2,
       projectId: "projects:1",
-      ref: { kind: "document", id: "unrelated" },
+      ref: { kind: "document", id: "documents:unrelated" },
       revision: 9,
       encoding: "utf-16",
       updatedAt: 1
@@ -384,7 +520,7 @@ describe("Derived Output lifecycle", () => {
 
   it("computes pull-time staleness from native material revisions", async () => {
     seed("documents", {
-      _id: "launch-brief",
+      _id: "documents:launch-brief",
       _creationTime: 1,
       projectId: "projects:1",
       title: "Launch brief",
@@ -396,7 +532,7 @@ describe("Derived Output lifecycle", () => {
       _id: "documentSnapshots:1",
       _creationTime: 1,
       projectId: "projects:1",
-      resourceId: "launch-brief",
+      resourceId: "documents:launch-brief",
       revision: 1,
       role: "leader",
       part: 0,
@@ -412,7 +548,7 @@ describe("Derived Output lifecycle", () => {
       name: "Launch budget",
       source: {
         kind: "resourceContent",
-        ref: { kind: "document", id: "launch-brief" },
+        ref: { kind: "document", id: "documents:launch-brief" },
         revision: 1,
         locator: { kind: "documentBlock", area: "body", rowId: "row", blockPath: ["table"] }
       },
@@ -429,7 +565,7 @@ describe("Derived Output lifecycle", () => {
       },
       profileHash: "profile-1",
       contextHash: "context-1",
-      revisionKey: "revision:document:launch-brief:1",
+      revisionKey: "revision:document:documents:launch-brief:1",
       state: "ready",
       updatedAt: 1
     });
@@ -439,13 +575,13 @@ describe("Derived Output lifecycle", () => {
       name: "Launch budget",
       source: {
         kind: "resourceContent",
-        ref: { kind: "document", id: "launch-brief" },
+        ref: { kind: "document", id: "documents:launch-brief" },
         revision: 1,
         locator: { kind: "documentBlock", area: "body", rowId: "row", blockPath: ["table"] }
       },
       profileHash: "profile-1",
       contextHash: "context-1",
-      revisionKey: "revision:document:launch-brief:1"
+      revisionKey: "revision:document:documents:launch-brief:1"
     };
     const citation = {
       evidenceKind: "structured",
@@ -461,7 +597,7 @@ describe("Derived Output lifecycle", () => {
     const fresh = await readDerivedOutput({ derivedOutputId: id });
     assert.equal(fresh?.effectiveState, "fresh");
     assert.deepEqual(fresh?.changedMaterials, []);
-    state.rows("semanticMaterials")[0].revisionKey = "revision:document:launch-brief:2";
+    state.rows("semanticMaterials")[0].revisionKey = "revision:document:documents:launch-brief:2";
     const stale = await readDerivedOutput({ derivedOutputId: id });
     assert.equal(stale?.effectiveState, "stale");
     assert.deepEqual(stale?.changedMaterials, [material]);
@@ -478,7 +614,7 @@ describe("Derived Output lifecycle", () => {
     assert.equal(updated?.state, "stale");
     assert.deepEqual(updated?.lastResponse, previous);
     assert.deepEqual(updated?.scope, {
-      include: [{ select: "resources", refs: [{ kind: "document", id: "launch-brief" }] }],
+      include: [{ select: "resources", refs: [{ kind: "document", id: "documents:launch-brief" }] }],
       exclude: []
     });
 
@@ -502,7 +638,7 @@ describe("Derived Output lifecycle", () => {
         {
           selections: [{ evidenceId: "old-evidence", use: "Old support" }],
           source: {
-            ref: { kind: "document", id: "launch-brief" },
+            ref: { kind: "document", id: "documents:launch-brief" },
             revision: 1,
             encoding: "utf-16"
           },
@@ -516,7 +652,7 @@ describe("Derived Output lifecycle", () => {
       derivedOutputId: id,
       prompt: "Summarize the launch schedule",
       scope: {
-        include: [{ select: "resources", refs: [{ kind: "document", id: "launch-brief" }] }],
+        include: [{ select: "resources", refs: [{ kind: "document", id: "documents:launch-brief" }] }],
         exclude: []
       },
       lastResponse: "  Keep this\nshape  "
@@ -576,7 +712,42 @@ describe("Derived Output lifecycle", () => {
     assert.deepEqual(state.controls.firstTools, ["retrieve"]);
     assert.equal(JSON.stringify(state.controls.retrieveResults).includes("Launch is Tuesday"), true);
     assert.deepEqual(state.controls.queryInputs[0].scope, {
-      include: [{ select: "resources", refs: [{ kind: "document", id: "launch-brief" }] }],
+      include: [{ select: "resources", refs: [{ kind: "document", id: "documents:launch-brief" }] }],
+      exclude: []
+    });
+  });
+
+  it("executes a resource-owned private scope as concrete without rewriting its stored pointer", async () => {
+    const id = seedOutput({
+      origin: { kind: "document", id: "documents:made" },
+      scope: {
+        include: [{ select: "set", setId: "resourceSets:placed" }],
+        exclude: []
+      }
+    });
+    seed("resourceSets", {
+      _id: "resourceSets:placed",
+      _creationTime: 1,
+      projectId: "projects:1",
+      boundTo: { kind: "resource", resourceId: "documents:made", hole: "source_material" },
+      set: {
+        include: [{ select: "resources", refs: [{ kind: "document", id: "documents:launch-brief" }] }],
+        exclude: []
+      },
+      createdBy: { kind: "system" },
+      revision: 1,
+      updatedAt: 1
+    });
+
+    const result = await refreshDerivedOutput({ derivedOutputId: id });
+
+    assert.equal(result?.outcome, "published");
+    assert.deepEqual(state.controls.queryInputs[0].scope, {
+      include: [{ select: "resources", refs: [{ kind: "document", id: "documents:launch-brief" }] }],
+      exclude: []
+    });
+    assert.deepEqual(state.rows("derivedOutputs")[0].scope, {
+      include: [{ select: "set", setId: "resourceSets:placed" }],
       exclude: []
     });
   });
@@ -590,7 +761,7 @@ describe("Derived Output lifecycle", () => {
       evidence: [{
         selections: [{ evidenceId: "evidence-1", use: "Establishes the launch day" }],
         source: {
-          ref: { kind: "document", id: "launch-brief" },
+          ref: { kind: "document", id: "documents:launch-brief" },
           revision: 1,
           encoding: "utf-16"
         },
@@ -619,7 +790,7 @@ describe("Derived Output lifecycle", () => {
       evidence: [{
         selections: [{ evidenceId: "evidence-1", use: "Establishes the launch day" }],
         source: {
-          ref: { kind: "document", id: "launch-brief" },
+          ref: { kind: "document", id: "documents:launch-brief" },
           revision: 1,
           encoding: "utf-16"
         },
@@ -639,7 +810,52 @@ describe("Derived Output lifecycle", () => {
     assert.equal(evidence.source.revision, 2);
   });
 
-  it("fails closed on terminal semantic work without publishing a stale response", async () => {
+  it("enqueues every current in-scope document, deck, and spreadsheet before draining", async () => {
+    seed("documents", {
+      _id: "documents:launch",
+      _creationTime: 1,
+      projectId: "projects:1",
+      title: "Launch brief"
+    });
+    seed("slideDecks", {
+      _id: "slideDecks:board",
+      _creationTime: 1,
+      projectId: "projects:1",
+      title: "Board update"
+    });
+    seed("spreadsheets", {
+      _id: "spreadsheets:forecast",
+      _creationTime: 1,
+      projectId: "projects:1",
+      title: "Forecast"
+    });
+    seed("documents", {
+      _id: "documents:foreign",
+      _creationTime: 2,
+      projectId: "projects:other",
+      title: "Foreign"
+    });
+    const id = seedOutput({
+      scope: { include: [{ select: "project" }], exclude: [] }
+    });
+
+    const result = await refreshDerivedOutput({ derivedOutputId: id });
+
+    assert.equal(result?.outcome, "published");
+    assert.deepEqual(state.controls.enqueuedRefs, [
+      { kind: "document", id: "documents:launch" },
+      { kind: "slides", id: "slideDecks:board" },
+      { kind: "spreadsheet", id: "spreadsheets:forecast" }
+    ]);
+    assert.deepEqual(state.controls.preparationEvents, [
+      "enqueue:document:documents:launch",
+      "enqueue:slides:slideDecks:board",
+      "enqueue:spreadsheet:spreadsheets:forecast",
+      "drain"
+    ]);
+  });
+
+  it("does not let an unrelated quarantined resource poison a refresh", async () => {
     const previous = textBlock("Previously published");
     const id = seedOutput({
       state: "stale",
@@ -649,18 +865,245 @@ describe("Derived Output lifecycle", () => {
     });
     state.controls.queueFailure = "semantic source indexing exhausted its retry budget";
 
-    await assert.rejects(
-      () => refreshDerivedOutput({ derivedOutputId: id }),
-      /exhausted its retry budget/
-    );
+    const result = await refreshDerivedOutput({ derivedOutputId: id });
 
     const output = state.rows("derivedOutputs")[0];
-    assert.deepEqual(output.lastResponse, previous);
-    assert.equal(output.lastRevision, 3);
-    assert.equal(output.state, "stale");
+    assert.equal(result?.outcome, "published");
+    assert.notDeepEqual(output.lastResponse, previous);
+    assert.equal(output.lastRevision, 4);
+    assert.equal(output.state, "fresh");
+    assert.equal(state.controls.intelligenceCalls, 1);
+  });
+
+  it("fails before synthesis when a resource in its concrete scope cannot be indexed", async () => {
+    const previous = textBlock("Previously published");
+    const id = seedOutput({
+      state: "stale",
+      lastResponse: previous,
+      lastRevision: 3,
+      lastGeneration: 4
+    });
+    state.controls.queueFailureRef = { kind: "document", id: "documents:launch-brief" };
+    state.controls.queueFailure = "source indexing exhausted its retry budget";
+    state.controls.materialQueueFailure = "material indexing exhausted its retry budget";
+
+    const result = await refreshDerivedOutput({ derivedOutputId: id });
+
+    assert.equal(result?.outcome, "failed");
+    assert.equal(result?.attempts, 0);
+    assert.equal(result?.output.state, "error");
+    assert.deepEqual(result?.output.lastResponse, previous);
+    assert.equal(result?.output.lastRevision, 3);
+    assert.match(
+      result?.output.error ?? "",
+      /launch-brief.*text.*source indexing.*launch-brief.*material.*material indexing/i
+    );
     assert.equal(state.controls.intelligenceCalls, 0);
-    const projected = await readDerivedOutput({ derivedOutputId: id });
-    assert.equal(projected?.refresh.state, "failed");
+  });
+
+  it("follows nested reusable named sets when deciding whether a failure is required", async () => {
+    seed("documents", {
+      _id: "documents:launch-brief",
+      _creationTime: 1,
+      projectId: "projects:1",
+      title: "Launch brief"
+    });
+    seed("resourceSets", {
+      _id: "resourceSets:inner",
+      _creationTime: 1,
+      projectId: "projects:1",
+      name: "Launch material",
+      set: {
+        include: [{ select: "resources", refs: [{ kind: "document", id: "documents:launch-brief" }] }],
+        exclude: []
+      },
+      createdBy: { kind: "system" },
+      revision: 1,
+      updatedAt: 1
+    });
+    seed("resourceSets", {
+      _id: "resourceSets:outer",
+      _creationTime: 2,
+      projectId: "projects:1",
+      name: "Nested launch material",
+      set: {
+        include: [{ select: "set", setId: "resourceSets:inner" }],
+        exclude: []
+      },
+      createdBy: { kind: "system" },
+      revision: 1,
+      updatedAt: 1
+    });
+    const id = seedOutput({
+      scope: {
+        include: [{ select: "set", setId: "resourceSets:outer" }],
+        exclude: []
+      }
+    });
+    state.controls.queueFailureRef = { kind: "document", id: "documents:launch-brief" };
+    state.controls.queueFailure = "nested source could not be indexed";
+
+    const result = await refreshDerivedOutput({ derivedOutputId: id });
+
+    assert.equal(result?.outcome, "failed");
+    assert.match(result?.output.error ?? "", /nested source could not be indexed/);
+    assert.deepEqual(state.controls.enqueuedRefs, [
+      { kind: "document", id: "documents:launch-brief" }
+    ]);
+    assert.equal(state.controls.intelligenceCalls, 0);
+  });
+
+  it("projects an exact-owner private template scope before classifying failures", async () => {
+    seed("documents", {
+      _id: "documents:launch-brief",
+      _creationTime: 1,
+      projectId: "projects:1",
+      title: "Launch brief"
+    });
+    seed("resourceSets", {
+      _id: "resourceSets:private-template-scope",
+      _creationTime: 1,
+      projectId: "projects:1",
+      boundTo: { kind: "resource", resourceId: "documents:made", hole: "source_material" },
+      set: {
+        include: [{ select: "resources", refs: [{ kind: "document", id: "documents:launch-brief" }] }],
+        exclude: []
+      },
+      createdBy: { kind: "system" },
+      revision: 1,
+      updatedAt: 1
+    });
+    const id = seedOutput({
+      origin: { kind: "document", id: "documents:made" },
+      scope: {
+        include: [{ select: "set", setId: "resourceSets:private-template-scope" }],
+        exclude: []
+      }
+    });
+    state.controls.queueFailureRef = { kind: "document", id: "documents:launch-brief" };
+    state.controls.queueFailure = "template source could not be indexed";
+
+    const result = await refreshDerivedOutput({ derivedOutputId: id });
+
+    assert.equal(result?.outcome, "failed");
+    assert.match(result?.output.error ?? "", /template source could not be indexed/);
+    assert.deepEqual(state.controls.enqueuedRefs, [
+      { kind: "document", id: "documents:launch-brief" }
+    ]);
+    assert.equal(state.controls.intelligenceCalls, 0);
+  });
+
+  it("lets server shutdown abort and drain blocked in-scope enqueue preparation", async () => {
+    seed("documents", {
+      _id: "documents:launch-brief",
+      _creationTime: 1,
+      projectId: "projects:1",
+      title: "Launch brief"
+    });
+    state.controls.enqueueBlocked = true;
+    const id = seedOutput();
+    const refresh = refreshDerivedOutput({ derivedOutputId: id });
+    await vi.waitFor(() => expect(state.controls.enqueueStarted).toBe(true));
+
+    await state.model.operationFlights.close();
+
+    await assert.rejects(refresh, /aborted/i);
+    assert.equal(state.controls.queueCalls, 0);
+    assert.equal(state.controls.intelligenceCalls, 0);
+  });
+
+  it("lets server shutdown abort and drain blocked overlay preparation", async () => {
+    state.controls.queueBlocked = true;
+    const id = seedOutput();
+    const refresh = refreshDerivedOutput({ derivedOutputId: id });
+    await vi.waitFor(() => expect(state.controls.queueStarted).toBe(true));
+
+    await state.model.operationFlights.close();
+
+    await assert.rejects(refresh, /aborted/i);
+    assert.equal(state.controls.intelligenceCalls, 0);
+  });
+
+  it("leaves shutdown-interrupted work queued for a fresh ServerModel to reclaim", async () => {
+    state.controls.queryBlocked = true;
+    const previous = textBlock("Earlier answer");
+    const id = seedOutput({
+      state: "stale",
+      lastResponse: previous,
+      lastRevision: 3,
+      lastGeneration: 4
+    });
+    const stoppedModel = state.model;
+    const refresh = refreshDerivedOutput({ derivedOutputId: id });
+    await vi.waitFor(() => expect(state.controls.queryStarted).toBe(true));
+
+    await stoppedModel.operationFlights.close();
+    await assert.rejects(refresh, /server shutdown aborted/i);
+
+    const queued = state.rows("derivedOutputRefreshJobs")[0];
+    assert.equal(queued.state, "queued");
+    assert.equal(queued.attempts, 0);
+    assert.equal(queued.error, undefined);
+    assert.equal(queued.startedAt, undefined);
+    const interruptedOutput = state.rows("derivedOutputs")[0];
+    assert.equal(interruptedOutput.state, "stale");
+    assert.equal(interruptedOutput.error, undefined);
+    assert.deepEqual(interruptedOutput.lastResponse, previous);
+    assert.equal(interruptedOutput.lastRevision, 3);
+
+    state.controls.queryBlocked = false;
+    state.controls.queryStarted = false;
+    const restartedModel = {
+      ...stoppedModel,
+      operationFlights: createOperationFlights()
+    };
+    assert.notEqual(restartedModel, stoppedModel);
+    state.model = restartedModel;
+
+    const recovered = await refreshDerivedOutput({ derivedOutputId: id });
+
+    assert.equal(recovered?.outcome, "published");
+    assert.equal(recovered?.output.state, "fresh");
+    assert.equal(recovered?.output.error, undefined);
+    assert.equal(recovered?.output.lastRevision, 4);
+    assert.equal(state.rows("derivedOutputRefreshJobs").length, 0);
+  });
+
+  it("keeps an ordinary AbortError as a visible refresh failure", async () => {
+    state.controls.queryOrdinaryAbort = true;
+    const id = seedOutput();
+
+    const result = await refreshDerivedOutput({ derivedOutputId: id });
+
+    assert.equal(result?.outcome, "failed");
+    assert.equal(result?.output.state, "error");
+    assert.match(result?.output.error ?? "", /user cancelled this refresh/i);
+    const failedJob = state.rows("derivedOutputRefreshJobs")[0];
+    assert.equal(failedJob.state, "failed");
+    assert.equal(failedJob.attempts, 1);
+    assert.match(String(failedJob.error), /user cancelled this refresh/i);
+  });
+
+  it("rejects a refresh job that omits its required requestedVersion", async () => {
+    const id = seedOutput();
+    seed("derivedOutputRefreshJobs", {
+      _id: "derivedOutputRefreshJobs:1",
+      _creationTime: 1,
+      projectId: "projects:1",
+      derivedOutputId: id,
+      state: "queued",
+      requestKey: "malformed-current-row",
+      attempts: 0,
+      queuedAt: 10,
+      updatedAt: 10
+    });
+
+    await assert.rejects(
+      () => refreshDerivedOutput({ derivedOutputId: id }),
+      /contains a non-current row/
+    );
+    assert.equal(state.controls.intelligenceCalls, 0);
+    assert.equal(state.rows("derivedOutputRefreshJobs")[0].requestedVersion, undefined);
   });
 
   it("restarts synthesis when a cited revision changes before publication", async () => {
@@ -696,7 +1139,7 @@ describe("Derived Output lifecycle", () => {
       {
         selections: [{ evidenceId: "evidence-1", use: "Names the launch" }],
         source: {
-          ref: { kind: "document", id: "launch-brief" },
+          ref: { kind: "document", id: "documents:launch-brief" },
           revision: 1,
           encoding: "utf-16"
         },
@@ -860,7 +1303,7 @@ describe("Derived Output lifecycle", () => {
       _id: "semanticSources:2",
       _creationTime: 2,
       projectId: "projects:1",
-      ref: { kind: "document", id: "neighboring-brief" },
+      ref: { kind: "document", id: "documents:neighboring-brief" },
       revision: 1,
       encoding: "utf-16",
       updatedAt: 1

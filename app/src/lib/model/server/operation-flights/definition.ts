@@ -23,6 +23,8 @@ export type DerivedFlight = {
 
 export type HeldResearchFlight = {
   readonly controller: AbortController;
+  readonly settled: Promise<void>;
+  readonly settle: () => void;
   stopping: boolean;
   reason?: ResearchFlightReason;
   deadline?: ReturnType<typeof setTimeout>;
@@ -32,6 +34,7 @@ export type OperationFlightsState = {
   readonly derived: Map<string, DerivedFlight>;
   readonly research: Map<string, HeldResearchFlight>;
   closed: boolean;
+  closePromise?: Promise<void>;
 };
 
 /** Owns all non-durable operation state for exactly one server process. */
@@ -82,7 +85,7 @@ export class OperationFlights implements OperationFlightsModel {
     return endResearch(this.#state, turnId);
   }
 
-  close(): void {
+  close(): Promise<void> {
     return close(this.#state);
   }
 }

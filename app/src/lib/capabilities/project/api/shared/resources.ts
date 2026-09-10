@@ -1,4 +1,8 @@
 import type { TableName } from "$model/server/store/index.server";
+import {
+  storedProjectResource,
+  type StoredProjectResource
+} from "$representation/data/behavior/project-resources/stored";
 
 import { recordsIn, type StoreReads } from "$capabilities/project/api/shared/store";
 import type { ProjectResourceKind } from "$capabilities/project/types/project";
@@ -20,7 +24,7 @@ export const PROJECT_RESOURCE_SPECS: readonly ProjectResourceSpec[] = [
 
 export type RepresentedProjectResource = {
   readonly spec: ProjectResourceSpec;
-  readonly row: Record<string, unknown>;
+  readonly row: StoredProjectResource["row"];
 };
 
 /** Resolve exactly one supported resource inside the already-resolved project. */
@@ -34,8 +38,10 @@ export const projectResourceOf = (
   );
   if (spec === undefined) return undefined;
 
-  const rows = recordsIn(store, spec.table).filter(
-    (row) => row._id === resourceId && row.projectId === projectId
-  );
-  return rows.length === 1 ? { spec, row: rows[0] } : undefined;
+  const claimed = recordsIn(store, spec.table).filter((row) => row._id === resourceId);
+  if (claimed.length !== 1) return undefined;
+  const stored = storedProjectResource(claimed[0], spec.table);
+  return stored !== undefined && stored.row.projectId === projectId
+    ? { spec, row: stored.row }
+    : undefined;
 };

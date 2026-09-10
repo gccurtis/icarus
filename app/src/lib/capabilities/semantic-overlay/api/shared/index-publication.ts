@@ -34,7 +34,7 @@ export const stageSemanticIndex = (
     build.nodes.map((node) => [node.key, node])
   );
   const oldIndexes = rowsOf(model.store, "semanticIndexes").filter(
-    (row) => row.projectId === projectId && (row.lane ?? "text") === lane
+    (row) => row.projectId === projectId && row.lane === lane
   );
   const oldIndexIds = new Set(oldIndexes.map((index) => index._id));
   const oldNodes = rowsOf(model.store, "semanticIndexNodes").filter((node) =>

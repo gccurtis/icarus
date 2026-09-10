@@ -1,7 +1,15 @@
 import type { ServerModel } from "$runtime/server/start.server";
+import { admittedReusableResourceSets } from "$representation/data/behavior/core/resource-set-rows";
+import { resourceInScope } from "$representation/data/behavior/semantic/scope";
 import type { Id } from "$representation/data/types/core/id";
+import type { ResourceRef } from "$representation/data/types/core/resource";
+import type { ResourceSet } from "$representation/data/types/core/resource-set";
 import type { DerivedOutput } from "$representation/data/types/semantic/derived-output";
-import { processSemanticSyncQueueFor } from "$capabilities/semantic-overlay";
+import {
+  enqueueSemanticSync,
+  isStagedResource,
+  processSemanticSyncQueueFor
+} from "$capabilities/semantic-overlay";
 import type { DerivedSynthesisUsage } from "$capabilities/derived-output/types/refresh-derived-output";
 import {
   activeMaterials,
@@ -80,17 +88,114 @@ export const safeFailure = (error: unknown): string =>
     .replace(/(?:api[-_ ]?key)\s*[:=]\s*\S+/gi, "apiKey=[redacted]")
     .slice(0, 400);
 
-export const prepareSemanticOverlay = async (
+type OverlayFailure = {
+  readonly lane: "text" | "material";
+  readonly ref: ResourceRef;
+  readonly error: string;
+};
+
+const reusableSetsIn = (
   model: ServerModel,
   projectId: Id<"projects">
+): ReadonlyMap<string, ResourceSet> => {
+  const rows = rowsOf(model.store, "resourceSets");
+  return new Map(
+    [...admittedReusableResourceSets(rows, projectId)].map(([id, row]) => [id, row.set])
+  );
+};
+
+const failureIsInScope = (
+  failure: OverlayFailure,
+  scope: ResourceSet | undefined,
+  namedSets: ReadonlyMap<string, ResourceSet>
+): boolean =>
+  scope === undefined || resourceInScope(failure.ref, scope, (id) => namedSets.get(id));
+
+const scopedFailureMessage = (failures: readonly OverlayFailure[]): string =>
+  `The Semantic Overlay could not prepare resources in this output's scope: ${failures
+    .map((failure) => `${failure.ref.kind}:${failure.ref.id} (${failure.lane}): ${failure.error}`)
+    .join("; ")}`;
+
+const currentProjectResources = (
+  model: ServerModel,
+  projectId: Id<"projects">
+): readonly ResourceRef[] => [
+  ...rowsOf(model.store, "documents")
+    .filter((row) => row.projectId === projectId)
+    .map((row) => ({ kind: "document" as const, id: row._id })),
+  ...rowsOf(model.store, "slideDecks")
+    .filter((row) => row.projectId === projectId)
+    .map((row) => ({ kind: "slides" as const, id: row._id })),
+  ...rowsOf(model.store, "spreadsheets")
+    .filter((row) => row.projectId === projectId)
+    .map((row) => ({ kind: "spreadsheet" as const, id: row._id }))
+];
+
+const resourcesInScope = (
+  model: ServerModel,
+  projectId: Id<"projects">,
+  scope: ResourceSet | undefined
+): readonly ResourceRef[] => {
+  const namedSets = reusableSetsIn(model, projectId);
+  return currentProjectResources(model, projectId).filter(
+    (ref) =>
+      !isStagedResource(model.store, projectId, ref) &&
+      (scope === undefined || resourceInScope(ref, scope, (id) => namedSets.get(id)))
+  );
+};
+
+export const prepareSemanticOverlay = async (
+  model: ServerModel,
+  projectId: Id<"projects">,
+  scope: ResourceSet | undefined,
+  signal?: AbortSignal
 ): Promise<void> => {
+  const requiredResources = resourcesInScope(model, projectId, scope);
+  for (const ref of requiredResources) {
+    signal?.throwIfAborted();
+    const queued = await enqueueSemanticSync({ ref }, signal);
+    signal?.throwIfAborted();
+    if (queued === null) {
+      throw new Error(
+        `The Semantic Overlay cannot prepare required resource ${ref.kind}:${ref.id}`
+      );
+    }
+  }
+
   for (let batch = 0; batch < 20; batch += 1) {
-    const processed = await processSemanticSyncQueueFor(model, projectId, 50);
-    const failed = processed.failed[0];
-    const failedMaterial = processed.materials.failed[0];
-    if (failed?.error !== undefined) throw new Error(failed.error);
-    if (failedMaterial?.error !== undefined) throw new Error(failedMaterial.error);
-    if (processed.remaining === 0 && processed.materials.remaining === 0) return;
+    signal?.throwIfAborted();
+    const processed = await processSemanticSyncQueueFor(
+      model,
+      projectId,
+      50,
+      undefined,
+      signal
+    );
+    signal?.throwIfAborted();
+    const failures = [
+      ...processed.failed.flatMap((failed) =>
+        failed.error === undefined ? [] : [{ lane: "text" as const, ref: failed.ref, error: failed.error }]
+      ),
+      ...processed.materials.failed.flatMap((failed) =>
+        failed.error === undefined
+          ? []
+          : [{ lane: "material" as const, ref: failed.ref, error: failed.error }]
+      )
+    ];
+    if (failures.length > 0) {
+      model.observability.logger.warn("derivedOutput.overlayIncomplete", {
+        projectId,
+        failures
+      });
+    }
+    if (processed.remaining === 0 && processed.materials.remaining === 0) {
+      const namedSets = reusableSetsIn(model, projectId);
+      const required = failures.filter((failure) =>
+        failureIsInScope(failure, scope, namedSets)
+      );
+      if (required.length > 0) throw new Error(scopedFailureMessage(required));
+      return;
+    }
   }
   throw new Error("The Semantic Overlay queue did not settle before refresh");
 };

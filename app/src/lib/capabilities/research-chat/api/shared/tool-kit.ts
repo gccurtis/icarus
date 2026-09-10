@@ -59,6 +59,8 @@ export type SessionInput = {
   readonly bound?: ResourceSet;
   /** Answered by the turn row: has a person asked it to stop and answer now? */
   stopping(): boolean;
+  /** The server-owned lifetime of this turn, shared by every tool it invokes. */
+  readonly signal?: AbortSignal;
 };
 
 export const STOPPED = {

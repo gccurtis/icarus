@@ -43,10 +43,10 @@ export const SYSTEMATIC: SystematicChange[] = [
   },
   {
     index: "06",
-    title: "Resource sets became a subject",
+    title: "Resource sets became owned scope values",
     before: "The resourceSets table existed, was seeded with two rows, and no capability read or wrote it.",
-    now: "A resource-sets capability of four procedures, and a Contexts panel in Project Overview that makes, renames, changes and deletes sets and counts what each one selects right now.",
-    why: "A prompt's scope, a hole's default and an answer can all name a set. Nothing could say what a set meant.",
+    now: "The capability still resolves represented reusable sets, while templates and Prompt Blocks create private owned rows from their point-of-use scope builders. Project Overview has no global Resource Sets panel.",
+    why: "A prompt's scope, a hole's default and an answer need durable rules, but a one-use choice should not become a globally curated subject.",
     area: "sets"
   },
   {
@@ -311,11 +311,6 @@ export const OPEN: OpenItem[] = [
     recommendation: "Belongs to the formula system, which the base does not have yet."
   },
   {
-    title: "Where resource sets are managed",
-    detail: "Sets are made and changed in Project Overview's Contexts panel, which the rail already named.",
-    recommendation: "Keep it there until a set needs a screen of its own."
-  },
-  {
     title: "Inserting a deck template brings layouts",
     detail: "A deck insert brings any layout and style key the deck lacks, with the deck's own version winning where both have one.",
     recommendation: "Keep it — a slide without its layout draws wrong."
@@ -404,7 +399,7 @@ export const MODEL_DELTA = {
   ],
   unchanged: [
     { name: "TemplateBody", note: "document | slides | spreadsheet, exactly as before" },
-    { name: "TemplateHole", note: "main's name, label, description?, default?, widened with kind and text for a hole that asks for words" },
+    { name: "TemplateHole", note: "name, label, required scope-or-text kind, description?, default?, and text?; an absent kind is rejected rather than inferred" },
     { name: "resourceSets", note: "the table was already there; only the capability over it is new" }
   ]
 };

@@ -17,6 +17,7 @@ import {
   templateAtomNamesIn
 } from "$representation/data/behavior/templates/scopes";
 import type { Atom, Mark } from "$representation/data/types/content/content-block";
+import type { ResourceSet } from "$representation/data/types/core/resource-set";
 import type { TemplateBody, TemplateHole } from "$representation/data/types/templates/template";
 
 /**
@@ -263,8 +264,11 @@ describe("prompts that ask a lot", () => {
     const body = templated(held) as unknown as TemplateBody;
     expect(scopeHoleNamesIn(body)).toEqual(["winter"]);
 
-    const holes: TemplateHole[] = [{ name: "winter", label: "winter", default: setScope("resourceSets:1") }];
-    const answer = { include: [{ select: "kinds" as const, kinds: ["research"] }], exclude: [] };
+    const holes: TemplateHole[] = [{ name: "winter", label: "winter", kind: "scope", default: setScope("resourceSets:1") }];
+    const answer: ResourceSet = {
+      include: [{ select: "kinds", kinds: ["research"] }],
+      exclude: []
+    };
     const resolved = resolveTemplateScopes(body, holes, { winter: answer });
     expect(resolved.accepted).toBe(true);
     if (!resolved.accepted) return;
@@ -287,7 +291,7 @@ describe("prompts that ask a lot", () => {
     const body = templated(
       bodyOf([prompt("q1", { hole: { name: "winter" }, scope: setScope("resourceSets:1") })])
     ) as unknown as TemplateBody;
-    const holes: TemplateHole[] = [{ name: "winter", label: "winter", default: setScope("resourceSets:1") }];
+    const holes: TemplateHole[] = [{ name: "winter", label: "winter", kind: "scope", default: setScope("resourceSets:1") }];
     const resolved = resolveTemplateScopes(body, holes, {
       winter: {
         include: [{ select: "project" }],

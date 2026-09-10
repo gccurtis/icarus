@@ -26,6 +26,7 @@
   } from "$app-views/categories/document-editor/inspector/prompt-block.state.svelte";
   import { createPromptBlock } from "$app-views/categories/document-editor/procedures/create-prompt-block";
   import { synchronizePromptBlockDraft } from "$app-views/categories/document-editor/procedures/effects/prompt-block-draft.svelte";
+  import { setPromptDefinition } from "$app-views/categories/document-editor/procedures/set-prompt-definition";
   import { isInspectorView, workspaceState } from "$model/client/workspace-state";
 
 
@@ -49,7 +50,7 @@
     generating: "Generating response"
   };
 
-  synchronizePromptBlockDraft(state, () => prompt?.id);
+  synchronizePromptBlockDraft(state, () => prompt);
 
   const create = () => createPromptBlock({ blockId, documentId, runtime, state });
 
@@ -97,6 +98,11 @@
         <Textarea
           id={`new-prompt-${prompt.id}`}
           bind:value={state.promptDraft}
+          oninput={(event) => setPromptDefinition({
+            block: prompt,
+            prompt: event.currentTarget.value,
+            runtime
+          })}
           rows={5}
           maxlength={8000}
           placeholder="What should this block derive from project sources?"

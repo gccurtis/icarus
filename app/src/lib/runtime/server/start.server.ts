@@ -67,7 +67,7 @@ const buildServerModel = async (): Promise<ServerModel> => {
     store,
     materialContent,
     close: async () => {
-      operationFlights.close();
+      await operationFlights.close();
       await observability.close();
     }
   };
@@ -90,6 +90,35 @@ let instance: ServerModel | undefined;
  * arriving mid-drain has to hear "shutting down" rather than "not built yet".
  */
 let closed = false;
+
+/**
+ * Browser resets are commands against the one process graph. Keeping their
+ * sequence beside that graph prevents two test workers or retries from closing
+ * and rebuilding the same instance concurrently. A failed reset releases the
+ * sequence so a later diagnostic reset can still run and report its own result.
+ */
+let browserResetSequence: Promise<void> = Promise.resolve();
+
+/** A failed reset may leave no graph; only the next sequenced reset may rebuild that state. */
+let browserResetMayRebuild = false;
+
+/** Every shutdown caller joins the one release rather than returning mid-drain. */
+let shutdownPromise: Promise<void> | undefined;
+
+type ServerShutdownChannel = {
+  readonly add: (listener: () => void) => void;
+  readonly remove: (listener: () => void) => void;
+};
+
+type ServerModelHotData = {
+  icarusServerModelRelease?: Promise<void>;
+  icarusServerShutdownListener?: () => void;
+};
+
+type ServerModelHotContext = {
+  readonly data: ServerModelHotData;
+  readonly dispose: (callback: (data: ServerModelHotData) => void) => void;
+};
 
 /**
  * Builds the one graph. Called once by `hooks.server.ts`'s `init` hook, which
@@ -124,7 +153,7 @@ export const serverModel = (): ServerModel => {
  * startup remains one-way, and callers cannot use it without the harness token
  * and validated temporary directory enforced by the route that invokes it.
  */
-export const resetServerModelForBrowserHarness = async (
+export const resetServerModelForBrowserHarness = (
   restoreDisposableStore: () => void
 ): Promise<void> => {
   if (
@@ -133,15 +162,23 @@ export const resetServerModelForBrowserHarness = async (
   ) {
     throw new Error("The browser reset seam is unavailable outside its disposable harness");
   }
-  if (closed) throw new Error("The server model is shutting down and cannot be reset");
+  const reset = browserResetSequence.then(async () => {
+    if (closed) throw new Error("The server model is shutting down and cannot be reset");
 
-  const model = instance;
-  if (model === undefined) throw new Error("The server model has not been built");
+    const model = instance;
+    if (model === undefined && !browserResetMayRebuild) {
+      throw new Error("The server model has not been built");
+    }
 
-  instance = undefined;
-  await model.close();
-  restoreDisposableStore();
-  instance = await buildServerModel();
+    instance = undefined;
+    browserResetMayRebuild = true;
+    if (model !== undefined) await model.close();
+    restoreDisposableStore();
+    instance = await buildServerModel();
+    browserResetMayRebuild = false;
+  });
+  browserResetSequence = reset.catch(() => undefined);
+  return reset;
 };
 
 /**
@@ -153,16 +190,75 @@ export const resetServerModelForBrowserHarness = async (
  * gets its own name rather than joining a bundle everyone then has to grow a
  * field for.
  */
-export const closeServerModel = async (): Promise<void> => {
-  if (closed) return;
+export const closeServerModel = (): Promise<void> => {
+  if (shutdownPromise !== undefined) return shutdownPromise;
   closed = true;
 
-  const model = instance;
-  if (!model) return;
+  shutdownPromise = browserResetSequence.then(async () => {
+    const model = instance;
+    if (!model) return;
 
-  // Cleared before closing, so a caller arriving mid-drain cannot be handed a
-  // graph whose log stream is already going away. The latch above is what tells
-  // it "shutting down" rather than "not built yet".
-  instance = undefined;
-  await model.close();
+    // Cleared before closing, so a caller arriving mid-drain cannot be handed a
+    // graph whose log stream is already going away. The latch above is what tells
+    // it "shutting down" rather than "not built yet".
+    instance = undefined;
+    await model.close();
+  });
+  return shutdownPromise;
+};
+
+/**
+ * Releases the current development graph without turning a module replacement
+ * into terminal process shutdown. The replacement hook waits for this promise
+ * before asking the (possibly cached) runtime module to initialize again.
+ */
+const releaseServerModelForHotReplacement = (): Promise<void> => {
+  if (closed) return closeServerModel();
+
+  const release = browserResetSequence.then(async () => {
+    if (closed) return;
+    const model = instance;
+    instance = undefined;
+    if (model !== undefined) await model.close();
+  });
+  browserResetSequence = release.catch(() => undefined);
+  return release;
+};
+
+/**
+ * Owns the adapter shutdown listener and the Vite replacement hand-off.
+ *
+ * Hot data belongs to this exact module identity across replacements. It lets
+ * the outgoing hook remove its process-global listener, release the graph it
+ * was using, and make the incoming hook wait for that release. Production has
+ * no hot context, so its one listener retains terminal, one-way shutdown.
+ */
+export const ownServerModelLifetime = (
+  channel: ServerShutdownChannel,
+  hot: ServerModelHotContext | undefined,
+  reportFailure: (error: unknown) => void
+): Promise<void> | undefined => {
+  const pendingRelease = hot?.data.icarusServerModelRelease;
+  const previousListener = hot?.data.icarusServerShutdownListener;
+  if (previousListener !== undefined) channel.remove(previousListener);
+
+  const shutdown = () => {
+    void closeServerModel().catch(reportFailure);
+  };
+  channel.add(shutdown);
+
+  if (hot !== undefined) {
+    hot.data.icarusServerShutdownListener = shutdown;
+    hot.dispose((data) => {
+      channel.remove(shutdown);
+      if (data.icarusServerShutdownListener === shutdown) {
+        delete data.icarusServerShutdownListener;
+      }
+      const release = releaseServerModelForHotReplacement();
+      data.icarusServerModelRelease = release;
+      void release.catch(reportFailure);
+    });
+  }
+
+  return pendingRelease;
 };

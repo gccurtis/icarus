@@ -114,6 +114,16 @@ export const writtenAt = (
   next: unknown
 ): readonly AnyRow[] => {
   const row = required(rows, path);
+  if (path.fields[0] === "_id" || path.fields[0] === "_creationTime") {
+    throw new Error("Store-owned identity fields cannot be written");
+  }
+  if (
+    path.fields.length === 0 &&
+    (next === null || typeof next !== "object" || Array.isArray(next) ||
+      Object.hasOwn(next, "_id") || Object.hasOwn(next, "_creationTime"))
+  ) {
+    throw new Error("a row replacement cannot supply Store-owned identity fields");
+  }
 
   const written =
     path.fields.length === 0
@@ -125,37 +135,32 @@ export const writtenAt = (
 
 export const removedAt = (rows: readonly AnyRow[], path: StorePath): readonly AnyRow[] => {
   const row = required(rows, path);
+  if (path.fields[0] === "_id" || path.fields[0] === "_creationTime") {
+    throw new Error("Store-owned identity fields cannot be removed");
+  }
   if (path.fields.length === 0) return rows.filter((candidate) => candidate._id !== row._id);
 
   const written = withoutField(row, path.fields) as AnyRow;
   return rows.map((candidate) => (candidate._id === row._id ? written : candidate));
 };
 
-/** The next id for a table, from what it already holds. */
-export const nextId = <T extends TableName>(table: T, rows: readonly AnyRow[]): Id<T> => {
-  const prefix = `${table}:`;
-  const highest = rows.reduce((seen, row) => {
-    const parsed = Number(row._id.slice(prefix.length));
-    return row._id.startsWith(prefix) && parsed > seen ? parsed : seen;
-  }, 0);
-  return `${prefix}${highest + 1}` as Id<T>;
+const hasOnlyDataProperties = (
+  value: object,
+  keys: readonly string[],
+  nonEnumerable: readonly string[] = []
+): boolean => {
+  const ownKeys = Reflect.ownKeys(value);
+  const stringKeys = ownKeys.filter((key): key is string => typeof key === "string");
+  if (stringKeys.length !== ownKeys.length) return false;
+  if (stringKeys.length !== keys.length || stringKeys.some((key) => !keys.includes(key))) return false;
+  return keys.every((key) => {
+    const descriptor = Object.getOwnPropertyDescriptor(value, key);
+    return descriptor !== undefined && "value" in descriptor &&
+      descriptor.enumerable === !nonEnumerable.includes(key);
+  });
 };
 
-export const createdIn = <T extends TableName>(
-  table: T,
-  rows: readonly AnyRow[],
-  fields: unknown,
-  at: number
-): { readonly rows: readonly AnyRow[]; readonly id: Id<T> } => {
-  if (fields === null || typeof fields !== "object" || Array.isArray(fields)) {
-    throw new Error(`a '${table}' row is an object`);
-  }
-  const id = nextId(table, rows);
-  const row = { ...(fields as Fields), _id: id, _creationTime: at } as unknown as AnyRow;
-  return { rows: [...rows, row], id };
-};
-
-/** Refuses what a JSON file cannot hold, so a write cannot half-persist. */
+/** Refuses anything whose value JSON persistence would omit, coerce, or reshape. */
 export const asStorable = (value: unknown): unknown => {
   const ancestors = new WeakSet<object>();
   const walk = (step: unknown): unknown => {
@@ -163,10 +168,37 @@ export const asStorable = (value: unknown): unknown => {
     if (typeof step === "function" || typeof step === "symbol" || typeof step === "bigint") {
       throw new Error(`${typeof step} is not storable`);
     }
+    if (typeof step === "number" && (!Number.isFinite(step) || Object.is(step, -0))) {
+      throw new Error("a non-finite or negative-zero number is not storable");
+    }
     if (step === null || typeof step !== "object") return step;
     if (ancestors.has(step)) throw new Error("a cycle is not storable");
     ancestors.add(step);
-    for (const entry of Object.values(step)) walk(entry);
+
+    if (Array.isArray(step)) {
+      if (Object.getPrototypeOf(step) !== Array.prototype) {
+        throw new Error("a custom-prototype array is not storable");
+      }
+      const keys = Object.keys(step);
+      if (
+        !hasOnlyDataProperties(step, [...keys, "length"], ["length"]) ||
+        keys.length !== step.length ||
+        keys.some((key, index) => key !== String(index))
+      ) {
+        throw new Error("a sparse, decorated, or accessor array is not storable");
+      }
+      for (const entry of step) walk(entry);
+    } else {
+      const prototype = Object.getPrototypeOf(step);
+      if (prototype !== Object.prototype && prototype !== null) {
+        throw new Error("a custom-prototype object is not storable");
+      }
+      const keys = Object.keys(step);
+      if (!hasOnlyDataProperties(step, keys)) {
+        throw new Error("a hidden, symbolic, or accessor property is not storable");
+      }
+      for (const key of keys) walk((step as Fields)[key]);
+    }
     ancestors.delete(step);
     return step;
   };

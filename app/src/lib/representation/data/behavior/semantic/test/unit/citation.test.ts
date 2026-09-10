@@ -4,6 +4,7 @@ import {
   changedSemanticSources,
   coalesceSemanticCitations
 } from "$representation/data/behavior/semantic/citation";
+import { asId } from "$representation/data/behavior/core/id";
 import type { SemanticTextCitation } from "$representation/data/types/semantic/derived-output";
 
 const citation = (
@@ -14,7 +15,11 @@ const citation = (
   evidenceId = `evidence-${from}-${to}-${generation}`
 ): SemanticTextCitation => ({
   selections: [{ evidenceId, use: `Supports ${text}` }],
-  source: { ref: { kind: "document", id: "brief" }, revision: 7, encoding: "utf-16" },
+  source: {
+    ref: { kind: "document", id: asId<"documents">("documents:brief") },
+    revision: 7,
+    encoding: "utf-16"
+  },
   span: { from, to, text },
   overlayGeneration: generation
 });
@@ -71,14 +76,22 @@ describe("semantic citations", () => {
     expect(
       changedSemanticSources([used], [
         used.source,
-        { ref: { kind: "document", id: "unrelated" }, revision: 99, encoding: "utf-16" }
+        {
+          ref: { kind: "document", id: asId<"documents">("documents:unrelated") },
+          revision: 99,
+          encoding: "utf-16"
+        }
       ])
     ).toEqual([]);
 
     expect(
       changedSemanticSources([used], [
         { ...used.source, revision: 8 },
-        { ref: { kind: "document", id: "unrelated" }, revision: 100, encoding: "utf-16" }
+        {
+          ref: { kind: "document", id: asId<"documents">("documents:unrelated") },
+          revision: 100,
+          encoding: "utf-16"
+        }
       ])
     ).toEqual([used.source]);
   });
@@ -87,7 +100,10 @@ describe("semantic citations", () => {
     const used: SemanticTextCitation = {
       ...citation(0, 5, "alpha"),
       source: {
-        ref: { kind: "externalFile::text", id: "externalFiles:notes" },
+        ref: {
+          kind: "externalFile::text",
+          id: asId<"externalFiles">("externalFiles:notes")
+        },
         revision: 0,
         contentHash: "a".repeat(64),
         encoding: "utf-16"

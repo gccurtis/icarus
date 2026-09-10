@@ -48,10 +48,10 @@ export const runtimeReference: AreaReference = {
       why: "Recoverability requires preserving both user intent and the reason it could not be accepted."
     },
     {
-      title: "Store queries move to workspace lifetime",
-      before: "Short-lived inspector lenses could create/destroy derived remote state and produce inert-derived console warnings.",
-      now: "Workspace constructs persistent table queries and username once, then exposes readStore/readUsername to all surfaces.",
-      why: "Resource lifetime should follow the workspace that consumes it, not whichever lens happens to be mounted."
+      title: "Reads use subject projections",
+      before: "A navigation coordinator exposed table-shaped reads to every surface.",
+      now: "Views request closed projections from the capability that owns each subject; WorkspaceState carries navigation and resource runtimes only.",
+      why: "A read boundary should express the subject, scope, and safe fields instead of exposing persistence vocabulary."
     }
   ],
   flows: [
@@ -161,15 +161,6 @@ export const runtimeReference: AreaReference = {
       transitions: ["attach → open", "release → settling", "reattach → open", "settled → released"],
       invariants: ["One runtime instance per open resource", "Reattachment reuses safely settling state", "Release flushes before disposal"],
       sources: ["src/lib/model/client/document-runtimes/constructor.svelte.ts", "src/lib/model/client/document-runtimes/definition.svelte.ts"]
-    },
-    {
-      name: "Workspace store queries",
-      owner: "Workspace client model",
-      shape: "persistent query per table name + username query + readStore/readUsername accessors",
-      states: ["lazy/unread", "loading", "available", "error", "released"],
-      transitions: ["workspace construct → register", "first read → fetch", "remote change → refresh", "workspace close → release"],
-      invariants: ["Lens mount lifetime does not own a query", "All consumers share the same scoped table projection", "Query errors remain observable"],
-      sources: ["src/lib/model/client/workspace-state/definition.svelte.ts", "src/lib/runtime/client/start.ts"]
     }
   ],
   procedures: [
@@ -212,22 +203,14 @@ export const runtimeReference: AreaReference = {
       writes: "Requeued buffer or canonical resynchronization state.",
       failure: "Further refusal remains visible; neither path pretends a save succeeded.",
       sources: ["src/lib/model/client/document-runtimes/definition.svelte.ts"]
-    },
-    {
-      name: "workspace readStore / readUsername",
-      role: "Provide stable, shared access to scoped remote store data for panels and annotations.",
-      reads: "Persistent query registry constructed at workspace startup.",
-      writes: "No domain data; accessors expose query values/errors.",
-      failure: "Errors remain query state and do not create per-lens replacement queries.",
-      sources: ["src/lib/model/client/workspace-state/definition.svelte.ts", "src/lib/runtime/client/start.ts"]
     }
   ],
   structure: [
     { path: "src/lib/model/client/document-runtimes/definition.svelte.ts", role: "Runtime state machine", note: "Live body, apply/history, buffer, flush/rebase, failure, retry/discard, and release behavior." },
     { path: "src/lib/model/client/document-runtimes/types.ts", role: "Runtime contracts", note: "Sync/failure/change-set and public runtime shapes." },
     { path: "src/lib/model/client/document-runtimes/constructor.svelte.ts", role: "Registry", note: "Per-resource attachment, reuse, settling, and release lifecycle." },
-    { path: "src/lib/model/client/workspace-state/definition.svelte.ts", role: "Workspace composition", note: "Shares document runtimes and persistent scoped store queries with all surfaces." },
-    { path: "src/lib/runtime/client/start.ts", role: "Client bootstrap", note: "Constructs configuration, store, runtimes, tabs/views/workspace and owns whole-client shutdown." }
+    { path: "src/lib/model/client/workspace-state/definition.svelte.ts", role: "Workspace composition", note: "Shares resource runtimes and coordinates navigation without exposing store schema." },
+    { path: "src/lib/runtime/client/start.ts", role: "Client bootstrap", note: "Constructs configuration, runtimes, tabs/views/workspace and owns whole-client shutdown." }
   ],
   review: [
     { tone: "settled", title: "Optimistic/canonical semantics are shared", detail: "The runtime and server wrapper invoke the same immutable operation applier; tests cover apply/invert and rebase behavior." },

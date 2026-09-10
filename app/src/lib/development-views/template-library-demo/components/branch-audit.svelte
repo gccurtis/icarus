@@ -10,7 +10,7 @@
     data: {
       label: "Seed data",
       reason:
-        "Supplies represented Template bodies, versions, resource provenance, snapshots, and spreadsheet cells so the library and Use path do not depend on component mocks. Activity and resource-set edits remove retired connection/external-file references requested before this branch."
+        "Supplies represented Template bodies, versions, independent example resources, snapshots, and spreadsheet cells so the library and Use path do not depend on component mocks. Activity and resource-set edits remove retired connection/external-file references requested before this branch."
     },
     templates: {
       label: "Template product",
@@ -26,11 +26,6 @@
       label: "Project integration",
       reason:
         "Does not put templates in Project Overview. It makes a document, deck, or spreadsheet created by Template Use appear in the existing resource table immediately, through the same typed project-resource cache key. This area is required for end-to-end Use, not for library browsing, and can be separated if Use integration is deferred."
-    },
-    compatibilityStore: {
-      label: "Compatibility Store",
-      reason:
-        "Narrows the legacy generic reader to an explicit project-scoped field projection so it cannot bypass the new subject capabilities and expose template bodies, credentials, snapshots, or history. This is broad security hardening rather than visual Template work and deserves explicit acceptance as a separable merge unit."
     },
     serverStore: {
       label: "Server Store model",
@@ -80,9 +75,9 @@
     "app/seed/activity.json":
       "Replaced the retired external-file upload event with a connector event, connector target, and visible connector label.",
     "app/seed/documentSnapshots.json":
-      "Added represented leader snapshots for seeded documents whose template provenance supplies realistic recent-use examples.",
+      "Added represented leader snapshots for seeded documents used as realistic project examples.",
     "app/seed/documents.json":
-      "Added templateId provenance to existing documents and one more represented document use so recency comes from stored resources.",
+      "Kept seeded documents independent from templates; template recency is represented on the template itself.",
     "app/seed/resourceSets.json":
       "Replaced the remaining external-file reference with an existing finding because external files are no longer a resource kind.",
     "app/seed/sheetCells.json":
@@ -90,11 +85,11 @@
     "app/seed/slideDeckSnapshots.json":
       "Added leader snapshots for the additional seeded slide decks used by the library recency examples.",
     "app/seed/slideDecks.json":
-      "Added templateId provenance to existing decks and two more represented deck uses for recent-template ordering.",
+      "Kept seeded decks independent from templates; template recency is represented on the template itself.",
     "app/seed/spreadsheetSnapshots.json":
       "Added represented spreadsheet geometry, formatting, print settings, and leader-snapshot metadata.",
     "app/seed/spreadsheets.json":
-      "Added templateId provenance to both seeded spreadsheets so those uses contribute to template recency.",
+      "Kept seeded spreadsheets independent from templates; template recency is represented on the template itself.",
     "app/seed/templateVersions.json":
       "Added the immutable current-version seed for every template, including body, variables, tags, revision, and timestamp.",
     "app/seed/templates.json":
@@ -133,16 +128,6 @@
       "Added tests for isolation, projection, quarantine, actor labels, title allocation, refusal, and blank resource persistence.",
     "app/src/lib/capabilities/project-resources/types/project-resources.ts":
       "Defined the closed resource-index projection and blank-resource command contracts.",
-    "app/src/lib/capabilities/store/api/read/read.ts":
-      "Changed generic read from raw Store pass-through to the project-scoped compatibility projection.",
-    "app/src/lib/capabilities/store/api/read/scoped-read.ts":
-      "Added a fail-closed allowlist, project filtering, bounded nested-value validation, and private-field and authored-body exclusion.",
-    "app/src/lib/capabilities/store/store.md":
-      "Replaced the pass-through description with the precise compatibility read policy and subject-capability migration boundary.",
-    "app/src/lib/capabilities/store/test/unit/store.test.ts":
-      "Added tests for project filtering, safe projection, malformed and duplicate rows, nested secrets, inaccessible tables, and preserved legacy writes.",
-    "app/src/lib/capabilities/store/types/read.ts":
-      "Replaced unrestricted Store results with the exact typed row and field projections generic read may expose.",
     "app/src/lib/capabilities/templates/api/create-template/create-template.ts":
       "Added viewer-owned creation with a valid empty body, revision one, and matching immutable version row.",
     "app/src/lib/capabilities/templates/api/create-template/validate-create-template.ts":
@@ -152,7 +137,7 @@
     "app/src/lib/capabilities/templates/api/duplicate-template/validate-duplicate-template.ts":
       "Added canonical template-id validation for duplicate requests.",
     "app/src/lib/capabilities/templates/api/instantiate-template/instantiate-template.ts":
-      "Added Template Use: resolve defaults, clone a body, persist an independent resource with provenance, leader snapshot, and any cells, or refuse before writing.",
+      "Added Template Use: resolve defaults, clone a body, persist an independent resource without a template pointer plus its leader snapshot and any cells, or refuse before writing.",
     "app/src/lib/capabilities/templates/api/instantiate-template/validate-instantiate-template.ts":
       "Added canonical template-id validation for Template Use.",
     "app/src/lib/capabilities/templates/api/read-template-library/read-template-library.ts":
@@ -162,7 +147,7 @@
     "app/src/lib/capabilities/templates/api/read-template/validate-read-template.ts":
       "Added canonical template-id validation for the direct read.",
     "app/src/lib/capabilities/templates/api/remove-template/remove-template.ts":
-      "Added owner-only revision-checked deletion, batched version cleanup, and scoped provenance removal with cross-project refusal.",
+      "Added owner-only revision-checked deletion of versions, private hole rows, and any stage in one recoverable transaction; independent resources are untouched.",
     "app/src/lib/capabilities/templates/api/remove-template/validate-remove-template.ts":
       "Added canonical id and positive base-revision validation for deletion.",
     "app/src/lib/capabilities/templates/api/shared/bodies.ts":
@@ -184,7 +169,7 @@
     "app/src/lib/capabilities/templates/templates.md":
       "Documented Template procedure results, ownership, quarantines, conflicts, Use, persistence limits, and deferred work.",
     "app/src/lib/capabilities/templates/test/unit/templates.test.ts":
-      "Added capability coverage for scope, validation, corruption, CRUD, revisions, defaults, three body kinds, provenance, deletion, and failure boundaries.",
+      "Added capability coverage for scope, validation, corruption, CRUD, revisions, defaults, three body kinds, independent copies, deletion, and failure boundaries.",
     "app/src/lib/capabilities/templates/types/templates.ts":
       "Defined the public library, detail, unavailable, mutation, conflict, permission, Use, target, availability, and request contracts.",
     "app/src/lib/components/authored/carousel-shelf/carousel-shelf.svelte":
@@ -214,7 +199,7 @@
     "app/src/lib/development-views/template-library-demo/template-library-demo.md":
       "Documented the reference purpose, persistence, scoped route, ownership, audit, dependencies, states, accessibility, layout, and invariants.",
     "app/src/lib/development-views/template-library-demo/template-library-demo.svelte":
-      "Added the live review page, architecture, persistence facts, model, behaviors, flow, exact justifications, verification, six decisions, and deferred editor proposal.",
+      "Added the live review page, architecture, persistence facts, model, behaviors, flow, exact justifications, verification, five current decisions, and deferred editor proposal.",
     "app/src/lib/model/client/workspace-state/definition.svelte.ts":
       "Added the per-workspace pending-promise registry and exposed singleFlight without importing or executing a capability.",
     "app/src/lib/model/client/workspace-state/index.ts":
@@ -242,7 +227,7 @@
     "app/src/lib/model/server/store/methods/shared/persist.server.ts":
       "Changed persistence to write and rename a sibling next-file and clean it after failure.",
     "app/src/lib/model/server/store/store.md":
-      "Documented UUIDs, disk-before-memory commits, batch admission, one-table atomicity, and the missing cross-table transaction.",
+      "Documented UUIDs, batch admission, and the Store's journaled cross-table transaction and recovery boundary.",
     "app/src/lib/model/server/store/test/unit/store.test.ts":
       "Updated id assertions and added non-reuse, all-before-write batch, removal, and disk tests.",
     "app/src/lib/model/server/store/types.ts":
@@ -273,7 +258,6 @@
       path.startsWith("app/src/lib/app-views/categories/project-overview/") ||
       path.startsWith("app/src/lib/capabilities/project-resources/")
     ) return "projectIntegration";
-    if (path.startsWith("app/src/lib/capabilities/store/")) return "compatibilityStore";
     if (path.startsWith("app/src/lib/model/server/store/")) return "serverStore";
     if (path.startsWith("app/src/lib/model/client/workspace-state/")) return "workspace";
     if (

@@ -28,40 +28,60 @@ const errorDetail = (body: unknown): string | undefined => {
 /** Authenticated JSON transport with a hard deadline and bounded errors. */
 export const requestJina = async (
   state: EmbeddingState,
-  payload: JsonObject
+  payload: JsonObject,
+  signal?: AbortSignal
 ): Promise<JinaResponse> => {
+  signal?.throwIfAborted();
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), state.timeoutMs);
+  let timedOut = false;
+  const abort = () => controller.abort(signal?.reason);
+  signal?.addEventListener("abort", abort, { once: true });
+  const timeout = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, state.timeoutMs);
 
   let response: Response;
-  try {
-    response = await state.request(state.endpoint, {
-      method: "POST",
-      headers: {
-        authorization: `Bearer ${state.apiKey}`,
-        accept: "application/json",
-        "content-type": "application/json"
-      },
-      body: JSON.stringify(payload),
-      signal: controller.signal
-    });
-  } catch (error) {
-    const reason = controller.signal.aborted
-      ? `timed out after ${state.timeoutMs}ms`
-      : "could not be reached";
-    throw new EmbeddingServiceError(`Jina embeddings ${reason}`, { cause: error });
-  } finally {
-    clearTimeout(timeout);
-  }
-
   let body: unknown;
   try {
-    body = await response.json();
-  } catch (error) {
-    throw new EmbeddingServiceError(
-      `Jina embeddings returned non-JSON HTTP ${response.status}`,
-      { cause: error }
-    );
+    try {
+      response = await state.request(state.endpoint, {
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${state.apiKey}`,
+          accept: "application/json",
+          "content-type": "application/json"
+        },
+        body: JSON.stringify(payload),
+        signal: controller.signal
+      });
+    } catch (error) {
+      signal?.throwIfAborted();
+      const reason = timedOut
+        ? `timed out after ${state.timeoutMs}ms`
+        : "could not be reached";
+      throw new EmbeddingServiceError(`Jina embeddings ${reason}`, { cause: error });
+    }
+    signal?.throwIfAborted();
+    try {
+      body = await response.json();
+    } catch (error) {
+      signal?.throwIfAborted();
+      if (timedOut) {
+        throw new EmbeddingServiceError(
+          `Jina embeddings timed out after ${state.timeoutMs}ms`,
+          { cause: error }
+        );
+      }
+      throw new EmbeddingServiceError(
+        `Jina embeddings returned non-JSON HTTP ${response.status}`,
+        { cause: error }
+      );
+    }
+    signal?.throwIfAborted();
+  } finally {
+    clearTimeout(timeout);
+    signal?.removeEventListener("abort", abort);
   }
 
   if (!response.ok) {

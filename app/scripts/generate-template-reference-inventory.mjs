@@ -55,8 +55,7 @@ const areaOf = (path) => {
   if (path.includes("/capabilities/resource-sets/")) return "sets";
   if (
     path.includes("/capabilities/project-resources/") ||
-    path.includes("/capabilities/comments/") ||
-    path.includes("/capabilities/store/")
+    path.includes("/capabilities/comments/")
   ) return "neighbours";
   if (path.includes("/categories/templates/")) return "library";
   if (path.includes("/categories/project-overview/")) return "contexts";

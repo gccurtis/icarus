@@ -1,5 +1,13 @@
 export type ResearchFlightReason = "cancelled" | "deadline" | "shutdown";
 
+/** Structural signal reason reserved for process-owned Derived Output shutdown. */
+export class OperationFlightsShutdownError extends Error {
+  constructor() {
+    super("Server shutdown aborted the operation");
+    this.name = "OperationFlightsShutdownError";
+  }
+}
+
 /** A read-only handle to one research turn owned by this process. */
 export interface ResearchFlight {
   readonly signal: AbortSignal;
@@ -31,5 +39,6 @@ export interface OperationFlightsModel {
   requestResearchStop(turnId: string): ResearchStopOutcome;
   endResearch(turnId: string): void;
 
-  close(): void;
+  /** Abort owned work and resolve only after every flight has finished settling. */
+  close(): Promise<void>;
 }

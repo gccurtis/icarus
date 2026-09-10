@@ -87,7 +87,7 @@
           code: `type SemanticEncoding = "utf-8" | "utf-16";
 
 type SemanticSourceInput = {
-  ref: ResourceRef; // { kind: ResourceKind; id: string }
+  ref: ResourceRef; // discriminated kind with its nominal table Id
   revision: number;
   text: string;
   encoding: SemanticEncoding;
@@ -108,7 +108,7 @@ type SemanticSourceInput = {
           note: "A project-scoped provenance anchor. Identity remains stable as revision changes."
         }
       ],
-      evidence: "The live representation defines ResourceRef as { kind, id }; ResourceKind remains intentionally open and prefix-matched."
+      evidence: "The live representation closes ResourceRef over current resource kinds and ties every discriminator to its represented table-id namespace; only selectors may name the broad externalFile family."
     },
     {
       id: "translate",

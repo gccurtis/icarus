@@ -1,12 +1,17 @@
 import type { ServerModel } from "$runtime/server/start.server";
+import { OperationFlightsShutdownError } from "$model/server/operation-flights/index.server";
 import type { Id } from "$representation/data/types/core/id";
 import type {
   DerivedOutput,
-  DerivedOutputRefreshJobFields,
   DerivedOutputSelection
 } from "$representation/data/types/semantic/derived-output";
 import type { RefreshDerivedOutputResult } from "$capabilities/derived-output/types/refresh-derived-output";
-import { outputOf, rowsOf } from "$capabilities/derived-output/api/shared/rows";
+import {
+  derivedOutputRefreshJobFor as jobFor,
+  requestedVersionOf
+} from "$capabilities/derived-output/api/shared/refresh-job-reading";
+import { outputOf } from "$capabilities/derived-output/api/shared/rows";
+import { writeRefreshJob as writeJob } from "$capabilities/derived-output/api/shared/write-refresh-job";
 
 type RefreshRun = (
   selection: DerivedOutputSelection | undefined,
@@ -30,47 +35,6 @@ const requestKeyFor = (
         to: selection.to
       }
 });
-
-const jobFor = (
-  model: ServerModel,
-  projectId: Id<"projects">,
-  outputId: Id<"derivedOutputs">
-) =>
-  rowsOf(model.store, "derivedOutputRefreshJobs").find(
-    (job) => job.projectId === projectId && job.derivedOutputId === outputId
-  );
-
-/** Read-only server seam used to project shared operation state to clients. */
-export const derivedOutputRefreshJobFor = jobFor;
-
-const fieldsOf = (
-  job: NonNullable<ReturnType<typeof jobFor>>
-): DerivedOutputRefreshJobFields => {
-  const { _id, _creationTime, ...fields } = job;
-  void _id;
-  void _creationTime;
-  return fields;
-};
-
-const writeJob = (
-  model: ServerModel,
-  job: NonNullable<ReturnType<typeof jobFor>>,
-  patch: Partial<DerivedOutputRefreshJobFields>
-) => {
-  const fields = Object.fromEntries(
-    Object.entries({ ...fieldsOf(job), ...patch }).filter(([, value]) => value !== undefined)
-  );
-  return model.store.transaction((unit) => {
-    unit.update(`derivedOutputRefreshJobs.${job._id}`, fields);
-    const written = rowsOf(unit, "derivedOutputRefreshJobs").find(
-      (candidate) =>
-        candidate.projectId === job.projectId &&
-        candidate.derivedOutputId === job.derivedOutputId
-    );
-    if (written === undefined) throw new Error("derived output refresh job disappeared");
-    return written;
-  });
-};
 
 /** Coalesce every browser's refresh signal onto one durable row per output. */
 export const enqueueDerivedOutputRefreshFor = (
@@ -106,10 +70,11 @@ export const enqueueDerivedOutputRefreshFor = (
     );
   }
 
+  const currentVersion = requestedVersionOf(existing);
   const sameRequest = existing.requestKey === requestKey;
   if (sameRequest && existing.state !== "failed") return existing._id;
 
-  const requestedVersion = (existing.requestedVersion ?? 1) + 1;
+  const requestedVersion = currentVersion + 1;
   writeJob(model, existing, {
     projectId,
     derivedOutputId: outputId,
@@ -132,6 +97,28 @@ const safeFailure = (error: unknown): string =>
     .replace(/Bearer\s+\S+/gi, "Bearer [redacted]")
     .replace(/(?:api[-_ ]?key)\s*[:=]\s*\S+/gi, "apiKey=[redacted]")
     .slice(0, 400);
+
+const serverShutdownReason = (
+  signal: AbortSignal
+): OperationFlightsShutdownError | undefined =>
+  signal.aborted && signal.reason instanceof OperationFlightsShutdownError
+    ? signal.reason
+    : undefined;
+
+const requeueInterruptedRefresh = (
+  model: ServerModel,
+  job: NonNullable<ReturnType<typeof jobFor>>
+): void => {
+  const now = Date.now();
+  writeJob(model, job, {
+    state: "queued",
+    attempts: Math.max(0, job.attempts - 1),
+    error: undefined,
+    queuedAt: now,
+    startedAt: undefined,
+    updatedAt: now
+  });
+};
 
 const workQueuedRefresh = async (
   model: ServerModel,
@@ -160,7 +147,7 @@ const workQueuedRefresh = async (
     }
     if (job.state === "failed") return last;
 
-    const claimedVersion = job.requestedVersion ?? 1;
+    const claimedVersion = requestedVersionOf(job);
     job = writeJob(model, job, {
       state: "running",
       attempts: job.attempts + 1,
@@ -171,8 +158,15 @@ const workQueuedRefresh = async (
 
     try {
       last = await run(job.selection, signal);
+      const shutdown = serverShutdownReason(signal);
+      if (shutdown !== undefined) throw shutdown;
     } catch (error) {
       const current = jobFor(model, projectId, outputId);
+      const shutdown = serverShutdownReason(signal);
+      if (shutdown !== undefined) {
+        if (current !== undefined) requeueInterruptedRefresh(model, current);
+        throw shutdown;
+      }
       if (current !== undefined) {
         writeJob(model, current, {
           state: "failed",
@@ -185,7 +179,7 @@ const workQueuedRefresh = async (
 
     const current = jobFor(model, projectId, outputId);
     if (current === undefined) return last;
-    if (current.requestedVersion > claimedVersion) {
+    if (requestedVersionOf(current) > claimedVersion) {
       writeJob(model, current, {
         state: "queued",
         error: undefined,

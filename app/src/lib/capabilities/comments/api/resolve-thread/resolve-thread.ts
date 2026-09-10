@@ -11,16 +11,16 @@ export const resolveThread = async (input: unknown): Promise<ResolveThreadResult
   const asked = validateResolveThread(input);
 
   const store = serverModel().store;
-  const thread = threadOf(store, scope.projectId, asked.threadId);
-  if (thread === undefined) throw new Error(`comments/resolve-thread: no thread ${asked.threadId}`);
-
   const at = Date.now();
-  if (asked.resolved) {
-    store.update(`commentThreads.${thread._id}.resolution`, { by: asId<"users">(scope.userId), at });
-  } else if (thread.resolution !== undefined) {
-    store.remove(`commentThreads.${thread._id}.resolution`);
-  }
-  store.update(`commentThreads.${thread._id}.updatedAt`, at);
-
-  return { resolved: asked.resolved };
+  return store.transaction((unit) => {
+    const thread = threadOf(unit, scope.projectId, asked.threadId);
+    if (thread === undefined) throw new Error(`comments/resolve-thread: no thread ${asked.threadId}`);
+    if (asked.resolved) {
+      unit.update(`commentThreads.${thread._id}.resolution`, { by: asId<"users">(scope.userId), at });
+    } else if (thread.resolution !== undefined) {
+      unit.remove(`commentThreads.${thread._id}.resolution`);
+    }
+    unit.update(`commentThreads.${thread._id}.updatedAt`, at);
+    return { resolved: asked.resolved };
+  });
 };

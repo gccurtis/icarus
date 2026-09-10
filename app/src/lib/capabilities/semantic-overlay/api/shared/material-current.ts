@@ -12,9 +12,12 @@ import { materialHash } from "$capabilities/semantic-overlay/api/shared/material
 import {
   canDescribeMaterial,
   materialContextHash,
-  type NormalizedMaterial
+  normalizeMaterials,
+  type NormalizedMaterial,
+  withDepartedExternalImages
 } from "$capabilities/semantic-overlay/api/shared/material-normalization";
 import { materialRevisionKey } from "$capabilities/semantic-overlay/api/shared/material-publication";
+import { readMaterialInventoryFor } from "$capabilities/semantic-overlay/api/shared/material-resource";
 import { rowsOf } from "$capabilities/semantic-overlay/api/shared/rows";
 import { sameResourceRef } from "$capabilities/semantic-overlay/api/shared/resource-ref";
 
@@ -96,4 +99,38 @@ export const materialsAreCurrent = (
       .sort();
     return materialHash(actual) === materialHash(expected);
   });
+};
+
+/** Whether one native resource's complete material lane already matches its authority. */
+export const materialProjectionIsCurrentFor = async (
+  model: ServerModel,
+  projectId: Id<"projects">,
+  ref: ResourceRef,
+  signal?: AbortSignal
+): Promise<boolean> => {
+  signal?.throwIfAborted();
+  if (ref.kind !== "document" && ref.kind !== "slides" && ref.kind !== "spreadsheet") {
+    return false;
+  }
+  try {
+    const inventory = await readMaterialInventoryFor(model, projectId, ref, signal);
+    signal?.throwIfAborted();
+    if (inventory === undefined) return false;
+    const index = rowsOf(model.store, "semanticIndexes").find(
+      (candidate) => candidate.projectId === projectId && candidate.lane === "material"
+    );
+    if (index === undefined) return false;
+    const seeds = withDepartedExternalImages(model, projectId, ref, inventory.seeds);
+    return materialsAreCurrent(
+      model,
+      projectId,
+      ref,
+      normalizeMaterials(model, projectId, ref, seeds)
+    );
+  } catch (error) {
+    if (signal?.aborted === true) throw error;
+    // A readiness probe proves only currency. The durable worker owns projection
+    // failures, retries, and the terminal error visible to research preparation.
+    return false;
+  }
 };

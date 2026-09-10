@@ -4,6 +4,7 @@ import {
   compactEvidenceSourceTitle,
   exactEvidenceText
 } from "$app-views/categories/document-editor/procedures/evidence";
+import { asId } from "$representation/data/behavior/core/id";
 import type { SemanticTextCitation } from "$representation/data/types/semantic/derived-output";
 
 const citation = (): SemanticTextCitation => {
@@ -15,7 +16,7 @@ const citation = (): SemanticTextCitation => {
   return {
     selections: [{ evidenceId: "evidence-1", use: "States Garry's age" }],
     source: {
-      ref: { kind: "document", id: "documents:source" },
+      ref: { kind: "document", id: asId<"documents">("documents:source") },
       revision: 5,
       encoding: "utf-16"
     },

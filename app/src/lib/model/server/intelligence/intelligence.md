@@ -25,11 +25,14 @@ they never receive the underlying credential or transport.
 
 The immutable port is constructed with the server graph and lives until that
 graph closes. Each completion owns its messages, tool trace, timeout, and usage;
-none are retained by the model after the call returns.
+none are retained by the model after the call returns. A caller signal crosses
+both provider requests and local tool boundaries; cancellation is propagated
+as cancellation rather than serialized as an ordinary tool failure.
 
 ## Invariants
 
 - Every tool call is admitted against a caller-supplied name and input schema.
-- Tool failures return bounded safe errors rather than secrets or raw bodies.
+- Ordinary tool failures return bounded safe errors rather than secrets or raw
+  bodies; caller cancellation propagates out of the loop.
 - The configured round and timeout bounds terminate incomplete runs.
 - Structured output is returned only after the caller's parser accepts it.

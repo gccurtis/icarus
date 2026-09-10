@@ -12,7 +12,12 @@
   import { ago, nameOf, textOf } from "$app-views/categories/spreadsheet-editor/procedures/comment-copy";
   import { selectedRef } from "$app-views/categories/spreadsheet-editor/procedures/selection-reading";
   import { cellSignal } from "$app-views/categories/spreadsheet-editor/procedures/selecting";
-  import { rowsOf, tableQuery } from "$app-views/categories/spreadsheet-editor/procedures/store";
+  import {
+    commentsQuery,
+    peopleIn,
+    remarksIn,
+    threadsIn
+  } from "$app-views/categories/spreadsheet-editor/procedures/comment-feed";
   import { holdsTheRuntime } from "$app-views/categories/spreadsheet-editor/procedures/effects/holds-the-runtime.svelte";
   import { workspaceState } from "$model/client/workspace-state";
 
@@ -26,13 +31,10 @@
   const sheet = $derived(runtime?.sheet);
   const grid = $derived(gridOf(sheet?.body));
 
-  const threadRows = tableQuery("commentThreads");
-  const remarkRows = tableQuery("comments");
-  const userRows = tableQuery("users");
-
-  const users = $derived(rowsOf(userRows, "users"));
-  const remarks = $derived(rowsOf(remarkRows, "comments"));
-  const threads = $derived(rowsOf(threadRows, "commentThreads"));
+  const comments = commentsQuery();
+  const users = $derived(peopleIn(comments));
+  const remarks = $derived(remarksIn(comments));
+  const threads = $derived(threadsIn(comments));
   const open = $derived(sheetId === undefined ? [] : threadsOf(threads, sheetId));
   const resolved = $derived(sheetId === undefined ? [] : resolvedOf(threads, sheetId));
   const selected = $derived(selectedRef(view.selection));

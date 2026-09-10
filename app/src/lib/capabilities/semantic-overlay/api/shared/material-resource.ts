@@ -3,6 +3,10 @@ import { Buffer } from "node:buffer";
 import type { ServerModel } from "$runtime/server/start.server";
 import type { Id } from "$representation/data/types/core/id";
 import type { ResourceRef } from "$representation/data/types/core/resource";
+import {
+  externalFileResourceKind,
+  isExternalFileResourceKind
+} from "$representation/data/behavior/core/resource";
 import type { MaterialSeed } from "$representation/data/types/semantic/material";
 import {
   isCsvFile,
@@ -60,15 +64,17 @@ export const readMaterialRevisionFor = (
           (row) => row.projectId === projectId && row.resourceId === resource._id && row.role === "leader"
         )?.revision;
   }
-  if (ref.kind === "externalFile" || ref.kind.startsWith("externalFile::")) {
+  if (isExternalFileResourceKind(ref.kind)) {
     return rowsOf(model.store, "externalFiles").some(
-      (row) => row.projectId === projectId && row._id === ref.id
+      (row) =>
+        row.projectId === projectId &&
+        row._id === ref.id &&
+        externalFileResourceKind(row.subkind) === ref.kind
     ) ? 0 : undefined;
   }
   return undefined;
 };
 
-/** Resolves aliases such as `externalFile` to the one persisted resource kind used everywhere else. */
 export const readMaterialSyncTargetFor = (
   model: ServerModel,
   projectId: Id<"projects">,
@@ -76,32 +82,30 @@ export const readMaterialSyncTargetFor = (
 ): MaterialSyncTarget | undefined => {
   const revision = readMaterialRevisionFor(model, projectId, ref);
   if (revision === undefined) return undefined;
-  if (ref.kind !== "externalFile" && !ref.kind.startsWith("externalFile::")) {
-    return { ref, revision };
-  }
-  const file = rowsOf(model.store, "externalFiles").find(
-    (row) => row.projectId === projectId && row._id === ref.id
-  );
-  if (file === undefined) return undefined;
-  const subkind = file.subkind;
-  return { ref: { kind: `externalFile::${subkind}`, id: file._id }, revision };
+  return { ref, revision };
 };
 
 const external = async (
   model: ServerModel,
   projectId: Id<"projects">,
-  ref: ResourceRef
+  ref: ResourceRef,
+  signal?: AbortSignal
 ): Promise<MaterialInventory | undefined> => {
+  signal?.throwIfAborted();
   const file = rowsOf(model.store, "externalFiles").find(
-    (row) => row.projectId === projectId && row._id === ref.id
+    (row) =>
+      row.projectId === projectId &&
+      row._id === ref.id &&
+      externalFileResourceKind(row.subkind) === ref.kind
   );
   if (file === undefined) return undefined;
   const subkind = file.subkind;
   const csv = isCsvFile(file.name, file.mediaType);
   const code = codeLanguage(file.name, file.mediaType) !== "unknown";
   const bytes = subkind === "image" || csv || code
-    ? await model.materialContent.read({ storageId: file.storageId, hash: file.hash })
+    ? await model.materialContent.read({ storageId: file.storageId, hash: file.hash }, signal)
     : undefined;
+  signal?.throwIfAborted();
   let text: string | undefined;
   if (bytes !== undefined && (code || csv)) {
     text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
@@ -138,8 +142,10 @@ const external = async (
 export const readMaterialInventoryFor = async (
   model: ServerModel,
   projectId: Id<"projects">,
-  ref: ResourceRef
+  ref: ResourceRef,
+  signal?: AbortSignal
 ): Promise<MaterialInventory | undefined> => {
+  signal?.throwIfAborted();
   if (ref.kind === "document" || ref.kind === "slides") {
     const projected = readProjectSemanticProjectionFor(model.store, projectId, ref);
     return projected === undefined
@@ -170,8 +176,8 @@ export const readMaterialInventoryFor = async (
       })]
     };
   }
-  if (ref.kind === "externalFile" || ref.kind.startsWith("externalFile::")) {
-    return external(model, projectId, ref);
+  if (isExternalFileResourceKind(ref.kind)) {
+    return external(model, projectId, ref, signal);
   }
   return undefined;
 };

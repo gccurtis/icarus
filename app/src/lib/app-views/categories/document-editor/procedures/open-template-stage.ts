@@ -9,7 +9,6 @@ export const openStage = (view: WorkspaceStateModel, templateId: string) =>
   view.singleFlight(["template", view.project, templateId, "stage"], () =>
     openTemplateStage({ templateId }).updates(
       readTemplateLibrary,
-      readTemplate({ templateId }),
-      view.readStore("documents")
+      readTemplate({ templateId })
     )
   );

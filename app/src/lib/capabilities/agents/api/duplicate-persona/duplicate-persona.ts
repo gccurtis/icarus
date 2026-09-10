@@ -3,7 +3,8 @@ import { serverModel } from "$runtime/server/start.server";
 import { asId } from "$representation/data/behavior/core/id";
 
 import { validateDuplicatePersona } from "$capabilities/agents/api/duplicate-persona/validate-duplicate-persona";
-import { findVisible, notFound, viewer } from "$capabilities/agents/api/shared/lookup";
+import { findVisible, notFound, refused, viewer } from "$capabilities/agents/api/shared/lookup";
+import { scopeReferenceRefusal } from "$capabilities/agents/api/shared/scope-references";
 import type { RowFields } from "$capabilities/agents/api/shared/store";
 import type { WriteResult } from "$capabilities/agents/types/agents";
 
@@ -15,6 +16,10 @@ export const duplicatePersona = async (input: unknown): Promise<WriteResult> => 
   const found = findVisible(store, scope, "personas", asked.personaId);
   if (found.kind !== "found") return notFound(asked.personaId, "persona");
   const source = found.row;
+  const scopeRefusal = scopeReferenceRefusal(store, scope.projectId, source.scope);
+  if (scopeRefusal !== undefined) {
+    return refused(source._id, "invalid-state", scopeRefusal, source.revision);
+  }
   const taken = new Set(found.visible.personas.map((row) => row.name.toLocaleLowerCase()));
   let name = `${source.name} (copy)`;
   let suffix = 2;

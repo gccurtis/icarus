@@ -2,6 +2,7 @@ import { requireScope } from "$runtime/server/scope.server";
 import { serverModel } from "$runtime/server/start.server";
 import { searchRecursiveObjects } from "$representation/data/behavior/semantic/query";
 import { resourceInScope } from "$representation/data/behavior/semantic/scope";
+import { admittedReusableResourceSets } from "$representation/data/behavior/core/resource-set-rows";
 import type { Id } from "$representation/data/types/core/id";
 import type { ResourceRef } from "$representation/data/types/core/resource";
 import type { MaterialHit, MaterialSourceSnapshot } from "$representation/data/types/semantic/material";
@@ -32,10 +33,12 @@ const sameSpace = (
   left.dimensions === right.dimensions;
 
 export const querySemanticMaterials = async (
-  input: unknown
+  input: unknown,
+  signal?: AbortSignal
 ): Promise<QuerySemanticMaterialsResult> => {
   const scope = await requireScope();
   const asked = validateQuerySemanticMaterials(input);
+  signal?.throwIfAborted();
   const model = serverModel();
   const projectId = scope.projectId as Id<"projects">;
   const overlay = currentOverlay(model.store, projectId);
@@ -62,13 +65,12 @@ export const querySemanticMaterials = async (
       placement
     ]);
   }
-  const namedSets = new Map(
-    rowsOf(model.store, "resourceSets")
-      .filter((row) => row.projectId === projectId)
-      .map((row) => [row._id, row.set])
+  const namedSets = admittedReusableResourceSets(
+    rowsOf(model.store, "resourceSets"),
+    projectId
   );
   const matchesScope = (ref: ResourceRef): boolean => asked.scope === undefined ||
-    resourceInScope(ref, asked.scope, (id) => namedSets.get(id));
+    resourceInScope(ref, asked.scope, (id) => namedSets.get(id)?.set);
   const eligibleMaterials = new Set(
     allMaterials
       .filter((material) =>
@@ -125,7 +127,8 @@ export const querySemanticMaterials = async (
   const nodes = rowsOf(model.store, "semanticIndexNodes")
     .filter((node) => node.projectId === projectId && node.indexId === index._id)
     .map((node) => ({ id: node._id, centroidVector: node.centroidVector, children: node.children }));
-  const embedded = await model.embedding.query(asked.text);
+  const embedded = await model.embedding.query(asked.text, signal);
+  signal?.throwIfAborted();
   const searched = searchRecursiveObjects({
     queryVector: embedded.value,
     rootNodeIds: index.rootNodeIds,

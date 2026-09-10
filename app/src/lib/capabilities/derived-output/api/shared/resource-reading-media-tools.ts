@@ -46,7 +46,8 @@ export const mediaReadingTools = (
         const bytes = await input.model.materialContent.read({
           storageId: file.storageId,
           hash: file.hash
-        });
+        }, input.signal);
+        input.signal?.throwIfAborted();
         if (bytes === undefined) throw new Error("code native content is unavailable");
         const text = new TextDecoder("utf-8", { fatal: true })
           .decode(bytes)
@@ -141,7 +142,8 @@ export const mediaReadingTools = (
         const bytes = await input.model.materialContent.read({
           storageId: file.storageId,
           hash: file.hash
-        });
+        }, input.signal);
+        input.signal?.throwIfAborted();
         if (bytes === undefined) throw new Error("image native content is unavailable");
         const image = {
           kind: "bytes" as const,

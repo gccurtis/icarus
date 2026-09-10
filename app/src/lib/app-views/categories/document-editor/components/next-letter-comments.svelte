@@ -1,18 +1,15 @@
 <script lang="ts">
   import { PanelNote, PanelQuote, PanelSection } from "$authored-components/panel";
   import {
-    ago,
-    nameOf,
+    commentsQuery,
+    peopleIn,
+    remarksIn,
     remarksOf,
-    textOf,
-    threadsOf,
-    threadsOn
+    threadsIn,
+    threadsOf
   } from "$app-views/categories/document-editor/procedures/comments";
-  import {
-    rowsIn,
-    rowsOf,
-    tableQuery
-  } from "$app-views/categories/document-editor/procedures/store";
+  import { threadsOn } from "$app-views/categories/document-editor/procedures/comment-anchors";
+  import { ago, nameOf, textOf } from "$app-views/categories/document-editor/procedures/comment-copy";
   import { workspaceState } from "$model/client/workspace-state";
   import type { DocumentRuntime } from "$model/client/workspace-state";
 
@@ -26,11 +23,10 @@
 
   const body = $derived(runtime?.body);
   const selection = $derived(view.selection);
-  const threadsQuery = tableQuery("commentThreads");
-  const remarksQuery = tableQuery("comments");
-  const users = $derived(rowsIn("users"));
-  const remarks = $derived(rowsOf(remarksQuery, "comments"));
-  const threads = $derived(threadsOf(rowsOf(threadsQuery, "commentThreads"), documentId ?? ""));
+  const comments = commentsQuery();
+  const users = $derived(peopleIn(comments));
+  const remarks = $derived(remarksIn(comments));
+  const threads = $derived(threadsOf(threadsIn(comments), documentId ?? ""));
   const here = $derived(body === undefined ? [] : threadsOn(threads, body, selection));
   const now = Date.now();
 

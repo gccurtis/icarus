@@ -61,9 +61,6 @@ describe("document comment anchors", () => {
   });
 
   it("detaches a span when its block no longer exists", () => {
-    expect(transformCommentAnchor(anchor(), [], { rows: [] })).toEqual({
-      kind: "text",
-      spans: []
-    });
+    expect(transformCommentAnchor(anchor(), [], { rows: [] })).toBeUndefined();
   });
 });

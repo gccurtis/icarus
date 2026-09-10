@@ -23,7 +23,7 @@ export const NOUNS: Noun[] = [
   {
     term: "Hole",
     says: "A hole in the body that a prompt's scope names. It carries the name the scope uses, a label, a description, and a default scope. It exists because the body names it.",
-    onDisk: "TemplateHole { name, label, description?, default? }",
+    onDisk: "TemplateHole { name, label, kind: 'scope' | 'text', description?, default?, text? }",
     not: "something you type in by hand — nothing in the panels adds or removes one"
   },
   {
@@ -47,9 +47,9 @@ export const NOUNS: Noun[] = [
   },
   {
     term: "Resource set",
-    says: "A named selection of the project's things: everything, some kinds, named resources, or another set, minus exclusions. Made in Project Overview's Contexts panel.",
-    onDisk: "resourceSets (projectId, name, description?, set, revision)",
-    not: "a template concept — a prompt's scope, a default and an answer can all name one"
+    says: "A persisted scope rule. Current workflows create private owned rows at the template or Prompt Block that needs them; existing named rows remain reusable choices.",
+    onDisk: "resourceSets (projectId, optional name or boundTo owner, set, revision)",
+    not: "a globally managed list — Project Overview exposes no Resource Sets panel"
   },
   {
     term: "Revision",

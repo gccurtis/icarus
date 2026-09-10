@@ -68,7 +68,11 @@ const model = vi.hoisted(() => ({
 
 vi.mock("$runtime/server/start.server", () => ({ serverModel: () => model }));
 vi.mock("$runtime/server/scope.server", () => ({
-  requireScope: () => Promise.resolve({ projectId: "mine", userId: "u", username: "You" })
+  requireScope: () => Promise.resolve({
+    projectId: "projects:mine",
+    userId: "users:u",
+    username: "You"
+  })
 }));
 
 const { submitSpreadsheetChanges } = await import(
@@ -91,6 +95,7 @@ const sheetOwnedBy = (projectId: string) => {
   model.sheets.push({ _id: "spreadsheets:1", projectId, title: "Sheet" });
   model.snapshots.push({
     _id: "spreadsheetSnapshots:1",
+    _creationTime: 1,
     projectId,
     resourceId: "spreadsheets:1",
     role: "leader",
@@ -128,7 +133,7 @@ beforeEach(() => {
  * proved against the store rather than taken from the request.
  */
 test("submitSpreadsheetChanges refuses a cross-project sheet and writes nothing", async () => {
-  sheetOwnedBy("theirs");
+  sheetOwnedBy("projects:theirs");
 
   const answer = await submitSpreadsheetChanges(writing());
 
@@ -140,7 +145,7 @@ test("submitSpreadsheetChanges refuses a cross-project sheet and writes nothing"
 });
 
 test("submitSpreadsheetChanges accepts the same change on a sheet the scope owns", async () => {
-  sheetOwnedBy("mine");
+  sheetOwnedBy("projects:mine");
 
   const answer = await submitSpreadsheetChanges(writing());
 

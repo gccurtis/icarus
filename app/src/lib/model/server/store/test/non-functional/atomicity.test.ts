@@ -45,6 +45,15 @@ const coveredIntents = [
 ] as const;
 
 const directories: string[] = [];
+const system = { kind: "system" as const };
+const project = (name: string) => ({ name, revision: 1, settings: "{}", updatedAt: 1000 });
+const document = (projectId: string, title: string) => ({
+  projectId,
+  title,
+  createdBy: system,
+  updatedBy: system,
+  updatedAt: 1000
+});
 
 const directory = (): string => {
   const path = mkdtempSync(join(tmpdir(), "icarus-atomicity-"));
@@ -65,8 +74,8 @@ describe("Store failpoint atomicity for multi-table capability intents", () => {
     expect(coveredIntents.length).toBeGreaterThan(0);
     const path = directory();
     const seeded = defineStore({ directory: path, now: () => 1000 });
-    const projectId = seeded.create("projects", { name: "Before" });
-    const documentId = seeded.create("documents", { projectId, title: "Before" });
+    const projectId = seeded.create("projects", project("Before"));
+    const documentId = seeded.create("documents", document(projectId, "Before"));
     const interrupted = defineStore({
       directory: path,
       now: () => 2000,
@@ -86,8 +95,8 @@ describe("Store failpoint atomicity for multi-table capability intents", () => {
   it("recovers every table after a decided transaction is interrupted", () => {
     const path = directory();
     const seeded = defineStore({ directory: path, now: () => 1000 });
-    const projectId = seeded.create("projects", { name: "Before" });
-    const documentId = seeded.create("documents", { projectId, title: "Before" });
+    const projectId = seeded.create("projects", project("Before"));
+    const documentId = seeded.create("documents", document(projectId, "Before"));
     const interrupted = defineStore({
       directory: path,
       now: () => 2000,

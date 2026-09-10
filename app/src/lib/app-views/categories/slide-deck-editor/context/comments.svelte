@@ -1,16 +1,16 @@
 <script lang="ts">
-  import { startThread } from "$capabilities/comments/index.remote";
+  import { startCommentCommand } from "$app-views/categories/slide-deck-editor/procedures/start-comment-command.svelte";
   import { Panel, PanelButton, PanelChoice, PanelEmpty, PanelNote, PanelQuote, PanelSection } from "$authored-components/panel";
   import { Textarea } from "$vendored-components/textarea";
   import {
-    ago,
-    nameOf,
+    commentsQuery,
+    peopleIn,
+    remarksIn,
     remarksOf,
-    rowsOf,
-    tableQuery,
-    textOf,
+    threadsIn,
     type CommentThread
   } from "$app-views/categories/slide-deck-editor/procedures/comments";
+  import { ago, nameOf, textOf } from "$app-views/categories/slide-deck-editor/procedures/comment-copy";
   import { elementIn, labelOf, slideHolding, slideIndexOf } from "$app-views/categories/slide-deck-editor/procedures/deck";
   import { selectedIds } from "$app-views/categories/slide-deck-editor/procedures/selecting";
   import { resourceTemplate } from "$app-views/categories/slide-deck-editor/procedures/templating";
@@ -29,19 +29,17 @@
   const selected = $derived(selectedIds(view.selection)[0]);
   const element = $derived(body === undefined || selected === undefined ? undefined : elementIn(body, selected));
 
-  const threadRows = tableQuery("commentThreads");
-  const commentRows = tableQuery("comments");
-  const userRows = tableQuery("users");
+  const commentFeed = commentsQuery();
   const templateQuery = $derived(deckId === undefined ? undefined : resourceTemplate(deckId));
   const workingCopy = $derived(templateQuery?.ready === true && templateQuery.current.stage !== null);
 
   const threads = $derived(
-    rowsOf(threadRows, "commentThreads").filter(
+    threadsIn(commentFeed).filter(
       (thread) => thread.target.kind === "slides" && thread.target.id === deckId
     )
   );
-  const comments = $derived(rowsOf(commentRows, "comments"));
-  const users = $derived(rowsOf(userRows, "users"));
+  const comments = $derived(remarksIn(commentFeed));
+  const users = $derived(peopleIn(commentFeed));
   const now = Date.now();
 
   let wanted = $state("deck");
@@ -81,31 +79,28 @@
   const resolved = $derived(shown.filter((thread) => thread.resolution !== undefined));
 
   let composing = $state("");
-  let posting = $state(false);
+  const commentCommand = startCommentCommand();
+  const posting = $derived(commentCommand.posting);
 
   const subject = $derived(chip === "element" && element ? labelOf(element) : chip === "slide" && slide && body ? `slide ${slideIndexOf(body, slide.id) + 1}` : "the deck");
 
-  const post = async () => {
+  const post = () => {
     const text = composing.trim();
     if (deckId === undefined || text === "" || posting) return;
-    posting = true;
-    try {
-      const within =
-        chip === "element" && selected !== undefined
-          ? { kind: "element" as const, elementId: selected }
-          : chip === "slide" && slide !== undefined
-            ? { kind: "slide" as const, slideId: slide.id }
-            : undefined;
-      await startThread({
-        target: { kind: "slides", id: deckId },
+    const within =
+      chip === "element" && selected !== undefined
+        ? { kind: "element" as const, elementId: selected }
+        : chip === "slide" && slide !== undefined
+          ? { kind: "slide" as const, slideId: slide.id }
+          : undefined;
+    commentCommand.start(
+      {
+        deckId,
         within,
         text
-      });
-      composing = "";
-      await Promise.all([threadRows.refresh(), commentRows.refresh()]);
-    } finally {
-      posting = false;
-    }
+      },
+      () => (composing = "")
+    );
   };
 
   const openThread = (thread: CommentThread) =>

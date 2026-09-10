@@ -5,7 +5,6 @@
     "projectId": "default",
     "title": "Outage minutes by substation",
     "summary": "Substation-level outage duration data used to identify the largest contributors to customer-minutes lost.",
-    "templateId": "templates:9",
     "createdBy": { "kind": "user", "userId": "users:2" },
     "updatedBy": { "kind": "user", "userId": "users:2" },
     "updatedAt": 1788298200000
@@ -16,9 +15,8 @@
     "projectId": "default",
     "title": "Hardening cost model",
     "summary": "Scenario model comparing capital cost and expected reliability benefit for hardening options.",
-    "templateId": "templates:10",
     "createdBy": { "kind": "user", "userId": "users:1" },
-    "updatedBy": { "kind": "agent", "taskId": "agentTasks:1" },
+    "updatedBy": { "kind": "agent", "taskId": "agentTasks:hardening-2" },
     "updatedAt": 1788127200000
   }
 ]

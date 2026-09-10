@@ -1,4 +1,4 @@
-import { rowsIn } from "$app-views/categories/project-overview/procedures/rows";
+import type { ReadProjectOverviewResult } from "$capabilities/project/index.remote";
 
 export type ProjectHeader = {
   readonly name: string;
@@ -12,10 +12,12 @@ export type ProjectHeader = {
  * the header is the first thing painted and a blank title reads as a broken page
  * rather than a loading one.
  */
-export const project = (id: string): ProjectHeader => {
-  const row = rowsIn("projects").find((candidate) => candidate._id === id);
+export const project = (
+  id: string,
+  row: ReadProjectOverviewResult | undefined
+): ProjectHeader => {
   return {
-    name: row?.name ?? "…",
-    description: row?.description ?? ""
+    name: row?.projectId === id ? row.name : "…",
+    description: row?.projectId === id ? row.description : ""
   };
 };

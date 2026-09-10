@@ -74,11 +74,13 @@ panel's, so a user who learns one edge has learned the other.
 | --- | --- |
 | Token domains: color, spacing, typography | Every value |
 
-## Directory Documents
+## Internal shape
 
-No concern directories. This view reads one key, resolves it to a path and
-renders what it loads; there is no vocabulary to hold, nothing to coordinate and
-nothing to observe.
+[`shared/inspector-state.svelte.ts`](shared/inspector-state.svelte.ts) owns the
+resolved lens and the path which produced it for one panel mounting. The named
+effect in [`effects/loads-lens.svelte.ts`](effects/loads-lens.svelte.ts)
+owns asynchronous loading and prevents a stale route's lens from mounting under
+the next tab or selection. The entry component derives paths and renders states.
 
 ## Rendered States
 
@@ -91,7 +93,7 @@ nothing to observe.
 | Loading | A lens's chunk is in flight | Nothing, for one frame | — |
 | Unresolved | A key that names no file | The key, named | — |
 | Stale | `None` | — | — |
-| Failure | `None` | — | — |
+| Failure | The lens module throws while evaluating | Its path and the failure reason | Repair the module and reload |
 | Denied | `None` | — | — |
 
 **An inspection lives on the tab, so switching tabs switches this panel** — and a

@@ -200,7 +200,7 @@
           </h3>
           <PanelQuote
             sourceLabel="Selected by"
-            source={thread.selectedBy?.label ?? "Someone"}
+            source={thread.selectedBy?.label}
             when={shortSince(thread.selectedAt, now)}
             collapsible={thread.selectedText.length > 240}
             onopen={thread.selectedBy?.id === undefined ? undefined : () => inspectActor(thread.selectedBy)}

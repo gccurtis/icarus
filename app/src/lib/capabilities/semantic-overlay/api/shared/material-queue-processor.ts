@@ -1,5 +1,6 @@
 import type { ServerModel } from "$runtime/server/start.server";
 import type { Id } from "$representation/data/types/core/id";
+import type { ResourceRef } from "$representation/data/types/core/resource";
 
 import { processDurableSemanticQueue } from "$capabilities/semantic-overlay/api/shared/durable-queue";
 import { syncSemanticMaterialsFor } from "$capabilities/semantic-overlay/api/shared/material-sync";
@@ -13,23 +14,28 @@ export const processSemanticMaterialQueueFor = async (
   model: ServerModel,
   projectId: Id<"projects">,
   limit: number,
-  ref?: { kind: string; id: string }
+  ref?: ResourceRef,
+  signal?: AbortSignal
 ): Promise<ProcessSemanticMaterialQueueResult> => {
+  signal?.throwIfAborted();
   const material = await processDurableSemanticQueue({
     model,
     table: "semanticMaterialJobs",
     projectId,
     limit,
     ...(ref === undefined ? {} : { ref }),
+    ...(signal === undefined ? {} : { signal }),
     run: async (job, assertClaim) =>
       await syncSemanticMaterialsFor(
         model,
         projectId,
         job.ref,
         job.force === true,
-        assertClaim
+        assertClaim,
+        signal
       )
   });
+  signal?.throwIfAborted();
   const adapt = (entry: (typeof material.processed)[number]): ProcessedSemanticMaterialJob => ({
     ...entry,
     jobId: entry.jobId as Id<"semanticMaterialJobs">

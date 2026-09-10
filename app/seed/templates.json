@@ -103,6 +103,7 @@
                 }
               ],
               "display": "Summarize what happened, the customer impact, and the current operating state.",
+              "prompt": "Summarize what happened, the customer impact, and the current operating state.",
               "marks": [],
               "scope": {
                 "include": [
@@ -168,6 +169,7 @@
       {
         "name": "incident_evidence",
         "label": "Incident evidence",
+        "kind": "scope",
         "description": "Findings, documents, and operating models that establish the incident timeline.",
         "default": {
           "include": [
@@ -294,6 +296,7 @@
                 }
               ],
               "display": "Summarize the expected operating conditions, binding constraints, and consequences if the forecast is exceeded.",
+              "prompt": "Summarize the expected operating conditions, binding constraints, and consequences if the forecast is exceeded.",
               "marks": [],
               "scope": {
                 "include": [
@@ -343,6 +346,7 @@
                 }
               ],
               "display": "Separate committed mitigations from residual gaps, then state the owner and decision date for each open action.",
+              "prompt": "Separate committed mitigations from residual gaps, then state the owner and decision date for each open action.",
               "marks": [],
               "scope": {
                 "include": [
@@ -367,6 +371,7 @@
       {
         "name": "readiness_record",
         "label": "Readiness record",
+        "kind": "scope",
         "description": "The forecasts, plans, and operating material that define the readiness posture.",
         "default": {
           "include": [
@@ -380,6 +385,7 @@
       {
         "name": "supporting_findings",
         "label": "Supporting findings",
+        "kind": "scope",
         "description": "Accepted findings that establish constraints, mitigations, and residual gaps.",
         "default": {
           "include": [
@@ -556,6 +562,7 @@
                 }
               ],
               "display": "Identify terms used inconsistently across the selected source material.",
+              "prompt": "Identify terms used inconsistently across the selected source material.",
               "marks": [],
               "scope": {
                 "include": [
@@ -576,15 +583,13 @@
       {
         "name": "source_material",
         "label": "Source material",
+        "kind": "scope",
         "description": "Documents and findings whose terminology should be normalized.",
         "default": {
           "include": [
             {
-              "select": "kinds",
-              "kinds": [
-                "document",
-                "finding"
-              ]
+              "select": "set",
+              "setId": "resourceSets:4"
             }
           ],
           "exclude": []
@@ -716,6 +721,7 @@
                 }
               ],
               "display": "Explain the decision, its urgency, and the evidence that constrains it.",
+              "prompt": "Explain the decision, its urgency, and the evidence that constrains it.",
               "marks": [],
               "scope": {
                 "include": [
@@ -765,6 +771,7 @@
                 }
               ],
               "display": "Compare feasible alternatives, total cost, reversibility, and delivery risk.",
+              "prompt": "Compare feasible alternatives, total cost, reversibility, and delivery risk.",
               "marks": [],
               "scope": {
                 "include": [
@@ -821,6 +828,7 @@
       {
         "name": "decision_evidence",
         "label": "Decision evidence",
+        "kind": "scope",
         "description": "The findings and documents that establish why a decision is required.",
         "default": {
           "include": [
@@ -838,6 +846,7 @@
       {
         "name": "cost_models",
         "label": "Cost models",
+        "kind": "scope",
         "description": "The spreadsheets used to compare alternatives and delivery economics.",
         "default": {
           "include": [
@@ -1045,7 +1054,8 @@
                       "text": "Synthesize the period into three outcomes, two material risks, and the decisions required from the board."
                     }
                   ],
-                  "display": "Synthesize the period into three outcomes, two material risks, and the decisions required from the board.",
+              "display": "Synthesize the period into three outcomes, two material risks, and the decisions required from the board.",
+              "prompt": "Synthesize the period into three outcomes, two material risks, and the decisions required from the board.",
                   "marks": [],
                   "scope": {
                     "include": [
@@ -1102,6 +1112,7 @@
       {
         "name": "board_evidence",
         "label": "Board evidence",
+        "kind": "scope",
         "description": "The findings, analyses, and project material that ground the board narrative.",
         "default": {
           "include": [
@@ -1109,7 +1120,6 @@
               "select": "kinds",
               "kinds": [
                 "finding",
-                "analysis",
                 "document",
                 "spreadsheet"
               ]
@@ -1301,7 +1311,8 @@
                       "text": "Turn the work package into a field-ready brief: sequence, hazards, controls, hold points, owners, and handoff criteria."
                     }
                   ],
-                  "display": "Turn the work package into a field-ready brief: sequence, hazards, controls, hold points, owners, and handoff criteria.",
+              "display": "Turn the work package into a field-ready brief: sequence, hazards, controls, hold points, owners, and handoff criteria.",
+              "prompt": "Turn the work package into a field-ready brief: sequence, hazards, controls, hold points, owners, and handoff criteria.",
                   "marks": [],
                   "scope": {
                     "include": [
@@ -1339,6 +1350,7 @@
       {
         "name": "field_record",
         "label": "Field work record",
+        "kind": "scope",
         "description": "The documents and findings the crew needs for this shift.",
         "default": {
           "include": [
@@ -1540,7 +1552,8 @@
                       "text": "Summarize trajectory, meaningful changes since the last update, the top two exceptions, and decisions due in the next seven days."
                     }
                   ],
-                  "display": "Summarize trajectory, meaningful changes since the last update, the top two exceptions, and decisions due in the next seven days.",
+              "display": "Summarize trajectory, meaningful changes since the last update, the top two exceptions, and decisions due in the next seven days.",
+              "prompt": "Summarize trajectory, meaningful changes since the last update, the top two exceptions, and decisions due in the next seven days.",
                   "marks": [],
                   "scope": {
                     "include": [
@@ -1582,6 +1595,7 @@
       {
         "name": "portfolio_record",
         "label": "Portfolio record",
+        "kind": "scope",
         "description": "The project findings, analyses, and status material that should shape this update.",
         "default": {
           "include": [
@@ -1589,7 +1603,6 @@
               "select": "kinds",
               "kinds": [
                 "finding",
-                "analysis",
                 "document",
                 "spreadsheet"
               ]
@@ -1785,7 +1798,8 @@
                       "text": "Frame the viable options against outcomes, delivery risk, constraints, and reversibility."
                     }
                   ],
-                  "display": "Frame the viable options against outcomes, delivery risk, constraints, and reversibility.",
+              "display": "Frame the viable options against outcomes, delivery risk, constraints, and reversibility.",
+              "prompt": "Frame the viable options against outcomes, delivery risk, constraints, and reversibility.",
                   "marks": [],
                   "scope": {
                     "include": [
@@ -1873,7 +1887,8 @@
                       "text": "Compare lifecycle cost, schedule sensitivity, and the assumptions that could reverse the recommendation."
                     }
                   ],
-                  "display": "Compare lifecycle cost, schedule sensitivity, and the assumptions that could reverse the recommendation.",
+              "display": "Compare lifecycle cost, schedule sensitivity, and the assumptions that could reverse the recommendation.",
+              "prompt": "Compare lifecycle cost, schedule sensitivity, and the assumptions that could reverse the recommendation.",
                   "marks": [],
                   "scope": {
                     "include": [
@@ -1915,6 +1930,7 @@
       {
         "name": "option_evidence",
         "label": "Option evidence",
+        "kind": "scope",
         "description": "The findings and documents that establish feasible choices and constraints.",
         "default": {
           "include": [
@@ -1932,13 +1948,13 @@
       {
         "name": "option_models",
         "label": "Option models",
+        "kind": "scope",
         "description": "The analyses and spreadsheets that quantify economics and sensitivity.",
         "default": {
           "include": [
             {
               "select": "kinds",
               "kinds": [
-                "analysis",
                 "spreadsheet"
               ]
             }
@@ -2203,6 +2219,7 @@
                 }
               ],
               "display": "Write three paragraphs for {client_name} on what moved, what is blocked, and what happens next.",
+              "prompt": "Write three paragraphs for {client_name} on what moved, what is blocked, and what happens next.",
               "marks": [],
               "scope": {
                 "include": [
@@ -2236,6 +2253,7 @@
       {
         "name": "status_evidence",
         "label": "Status evidence",
+        "kind": "scope",
         "description": "The findings and documents this note should be written from.",
         "default": {
           "include": [
@@ -2330,6 +2348,7 @@
                 }
               ],
               "display": "Give the sequence of events, with times, in one paragraph.",
+              "prompt": "Give the sequence of events, with times, in one paragraph.",
               "marks": [],
               "scope": {
                 "include": [
@@ -2381,6 +2400,7 @@
                 }
               ],
               "display": "State the cost, and say which assumption it turns on.",
+              "prompt": "State the cost, and say which assumption it turns on.",
               "marks": [],
               "scope": {
                 "include": [
@@ -2407,6 +2427,7 @@
       {
         "name": "incident_record",
         "label": "Incident record",
+        "kind": "scope",
         "description": "Everything the write-up should be grounded in.",
         "default": {
           "include": [
@@ -2429,6 +2450,7 @@
       {
         "name": "cost_models",
         "label": "Cost models",
+        "kind": "scope",
         "description": "The spreadsheets that put a number on it.",
         "default": {
           "include": [

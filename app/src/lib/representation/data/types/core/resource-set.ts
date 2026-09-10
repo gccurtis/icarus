@@ -1,9 +1,9 @@
 import type { Id } from "$representation/data/types/core/id";
-import type { ResourceKind, ResourceRef } from "$representation/data/types/core/resource";
+import type { ResourceRef, ResourceSelectorKind } from "$representation/data/types/core/resource";
 
 type ProjectTerm = { select: "project" };
 
-type KindsTerm = { select: "kinds"; kinds: ResourceKind[] };
+type KindsTerm = { select: "kinds"; kinds: ResourceSelectorKind[] };
 
 type NamedSetTerm = { select: "set"; setId: Id<"resourceSets"> };
 

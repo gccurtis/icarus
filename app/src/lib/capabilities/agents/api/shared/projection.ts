@@ -5,6 +5,13 @@ import { messageText } from "$representation/data/behavior/agents/messages";
 import { openQuestions, planProgress } from "$representation/data/behavior/agents/plan";
 import { TOOLS, orderedTools } from "$representation/data/behavior/agents/tools";
 import { triggerSummary } from "$representation/data/behavior/agents/triggers";
+import {
+  isStoredAgentActivity,
+  isStoredAgentTask,
+  isStoredAutomation,
+  isStoredPersona
+} from "$representation/data/behavior/agents/stored-rows";
+import { admittedReusableResourceSets } from "$representation/data/behavior/core/resource-set-rows";
 
 import { namesIn, type Names } from "$capabilities/agents/api/shared/names";
 import { rowsIn } from "$capabilities/agents/api/shared/store";
@@ -18,6 +25,7 @@ import type {
   PersonaDetail,
   PersonaItem,
   ReadAgentsLibraryResult,
+  ResourceOption,
   TaskDetail,
   TaskItem,
   TaskTurn
@@ -36,34 +44,24 @@ export type Visible = {
   readonly names: Names;
 };
 
-const sound = (row: { readonly _id: unknown; readonly revision?: unknown }): boolean =>
-  typeof row._id === "string" &&
-  (row.revision === undefined || (Number.isSafeInteger(row.revision) && (row.revision as number) >= 1));
-
 export const visibleIn = (store: StoreModel, scope: Scope): Visible => {
   const inProject = (row: { readonly projectId?: unknown }) => row.projectId === scope.projectId;
 
   const personas = rowsIn(store, "personas").filter(
-    (row) => sound(row) && inProject(row) && typeof row.name === "string"
+    (row) => isStoredPersona(row) && inProject(row)
   );
   const personaIds = new Set(personas.map((row) => row._id as string));
   const tasks = rowsIn(store, "agentTasks").filter(
     (row) =>
-      sound(row) &&
+      isStoredAgentTask(row) &&
       inProject(row) &&
-      typeof row.title === "string" &&
-      personaIds.has(row.personaId) &&
-      Array.isArray(row.plan) &&
-      Array.isArray(row.outputs) &&
-      Array.isArray(row.questions)
+      personaIds.has(row.personaId)
   );
   const automations = rowsIn(store, "automations").filter(
     (row) =>
-      sound(row) &&
+      isStoredAutomation(row) &&
       inProject(row) &&
-      typeof row.name === "string" &&
-      personaIds.has(row.personaId) &&
-      typeof row.trigger === "object"
+      personaIds.has(row.personaId)
   );
   const chats = rowsIn(store, "researchThreads").filter(
     (row) =>
@@ -92,7 +90,7 @@ export const personaItem = (persona: Persona, visible: Visible): PersonaItem => 
   name: persona.name,
   description: persona.description ?? null,
   scope: persona.scope ?? null,
-  tools: orderedTools(persona.tools ?? []),
+  tools: orderedTools(persona.tools),
   createdByName: visible.names.actor(persona.createdBy),
   revision: persona.revision,
   updatedAt: persona.updatedAt,
@@ -102,11 +100,11 @@ export const personaItem = (persona: Persona, visible: Visible): PersonaItem => 
 export const personaDetail = (persona: Persona, visible: Visible): PersonaDetail => ({
   ...personaItem(persona, visible),
   definition: {
-    focus: persona.definition?.focus ?? "",
-    background: persona.definition?.background ?? "",
-    approach: persona.definition?.approach ?? "",
-    outputPreferences: persona.definition?.outputPreferences ?? "",
-    verification: persona.definition?.verification ?? ""
+    focus: persona.definition.focus,
+    background: persona.definition.background,
+    approach: persona.definition.approach,
+    outputPreferences: persona.definition.outputPreferences,
+    verification: persona.definition.verification
   },
   cast: persona.cast ?? null,
   avatar: persona.avatar ?? null
@@ -132,7 +130,7 @@ export const automationItem = (automation: Automation, visible: Visible): Automa
       task.origin.automationId === automation._id
   ).length,
   scope: automation.scope ?? null,
-  tools: orderedTools(automation.tools ?? []),
+  tools: orderedTools(automation.tools),
   createdByName: visible.names.actor(automation.createdBy),
   revision: automation.revision,
   updatedAt: automation.updatedAt
@@ -167,10 +165,9 @@ const agentActivity = (store: StoreModel, visible: Visible, projectId: string) =
   rowsIn(store, "activity")
     .filter(
       (row) =>
+        isStoredAgentActivity(row) &&
         row.projectId === projectId &&
-        typeof row.verb === "string" &&
-        row.target !== undefined &&
-        row.actor?.kind === "agent"
+        row.actor.kind === "agent"
     )
     .toSorted((left, right) => right._creationTime - left._creationTime)
     .slice(0, 40)
@@ -179,10 +176,7 @@ const agentActivity = (store: StoreModel, visible: Visible, projectId: string) =
       const task = visible.tasks.find((candidate) => candidate._id === actor.taskId);
       return {
         id: row._id as string,
-        actorName:
-          typeof row.actorLabel === "string" && row.actorLabel !== ""
-            ? row.actorLabel
-            : visible.names.actor(row.actor),
+        actorName: row.actorLabel,
         personaId: task?.personaId ?? null,
         verb: row.verb,
         subject: row.target.label,
@@ -194,17 +188,14 @@ const agentActivity = (store: StoreModel, visible: Visible, projectId: string) =
 
 export const library = (store: StoreModel, scope: Scope): ReadAgentsLibraryResult => {
   const visible = visibleIn(store, scope);
-  const resources = (
-    [
-      ["document", "documents"],
-      ["slides", "slideDecks"],
-      ["spreadsheet", "spreadsheets"]
-    ] as const
-  ).flatMap(([kind, table]) =>
-    rowsIn(store, table)
-      .filter((row) => row.projectId === scope.projectId && typeof row.title === "string")
-      .map((row) => ({ ref: { kind, id: row._id as string }, name: row.title }))
-  );
+  const resources: ResourceOption[] = [
+    ...rowsIn(store, "documents").filter((row) => row.projectId === scope.projectId)
+      .map((row) => ({ ref: { kind: "document" as const, id: row._id }, name: row.title })),
+    ...rowsIn(store, "slideDecks").filter((row) => row.projectId === scope.projectId)
+      .map((row) => ({ ref: { kind: "slides" as const, id: row._id }, name: row.title })),
+    ...rowsIn(store, "spreadsheets").filter((row) => row.projectId === scope.projectId)
+      .map((row) => ({ ref: { kind: "spreadsheet" as const, id: row._id }, name: row.title }))
+  ];
   return {
     personas: visible.personas.map((row) => personaItem(row, visible)).toSorted(byName),
     tasks: visible.tasks
@@ -217,9 +208,11 @@ export const library = (store: StoreModel, scope: Scope): ReadAgentsLibraryResul
     activity: agentActivity(store, visible, scope.projectId),
     tools: TOOLS,
     resources: resources.toSorted(byName),
-    resourceSets: rowsIn(store, "resourceSets")
-      .filter((row) => row.projectId === scope.projectId)
-      .flatMap((row) => (row.name === undefined ? [] : [{ id: row._id as string, name: row.name }]))
+    resourceSets: [...admittedReusableResourceSets(
+      rowsIn(store, "resourceSets"),
+      scope.projectId
+    ).values()]
+      .map((row) => ({ id: row._id as string, name: row.name }))
       .toSorted(byName)
   };
 };

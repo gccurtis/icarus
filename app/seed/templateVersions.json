@@ -103,6 +103,7 @@
                 }
               ],
               "display": "Summarize what happened, the customer impact, and the current operating state.",
+              "prompt": "Summarize what happened, the customer impact, and the current operating state.",
               "marks": [],
               "scope": {
                 "include": [
@@ -168,6 +169,7 @@
       {
         "name": "incident_evidence",
         "label": "Incident evidence",
+        "kind": "scope",
         "description": "Findings, documents, and operating models that establish the incident timeline.",
         "default": {
           "include": [
@@ -180,7 +182,17 @@
               ]
             }
           ],
-          "exclude": []
+          "exclude": [
+            {
+              "select": "resources",
+              "refs": [
+                {
+                  "kind": "document",
+                  "id": "documents:3"
+                }
+              ]
+            }
+          ]
         }
       }
     ],
@@ -292,6 +304,7 @@
                 }
               ],
               "display": "Summarize the expected operating conditions, binding constraints, and consequences if the forecast is exceeded.",
+              "prompt": "Summarize the expected operating conditions, binding constraints, and consequences if the forecast is exceeded.",
               "marks": [],
               "scope": {
                 "include": [
@@ -341,6 +354,7 @@
                 }
               ],
               "display": "Separate committed mitigations from residual gaps, then state the owner and decision date for each open action.",
+              "prompt": "Separate committed mitigations from residual gaps, then state the owner and decision date for each open action.",
               "marks": [],
               "scope": {
                 "include": [
@@ -365,6 +379,7 @@
       {
         "name": "readiness_record",
         "label": "Readiness record",
+        "kind": "scope",
         "description": "The forecasts, plans, and operating material that define the readiness posture.",
         "default": {
           "include": [
@@ -378,6 +393,7 @@
       {
         "name": "supporting_findings",
         "label": "Supporting findings",
+        "kind": "scope",
         "description": "Accepted findings that establish constraints, mitigations, and residual gaps.",
         "default": {
           "include": [
@@ -548,6 +564,7 @@
                 }
               ],
               "display": "Identify terms used inconsistently across the selected source material.",
+              "prompt": "Identify terms used inconsistently across the selected source material.",
               "marks": [],
               "scope": {
                 "include": [
@@ -568,14 +585,17 @@
       {
         "name": "source_material",
         "label": "Source material",
+        "kind": "scope",
         "description": "Documents and findings whose terminology should be normalized.",
         "default": {
           "include": [
             {
-              "select": "kinds",
-              "kinds": [
-                "document",
-                "finding"
+              "select": "resources",
+              "refs": [
+                {
+                  "kind": "document",
+                  "id": "documents:3"
+                }
               ]
             }
           ],
@@ -702,6 +722,7 @@
                 }
               ],
               "display": "Explain the decision, its urgency, and the evidence that constrains it.",
+              "prompt": "Explain the decision, its urgency, and the evidence that constrains it.",
               "marks": [],
               "scope": {
                 "include": [
@@ -751,6 +772,7 @@
                 }
               ],
               "display": "Compare feasible alternatives, total cost, reversibility, and delivery risk.",
+              "prompt": "Compare feasible alternatives, total cost, reversibility, and delivery risk.",
               "marks": [],
               "scope": {
                 "include": [
@@ -807,6 +829,7 @@
       {
         "name": "decision_evidence",
         "label": "Decision evidence",
+        "kind": "scope",
         "description": "The findings and documents that establish why a decision is required.",
         "default": {
           "include": [
@@ -824,6 +847,7 @@
       {
         "name": "cost_models",
         "label": "Cost models",
+        "kind": "scope",
         "description": "The spreadsheets used to compare alternatives and delivery economics.",
         "default": {
           "include": [
@@ -1025,7 +1049,8 @@
                       "text": "Synthesize the period into three outcomes, two material risks, and the decisions required from the board."
                     }
                   ],
-                  "display": "Synthesize the period into three outcomes, two material risks, and the decisions required from the board.",
+              "display": "Synthesize the period into three outcomes, two material risks, and the decisions required from the board.",
+              "prompt": "Synthesize the period into three outcomes, two material risks, and the decisions required from the board.",
                   "marks": [],
                   "scope": {
                     "include": [
@@ -1082,6 +1107,7 @@
       {
         "name": "board_evidence",
         "label": "Board evidence",
+        "kind": "scope",
         "description": "The findings, analyses, and project material that ground the board narrative.",
         "default": {
           "include": [
@@ -1089,7 +1115,6 @@
               "select": "kinds",
               "kinds": [
                 "finding",
-                "analysis",
                 "document",
                 "spreadsheet"
               ]
@@ -1275,7 +1300,8 @@
                       "text": "Turn the work package into a field-ready brief: sequence, hazards, controls, hold points, owners, and handoff criteria."
                     }
                   ],
-                  "display": "Turn the work package into a field-ready brief: sequence, hazards, controls, hold points, owners, and handoff criteria.",
+              "display": "Turn the work package into a field-ready brief: sequence, hazards, controls, hold points, owners, and handoff criteria.",
+              "prompt": "Turn the work package into a field-ready brief: sequence, hazards, controls, hold points, owners, and handoff criteria.",
                   "marks": [],
                   "scope": {
                     "include": [
@@ -1313,6 +1339,7 @@
       {
         "name": "field_record",
         "label": "Field work record",
+        "kind": "scope",
         "description": "The documents and findings the crew needs for this shift.",
         "default": {
           "include": [
@@ -1508,7 +1535,8 @@
                       "text": "Summarize trajectory, meaningful changes since the last update, the top two exceptions, and decisions due in the next seven days."
                     }
                   ],
-                  "display": "Summarize trajectory, meaningful changes since the last update, the top two exceptions, and decisions due in the next seven days.",
+              "display": "Summarize trajectory, meaningful changes since the last update, the top two exceptions, and decisions due in the next seven days.",
+              "prompt": "Summarize trajectory, meaningful changes since the last update, the top two exceptions, and decisions due in the next seven days.",
                   "marks": [],
                   "scope": {
                     "include": [
@@ -1550,6 +1578,7 @@
       {
         "name": "portfolio_record",
         "label": "Portfolio record",
+        "kind": "scope",
         "description": "The project findings, analyses, and status material that should shape this update.",
         "default": {
           "include": [
@@ -1557,7 +1586,6 @@
               "select": "kinds",
               "kinds": [
                 "finding",
-                "analysis",
                 "document",
                 "spreadsheet"
               ]
@@ -1747,7 +1775,8 @@
                       "text": "Frame the viable options against outcomes, delivery risk, constraints, and reversibility."
                     }
                   ],
-                  "display": "Frame the viable options against outcomes, delivery risk, constraints, and reversibility.",
+              "display": "Frame the viable options against outcomes, delivery risk, constraints, and reversibility.",
+              "prompt": "Frame the viable options against outcomes, delivery risk, constraints, and reversibility.",
                   "marks": [],
                   "scope": {
                     "include": [
@@ -1835,7 +1864,8 @@
                       "text": "Compare lifecycle cost, schedule sensitivity, and the assumptions that could reverse the recommendation."
                     }
                   ],
-                  "display": "Compare lifecycle cost, schedule sensitivity, and the assumptions that could reverse the recommendation.",
+              "display": "Compare lifecycle cost, schedule sensitivity, and the assumptions that could reverse the recommendation.",
+              "prompt": "Compare lifecycle cost, schedule sensitivity, and the assumptions that could reverse the recommendation.",
                   "marks": [],
                   "scope": {
                     "include": [
@@ -1877,6 +1907,7 @@
       {
         "name": "option_evidence",
         "label": "Option evidence",
+        "kind": "scope",
         "description": "The findings and documents that establish feasible choices and constraints.",
         "default": {
           "include": [
@@ -1894,13 +1925,13 @@
       {
         "name": "option_models",
         "label": "Option models",
+        "kind": "scope",
         "description": "The analyses and spreadsheets that quantify economics and sensitivity.",
         "default": {
           "include": [
             {
               "select": "kinds",
               "kinds": [
-                "analysis",
                 "spreadsheet"
               ]
             }
@@ -1910,503 +1941,6 @@
       }
     ],
     "at": 1785585600000
-  },
-  {
-    "_id": "templateVersions:9",
-    "_creationTime": 1784385000000,
-    "templateId": "templates:9",
-    "revision": 3,
-    "name": "Outage analysis workbook",
-    "description": "A ready-to-calculate reliability workbook for outage duration, customers affected, and customer-minutes interrupted.",
-    "tags": [
-      "Operations",
-      "Analysis",
-      "Reliability"
-    ],
-    "body": {
-      "resource": "spreadsheet",
-      "cells": {
-        "A1": {
-          "value": {
-            "kind": "text",
-            "value": "Outage analysis"
-          },
-          "merge": "F1",
-          "format": {
-            "background": "--token-color-intelligence-surface",
-            "padding": {
-              "x": 10,
-              "y": 8
-            }
-          }
-        },
-        "A3": {
-          "value": {
-            "kind": "text",
-            "value": "Event"
-          },
-          "format": {
-            "background": "--token-surface-secondary"
-          }
-        },
-        "B3": {
-          "value": {
-            "kind": "text",
-            "value": "Start"
-          },
-          "format": {
-            "background": "--token-surface-secondary"
-          }
-        },
-        "C3": {
-          "value": {
-            "kind": "text",
-            "value": "End"
-          },
-          "format": {
-            "background": "--token-surface-secondary"
-          }
-        },
-        "D3": {
-          "value": {
-            "kind": "text",
-            "value": "Minutes"
-          },
-          "format": {
-            "background": "--token-surface-secondary"
-          }
-        },
-        "E3": {
-          "value": {
-            "kind": "text",
-            "value": "Customers"
-          },
-          "format": {
-            "background": "--token-surface-secondary"
-          }
-        },
-        "F3": {
-          "value": {
-            "kind": "text",
-            "value": "Customer-minutes"
-          },
-          "format": {
-            "background": "--token-surface-secondary"
-          }
-        },
-        "A4": {
-          "value": {
-            "kind": "text",
-            "value": "Feeder event 01"
-          }
-        },
-        "B4": {
-          "value": {
-            "kind": "text",
-            "value": "08:12"
-          }
-        },
-        "C4": {
-          "value": {
-            "kind": "text",
-            "value": "09:07"
-          }
-        },
-        "D4": {
-          "value": {
-            "kind": "number",
-            "value": 55
-          },
-          "format": {
-            "valueFormat": "0"
-          }
-        },
-        "E4": {
-          "value": {
-            "kind": "number",
-            "value": 1240
-          },
-          "format": {
-            "valueFormat": "#,##0"
-          }
-        },
-        "F4": {
-          "expression": "D4*E4",
-          "format": {
-            "valueFormat": "#,##0"
-          }
-        },
-        "A6": {
-          "value": {
-            "kind": "text",
-            "value": "Total customer-minutes"
-          }
-        },
-        "F6": {
-          "expression": "SUM(F4:F5)",
-          "format": {
-            "valueFormat": "#,##0"
-          }
-        }
-      },
-      "columnWidths": {
-        "A": 180,
-        "B": 100,
-        "C": 100,
-        "D": 100,
-        "E": 120,
-        "F": 150
-      },
-      "rowHeights": {
-        "1": 38,
-        "3": 30
-      },
-      "formatRules": [
-        {
-          "id": "format-rule-header",
-          "from": "A3",
-          "to": "F3",
-          "style": "header",
-          "format": {
-            "background": "--token-surface-secondary",
-            "border": {
-              "top": {
-                "color": "--token-color-active-border",
-                "width": 1,
-                "style": "solid"
-              },
-              "right": {
-                "color": "--token-color-active-border",
-                "width": 1,
-                "style": "solid"
-              },
-              "bottom": {
-                "color": "--token-color-active-border",
-                "width": 1,
-                "style": "solid"
-              },
-              "left": {
-                "color": "--token-color-active-border",
-                "width": 1,
-                "style": "solid"
-              }
-            }
-          }
-        },
-        {
-          "id": "format-rule-output",
-          "from": "F4",
-          "to": "F20",
-          "format": {
-            "background": "--token-color-intelligence-surface"
-          }
-        }
-      ],
-      "frozenRows": 3,
-      "frozenColumns": 1,
-      "print": {
-        "page": {
-          "paper": "letter",
-          "orientation": "landscape",
-          "margins": {
-            "top": 0.5,
-            "right": 0.5,
-            "bottom": 0.5,
-            "left": 0.5
-          }
-        },
-        "area": {
-          "from": "A1",
-          "to": "F20"
-        },
-        "repeatRows": "1:3",
-        "scale": "fit-width",
-        "gridlines": false,
-        "headings": false
-      },
-      "styles": {
-        "defaultKey": "body",
-        "styles": {
-          "body": {
-            "name": "Body",
-            "fontFamily": "IBM Plex Sans",
-            "fontSize": 12,
-            "color": "--token-ink-primary"
-          },
-          "header": {
-            "name": "Header",
-            "fontFamily": "IBM Plex Sans",
-            "fontSize": 11,
-            "fontWeight": 650,
-            "color": "--token-ink-primary"
-          }
-        }
-      }
-    },
-    "holes": [],
-    "at": 1784385000000
-  },
-  {
-    "_id": "templateVersions:10",
-    "_creationTime": 1782306000000,
-    "templateId": "templates:10",
-    "revision": 5,
-    "name": "Hardening cost model",
-    "description": "A transparent option model for unit cost, contingency, total investment, and annualized benefit.",
-    "tags": [
-      "Finance",
-      "Planning",
-      "Model"
-    ],
-    "body": {
-      "resource": "spreadsheet",
-      "cells": {
-        "A1": {
-          "value": {
-            "kind": "text",
-            "value": "Hardening cost model"
-          },
-          "merge": "E1",
-          "format": {
-            "background": "--token-color-accent-2-surface",
-            "padding": {
-              "x": 10,
-              "y": 8
-            }
-          }
-        },
-        "A3": {
-          "value": {
-            "kind": "text",
-            "value": "Option"
-          },
-          "format": {
-            "background": "--token-surface-secondary"
-          }
-        },
-        "B3": {
-          "value": {
-            "kind": "text",
-            "value": "Units"
-          },
-          "format": {
-            "background": "--token-surface-secondary"
-          }
-        },
-        "C3": {
-          "value": {
-            "kind": "text",
-            "value": "Unit cost"
-          },
-          "format": {
-            "background": "--token-surface-secondary"
-          }
-        },
-        "D3": {
-          "value": {
-            "kind": "text",
-            "value": "Contingency"
-          },
-          "format": {
-            "background": "--token-surface-secondary"
-          }
-        },
-        "E3": {
-          "value": {
-            "kind": "text",
-            "value": "Total"
-          },
-          "format": {
-            "background": "--token-surface-secondary"
-          }
-        },
-        "A4": {
-          "value": {
-            "kind": "text",
-            "value": "Covered conductor"
-          }
-        },
-        "B4": {
-          "value": {
-            "kind": "number",
-            "value": 18
-          },
-          "format": {
-            "valueFormat": "0"
-          }
-        },
-        "C4": {
-          "value": {
-            "kind": "number",
-            "value": 142000
-          },
-          "format": {
-            "valueFormat": "$#,##0"
-          }
-        },
-        "D4": {
-          "value": {
-            "kind": "number",
-            "value": 0.15
-          },
-          "format": {
-            "valueFormat": "0%"
-          }
-        },
-        "E4": {
-          "expression": "B4*C4*(1+D4)",
-          "format": {
-            "valueFormat": "$#,##0"
-          }
-        },
-        "A5": {
-          "value": {
-            "kind": "text",
-            "value": "Underground segment"
-          }
-        },
-        "B5": {
-          "value": {
-            "kind": "number",
-            "value": 4
-          },
-          "format": {
-            "valueFormat": "0"
-          }
-        },
-        "C5": {
-          "value": {
-            "kind": "number",
-            "value": 890000
-          },
-          "format": {
-            "valueFormat": "$#,##0"
-          }
-        },
-        "D5": {
-          "value": {
-            "kind": "number",
-            "value": 0.2
-          },
-          "format": {
-            "valueFormat": "0%"
-          }
-        },
-        "E5": {
-          "expression": "B5*C5*(1+D5)",
-          "format": {
-            "valueFormat": "$#,##0"
-          }
-        },
-        "A7": {
-          "value": {
-            "kind": "text",
-            "value": "Portfolio total"
-          }
-        },
-        "E7": {
-          "expression": "SUM(E4:E6)",
-          "format": {
-            "valueFormat": "$#,##0",
-            "background": "--token-color-accent-2-surface"
-          }
-        }
-      },
-      "columnWidths": {
-        "A": 210,
-        "B": 90,
-        "C": 120,
-        "D": 110,
-        "E": 150
-      },
-      "rowHeights": {
-        "1": 38,
-        "3": 30
-      },
-      "formatRules": [
-        {
-          "id": "format-rule-header",
-          "from": "A3",
-          "to": "E3",
-          "style": "header",
-          "format": {
-            "background": "--token-surface-secondary",
-            "border": {
-              "top": {
-                "color": "--token-color-active-border",
-                "width": 1,
-                "style": "solid"
-              },
-              "right": {
-                "color": "--token-color-active-border",
-                "width": 1,
-                "style": "solid"
-              },
-              "bottom": {
-                "color": "--token-color-active-border",
-                "width": 1,
-                "style": "solid"
-              },
-              "left": {
-                "color": "--token-color-active-border",
-                "width": 1,
-                "style": "solid"
-              }
-            }
-          }
-        },
-        {
-          "id": "format-rule-output",
-          "from": "E4",
-          "to": "E20",
-          "format": {
-            "background": "--token-color-accent-2-surface"
-          }
-        }
-      ],
-      "frozenRows": 3,
-      "frozenColumns": 1,
-      "print": {
-        "page": {
-          "paper": "letter",
-          "orientation": "landscape",
-          "margins": {
-            "top": 0.5,
-            "right": 0.5,
-            "bottom": 0.5,
-            "left": 0.5
-          }
-        },
-        "area": {
-          "from": "A1",
-          "to": "E20"
-        },
-        "repeatRows": "1:3",
-        "scale": "fit-width",
-        "gridlines": false,
-        "headings": false
-      },
-      "styles": {
-        "defaultKey": "body",
-        "styles": {
-          "body": {
-            "name": "Body",
-            "fontFamily": "IBM Plex Sans",
-            "fontSize": 12,
-            "color": "--token-ink-primary"
-          },
-          "header": {
-            "name": "Header",
-            "fontFamily": "IBM Plex Sans",
-            "fontSize": 11,
-            "fontWeight": 650,
-            "color": "--token-ink-primary"
-          }
-        }
-      }
-    },
-    "holes": [],
-    "at": 1782306000000
   },
   {
     "_id": "templateVersions:11",
@@ -2651,6 +2185,7 @@
                 }
               ],
               "display": "Write three paragraphs for {client_name} on what moved, what is blocked, and what happens next.",
+              "prompt": "Write three paragraphs for {client_name} on what moved, what is blocked, and what happens next.",
               "marks": [],
               "scope": {
                 "include": [
@@ -2684,6 +2219,7 @@
       {
         "name": "status_evidence",
         "label": "Status evidence",
+        "kind": "scope",
         "description": "The findings and documents this note should be written from.",
         "default": {
           "include": [
@@ -2773,6 +2309,7 @@
                 }
               ],
               "display": "Give the sequence of events, with times, in one paragraph.",
+              "prompt": "Give the sequence of events, with times, in one paragraph.",
               "marks": [],
               "scope": {
                 "include": [
@@ -2824,6 +2361,7 @@
                 }
               ],
               "display": "State the cost, and say which assumption it turns on.",
+              "prompt": "State the cost, and say which assumption it turns on.",
               "marks": [],
               "scope": {
                 "include": [
@@ -2850,6 +2388,7 @@
       {
         "name": "incident_record",
         "label": "Incident record",
+        "kind": "scope",
         "description": "Everything the write-up should be grounded in.",
         "default": {
           "include": [
@@ -2872,6 +2411,7 @@
       {
         "name": "cost_models",
         "label": "Cost models",
+        "kind": "scope",
         "description": "The spreadsheets that put a number on it.",
         "default": {
           "include": [

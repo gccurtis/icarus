@@ -1,150 +1,176 @@
 import { requireScope } from "$runtime/server/scope.server";
 import { serverModel } from "$runtime/server/start.server";
-import type { StoreModel, TableName } from "$model/server/store/index.server";
 
-import { activityIn, actorOf } from "$capabilities/project/api/shared/projection";
-import { projectResourceOf } from "$capabilities/project/api/shared/resources";
+import { textInContentBlocks } from "$representation/data/behavior/content/admission";
 import {
-  boundedText,
-  finiteTime,
-  recordOf,
-  recordsIn
-} from "$capabilities/project/api/shared/store";
+  isStoredFinding,
+  isStoredResearchThread
+} from "$representation/data/behavior/project-resources/stored";
+import {
+  isStoredSnapshot,
+  snapshotTable
+} from "$representation/data/behavior/project-resources/stored-snapshot";
+import { isStoredSheetCell } from "$representation/data/behavior/spreadsheets/stored-cell";
+import type { DocumentBody } from "$representation/data/types/documents/body";
+import type { SlideDeckBody } from "$representation/data/types/slide-decks/body";
+import type { SpreadsheetBody } from "$representation/data/types/spreadsheets/body";
+
+import { projectActor } from "$capabilities/project/api/shared/actors";
+import { projectThreadCount } from "$capabilities/project/api/shared/comment-ownership";
+import { activityIn } from "$capabilities/project/api/shared/projection";
+import {
+  projectResourceOf,
+  type RepresentedProjectResource
+} from "$capabilities/project/api/shared/resources";
+import { recordsIn, type StoreReads } from "$capabilities/project/api/shared/store";
 import { validateReadProjectResource } from "$capabilities/project/api/read-project-resource/validate-read-project-resource";
 import type {
   ProjectResourceFact,
-  ProjectResourceKind,
   ReadProjectResourceResult
 } from "$capabilities/project/types/project";
 
-const listOf = (value: unknown): readonly unknown[] => Array.isArray(value) ? value : [];
+type ResourceBody =
+  | { readonly kind: "document"; readonly body: DocumentBody }
+  | { readonly kind: "slides"; readonly body: SlideDeckBody }
+  | { readonly kind: "spreadsheet"; readonly body: SpreadsheetBody };
 
-const latestBody = (
-  store: StoreModel,
-  table: TableName | undefined,
-  projectId: string,
-  resourceId: string
-): Record<string, unknown> | undefined => {
+const leaderBody = (
+  store: StoreReads,
+  resource: RepresentedProjectResource
+): ResourceBody | undefined => {
+  const table = snapshotTable(resource.spec.snapshot);
   if (table === undefined) return undefined;
-  const snapshots = recordsIn(store, table)
-    .filter((row) => row.projectId === projectId && row.resourceId === resourceId)
-    .sort((left, right) => {
-      const leftLeader = left.role === "leader" ? 1 : 0;
-      const rightLeader = right.role === "leader" ? 1 : 0;
-      if (leftLeader !== rightLeader) return rightLeader - leftLeader;
-      const leftRevision = typeof left.revision === "number" ? left.revision : -1;
-      const rightRevision = typeof right.revision === "number" ? right.revision : -1;
-      return rightRevision - leftRevision;
-    });
-  return recordOf(snapshots[0]?.body);
-};
-
-const textInBlock = (value: unknown): readonly string[] => {
-  const block = recordOf(value);
-  if (block === undefined) return [];
-
-  const own = typeof block.display === "string" ? [block.display] : [];
-  const cells = listOf(block.rows).flatMap((row) =>
-    listOf(recordOf(row)?.cells).flatMap((cell) =>
-      listOf(recordOf(cell)?.blocks).flatMap(textInBlock)
-    )
+  const rows = recordsIn(store, table);
+  const claimed = rows.filter(
+    (row) =>
+      row.projectId === resource.row.projectId &&
+      row.resourceId === resource.row._id &&
+      row.role === "leader"
   );
-  const caption = block.caption === undefined ? [] : textInBlock(block.caption);
-  return [...own, ...cells, ...caption];
+  if (
+    claimed.length !== 1 ||
+    rows.filter((row) => row._id === claimed[0]._id).length !== 1 ||
+    !isStoredSnapshot(claimed[0], table)
+  ) return undefined;
+  if (table === "documentSnapshots" && resource.spec.kind === "document") {
+    return { kind: "document", body: claimed[0].body as DocumentBody };
+  }
+  if (table === "slideDeckSnapshots" && resource.spec.kind === "slides") {
+    return { kind: "slides", body: claimed[0].body as SlideDeckBody };
+  }
+  if (table === "spreadsheetSnapshots" && resource.spec.kind === "spreadsheet") {
+    return { kind: "spreadsheet", body: claimed[0].body as SpreadsheetBody };
+  }
+  return undefined;
 };
 
-const documentWords = (body: Record<string, unknown> | undefined): number => {
-  const text = listOf(body?.rows)
-    .flatMap((row) => listOf(recordOf(row)?.blocks).flatMap(textInBlock))
-    .join(" ");
+const documentWords = (body: DocumentBody): number => {
+  const text = body.rows.flatMap((row) =>
+    row.kind === "blocks" ? [textInContentBlocks(row.blocks)] : []
+  ).join(" ");
   return text.match(/[\p{L}\p{N}]+(?:[’'][\p{L}\p{N}]+)*/gu)?.length ?? 0;
 };
 
 const count = (value: number): string => value.toLocaleString("en-US");
 
-const factsFor = (
-  kind: ProjectResourceKind,
-  row: Record<string, unknown>,
-  body: Record<string, unknown> | undefined,
-  discussionCount: number,
-  filledCells: number
-): readonly ProjectResourceFact[] => {
-  const comments = {
-    label: "Comments",
-    value: count(discussionCount)
-  };
+const spreadsheetCellCount = (
+  store: StoreReads,
+  resource: RepresentedProjectResource,
+  body: SpreadsheetBody
+): number | undefined => {
+  const allCells = recordsIn(store, "sheetCells");
+  const idCounts = new Map<unknown, number>();
+  for (const row of allCells) idCounts.set(row._id, (idCounts.get(row._id) ?? 0) + 1);
+  const candidates = allCells.filter(
+    (row) => row.projectId === resource.row.projectId && row.resourceId === resource.row._id
+  );
+  const rows = new Map(body.rows.map((row) => [row.id, row.order]));
+  const columns = new Set(body.columns.map((column) => column.id));
+  const refExists = (ref: { readonly rowId: string; readonly columnId: string }): boolean =>
+    rows.has(ref.rowId) && columns.has(ref.columnId);
+  if (
+    candidates.some((row) =>
+      !isStoredSheetCell(row) ||
+      idCounts.get(row._id) !== 1 ||
+      rows.get(row.rowId) !== row.rowOrder ||
+      !columns.has(row.columnId) ||
+      (row.mergedTo !== undefined && !refExists(row.mergedTo)) ||
+      (row.spillTo !== undefined && !refExists(row.spillTo))
+    )
+  ) return undefined;
+  return candidates.length;
+};
 
-  if (kind === "document") {
-    return [
-      { label: "Words", value: count(documentWords(body)) },
-      comments
-    ];
+const factsFor = (
+  resource: RepresentedProjectResource,
+  body: ResourceBody | undefined,
+  comments: number,
+  filledCells: number
+): readonly ProjectResourceFact[] | undefined => {
+  const commentFact = { label: "Comments", value: count(comments) };
+  if (resource.spec.kind === "document") {
+    if (body?.kind !== "document") return undefined;
+    return [{ label: "Words", value: count(documentWords(body.body)) }, commentFact];
   }
-  if (kind === "slides") {
-    return [
-      { label: "Slides", value: count(listOf(body?.slides).length) },
-      comments
-    ];
+  if (resource.spec.kind === "slides") {
+    if (body?.kind !== "slides") return undefined;
+    return [{ label: "Slides", value: count(body.body.slides.length) }, commentFact];
   }
-  if (kind === "spreadsheet") {
+  if (resource.spec.kind === "spreadsheet") {
+    if (body?.kind !== "spreadsheet") return undefined;
     return [
-      { label: "Rows", value: count(listOf(body?.rows).length) },
-      { label: "Columns", value: count(listOf(body?.columns).length) },
+      { label: "Rows", value: count(body.body.rows.length) },
+      { label: "Columns", value: count(body.body.columns.length) },
       { label: "Filled cells", value: count(filledCells) },
-      comments
+      commentFact
     ];
   }
-  if (kind === "research") {
-    return [
-      { label: "Findings", value: count(listOf(row.findingIds).length) },
-      comments
-    ];
+  if (resource.spec.kind === "research") {
+    if (!isStoredResearchThread(resource.row)) return undefined;
+    return [{ label: "Findings", value: count(resource.row.findingIds.length) }, commentFact];
   }
+  if (!isStoredFinding(resource.row)) return undefined;
   return [
-    { label: "Sources", value: count(listOf(row.sources).length) },
-    {
-      label: "Research threads",
-      value: count(listOf(row.researchThreadIds).length)
-    },
-    comments
+    { label: "Sources", value: count(resource.row.sources.length) },
+    { label: "Research threads", value: count(resource.row.researchThreadIds.length) },
+    commentFact
   ];
 };
 
-/** Executive resource context: authored summary, useful counts, provenance, and recent history. */
+/** Exact current resource metadata, body-derived facts, and owned nested counts. */
 export const readProjectResource = async (input: unknown): Promise<ReadProjectResourceResult> => {
   const scope = await requireScope();
   const asked = validateReadProjectResource(input);
   const store = serverModel().store;
-  const represented = projectResourceOf(store, scope.projectId, asked.resourceId);
-  if (represented === undefined) return null;
+  const resource = projectResourceOf(store, scope.projectId, asked.resourceId);
+  if (resource === undefined) return null;
 
-  const { row, spec } = represented;
-  const name = boundedText(row.title, 10_000);
-  const createdAt = finiteTime(row._creationTime);
-  if (name === undefined || createdAt === undefined) return null;
-
-  const discussionCount = recordsIn(store, "commentThreads").filter((thread) => {
-    const target = recordOf(thread.target);
-    return thread.projectId === scope.projectId && target?.id === asked.resourceId;
-  }).length;
-  const filledCells = spec.kind === "spreadsheet"
-    ? recordsIn(store, "sheetCells").filter(
-        (cell) => cell.projectId === scope.projectId && cell.resourceId === asked.resourceId
-      ).length
-    : 0;
-  const body = latestBody(store, spec.snapshot, scope.projectId, asked.resourceId);
+  const body = resource.spec.snapshot === undefined ? undefined : leaderBody(store, resource);
+  if (resource.spec.snapshot !== undefined && body === undefined) return null;
+  const discussions = projectThreadCount(store, scope.projectId, resource);
+  if (discussions === undefined) return null;
+  let filledCells = 0;
+  if (resource.spec.kind === "spreadsheet") {
+    if (body?.kind !== "spreadsheet") return null;
+    const admitted = spreadsheetCellCount(store, resource, body.body);
+    if (admitted === undefined) return null;
+    filledCells = admitted;
+  }
+  if (filledCells === undefined) return null;
+  const facts = factsFor(resource, body, discussions, filledCells);
+  if (facts === undefined) return null;
 
   return {
-    id: asked.resourceId,
-    kind: spec.kind,
-    name,
-    createdAt,
-    createdBy: actorOf(store, scope, row.createdBy),
-    summary: boundedText(row.summary, 1_000) ?? "",
-    facts: factsFor(spec.kind, row, body, discussionCount, filledCells),
+    id: resource.row._id,
+    kind: resource.spec.kind,
+    name: resource.row.title,
+    createdAt: resource.row._creationTime,
+    createdBy: projectActor(store, scope, resource.row.createdBy),
+    summary: resource.row.summary ?? "",
+    facts,
     recentActivity: activityIn(store, scope)
       .filter((entry) => entry.target.id === asked.resourceId)
       .slice(0, 5),
-    openable: spec.kind === "document" || spec.kind === "slides"
+    openable: resource.spec.kind === "document" || resource.spec.kind === "slides"
   };
 };

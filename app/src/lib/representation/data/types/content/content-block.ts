@@ -172,7 +172,7 @@ export type PromptBlock = {
   display: string;
   marks: Mark[];
   scope?: ResourceSet | TemplatedResourceSet;
-  /** This block's prompt, written onto it when the derived output that held it is left behind. */
+  /** This block's prompt while no linked derived output owns the question. */
   prompt?: string;
   hole?: PromptHole;
   state: PromptState;

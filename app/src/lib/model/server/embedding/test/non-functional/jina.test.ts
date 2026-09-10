@@ -3,6 +3,7 @@ import { createConfiguration } from "$model/server/configuration/index.server";
 import { createEmbedding } from "$model/server/embedding/constructor";
 import { buildRecursiveIndex } from "$representation/data/behavior/semantic/recursive-index";
 import { searchRecursiveIndex } from "$representation/data/behavior/semantic/query";
+import { asId } from "$representation/data/behavior/core/id";
 import type { Id } from "$representation/data/types/core/id";
 
 const live = process.env.ICARUS_LIVE_JINA === "1";
@@ -44,7 +45,10 @@ test.runIf(live)("configured Jina key serves all four Semantic Overlay embedding
       id: `semanticObjects:${index + 1}` as Id<"semanticObjects">,
       vector,
       source: {
-        ref: { kind: "document", id: `documents:${index + 1}` },
+        ref: {
+          kind: "document" as const,
+          id: asId<"documents">(`documents:${index + 1}`)
+        },
         revision: 1,
         encoding: "utf-16" as const
       },

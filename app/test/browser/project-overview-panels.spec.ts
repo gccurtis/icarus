@@ -134,6 +134,7 @@ test("bounds oversized panel content and makes history rows coherent targets", a
 });
 
 test("wires the six production panels to scoped project data", async ({ page }) => {
+  await page.clock.setFixedTime(new Date("2026-09-09T12:00:00.000Z"));
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/app/dev-project", { waitUntil: "networkidle" });
 
@@ -154,7 +155,7 @@ test("wires the six production panels to scoped project data", async ({ page }) 
   await expect(context.getByText("Resources", { exact: true })).toHaveCount(0);
   await expect(context.getByText("Needs you", { exact: true })).toHaveCount(0);
   await expect(context.getByRole("button", { name: "Variables", exact: true })).toHaveCount(0);
-  await expect(context.getByRole("button", { name: "Contexts", exact: true })).toHaveCount(0);
+  await expect(context.getByRole("button", { name: "Context", exact: true })).toHaveCount(0);
 
   await context.getByRole("button", { name: "History", exact: true }).click();
   await expect(context.getByRole("heading", { name: "History", exact: true })).toBeVisible();
@@ -180,9 +181,9 @@ test("wires the six production panels to scoped project data", async ({ page }) 
   await expect(inspector.getByText("activity:1", { exact: true })).toHaveCount(0);
 
   await context
-    .getByRole("button", { name: /Started a research question: What drives customer-minutes lost/ })
+    .getByRole("button", { name: /Started a research question: What is the binding winter constraint/ })
     .click();
-  await expect(inspector.locator("blockquote")).toContainText("What drives customer-minutes lost?");
+  await expect(inspector.locator("blockquote")).toContainText("What is the binding winter constraint?");
   await expect(inspector.getByText("Research chat", { exact: true })).toBeVisible();
 
   await resources

@@ -34,6 +34,7 @@ const scopeOf = (held: TemplateBody, blockId: string) => {
 const evidence: TemplateHole = {
   name: "evidence",
   label: "Evidence",
+  kind: "scope",
   default: { include: [{ select: "kinds", kinds: ["finding"] }], exclude: [] }
 };
 
@@ -65,7 +66,7 @@ describe("resolveTemplateScopes", () => {
   it("means the whole project for a hole declared without a default", () => {
     const resolved = resolveTemplateScopes(
       body([prompt("p", [{ select: "hole", name: "models" }])]),
-      [{ name: "models", label: "Models" }]
+      [{ name: "models", label: "Models", kind: "scope" }]
     );
     if (!resolved.accepted) throw new Error(resolved.detail);
     expect(scopeOf(resolved.body, "p")).toEqual({ include: [{ select: "project" }], exclude: [] });
@@ -93,7 +94,7 @@ describe("resolveTemplateScopes", () => {
 
   it("treats a hole that reaches itself as the whole project", () => {
     const resolved = resolveTemplateScopes(body([prompt("p", [{ select: "hole", name: "loop" }])]), [
-      { name: "loop", label: "Loop", default: { include: [{ select: "hole", name: "loop" }], exclude: [] } }
+      { name: "loop", label: "Loop", kind: "scope", default: { include: [{ select: "hole", name: "loop" }], exclude: [] } }
     ]);
     if (!resolved.accepted) throw new Error(resolved.detail);
     expect(scopeOf(resolved.body, "p")).toEqual({ include: [{ select: "project" }], exclude: [] });

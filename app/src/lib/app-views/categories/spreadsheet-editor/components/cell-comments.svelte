@@ -13,11 +13,11 @@
   import { paintOf } from "$app-views/categories/spreadsheet-editor/procedures/formatting";
   import { selectedRef } from "$app-views/categories/spreadsheet-editor/procedures/selection-reading";
   import {
-    projectIdOf,
-    rowsOf,
-    tableQuery,
-    viewerId
-  } from "$app-views/categories/spreadsheet-editor/procedures/store";
+    commentsQuery,
+    peopleIn,
+    remarksIn,
+    threadsIn
+  } from "$app-views/categories/spreadsheet-editor/procedures/comment-feed";
   import { displayOf } from "$app-views/categories/spreadsheet-editor/procedures/values";
   import { holdsTheRuntime } from "$app-views/categories/spreadsheet-editor/procedures/effects/holds-the-runtime.svelte";
   import { workspaceState } from "$model/client/workspace-state";
@@ -40,16 +40,12 @@
     return text === "" ? (held?.expression ?? "") : text;
   });
 
-  const threadRows = tableQuery("commentThreads");
-  const remarkRows = tableQuery("comments");
-  const userRows = tableQuery("users");
-  const users = $derived(rowsOf(userRows, "users"));
+  const comments = commentsQuery();
+  const users = $derived(peopleIn(comments));
   const threads = $derived(
-    sheetId === undefined || ref === undefined ? [] : threadsOnCell(threadsOf(rowsOf(threadRows, "commentThreads"), sheetId), ref)
+    sheetId === undefined || ref === undefined ? [] : threadsOnCell(threadsOf(threadsIn(comments), sheetId), ref)
   );
-  const remarks = $derived(rowsOf(remarkRows, "comments"));
-  const project = $derived(projectIdOf(sheetId));
-  const viewer = $derived(viewerId());
+  const remarks = $derived(remarksIn(comments));
 
   let composing = $state("");
 
@@ -57,13 +53,10 @@
     const text = composing.trim();
     if (text === "" || sheetId === undefined || ref === undefined) return;
     void addsAComment({
-      projectId: project,
       sheetId,
       ref,
       quote: shows,
-      viewerId: viewer,
       text,
-      queries: [threadRows, remarkRows],
       sent: () => {
         composing = "";
       }

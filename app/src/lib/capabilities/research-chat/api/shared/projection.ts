@@ -1,15 +1,7 @@
 import type { StoreModel, TableRow } from "$model/server/store/index.server";
-import { messageText } from "$representation/data/behavior/agents/messages";
-import type { Message } from "$representation/data/types/agents/message";
 
-import { rowsIn, turnsIn } from "$capabilities/research-chat/api/shared/store";
+import { turnsIn } from "$capabilities/research-chat/api/shared/store";
 import type { ThreadItem, TurnItem } from "$capabilities/research-chat/types/research-chat";
-
-export const messagesOf = (store: StoreModel, threadId: string): readonly Message[] =>
-  rowsIn(store, "threadParts")
-    .filter((part) => part.threadId === threadId && Array.isArray(part.messages))
-    .toSorted((left, right) => left.part - right.part)
-    .flatMap((part) => part.messages);
 
 /**
  * A turn no process is running is reported as failed, whatever the row says.
@@ -59,8 +51,6 @@ export const threadItem = (
 ): ThreadItem => {
   const turns = turnsIn(store, row.projectId, row._id);
   const last = turns[turns.length - 1];
-  const messages = messagesOf(store, row.threadId);
-  const lastMessage = messages[messages.length - 1];
   return {
     id: row._id,
     title: row.title,
@@ -69,9 +59,7 @@ export const threadItem = (
     personaName:
       row.personaId === undefined ? null : (personaName?.(row.personaId) ?? null),
     turnCount: turns.length,
-    lastLine:
-      last?.prompt ??
-      (lastMessage === undefined ? null : messageText(lastMessage).slice(0, 200) || null),
+    lastLine: last?.prompt ?? null,
     updatedAt: last?.updatedAt ?? row.updatedAt
   };
 };

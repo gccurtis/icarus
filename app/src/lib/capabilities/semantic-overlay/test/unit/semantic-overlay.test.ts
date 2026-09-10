@@ -9,6 +9,7 @@ const state = vi.hoisted(() => {
   const counters = new Map<string, number>();
   const calls = {
     queries: 0,
+    queryOverride: undefined as ((signal?: AbortSignal) => Promise<never>) | undefined,
     nativeReads: 0,
     logs: [] as unknown[],
     failAfterNodes: Infinity,
@@ -81,8 +82,9 @@ const state = vi.hoisted(() => {
     configuration,
     embedding: {
       space: { provider: "jina", model: "jina-embeddings-v4", dimensions: 2 },
-      query: async () => {
+      query: async (_text: string, signal?: AbortSignal) => {
         calls.queries += 1;
+        if (calls.queryOverride !== undefined) return await calls.queryOverride(signal);
         return {
           value: [1, 0],
           usage: {
@@ -139,12 +141,16 @@ const baseRows = (): void => {
   const vectors = [[1, 0], [0.98, 0.1], [0, 1], [0.1, 0.98], [-1, 0], [-0.98, -0.1]];
   vectors.forEach((vector, index) => {
     const number = index + 1;
+    const externalHash = String(number).repeat(64);
     seed("semanticSources", {
       _id: `semanticSources:${number}`,
       _creationTime: number,
       projectId: "projects:1",
-      ref: { kind: number <= 2 ? "document" : "externalFile", id: `resource:${number}` },
-      revision: 1,
+      ref: number <= 2
+        ? { kind: "document", id: `documents:${number}` }
+        : { kind: "externalFile::text", id: `externalFiles:${number}` },
+      revision: number <= 2 ? 1 : 0,
+      ...(number <= 2 ? {} : { contentHash: externalHash }),
       encoding: "utf-16",
       updatedAt: 1
     });
@@ -153,6 +159,7 @@ const baseRows = (): void => {
       _id: `semanticObjects:${number}`,
       _creationTime: number,
       projectId: "projects:1",
+      lane: "text",
       semanticSourceId: `semanticSources:${number}`,
       span: { from: 0, to: text.length, text },
       vector
@@ -160,7 +167,7 @@ const baseRows = (): void => {
   });
   for (const number of [1, 2]) {
     seed("documents", {
-      _id: `resource:${number}`,
+      _id: `documents:${number}`,
       _creationTime: number,
       projectId: "projects:1",
       title: `Document ${number}`,
@@ -172,12 +179,27 @@ const baseRows = (): void => {
       _id: `documentSnapshots:${number}`,
       _creationTime: number,
       projectId: "projects:1",
-      resourceId: `resource:${number}`,
+      resourceId: `documents:${number}`,
       revision: 1,
       role: "leader",
       part: 0,
       body: { rows: [] },
       at: 1
+    });
+  }
+  for (const number of [3, 4, 5, 6]) {
+    seed("externalFiles", {
+      _id: `externalFiles:${number}`,
+      _creationTime: number,
+      projectId: "projects:1",
+      name: `Text file ${number}`,
+      mediaType: "text/plain",
+      subkind: "text",
+      storageId: `_storage:${number}`,
+      hash: String(number).repeat(64),
+      origin: { kind: "upload" },
+      createdBy: { kind: "system" },
+      updatedAt: 1
     });
   }
 };
@@ -186,6 +208,7 @@ beforeEach(() => {
   state.tables.clear();
   state.counters.clear();
   state.calls.queries = 0;
+  state.calls.queryOverride = undefined;
   state.calls.nativeReads = 0;
   state.calls.logs.length = 0;
   state.calls.failAfterNodes = Infinity;
@@ -201,8 +224,7 @@ test("external-file enqueue records only material work without reading native by
     name: "large.csv",
     mediaType: "text/csv",
     subkind: "data",
-    size: 8_000_000,
-    storageId: "storage:1",
+    storageId: "_storage:1",
     hash: "a".repeat(64),
     origin: { kind: "upload" },
     createdBy: { kind: "system" },
@@ -224,7 +246,7 @@ test("external-file enqueue records only material work without reading native by
   );
 });
 
-test("UTF-8 external-file enqueue schedules both exact text and material work without reading bytes", async () => {
+test("UTF-8 external-file enqueue requires the exact subkind and schedules both lanes", async () => {
   seed("externalFiles", {
     _id: "externalFiles:notes",
     _creationTime: 2,
@@ -232,7 +254,7 @@ test("UTF-8 external-file enqueue schedules both exact text and material work wi
     name: "notes.md",
     mediaType: "text/markdown",
     subkind: "text",
-    storageId: "storage:notes",
+    storageId: "_storage:notes",
     hash: "b".repeat(64),
     origin: { kind: "upload" },
     createdBy: { kind: "system" },
@@ -240,7 +262,7 @@ test("UTF-8 external-file enqueue schedules both exact text and material work wi
   });
 
   const result = await enqueueSemanticSync({
-    ref: { kind: "externalFile", id: "externalFiles:notes" }
+    ref: { kind: "externalFile::text", id: "externalFiles:notes" }
   });
 
   assert.deepEqual(result?.ref, { kind: "externalFile::text", id: "externalFiles:notes" });
@@ -251,6 +273,41 @@ test("UTF-8 external-file enqueue schedules both exact text and material work wi
     (state.tables.get("semanticSyncJobs") ?? []).map((row) => row.ref),
     [{ kind: "externalFile::text", id: "externalFiles:notes" }]
   );
+
+  await assert.rejects(
+    () => enqueueSemanticSync({ ref: { kind: "externalFile", id: "externalFiles:notes" } }),
+    /exact current kind/
+  );
+});
+
+test("an unprojectable native resource reaches the durable workers instead of failing readiness", async () => {
+  seed("documents", {
+    _id: "documents:broken",
+    _creationTime: 20,
+    projectId: "projects:1",
+    title: "Broken document",
+    createdBy: { kind: "system" },
+    updatedBy: { kind: "system" },
+    updatedAt: 1
+  });
+  seed("documentSnapshots", {
+    _id: "documentSnapshots:broken",
+    _creationTime: 20,
+    projectId: "projects:1",
+    resourceId: "documents:broken",
+    revision: 1,
+    role: "leader",
+    part: 0,
+    body: { rows: null },
+    at: 1
+  });
+
+  const result = await enqueueSemanticSync({
+    ref: { kind: "document", id: "documents:broken" }
+  });
+
+  assert.ok(result?.jobId !== undefined);
+  assert.ok(result?.materialJobId !== undefined);
 });
 
 test("rebuild publishes a complete replacement before retiring the old tree", async () => {
@@ -260,6 +317,7 @@ test("rebuild publishes a complete replacement before retiring the old tree", as
     projectId: "projects:1",
     semanticOverlayId: "semanticOverlays:1",
     method: "recursiveClustering",
+    lane: "text",
     rootNodeIds: ["semanticIndexNodes:1"],
     configuration: {},
     updatedAt: 1
@@ -293,6 +351,7 @@ test("a failed replacement is cleaned up and leaves the prior tree", async () =>
     projectId: "projects:1",
     semanticOverlayId: "semanticOverlays:1",
     method: "recursiveClustering",
+    lane: "text",
     rootNodeIds: ["semanticIndexNodes:1"],
     configuration: {},
     updatedAt: 1
@@ -327,6 +386,7 @@ test("query uses the built tree and returns provider usage with diagnostics", as
     projectId: "projects:1",
     semanticOverlayId: "semanticOverlays:1",
     method: "recursiveClustering",
+    lane: "text",
     rootNodeIds: [],
     configuration: {},
     updatedAt: 999
@@ -342,6 +402,32 @@ test("query uses the built tree and returns provider usage with diagnostics", as
   assert.equal(state.calls.queries, 1);
 });
 
+test("query cancellation reaches a blocked embedding request", async () => {
+  await rebuildSemanticIndex({});
+  let entered!: () => void;
+  const embedding = new Promise<void>((resolve) => {
+    entered = resolve;
+  });
+  state.calls.queryOverride = async (signal) => {
+    assert.notEqual(signal, undefined);
+    entered();
+    await new Promise<never>((_resolve, reject) => {
+      signal!.addEventListener("abort", () => reject(signal!.reason), { once: true });
+    });
+    throw new Error("unreachable");
+  };
+  const controller = new AbortController();
+  const pending = querySemanticOverlay(
+    { text: "interrupt this retrieval", topK: 2 },
+    controller.signal
+  );
+  await embedding;
+
+  controller.abort();
+
+  await assert.rejects(pending, (error: Error) => error.name === "AbortError");
+});
+
 test("resource scope filters before traversal and an empty scope includes all", async () => {
   await rebuildSemanticIndex({});
 
@@ -349,7 +435,7 @@ test("resource scope filters before traversal and an empty scope includes all", 
     text: "first direction",
     topK: 5,
     scope: {
-      include: [{ select: "resources", refs: [{ kind: "externalFile", id: "resource:4" }] }],
+      include: [{ select: "resources", refs: [{ kind: "externalFile::text", id: "externalFiles:4" }] }],
       exclude: []
     }
   });
@@ -374,10 +460,82 @@ test("resource scope filters before traversal and an empty scope includes all", 
   assert.equal(state.calls.queries, before);
 });
 
+test("a caller cannot resolve an unnamed private Resource Set as a reusable scope", async () => {
+  await rebuildSemanticIndex({});
+  seed("resourceSets", {
+    _id: "resourceSets:private",
+    _creationTime: 1,
+    projectId: "projects:1",
+    boundTo: { kind: "resource", resourceId: "externalFiles:4", hole: "evidence" },
+    set: {
+      include: [{ select: "resources", refs: [{ kind: "externalFile::text", id: "externalFiles:4" }] }],
+      exclude: []
+    },
+    createdBy: { kind: "system" },
+    revision: 1,
+    updatedAt: 1
+  });
+  const before = state.calls.queries;
+
+  await assert.rejects(
+    () => querySemanticOverlay({
+      text: "first direction",
+      topK: 2,
+      scope: {
+        include: [{ select: "set", setId: "resourceSets:private" }],
+        exclude: []
+      }
+    }),
+    /does not exist/
+  );
+  assert.equal(state.calls.queries, before);
+});
+
+test("text query quarantines duplicate and malformed named Resource Set rows", async () => {
+  await rebuildSemanticIndex({});
+  const reusable = {
+    _id: "resourceSets:evidence",
+    _creationTime: 1,
+    projectId: "projects:1",
+    name: "Evidence",
+    set: {
+      include: [{ select: "resources", refs: [{ kind: "externalFile::text", id: "externalFiles:4" }] }],
+      exclude: []
+    },
+    createdBy: { kind: "system" },
+    revision: 1,
+    updatedAt: 1
+  } satisfies Row;
+  const scopedQuery = () => querySemanticOverlay({
+    text: "first direction",
+    topK: 2,
+    scope: {
+      include: [{ select: "set", setId: "resourceSets:evidence" }],
+      exclude: []
+    }
+  });
+  state.tables.set("resourceSets", [reusable]);
+  const valid = await scopedQuery();
+  assert.deepEqual(valid.hits[0]?.semanticObjectIds, ["semanticObjects:4"]);
+  const before = state.calls.queries;
+
+  state.tables.set("resourceSets", [
+    reusable,
+    { ...reusable, projectId: "projects:elsewhere", name: "Duplicate" }
+  ]);
+  await assert.rejects(scopedQuery, /does not exist/);
+
+  state.tables.set("resourceSets", [
+    { ...reusable, set: { include: "everything", exclude: [] } }
+  ]);
+  await assert.rejects(scopedQuery, /does not exist/);
+  assert.equal(state.calls.queries, before);
+});
+
 test("query excludes an old text source as soon as its document leader advances", async () => {
   await rebuildSemanticIndex({});
   const firstLeader = (state.tables.get("documentSnapshots") ?? []).find(
-    (row) => row.resourceId === "resource:1"
+    (row) => row.resourceId === "documents:1"
   );
   if (firstLeader === undefined) throw new Error("missing document leader fixture");
   firstLeader.revision = 2;

@@ -936,7 +936,8 @@ const validBlock = (value: unknown, depth = 0): boolean => {
       ]) &&
       (value.derivedOutputId === undefined || validIdentifier(value.derivedOutputId)) &&
       (value.style === undefined || validIdentifier(value.style)) &&
-      (value.prompt === undefined || validText(value.prompt, MAX_BLOCK_TEXT_LENGTH, true)) &&
+      validText(value.prompt, MAX_BLOCK_TEXT_LENGTH) &&
+      value.prompt.trim().length > 0 &&
       (value.hole === undefined || validPromptHole(value.hole)) &&
       Array.isArray(value.atoms) &&
       value.atoms.length <= MAX_BLOCKS_PER_CONTAINER &&
@@ -1436,6 +1437,10 @@ const validSlides = (body: Fields): boolean => {
   });
 };
 
+/** The exhaustive slide-body predicate used by template admission. */
+export const validSlideTemplateBody = (value: unknown): boolean =>
+  isRecord(value) && value.resource === "slides" && validSlides(value);
+
 const validSize = (value: unknown): boolean =>
   isFiniteNumber(value) && value > 0 && value <= 10_000;
 
@@ -1686,7 +1691,13 @@ export const bodyOf = (value: unknown, subject: string): TemplateBody => {
   return value as TemplateBody;
 };
 
-export { answersOf, holesOf, resourceSetOf, textsOf } from "$capabilities/templates/api/shared/hole-validation";
+export {
+  answersOf,
+  holesOf,
+  resourceSetOf,
+  textsOf,
+  versionHolesOf
+} from "$capabilities/templates/api/shared/hole-validation";
 
 
 export const has = (fields: Fields, field: string): boolean =>

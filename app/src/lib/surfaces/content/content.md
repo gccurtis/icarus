@@ -69,10 +69,14 @@ becomes a sibling view and is imported through its root. None has yet.
 | --- | --- |
 | Token domains: color, spacing, typography | Inherited by what it renders; this view declares none of its own |
 
-## Directory Documents
+## Internal shape
 
-No concern directories. The whole view is a path, a glob and three states — there
-is nothing to coordinate and no vocabulary to hold.
+[`shared/content-state.svelte.ts`](shared/content-state.svelte.ts) is the
+instance-owned load ledger: component, source path, missing-path diagnosis and
+failure. The named effect in
+[`effects/loads-centre.svelte.ts`](effects/loads-centre.svelte.ts)
+owns the asynchronous import and retires a result when its route stops being
+current. The component keeps only path derivation and rendering beside markup.
 
 ## Rendered States
 

@@ -78,7 +78,8 @@ const updateCommentAnchors = (
 
     const within = transformCommentAnchor(thread.within, ops, body);
     if (JSON.stringify(within) === JSON.stringify(thread.within)) continue;
-    store.update(`commentThreads.${thread._id}.within`, within);
+    if (within === undefined) store.remove(`commentThreads.${thread._id}.within`);
+    else store.update(`commentThreads.${thread._id}.within`, within);
   }
 };
 
@@ -96,7 +97,15 @@ export const submitDocumentChanges = async (
   const actor = { kind: "user" as const, userId: scope.userId as Id<"users"> };
 
   const leader = leaderOf(store, projectId, resourceId);
-  const revision = leader?.revision ?? 0;
+  if (leader === undefined) {
+    return {
+      accepted: false,
+      reason: "unresolved",
+      revision: 0,
+      detail: `no body is stored for ${changeSet.resourceId}`
+    };
+  }
+  const revision = leader.revision;
 
   const catchUp = catchUpFor(
     store,
@@ -117,7 +126,7 @@ export const submitDocumentChanges = async (
 
   let body;
   try {
-    body = applyOps(leader?.body ?? { rows: [] }, changeSet.ops);
+    body = applyOps(leader.body, changeSet.ops);
   } catch (error) {
     return {
       accepted: false,
@@ -155,8 +164,7 @@ export const submitDocumentChanges = async (
       at
     } as const;
 
-    if (leader === undefined) unit.create("documentSnapshots", snapshot);
-    else unit.update(`documentSnapshots.${leader._id}`, snapshot);
+    unit.update(`documentSnapshots.${leader._id}`, snapshot);
 
     unit.update(`documents.${resourceId}.updatedAt`, at);
     unit.update(`documents.${resourceId}.updatedBy`, actor);

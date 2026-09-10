@@ -11,7 +11,8 @@ export type ProjectResourceIndexItem = {
   readonly kind: ProjectResourceKind;
   readonly name: string;
   readonly updatedAt: number;
-  readonly updatedByName: string;
+  /** Null when the exact historical actor is no longer inspectable in this project. */
+  readonly updatedByName: string | null;
 };
 
 export type ProjectResourceUnavailable = {
@@ -41,4 +42,15 @@ export type CreateProjectResourceResult = {
   readonly resourceId: string;
   readonly title: string;
   readonly revision: 0;
+};
+
+export type RenameProjectResourceInput = {
+  readonly resourceId: string;
+  readonly title: string;
+};
+
+export type RenameProjectResourceResult = {
+  readonly resourceId: string;
+  readonly title: string;
+  readonly updatedAt: number;
 };

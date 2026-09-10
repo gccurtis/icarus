@@ -1,8 +1,8 @@
 import type { StoreUnitOfWork } from "$model/server/store/index.server";
 import { asId } from "$representation/data/behavior/core/id";
-import { needsRow } from "$representation/data/behavior/core/scope-draft";
 import { portableBodyOf } from "$representation/data/behavior/templates/portable";
 import type { Actor } from "$representation/data/types/core/actor";
+import type { ResourceRef } from "$representation/data/types/core/resource";
 import {
   mergedPromptHoles,
   promptHolesOf,
@@ -14,7 +14,10 @@ import {
 } from "$representation/data/behavior/templates/prompt-holes";
 import type { TemplateHole } from "$representation/data/types/templates/template";
 
-import { normalizeScope } from "$capabilities/templates/api/shared/scopes";
+import {
+  normalizeScope,
+  setReferencesIn
+} from "$capabilities/templates/api/shared/scopes";
 import { recordsIn } from "$capabilities/templates/api/shared/store";
 
 type Fields = Record<string, unknown>;
@@ -79,7 +82,7 @@ export const withFreshOutputs = <T>(
   store: StoreUnitOfWork,
   projectId: string,
   actor: Actor,
-  origin: { kind: string; id: string },
+  origin: ResourceRef,
   body: T,
   at: number
 ): { readonly body: T; readonly written: readonly string[] } => {
@@ -89,9 +92,14 @@ export const withFreshOutputs = <T>(
     if (!isRecord(value)) return value;
     const next: Fields = {};
     for (const [field, nested] of Object.entries(value)) next[field] = walk(nested);
-    if (value.type !== "prompt") return next;
-    const asked = typeof value.prompt === "string" ? value.prompt.trim() : "";
-    if (asked === "") return next;
+    if (value.type !== "prompt" || !Array.isArray(value.atoms) || !Array.isArray(value.marks)) {
+      return next;
+    }
+    if (typeof value.prompt !== "string" || value.prompt.trim() === "") {
+      const id = typeof value.id === "string" ? ` '${value.id}'` : "";
+      throw new Error(`template prompt block${id} requires an explicit prompt`);
+    }
+    const asked = value.prompt.trim();
     const id = store.create("derivedOutputs", {
       projectId: asId<"projects">(projectId),
       prompt: asked,
@@ -146,16 +154,34 @@ export const settledHoleDefaults = (
   at: number
 ): readonly TemplateHole[] =>
   holes.map((hole) => {
-    if (hole.default === undefined || !needsRow(hole.default)) return hole;
+    const owner = {
+      kind: "hole" as const,
+      templateId: asId<"templates">(templateId),
+      hole: hole.name
+    };
+    const references = setReferencesIn(
+      store,
+      projectId,
+      hole.default ?? { include: [], exclude: [] }
+    );
+    const invalid = references.missing[0] ?? references.private[0];
+    if (invalid !== undefined) {
+      throw new Error(`template hole '${hole.name}' cannot borrow private or missing set ${invalid}`);
+    }
     const written = normalizeScope(
       store,
       projectId,
       actor,
-      { kind: "hole", templateId: asId<"templates">(templateId), hole: hole.name },
+      owner,
       hole.default,
       at
     );
-    return written === undefined ? hole : { ...hole, default: written.term };
+    if (written === undefined) {
+      const { default: _removed, ...withoutDefault } = hole;
+      void _removed;
+      return withoutDefault;
+    }
+    return { ...hole, default: written.term };
   });
 
 export const templatedBodyOf = <T>(

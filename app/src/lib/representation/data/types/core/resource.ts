@@ -1,12 +1,38 @@
-/**
- * What a project holds and works over. An open string, prefix-matched on `::`,
- * so `externalFile` names every subkind under it.
- *
- * Base kinds: `document` `slides` `spreadsheet` `externalFile` `connection`
- * `finding`. Nothing validates the string, so a typo is a silent miss.
- * `kindMatches`, in `behavior/core/resource.ts`, is what reads the separator.
- */
-export type ResourceKind = string;
+import type { Id } from "$representation/data/types/core/id";
 
-/** A specific resource. `id` is a plain string: several tables answer to it. */
-export type ResourceRef = { kind: ResourceKind; id: string };
+/** The complete current taxonomy persisted on an external-file row. */
+export type ExternalFileSubkind = "text" | "data" | "image" | "audio" | "video" | "unknown";
+
+/** An external-file reference always names the persisted file's exact current subkind. */
+export type ExternalFileResourceKind = `externalFile::${ExternalFileSubkind}`;
+
+/** The closed vocabulary that can identify one specific current resource. */
+export type ResourceKind =
+  | "document"
+  | "slides"
+  | "spreadsheet"
+  | "research"
+  | "finding"
+  | "connection"
+  | ExternalFileResourceKind;
+
+/**
+ * A kind selector may name the whole external-file family. Specific references
+ * may not: their kind must carry the exact represented file subkind.
+ */
+export type ResourceSelectorKind = ResourceKind | "externalFile";
+
+export type ExternalFileResourceRef = {
+  kind: ExternalFileResourceKind;
+  id: Id<"externalFiles">;
+};
+
+/** A specific current resource, with its discriminator tied to its row namespace. */
+export type ResourceRef =
+  | { kind: "document"; id: Id<"documents"> }
+  | { kind: "slides"; id: Id<"slideDecks"> }
+  | { kind: "spreadsheet"; id: Id<"spreadsheets"> }
+  | { kind: "research"; id: Id<"researchThreads"> }
+  | { kind: "finding"; id: Id<"findings"> }
+  | { kind: "connection"; id: Id<"connectors"> }
+  | ExternalFileResourceRef;

@@ -57,7 +57,6 @@ export const RAIL_ENTRIES: Record<ContextView, RailEntry> = {
 
   "analysis.analyses": { label: "Analyses", icon: ChartColumn },
   "new-tab.bring-in": { label: "Bring in", icon: Upload },
-  "project-overview.contexts-library": { label: "Contexts", icon: Target },
   "new-tab.create": { label: "Create", icon: Plus },
   "research.findings-library": { label: "Findings", icon: Lightbulb },
   "research.inquiry-library": { label: "Inquiry", icon: CircleQuestionMark },
@@ -76,7 +75,6 @@ export const RAIL_ENTRIES: Record<ContextView, RailEntry> = {
   "templates.overview-library": { label: "Overview", icon: Info },
 
   "project-overview.activity": { label: "Activity", icon: Activity },
-  "project-overview.contexts": { label: "Context", icon: Target },
   "project-overview.history": { label: "History", icon: Clock },
   "project-overview.mentions": { label: "Mentions", icon: AtSign },
   "project-overview.people": { label: "People", icon: Users },

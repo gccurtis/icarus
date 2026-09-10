@@ -24,7 +24,6 @@
   import { Button } from "$vendored-components/button";
   import * as DropdownMenu from "$vendored-components/dropdown-menu";
   import { ToggleGroup, ToggleGroupItem } from "$vendored-components/toggle-group";
-  import { readProjectResourceIndex } from "$capabilities/project-resources/index.remote";
   import { actorName } from "$app-views/categories/project-overview/procedures/actor-name";
   import { activity } from "$app-views/categories/project-overview/procedures/activity";
   import { OverviewState } from "$app-views/categories/project-overview/content/overview.state.svelte";
@@ -35,6 +34,10 @@
   import { openingFor } from "$app-views/categories/project-overview/procedures/opening";
   import { people } from "$app-views/categories/project-overview/procedures/people";
   import { project } from "$app-views/categories/project-overview/procedures/project";
+  import { boardHistory } from "$app-views/categories/project-overview/procedures/read-board-history";
+  import { projectComments } from "$app-views/categories/project-overview/procedures/read-comments";
+  import { projectOverview } from "$app-views/categories/project-overview/procedures/read-overview";
+  import { projectResources } from "$app-views/categories/project-overview/procedures/read-resources";
   import { projectId, viewerId } from "$app-views/categories/project-overview/procedures/scope";
   import {
     resourcesIn,
@@ -78,21 +81,29 @@
    * two that straddled a minute boundary would disagree about how long ago the
    * same edit was.
    *
-   * The project is not `view.project` — that is the token from the route, and
-   * what scopes a row is the id it resolves to. Both come from `scope`, which
-   * says there why it has to work them out.
+   * The overview capability publishes the exact project and viewer identities
+   * admitted from the current route and session. Each remote query is created
+   * once at component setup; derived rows consume only its current snapshot.
    */
 
-  const id = $derived(projectId());
-  const viewer = $derived(viewerId());
-  const resourceIndex = readProjectResourceIndex();
+  const overviewAnswer = projectOverview();
+  const historyAnswer = boardHistory();
+  const commentsAnswer = projectComments();
+  const resourceIndex = projectResources();
 
-  const it = $derived(project(id));
-  const everyone = $derived(people(id));
-  const mentions = $derived(mentionsForViewer(id, viewer, clock.now));
-  const events = $derived(activity(id, clock.now));
+  const overview = $derived(overviewAnswer.ready ? overviewAnswer.current : undefined);
+  const history = $derived(historyAnswer.ready ? historyAnswer.current : undefined);
+  const comments = $derived(commentsAnswer.ready ? commentsAnswer.current : undefined);
+  const resources = $derived(resourceIndex.ready ? resourceIndex.current : undefined);
+  const id = $derived(projectId(overview));
+  const viewer = $derived(viewerId(overview));
+
+  const it = $derived(project(id, overview));
+  const everyone = $derived(people(id, overview));
+  const mentions = $derived(mentionsForViewer(viewer, clock.now, comments, resources));
+  const events = $derived(activity(clock.now, history));
   const work = $derived(
-    resourcesIn(resourceIndex.ready ? resourceIndex.current : undefined, clock.now)
+    resourcesIn(resources, clock.now)
   );
 
   const SORTS = [
@@ -391,7 +402,7 @@
                     view.inspect("project-overview.comment", { kind: "comment", id: mention.id })}
                 >
                   <span class="block truncate" title={mention.resource}>
-                    <strong>{actorName(mention.author)}</strong>
+                    <strong>{actorName(mention.author, comments?.people ?? [])}</strong>
                     mentioned you on
                     <strong>{mention.resource}</strong>
                     {#if mention.location}<span class="text-ink-muted">· {mention.location}</span>{/if}

@@ -1,13 +1,24 @@
 import type { StoreUnitOfWork } from "$model/server/store/index.server";
 import { asId } from "$representation/data/behavior/core/id";
 import { needsRow, ruleWords } from "$representation/data/behavior/core/scope-draft";
+import { resourceSetReferenceIssue } from "$representation/data/behavior/core/resource-set";
+import {
+  admittedResourceSetClaim,
+  admittedReusableResourceSets
+} from "$representation/data/behavior/core/resource-set-rows";
 import type { Actor } from "$representation/data/types/core/actor";
 import type {
-  BoundTo,
   ResourceSet,
   TemplatedResourceSet
 } from "$representation/data/types/core/resource-set";
+import type { TemplateVersionScope } from "$representation/data/types/templates/template";
 
+import {
+  removeRowsBoundTo,
+  rowsBoundTo,
+  sameScopeOwner,
+  type ScopeOwner
+} from "$capabilities/templates/api/shared/scope-rows";
 import { recordsIn } from "$capabilities/templates/api/shared/store";
 
 /**
@@ -27,99 +38,111 @@ import { recordsIn } from "$capabilities/templates/api/shared/store";
  * said inline, which is the common case.
  */
 
-export type ScopeOwner = BoundTo;
-
-const named = (store: StoreUnitOfWork, projectId: string): ReadonlySet<string> =>
-  new Set(
-    recordsIn(store, "resourceSets")
-      .filter(
-        (row) => row.projectId === projectId && typeof row._id === "string" && row.name !== undefined
-      )
-      .map((row) => row._id as string)
-  );
-
-const sameOwner = (held: unknown, owner: ScopeOwner): boolean => {
-  if (held === null || typeof held !== "object") return false;
-  const record = held as Record<string, unknown>;
-  if (owner.kind === "hole") {
-    return (
-      record.kind === "hole" &&
-      record.templateId === owner.templateId &&
-      record.hole === owner.hole
-    );
-  }
-  return (
-    record.kind === "resource" &&
-    record.resourceId === owner.resourceId &&
-    record.hole === owner.hole
-  );
-};
-
-/** Every row bound to one resource, whichever hole it answered. */
-export const rowsOfResource = (
-  store: StoreUnitOfWork,
-  projectId: string,
-  resourceId: string
-): readonly string[] =>
-  recordsIn(store, "resourceSets")
-    .filter((row) => {
-      if (row.projectId !== projectId || typeof row._id !== "string") return false;
-      const held = row.boundTo;
-      return (
-        held !== null &&
-        typeof held === "object" &&
-        (held as Record<string, unknown>).kind === "resource" &&
-        (held as Record<string, unknown>).resourceId === resourceId
-      );
-    })
-    .map((row) => row._id as string);
-
-/** The bound rows an owner holds, newest last, so a rewrite can reuse the first. */
-export const rowsBoundTo = (
-  store: StoreUnitOfWork,
-  projectId: string,
-  owner: ScopeOwner
-): readonly string[] =>
-  recordsIn(store, "resourceSets")
-    .filter(
-      (row) =>
-        row.projectId === projectId &&
-        typeof row._id === "string" &&
-        sameOwner(row.boundTo, owner)
-    )
-    .map((row) => row._id as string);
-
-export const removeRowsBoundTo = (
-  store: StoreUnitOfWork,
-  projectId: string,
-  owner: ScopeOwner
-): number => {
-  const held = rowsBoundTo(store, projectId, owner);
-  for (const setId of held) store.remove(`resourceSets.${setId}`);
-  return held.length;
-};
-
-/** Every set term in a rule that the project does not hold. */
-export const unknownSetsIn = (
+/** Classifies a caller's set references as reusable, missing, or private implementation storage. */
+export const setReferencesIn = (
   store: StoreUnitOfWork,
   projectId: string,
   scope: { include: readonly { select: string }[]; exclude: readonly { select: string }[] }
-): readonly string[] => {
-  const held = new Set(
-    recordsIn(store, "resourceSets")
-      .filter((row) => row.projectId === projectId && typeof row._id === "string")
-      .map((row) => row._id as string)
+): { readonly missing: readonly string[]; readonly private: readonly string[] } => {
+  const rows = recordsIn(store, "resourceSets");
+  const reusable = admittedReusableResourceSets(rows, projectId);
+  const localClaims = new Set(
+    rows.flatMap((row) =>
+      row.projectId === projectId && typeof row._id === "string" ? [row._id] : []
+    )
   );
   const missing: string[] = [];
+  const privateSets: string[] = [];
   for (const term of [...scope.include, ...scope.exclude]) {
     const setId = (term as { setId?: unknown }).setId;
     if (term.select !== "set" || typeof setId !== "string") continue;
-    if (!held.has(setId) && !missing.includes(setId)) missing.push(setId);
+    if (reusable.has(setId)) continue;
+    if (localClaims.has(setId)) {
+      if (!privateSets.includes(setId)) privateSets.push(setId);
+    } else if (!missing.includes(setId)) {
+      missing.push(setId);
+    }
   }
-  return missing;
+  if (missing.length === 0 && privateSets.length === 0) {
+    const setTerms = (terms: readonly { select: string }[]): ResourceSet["include"] =>
+      terms.flatMap((term) => {
+        const setId = (term as { setId?: unknown }).setId;
+        return term.select === "set" && typeof setId === "string"
+          ? [{ select: "set", setId: asId<"resourceSets">(setId) }]
+          : [];
+      });
+    const references: ResourceSet = {
+      include: setTerms(scope.include),
+      exclude: setTerms(scope.exclude)
+    };
+    const named = new Map([...reusable].map(([id, row]) => [id, row.set]));
+    const issue = resourceSetReferenceIssue(references, named);
+    if (issue !== undefined) {
+      if (localClaims.has(issue.setId)) privateSets.push(issue.setId);
+      else missing.push(issue.setId);
+    }
+  }
+  return { missing, private: privateSets };
 };
 
 type Written = { readonly term: TemplatedResourceSet; readonly setId?: string };
+
+export type PrivateHoleDefault =
+  | { readonly kind: "ordinary" }
+  | { readonly kind: "private"; readonly rule: ResourceSet }
+  | { readonly kind: "invalid"; readonly setId: string };
+
+/** Classify a private set reference without treating another owner's row as portable. */
+const privateDefaultOf = (
+  store: StoreUnitOfWork,
+  projectId: string,
+  owner: ScopeOwner,
+  scope: TemplatedResourceSet | undefined
+): PrivateHoleDefault => {
+  if (scope === undefined) return { kind: "ordinary" };
+  const terms = [...scope.include, ...scope.exclude].filter(
+    (term): term is Extract<(typeof scope.include)[number], { select: "set" }> =>
+      term.select === "set"
+  );
+  const rows = recordsIn(store, "resourceSets");
+  const reusable = admittedReusableResourceSets(rows, projectId);
+  for (const term of terms) {
+    if (reusable.has(term.setId)) {
+      const references = setReferencesIn(store, projectId, {
+        include: [term],
+        exclude: []
+      });
+      const invalid = references.missing[0] ?? references.private[0];
+      if (invalid !== undefined) return { kind: "invalid", setId: invalid };
+      continue;
+    }
+    const row = admittedResourceSetClaim(rows, term.setId);
+    if (row === undefined || row.projectId !== projectId || row.name !== undefined) {
+      return { kind: "invalid", setId: term.setId };
+    }
+    const isOnlyTerm =
+      scope.exclude.length === 0 &&
+      scope.include.length === 1 &&
+      scope.include[0].select === "set";
+    if (!isOnlyTerm || !sameScopeOwner(row.boundTo, owner)) {
+      return { kind: "invalid", setId: term.setId };
+    }
+    const references = setReferencesIn(store, projectId, row.set);
+    const invalid = references.missing[0] ?? references.private[0];
+    return invalid === undefined
+      ? { kind: "private", rule: row.set }
+      : { kind: "invalid", setId: invalid };
+  }
+  return { kind: "ordinary" };
+};
+
+/** Classify one live template hole's stored default against that exact hole. */
+export const privateHoleDefaultOf = (
+  store: StoreUnitOfWork,
+  projectId: string,
+  owner: Extract<ScopeOwner, { kind: "hole" }>,
+  scope: TemplatedResourceSet | undefined
+): PrivateHoleDefault => privateDefaultOf(store, projectId, owner, scope);
 
 /**
  * The rule as a templated set, writing or rewriting the owner's row when the
@@ -150,7 +173,11 @@ export const normalizeScope = (
 
   if (first !== undefined) {
     const row = recordsIn(store, "resourceSets").find((candidate) => candidate._id === first);
-    const revision = typeof row?.revision === "number" ? row.revision : 1;
+    if (row === undefined) throw new Error(`template scope row ${first} disappeared`);
+    if (!Number.isSafeInteger(row.revision) || Number(row.revision) < 1) {
+      throw new Error(`template scope row ${first} has no current revision`);
+    }
+    const revision = Number(row.revision);
     store.update(`resourceSets.${first}.set`, rule);
     store.update(`resourceSets.${first}.revision`, revision + 1);
     store.update(`resourceSets.${first}.updatedAt`, at);
@@ -175,29 +202,51 @@ export const normalizeScope = (
 };
 
 /**
- * A stored default read back as the rule somebody built.
+ * A stored default read back as the rule its exact owner built.
  *
- * A term naming a bound row is expanded, because that row is this hole's value
+ * A term naming a bound row is expanded, because that row is the owner's value
  * rather than a set anyone chose. A term naming one of the project's own
- * sets is left alone, because choosing it was the point.
+ * sets is left alone, because choosing it was the point. A missing row or a
+ * private row owned by anything else is invalid rather than data this boundary
+ * may disclose or silently copy.
  */
 export const expandedScope = (
   store: StoreUnitOfWork,
   projectId: string,
+  owner: ScopeOwner,
   scope: TemplatedResourceSet | undefined
 ): TemplatedResourceSet | undefined => {
+  const held = privateDefaultOf(store, projectId, owner, scope);
+  if (held.kind === "invalid") {
+    throw new Error(
+      `template scope owner cannot use private or missing set ${held.setId}`
+    );
+  }
+  return held.kind === "private"
+    ? (structuredClone(held.rule) as unknown as TemplatedResourceSet)
+    : scope;
+};
+
+/**
+ * A live hole's private row made independent for immutable history.
+ *
+ * Named project sets remain references because naming that reusable set was the
+ * authored choice. A row owned by this exact hole is implementation storage for
+ * a rule the template itself cannot carry, so a version owns a clone of the
+ * concrete rule instead of the mutable row id.
+ */
+export const versionScopeOf = (
+  store: StoreUnitOfWork,
+  projectId: string,
+  owner: Extract<ScopeOwner, { kind: "hole" }>,
+  scope: TemplatedResourceSet | undefined
+): TemplateVersionScope | undefined => {
   if (scope === undefined) return undefined;
-  if (scope.exclude.length > 0 || scope.include.length !== 1) return scope;
-  const term = scope.include[0];
-  if (term.select !== "set" || named(store, projectId).has(term.setId)) return scope;
-  const row = recordsIn(store, "resourceSets").find(
-    (candidate) => candidate._id === term.setId && candidate.projectId === projectId
-  );
-  const rule = row?.set;
-  if (rule === null || typeof rule !== "object" || Array.isArray(rule)) return scope;
-  const held = rule as { include?: unknown; exclude?: unknown };
-  if (!Array.isArray(held.include) || !Array.isArray(held.exclude)) return scope;
-  return held as unknown as TemplatedResourceSet;
+  const held = privateDefaultOf(store, projectId, owner, scope);
+  if (held.kind === "invalid") {
+    throw new Error(`template scope owner cannot use private or missing set ${held.setId}`);
+  }
+  return structuredClone(held.kind === "private" ? held.rule : scope) as TemplateVersionScope;
 };
 
 /** What a rule says, for a refusal that has to name it. */

@@ -15,6 +15,10 @@ export class ThreadState {
   now = $state(Date.now());
   /** The turn the centre has already asked the inspector to open. */
   claimed = $state<string>();
+  /** The durable chat detail refreshed during this mounting of the centre. */
+  refreshedThread = $state<string>();
+  /** A lifecycle read failure, kept beside the chat identity it belongs to. */
+  refreshFailure = $state<{ threadId: string; message: string }>();
   text = $state("");
   /** Which chat the field currently belongs to, so a restore never saves over. */
   held = $state<string>();

@@ -1,15 +1,26 @@
 import { describe, expect, it } from "vitest";
 
 import type { ResourceRef } from "$representation/data/types/core/resource";
+import { admitResourceRef } from "$representation/data/behavior/core/resource";
 import type { ResourceSet } from "$representation/data/types/core/resource-set";
-import { resolveResourceSet } from "$representation/data/behavior/core/resource-set";
+import {
+  isReusableResourceSetRow,
+  resourceSetReferenceIssue,
+  resolveResourceSet
+} from "$representation/data/behavior/core/resource-set";
+import {
+  admitResourceSetRow,
+  admitReusableResourceSetRow,
+  admittedResourceSetClaim,
+  admittedReusableResourceSets
+} from "$representation/data/behavior/core/resource-set-rows";
 
 const catalogue: ResourceRef[] = [
-  { kind: "document", id: "documents:1" },
-  { kind: "document", id: "documents:2" },
-  { kind: "slides", id: "slideDecks:1" },
-  { kind: "finding", id: "findings:1" },
-  { kind: "externalFile::pdf", id: "externalFiles:1" }
+  admitResourceRef({ kind: "document", id: "documents:1" }),
+  admitResourceRef({ kind: "document", id: "documents:2" }),
+  admitResourceRef({ kind: "slides", id: "slideDecks:1" }),
+  admitResourceRef({ kind: "finding", id: "findings:1" }),
+  admitResourceRef({ kind: "externalFile::data", id: "externalFiles:1" })
 ];
 
 const ids = (refs: readonly ResourceRef[]) => refs.map((ref) => ref.id);
@@ -24,7 +35,10 @@ describe("resolveResourceSet", () => {
     const set: ResourceSet = {
       include: [
         { select: "kinds", kinds: ["externalFile"] },
-        { select: "resources", refs: [{ kind: "document", id: "documents:2" }, { kind: "document", id: "documents:9" }] }
+        { select: "resources", refs: [
+          admitResourceRef({ kind: "document", id: "documents:2" }),
+          admitResourceRef({ kind: "document", id: "documents:9" })
+        ] }
       ],
       exclude: []
     };
@@ -42,5 +56,116 @@ describe("resolveResourceSet", () => {
 
   it("selects nothing from an empty include", () => {
     expect(resolveResourceSet({ include: [], exclude: [] }, catalogue)).toEqual([]);
+  });
+});
+
+describe("isReusableResourceSetRow", () => {
+  it("distinguishes a named reusable row from private or malformed ownership", () => {
+    expect(isReusableResourceSetRow({ name: "Evidence" })).toBe(true);
+    expect(isReusableResourceSetRow({ name: " Evidence " })).toBe(false);
+    expect(isReusableResourceSetRow({ boundTo: { kind: "resource" } })).toBe(false);
+    expect(
+      isReusableResourceSetRow({ name: "Evidence", boundTo: { kind: "resource" } })
+    ).toBe(false);
+  });
+});
+
+describe("admittedReusableResourceSets", () => {
+  const row = (fields: Record<string, unknown> = {}) => ({
+    _id: "resourceSets:one",
+    _creationTime: 1,
+    projectId: "projects:one",
+    name: "Evidence",
+    set: { include: [{ select: "project" }], exclude: [] },
+    createdBy: { kind: "system" },
+    revision: 1,
+    updatedAt: 1,
+    ...fields
+  });
+
+  it("admits one complete canonical named row", () => {
+    const admitted = admitReusableResourceSetRow(row());
+    expect(admitted.name).toBe("Evidence");
+    expect(Object.hasOwn(admitted, "boundTo")).toBe(false);
+    expect(admitted.set).toEqual({ include: [{ select: "project" }], exclude: [] });
+  });
+
+  it("admits exact private ownership only through the private row boundary", () => {
+    const { name: _name, ...base } = row();
+    const privateRow = {
+      ...base,
+      boundTo: { kind: "resource", resourceId: "documents:one", hole: "evidence" }
+    };
+    const admitted = admitResourceSetRow(privateRow);
+    expect(admitted.name).toBeUndefined();
+    expect(Object.hasOwn(admitted, "name")).toBe(false);
+    expect(admitted.boundTo).toEqual({
+      kind: "resource",
+      resourceId: "documents:one",
+      hole: "evidence"
+    });
+    expect(() => admitReusableResourceSetRow(privateRow)).toThrow(/private storage/);
+    expect(admittedResourceSetClaim([privateRow], "resourceSets:one")).toEqual(admitted);
+    expect(
+      admittedResourceSetClaim(
+        [privateRow, row({ projectId: "projects:other" })],
+        "resourceSets:one"
+      )
+    ).toBeUndefined();
+  });
+
+  it("quarantines every claimant of a duplicate id and structurally malformed rows", () => {
+    expect(
+      admittedReusableResourceSets(
+        [row(), row({ projectId: "projects:other", name: "Foreign duplicate" })],
+        "projects:one"
+      ).size
+    ).toBe(0);
+    expect(
+      admittedReusableResourceSets(
+        [row({ set: { include: "everything", exclude: [] } })],
+        "projects:one"
+      ).size
+    ).toBe(0);
+    expect(
+      admittedReusableResourceSets(
+        [row({ createdBy: { kind: "user" } })],
+        "projects:one"
+      ).size
+    ).toBe(0);
+    expect(
+      admittedReusableResourceSets(
+        [row({ legacyScope: { include: [] } })],
+        "projects:one"
+      ).size
+    ).toBe(0);
+    expect(() => admitResourceSetRow(row({ legacyScope: {} }))).toThrow(/unknown field legacyScope/);
+    expect(() => admitResourceSetRow(row({ boundTo: undefined }))).toThrow(/storable/);
+    expect(() => admitResourceSetRow({ ...row(), name: undefined })).toThrow(/storable/);
+  });
+});
+
+describe("resourceSetReferenceIssue", () => {
+  it("finds missing and recursively cyclic named-set graphs", () => {
+    const missing = { include: [{ select: "set" as const, setId: "missing" as never }], exclude: [] };
+    expect(resourceSetReferenceIssue(missing, new Map())).toEqual({
+      kind: "unavailable",
+      setId: "missing"
+    });
+
+    const sets = new Map([
+      ["a", { include: [{ select: "set" as const, setId: "b" as never }], exclude: [] }],
+      ["b", { include: [{ select: "set" as const, setId: "a" as never }], exclude: [] }]
+    ]);
+    expect(resourceSetReferenceIssue(missing, sets)).toEqual({
+      kind: "unavailable",
+      setId: "missing"
+    });
+    expect(
+      resourceSetReferenceIssue(
+        { include: [{ select: "set", setId: "a" as never }], exclude: [] },
+        sets
+      )
+    ).toEqual({ kind: "cycle", setId: "a" });
   });
 });

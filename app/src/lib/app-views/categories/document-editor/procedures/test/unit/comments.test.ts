@@ -3,14 +3,13 @@ import { test } from "vitest";
 import type { TextBlock } from "$representation/data/types/content/content-block";
 import type { DocumentBody } from "$representation/data/types/documents/body";
 import {
-  ago,
   anchorOf,
   isCommentableSelection,
   quoteOf,
-  threadFields,
-  threadsOn,
-  type Thread
-} from "$app-views/categories/document-editor/procedures/comments";
+  threadsOn
+} from "$app-views/categories/document-editor/procedures/comment-anchors";
+import { ago } from "$app-views/categories/document-editor/procedures/comment-copy";
+import type { Thread } from "$app-views/categories/document-editor/procedures/comments";
 
 const text = (id: string, display: string): TextBlock => ({
   id,
@@ -125,24 +124,6 @@ test("one thread is returned once when several of its anchors touch the selectio
     }).map((found) => found._id),
     ["t1"]
   );
-});
-
-test("a new thread carries the project, the document, the anchor and the quote", () => {
-  const fields = threadFields({
-    projectId: "p",
-    documentId: "d",
-    within: { kind: "text", spans: [{ blockId: "#b1", from: { atom: "#b1-atom", offset: 6 }, to: { atom: "#b1-atom", offset: 18 } }] },
-    quote: "the exposure",
-    by: "u",
-    now: 5
-  });
-
-  assert.equal(fields.projectId, "p");
-  assert.deepEqual(fields.target, { kind: "document", id: "d" });
-  assert.equal(fields.quote, "the exposure");
-  assert.deepEqual(fields.createdBy, { kind: "user", userId: "u" });
-  assert.equal(fields.updatedAt, 5);
-  assert.equal("resolution" in fields, false);
 });
 
 test("how long ago reads in the words a panel uses", () => {

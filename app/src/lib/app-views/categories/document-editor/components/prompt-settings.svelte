@@ -9,6 +9,10 @@
   } from "$authored-components/panel";
   import { Button } from "$vendored-components/button";
   import { Textarea } from "$vendored-components/textarea";
+  import {
+    evidenceTitles,
+    resourceIndex
+  } from "$app-views/categories/document-editor/procedures/resource-index";
   import { blockIn } from "$app-views/categories/document-editor/procedures/blocks";
   import {
     compactEvidenceSourceTitle,
@@ -24,7 +28,6 @@
   import { setPromptScope } from "$app-views/categories/document-editor/procedures/set-prompt-scope";
   import { refreshPromptBlock } from "$app-views/categories/document-editor/procedures/refresh-prompt-block";
   import { synchronizePromptSettings } from "$app-views/categories/document-editor/procedures/effects/prompt-settings.svelte";
-  import { rowsOf, tableQuery } from "$app-views/categories/document-editor/procedures/store";
   import { workspaceState } from "$model/client/workspace-state";
   import type { ResourceRef } from "$representation/data/types/core/resource";
   import type { SemanticCitation } from "$representation/data/types/semantic/derived-output";
@@ -53,9 +56,7 @@
   // One settings instance belongs to one immutable Derived Output identity.
   // svelte-ignore state_referenced_locally
   const detailQuery = readPromptOutput(outputId);
-  const documentsQuery = tableQuery("documents");
-  const slideDecksQuery = tableQuery("slideDecks");
-  const spreadsheetsQuery = tableQuery("spreadsheets");
+  const resources = resourceIndex();
 
   const detail = $derived(detailQuery.ready ? detailQuery.current : undefined);
   const output = $derived(detail?.output);
@@ -79,19 +80,7 @@
   const shownError = $derived(
     busy ? undefined : state.actionError ?? refreshError ?? output?.error ?? queryError
   );
-  const sourceTitles = $derived.by(() => {
-    const titles = new Map<string, string>();
-    for (const document of rowsOf(documentsQuery, "documents")) {
-      titles.set(`document:${document._id}`, document.title);
-    }
-    for (const deck of rowsOf(slideDecksQuery, "slideDecks")) {
-      titles.set(`slides:${deck._id}`, deck.title);
-    }
-    for (const sheet of rowsOf(spreadsheetsQuery, "spreadsheets")) {
-      titles.set(`spreadsheet:${sheet._id}`, sheet.title);
-    }
-    return titles;
-  });
+  const sourceTitles = $derived(evidenceTitles(resources));
 
   synchronizePromptSettings({
     outputId: () => outputId,

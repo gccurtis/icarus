@@ -50,7 +50,7 @@ export const contentReference: AreaReference = {
     {
       title: "Partial header and footer rendering is removed",
       before: "The first page hosted rich editable blocks while repeated pages flattened the same content and lost styling.",
-      now: "Header/footer content stays in the backward-compatible representation but does not enter the editor schema, selection map, or translator. Page numbers use a dedicated read-only projection.",
+      now: "Header/footer furniture stays in the current representation but does not enter the editor schema, selection map, or translator. Page numbers use a dedicated read-only projection.",
       why: "The editor should not ship a document feature until every occurrence can preserve visual and behavioral parity."
     },
     {
@@ -177,10 +177,10 @@ export const contentReference: AreaReference = {
     {
       name: "Page-number projection",
       owner: "Document body + page-number plugin",
-      shape: "numbering settings + top/bottom compatibility edge + repeated read-only labels",
+      shape: "numbering settings + represented top/bottom edge + repeated read-only labels",
       states: ["absent", "visible on every page", "hidden on first page"],
       transitions: ["layout action → configure", "page count change → repeat projection", "disable → remove projections"],
-      invariants: ["Page numbers are never editable canvas content", "Header/footer rows are not projected", "Legacy top-edge numbering remains readable"],
+      invariants: ["Page numbers are never editable canvas content", "Header/footer rows are not projected", "Both represented page edges remain readable"],
       sources: ["src/lib/app-views/categories/document-editor/procedures/page-numbers.ts", "src/lib/app-views/categories/document-editor/content/document.svelte"]
     },
     {
@@ -236,8 +236,8 @@ export const contentReference: AreaReference = {
     },
     {
       name: "page-number projection",
-      role: "Repeat page-number labels without projecting or editing their compatibility host content.",
-      reads: "Page-number settings, compatibility edge/distance, and derived pages.",
+      role: "Repeat page-number labels without projecting or editing reserved page-furniture content.",
+      reads: "Page-number settings, represented edge/distance, and derived pages.",
       writes: "Derived page-number plugin metadata only.",
       failure: "Missing numbering produces no decoration; represented header/footer rows remain untouched.",
       sources: ["src/lib/app-views/categories/document-editor/procedures/page-numbers.ts"]

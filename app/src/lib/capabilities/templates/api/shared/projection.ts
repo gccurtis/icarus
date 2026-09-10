@@ -259,7 +259,12 @@ export const detailOf = (
      * stays a named set.
      */
     holes: admitted.holes.map((hole) => {
-      const expanded = expandedScope(store, scope.projectId, hole.default);
+      const expanded = expandedScope(
+        store,
+        scope.projectId,
+        { kind: "hole", templateId: admitted._id, hole: hole.name },
+        hole.default
+      );
       return expanded === undefined ? hole : { ...hole, default: expanded };
     })
   };

@@ -1,8 +1,8 @@
 import type { AnchorWithin } from "$representation/data/types/collaboration/anchor";
-import type { ResourceRef } from "$representation/data/types/core/resource";
+import type { CommentTarget } from "$representation/data/types/collaboration/comment";
 
 export type StartThreadInput = {
-  readonly target: ResourceRef;
+  readonly target: CommentTarget;
   readonly within?: AnchorWithin;
   readonly quote?: string;
   readonly text: string;

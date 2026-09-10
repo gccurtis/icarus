@@ -29,7 +29,11 @@
   } from "$authored-components/slide-surface";
   import { Button } from "$vendored-components/button";
   import * as ContextMenu from "$vendored-components/context-menu";
-  import { rowsOf } from "$app-views/categories/slide-deck-editor/procedures/comments";
+  import {
+    resourceName,
+    resourceIndex
+  } from "$app-views/categories/slide-deck-editor/procedures/resource-index";
+  import { commentsQuery, threadsIn } from "$app-views/categories/slide-deck-editor/procedures/comments";
   import {
     blockIn,
     boundsOf,
@@ -76,9 +80,9 @@
     percent,
     slideUnits
   } from "$app-views/categories/slide-deck-editor/procedures/stage";
+  import { resourceTemplate } from "$app-views/categories/slide-deck-editor/procedures/template-resources";
   import { replaced, toggledMark } from "$app-views/categories/slide-deck-editor/procedures/typing";
   import {
-    readStore,
     workspaceState,
     type SlideDeckRuntime,
     type SyncState
@@ -116,16 +120,13 @@
   const view = workspaceState();
 
   const deckId = view.active.resourceId;
-  const decksQuery = readStore("slideDecks");
+  const resources = resourceIndex();
+  const template = deckId === undefined ? undefined : resourceTemplate(deckId);
 
   const deckTitle = $derived.by(() => {
     if (deckId === undefined) return undefined;
 
-    if (!decksQuery.ready) return undefined;
-
-    const found = decksQuery.current;
-    if (found?.kind !== "table" || found.table !== "slideDecks") return undefined;
-    return found.rows.find((deck) => deck._id === deckId)?.title;
+    return resourceName(resources, deckId, template?.current);
   });
 
   let runtime = $state<SlideDeckRuntime | undefined>(undefined);
@@ -189,11 +190,11 @@
 
   const cells = $derived(selectedCells(view.selection));
 
-  const threadRows = readStore("commentThreads");
+  const comments = commentsQuery();
 
   const threads = $derived.by(() => {
     if (deckId === undefined) return [];
-    return rowsOf(threadRows, "commentThreads").filter(
+    return threadsIn(comments).filter(
       (row) =>
         row.target.kind === "slides" &&
         row.target.id === deckId &&

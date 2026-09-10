@@ -77,7 +77,7 @@ const template = (slides: 1 | 2): TemplateDetail => ({
     ],
     sections: []
   },
-  holes: [{ name: "evidence", label: "Evidence", default: { include: [{ select: "project" }], exclude: [] } }]
+  holes: [{ name: "evidence", label: "Evidence", kind: "scope", default: { include: [{ select: "project" }], exclude: [] } }]
 });
 
 describe("inserting a template into a deck", () => {

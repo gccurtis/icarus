@@ -1,5 +1,12 @@
 import type { ResourceSet, SetTerm } from "$representation/data/types/core/resource-set";
-import type { TemplateHole } from "$representation/data/types/templates/template";
+import {
+  isResourceRef,
+  isResourceSelectorKind
+} from "$representation/data/behavior/core/resource";
+import type {
+  TemplateHole,
+  TemplateVersionHole
+} from "$representation/data/types/templates/template";
 import type { TemplateAnswers } from "$capabilities/templates/types/templates";
 
 type Fields = Record<string, unknown>;
@@ -10,8 +17,6 @@ const MAX_TEMPLATE_KINDS_PER_TERM = 100;
 export const TEMPLATE_HOLE_NAME_LIMIT = 160;
 const MAX_HOLE_LABEL_LENGTH = 500;
 export const TEMPLATE_HOLE_DESCRIPTION_LIMIT = 4_000;
-const MAX_RESOURCE_KIND_LENGTH = 160;
-const MAX_IDENTIFIER_LENGTH = 500;
 const MAX_BLOCK_TEXT_LENGTH = 100_000;
 
 const isRecord = (value: unknown): value is Fields =>
@@ -22,9 +27,6 @@ const validText = (value: unknown, maximum: number, allowEmpty = false): value i
   typeof value === "string" && value.length <= maximum && (allowEmpty || value.length > 0);
 const validCanonicalText = (value: unknown, maximum: number): value is string =>
   validText(value, maximum) && value === value.trim();
-const validIdentifier = (value: unknown): value is string =>
-  validCanonicalText(value, MAX_IDENTIFIER_LENGTH);
-
 const assertStoredValue = (value: unknown, subject: string): void => {
   const seen = new WeakSet<object>();
   const walk = (step: unknown): void => {
@@ -69,7 +71,7 @@ const validTerm = (value: unknown): boolean => {
     !Array.isArray(value.kinds) ||
     value.kinds.length === 0 ||
     value.kinds.length > MAX_TEMPLATE_KINDS_PER_TERM ||
-    !value.kinds.every((kind) => validCanonicalText(kind, MAX_RESOURCE_KIND_LENGTH))
+    !value.kinds.every(isResourceSelectorKind)
   ) {
     return false;
   }
@@ -92,13 +94,7 @@ const validSetTerm = (value: unknown): boolean => {
     hasOnlyKeys(value, ["select", "refs"]) &&
     Array.isArray(value.refs) &&
     value.refs.length <= 1_000 &&
-    value.refs.every(
-      (ref) =>
-        isRecord(ref) &&
-        hasOnlyKeys(ref, ["kind", "id"]) &&
-        validCanonicalText(ref.kind, MAX_RESOURCE_KIND_LENGTH) &&
-        validIdentifier(ref.id)
-    )
+    value.refs.every(isResourceRef)
   );
 };
 
@@ -185,11 +181,11 @@ const validChosenSet = (value: unknown): boolean =>
   value.exclude.length <= MAX_TEMPLATE_TERMS_PER_SIDE &&
   value.exclude.every((term) => validTerm(term) || validSetTerm(term));
 
-export const holesOf = (
+const checkedHoles = (
   value: unknown,
   subject: string,
   chosen = false
-): readonly TemplateHole[] => {
+): readonly Fields[] => {
   if (!Array.isArray(value)) throw new Error(`templates/${subject}: holes is a list`);
   if (value.length > MAX_TEMPLATE_HOLES) {
     throw new Error(`templates/${subject}: a template has at most ${MAX_TEMPLATE_HOLES} holes`);
@@ -203,7 +199,7 @@ export const holesOf = (
     ) {
       throw new Error(`templates/${subject}: a hole has only represented fields`);
     }
-    if (hole.kind !== undefined && hole.kind !== "scope" && hole.kind !== "text") {
+    if (hole.kind !== "scope" && hole.kind !== "text") {
       throw new Error(`templates/${subject}: a hole is answered with a scope or with text`);
     }
     if (hole.kind === "text" && hole.default !== undefined) {
@@ -253,5 +249,20 @@ export const holesOf = (
     }
   }
   assertStoredValue(value, subject);
-  return value as readonly TemplateHole[];
+  return value as readonly Fields[];
 };
+
+/** A live template stores only terms its templated scope can own inline. */
+export const holesOf = (
+  value: unknown,
+  subject: string,
+  chosen = false
+): readonly TemplateHole[] =>
+  checkedHoles(value, subject, chosen) as readonly TemplateHole[];
+
+/** A history row additionally owns concrete resource selections. */
+export const versionHolesOf = (
+  value: unknown,
+  subject: string
+): readonly TemplateVersionHole[] =>
+  checkedHoles(value, subject, true) as readonly TemplateVersionHole[];

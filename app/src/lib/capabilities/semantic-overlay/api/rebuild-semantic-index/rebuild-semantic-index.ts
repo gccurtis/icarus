@@ -31,7 +31,7 @@ export const rebuildSemanticIndex = async (
       throw new Error("The active Semantic Overlay and configured embedding model use different vector spaces");
     }
     const objects = rowsOf(unit, "semanticObjects").filter(
-      (row) => row.projectId === projectId && (row.lane ?? "text") === "text"
+      (row) => row.projectId === projectId && row.lane === "text"
     );
     const staged = stageSemanticIndex(
       semanticUnitModel(model, unit),

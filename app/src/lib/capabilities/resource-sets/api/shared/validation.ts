@@ -1,4 +1,8 @@
 import { asId } from "$representation/data/behavior/core/id";
+import {
+  admitResourceRef,
+  isResourceSelectorKind
+} from "$representation/data/behavior/core/resource";
 import type { BoundTo, ResourceSet, SetTerm } from "$representation/data/types/core/resource-set";
 
 type Fields = Record<string, unknown>;
@@ -120,31 +124,32 @@ const termOf = (value: unknown, subject: string): SetTerm => {
       !Array.isArray(value.kinds) ||
       value.kinds.length === 0 ||
       value.kinds.length > MAX_KINDS_PER_TERM ||
-      !value.kinds.every((kind) => canonicalText(kind, MAX_KIND_LENGTH)) ||
+      !value.kinds.every(isResourceSelectorKind) ||
       new Set(value.kinds.map((kind) => (kind as string).toLocaleLowerCase())).size !== value.kinds.length
     ) {
       throw new Error(`resource-sets/${subject}: a kinds term lists distinct resource kinds`);
     }
-    return { select: "kinds", kinds: [...(value.kinds as string[])] };
+    return { select: "kinds", kinds: [...value.kinds] };
   }
   if (value.select === "resources") {
     if (
       Object.keys(value).length !== 2 ||
       !Array.isArray(value.refs) ||
       value.refs.length > MAX_REFS_PER_TERM ||
-      !value.refs.every(
-        (ref) =>
-          isRecord(ref) &&
-          Object.keys(ref).length === 2 &&
-          canonicalText(ref.kind, MAX_KIND_LENGTH) &&
-          canonicalText(ref.id, MAX_IDENTIFIER_LENGTH)
-      )
+      !value.refs.every((ref) => {
+        try {
+          admitResourceRef(ref);
+          return true;
+        } catch {
+          return false;
+        }
+      })
     ) {
       throw new Error(`resource-sets/${subject}: a resources term lists resource references`);
     }
     return {
       select: "resources",
-      refs: (value.refs as { kind: string; id: string }[]).map((ref) => ({ kind: ref.kind, id: ref.id }))
+      refs: value.refs.map((ref) => admitResourceRef(ref, `resource-sets/${subject}: ref`))
     };
   }
   if (value.select === "set") {

@@ -35,6 +35,7 @@ export const synthesisEnvironment = (input: SynthesisInput): AttemptEnvironment 
       : createResourceReadingSession({
           model: input.reading.model,
           projectId: input.output.projectId,
+          ...(input.signal === undefined ? {} : { signal: input.signal }),
           ...(input.output.scope === undefined ? {} : { scope: input.output.scope }),
           ...(input.reading.selection === undefined
             ? {}
@@ -53,6 +54,7 @@ export const synthesisEnvironment = (input: SynthesisInput): AttemptEnvironment 
       additionalProperties: false
     },
     execute: async (value) => {
+      input.signal?.throwIfAborted();
       const asked = queryInput(value, input.defaultTopK);
       if (!queries.includes(asked.query)) queries.push(asked.query);
       const result = await input.query({
@@ -60,6 +62,7 @@ export const synthesisEnvironment = (input: SynthesisInput): AttemptEnvironment 
         topK: asked.topK,
         ...(input.output.scope === undefined ? {} : { scope: input.output.scope })
       });
+      input.signal?.throwIfAborted();
       if (!overlayGenerations.includes(result.overlayGeneration)) {
         overlayGenerations.push(result.overlayGeneration);
       }
@@ -117,6 +120,7 @@ export const synthesisEnvironment = (input: SynthesisInput): AttemptEnvironment 
         additionalProperties: false
       },
       execute: async (value) => {
+        input.signal?.throwIfAborted();
         const asked = materialQueryInput(value, input.defaultTopK);
         if (!queries.includes(asked.query)) queries.push(asked.query);
         const result = await materialReading.queryMaterials({
@@ -125,6 +129,7 @@ export const synthesisEnvironment = (input: SynthesisInput): AttemptEnvironment 
           ...(asked.kinds === undefined ? {} : { kinds: asked.kinds }),
           ...(input.output.scope === undefined ? {} : { scope: input.output.scope })
         });
+        input.signal?.throwIfAborted();
         if (!overlayGenerations.includes(result.overlayGeneration)) {
           overlayGenerations.push(result.overlayGeneration);
         }

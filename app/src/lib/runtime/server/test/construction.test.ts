@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
-import { beforeEach, test, vi } from "vitest";
-import { initServerModel } from "$runtime/server/start.server";
+import { afterEach, beforeEach, test, vi } from "vitest";
+import {
+  closeServerModel,
+  initServerModel,
+  resetServerModelForBrowserHarness,
+  serverModel
+} from "$runtime/server/start.server";
 
 /**
  * Composition order, and what the graph names when it is built.
@@ -64,6 +69,10 @@ beforeEach(() => {
   graph.records = [];
 });
 
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
+
 test("the graph names every object it built", async () => {
   const model = await initServerModel();
 
@@ -82,4 +91,105 @@ test("closing the graph closes what it holds", async () => {
   await model.close();
 
   assert.deepEqual(graph.order, ["observability"]);
+});
+
+test("a browser reset drains terminal operation work before restoring the Store", async () => {
+  vi.stubEnv("ICARUS_BROWSER_RESET_TOKEN", "test-reset");
+  vi.stubEnv("ICARUS_BROWSER_RESET_DIRECTORY", "/tmp/icarus-browser-store-test");
+  const model = await initServerModel();
+  let finishTerminalWrite!: () => void;
+  const terminalWrite = new Promise<void>((resolve) => {
+    finishTerminalWrite = resolve;
+  });
+  let signal: AbortSignal | undefined;
+  const flight = model.operationFlights.shareDerived(
+    "output:reset",
+    "definition:1",
+    async (ownedSignal) => {
+      signal = ownedSignal;
+      await terminalWrite;
+      graph.order.push("terminal-write");
+    }
+  );
+  await Promise.resolve();
+
+  const first = resetServerModelForBrowserHarness(() => {
+    graph.order.push("restore:first");
+  });
+  const second = resetServerModelForBrowserHarness(() => {
+    graph.order.push("restore:second");
+  });
+  await Promise.resolve();
+
+  assert.equal(signal?.aborted, true);
+  assert.deepEqual(graph.order, []);
+
+  finishTerminalWrite();
+  await flight.promise;
+  await Promise.all([first, second]);
+
+  assert.deepEqual(graph.order, [
+    "terminal-write",
+    "observability",
+    "restore:first",
+    "observability",
+    "restore:second"
+  ]);
+});
+
+test("a browser reset can restore the graph after an earlier restore failed", async () => {
+  vi.stubEnv("ICARUS_BROWSER_RESET_TOKEN", "test-reset");
+  vi.stubEnv("ICARUS_BROWSER_RESET_DIRECTORY", "/tmp/icarus-browser-store-test");
+  await initServerModel();
+
+  await assert.rejects(
+    resetServerModelForBrowserHarness(() => {
+      graph.order.push("restore:failed");
+      throw new Error("seed copy failed");
+    }),
+    /seed copy failed/
+  );
+  assert.throws(serverModel, /has not been built/);
+
+  await resetServerModelForBrowserHarness(() => {
+    graph.order.push("restore:retry");
+  });
+
+  assert.ok(serverModel());
+  assert.deepEqual(graph.order, ["observability", "restore:failed", "restore:retry"]);
+});
+
+test("production shutdown callers join the drain and cannot admit new work", async () => {
+  const model = await initServerModel();
+  let finishTerminalWrite!: () => void;
+  const terminalWrite = new Promise<void>((resolve) => {
+    finishTerminalWrite = resolve;
+  });
+  let signal: AbortSignal | undefined;
+  const flight = model.operationFlights.shareDerived(
+    "output:shutdown",
+    "definition:1",
+    async (ownedSignal) => {
+      signal = ownedSignal;
+      await terminalWrite;
+      graph.order.push("terminal-write");
+    }
+  );
+  await Promise.resolve();
+
+  const first = closeServerModel();
+  const second = closeServerModel();
+  await Promise.resolve();
+
+  assert.equal(first, second);
+  assert.equal(signal?.aborted, true);
+  assert.throws(serverModel, /shutting down/);
+  assert.throws(() => model.operationFlights.beginResearch("turn:late"), /closed/);
+  assert.deepEqual(graph.order, []);
+
+  finishTerminalWrite();
+  await flight.promise;
+  await first;
+
+  assert.deepEqual(graph.order, ["terminal-write", "observability"]);
 });

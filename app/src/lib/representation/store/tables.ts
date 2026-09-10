@@ -15,6 +15,7 @@ import type {
   Resolution,
   AnchorWithin
 } from "$representation/data/types/collaboration/anchor";
+import type { CommentTarget } from "$representation/data/types/collaboration/comment";
 import type { ContentBlock, MarkLink } from "$representation/data/types/content/content-block";
 import type { VariableType, VariableValue } from "$representation/data/types/content/variable-value";
 import type { MembershipRole } from "$representation/data/types/core/access";
@@ -97,7 +98,8 @@ import type {
 } from "$representation/data/types/spreadsheets/snapshot";
 import type {
   TemplateBody,
-  TemplateHole
+  TemplateHole,
+  TemplateVersionHole
 } from "$representation/data/types/templates/template";
 import type { WorkspaceOp } from "$representation/data/types/workspace/op";
 import type { TabId, TabRecord, TabView } from "$representation/data/types/workspace/tab";
@@ -206,7 +208,6 @@ export type DocumentFields = {
   projectId: Id<"projects">;
   title: string;
   summary?: string;
-  templateId?: Id<"templates">;
   createdBy: Actor;
   updatedBy: Actor;
   updatedAt: number;
@@ -217,7 +218,6 @@ export type SlideDeckFields = {
   projectId: Id<"projects">;
   title: string;
   summary?: string;
-  templateId?: Id<"templates">;
   createdBy: Actor;
   updatedBy: Actor;
   updatedAt: number;
@@ -228,7 +228,6 @@ export type SpreadsheetFields = {
   projectId: Id<"projects">;
   title: string;
   summary?: string;
-  templateId?: Id<"templates">;
   createdBy: Actor;
   updatedBy: Actor;
   updatedAt: number;
@@ -427,7 +426,7 @@ export type TemplateVersionFields = {
   description?: string;
   tags: string[];
   body: TemplateBody;
-  holes: TemplateHole[];
+  holes: TemplateVersionHole[];
   at: number;
 };
 export type TemplateVersion = Row<"templateVersions"> & TemplateVersionFields;
@@ -599,7 +598,7 @@ export type ResearchTurn = Row<"researchTurns"> & ResearchTurnFields;
 
 export type CommentThreadFields = {
   projectId: Id<"projects">;
-  target: ResourceRef;
+  target: CommentTarget;
   within?: AnchorWithin;
   quote?: string;
   resolution?: Resolution;

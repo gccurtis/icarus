@@ -11,6 +11,7 @@
   import { cellAt, typed } from "$app-views/categories/spreadsheet-editor/procedures/cells";
   import { editableOf, factsOf, recalculating } from "$app-views/categories/spreadsheet-editor/procedures/recalculation";
   import { pickingChannel, type Picker } from "$app-views/categories/spreadsheet-editor/procedures/picking.svelte";
+  import { insertedReference, type ReferenceSpan } from "$app-views/categories/spreadsheet-editor/procedures/reference-picking";
   import { variableRegister } from "$app-views/categories/spreadsheet-editor/procedures/variables.svelte";
   import { selectedRef } from "$app-views/categories/spreadsheet-editor/procedures/selection-reading";
   import { holdsTheRuntime } from "$app-views/categories/spreadsheet-editor/procedures/effects/holds-the-runtime.svelte";
@@ -44,22 +45,27 @@
   let editingAt = $state<CellRef | undefined>(undefined);
   let draft = $state("");
   let field = $state<HTMLInputElement | null>(null);
-  let span = $state<{ from: number; to: number; anchor: string } | undefined>(undefined);
+  let span = $state<ReferenceSpan | undefined>(undefined);
   let refusal = $state<string | undefined>(undefined);
 
   const picker: Picker = {
-    insert: (address, anchor) => {
+    insert: (address, anchor, gesture) => {
       const input = field;
       if (input === null) return;
-      const previous = span;
-      const from = previous !== undefined && previous.anchor === anchor ? previous.from : (input.selectionStart ?? draft.length);
-      const to = previous !== undefined && previous.anchor === anchor ? previous.to : (input.selectionEnd ?? from);
-      draft = `${draft.slice(0, from)}${address}${draft.slice(to)}`;
-      span = { from, to: from + address.length, anchor };
-      const caret = from + address.length;
+      const from = input.selectionStart ?? draft.length;
+      const insertion = insertedReference(
+        draft,
+        address,
+        anchor,
+        gesture,
+        { from, to: input.selectionEnd ?? from },
+        span
+      );
+      draft = insertion.text;
+      span = insertion.span;
       setTimeout(() => {
         input.focus();
-        input.setSelectionRange(caret, caret);
+        input.setSelectionRange(insertion.caret, insertion.caret);
       }, 0);
     }
   };

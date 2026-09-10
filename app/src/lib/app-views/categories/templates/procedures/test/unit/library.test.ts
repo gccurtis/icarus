@@ -27,7 +27,7 @@ describe("template library view procedures", () => {
     expect(templateDetail(undefined)).toBeUndefined();
   });
 
-  it("does not send restored legacy or deleted selections to the detail read", () => {
+  it("does not send stale or deleted selections to the detail read", () => {
     expect(selectedTemplateIdIn("tp-cost", [])).toBeUndefined();
     expect(selectedTemplateIdIn("templates:gone", ["templates:1"])).toBeUndefined();
     expect(selectedTemplateIdIn("templates:1", ["templates:1"])).toBe("templates:1");

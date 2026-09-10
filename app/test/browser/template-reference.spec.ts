@@ -41,6 +41,10 @@ test("all template reference pages load and stay within the narrow viewport", as
   for (const [, route, heading] of routes) {
     await page.goto(route, { waitUntil: "networkidle" });
     await expect(page.getByRole("heading", { level: 1, name: heading })).toBeVisible();
+    await expect(page.locator("body")).not.toContainText("Project Overview's Contexts panel");
+    await expect(page.locator("body")).not.toContainText("Project Overview · Contexts panel");
+    await expect(page.locator("body")).not.toContainText("project-overview/context/contexts.svelte");
+    await expect(page.locator("body")).not.toContainText("project-overview/procedures/contexts.ts");
     expect(
       await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth),
       `${route} should not create page-level horizontal overflow`

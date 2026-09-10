@@ -17,19 +17,26 @@ export const SCOPED_AUTHORITY: ArchitecturePillar = {
     "Administrative or generic storage operations are not exported to an ordinary browser capability surface."
   ],
   example: {
-    title: "Generic store create accepts a table after throwing scope away",
-    source: "capabilities/store/api/create/create.ts",
-    shape: `await requireScope();
-const { table, fields } = validateCreate(input);
-return serverModel().store.create(table, fields);`,
+    title: "Starting a comment binds the target to the resolved project",
+    source: "capabilities/comments/api/start-thread/start-thread.ts",
+    shape: `const scope = await requireScope();
+const asked = validateStartThread(input);
+return serverModel().store.transaction((unit) => {
+  const resources = unit.read(table);
+  if (!resources.rows.some((row) =>
+    row._id === asked.target.id && row.projectId === scope.projectId
+  )) throw new Error("not found");
+  const threadId = unit.create("commentThreads", fields);
+  unit.create("comments", { threadId, ...opening });
+});`,
     observed:
-      "The procedure correctly opens with the project/user gate, but it discards the result. Validation proves that table and fields have a store-compatible shape; it does not prove that the target row belongs to this project or that a subject capability grants this write.",
+      "The browser chooses a comment target and current anchor shape, while the capability resolves the caller, proves the target belongs to that project, and creates the thread and opening remark in one transaction.",
     antagonism:
-      "The client is no longer choosing a domain option inside a contract. It is supplying storage vocabulary directly, and the server's resolved authority has no effect on where the write lands.",
+      "Passing an arbitrary table or persistence path would escape this contract: shape validation alone cannot grant authority over a row.",
     repair:
-      "Move ordinary writes to subject capabilities such as Comments, Documents, or Slide Decks. Those procedures derive project ownership and storage targets, validate the domain intent, and call Store through a scoped/transactional method. Delete the generic browser mutators rather than retaining a legacy adapter.",
+      "Keep browser operations named by subject intent. Derive storage coordinates only after scoped ownership and exact current-schema admission, and group one intent's writes transactionally.",
     nuance:
-      "A client-selected kind is not inherently wrong. A generic project key/value capability could be safe if the server prefixes the namespace from scope, strictly allowlists keys and value schemas, prevents cross-project addressing, and intentionally grants that exact operation. Likewise an internal admin endpoint can expose broader storage controls under a distinct authority model. The current create/update/remove procedures satisfy none of those narrower contracts."
+      "A client-selected kind is not inherently wrong. It is safe when the capability defines the closed kinds, binds each one to an authorized subject, and never lets the input become an unchecked storage instruction."
   },
   equivalence: {
     rule: "Untrusted input determines more authority or storage reach than the named capability contract grants.",
@@ -73,7 +80,7 @@ return serverModel().store.create(table, fields);`,
       detects: "Bare await requireScope(), unused scope variables, and explicit void/no-op uses.",
       implementation:
         "Resolve each binding produced by the first requireScope call and require a meaningful subsequent AST use; declarations and void, no-op, or direct-return references do not count.",
-      current: "Enforced; the three generic Store mutators that discard scope are baselined.",
+      current: "Enforced and clean; browser commands consume scope in subject ownership decisions.",
       limit: "Binding flow cannot prove that the eventual sink enforces ownership; AUTH-04 must attempt cross-project targets in executable contracts."
     },
     {
@@ -86,7 +93,7 @@ return serverModel().store.create(table, fields);`,
       detects: "Store type imports and table/path properties typed as TableName, StorePath, or string.",
       implementation:
         "Scan the types/ home of each browser-reachable capability for Store imports and raw persistence-coordinate properties. A future internal-admin surface must live behind a separately catalogued authority boundary.",
-      current: "Enforced; four browser-reachable Store input types exposing coordinates are baselined.",
+      current: "Enforced and clean; browser capability inputs expose domain intent rather than Store coordinates.",
       limit: "A field named path may be legitimate domain input; a deliberately narrow exception needs domain context rather than a global exemption."
     },
     {
@@ -124,15 +131,13 @@ return serverModel().store.create(table, fields);`,
       detects: "Generic create/update/remove exports and typed aliases that expose raw Store operations.",
       implementation:
         "Forbid generic mutators in browser-reachable capability indexes. Permit only a separately named internal-admin tree with an explicit non-project authority mechanism.",
-      current: "Enforced; the three generic browser Store mutations are baselined.",
+      current: "Enforced and clean; the generic browser Store capability has been removed.",
       limit: "Do not ban domain commands named create or remove; this targets operations generic over persistence subjects."
     }
   ],
   rollout: [
-    "Move current comment callers from generic Store mutations to the Comments capability.",
-    "Delete browser-reachable raw create/update/remove inputs rather than preserving a compatibility layer.",
     "Add executable two-project ownership contracts to each baselined mutating capability family.",
     "Bind every resolved scope value into ownership lookup or a scoped model call before removing its debt record."
   ],
-  relatedFindings: ["ARCH-01", "ARCH-09"]
+  relatedFindings: ["ARCH-09"]
 };

@@ -1,47 +1,20 @@
-import type { Actor } from "$representation/data/types/core/actor";
-import type { TextBlock } from "$representation/data/types/content/content-block";
-import type {
-  Comment,
-  CommentThread,
-  TableName,
-  TableRow,
-  User
-} from "$representation/store/tables";
-import { mint } from "$app-views/categories/slide-deck-editor/procedures/ids";
-import { readStore, readUsername } from "$model/client/workspace-state";
+import {
+  readComments,
+  type CommentPersonRecord,
+  type CommentRemarkRecord,
+  type CommentThreadRecord
+} from "$capabilities/comments/index.remote";
 
-export type { Comment, CommentThread, User } from "$representation/store/tables";
+export type Comment = CommentRemarkRecord;
+export type CommentThread = CommentThreadRecord;
+export type User = CommentPersonRecord;
 
-export type TableQuery = ReturnType<typeof readStore>;
-
-export const tableQuery = (table: TableName): TableQuery => readStore(table);
-
-export const rowsOf = <T extends TableName>(
-  query: TableQuery,
-  table: T
-): readonly TableRow<T>[] => {
-  if (!query.ready) return [];
-
-  const found = query.current;
-  return found?.kind === "table" && found.table === table
-    ? (found.rows as unknown as readonly TableRow<T>[])
-    : [];
-};
-
-export const rowsIn = <T extends TableName>(table: T): readonly TableRow<T>[] =>
-  rowsOf(readStore(table), table);
-
-export const refreshAll = (...queries: readonly TableQuery[]): Promise<void> =>
-  Promise.all(queries.map((query) => query.refresh())).then(() => undefined);
-
-export const viewerId = (): string => {
-  const answer = readUsername();
-  if (!answer.ready) return "";
-
-  const name = answer.current;
-  return rowsIn("users").find((user) => user.displayName === name)?._id ?? "";
-};
-
+export type CommentsQuery = ReturnType<typeof readComments>;
+export const commentsQuery = (): CommentsQuery => readComments();
+export const threadsIn = (query: CommentsQuery): readonly CommentThread[] => query.current?.threads ?? [];
+export const remarksIn = (query: CommentsQuery): readonly Comment[] => query.current?.remarks ?? [];
+export const peopleIn = (query: CommentsQuery): readonly User[] => query.current?.people ?? [];
+export const viewerId = (query: CommentsQuery): string => query.current?.viewerId ?? "";
 export const threadOf = (
   rows: readonly CommentThread[],
   id: string
@@ -54,64 +27,3 @@ export const remarksOf = (
   rows
     .filter((remark) => remark.threadId === threadId)
     .sort((a, b) => a._creationTime - b._creationTime);
-
-export const nameOf = (users: readonly User[], actor: Actor | undefined): string => {
-  if (actor === undefined) return "Someone";
-  if (actor.kind !== "user") return "An agent";
-
-  return users.find((user) => user._id === actor.userId)?.displayName ?? "Someone";
-};
-
-export const userIdOf = (actor: Actor | undefined): string | undefined =>
-  actor?.kind === "user" ? actor.userId : undefined;
-
-const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-
-export const ago = (at: number, now: number): string => {
-  const seconds = Math.max(0, Math.round((now - at) / 1000));
-  if (seconds < 60) return "just now";
-
-  const minutes = Math.round(seconds / 60);
-  if (minutes < 60) return `${minutes}m`;
-
-  const hours = Math.round(minutes / 60);
-  if (hours < 24) return `${hours}h`;
-
-  const days = Math.round(hours / 24);
-  if (days === 1) return "yesterday";
-  if (days < 7) return DAYS[new Date(at).getDay()];
-
-  return new Date(at).toLocaleDateString(undefined, { month: "short", day: "numeric" });
-};
-
-export const textOf = (remark: Comment): string =>
-  remark.blocks
-    .map((block) => ("display" in block ? block.display : ""))
-    .filter((text) => text.length > 0)
-    .join("\n");
-
-export const remarkBlock = (text: string): TextBlock => ({
-  id: mint("block"),
-  type: "text",
-  variant: "paragraph",
-  atoms: [{ id: mint("atom"), kind: "literal", text }],
-  display: text,
-  marks: []
-});
-
-export const replyFields = (
-  thread: CommentThread,
-  text: string,
-  by: string
-): Omit<Comment, "_id" | "_creationTime"> => ({
-  projectId: thread.projectId,
-  threadId: thread._id,
-  blocks: [remarkBlock(text)],
-  mentions: [],
-  author: { kind: "user", userId: by as User["_id"] }
-});
-
-export const belongsToDeck = (
-  thread: CommentThread,
-  deckId: string | undefined
-): boolean => thread.target.kind === "slides" && thread.target.id === deckId;

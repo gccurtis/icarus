@@ -1,7 +1,11 @@
 <script lang="ts">
-  import type { Component } from "svelte";
-
   import { workspaceState } from "$model/client/workspace-state";
+  import { loadCentre } from "$surfaces/content/effects/loads-centre.svelte";
+  import { centreFailureFor } from "$surfaces/content/procedures/centre-failure-for";
+  import {
+    ContentState,
+    type CentreLoader
+  } from "$surfaces/content/shared/content-state.svelte";
 
   /**
    * The work surface — the generous plane, and what the active tab holds.
@@ -24,10 +28,11 @@
    */
   const CENTRES = import.meta.glob("$lib/app-views/categories/*/content/*.svelte") as Record<
     string,
-    () => Promise<{ default: Component }>
+    CentreLoader
   >;
 
   const view = workspaceState();
+  const state = new ContentState();
 
   const path = $derived(
     `/src/lib/app-views/categories/${view.active.content.replace(".", "/content/")}.svelte`
@@ -35,29 +40,16 @@
 
   const load = $derived(CENTRES[path]);
 
-  let Centre = $state<Component | undefined>(undefined);
-  let missing = $state<string | undefined>(undefined);
-  let broke = $state<string | undefined>(undefined);
+  // A tab switch rekeys the centre before its new chunk arrives. A component is
+  // visible only beside the path that produced it.
+  const CurrentCentre = $derived(state.loadedPath === path ? state.centre : undefined);
+  const CurrentMissing = $derived(state.missing === path ? state.missing : undefined);
+  const CurrentFailure = $derived(centreFailureFor(state.failure, path));
 
-  $effect(() => {
-    const loader = load;
-    Centre = undefined;
-    broke = undefined;
-    missing = loader === undefined ? path : undefined;
-    if (!loader) return;
-
-    let current = true;
-    void loader().then(
-      (module) => {
-        if (current) Centre = module.default;
-      },
-      (reason: unknown) => {
-        if (current) broke = String(reason);
-      }
-    );
-    return () => {
-      current = false;
-    };
+  loadCentre({
+    state,
+    path: () => path,
+    loader: () => load
   });
 </script>
 
@@ -66,12 +58,12 @@
   same kind remounts instead of reusing one component's state for both. Two open
   documents are not one document.
 -->
-{#if missing}
-  <p class="text-body-sm text-danger-text p-4 font-mono">{missing}</p>
-{:else if broke}
-  <p class="text-body-sm text-danger-text p-4 font-mono">{path}<br />{broke}</p>
-{:else if Centre}
+{#if CurrentMissing}
+  <p class="text-body-sm text-danger-text p-4 font-mono">{CurrentMissing}</p>
+{:else if CurrentFailure}
+  <p class="text-body-sm text-danger-text p-4 font-mono">{path}<br />{CurrentFailure.reason}</p>
+{:else if CurrentCentre}
   {#key view.activeId + view.active.content}
-    <Centre />
+    <CurrentCentre />
   {/key}
 {/if}

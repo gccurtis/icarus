@@ -1,34 +1,21 @@
-import { rowsIn } from "$app-views/categories/project-overview/procedures/rows";
-import { readUsername } from "$model/client/workspace-state";
+import type { ReadProjectOverviewResult } from "$capabilities/project/index.remote";
 
 /**
  * Who is asking, and about what.
  *
- * **Both of these are standing in for the scope the server already resolves.**
- * `requireScope` maps a session cookie and a project token to a `userId` and a
- * `projectId` on every capability call — but the store capability is a path read
- * with no scope in its signature, so nothing carries either answer back. Until a
- * capability does, the board works them out from what it can see.
- *
- * The route gives the project *token*, not its id: `/app/dev-project` names the
- * handle a client carries, and `development.projectId` is what it resolves to.
- * So the token is no use here, and neither is anything else the client holds.
+ * The server resolves both identities from the current session and project route,
+ * then publishes them in the current overview projection. This module only reads
+ * that admitted snapshot; it does not initiate another remote query.
  */
 
 /** The project this store is about. It holds exactly one. */
-export const projectId = (): string => rowsIn("projects")[0]?._id ?? "";
+export const projectId = (overview: ReadProjectOverviewResult | undefined): string =>
+  overview?.projectId ?? "";
 
 /**
- * The signed-in person, by the name the development capability publishes.
+ * The signed-in person's exact scoped id.
  *
- * A join on the display name rather than the id, because `username` is the only
- * thing about the session that reaches the browser today. Two people with one
- * name would break it, which is one more reason this is temporary.
+ * This is the exact id admitted by the scoped overview capability.
  */
-export const viewerId = (): string => {
-  const answer = readUsername();
-  if (!answer.ready) return "";
-
-  const name = answer.current;
-  return rowsIn("users").find((user) => user.displayName === name)?._id ?? "";
-};
+export const viewerId = (overview: ReadProjectOverviewResult | undefined): string =>
+  overview?.viewerId ?? "";

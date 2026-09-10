@@ -42,7 +42,7 @@ test("orientation and margins are single field writes", () => {
   assert.deepEqual(marginOps(wide, "left", 1.25), []);
 });
 
-test("page numbers use a compatibility footer host when the representation needs one", () => {
+test("page numbers use represented bottom-page furniture when none exists", () => {
   const numbered = applyOps(BARE, pageNumberOps(BARE, "center"));
   assert.equal(numbered.footer?.pageNumber?.position, "center");
   assert.equal(pageNumberOf(numbered)?.position, "center");
@@ -52,7 +52,7 @@ test("page numbers use a compatibility footer host when the representation needs
   assert.equal(none.footer?.rows.length, 1, "the footer stays");
 });
 
-test("turning numbering off clears every legacy compatibility host", () => {
+test("turning numbering off clears numbering from both represented edges", () => {
   const before: DocumentBody = {
     rows: [],
     header: {

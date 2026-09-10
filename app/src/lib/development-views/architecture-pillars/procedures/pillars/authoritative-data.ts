@@ -124,12 +124,12 @@ sheet view → renders constants, not SpreadsheetRuntime.body`,
       status: "Enforced",
       wave: 1,
       mechanism: "Production AST + source-path vocabulary",
-      guarantee: "Production executable and type syntax contains no explicit legacy, compatibility, deprecated, or migration path.",
-      detects: "Legacy-prefixed types and constants, compatibility or migration source paths, and executable fallback discriminator strings.",
+      guarantee: "Production executable and type syntax contains no explicit legacy, compatibility, deprecated, or migration path, registered retired fields cannot return under neutral names, registered required current fields cannot become optional or be repaired when absent, and represented resource kinds and references stay closed and nominal.",
+      detects: "Legacy-prefixed types and constants, compatibility or migration source paths, executable fallback discriminator strings, retired members on current schema types, optional or missing registered required fields, defaults applied to path-scoped current reads, an open ResourceKind, a bare external-file reference alias, and ResourceRef kind/id namespace drift.",
       implementation:
-        "Parse identifiers and string literals from production TypeScript and Svelte scripts, and inspect production source-path components. Comments and documentation do not count.",
-      current: "Enforced; document leading, slide bodies, and comment anchors now accept only their current represented shapes.",
-      limit: "Neutral names can disguise backward reading, so review must still reject old-shape support rather than merely renaming it."
+        "Parse identifiers, string literals, and registered current reads from production TypeScript, Svelte scripts, and top-level operational scripts; inspect source-path components; and compare current schema types with explicit retired-member, required-member, and path-plus-read registries. Comments and documentation do not count.",
+      current: "Enforced; document leaders, template scopes and prompts, durable refresh jobs, Agents rows, spreadsheet snapshots and formulas, client storage, and the closed ResourceKind/ResourceRef contract now reject incomplete or mismatched current shapes instead of repairing them.",
+      limit: "A retired neutral field must be added to the explicit registry when its schema is removed; review still rejects behavioral fallbacks that disguise compatibility without a known member."
     }
   ],
   rollout: [

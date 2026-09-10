@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { asId } from "$representation/data/behavior/core/id";
 import { projectResource } from "$representation/data/behavior/semantic/projection/project-resource";
 import type { TextBlock } from "$representation/data/types/content/content-block";
 import type { SlideDeckBody } from "$representation/data/types/slide-decks/body";
@@ -16,7 +17,7 @@ describe("semantic resource text projection", () => {
   it("flattens document content while retaining exact block locators", () => {
     const projection = projectResource({
       kind: "document",
-      ref: { kind: "document", id: "people" },
+      ref: { kind: "document", id: asId<"documents">("documents:people") },
       revision: 7,
       title: "People",
       body: {
@@ -112,7 +113,7 @@ describe("semantic resource text projection", () => {
 
     const projection = projectResource({
       kind: "slides",
-      ref: { kind: "slides", id: "brief" },
+      ref: { kind: "slides", id: asId<"slideDecks">("slideDecks:brief") },
       revision: 2,
       title: "Brief",
       body

@@ -51,7 +51,18 @@ const model = vi.hoisted(() => ({
         row._id === id ? { ...(value as Row), _id: id } : row
       );
     },
-    remove: (path: string) => model.calls.push(`remove ${path}`),
+    remove: (path: string) => {
+      model.calls.push(`remove ${path}`);
+      if (path.startsWith("commentThreads.")) {
+        const [, id, field] = path.split(".");
+        model.threads = model.threads.map((held) => {
+          if (held._id !== id) return held;
+          const { [field]: removed, ...row } = held;
+          void removed;
+          return row as Row;
+        });
+      }
+    },
     transaction: <T>(work: (unit: StoreUnitOfWork) => T): T =>
       work(model.store as unknown as StoreUnitOfWork)
   }
@@ -206,6 +217,31 @@ test("accepted text edits move structural comment anchors with their cited text"
   });
 });
 
+test("an edit detaches a comment whose last live span disappeared", async () => {
+  leaderAt(0);
+  model.threads.push({
+    _id: "commentThreads:1",
+    projectId: "p",
+    target: { kind: "document", id: "documents:1" },
+    within: {
+      kind: "text",
+      spans: [{
+        blockId: "#removed",
+        from: { atom: "#gone", offset: 0 },
+        to: { atom: "#gone", offset: 3 }
+      }]
+    }
+  });
+
+  await submitDocumentChanges(typing(0, 0, "A "));
+
+  assert.equal(Object.hasOwn(model.threads[0], "within"), false);
+  assert.equal(
+    model.calls.includes("remove commentThreads.commentThreads:1.within"),
+    true
+  );
+});
+
 test("a change set authored against an older revision is refused when the changes since cannot be read", async () => {
   leaderAt(4);
 
@@ -322,7 +358,26 @@ test("another project's leader is not this one's", async () => {
   assert.equal(await readDocumentBody({ resourceId: "documents:1" }), null);
 });
 
+test("a document without its canonical leader snapshot is refused rather than bootstrapped", async () => {
+  const refused = await submitDocumentChanges(
+    sending(0, [
+      { op: "insert", target: "row", path: "rows", ids: ["#r1"], after: null, values: [row] }
+    ])
+  );
+
+  assert.deepEqual(refused, {
+    accepted: false,
+    reason: "unresolved",
+    revision: 0,
+    detail: "no body is stored for documents:1"
+  });
+  assert.equal(model.snapshots.length, 0);
+  assert.equal(model.changeSets.length, 0);
+  assert.equal(model.calls.some((call) => call.startsWith("update documents.")), false);
+});
+
 test("an accepted change set marks the document updated", async () => {
+  leaderAt(0);
   await submitDocumentChanges(
     sending(0, [
       { op: "insert", target: "row", path: "rows", ids: ["#r1"], after: null, values: [row] }

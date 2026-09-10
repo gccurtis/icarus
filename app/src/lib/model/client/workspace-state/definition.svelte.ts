@@ -1,7 +1,6 @@
 import type { WorkspaceOp } from "$representation/data/types/workspace/op";
 import type { ContextView } from "$representation/data/types/workspace/views";
 import type { Category, ContentView } from "$representation/data/types/workspace/categories";
-import { TABLE_NAMES, type TableName } from "$representation/store/tables";
 import type {
   Frame,
   Inspected,
@@ -25,6 +24,7 @@ import { spreadsheetRuntime } from "$model/client/workspace-state/methods/spread
 import { flush } from "$model/client/workspace-state/methods/flush";
 import { inspect } from "$model/client/workspace-state/methods/inspect";
 import { open } from "$model/client/workspace-state/methods/open";
+import { pendingFlight } from "$model/client/workspace-state/methods/pending-flight";
 import { redo } from "$model/client/workspace-state/methods/redo";
 import { reopenClosed } from "$model/client/workspace-state/methods/reopen-closed";
 import { resize } from "$model/client/workspace-state/methods/resize";
@@ -40,51 +40,12 @@ import { undo } from "$model/client/workspace-state/methods/undo";
 import { zoom } from "$model/client/workspace-state/methods/zoom";
 import type {
   SingleFlightKeyPart,
-  StoreQuery,
-  StoreReader,
   Tab,
-  UsernameQuery,
-  UsernameReader,
   WorkspaceStateModel,
   WorkspaceSync
 } from "$model/client/workspace-state/types";
 
 export type Thresholds = { readonly afterOps: number; readonly afterMs: number };
-
-class WorkspaceQueries {
-  readonly #held = new Map<TableName, StoreQuery>();
-  #username: UsernameQuery | undefined;
-
-  constructor(reader: StoreReader | undefined, usernameReader: UsernameReader | undefined) {
-    this.#username = usernameReader?.();
-    if (reader === undefined) return;
-
-    // Construct every proxy while the persistent /app layout is initializing.
-    // Queries remain lazy — no table is fetched until a consumer reads it — but
-    // their reactive resources can never inherit a short-lived view branch.
-    for (const table of TABLE_NAMES) this.#held.set(table, reader({ path: table }));
-  }
-
-  read(table: TableName): StoreQuery {
-    const query = this.#held.get(table);
-    if (query === undefined) {
-      throw new Error("Store queries require the client workspace owner.");
-    }
-    return query;
-  }
-
-  username(): UsernameQuery {
-    if (this.#username === undefined) {
-      throw new Error("Session queries require the client workspace owner.");
-    }
-    return this.#username;
-  }
-
-  release(): void {
-    this.#held.clear();
-    this.#username = undefined;
-  }
-}
 
 export class WorkspaceStateData {
   log = $state<WorkspaceOp[]>([]);
@@ -147,7 +108,6 @@ export class WorkspaceStateData {
 
 export class WorkspaceState implements WorkspaceStateModel {
   readonly #state: WorkspaceStateData;
-  readonly #queries: WorkspaceQueries;
 
   constructor(
     project: string,
@@ -156,11 +116,8 @@ export class WorkspaceState implements WorkspaceStateModel {
     thresholds: Thresholds,
     documents?: DocumentRuntimesModel,
     decks?: SlideDeckRuntimesModel,
-    sheets?: SpreadsheetRuntimesModel,
-    storeReader?: StoreReader,
-    usernameReader?: UsernameReader
+    sheets?: SpreadsheetRuntimesModel
   ) {
-    this.#queries = new WorkspaceQueries(storeReader, usernameReader);
     this.#state = new WorkspaceStateData(project, tabs, views, thresholds, documents, decks, sheets);
   }
 
@@ -279,6 +236,12 @@ export class WorkspaceState implements WorkspaceStateModel {
     return singleFlight(this.#state, key, run);
   }
 
+  pendingFlight<Result>(
+    key: readonly SingleFlightKeyPart[]
+  ): Promise<Result> | undefined {
+    return pendingFlight(this.#state, key);
+  }
+
   documentRuntime(resourceId: string): DocumentRuntime {
     return documentRuntime(this.#state, resourceId);
   }
@@ -299,14 +262,6 @@ export class WorkspaceState implements WorkspaceStateModel {
     keepDraft(this.#state, key, text);
   }
 
-  readStore(table: TableName): StoreQuery {
-    return this.#queries.read(table);
-  }
-
-  readUsername(): UsernameQuery {
-    return this.#queries.username();
-  }
-
   undo(): void {
     undo(this.#state);
   }
@@ -324,6 +279,6 @@ export class WorkspaceState implements WorkspaceStateModel {
   }
 
   release(): void {
-    this.#queries.release();
+    // Resource-specific runtimes are released by the client model that owns them.
   }
 }

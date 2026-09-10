@@ -5,6 +5,10 @@ Lives at `procedures/procedures.md`.
 | File | Holds |
 | --- | --- |
 | [`category-entries.ts`](category-entries.ts) | `CATEGORY_ENTRIES`, `labelOf` — what an opened tab is called and what it looks like |
+| [`read-agents.ts`](read-agents.ts) | `tabAgentNames` — starts the component-owned agent name query |
+| [`read-resources.ts`](read-resources.ts) | `tabResourceNames` — starts the component-owned represented-resource name query |
+| [`read-template-stages.ts`](read-template-stages.ts) | `tabTemplateStageNames` — starts the component-owned exact working-copy identity query |
+| [`resource-name.ts`](resource-name.ts) | `nameOf` — a pure name projection over component-owned resource, stage and agent snapshots |
 
 ## Why display copy is here and not in the model
 
@@ -32,8 +36,10 @@ strip exists to prevent. So `label` takes the tab: New Tab ignores it, and the
 five categories keyed by a resource — an analysis, a research thread, a document, a
 deck, a spreadsheet — answer with what they hold.
 
-What that resource is *called* is a question about data rather than about copy,
-so it is a store read rather than something resolved here.
+What that resource is *called* is a question about data rather than about copy.
+The component owns the scoped capability reads for its lifetime and hands their
+snapshots to this pure projection; a label calculation never creates a remote
+query as a side effect.
 
 ## Why three states and not two
 

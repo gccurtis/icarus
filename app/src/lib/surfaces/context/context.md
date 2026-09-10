@@ -83,11 +83,12 @@ alike.
 
 | Concern | Document | What it owns |
 | --- | --- | --- |
-| Procedures | [procedures.md](procedures/procedures.md) | What each context view is called and which icon stands for it |
+| Procedures | [procedures.md](procedures/procedures.md) | Context display vocabulary and the dynamic-view load lifecycle |
 
-No components directory. The rail and the content half are twenty lines of
-markup between them, and a context id names its own file — so there is nothing
-here for a component to hold that the panel does not already say in one place.
+[`shared/context-state.svelte.ts`](shared/context-state.svelte.ts) owns the
+resolved component and the path which produced it for exactly one panel
+mounting. The rail and the content half remain in the entry component; their
+synchronization does not.
 
 ## Rendered States
 
@@ -95,10 +96,10 @@ here for a component to hold that the panel does not already say in one place.
 | --- | --- | --- | --- |
 | Initial | Always | The rail, one entry selected, and that entry's content | — |
 | Collapsed | A drag inside `COLLAPSE_BELOW` | The rail alone, nothing selected-looking | Click any rail icon |
-| Loading | `None` | — | — |
+| Loading | A context chunk is in flight | The previous context is retired; the content half waits | — |
 | Empty | `None` | — | — |
 | Stale | `None` | — | — |
-| Failure | `None` | — | — |
+| Failure | The context module throws while evaluating | Its path and the failure reason | Repair the module and reload |
 | Denied | `None` | — | — |
 
 No unknown-context state. The model's `context` getter answers with a view the

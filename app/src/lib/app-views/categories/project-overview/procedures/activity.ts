@@ -1,5 +1,5 @@
-import { actorName } from "$app-views/categories/project-overview/procedures/actor-name";
-import { rowsIn, since } from "$app-views/categories/project-overview/procedures/rows";
+import type { ReadProjectHistoryResult } from "$capabilities/project/index.remote";
+import { since } from "$app-views/categories/project-overview/procedures/rows";
 
 export type Event = {
   readonly id: string;
@@ -14,19 +14,18 @@ export type Event = {
  *
  * `actorLabel` is stored beside the actor and is what this reads: an event is a
  * record of a moment, so the name it carries is the one that was true then. A
- * renamed person does not rewrite what the feed says they did — which is why
- * this one place does not go through `actorName`, and falls back to it only
- * where an older row was written without a label.
+ * renamed person does not rewrite what the feed says they did. Current activity
+ * rows require the label; this projection neither repairs nor substitutes it.
  */
-export const activity = (projectId: string, now: number): readonly Event[] =>
-  rowsIn("activity")
-    .filter((event) => event.projectId === projectId)
-    .slice()
-    .sort((a, b) => b._creationTime - a._creationTime)
+export const activity = (
+  now: number,
+  history: ReadProjectHistoryResult | undefined
+): readonly Event[] =>
+  (history?.entries ?? [])
     .map((event) => ({
-      id: event._id,
-      at: since(event._creationTime, now),
-      actor: event.actorLabel === "" ? actorName(event.actor) : event.actorLabel,
+      id: event.id,
+      at: since(event.at, now),
+      actor: event.actorLabel,
       verb: event.verb,
       subject: event.target.label
     }));

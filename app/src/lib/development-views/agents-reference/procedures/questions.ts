@@ -4,15 +4,15 @@ export const QUESTIONS: readonly Question[] = [
   {
     n: 1,
     page: "context",
-    title: "A chat opens as a research thread, keyed by the persona thread",
+    title: "A persona chat opens as a research thread",
     matters:
-      "A chat is started from a persona and opens in its own research tab. The research thread surface is still a static mock, so the tab opens but does not yet read the thread it was opened on.",
+      "A chat started from a persona is a current researchThreads record and opens in its own research tab. The research capability owns its thread projection and conversation.",
     options: [
-      "Open research.thread with the personaThreads id as the tab's resource, and wire the research surface to read it next.",
+      "Open research.thread with the researchThreads id as the tab's resource.",
       "Give Agents its own chat surface now and leave research alone."
     ],
     recommendation:
-      "The first, and it is what is built. The thread rows exist and the tab is titled from them; the research surface is the one place left to teach."
+      "The first, and it is what is built. The research projection supplies the tab and surface with the same scoped thread."
   },
   {
     n: 2,

@@ -31,6 +31,12 @@ chat is visible when it belongs to the scoped project and names a visible
 persona. A row that fails those shape checks is left out rather than crashing
 the list.
 
+That admission is strict for the current representation. Persona definitions
+and tools, task origins and run lists, and automation triggers, tools, and fire
+counts must be present. The capability quarantines an incomplete stored row; it
+never turns an absent required field into an empty definition, tool list, plan,
+or counter.
+
 ## A task is a run
 
 There is no separate run table. A task starts running the moment it is created

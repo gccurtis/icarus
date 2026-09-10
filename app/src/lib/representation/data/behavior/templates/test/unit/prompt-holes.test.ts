@@ -135,7 +135,7 @@ describe("text holes", () => {
 describe("saving a template again", () => {
   it("takes the name from the thing and leaves a description alone", () => {
     const known: TemplateHole[] = [
-      { name: "sources", label: "sources", description: "Old words" }
+      { name: "sources", label: "sources", kind: "scope", description: "Old words" }
     ];
     const fresh = promptHolesOf(body([prompt("b", { hole: { name: "sources" } })])).map(
       (draft) => draft.hole

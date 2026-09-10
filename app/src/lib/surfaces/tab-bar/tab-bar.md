@@ -52,7 +52,7 @@ It does not own:
 
 | Capability | Usage |
 | --- | --- |
-| `$capabilities/store` | `nameOf` — what the thing a tab holds is called |
+| `$capabilities/agents`, `$capabilities/project-resources`, `$capabilities/templates` | Component-owned subject queries whose snapshots are passed to `procedures/resource-name.ts`; the template query is the exact working-copy identity projection, not the listable resource index |
 
 ### Composed views
 
@@ -132,6 +132,10 @@ describes what is actually implemented.
   an underline on the shared edge and with `aria-current`.
 - **The category map is total.** `Record<Category, CategoryEntry>` means a new
   category fails to compile until it has a label and an icon.
+- **A template working copy is named by stage membership.** Its scratch document
+  or deck is intentionally absent from the listable project-resource index, so
+  the bar consumes the separate exact stage identity projection once and never
+  treats a missing resource name as evidence that something is a stage.
 
 ## Supporting Documents
 

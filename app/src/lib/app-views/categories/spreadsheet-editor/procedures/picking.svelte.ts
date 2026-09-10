@@ -1,6 +1,6 @@
 import { getContext, setContext } from "svelte";
 
-export type Picker = { readonly insert: (address: string, anchor: string) => void };
+export type Picker = { readonly insert: (address: string, anchor: string, gesture: number) => void };
 
 export type Draft = { readonly at: string; readonly text: string };
 
@@ -10,7 +10,8 @@ export type PickingChannel = {
   readonly arm: (picker: Picker) => void;
   readonly disarm: (picker: Picker) => void;
   readonly armed: boolean;
-  readonly pick: (address: string, anchor: string) => boolean;
+  readonly session: number;
+  readonly pick: (address: string, anchor: string, gesture: number) => boolean;
   readonly drafting: (next: Draft | undefined) => void;
   readonly drafted: Draft | undefined;
   readonly beginWriting: (seed: string) => void;
@@ -36,23 +37,35 @@ export type PickingChannel = {
  */
 export const createPickingChannel = (): PickingChannel => {
   let picker: Picker | undefined = undefined;
+  let armed = $state(false);
+  let session = $state(0);
+  let nextSession = 0;
   let draft = $state<Draft | undefined>(undefined);
   let opening = $state<Writing | undefined>(undefined);
   let closing = $state<number | undefined>(undefined);
 
   return {
     arm: (next) => {
+      if (picker === next) return;
       picker = next;
+      armed = true;
+      nextSession += 1;
+      session = nextSession;
     },
     disarm: (next) => {
-      if (picker === next) picker = undefined;
+      if (picker !== next) return;
+      picker = undefined;
+      armed = false;
     },
     get armed(): boolean {
-      return picker !== undefined;
+      return armed;
     },
-    pick: (address, anchor) => {
+    get session(): number {
+      return session;
+    },
+    pick: (address, anchor, gesture) => {
       if (picker === undefined) return false;
-      picker.insert(address, anchor);
+      picker.insert(address, anchor, gesture);
       return true;
     },
     drafting: (next) => {

@@ -5,12 +5,13 @@ import { executableContract } from "../shared/contracts.mjs";
 import { capabilities } from "../shared/trees.mjs";
 
 const isRevisionSubject = (tree, capability) => {
-  const text = tree
+  const submissions = tree
     .under(join(capability.path, "api"))
-    .filter((path) => path.endsWith(".ts"))
-    .map((path) => tree.read(path))
-    .join("\n");
-  return /Snapshots/.test(text) && /ChangeSets/.test(text) && /revision/i.test(text);
+    .filter((path) => /\/api\/submit-[^/]+-changes\/submit-[^/]+-changes\.ts$/.test(path));
+  return submissions.some((path) => {
+    const text = tree.read(path);
+    return /Snapshots/.test(text) && /ChangeSets/.test(text) && /revision/i.test(text);
+  });
 };
 
 export default check({
@@ -18,7 +19,7 @@ export default check({
   pillar: "atomic-invariants",
   finding: "ARCH-02",
   name: "revision-state-advances-together",
-  says: "Every revision-bearing subject has an atomicity contract covering snapshot, change set, leader, and revision metadata.",
+  says: "Every resource-revision submission capability has an atomicity contract covering snapshot, change set, leader, and revision metadata.",
   run(tree) {
     const found = [];
     for (const capability of capabilities(tree).filter((candidate) => isRevisionSubject(tree, candidate))) {

@@ -5,7 +5,7 @@ type Row = Record<string, unknown> & { _id: string; _creationTime: number };
 
 const model = vi.hoisted(() => ({
   calls: [] as string[],
-  scope: { projectId: "p", userId: "u", username: "Uma" },
+  scope: { projectId: "projects:p", userId: "users:u", username: "Uma" },
   tables: {} as Record<string, Row[]>,
   store: {
     create: (table: string, fields: unknown) => {
@@ -96,12 +96,12 @@ const user = (userId: string) => ({ kind: "user", userId });
 const persona = (id: string, extra: Record<string, unknown> = {}): Row => ({
   _id: `personas:${id}`,
   _creationTime: 1,
-  projectId: "p",
+  projectId: "projects:p",
   name: `Persona ${id}`,
   definition: { focus: "", background: "", approach: "", outputPreferences: "", verification: "" },
   scope: { include: [{ select: "project" }], exclude: [] },
   tools: ["retrieve", "resource.read"],
-  createdBy: user("u"),
+  createdBy: user("users:u"),
   revision: 2,
   updatedAt: 10,
   ...extra
@@ -110,7 +110,7 @@ const persona = (id: string, extra: Record<string, unknown> = {}): Row => ({
 const task = (id: string, extra: Record<string, unknown> = {}): Row => ({
   _id: `agentTasks:${id}`,
   _creationTime: 1,
-  projectId: "p",
+  projectId: "projects:p",
   threadId: `threads:${id}`,
   title: `Task ${id}`,
   instruction: "Do the thing",
@@ -121,7 +121,7 @@ const task = (id: string, extra: Record<string, unknown> = {}): Row => ({
   plan: [],
   outputs: [],
   questions: [],
-  createdBy: user("u"),
+  createdBy: user("users:u"),
   startedAt: 5,
   revision: 1,
   updatedAt: 5,
@@ -131,7 +131,7 @@ const task = (id: string, extra: Record<string, unknown> = {}): Row => ({
 const automation = (id: string, extra: Record<string, unknown> = {}): Row => ({
   _id: `automations:${id}`,
   _creationTime: 1,
-  projectId: "p",
+  projectId: "projects:p",
   name: `Rule ${id}`,
   personaId: "personas:a",
   instruction: "Every time, do the thing",
@@ -139,7 +139,7 @@ const automation = (id: string, extra: Record<string, unknown> = {}): Row => ({
   tools: ["retrieve"],
   enabled: true,
   firedCount: 0,
-  createdBy: user("u"),
+  createdBy: user("users:u"),
   revision: 3,
   updatedAt: 10,
   ...extra
@@ -148,13 +148,17 @@ const automation = (id: string, extra: Record<string, unknown> = {}): Row => ({
 beforeEach(() => {
   vi.spyOn(Date, "now").mockReturnValue(500);
   model.calls.length = 0;
-  model.scope = { projectId: "p", userId: "u", username: "Uma" };
+  model.scope = { projectId: "projects:p", userId: "users:u", username: "Uma" };
   model.tables = {
     users: [
-      { _id: "u", _creationTime: 1, displayName: "Uma" },
-      { _id: "v", _creationTime: 1, displayName: "Victor" }
+      { _id: "users:u", _creationTime: 1, displayName: "Uma" },
+      { _id: "users:v", _creationTime: 1, displayName: "Victor" }
     ],
-    personas: [persona("a"), persona("b"), persona("elsewhere", { projectId: "other" })],
+    personas: [
+      persona("a"),
+      persona("b"),
+      persona("elsewhere", { projectId: "projects:other" })
+    ],
     agentTasks: [
       task("1"),
       task("2", {
@@ -167,25 +171,25 @@ beforeEach(() => {
         questions: [{ id: "q1", text: "Which one?", askedAt: 6 }]
       }),
       task("3", { state: "finished", finishedAt: 60, personaId: "personas:b" }),
-      task("gone", { projectId: "other" })
+      task("gone", { projectId: "projects:other" })
     ],
     threads: [
-      { _id: "threads:1", _creationTime: 1, projectId: "p", kind: "agentTask" },
-      { _id: "threads:2", _creationTime: 1, projectId: "p", kind: "agentTask" },
-      { _id: "threads:3", _creationTime: 1, projectId: "p", kind: "agentTask" }
+      { _id: "threads:1", _creationTime: 1, projectId: "projects:p", kind: "agentTask" },
+      { _id: "threads:2", _creationTime: 1, projectId: "projects:p", kind: "agentTask" },
+      { _id: "threads:3", _creationTime: 1, projectId: "projects:p", kind: "agentTask" }
     ],
     threadParts: [
       {
         _id: "threadParts:1",
         _creationTime: 1,
-        projectId: "p",
+        projectId: "projects:p",
         threadId: "threads:1",
         part: 1,
         messages: [
           {
             id: "m1",
             role: "prompt",
-            author: user("u"),
+            author: user("users:u"),
             sentAt: 5,
             blocks: [
               {
@@ -207,17 +211,22 @@ beforeEach(() => {
       {
         _id: "researchThreads:c",
         _creationTime: 1,
-        projectId: "p",
+        projectId: "projects:p",
         threadId: "threads:c",
         personaId: "personas:a",
         title: "A chat",
         mode: { kind: "explore" },
         findingIds: [],
-        createdBy: user("v"),
+        createdBy: user("users:v"),
         updatedAt: 20
       }
     ],
-    documents: [{ _id: "documents:1", _creationTime: 1, projectId: "p", title: "Brief" }],
+    documents: [{
+      _id: "documents:1",
+      _creationTime: 1,
+      projectId: "projects:p",
+      title: "Brief"
+    }],
     slideDecks: [],
     spreadsheets: [],
     findings: [],
@@ -226,8 +235,8 @@ beforeEach(() => {
       {
         _id: "activity:1",
         _creationTime: 30,
-        projectId: "p",
-        actor: user("u"),
+        projectId: "projects:p",
+        actor: user("users:u"),
         actorLabel: "Uma",
         verb: "edited",
         target: { kind: "document", id: "documents:1", label: "Brief" }
@@ -235,7 +244,7 @@ beforeEach(() => {
       {
         _id: "activity:2",
         _creationTime: 40,
-        projectId: "p",
+        projectId: "projects:p",
         actor: { kind: "agent", taskId: "agentTasks:1" },
         actorLabel: "",
         verb: "finished",
@@ -244,8 +253,8 @@ beforeEach(() => {
       {
         _id: "activity:3",
         _creationTime: 50,
-        projectId: "p",
-        actor: user("v"),
+        projectId: "projects:p",
+        actor: user("users:v"),
         actorLabel: "Victor",
         verb: "switched off",
         target: { kind: "automation", id: "automations:m", label: "Rule m" }
@@ -291,9 +300,35 @@ describe("reading the library", () => {
     assert.deepEqual(library.resources.map((row) => row.name), ["Brief"]);
     assert.deepEqual(
       library.activity.map((row) => [row.actorName, row.verb, row.subject, row.personaId]),
-      [["Persona a", "finished", "Task 1", "personas:a"]]
+      [["", "finished", "Task 1", "personas:a"]]
     );
     assert.equal(fired?.startedByName, "Uma");
+  });
+
+  test("quarantines rows missing required current persona, task, or automation fields", async () => {
+    model.tables.personas.push(
+      persona("missing-definition", { definition: undefined }),
+      persona("missing-tools", { tools: undefined }),
+      persona("missing-revision", { revision: undefined })
+    );
+    model.tables.agentTasks.push(
+      task("missing-tools", { tools: undefined }),
+      task("missing-plan", { plan: undefined }),
+      task("missing-origin", { origin: undefined })
+    );
+    model.tables.automations.push(
+      automation("missing-tools", { tools: undefined }),
+      automation("missing-trigger", { trigger: undefined }),
+      automation("missing-count", { firedCount: undefined })
+    );
+
+    const library = await readAgentsLibrary();
+
+    assert.equal(library.personas.some((row) => row.id.includes("missing-")), false);
+    assert.equal(library.tasks.some((row) => row.id.includes("missing-")), false);
+    assert.equal(library.automations.some((row) => row.id.includes("missing-")), false);
+    assert.equal(await readPersona({ personaId: "personas:missing-tools" }), null);
+    assert.equal(await readTask({ taskId: "agentTasks:missing-tools" }), null);
   });
 
   test("names what started an automation's task by its trigger", async () => {
@@ -330,6 +365,36 @@ describe("reading the library", () => {
 
   test("refuses an input with a stray field before touching the store", async () => {
     await assert.rejects(() => readPersona({ personaId: "personas:a", extra: 1 } as never), /unknown field/);
+  });
+
+  test("offers only admitted uniquely identified named Resource Sets", async () => {
+    const reusable = (id: string, name: string, extra: Record<string, unknown> = {}): Row => ({
+      _id: `resourceSets:${id}`,
+      _creationTime: 1,
+      projectId: "projects:p",
+      name,
+      set: { include: [{ select: "project" }], exclude: [] },
+      createdBy: user("users:u"),
+      revision: 1,
+      updatedAt: 1,
+      ...extra
+    });
+    model.tables.resourceSets = [
+      reusable("duplicate", "First claimant"),
+      reusable("duplicate", "Foreign claimant", { projectId: "projects:other" }),
+      reusable("malformed", "Malformed", { set: { include: "everything", exclude: [] } }),
+      reusable("valid", "Valid set"),
+      reusable("private", "Private", {
+        name: undefined,
+        boundTo: { kind: "resource", resourceId: "documents:1", hole: "evidence" }
+      })
+    ];
+
+    const library = await readAgentsLibrary();
+
+    assert.deepEqual(library.resourceSets, [
+      { id: "resourceSets:valid", name: "Valid set" }
+    ]);
   });
 });
 
@@ -508,6 +573,44 @@ describe("automations", () => {
     assert.equal(weekly.accepted, true);
   });
 
+  test("rejects retired trigger selectors and non-current exact references", async () => {
+    const triggers = [
+      { kind: "resource-created", kinds: ["analysis"] },
+      {
+        kind: "resource-edited",
+        kinds: ["externalFile"],
+        ref: { kind: "externalFile", id: "externalFiles:1" }
+      },
+      {
+        kind: "resource-edited",
+        kinds: ["externalFile"],
+        ref: { kind: "externalFile::pdf", id: "externalFiles:1" }
+      },
+      {
+        kind: "resource-edited",
+        kinds: ["document"],
+        ref: { kind: "document", id: "spreadsheets:1" }
+      },
+      {
+        kind: "resource-edited",
+        kinds: ["document"],
+        ref: { kind: "document", id: "documents:1", label: "Brief" }
+      }
+    ];
+    const before = structuredClone(model.tables.automations);
+    for (const trigger of triggers) {
+      await assert.rejects(
+        () => updateAutomation({
+          automationId: "automations:m",
+          baseRevision: 3,
+          patch: { trigger }
+        } as never),
+        /current resource selectors|exact current resource reference/
+      );
+    }
+    assert.deepEqual(model.tables.automations, before);
+  });
+
   test("refuses to remove a rule that fired tasks still name", async () => {
     const held = await removeAutomation({ automationId: "automations:fired", baseRevision: 3 });
     assert.equal(held.accepted === false && held.reason, "in-use");
@@ -517,6 +620,85 @@ describe("automations", () => {
 });
 
 describe("scope", () => {
+  test("all persisted agent scope writers refuse a private Resource Set pointer", async () => {
+    model.tables.resourceSets.push({
+      _id: "resourceSets:private",
+      _creationTime: 1,
+      projectId: "projects:p",
+      boundTo: { kind: "resource", resourceId: "documents:1", hole: "evidence" },
+      set: {
+        include: [{ select: "resources", refs: [{ kind: "document", id: "documents:1" }] }],
+        exclude: []
+      },
+      createdBy: user("users:u"),
+      revision: 1,
+      updatedAt: 1
+    });
+    const privateScope = {
+      include: [{ select: "set" as const, setId: "resourceSets:private" }],
+      exclude: []
+    };
+    const before = structuredClone(model.tables);
+
+    const personaResult = await updatePersona({
+      personaId: "personas:a",
+      baseRevision: 2,
+      patch: { scope: privateScope }
+    });
+    const taskCreate = await createTask({
+      personaId: "personas:a",
+      title: "Unsafe scope",
+      instruction: "Do not persist this.",
+      scope: privateScope
+    });
+    const taskUpdate = await updateTask({
+      taskId: "agentTasks:1",
+      baseRevision: 1,
+      patch: { scope: privateScope }
+    });
+    const automationCreate = await createAutomation({
+      personaId: "personas:a",
+      name: "Unsafe scope",
+      scope: privateScope
+    });
+    const automationUpdate = await updateAutomation({
+      automationId: "automations:m",
+      baseRevision: 3,
+      patch: { scope: privateScope }
+    });
+
+    for (const result of [
+      personaResult,
+      taskCreate,
+      taskUpdate,
+      automationCreate,
+      automationUpdate
+    ]) {
+      assert.equal(result.accepted, false);
+      assert.equal(result.accepted ? "" : result.reason, "invalid-state");
+    }
+    assert.deepEqual(model.tables, before);
+  });
+
+  test("copying or running persisted agent state cannot propagate a private pointer", async () => {
+    const privateScope = {
+      include: [{ select: "set", setId: "resourceSets:private" }],
+      exclude: []
+    };
+    model.tables.personas[0].scope = privateScope;
+    model.tables.automations[0].scope = privateScope;
+    const before = structuredClone(model.tables);
+
+    const copied = await duplicatePersona({ personaId: "personas:a" });
+    const fired = await runAutomation({ automationId: "automations:m" });
+
+    assert.equal(copied.accepted, false);
+    assert.equal(copied.accepted ? "" : copied.reason, "invalid-state");
+    assert.equal(fired.accepted, false);
+    assert.equal(fired.accepted ? "" : fired.reason, "invalid-state");
+    assert.deepEqual(model.tables, before);
+  });
+
   test("a task inherits nothing by default, takes one, and gives it back", async () => {
     const library = await readAgentsLibrary();
     assert.equal(library.tasks.find((row) => row.id === "agentTasks:1")?.scope, null);
@@ -539,6 +721,16 @@ describe("scope", () => {
   });
 
   test("a fired task carries the rule's scope", async () => {
+    model.tables.resourceSets.push({
+      _id: "resourceSets:1",
+      _creationTime: 1,
+      projectId: "projects:p",
+      name: "Launch evidence",
+      set: { include: [{ select: "project" }], exclude: [] },
+      createdBy: user("users:u"),
+      revision: 1,
+      updatedAt: 1
+    });
     model.tables.automations[0].scope = { include: [{ select: "set", setId: "resourceSets:1" }], exclude: [] };
     const result = await runAutomation({ automationId: "automations:m" });
     assert.equal(result.accepted, true);

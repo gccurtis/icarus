@@ -148,7 +148,6 @@ export type RemoveTemplateResult =
         | "not-found"
         | "forbidden"
         | "stale"
-        | "in-use-elsewhere"
         | "unsupported-body";
       readonly revision: number | null;
       readonly detail: string;
@@ -215,6 +214,28 @@ export type ResourceTemplateStage = {
 export type ReadResourceTemplateResult = {
   readonly resourceId: string;
   readonly stage: ResourceTemplateStage | null;
+};
+
+/** Exact identity for one live template working copy in the scoped project. */
+export type TemplateStageIdentity = {
+  readonly stageId: string;
+  readonly templateId: string;
+  readonly templateName: string;
+  readonly target: TemplateStageTarget;
+  readonly resourceId: string;
+};
+
+export type TemplateStageIdentityUnavailable = {
+  readonly unavailable: true;
+  readonly stageId: string;
+  readonly resourceId: string;
+  readonly reason: "corrupt";
+  readonly detail: string;
+};
+
+export type ReadTemplateStageIndexResult = {
+  readonly stages: readonly TemplateStageIdentity[];
+  readonly unavailable: readonly TemplateStageIdentityUnavailable[];
 };
 
 export type CommitTemplateStageInput = {

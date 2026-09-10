@@ -69,6 +69,67 @@ const { updateProjectResourceSummary } = await import(
 
 const user = (id: string) => ({ kind: "user", userId: id });
 
+const paragraph = (display: string, suffix = "1") => ({
+  id: `block:${suffix}`,
+  type: "text" as const,
+  variant: "paragraph" as const,
+  atoms: [{ id: `atom:${suffix}`, kind: "literal" as const, text: display }],
+  display,
+  marks: []
+});
+
+const currentThread = (
+  id: string,
+  target: { kind: "document" | "slides" | "spreadsheet"; id: string },
+  extra: Record<string, unknown> = {}
+) => ({
+  _id: id,
+  _creationTime: 20,
+  projectId: "projects:mine",
+  target,
+  createdBy: user("users:me"),
+  updatedAt: 30,
+  ...extra
+});
+
+const currentComment = (
+  id: string,
+  threadId: string,
+  display: string,
+  extra: Record<string, unknown> = {}
+) => ({
+  _id: id,
+  _creationTime: 21,
+  projectId: "projects:mine",
+  threadId,
+  blocks: [paragraph(display, id.replace(":", "-"))],
+  mentions: [],
+  author: user("users:me"),
+  ...extra
+});
+
+const currentDocument = () => ({
+  _id: "documents:1",
+  _creationTime: 10,
+  projectId: "projects:mine",
+  title: "Brief",
+  createdBy: user("users:me"),
+  updatedBy: user("users:me"),
+  updatedAt: 30
+});
+
+const currentDocumentSnapshot = () => ({
+  _id: "documentSnapshots:1",
+  _creationTime: 29,
+  projectId: "projects:mine",
+  resourceId: "documents:1",
+  revision: 3,
+  role: "leader",
+  part: 0,
+  body: { rows: [] },
+  at: 29
+});
+
 beforeEach(() => {
   model.tables.clear();
   model.tables.set("projects", [
@@ -76,13 +137,18 @@ beforeEach(() => {
       _id: "projects:mine",
       _creationTime: 10,
       name: "Mine",
+      revision: 1,
+      settings: "{}",
       updatedAt: 20
     },
     {
       _id: "projects:other",
       _creationTime: 11,
       name: "Other",
-      archivedAt: 12
+      archivedAt: 12,
+      revision: 1,
+      settings: "{}",
+      updatedAt: 20
     }
   ]);
   model.tables.set("memberships", [
@@ -91,6 +157,7 @@ beforeEach(() => {
       _creationTime: 12,
       projectId: "projects:mine",
       userId: "users:me",
+      token: "mine",
       role: "owner"
     },
     {
@@ -98,6 +165,7 @@ beforeEach(() => {
       _creationTime: 13,
       projectId: "projects:other",
       userId: "users:other",
+      token: "other",
       role: "owner"
     }
   ]);
@@ -108,13 +176,17 @@ beforeEach(() => {
       displayName: "Me",
       email: "me@example.org",
       authSubject: "must-not-cross",
-      settings: "must-not-cross"
+      settings: "must-not-cross",
+      updatedAt: 2
     },
     {
       _id: "users:other",
       _creationTime: 1,
       displayName: "Other",
-      email: "other@example.org"
+      email: "other@example.org",
+      authSubject: "other",
+      settings: "{}",
+      updatedAt: 2
     }
   ]);
 });
@@ -123,9 +195,13 @@ describe("project panel reads", () => {
   it("keeps the overview to administrative context not already on the canvas", async () => {
     await expect(readProjectOverview()).resolves.toEqual({
       projectId: "projects:mine",
+      viewerId: "users:me",
+      name: "Mine",
+      description: "",
       status: "active",
       viewerRole: "owner",
-      createdAt: 10
+      createdAt: 10,
+      people: [{ id: "users:me", name: "Me", role: "owner" }]
     });
   });
 
@@ -195,21 +271,13 @@ describe("project panel reads", () => {
         target: { kind: "document", id: "documents:1", label: "Brief" }
       }
     ]);
+    model.tables.set("commentThreads", [
+      currentThread("commentThreads:mine", { kind: "document", id: "documents:1" })
+    ]);
     model.tables.set("comments", [
-      {
-        _id: "comments:mine",
-        projectId: "projects:mine",
-        author: user("users:me")
-      }
+      currentComment("comments:mine", "commentThreads:mine", "A contribution")
     ]);
-    model.tables.set("documents", [
-      {
-        _id: "documents:1",
-        projectId: "projects:mine",
-        title: "Brief",
-        createdBy: user("users:me")
-      }
-    ]);
+    model.tables.set("documents", [currentDocument()]);
 
     const result = await readProjectPerson({ userId: "users:me" });
     expect(result).toMatchObject({
@@ -275,7 +343,6 @@ describe("project panel reads", () => {
         projectId: "projects:mine",
         title: "Brief",
         summary: "A short decision brief.",
-        templateId: "templates:1",
         createdBy: user("users:me"),
         updatedBy: user("users:me"),
         updatedAt: 30
@@ -285,42 +352,39 @@ describe("project panel reads", () => {
     model.tables.set("documentSnapshots", [
       {
         _id: "documentSnapshots:1",
+        _creationTime: 29,
         projectId: "projects:mine",
         resourceId: "documents:1",
         revision: 3,
         role: "leader",
+        part: 0,
         body: {
-          secret: "authored body",
           rows: [
             {
+              id: "row:1",
               kind: "blocks",
-              blocks: [{ type: "text", display: "Three useful words" }]
+              blocks: [paragraph("Three useful words")]
             }
           ]
-        }
+        },
+        at: 29
       }
     ]);
     model.tables.set("commentThreads", [
-      {
-        _id: "commentThreads:1",
-        projectId: "projects:mine",
-        target: { kind: "document", id: "documents:1" }
-      },
-      {
-        _id: "commentThreads:research",
-        projectId: "projects:mine",
-        target: { kind: "research", id: "researchThreads:1" }
-      }
+      currentThread("commentThreads:1", { kind: "document", id: "documents:1" })
     ]);
     model.tables.set("researchThreads", [
       {
         _id: "researchThreads:1",
         _creationTime: 11,
         projectId: "projects:mine",
+        threadId: "threads:research-1",
         title: "What drives customer-minutes lost?",
         summary: "A focused research chat.",
+        mode: { kind: "explore" },
         findingIds: ["findings:1", "findings:2"],
-        createdBy: user("users:me")
+        createdBy: user("users:me"),
+        updatedAt: 30
       }
     ]);
     model.tables.set("findings", [
@@ -363,7 +427,7 @@ describe("project panel reads", () => {
       kind: "research",
       facts: [
         { label: "Findings", value: "2" },
-        { label: "Comments", value: "1" }
+        { label: "Comments", value: "0" }
       ],
       openable: false
     });
@@ -416,7 +480,8 @@ describe("project panel reads", () => {
         _creationTime: 30,
         projectId: "projects:mine",
         threadId: "commentThreads:1",
-        blocks: [{ display: "The reply" }],
+        blocks: [paragraph("The reply", "reply")],
+        mentions: [],
         author: user("users:me")
       },
       {
@@ -424,7 +489,8 @@ describe("project panel reads", () => {
         _creationTime: 20,
         projectId: "projects:mine",
         threadId: "commentThreads:1",
-        blocks: [{ display: "The opening" }],
+        blocks: [paragraph("The opening", "opening")],
+        mentions: [],
         author: user("users:me")
       }
     ]);
@@ -476,5 +542,98 @@ describe("project panel reads", () => {
       updateProjectResourceSummary({ resourceId: "documents:foreign", summary: "No" })
     ).rejects.toThrow(/no resource/);
     expect(foreign).not.toHaveProperty("summary");
+  });
+
+  it("quarantines activity that omits or disguises a required current field", async () => {
+    const event: Record<string, unknown> = {
+      _id: "activity:invalid",
+      _creationTime: 30,
+      projectId: "projects:mine",
+      actor: user("users:me"),
+      verb: "edited",
+      target: { kind: "document", id: "documents:1", label: "Brief" }
+    };
+    model.tables.set("activity", [event]);
+
+    await expect(readProjectActivity({ activityId: "activity:invalid" })).resolves.toBeNull();
+    await expect(
+      readProjectHistory({ search: "", since: null, before: null, limit: 10 })
+    ).resolves.toMatchObject({ entries: [], total: 0 });
+
+    event.actorLabel = "Recorded author";
+    event.retiredActorName = "Old author";
+    await expect(readProjectActivity({ activityId: "activity:invalid" })).resolves.toBeNull();
+  });
+
+  it("rejects present malformed optional project fields instead of treating them as absent", async () => {
+    const project = (model.tables.get("projects") as Record<string, unknown>[])[0];
+    project.description = 7;
+    await expect(readProjectOverview()).resolves.toBeNull();
+
+    delete project.description;
+    project.archivedAt = "yesterday";
+    await expect(readProjectOverview()).resolves.toBeNull();
+  });
+
+  it("never substitutes an incomplete or non-leader snapshot for a current leader", async () => {
+    model.tables.set("documents", [currentDocument()]);
+    const snapshot = currentDocumentSnapshot() as Record<string, unknown>;
+
+    snapshot.role = "checkpoint";
+    model.tables.set("documentSnapshots", [snapshot]);
+    await expect(readProjectResource({ resourceId: "documents:1" })).resolves.toBeNull();
+
+    snapshot.role = "leader";
+    delete snapshot.revision;
+    await expect(readProjectResource({ resourceId: "documents:1" })).resolves.toBeNull();
+
+    snapshot.revision = 3;
+    snapshot.body = {};
+    await expect(readProjectResource({ resourceId: "documents:1" })).resolves.toBeNull();
+
+    delete snapshot.body;
+    await expect(readProjectResource({ resourceId: "documents:1" })).resolves.toBeNull();
+  });
+
+  it("makes a malformed current comment subject unavailable instead of repairing it", async () => {
+    model.tables.set("documents", [currentDocument()]);
+    const thread = {
+      _id: "commentThreads:strict",
+      _creationTime: 20,
+      projectId: "projects:mine",
+      target: { kind: "document", id: "documents:1" },
+      within: {
+        kind: "text",
+        spans: [{
+          blockId: "block:1",
+          from: { atom: "atom:1", offset: 0 },
+          to: { atom: "atom:1", offset: 4 }
+        }]
+      },
+      createdBy: user("users:me"),
+      updatedAt: 30
+    };
+    const remark: Record<string, unknown> = currentComment(
+      "comments:strict",
+      "commentThreads:strict",
+      "Text"
+    );
+    model.tables.set("commentThreads", [thread]);
+    model.tables.set("comments", [remark]);
+
+    delete remark.blocks;
+    await expect(readProjectComment({ threadId: "commentThreads:strict" })).resolves.toBeNull();
+
+    remark.blocks = [paragraph("Text", "strict")];
+    delete remark.author;
+    await expect(readProjectComment({ threadId: "commentThreads:strict" })).resolves.toBeNull();
+
+    remark.author = user("users:me");
+    thread.within.spans[0].from = { atom: "atom:1", offset: -1 };
+    await expect(readProjectComment({ threadId: "commentThreads:strict" })).resolves.toBeNull();
+
+    thread.within.spans[0].from = { atom: "atom:1", offset: 0 };
+    (thread as Record<string, unknown>).resolution = { at: 31 };
+    await expect(readProjectComment({ threadId: "commentThreads:strict" })).resolves.toBeNull();
   });
 });

@@ -98,13 +98,6 @@ export const DOORS: ScopeDoor[] = [
     confirms: "Use this",
     writes: "Nothing yet; the rule is held until Use is pressed"
   },
-  {
-    where: "Project Overview · Contexts panel",
-    opens: "New set, or a set's Edit",
-    title: "A set of resources",
-    confirms: "Create · Save",
-    writes: "createResourceSet or updateResourceSet with a name, which makes the row a project subject"
-  }
 ];
 
 export const LIFECYCLE: LifecycleStep[] = [
@@ -367,18 +360,6 @@ export const WORK: ScopeWork[] = [
     work: "Default scope and Use open the builder, and the rule under the button is the shared sentence."
   },
   {
-    path: "app-views/categories/project-overview/procedures/contexts.ts",
-    status: "changed",
-    area: "contexts",
-    work: "The fourth copy, which had drifted, is gone; the panel now reads the same words as everything else."
-  },
-  {
-    path: "app-views/categories/project-overview/context/contexts.svelte",
-    status: "changed",
-    area: "contexts",
-    work: "The kind toggles are replaced by the builder, so a named set can finally exclude something and name a particular resource."
-  },
-  {
     path: "app-views/categories/*/procedures/test/unit/",
     status: "changed",
     area: "evidence",
@@ -394,7 +375,7 @@ export const WORK: ScopeWork[] = [
     path: "test/browser/template-features.spec.ts",
     status: "changed",
     area: "evidence",
-    work: "Answering through the builder on insert, building a named set through it in Contexts, and a default built with an exclusion, stored, and read back."
+    work: "Answering through the point-of-use builder on insert and changing a default built with an exclusion, stored, and read back."
   }
 ];
 
@@ -404,7 +385,7 @@ export const FORKS: ScopeFork[] = [
     question: "Does a row have to be named?",
     recommended: "No, and that is how it is built. name is optional; a row without one carries an owner instead.",
     because:
-      "Anonymity was the point of the change. A synthesised name would appear in every offer list and in the Contexts panel, and somebody would eventually rename it.",
+      "Anonymity was the point of the change. A synthesised name would appear in every offer list and turn one-use scope values into misleading global subjects.",
     alternative: "Keep name required, generate one, and filter bound rows out of every list by their owner.",
     cost: "The projection now refuses a row that carries both or neither, which is the rule stated once."
   },
@@ -440,12 +421,12 @@ export const FORKS: ScopeFork[] = [
   },
   {
     index: "5",
-    question: "Does the Contexts panel keep its own editor?",
-    recommended: "No. It opens the same builder, and it gained exclusions and particular resources by doing so.",
+    question: "Does a point-of-use scope need another editor?",
+    recommended: "No. Every scope control opens the same builder, including exclusions and particular resources.",
     because:
-      "Two editors for one rule is how the two drift, and they already had: four copies of the same prose, one of which said Selects nothing where the others said Nothing.",
-    alternative: "Leave Contexts alone and build only for templates.",
-    cost: "One panel changed, and a fourth copy of the vocabulary deleted."
+      "Two editors for one rule is how vocabulary and behavior drift. One builder keeps the rule identical wherever it is needed.",
+    alternative: "Give each template and Prompt Block surface its own scope editor.",
+    cost: "The retired global panel and its drifted copy are gone."
   },
   {
     index: "6",
@@ -498,8 +479,8 @@ export const GAPS: ScopeGap[] = [
   {
     title: "The scope vocabulary has four copies",
     detail:
-      "ruleOf, ruleFrom, termWords, the kind list and the answer options are byte-identical in the document editor, the deck editor and the library, and a fourth, drifted copy sits in Contexts. The builder would be a fifth.",
-    order: "Done. All four now read one module, and the drifted copy is gone"
+      "ruleOf, ruleFrom, termWords, the kind list and the answer options had separate copies in the document editor, the deck editor, the library, and the retired Contexts panel.",
+    order: "Done. Current scope surfaces read one module, and the retired panel's drifted copy is gone"
   },
   {
     title: "A resource picker needs the index inside an editor",

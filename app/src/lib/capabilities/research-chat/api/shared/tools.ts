@@ -1,6 +1,10 @@
 import type { IntelligenceTool } from "$model/server/intelligence/index.server";
 import { resourceInScope } from "$representation/data/behavior/semantic/scope";
-import type { MaterialSourceSnapshot } from "$representation/data/types/semantic/material";
+import { admittedReusableResourceSets } from "$representation/data/behavior/core/resource-set-rows";
+import type {
+  MaterialKind,
+  MaterialSourceSnapshot
+} from "$representation/data/types/semantic/material";
 import type { ResourceRef } from "$representation/data/types/core/resource";
 import type { ResourceSet } from "$representation/data/types/core/resource-set";
 import type { ResearchSource } from "$representation/data/types/investigation/research-turn";
@@ -22,6 +26,23 @@ import {
 } from "$capabilities/research-chat/api/shared/tool-kit";
 
 export type { ToolSession } from "$capabilities/research-chat/api/shared/tool-kit";
+
+const MATERIAL_KINDS = ["table", "csv", "chart", "image", "code"] as const satisfies readonly MaterialKind[];
+
+const isMaterialKind = (value: unknown): value is MaterialKind =>
+  typeof value === "string" && MATERIAL_KINDS.some((kind) => kind === value);
+
+const materialKindsOf = (value: unknown): MaterialKind[] | undefined => {
+  if (value === undefined) return undefined;
+  if (
+    !Array.isArray(value) ||
+    value.length > MATERIAL_KINDS.length ||
+    value.some((kind) => !isMaterialKind(kind))
+  ) {
+    throw new Error("kinds must contain only current material kinds");
+  }
+  return [...value];
+};
 
 /**
  * What the chat can do, built for one turn.
@@ -60,16 +81,16 @@ export const createToolSession = (input: SessionInput): ToolSession => {
     return id;
   };
 
-  const namedSets = new Map(
-    rowsIn(input.model.store, "resourceSets")
-      .filter((row) => row.projectId === input.projectId)
-      .map((row) => [row._id as string, row.set])
+  const namedSets = admittedReusableResourceSets(
+    rowsIn(input.model.store, "resourceSets"),
+    input.projectId
   );
 
   /** Both gates, on every ref a tool touches: the turn's choice and the persona's. */
   const inScope = (ref: ResourceRef): boolean =>
     chosen(input.scope, ref) &&
-    (input.bound === undefined || resourceInScope(ref, input.bound, (id) => namedSets.get(id)));
+    (input.bound === undefined ||
+      resourceInScope(ref, input.bound, (id) => namedSets.get(id)?.set));
 
   /**
    * What retrieval is asked to search.
@@ -106,7 +127,7 @@ export const createToolSession = (input: SessionInput): ToolSession => {
         text: asked.query,
         topK: asked.topK,
         ...(scoped === undefined ? {} : { scope: scoped })
-      });
+      }, input.signal);
       const kept = result.hits.filter((hit: SemanticHit) => inScope(hit.source.ref));
       returned.push(kept.length);
       return {
@@ -156,16 +177,14 @@ export const createToolSession = (input: SessionInput): ToolSession => {
     execute: async (value) => {
       const asked = askedQuery(value, input.topK);
       const raw = asRecord(value, "the input must be an object");
-      const kinds = Array.isArray(raw.kinds)
-        ? (raw.kinds.map(String) as Array<"table" | "csv" | "chart" | "image" | "code">)
-        : undefined;
+      const kinds = materialKindsOf(raw.kinds);
       if (!queries.includes(asked.query)) queries.push(asked.query);
       const result = await querySemanticMaterials({
         text: asked.query,
         topK: asked.topK,
         ...(kinds === undefined ? {} : { kinds }),
         ...(scoped === undefined ? {} : { scope: scoped })
-      });
+      }, input.signal);
       return {
         materials: result.hits
           .filter((hit: MaterialHit) => inScope(hit.material.source.ref))
@@ -197,7 +216,13 @@ export const createToolSession = (input: SessionInput): ToolSession => {
 
   const halted = (tool: IntelligenceTool): IntelligenceTool => ({
     ...tool,
-    execute: async (value) => (input.stopping() ? STOPPED : await tool.execute(value))
+    execute: async (value) => {
+      input.signal?.throwIfAborted();
+      if (input.stopping()) return STOPPED;
+      const result = await tool.execute(value);
+      input.signal?.throwIfAborted();
+      return result;
+    }
   });
 
   const context: ToolContext = { input, materials, inScope, issue, nameOf, returned };

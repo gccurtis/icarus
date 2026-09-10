@@ -5,6 +5,7 @@ import { asId } from "$representation/data/behavior/core/id";
 import { validateRunAutomation } from "$capabilities/agents/api/run-automation/validate-run-automation";
 import { findVisible, notFound, refused, viewer } from "$capabilities/agents/api/shared/lookup";
 import type { RowFields } from "$capabilities/agents/api/shared/store";
+import { scopeReferenceRefusal } from "$capabilities/agents/api/shared/scope-references";
 import { openThread } from "$capabilities/agents/api/shared/threads";
 import type { RunAutomationResult } from "$capabilities/agents/types/agents";
 
@@ -23,6 +24,10 @@ export const runAutomation = async (input: unknown): Promise<RunAutomationResult
       "it has no instruction yet, so there is nothing to ask",
       automation.revision
     );
+  }
+  const scopeRefusal = scopeReferenceRefusal(store, scope.projectId, automation.scope);
+  if (scopeRefusal !== undefined) {
+    return refused(automation._id, "invalid-state", scopeRefusal, automation.revision);
   }
 
   const at = Date.now();

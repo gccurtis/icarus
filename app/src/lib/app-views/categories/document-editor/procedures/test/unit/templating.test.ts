@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
+import { asId } from "$representation/data/behavior/core/id";
 import type { DocumentBody } from "$representation/data/types/documents/body";
 import { applyOps, invertAll } from "$representation/data/behavior/documents/apply-ops";
 import type { TemplateDetail } from "$capabilities/templates/index.remote";
@@ -65,7 +66,7 @@ const template: TemplateDetail = {
       }
     ]
   },
-  holes: [{ name: "evidence", label: "Evidence", default: { include: [{ select: "kinds", kinds: ["finding"] }], exclude: [] } }]
+  holes: [{ name: "evidence", label: "Evidence", kind: "scope", default: { include: [{ select: "kinds", kinds: ["finding"] }], exclude: [] } }]
 };
 
 test("an insertion lands after the row holding the caret, or at the end", () => {
@@ -99,7 +100,7 @@ test("inserting into a stage keeps hole terms", () => {
 });
 
 test("a hole without a default resolves to the whole project on insert", () => {
-  const insertion = insertionOf(held, { ...template, holes: [{ name: "evidence", label: "Evidence" }] }, "r2", "resolve");
+  const insertion = insertionOf(held, { ...template, holes: [{ name: "evidence", label: "Evidence", kind: "scope" }] }, "r2", "resolve");
   const after = applyOps(held, insertion.ops);
   const row = after.rows[3];
   if (row.kind !== "blocks" || row.blocks[0].type !== "prompt") throw new Error("prompt expected");
@@ -107,7 +108,7 @@ test("a hole without a default resolves to the whole project on insert", () => {
 });
 
 test("holes are edited by name and merged without repeats", () => {
-  const declared = [{ name: "incident_evidence", label: "Incident evidence" }];
+  const declared = [{ name: "incident_evidence", label: "Incident evidence", kind: "scope" as const }];
 
   const described = withHoleField(declared, "incident_evidence", { description: "  What happened  " });
   assert.equal(described[0].description, "What happened");
@@ -116,7 +117,10 @@ test("holes are edited by name and merged without repeats", () => {
   const ruled = withHoleField(declared, "incident_evidence", { default: { include: [{ select: "project" }], exclude: [] } });
   assert.deepEqual(ruled[0].default, { include: [{ select: "project" }], exclude: [] });
 
-  const merged = mergedHoles(declared, [{ name: "incident_evidence", label: "Other" }, { name: "models", label: "Models" }]);
+  const merged = mergedHoles(declared, [
+    { name: "incident_evidence", label: "Other", kind: "scope" },
+    { name: "models", label: "Models", kind: "scope" }
+  ]);
   assert.deepEqual(merged.map((hole) => hole.name), ["incident_evidence", "models"]);
   assert.deepEqual(merged[0], declared[0]);
 });
@@ -158,7 +162,10 @@ test("a rule that excludes anything is sent as built, for the server to store", 
   const answers = answersFrom({
     evidence: {
       include: [{ select: "project" }],
-      exclude: [{ select: "resources", refs: [{ kind: "document", id: "documents:2" }] }]
+      exclude: [{
+        select: "resources",
+        refs: [{ kind: "document", id: asId<"documents">("documents:2") }]
+      }]
     }
   });
   assert.deepEqual(answers.evidence.exclude, [

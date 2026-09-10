@@ -8,6 +8,15 @@ import { journalPath } from "$model/server/store/methods/transaction/journal.ser
 import type { StoreFailpoint } from "$model/server/store/types";
 
 const directories: string[] = [];
+const system = { kind: "system" as const };
+const project = (name: string) => ({ name, revision: 1, settings: "{}", updatedAt: 1000 });
+const document = (projectId: string, title: string) => ({
+  projectId,
+  title,
+  createdBy: system,
+  updatedBy: system,
+  updatedAt: 1000
+});
 const directory = (): string => {
   const created = mkdtempSync(join(tmpdir(), "icarus-store-recovery-"));
   directories.push(created);
@@ -28,8 +37,8 @@ const interruptedTransaction = (path: string, target: StoreFailpoint) => {
   let documentId = "";
   expect(() =>
     store.transaction((unit) => {
-      projectId = unit.create("projects", { name: "Q3" });
-      documentId = unit.create("documents", { projectId, title: "Plan" });
+      projectId = unit.create("projects", project("Q3"));
+      documentId = unit.create("documents", document(projectId, "Plan"));
     })
   ).toThrow(/interrupted/);
   return { store, projectId, documentId };
@@ -118,5 +127,61 @@ describe("transaction failpoint recovery before readiness", () => {
 
     expect(() => defineStore({ directory: path })).toThrow(/unsupported schema/);
     expect(existsSync(journalPath(path))).toBe(true);
+  });
+
+  it("fails readiness for unknown fields in a committed current-version journal", () => {
+    const path = directory();
+    writeFileSync(
+      journalPath(path),
+      JSON.stringify({
+        version: 1,
+        transactionId: "decided",
+        state: "committed",
+        legacyState: "prepared",
+        changes: [{ table: "projects", rows: [] }]
+      })
+    );
+
+    expect(() => defineStore({ directory: path })).toThrow(/unknown fields/);
+    expect(existsSync(journalPath(path))).toBe(true);
+  });
+
+  it("fails readiness rather than recovering a non-current row", () => {
+    const path = directory();
+    writeFileSync(
+      journalPath(path),
+      JSON.stringify({
+        version: 1,
+        transactionId: "decided",
+        state: "committed",
+        changes: [{
+          table: "projects",
+          rows: [{
+            _id: "projects:old",
+            _creationTime: 1000,
+            name: "Old",
+            revision: 1,
+            settings: "{}",
+            updatedAt: 1000,
+            legacyName: "Retired"
+          }]
+        }]
+      })
+    );
+
+    expect(() => defineStore({ directory: path })).toThrow(/non-current row/);
+    expect(existsSync(journalPath(path))).toBe(true);
+  });
+
+  it("refuses a journal value JSON parsing would coerce to a non-finite number", () => {
+    const path = directory();
+    writeFileSync(
+      journalPath(path),
+      `{"version":1,"transactionId":"decided","state":"committed","changes":[{"table":"projects","rows":[{"_id":"projects:old","_creationTime":1000,"name":"Old","revision":1,"settings":"{}","updatedAt":1e400}]}]}`
+    );
+
+    expect(() => defineStore({ directory: path })).toThrow(/non-current row/);
+    expect(existsSync(journalPath(path))).toBe(true);
+    expect(existsSync(join(path, "projects.json"))).toBe(false);
   });
 });

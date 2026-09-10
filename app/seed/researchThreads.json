@@ -1,65 +1,10 @@
 [
   {
-    "_id": "researchThreads:1",
-    "_creationTime": 1786176000000,
-    "projectId": "default",
-    "threadId": "threads:1",
-    "title": "What drives customer-minutes lost?",
-    "summary": "Research into the small set of assets and operating conditions driving most customer-minutes lost.",
-    "mode": {
-      "kind": "explore"
-    },
-    "findingIds": [
-      "findings:1"
-    ],
-    "createdBy": {
-      "kind": "user",
-      "userId": "users:1"
-    },
-    "updatedAt": 1788297000000
-  },
-  {
-    "_id": "researchThreads:2",
-    "_creationTime": 1785484800000,
-    "projectId": "default",
-    "threadId": "threads:2",
-    "title": "Vegetation management effectiveness",
-    "summary": "Review of whether shorter trimming cycles measurably improve outage performance.",
-    "mode": {
-      "kind": "explore"
-    },
-    "findingIds": [
-      "findings:2"
-    ],
-    "createdBy": {
-      "kind": "user",
-      "userId": "users:3"
-    },
-    "updatedAt": 1788040800000
-  },
-  {
-    "_id": "researchThreads:3",
-    "_creationTime": 1783929600000,
-    "projectId": "default",
-    "threadId": "threads:3",
-    "title": "Are reclosers worth it below 12kV?",
-    "summary": "Evaluation of recloser economics and reliability gains on lower-voltage feeders.",
-    "mode": {
-      "kind": "explore"
-    },
-    "findingIds": [],
-    "createdBy": {
-      "kind": "user",
-      "userId": "users:2"
-    },
-    "updatedAt": 1787522400000
-  },
-  {
     "_id": "researchThreads:priorities",
     "_creationTime": 1788558000000,
     "projectId": "default",
     "threadId": "threads:chat-priorities",
-    "title": "Which substations should the filing prioritise?",
+    "title": "What is the binding winter constraint?",
     "mode": {
       "kind": "explore"
     },
@@ -76,7 +21,7 @@
     "_creationTime": 1788472200000,
     "projectId": "default",
     "threadId": "threads:chat-tone",
-    "title": "Tone for the remedy section",
+    "title": "What does the replacement decision recommend?",
     "mode": {
       "kind": "explore"
     },
@@ -93,7 +38,7 @@
     "_creationTime": 1788212700000,
     "projectId": "default",
     "threadId": "threads:chat-sources",
-    "title": "Is the NERC winter review citable?",
+    "title": "Is a NERC winter review in the project?",
     "mode": {
       "kind": "explore"
     },
@@ -110,7 +55,7 @@
     "_creationTime": 1787867400000,
     "projectId": "default",
     "threadId": "threads:chat-undergrounding",
-    "title": "Steelman the undergrounding case",
+    "title": "What is the recorded undergrounding strategy?",
     "mode": {
       "kind": "explore"
     },
@@ -127,7 +72,7 @@
     "_creationTime": 1787608200000,
     "projectId": "default",
     "threadId": "threads:chat-feeder12-history",
-    "title": "What do we know about Feeder 12 before 2026?",
+    "title": "What is recorded for Feeder 12?",
     "mode": {
       "kind": "explore"
     },

@@ -100,7 +100,7 @@ export const STATE_OWNERSHIP: ArchitecturePillar = {
       detects: "TableName, StoreQuery, readStore, raw paths, or TABLE_NAMES in WorkspaceState's public surface.",
       implementation:
         "Reject representation/store types from the workspace public API. Permit typed project projections or subject runtimes with a named lifetime owner.",
-      current: "Enforced; four WorkspaceState sources exposing store vocabulary are baselined.",
+      current: "Enforced; WorkspaceState exposes navigation and resource runtimes without generic store vocabulary.",
       limit: "This checker enforces vocabulary and ownership boundaries; it does not prescribe one model per query."
     },
     {

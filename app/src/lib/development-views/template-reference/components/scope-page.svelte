@@ -226,18 +226,17 @@
       <figure class="tref-figure">
         <DiagramBinding />
         <figcaption>
-          <b>Two rows in one table.</b> A named row is a project subject: listed, offerable, and protected
-          from deletion while anything names it. A bound row is invisible, owned, and deleted with its
-          owner.
+          <b>Two rows in one table.</b> A named row is represented and reusable, although no global panel
+          manages it today. A bound row is invisible, owned, and deleted with its owner; this is the row
+          the current UI creates at the point a concrete scope is needed.
         </figcaption>
       </figure>
 
       <p class="tref-prose">
         The stance matters because the alternative is worse in a specific way. If every chosen scope had to
-        be named, the Contexts panel would fill with rows called <em>Source material for Readiness brief</em>,
-        each used once, each impossible to delete without reading a refusal, and each offered to the next
-        person who opens a builder. Anonymity is not a shortcut; it is what keeps the named list worth
-        reading.
+        be named, every builder would fill with rows called <em>Source material for Readiness brief</em>,
+        each used once and each offered to the next person who opens a builder. Anonymity is not a shortcut;
+        it keeps a point-of-use value from pretending to be a globally curated subject.
       </p>
     </section>
 
@@ -262,10 +261,10 @@
 
     <section class="tref-section" id="doors">
       <div class="tref-section-head">
-        <div><span class="tref-kicker">One modal, four callers</span><h2>Where it opens</h2></div>
+        <div><span class="tref-kicker">One modal, four doors</span><h2>Where it opens</h2></div>
         <p>
-          Two doors set a default, two give an answer, and the fifth is the Contexts panel, which is the
-          same modal with a name field above it.
+          Two doors set a default and two give an answer. Each opens where the rule is needed; there is no
+          fifth, global management door.
         </p>
       </div>
 

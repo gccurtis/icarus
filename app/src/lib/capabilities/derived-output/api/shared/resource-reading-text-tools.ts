@@ -1,5 +1,11 @@
 import type { IntelligenceTool } from "$model/server/intelligence/index.server";
-import { kindMatches } from "$representation/data/behavior/core/resource";
+import {
+  admitResourceRef,
+  externalFileResourceKind,
+  isResourceSelectorKind,
+  kindMatches
+} from "$representation/data/behavior/core/resource";
+import type { ResourceRef } from "$representation/data/types/core/resource";
 import { rowsOf } from "$capabilities/derived-output/api/shared/rows";
 import type { ResourceReadingContext } from "$capabilities/derived-output/api/shared/resource-reading-context";
 import { describedAgentTool } from "$capabilities/derived-output/api/shared/tool-catalog";
@@ -43,28 +49,32 @@ export const textReadingTools = (context: ResourceReadingContext): IntelligenceT
         const held = record(value, "find_resources input must be an object");
         const query = typeof held.query === "string" ? held.query.trim().toLowerCase() : "";
         const kinds = Array.isArray(held.kinds)
-          ? new Set(held.kinds.filter((kind): kind is string => typeof kind === "string"))
+          ? new Set(held.kinds.filter(isResourceSelectorKind))
           : undefined;
         const paging = page(value);
-        const resources = [
+        const resources: Array<{
+          ref: ResourceRef;
+          name: string;
+          projectId: string;
+        }> = [
           ...rowsOf(input.model.store, "documents").map((row) => ({
-            ref: { kind: "document", id: row._id },
+            ref: { kind: "document" as const, id: row._id },
             name: row.title,
             projectId: row.projectId
           })),
           ...rowsOf(input.model.store, "slideDecks").map((row) => ({
-            ref: { kind: "slides", id: row._id },
+            ref: { kind: "slides" as const, id: row._id },
             name: row.title,
             projectId: row.projectId
           })),
           ...rowsOf(input.model.store, "spreadsheets").map((row) => ({
-            ref: { kind: "spreadsheet", id: row._id },
+            ref: { kind: "spreadsheet" as const, id: row._id },
             name: row.title,
             projectId: row.projectId
           })),
           ...rowsOf(input.model.store, "externalFiles").map((row) => ({
             ref: {
-              kind: `externalFile::${row.subkind}`,
+              kind: externalFileResourceKind(row.subkind),
               id: row._id
             },
             name: row.name,
@@ -106,7 +116,10 @@ export const textReadingTools = (context: ResourceReadingContext): IntelligenceT
       },
       execute: async (value) => {
         const held = record(value, "list_document_blocks input must be an object");
-        const ref = { kind: "document", id: text(held.resourceId, "resourceId") };
+        const ref = admitResourceRef(
+          { kind: "document", id: text(held.resourceId, "resourceId") },
+          "document resource"
+        );
         if (!allowed(ref)) {
           throw new Error("document is outside the Derived Output Resource Set");
         }
@@ -173,7 +186,10 @@ export const textReadingTools = (context: ResourceReadingContext): IntelligenceT
       },
       execute: async (value) => {
         const held = record(value, "list_deck_slides input must be an object");
-        const ref = { kind: "slides", id: text(held.resourceId, "resourceId") };
+        const ref = admitResourceRef(
+          { kind: "slides", id: text(held.resourceId, "resourceId") },
+          "slide-deck resource"
+        );
         if (!allowed(ref)) throw new Error("deck is outside the Derived Output Resource Set");
         const { body } = slideDeck(ref);
         const paging = page(value);

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { writeAddress } from "$representation/data/behavior/formulas/addresses";
+import { asId } from "$representation/data/behavior/core/id";
 import { evaluate } from "$representation/data/behavior/formulas/evaluate";
 import { parseFormula } from "$representation/data/behavior/formulas/parse";
 import type { FormulaValue } from "$representation/data/types/content/formula-value";
@@ -32,7 +33,13 @@ const VARIABLES: Readonly<Record<string, FormulaValue>> = {
   tiers: { kind: "list", values: [text("Tier 1"), text("Tier 2"), text("Tier 3")] },
   target: { kind: "record", fields: { minutes: number(15000), cost: number(50000) } },
   nothing: { kind: "table", columns: [{ name: "name" }], rows: [] },
-  events: { kind: "reference", target: { to: "resource", ref: { kind: "spreadsheet", id: "spreadsheets:9" } } },
+  events: {
+    kind: "reference",
+    target: {
+      to: "resource",
+      ref: { kind: "spreadsheet", id: asId<"spreadsheets">("spreadsheets:9") }
+    }
+  },
   alias: { kind: "reference", target: { to: "variable", name: "rate" } },
   chain: { kind: "reference", target: { to: "variable", name: "alias" } },
   ring: { kind: "reference", target: { to: "variable", name: "loop" } },

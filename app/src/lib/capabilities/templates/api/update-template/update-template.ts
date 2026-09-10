@@ -10,9 +10,9 @@ import {
 } from "$capabilities/templates/api/shared/projection";
 import {
   normalizeScope,
-  removeRowsBoundTo,
-  unknownSetsIn
+  setReferencesIn
 } from "$capabilities/templates/api/shared/scopes";
+import { removeRowsBoundTo } from "$capabilities/templates/api/shared/scope-rows";
 import { stagesIn } from "$capabilities/templates/api/shared/stages";
 import type { RowFields } from "$capabilities/templates/api/shared/store";
 import { writeTemplateVersion } from "$capabilities/templates/api/shared/template-rows";
@@ -86,18 +86,27 @@ export const updateTemplate = async (input: unknown): Promise<UpdateTemplateResu
       };
     }
     for (const hole of holes) {
-      const missing = unknownSetsIn(
+      const references = setReferencesIn(
         store,
         scope.projectId,
         hole.default ?? { include: [], exclude: [] }
       );
-      if (missing.length > 0) {
+      if (references.missing.length > 0) {
         return {
           accepted: false,
           templateId: asked.templateId,
           reason: "unsupported-body",
           revision: template.revision,
-          detail: `no set in this project has id ${missing.join(", ")}`
+          detail: `no set in this project has id ${references.missing.join(", ")}`
+        };
+      }
+      if (references.private.length > 0) {
+        return {
+          accepted: false,
+          templateId: asked.templateId,
+          reason: "unsupported-body",
+          revision: template.revision,
+          detail: `a template default may reference only named reusable resource sets; ${references.private.join(", ")} is private`
         };
       }
     }
@@ -143,7 +152,7 @@ export const updateTemplate = async (input: unknown): Promise<UpdateTemplateResu
           name: hole.name,
           label: hole.label,
           ...(hole.description === undefined ? {} : { description: hole.description }),
-          ...(hole.kind === undefined ? {} : { kind: hole.kind }),
+          kind: hole.kind,
           ...(hole.text === undefined ? {} : { text: hole.text }),
           ...(written === undefined ? {} : { default: written.term })
         };

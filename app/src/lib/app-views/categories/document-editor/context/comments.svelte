@@ -1,16 +1,16 @@
 <script lang="ts">
   import { Panel, PanelEmpty, PanelQuote, PanelSection } from "$authored-components/panel";
   import {
-    ago,
-    detached,
-    firstAnchorBlockId,
-    nameOf,
+    commentsQuery,
+    peopleIn,
+    remarksIn,
     remarksOf,
-    textOf,
+    threadsIn,
     threadsOf,
     type Thread
   } from "$app-views/categories/document-editor/procedures/comments";
-  import { rowsIn, rowsOf, tableQuery } from "$app-views/categories/document-editor/procedures/store";
+  import { detached, firstAnchorBlockId } from "$app-views/categories/document-editor/procedures/comment-anchors";
+  import { ago, nameOf, textOf } from "$app-views/categories/document-editor/procedures/comment-copy";
   import { workspaceState } from "$model/client/workspace-state";
   import type { DocumentRuntime } from "$model/client/workspace-state";
 
@@ -24,14 +24,13 @@
     runtime = documentId === undefined ? undefined : view.documentRuntime(documentId);
   });
 
-  const threadsQuery = tableQuery("commentThreads");
-  const remarksQuery = tableQuery("comments");
+  const comments = commentsQuery();
 
   const body = $derived(runtime?.body);
-  const users = $derived(rowsIn("users"));
-  const remarks = $derived(rowsOf(remarksQuery, "comments"));
+  const users = $derived(peopleIn(comments));
+  const remarks = $derived(remarksIn(comments));
   const all = $derived(
-    rowsOf(threadsQuery, "commentThreads").filter(
+    threadsIn(comments).filter(
       (thread) => thread.target.kind === "document" && thread.target.id === documentId
     )
   );

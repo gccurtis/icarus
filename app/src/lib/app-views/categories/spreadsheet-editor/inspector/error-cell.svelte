@@ -24,7 +24,10 @@
   } from "$app-views/categories/spreadsheet-editor/procedures/references";
   import { selectedRef } from "$app-views/categories/spreadsheet-editor/procedures/selection-reading";
   import { cellSignal } from "$app-views/categories/spreadsheet-editor/procedures/selecting";
-  import { rowsOf, tableQuery } from "$app-views/categories/spreadsheet-editor/procedures/store";
+  import {
+    resourceIndexQuery,
+    spreadsheetRecordsIn
+  } from "$app-views/categories/spreadsheet-editor/procedures/spreadsheet-records";
   import { ERROR_NAMES, displayOf, errorOf, type ErrorToken, type SheetCell } from "$app-views/categories/spreadsheet-editor/procedures/values";
   import { holdsTheRuntime } from "$app-views/categories/spreadsheet-editor/procedures/effects/holds-the-runtime.svelte";
   import { variableRegister } from "$app-views/categories/spreadsheet-editor/procedures/variables.svelte";
@@ -51,8 +54,8 @@
     referencesIn(facts, held).filter((reference) => reference.rect === undefined && reference.kind !== "external")
   );
 
-  const sheetRows = tableQuery("spreadsheets");
-  const sheets = $derived(rowsOf(sheetRows, "spreadsheets"));
+  const resourceIndex = resourceIndexQuery();
+  const sheets = $derived(spreadsheetRecordsIn(resourceIndex));
 
   const apply = (edit: Edit) => {
     if (edit.refused === undefined && edit.ops.length > 0 && sheet !== undefined) runtime?.apply(recalculating(register, sheetId, sheet, edit.ops));

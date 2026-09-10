@@ -5,22 +5,18 @@
 
   import { Panel, PanelButton, PanelChip, PanelCrumbs, PanelNote, PanelQuote } from "$authored-components/panel";
   import { Textarea } from "$vendored-components/textarea";
-  import { create, remove, update } from "$capabilities/store/index.remote";
+  import { commentThreadCommand } from "$app-views/categories/slide-deck-editor/procedures/comment-thread-command.svelte";
   import {
-    ago,
-    nameOf,
-    refreshAll,
+    commentsQuery,
+    peopleIn,
+    remarksIn,
     remarksOf,
-    replyFields,
-    rowsIn,
-    rowsOf,
-    tableQuery,
-    textOf,
     threadOf,
-    userIdOf,
+    threadsIn,
     viewerId,
     type CommentThread
   } from "$app-views/categories/slide-deck-editor/procedures/comments";
+  import { ago, nameOf, textOf, userIdOf } from "$app-views/categories/slide-deck-editor/procedures/comment-copy";
   import { workspaceState } from "$model/client/workspace-state";
 
   type ElementNode = {
@@ -30,63 +26,36 @@
 
   const view = workspaceState();
   const threadId = $derived(view.selection?.id ?? "");
-  const threadsQuery = tableQuery("commentThreads");
-  const remarksQuery = tableQuery("comments");
-  const thread = $derived(threadOf(rowsOf(threadsQuery, "commentThreads"), threadId));
+  const comments = commentsQuery();
+  const thread = $derived(threadOf(threadsIn(comments), threadId));
   const remarks = $derived(
-    thread === undefined ? [] : remarksOf(rowsOf(remarksQuery, "comments"), thread._id)
+    thread === undefined ? [] : remarksOf(remarksIn(comments), thread._id)
   );
   const opening = $derived(remarks[0]);
-  const users = $derived(rowsIn("users"));
-  const viewer = $derived(viewerId());
+  const users = $derived(peopleIn(comments));
+  const viewer = $derived(viewerId(comments));
   const resolved = $derived(thread?.resolution);
   const now = Date.now();
 
   let reply = $state("");
-  let busy = $state(false);
-  let failed = $state<string>();
+  const command = commentThreadCommand();
+  const busy = $derived(command.busy);
+  const failed = $derived(command.failed);
 
-  const attempt = async (act: () => Promise<void>) => {
-    busy = true;
-    failed = undefined;
-    try {
-      await act();
-    } catch (error) {
-      failed = error instanceof Error ? error.message : "That did not save.";
-    } finally {
-      busy = false;
-    }
+  const send = () => {
+    const held = thread;
+    const text = reply.trim();
+    if (held === undefined || text.length === 0) return;
+    command.reply(held._id, text, () => (reply = ""));
   };
 
-  const send = () =>
-    attempt(async () => {
-      const held = thread;
-      const text = reply.trim();
-      if (held === undefined || text.length === 0) return;
-      await create({ table: "comments", fields: replyFields(held, text, viewer) });
-      await update({ path: `commentThreads.${held._id}.updatedAt`, value: Date.now() });
-      reply = "";
-      await refreshAll(remarksQuery, threadsQuery);
-    });
+  const resolve = () => {
+    if (thread !== undefined) command.setResolved(thread._id, true);
+  };
 
-  const resolve = () =>
-    attempt(async () => {
-      const held = thread;
-      if (held === undefined) return;
-      await update({
-        path: `commentThreads.${held._id}.resolution`,
-        value: { by: viewer, at: Date.now() }
-      });
-      await refreshAll(threadsQuery);
-    });
-
-  const reopen = () =>
-    attempt(async () => {
-      const held = thread;
-      if (held === undefined) return;
-      await remove({ path: `commentThreads.${held._id}.resolution` });
-      await refreshAll(threadsQuery);
-    });
+  const reopen = () => {
+    if (thread !== undefined) command.setResolved(thread._id, false);
+  };
 
   const elementIn = (elements: readonly ElementNode[], id: string): boolean =>
     elements.some(

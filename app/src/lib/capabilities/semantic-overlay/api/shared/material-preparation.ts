@@ -38,9 +38,14 @@ const joinedFailure = (...values: Array<string | undefined>): string | undefined
   return messages.length === 0 ? undefined : messages.join("; ").slice(0, 400);
 };
 
-const nativeImageReader = (model: ServerModel, projectId: Id<"projects">) => {
+const nativeImageReader = (
+  model: ServerModel,
+  projectId: Id<"projects">,
+  signal?: AbortSignal
+) => {
   const pendingByHash = new Map<string, Promise<MaterialSeed["nativeImage"]>>();
   return async (seed: MaterialSeed): Promise<{ seed: MaterialSeed; error?: string }> => {
+    signal?.throwIfAborted();
     if (
       seed.kind !== "image" ||
       seed.nativeImage !== undefined ||
@@ -56,7 +61,7 @@ const nativeImageReader = (model: ServerModel, projectId: Id<"projects">) => {
     let pending = pendingByHash.get(file.hash);
     if (pending === undefined) {
       pending = model.materialContent
-        .read({ storageId: file.storageId, hash: file.hash })
+        .read({ storageId: file.storageId, hash: file.hash }, signal)
         .then((bytes) =>
           bytes === undefined || bytes.byteLength > 5_000_000
             ? undefined
@@ -70,6 +75,7 @@ const nativeImageReader = (model: ServerModel, projectId: Id<"projects">) => {
     }
     try {
       const nativeImage = await pending;
+      signal?.throwIfAborted();
       return nativeImage === undefined
         ? {
             seed,
@@ -77,6 +83,7 @@ const nativeImageReader = (model: ServerModel, projectId: Id<"projects">) => {
           }
         : { seed: { ...seed, nativeImage } };
     } catch (error) {
+      if (signal?.aborted === true) throw error;
       return { seed, error: safeFailure(error) };
     }
   };
@@ -86,8 +93,10 @@ export const prepareMaterials = async (
   model: ServerModel,
   projectId: Id<"projects">,
   normalized: readonly NormalizedMaterial[],
-  force: boolean
+  force: boolean,
+  signal?: AbortSignal
 ): Promise<{ prepared: PreparedMaterial[]; usage: ProviderUsage[] }> => {
+  signal?.throwIfAborted();
   const previous = new Map(
     rowsOf(model.store, "semanticMaterials")
       .filter((material) => material.projectId === projectId)
@@ -99,10 +108,11 @@ export const prepareMaterials = async (
         ? [object as MaterialObjectRow]
         : []
   );
-  const readNativeImage = nativeImageReader(model, projectId);
+  const readNativeImage = nativeImageReader(model, projectId, signal);
   const prepared: PreparedMaterial[] = [];
   const usage: ProviderUsage[] = [];
   for (const candidate of normalized) {
+    signal?.throwIfAborted();
     const { seed, contextRefs } = candidate;
     const profileHash = materialHash(seed.profile);
     const contextHash = materialContextHash(seed, contextRefs);
@@ -174,8 +184,9 @@ export const prepareMaterials = async (
         shouldDescribeMaterial(preparedSeed));
     if (descriptorNeedsRefresh) {
       try {
-        descriptor = await describeMaterial(model, preparedSeed);
+        descriptor = await describeMaterial(model, preparedSeed, signal);
       } catch (failure) {
+        if (signal?.aborted === true) throw failure;
         descriptor = undefined;
         error = joinedFailure(error, safeFailure(failure));
       }
@@ -185,7 +196,8 @@ export const prepareMaterials = async (
       preparedSeed,
       descriptor,
       contextRefs,
-      force ? [] : priorFacets
+      force ? [] : priorFacets,
+      signal
     );
     if (
       !embedded.facets.some((facet) => facet.facet === "nativeVisual") &&

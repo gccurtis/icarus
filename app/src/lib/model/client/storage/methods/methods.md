@@ -37,17 +37,18 @@ constructor. Everything else an object does lives here.
 ## State Access
 
 Neither function receives instance state, and that is the point. `serialize.ts`
-imports nothing but types: no DOM, no `$app/*`, no runes. That is what lets the
-half of this object where every decision actually lives be tested directly, under
-the node environment, against string literals — while the browser half stays two
-lines around `localStorage`.
+imports only the current represented vocabulary and pure admission behavior: no
+DOM, no `$app/*`, no runes. That lets the half of this object where every decision
+actually lives be tested directly under the node environment against string
+literals, while the browser half stays two lines around `localStorage`.
 
 ## Common Shape
 
 ```text
-1. reject what could not be what it claims
-2. drop it on its own rather than taking its parent with it
-3. answer a value the rest of the application can use unchecked
+1. admit only the one current version and its closed current vocabularies
+2. reject a missing, unknown, malformed, duplicated, or incoherent member
+3. discard the complete document when any member fails
+4. answer a value the rest of the application can use unchecked
 ```
 
 ## Concurrency

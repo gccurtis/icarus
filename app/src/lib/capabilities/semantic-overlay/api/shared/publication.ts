@@ -81,7 +81,7 @@ export const publishSemanticTranslation = (
       ? []
       : rowsOf(model.store, "semanticObjects").flatMap((row): TextObjectRow[] =>
           row.projectId === projectId &&
-          (row.lane ?? "text") === "text" &&
+          row.lane === "text" &&
           "semanticSourceId" in row &&
           row.semanticSourceId === previous._id
             ? [row as TextObjectRow]
@@ -139,7 +139,7 @@ export const publishSemanticTranslation = (
     .filter(
       (row) =>
         row.projectId === projectId &&
-        (row.lane ?? "text") === "text" &&
+        row.lane === "text" &&
         !previousObjectIds.has(row._id)
     )
     .map((row) => ({ id: row._id, vector: row.vector }));

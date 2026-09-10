@@ -87,8 +87,9 @@ export const FLIGHT_DIAGRAM = `flowchart TB
   FLIGHTS --> R["research chat<br/>controller + stop + deadline"]
   D --> JOB["durable refresh job"]
   R --> TURN["durable turn row"]
-  CLOSE["server.close()"] --> ABORT["abort every active operation"]
-  ABORT --> FLIGHTS
+  CLOSE["server.close()"] --> FLIGHTS
+  FLIGHTS --> ABORT["abort every active operation"]
+  ABORT --> DRAIN["await terminal persistence"]
 
   note["Capabilities receive the model;<br/>no globalThis registry and no mutable module singleton"]
   note -.-> FLIGHTS

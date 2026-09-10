@@ -6,11 +6,7 @@ import type { SpreadsheetRuntimesModel } from "$model/client/spreadsheet-runtime
 import type { TabListModel } from "$model/client/tab-list";
 import type { TabViewsModel } from "$model/client/tab-views";
 import { WorkspaceState } from "$model/client/workspace-state/definition.svelte";
-import type {
-  StoreReader,
-  UsernameReader,
-  WorkspaceStateModel
-} from "$model/client/workspace-state/types";
+import type { WorkspaceStateModel } from "$model/client/workspace-state/types";
 
 const FLUSH_AFTER_OPS = "workspace.changeSets.flushAfterOps";
 const FLUSH_AFTER_MS = "workspace.changeSets.flushAfterMs";
@@ -22,9 +18,7 @@ export const createWorkspaceState = (
   configuration: ConfigurationModel,
   documents?: DocumentRuntimesModel,
   decks?: SlideDeckRuntimesModel,
-  sheets?: SpreadsheetRuntimesModel,
-  storeReader?: StoreReader,
-  usernameReader?: UsernameReader
+  sheets?: SpreadsheetRuntimesModel
 ): WorkspaceStateModel =>
   new WorkspaceState(
     project,
@@ -36,7 +30,5 @@ export const createWorkspaceState = (
     },
     documents,
     decks,
-    sheets,
-    storeReader,
-    usernameReader
+    sheets
   );

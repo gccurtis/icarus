@@ -3,7 +3,7 @@ import { beforeEach, test, vi } from "vitest";
 
 import type { StoreUnitOfWork } from "$model/server/store/index.server";
 
-type Row = Record<string, unknown> & { _id: string };
+type Row = Record<string, unknown> & { _id: string; _creationTime: number };
 
 const model = vi.hoisted(() => ({
   calls: [] as string[],
@@ -32,7 +32,7 @@ const model = vi.hoisted(() => ({
       model.calls.push(`create ${table}`);
       model.minted += 1;
       const id = `${table}:${model.minted}`;
-      model.tableOf(table).push({ ...(fields as Row), _id: id });
+      model.tableOf(table).push({ ...(fields as Row), _id: id, _creationTime: Date.now() });
       return id;
     },
     read: (path: string) => {
@@ -47,7 +47,9 @@ const model = vi.hoisted(() => ({
       const at = rows.findIndex((row) => row._id === id);
       if (at === -1) return;
       rows[at] =
-        field === undefined ? { ...(value as Row), _id: id } : { ...rows[at], [field]: value };
+        field === undefined
+          ? { ...(value as Row), _id: id, _creationTime: rows[at]._creationTime }
+          : { ...rows[at], [field]: value };
     },
     remove: (path: string) => {
       model.calls.push(`remove ${path}`);
@@ -65,7 +67,7 @@ const model = vi.hoisted(() => ({
 
 vi.mock("$runtime/server/start.server", () => ({ serverModel: () => model }));
 vi.mock("$runtime/server/scope.server", () => ({
-  requireScope: () => Promise.resolve({ projectId: "p", userId: "u", username: "You" })
+  requireScope: () => Promise.resolve({ projectId: "default", userId: "default-user", username: "You" })
 }));
 
 const { readSpreadsheet } = await import(
@@ -74,6 +76,7 @@ const { readSpreadsheet } = await import(
 const { submitSpreadsheetChanges } = await import(
   "$capabilities/spreadsheet/api/submit-spreadsheet-changes/submit-spreadsheet-changes"
 );
+const { surroundingsOf } = await import("$capabilities/spreadsheet/api/shared/answering");
 
 const body = () => ({
   rows: [
@@ -92,11 +95,12 @@ const body = () => ({
 
 const leaderAt = (revision: number) => {
   if (!model.sheets.some((row) => row._id === "spreadsheets:1")) {
-    model.sheets.push({ _id: "spreadsheets:1", projectId: "p", title: "Sheet" });
+    model.sheets.push({ _id: "spreadsheets:1", _creationTime: 1, projectId: "default", title: "Sheet" });
   }
   return model.snapshots.push({
     _id: "spreadsheetSnapshots:1",
-    projectId: "p",
+    _creationTime: 1,
+    projectId: "default",
     resourceId: "spreadsheets:1",
     role: "leader",
     revision,
@@ -109,7 +113,8 @@ const leaderAt = (revision: number) => {
 const cellRow = (rowId: string, columnId: string, value: unknown) =>
   model.cells.push({
     _id: `sheetCells:${model.cells.length + 100}`,
-    projectId: "p",
+    _creationTime: 1,
+    projectId: "default",
     resourceId: "spreadsheets:1",
     rowId,
     columnId,
@@ -157,7 +162,8 @@ test("a read answers the leader body and the sheet's cells without their row fie
   cellRow("r1", "c1", { kind: "text", value: "Feeder" });
   model.cells.push({
     _id: "sheetCells:9",
-    projectId: "other",
+    _creationTime: 1,
+    projectId: "projects:other",
     resourceId: "spreadsheets:1",
     rowId: "r1",
     columnId: "c2",
@@ -186,7 +192,7 @@ test("a change set for a sheet that is not there writes nothing", async () => {
 });
 
 test("a sheet with no leader snapshot is not written into existence", async () => {
-  model.sheets.push({ _id: "spreadsheets:1", projectId: "p", title: "Sheet" });
+  model.sheets.push({ _id: "spreadsheets:1", _creationTime: 1, projectId: "default", title: "Sheet" });
 
   const answer = await submitSpreadsheetChanges(typing(0, "r3/c2/value", 42));
 
@@ -194,6 +200,53 @@ test("a sheet with no leader snapshot is not written into existence", async () =
   assert.equal(!answer.accepted && answer.reason, "missing");
   assert.equal(model.snapshots.length, 0);
   assert.equal(model.changeSets.length, 0);
+});
+
+test("a leader missing its current body fails closed", async () => {
+  model.sheets.push({ _id: "spreadsheets:1", _creationTime: 1, projectId: "default", title: "Sheet" });
+  model.snapshots.push({
+    _id: "spreadsheetSnapshots:1",
+    _creationTime: 1,
+    projectId: "default",
+    resourceId: "spreadsheets:1",
+    role: "leader",
+    revision: 3,
+    part: 0,
+    at: 1
+  });
+
+  await assert.rejects(
+    () => readSpreadsheet({ resourceId: "spreadsheets:1" }),
+    /spreadsheetSnapshots table contains a non-current row/
+  );
+  await assert.rejects(
+    () => submitSpreadsheetChanges(typing(3, "r1/c1/value", 42)),
+    /spreadsheetSnapshots table contains a non-current row/
+  );
+  assert.equal(model.changeSets.length, 0);
+  assert.equal(model.cells.length, 0);
+});
+
+test("a malformed neighbouring snapshot fails formula surroundings closed", () => {
+  model.snapshots.push({
+    _id: "spreadsheetSnapshots:other",
+    _creationTime: 1,
+    projectId: "default",
+    resourceId: "spreadsheets:other",
+    role: "leader",
+    revision: 1,
+    part: 0,
+    at: 1
+  });
+
+  assert.throws(
+    () => surroundingsOf(
+      model.store as never,
+      "default" as never,
+      "spreadsheets:1" as never
+    ),
+    /spreadsheetSnapshots table contains a non-current row/
+  );
 });
 
 test("a set on a coordinate makes a cell row, and a second set updates it", async () => {
@@ -352,7 +405,8 @@ test("sharing a formula with another sheet preserves that sheet's ownership", as
   leaderAt(0);
   model.formulas.push({
     _id: "formulas:shared",
-    projectId: "p",
+    _creationTime: 1,
+    projectId: "default",
     representation: "=1+1",
     usedBy: [
       {
@@ -395,6 +449,49 @@ test("sharing a formula with another sheet preserves that sheet's ownership", as
       path: "r1/c1"
     }
   ]);
+});
+
+test("a stored formula missing its current usedBy list rejects the whole change", async () => {
+  leaderAt(0);
+  model.formulas.push({
+    _id: "formulas:malformed",
+    _creationTime: 1,
+    projectId: "default",
+    representation: "=1+1",
+    updatedAt: 1
+  });
+  const before = {
+    snapshots: structuredClone(model.snapshots),
+    formulas: structuredClone(model.formulas),
+    changeSets: structuredClone(model.changeSets),
+    cells: structuredClone(model.cells)
+  };
+
+  await assert.rejects(
+    () =>
+      submitSpreadsheetChanges(
+        sending(0, [
+          {
+            op: "set",
+            target: "cell",
+            path: "r1/c1",
+            value: {
+              rowId: "r1",
+              columnId: "c1",
+              value: { kind: "empty" },
+              expression: "=1+1",
+              anchors: []
+            },
+            was: null
+          }
+        ])
+      ),
+    /formulas table contains a non-current row/
+  );
+  assert.deepEqual(model.snapshots, before.snapshots);
+  assert.deepEqual(model.formulas, before.formulas);
+  assert.deepEqual(model.changeSets, before.changeSets);
+  assert.deepEqual(model.cells, before.cells);
 });
 
 test("a forged was is replaced by what the sheet actually held", async () => {

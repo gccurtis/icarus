@@ -27,8 +27,11 @@ export const createTemplate = async (input: unknown): Promise<CreateTemplateResu
     revision: 1,
     updatedAt: at
   };
-  const templateId = store.create("templates", fields);
-  writeTemplateVersion(store, templateId, fields, at);
+  const templateId = store.transaction((unit) => {
+    const id = unit.create("templates", fields);
+    writeTemplateVersion(unit, id, fields, at);
+    return id;
+  });
 
   return { accepted: true, templateId, target: asked.target, revision: 1 };
 };

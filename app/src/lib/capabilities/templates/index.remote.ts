@@ -1,7 +1,8 @@
 import { command, query } from "$app/server";
 
+import { readDocumentBody } from "$capabilities/document/index.remote";
 import { readProjectResourceIndex } from "$capabilities/project-resources/index.remote";
-import { read as readStoreTable } from "$capabilities/store/index.remote";
+import { readSlideDeckBody } from "$capabilities/slide-deck/index.remote";
 import { commitTemplateStage as commitTemplateStageProcedure } from "$capabilities/templates/api/commit-template-stage/commit-template-stage";
 import { createTemplate as createTemplateProcedure } from "$capabilities/templates/api/create-template/create-template";
 import { createTemplateFromResource as createTemplateFromResourceProcedure } from "$capabilities/templates/api/create-template-from-resource/create-template-from-resource";
@@ -12,13 +13,14 @@ import { openTemplateStage as openTemplateStageProcedure } from "$capabilities/t
 import { readResourceTemplate as readResourceTemplateProcedure } from "$capabilities/templates/api/read-resource-template/read-resource-template";
 import { readTemplate as readTemplateProcedure } from "$capabilities/templates/api/read-template/read-template";
 import { readTemplateLibrary as readTemplateLibraryProcedure } from "$capabilities/templates/api/read-template-library/read-template-library";
+import { readTemplateStageIndex as readTemplateStageIndexProcedure } from "$capabilities/templates/api/read-template-stage-index/read-template-stage-index";
 import { removeTemplate as removeTemplateProcedure } from "$capabilities/templates/api/remove-template/remove-template";
-import { resourceTableOf } from "$capabilities/templates/api/shared/stages";
 import { updateTemplate as updateTemplateProcedure } from "$capabilities/templates/api/update-template/update-template";
 
 export const readTemplateLibrary = query(readTemplateLibraryProcedure);
 export const readTemplate = query("unchecked", readTemplateProcedure);
 export const readResourceTemplate = query("unchecked", readResourceTemplateProcedure);
+export const readTemplateStageIndex = query(readTemplateStageIndexProcedure);
 
 export const createTemplate = command("unchecked", async (input) => {
   const result = await createTemplateProcedure(input);
@@ -36,6 +38,7 @@ export const updateTemplate = command("unchecked", async (input) => {
   const result = await updateTemplateProcedure(input);
   await readTemplateLibrary().refresh();
   await readTemplate({ templateId: result.templateId }).refresh();
+  if (result.accepted) await readTemplateStageIndex().refresh();
   return result;
 });
 
@@ -49,6 +52,7 @@ export const removeTemplate = command("unchecked", async (input) => {
   const result = await removeTemplateProcedure(input);
   await readTemplateLibrary().refresh();
   await readTemplate({ templateId: result.templateId }).refresh();
+  if (result.accepted) await readTemplateStageIndex().refresh();
   return result;
 });
 
@@ -64,8 +68,14 @@ export const openTemplateStage = command("unchecked", async (input) => {
   await readTemplateLibrary().refresh();
   await readTemplate({ templateId: result.templateId }).refresh();
   if (result.accepted) {
+    await readTemplateStageIndex().refresh();
     await readResourceTemplate({ resourceId: result.resourceId }).refresh();
-    await readStoreTable({ path: resourceTableOf(result.target) }).refresh();
+    await readProjectResourceIndex().refresh();
+    if (result.target === "document") {
+      await readDocumentBody({ resourceId: result.resourceId }).refresh();
+    } else {
+      await readSlideDeckBody({ resourceId: result.resourceId }).refresh();
+    }
   }
   return result;
 });
@@ -81,9 +91,15 @@ export const discardTemplateStage = command("unchecked", async (input) => {
   const result = await discardTemplateStageProcedure(input);
   await readTemplateLibrary().refresh();
   if (result.accepted) {
+    await readTemplateStageIndex().refresh();
     await readTemplate({ templateId: result.templateId }).refresh();
     await readResourceTemplate({ resourceId: result.resourceId }).refresh();
-    await readStoreTable({ path: resourceTableOf(result.target) }).refresh();
+    await readProjectResourceIndex().refresh();
+    if (result.target === "document") {
+      await readDocumentBody({ resourceId: result.resourceId }).refresh();
+    } else {
+      await readSlideDeckBody({ resourceId: result.resourceId }).refresh();
+    }
   }
   return result;
 });
@@ -105,6 +121,7 @@ export type {
   OpenTemplateStageResult,
   ReadResourceTemplateInput,
   ReadResourceTemplateResult,
+  ReadTemplateStageIndexResult,
   ReadTemplateInput,
   ReadTemplateLibraryResult,
   ReadTemplateResult,
@@ -117,6 +134,8 @@ export type {
   TemplateDetail,
   TemplateLibraryItem,
   TemplateStageTarget,
+  TemplateStageIdentity,
+  TemplateStageIdentityUnavailable,
   TemplateTarget,
   TemplateUnavailable,
   UpdateTemplateInput,

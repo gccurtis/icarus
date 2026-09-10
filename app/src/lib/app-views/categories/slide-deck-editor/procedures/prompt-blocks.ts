@@ -110,13 +110,14 @@ export const promptScopeOps = (block: PromptBlock, scope: unknown): SlideDeckOp[
   return op === undefined ? [] : [op];
 };
 
-/** Linking hands the scope to the output, which is why the block gives it up here. */
+/** Linking hands the question and scope to the output, so the block gives both up here. */
 export const linkPromptBlockOps = (
   block: PromptBlock,
   derivedOutputId: Id<"derivedOutputs">
 ): SlideDeckOp[] =>
   [
     setField(block, "derivedOutputId", derivedOutputId, block.derivedOutputId),
+    setField(block, "prompt", undefined, block.prompt),
     setField(block, "scope", undefined, block.scope)
   ].filter((op): op is SlideDeckOp => op !== undefined);
 

@@ -1,104 +1,73 @@
-import type { TableName } from "$representation/store/tables";
-import { readTemplate } from "$capabilities/templates/index.remote";
-import { readStore } from "$model/client/workspace-state";
+import type { ReadAgentsLibraryResult } from "$capabilities/agents/index.remote";
+import type { ProjectResourceIndex } from "$capabilities/project-resources/index.remote";
+import type {
+  ReadTemplateLibraryResult,
+  ReadTemplateStageIndexResult
+} from "$capabilities/templates/index.remote";
 
-/**
- * The field for each table this surface may be asked to name.
- * Omitted tables are internal representation state, not status-bar resources.
- */
-const NAMED_FIELD: Partial<Record<TableName, string | null>> = {
-  activity: null,
-  agentTasks: "title",
-  comments: null,
-  commentThreads: null,
-  connectors: "name",
-  dataBackReferences: null,
-  derivedOutputs: null,
-  documentChangeSets: null,
-  documents: "title",
-  documentSnapshots: null,
-  findings: "title",
-  formulas: null,
-  hypotheses: "statement",
-  memberships: null,
-  personas: "name",
-  projects: "name",
-  questions: "text",
-  researchThreads: "title",
-  resourceSets: "name",
-  sheetCells: null,
-  slideDeckChangeSets: null,
-  slideDecks: "title",
-  slideDeckSnapshots: null,
-  spreadsheetChangeSets: null,
-  spreadsheets: "title",
-  spreadsheetSnapshots: null,
-  templates: "name",
-  templateVersions: null,
-  threadParts: null,
-  threads: null,
-  users: "displayName",
-  variables: "name",
-  workspaceRevisions: null,
-  workspaceSnapshots: null
+/** Stable query snapshots owned by the status-bar component. */
+export type ResourceNames = {
+  readonly resourcesReady: boolean;
+  readonly agentsReady: boolean;
+  readonly templatesReady: boolean;
+  readonly stagesReady: boolean;
+  readonly resources: ProjectResourceIndex | undefined;
+  readonly agents: ReadAgentsLibraryResult | undefined;
+  readonly templates: ReadTemplateLibraryResult | undefined;
+  readonly stages: ReadTemplateStageIndexResult | undefined;
 };
 
-/**
- * What to call a table on the one always-visible line.
- *
- * Partial: a table with no word here shows no kind, and the bar draws the name
- * alone. Filling in all thirty-five would be inventing a word for rows that
- * cannot be the subject of a tab.
- */
-const KIND_WORD: Partial<Record<TableName, string>> = {
-  agentTasks: "Task",
-  connectors: "Connector",
-  documents: "Document",
-  findings: "Finding",
-  hypotheses: "Hypothesis",
-  personas: "Persona",
-  questions: "Question",
-  researchThreads: "Research",
-  slideDecks: "Deck",
-  spreadsheets: "Spreadsheet",
-  templates: "Template"
-};
+const RESOURCE_KIND = {
+  document: "Document",
+  slides: "Deck",
+  spreadsheet: "Spreadsheet",
+  research: "Research",
+  finding: "Finding"
+} as const;
 
-const isTable = (value: string): value is TableName => Object.hasOwn(NAMED_FIELD, value);
-
-/** Resource ids keep the table before one opaque suffix. */
-const tableOf = (id: string): TableName | undefined => {
-  const [table] = id.split(":");
-  return table !== undefined && isTable(table) ? table : undefined;
-};
-
-/** What a row is called. `…` while the read is out, `Disconnected` when it answers empty. */
-export const nameOf = (id: string): string => {
-  const table = tableOf(id);
-  if (table === "templates") {
-    const answer = readTemplate({ templateId: id });
-    if (!answer.ready) return "…";
-
-    const found = answer.current;
-    if (found === null) return "Disconnected";
-    return "unavailable" in found ? "Unavailable template" : found.name;
+/** Name the current browser subject without exposing a representation table. */
+export const nameOf = (id: string, names: ResourceNames): string => {
+  if (id.startsWith("templates:")) {
+    if (!names.templatesReady) return "…";
+    const found = names.templates?.templates.find((candidate) => candidate.id === id);
+    if (found !== undefined) return found.name;
+    return names.templates?.unavailable.some((candidate) => candidate.templateId === id)
+      ? "Unavailable template"
+      : "Disconnected";
   }
-  const field = table === undefined ? undefined : NAMED_FIELD[table];
-  if (table === undefined || field == null) return "Disconnected";
 
-  const answer = readStore(table);
-  if (!answer.ready) return "…";
+  if (!names.resourcesReady || !names.agentsReady || !names.stagesReady) return "…";
+  // A live stage is a distinct current subject. Its explicit membership wins;
+  // it is intentionally absent from the project resource projection.
+  const stage = names.stages?.stages.find((candidate) => candidate.resourceId === id);
+  if (stage !== undefined) return `Template · ${stage.templateName}`.slice(0, 160);
 
-  const found = answer.current;
-  if (found?.kind !== "table" || found.table !== table) return "Disconnected";
+  const resource = names.resources?.resources.find((candidate) => candidate.id === id);
+  if (resource !== undefined) return resource.name;
 
-  const row = found.rows.find((candidate) => candidate._id === id);
-  const value = (row as unknown as Record<string, unknown> | undefined)?.[field];
-  return typeof value === "string" ? value : "Disconnected";
+  const library = names.agents;
+  const persona = library?.personas.find((candidate) => candidate.id === id);
+  if (persona !== undefined) return persona.name;
+  const task = library?.tasks.find((candidate) => candidate.id === id);
+  if (task !== undefined) return task.title;
+  const automation = library?.automations.find((candidate) => candidate.id === id);
+  if (automation !== undefined) return automation.name;
+  const chat = library?.chats.find((candidate) => candidate.id === id);
+  return chat?.title ?? "Disconnected";
 };
 
-/** The word for what kind of thing an id names, where there is one. */
-export const kindOf = (id: string): string | undefined => {
-  const table = tableOf(id);
-  return table === undefined ? undefined : KIND_WORD[table];
+export const kindOf = (
+  id: string,
+  resources: ProjectResourceIndex | undefined,
+  stages: ReadTemplateStageIndexResult | undefined
+): string | undefined => {
+  if (id.startsWith("templates:")) return "Template";
+  const stage = stages?.stages.find((candidate) => candidate.resourceId === id);
+  if (stage !== undefined) return stage.target === "document" ? "Document" : "Deck";
+  const resource = resources?.resources.find((candidate) => candidate.id === id);
+  if (resource !== undefined) return RESOURCE_KIND[resource.kind];
+  if (id.startsWith("personas:")) return "Persona";
+  if (id.startsWith("agentTasks:")) return "Task";
+  if (id.startsWith("automations:")) return "Automation";
+  return undefined;
 };

@@ -18,6 +18,7 @@
   import { startClock } from "$app-views/categories/research/procedures/effects/clock.svelte";
   import { keepDraftWithChat } from "$app-views/categories/research/procedures/effects/draft.svelte";
   import { followNewestTurn } from "$app-views/categories/research/procedures/effects/newest.svelte";
+  import { refreshThreadWhenShown } from "$app-views/categories/research/procedures/effects/refresh-thread.svelte";
   import { releaseThread } from "$app-views/categories/research/procedures/effects/release.svelte";
   import { setPersona } from "$app-views/categories/research/procedures/set-persona";
   import { stopTurn } from "$app-views/categories/research/procedures/stop-turn";
@@ -26,6 +27,7 @@
   import { workspaceState } from "$model/client/workspace-state";
 
   const view = workspaceState();
+  const surface = new ThreadState(view);
 
   const list = threadList();
   const threads = $derived(list.ready ? list.current.threads : []);
@@ -47,10 +49,16 @@
     turns.find((row) => row.state === "running" || row.state === "queued")
   );
   const live = $derived(running !== undefined);
+  const refreshFailure = $derived.by(() => {
+    const held = surface.refreshFailure;
+    if (held === undefined || held.threadId !== threadId) return undefined;
+    return held.message;
+  });
+  const failure = $derived(surface.failure ?? refreshFailure);
 
-  const surface = new ThreadState(view);
   const clock = startClock();
   releaseThread(surface);
+  refreshThreadWhenShown(view, surface, () => threadId, () => detail, () => live);
   keepDraftWithChat(view, surface, () => threadId);
   followNewestTurn(view, surface, () => newest?.id);
 
@@ -125,8 +133,8 @@
       </div>
 
       <div class="answer">
-        {#if surface.failure}
-          <ScreenBanner title="That did not run" tone="attention">{surface.failure}</ScreenBanner>
+        {#if failure}
+          <ScreenBanner title="That did not run" tone="attention">{failure}</ScreenBanner>
         {/if}
 
         {#if surface.pending || live}

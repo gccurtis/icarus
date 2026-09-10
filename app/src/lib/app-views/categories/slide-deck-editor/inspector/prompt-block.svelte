@@ -43,6 +43,7 @@
   } from "$app-views/categories/slide-deck-editor/inspector/prompt-block.state.svelte";
   import { createPromptBlock } from "$app-views/categories/slide-deck-editor/procedures/create-prompt-block";
   import { synchronizePromptBlockDraft } from "$app-views/categories/slide-deck-editor/procedures/effects/prompt-block-draft.svelte";
+  import { setPromptDefinition } from "$app-views/categories/slide-deck-editor/procedures/set-prompt-definition";
   import { workspaceState } from "$model/client/workspace-state";
 
   const PHASE: Record<PromptBlockPhase, string> = {
@@ -79,7 +80,7 @@
     if (ops.length > 0) runtime.apply(ops);
   };
 
-  synchronizePromptBlockDraft(state, () => block?.id);
+  synchronizePromptBlockDraft(state, () => block);
 
   const create = () => createPromptBlock({
     blockId: block?.id ?? "",
@@ -128,6 +129,11 @@
         <Textarea
           id={`new-slide-prompt-${block.id}`}
           bind:value={state.promptDraft}
+          oninput={(event) => setPromptDefinition({
+            block,
+            prompt: event.currentTarget.value,
+            runtime
+          })}
           rows={5}
           maxlength={8000}
           placeholder="What should this text box derive from project sources?"

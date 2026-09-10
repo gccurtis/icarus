@@ -1,4 +1,4 @@
-import { rowsIn } from "$app-views/categories/project-overview/procedures/rows";
+import type { ReadProjectOverviewResult } from "$capabilities/project/index.remote";
 
 export type Person = {
   readonly id: string;
@@ -22,15 +22,11 @@ const ROLE: Record<string, string> = {
  * `users` says what they are called, and neither answers alone. A membership
  * whose user has not loaded is dropped rather than drawn as a blank face.
  */
-export const people = (projectId: string): readonly Person[] => {
-  const users = rowsIn("users");
-
-  return rowsIn("memberships")
-    .filter((membership) => membership.projectId === projectId)
-    .flatMap((membership) => {
-      const user = users.find((candidate) => candidate._id === membership.userId);
-      return user === undefined
-        ? []
-        : [{ id: user._id, name: user.displayName, role: ROLE[membership.role] ?? membership.role }];
-    });
+export const people = (
+  projectId: string,
+  overview: ReadProjectOverviewResult | undefined
+): readonly Person[] => {
+  return overview?.projectId === projectId
+    ? overview.people.map((person) => ({ ...person, role: ROLE[person.role] ?? person.role }))
+    : [];
 };

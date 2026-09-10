@@ -1,6 +1,6 @@
 # Configuration
 
-Every `*.yaml` in this directory is read once at startup and merged into one
+Every top-level `*.yaml` in this directory is read once at startup and merged into one
 immutable snapshot. How that works — merge order, freezing, why values come back
 as `unknown` — is documented beside the code that does it, in
 [`src/lib/model/server/configuration/configuration.md`](../src/lib/model/server/configuration/configuration.md).
@@ -41,5 +41,13 @@ a literal path to find and replace later, and it says so in the file itself.
 
 ## local.yaml
 
-Git-ignored, and merged last so it wins. It is where a real secret goes;
-everything else here is tracked.
+Git-ignored, and merged after the ordinary sections so it wins. It is where a
+real secret goes; everything else here is tracked.
+
+## Process overlays
+
+Files under `overlays/` are never merged implicitly. A process may opt into one
+with `ICARUS_CONFIGURATION_OVERLAY=overlays/<name>.yaml`. The path is confined to
+one file directly inside that directory, and the selected file merges after
+`local.yaml`. This is for isolated process infrastructure such as deterministic
+browser providers; it is not a second local-configuration mechanism.

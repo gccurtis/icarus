@@ -880,6 +880,7 @@
       },
       "layouts": [
         {
+          "id": "layout-executive-summary",
           "key": "executive-summary",
           "name": "Executive summary",
           "locked": [],
@@ -898,8 +899,9 @@
               "id": "exec-title-element",
               "frame": { "x": 0.08, "y": 0.1, "width": 0.84, "height": 0.18 },
               "overflow": "shrink",
-              "blocks": [
-                {
+              "content": {
+                "type": "text",
+                "block": {
                   "id": "exec-title-block",
                   "type": "text",
                   "variant": "heading",
@@ -909,24 +911,26 @@
                   "display": "September portfolio update",
                   "marks": []
                 }
-              ]
+              }
             },
             {
               "id": "exec-body-element",
               "frame": { "x": 0.08, "y": 0.36, "width": 0.84, "height": 0.48 },
               "overflow": "shrink",
-              "format": { "background": "--token-color-intelligence-surface", "padding": { "x": 18, "y": 16 } },
-              "blocks": [
-                {
+              "paint": { "fill": "--token-color-intelligence-surface" },
+              "content": {
+                "type": "text",
+                "block": {
                   "id": "exec-body-block",
                   "type": "text",
                   "variant": "paragraph",
                   "style": "body",
+                  "format": { "padding": { "x": 18, "y": 16 } },
                   "atoms": [{ "id": "exec-body-atom", "kind": "literal", "text": "Reliability work remains on plan. Transformer procurement is the only material schedule exception; approval of the accelerated replacement window is requested this week." }],
                   "display": "Reliability work remains on plan. Transformer procurement is the only material schedule exception; approval of the accelerated replacement window is requested this week.",
                   "marks": []
                 }
-              ]
+              }
             }
           ],
           "notes": []
@@ -960,6 +964,7 @@
       },
       "layouts": [
         {
+          "id": "layout-options",
           "key": "options",
           "name": "Options",
           "locked": [],
@@ -978,8 +983,9 @@
               "id": "options-title-element",
               "frame": { "x": 0.07, "y": 0.08, "width": 0.86, "height": 0.18 },
               "overflow": "shrink",
-              "blocks": [
-                {
+              "content": {
+                "type": "text",
+                "block": {
                   "id": "options-title-block",
                   "type": "text",
                   "variant": "heading",
@@ -989,24 +995,26 @@
                   "display": "Storm hardening options",
                   "marks": []
                 }
-              ]
+              }
             },
             {
               "id": "options-body-element",
               "frame": { "x": 0.07, "y": 0.33, "width": 0.86, "height": 0.56 },
               "overflow": "shrink",
-              "format": { "border": { "color": "--token-color-active-border", "width": 1, "style": "solid" }, "padding": { "x": 18, "y": 16 } },
-              "blocks": [
-                {
+              "paint": { "stroke": { "color": "--token-color-active-border", "width": 1, "dash": "solid" } },
+              "content": {
+                "type": "text",
+                "block": {
                   "id": "options-body-block",
                   "type": "text",
                   "variant": "paragraph",
                   "style": "body",
+                  "format": { "padding": { "x": 18, "y": 16 } },
                   "atoms": [{ "id": "options-body-atom", "kind": "literal", "text": "Covered conductor provides the strongest near-term risk reduction per dollar. Targeted undergrounding is reserved for the four highest-consequence segments." }],
                   "display": "Covered conductor provides the strongest near-term risk reduction per dollar. Targeted undergrounding is reserved for the four highest-consequence segments.",
                   "marks": []
                 }
-              ]
+              }
             }
           ],
           "notes": []

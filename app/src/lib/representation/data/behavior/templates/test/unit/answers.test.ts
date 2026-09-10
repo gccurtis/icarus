@@ -62,6 +62,7 @@ describe("what placing a template asks for", () => {
     {
       name: "evidence",
       label: "Evidence",
+      kind: "scope",
       description: "What it reads.",
       default: { include: [{ select: "kinds", kinds: ["finding"] }], exclude: [] }
     },

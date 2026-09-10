@@ -57,7 +57,7 @@ export const taskItem = (task: Task, visible: Visible): TaskItem => ({
   openQuestions: openQuestions(task.questions).length,
   outputCount: task.outputs.length,
   scope: task.scope ?? null,
-  tools: orderedTools(task.tools ?? []),
+  tools: orderedTools(task.tools),
   revision: task.revision,
   updatedAt: task.updatedAt
 });

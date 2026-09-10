@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { renameSheet, titleOf, titleQuery } from "$app-views/categories/spreadsheet-editor/procedures/store";
+  import { renameSheet, titleOf, titleQuery } from "$app-views/categories/spreadsheet-editor/procedures/resource-title";
   import { Panel, PanelEditableText, PanelEmpty, PanelField, PanelFields, PanelSection } from "$authored-components/panel";
   import { gridOf, rectLabelOf } from "$app-views/categories/spreadsheet-editor/procedures/addresses";
   import { problemsOf } from "$app-views/categories/spreadsheet-editor/procedures/references";

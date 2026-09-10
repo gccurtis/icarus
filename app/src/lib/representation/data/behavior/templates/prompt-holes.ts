@@ -114,6 +114,7 @@ export const promptHolesOf = (body: unknown): readonly PromptHoleDraft[] =>
         hole: {
           name,
           label: name,
+          kind: "scope",
           ...(description === "" ? {} : { description }),
           ...(fallback === undefined ? {} : { default: fallback })
         }

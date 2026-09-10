@@ -29,7 +29,11 @@ export const enqueueMaterialSyncFor = (
     queuedAt: at,
     updatedAt: at
   });
-  if (requestedRevision > existing.requestedRevision) {
+
+  const revisionAdvanced = requestedRevision > existing.requestedRevision;
+  if (existing.state === "failed" && !revisionAdvanced && !force) return existing._id;
+
+  if (revisionAdvanced) {
     model.store.update(`semanticMaterialJobs.${existing._id}.requestedRevision`, requestedRevision);
   }
   if (force && existing.force !== true) model.store.update(`semanticMaterialJobs.${existing._id}.force`, true);

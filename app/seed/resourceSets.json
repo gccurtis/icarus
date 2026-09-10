@@ -42,5 +42,27 @@
     "createdBy": { "kind": "user", "userId": "users:1" },
     "revision": 1,
     "updatedAt": 1787004000000
+  },
+  {
+    "_id": "resourceSets:4",
+    "_creationTime": 1787244300000,
+    "projectId": "default",
+    "boundTo": {
+      "kind": "hole",
+      "templateId": "templates:3",
+      "hole": "source_material"
+    },
+    "set": {
+      "include": [
+        {
+          "select": "resources",
+          "refs": [{ "kind": "document", "id": "documents:3" }]
+        }
+      ],
+      "exclude": []
+    },
+    "createdBy": { "kind": "user", "userId": "default-user" },
+    "revision": 1,
+    "updatedAt": 1787244300000
   }
 ]

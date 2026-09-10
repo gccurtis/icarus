@@ -4,6 +4,7 @@ import { asId } from "$representation/data/behavior/core/id";
 
 import { findVisible, notFound, refused, stale, viewer } from "$capabilities/agents/api/shared/lookup";
 import type { RowFields } from "$capabilities/agents/api/shared/store";
+import { scopeReferenceRefusal } from "$capabilities/agents/api/shared/scope-references";
 import { validateUpdateTask } from "$capabilities/agents/api/update-task/validate-update-task";
 import type { WriteResult } from "$capabilities/agents/types/agents";
 
@@ -32,18 +33,28 @@ export const updateTask = async (input: unknown): Promise<WriteResult> => {
   }
 
   const at = Date.now();
-  const { _id, _creationTime, finishedAt, reviewedBy, scope: reach, ...rest } = task;
-  void _id;
-  void _creationTime;
+  const { finishedAt, reviewedBy, scope: reach } = task;
   const finishing = patch.state === "finished";
   const nextScope = patch.scope === undefined ? reach : (patch.scope ?? undefined);
+  const scopeRefusal = scopeReferenceRefusal(store, scope.projectId, nextScope);
+  if (scopeRefusal !== undefined) {
+    return refused(task._id, "invalid-state", scopeRefusal, task.revision);
+  }
   const fields: RowFields<"agentTasks"> = {
-    ...rest,
+    projectId: task.projectId,
+    threadId: task.threadId,
     title: patch.title ?? task.title,
     instruction: patch.instruction ?? task.instruction,
+    personaId: task.personaId,
+    origin: task.origin,
     ...(nextScope === undefined ? {} : { scope: nextScope }),
     tools: [...(patch.tools ?? task.tools)],
     state: finishing ? "finished" : task.state,
+    plan: task.plan,
+    outputs: task.outputs,
+    questions: task.questions,
+    createdBy: task.createdBy,
+    startedAt: task.startedAt,
     ...(finishing ? { finishedAt: finishedAt ?? at, reviewedBy: viewer(scope) } : {
       ...(finishedAt === undefined ? {} : { finishedAt }),
       ...(reviewedBy === undefined ? {} : { reviewedBy })

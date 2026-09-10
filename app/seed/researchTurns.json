@@ -1,0 +1,313 @@
+[
+  {
+    "_id": "researchTurns:priorities-1",
+    "_creationTime": 1788558000000,
+    "projectId": "default",
+    "researchThreadId": "researchThreads:priorities",
+    "threadId": "threads:chat-priorities",
+    "promptMessageId": "m-chat-priorities-0",
+    "messageId": "m-chat-priorities-1",
+    "prompt": "What does the readiness brief identify as the binding constraint?",
+    "mode": { "kind": "explore" },
+    "scope": { "kind": "project" },
+    "tools": [],
+    "state": "answered",
+    "blocks": [
+      {
+        "id": "m-chat-priorities-1-b",
+        "type": "text",
+        "variant": "paragraph",
+        "atoms": [
+          {
+            "id": "m-chat-priorities-1-b-a",
+            "kind": "literal",
+            "text": "Substation 14 is the binding constraint. Its transformer bank was derated in September after the oil analysis came back."
+          }
+        ],
+        "display": "Substation 14 is the binding constraint. Its transformer bank was derated in September after the oil analysis came back.",
+        "marks": []
+      }
+    ],
+    "queries": ["binding constraint winter readiness"],
+    "sources": [
+      {
+        "id": "s1",
+        "ref": { "kind": "document", "id": "documents:1" },
+        "title": "Winter readiness brief",
+        "locator": "Where the exposure sits",
+        "excerpt": "Substation 14 is the binding constraint. Its transformer bank was derated in September after the oil analysis came back, and the two feeders that would otherwise pick up its load both run through the same corridor, so a fault on either leaves the northern ring supplied from one direction only.",
+        "uses": ["Identifies the binding winter constraint and why the bank was derated."]
+      }
+    ],
+    "findings": [
+      {
+        "id": "f-priorities-1",
+        "text": "The readiness brief identifies Substation 14 as the binding constraint and records the transformer-bank derating.",
+        "sourceIds": ["s1"]
+      }
+    ],
+    "askedAt": 1788558000000,
+    "answeredAt": 1788558300000,
+    "updatedAt": 1788558300000
+  },
+  {
+    "_id": "researchTurns:priorities-2",
+    "_creationTime": 1788558600000,
+    "projectId": "default",
+    "researchThreadId": "researchThreads:priorities",
+    "threadId": "threads:chat-priorities",
+    "promptMessageId": "m-chat-priorities-2",
+    "messageId": "m-chat-priorities-3",
+    "prompt": "Why do the two feeder alternatives not remove that exposure?",
+    "mode": { "kind": "explore" },
+    "scope": { "kind": "project" },
+    "tools": [],
+    "state": "answered",
+    "blocks": [
+      {
+        "id": "m-chat-priorities-3-b",
+        "type": "text",
+        "variant": "paragraph",
+        "atoms": [
+          {
+            "id": "m-chat-priorities-3-b-a",
+            "kind": "literal",
+            "text": "Both feeders run through the same corridor, so a fault on either leaves the northern ring supplied from one direction only."
+          }
+        ],
+        "display": "Both feeders run through the same corridor, so a fault on either leaves the northern ring supplied from one direction only.",
+        "marks": []
+      }
+    ],
+    "queries": ["Substation 14 alternate feeders shared corridor"],
+    "sources": [
+      {
+        "id": "s1",
+        "ref": { "kind": "document", "id": "documents:1" },
+        "title": "Winter readiness brief",
+        "locator": "Where the exposure sits",
+        "excerpt": "the two feeders that would otherwise pick up its load both run through the same corridor, so a fault on either leaves the northern ring supplied from one direction only.",
+        "uses": ["Explains the shared-corridor failure mode of the alternate feeders."]
+      }
+    ],
+    "findings": [
+      {
+        "id": "f-priorities-2",
+        "text": "The two alternate feeders share one corridor, so either corridor fault leaves the northern ring supplied from one direction.",
+        "sourceIds": ["s1"]
+      }
+    ],
+    "askedAt": 1788558600000,
+    "answeredAt": 1788558900000,
+    "updatedAt": 1788558900000
+  },
+  {
+    "_id": "researchTurns:tone-1",
+    "_creationTime": 1788472200000,
+    "projectId": "default",
+    "researchThreadId": "researchThreads:tone",
+    "threadId": "threads:chat-tone",
+    "promptMessageId": "m-chat-tone-0",
+    "messageId": "m-chat-tone-1",
+    "prompt": "What does the replacement decision actually recommend?",
+    "mode": { "kind": "explore" },
+    "scope": { "kind": "project" },
+    "tools": [],
+    "state": "answered",
+    "blocks": [
+      {
+        "id": "m-chat-tone-1-b",
+        "type": "text",
+        "variant": "paragraph",
+        "atoms": [
+          {
+            "id": "m-chat-tone-1-b-a",
+            "kind": "literal",
+            "text": "It recommends authorizing the accelerated replacement window and reserving the mobile bank until commissioning tests close."
+          }
+        ],
+        "display": "It recommends authorizing the accelerated replacement window and reserving the mobile bank until commissioning tests close.",
+        "marks": []
+      }
+    ],
+    "queries": ["transformer bank replacement recommendation"],
+    "sources": [
+      {
+        "id": "s1",
+        "ref": { "kind": "document", "id": "documents:4" },
+        "title": "Transformer bank replacement decision",
+        "locator": "Recommendation",
+        "excerpt": "Authorize the accelerated replacement window and reserve the mobile bank until commissioning tests close. The premium preserves winter contingency and avoids a second planned outage.",
+        "uses": ["States the recommended replacement timing and mobile-bank reservation."]
+      }
+    ],
+    "findings": [
+      {
+        "id": "f-tone-1",
+        "text": "The decision recommends accelerating the replacement window and reserving the mobile bank through commissioning.",
+        "sourceIds": ["s1"]
+      }
+    ],
+    "askedAt": 1788472200000,
+    "answeredAt": 1788472800000,
+    "updatedAt": 1788472800000
+  },
+  {
+    "_id": "researchTurns:sources-1",
+    "_creationTime": 1788212700000,
+    "projectId": "default",
+    "researchThreadId": "researchThreads:sources",
+    "threadId": "threads:chat-sources",
+    "promptMessageId": "m-chat-sources-0",
+    "messageId": "m-chat-sources-1",
+    "prompt": "Can we cite a NERC winter review from this project?",
+    "mode": { "kind": "explore" },
+    "scope": { "kind": "project" },
+    "tools": [],
+    "state": "insufficient",
+    "blocks": [
+      {
+        "id": "m-chat-sources-1-b",
+        "type": "text",
+        "variant": "paragraph",
+        "atoms": [
+          {
+            "id": "m-chat-sources-1-b-a",
+            "kind": "literal",
+            "text": "Nothing in this project answers that. Try naming the resource you have in mind, or ask something narrower."
+          }
+        ],
+        "display": "Nothing in this project answers that. Try naming the resource you have in mind, or ask something narrower.",
+        "marks": []
+      }
+    ],
+    "queries": ["NERC winter review"],
+    "sources": [],
+    "findings": [],
+    "askedAt": 1788212700000,
+    "answeredAt": 1788213000000,
+    "updatedAt": 1788213000000
+  },
+  {
+    "_id": "researchTurns:sources-2",
+    "_creationTime": 1788213300000,
+    "projectId": "default",
+    "researchThreadId": "researchThreads:sources",
+    "threadId": "threads:chat-sources",
+    "promptMessageId": "m-chat-sources-2",
+    "prompt": "Then cite page 31 anyway.",
+    "mode": { "kind": "explore" },
+    "scope": { "kind": "project" },
+    "tools": [],
+    "state": "failed",
+    "blocks": [],
+    "queries": [],
+    "sources": [],
+    "findings": [],
+    "error": "The provider stopped before it returned a finished answer.",
+    "askedAt": 1788213300000,
+    "updatedAt": 1788213360000
+  },
+  {
+    "_id": "researchTurns:undergrounding-1",
+    "_creationTime": 1787867400000,
+    "projectId": "default",
+    "researchThreadId": "researchThreads:undergrounding",
+    "threadId": "threads:chat-undergrounding",
+    "promptMessageId": "m-chat-undergrounding-0",
+    "messageId": "m-chat-undergrounding-1",
+    "prompt": "What does the storm-hardening deck say about undergrounding?",
+    "mode": { "kind": "explore" },
+    "scope": { "kind": "project" },
+    "tools": [],
+    "state": "answered",
+    "blocks": [
+      {
+        "id": "m-chat-undergrounding-1-b",
+        "type": "text",
+        "variant": "paragraph",
+        "atoms": [
+          {
+            "id": "m-chat-undergrounding-1-b-a",
+            "kind": "literal",
+            "text": "It reserves targeted undergrounding for the four highest-consequence segments."
+          }
+        ],
+        "display": "It reserves targeted undergrounding for the four highest-consequence segments.",
+        "marks": []
+      }
+    ],
+    "queries": ["storm hardening undergrounding strategy"],
+    "sources": [
+      {
+        "id": "s1",
+        "ref": { "kind": "slides", "id": "slideDecks:4" },
+        "title": "Storm hardening options",
+        "locator": "Options summary",
+        "excerpt": "Targeted undergrounding is reserved for the four highest-consequence segments.",
+        "uses": ["States where the option set reserves undergrounding."]
+      }
+    ],
+    "findings": [
+      {
+        "id": "f-undergrounding-1",
+        "text": "The option set reserves targeted undergrounding for the four highest-consequence segments.",
+        "sourceIds": ["s1"]
+      }
+    ],
+    "askedAt": 1787867400000,
+    "answeredAt": 1787868000000,
+    "updatedAt": 1787868000000
+  },
+  {
+    "_id": "researchTurns:feeder12-history-1",
+    "_creationTime": 1787608200000,
+    "projectId": "default",
+    "researchThreadId": "researchThreads:feeder12-history",
+    "threadId": "threads:chat-feeder12-history",
+    "promptMessageId": "m-chat-feeder12-history-0",
+    "messageId": "m-chat-feeder12-history-1",
+    "prompt": "What does the outage workbook record for Feeder 12?",
+    "mode": { "kind": "explore" },
+    "scope": { "kind": "project" },
+    "tools": [],
+    "state": "answered",
+    "blocks": [
+      {
+        "id": "m-chat-feeder12-history-1-b",
+        "type": "text",
+        "variant": "paragraph",
+        "atoms": [
+          {
+            "id": "m-chat-feeder12-history-1-b-a",
+            "kind": "literal",
+            "text": "The workbook records that recloser mis-coordination is under review."
+          }
+        ],
+        "display": "The workbook records that recloser mis-coordination is under review.",
+        "marks": []
+      }
+    ],
+    "queries": ["Feeder 12 recloser record"],
+    "sources": [
+      {
+        "id": "s1",
+        "ref": { "kind": "spreadsheet", "id": "spreadsheets:1" },
+        "title": "Outage minutes by substation",
+        "locator": "row 6, column 11",
+        "excerpt": "Recloser mis-coordination under review",
+        "uses": ["Records the outstanding recloser coordination issue."]
+      }
+    ],
+    "findings": [
+      {
+        "id": "f-feeder12-history-1",
+        "text": "The outage workbook records that recloser mis-coordination is under review.",
+        "sourceIds": ["s1"]
+      }
+    ],
+    "askedAt": 1787608200000,
+    "answeredAt": 1787608800000,
+    "updatedAt": 1787608800000
+  }
+]

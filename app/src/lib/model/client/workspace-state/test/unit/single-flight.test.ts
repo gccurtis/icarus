@@ -39,8 +39,12 @@ test("one pending durable intent runs once and shares its promise", async () => 
   const second = view.singleFlight(["template", "t1", "instantiate"], run);
 
   assert.equal(first, second);
+  assert.equal(view.pendingFlight(["template", "t1", "instantiate"]), first);
+  assert.equal(view.pendingFlight(["template", "t2", "instantiate"]), undefined);
   held.resolve(42);
   assert.deepEqual(await Promise.all([first, second]), [42, 42]);
+  await Promise.resolve();
+  assert.equal(view.pendingFlight(["template", "t1", "instantiate"]), undefined);
   assert.equal(calls, 1);
 });
 

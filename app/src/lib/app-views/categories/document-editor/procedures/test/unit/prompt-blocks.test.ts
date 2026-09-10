@@ -11,6 +11,7 @@ import {
   promptBlocksIn,
   syncPromptBlockOps
 } from "$app-views/categories/document-editor/procedures/prompt-blocks";
+import { promptDefinitionOps } from "$app-views/categories/document-editor/procedures/prompt-definition";
 
 const body: DocumentBody = {
   rows: [
@@ -76,8 +77,35 @@ const output = (): DerivedOutput => ({
  * them is what the agent obeys. So the block keeps one until there is an output
  * to keep it, and gives it up at the moment there is.
  */
-test("linking a Prompt Block takes the Derived Output identity and gives up the scope", () => {
-  const block = { ...prompt(), scope: { include: [{ select: "project" as const }], exclude: [] } };
+test("an unlinked Prompt Block keeps its authored question in the document body", () => {
+  const block = prompt();
+  const authored = "  Which filings changed?  ";
+  const changed = applyOps(
+    { rows: [{ id: "#row", kind: "blocks", blocks: [block] }] },
+    promptDefinitionOps(block, authored)
+  );
+  const defined = changed.rows[0].kind === "blocks" ? changed.rows[0].blocks[0] : undefined;
+
+  assert.equal(defined?.type === "prompt" && defined.prompt, authored);
+});
+
+test("clearing an unlinked Prompt Block removes its represented question", () => {
+  const block = { ...prompt(), prompt: "Which filings changed?" };
+  const changed = applyOps(
+    { rows: [{ id: "#row", kind: "blocks", blocks: [block] }] },
+    promptDefinitionOps(block, "   ")
+  );
+  const cleared = changed.rows[0].kind === "blocks" ? changed.rows[0].blocks[0] : undefined;
+
+  assert.equal(cleared?.type === "prompt" && "prompt" in cleared, false);
+});
+
+test("linking a Prompt Block takes the Derived Output identity and gives up its question and scope", () => {
+  const block = {
+    ...prompt(),
+    prompt: "Which filings changed?",
+    scope: { include: [{ select: "project" as const }], exclude: [] }
+  };
   const changed = applyOps(
     { rows: [{ id: "#row", kind: "blocks", blocks: [block] }] },
     linkPromptBlockOps(block, "derivedOutputs:9" as Id<"derivedOutputs">)
@@ -85,6 +113,7 @@ test("linking a Prompt Block takes the Derived Output identity and gives up the 
   const linked = changed.rows[0].kind === "blocks" ? changed.rows[0].blocks[0] : undefined;
 
   assert.equal(linked?.type === "prompt" && linked.derivedOutputId, "derivedOutputs:9");
+  assert.equal(linked?.type === "prompt" && "prompt" in linked, false);
   assert.equal(linked?.type === "prompt" && "scope" in linked, false);
   assert.equal(linked?.type === "prompt" && linked.display, "Old answer");
 });

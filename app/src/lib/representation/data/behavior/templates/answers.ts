@@ -20,8 +20,7 @@ export type AnswerRow = {
   readonly missing: boolean;
 };
 
-export const kindOfHole = (hole: TemplateHole): "scope" | "text" =>
-  hole.kind === "text" ? "text" : "scope";
+export const kindOfHole = (hole: TemplateHole): "scope" | "text" => hole.kind;
 
 export const answerRowsOf = (
   holes: readonly TemplateHole[],

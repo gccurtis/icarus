@@ -210,6 +210,7 @@ supporting flow. Every one is still a file.
 | `setZoom` | file | mutator | What the active tab's centre is drawn at. Beside the frame rather than in it, because the frame is the panels' geometry and this is the centre's |
 | `showing` | file | accessor | Whether the active tab is on a given centre right now |
 | `singleFlight` | file | coordinator | Share one pending durable command by its exact intent key across every mounted view in this workspace |
+| `pendingFlight` | file | observer | Read one matching pending command without changing its ownership or lifetime |
 | `documentRuntime` | file | accessor | The runtime a document already has. Attaching is the register's, so two tabs on one document share a buffer |
 | `slideDeckRuntime` | file | accessor | The same for a deck |
 | `undo` | file | mutator | Apply the inverse of the last op, and keep it for `redo` |

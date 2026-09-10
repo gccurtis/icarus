@@ -1,16 +1,16 @@
 <script lang="ts">
-  import { startThread } from "$capabilities/comments/index.remote";
+  import { startCommentCommand } from "$app-views/categories/slide-deck-editor/procedures/start-comment-command.svelte";
   import { Panel, PanelButton, PanelCrumbs, PanelEmpty, PanelNote, PanelQuote, PanelSection } from "$authored-components/panel";
   import { Textarea } from "$vendored-components/textarea";
   import {
-    ago,
-    nameOf,
+    commentsQuery,
+    peopleIn,
+    remarksIn,
     remarksOf,
-    rowsOf,
-    tableQuery,
-    textOf,
+    threadsIn,
     type CommentThread
   } from "$app-views/categories/slide-deck-editor/procedures/comments";
+  import { ago, nameOf, textOf } from "$app-views/categories/slide-deck-editor/procedures/comment-copy";
   import { elementIn, labelOf, slideHolding, slideIndexOf } from "$app-views/categories/slide-deck-editor/procedures/deck";
   import { elementsSignal, slideSignal } from "$app-views/categories/slide-deck-editor/procedures/selecting";
   import { resourceTemplate } from "$app-views/categories/slide-deck-editor/procedures/templating";
@@ -30,20 +30,18 @@
   const slide = $derived(body === undefined || anchor === undefined ? undefined : element ? slideHolding(body, anchor) : body.slides.find((held) => held.id === anchor));
   const position = $derived(body === undefined || slide === undefined ? 0 : slideIndexOf(body, slide.id) + 1);
 
-  const threadRows = tableQuery("commentThreads");
-  const commentRows = tableQuery("comments");
-  const userRows = tableQuery("users");
+  const commentFeed = commentsQuery();
 
   const threads = $derived(
-    rowsOf(threadRows, "commentThreads")
+    threadsIn(commentFeed)
       .filter((thread) => thread.target.kind === "slides" && thread.target.id === deckId)
       .filter((thread) => (element ? thread.within?.kind === "element" && thread.within.elementId === anchor : thread.within?.kind === "slide" && thread.within.slideId === anchor))
       .sort((a, b) => b._creationTime - a._creationTime)
   );
   const open = $derived(threads.filter((thread) => thread.resolution === undefined));
   const resolved = $derived(threads.filter((thread) => thread.resolution !== undefined));
-  const comments = $derived(rowsOf(commentRows, "comments"));
-  const users = $derived(rowsOf(userRows, "users"));
+  const comments = $derived(remarksIn(commentFeed));
+  const users = $derived(peopleIn(commentFeed));
   const now = Date.now();
 
   const inThread = (thread: CommentThread) => remarksOf(comments, thread._id);
@@ -52,24 +50,21 @@
   const workingCopy = $derived(templateQuery?.ready === true && templateQuery.current.stage !== null);
 
   let composing = $state("");
-  let posting = $state(false);
+  const commentCommand = startCommentCommand();
+  const posting = $derived(commentCommand.posting);
   let box = $state<HTMLTextAreaElement | null>(null);
 
-  const post = async () => {
+  const post = () => {
     const text = composing.trim();
     if (deckId === undefined || anchor === undefined || text === "" || posting) return;
-    posting = true;
-    try {
-      await startThread({
-        target: { kind: "slides", id: deckId },
+    commentCommand.start(
+      {
+        deckId,
         within: element ? { kind: "element", elementId: anchor } : { kind: "slide", slideId: anchor },
         text
-      });
-      composing = "";
-      await Promise.all([threadRows.refresh(), commentRows.refresh()]);
-    } finally {
-      posting = false;
-    }
+      },
+      () => (composing = "")
+    );
   };
 
   const openThread = (thread: CommentThread) =>

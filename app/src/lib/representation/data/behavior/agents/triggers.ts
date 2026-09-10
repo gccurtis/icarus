@@ -5,6 +5,7 @@ import type {
   Weekday
 } from "$representation/data/types/agents/automation";
 import type { TaskOrigin } from "$representation/data/types/agents/agent-task";
+import type { ResourceSelectorKind } from "$representation/data/types/core/resource";
 
 export const TRIGGER_KINDS: readonly AutomationTriggerKind[] = [
   "manual",
@@ -55,31 +56,40 @@ export const TRIGGER_RESOURCE_KINDS = [
   { id: "document", label: "Documents" },
   { id: "slides", label: "Slide decks" },
   { id: "spreadsheet", label: "Spreadsheets" },
-  { id: "finding", label: "Findings" }
-] as const;
+  { id: "research", label: "Research threads" },
+  { id: "finding", label: "Findings" },
+  { id: "connection", label: "Connections" },
+  { id: "externalFile", label: "External files" }
+] as const satisfies readonly { id: ResourceSelectorKind; label: string }[];
 
 const KIND_WORD: Record<string, string> = {
   "document": "a document",
   "slides": "a slide deck",
   "spreadsheet": "a spreadsheet",
-  "finding": "a finding"
+  "research": "a research thread",
+  "finding": "a finding",
+  "connection": "a connection",
+  "externalFile": "an external file"
 };
 
 const KIND_PLURAL: Record<string, string> = {
   "document": "documents",
   "slides": "slide decks",
   "spreadsheet": "spreadsheets",
-  "finding": "findings"
+  "research": "research threads",
+  "finding": "findings",
+  "connection": "connections",
+  "externalFile": "external files"
 };
 
-const kindsPhrase = (kinds: readonly string[]): string => {
+const kindsPhrase = (kinds: readonly ResourceSelectorKind[]): string => {
   const words = kinds.map((kind) => KIND_WORD[kind] ?? kind);
   if (words.length === 0) return "any resource";
   if (words.length === 1) return words[0];
   return `${words.slice(0, -1).join(", ")} or ${words[words.length - 1]}`;
 };
 
-const pluralPhrase = (kinds: readonly string[]): string => {
+const pluralPhrase = (kinds: readonly ResourceSelectorKind[]): string => {
   const words = kinds.map((kind) => KIND_PLURAL[kind] ?? kind);
   if (words.length === 0) return "resources";
   if (words.length === 1) return words[0];

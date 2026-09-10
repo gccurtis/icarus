@@ -1,6 +1,8 @@
 import { requireScope } from "$runtime/server/scope.server";
 import { serverModel } from "$runtime/server/start.server";
+import { externalFileResourceKind } from "$representation/data/behavior/core/resource";
 import type { Id } from "$representation/data/types/core/id";
+import type { ResourceRef } from "$representation/data/types/core/resource";
 import { enqueueSemanticSyncFor } from "$capabilities/semantic-overlay/api/shared/sync-queue";
 import { rowsOf } from "$capabilities/semantic-overlay/api/shared/rows";
 import { isStagedResource } from "$capabilities/semantic-overlay/api/shared/staged";
@@ -18,7 +20,7 @@ export const backfillSemanticOverlay = async (
   const asked = validateBackfillSemanticOverlay(input);
   const model = serverModel();
   const projectId = scope.projectId as Id<"projects">;
-  const refs = [
+  const refs: Array<{ ref: ResourceRef; revision: number }> = [
     ...rowsOf(model.store, "documentSnapshots")
       .filter((row) => row.projectId === projectId && row.role === "leader")
       .map((row) => ({
@@ -41,7 +43,7 @@ export const backfillSemanticOverlay = async (
       .filter((row) => row.projectId === projectId)
       .map((row) => ({
         ref: {
-          kind: `externalFile::${row.subkind}`,
+          kind: externalFileResourceKind(row.subkind),
           id: row._id
         },
         revision: 0

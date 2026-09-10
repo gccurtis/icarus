@@ -1,4 +1,5 @@
 import { expect, test } from "vitest";
+import { asId } from "$representation/data/behavior/core/id";
 import { buildRecursiveIndex } from "$representation/data/behavior/semantic/recursive-index";
 import {
   coalesceSemanticHits,
@@ -8,6 +9,7 @@ import {
 import { resourceInScope } from "$representation/data/behavior/semantic/scope";
 import type { Id } from "$representation/data/types/core/id";
 import type { ResourceSet } from "$representation/data/types/core/resource-set";
+import type { ResourceRef } from "$representation/data/types/core/resource";
 import type {
   IndexableSemanticObject,
   RecursiveIndexBuild,
@@ -15,6 +17,7 @@ import type {
   SearchableSemanticIndexNode,
   SearchableSemanticObject
 } from "$representation/data/types/semantic/index";
+import type { SemanticSourceSnapshot } from "$representation/data/types/semantic/source";
 
 const configuration = (
   overrides: Partial<RecursiveIndexConfiguration> = {}
@@ -43,7 +46,7 @@ const searchable = (
   id: id(value),
   vector,
   source: {
-    ref: { kind: "document", id: `documents:${value}` },
+    ref: { kind: "document", id: asId<"documents">(`documents:${value}`) },
     revision: 1,
     encoding: "utf-16"
   },
@@ -291,8 +294,8 @@ test("query eligibility filters leaf candidates before exact object scoring", ()
 });
 
 test("overlapping objects coalesce transitively before topK", () => {
-  const source = {
-    ref: { kind: "document", id: "documents:1" },
+  const source: SemanticSourceSnapshot = {
+    ref: { kind: "document", id: asId<"documents">("documents:1") },
     revision: 3,
     encoding: "utf-8" as const
   };
@@ -332,7 +335,10 @@ test("overlapping objects coalesce transitively before topK", () => {
   const separate: SearchableSemanticObject = {
     id: id(4),
     vector: [0, 1],
-    source: { ...source, ref: { kind: "document", id: "documents:2" } },
+    source: {
+      ...source,
+      ref: { kind: "document", id: asId<"documents">("documents:2") }
+    },
     span: { from: 0, to: 5, text: "other" }
   };
   const firstRoot = "semanticIndexNodes:first" as Id<"semanticIndexNodes">;
@@ -363,8 +369,8 @@ test("overlapping objects coalesce transitively before topK", () => {
 });
 
 test("touching objects coalesce before topK without splitting a word", () => {
-  const source = {
-    ref: { kind: "document", id: "documents:touching" },
+  const source: SemanticSourceSnapshot = {
+    ref: { kind: "document", id: asId<"documents">("documents:touching") },
     revision: 1,
     encoding: "utf-8" as const
   };
@@ -401,8 +407,8 @@ test("touching objects coalesce before topK without splitting a word", () => {
 });
 
 test("touching objects in different hard partitions never coalesce", () => {
-  const source = {
-    ref: { kind: "slides", id: "slideDecks:partitioned" },
+  const source: SemanticSourceSnapshot = {
+    ref: { kind: "slides", id: asId<"slideDecks">("slideDecks:partitioned") },
     revision: 2,
     encoding: "utf-16" as const
   };
@@ -445,7 +451,10 @@ test("touching objects in different hard partitions never coalesce", () => {
 });
 
 test("resource scope treats an empty include as project-wide and exclusion wins", () => {
-  const ref = { kind: "externalFile::pdf", id: "externalFiles:1" };
+  const ref: ResourceRef = {
+    kind: "externalFile::text",
+    id: asId<"externalFiles">("externalFiles:1")
+  };
   const all: ResourceSet = { include: [], exclude: [] };
   expect(resourceInScope(ref, all, () => undefined)).toBe(true);
 

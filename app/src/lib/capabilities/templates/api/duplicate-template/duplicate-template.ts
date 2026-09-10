@@ -3,11 +3,13 @@ import { serverModel } from "$runtime/server/start.server";
 import { asId } from "$representation/data/behavior/core/id";
 
 import { validateDuplicateTemplate } from "$capabilities/templates/api/duplicate-template/validate-duplicate-template";
+import { settledHoleDefaults } from "$capabilities/templates/api/shared/prompts";
 import {
   admitStoredTemplate,
   reportableRevision,
   visibleTemplate
 } from "$capabilities/templates/api/shared/projection";
+import { expandedScope } from "$capabilities/templates/api/shared/scopes";
 import type { RowFields } from "$capabilities/templates/api/shared/store";
 import { writeTemplateVersion } from "$capabilities/templates/api/shared/template-rows";
 import type { DuplicateTemplateResult } from "$capabilities/templates/types/templates";
@@ -34,8 +36,18 @@ export const duplicateTemplate = async (input: unknown): Promise<DuplicateTempla
   const stored = found.template;
 
   let source: ReturnType<typeof admitStoredTemplate>;
+  let holes: ReturnType<typeof admitStoredTemplate>["holes"];
   try {
     source = admitStoredTemplate(stored);
+    holes = source.holes.map((hole) => {
+      const expanded = expandedScope(
+        store,
+        scope.projectId,
+        { kind: "hole", templateId: source._id, hole: hole.name },
+        hole.default
+      );
+      return expanded === undefined ? hole : { ...hole, default: expanded };
+    });
   } catch (error) {
     return {
       accepted: false,
@@ -55,13 +67,19 @@ export const duplicateTemplate = async (input: unknown): Promise<DuplicateTempla
     ...(source.description === undefined ? {} : { description: source.description }),
     tags: [...source.tags],
     body: structuredClone(source.body),
-    holes: structuredClone(source.holes),
+    holes: structuredClone(holes),
     createdBy: actor,
     revision: 1,
     updatedAt: at
   };
-  const templateId = store.create("templates", fields);
-  writeTemplateVersion(store, templateId, fields, at);
+  const templateId = store.transaction((unit) => {
+    const id = unit.create("templates", fields);
+    const holes = settledHoleDefaults(unit, scope.projectId, actor, id, fields.holes, at);
+    const stored = { ...fields, holes: [...holes] };
+    unit.update(`templates.${id}`, stored);
+    writeTemplateVersion(unit, id, stored, at);
+    return id;
+  });
 
   return {
     accepted: true,

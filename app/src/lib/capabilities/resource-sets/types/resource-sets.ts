@@ -28,11 +28,17 @@ export type CreateResourceSetInput = {
   readonly set: ResourceSet;
 };
 
-export type CreateResourceSetResult = {
-  readonly accepted: true;
-  readonly setId: string;
-  readonly revision: 1;
-};
+export type CreateResourceSetResult =
+  | {
+      readonly accepted: true;
+      readonly setId: string;
+      readonly revision: 1;
+    }
+  | {
+      readonly accepted: false;
+      readonly reason: "invalid-reference";
+      readonly detail: string;
+    };
 
 export type UpdateResourceSetPatch = {
   readonly name?: string;
@@ -51,7 +57,7 @@ export type UpdateResourceSetResult =
   | {
       readonly accepted: false;
       readonly setId: string;
-      readonly reason: "not-found" | "stale" | "corrupt";
+      readonly reason: "not-found" | "stale" | "corrupt" | "invalid-reference";
       readonly revision: number | null;
       readonly detail: string;
     };

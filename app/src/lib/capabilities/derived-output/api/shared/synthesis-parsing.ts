@@ -30,7 +30,9 @@ export const materialQueryInput = (value: unknown, defaultTopK: number) => {
   const kinds =
     raw.kinds === undefined
       ? undefined
-      : Array.isArray(raw.kinds) && raw.kinds.every((kind) => supported.has(String(kind)))
+      : Array.isArray(raw.kinds) && raw.kinds.every(
+        (kind) => typeof kind === "string" && supported.has(kind)
+      )
         ? [
             ...new Set(
               raw.kinds as Array<"table" | "csv" | "chart" | "image" | "code">

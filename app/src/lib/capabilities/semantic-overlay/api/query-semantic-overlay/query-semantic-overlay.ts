@@ -3,7 +3,9 @@ import { serverModel } from "$runtime/server/start.server";
 import type { TableRow } from "$model/server/store/index.server";
 import { searchRecursiveIndex } from "$representation/data/behavior/semantic/query";
 import { resourceInScope } from "$representation/data/behavior/semantic/scope";
+import { admittedReusableResourceSets } from "$representation/data/behavior/core/resource-set-rows";
 import type { Id } from "$representation/data/types/core/id";
+import type { ResourceRef } from "$representation/data/types/core/resource";
 import type { SearchableSemanticObject } from "$representation/data/types/semantic/index";
 import { currentOverlay } from "$capabilities/semantic-overlay/api/shared/overlay";
 import { rowsOf } from "$capabilities/semantic-overlay/api/shared/rows";
@@ -20,7 +22,7 @@ const sameSpace = (
   left.dimensions === right.dimensions;
 
 const sourceKey = (source: {
-  ref: { kind: string; id: string };
+  ref: ResourceRef;
   revision: number;
   contentHash?: string;
   encoding: string;
@@ -37,10 +39,12 @@ type TextObjectRow = Extract<TableRow<"semanticObjects">, { lane: "text" }>;
 
 /** Embeds one query, traverses the current tree, and returns citation-ready values. */
 export const querySemanticOverlay = async (
-  input: unknown
+  input: unknown,
+  signal?: AbortSignal
 ): Promise<QuerySemanticOverlayResult> => {
   const scope = await requireScope();
   const asked = validateQuerySemanticOverlay(input);
+  signal?.throwIfAborted();
 
   const model = serverModel();
   const projectId = scope.projectId as Id<"projects">;
@@ -61,7 +65,7 @@ export const querySemanticOverlay = async (
   const activeObjectIds = new Set<Id<"semanticObjects">>();
   const objects: SearchableSemanticObject[] = rowsOf(model.store, "semanticObjects")
     .flatMap((row): TextObjectRow[] =>
-      row.projectId === projectId && (row.lane ?? "text") === "text" && "semanticSourceId" in row && "span" in row
+      row.projectId === projectId && row.lane === "text" && "semanticSourceId" in row && "span" in row
         ? [row as TextObjectRow]
         : []
     )
@@ -89,17 +93,16 @@ export const querySemanticOverlay = async (
       }];
     });
 
-  const namedSets = new Map(
-    rowsOf(model.store, "resourceSets")
-      .filter((row) => row.projectId === projectId)
-      .map((row) => [row._id, row.set])
+  const namedSets = admittedReusableResourceSets(
+    rowsOf(model.store, "resourceSets"),
+    projectId
   );
   // Keep every indexed object resolvable for tree integrity, but make stale
   // resource revisions ineligible before traversal.
   const eligible = objects.filter((object) => {
     if (!activeObjectIds.has(object.id)) return false;
     return asked.scope === undefined ||
-      resourceInScope(object.source.ref, asked.scope, (id) => namedSets.get(id));
+      resourceInScope(object.source.ref, asked.scope, (id) => namedSets.get(id)?.set);
   });
 
   if (eligible.length === 0) {
@@ -123,7 +126,7 @@ export const querySemanticOverlay = async (
         row.projectId === projectId &&
         row.semanticOverlayId === overlay._id &&
         row.method === "recursiveClustering" &&
-        (row.lane ?? "text") === "text" &&
+        row.lane === "text" &&
         row.rootNodeIds.length > 0
     )
     .sort((left, right) => right._creationTime - left._creationTime)[0];
@@ -136,7 +139,8 @@ export const querySemanticOverlay = async (
       centroidVector: node.centroidVector,
       children: node.children
     }));
-  const embedded = await model.embedding.query(asked.text);
+  const embedded = await model.embedding.query(asked.text, signal);
+  signal?.throwIfAborted();
   const found = searchRecursiveIndex({
     queryVector: embedded.value,
     rootNodeIds: index.rootNodeIds,

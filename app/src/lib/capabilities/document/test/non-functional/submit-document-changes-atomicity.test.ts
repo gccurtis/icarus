@@ -86,6 +86,34 @@ const writing = (resourceId: string) => ({
   }
 });
 
+const insertingUnconfiguredPrompt = (resourceId: string) => ({
+  changeSet: {
+    resourceId,
+    baseRevision: 0,
+    ops: [{
+      op: "insert",
+      target: "row",
+      path: "rows",
+      ids: ["row:prompt"],
+      after: "row:1",
+      values: [{
+        id: "row:prompt",
+        kind: "blocks",
+        blocks: [{
+          id: "block:prompt",
+          type: "prompt",
+          style: "body",
+          atoms: [{ id: "atom:prompt", kind: "literal", text: "Text" }],
+          display: "Text",
+          marks: [],
+          state: "idle"
+        }]
+      }]
+    }],
+    touched: ["rows"]
+  }
+});
+
 const revisionOf = (store: StoreModel, leaderId: string): unknown => {
   const found = store.read(`documentSnapshots.${leaderId}.revision`);
   return found?.kind === "field" ? found.value : undefined;
@@ -136,6 +164,53 @@ describe("submit document changes transaction atomicity", () => {
       "semanticSyncJobs"
     ]);
     expectAdvanced(storeAt(path), ids);
+  });
+
+  it("persists a newly inserted prompt before it has configuration", async () => {
+    const path = directory();
+    const ids = seeded(path);
+    runtime.store = storeAt(path);
+
+    await expect(submitDocumentChanges(insertingUnconfiguredPrompt(ids.resourceId))).resolves.toMatchObject({
+      accepted: true,
+      revision: 1
+    });
+
+    const snapshot = rowsIn(storeAt(path), "documentSnapshots")[0];
+    expect(snapshot.body).toMatchObject({
+      rows: [
+        { id: "row:1" },
+        { id: "row:prompt", blocks: [{ id: "block:prompt", type: "prompt", state: "idle" }] }
+      ]
+    });
+  });
+
+  it("detaches a comment when an accepted edit finds no live anchor spans", async () => {
+    const path = directory();
+    const ids = seeded(path);
+    const setup = storeAt(path);
+    const threadId = setup.create("commentThreads", {
+      projectId: "projects:p",
+      target: { kind: "document", id: ids.resourceId },
+      within: {
+        kind: "text",
+        spans: [{
+          blockId: "block:gone",
+          from: { atom: "atom:gone", offset: 0 },
+          to: { atom: "atom:gone", offset: 3 }
+        }]
+      },
+      createdBy: { kind: "user", userId: "users:u" },
+      updatedAt: 1_000
+    });
+    runtime.store = storeAt(path);
+
+    await expect(submitDocumentChanges(writing(ids.resourceId))).resolves.toMatchObject({
+      accepted: true,
+      revision: 1
+    });
+
+    expect(storeAt(path).read(`commentThreads.${threadId}.within`)).toBeUndefined();
   });
 
   it("rolls back before decision and recovers whole after every decided boundary", async () => {

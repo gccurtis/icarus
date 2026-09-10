@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { addressText, addressesIn, readAddress, sameAddress, writeAddress } from "$representation/data/behavior/formulas/addresses";
+import { asId } from "$representation/data/behavior/core/id";
 import type { Id } from "$representation/data/types/core/id";
 import type { Address } from "$representation/data/types/formulas/expression";
 
@@ -12,7 +13,10 @@ const RANGE: Address = {
   resourceId: sheet,
   range: { from: { rowId: "r4", columnId: "c5" }, to: { rowId: "r17", columnId: "c5" } }
 };
-const RESOURCE: Address = { at: "resource", ref: { kind: "spreadsheet", id: "spreadsheets:2" } };
+const RESOURCE: Address = {
+  at: "resource",
+  ref: { kind: "spreadsheet", id: asId<"spreadsheets">("spreadsheets:2") }
+};
 
 describe("how an id is written inside a formula", () => {
   it("writes each kind so it can be read back unchanged", () => {

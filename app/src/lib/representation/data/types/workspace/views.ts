@@ -31,8 +31,6 @@ export type ContextView =
   | "new-tab.recent"
   | "new-tab.templates"
   | "project-overview.activity"
-  | "project-overview.contexts"
-  | "project-overview.contexts-library"
   | "project-overview.history"
   | "project-overview.mentions"
   | "project-overview.overview"

@@ -36,7 +36,7 @@ const currentResult = (
     objectCount: rowsOf(model.store, "semanticObjects").filter(
       (row) =>
         row.projectId === projectId &&
-        (row.lane ?? "text") === "text" &&
+        row.lane === "text" &&
         "semanticSourceId" in row &&
         row.semanticSourceId === source._id
     ).length,
@@ -61,9 +61,11 @@ export const syncSemanticResourceFor = async (
   projectId: Id<"projects">,
   ref: ResourceRef,
   force = false,
-  assertClaim?: (unit: StoreUnitOfWork) => void
+  assertClaim?: (unit: StoreUnitOfWork) => void,
+  signal?: AbortSignal
 ): Promise<SyncSemanticResourceResult> => {
-  const projection = await readSemanticResourceForModel(model, projectId, ref);
+  signal?.throwIfAborted();
+  const projection = await readSemanticResourceForModel(model, projectId, ref, signal);
   if (projection === undefined) return { outcome: "missing", ref };
   const current = currentResult(model, projectId, projection);
   if (!force && current !== undefined) return current;
@@ -72,14 +74,15 @@ export const syncSemanticResourceFor = async (
   if (!projection.text.trim()) {
     translation = { source: projection, objects: [], usage: [] };
   } else {
-    const tokenField = await model.embedding.tokenField(projection.text);
+    const tokenField = await model.embedding.tokenField(projection.text, signal);
     const prepared = prepareTranslation(
       projection,
       tokenField.value,
       semanticTranslationConfiguration(model.configuration)
     );
     const passages = await model.embedding.windowedPassages(
-      prepared.spans.map((span) => span.text)
+      prepared.spans.map((span) => span.text),
+      signal
     );
     translation = completeTranslation(prepared, passages.value, [
       tokenField.usage,
@@ -87,7 +90,8 @@ export const syncSemanticResourceFor = async (
     ]);
   }
 
-  const latest = await readSemanticResourceForModel(model, projectId, ref);
+  signal?.throwIfAborted();
+  const latest = await readSemanticResourceForModel(model, projectId, ref, signal);
   if (!sameProjection(latest, projection)) {
     const overlay = rowsOf(model.store, "semanticOverlays")
       .filter((row) => row.projectId === projectId)
@@ -102,6 +106,7 @@ export const syncSemanticResourceFor = async (
     };
   }
 
+  signal?.throwIfAborted();
   const published = model.store.transaction((unit) => {
     assertClaim?.(unit);
     return publishSemanticTranslation(semanticUnitModel(model, unit), projectId, translation, force);

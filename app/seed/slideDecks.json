@@ -5,7 +5,6 @@
     "projectId": "default",
     "title": "Board review — Q1 exposure",
     "summary": "Board-ready review of first-quarter grid exposure, mitigation choices, and required decisions.",
-    "templateId": "templates:5",
     "createdBy": { "kind": "user", "userId": "users:1" },
     "updatedBy": { "kind": "user", "userId": "users:2" },
     "updatedAt": 1788296400000
@@ -16,7 +15,6 @@
     "projectId": "default",
     "title": "Field team briefing",
     "summary": "Practical briefing for field crews covering priority assets, sequencing, and escalation paths.",
-    "templateId": "templates:6",
     "createdBy": { "kind": "user", "userId": "users:4" },
     "updatedBy": { "kind": "user", "userId": "users:4" },
     "updatedAt": 1787436000000
@@ -27,7 +25,6 @@
     "projectId": "default",
     "title": "Executive update — September",
     "summary": "September leadership update on readiness progress, open risks, and near-term decisions.",
-    "templateId": "templates:7",
     "createdBy": { "kind": "user", "userId": "default-user" },
     "updatedBy": { "kind": "user", "userId": "default-user" },
     "updatedAt": 1788528000000
@@ -38,7 +35,6 @@
     "projectId": "default",
     "title": "Storm hardening options",
     "summary": "Comparison of storm-hardening options by reliability impact, delivery time, and cost.",
-    "templateId": "templates:8",
     "createdBy": { "kind": "user", "userId": "users:3" },
     "updatedBy": { "kind": "user", "userId": "users:1" },
     "updatedAt": 1788001200000

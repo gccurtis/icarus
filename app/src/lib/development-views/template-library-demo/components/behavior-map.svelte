@@ -48,7 +48,7 @@
       title: "Remove",
       icon: Trash2,
       gesture: "Delete with confirmation",
-      result: "Resource provenance, version rows and the template are removed in ordered per-table writes, then selection clears. A cross-table failure needs explicit recovery semantics."
+      result: "The template, immutable versions, private hole rows and any stage are removed in one recoverable Store transaction, then selection clears. Independent resources are untouched."
     },
     {
       number: "07",

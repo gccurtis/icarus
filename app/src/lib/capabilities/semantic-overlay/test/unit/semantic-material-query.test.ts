@@ -339,6 +339,67 @@ describe("semantic material query", () => {
     );
   });
 
+  it("does not resolve an unnamed private Resource Set supplied as query scope", async () => {
+    set("resourceSets", [
+      ...((state.tables.get("resourceSets") ?? []) as Row[]),
+      {
+        _id: "resourceSets:private",
+        _creationTime: 2,
+        projectId: "projects:materials",
+        boundTo: { kind: "resource", resourceId: "slideDecks:launch", hole: "evidence" },
+        set: {
+          include: [
+            { select: "resources", refs: [{ kind: "slides", id: "slideDecks:launch" }] }
+          ],
+          exclude: []
+        },
+        createdBy: { kind: "system" },
+        revision: 1,
+        updatedAt: 1
+      }
+    ]);
+
+    await assert.rejects(
+      () => querySemanticMaterials({
+        text: "launch image",
+        kinds: ["image"],
+        topK: 4,
+        scope: {
+          include: [{ select: "set", setId: "resourceSets:private" }],
+          exclude: []
+        }
+      }),
+      /does not exist/
+    );
+    assert.equal(state.queries, 0);
+  });
+
+  it("quarantines duplicate and malformed named Resource Sets before material search", async () => {
+    const reusable = (state.tables.get("resourceSets") ?? [])[0];
+    if (reusable === undefined) throw new Error("missing reusable Resource Set fixture");
+    const query = () => querySemanticMaterials({
+      text: "launch image",
+      kinds: ["image"],
+      topK: 4,
+      scope: {
+        include: [{ select: "set", setId: "resourceSets:launch-only" }],
+        exclude: []
+      }
+    });
+
+    set("resourceSets", [
+      reusable,
+      { ...reusable, projectId: "projects:other", name: "Duplicate claimant" }
+    ]);
+    await assert.rejects(query, /does not exist/);
+
+    set("resourceSets", [
+      { ...reusable, set: { include: "everything", exclude: [] } }
+    ]);
+    await assert.rejects(query, /does not exist/);
+    assert.equal(state.queries, 0);
+  });
+
   it("makes aggregate context eligible when every contributing resource is in scope", async () => {
     const result = await querySemanticMaterials({
       text: "secret campaign",

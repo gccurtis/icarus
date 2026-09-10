@@ -1,4 +1,4 @@
-import type { ResourceKind, ResourceRef } from "$representation/data/types/core/resource";
+import type { ResourceRef, ResourceSelectorKind } from "$representation/data/types/core/resource";
 
 export type AutomationTriggerKind = "manual" | "schedule" | "resource-edited" | "resource-created";
 
@@ -22,5 +22,5 @@ export type AutomationTrigger =
       weekday?: Weekday;
       timezone: string;
     }
-  | { kind: "resource-edited"; kinds: ResourceKind[]; ref?: ResourceRef }
-  | { kind: "resource-created"; kinds: ResourceKind[] };
+  | { kind: "resource-edited"; kinds: ResourceSelectorKind[]; ref?: ResourceRef }
+  | { kind: "resource-created"; kinds: ResourceSelectorKind[] };

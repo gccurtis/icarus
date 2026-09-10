@@ -10,11 +10,10 @@ import type { WorkspaceStateModel } from "$model/client/workspace-state";
 /**
  * What a project holds, as the board draws it.
  *
- * A closed union rather than `representation`'s open `ResourceKind`, which is a
- * string so that a subkind can be minted without a migration. The board has to
- * name every kind it draws — a label, a plural, an icon, a hue — so a kind added
- * to this list without a name beside it is a build error rather than a blank
- * cell and an option nobody can read.
+ * This projection-specific closed union names every kind the board can draw —
+ * a label, a plural, an icon, and a hue. Representation's separate persisted
+ * resource identity vocabulary is also closed, and does not flow through this
+ * view-only taxonomy.
  */
 export const RESOURCE_KINDS = [
   "document",
@@ -50,13 +49,6 @@ export const createProjectResource = (
   view: WorkspaceStateModel,
   input: CreateProjectResourceInput
 ) => {
-  const table = view.readStore(
-    input.target === "document"
-      ? "documents"
-      : input.target === "slides"
-        ? "slideDecks"
-        : "spreadsheets"
-  );
   return view.singleFlight(
     [
       "project-resource",
@@ -66,11 +58,7 @@ export const createProjectResource = (
       input.title?.trim() ?? null
     ],
     async () => {
-      const result = await createProjectResourceRemote(input).updates(readProjectResourceIndex);
-      // This table query may be warm but unmounted while Overview is active.
-      // Refresh it explicitly before the editor and tab bar consume its title.
-      await table.refresh();
-      return result;
+      return createProjectResourceRemote(input).updates(readProjectResourceIndex);
     }
   );
 };
@@ -82,25 +70,5 @@ export const resourcesIn = (
   (indexed?.resources ?? []).map((row) => ({
     ...row,
     updated: since(row.updatedAt, now),
-    updatedBy: row.updatedByName
+    updatedBy: row.updatedByName ?? "—"
   }));
-
-export const resources = (projectId: string, now: number): readonly Resource[] => {
-  const indexed = readProjectResourceIndex();
-  // Other board projections still take the represented project id. This
-  // resource query has already enforced it at the server boundary.
-  void projectId;
-  return resourcesIn(indexed.ready ? indexed.current : undefined, now);
-};
-
-/** What a row is called, for the places that hold an id and want a name. */
-export const nameOf = (projectId: string, id: string, now: number): string =>
-  resources(projectId, now).find((row) => row.id === id)?.name ?? id;
-
-/** The threads Create lands on when it cannot mint one. */
-export const threads = (projectId: string, now: number): readonly Resource[] =>
-  resources(projectId, now).filter((row) => row.kind === "research");
-
-/** Empty, and honestly so — see `resources` above. */
-export const analyses = (projectId: string, now: number): readonly Resource[] =>
-  resources(projectId, now).filter((row) => row.kind === "analysis");

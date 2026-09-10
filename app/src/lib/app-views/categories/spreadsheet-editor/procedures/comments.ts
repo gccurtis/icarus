@@ -1,6 +1,9 @@
 import type { LiveSheet } from "$representation/data/types/spreadsheets/live";
-import type { CommentThread } from "$representation/store/tables";
 import type { SurfacePin } from "$authored-components/sheet-surface";
+import {
+  startThread,
+  type CommentThreadRecord
+} from "$capabilities/comments/index.remote";
 import {
   indexOf,
   keyOf,
@@ -8,15 +11,9 @@ import {
   type CellRef,
   type Grid
 } from "$app-views/categories/spreadsheet-editor/procedures/addresses";
-import {
-  remarkBlock,
-  type Remark
-} from "$app-views/categories/spreadsheet-editor/procedures/comment-copy";
-import { createRow } from "$app-views/categories/spreadsheet-editor/procedures/creating-row";
-import { refreshAll } from "$app-views/categories/spreadsheet-editor/procedures/refreshing-queries";
-import type { TableQuery } from "$app-views/categories/spreadsheet-editor/procedures/store";
+import type { Remark } from "$app-views/categories/spreadsheet-editor/procedures/comment-copy";
 
-export type Thread = CommentThread;
+export type Thread = CommentThreadRecord;
 
 const onSheet = (thread: Thread, sheetId: string): boolean =>
   thread.target.kind === "spreadsheet" && thread.target.id === sheetId;
@@ -35,13 +32,10 @@ export const remarksOf = (rows: readonly Remark[], threadId: string): Remark[] =
   rows.filter((remark) => remark.threadId === threadId).sort((a, b) => a._creationTime - b._creationTime);
 
 export type NewComment = {
-  readonly projectId: string;
   readonly sheetId: string;
   readonly ref: CellRef;
   readonly quote: string;
-  readonly viewerId: string;
   readonly text: string;
-  readonly queries: readonly TableQuery[];
   readonly sent: () => void;
 };
 
@@ -53,26 +47,14 @@ export type NewComment = {
  * cell has since become.
  */
 export const addsAComment = async (asked: NewComment): Promise<void> => {
-  const author = { kind: "user" as const, userId: asked.viewerId };
-  const made = await createRow("commentThreads", {
-    projectId: asked.projectId,
+  await startThread({
     target: { kind: "spreadsheet", id: asked.sheetId },
     within: { kind: "cell", rowId: asked.ref.rowId, columnId: asked.ref.columnId },
     quote: asked.quote,
-    createdBy: author,
-    updatedAt: Date.now()
-  });
-
-  await createRow("comments", {
-    projectId: asked.projectId,
-    threadId: made.id,
-    blocks: [remarkBlock(asked.text)],
-    mentions: [],
-    author
+    text: asked.text
   });
 
   asked.sent();
-  await refreshAll(...asked.queries);
 };
 
 export const anchorOf = (thread: Thread): CellRef | undefined =>

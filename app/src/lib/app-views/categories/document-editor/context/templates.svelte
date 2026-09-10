@@ -16,7 +16,6 @@
   import { ScopeBuilder } from "$authored-components/scope-builder";
   import { TemplateAnswers as TemplateAnswerList } from "$authored-components/template-answers";
   import { TemplatesContextState } from "$app-views/categories/document-editor/context/templates.state.svelte";
-  import { rowsIn } from "$app-views/categories/document-editor/procedures/store";
   import {
     answerRowsOf,
     builderView,
@@ -45,11 +44,10 @@
   const runtime = documentId === undefined ? undefined : view.documentRuntime(documentId);
 
   const body = $derived(runtime?.body);
-  const title = $derived(rowsIn("documents").find((row) => row._id === documentId)?.title);
-
   const library = templateLibrary();
   const sets = resourceSets();
   const index = projectResources();
+  const title = $derived(index.current?.resources.find((row) => row.id === documentId)?.name);
   const setItems = $derived(setsIn(sets.ready ? sets.current : undefined));
   const catalogue = $derived(resourcesIn(index.ready ? index.current : undefined));
   const setNames = $derived(scopeNamesOf(setItems, catalogue));

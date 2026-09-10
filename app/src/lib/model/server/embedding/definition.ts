@@ -30,28 +30,31 @@ export class JinaEmbedding implements EmbeddingModel {
     };
   }
 
-  tokenField(text: string): Promise<EmbeddingResult<TokenEmbeddingField>> {
-    return tokenField(this.#state, text);
+  tokenField(text: string, signal?: AbortSignal): Promise<EmbeddingResult<TokenEmbeddingField>> {
+    return tokenField(this.#state, text, signal);
   }
 
-  windowedPassages(texts: readonly string[]): Promise<EmbeddingResult<number[][]>> {
-    return windowedPassages(this.#state, texts);
+  windowedPassages(
+    texts: readonly string[],
+    signal?: AbortSignal
+  ): Promise<EmbeddingResult<number[][]>> {
+    return windowedPassages(this.#state, texts, signal);
   }
 
-  passage(text: string): Promise<EmbeddingResult<number[]>> {
-    return passage(this.#state, text);
+  passage(text: string, signal?: AbortSignal): Promise<EmbeddingResult<number[]>> {
+    return passage(this.#state, text, signal);
   }
 
-  passages(texts: readonly string[]): Promise<EmbeddingResult<number[][]>> {
-    return passages(this.#state, texts);
+  passages(texts: readonly string[], signal?: AbortSignal): Promise<EmbeddingResult<number[][]>> {
+    return passages(this.#state, texts, signal);
   }
 
-  image(input: ImageEmbeddingInput): Promise<EmbeddingResult<number[]>> {
-    return image(this.#state, input);
+  image(input: ImageEmbeddingInput, signal?: AbortSignal): Promise<EmbeddingResult<number[]>> {
+    return image(this.#state, input, signal);
   }
 
-  query(text: string): Promise<EmbeddingResult<number[]>> {
-    return query(this.#state, text);
+  query(text: string, signal?: AbortSignal): Promise<EmbeddingResult<number[]>> {
+    return query(this.#state, text, signal);
   }
 }
 

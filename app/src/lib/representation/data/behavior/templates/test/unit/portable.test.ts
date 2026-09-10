@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 
 import type { DocumentBody } from "$representation/data/types/documents/body";
 import type { SlideDeckBody } from "$representation/data/types/slide-decks/body";
+import { asId } from "$representation/data/behavior/core/id";
 import { portableBodyOf } from "$representation/data/behavior/templates/portable";
+import type { ResourceSet } from "$representation/data/types/core/resource-set";
 
 const documentBody = (): DocumentBody => ({
   rows: [
@@ -29,7 +31,7 @@ const documentBody = (): DocumentBody => ({
           display: "See 4",
           marks: [
             { id: "m1", from: { atom: "a1", offset: 0 }, to: { atom: "a1", offset: 3 }, link: { kind: "url", url: "https://example.com" } },
-            { id: "m2", from: { atom: "a1", offset: 0 }, to: { atom: "a1", offset: 2 }, style: ["bold"], link: { kind: "resource", ref: { kind: "document", id: "documents:1" } } }
+            { id: "m2", from: { atom: "a1", offset: 0 }, to: { atom: "a1", offset: 2 }, style: ["bold"], link: { kind: "resource", ref: { kind: "document", id: asId<"documents">("documents:1") } } }
           ]
         },
         { id: "b2", type: "image", alt: "Site", source: { kind: "file", fileId: "externalFiles:1" as never } },
@@ -42,8 +44,11 @@ const documentBody = (): DocumentBody => ({
           marks: [],
           scope: {
             include: [{ select: "kinds", kinds: ["finding"] }, { select: "set", setId: "resourceSets:1" as never }],
-            exclude: [{ select: "resources", refs: [{ kind: "document", id: "documents:2" }] }]
-          },
+            exclude: [{
+              select: "resources",
+              refs: [{ kind: "document", id: asId<"documents">("documents:2") }]
+            }]
+          } satisfies ResourceSet,
           state: "idle"
         }
       ]

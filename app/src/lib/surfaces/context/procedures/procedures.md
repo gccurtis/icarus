@@ -4,7 +4,8 @@ Lives at `procedures/procedures.md`.
 
 | File | Holds |
 | --- | --- |
-| [`rail-entries.ts`](rail-entries.ts) | `RAIL_ENTRIES` — a label and an icon for each of the ninety-two context views |
+| [`rail-entries.ts`](rail-entries.ts) | `RAIL_ENTRIES` — a label and an icon for every context view |
+| [`../effects/loads-context.svelte.ts`](../effects/loads-context.svelte.ts) | The lifetime of one asynchronous context-module load, including stale-result retirement |
 
 ## What is here, and what belongs to the model
 
@@ -29,6 +30,6 @@ cannot be drawn is a rail with a hole in it, and finding that at runtime is
 strictly worse than finding it at build time — in the markup the same lookup
 would silently render nothing.
 
-The rest — which component a chosen id resolves to — stays in
-[`context.svelte`](../context.svelte), where an id is a path and
-there is no map to keep in step at all.
+The entry component derives the path without a second registry. The named load
+effect resolves that path and records the result beside its source path in the
+panel's instance-owned state.

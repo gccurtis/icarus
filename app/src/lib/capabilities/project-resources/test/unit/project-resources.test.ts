@@ -3,7 +3,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const model = vi.hoisted(() => ({
   projectId: "projects:mine",
   tables: new Map<string, unknown>(),
-  writes: [] as { table: string; fields: Record<string, unknown> }[]
+  writes: [] as { table: string; fields: Record<string, unknown> }[],
+  updates: [] as { path: string; value: unknown }[]
 }));
 
 vi.mock("$runtime/server/scope.server", () => ({
@@ -17,6 +18,9 @@ vi.mock("$runtime/server/start.server", () => ({
       create: (table: string, fields: Record<string, unknown>) => {
         model.writes.push({ table, fields });
         return `${table}:new`;
+      },
+      update: (path: string, value: unknown) => {
+        model.updates.push({ path, value });
       },
       read: (table: string) => ({
         table,
@@ -35,10 +39,14 @@ const { readProjectResourceIndex } = await import(
 beforeEach(() => {
   model.tables.clear();
   model.writes.length = 0;
+  model.updates.length = 0;
 });
 
 const { createProjectResource } = await import(
   "$capabilities/project-resources/api/create-project-resource/create-project-resource"
+);
+const { renameProjectResource } = await import(
+  "$capabilities/project-resources/api/rename-project-resource/rename-project-resource"
 );
 
 describe("createProjectResource", () => {
@@ -229,48 +237,68 @@ describe("createProjectResource", () => {
 });
 
 describe("readProjectResourceIndex", () => {
+  const system = { kind: "system" as const };
+  const editable = (
+    table: "documents" | "slideDecks" | "spreadsheets",
+    suffix: string,
+    extra: Record<string, unknown> = {}
+  ) => ({
+    _id: `${table}:${suffix}`,
+    _creationTime: 1,
+    projectId: "projects:mine",
+    title: suffix,
+    createdBy: system,
+    updatedBy: system,
+    updatedAt: 10,
+    ...extra
+  });
+
+  const exactUser = (id: string, name: string) => ({
+    _id: id,
+    _creationTime: 1,
+    authSubject: `auth:${id}`,
+    displayName: name,
+    settings: "{}",
+    updatedAt: 2
+  });
+
+  const exactMembership = (id: string, projectId: string, userId: string) => ({
+    _id: id,
+    _creationTime: 1,
+    projectId,
+    userId,
+    token: `token:${id}`,
+    role: "editor"
+  });
+
   it("treats a malformed table root as unavailable input rather than crashing", async () => {
     model.tables.set("documents", { not: "an array" });
 
     await expect(readProjectResourceIndex()).resolves.toEqual({ resources: [], unavailable: [] });
+
+    model.tables.set("documents", [null, 7, "row"]);
+    await expect(readProjectResourceIndex()).resolves.toEqual({ resources: [], unavailable: [] });
   });
 
-  it("returns only listable rows in the resolved project", async () => {
+  it("lists exact current rows and quarantines an unknown resource field", async () => {
     model.tables.set("documents", [
-      {
-        _id: "documents:mine",
-        projectId: "projects:mine",
+      editable("documents", "mine", {
         title: "Mine",
-        templateId: "templates:secret",
-        updatedAt: 10,
         updatedBy: { kind: "user", userId: "users:me" }
-      },
-      {
-        _id: "documents:other",
-        projectId: "projects:other",
-        title: "Other",
-        updatedAt: 9,
-        updatedBy: { kind: "user", userId: "users:other" }
-      }
+      }),
+      editable("documents", "unknown", { unknownField: true }),
+      editable("documents", "other", { projectId: "projects:other", title: "Other" })
     ]);
     model.tables.set("spreadsheets", [
-      {
-        _id: "spreadsheets:mine",
-        projectId: "projects:mine",
+      editable("spreadsheets", "mine", {
         title: "Model",
         updatedAt: 8,
         updatedBy: { kind: "user", userId: "users:me" }
-      }
+      })
     ]);
-    model.tables.set("templateVersions", [
-      { _id: "templateVersions:secret", templateId: "templates:other", body: {} }
-    ]);
-    model.tables.set("users", [
-      { _id: "users:me", displayName: "Me" },
-      { _id: "users:other", displayName: "Other" }
-    ]);
+    model.tables.set("users", [exactUser("users:me", "Me")]);
     model.tables.set("memberships", [
-      { _id: "memberships:me", projectId: "projects:mine", userId: "users:me" }
+      exactMembership("memberships:me", "projects:mine", "users:me")
     ]);
 
     const result = await readProjectResourceIndex();
@@ -286,52 +314,32 @@ describe("readProjectResourceIndex", () => {
       updatedAt: 10,
       updatedByName: "Me"
     });
-    expect("templateId" in result.resources[0]).toBe(false);
-    expect("templateVersions" in result).toBe(false);
-    expect(result.unavailable).toEqual([]);
+    expect(result.unavailable).toEqual([
+      expect.objectContaining({ resourceId: "documents:unknown", reason: "corrupt" })
+    ]);
   });
 
   it("quarantines malformed scoped rows and never forwards actor extras", async () => {
     model.tables.set("documents", [
-      {
-        _id: "documents:good",
-        projectId: "projects:mine",
-        title: "Good",
-        updatedAt: 10,
-        updatedBy: { kind: "system" }
-      },
-      {
-        _id: "documents:bad.actor",
-        projectId: "projects:mine",
+      editable("documents", "good", { title: "Good" }),
+      editable("documents", "bad.actor", {
         title: "Bad",
-        updatedAt: 11,
         updatedBy: { kind: "user", userId: "users:me", credential: "do-not-forward" }
-      },
-      {
-        _id: "documents:bad-time",
-        projectId: "projects:mine",
+      }),
+      editable("documents", "bad-time", {
         title: "Bad time",
-        updatedAt: Number.POSITIVE_INFINITY,
-        updatedBy: { kind: "system" }
-      },
-      {
-        _id: "documents:foreign-actor",
-        projectId: "projects:mine",
+        updatedAt: Number.POSITIVE_INFINITY
+      }),
+      editable("documents", "foreign-actor", {
         title: "Former collaborator",
         updatedAt: 12,
         updatedBy: { kind: "user", userId: "users:other" }
-      },
-      {
-        _id: "documents:good",
-        projectId: "projects:mine",
-        title: "Duplicate id",
-        updatedAt: 13,
-        updatedBy: { kind: "system" }
-      }
+      }),
+      editable("documents", "good", { title: "Duplicate id", updatedAt: 13 })
     ]);
-    model.tables.set("users", [{ _id: "users:other", displayName: "Other secret" }]);
+    model.tables.set("users", [exactUser("users:other", "Other secret")]);
     model.tables.set("memberships", [
-      { _id: "memberships:other", projectId: "projects:other", userId: "users:other" }
+      exactMembership("memberships:other", "projects:other", "users:other")
     ]);
 
     const result = await readProjectResourceIndex();
@@ -342,7 +350,7 @@ describe("readProjectResourceIndex", () => {
         kind: "document",
         name: "Former collaborator",
         updatedAt: 12,
-        updatedByName: "Someone"
+        updatedByName: null
       }
     ]);
     expect(result.unavailable).toHaveLength(4);
@@ -355,20 +363,8 @@ describe("readProjectResourceIndex", () => {
 
   it("reserves a malformed row id so a valid-looking duplicate is never exposed", async () => {
     model.tables.set("documents", [
-      {
-        _id: "documents:duplicate",
-        projectId: "projects:mine",
-        title: "",
-        updatedAt: 10,
-        updatedBy: { kind: "system" }
-      },
-      {
-        _id: "documents:duplicate",
-        projectId: "projects:mine",
-        title: "Looks valid",
-        updatedAt: 11,
-        updatedBy: { kind: "system" }
-      }
+      editable("documents", "duplicate", { title: "" }),
+      editable("documents", "duplicate", { title: "Looks valid", updatedAt: 11 })
     ]);
 
     const result = await readProjectResourceIndex();
@@ -383,20 +379,12 @@ describe("readProjectResourceIndex", () => {
 
   it("quarantines a scoped row when a foreign row claims the same canonical id", async () => {
     model.tables.set("documents", [
-      {
-        _id: "documents:shared-path",
-        projectId: "projects:mine",
-        title: "Mine",
-        updatedAt: 10,
-        updatedBy: { kind: "system" }
-      },
-      {
-        _id: "documents:shared-path",
+      editable("documents", "shared-path", { title: "Mine" }),
+      editable("documents", "shared-path", {
         projectId: "projects:other",
         title: "Foreign",
-        updatedAt: 11,
-        updatedBy: { kind: "system" }
-      }
+        updatedAt: 11
+      })
     ]);
 
     const result = await readProjectResourceIndex();
@@ -413,59 +401,108 @@ describe("readProjectResourceIndex", () => {
     expect(JSON.stringify(result)).not.toContain("Foreign");
   });
 
-  it("falls back when referenced actor labels are noncanonical or overlong", async () => {
+  it("keeps unavailable historical actors null and resolves exact related subjects", async () => {
     model.tables.set("documents", [
-      {
-        _id: "documents:user",
-        projectId: "projects:mine",
+      editable("documents", "user", {
         title: "User work",
-        updatedAt: 10,
-        updatedBy: { kind: "user", userId: "users:odd" }
-      }
+        updatedBy: { kind: "user", userId: "users:former" }
+      })
     ]);
     model.tables.set("slideDecks", [
-      {
-        _id: "slideDecks:connector",
-        projectId: "projects:mine",
+      editable("slideDecks", "connector", {
         title: "Connector work",
         updatedAt: 11,
-        updatedBy: { kind: "connector", connectorId: "connectors:odd" }
-      }
+        updatedBy: { kind: "connector", connectorId: "connectors:exact" }
+      })
     ]);
-    model.tables.set("researchThreads", [
-      {
-        _id: "researchThreads:agent",
-        projectId: "projects:mine",
-        title: "Agent work",
-        updatedAt: 12,
-        createdBy: { kind: "agent", taskId: "agentTasks:odd" }
-      }
-    ]);
-    model.tables.set("memberships", [
-      { _id: "memberships:odd", projectId: "projects:mine", userId: "users:odd" }
-    ]);
-    model.tables.set("users", [{ _id: "users:odd", displayName: "x".repeat(161) }]);
     model.tables.set("connectors", [
       {
-        _id: "connectors:odd",
+        _id: "connectors:exact",
+        _creationTime: 1,
         projectId: "projects:mine",
-        name: " Padded connector "
-      }
-    ]);
-    model.tables.set("agentTasks", [
-      {
-        _id: "agentTasks:odd",
-        projectId: "projects:mine",
-        title: "x".repeat(161)
+        name: "Drive source",
+        configuration: {
+          kind: "provider",
+          provider: "googleDrive",
+          selection: "folder:board"
+        },
+        createdBy: system,
+        updatedAt: 2
       }
     ]);
 
     const result = await readProjectResourceIndex();
 
     expect(result.resources.map((row) => row.updatedByName)).toEqual([
-      "Someone",
-      "A connector",
-      "An agent"
+      null,
+      "Drive source"
     ]);
+  });
+
+  it("never hides a resource through a malformed partial stage", async () => {
+    model.tables.set("documents", [editable("documents", "stage")]);
+    model.tables.set("templateStages", [
+      {
+        _id: "templateStages:bad",
+        projectId: "projects:mine",
+        resourceId: "documents:stage"
+      }
+    ]);
+
+    await expect(readProjectResourceIndex()).resolves.toMatchObject({
+      resources: [],
+      unavailable: [
+        { resourceId: "documents:stage", reason: "corrupt" }
+      ]
+    });
+  });
+});
+
+describe("renameProjectResource", () => {
+  const system = { kind: "system" as const };
+  const exact = (extra: Record<string, unknown> = {}) => ({
+    _id: "documents:rename",
+    _creationTime: 1,
+    projectId: "projects:mine",
+    title: "Before",
+    summary: "Kept",
+    createdBy: system,
+    updatedBy: system,
+    updatedAt: 2,
+    ...extra
+  });
+
+  it("replaces an admitted row with explicitly named current fields", async () => {
+    model.tables.set("documents", [exact()]);
+
+    await expect(renameProjectResource({
+      resourceId: "documents:rename",
+      title: "After"
+    })).resolves.toMatchObject({ resourceId: "documents:rename", title: "After" });
+
+    expect(model.updates).toHaveLength(1);
+    expect(model.updates[0].path).toBe("documents.documents:rename");
+    expect(model.updates[0].value).toEqual({
+      projectId: "projects:mine",
+      title: "After",
+      summary: "Kept",
+      createdBy: system,
+      updatedBy: { kind: "user", userId: "users:me" },
+      updatedAt: expect.any(Number)
+    });
+  });
+
+  it("refuses unknown, incomplete, duplicate, and foreign row claimants", async () => {
+    const ask = { resourceId: "documents:rename", title: "After" };
+
+    model.tables.set("documents", [exact({ unknownField: true })]);
+    await expect(renameProjectResource(ask)).rejects.toThrow(/no resource/);
+
+    model.tables.set("documents", [exact(), exact()]);
+    await expect(renameProjectResource(ask)).rejects.toThrow(/no resource/);
+
+    model.tables.set("documents", [exact({ projectId: "projects:other" })]);
+    await expect(renameProjectResource(ask)).rejects.toThrow(/no resource/);
+    expect(model.updates).toEqual([]);
   });
 });

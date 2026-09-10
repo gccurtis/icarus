@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { afterEach, test, vi } from "vitest";
 import { createBrowserStorage } from "$model/client/storage";
 import { STORAGE_VERSION, storageKey } from "$model/client/storage/types";
+import { asId } from "$representation/data/behavior/core/id";
 
 /**
  * The two `localStorage` calls, and what they do when the store refuses.
@@ -26,6 +27,9 @@ afterEach(() => {
 });
 
 const settled = () => new Promise<void>((resolve) => queueMicrotask(resolve));
+
+const tab = (id: string) =>
+  ["document-editor", asId<"documents">(`documents:${id}`)] as const;
 
 test("reads this project's key, and only that key", () => {
   const asked: string[] = [];
@@ -68,7 +72,7 @@ test("a store that cannot be written loses the next reload and nothing else", as
   // The write happens in a microtask, so a throw there would be an unhandled
   // rejection rather than something a caller could catch — which is exactly why
   // it is swallowed at the source.
-  storage.saveWorkbench({ tabs: [["project-overview", "a"]] });
+  storage.saveWorkbench({ tabs: [tab("a")] });
   await assert.doesNotReject(settled());
 });
 
@@ -80,7 +84,7 @@ test("what is written is this project's key and the whole document", async () =>
   });
 
   const storage = createBrowserStorage("beta");
-  storage.saveWorkbench({ tabs: [["project-overview", "a"]] });
+  storage.saveWorkbench({ tabs: [tab("a")] });
   await settled();
 
   assert.deepEqual([...written.keys()], [storageKey("beta")]);
@@ -94,11 +98,11 @@ test("two projects cannot grow each other's document", async () => {
     setItem: (key: string, value: string) => void written.set(key, value)
   });
 
-  createBrowserStorage("alpha").saveWorkbench({ tabs: [["project-overview", "a"]] });
-  createBrowserStorage("beta").saveWorkbench({ tabs: [["project-overview", "b"]] });
+  createBrowserStorage("alpha").saveWorkbench({ tabs: [tab("a")] });
+  createBrowserStorage("beta").saveWorkbench({ tabs: [tab("b")] });
   await settled();
 
   assert.equal(written.size, 2);
-  assert.match(written.get(storageKey("alpha")) ?? "", /"a"/);
-  assert.match(written.get(storageKey("beta")) ?? "", /"b"/);
+  assert.match(written.get(storageKey("alpha")) ?? "", /"documents:a"/);
+  assert.match(written.get(storageKey("beta")) ?? "", /"documents:b"/);
 });

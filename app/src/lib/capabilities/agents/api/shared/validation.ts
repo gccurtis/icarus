@@ -3,8 +3,15 @@ import type { AutomationTrigger } from "$representation/data/types/agents/automa
 import type { Cast, PersonaDefinition } from "$representation/data/types/agents/persona";
 import type { ToolId } from "$representation/data/types/agents/tool";
 import type { Id } from "$representation/data/types/core/id";
-import type { ResourceRef } from "$representation/data/types/core/resource";
+import type {
+  ResourceRef,
+  ResourceSelectorKind
+} from "$representation/data/types/core/resource";
 import type { ResourceSet, SetTerm } from "$representation/data/types/core/resource-set";
+import {
+  admitResourceRef,
+  isResourceSelectorKind
+} from "$representation/data/behavior/core/resource";
 import { isToolId, orderedTools } from "$representation/data/behavior/agents/tools";
 import {
   isRepeat,
@@ -91,17 +98,18 @@ export const toolsOf = (value: unknown, subject: string): readonly ToolId[] => {
 };
 
 export const resourceRefOf = (value: unknown, subject: string): ResourceRef => {
-  const fields = fieldsOf(value, subject);
-  only(fields, ["kind", "id"], subject);
-  return {
-    kind: textOf(fields.kind, subject, "ref.kind", 80),
-    id: idOf(fields.id, subject, "ref.id")
-  };
+  try {
+    return admitResourceRef(value, `agents/${subject}: ref`);
+  } catch {
+    return fail(subject, "ref is one exact current resource reference");
+  }
 };
 
-const kindsOf = (value: unknown, subject: string): string[] => {
+const kindsOf = (value: unknown, subject: string): ResourceSelectorKind[] => {
   if (!Array.isArray(value) || value.length === 0) fail(subject, "kinds names at least one kind");
-  return (value as unknown[]).map((entry) => textOf(entry, subject, "a kind", 80));
+  const values = value as unknown[];
+  if (!values.every(isResourceSelectorKind)) fail(subject, "kinds contains only current resource selectors");
+  return [...values] as ResourceSelectorKind[];
 };
 
 const termOf = (value: unknown, subject: string): SetTerm => {

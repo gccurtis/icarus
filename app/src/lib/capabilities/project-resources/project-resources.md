@@ -8,10 +8,13 @@ sources are represented as connectors.
 `readProjectResourceIndex` resolves its project from the request route, filters
 every represented table on the server, and returns one shared query key. Each
 item is a closed projection of id, kind, display name, timestamp, and a
-project-authorized actor display name—not a raw represented row—so bodies,
+project-authorized actor display name (or `null` when that exact historical
+subject is no longer inspectable)—not a raw represented row—so bodies,
 evidence, storage ids, hashes, provenance, and fields added later cannot leak
-through implicitly. Malformed scoped legacy rows are quarantined in an explicit
-`unavailable` list rather than crashing the index or being forwarded. Template
+through implicitly. Every row and nested actor/stage subject must match the one
+current represented shape. Malformed scoped rows and rows carrying unknown or
+retired fields are quarantined in an explicit `unavailable` list rather than
+being decoded, repaired, or forwarded. Template
 instantiation refreshes that key, so returning to Project Overview shows the new
 resource without asking the broad Store capability to stand in as an invalidation
 mechanism. Snapshots, cells, changes, and template bodies are not part of this
@@ -34,9 +37,13 @@ Project Overview therefore do not choose names from potentially stale cached
 indexes. The result carries that chosen title with the opaque resource id and
 revision. This replaces Project Overview's former client-shaped generic Store
 mutation. Both launchers refresh the merged resource index and the exact
-`documents` or `slideDecks` query before opening, because tab and editor titles
-consume the latter. Spreadsheet creation stays visibly unavailable until its editor consumes
-represented ids.
+`documents`, `slideDecks`, or `spreadsheets` query before opening, because tab
+and editor titles consume the latter.
+
+`renameProjectResource` first exact-admits one unique project-owned editor
+resource. Its whole-row replacement explicitly names every current field; it
+never spreads a stored row, so an unknown or retired field can neither authorize
+the command nor survive it accidentally.
 
 Request scope currently proves project membership but does not include the
 membership role. The development session is the represented owner; enforcing

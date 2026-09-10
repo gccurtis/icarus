@@ -78,6 +78,38 @@ const writing = (resourceId: string) => ({
   }
 });
 
+const insertingUnconfiguredPrompt = (resourceId: string) => ({
+  changeSet: {
+    resourceId,
+    baseRevision: 0,
+    ops: [{
+      op: "insert",
+      target: "element",
+      path: "slide:1/elements",
+      ids: ["element:prompt"],
+      after: null,
+      values: [{
+        id: "element:prompt",
+        frame: { x: 0.1, y: 0.1, width: 0.4, height: 0.1 },
+        overflow: "grow",
+        content: {
+          type: "prompt",
+          block: {
+            id: "block:prompt",
+            type: "prompt",
+            style: "body",
+            atoms: [{ id: "atom:prompt", kind: "literal", text: "Text" }],
+            display: "Text",
+            marks: [],
+            state: "idle"
+          }
+        }
+      }]
+    }],
+    touched: ["slide:1/elements"]
+  }
+});
+
 const revisionOf = (store: StoreModel, leaderId: string): unknown => {
   const found = store.read(`slideDeckSnapshots.${leaderId}.revision`);
   return found?.kind === "field" ? found.value : undefined;
@@ -128,6 +160,28 @@ describe("submit slide-deck changes transaction atomicity", () => {
       "slideDecks"
     ]);
     expectAdvanced(storeAt(path), ids);
+  });
+
+  it("persists a newly inserted prompt before it has configuration", async () => {
+    const path = directory();
+    const ids = seeded(path);
+    runtime.store = storeAt(path);
+
+    await expect(submitSlideDeckChanges(insertingUnconfiguredPrompt(ids.resourceId))).resolves.toMatchObject({
+      accepted: true,
+      revision: 1
+    });
+
+    const snapshot = rowsIn(storeAt(path), "slideDeckSnapshots")[0];
+    expect(snapshot.body).toMatchObject({
+      slides: [{
+        id: "slide:1",
+        elements: [{
+          id: "element:prompt",
+          content: { type: "prompt", block: { type: "prompt", state: "idle" } }
+        }]
+      }]
+    });
   });
 
   it("rolls back before decision and recovers whole after every decided boundary", async () => {

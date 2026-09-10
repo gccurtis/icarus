@@ -30,6 +30,10 @@
   import { filled } from "$app-views/categories/spreadsheet-editor/procedures/fill";
   import { createSheetState } from "$app-views/categories/spreadsheet-editor/content/sheet.state.svelte";
   import { pickingChannel } from "$app-views/categories/spreadsheet-editor/procedures/picking.svelte";
+  import {
+    endedReferenceGesture,
+    startedReferenceGesture
+  } from "$app-views/categories/spreadsheet-editor/procedures/reference-picking";
   import { variableRegister } from "$app-views/categories/spreadsheet-editor/procedures/variables.svelte";
   import {
     factsOf,
@@ -68,7 +72,8 @@
   } from "$app-views/categories/spreadsheet-editor/procedures/merge-spans";
   import { spillChildOf, spillOf } from "$app-views/categories/spreadsheet-editor/procedures/spill-spans";
   import { usedRect } from "$app-views/categories/spreadsheet-editor/procedures/stats";
-  import { rowsOf, tableQuery, titleOf, titleQuery } from "$app-views/categories/spreadsheet-editor/procedures/store";
+  import { commentsQuery, threadsIn } from "$app-views/categories/spreadsheet-editor/procedures/comment-feed";
+  import { titleOf, titleQuery } from "$app-views/categories/spreadsheet-editor/procedures/resource-title";
   import {
     APPEND_COLUMNS,
     APPEND_ROWS
@@ -116,8 +121,8 @@
   const grid = $derived(gridOf(sheet?.body));
   const facts = $derived(factsOf(sheetId, sheet, title ?? ""));
 
-  const threadRows = tableQuery("commentThreads");
-  const allThreads = $derived(rowsOf(threadRows, "commentThreads"));
+  const comments = commentsQuery();
+  const allThreads = $derived(threadsIn(comments));
   const threads = $derived(sheetId === undefined ? [] : threadsOf(allThreads, sheetId));
   const currentThread = $derived(view.inspected === "general.comment" ? view.selection?.id : undefined);
   const pins = $derived(
@@ -175,6 +180,12 @@
   });
 
   const held = createSheetState();
+
+  const surfaceSelection = $derived(
+    channel.armed && held.referencePick?.session === channel.session
+      ? held.referencePick.selection
+      : selection
+  );
 
   const say = (text: string) => {
     held.notice = text;
@@ -259,15 +270,25 @@
 
   const picked = (next: SurfaceSelection): boolean => {
     if (!channel.armed) return false;
+    const gesture = held.referenceGesture.active;
+    if (gesture === undefined) return false;
     const at = next.cell;
     const [rect] = next.ranges;
     if (at === undefined || rect === undefined || next.ranges.length > 1) return false;
     const ref = refAt(grid, at[1], at[0]);
     if (ref === undefined) return false;
+    held.referencePick = { session: channel.session, selection: next };
     return channel.pick(
       rect.rows === 1 && rect.columns === 1 ? labelOf(grid, ref) : rectLabelOf(grid, rect),
-      keyOf(ref)
+      keyOf(ref),
+      gesture
     );
+  };
+
+  const referenceGesture = (active: boolean) => {
+    held.referenceGesture = active
+      ? startedReferenceGesture(held.referenceGesture)
+      : endedReferenceGesture(held.referenceGesture);
   };
 
   const select = (next: SurfaceSelection) => {
@@ -439,7 +460,7 @@
           {#if scene}
             <SheetSurface
               {scene}
-              {selection}
+              selection={surfaceSelection}
               {highlights}
               {zoom}
               scrollTarget={held.scrollTarget}
@@ -459,6 +480,7 @@
               onappend={append}
               onappendcolumn={appendColumn}
               oncontext={pointed}
+              onselectiongesture={referenceGesture}
             />
           {:else}
             <p class="loading text-caption text-ink-muted">

@@ -1,12 +1,14 @@
 import assert from "node:assert/strict";
 import { beforeEach, describe, test, vi } from "vitest";
 import type { StoreUnitOfWork } from "$model/server/store/index.server";
+import { asId } from "$representation/data/behavior/core/id";
+import type { ResourceSet } from "$representation/data/types/core/resource-set";
 
 type Row = Record<string, unknown> & { _id: string; _creationTime: number };
 
 const model = vi.hoisted(() => ({
   calls: [] as string[],
-  scope: { projectId: "p", userId: "u", username: "Uma" },
+  scope: { projectId: "projects:p", userId: "users:u", username: "Uma" },
   tables: {} as Record<string, Row[]>,
   store: {
     create: (table: string, fields: unknown) => {
@@ -132,6 +134,12 @@ const { updateTemplate } = await import(
 const { bodyOf, holesOf } = await import(
   "$capabilities/templates/api/shared/validation"
 );
+const { normalizeScope } = await import(
+  "$capabilities/templates/api/shared/scopes"
+);
+const { withFreshOutputs } = await import(
+  "$capabilities/templates/api/shared/prompts"
+);
 
 const documentBody = { resource: "document", rows: [] } as const;
 const slidesBody = {
@@ -179,7 +187,7 @@ const template = (
   extra: Record<string, unknown> = {}
 ): Row =>
   row("templates", id, {
-    projectId: "p",
+    projectId: "projects:p",
     userId: owner,
     name: `Template ${id}`,
     tags: ["Useful"],
@@ -194,20 +202,21 @@ const template = (
 beforeEach(() => {
   vi.spyOn(Date, "now").mockReturnValue(500);
   model.calls.length = 0;
-  model.scope = { projectId: "p", userId: "u", username: "Uma" };
+  model.scope = { projectId: "projects:p", userId: "users:u", username: "Uma" };
   model.tables = {
     users: [
-      row("users", "u", { displayName: "Uma", authSubject: "u", settings: "{}", updatedAt: 1 }),
-      row("users", "v", { displayName: "Victor", authSubject: "v", settings: "{}", updatedAt: 1 }),
-      row("users", "x", { displayName: "Xavier", authSubject: "x", settings: "{}", updatedAt: 1 })
+      row("users", "users:u", { displayName: "Uma", authSubject: "users:u", settings: "{}", updatedAt: 1 }),
+      row("users", "users:v", { displayName: "Victor", authSubject: "users:v", settings: "{}", updatedAt: 1 }),
+      row("users", "users:x", { displayName: "Xavier", authSubject: "users:x", settings: "{}", updatedAt: 1 })
     ],
     memberships: [
-      row("memberships", "1", { userId: "u", projectId: "p", token: "u", role: "owner" }),
-      row("memberships", "2", { userId: "v", projectId: "p", token: "v", role: "editor" }),
-      row("memberships", "3", { userId: "x", projectId: "other", token: "x", role: "owner" })
+      row("memberships", "1", { userId: "users:u", projectId: "projects:p", token: "users:u", role: "owner" }),
+      row("memberships", "2", { userId: "users:v", projectId: "projects:p", token: "users:v", role: "editor" }),
+      row("memberships", "3", { userId: "users:x", projectId: "projects:other", token: "x", role: "owner" })
     ],
     templates: [],
     templateVersions: [],
+    resourceSets: [],
     documents: [],
     documentSnapshots: [],
     slideDecks: [],
@@ -231,7 +240,7 @@ describe("the project library", () => {
   });
 
   test("does not forward an unbounded referenced actor label", async () => {
-    model.tables.templates.push(template("1", "u"));
+    model.tables.templates.push(template("1", "users:u"));
     model.tables.users[0].displayName = "x".repeat(161);
 
     const answer = await readTemplateLibrary();
@@ -241,10 +250,10 @@ describe("the project library", () => {
 
   test("quarantines duplicate ids across projects and tolerates malformed resource rows", async () => {
     model.tables.templates.push(
-      template("1", "u", documentBody, {
-        createdBy: { kind: "user", userId: "x" }
+      template("1", "users:u", documentBody, {
+        createdBy: { kind: "user", userId: "users:x" }
       }),
-      template("1", "v", slidesBody, { projectId: "other" })
+      template("1", "users:v", slidesBody, { projectId: "projects:other" })
     );
     model.tables.documents.push(null as unknown as Row);
 
@@ -260,8 +269,8 @@ describe("the project library", () => {
 
   test("resolves creator labels only through actors authorized in this project", async () => {
     model.tables.templates.push(
-      template("1", "u", documentBody, {
-        createdBy: { kind: "user", userId: "x" }
+      template("1", "users:u", documentBody, {
+        createdBy: { kind: "user", userId: "users:x" }
       })
     );
 
@@ -276,9 +285,9 @@ describe("the project library", () => {
 
   test("projects only this project's templates with project-local recency", async () => {
     model.tables.templates.push(
-      template("1", "u", documentBody, { name: "Mine", updatedAt: 30, lastUsedAt: 80 }),
-      template("2", "v", slidesBody, { name: "Shared", updatedAt: 40, lastUsedAt: 90 }),
-      template("3", "x", documentBody, { name: "Hidden", updatedAt: 50, projectId: "other" })
+      template("1", "users:u", documentBody, { name: "Mine", updatedAt: 30, lastUsedAt: 80 }),
+      template("2", "users:v", slidesBody, { name: "Shared", updatedAt: 40, lastUsedAt: 90 }),
+      template("3", "users:x", documentBody, { name: "Hidden", updatedAt: 50, projectId: "projects:other" })
     );
 
     const answer = await readTemplateLibrary();
@@ -299,8 +308,8 @@ describe("the project library", () => {
 
   test("reads a full body and does not disclose another project's template", async () => {
     model.tables.templates.push(
-      template("1", "u", slidesBody),
-      template("2", "v", documentBody, { projectId: "other" })
+      template("1", "users:u", slidesBody),
+      template("2", "users:v", documentBody, { projectId: "projects:other" })
     );
 
     const answer = await readTemplate({ templateId: "templates:1" });
@@ -309,10 +318,52 @@ describe("the project library", () => {
     assert.equal(await readTemplate({ templateId: "templates:2" }), null);
   });
 
+  test("refuses to read or duplicate a private default owned by another subject", async () => {
+    model.tables.templates.push(
+      template("1", "users:u", documentBody, {
+        holes: [
+          {
+            name: "evidence",
+            label: "Evidence",
+            kind: "scope",
+            default: {
+              include: [{ select: "set", setId: "resourceSets:9" }],
+              exclude: []
+            }
+          }
+        ]
+      })
+    );
+    model.tables.resourceSets.push(
+      row("resourceSets", "9", {
+        projectId: "projects:p",
+        boundTo: { kind: "resource", resourceId: "documents:9", hole: "evidence" },
+        set: {
+          include: [{ select: "resources", refs: [{ kind: "document", id: "documents:9" }] }],
+          exclude: []
+        },
+        createdBy: { kind: "user", userId: "users:u" },
+        revision: 1,
+        updatedAt: 1
+      })
+    );
+
+    const selected = await readTemplate({ templateId: "templates:1" });
+    const duplicated = await duplicateTemplate({ templateId: "templates:1" });
+
+    assert.ok(selected !== null && "unavailable" in selected);
+    assert.match(selected !== null && "unavailable" in selected ? selected.detail : "", /private/);
+    assert.equal(duplicated.accepted, false);
+    assert.equal(duplicated.accepted ? "" : duplicated.reason, "unsupported-body");
+    assert.match(duplicated.accepted ? "" : duplicated.detail, /private/);
+    assert.equal(model.tables.templates.length, 1);
+    assert.equal(model.tables.resourceSets.length, 1);
+  });
+
   test("quarantines an invalid owned row without hiding healthy templates", async () => {
     model.tables.templates.push(
-      template("1", "u", documentBody, { name: "Healthy" }),
-      template("2", "u", { resource: "document", blocks: [] }, { name: "Legacy" })
+      template("1", "users:u", documentBody, { name: "Healthy" }),
+      template("2", "users:u", { resource: "document", blocks: [] }, { name: "Malformed" })
     );
 
     const library = await readTemplateLibrary();
@@ -327,9 +378,9 @@ describe("the project library", () => {
   });
 
   test("quarantines a path-like row id and rejects it at every input door", async () => {
-    const legitimate = template("1", "u", documentBody, { description: "Keep me" });
+    const legitimate = template("1", "users:u", documentBody, { description: "Keep me" });
     const disguised = {
-      ...template("evil", "u", documentBody),
+      ...template("evil", "users:u", documentBody),
       _id: "templates:1.description"
     };
     model.tables.templates.push(legitimate, disguised);
@@ -367,8 +418,8 @@ describe("template mutations", () => {
 
   test("updates only this project's current revision and snapshots the accepted result", async () => {
     model.tables.templates.push(
-      template("1", "u"),
-      template("2", "v", documentBody, { projectId: "other" })
+      template("1", "users:u"),
+      template("2", "users:v", documentBody, { projectId: "projects:other" })
     );
 
     assert.deepEqual(
@@ -404,11 +455,12 @@ describe("template mutations", () => {
 
   test("updates hole prose without exposing its stable key or default to editing", async () => {
     model.tables.templates.push(
-      template("1", "u", documentBody, {
+      template("1", "users:u", documentBody, {
         holes: [
           {
             name: "evidence",
             label: "Evidence",
+            kind: "scope",
             description: "Old help",
             default: { include: [{ select: "kinds", kinds: ["finding"] }], exclude: [] }
           }
@@ -429,6 +481,7 @@ describe("template mutations", () => {
       {
         name: "evidence",
         label: "Evidence",
+        kind: "scope",
         description: "Choose the evidence set.",
         default: { include: [{ select: "kinds", kinds: ["finding"] }], exclude: [] }
       }
@@ -437,30 +490,81 @@ describe("template mutations", () => {
   });
 
   test("duplicates a visible template into a new viewer-owned template", async () => {
-    model.tables.templates.push(template("1", "u", slidesBody, { description: "Source" }));
+    model.tables.templates.push(template("1", "users:u", slidesBody, { description: "Source" }));
 
     const answer = await duplicateTemplate({ templateId: "templates:1", name: "My copy" });
 
     assert.equal(answer.accepted, true);
     const copy = model.tables.templates.find((candidate) => candidate._id === "templates:2");
-    assert.equal(copy?.userId, "u");
-    assert.equal(copy?.projectId, "p");
+    assert.equal(copy?.userId, "users:u");
+    assert.equal(copy?.projectId, "projects:p");
     assert.equal(copy?.name, "My copy");
-    assert.deepEqual(copy?.createdBy, { kind: "user", userId: "u" });
+    assert.deepEqual(copy?.createdBy, { kind: "user", userId: "users:u" });
     assert.notEqual(copy?.body, model.tables.templates[0].body);
     assert.notEqual(copy?.holes, model.tables.templates[0].holes);
     assert.equal(model.tables.templateVersions.length, 1);
   });
 
+  test("gives a duplicated private default its own live row and an inline version snapshot", async () => {
+    const chosen = {
+      include: [
+        { select: "resources", refs: [{ kind: "document", id: "documents:1" }] }
+      ],
+      exclude: []
+    };
+    model.tables.templates.push(
+      template("1", "users:u", documentBody, {
+        holes: [
+          {
+            name: "evidence",
+            label: "Evidence",
+            kind: "scope",
+            default: { include: [{ select: "set", setId: "resourceSets:1" }], exclude: [] }
+          }
+        ]
+      })
+    );
+    model.tables.resourceSets.push(
+      row("resourceSets", "1", {
+        projectId: "projects:p",
+        boundTo: { kind: "hole", templateId: "templates:1", hole: "evidence" },
+        set: chosen,
+        createdBy: { kind: "user", userId: "users:u" },
+        revision: 1,
+        updatedAt: 20
+      })
+    );
+
+    const answer = await duplicateTemplate({ templateId: "templates:1", name: "Independent" });
+    assert.ok(answer.accepted);
+    const copy = model.tables.templates.find((candidate) => candidate._id === answer.templateId);
+    const copySet = model.tables.resourceSets.find(
+      (candidate) =>
+        (candidate.boundTo as { templateId?: string } | undefined)?.templateId === answer.templateId
+    );
+    assert.deepEqual(copy?.holes, [
+      {
+        name: "evidence",
+        label: "Evidence",
+        kind: "scope",
+        default: { include: [{ select: "set", setId: copySet?._id }], exclude: [] }
+      }
+    ]);
+    assert.deepEqual(copySet?.set, chosen);
+    assert.deepEqual(model.tables.templateVersions[0].holes, [
+      { name: "evidence", label: "Evidence", kind: "scope", default: chosen }
+    ]);
+  });
+
   test("refuses to version, duplicate, or remove a malformed stored template", async () => {
     model.tables.templates.push(
-      template("1", "u", { resource: "document", blocks: [] }, { name: "Legacy" })
+      template("1", "users:u", { resource: "document", blocks: [] }, { name: "Malformed" })
     );
 
     const updated = await updateTemplate({
       templateId: "templates:1",
       baseRevision: 2,
-      patch: { name: "Still legacy" }
+      patch: { name: "Still malformed" }
     });
     const duplicated = await duplicateTemplate({ templateId: "templates:1" });
     const removed = await removeTemplate({ templateId: "templates:1", baseRevision: 2 });
@@ -475,9 +579,72 @@ describe("template mutations", () => {
     assert.equal(model.tables.templateVersions.length, 0);
   });
 
+  test("does not reuse a private scope row that omits its required revision", () => {
+    const malformed = row("resourceSets", "1", {
+      projectId: "projects:p",
+      boundTo: { kind: "hole", templateId: "templates:1", hole: "evidence" },
+      set: { include: [{ select: "project" }], exclude: [] },
+      createdBy: { kind: "user", userId: "users:u" },
+      updatedAt: 20
+    });
+    model.tables.resourceSets.push(malformed);
+
+    const written = normalizeScope(
+      model.store as unknown as StoreUnitOfWork,
+      "projects:p",
+      { kind: "user", userId: "users:u" as never },
+      { kind: "hole", templateId: "templates:1" as never, hole: "evidence" },
+      {
+        include: [{
+          select: "resources",
+          refs: [{ kind: "document", id: asId<"documents">("documents:1") }]
+        }],
+        exclude: []
+      } satisfies ResourceSet,
+      500
+    );
+
+    assert.equal(malformed.revision, undefined);
+    assert.notEqual(written?.setId, malformed._id);
+    const replacement = model.tables.resourceSets.find((candidate) => candidate._id === written?.setId);
+    assert.equal(replacement?.revision, 1);
+  });
+
+  test("requires an explicit prompt at both template admission and placement", () => {
+    const missing = {
+      resource: "document",
+      rows: [{
+        id: "row",
+        kind: "blocks",
+        blocks: [{
+          id: "prompt",
+          type: "prompt",
+          atoms: [{ id: "prompt-atom", kind: "literal", text: "Summarize" }],
+          display: "Summarize",
+          marks: [],
+          state: "idle"
+        }]
+      }]
+    };
+
+    assert.throws(() => bodyOf(missing, "missing-prompt"), /not a valid document template body/);
+    assert.throws(
+      () => withFreshOutputs(
+        model.store as unknown as StoreUnitOfWork,
+        "projects:p",
+        { kind: "user", userId: "users:u" as never },
+        { kind: "document", id: asId<"documents">("documents:1") },
+        missing,
+        500
+      ),
+      /prompt block 'prompt' requires an explicit prompt/
+    );
+    assert.equal((model.tables.derivedOutputs ?? []).length, 0);
+  });
+
   test("refuses to advance an exhausted safe revision counter", async () => {
     model.tables.templates.push(
-      template("1", "u", documentBody, { revision: Number.MAX_SAFE_INTEGER })
+      template("1", "users:u", documentBody, { revision: Number.MAX_SAFE_INTEGER })
     );
 
     const answer = await updateTemplate({
@@ -498,7 +665,7 @@ describe("template mutations", () => {
   });
 
   test("keeps a generated copy name inside the represented name boundary", async () => {
-    model.tables.templates.push(template("1", "u", slidesBody, { name: "x".repeat(160) }));
+    model.tables.templates.push(template("1", "users:u", slidesBody, { name: "x".repeat(160) }));
 
     const answer = await duplicateTemplate({ templateId: "templates:1" });
 
@@ -509,13 +676,13 @@ describe("template mutations", () => {
   });
 
   test("deletes a template with its versions and leaves the resources made from it alone", async () => {
-    model.tables.templates.push(template("1", "u"));
+    model.tables.templates.push(template("1", "users:u"));
     model.tables.templateVersions.push(
       row("templateVersions", "1", { templateId: "templates:1", revision: 1 }),
       row("templateVersions", "2", { templateId: "templates:1", revision: 2 })
     );
     model.tables.documents.push(
-      row("documents", "1", { projectId: "p", title: "Made from it", updatedAt: 1 })
+      row("documents", "1", { projectId: "projects:p", title: "Made from it", updatedAt: 1 })
     );
 
     assert.deepEqual(await removeTemplate({ templateId: "templates:1", baseRevision: 2 }), {
@@ -530,7 +697,7 @@ describe("template mutations", () => {
   });
 
   test("preflights corrupt version ids before removing anything", async () => {
-    model.tables.templates.push(template("1", "u"));
+    model.tables.templates.push(template("1", "users:u"));
     model.tables.templateVersions.push({
       _id: "templateVersions:bad.path",
       _creationTime: 1,
@@ -548,7 +715,7 @@ describe("template mutations", () => {
   });
 
   test("refuses an ambiguous version id before deleting another template's history", async () => {
-    model.tables.templates.push(template("1", "u"));
+    model.tables.templates.push(template("1", "users:u"));
     model.tables.templateVersions.push(
       row("templateVersions", "1", { templateId: "templates:1", revision: 2 }),
       row("templateVersions", "1", { templateId: "templates:other", revision: 1 })
@@ -585,8 +752,8 @@ describe("template mutations", () => {
 describe("instantiation", () => {
   test("refuses corrupt stored metadata before creating any resource", async () => {
     model.tables.templates.push(
-      template("1", "u", documentBody, { name: 42 }),
-      template("2", "u", documentBody, { revision: 0 })
+      template("1", "users:u", documentBody, { name: 42 }),
+      template("2", "users:u", documentBody, { revision: 0 })
     );
 
     const badName = await instantiateTemplate({ templateId: "templates:1" });
@@ -602,7 +769,7 @@ describe("instantiation", () => {
   });
 
   test("creates ordinary document and slide-deck rows with leader snapshots and no provenance", async () => {
-    model.tables.templates.push(template("1", "u"), template("2", "u", slidesBody));
+    model.tables.templates.push(template("1", "users:u"), template("2", "users:u", slidesBody));
 
     const document = await instantiateTemplate({ templateId: "templates:1", name: "Brief" });
     const slides = await instantiateTemplate({ templateId: "templates:2" });
@@ -623,7 +790,7 @@ describe("instantiation", () => {
   });
 
   test("preserves current document pixel leading without schema inference", async () => {
-    model.tables.templates.push(template("1", "u", {
+    model.tables.templates.push(template("1", "users:u", {
       resource: "document",
       styles: {
         defaultKey: "body",
@@ -642,7 +809,7 @@ describe("instantiation", () => {
   });
 
   test("materializes a current spreadsheet template", async () => {
-    model.tables.templates.push(template("1", "u", spreadsheetBody));
+    model.tables.templates.push(template("1", "users:u", spreadsheetBody));
 
     const answer = await instantiateTemplate({ templateId: "templates:1" });
 
@@ -657,7 +824,7 @@ describe("instantiation", () => {
     model.tables.templates.push(
       template(
         "1",
-        "u",
+        "users:u",
         {
           resource: "document",
           rows: [
@@ -670,6 +837,7 @@ describe("instantiation", () => {
                   type: "prompt",
                   atoms: [],
                   display: "",
+                  prompt: "Summarize",
                   marks: [],
                   scope: {
                     include: [{ select: "hole", name: "region" }],
@@ -681,7 +849,7 @@ describe("instantiation", () => {
             }
           ]
         },
-        { holes: [{ name: "region", label: "Region" }] }
+        { holes: [{ name: "region", label: "Region", kind: "scope" }] }
       )
     );
 
@@ -689,9 +857,12 @@ describe("instantiation", () => {
 
     assert.equal(answer.accepted, true);
     const made = model.tables.documentSnapshots[0].body as {
-      rows: { blocks: { scope: unknown }[] }[];
+      rows: { blocks: { derivedOutputId: string; scope?: unknown }[] }[];
     };
-    assert.deepEqual(made.rows[0].blocks[0].scope, {
+    const block = made.rows[0].blocks[0];
+    assert.equal(block.scope, undefined);
+    const output = model.tables.derivedOutputs.find((row) => row._id === block.derivedOutputId);
+    assert.deepEqual(output?.scope, {
       include: [{ select: "project" }],
       exclude: []
     });
@@ -701,7 +872,7 @@ describe("instantiation", () => {
     model.tables.templates.push(
       template(
         "1",
-        "u",
+        "users:u",
         {
           resource: "document",
           rows: [
@@ -714,6 +885,7 @@ describe("instantiation", () => {
                   type: "prompt",
                   atoms: [],
                   display: "",
+                  prompt: "Summarize",
                   marks: [],
                   scope: {
                     include: [{ select: "hole", name: "evidence" }],
@@ -726,6 +898,7 @@ describe("instantiation", () => {
                   type: "prompt",
                   atoms: [],
                   display: "",
+                  prompt: "Summarize",
                   marks: [],
                   scope: {
                     include: [{ select: "hole", name: "evidence" }],
@@ -742,6 +915,7 @@ describe("instantiation", () => {
             {
               name: "evidence",
               label: "Evidence",
+              kind: "scope",
               default: {
                 include: [{ select: "kinds", kinds: ["finding", "document"] }],
                 exclude: []
@@ -756,16 +930,23 @@ describe("instantiation", () => {
 
     assert.equal(answer.accepted, true);
     const body = model.tables.documentSnapshots[0].body as {
-      rows: { blocks: { scope: unknown }[] }[];
+      rows: { blocks: { derivedOutputId: string; scope?: unknown }[] }[];
     };
-    assert.deepEqual(body.rows[0].blocks[0].scope, {
+    const [firstBlock, secondBlock] = body.rows[0].blocks;
+    assert.equal(firstBlock.scope, undefined);
+    assert.equal(secondBlock.scope, undefined);
+    const first = model.tables.derivedOutputs.find((row) => row._id === firstBlock.derivedOutputId)?.scope as {
+      include: { kinds: string[] }[];
+    };
+    const second = model.tables.derivedOutputs.find((row) => row._id === secondBlock.derivedOutputId)?.scope as {
+      include: { kinds: string[] }[];
+    };
+    assert.deepEqual(first, {
       include: [{ select: "kinds", kinds: ["finding", "document"] }],
       exclude: []
     });
-    assert.deepEqual(body.rows[0].blocks[1].scope, body.rows[0].blocks[0].scope);
-    assert.notEqual(body.rows[0].blocks[1].scope, body.rows[0].blocks[0].scope);
-    const first = body.rows[0].blocks[0].scope as { include: { kinds: string[] }[] };
-    const second = body.rows[0].blocks[1].scope as { include: { kinds: string[] }[] };
+    assert.deepEqual(second, first);
+    assert.notEqual(second, first);
     assert.notEqual(first.include[0], second.include[0]);
     assert.notEqual(first.include[0].kinds, second.include[0].kinds);
   });
@@ -774,6 +955,7 @@ describe("instantiation", () => {
     const holes = Array.from({ length: 16 }, (_, index) => ({
       name: `branch-${index}`,
       label: `Branch ${index}`,
+      kind: "scope" as const,
       default:
         index === 15
           ? { include: [{ select: "project" as const }], exclude: [] }
@@ -788,7 +970,7 @@ describe("instantiation", () => {
     model.tables.templates.push(
       template(
         "1",
-        "u",
+        "users:u",
         {
           resource: "document",
           rows: [
@@ -801,6 +983,7 @@ describe("instantiation", () => {
                   type: "prompt",
                   atoms: [],
                   display: "",
+                  prompt: "Summarize",
                   marks: [],
                   scope: {
                     include: [{ select: "hole", name: "branch-0" }],
@@ -828,7 +1011,7 @@ describe("instantiation", () => {
     model.tables.templates.push(
       template(
         "1",
-        "u",
+        "users:u",
         {
           resource: "document",
           rows: [
@@ -841,6 +1024,7 @@ describe("instantiation", () => {
                   type: "prompt",
                   atoms: [],
                   display: "",
+                  prompt: "Summarize",
                   marks: [],
                   scope: {
                     include: [{ select: "kinds", kinds: ["document"] }],
@@ -857,6 +1041,7 @@ describe("instantiation", () => {
             {
               name: "other-material",
               label: "Other material",
+              kind: "scope",
               default: {
                 include: [{ select: "kinds", kinds: ["spreadsheet"] }],
                 exclude: [{ select: "project" }]
@@ -877,7 +1062,7 @@ describe("instantiation", () => {
 
   test("refuses project-bound body ids and unbounded spreadsheet ranges before writing", async () => {
     model.tables.templates.push(
-      template("1", "u", {
+      template("1", "users:u", {
         resource: "document",
         rows: [
           {
@@ -897,7 +1082,7 @@ describe("instantiation", () => {
           }
         ]
       }),
-      template("2", "u", {
+      template("2", "users:u", {
         ...spreadsheetBody,
         print: { ...spreadsheetBody.print, repeatRows: "1:999999999" }
       })
@@ -914,8 +1099,8 @@ describe("instantiation", () => {
     assert.equal(model.tables.spreadsheets.length, 0);
   });
 
-  test("returns an explicit refusal for a legacy body an editor cannot open", async () => {
-    model.tables.templates.push(template("1", "u", { resource: "document", blocks: [] }));
+  test("returns an explicit refusal for a malformed body an editor cannot open", async () => {
+    model.tables.templates.push(template("1", "users:u", { resource: "document", blocks: [] }));
 
     const answer = await instantiateTemplate({ templateId: "templates:1" });
 
@@ -957,11 +1142,19 @@ describe("stored template validation", () => {
     assert.doesNotThrow(() => bodyOf(body, "record-keys"));
   });
 
+  test("rejects a hole whose answer kind is absent", () => {
+    assert.throws(
+      () => holesOf([{ name: "untyped", label: "Untyped" }], "test"),
+      /a hole is answered with a scope or with text/
+    );
+  });
+
   test("accepts only canonical represented holes and bounded templated defaults", () => {
     const valid = [
       {
         name: "region",
         label: "Region",
+        kind: "scope",
         description: "The operating region.",
         default: {
           include: [{ select: "kinds", kinds: ["finding", "document"] }],
@@ -971,6 +1164,7 @@ describe("stored template validation", () => {
       {
         name: "evidence",
         label: "Evidence",
+        kind: "scope",
         default: { include: [{ select: "set", setId: "resourceSets:1" }], exclude: [] }
       }
     ];
@@ -1027,8 +1221,8 @@ describe("stored template validation", () => {
         }
       ],
       [
-        { name: "region", label: "Region" },
-        { name: "Region", label: "Duplicate by case" }
+        { name: "region", label: "Region", kind: "scope" },
+        { name: "Region", label: "Duplicate by case", kind: "scope" }
       ]
     ];
     for (const holes of invalid) {
@@ -1041,10 +1235,11 @@ describe("stored template validation", () => {
       () =>
         holesOf(
           [
-            { name: "region", label: "Region" },
+            { name: "region", label: "Region", kind: "scope" },
             {
               name: "evidence",
               label: "Evidence",
+              kind: "scope",
               default: {
                 include: [{ select: "hole", name: "Region" }],
                 exclude: []
@@ -1271,6 +1466,7 @@ describe("stored template validation", () => {
                   type: "prompt",
                   atoms: [{ id: "prompt-atom", kind: "literal", text: "Summarize" }],
                   display: "Summarize",
+                  prompt: "Summarize",
                   marks: [],
                   scope: { include: [{ select: "project" }], exclude: [] },
                   state: "idle"
@@ -1404,7 +1600,7 @@ describe("stored template validation", () => {
     model.tables.templates.push(
       template(
         "1",
-        "u",
+        "users:u",
         {
           resource: "document",
           rows: [
@@ -1417,6 +1613,7 @@ describe("stored template validation", () => {
                   type: "prompt",
                   atoms: [],
                   display: "",
+                  prompt: "Summarize",
                   marks: [],
                   scope: {
                     include: [{ select: "hole", name: "Region" }],
@@ -1433,6 +1630,7 @@ describe("stored template validation", () => {
             {
               name: "region",
               label: "Region",
+              kind: "scope",
               default: { include: [{ select: "project" }], exclude: [] }
             }
           ]

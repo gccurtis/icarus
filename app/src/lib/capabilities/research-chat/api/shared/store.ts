@@ -2,13 +2,27 @@ import type { StoreModel, TableName, TableRow } from "$model/server/store/index.
 import type { Scope } from "$runtime/server/scope.server";
 import type { Actor } from "$representation/data/types/core/actor";
 import { asId } from "$representation/data/behavior/core/id";
+import {
+  isStoredResearchThread,
+  isStoredResearchTurn
+} from "$representation/data/behavior/investigation/stored-rows";
 
 export const rowsIn = <T extends TableName>(store: StoreModel, table: T): readonly TableRow<T>[] => {
   const found = store.read(table);
   if (found?.table !== table || found.kind !== "table" || !Array.isArray(found.rows)) return [];
-  return found.rows.filter(
-    (row) => row !== null && typeof row === "object" && !Array.isArray(row)
-  ) as readonly TableRow<T>[];
+  if (table === "researchThreads") {
+    if (found.rows.every(isStoredResearchThread)) {
+      return found.rows as unknown as readonly TableRow<T>[];
+    }
+    throw new Error("the researchThreads table contains a non-current row");
+  }
+  if (table === "researchTurns") {
+    if (found.rows.every(isStoredResearchTurn)) {
+      return found.rows as unknown as readonly TableRow<T>[];
+    }
+    throw new Error("the researchTurns table contains a non-current row");
+  }
+  return found.rows as readonly TableRow<T>[];
 };
 
 export const uniqueId = (): string => crypto.randomUUID().replace(/-/g, "").slice(0, 12);

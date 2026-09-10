@@ -1,6 +1,7 @@
 import type { ServerModel } from "$runtime/server/start.server";
 import type { StoreUnitOfWork } from "$model/server/store/index.server";
 import { DEFAULT_TOOLS, orderedTools } from "$representation/data/behavior/agents/tools";
+import { isStoredPersona } from "$representation/data/behavior/agents/stored-rows";
 import type { Message } from "$representation/data/types/agents/message";
 
 import { rowsIn } from "$capabilities/research-chat/api/shared/store";
@@ -81,7 +82,7 @@ export const personaFor = (model: ServerModel, projectId: string, personaId: str
   personaId === undefined
     ? undefined
     : rowsIn(model.store, "personas").find(
-        (row) => row._id === personaId && row.projectId === projectId
+        (row) => isStoredPersona(row) && row._id === personaId && row.projectId === projectId
       );
 
 /**

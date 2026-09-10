@@ -11,7 +11,8 @@ import {
   spansOf,
   stacked
 } from "$app-views/categories/document-editor/procedures/annotations";
-import { anchoredOf, type Thread } from "$app-views/categories/document-editor/procedures/comments";
+import { anchoredOf } from "$app-views/categories/document-editor/procedures/comment-anchors";
+import type { Thread } from "$app-views/categories/document-editor/procedures/comments";
 import { docOf, positionOf } from "$app-views/categories/document-editor/procedures/projection";
 
 const text = (id: string, display: string): TextBlock => ({

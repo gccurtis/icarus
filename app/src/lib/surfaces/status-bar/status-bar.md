@@ -55,7 +55,7 @@ It does not own:
 
 | Capability | Usage |
 | --- | --- |
-| `$capabilities/store` | `read` — the row behind an id, through `procedures/resource-name.ts` |
+| `$capabilities/agents`, `$capabilities/project-resources`, `$capabilities/templates` | Component-owned subject queries whose snapshots are passed to `procedures/resource-name.ts`; template working copies use their exact stage identity projection and stay absent from listable project resources |
 | `$capabilities/development` | `username` — who you are, until authentication exists |
 
 ### Composed views
@@ -74,7 +74,7 @@ It does not own:
 
 | Concern | Document | What it owns |
 | --- | --- | --- |
-| Procedures | [`resource-name.ts`](procedures/resource-name.ts) | What a row is called, and what word to call its kind |
+| Procedures | [`resource-name.ts`](procedures/resource-name.ts), `read-*.ts`, [`session.ts`](procedures/session.ts) | Pure subject naming plus the component-owned query starters that supply its snapshots |
 
 Its own copy rather than the tab bar's: a surface is entered at its root, so
 there is no path from here to `tab-bar/procedures/`.
@@ -119,6 +119,10 @@ there is no path from here to `tab-bar/procedures/`.
   the bar would make them look like one kind.
 - **One raised voice.** Only the unresolved-mention count takes a role colour.
   A status bar where three things are coloured has no status.
+- **A template working copy is an explicit subject.** The separate exact stage
+  projection names and classifies it; no working copy enters the listable
+  project-resource index, and an absent ordinary name is never reinterpreted as
+  a stage.
 
 ## Supporting Documents
 

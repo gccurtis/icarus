@@ -1,9 +1,11 @@
 import type { ServerModel } from "$runtime/server/start.server";
 import { resourceInScope } from "$representation/data/behavior/semantic/scope";
+import { admittedReusableResourceSets } from "$representation/data/behavior/core/resource-set-rows";
 import { sliceByCoordinates } from "$representation/data/behavior/semantic/encoding";
 import type { ContentBlock, TableBlock } from "$representation/data/types/content/content-block";
 import type { Id } from "$representation/data/types/core/id";
 import type { ResourceRef } from "$representation/data/types/core/resource";
+import { admitResourceRef } from "$representation/data/behavior/core/resource";
 import type { ResourceSet } from "$representation/data/types/core/resource-set";
 import type {
   DerivedOutputSelection,
@@ -39,6 +41,7 @@ type EvidenceDraft =
 export type ResourceReadingSessionInput = {
   model: ServerModel;
   projectId: Id<"projects">;
+  signal?: AbortSignal;
   scope?: ResourceSet;
   selection?: DerivedOutputSelection;
   issue(key: string, evidence: EvidenceDraft): string;
@@ -50,13 +53,13 @@ type MaterialHandle = {
 };
 
 export const createResourceReadingContext = (input: ResourceReadingSessionInput) => {
-  const namedSets = new Map(
-    rowsOf(input.model.store, "resourceSets")
-      .filter((row) => row.projectId === input.projectId)
-      .map((row) => [row._id, row.set])
+  const namedSets = admittedReusableResourceSets(
+    rowsOf(input.model.store, "resourceSets"),
+    input.projectId
   );
   const allowed = (ref: ResourceRef): boolean =>
-    input.scope === undefined || resourceInScope(ref, input.scope, (id) => namedSets.get(id));
+    input.scope === undefined ||
+    resourceInScope(ref, input.scope, (id) => namedSets.get(id)?.set);
   const handles = new Map<string, MaterialHandle>();
   const handleBySnapshot = new Map<string, string>();
   let nextHandle = 1;
@@ -115,8 +118,15 @@ export const createResourceReadingContext = (input: ResourceReadingSessionInput)
   };
 
   const exactProjection = async (ref: ResourceRef) => {
+    input.signal?.throwIfAborted();
     if (!allowed(ref)) throw new Error("resource is outside the Derived Output Resource Set");
-    const projection = await readSemanticResourceForModel(input.model, input.projectId, ref);
+    const projection = await readSemanticResourceForModel(
+      input.model,
+      input.projectId,
+      ref,
+      input.signal
+    );
+    input.signal?.throwIfAborted();
     if (projection === undefined) throw new Error("resource does not exist");
     return projection;
   };
@@ -132,7 +142,10 @@ export const createResourceReadingContext = (input: ResourceReadingSessionInput)
 
   const directText = async (value: unknown) => {
     const held = record(value, "read_text input must be an object");
-    const ref = { kind: text(held.kind, "kind"), id: text(held.resourceId, "resourceId") };
+    const ref = admitResourceRef(
+      { kind: text(held.kind, "kind"), id: text(held.resourceId, "resourceId") },
+      "read_text resource"
+    );
     const projection = await exactProjection(ref);
     const from = integer(held.from, "from", 0, projection.text.length);
     const to = integer(

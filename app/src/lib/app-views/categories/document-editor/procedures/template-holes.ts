@@ -23,11 +23,14 @@ export const withHoleField = (
 ): readonly ChosenHole[] =>
   holes.map((hole) => {
     if (hole.name !== name) return hole;
-    const next: ChosenHole = { name: hole.name, label: change.label ?? hole.label };
+    const next: ChosenHole = {
+      name: hole.name,
+      label: change.label ?? hole.label,
+      kind: hole.kind
+    };
     const description = "description" in change ? change.description : hole.description;
     const fallback = "default" in change ? change.default : hole.default;
     const words = "text" in change ? change.text : hole.text;
-    if (hole.kind !== undefined) next.kind = hole.kind;
     if (description !== undefined && description.trim().length > 0) next.description = description.trim();
     if (fallback !== undefined) next.default = fallback;
     if (words !== undefined && words.trim().length > 0) next.text = words;

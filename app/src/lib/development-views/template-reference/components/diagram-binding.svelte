@@ -15,7 +15,7 @@
 <div class="binding">
   <section class="lane">
     <header><span class="tag named">Named</span><b>A project subject</b></header>
-    <p>Made in Contexts, listed there, offered by every builder, and deleted only when nothing names it.</p>
+    <p>Represented for reusable scopes and offered by builders, but not created or managed by a global panel.</p>
     <dl class="row">
       {#each named as line (line.field)}
         <div><dt>{line.field}</dt><dd>{line.value}</dd></div>
@@ -64,13 +64,13 @@
   <div class="to bound-to"><b>A bound row</b><small>owner: that resource</small></div>
 
   <div class="from">
-    <code>Contexts · New set</code>
-    <small>somebody curating the project</small>
+    <code>Existing named rule</code>
+    <small>represented, with no current management surface</small>
   </div>
   <div class="arrow" aria-hidden="true">→</div>
-  <div class="term"><code>createResourceSet(name, rule)</code><small>the only door that takes a name</small></div>
+  <div class="term"><code>{"{ select: \"set\", setId }"}</code><small>kept as an explicit reusable reference</small></div>
   <div class="arrow" aria-hidden="true">→</div>
-  <div class="to named-to"><b>A named row</b><small>listed, offerable, reusable</small></div>
+  <div class="to named-to"><b>A named row</b><small>offerable wherever a scope is chosen</small></div>
 </div>
 
 <style>

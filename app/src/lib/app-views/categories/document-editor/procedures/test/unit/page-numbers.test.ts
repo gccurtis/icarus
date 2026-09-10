@@ -22,7 +22,7 @@ const text = (id: string, display: string): TextBlock => ({
   marks: []
 });
 
-const host = (edge: "header" | "footer", display = "Legacy content"): PageFurniture => ({
+const host = (edge: "header" | "footer", display = "Reserved furniture content"): PageFurniture => ({
   rows: [
     {
       id: `#${edge}-row`,
@@ -45,7 +45,7 @@ test("page numbers count from where they start and can skip the first page", () 
   assert.equal(pageNumberText({ position: "center", startAt: 4, hideOnFirstPage: true }, 2), "5");
 });
 
-test("the compatibility host determines only the page-number edge", () => {
+test("represented page furniture determines only the page-number edge", () => {
   assert.equal(pageNumbersOf({ rows: [], footer: host("footer") }).placement?.edge, "bottom");
   assert.equal(pageNumbersOf({ rows: [], header: host("header") }).placement?.edge, "top");
   assert.deepEqual(pageNumbersOf({ rows: [] }), {});
@@ -66,7 +66,7 @@ test("the plugin projects page numbers without projecting host content", () => {
   });
 
   assert.equal(doc.childCount, 2);
-  assert.equal(doc.textContent.includes("Legacy content"), false);
+  assert.equal(doc.textContent.includes("Reserved furniture content"), false);
   assert.equal(pageNumberDecorations(state).find().length, 2);
   assert.equal(PAGE_NUMBERS.getState(state)?.placement?.numbering.position, "end");
 });

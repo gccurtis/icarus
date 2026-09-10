@@ -1,15 +1,16 @@
 import { createThread, readThreads } from "$capabilities/research-chat/index.remote";
-import type { WorkspaceStateModel } from "$model/client/workspace-state";
+import { readProjectResourceIndex } from "$capabilities/project-resources/index.remote";
 
 /**
  * Opens an empty research chat and hands back the row a tab can be opened on.
  *
- * The tab bar names a chat from the workspace's own copy of the thread list, so
- * that read is refreshed here rather than after the tab is already open under a
- * placeholder title.
+ * The tab bar names a chat from the scoped represented-resource index, so that
+ * projection is refreshed before a tab opens on the new resource id.
  */
-export const createChat = async (view: WorkspaceStateModel): Promise<string> => {
-  const { threadId } = await createThread({}).updates(readThreads);
-  await view.readStore("researchThreads").refresh();
+export const createChat = async (): Promise<string> => {
+  const { threadId } = await createThread({}).updates(
+    readThreads,
+    readProjectResourceIndex
+  );
   return threadId;
 };

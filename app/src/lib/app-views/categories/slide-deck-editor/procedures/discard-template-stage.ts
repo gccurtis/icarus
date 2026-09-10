@@ -15,7 +15,6 @@ export const discardStage = (
     discardTemplateStage({ stageId: stage.stageId }).updates(
       readTemplateLibrary,
       readTemplate({ templateId: stage.templateId }),
-      readResourceTemplate({ resourceId }),
-      view.readStore("slideDecks")
+      readResourceTemplate({ resourceId })
     )
   );

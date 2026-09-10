@@ -30,12 +30,7 @@ describe("text comment anchors", () => {
     expect(canonicalAnchorWithin(anchor)).toEqual(anchor);
   });
 
-  it("drops malformed spans instead of handing unsafe offsets to an editor", () => {
-    expect(
-      textAnchorSpans({
-        kind: "text",
-        spans: [first, { blockId: "#b2", from: { atom: "#a2", offset: -1 }, to: { atom: "#a2", offset: 2 } }]
-      })
-    ).toEqual([first]);
+  it("represents a detached text anchor as an absent within field", () => {
+    expect(canonicalAnchorWithin({ kind: "text", spans: [] })).toBeUndefined();
   });
 });

@@ -13,7 +13,8 @@
   } from "$authored-components/panel";
   import { Input } from "$vendored-components/input";
   import { Textarea } from "$vendored-components/textarea";
-  import { create } from "$capabilities/store/index.remote";
+  import { createTextSelectionState } from "$app-views/categories/document-editor/inspector/text-selection.state.svelte";
+  import { startCommentCommand } from "$app-views/categories/document-editor/procedures/start-comment-command.svelte";
   import {
     agree,
     formatOps,
@@ -28,18 +29,21 @@
     selectedWords
   } from "$app-views/categories/document-editor/procedures/templating";
   import {
-    ago,
+    commentsQuery,
+    peopleIn,
+    remarksIn,
+    remarksOf,
+    threadsIn,
+    threadsOf,
+    viewerId
+  } from "$app-views/categories/document-editor/procedures/comments";
+  import {
     anchorOf,
     isCommentableSelection,
-    nameOf,
     quoteOf,
-    remarkFields,
-    remarksOf,
-    textOf,
-    threadFields,
-    threadsOf,
     threadsOn
-  } from "$app-views/categories/document-editor/procedures/comments";
+  } from "$app-views/categories/document-editor/procedures/comment-anchors";
+  import { ago, nameOf, textOf } from "$app-views/categories/document-editor/procedures/comment-copy";
   import {
     selectedText,
     selectedTexts
@@ -64,14 +68,6 @@
     safeLinkHref
   } from "$app-views/categories/document-editor/procedures/links";
   import {
-    projectIdOf,
-    refreshAll,
-    rowsIn,
-    rowsOf,
-    tableQuery,
-    viewerId
-  } from "$app-views/categories/document-editor/procedures/store";
-  import {
     applyStyleOps,
     ensureStylesOps,
     styleOptions,
@@ -84,13 +80,13 @@
 
   const documentId = view.active.resourceId;
 
-  let runtime = $state<DocumentRuntime | undefined>(undefined);
+  const state = createTextSelectionState();
 
   $effect(() => {
-    runtime = documentId === undefined ? undefined : view.documentRuntime(documentId);
+    state.runtime = documentId === undefined ? undefined : view.documentRuntime(documentId);
   });
 
-  const body = $derived(runtime?.body);
+  const body = $derived(state.runtime?.body);
   const selection = $derived(view.selection);
   const text = $derived(selectedText(body, selection));
   const texts = $derived(selectedTexts(body, selection));
@@ -121,28 +117,20 @@
   const colour = $derived(body === undefined ? { mixed: false } : colourOn(body, ranges));
   const links = $derived(body === undefined ? [] : linksOn(body, ranges));
 
-  const project = $derived(projectIdOf(documentId));
-  const viewer = $derived(viewerId());
-  const threadsQuery = tableQuery("commentThreads");
-  const remarksQuery = tableQuery("comments");
-  const users = $derived(rowsIn("users"));
-  const remarks = $derived(rowsOf(remarksQuery, "comments"));
-  const threads = $derived(threadsOf(rowsOf(threadsQuery, "commentThreads"), documentId ?? ""));
+  const comments = commentsQuery();
+  const viewer = $derived(viewerId(comments));
+  const users = $derived(peopleIn(comments));
+  const remarks = $derived(remarksIn(comments));
+  const threads = $derived(threadsOf(threadsIn(comments), documentId ?? ""));
   const here = $derived(body === undefined ? [] : threadsOn(threads, body, selection));
   const now = Date.now();
 
-  let composing = $state("");
-  let linkUrl = $state("");
-  let linkNote = $state("");
-  let linkFailed = $state<string | undefined>(undefined);
-  let editingLink = $state<string | undefined>(undefined);
-  let editLinkUrl = $state("");
-  let editLinkNote = $state("");
-  let failed = $state<string | undefined>(undefined);
-  let sending = $state(false);
+  const commentCommand = startCommentCommand();
+  const failed = $derived(commentCommand.failed);
+  const sending = $derived(commentCommand.sending);
 
   const commit = (ops: Parameters<DocumentRuntime["apply"]>[0]) => {
-    if (ops.length > 0) runtime?.apply(ops);
+    if (ops.length > 0) state.runtime?.apply(ops);
   };
 
   const setStyle = (key: string) => {
@@ -179,57 +167,57 @@
 
   const addLink = () => {
     if (body === undefined) return;
-    const normalized = normalizeLinkUrl(linkUrl);
+    const normalized = normalizeLinkUrl(state.linkUrl);
     if (!normalized.ok) {
-      linkFailed = normalized.reason;
+      state.linkFailed = normalized.reason;
       return;
     }
-    const note = linkNote.trim();
+    const note = state.linkNote.trim();
     commit(linkOps(body, ranges, {
       kind: "url",
       url: normalized.url,
       ...(note.length === 0 ? {} : { note })
     }));
-    linkUrl = "";
-    linkNote = "";
-    linkFailed = undefined;
+    state.linkUrl = "";
+    state.linkNote = "";
+    state.linkFailed = undefined;
   };
 
   const removeLink = (link: PlacedLink) => {
     if (body === undefined) return;
     commit(linkOps(body, [{ blockId: link.blockId, from: link.from, to: link.to }], undefined));
-    if (editingLink === link.mark.id) editingLink = undefined;
+    if (state.editingLink === link.mark.id) state.editingLink = undefined;
   };
 
   const startEditingLink = (link: PlacedLink) => {
     const held = link.mark.link;
     if (held?.kind !== "url") return;
-    editingLink = link.mark.id;
-    editLinkUrl = held.url;
-    editLinkNote = held.note ?? "";
-    linkFailed = undefined;
+    state.editingLink = link.mark.id;
+    state.editLinkUrl = held.url;
+    state.editLinkNote = held.note ?? "";
+    state.linkFailed = undefined;
   };
 
   const saveLink = (link: PlacedLink) => {
-    const normalized = normalizeLinkUrl(editLinkUrl);
+    const normalized = normalizeLinkUrl(state.editLinkUrl);
     if (!normalized.ok) {
-      linkFailed = normalized.reason;
+      state.linkFailed = normalized.reason;
       return;
     }
-    const note = editLinkNote.trim();
+    const note = state.editLinkNote.trim();
     commit(updateLinkOps(link, {
       kind: "url",
       url: normalized.url,
       ...(note.length === 0 ? {} : { note })
     }));
-    editingLink = undefined;
-    linkFailed = undefined;
+    state.editingLink = undefined;
+    state.linkFailed = undefined;
   };
 
-  const addComment = async () => {
+  const addComment = () => {
     const held = body;
     const at = selection;
-    const message = composing.trim();
+    const message = state.composing.trim();
     if (
       held === undefined ||
       !isCommentableSelection(at) ||
@@ -240,31 +228,15 @@
     const within = anchorOf(held, at);
     if (within === undefined) return;
 
-    sending = true;
-    failed = undefined;
-    try {
-      const { id } = await create({
-        table: "commentThreads",
-        fields: threadFields({
-          projectId: project,
-          documentId,
-          within,
-          quote: quoteOf(held, within) ?? text,
-          by: viewer,
-          now: Date.now()
-        })
-      });
-      await create({
-        table: "comments",
-        fields: remarkFields({ projectId: project, threadId: id, text: message, by: viewer })
-      });
-      composing = "";
-      await refreshAll(threadsQuery, remarksQuery);
-    } catch (error) {
-      failed = error instanceof Error ? error.message : "The comment was not saved.";
-    } finally {
-      sending = false;
-    }
+    commentCommand.start(
+      {
+        documentId,
+        within,
+        quote: quoteOf(held, within) ?? text,
+        text: message
+      },
+      () => (state.composing = "")
+    );
   };
 
   const navigate = (key: string) => {
@@ -282,7 +254,7 @@
    * default, so a template placed without changing anything reads exactly like
    * the document it came from.
    */
-  const holeBody = $derived(runtime?.body);
+  const holeBody = $derived(state.runtime?.body);
   const holeOffer = $derived(holeBody === undefined ? "Hole 1" : nextHoleName(holeBody));
   const holeWords = $derived(
     holeBody === undefined ? "" : selectedWords(holeBody, view.selection)
@@ -290,9 +262,9 @@
   const holeHere = $derived(holeBody === undefined ? undefined : markedHoleAt(holeBody, view.selection));
 
   const templateify = () => {
-    if (runtime === undefined || holeBody === undefined) return;
+    if (state.runtime === undefined || holeBody === undefined) return;
     const ops = markHoleOps(holeBody, view.selection, holeOffer);
-    if (ops.length > 0) runtime.apply(ops);
+    if (ops.length > 0) state.runtime.apply(ops);
   };
 </script>
 
@@ -416,14 +388,14 @@
           <span class="text-caption text-ink-muted font-medium">New comment on the selected text</span>
           <Textarea
             placeholder="Write a comment on the selection…"
-            bind:value={composing}
+            bind:value={state.composing}
             class="text-body-sm field-sizing-content min-h-16 resize-none"
           />
           <div class="flex">
             <PanelButton
               label={sending ? "Adding…" : "Add comment"}
               tone="primary"
-              disabled={sending || composing.trim().length === 0 || viewer.length === 0 || project.length === 0}
+              disabled={sending || state.composing.trim().length === 0 || viewer.length === 0 || documentId === undefined}
               onclick={() => void addComment()}
             />
           </div>
@@ -469,47 +441,47 @@
           type="url"
           aria-label="Link"
           placeholder="https://"
-          bind:value={linkUrl}
+          bind:value={state.linkUrl}
           onkeydown={(event) => event.key === "Enter" && addLink()}
           class="text-body-sm h-auto py-1"
         />
         <Textarea
           aria-label="Link notes"
           placeholder="Notes about this link…"
-          bind:value={linkNote}
+          bind:value={state.linkNote}
           class="text-body-sm field-sizing-content min-h-16 resize-none"
         />
         <div class="flex">
-          <PanelButton label="Add link" tone="primary" disabled={linkUrl.trim().length === 0 || ranges.length === 0} onclick={addLink} />
+          <PanelButton label="Add link" tone="primary" disabled={state.linkUrl.trim().length === 0 || ranges.length === 0} onclick={addLink} />
         </div>
-        {#if linkFailed !== undefined && editingLink === undefined}
-          <PanelNote tone="gap">{linkFailed}</PanelNote>
+        {#if state.linkFailed !== undefined && state.editingLink === undefined}
+          <PanelNote tone="gap">{state.linkFailed}</PanelNote>
         {/if}
       </div>
 
       <div class="border-border-subtle mt-1.5 flex flex-col gap-2 border-t pt-2">
         {#each links as link (link.mark.id)}
           <div class="flex flex-col gap-2 px-3">
-            {#if editingLink === link.mark.id && link.mark.link?.kind === "url"}
+            {#if state.editingLink === link.mark.id && link.mark.link?.kind === "url"}
               <Input
                 type="url"
                 aria-label="Edit link"
-                bind:value={editLinkUrl}
+                bind:value={state.editLinkUrl}
                 class="text-body-sm h-auto py-1"
               />
               <Textarea
                 aria-label="Edit link notes"
                 placeholder="Notes about this link…"
-                bind:value={editLinkNote}
+                bind:value={state.editLinkNote}
                 class="text-body-sm field-sizing-content min-h-16 resize-none"
               />
               <div class="flex flex-wrap gap-1.5">
                 <PanelButton label="Save" tone="primary" onclick={() => saveLink(link)} />
-                <PanelButton label="Cancel" tone="ghost" onclick={() => (editingLink = undefined)} />
+                <PanelButton label="Cancel" tone="ghost" onclick={() => (state.editingLink = undefined)} />
                 <PanelButton label="Remove" tone="danger" onclick={() => removeLink(link)} />
               </div>
-              {#if linkFailed !== undefined}
-                <PanelNote tone="gap">{linkFailed}</PanelNote>
+              {#if state.linkFailed !== undefined}
+                <PanelNote tone="gap">{state.linkFailed}</PanelNote>
               {/if}
             {:else}
               <div class="flex min-w-0 items-center gap-2">

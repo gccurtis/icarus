@@ -352,6 +352,49 @@ describe("OpenRouter intelligence", () => {
     );
   });
 
+  it("propagates cancellation from a blocked tool instead of asking the provider again", async () => {
+    let requests = 0;
+    let entered!: () => void;
+    const running = new Promise<void>((resolve) => {
+      entered = resolve;
+    });
+    const controller = new AbortController();
+    const intelligence = defineIntelligence(
+      input(async () => {
+        requests += 1;
+        return response(turn({
+          content: null,
+          tool_calls: [{
+            id: "call-blocked",
+            type: "function",
+            function: { name: "retrieve", arguments: '{"query":"wait"}' }
+          }]
+        }));
+      })
+    );
+    const pending = intelligence.completeWithTools({
+      system: "Use tools.",
+      user: "Find it.",
+      signal: controller.signal,
+      tools: [tool(async () => {
+        entered();
+        await new Promise<never>((_resolve, reject) => {
+          controller.signal.addEventListener(
+            "abort",
+            () => reject(controller.signal.reason),
+            { once: true }
+          );
+        });
+      })]
+    });
+    await running;
+
+    controller.abort();
+
+    await assert.rejects(pending, (error: Error) => error.name === "AbortError");
+    assert.equal(requests, 1);
+  });
+
   it("validates the complete provision before startup", () => {
     const values: Record<string, unknown> = {
       "intelligence.api": "openrouter",

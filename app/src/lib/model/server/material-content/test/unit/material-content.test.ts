@@ -53,4 +53,22 @@ describe("native semantic material content", () => {
       /does not match/
     );
   });
+
+  it("honors the operation signal before opening native content", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "icarus-material-content-"));
+    directories.push(directory);
+    const controller = new AbortController();
+    controller.abort();
+
+    await assert.rejects(
+      () => defineMaterialContent(directory).read(
+        {
+          storageId: "_storage:cancelled" as Id<"_storage">,
+          hash: "a".repeat(64)
+        },
+        controller.signal
+      ),
+      (error: Error) => error.name === "AbortError"
+    );
+  });
 });

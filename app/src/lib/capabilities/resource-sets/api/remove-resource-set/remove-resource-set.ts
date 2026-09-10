@@ -3,6 +3,7 @@ import { serverModel } from "$runtime/server/start.server";
 import type { StoreModel } from "$model/server/store/index.server";
 
 import {
+  admitStoredSet,
   recordsIn,
   reportableRevision,
   visibleSet
@@ -64,7 +65,18 @@ export const removeResourceSet = async (input: unknown): Promise<RemoveResourceS
       detail: found.kind === "missing" ? "no set in this project has that id" : found.detail
     };
   }
-  const stored = found.set;
+  let stored: ReturnType<typeof admitStoredSet>;
+  try {
+    stored = admitStoredSet(found.set);
+  } catch (error) {
+    return {
+      accepted: false,
+      setId: asked.setId,
+      reason: "corrupt",
+      revision: reportableRevision(found.set.revision),
+      detail: error instanceof Error ? error.message : String(error)
+    };
+  }
   if (stored.revision !== asked.baseRevision) {
     return {
       accepted: false,

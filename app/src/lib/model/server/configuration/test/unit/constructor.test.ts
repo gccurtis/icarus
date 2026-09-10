@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
-import { freeze, merge } from "$model/server/configuration/constructor";
+import {
+  configurationFileOrder,
+  freeze,
+  merge
+} from "$model/server/configuration/constructor";
 
 /**
  * The pure half of construction: how sections combine, and what stops a consumer
@@ -57,4 +61,24 @@ test("freezing reaches nested mappings and arrays", () => {
     (root.nested as { value: number }).value = 99;
   }, TypeError);
   assert.throws(() => root.list.push({ value: 3 }), TypeError);
+});
+
+test("an explicit confined overlay is last and unrequested overlays stay inert", () => {
+  const entries = ["z.yaml", "overlays", "local.yaml", "a.yaml", "README.md"];
+
+  assert.deepEqual(configurationFileOrder(entries, undefined), ["a.yaml", "z.yaml", "local.yaml"]);
+  assert.deepEqual(configurationFileOrder(entries, "overlays/browser-providers.yaml"), [
+    "a.yaml",
+    "z.yaml",
+    "local.yaml",
+    "overlays/browser-providers.yaml"
+  ]);
+  assert.throws(
+    () => configurationFileOrder(entries, "../local.yaml"),
+    /configuration\/overlays/
+  );
+  assert.throws(
+    () => configurationFileOrder(entries, "overlays/nested/test.yaml"),
+    /configuration\/overlays/
+  );
 });

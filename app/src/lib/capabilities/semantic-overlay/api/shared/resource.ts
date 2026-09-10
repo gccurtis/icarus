@@ -4,6 +4,10 @@ import { projectResource } from "$representation/data/behavior/semantic/projecti
 import type { ProjectSemanticProjection } from "$representation/data/behavior/semantic/projection/contract";
 import type { Id } from "$representation/data/types/core/id";
 import type { ResourceRef } from "$representation/data/types/core/resource";
+import {
+  externalFileResourceKind,
+  isExternalFileResourceKind
+} from "$representation/data/behavior/core/resource";
 import type { SemanticResourceProjection } from "$representation/data/types/semantic/source";
 import { rowsOf } from "$capabilities/semantic-overlay/api/shared/rows";
 
@@ -53,13 +57,13 @@ export const readSemanticResourceRevisionFor = (
           (row) => row.projectId === projectId && row.resourceId === resource._id && row.role === "leader"
         )?.revision;
   }
-  if (ref.kind === "externalFile" || ref.kind.startsWith("externalFile::")) {
+  if (isExternalFileResourceKind(ref.kind)) {
     const file = rowsOf(store, "externalFiles").find(
       (row) => row.projectId === projectId && row._id === ref.id
     );
     if (file === undefined) return undefined;
     const subkind = file.subkind;
-    return subkind === "text" ? 0 : undefined;
+    return subkind === "text" && ref.kind === externalFileResourceKind(subkind) ? 0 : undefined;
   }
   return undefined;
 };
@@ -72,14 +76,10 @@ export const readSemanticSyncTargetFor = (
 ): { ref: ResourceRef; revision: number } | undefined => {
   const revision = readSemanticResourceRevisionFor(store, projectId, ref);
   if (revision === undefined) return undefined;
-  if (ref.kind !== "externalFile" && !ref.kind.startsWith("externalFile::")) {
+  if (!isExternalFileResourceKind(ref.kind)) {
     return { ref, revision };
   }
-  const file = rowsOf(store, "externalFiles").find(
-    (row) => row.projectId === projectId && row._id === ref.id
-  );
-  if (file === undefined) return undefined;
-  return { ref: { kind: "externalFile::text", id: file._id }, revision };
+  return { ref, revision };
 };
 
 /** Reads one editable resource once and emits exact text plus material inventory. */
@@ -143,19 +143,25 @@ export const readSemanticResourceFor = (
 export const readSemanticResourceForModel = async (
   model: ServerModel,
   projectId: Id<"projects">,
-  ref: ResourceRef
+  ref: ResourceRef,
+  signal?: AbortSignal
 ): Promise<SemanticResourceProjection | undefined> => {
+  signal?.throwIfAborted();
   if (ref.kind === "document" || ref.kind === "slides") {
     return readSemanticResourceFor(model.store, projectId, ref);
   }
-  if (ref.kind !== "externalFile" && !ref.kind.startsWith("externalFile::")) return undefined;
+  if (ref.kind !== "externalFile::text") return undefined;
   const file = rowsOf(model.store, "externalFiles").find(
     (row) => row.projectId === projectId && row._id === ref.id
   );
   if (file === undefined) return undefined;
   const subkind = file.subkind;
-  if (subkind !== "text") return undefined;
-  const bytes = await model.materialContent.read({ storageId: file.storageId, hash: file.hash });
+  if (subkind !== "text" || ref.kind !== externalFileResourceKind(subkind)) return undefined;
+  const bytes = await model.materialContent.read(
+    { storageId: file.storageId, hash: file.hash },
+    signal
+  );
+  signal?.throwIfAborted();
   if (bytes === undefined) throw new Error(`Native text for '${file.name}' is unavailable`);
   if (bytes.byteLength > MAX_EXTERNAL_TEXT_BYTES) {
     throw new Error(`Native text for '${file.name}' exceeds the bounded exact-text limit`);
@@ -166,9 +172,8 @@ export const readSemanticResourceForModel = async (
   } catch {
     throw new Error(`Native text for '${file.name}' is not valid UTF-8`);
   }
-  const canonicalRef = { kind: "externalFile::text", id: file._id };
   return {
-    ref: canonicalRef,
+    ref,
     revision: 0,
     contentHash: file.hash,
     text: content,

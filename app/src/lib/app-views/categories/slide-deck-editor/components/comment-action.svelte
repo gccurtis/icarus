@@ -2,7 +2,7 @@
   import MessageSquare from "@lucide/svelte/icons/message-square";
 
   import { PanelButton } from "$authored-components/panel";
-  import { rowsOf, tableQuery } from "$app-views/categories/slide-deck-editor/procedures/comments";
+  import { commentsQuery, threadsIn } from "$app-views/categories/slide-deck-editor/procedures/comments";
   import { threadsSignal } from "$app-views/categories/slide-deck-editor/procedures/selecting";
   import { workspaceState } from "$model/client/workspace-state";
 
@@ -10,10 +10,10 @@
 
   const view = workspaceState();
 
-  const threadRows = tableQuery("commentThreads");
+  const comments = commentsQuery();
 
   const count = $derived(
-    rowsOf(threadRows, "commentThreads").filter(
+    threadsIn(comments).filter(
       (row) => row.within?.kind === "element" && row.within.elementId === elementId && row.resolution === undefined
     ).length
   );

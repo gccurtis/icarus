@@ -5,8 +5,8 @@ The project's resource sets: the scopes a prompt looks things up in.
 | procedure | answers |
 | --- | --- |
 | `readResourceSets` | Every valid **named** set in the scoped project, with its creator's name and how many resources it selects now, plus quarantined invalid rows |
-| `createResourceSet` | A set from a name, an optional description, and an include and exclude list |
-| `updateResourceSet` | A compare-and-swap change to name, description, or the set itself |
+| `createResourceSet` | A set from a name, an optional description, and an include and exclude list; references to missing, private, foreign, ambiguous, or cyclic sets are refused |
+| `updateResourceSet` | A compare-and-swap change to name, description, or the set itself, with the same recursive reference checks |
 | `removeResourceSet` | A compare-and-swap delete, refused while another set or a template hole's default in this project still names it |
 
 A set is `include` minus `exclude`. A term selects the whole project, a list of
@@ -24,4 +24,8 @@ the bound ones belong to whichever capability owns the thing that points at them
 
 Every stored row is re-admitted before projection or mutation. A malformed row
 is quarantined from the list and refused by update and remove, so one corrupt
-row cannot take the rest down. A set that would include itself is refused.
+row cannot take the rest down. Generic scope resolution indexes only admitted,
+uniquely identified named rows; an unnamed row can be expanded only by the
+capability that proves its exact owner. Set references are checked recursively,
+so direct and indirect cycles and every ownership or project boundary are
+refused before a write.

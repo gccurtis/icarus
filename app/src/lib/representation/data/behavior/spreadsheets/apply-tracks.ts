@@ -33,14 +33,14 @@ export const listRows = (sheet: LiveSheet, op: ListOp): LiveSheet => {
         cells[cellKey(row.id, cell.columnId)] = { ...cell, rowId: row.id };
       }
     }
-    return { body: { ...sheet.body, rows }, cells };
+    return { body: { ...sheet.body, rows, rowPartCounts: [rows.length] }, cells };
   }
   const rows = withoutIds(sheet.body.rows, op.ids, op);
   const going = new Set(op.ids);
   const cells = Object.fromEntries(
     Object.entries(sheet.cells).filter(([, cell]) => !going.has(cell.rowId))
   );
-  return { body: { ...sheet.body, rows }, cells };
+  return { body: { ...sheet.body, rows, rowPartCounts: [rows.length] }, cells };
 };
 
 export const listColumns = (sheet: LiveSheet, op: ListOp): LiveSheet => {

@@ -13,6 +13,7 @@ import {
   completeTranslation,
   prepareTranslation
 } from "$representation/data/behavior/semantic/translation";
+import { asId } from "$representation/data/behavior/core/id";
 import type { SemanticSourceInput } from "$representation/data/types/semantic/source";
 import type {
   AlignedTokenField,
@@ -37,7 +38,7 @@ const source = (
   text: string,
   encoding: SemanticSourceInput["encoding"] = "utf-16"
 ): SemanticSourceInput => ({
-  ref: { kind: "document", id: "documents:fixture" },
+  ref: { kind: "document", id: asId<"documents">("documents:fixture") },
   revision: 7,
   text,
   encoding

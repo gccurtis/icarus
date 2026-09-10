@@ -38,26 +38,20 @@
     withHoleField
   } from "$app-views/categories/slide-deck-editor/procedures/templating";
   import { releaseTemplatesContext } from "$app-views/categories/slide-deck-editor/procedures/effects/templates-context.svelte";
-  import { readStore, workspaceState } from "$model/client/workspace-state";
+  import { workspaceState } from "$model/client/workspace-state";
 
   const view = workspaceState();
   const deckId = view.active.resourceId;
   const runtime = deckId === undefined ? undefined : view.slideDeckRuntime(deckId);
 
   const body = $derived(runtime?.body);
-  const decksQuery = readStore("slideDecks");
-  const title = $derived.by(() => {
-    if (!decksQuery.ready) return undefined;
-    const found = decksQuery.current;
-    if (found?.kind !== "table" || found.table !== "slideDecks") return undefined;
-    return found.rows.find((deck) => deck._id === deckId)?.title;
-  });
   const current = $derived(body === undefined ? undefined : body.slides[slideIndexOf(body, view.active.focus ?? undefined)]);
   const position = $derived(body === undefined || current === undefined ? 0 : slideIndexOf(body, current.id) + 1);
 
   const library = templateLibrary();
   const sets = resourceSets();
   const index = projectResources();
+  const title = $derived(index.current?.resources.find((row) => row.id === deckId)?.name);
   const setItems = $derived(setsIn(sets.ready ? sets.current : undefined));
   const catalogue = $derived(resourcesIn(index.ready ? index.current : undefined));
   const setNames = $derived(scopeNamesOf(setItems, catalogue));

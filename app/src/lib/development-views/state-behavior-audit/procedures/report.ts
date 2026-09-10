@@ -16,11 +16,11 @@ export const AUDIT_META = {
 } as const;
 
 export const VERDICT = {
-  headline: "The design is clear; the as-built code only partially conforms.",
+  headline: "Subject boundaries are enforced; client ownership work remains.",
   summary:
-    "At the dependency-boundary level, Icarus is unusually disciplined: representation is pure, construction is centralized, capabilities are stateless, and production server access crosses through a model. At the ownership level, however, several views still own resource state or large behavior chains, runtime lifetime is triggered by rendering instead of tabs, and a generic mutation capability bypasses the authority that the subject capabilities are meant to provide.",
+    "Representation is pure, construction is centralized, capabilities are stateless, and production server access crosses through a model. Browser reads and writes now use subject capabilities with scoped current-schema admission; the generic Store compatibility surface has been removed. Remaining debt is concentrated in view behavior and resource-runtime lifetime.",
   answer:
-    "Your description is accurate as the target architecture, but it is not yet an accurate description of the whole codebase. The server half is closest. The client model shell is structurally sound. The largest gap is the view layer, followed by resource-runtime lifecycle and the persistent write boundary."
+    "The authority boundary now matches the target architecture. The largest remaining gap is the view layer, followed by resource-runtime lifecycle and multi-record intents that have not yet adopted the transaction boundary."
 } as const;
 
 export const METRICS: readonly AuditMetric[] = [
@@ -82,15 +82,15 @@ export const SCORECARD: readonly ScorecardRow[] = [
   },
   {
     concern: "Capability authority",
-    grade: "Critical",
-    assessment: "Subject capabilities are well shaped, but the generic create/update/remove door discards scope and accepts arbitrary store targets.",
-    evidence: "capabilities/store/api/{create,update,remove}; active comment views still call this path."
+    grade: "Strong",
+    assessment: "Browser operations cross named subject capabilities with scope, exact input admission, and ownership checks.",
+    evidence: "The generic Store capability is absent; comment reads and writes are scoped by the Comments capability."
   },
   {
     concern: "Workspace ownership",
-    grade: "Partial",
-    assessment: "Tabs, panel geometry, inspection, and zoom have one coordinator, but it also owns all generic table queries and runtime attachment.",
-    evidence: "WorkspaceQueries constructs one proxy for each of 42 tables and exposes raw readStore/readUsername access."
+    grade: "Strong",
+    assessment: "Tabs, panel geometry, inspection, zoom, and resource runtimes have one coordinator without a generic table-query API.",
+    evidence: "WorkspaceState exposes no persistence table vocabulary; views read closed subject projections."
   },
   {
     concern: "Resource edit state",
@@ -234,36 +234,14 @@ export const STATE_OWNERS: readonly StateOwnerRow[] = [
 
 const FINDINGS: readonly AuditFinding[] = [
   {
-    id: "ARCH-01",
-    priority: "P0",
-    area: "Authority and persistence",
-    title: "Generic store mutations are scoped in name only",
-    finding:
-      "create, update, and remove call requireScope() but discard its result. They then accept a browser-supplied table or path and invoke StoreModel directly. A caller with any valid project route can therefore address state that the resolved project does not own, and no subject validator protects the write.",
-    consequence:
-      "This is both an authorization boundary failure and a state-ownership failure. The server cannot truthfully say that a document, comment, or deck capability is the only writer for its subject while the generic door remains writable.",
-    recommendation:
-      "Move the remaining comment callers to the typed Comments capability, add typed subject reads where needed, and delete generic create/update/remove rather than retaining a legacy adapter. Extend enforcement so a scoped mutator must use the resolved scope and so production views cannot import generic mutations.",
-    acceptance:
-      "No generic mutation export or production caller remains; cross-project mutation tests fail closed; every write is named by a subject capability with project and row ownership checks.",
-    evidence: [
-      "capabilities/store/api/create/create.ts:7",
-      "capabilities/store/api/update/update.ts:7",
-      "capabilities/store/api/remove/remove.ts:7",
-      "document-editor/inspector/comment.svelte:8",
-      "slide-deck-editor/inspector/comment.svelte:8",
-      "app-views/general/comment/comment.svelte:15"
-    ]
-  },
-  {
     id: "ARCH-02",
     priority: "P1",
     area: "Authority and persistence",
     title: "Multi-table capabilities do not use the atomic Store boundary",
     finding:
-      "StoreModel now exposes a staged transaction with a durable commit journal and constructor-time recovery. Existing capabilities still create resource + leader snapshot, thread + opening comment, or change set + snapshot + resource metadata as separate commits instead of using it.",
+      "StoreModel exposes a staged transaction with a durable commit journal and constructor-time recovery. Some multi-record capabilities still create resource + leader snapshot or change set + snapshot + resource metadata as separate commits instead of using it; comment thread creation has moved to the transaction boundary.",
     consequence:
-      "A later persistence failure can leave a resource without its snapshot, a thread without its first comment, or revision history that disagrees with the leader. The persistence model can now uphold all-or-nothing semantics, but those capabilities have not yet placed their intent inside that boundary.",
+      "A later persistence failure can leave a resource without its snapshot or revision history that disagrees with the leader. The persistence model can uphold all-or-nothing semantics, but those remaining capabilities have not yet placed their intent inside that boundary.",
     recommendation:
       "Move each multi-write capability into StoreModel.transaction, use only the callback-scoped unit, and add its path to the failpoint contract. Keep recovery in the persistence model; do not add capability-level best-effort rollback.",
     acceptance:
@@ -271,7 +249,6 @@ const FINDINGS: readonly AuditFinding[] = [
     evidence: [
       "model/server/store/store.md",
       "project-resources/api/create-project-resource.ts:102",
-      "comments/api/start-thread/start-thread.ts:18",
       "document/api/submit-document-changes.ts:133",
       "slide-deck/api/submit-slide-deck-changes.ts:57"
     ]
@@ -379,26 +356,6 @@ const FINDINGS: readonly AuditFinding[] = [
       "analysis/procedures/analysis.ts:1",
       "spreadsheet-editor/content/sheet.svelte:62",
       "new-tab/procedures/library.ts:953"
-    ]
-  },
-  {
-    id: "ARCH-08",
-    priority: "P1",
-    area: "Client state ownership",
-    title: "WorkspaceState is becoming both navigation coordinator and generic data container",
-    finding:
-      "WorkspaceQueries creates a remote query proxy for every one of the 42 representation tables plus the session username, and WorkspaceState exposes readStore/readUsername. The same object also owns tabs, panel geometry, operation history, persistence, runtime routing, and single-flight coordination.",
-    consequence:
-      "The model's ownership sentence is no longer narrow. Any view can depend on raw store table vocabulary, subject read boundaries stay undeveloped, and WorkspaceState accumulates unrelated reasons to change.",
-    recommendation:
-      "Keep WorkspaceState about what is open and what each tab is looking at. Move durable subject reads to typed capabilities and own long-lived reactive queries in one coherent project-data/query model or the appropriate resource runtime—not one tiny model per query and not a raw TableName API.",
-    acceptance:
-      "WorkspaceState's public type no longer exposes TableName, StoreQuery, readStore, or readUsername; views consume subject projections with an explicit lifetime owner.",
-    evidence: [
-      "workspace-state/definition.svelte.ts:50",
-      "workspace-state/definition.svelte.ts:61",
-      "workspace-state/types.ts:72",
-      "representation/store/tables.ts:539"
     ]
   },
   {

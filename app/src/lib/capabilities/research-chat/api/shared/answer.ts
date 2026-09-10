@@ -182,7 +182,8 @@ export const answerQuestion = async (input: AnswerInput): Promise<ChatAnswer> =>
     topK: input.topK,
     grants: input.grants,
     ...(input.bound === undefined ? {} : { bound: input.bound }),
-    stopping: input.stopping
+    stopping: input.stopping,
+    ...(input.signal === undefined ? {} : { signal: input.signal })
   });
 
   let submitted: Decision | undefined;

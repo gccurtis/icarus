@@ -4,6 +4,7 @@ import { describe, it } from "vitest";
 import { defineStore } from "$model/server/store/index.server";
 import type { ServerModel } from "$runtime/server/start.server";
 import type { Id } from "$representation/data/types/core/id";
+import type { ResourceRef } from "$representation/data/types/core/resource";
 import { semanticSourceIsCurrent } from "$capabilities/semantic-overlay/api/shared/freshness";
 import { syncSemanticResourceFor } from "$capabilities/semantic-overlay/api/shared/sync";
 
@@ -90,7 +91,7 @@ const fixture = () => {
 describe("external exact-text synchronization", () => {
   it("publishes UTF-8 text by immutable hash, reuses it, and replaces it on hash change", async () => {
     const held = fixture();
-    const ref = { kind: "externalFile::text", id: held.fileId };
+    const ref: ResourceRef = { kind: "externalFile::text", id: held.fileId };
 
     const first = await syncSemanticResourceFor(held.model, projectId, ref);
     assert.equal(first.outcome, "published");
@@ -128,5 +129,28 @@ describe("external exact-text synchronization", () => {
       rows: Array<{ object: { source?: { contentHash?: string } } }>;
     }).rows;
     assert.equal(history[0].object.source?.contentHash, held.firstHash);
+  });
+
+  it("rejects a lane-less semantic object at Store admission", async () => {
+    const held = fixture();
+    const ref: ResourceRef = { kind: "externalFile::text", id: held.fileId };
+    const first = await syncSemanticResourceFor(held.model, projectId, ref);
+    assert.equal(first.outcome, "published");
+    const source = (held.store.read("semanticSources") as unknown as {
+      rows: Array<{ _id: string }>;
+    }).rows[0];
+    assert.throws(
+      () => held.store.create("semanticObjects", {
+        projectId,
+        semanticSourceId: source._id,
+        span: { from: 0, to: 4, text: "old?" },
+        vector: [1, 0]
+      } as never),
+      /missing required field: lane/
+    );
+    assert.equal(
+      (held.store.read("semanticObjects") as unknown as { rows: unknown[] }).rows.length,
+      1
+    );
   });
 });

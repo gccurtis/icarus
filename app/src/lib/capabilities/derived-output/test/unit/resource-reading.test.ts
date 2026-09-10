@@ -3,7 +3,9 @@ import { Buffer } from "node:buffer";
 import { beforeEach, describe, it } from "vitest";
 
 import type { ServerModel } from "$runtime/server/start.server";
+import { asId } from "$representation/data/behavior/core/id";
 import type { Id } from "$representation/data/types/core/id";
+import type { ResourceSet } from "$representation/data/types/core/resource-set";
 import type { MaterialHit, MaterialSourceSnapshot } from "$representation/data/types/semantic/material";
 import { createResourceReadingSession } from "$capabilities/derived-output/api/shared/resource-reading";
 import { materialDescriptorEvidence } from "$capabilities/derived-output/api/shared/synthesis";
@@ -73,11 +75,16 @@ describe("Derived Output resource-reading session", () => {
     };
   };
 
-  const session = (scope?: { include: []; exclude: [{ select: "project" }] }) =>
+  const session = (scope?: ResourceSet, signal?: AbortSignal) =>
     createResourceReadingSession({
       model,
       projectId,
-      selection: { ref: { kind: "document", id: "documents:doc" }, from: 0, to: 13 },
+      ...(signal === undefined ? {} : { signal }),
+      selection: {
+        ref: { kind: "document", id: asId<"documents">("documents:doc") },
+        from: 0,
+        to: 13
+      },
       ...(scope === undefined ? {} : { scope }),
       issue: (_key, evidence) => {
         const id = `evidence-${nextEvidence++}`;
@@ -485,7 +492,7 @@ describe("Derived Output resource-reading session", () => {
 
     const held = session();
     const handle = held.rememberMaterial(snapshot("semanticMaterials:nested-table", {
-      ref: { kind: "slides", id: "slideDecks:deck" }, revision: 3, locator
+      ref: { kind: "slides", id: asId<"slideDecks">("slideDecks:deck") }, revision: 3, locator
     }));
     const read = held.tools.find((candidate) => candidate.name === "read_table")!;
     const result = await read.execute({ materialHandle: handle }) as { rows: string[][] };
@@ -560,10 +567,108 @@ describe("Derived Output resource-reading session", () => {
     );
   });
 
+  it("checks cancellation around every tool and passes it into native reads", async () => {
+    const alreadyStopped = new AbortController();
+    alreadyStopped.abort();
+    const stopped = session(undefined, alreadyStopped.signal);
+    const find = stopped.tools.find((candidate) => candidate.name === "find_resources")!;
+    await assert.rejects(() => find.execute({}), /aborted/i);
+
+    const controller = new AbortController();
+    let received: AbortSignal | undefined;
+    const originalRead = model.materialContent.read;
+    model.materialContent.read = async (ref, signal) => {
+      received = signal;
+      const bytes = await originalRead(ref, signal);
+      controller.abort();
+      return bytes;
+    };
+    const held = session(undefined, controller.signal);
+    const handle = held.rememberMaterial(snapshot("semanticMaterials:code"));
+    const read = held.tools.find((candidate) => candidate.name === "read_code")!;
+
+    await assert.rejects(
+      () => read.execute({ materialHandle: handle, fromLine: 1, toLine: 1 }),
+      /aborted/i
+    );
+    assert.equal(received, controller.signal);
+  });
+
+  it("does not resolve an unnamed private Resource Set supplied as the output scope", async () => {
+    put("resourceSets", [
+      {
+        _id: "resourceSets:private",
+        _creationTime: 1,
+        projectId,
+        boundTo: { kind: "resource", resourceId: "documents:doc", hole: "evidence" },
+        set: {
+          include: [{ select: "resources", refs: [{ kind: "document", id: "documents:doc" }] }],
+          exclude: []
+        },
+        createdBy: { kind: "system" },
+        revision: 1,
+        updatedAt: 1
+      }
+    ]);
+    const held = session({
+      include: [{ select: "set", setId: "resourceSets:private" as Id<"resourceSets"> }],
+      exclude: []
+    });
+    const read = held.tools.find((candidate) => candidate.name === "read_text")!;
+
+    await assert.rejects(
+      () => read.execute({ kind: "document", resourceId: "documents:doc", from: 0, to: 8 }),
+      /resource set 'resourceSets:private' does not exist/
+    );
+  });
+
+  it("does not resolve duplicate or malformed named Resource Sets while reading", async () => {
+    const reusable: Row = {
+      _id: "resourceSets:evidence",
+      _creationTime: 1,
+      projectId,
+      name: "Evidence",
+      set: {
+        include: [{ select: "resources", refs: [{ kind: "document", id: "documents:doc" }] }],
+        exclude: []
+      },
+      createdBy: { kind: "system" },
+      revision: 1,
+      updatedAt: 1
+    };
+    const read = () => {
+      const held = session({
+        include: [{ select: "set", setId: "resourceSets:evidence" as Id<"resourceSets"> }],
+        exclude: []
+      });
+      return held.tools.find((candidate) => candidate.name === "read_text")!.execute({
+        kind: "document",
+        resourceId: "documents:doc",
+        from: 0,
+        to: 8
+      });
+    };
+
+    put("resourceSets", [reusable]);
+    const allowed = await read() as { span: { text: string } };
+    assert.equal(allowed.span.text, "Selected");
+
+    put("resourceSets", [
+      reusable,
+      { ...reusable, projectId: "projects:other", name: "Duplicate claimant" }
+    ]);
+    await assert.rejects(read, /resource set 'resourceSets:evidence' does not exist/);
+
+    put("resourceSets", [
+      { ...reusable, createdBy: { kind: "user" } }
+    ]);
+    await assert.rejects(read, /resource set 'resourceSets:evidence' does not exist/);
+  });
+
   it("rejects a material handle as soon as its native resource revision advances", async () => {
     const held = session();
     const handle = held.rememberMaterial(snapshot("semanticMaterials:chart", {
-      ref: { kind: "slides", id: "slideDecks:deck" },
+      ref: { kind: "slides", id: asId<"slideDecks">("slideDecks:deck") },
       revision: 3,
       locator: { kind: "slideElement", slideId: "slide-one", elementPath: ["chart"] }
     }));
@@ -584,7 +689,10 @@ describe("material discovery evidence", () => {
       name: "Architecture sketch",
       source: {
         kind: "externalFile",
-        ref: { kind: "externalFile::image", id: "externalFiles:image" },
+        ref: {
+          kind: "externalFile::image",
+          id: asId<"externalFiles">("externalFiles:image")
+        },
         fileId: "externalFiles:image" as Id<"externalFiles">,
         hash: hash("d"),
         mediaType: "image/png",

@@ -10,10 +10,12 @@ import {
 import type { TemplateAnswers } from "$capabilities/templates/index.remote";
 import {
   narrowed,
+  type NamedResourceRef,
   type ScopeDraft,
   type ScopeNames,
   type ScopeOffering
 } from "$representation/data/behavior/core/scope-draft";
+import { admitResourceRef } from "$representation/data/behavior/core/resource";
 
 export const resourceSets = () => readResourceSets();
 
@@ -24,8 +26,11 @@ export const projectResources = () => readProjectResourceIndex();
 
 export const resourcesIn = (
   answer: ProjectResourceIndex | undefined
-): readonly { readonly id: string; readonly kind: string; readonly name: string }[] =>
-  (answer?.resources ?? []).map((item) => ({ id: item.id, kind: item.kind, name: item.name }));
+): readonly NamedResourceRef[] =>
+  (answer?.resources ?? []).map((item) => ({
+    ...admitResourceRef({ kind: item.kind, id: item.id }, "project resource index item"),
+    name: item.name
+  }));
 
 /** What the builder and every sentence read a set or a resource by. */
 export const scopeNamesOf = (
@@ -39,7 +44,7 @@ export const scopeNamesOf = (
 /** What the builder is handed for a hole's default, or for an answer. */
 export const offeringOf = (
   sets: readonly ResourceSetItem[],
-  resources: readonly { readonly id: string; readonly kind: string; readonly name: string }[]
+  resources: readonly NamedResourceRef[]
 ): ScopeOffering => ({
   sets: sets.map((set) => ({ id: set.id, name: set.name, set: set.set })),
   resources

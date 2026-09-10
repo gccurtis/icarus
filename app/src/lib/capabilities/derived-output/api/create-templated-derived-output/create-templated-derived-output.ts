@@ -3,6 +3,7 @@ import { serverModel } from "$runtime/server/start.server";
 import type { Id } from "$representation/data/types/core/id";
 import { outputOf } from "$capabilities/derived-output/api/shared/rows";
 import { validateCreateTemplatedDerivedOutput } from "$capabilities/derived-output/api/create-templated-derived-output/validate-create-templated-derived-output";
+import { assertReusableScopeReferences } from "$capabilities/derived-output/api/shared/scope-references";
 import type { CreateTemplatedDerivedOutputResult } from "$capabilities/derived-output/types/create-templated-derived-output";
 
 /** Creates a named-variable definition whose final text is rendered by the application. */
@@ -13,6 +14,7 @@ export const createTemplatedDerivedOutput = async (
   const asked = validateCreateTemplatedDerivedOutput(input);
   const model = serverModel();
   const projectId = scope.projectId as Id<"projects">;
+  assertReusableScopeReferences(model.store, projectId, asked.scope);
   const at = Date.now();
   const id = model.store.create("derivedOutputs", {
     projectId,

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { applyOps } from "$representation/data/behavior/slide-decks/apply-ops";
+import { asId } from "$representation/data/behavior/core/id";
 import type { Id } from "$representation/data/types/core/id";
 import type { DerivedOutput } from "$representation/data/types/semantic/derived-output";
 import type { SlideDeckBody } from "$representation/data/types/slide-decks/body";
@@ -11,6 +12,7 @@ import {
   syncPromptBlockOps,
   withPromptElement
 } from "$app-views/categories/slide-deck-editor/procedures/prompt-blocks";
+import { promptDefinitionOps } from "$app-views/categories/slide-deck-editor/procedures/prompt-definition";
 import { sceneOf } from "$app-views/categories/slide-deck-editor/procedures/scene";
 import { replaced } from "$app-views/categories/slide-deck-editor/procedures/typing";
 
@@ -59,7 +61,7 @@ const output = (display: string): DerivedOutput => ({
   projectId: "projects:one" as Id<"projects">,
   prompt: "Give me the answer",
   definitionRevision: 1,
-  origin: { kind: "slides", id: "deck-one" },
+  origin: { kind: "slides", id: asId<"slideDecks">("slideDecks:deck-one") },
   queries: [],
   evidence: [],
   lastResponse: {
@@ -84,16 +86,41 @@ describe("slide Prompt Blocks", () => {
    * them is what the agent obeys. So the block keeps one until there is an
    * output to keep it, and gives it up at the moment there is.
    */
-  it("takes the Derived Output identity and gives up the scope", () => {
+  it("represents an unlinked question in the slide body", () => {
+    const before = withPromptElement(body(), "element-one").body;
+    const held = before.slides[0].elements[0].content;
+    if (held.type !== "prompt") throw new Error("expected a prompt element");
+    const authored = "  Which risks should the slide explain?  ";
+
+    const defined = applyOps(
+      before,
+      promptDefinitionOps(held.block, authored)
+    );
+    const block = defined.slides[0].elements[0].content;
+    if (block.type !== "prompt") throw new Error("expected a prompt element");
+    expect(block.block.prompt).toBe(authored);
+    expect(promptDefinitionOps(block.block, authored)).toEqual([]);
+
+    const cleared = applyOps(defined, promptDefinitionOps(block.block, "   "));
+    const after = cleared.slides[0].elements[0].content;
+    if (after.type !== "prompt") throw new Error("expected a prompt element");
+    expect("prompt" in after.block).toBe(false);
+  });
+
+  it("takes the Derived Output identity and gives up the definition and scope", () => {
     const before = withPromptElement(body(), "element-one").body;
     const held = before.slides[0].elements[0].content;
     if (held.type !== "prompt") throw new Error("expected a prompt element");
     const scoped = applyOps(
       before,
-      promptScopeOps(held.block, { include: [{ select: "project" }], exclude: [] })
+      [
+        ...promptDefinitionOps(held.block, "Give me the answer"),
+        ...promptScopeOps(held.block, { include: [{ select: "project" }], exclude: [] })
+      ]
     );
     const block = scoped.slides[0].elements[0].content;
     if (block.type !== "prompt") throw new Error("expected a prompt element");
+    expect(block.block.prompt).toBe("Give me the answer");
     expect(block.block.scope).toEqual({ include: [{ select: "project" }], exclude: [] });
 
     const linked = applyOps(
@@ -103,7 +130,9 @@ describe("slide Prompt Blocks", () => {
     const after = linked.slides[0].elements[0].content;
     if (after.type !== "prompt") throw new Error("expected a prompt element");
     expect(after.block.derivedOutputId).toBe("derivedOutputs:slide");
+    expect("prompt" in after.block).toBe(false);
     expect("scope" in after.block).toBe(false);
+    expect(promptDefinitionOps(after.block, "A second owner")).toEqual([]);
   });
 
   it("converts only the inner text contract and preserves the element presentation", () => {

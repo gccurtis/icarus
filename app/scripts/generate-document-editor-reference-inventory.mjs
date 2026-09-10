@@ -63,8 +63,7 @@ const areaOf = (path) => {
   ) return "runtime";
   if (
     path.includes("/representation/") ||
-    path.includes("/capabilities/document/") ||
-    path.includes("/capabilities/store/")
+    path.includes("/capabilities/document/")
   ) return "backend";
   return "cross-cutting";
 };

@@ -4,6 +4,7 @@ import { asId } from "$representation/data/behavior/core/id";
 
 import { findVisible, notFound, refused, stale } from "$capabilities/agents/api/shared/lookup";
 import type { RowFields } from "$capabilities/agents/api/shared/store";
+import { scopeReferenceRefusal } from "$capabilities/agents/api/shared/scope-references";
 import { validateUpdatePersona } from "$capabilities/agents/api/update-persona/validate-update-persona";
 import type { WriteResult } from "$capabilities/agents/types/agents";
 
@@ -19,15 +20,17 @@ export const updatePersona = async (input: unknown): Promise<WriteResult> => {
     return stale(asked.personaId, asked.baseRevision, persona.revision);
   }
   const patch = asked.patch;
-  const { _id, _creationTime, description, scope: access, cast, ...rest } = persona;
-  void _id;
-  void _creationTime;
+  const { description, scope: access, cast } = persona;
   const nextDescription =
     patch.description === undefined ? description : (patch.description ?? undefined);
   const nextScope = patch.scope === undefined ? access : (patch.scope ?? undefined);
+  const scopeRefusal = scopeReferenceRefusal(store, scope.projectId, nextScope);
+  if (scopeRefusal !== undefined) {
+    return refused(persona._id, "invalid-state", scopeRefusal, persona.revision);
+  }
   const nextCast = patch.cast === undefined ? cast : (patch.cast ?? undefined);
   const fields: RowFields<"personas"> = {
-    ...rest,
+    projectId: persona.projectId,
     name: patch.name ?? persona.name,
     ...(nextDescription === undefined ? {} : { description: nextDescription }),
     definition:
@@ -37,6 +40,8 @@ export const updatePersona = async (input: unknown): Promise<WriteResult> => {
     ...(nextScope === undefined ? {} : { scope: nextScope }),
     ...(nextCast === undefined ? {} : { cast: nextCast }),
     tools: [...(patch.tools ?? persona.tools)],
+    ...(persona.avatar === undefined ? {} : { avatar: persona.avatar }),
+    createdBy: persona.createdBy,
     revision: persona.revision + 1,
     updatedAt: Date.now()
   };

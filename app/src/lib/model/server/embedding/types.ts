@@ -16,16 +16,19 @@ export type ImageEmbeddingInput =
 /** The process-wide embedding port. Credentials never cross this boundary. */
 export interface EmbeddingModel {
   readonly space: EmbeddingSpace;
-  tokenField(text: string): Promise<EmbeddingResult<TokenEmbeddingField>>;
+  tokenField(text: string, signal?: AbortSignal): Promise<EmbeddingResult<TokenEmbeddingField>>;
   /** Contextual vectors for spans from exactly one source document. */
-  windowedPassages(texts: readonly string[]): Promise<EmbeddingResult<number[][]>>;
+  windowedPassages(
+    texts: readonly string[],
+    signal?: AbortSignal
+  ): Promise<EmbeddingResult<number[][]>>;
   /** One non-contextual vector for one complete passage. */
-  passage(text: string): Promise<EmbeddingResult<number[]>>;
+  passage(text: string, signal?: AbortSignal): Promise<EmbeddingResult<number[]>>;
   /** Independent non-contextual vectors for unrelated complete passages. */
-  passages(texts: readonly string[]): Promise<EmbeddingResult<number[][]>>;
+  passages(texts: readonly string[], signal?: AbortSignal): Promise<EmbeddingResult<number[][]>>;
   /** One original image in the same retrieval.passage vector space as text. */
-  image(input: ImageEmbeddingInput): Promise<EmbeddingResult<number[]>>;
-  query(text: string): Promise<EmbeddingResult<number[]>>;
+  image(input: ImageEmbeddingInput, signal?: AbortSignal): Promise<EmbeddingResult<number[]>>;
+  query(text: string, signal?: AbortSignal): Promise<EmbeddingResult<number[]>>;
 }
 
 /** Injected transport keeps HTTP deterministic in unit tests. */

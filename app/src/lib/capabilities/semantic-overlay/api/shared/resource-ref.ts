@@ -1,58 +1,48 @@
 import type { ResourceRef } from "$representation/data/types/core/resource";
-import { kindMatches } from "$representation/data/behavior/core/resource";
-
-const record = (value: unknown): Record<string, unknown> | undefined =>
-  value !== null && typeof value === "object" && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : undefined;
+import {
+  admitResourceRef,
+  isExternalFileResourceKind,
+  sameResourceRef
+} from "$representation/data/behavior/core/resource";
 
 const resourceRef = (
   value: unknown,
-  accepts: (kind: string) => boolean,
+  accepts: (ref: ResourceRef) => boolean,
   expected: string
 ): ResourceRef => {
-  const candidate = record(value);
-  if (candidate === undefined) throw new Error("A semantic resource ref must be an object");
-  if (typeof candidate.kind !== "string" || !accepts(candidate.kind)) {
+  let candidate: ResourceRef;
+  try {
+    candidate = admitResourceRef(value, "semantic resource ref");
+  } catch {
+    throw new Error("A semantic resource ref must have an exact current kind and matching row id");
+  }
+  if (!accepts(candidate)) {
     throw new Error(`A semantic resource ref kind must be ${expected}`);
   }
-  if (
-    typeof candidate.id !== "string" ||
-    !candidate.id.trim() ||
-    candidate.id.length > 500
-  ) {
-    throw new Error("A semantic resource ref id must be 1 through 500 characters");
-  }
-  const unexpected = Object.keys(candidate).find((key) => key !== "kind" && key !== "id");
-  if (unexpected !== undefined) {
-    throw new Error(`A semantic resource ref has unexpected field '${unexpected}'`);
-  }
-  return { kind: candidate.kind, id: candidate.id.trim() };
+  return candidate;
 };
 
 /** Resource kinds that own an exact, quoteable text projection. */
 export const semanticResourceRef = (value: unknown): ResourceRef =>
   resourceRef(
     value,
-    (kind) =>
-      kind === "document" ||
-      kind === "slides" ||
-      kind === "externalFile" ||
-      kind === "externalFile::text",
-    "'document', 'slides', or an exact-text 'externalFile'"
+    (ref) =>
+      ref.kind === "document" ||
+      ref.kind === "slides" ||
+      ref.kind === "externalFile::text",
+    "'document', 'slides', or 'externalFile::text'"
   );
 
 /** Resource kinds whose save/upload event can enqueue either semantic lane. */
 export const semanticIngestibleResourceRef = (value: unknown): ResourceRef =>
   resourceRef(
     value,
-    (kind) =>
-      kind === "document" ||
-      kind === "slides" ||
-      kind === "spreadsheet" ||
-      kindMatches("externalFile", kind),
+    (ref) =>
+      ref.kind === "document" ||
+      ref.kind === "slides" ||
+      ref.kind === "spreadsheet" ||
+      isExternalFileResourceKind(ref.kind),
     "'document', 'slides', 'spreadsheet', or an 'externalFile' subkind"
   );
 
-export const sameResourceRef = (left: ResourceRef, right: ResourceRef): boolean =>
-  left.kind === right.kind && left.id === right.id;
+export { sameResourceRef };

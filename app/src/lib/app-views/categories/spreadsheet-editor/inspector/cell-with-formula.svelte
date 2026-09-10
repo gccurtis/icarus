@@ -29,7 +29,10 @@
   import { cellSignal } from "$app-views/categories/spreadsheet-editor/procedures/selecting";
   import { mergeOf, unmerged } from "$app-views/categories/spreadsheet-editor/procedures/merge-spans";
   import { spillOf } from "$app-views/categories/spreadsheet-editor/procedures/spill-spans";
-  import { rowsOf, tableQuery } from "$app-views/categories/spreadsheet-editor/procedures/store";
+  import {
+    resourceIndexQuery,
+    spreadsheetRecordsIn
+  } from "$app-views/categories/spreadsheet-editor/procedures/spreadsheet-records";
   import { KIND_LABEL, displayOf, kindOf, type SheetCell } from "$app-views/categories/spreadsheet-editor/procedures/values";
   import { holdsTheRuntime } from "$app-views/categories/spreadsheet-editor/procedures/effects/holds-the-runtime.svelte";
   import { variableRegister } from "$app-views/categories/spreadsheet-editor/procedures/variables.svelte";
@@ -60,8 +63,8 @@
   const merge = $derived(sheet === undefined || ref === undefined ? undefined : mergeOf(sheet, grid, ref));
   const spill = $derived(sheet === undefined || ref === undefined ? undefined : spillOf(sheet, grid, ref));
 
-  const sheetRows = tableQuery("spreadsheets");
-  const sheets = $derived(rowsOf(sheetRows, "spreadsheets"));
+  const resourceIndex = resourceIndexQuery();
+  const sheets = $derived(spreadsheetRecordsIn(resourceIndex));
 
   const apply = (edit: Edit) => {
     if (edit.refused === undefined && edit.ops.length > 0 && sheet !== undefined) runtime?.apply(recalculating(register, sheetId, sheet, edit.ops));

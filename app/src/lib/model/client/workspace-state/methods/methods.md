@@ -20,6 +20,7 @@ function taking `WorkspaceStateData` first.
 | `resize` | file | [`resize.ts`](resize.ts) | mutator | Replace the active tab's frame with a patched copy |
 | `showing` | file | [`showing.ts`](showing.ts) | accessor | Whether the active tab is on a given centre right now |
 | `singleFlight` | file | [`single-flight.ts`](single-flight.ts) | coordinator | Share one pending durable command across remounts and sibling surfaces |
+| `pendingFlight` | file | [`pending-flight.ts`](pending-flight.ts) | observer | Read a matching command promise without acquiring or replacing it |
 | `slideDeckRuntime` | file | [`slide-deck-runtime.ts`](slide-deck-runtime.ts) | accessor | The runtime a deck already has, from the register this object borrows |
 | `spreadsheetRuntime` | file | [`spreadsheet-runtime.ts`](spreadsheet-runtime.ts) | accessor | The same for a sheet |
 | `undo` | file | [`undo.ts`](undo.ts) | mutator | Apply the inverse of the last op, and remember it for `redo` |

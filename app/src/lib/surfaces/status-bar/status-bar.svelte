@@ -1,6 +1,11 @@
 <script lang="ts">
+  import { workspaceState } from "$model/client/workspace-state";
+  import { statusAgentNames } from "$surfaces/status-bar/procedures/read-agents";
+  import { statusResourceNames } from "$surfaces/status-bar/procedures/read-resources";
+  import { statusTemplateStageNames } from "$surfaces/status-bar/procedures/read-template-stages";
+  import { statusTemplateNames } from "$surfaces/status-bar/procedures/read-templates";
   import { kindOf, nameOf } from "$surfaces/status-bar/procedures/resource-name";
-  import { readUsername, workspaceState } from "$model/client/workspace-state";
+  import { sessionName } from "$surfaces/status-bar/procedures/session";
 
   /**
    * The bar across the foot of the application. Two parts, at opposite ends.
@@ -15,6 +20,11 @@
    * ends is what stops the bar becoming a single run of unrelated chips.
    */
   const view = workspaceState();
+  const resources = statusResourceNames();
+  const agents = statusAgentNames();
+  const templates = statusTemplateNames();
+  const stages = statusTemplateStageNames();
+  const session = sessionName();
 
   // ------------------------------------------------------------ the work ----
 
@@ -31,14 +41,26 @@
    * it; `focus` otherwise, which is where a permanent tab keeps its subject.
    */
   const subjectId = $derived(view.active.resourceId ?? view.active.focus);
+  const names = $derived({
+    resourcesReady: resources.ready,
+    agentsReady: agents.ready,
+    templatesReady: templates.ready,
+    stagesReady: stages.ready,
+    resources: resources.ready ? resources.current : undefined,
+    agents: agents.ready ? agents.current : undefined,
+    templates: templates.ready ? templates.current : undefined,
+    stages: stages.ready ? stages.current : undefined
+  });
 
-  const name = $derived(subjectId === undefined ? undefined : nameOf(subjectId));
-  const kind = $derived(subjectId === undefined ? undefined : kindOf(subjectId));
+  const name = $derived(subjectId === undefined ? undefined : nameOf(subjectId, names));
+  const kind = $derived(
+    subjectId === undefined ? undefined : kindOf(subjectId, names.resources, names.stages)
+  );
 
   // ----------------------------------------------------------------- you ----
 
   /** From `configuration/dev.yaml` until authentication exists. */
-  const you = $derived(readUsername().current);
+  const you = $derived(session.current);
 </script>
 
 <footer class="status-bar">

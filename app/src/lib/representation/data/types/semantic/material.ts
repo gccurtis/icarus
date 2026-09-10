@@ -1,6 +1,9 @@
 import type { ImageSource } from "$representation/data/types/content/content-block";
 import type { Id, Row } from "$representation/data/types/core/id";
-import type { ResourceRef } from "$representation/data/types/core/resource";
+import type {
+  ExternalFileResourceRef,
+  ResourceRef
+} from "$representation/data/types/core/resource";
 import type { FileSubkind } from "$representation/data/types/external/file";
 
 export type MaterialKind = "table" | "csv" | "chart" | "image" | "code";
@@ -49,7 +52,7 @@ export type ResourceMaterialSource = {
 
 export type ExternalFileMaterialSource = {
   kind: "externalFile";
-  ref: ResourceRef;
+  ref: ExternalFileResourceRef;
   fileId: Id<"externalFiles">;
   hash: string;
   mediaType: string;

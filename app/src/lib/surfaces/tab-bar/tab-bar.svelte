@@ -6,6 +6,9 @@
 
   import { workspaceState } from "$model/client/workspace-state";
   import { CATEGORY_ENTRIES, isOpened, labelOf } from "$surfaces/tab-bar/procedures/category-entries";
+  import { tabAgentNames } from "$surfaces/tab-bar/procedures/read-agents";
+  import { tabResourceNames } from "$surfaces/tab-bar/procedures/read-resources";
+  import { tabTemplateStageNames } from "$surfaces/tab-bar/procedures/read-template-stages";
 
   /**
    * The tab bar — what is open, and which one is active.
@@ -22,14 +25,23 @@
    * carrying `aria-current`.
    */
   const view = workspaceState();
+  const resources = tabResourceNames();
+  const agents = tabAgentNames();
+  const stages = tabTemplateStageNames();
 
   const here = $derived(view.active.category);
+  const names = $derived({
+    ready: resources.ready && agents.ready && stages.ready,
+    resources: resources.ready ? resources.current : undefined,
+    agents: agents.ready ? agents.current : undefined,
+    stages: stages.ready ? stages.current : undefined
+  });
 
   /** A label is read once per tab per render; the markup asks for it three times. */
   const opened = $derived(
     view.tabs.filter(isOpened).map((tab) => ({
       tab,
-      label: labelOf(tab),
+      label: labelOf(tab, names),
       Icon: CATEGORY_ENTRIES[tab.category].icon
     }))
   );

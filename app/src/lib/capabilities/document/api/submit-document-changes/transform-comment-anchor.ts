@@ -1,7 +1,4 @@
-import {
-  canonicalAnchorWithin,
-  textAnchorSpans
-} from "$representation/data/behavior/collaboration/anchors";
+import { canonicalAnchorWithin } from "$representation/data/behavior/collaboration/anchors";
 import type {
   AnchorWithin,
   TextAnchorSpan
@@ -63,7 +60,7 @@ export const transformCommentAnchor = (
 ): AnchorWithin | undefined => {
   if (within === undefined || within.kind !== "text") return canonicalAnchorWithin(within);
 
-  let spans = [...textAnchorSpans(within)];
+  let spans = [...within.spans];
   for (const op of ops) {
     if (op.op !== "text") continue;
     const [blockId, field, atom] = op.path.split("/");
@@ -85,5 +82,5 @@ export const transformCommentAnchor = (
     return atoms?.has(span.from.atom) === true && atoms.has(span.to.atom);
   });
 
-  return { kind: "text", spans };
+  return canonicalAnchorWithin({ kind: "text", spans });
 };

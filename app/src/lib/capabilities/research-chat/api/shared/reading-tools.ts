@@ -5,6 +5,7 @@ import type { ContentBlock } from "$representation/data/types/content/content-bl
 import type { SlideElement } from "$representation/data/types/slide-decks/body";
 import type { MaterialLocator } from "$representation/data/types/semantic/material";
 import type { ResourceRef } from "$representation/data/types/core/resource";
+import { admitResourceRef } from "$representation/data/behavior/core/resource";
 import { readSemanticResourceForModel } from "$capabilities/semantic-overlay";
 
 import { rowsIn } from "$capabilities/research-chat/api/shared/store";
@@ -39,7 +40,10 @@ export const readingTools = (context: ToolContext): readonly IntelligenceTool[] 
     },
     execute: async (value) => {
       const asked = asRecord(value, "the input must be an object");
-      const ref = { kind: String(asked.kind), id: String(asked.id) };
+      const ref = admitResourceRef(
+        { kind: asked.kind, id: asked.id },
+        "read_text resource"
+      );
       if (!context.inScope(ref)) throw new Error("that resource is not in this turn's scope");
       const from = Number(asked.from);
       const to = Number(asked.to);
@@ -47,7 +51,12 @@ export const readingTools = (context: ToolContext): readonly IntelligenceTool[] 
         throw new Error("from and to must be whole numbers with to greater than from");
       }
       if (to - from > 12_000) throw new Error("read at most 12000 characters at a time");
-      const projection = await readSemanticResourceForModel(context.input.model, context.input.projectId, ref);
+      const projection = await readSemanticResourceForModel(
+        context.input.model,
+        context.input.projectId,
+        ref,
+        context.input.signal
+      );
       if (projection === undefined) throw new Error("that resource has no readable text");
       const text = sliceByCoordinates(projection.text, projection.encoding, from, to);
       const sourceId = context.issue(JSON.stringify(["text", ref, from, to]), {
@@ -72,9 +81,9 @@ export const readingTools = (context: ToolContext): readonly IntelligenceTool[] 
             (row) =>
               row.projectId === context.input.projectId &&
               typeof row.title === "string" &&
-              context.inScope({ kind, id: row._id as string })
+              context.inScope(admitResourceRef({ kind, id: row._id }, "listed resource"))
           )
-          .map((row) => ({ kind, id: row._id as string, name: row.title as string }))
+          .map((row) => ({ kind, id: row._id, name: row.title as string }))
       )
     })
   };
@@ -163,11 +172,18 @@ export const readingTools = (context: ToolContext): readonly IntelligenceTool[] 
         rowTo: { type: "integer", minimum: 1 }
       },
       required: ["materialHandle"],
-      additionalProperties: false
+    additionalProperties: false
     },
     execute: async (value) => {
       const asked = asRecord(value, "the input must be an object");
-      const handle = String(asked.materialHandle);
+      if (
+        typeof asked.materialHandle !== "string" ||
+        asked.materialHandle.length === 0 ||
+        asked.materialHandle.length > 200
+      ) {
+        throw new Error("materialHandle must be a non-empty string of at most 200 characters");
+      }
+      const handle = asked.materialHandle;
       const snapshot = context.materials.get(handle);
       if (snapshot === undefined) {
         throw new Error("that materialHandle was not issued in this conversation; search first");

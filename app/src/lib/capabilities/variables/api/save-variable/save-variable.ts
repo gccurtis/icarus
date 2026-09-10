@@ -53,9 +53,17 @@ export const saveVariable = async (input: unknown): Promise<SaveVariableResult> 
       return { ...fields, _id: id, _creationTime: at } as VariableRow;
     }
 
-    const next = { ...held, ...fields, createdBy: held.createdBy };
+    const next = {
+      projectId,
+      name: asked.name,
+      value: asked.value,
+      type: asked.type,
+      ...(asked.description === undefined ? {} : { description: asked.description }),
+      createdBy: held.createdBy,
+      updatedAt: at
+    };
     unit.update(`variables.${held._id}`, next);
-    return next;
+    return { ...next, _id: held._id, _creationTime: held._creationTime } as VariableRow;
   });
 
   return { saved: true, variable: recordOf(saved) };

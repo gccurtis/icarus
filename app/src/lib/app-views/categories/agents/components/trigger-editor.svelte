@@ -81,8 +81,12 @@
 
   const setKinds = (kinds: string[]) => {
     if (kinds.length === 0) return;
-    if (value.kind === "resource-edited") void save({ ...value, kinds });
-    if (value.kind === "resource-created") void save({ kind: "resource-created", kinds });
+    const selected = TRIGGER_RESOURCE_KINDS
+      .map((kind) => kind.id)
+      .filter((kind) => kinds.includes(kind));
+    if (selected.length === 0) return;
+    if (value.kind === "resource-edited") void save({ ...value, kinds: selected });
+    if (value.kind === "resource-created") void save({ kind: "resource-created", kinds: selected });
   };
 
   const setRef = (choice: string) => {

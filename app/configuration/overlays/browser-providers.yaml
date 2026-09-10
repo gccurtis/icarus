@@ -1,0 +1,18 @@
+# Deterministic browser-test providers. Inert unless the Playwright-owned server selects it.
+intelligence:
+  providers:
+    openrouter:
+      apiKey: browser-fixture-key
+      endpoint: __ICARUS_BROWSER_PROVIDER_ORIGIN__/openrouter
+      model: fixture/research-chat
+      timeoutMs: 10000
+
+semanticOverlay:
+  embedding:
+    jina:
+      apiKey: browser-fixture-key
+      endpoint: __ICARUS_BROWSER_PROVIDER_ORIGIN__/jina
+      dimensions: 4
+      timeoutMs: 10000
+  materials:
+    generateDescriptors: false

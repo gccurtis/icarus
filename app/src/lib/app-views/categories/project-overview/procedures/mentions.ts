@@ -1,27 +1,21 @@
-import { rowsIn, since } from "$app-views/categories/project-overview/procedures/rows";
-import { nameOf } from "$app-views/categories/project-overview/procedures/resources";
-import type { Actor } from "$representation/data/types/core/actor";
+import {
+  type CommentActor,
+  type ReadCommentsResult
+} from "$capabilities/comments/index.remote";
+import type { ProjectResourceIndex } from "$capabilities/project-resources/index.remote";
+import { since } from "$app-views/categories/project-overview/procedures/rows";
 
 export type Mention = {
   /** The discussion lifetime; the comment inspector is keyed by its thread. */
   readonly id: string;
   readonly age: string;
-  readonly author: Actor;
+  readonly author: CommentActor;
   readonly resource: string;
   readonly location?: string;
   readonly excerpt: string;
 };
 
 /** A comment names you when one of its mention marks points at you. */
-const names = (mentions: readonly { kind: string }[], viewer: string): boolean =>
-  mentions.some(
-    (mark) =>
-      mark.kind === "actor" &&
-      "actor" in mark &&
-      (mark.actor as Actor).kind === "user" &&
-      (mark.actor as { userId: string }).userId === viewer
-  );
-
 /**
  * Comments addressed to you, newest first.
  *
@@ -30,29 +24,28 @@ const names = (mentions: readonly { kind: string }[], viewer: string): boolean =
  * than one fewer row in a band that is already the shortest on the board.
  */
 export const mentions = (
-  projectId: string,
   viewer: string,
-  now: number
+  now: number,
+  feed: ReadCommentsResult | undefined,
+  resourceIndex: ProjectResourceIndex | undefined
 ): readonly Mention[] => {
-  const threads = rowsIn("commentThreads");
-
-  return rowsIn("comments")
-    .filter((comment) => comment.projectId === projectId && names(comment.mentions, viewer))
+  const resources = resourceIndex?.resources ?? [];
+  return (feed?.remarks ?? [])
+    .filter((comment) => comment.mentionedUserIds.includes(viewer))
     .slice()
     .sort((a, b) => b._creationTime - a._creationTime)
     .flatMap((comment) => {
-      const thread = threads.find((candidate) => candidate._id === comment.threadId);
+      const thread = feed?.threads.find((candidate) => candidate._id === comment.threadId);
       if (thread === undefined) return [];
 
-      const first = comment.blocks[0];
       return [
         {
           id: thread._id,
           age: since(comment._creationTime, now),
           author: comment.author,
-          resource: nameOf(projectId, thread.target.id, now),
+          resource: resources.find((resource) => resource.id === thread.target.id)?.name ?? thread.target.id,
           location: thread.quote,
-          excerpt: first !== undefined && first.type === "text" ? first.display : ""
+          excerpt: comment.text
         }
       ];
     });

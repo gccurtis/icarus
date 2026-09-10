@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { projectResource } from "$representation/data/behavior/semantic/projection/project-resource";
+import { asId } from "$representation/data/behavior/core/id";
 import type {
   ImageBlock,
   PromptBlock,
@@ -101,7 +102,7 @@ describe("semantic material projection", () => {
   it("keeps table values native while exact text retains only authored labels", () => {
     const projection = projectResource({
       kind: "document",
-      ref: { kind: "document", id: "sales" },
+      ref: { kind: "document", id: asId<"documents">("documents:sales") },
       revision: 3,
       title: "Sales report",
       body: {
@@ -146,14 +147,14 @@ describe("semantic material projection", () => {
     const native = table();
     const documentProjection = projectResource({
       kind: "document",
-      ref: { kind: "document", id: "doc" },
+      ref: { kind: "document", id: asId<"documents">("documents:doc") },
       revision: 1,
       title: "Doc",
       body: { rows: [{ id: "row", kind: "blocks", blocks: [native] }] }
     });
     const slides = projectResource({
       kind: "slides",
-      ref: { kind: "slides", id: "deck" },
+      ref: { kind: "slides", id: asId<"slideDecks">("slideDecks:deck") },
       revision: 1,
       title: "Deck",
       body: deckWith(native)
@@ -180,7 +181,7 @@ describe("semantic material projection", () => {
     });
     const projection = projectResource({
       kind: "document",
-      ref: { kind: "document", id: "brand" },
+      ref: { kind: "document", id: asId<"documents">("documents:brand") },
       revision: 2,
       title: "Brand",
       body: {
@@ -233,7 +234,7 @@ describe("semantic material projection", () => {
     };
     const documentProjection = projectResource({
       kind: "document",
-      ref: { kind: "document", id: "nested" },
+      ref: { kind: "document", id: asId<"documents">("documents:nested") },
       revision: 1,
       title: "Nested",
       body: { rows: [{ id: "row", kind: "blocks", blocks: [outer] }] }
@@ -258,7 +259,10 @@ describe("semantic material projection", () => {
 
     const slideProjection = projectResource({
       kind: "slides",
-      ref: { kind: "slides", id: "nested-deck" },
+      ref: {
+        kind: "slides",
+        id: asId<"slideDecks">("slideDecks:nested-deck")
+      },
       revision: 1,
       title: "Nested deck",
       body: {

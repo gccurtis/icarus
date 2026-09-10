@@ -6,6 +6,7 @@ import {
   reportableRevision,
   visibleSet
 } from "$capabilities/resource-sets/api/shared/projection";
+import { resourceSetReferenceRefusal } from "$capabilities/resource-sets/api/shared/reference-validation";
 import { validateUpdateResourceSet } from "$capabilities/resource-sets/api/update-resource-set/validate-update-resource-set";
 import type { UpdateResourceSetResult } from "$capabilities/resource-sets/types/resource-sets";
 
@@ -46,13 +47,20 @@ export const updateResourceSet = async (input: unknown): Promise<UpdateResourceS
       detail: error instanceof Error ? error.message : String(error)
     };
   }
-  if (asked.patch.set?.include.some((term) => term.select === "set" && term.setId === held._id)) {
+  const nextSet = asked.patch.set ?? held.set;
+  const referenceRefusal = resourceSetReferenceRefusal(
+    store,
+    scope.projectId,
+    nextSet,
+    held._id
+  );
+  if (referenceRefusal !== undefined) {
     return {
       accepted: false,
       setId: asked.setId,
-      reason: "corrupt",
+      reason: "invalid-reference",
       revision: held.revision,
-      detail: "a set cannot include itself"
+      detail: referenceRefusal
     };
   }
 
@@ -62,7 +70,7 @@ export const updateResourceSet = async (input: unknown): Promise<UpdateResourceS
     projectId: held.projectId,
     name: asked.patch.name ?? held.name,
     ...(description === undefined || description === "" ? {} : { description }),
-    set: asked.patch.set ?? held.set,
+    set: nextSet,
     createdBy: held.createdBy,
     revision: held.revision + 1,
     updatedAt: Date.now()

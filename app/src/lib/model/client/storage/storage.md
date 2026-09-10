@@ -1,17 +1,15 @@
 # Storage
 
-> **Nothing writes to this object today, and nothing reads it.**
+> **Workspace persistence is not wired to this object yet.**
 >
 > Everything it persists is workbench state, and the workbench does not persist
 > while its stored shape is unsettled — a target instead of a `ResourceRef`, an
 > eleven-arm workspace state instead of an options blob. See
 > [workspace-state.md](../workspace-state/workspace-state.md).
 >
-> It is left **intact and unused** rather than torn out: the serialisation, the
-> version policy and the per-project key are all still right, and the section
-> types below carry no domain types, so nothing here had to change when the
-> workbench did. The document below describes the format as it stands, which is
-> the format persistence will be reconsidered against rather than resumed with.
+> The client runtime constructs it, but the workspace does not yet read or write
+> its workbench value. Its wire contract nevertheless names only current
+> represented identities and is validated as one indivisible document.
 
 ## Description
 
@@ -33,9 +31,9 @@ Storage owns:
 
 Consumers own:
 
-- what the values mean. Storage checks that a width could be a width; whether it
-  is an allowed width is the panel's business, and which resource kinds exist is
-  the workbench's.
+- display policy such as a panel's minimum and maximum width. Storage owns the
+  current wire vocabulary: category, category-specific identity, context, and
+  the complete stored shape.
 
 ## Lifetime
 
@@ -57,7 +55,7 @@ is open.
 
 | File | Holds |
 | --- | --- |
-| `types.ts` | The contract and the wire shape, importing nothing |
+| `types.ts` | The contract and the wire shape, using current represented ids |
 | `methods/serialize.ts` | `decode` / `encode`. Pure — no DOM, no `$app/*`, no runes |
 | `definition.ts` | The document, and write coalescing |
 | `constructor.ts` | The two `localStorage` calls, and the key |
@@ -84,7 +82,7 @@ lines into a file and leave the state they guard behind.
 
 | Field | Type | Meaning |
 | ----- | ---- | ------- |
-| `workbench` | `readonly PersistedWorkbench \| undefined` | What was stored last time, already validated. Undefined when the store was absent, corrupt, or written by an older version |
+| `workbench` | `readonly PersistedWorkbench \| undefined` | What was stored last time, already validated. Undefined when the store was absent, corrupt, or uses another version |
 
 ## Construction
 
@@ -105,10 +103,9 @@ anything else, which is what lets the format be tested without a DOM.
 
 ## Nothing here throws on bad input
 
-What is read was written by an older build, edited by hand, or corrupted. Absent
-and malformed are deliberately the same case: both mean "start from defaults",
-and the next write repairs the store because the whole document is rewritten each
-time.
+Stored text may be absent, malformed, or outside the one current version. Those
+cases deliberately mean the same thing: "start from defaults." A later save
+writes a fresh complete current document.
 
 A version mismatch **discards rather than migrates**. This is a cache of panel
 widths and open tabs; being wrong costs one re-drag, and migration code for it
@@ -132,17 +129,27 @@ already says what dies with the tab; this is that line, enforced.
 
 ## What it validates, and what it does not
 
-Storage checks that a value *could be* what it claims — an integer width, two
-strings for a ref — and drops what could not. It does **not** clamp to a panel's
-minimum or maximum: that is policy, it belongs to the component that enforces the
-drag, and putting it here would put the same number in two places.
+Storage admits one complete current document or discards it whole. Required
+fields must be present, optional fields must be valid when present, tuples have
+their exact current length, and objects may not carry unknown fields. It never
+fills a missing value, drops an invalid member, or interprets another shape as
+the current schema.
 
-It also does not know what a `ResourceKind` or a `ContextId` is. Doing so would
-make the stored format follow every domain change; the workbench drops what it no
-longer recognises.
+It does **not** clamp an otherwise valid width to a panel's minimum or maximum:
+that is policy, it belongs to the component that enforces the drag, and putting
+it here would put the same number in two places.
 
-An option that fails validation is dropped on its own rather than taking its tab
-with it. A bad width costs a re-drag; losing the tab loses the user's place.
+The tab discriminator is the current closed `Category` vocabulary, and each
+category proves the identity it stores: editor and research tabs require the
+matching canonical Store row namespace, analysis requires its canonical local
+identifier, and singleton or project-level surfaces require their one literal
+identity. A remembered context must be one current context belonging to that
+same category. Unknown categories, mismatched ids, duplicate tab identities,
+and an active identity absent from the tab list invalidate the whole document.
+
+A malformed nested option invalidates the complete stored document. This cache
+is cheap to discard, while silently constructing a shape no current writer
+emitted would be an unrepresented interpretation.
 
 ## Terminal Behaviour
 
@@ -165,9 +172,8 @@ pending at unload, and there is therefore nothing to close.
 - The document always carries the current `STORAGE_VERSION`; a document read at
   any other version is discarded whole.
 - What `decode` returns is always usable: every field it hands back has been
-  checked, and anything that failed is absent rather than repaired.
-- A write always serializes the whole document, so a store damaged by hand is
-  repaired by the next mutation.
+  checked, and any malformed current document was discarded whole.
+- A write always serializes one complete current document.
 
 ## File Tree
 

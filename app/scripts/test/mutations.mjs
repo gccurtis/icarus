@@ -348,9 +348,7 @@ export const MUTATIONS = [
             "    settings,\n" +
             "    documentRuntimes,\n" +
             "    slideDeckRuntimes,\n" +
-            "    spreadsheetRuntimes,\n" +
-            "    read,\n" +
-            "    username\n" +
+            "    spreadsheetRuntimes\n" +
             "  );";
           const again = call.replace("const workspaceState", "const probe");
           return text.replace(call, `${call}\n${again}\n  void probe;`);

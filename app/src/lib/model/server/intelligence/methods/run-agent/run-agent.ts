@@ -238,6 +238,7 @@ const invoke = async (
     }
     return parseTurn(await response.json());
   } catch (error) {
+    input.signal?.throwIfAborted();
     if (error instanceof IntelligenceServiceError) throw error;
     if (controller.signal.aborted) {
       throw new IntelligenceServiceError("OpenRouter request timed out", { cause: error });
@@ -262,6 +263,7 @@ export const runAgent = async <Value = string>(
   state: IntelligenceState,
   input: IntelligenceInput<Value>
 ): Promise<IntelligenceResult<Value>> => {
+  input.signal?.throwIfAborted();
   const userText = typeof input.user === "string" ? input.user : input.user.text;
   if (!input.system.trim() || !userText.trim()) {
     throw new IntelligenceServiceError("Intelligence prompts must not be blank");
@@ -295,12 +297,14 @@ export const runAgent = async <Value = string>(
   const unbounded = bound === -1;
 
   for (let round = 1; unbounded || round <= bound + 1; round += 1) {
+    input.signal?.throwIfAborted();
     const turn = await invoke(
       state,
       messages,
       input,
       round === 1 ? input.firstTool : undefined
     );
+    input.signal?.throwIfAborted();
     usage = addUsage(usage, turn.usage);
 
     if (turn.toolCalls.length === 0) {
@@ -346,6 +350,7 @@ export const runAgent = async <Value = string>(
           ok = true;
           if (call.function.name === input.finalTool) finished = true;
         } catch (error) {
+          input.signal?.throwIfAborted();
           output = { ok: false, error: safeError(error) };
         }
       }

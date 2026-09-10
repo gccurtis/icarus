@@ -1,6 +1,11 @@
 import type { StoreModel } from "$model/server/store/index.server";
 import type { Actor } from "$representation/data/types/core/actor";
 import type { ResourceRef } from "$representation/data/types/core/resource";
+import {
+  isStoredAgentTask,
+  isStoredAutomation,
+  isStoredPersona
+} from "$representation/data/behavior/agents/stored-rows";
 
 import { rowsIn } from "$capabilities/agents/api/shared/store";
 
@@ -21,12 +26,20 @@ const RESOURCE_TABLE: Record<string, "documents" | "slideDecks" | "spreadsheets"
 
 export const namesIn = (store: StoreModel, projectId: string): Names => {
   const users = new Map(rowsIn(store, "users").map((row) => [row._id as string, row.displayName]));
-  const personas = new Map(rowsIn(store, "personas").map((row) => [row._id as string, row.name]));
+  const personas = new Map(
+    rowsIn(store, "personas")
+      .filter(isStoredPersona)
+      .map((row) => [row._id as string, row.name])
+  );
   const automations = new Map(
-    rowsIn(store, "automations").map((row) => [row._id as string, row.name])
+    rowsIn(store, "automations")
+      .filter(isStoredAutomation)
+      .map((row) => [row._id as string, row.name])
   );
   const tasks = new Map(
-    rowsIn(store, "agentTasks").map((row) => [row._id as string, row.personaId as string])
+    rowsIn(store, "agentTasks")
+      .filter(isStoredAgentTask)
+      .map((row) => [row._id as string, row.personaId as string])
   );
   const resources = new Map<string, string>();
   for (const [kind, table] of Object.entries(RESOURCE_TABLE)) {

@@ -1,4 +1,5 @@
 import { ask, readThreads } from "$capabilities/research-chat/index.remote";
+import { readProjectResourceIndex } from "$capabilities/project-resources/index.remote";
 import type { WorkspaceStateModel } from "$model/client/workspace-state";
 
 import type { ThreadState } from "$app-views/categories/research/content/thread.state.svelte";
@@ -11,8 +12,8 @@ import { inspectTurn } from "$app-views/categories/research/procedures/inspect-t
  *
  * The field is cleared optimistically and the text is put back if the capability
  * refuses, so a rejected question is never lost. The first question also names
- * the chat, and the tab bar reads that name from the workspace's own copy of the
- * thread list, so that read is refreshed here rather than left stale.
+ * the chat, and the tab bar reads that name from the scoped represented-resource
+ * index, so that projection is refreshed here rather than left stale.
  */
 export const askQuestion = async (
   view: WorkspaceStateModel,
@@ -26,13 +27,12 @@ export const askQuestion = async (
   state.pending = true;
   state.failure = undefined;
   try {
-    const result = await view.singleFlight(flightKey(view, "ask", threadId), async () => {
-      const answered = await ask({ threadId, text: written, scope: state.chosenScope() }).updates(
-        readThreads
-      );
-      await view.readStore("researchThreads").refresh();
-      return answered;
-    });
+    const result = await view.singleFlight(flightKey(view, "ask", threadId), () =>
+      ask({ threadId, text: written, scope: state.chosenScope() }).updates(
+        readThreads,
+        readProjectResourceIndex
+      )
+    );
     if (!state.mounted) return;
     if (result.accepted) {
       state.claimed = result.turnId;

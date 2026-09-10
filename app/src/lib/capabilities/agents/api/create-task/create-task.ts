@@ -5,6 +5,7 @@ import { asId } from "$representation/data/behavior/core/id";
 import { validateCreateTask } from "$capabilities/agents/api/create-task/validate-create-task";
 import { findVisible, notFound, refused, viewer } from "$capabilities/agents/api/shared/lookup";
 import type { RowFields } from "$capabilities/agents/api/shared/store";
+import { scopeReferenceRefusal } from "$capabilities/agents/api/shared/scope-references";
 import { openThread } from "$capabilities/agents/api/shared/threads";
 import type { WriteResult } from "$capabilities/agents/types/agents";
 
@@ -16,6 +17,10 @@ export const createTask = async (input: unknown): Promise<WriteResult> => {
   const found = findVisible(store, scope, "personas", asked.personaId);
   if (found.kind !== "found") return notFound(asked.personaId, "persona");
   const persona = found.row;
+  const scopeRefusal = scopeReferenceRefusal(store, scope.projectId, asked.scope);
+  if (scopeRefusal !== undefined) {
+    return refused(asked.personaId, "invalid-state", scopeRefusal);
+  }
   const at = Date.now();
   const actor = viewer(scope);
   const id = store.transaction((unit) => {

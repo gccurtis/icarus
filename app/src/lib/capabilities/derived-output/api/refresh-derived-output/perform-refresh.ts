@@ -1,4 +1,5 @@
 import type { ServerModel } from "$runtime/server/start.server";
+import { OperationFlightsShutdownError } from "$model/server/operation-flights/index.server";
 import {
   changedSemanticMaterials,
   changedSemanticSources
@@ -27,9 +28,16 @@ import {
   outputOf,
   responseBlock
 } from "$capabilities/derived-output/api/shared/rows";
+import { visibleScopeOf } from "$capabilities/derived-output/api/shared/scope-projection";
 import { synthesize } from "$capabilities/derived-output/api/shared/synthesis";
 
 type RefreshRequest = ReturnType<typeof validateRefreshDerivedOutput>;
+
+const throwIfServerShutdown = (signal: AbortSignal): void => {
+  if (signal.aborted && signal.reason instanceof OperationFlightsShutdownError) {
+    throw signal.reason;
+  }
+};
 
 export const performDerivedOutputRefresh = async (
   model: ServerModel,
@@ -37,9 +45,44 @@ export const performDerivedOutputRefresh = async (
   asked: RefreshRequest,
   signal: AbortSignal
 ): Promise<RefreshDerivedOutputResult> => {
-  await prepareSemanticOverlay(model, projectId);
   const original = outputOf(model.store, projectId, asked.derivedOutputId);
   if (original === undefined) return null;
+
+  try {
+    await prepareSemanticOverlay(model, projectId, visibleScopeOf(model.store, original), signal);
+  } catch (error) {
+    throwIfServerShutdown(signal);
+    signal.throwIfAborted();
+    const current = outputOf(model.store, projectId, original._id);
+    if (current === undefined) return null;
+    if (definitionKeyOf(current) !== definitionKeyOf(original)) {
+      return {
+        outcome: "superseded",
+        output: current,
+        attempts: 0,
+        toolCalls: 0,
+        usage: emptyUsage()
+      };
+    }
+    const failed = updateOutput(model, current, {
+      state: "error",
+      error: safeFailure(error),
+      updatedAt: Date.now()
+    });
+    model.observability.logger.warn("derivedOutput.refreshFailed", {
+      projectId,
+      derivedOutputId: original._id,
+      attempts: 0,
+      reason: "overlay"
+    });
+    return {
+      outcome: "failed",
+      output: failed,
+      attempts: 0,
+      toolCalls: 0,
+      usage: emptyUsage()
+    };
+  }
 
   if (original.state === "fresh" && asked.selection === undefined) {
     const changedSources = changedSemanticSources(
@@ -84,7 +127,6 @@ export const performDerivedOutputRefresh = async (
 
   try {
     for (attempts = 1; attempts <= maxRetries + 1; attempts += 1) {
-      if (attempts > 1) await prepareSemanticOverlay(model, projectId);
       const currentDefinition = outputOf(model.store, projectId, original._id);
       if (currentDefinition === undefined) return null;
       if (definitionKeyOf(currentDefinition) !== requestedDefinitionKey) {
@@ -96,18 +138,26 @@ export const performDerivedOutputRefresh = async (
           usage
         };
       }
+      const visibleScope = visibleScopeOf(model.store, currentDefinition);
+      if (attempts > 1) {
+        await prepareSemanticOverlay(model, projectId, visibleScope, signal);
+      }
       attemptedDefinitionKey = definitionKeyOf(currentDefinition);
+      const executionDefinition =
+        visibleScope === currentDefinition.scope
+          ? currentDefinition
+          : { ...currentDefinition, scope: visibleScope };
       const inputWatermark = semanticInputWatermark(model, projectId);
       const attempt = await synthesize({
-        output: currentDefinition,
+        output: executionDefinition,
         intelligence: model.intelligence,
         defaultTopK,
         signal,
-        query: async (query) => await querySemanticOverlay(query),
+        query: async (query) => await querySemanticOverlay(query, signal),
         reading: {
           model,
           ...(asked.selection === undefined ? {} : { selection: asked.selection }),
-          queryMaterials: async (query) => await querySemanticMaterials(query)
+          queryMaterials: async (query) => await querySemanticMaterials(query, signal)
         }
       });
       usage = addAttemptUsage(usage, attempt);
@@ -189,6 +239,7 @@ export const performDerivedOutputRefresh = async (
       return { outcome: "published", output: published, attempts, toolCalls, usage };
     }
   } catch (error) {
+    throwIfServerShutdown(signal);
     const current = outputOf(model.store, projectId, original._id);
     if (current === undefined) return null;
     if (definitionKeyOf(current) !== attemptedDefinitionKey) {

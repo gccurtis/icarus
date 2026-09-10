@@ -166,15 +166,6 @@ export const backendReference: AreaReference = {
       transitions: ["create from selection", "accepted text op → shift/filter", "resolve for display"],
       invariants: ["Server transform uses post-op body", "Deleted identities are never guessed", "An empty anchor does not delete the discussion"],
       sources: ["src/lib/representation/data/types/collaboration/anchor.ts", "src/lib/capabilities/document/api/submit-document-changes/transform-comment-anchor.ts"]
-    },
-    {
-      name: "Safe store projection",
-      owner: "Generic store capability",
-      shape: "scope-filtered records with a per-table allowlist of validated fields",
-      states: ["authorized result", "empty result", "invalid/ambiguous refusal"],
-      transitions: ["query → scope filter → field projection → decode"],
-      invariants: ["Project ownership is enforced", "Secrets/internal references remain omitted", "Comment anchor and resolution fields are explicitly allowlisted"],
-      sources: ["src/lib/capabilities/store/api/read/scoped-read.ts", "src/lib/capabilities/store/index.remote.ts"]
     }
   ],
   procedures: [
@@ -225,14 +216,6 @@ export const backendReference: AreaReference = {
       writes: "Canonical updated within value for each affected thread.",
       failure: "Unresolvable spans are removed from within; the thread remains as detached discussion.",
       sources: ["src/lib/capabilities/document/api/submit-document-changes/transform-comment-anchor.ts"]
-    },
-    {
-      name: "scoped store read",
-      role: "Project and return only safe table fields within the caller’s project boundary.",
-      reads: "Scope, requested table, stored records, field allowlist.",
-      writes: "No domain data; produces a validated projection.",
-      failure: "Unknown tables/shapes, ambiguous ownership, or out-of-scope records are rejected/omitted.",
-      sources: ["src/lib/capabilities/store/api/read/scoped-read.ts"]
     }
   ],
   structure: [
@@ -241,7 +224,7 @@ export const backendReference: AreaReference = {
     { path: "src/lib/representation/data/types/collaboration/anchor.ts + representation/store/tables.ts", role: "Store model", note: "Comment thread/comment/user records and the one canonical anchor shape." },
     { path: "src/lib/capabilities/document/api/*", role: "Document capability boundary", note: "Authorization, query, submit validation, catch-up, conflict refusal, persistence, and acknowledgement." },
     { path: "src/lib/capabilities/document/api/submit-document-changes/transform-comment-anchor.ts", role: "Annotation maintenance", note: "Canonical endpoint affinity, shift/filter, and detached behavior." },
-    { path: "src/lib/capabilities/store/api/read/scoped-read.ts", role: "Generic store capability", note: "Scoped safe-field projection used by workspace queries." }
+    { path: "src/lib/capabilities/comments/api/read-comments/read-comments.ts", role: "Comment read boundary", note: "Project-scoped current-shape threads, remarks, and safe people for browser views." }
   ],
   review: [
     { tone: "settled", title: "Representation is editor-independent", detail: "The operation model, applier, inverse behavior, furniture, links, and anchors can be tested without Svelte or ProseMirror." },

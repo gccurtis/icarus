@@ -7,6 +7,10 @@
 
   import MessageSquare from "@lucide/svelte/icons/message-square";
   import MessagesSquare from "@lucide/svelte/icons/messages-square";
+  import {
+    resourceName,
+    resourceIndex
+  } from "$app-views/categories/document-editor/procedures/resource-index";
 
   import {
     ANNOTATIONS,
@@ -19,9 +23,11 @@
     type PinState
   } from "$app-views/categories/document-editor/procedures/annotations";
   import {
-    anchoredOf,
+    commentsQuery,
+    threadsIn,
     threadsOf
   } from "$app-views/categories/document-editor/procedures/comments";
+  import { anchoredOf } from "$app-views/categories/document-editor/procedures/comment-anchors";
   import { mergeRow, splitRow } from "$app-views/categories/document-editor/procedures/editing";
   import {
     PAGE_NUMBERS,
@@ -64,9 +70,9 @@
     type Metrics
   } from "$app-views/categories/document-editor/procedures/projection";
   import { promptBlocksIn } from "$app-views/categories/document-editor/procedures/prompt-blocks";
+  import { resourceTemplate } from "$app-views/categories/document-editor/procedures/template-resources";
   import { schema } from "$app-views/categories/document-editor/procedures/schema";
   import { translate } from "$app-views/categories/document-editor/procedures/translate";
-  import { rowsOf, tableQuery } from "$app-views/categories/document-editor/procedures/store";
   import { workspaceState } from "$model/client/workspace-state";
   import type { DocumentRuntime, PendingMarks, SyncState } from "$model/client/workspace-state";
 
@@ -93,11 +99,12 @@
   const view = workspaceState();
 
   const documentId = view.active.resourceId;
-  const documentsQuery = tableQuery("documents");
+  const resources = resourceIndex();
+  const template = documentId === undefined ? undefined : resourceTemplate(documentId);
 
   const documentTitle = $derived.by(() => {
     if (documentId === undefined) return undefined;
-    return rowsOf(documentsQuery, "documents").find((document) => document._id === documentId)?.title;
+    return resourceName(resources, documentId, template?.current);
   });
 
   let runtime = $state<DocumentRuntime | undefined>(undefined);
@@ -115,10 +122,10 @@
   }>({ comments: [], prompts: [] });
   let appliedThreadKey = "";
 
-  const threadsQuery = tableQuery("commentThreads");
+  const comments = commentsQuery();
 
   const threads = $derived(
-    documentId === undefined ? [] : threadsOf(rowsOf(threadsQuery, "commentThreads"), documentId)
+    documentId === undefined ? [] : threadsOf(threadsIn(comments), documentId)
   );
   const current = $derived(view.inspected === "document-editor.comment" ? view.selection?.id : undefined);
   const threadKey = $derived(

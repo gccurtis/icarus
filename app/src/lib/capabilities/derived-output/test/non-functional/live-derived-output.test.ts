@@ -5,6 +5,7 @@ import { createEmbedding } from "$model/server/embedding/index.server";
 import { createIntelligence } from "$model/server/intelligence/index.server";
 import { buildRecursiveIndex } from "$representation/data/behavior/semantic/recursive-index";
 import { searchRecursiveIndex } from "$representation/data/behavior/semantic/query";
+import { asId } from "$representation/data/behavior/core/id";
 import type { Id } from "$representation/data/types/core/id";
 import type { DerivedOutput } from "$representation/data/types/semantic/derived-output";
 import { synthesize } from "$capabilities/derived-output/api/shared/synthesis";
@@ -25,7 +26,10 @@ test.runIf(live)("real Jina retrieval grounds a real OpenRouter tool loop", asyn
     id: `semanticObjects:${index + 1}` as Id<"semanticObjects">,
     vector,
     source: {
-      ref: { kind: "document", id: `brief-${index + 1}` },
+      ref: {
+        kind: "document" as const,
+        id: asId<"documents">(`documents:brief-${index + 1}`)
+      },
       revision: 1,
       encoding: "utf-16" as const
     },

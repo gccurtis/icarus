@@ -77,8 +77,17 @@ window is real: the Node adapter drains in-flight requests for up to thirty
 seconds after the signal, and keep-alive connections keep delivering.
 
 Shutdown releases what the graph holds: operation flights abort active provider
-work and clear their deadlines, then observability closes its log stream. It is
-idempotent: a second call does nothing, and no call after it revives the graph.
+work, clear their deadlines, and drain the capabilities' terminal persistence;
+only then does observability close its log stream. It is idempotent: a second
+call joins the same drain, and no call after it revives the graph.
+
+The development-only browser reset uses that same close boundary. Reset requests
+are sequenced; each one aborts and drains the old graph before its disposable
+Store directory is restored and a new graph is published. A terminal catch from
+the old graph therefore cannot write into the next test's restored fixture. If
+restoring or rebuilding fails after the old graph is released, the next
+authorized reset may restore and rebuild from that explicit graphless state;
+ordinary initialization and request access still cannot do so.
 
 ## Scoped accessors live on this root
 

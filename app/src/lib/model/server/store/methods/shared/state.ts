@@ -1,4 +1,5 @@
 import type { AnyRow } from "$representation/store/path";
+import { admitAnyRows } from "$representation/store/current-row";
 import type { TableName } from "$representation/store/tables";
 
 import type { StoreState } from "$model/server/store/definition";
@@ -45,11 +46,12 @@ export const replaceRows = (
   rows: readonly AnyRow[]
 ): void => {
   requireAvailable(state);
+  const current = admitAnyRows(table, rows);
   if (state.kind === "unit-of-work") {
-    state.tables.set(table, rows);
+    state.tables.set(table, current);
     state.changed.add(table);
     return;
   }
-  persist(state.directory, table, rows);
-  state.tables.set(table, rows);
+  persist(state.directory, table, current);
+  state.tables.set(table, current);
 };

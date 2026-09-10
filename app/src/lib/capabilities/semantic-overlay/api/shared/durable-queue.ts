@@ -4,6 +4,7 @@ import type { Id } from "$representation/data/types/core/id";
 import type { ResourceRef } from "$representation/data/types/core/resource";
 
 import { rowsOf } from "$capabilities/semantic-overlay/api/shared/rows";
+import { safeSemanticFailure } from "$capabilities/semantic-overlay/api/shared/safe-failure";
 import { sameResourceRef } from "$capabilities/semantic-overlay/api/shared/resource-ref";
 
 type SemanticJobTable = "semanticSyncJobs" | "semanticMaterialJobs";
@@ -50,6 +51,7 @@ type ProcessQueueInput<Result extends SemanticWorkerResult> = {
   readonly projectId: Id<"projects">;
   readonly limit: number;
   readonly ref?: ResourceRef;
+  readonly signal?: AbortSignal;
   readonly run: (
     job: DurableSemanticJob,
     assertClaim: (unit: StoreUnitOfWork) => void
@@ -59,12 +61,6 @@ type ProcessQueueInput<Result extends SemanticWorkerResult> = {
 const MAX_ATTEMPTS = 3;
 const LEASE_MS = 5 * 60_000;
 const HEARTBEAT_MS = Math.floor(LEASE_MS / 3);
-
-const safeFailure = (error: unknown): string =>
-  (error instanceof Error ? error.message : "Semantic synchronization failed")
-    .replace(/Bearer\s+\S+/gi, "Bearer [redacted]")
-    .replace(/(?:api[-_ ]?key)\s*[:=]\s*\S+/gi, "apiKey=[redacted]")
-    .slice(0, 400);
 
 const jobsIn = (
   model: ServerModel,
@@ -224,6 +220,21 @@ const fail = <Result extends SemanticWorkerResult>(
   return "failed";
 });
 
+/** Return an interrupted claim to the queue without spending a provider attempt. */
+const releaseInterruptedClaim = <Result extends SemanticWorkerResult>(
+  input: ProcessQueueInput<Result>,
+  claimed: DurableSemanticJob
+): void => input.model.store.transaction((unit) => {
+  const current = claimIn(unit, input.table, input.projectId, claimed);
+  if (current === undefined) return;
+  requeueIn(
+    unit,
+    input.table,
+    { ...current, attempts: Math.max(0, current.attempts - 1) },
+    false
+  );
+});
+
 /** Atomically claims, runs, and settles one bounded semantic queue batch. */
 export const processDurableSemanticQueue = async <Result extends SemanticWorkerResult>(
   input: ProcessQueueInput<Result>
@@ -231,6 +242,7 @@ export const processDurableSemanticQueue = async <Result extends SemanticWorkerR
   const processed: DurableSemanticProcessed<Result>[] = [];
   const attempted = new Set<string>();
   for (let count = 0; count < input.limit; count += 1) {
+    input.signal?.throwIfAborted();
     const job = claimOne(input, attempted);
     if (job === undefined) break;
     attempted.add(job._id);
@@ -247,10 +259,19 @@ export const processDurableSemanticQueue = async <Result extends SemanticWorkerR
     }, HEARTBEAT_MS);
     try {
       const result = await input.run(job, assertClaim);
+      input.signal?.throwIfAborted();
       complete(input, job, result, assertClaim);
       processed.push({ jobId: job._id, ref: job.ref, result });
     } catch (error) {
-      const message = safeFailure(error);
+      if (input.signal?.aborted === true) {
+        releaseInterruptedClaim(input, job);
+        throw input.signal.reason instanceof Error
+          ? input.signal.reason
+          : new Error("Semantic synchronization was interrupted", {
+              cause: input.signal.reason
+            });
+      }
+      const message = safeSemanticFailure(error);
       const outcome = fail(input, job, message);
       processed.push({
         jobId: job._id,
@@ -262,11 +283,16 @@ export const processDurableSemanticQueue = async <Result extends SemanticWorkerR
     }
   }
 
+  input.signal?.throwIfAborted();
+
+  const inRequestedScope = (job: DurableSemanticJob): boolean =>
+    job.projectId === input.projectId &&
+    (input.ref === undefined || sameResourceRef(job.ref, input.ref));
   const unresolved = jobsIn(input.model, input.table).filter(
-    (job) => job.projectId === input.projectId && job.state !== "failed"
+    (job) => inRequestedScope(job) && job.state !== "failed"
   );
   const failed = jobsIn(input.model, input.table)
-    .filter((job) => job.projectId === input.projectId && job.state === "failed")
+    .filter((job) => inRequestedScope(job) && job.state === "failed")
     .map((job) => ({ jobId: job._id, ref: job.ref, error: job.error ?? "Semantic synchronization failed" }));
   return { processed, remaining: unresolved.length, failed };
 };

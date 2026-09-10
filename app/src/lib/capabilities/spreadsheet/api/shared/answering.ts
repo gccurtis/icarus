@@ -1,7 +1,11 @@
 import type { StoreUnitOfWork } from "$model/server/store/index.server";
 import { addressesIn, writeAddress } from "$representation/data/behavior/formulas/addresses";
 import { applyOps } from "$representation/data/behavior/spreadsheets/apply-ops";
-import { emptyBody } from "$representation/data/behavior/spreadsheets/empty-sheet";
+import { isStoredSpreadsheetSnapshot } from "$representation/data/behavior/spreadsheets/stored-snapshot";
+import {
+  isStoredDataBackReference,
+  isStoredFormula
+} from "$representation/data/behavior/spreadsheets/stored-formula";
 import {
   recalculated,
   sourceOf,
@@ -39,11 +43,14 @@ export const surroundingsOf = (
   const sheets = new Map<string, SheetSource>();
   const snapshots = store.read("spreadsheetSnapshots");
   if (snapshots?.table === "spreadsheetSnapshots" && snapshots.kind === "table") {
+    if (!snapshots.rows.every(isStoredSpreadsheetSnapshot)) {
+      throw new Error("the spreadsheetSnapshots table contains a non-current row");
+    }
     for (const row of snapshots.rows) {
       if (row.projectId !== projectId || row.role !== "leader") continue;
       if (row.resourceId === here) continue;
       const cells = cellsOf(cellRowsOf(store, projectId, row.resourceId));
-      sheets.set(row.resourceId, sourceOf(row.resourceId, { body: row.body ?? emptyBody(), cells }));
+      sheets.set(row.resourceId, sourceOf(row.resourceId, { body: row.body, cells }));
     }
   }
 
@@ -85,7 +92,12 @@ export const writeFormulas = (
   sheet: LiveSheet
 ): LiveSheet => {
   const rows = unit.read("formulas");
-  const held = rows?.table === "formulas" && rows.kind === "table" ? rows.rows.filter((row) => row.projectId === projectId) : [];
+  const all = rows?.table === "formulas" && rows.kind === "table" ? rows.rows : [];
+  if (!all.every(isStoredFormula)) {
+    throw new Error("the formulas table contains a non-current row");
+  }
+  const held = all.filter((row) => row.projectId === projectId);
+  const usesById = new Map(held.map((row) => [row._id, row.usedBy]));
   const byText = new Map(held.map((row) => [row.representation, row]));
 
   const at = Date.now();
@@ -99,7 +111,7 @@ export const writeFormulas = (
   for (const [representation, keys] of wanted) {
     const existing = byText.get(representation);
     const uses = [
-      ...(existing?.usedBy ?? []).filter(
+      ...(existing === undefined ? [] : usesById.get(existing._id)!).filter(
         (use) =>
           !(
             use.in === "resource" &&
@@ -117,13 +129,19 @@ export const writeFormulas = (
     }
     idOf.set(representation, existing._id);
     if (JSON.stringify(existing.usedBy) !== JSON.stringify(uses)) {
-      unit.update(`formulas.${existing._id}`, { ...existing, usedBy: uses, updatedAt: at });
+      unit.update(`formulas.${existing._id}`, {
+        projectId: existing.projectId,
+        representation: existing.representation,
+        usedBy: uses,
+        updatedAt: at
+      });
     }
   }
 
   for (const row of held) {
     if (wanted.has(row.representation)) continue;
-    const kept = (row.usedBy ?? []).filter(
+    const previous = usesById.get(row._id)!;
+    const kept = previous.filter(
       (use) =>
         !(
           use.in === "resource" &&
@@ -131,20 +149,30 @@ export const writeFormulas = (
           use.ref.id === resourceId
         )
     );
-    if (kept.length === (row.usedBy ?? []).length) continue;
+    if (kept.length === previous.length) continue;
     if (kept.length === 0) {
       unit.remove(`formulas.${row._id}`);
       clearBackReferences(unit, row._id);
       continue;
     }
-    unit.update(`formulas.${row._id}`, { ...row, usedBy: kept, updatedAt: at });
+    unit.update(`formulas.${row._id}`, {
+      projectId: row.projectId,
+      representation: row.representation,
+      usedBy: kept,
+      updatedAt: at
+    });
   }
 
   const cells = { ...sheet.cells };
   for (const [key, cell] of Object.entries(cells)) {
     const wantedId = cell.expression === undefined ? undefined : idOf.get(cell.expression);
     if (cell.formulaId === wantedId) continue;
-    cells[key] = wantedId === undefined ? { ...cell, formulaId: undefined } : { ...cell, formulaId: wantedId };
+    if (wantedId === undefined) {
+      const { formulaId: _formulaId, ...withoutFormula } = cell;
+      cells[key] = withoutFormula;
+    } else {
+      cells[key] = { ...cell, formulaId: wantedId };
+    }
   }
   return { ...sheet, cells };
 };
@@ -152,6 +180,9 @@ export const writeFormulas = (
 const clearBackReferences = (unit: StoreUnitOfWork, formulaId: Id<"formulas">): void => {
   const rows = unit.read("dataBackReferences");
   if (rows?.table !== "dataBackReferences" || rows.kind !== "table") return;
+  if (!rows.rows.every(isStoredDataBackReference)) {
+    throw new Error("the dataBackReferences table contains a non-current row");
+  }
   for (const row of rows.rows) {
     if (row.formulaId === formulaId) unit.remove(`dataBackReferences.${row._id}`);
   }

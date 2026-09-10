@@ -18,6 +18,7 @@
   import { mountsTheGrid } from "$authored-components/sheet-surface/procedures/effects/mounts-the-grid.svelte";
   import { rendersTheGrid } from "$authored-components/sheet-surface/procedures/effects/renders-the-grid.svelte";
   import { scrollsToACell } from "$authored-components/sheet-surface/procedures/effects/scrolls-to-a-cell.svelte";
+  import { tracksSelectionGestures } from "$authored-components/sheet-surface/procedures/effects/tracks-selection-gestures.svelte";
   import type {
     SurfaceApi,
     SurfaceEdit,
@@ -50,7 +51,8 @@
     onappend,
     onappendcolumn,
     oncontext,
-    onbegin
+    onbegin,
+    onselectiongesture
   }: {
     scene: SurfaceScene;
     selection?: SurfaceSelection;
@@ -78,6 +80,8 @@
      * so everything it can do is available every time.
      */
     onbegin?: (seed: string) => void;
+    /** A primary-pointer selection starts or finishes. */
+    onselectiongesture?: (active: boolean) => void;
   } = $props();
 
   const APPEND_COLUMN = "append";
@@ -187,6 +191,11 @@
   };
 
   followsTheScroller(held);
+
+  tracksSelectionGestures({
+    node: () => held.host,
+    change: () => onselectiongesture
+  });
 
   mountsTheGrid({
     held,

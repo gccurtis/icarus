@@ -22,9 +22,11 @@ export const syncSemanticMaterialsFor = async (
   projectId: Id<"projects">,
   ref: ResourceRef,
   force = false,
-  assertClaim?: (unit: StoreUnitOfWork) => void
+  assertClaim?: (unit: StoreUnitOfWork) => void,
+  signal?: AbortSignal
 ): Promise<SyncSemanticMaterialsResult> => {
-  const inventory = await readMaterialInventoryFor(model, projectId, ref);
+  signal?.throwIfAborted();
+  const inventory = await readMaterialInventoryFor(model, projectId, ref, signal);
   if (inventory === undefined) return { outcome: "missing", ref };
   const inventorySeeds = withDepartedExternalImages(
     model,
@@ -62,9 +64,11 @@ export const syncSemanticMaterialsFor = async (
     model,
     projectId,
     normalized,
-    force
+    force,
+    signal
   );
-  const latest = await readMaterialInventoryFor(model, projectId, ref);
+  signal?.throwIfAborted();
+  const latest = await readMaterialInventoryFor(model, projectId, ref, signal);
   const latestSeeds =
     latest === undefined
       ? []
@@ -87,6 +91,7 @@ export const syncSemanticMaterialsFor = async (
       usage
     };
   }
+  signal?.throwIfAborted();
   return model.store.transaction((unit) => {
     assertClaim?.(unit);
     return publishSemanticMaterials(

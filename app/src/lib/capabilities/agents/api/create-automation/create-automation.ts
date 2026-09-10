@@ -5,6 +5,7 @@ import { asId } from "$representation/data/behavior/core/id";
 import { validateCreateAutomation } from "$capabilities/agents/api/create-automation/validate-create-automation";
 import { findVisible, notFound, refused, viewer } from "$capabilities/agents/api/shared/lookup";
 import type { RowFields } from "$capabilities/agents/api/shared/store";
+import { scopeReferenceRefusal } from "$capabilities/agents/api/shared/scope-references";
 import type { WriteResult } from "$capabilities/agents/types/agents";
 
 export const createAutomation = async (input: unknown): Promise<WriteResult> => {
@@ -15,6 +16,10 @@ export const createAutomation = async (input: unknown): Promise<WriteResult> => 
   const found = findVisible(store, scope, "personas", asked.personaId);
   if (found.kind !== "found") return notFound(asked.personaId, "persona");
   const persona = found.row;
+  const scopeRefusal = scopeReferenceRefusal(store, scope.projectId, asked.scope);
+  if (scopeRefusal !== undefined) {
+    return refused(asked.personaId, "invalid-state", scopeRefusal);
+  }
   const at = Date.now();
   const fields: RowFields<"automations"> = {
     projectId: asId<"projects">(scope.projectId),

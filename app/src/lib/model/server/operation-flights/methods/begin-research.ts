@@ -8,8 +8,17 @@ export const beginResearch = (
   turnId: string
 ): ResearchFlight => {
   assertOpen(state);
+  if (state.research.has(turnId)) {
+    throw new Error(`research flight ${turnId} is already active`);
+  }
+  let settle!: () => void;
+  const settled = new Promise<void>((resolve) => {
+    settle = resolve;
+  });
   const held: HeldResearchFlight = {
     controller: new AbortController(),
+    settled,
+    settle,
     stopping: false
   };
   state.research.set(turnId, held);

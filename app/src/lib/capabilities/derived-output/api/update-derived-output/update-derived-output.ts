@@ -9,6 +9,7 @@ import {
   responseBlock,
   writeOutput
 } from "$capabilities/derived-output/api/shared/rows";
+import { assertReusableScopeReferences } from "$capabilities/derived-output/api/shared/scope-references";
 
 /**
  * update-derived-output.
@@ -27,6 +28,9 @@ export const updateDerivedOutput = async (input: unknown): Promise<UpdateDerived
   if (output === undefined) return null;
   if (output.template !== undefined) {
     throw new Error("A templated derived output cannot be edited through the prompt update path");
+  }
+  if (asked.scope !== undefined) {
+    assertReusableScopeReferences(model.store, projectId, asked.scope);
   }
   const nextScope = asked.scope ?? output.scope;
   const sameDefinition =

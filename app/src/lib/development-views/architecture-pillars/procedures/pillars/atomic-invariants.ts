@@ -111,9 +111,9 @@ return { threadId, commentId }`,
       guarantee: "Snapshot, change set, resource leader, and revision number always describe the same accepted edit history.",
       detects: "Orphan snapshots/change sets, leader pointers to absent bodies, duplicate revision acceptance, and acknowledged but invisible edits.",
       implementation:
-        "Define a reusable revision invariant assertion and run it before/after success, conflict, injected persistence failure, and restart for every editor subject.",
+        "Identify resource-revision submissions by their submit-*-changes entry, then define a reusable revision invariant assertion and run it before/after success, conflict, injected persistence failure, and restart for every editor subject.",
       current: "Enforced; document and slide-deck revision atomicity contracts are baselined as missing.",
-      limit: "This domain check complements rather than replaces generic transaction fault testing."
+      limit: "This domain check complements rather than replaces generic transaction fault testing; incidental maintenance of snapshots or change sets outside a submit-*-changes entry does not make a capability a revision subject."
     }
   ],
   rollout: [

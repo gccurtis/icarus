@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { createOperationFlights } from "$model/server/operation-flights/index.server";
+import {
+  createOperationFlights,
+  OperationFlightsShutdownError
+} from "$model/server/operation-flights/index.server";
 
 const deferred = <T>() => {
   let resolve!: (value: T) => void;
@@ -65,6 +68,16 @@ describe("OperationFlights", () => {
     }
   });
 
+  it("refuses to replace an active research flight", () => {
+    const model = createOperationFlights();
+    const first = model.beginResearch("turn:duplicate");
+
+    expect(() => model.beginResearch("turn:duplicate")).toThrow(/already active/);
+    expect(model.research("turn:duplicate")?.signal).toBe(first.signal);
+
+    model.endResearch("turn:duplicate");
+  });
+
   it("aborts every owned controller and rejects new work at shutdown", async () => {
     const model = createOperationFlights();
     let derivedSignal: AbortSignal | undefined;
@@ -77,15 +90,29 @@ describe("OperationFlights", () => {
     const research = model.beginResearch("turn:shutdown");
     await Promise.resolve();
 
-    model.close();
+    const closing = model.close();
+    let closed = false;
+    void closing.then(() => {
+      closed = true;
+    });
 
     expect(derivedSignal?.aborted).toBe(true);
+    expect(derivedSignal?.reason).toBeInstanceOf(OperationFlightsShutdownError);
     expect(research.signal.aborted).toBe(true);
     expect(research.reason()).toBe("shutdown");
+    expect(closed).toBe(false);
+    expect(model.close()).toBe(closing);
     expect(() => model.beginResearch("turn:new")).toThrow(/closed/);
     expect(() => model.shareDerived("output:new", "definition:1", async () => "no"))
       .toThrow(/closed/);
+
     never.resolve();
     await derived.promise;
+    await Promise.resolve();
+    expect(closed).toBe(false);
+
+    model.endResearch("turn:shutdown");
+    await closing;
+    expect(closed).toBe(true);
   });
 });

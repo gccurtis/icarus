@@ -25,9 +25,17 @@ export type ProjectActivityEntry = {
 
 export type ReadProjectOverviewResult = {
   readonly projectId: string;
+  readonly viewerId: string;
+  readonly name: string;
+  readonly description: string;
   readonly status: "active" | "archived";
   readonly viewerRole: string;
   readonly createdAt: number;
+  readonly people: readonly {
+    readonly id: string;
+    readonly name: string;
+    readonly role: string;
+  }[];
 } | null;
 
 export type ReadProjectHistoryInput = {
@@ -111,13 +119,15 @@ export type ProjectCommentAnchor =
   | { readonly kind: "document-text"; readonly blockId: string }
   | { readonly kind: "slide"; readonly slideId: string }
   | { readonly kind: "element"; readonly elementId: string }
+  | { readonly kind: "cell"; readonly rowId: string; readonly columnId: string }
   | null;
 
 export type ProjectCommentRemark = {
   readonly id: string;
   readonly at: number;
   readonly author: ProjectPanelActor | null;
-  readonly authorLabel: string;
+  /** Present only while the historical actor remains inspectable in this project. */
+  readonly authorLabel?: string;
   readonly text: string;
 };
 

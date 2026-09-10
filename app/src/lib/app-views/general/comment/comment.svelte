@@ -12,19 +12,18 @@
     PanelQuote
   } from "$authored-components/panel";
   import { Textarea } from "$vendored-components/textarea";
-  import { create, remove, update } from "$capabilities/store/index.remote";
+  import { commentThreadCommand } from "$app-views/general/comment/comment-thread-command.svelte";
   import {
     ago,
     blockIdOf,
+    commentsQuery,
     nameOf,
-    refreshAll,
+    peopleIn,
+    remarksIn,
     remarksOf,
-    replyFields,
-    rowsIn,
-    rowsOf,
-    tableQuery,
     textOf,
     threadOf,
+    threadsIn,
     userIdOf,
     viewerId,
     type CommentThread
@@ -42,14 +41,13 @@
   const view = workspaceState();
 
   const threadId = $derived(view.selection?.id ?? "");
-  const threadsQuery = tableQuery("commentThreads");
-  const remarksQuery = tableQuery("comments");
-  const threads = $derived(rowsOf(threadsQuery, "commentThreads"));
+  const comments = commentsQuery();
+  const threads = $derived(threadsIn(comments));
   const thread = $derived(threadOf(threads, threadId));
-  const remarks = $derived(thread === undefined ? [] : remarksOf(rowsOf(remarksQuery, "comments"), thread._id));
+  const remarks = $derived(thread === undefined ? [] : remarksOf(remarksIn(comments), thread._id));
   const opening = $derived(remarks[0]);
-  const users = $derived(rowsIn("users"));
-  const viewer = $derived(viewerId());
+  const users = $derived(peopleIn(comments));
+  const viewer = $derived(viewerId(comments));
   const now = Date.now();
 
   const resolved = $derived(thread?.resolution);
@@ -58,54 +56,25 @@
   );
 
   let reply = $state("");
-  let busy = $state(false);
-  let failed = $state<string | undefined>(undefined);
+  const command = commentThreadCommand();
+  const busy = $derived(command.busy);
+  const failed = $derived(command.failed);
   let composer = $state<HTMLTextAreaElement | null>(null);
 
-  const attempt = async (act: () => Promise<void>) => {
-    busy = true;
-    failed = undefined;
-    try {
-      await act();
-    } catch (error) {
-      failed = error instanceof Error ? error.message : "That did not save.";
-    } finally {
-      busy = false;
-    }
+  const send = () => {
+    const held = thread;
+    const text = reply.trim();
+    if (held === undefined || text.length === 0) return;
+    command.reply(held._id, text, () => (reply = ""));
   };
 
-  const send = () =>
-    attempt(async () => {
-      const held = thread;
-      const text = reply.trim();
-      if (held === undefined || text.length === 0) return;
+  const resolve = () => {
+    if (thread !== undefined) command.setResolved(thread._id, true);
+  };
 
-      await create({ table: "comments", fields: replyFields(held, text, viewer) });
-      await update({ path: `commentThreads.${held._id}.updatedAt`, value: Date.now() });
-      reply = "";
-      await refreshAll(remarksQuery, threadsQuery);
-    });
-
-  const resolve = () =>
-    attempt(async () => {
-      const held = thread;
-      if (held === undefined) return;
-
-      await update({
-        path: `commentThreads.${held._id}.resolution`,
-        value: { by: viewer, at: Date.now() }
-      });
-      await refreshAll(threadsQuery);
-    });
-
-  const reopen = () =>
-    attempt(async () => {
-      const held = thread;
-      if (held === undefined) return;
-
-      await remove({ path: `commentThreads.${held._id}.resolution` });
-      await refreshAll(threadsQuery);
-    });
+  const reopen = () => {
+    if (thread !== undefined) command.setResolved(thread._id, false);
+  };
 
   const elementIn = (elements: readonly ElementNode[], id: string): boolean =>
     elements.some(

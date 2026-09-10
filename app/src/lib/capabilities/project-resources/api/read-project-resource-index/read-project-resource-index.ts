@@ -1,9 +1,15 @@
 import { requireScope } from "$runtime/server/scope.server";
 import { serverModel } from "$runtime/server/start.server";
-import type { TableName } from "$model/server/store/index.server";
-import { asId } from "$representation/data/behavior/core/id";
-import type { Actor } from "$representation/data/types/core/actor";
+import type { StoreUnitOfWork, TableName } from "$model/server/store/index.server";
 
+import { storedFields } from "$representation/data/behavior/core/stored";
+import {
+  storedProjectResource,
+  type StoredProjectResource
+} from "$representation/data/behavior/project-resources/stored";
+import { isStoredTemplateStage } from "$representation/data/behavior/templates/stored-stage";
+
+import { projectedActorName } from "$capabilities/project-resources/api/read-project-resource-index/projected-actor";
 import type {
   ProjectResourceIndex,
   ProjectResourceIndexItem,
@@ -11,186 +17,100 @@ import type {
   ProjectResourceUnavailable
 } from "$capabilities/project-resources/types/project-resources";
 
-const rowsIn = (table: TableName): readonly unknown[] => {
-  const found = serverModel().store.read(table);
-  return found?.kind === "table" && found.table === table && Array.isArray(found.rows)
-    ? found.rows
-    : [];
+type StoreReads = Pick<StoreUnitOfWork, "read">;
+
+const rowsIn = (store: StoreReads, table: TableName): readonly Record<string, unknown>[] => {
+  const found = store.read(table);
+  if (found?.kind !== "table" || found.table !== table || !Array.isArray(found.rows)) return [];
+  return found.rows.flatMap((value) => {
+    const row = storedFields(value);
+    return row === undefined ? [] : [row];
+  });
 };
 
-const recordOf = (value: unknown): Record<string, unknown> | undefined =>
-  value !== null && typeof value === "object" && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : undefined;
+const RESOURCE_TABLES = [
+  { table: "documents", kind: "document" },
+  { table: "slideDecks", kind: "slides" },
+  { table: "spreadsheets", kind: "spreadsheet" },
+  { table: "researchThreads", kind: "research" },
+  { table: "findings", kind: "finding" }
+] as const satisfies readonly { table: TableName; kind: ProjectResourceKind }[];
 
-const actorOf = (value: unknown): Actor => {
-  const actor = recordOf(value);
-  if (actor === undefined) throw new Error("updated actor is represented");
-  const exact = (fields: readonly string[]) =>
-    Object.keys(actor).every((field) => fields.includes(field));
-  if (actor.kind === "system" && exact(["kind"])) return { kind: "system" };
-  if (
-    actor.kind === "user" &&
-    exact(["kind", "userId"]) &&
-    typeof actor.userId === "string" &&
-    actor.userId.length > 0
-  ) {
-    return { kind: "user", userId: asId<"users">(actor.userId) };
-  }
-  if (
-    actor.kind === "connector" &&
-    exact(["kind", "connectorId"]) &&
-    typeof actor.connectorId === "string" &&
-    actor.connectorId.length > 0
-  ) {
-    return { kind: "connector", connectorId: asId<"connectors">(actor.connectorId) };
-  }
-  if (
-    actor.kind === "agent" &&
-    exact(["kind", "taskId"]) &&
-    typeof actor.taskId === "string" &&
-    actor.taskId.length > 0
-  ) {
-    return { kind: "agent", taskId: asId<"agentTasks">(actor.taskId) };
-  }
-  throw new Error("updated actor is represented");
-};
+const unavailableId = (value: unknown, table: TableName): string =>
+  typeof value === "string" && value.length <= 500 ? value : `${table}:invalid`;
 
-const namedRow = (
-  table: TableName,
-  id: string,
-  field: string,
-  projectId?: string
-): string | undefined => {
-  const row = rowsIn(table)
-    .map(recordOf)
-    .find(
-      (candidate) =>
-        candidate?._id === id && (projectId === undefined || candidate.projectId === projectId)
+const stageState = (
+  store: StoreReads,
+  projectId: string,
+  resourceId: string
+): "none" | "staged" | "corrupt" => {
+  const rows = rowsIn(store, "templateStages");
+  const claims = rows.filter(
+    (row) => row.projectId === projectId && row.resourceId === resourceId
   );
-  const value = row?.[field];
-  return typeof value === "string" &&
-    value === value.trim() &&
-    value.length > 0 &&
-    value.length <= 160
-    ? value
-    : undefined;
+  if (claims.length === 0) return "none";
+  return claims.length === 1 &&
+    rows.filter((row) => row._id === claims[0]._id).length === 1 &&
+    isStoredTemplateStage(claims[0])
+    ? "staged"
+    : "corrupt";
 };
 
-const actorName = (actor: Actor, projectId: string): string => {
-  if (actor.kind === "system") return "Icarus";
-  if (actor.kind === "user") {
-    const isMember = rowsIn("memberships")
-      .map(recordOf)
-      .some((row) => row?.projectId === projectId && row.userId === actor.userId);
-    return isMember ? (namedRow("users", actor.userId, "displayName") ?? "Someone") : "Someone";
-  }
-  if (actor.kind === "connector") {
-    return namedRow("connectors", actor.connectorId, "name", projectId) ?? "A connector";
-  }
-  const task = namedRow("agentTasks", actor.taskId, "title", projectId);
-  return task === undefined ? "An agent" : `Agent · ${task}`;
+const projectedItem = (
+  store: StoreReads,
+  projectId: string,
+  kind: ProjectResourceKind,
+  stored: StoredProjectResource
+): ProjectResourceIndexItem => {
+  const actor = "updatedBy" in stored.row ? stored.row.updatedBy : stored.row.createdBy;
+  return {
+    id: stored.row._id,
+    kind,
+    name: stored.row.title,
+    updatedAt: stored.row.updatedAt,
+    updatedByName: projectedActorName(store, projectId, actor)
+  };
 };
 
-const idOf = (value: unknown, table: TableName): string => {
-  if (
-    typeof value !== "string" ||
-    value.length > 500 ||
-    !value.startsWith(`${table}:`) ||
-    value.slice(table.length + 1).length === 0 ||
-    /[.:\s]/.test(value.slice(table.length + 1))
-  ) {
-    throw new Error(`${table} id is one canonical row segment`);
-  }
-  return value;
-};
-
-const nameOf = (value: unknown): string => {
-  if (
-    typeof value !== "string" ||
-    value.trim().length === 0 ||
-    value !== value.trim() ||
-    value.length > 10_000
-  ) {
-    throw new Error("resource name is bounded canonical text");
-  }
-  return value;
-};
-
-const timeOf = (value: unknown): number => {
-  if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
-    throw new Error("resource update time is finite and non-negative");
-  }
-  return value;
-};
-
+/** Exact current resource metadata only; malformed scoped claimants are quarantined. */
 export const readProjectResourceIndex = async (): Promise<ProjectResourceIndex> => {
   const scope = await requireScope();
+  const store = serverModel().store;
   const resources: ProjectResourceIndexItem[] = [];
   const unavailable: ProjectResourceUnavailable[] = [];
 
-  const staged = new Set(
-    rowsIn("templateStages")
-      .map(recordOf)
-      .filter((row) => row?.projectId === scope.projectId && typeof row.resourceId === "string")
-      .map((row) => row?.resourceId as string)
-  );
-
-  const collect = (
-    table: TableName,
-    kind: ProjectResourceKind,
-    nameField: "title" | "name",
-    actorField: "updatedBy" | "createdBy"
-  ) => {
-    const rows = rowsIn(table);
+  for (const { table, kind } of RESOURCE_TABLES) {
+    const rows = rowsIn(store, table);
     const idCounts = new Map<string, number>();
-
-    for (const value of rows) {
-      const row = recordOf(value);
-      if (row === undefined) continue;
-      try {
-        const id = idOf(row._id, table);
-        idCounts.set(id, (idCounts.get(id) ?? 0) + 1);
-      } catch {
-        continue;
-      }
+    for (const row of rows) {
+      if (typeof row._id !== "string") continue;
+      idCounts.set(row._id, (idCounts.get(row._id) ?? 0) + 1);
     }
 
-    for (const value of rows) {
-      const row = recordOf(value);
-      if (row === undefined || row.projectId !== scope.projectId) continue;
-      if (typeof row._id === "string" && staged.has(row._id)) continue;
-
-      try {
-        const id = idOf(row._id, table);
-        if (idCounts.get(id) !== 1) throw new Error(`${table} id is unique`);
-        const actor = actorOf(row[actorField]);
-        resources.push({
-          id,
-          kind,
-          name: nameOf(row[nameField]),
-          updatedAt: timeOf(row.updatedAt),
-          updatedByName: actorName(actor, scope.projectId)
-        });
-      } catch (error) {
+    for (const row of rows) {
+      if (row.projectId !== scope.projectId) continue;
+      const id = unavailableId(row._id, table);
+      const stored = storedProjectResource(row, table);
+      const staged = typeof row._id === "string"
+        ? stageState(store, scope.projectId, row._id)
+        : "none";
+      if (stored === undefined || idCounts.get(id) !== 1 || staged === "corrupt") {
         unavailable.push({
-          resourceId:
-            typeof row._id === "string" && row._id.length <= 500
-              ? row._id
-              : `${table}:invalid`,
+          resourceId: id,
           kind,
           reason: "corrupt",
-          detail: error instanceof Error ? error.message : String(error)
+          detail: stored === undefined
+            ? "resource does not match the current represented shape"
+            : staged === "corrupt"
+              ? "resource has an invalid template-stage claimant"
+              : `${table} id is unique`
         });
+        continue;
       }
+      if (staged === "staged") continue;
+      resources.push(projectedItem(store, scope.projectId, kind, stored));
     }
-  };
-
-  collect("documents", "document", "title", "updatedBy");
-  collect("slideDecks", "slides", "title", "updatedBy");
-  collect("spreadsheets", "spreadsheet", "title", "updatedBy");
-  collect("researchThreads", "research", "title", "createdBy");
-  collect("findings", "finding", "title", "updatedBy");
+  }
 
   return { resources, unavailable };
 };

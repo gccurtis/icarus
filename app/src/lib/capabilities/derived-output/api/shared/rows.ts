@@ -3,6 +3,10 @@ import type { TextBlock } from "$representation/data/types/content/content-block
 import type { Id } from "$representation/data/types/core/id";
 import type { DerivedOutputFields } from "$representation/data/types/semantic/derived-output";
 import type { SemanticSourceSnapshot } from "$representation/data/types/semantic/source";
+import {
+  isStoredDerivedOutput,
+  isStoredDerivedOutputRefreshJob
+} from "$representation/data/behavior/semantic/stored-derived-output";
 import { materialRecordIsCurrent } from "$capabilities/semantic-overlay";
 
 export const rowsOf = <T extends TableName>(
@@ -11,6 +15,18 @@ export const rowsOf = <T extends TableName>(
 ): readonly TableRow<T>[] => {
   const found = store.read(table);
   if (found?.kind !== "table" || found.table !== table) return [];
+  if (table === "derivedOutputs") {
+    if (!found.rows.every(isStoredDerivedOutput)) {
+      throw new Error("the derivedOutputs table contains a non-current row");
+    }
+    return found.rows as unknown as readonly TableRow<T>[];
+  }
+  if (table === "derivedOutputRefreshJobs") {
+    if (!found.rows.every(isStoredDerivedOutputRefreshJob)) {
+      throw new Error("the derivedOutputRefreshJobs table contains a non-current row");
+    }
+    return found.rows as unknown as readonly TableRow<T>[];
+  }
   return found.rows as unknown as readonly TableRow<T>[];
 };
 
@@ -23,11 +39,61 @@ export const outputOf = (
     (output) => output._id === id && output.projectId === projectId
   );
 
-const fieldsOf = (output: TableRow<"derivedOutputs">): DerivedOutputFields => {
-  const { _id, _creationTime, ...fields } = output;
-  void _id;
-  void _creationTime;
-  return fields;
+const chosen = <K extends keyof DerivedOutputFields>(
+  output: TableRow<"derivedOutputs">,
+  patch: Partial<DerivedOutputFields>,
+  field: K
+): DerivedOutputFields[K] | undefined =>
+  Object.hasOwn(patch, field) ? patch[field] : output[field];
+
+const outputFields = (
+  output: TableRow<"derivedOutputs">,
+  patch: Partial<DerivedOutputFields>
+): DerivedOutputFields => {
+  const candidate = Object.fromEntries(Object.entries({
+    _id: output._id,
+    _creationTime: output._creationTime,
+    projectId: chosen(output, patch, "projectId"),
+    prompt: chosen(output, patch, "prompt"),
+    definitionRevision: chosen(output, patch, "definitionRevision"),
+    origin: chosen(output, patch, "origin"),
+    template: chosen(output, patch, "template"),
+    scope: chosen(output, patch, "scope"),
+    queries: chosen(output, patch, "queries"),
+    evidence: chosen(output, patch, "evidence"),
+    lastVariables: chosen(output, patch, "lastVariables"),
+    lastResponse: chosen(output, patch, "lastResponse"),
+    lastRevision: chosen(output, patch, "lastRevision"),
+    lastGeneration: chosen(output, patch, "lastGeneration"),
+    state: chosen(output, patch, "state"),
+    error: chosen(output, patch, "error"),
+    refreshedAt: chosen(output, patch, "refreshedAt"),
+    createdBy: chosen(output, patch, "createdBy"),
+    updatedAt: chosen(output, patch, "updatedAt")
+  }).filter(([, value]) => value !== undefined));
+  if (!isStoredDerivedOutput(candidate)) {
+    throw new Error("the derived output update is not a complete current row");
+  }
+  const current = candidate;
+  return {
+    projectId: current.projectId,
+    prompt: current.prompt,
+    definitionRevision: current.definitionRevision,
+    ...(current.origin === undefined ? {} : { origin: current.origin }),
+    ...(current.template === undefined ? {} : { template: current.template }),
+    ...(current.scope === undefined ? {} : { scope: current.scope }),
+    queries: current.queries,
+    evidence: current.evidence,
+    ...(current.lastVariables === undefined ? {} : { lastVariables: current.lastVariables }),
+    ...(current.lastResponse === undefined ? {} : { lastResponse: current.lastResponse }),
+    ...(current.lastRevision === undefined ? {} : { lastRevision: current.lastRevision }),
+    ...(current.lastGeneration === undefined ? {} : { lastGeneration: current.lastGeneration }),
+    state: current.state,
+    ...(current.error === undefined ? {} : { error: current.error }),
+    ...(current.refreshedAt === undefined ? {} : { refreshedAt: current.refreshedAt }),
+    createdBy: current.createdBy,
+    updatedAt: current.updatedAt
+  };
 };
 
 /** Replaces one row in a single store write and deliberately removes undefined optionals. */
@@ -36,9 +102,10 @@ export const writeOutput = (
   output: TableRow<"derivedOutputs">,
   patch: Partial<DerivedOutputFields>
 ): TableRow<"derivedOutputs"> => {
-  const fields = Object.fromEntries(
-    Object.entries({ ...fieldsOf(output), ...patch }).filter(([, value]) => value !== undefined)
-  );
+  if (!isStoredDerivedOutput(output)) {
+    throw new Error("the derived output to update is not a complete current row");
+  }
+  const fields = outputFields(output, patch);
   store.update(`derivedOutputs.${output._id}`, fields);
   const written = outputOf(store, output.projectId, output._id);
   if (written === undefined) throw new Error("derived output disappeared during a synchronous write");
@@ -81,7 +148,7 @@ export const activeSources = (
   );
   for (const snapshot of rowsOf(store, "documentSnapshots")) {
     if (snapshot.projectId !== projectId || snapshot.role !== "leader" || !documents.has(snapshot.resourceId)) continue;
-    const ref = { kind: "document", id: snapshot.resourceId };
+    const ref = { kind: "document" as const, id: snapshot.resourceId };
     active.set(`${ref.kind}\u0000${ref.id}`, { ref, revision: snapshot.revision, encoding: "utf-16" });
   }
   const decks = new Set(
@@ -91,14 +158,14 @@ export const activeSources = (
   );
   for (const snapshot of rowsOf(store, "slideDeckSnapshots")) {
     if (snapshot.projectId !== projectId || snapshot.role !== "leader" || !decks.has(snapshot.resourceId)) continue;
-    const ref = { kind: "slides", id: snapshot.resourceId };
+    const ref = { kind: "slides" as const, id: snapshot.resourceId };
     active.set(`${ref.kind}\u0000${ref.id}`, { ref, revision: snapshot.revision, encoding: "utf-16" });
   }
   for (const file of rowsOf(store, "externalFiles")) {
     if (file.projectId !== projectId) continue;
     const subkind = file.subkind;
     if (subkind !== "text") continue;
-    const ref = { kind: "externalFile::text", id: file._id };
+    const ref = { kind: "externalFile::text" as const, id: file._id };
     active.set(`${ref.kind}\u0000${ref.id}`, {
       ref,
       revision: 0,

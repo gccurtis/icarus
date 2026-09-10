@@ -18,7 +18,7 @@
     ["personas", "modify", "name · description · definition · scope · cast · tools · avatar · createdBy · revision · updatedAt", "tools becomes the closed ToolId union"],
     ["agentTasks", "modify", "threadId · title · instruction · personaId · origin · state · scope · tools · plan · outputs · questions · createdBy · startedAt · finishedAt · reviewedBy · revision · updatedAt", "a task is a run; status, prompt, data and error go; scope joins"],
     ["automations", "create", "name · personaId · instruction · trigger · scope · tools · enabled · firedCount · lastFiredAt · createdBy · revision · updatedAt", "a rule that makes tasks"],
-    ["personaThreads", "keep", "threadId · personaId · title · createdBy · updatedAt", "a chat; now readable through the store capability so its tab has a title"],
+    ["researchThreads", "keep", "threadId · personaId · title · mode · findingIds · createdBy · updatedAt", "a chat, owned and projected by the research and agents capabilities"],
     ["threads", "keep", "kind · branchedFrom", "one per task and per chat"],
     ["threadParts", "keep", "threadId · part · messages", "the turns"]
   ];
@@ -50,7 +50,7 @@
     ["personas.json", "4", "Grid Analyst, Filing Editor, Source Checker, Skeptic; all in the project"],
     ["agentTasks.json", "17", "3 running, 3 pending review, 11 finished; one with two open questions and three with their own scope"],
     ["automations.json", "8", "3 manual, 2 scheduled, 2 on edit, 1 on create; the board pack is off"],
-    ["personaThreads.json", "5", "chats across all four personas"],
+    ["researchThreads.json", "5", "chats across all four personas"],
     ["threads.json", "22", "one per task and per chat"],
     ["threadParts.json", "22", "every thread's messages, the instruction first"]
   ];

@@ -205,7 +205,7 @@ export const REMEDIATION: readonly RemediationPhase[] = [
     phase: "04 — Narrow the workspace and remove false state",
     objective: "Give every durable read and client preference one explicit owner.",
     changes: [
-      "Replace raw readStore/readUsername access with typed subject projections.",
+      "Keep browser reads on typed subject projections and their explicit lifetime owners.",
       "Move query lifetime to one coherent project-data owner or resource runtime.",
       "Integrate or delete Storage and move Appearance into the client graph.",
       "Delete production mock repositories as real subjects arrive."

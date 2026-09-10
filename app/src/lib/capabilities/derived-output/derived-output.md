@@ -23,10 +23,16 @@ keyed by project and Derived Output ID. Concurrent callers join the same server
 flight. The job—not the value row—owns `queued`, `running`, and `failed`
 operation state. An identical signal changes nothing and simply awaits that
 flight. Only a different definition revision or selection advances the request
-version and causes one follow-up pass. The worker drains pending exact-text and
-material semantic jobs before it asks the freshness gate whether provider work
-is necessary, and it fails closed when required newer work is terminally
-failed. It snapshots project semantic inputs around synthesis; a source
+version and causes one follow-up pass. The worker first discovers every current,
+non-staged document, deck, and spreadsheet in the output's effective scope and
+idempotently enqueues its current authoritative revision. It then drains pending
+exact-text and material semantic jobs before it asks the freshness gate whether
+provider work is necessary. A terminally failed semantic job is quarantined and
+reported. It
+fails an output whose effective scope contains that resource, including a
+resource-owned scope projected from a placed Template, but cannot poison an
+unrelated scoped refresh. Reusable named sets are resolved transitively at this
+boundary. The worker snapshots project semantic inputs around synthesis; a source
 revision, material revision, pending semantic job, or overlay-generation change
 causes one bounded retry after another drain. It gives one bounded agent the
 sixteen tools in `api/shared/tool-catalog.ts`. `retrieve` returns
@@ -88,7 +94,14 @@ subscription transport can replace polling without changing the capability
 contract.
 The durable job row and claim token are the authority boundary; the shared
 promise that joins callers belongs to `ServerModel.operationFlights`, not this
-capability or `globalThis`. Server shutdown aborts those active provider calls.
+capability or `globalThis`. Server shutdown aborts those active provider calls
+with a typed process-owned reason. That signal crosses queue preparation, both
+retrieval lanes, exact resource reads, native material reads, and every model
+tool boundary. The worker atomically returns its durable refresh row to `queued`,
+restores the pre-claim attempt count, and leaves the output value untouched
+before shutdown finishes draining. A fresh `ServerModel` then reclaims the same
+request. Ordinary provider and user-facing failures remain terminal and visible;
+they cannot impersonate process shutdown merely by using `AbortError` text.
 The JSON-backed Store serializes claims inside one server instance; a
 multi-process database adapter must preserve the same transactional claim and
 lease contract. An always-on worker host and additional editor placement

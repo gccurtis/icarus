@@ -38,7 +38,7 @@ export const contextReference: AreaReference = {
     {
       title: "Partial header and footer authoring is withdrawn",
       before: "Layout exposed controls for a feature whose editable first page and flattened repeated pages could not maintain visual parity.",
-      now: "Layout exposes paper, margins, page numbers, and dimensions only. Header/footer representation remains backward-compatible but has no editor UI.",
+      now: "Layout exposes paper, margins, page numbers, and dimensions only. Header/footer furniture remains part of the current representation but has no editor UI.",
       why: "A missing feature is more truthful than a known-buggy implementation that presents one logical value in two visual forms."
     },
     {
@@ -63,7 +63,7 @@ export const contextReference: AreaReference = {
         { actor: "Context rail", action: "Looks up the entry in the active category’s rail model.", artifact: "view.railFor(category)" },
         { actor: "Workspace view", action: "Stores the selected context ID and clears collapsed state.", artifact: "view.selectContext(id)" },
         { actor: "Context surface", action: "Maps category and ID to a registered Svelte view.", artifact: "import.meta.glob registry" },
-        { actor: "Context view", action: "Attaches to shared runtime/store state and renders current data.", artifact: "documentRuntime + readStore" }
+        { actor: "Context view", action: "Attaches to the shared document runtime and renders typed subject projections.", artifact: "documentRuntime + subject query" }
       ],
       outcome: "The requested tool appears without creating a second document body or private cache.",
       failure: "A missing registry entry renders PanelPlaceholder with the tool’s name."
@@ -194,9 +194,9 @@ export const contextReference: AreaReference = {
     {
       name: "layout operations",
       role: "Edit page setup and page-number settings without exposing represented header/footer content.",
-      reads: "Page setup, page metrics, and page-number compatibility host.",
+      reads: "Page setup, page metrics, and represented page-number furniture.",
       writes: "Page settings through runtime.apply.",
-      failure: "Invalid layout input is rejected; a page-number compatibility host is created only when numbering requires it.",
+      failure: "Invalid layout input is rejected; bottom-page furniture is created only when numbering requires it.",
       sources: ["src/lib/app-views/categories/document-editor/context/layout.svelte", "src/lib/app-views/categories/document-editor/procedures/layout.ts"]
     },
     {

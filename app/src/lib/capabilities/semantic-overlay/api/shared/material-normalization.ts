@@ -1,6 +1,7 @@
 import type { ServerModel } from "$runtime/server/start.server";
 import type { Id } from "$representation/data/types/core/id";
 import type { ResourceRef } from "$representation/data/types/core/resource";
+import { externalFileResourceKind } from "$representation/data/behavior/core/resource";
 import type {
   MaterialAuthoredContext,
   MaterialSeed
@@ -129,7 +130,7 @@ export const withDepartedExternalImages = (
           name: file.name,
           source: {
             ...source,
-            ref: { kind: `externalFile::${subkind}`, id: file._id },
+            ref: { kind: externalFileResourceKind(subkind), id: file._id },
             mediaType: file.mediaType,
             subkind
           },

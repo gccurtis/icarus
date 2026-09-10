@@ -3,6 +3,7 @@ import { test } from "vitest";
 import { createStorage } from "$model/client/storage";
 import type { PersistedWorkbench } from "$model/client/storage";
 import { STORAGE_VERSION } from "$model/client/storage/types";
+import { asId } from "$representation/data/behavior/core/id";
 
 /**
  * Write coalescing, which is the whole of what the definition owns beyond a
@@ -21,8 +22,8 @@ const recording = () => {
 };
 
 const workbench = (id: string): PersistedWorkbench => ({
-  tabs: [["project-overview", id]],
-  active: ["project-overview", id]
+  tabs: [["document-editor", asId<"documents">(`documents:${id}`)]],
+  active: ["document-editor", asId<"documents">(`documents:${id}`)]
 });
 
 const settled = () => new Promise<void>((resolve) => queueMicrotask(resolve));
@@ -42,7 +43,7 @@ test("a burst of writes in one turn costs one serialization", async () => {
 
   assert.equal(writes.length, 1, "each save scheduled its own write");
   // The last document wins, because each save replaces the section whole.
-  assert.match(writes[0], /"c"/);
+  assert.match(writes[0], /"documents:c"/);
 });
 
 test("a later turn schedules a new write", async () => {
@@ -65,12 +66,12 @@ test("reads come back from the document, before anything is flushed", () => {
 
   // The document is assigned synchronously; only the write is deferred. A reader
   // that had to wait for the microtask would see the previous value.
-  assert.equal(storage.workbench?.tabs[0][1], "a");
+  assert.equal(storage.workbench?.tabs[0][1], "documents:a");
 });
 
 test("every write carries the whole document", async () => {
-  // Whole rather than incremental, so a store damaged by hand or written by an
-  // older build is repaired by the next mutation.
+  // Whole rather than incremental, so damaged stored text is replaced by the
+  // next current write.
   const { writes, sink } = recording();
   const storage = createStorage({ v: STORAGE_VERSION }, sink);
 
@@ -79,7 +80,10 @@ test("every write carries the whole document", async () => {
 
   assert.deepEqual(JSON.parse(writes[0]), {
     v: STORAGE_VERSION,
-    workbench: { tabs: [["project-overview", "a"]], active: ["project-overview", "a"] }
+    workbench: {
+      tabs: [["document-editor", "documents:a"]],
+      active: ["document-editor", "documents:a"]
+    }
   });
 });
 

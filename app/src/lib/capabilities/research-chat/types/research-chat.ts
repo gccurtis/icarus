@@ -1,4 +1,5 @@
 import type { ContentBlock } from "$representation/data/types/content/content-block";
+import type { ResourceRef } from "$representation/data/types/core/resource";
 import type { ResearchModeKind } from "$representation/data/types/investigation/research-thread";
 import type {
   ResearchFinding,
@@ -41,9 +42,7 @@ export type TurnItem = {
 };
 
 /** One thing a turn can be narrowed to, named as the composer shows it. */
-export type ResourceOption = {
-  readonly kind: string;
-  readonly id: string;
+export type ResourceOption = ResourceRef & {
   readonly name: string;
 };
 

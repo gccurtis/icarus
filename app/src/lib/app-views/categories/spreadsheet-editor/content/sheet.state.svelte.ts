@@ -1,6 +1,15 @@
-import type { SurfaceApi, SurfaceHit } from "$authored-components/sheet-surface";
+import type { SurfaceApi, SurfaceHit, SurfaceSelection } from "$authored-components/sheet-surface";
+import {
+  initialReferenceGesture,
+  type ReferenceGesture
+} from "$app-views/categories/spreadsheet-editor/procedures/reference-picking";
 
 export type ScrollTarget = { readonly row: number; readonly column: number; readonly token: number };
+
+export type ReferencePick = {
+  readonly session: number;
+  readonly selection: SurfaceSelection;
+};
 
 export type SheetHeld = {
   api: SurfaceApi | undefined;
@@ -9,6 +18,8 @@ export type SheetHeld = {
   scrollTarget: ScrollTarget | undefined;
   hit: SurfaceHit | undefined;
   landed: string | undefined;
+  referencePick: ReferencePick | undefined;
+  referenceGesture: ReferenceGesture;
   scrolls: number;
   noticeTimer: ReturnType<typeof setTimeout> | undefined;
 };
@@ -18,9 +29,10 @@ export type SheetHeld = {
  *
  * All of it is the screen's rather than the sheet's: the surface's handle, the
  * element the keyboard is bound to, a message that fades, the cell a scroll was
- * asked for, the last right-click, and the tab focus already answered. A sheet
- * reopened in another tab starts each of them again, which is why they are
- * constructed here and not kept anywhere longer-lived.
+ * asked for, the last right-click, the tab focus already answered, and the
+ * transient range being pointed at while a formula is written. A sheet reopened
+ * in another tab starts each of them again, which is why they are constructed
+ * here and not kept anywhere longer-lived.
  */
 export const createSheetState = (): SheetHeld => {
   let api = $state<SurfaceApi | undefined>(undefined);
@@ -29,6 +41,8 @@ export const createSheetState = (): SheetHeld => {
   let scrollTarget = $state<ScrollTarget | undefined>(undefined);
   let hit = $state<SurfaceHit | undefined>(undefined);
   let landed = $state<string | undefined>(undefined);
+  let referencePick = $state<ReferencePick | undefined>(undefined);
+  let referenceGesture = $state<ReferenceGesture>(initialReferenceGesture());
 
   return {
     get api() {
@@ -66,6 +80,18 @@ export const createSheetState = (): SheetHeld => {
     },
     set landed(next) {
       landed = next;
+    },
+    get referencePick() {
+      return referencePick;
+    },
+    set referencePick(next) {
+      referencePick = next;
+    },
+    get referenceGesture() {
+      return referenceGesture;
+    },
+    set referenceGesture(next) {
+      referenceGesture = next;
     },
     scrolls: 0,
     noticeTimer: undefined

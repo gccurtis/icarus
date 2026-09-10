@@ -9,7 +9,7 @@
     { area: "neighbours", label: "Neighbouring capabilities" },
     { area: "editors", label: "Editor panels" },
     { area: "library", label: "Library and inspector" },
-    { area: "contexts", label: "Contexts panel" },
+    { area: "contexts", label: "Retired Contexts panel" },
     { area: "evidence", label: "Seed and browser evidence" },
     { area: "reference", label: "These pages" },
     { area: "documentation", label: "Written documentation" },

@@ -14,6 +14,7 @@ import type { RowFields } from "$capabilities/templates/api/shared/store";
 import { writeTemplateVersion } from "$capabilities/templates/api/shared/template-rows";
 import { bodyOf } from "$capabilities/templates/api/shared/validation";
 import { declaredFor } from "$capabilities/templates/api/shared/holes";
+import { expandedScope } from "$capabilities/templates/api/shared/scopes";
 import type { CommitTemplateStageResult } from "$capabilities/templates/types/templates";
 
 export const commitTemplateStage = async (input: unknown): Promise<CommitTemplateStageResult> => {
@@ -93,6 +94,28 @@ export const commitTemplateStage = async (input: unknown): Promise<CommitTemplat
     };
   }
 
+  let holes;
+  try {
+    holes = declaredFor(body, portable.holes).map((hole) => {
+      const expanded = expandedScope(
+        store,
+        scope.projectId,
+        { kind: "resource", resourceId: stage.resourceId, hole: hole.name },
+        hole.default
+      );
+      return expanded === undefined ? hole : { ...hole, default: expanded };
+    });
+  } catch (error) {
+    return {
+      accepted: false,
+      stageId: stage._id,
+      templateId: template._id,
+      reason: "unsupported-body",
+      revision: template.revision,
+      detail: error instanceof Error ? error.message : String(error)
+    };
+  }
+
   const at = Date.now();
   const fields = store.transaction((unit): RowFields<"templates"> => {
     const next: RowFields<"templates"> = {
@@ -108,7 +131,7 @@ export const commitTemplateStage = async (input: unknown): Promise<CommitTemplat
           template.projectId,
           template.createdBy,
           template._id,
-          declaredFor(body, portable.holes),
+          holes,
           at
         )
       ],

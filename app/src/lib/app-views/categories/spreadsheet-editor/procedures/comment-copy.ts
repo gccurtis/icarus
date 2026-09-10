@@ -1,12 +1,13 @@
-import type { TextBlock } from "$representation/data/types/content/content-block";
-import type { Actor } from "$representation/data/types/core/actor";
-import type { Comment, User } from "$representation/store/tables";
-import { mint } from "$app-views/categories/spreadsheet-editor/procedures/ids";
+import type {
+  CommentActor,
+  CommentPersonRecord,
+  CommentRemarkRecord
+} from "$capabilities/comments/index.remote";
 
-export type Remark = Comment;
-export type Person = User;
+export type Remark = CommentRemarkRecord;
+export type Person = CommentPersonRecord;
 
-export const nameOf = (users: readonly Person[], actor: Actor | undefined): string => {
+export const nameOf = (users: readonly Person[], actor: CommentActor | undefined): string => {
   if (actor === undefined) return "Someone";
   if (actor.kind !== "user") return "An agent";
   return users.find((user) => user._id === actor.userId)?.displayName ?? "Someone";
@@ -27,17 +28,4 @@ export const ago = (at: number, now: number = Date.now()): string => {
   return new Date(at).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 };
 
-export const textOf = (remark: Remark): string =>
-  remark.blocks
-    .map((block) => ("display" in block ? block.display : ""))
-    .filter((text) => text.length > 0)
-    .join("\n");
-
-export const remarkBlock = (text: string): TextBlock => ({
-  id: mint("block"),
-  type: "text",
-  variant: "paragraph",
-  atoms: [{ id: mint("atom"), kind: "literal", text }],
-  display: text,
-  marks: []
-});
+export const textOf = (remark: Remark): string => remark.text;

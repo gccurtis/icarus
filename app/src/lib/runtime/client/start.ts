@@ -1,6 +1,4 @@
 import { browser } from "$app/environment";
-import { username } from "$capabilities/development/index.remote";
-import { read } from "$capabilities/store/index.remote";
 import { createCommands } from "$model/client/commands";
 import { createConfiguration } from "$model/client/configuration";
 import { createDocumentRuntimes } from "$model/client/document-runtimes";
@@ -54,9 +52,7 @@ const buildClientModel = ({
     settings,
     documentRuntimes,
     slideDeckRuntimes,
-    spreadsheetRuntimes,
-    read,
-    username
+    spreadsheetRuntimes
   );
 
   return {

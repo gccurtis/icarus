@@ -1,15 +1,16 @@
 import { requireScope } from "$runtime/server/scope.server";
 import { serverModel } from "$runtime/server/start.server";
+import type { TableRow } from "$model/server/store/index.server";
 
-import { actorOf } from "$capabilities/project/api/shared/projection";
-import { projectResourceOf } from "$capabilities/project/api/shared/resources";
 import {
-  boundedText,
-  finiteTime,
-  recordOf,
-  recordsIn,
-  type StoreReads
-} from "$capabilities/project/api/shared/store";
+  isStoredComment,
+  storedCommentText
+} from "$representation/data/behavior/collaboration/stored-comments";
+import type { AnchorWithin } from "$representation/data/types/collaboration/anchor";
+
+import { projectActor } from "$capabilities/project/api/shared/actors";
+import { ownedProjectThread } from "$capabilities/project/api/shared/comment-ownership";
+import { recordsIn, type StoreReads } from "$capabilities/project/api/shared/store";
 import { validateReadProjectComment } from "$capabilities/project/api/read-project-comment/validate-read-project-comment";
 import type {
   ProjectCommentAnchor,
@@ -18,96 +19,69 @@ import type {
 } from "$capabilities/project/types/project";
 import type { Scope } from "$runtime/server/scope.server";
 
-const idOf = (value: unknown): string | undefined => boundedText(value, 500);
-
-const textOf = (value: unknown): string => {
-  const row = recordOf(value);
-  if (!Array.isArray(row?.blocks)) return "";
-  return row.blocks
-    .flatMap((block) => {
-      const display = recordOf(block)?.display;
-      return typeof display === "string" && display.length <= 20_000 ? [display] : [];
-    })
-    .join("\n")
-    .slice(0, 20_000);
+const projectedAnchor = (within: AnchorWithin | undefined): ProjectCommentAnchor => {
+  if (within === undefined) return null;
+  if (within.kind === "text") {
+    return { kind: "document-text", blockId: within.spans[0].blockId };
+  }
+  if (within.kind === "slide") return { kind: "slide", slideId: within.slideId };
+  if (within.kind === "element") return { kind: "element", elementId: within.elementId };
+  return { kind: "cell", rowId: within.rowId, columnId: within.columnId };
 };
 
-const remarkOf = (
+const projectedRemark = (
   store: StoreReads,
   scope: Scope,
-  value: unknown
-): ProjectCommentRemark | undefined => {
-  const row = recordOf(value);
-  const id = idOf(row?._id);
-  const at = finiteTime(row?._creationTime);
-  if (row?.projectId !== scope.projectId || id === undefined || at === undefined) {
-    return undefined;
-  }
-  const author = actorOf(store, scope, row.author);
+  row: TableRow<"comments">
+): ProjectCommentRemark => {
+  const author = projectActor(store, scope, row.author);
   return {
-    id,
-    at,
+    id: row._id,
+    at: row._creationTime,
     author,
-    authorLabel: author?.label ?? "Someone",
-    text: textOf(row)
+    ...(author === null ? {} : { authorLabel: author.label }),
+    text: storedCommentText(row)
   };
 };
 
-const anchorOf = (value: unknown): ProjectCommentAnchor => {
-  const within = recordOf(value);
-  if (within?.kind === "text") {
-    const first = Array.isArray(within.spans) ? recordOf(within.spans[0]) : undefined;
-    const blockId = idOf(first?.blockId);
-    return blockId === undefined ? null : { kind: "document-text", blockId };
-  }
-  if (within?.kind === "slide") {
-    const slideId = idOf(within.slideId);
-    return slideId === undefined ? null : { kind: "slide", slideId };
-  }
-  if (within?.kind === "element") {
-    const elementId = idOf(within.elementId);
-    return elementId === undefined ? null : { kind: "element", elementId };
-  }
-  return null;
-};
-
-/** The Project Overview discussion lens, projected without widening generic store reads. */
+/** One exact owned discussion; unavailable historical actors remain explicitly null. */
 export const readProjectComment = async (input: unknown): Promise<ReadProjectCommentResult> => {
   const scope = await requireScope();
   const asked = validateReadProjectComment(input);
   const store = serverModel().store;
-  const threads = recordsIn(store, "commentThreads").filter(
-    (row) => row._id === asked.threadId && row.projectId === scope.projectId
-  );
-  if (threads.length !== 1) return null;
-  const thread = threads[0];
-  const targetRef = recordOf(thread.target);
-  const targetId = idOf(targetRef?.id);
-  if (targetId === undefined) return null;
-  const target = projectResourceOf(store, scope.projectId, targetId);
-  const name = boundedText(target?.row.title, 10_000);
-  const threadAt = finiteTime(thread._creationTime);
-  if (target === undefined || name === undefined || threadAt === undefined) return null;
+  const owned = ownedProjectThread(store, scope.projectId, asked.threadId);
+  if (owned === undefined) return null;
 
-  const remarks = recordsIn(store, "comments")
-    .filter((row) => row.threadId === asked.threadId && row.projectId === scope.projectId)
-    .flatMap((row) => {
-      const remark = remarkOf(store, scope, row);
-      return remark === undefined ? [] : [remark];
-    })
+  const rows = recordsIn(store, "comments");
+  const idCounts = new Map<unknown, number>();
+  for (const row of rows) idCounts.set(row._id, (idCounts.get(row._id) ?? 0) + 1);
+  const claims = rows.filter((row) => row.threadId === asked.threadId);
+  if (
+    claims.length === 0 ||
+    claims.some((row) =>
+      idCounts.get(row._id) !== 1 ||
+      !isStoredComment(row) ||
+      row.projectId !== scope.projectId
+    )
+  ) return null;
+  const remarks = (claims as TableRow<"comments">[])
+    .map((row) => projectedRemark(store, scope, row))
     .sort((left, right) => left.at - right.at);
 
+  const { row: thread, resource } = owned;
   const opening = remarks[0] ?? null;
   return {
-    id: asked.threadId,
+    id: thread._id,
     state: thread.resolution === undefined ? "open" : "resolved",
-    target: { id: targetId, kind: target.spec.kind, name },
-    anchor: anchorOf(thread.within),
-    ...(boundedText(thread.quote, 20_000) === undefined
-      ? {}
-      : { selectedText: boundedText(thread.quote, 20_000) }),
-    selectedBy: actorOf(store, scope, thread.createdBy),
-    selectedAt: threadAt,
+    target: {
+      id: resource.row._id,
+      kind: resource.spec.kind,
+      name: resource.row.title
+    },
+    anchor: projectedAnchor(thread.within),
+    ...(thread.quote === undefined ? {} : { selectedText: thread.quote }),
+    selectedBy: projectActor(store, scope, thread.createdBy),
+    selectedAt: thread._creationTime,
     opening,
     replies: opening === null ? [] : remarks.slice(1)
   };

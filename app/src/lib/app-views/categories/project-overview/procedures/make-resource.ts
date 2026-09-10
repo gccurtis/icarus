@@ -31,7 +31,7 @@ export const makeResource = async (
   state.failure = undefined;
   try {
     if (key === "research") {
-      const threadId = await createChat(view);
+      const threadId = await createChat();
       if (state.mounted) {
         view.open({ category: "research", content: "research.thread", resourceId: threadId });
       }

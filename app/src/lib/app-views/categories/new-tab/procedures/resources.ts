@@ -49,7 +49,7 @@ export const resourcesOf = (
     kind: row.kind,
     updatedAt: row.updatedAt,
     updated: ageOf(row.updatedAt, now),
-    updatedBy: row.updatedByName
+    updatedBy: row.updatedByName ?? "—"
   }));
 
 /** Recent is changed-recently until the workspace has represented open history. */

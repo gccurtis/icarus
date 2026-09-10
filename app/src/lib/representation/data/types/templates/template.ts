@@ -1,6 +1,9 @@
 import type { Mark } from "$representation/data/types/content/content-block";
 import type { VariableValue } from "$representation/data/types/content/variable-value";
-import type { TemplatedResourceSet } from "$representation/data/types/core/resource-set";
+import type {
+  SetTerm,
+  TemplatedResourceSet
+} from "$representation/data/types/core/resource-set";
 import type { DocumentBody } from "$representation/data/types/documents/body";
 import type { SlideDeckBody } from "$representation/data/types/slide-decks/body";
 import type { PrintScale } from "$representation/data/types/spreadsheets/body";
@@ -21,12 +24,32 @@ export type TemplateHole = {
   name: string;
   label: string;
   description?: string;
-  /** Absent means `scope`, which is what every hole was before text ones existed. */
-  kind?: TemplateHoleKind;
+  /** The represented answer type. Every stored and in-memory hole declares it. */
+  kind: TemplateHoleKind;
   /** What a `scope` selects when the caller says nothing. */
   default?: TemplatedResourceSet;
   /** What a `text` says when the caller says nothing. Absent means it must be filled in. */
   text?: string;
+};
+
+/**
+ * A hole as it was when one immutable template version was written.
+ *
+ * A live template normalises a rule that names particular resources into a
+ * private `resourceSets` row. History cannot retain that private pointer: the
+ * row belongs to the live hole and is rewritten by its next edit. A version
+ * therefore admits the concrete resource term as well as the terms a live
+ * template can store inline.
+ */
+export type TemplateVersionTerm = SetTerm | { select: "hole"; name: string };
+
+export type TemplateVersionScope = {
+  include: TemplateVersionTerm[];
+  exclude: TemplateVersionTerm[];
+};
+
+export type TemplateVersionHole = Omit<TemplateHole, "default"> & {
+  default?: TemplateVersionScope;
 };
 
 export type TemplateCell = {

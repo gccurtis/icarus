@@ -5,7 +5,6 @@
     "projectId": "default",
     "title": "Winter readiness brief",
     "summary": "Executive view of the grid's highest winter reliability exposures and the decisions needed before peak season.",
-    "templateId": "templates:2",
     "createdBy": { "kind": "user", "userId": "users:1" },
     "updatedBy": { "kind": "user", "userId": "users:1" },
     "updatedAt": 1788299760000
@@ -16,7 +15,6 @@
     "projectId": "default",
     "title": "Substation 14 incident write-up",
     "summary": "Post-incident account of the Substation 14 outage, restoration sequence, and follow-up actions.",
-    "templateId": "templates:1",
     "createdBy": { "kind": "user", "userId": "users:2" },
     "updatedBy": { "kind": "user", "userId": "users:3" },
     "updatedAt": 1788213600000
@@ -27,7 +25,6 @@
     "projectId": "default",
     "title": "Interconnect glossary",
     "summary": "Shared definitions for the operational, planning, and regulatory terms used across this project.",
-    "templateId": "templates:3",
     "createdBy": { "kind": "user", "userId": "users:3" },
     "updatedBy": { "kind": "user", "userId": "users:3" },
     "updatedAt": 1787954400000
@@ -38,7 +35,6 @@
     "projectId": "default",
     "title": "Transformer bank replacement decision",
     "summary": "Decision record comparing replacement timing, service risk, and capital cost for the transformer bank.",
-    "templateId": "templates:4",
     "createdBy": { "kind": "user", "userId": "default-user" },
     "updatedBy": { "kind": "user", "userId": "users:1" },
     "updatedAt": 1788460800000

@@ -55,47 +55,13 @@ const seeded = (directory: string) => {
     tags: [],
     body: { resource: "document", rows: [] },
     holes: [],
-    createdBy: { kind: "user", userId: "users:u" },
     at: 1000
   });
-  const documentId = store.create("documents", {
-    projectId: "projects:p",
-    title: "Plan",
-    templateId,
-    createdBy: { kind: "user", userId: "users:u" },
-    updatedBy: { kind: "user", userId: "users:u" },
-    updatedAt: 1000
-  });
-  const slideDeckId = store.create("slideDecks", {
-    projectId: "projects:p",
-    title: "Plan",
-    templateId
-  });
-  const spreadsheetId = store.create("spreadsheets", {
-    projectId: "projects:p",
-    title: "Plan",
-    templateId
-  });
-  return { templateId, versionId, documentId, slideDeckId, spreadsheetId };
+  return { templateId, versionId };
 };
 
 const interruptAt = (target: StoreFailpoint) => (failpoint: StoreFailpoint): void => {
   if (failpoint === target) throw new Error(`interrupted at ${failpoint}`);
-};
-
-const resourceTemplate = (store: StoreModel, table: string, resourceId: string): unknown => {
-  const found = store.read(`${table}.${resourceId}.templateId`);
-  return found?.kind === "field" ? found.value : undefined;
-};
-
-const expectResourcesUse = (
-  store: StoreModel,
-  ids: ReturnType<typeof seeded>,
-  expected: unknown
-): void => {
-  expect(resourceTemplate(store, "documents", ids.documentId)).toBe(expected);
-  expect(resourceTemplate(store, "slideDecks", ids.slideDeckId)).toBe(expected);
-  expect(resourceTemplate(store, "spreadsheets", ids.spreadsheetId)).toBe(expected);
 };
 
 describe("remove template transaction atomicity", () => {
@@ -111,15 +77,11 @@ describe("remove template transaction atomicity", () => {
     const restarted = storeAt(directory);
     expect(restarted.read(`templates.${ids.templateId}`)).toMatchObject({ kind: "row" });
     expect(restarted.read(`templateVersions.${ids.versionId}`)).toMatchObject({ kind: "row" });
-    expectResourcesUse(restarted, ids, ids.templateId);
   });
 
   it("recovers the complete removal after every post-commit failpoint", async () => {
     const failpoints: StoreFailpoint[] = [
       "transaction:after-journal",
-      "transaction:after-table:documents",
-      "transaction:after-table:slideDecks",
-      "transaction:after-table:spreadsheets",
       "transaction:after-table:templateVersions",
       "transaction:after-table:templates",
       "transaction:before-journal-remove"
@@ -137,7 +99,6 @@ describe("remove template transaction atomicity", () => {
       const restarted = storeAt(directory);
       expect(restarted.read(`templates.${ids.templateId}`)).toBeUndefined();
       expect(restarted.read(`templateVersions.${ids.versionId}`)).toBeUndefined();
-      expectResourcesUse(restarted, ids, undefined);
     }
   });
 });

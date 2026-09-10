@@ -1,10 +1,14 @@
 <script lang="ts">
-  import type { Component } from "svelte";
-
   import { PanelPlaceholder } from "$authored-components/panel";
   import { ResizeHandle } from "$authored-components/resize-handle";
   import { railFor, workspaceState, type ContextView } from "$model/client/workspace-state";
+  import { loadContext } from "$surfaces/context/effects/loads-context.svelte";
+  import { contextFailureFor } from "$surfaces/context/procedures/context-failure-for";
   import { RAIL_ENTRIES } from "$surfaces/context/procedures/rail-entries";
+  import {
+    ContextState,
+    type ContextLoader
+  } from "$surfaces/context/shared/context-state.svelte";
   import { COLLAPSE_BELOW, MAX_WIDTH, MIN_WIDTH, RAIL_WIDTH } from "$surfaces/context/types";
 
   /**
@@ -35,35 +39,35 @@
    */
   const VIEWS = import.meta.glob("$lib/app-views/categories/*/context/*.svelte") as Record<
     string,
-    () => Promise<{ default: Component }>
+    ContextLoader
   >;
 
   const view = workspaceState();
+  const state = new ContextState();
 
   const rail = $derived(railFor(view.active.category));
   const active = $derived(view.context);
   const collapsed = $derived(view.frame.contextCollapsed);
 
-  const load = $derived(
+  const path = $derived(
     active === undefined
       ? undefined
-      : VIEWS[`/src/lib/app-views/categories/${active.replace(".", "/context/")}.svelte`]
+      : `/src/lib/app-views/categories/${active.replace(".", "/context/")}.svelte`
   );
+  const load = $derived(path === undefined ? undefined : VIEWS[path]);
 
-  let Content = $state<Component | undefined>(undefined);
+  // The key below follows the active tab synchronously; the import effect
+  // follows one turn later. Keep the old category's component from being
+  // constructed against the new tab during that turn.
+  const CurrentContent = $derived(
+    state.loadedPath === path ? state.content : undefined
+  );
+  const CurrentFailure = $derived(contextFailureFor(state.failure, path));
 
-  $effect(() => {
-    const loader = load;
-    Content = undefined;
-    if (!loader) return;
-
-    let current = true;
-    void loader().then((module) => {
-      if (current) Content = module.default;
-    });
-    return () => {
-      current = false;
-    };
+  loadContext({
+    state,
+    path: () => path,
+    loader: () => load
   });
 
   /**
@@ -84,7 +88,7 @@
   const visible = $derived(RAIL_WIDTH + view.frame.contextWidth);
 </script>
 
-<aside class="panel" aria-label="Context">
+<aside class="panel" aria-label="Context" data-context={active}>
   <nav class="rail" aria-label="Context views">
     {#each rail as id (id)}
       {@const entry = RAIL_ENTRIES[id]}
@@ -105,11 +109,13 @@
   {#if !collapsed}
     <div class="content">
       <div class="body">
-        {#if Content}
+        {#if CurrentContent}
           {#key `${view.activeId}\u0000${active}`}
-            <Content />
+            <CurrentContent />
           {/key}
-        {:else if active !== undefined}
+        {:else if CurrentFailure}
+          <p class="text-body-sm text-danger-text p-4 font-mono">{path}<br />{CurrentFailure.reason}</p>
+        {:else if active !== undefined && load === undefined}
           <!--
             A key the rail offers and the tree has no file for: a view that has
             been designed and not built. Blank was the state before, which is

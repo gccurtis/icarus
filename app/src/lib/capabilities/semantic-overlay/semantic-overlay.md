@@ -17,7 +17,9 @@ lanes: exact text and interpreted semantic material.
   leases. Active work renews its lease, and the owner token is rechecked inside
   publication and settlement transactions. Expired work is recoverable,
   failures stop after three attempts, and a newer requested revision requeues
-  terminal or obsolete work.
+  terminal or obsolete work. Cancellation returns an in-flight claim to the
+  queue atomically without spending a provider attempt; caller signals reach
+  native content, descriptor, and embedding work before the drain resolves.
   `syncSemanticResource`
   runs token-field embedding, deterministic segmentation, contextual passage
   embedding, a latest-revision check, and guarded publication.
@@ -49,6 +51,8 @@ lanes: exact text and interpreted semantic material.
   in-set source or placement; aggregate authored/generated facets persist every
   contributor in `scopeRefs` and require all contributors in-set. Context
   changes reuse unchanged facet vectors independently by input hash.
+  Both query lanes accept the owning operation's signal, including when they
+  are invoked inside an intelligence tool loop.
 
 Derived Output's `read_*` tools do not query either lane. They resolve current
 authoritative resource content and issue typed exact, structured, code, or

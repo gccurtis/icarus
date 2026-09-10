@@ -209,7 +209,8 @@ export const structuredReadingTools = (
         const bytes = await input.model.materialContent.read({
           storageId: file.storageId,
           hash: file.hash
-        });
+        }, input.signal);
+        input.signal?.throwIfAborted();
         if (bytes === undefined) throw new Error("CSV native content is unavailable");
         const parsed = parseCsv(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
         const headers = parsed.rows[0] ?? [];

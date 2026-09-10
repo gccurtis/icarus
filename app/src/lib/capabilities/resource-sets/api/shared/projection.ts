@@ -1,17 +1,15 @@
 import type { StoreModel, TableName, TableRow } from "$model/server/store/index.server";
 import type { Scope } from "$runtime/server/scope.server";
 import { resolveResourceSet } from "$representation/data/behavior/core/resource-set";
+import {
+  admitReusableResourceSetRow,
+  admittedReusableResourceSets
+} from "$representation/data/behavior/core/resource-set-rows";
 import type { Actor } from "$representation/data/types/core/actor";
 import type { ResourceRef } from "$representation/data/types/core/resource";
+import { isResourceRef } from "$representation/data/behavior/core/resource";
 import type { ResourceSet } from "$representation/data/types/core/resource-set";
 
-import {
-  boundToOf,
-  descriptionOf,
-  nameOf,
-  resourceSetOf,
-  setIdOf
-} from "$capabilities/resource-sets/api/shared/validation";
 import type {
   ResourceSetItem,
   ResourceSetUnavailable
@@ -44,68 +42,21 @@ export const recordsIn = (
 export const reportableRevision = (value: unknown): number | null =>
   typeof value === "number" && Number.isSafeInteger(value) && value > 0 ? value : null;
 
-const actorOf = (value: unknown, subject: string): Actor => {
-  const actor = recordOf(value);
-  const identifier = (candidate: unknown): candidate is string =>
-    typeof candidate === "string" && candidate === candidate.trim() && candidate.length > 0 && candidate.length <= 500;
-  const exact = (fields: readonly string[]) =>
-    actor !== undefined && Object.keys(actor).every((field) => fields.includes(field));
-  if (actor?.kind === "system" && exact(["kind"])) return { kind: "system" };
-  if (actor?.kind === "user" && exact(["kind", "userId"]) && identifier(actor.userId)) {
-    return value as Actor;
-  }
-  if (actor?.kind === "connector" && exact(["kind", "connectorId"]) && identifier(actor.connectorId)) {
-    return value as Actor;
-  }
-  if (actor?.kind === "agent" && exact(["kind", "taskId"]) && identifier(actor.taskId)) {
-    return value as Actor;
-  }
-  throw new Error(`resource-sets/${subject}: createdBy is a represented actor`);
-};
-
-export const admitStoredSet = (row: NamedSet): NamedSet => {
-  const subject = `stored-${row._id}`;
-  setIdOf(row._id, subject);
-  if (typeof row.projectId !== "string" || row.projectId.length === 0) {
-    throw new Error(`resource-sets/${subject}: projectId is required`);
-  }
-  if (!Number.isSafeInteger(row.revision) || row.revision < 1) {
-    throw new Error(`resource-sets/${subject}: revision is safe and positive`);
-  }
-  if (!Number.isFinite(row.updatedAt) || row.updatedAt < 0) {
-    throw new Error(`resource-sets/${subject}: updated time is finite`);
-  }
-  if ((row.name === undefined) === (row.boundTo === undefined)) {
-    throw new Error(`resource-sets/${subject}: a row carries a name or an owner, never both or neither`);
-  }
-  const description = row.description === undefined ? undefined : descriptionOf(row.description, subject);
-  return {
-    ...row,
-    ...(row.name === undefined ? {} : { name: nameOf(row.name, subject) }),
-    ...(row.boundTo === undefined ? {} : { boundTo: boundToOf(row.boundTo, subject) }),
-    ...(description === undefined ? {} : { description }),
-    set: resourceSetOf(row.set, subject),
-    createdBy: actorOf(row.createdBy, subject)
-  };
-};
+export const admitStoredSet = (row: NamedSet): NamedSet =>
+  admitReusableResourceSetRow(row);
 
 export const visibleSet = (store: StoreModel, scope: Scope, setId: string): SetLookup => {
   const matching = recordsIn(store, "resourceSets").filter((row) => row._id === setId);
   const visible = matching.filter((row) => row.projectId === scope.projectId);
   if (visible.length === 0) return { kind: "missing" };
-  if (matching.length !== 1) {
+  if (matching.length !== 1 || visible.length !== 1) {
     return { kind: "ambiguous", detail: "more than one stored row claims this set id" };
+  }
+  if (visible[0]?.name === undefined && visible[0]?.boundTo !== undefined) {
+    return { kind: "missing" };
   }
   return { kind: "found", set: visible[0] as unknown as NamedSet };
 };
-
-const CATALOGUE: readonly { table: TableName; kind: string }[] = [
-  { table: "documents", kind: "document" },
-  { table: "slideDecks", kind: "slides" },
-  { table: "spreadsheets", kind: "spreadsheet" },
-  { table: "findings", kind: "finding" },
-  { table: "researchThreads", kind: "research" }
-];
 
 export const catalogueOf = (store: StoreModel, projectId: string): readonly ResourceRef[] => {
   const staged = new Set(
@@ -113,27 +64,34 @@ export const catalogueOf = (store: StoreModel, projectId: string): readonly Reso
       .filter((row) => row.projectId === projectId && typeof row.resourceId === "string")
       .map((row) => row.resourceId as string)
   );
-  return CATALOGUE.flatMap(({ table, kind }) =>
-    recordsIn(store, table)
-      .filter(
-        (row) =>
-          row.projectId === projectId && typeof row._id === "string" && !staged.has(row._id)
-      )
-      .map((row) => ({ kind, id: row._id as string }))
+  const candidates = [
+    ...recordsIn(store, "documents").filter((row) => row.projectId === projectId)
+      .map((row) => ({ kind: "document", id: row._id })),
+    ...recordsIn(store, "slideDecks").filter((row) => row.projectId === projectId)
+      .map((row) => ({ kind: "slides", id: row._id })),
+    ...recordsIn(store, "spreadsheets").filter((row) => row.projectId === projectId)
+      .map((row) => ({ kind: "spreadsheet", id: row._id })),
+    ...recordsIn(store, "findings").filter((row) => row.projectId === projectId)
+      .map((row) => ({ kind: "finding", id: row._id })),
+    ...recordsIn(store, "researchThreads").filter((row) => row.projectId === projectId)
+      .map((row) => ({ kind: "research", id: row._id })),
+    ...recordsIn(store, "connectors").filter((row) => row.projectId === projectId)
+      .map((row) => ({ kind: "connection", id: row._id })),
+    ...recordsIn(store, "externalFiles").filter((row) => row.projectId === projectId)
+      .map((row) => ({
+      kind: typeof row.subkind === "string" ? `externalFile::${row.subkind}` : undefined,
+      id: row._id
+    }))
+  ];
+  return candidates.filter(
+    (candidate): candidate is ResourceRef =>
+      isResourceRef(candidate) && !staged.has(candidate.id)
   );
 };
 
 export const namedSetsIn = (store: StoreModel, projectId: string): ReadonlyMap<string, ResourceSet> => {
-  const sets = new Map<string, ResourceSet>();
-  for (const row of recordsIn(store, "resourceSets")) {
-    if (row.projectId !== projectId || typeof row._id !== "string") continue;
-    try {
-      sets.set(row._id, resourceSetOf(row.set, `stored-${row._id}`));
-    } catch {
-      continue;
-    }
-  }
-  return sets;
+  const reusable = admittedReusableResourceSets(recordsIn(store, "resourceSets"), projectId);
+  return new Map([...reusable].map(([id, row]) => [id, row.set]));
 };
 
 const namedRow = (

@@ -27,7 +27,7 @@ The live stage is not backed by component-local mock values. Accepted create,
 rename, description, variable-description, tag, duplicate, and delete commands
 write through the Templates capability into the representation store. Refresh
 and server restart preserve them. Document and slide-deck `Use` also persists an
-independent project resource with template provenance. Spreadsheet
+independent project resource without a continuing link to its template. Spreadsheet
 materialization exists at the capability boundary, but its UI hand-off remains
 disabled until the spreadsheet editor consumes represented resource ids.
 
@@ -35,7 +35,7 @@ The follow-on decision list is therefore not a list of missing CRUD behaviors.
 It separates future ownership, production authorization, network-retry safety,
 cross-table crash recovery, editor-session recovery, and remaining Use inputs.
 Each rendered item states its trigger, current behavior, worst credible result,
-and completion shape. Those six rows are the only product and architecture
+and completion shape. Those five rows are the only product and architecture
 decisions requested from the reviewer; the exact audit is evidence and scope
 explanation rather than an additional decision.
 
@@ -160,9 +160,9 @@ component being reviewed.
   as a future ownership state, and Shared is absent from the current contract.
 - Scope proves project membership but carries no membership role. The reference
   uses the development owner; production writes still need role-aware scope.
-- Batched collection writes and removals are atomic within one table file. Store
-  now provides a recoverable cross-table transaction and template removal uses
-  it; create, update, duplicate, and instantiate have not adopted it yet.
+- Store provides a journaled, recoverable cross-table transaction. Template
+  creation, revisions, duplication, removal, staging, and instantiation use it
+  whenever one intent changes more than one represented row or table.
 - Matching pending commands share one promise per Workspace State instance, so
   sibling panes and keyed remounts cannot duplicate a write. This is not a
   durable cross-client request-id ledger, and the reference does not claim it is.

@@ -8,11 +8,11 @@ export const DECISIONS: readonly DecisionBrief[] = [
     stakes: "This choice changes what the editor promises today without requiring destructive changes to represented document data.",
     context: [
       "The document representation can store global and first-page header/footer rows. The withdrawn editor implementation rendered the first page as rich editable blocks but flattened later pages into generic text, so one logical header had visibly different results.",
-      "The representation remains useful compatibility surface and deleting it would risk stored data. The editor now leaves those roots untouched and unrendered. Page numbering remains available through a small independent projection because its current storage happens to live on the same represented objects."
+      "The current representation reserves global and first-page furniture for the eventual parity-safe feature. The editor leaves those roots untouched and unrendered. Page numbering remains available through a small independent projection because its current storage lives on the same represented objects."
     ],
     recommendation: {
       optionId: "defer-authoring",
-      rationale: "Withdraw authoring until one structured renderer can make editable and repeated occurrences visually identical. Keep stored fields backward-compatible and keep page numbering isolated, so the future feature can return without preserving a known-buggy UI."
+      rationale: "Withdraw authoring until one structured renderer can make editable and repeated occurrences visually identical. Keep the current represented furniture explicit and page numbering isolated, so the future feature can return without preserving a known-buggy UI."
     },
     decision: {
       optionId: "defer-authoring",

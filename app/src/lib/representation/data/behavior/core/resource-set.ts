@@ -4,6 +4,55 @@ import type { ResourceSet, SetTerm } from "$representation/data/types/core/resou
 
 const keyOf = (ref: ResourceRef): string => `${ref.kind}\u0000${ref.id}`;
 
+/**
+ * Whether a resource-set row carries the ownership shape of a reusable subject.
+ *
+ * Unnamed rows are private storage owned by another subject. A generic scope
+ * resolver must use `admittedReusableResourceSets`, not this discriminator:
+ * only the former proves the complete stored row and unique id. An owning
+ * capability may inspect this shape while separately proving `boundTo`.
+ */
+export const isReusableResourceSetRow = (
+  row: { readonly name?: unknown; readonly boundTo?: unknown }
+): row is { readonly name: string; readonly boundTo?: undefined } =>
+  typeof row.name === "string" &&
+  row.name.length > 0 &&
+  row.name === row.name.trim() &&
+  row.boundTo === undefined;
+
+export type ResourceSetReferenceIssue = {
+  readonly kind: "unavailable" | "cycle";
+  readonly setId: string;
+};
+
+/** Finds the first reference a closed reusable-set graph cannot safely follow. */
+export const resourceSetReferenceIssue = (
+  set: ResourceSet,
+  setsById: ReadonlyMap<string, ResourceSet>,
+  selfId?: string
+): ResourceSetReferenceIssue | undefined => {
+  const visited = new Set<string>();
+  const visiting = new Set<string>();
+  const walk = (held: ResourceSet): ResourceSetReferenceIssue | undefined => {
+    for (const term of [...held.include, ...held.exclude]) {
+      if (term.select !== "set") continue;
+      if (term.setId === selfId || visiting.has(term.setId)) {
+        return { kind: "cycle", setId: term.setId };
+      }
+      if (visited.has(term.setId)) continue;
+      const nested = setsById.get(term.setId);
+      if (nested === undefined) return { kind: "unavailable", setId: term.setId };
+      visiting.add(term.setId);
+      const issue = walk(nested);
+      visiting.delete(term.setId);
+      if (issue !== undefined) return issue;
+      visited.add(term.setId);
+    }
+    return undefined;
+  };
+  return walk(set);
+};
+
 export const resolveResourceSet = (
   set: ResourceSet,
   catalogue: readonly ResourceRef[],

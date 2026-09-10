@@ -1,5 +1,12 @@
-import { kindMatches } from "$representation/data/behavior/core/resource";
-import type { ResourceKind, ResourceRef } from "$representation/data/types/core/resource";
+import {
+  isResourceRef,
+  isResourceSelectorKind,
+  kindMatches
+} from "$representation/data/behavior/core/resource";
+import type {
+  ResourceRef,
+  ResourceSelectorKind
+} from "$representation/data/types/core/resource";
 import type {
   ResourceSet,
   SetTerm,
@@ -10,10 +17,9 @@ import type {
 /**
  * A scope while somebody is building it, and the words for the one they built.
  *
- * Every surface that offers a scope reads this: both editors' Templates panels,
- * the library inspector, and the Contexts panel. Before it existed the same
- * arithmetic and the same sentence were written out four times, and the fourth
- * had already drifted.
+ * Every surface that offers a scope reads this: both editors' Templates panels
+ * and the library inspector. Before it existed, the same arithmetic and the
+ * same sentence were repeated across those consumers and had already drifted.
  *
  * A draft is the widest shape either union can hold, so one component can edit a
  * template's default and a project's own set without knowing which it has.
@@ -29,21 +35,22 @@ export type ScopeDraft = {
   readonly exclude: readonly AnyTerm[];
 };
 
-export type KindOption = { readonly kind: ResourceKind; readonly label: string };
+export type KindOption = { readonly kind: ResourceSelectorKind; readonly label: string };
 
 /**
  * The kinds a project's catalogue reports, with the words for them.
  *
- * `ResourceKind` is an open prefix-matched string, so this is the offer list
- * rather than the vocabulary: naming `externalFile` here would still match every
- * subkind under it.
+ * Exact reference kinds are closed. The base `externalFile` selector is offered
+ * here because it deliberately selects every current external-file subkind.
  */
 export const PROJECT_KINDS: readonly KindOption[] = [
   { kind: "document", label: "Documents" },
   { kind: "slides", label: "Slide decks" },
   { kind: "spreadsheet", label: "Spreadsheets" },
   { kind: "finding", label: "Findings" },
-  { kind: "research", label: "Research threads" }
+  { kind: "research", label: "Research threads" },
+  { kind: "connection", label: "Connections" },
+  { kind: "externalFile", label: "External files" }
 ];
 
 export const WHOLE_PROJECT: ResourceSet = { include: [{ select: "project" }], exclude: [] };
@@ -249,6 +256,12 @@ export type ScopeOffer = {
   readonly refused?: string;
 };
 
+export type NamedResourceRef = ResourceRef extends infer Ref
+  ? Ref extends ResourceRef
+    ? Ref & { readonly name: string }
+    : never
+  : never;
+
 export type OfferSource = "kinds" | "sets" | "resources";
 
 export const rowsOf = (
@@ -267,11 +280,14 @@ export const resourceKey = (ref: ResourceRef): string => `${ref.kind}/${ref.id}`
 
 /** The term an offer stands for, so a callback can name a key rather than a shape. */
 export const termFor = (source: OfferSource, key: string): AnyTerm | undefined => {
-  if (source === "kinds") return { select: "kinds", kinds: [key] };
+  if (source === "kinds") {
+    return isResourceSelectorKind(key) ? { select: "kinds", kinds: [key] } : undefined;
+  }
   if (source === "sets") return { select: "set", setId: key as never };
   const cut = key.indexOf("/");
   if (cut <= 0) return undefined;
-  return { select: "resources", refs: [{ kind: key.slice(0, cut), id: key.slice(cut + 1) }] };
+  const ref = { kind: key.slice(0, cut), id: key.slice(cut + 1) };
+  return isResourceRef(ref) ? { select: "resources", refs: [ref] } : undefined;
 };
 
 const offer = (scope: ScopeDraft, key: string, label: string, note: string | undefined, term: AnyTerm, refused?: string): ScopeOffer => {
@@ -309,20 +325,27 @@ export const setOffers = (
 
 export const resourceOffers = (
   scope: ScopeDraft,
-  resources: readonly { readonly id: string; readonly kind: string; readonly name: string }[]
+  resources: readonly NamedResourceRef[]
 ): readonly ScopeOffer[] =>
-  resources.map((entry) =>
-    offer(scope, resourceKey(entry), entry.name, entry.kind, {
+  resources.map((entry) => {
+    const ref = admittedNamedReference(entry);
+    return offer(scope, resourceKey(ref), entry.name, entry.kind, {
       select: "resources",
-      refs: [{ kind: entry.kind, id: entry.id }]
-    })
-  );
+      refs: [ref]
+    });
+  });
+
+const admittedNamedReference = (entry: NamedResourceRef): ResourceRef => {
+  const ref = { kind: entry.kind, id: entry.id };
+  if (!isResourceRef(ref)) throw new Error("scope offering contains an invalid resource ref");
+  return ref;
+};
 
 export type ScopeOffering = {
   /** The project's own named sets. */
   readonly sets?: readonly { readonly id: string; readonly name: string; readonly set: ResourceSet }[];
   /** Everything the project holds, for the count and for naming one directly. */
-  readonly resources?: readonly { readonly id: string; readonly kind: string; readonly name: string }[];
+  readonly resources?: readonly NamedResourceRef[];
   /** The set being edited, when one is, so it cannot be put inside itself. */
   readonly self?: string;
 };
@@ -356,7 +379,7 @@ export const builderView = (scope: ScopeDraft, offering: ScopeOffering = {}): Sc
     sets: new Map(sets.map((entry) => [entry.id, entry.name])),
     resources: new Map(resources.map((entry) => [entry.id, entry.name]))
   };
-  const catalogue = resources.map((entry) => ({ kind: entry.kind, id: entry.id }));
+  const catalogue = resources.map(admittedNamedReference);
   const selected = selectedBy(scope, catalogue, known);
   const titles = new Map(resources.map((entry) => [entry.id, entry]));
 

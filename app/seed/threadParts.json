@@ -791,10 +791,10 @@
               {
                 "id": "m-chat-priorities-0-b-a",
                 "kind": "literal",
-                "text": "If the filing can only name five substations for hardening, which five does the record support?"
+                "text": "What does the readiness brief identify as the binding constraint?"
               }
             ],
-            "display": "If the filing can only name five substations for hardening, which five does the record support?",
+            "display": "What does the readiness brief identify as the binding constraint?",
             "marks": []
           }
         ],
@@ -813,10 +813,10 @@
               {
                 "id": "m-chat-priorities-1-b-a",
                 "kind": "literal",
-                "text": "By customer-minutes lost in 2026: Substations 14, 7, 22, 3 and 41. Substation 14 alone carries a fifth of the total, and it is the one with two questioned events."
+                "text": "Substation 14 is the binding constraint. Its transformer bank was derated in September after the oil analysis came back."
               }
             ],
-            "display": "By customer-minutes lost in 2026: Substations 14, 7, 22, 3 and 41. Substation 14 alone carries a fifth of the total, and it is the one with two questioned events.",
+            "display": "Substation 14 is the binding constraint. Its transformer bank was derated in September after the oil analysis came back.",
             "marks": []
           }
         ],
@@ -839,10 +839,10 @@
               {
                 "id": "m-chat-priorities-2-b-a",
                 "kind": "literal",
-                "text": "Does 41 hold up if we exclude the December storm?"
+                "text": "Why do the two feeder alternatives not remove that exposure?"
               }
             ],
-            "display": "Does 41 hold up if we exclude the December storm?",
+            "display": "Why do the two feeder alternatives not remove that exposure?",
             "marks": []
           }
         ],
@@ -861,10 +861,10 @@
               {
                 "id": "m-chat-priorities-3-b-a",
                 "kind": "literal",
-                "text": "No. Without December, 41 drops to ninth and Substation 9 takes its place. The other four hold."
+                "text": "Both feeders run through the same corridor, so a fault on either leaves the northern ring supplied from one direction only."
               }
             ],
-            "display": "No. Without December, 41 drops to ninth and Substation 9 takes its place. The other four hold.",
+            "display": "Both feeders run through the same corridor, so a fault on either leaves the northern ring supplied from one direction only.",
             "marks": []
           }
         ],
@@ -896,10 +896,10 @@
               {
                 "id": "m-chat-tone-0-b-a",
                 "kind": "literal",
-                "text": "The remedy section reads as if we are asking permission. Can the register carry a firmer tone?"
+                "text": "What does the replacement decision actually recommend?"
               }
             ],
-            "display": "The remedy section reads as if we are asking permission. Can the register carry a firmer tone?",
+            "display": "What does the replacement decision actually recommend?",
             "marks": []
           }
         ],
@@ -918,10 +918,10 @@
               {
                 "id": "m-chat-tone-1-b-a",
                 "kind": "literal",
-                "text": "It can, as long as every firm sentence rests on a numbered finding. The register objects to assertion, not to confidence. I would open with the remedy and cite the finding in the same sentence."
+                "text": "It recommends authorizing the accelerated replacement window and reserving the mobile bank until commissioning tests close."
               }
             ],
-            "display": "It can, as long as every firm sentence rests on a numbered finding. The register objects to assertion, not to confidence. I would open with the remedy and cite the finding in the same sentence.",
+            "display": "It recommends authorizing the accelerated replacement window and reserving the mobile bank until commissioning tests close.",
             "marks": []
           }
         ],
@@ -953,10 +953,10 @@
               {
                 "id": "m-chat-sources-0-b-a",
                 "kind": "literal",
-                "text": "Can we cite the NERC winter review for the claim that under-frequency load shedding was avoided?"
+                "text": "Can we cite a NERC winter review from this project?"
               }
             ],
-            "display": "Can we cite the NERC winter review for the claim that under-frequency load shedding was avoided?",
+            "display": "Can we cite a NERC winter review from this project?",
             "marks": []
           }
         ],
@@ -975,10 +975,10 @@
               {
                 "id": "m-chat-sources-1-b-a",
                 "kind": "literal",
-                "text": "Page 31 says load shedding was 'not required at any point'. That carries the claim. The stronger phrasing about 'margin' on page 33 is implied, not stated."
+                "text": "Nothing in this project answers that. Try naming the resource you have in mind, or ask something narrower."
               }
             ],
-            "display": "Page 31 says load shedding was 'not required at any point'. That carries the claim. The stronger phrasing about 'margin' on page 33 is implied, not stated.",
+            "display": "Nothing in this project answers that. Try naming the resource you have in mind, or ask something narrower.",
             "marks": []
           }
         ],
@@ -1001,10 +1001,10 @@
               {
                 "id": "m-chat-sources-2-b-a",
                 "kind": "literal",
-                "text": "Then cite 31 and drop the margin sentence."
+                "text": "Then cite page 31 anyway."
               }
             ],
-            "display": "Then cite 31 and drop the margin sentence.",
+            "display": "Then cite page 31 anyway.",
             "marks": []
           }
         ],
@@ -1036,10 +1036,10 @@
               {
                 "id": "m-chat-undergrounding-0-b-a",
                 "kind": "literal",
-                "text": "Before you attack it, give me the undergrounding case at its strongest."
+                "text": "What does the storm-hardening deck say about undergrounding?"
               }
             ],
-            "display": "Before you attack it, give me the undergrounding case at its strongest.",
+            "display": "What does the storm-hardening deck say about undergrounding?",
             "marks": []
           }
         ],
@@ -1058,10 +1058,10 @@
               {
                 "id": "m-chat-undergrounding-1-b-a",
                 "kind": "literal",
-                "text": "At its strongest: the three feeders that carry 41 percent of customer-minutes are all overhead, all in the same corridor, and all failed in the same two storms. Undergrounding that corridor removes the correlated failure, not just the average one."
+                "text": "It reserves targeted undergrounding for the four highest-consequence segments."
               }
             ],
-            "display": "At its strongest: the three feeders that carry 41 percent of customer-minutes are all overhead, all in the same corridor, and all failed in the same two storms. Undergrounding that corridor removes the correlated failure, not just the average one.",
+            "display": "It reserves targeted undergrounding for the four highest-consequence segments.",
             "marks": []
           }
         ],
@@ -1093,10 +1093,10 @@
               {
                 "id": "m-chat-feeder12-history-0-b-a",
                 "kind": "literal",
-                "text": "Is there anything in the record about Feeder 12 before the 2026 storms?"
+                "text": "What does the outage workbook record for Feeder 12?"
               }
             ],
-            "display": "Is there anything in the record about Feeder 12 before the 2026 storms?",
+            "display": "What does the outage workbook record for Feeder 12?",
             "marks": []
           }
         ],
@@ -1115,10 +1115,10 @@
               {
                 "id": "m-chat-feeder12-history-1-b-a",
                 "kind": "literal",
-                "text": "One relay replacement in 2024 and a mis-coordination note from the 2025 winter review. The note was never closed out, which may be why 12-B trips early now."
+                "text": "The workbook records that recloser mis-coordination is under review."
               }
             ],
-            "display": "One relay replacement in 2024 and a mis-coordination note from the 2025 winter review. The note was never closed out, which may be why 12-B trips early now.",
+            "display": "The workbook records that recloser mis-coordination is under review.",
             "marks": []
           }
         ],

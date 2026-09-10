@@ -16,7 +16,7 @@
   import { Textarea } from "$vendored-components/textarea";
   import { ToggleGroup, ToggleGroupItem } from "$vendored-components/toggle-group";
   import { BUILTINS } from "$app-views/general/function-builder/builtins";
-  import { readStore } from "$model/client/workspace-state";
+  import { variables } from "$app-views/general/function-builder/variables";
 
   /**
    * Writing an expression against everything the project can refer to.
@@ -41,16 +41,12 @@
     description: string;
   };
 
-  const answer = readStore("variables");
-  const rows = $derived(
-    answer.current?.kind === "table" && answer.current.table === "variables"
-      ? answer.current.rows
-      : []
-  );
+  const answer = variables();
+  const rows = $derived(answer.current?.variables ?? []);
 
   const entries = $derived<Entry[]>([
     ...rows.map((variable) => ({
-      id: variable._id,
+      id: variable.id,
       name: variable.name,
       right: variable.value.kind,
       group: "Variables",

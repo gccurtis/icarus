@@ -34,7 +34,7 @@
     {
       number: "03",
       title: "Use the ordinary editor",
-      detail: "Document and slide-deck behavior stay in their owners. The spreadsheet editor is still mock-backed.",
+      detail: "Document and slide-deck behavior stay in their owners. Spreadsheet template staging remains unavailable.",
       icon: Layers3
     },
     {
@@ -79,7 +79,7 @@
     {
       label: "Editor strategy",
       value: "proposed · deferred",
-      detail: "Document and deck reuse need a durable authoring session; the spreadsheet editor itself remains mock-backed.",
+      detail: "Document and deck reuse need a durable authoring session; spreadsheet template staging remains unavailable.",
       state: "deferred"
     },
     {
@@ -111,13 +111,6 @@
       today: "Workspace single-flight shares one identical pending promise inside one browser workspace. Revision checks protect update and delete, but create, duplicate, and Use intentionally mint a fresh UUID for every separately accepted request.",
       worst: "If a transport retries after the server committed but before the browser received the answer—or two clients submit the same intent—the result can be two templates or two created resources. Existing rows are not overwritten or corrupted.",
       next: "Add a caller-generated operation id and a persisted, user/project-scoped result ledger so a retry returns the first result. This is a moderate server contract and retention decision, not a reliable one-line debounce; it does not block this merge while the client has no automatic retry queue."
-    },
-    {
-      title: "Cross-table failure recovery",
-      priority: "Before production-critical mutations · high, low-frequency",
-      today: "Admission and conflicts are resolved before writing, and each individual table file is replaced atomically. There is no transaction spanning template, version, resource, snapshot, provenance, and cell tables.",
-      worst: "An I/O or process failure between table commits can leave a new template without its history row, an updated template without the matching version, an instantiated resource without its snapshot, or a partially completed delete. Ordinary validation failures do not cause this; it requires a persistence failure after an earlier table committed.",
-      next: "Use a transactional backend or add a durable mutation journal with deterministic recovery. The current per-table hardening reduces the failure window but cannot honestly promise all-or-nothing behavior across files."
     },
     {
       title: "Template authoring session and failed Done",
@@ -288,7 +281,7 @@
         <div><span class="kicker">REPRESENTATION RELATIONSHIPS</span><h2>Portable body, explicit history</h2></div>
         <p>
           A template owns portable content rather than live resource IDs. Versions preserve prior
-          values; resources created with Use retain provenance but become independent. Ownership is
+          values; resources created with Use are independent copies with no template pointer. Ownership is
           represented for Personal templates; Project ownership is not yet represented or emitted.
         </p>
       </div>
@@ -318,9 +311,9 @@
             </div>
           </article>
           <article>
-            <header><ArrowRight size={16} aria-hidden="true" /><span>PROVENANCE</span></header>
+            <header><ArrowRight size={16} aria-hidden="true" /><span>INDEPENDENT COPY</span></header>
             <h3>Created resource</h3>
-            <p>An independent document, deck or workbook retains templateId; later template edits never rewrite it.</p>
+            <p>A document, deck or workbook carries no template id; later template edits never rewrite it.</p>
           </article>
         </div>
       </div>
@@ -364,7 +357,7 @@
       <div class="section-heading">
         <div><span class="kicker">FOLLOW-ON / PRIORITIZED</span><h2>Six decisions, with their actual stakes</h2></div>
         <p>
-          These six are the only product and architecture choices requested from the reviewer. The
+          These five are the only product and architecture choices requested from the reviewer. The
           branch audit above is evidence and merge-scope explanation, not a seventh decision. Each
           row says what works today, the worst credible failure, when it matters, and what completing
           it entails.

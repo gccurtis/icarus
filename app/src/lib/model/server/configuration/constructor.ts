@@ -6,19 +6,43 @@ import { isConfigurationObject } from "$model/server/configuration/types";
 import { SnapshotConfiguration } from "$model/server/configuration/definition";
 
 const LOCAL_FILE = "local.yaml";
+const OVERLAY_ENVIRONMENT_KEY = "ICARUS_CONFIGURATION_OVERLAY";
+const DIRECTORY_ENVIRONMENT_KEY = "ICARUS_CONFIGURATION_DIRECTORY";
+
+/** Keep an opt-in overlay confined to one tracked subdirectory and out of the default merge. */
+export const configurationFileOrder = (
+  entries: readonly string[],
+  overlay: string | undefined
+): string[] => {
+  const sections = entries.filter((name) => name.endsWith(".yaml") && name !== LOCAL_FILE).sort();
+  const names = entries.includes(LOCAL_FILE) ? [...sections, LOCAL_FILE] : sections;
+  if (overlay === undefined || overlay.length === 0) return names;
+  if (!/^overlays\/[a-z0-9][a-z0-9.-]*\.yaml$/i.test(overlay)) {
+    throw new Error(
+      `${OVERLAY_ENVIRONMENT_KEY} must name one YAML file directly inside configuration/overlays`
+    );
+  }
+  return [...names, overlay];
+};
 
 /**
- * Where the YAML lives, resolved from the process working directory.
+ * Where the YAML lives, normally resolved from the process working directory.
  *
  * Deliberately *not* derived from this module's own location. Under Vite this
  * file is bundled into a chunk under `build/server/`, so `import.meta.url` would
  * resolve to a directory that exists and is wrong — a failure that produces an
  * empty configuration rather than an error. The backend derived it that way and
- * it is one of the three path derivations this migration had to fix.
+ * it is one of the three path derivation defects corrected in this implementation.
  *
- * `pnpm dev` and `node build/index.js` are both run from the package root.
+ * `pnpm dev` and `node build/index.js` are both run from the package root. An
+ * explicit directory lets an isolated process use a disposable configuration
+ * snapshot without writing generated values into the source tree.
  */
-const configurationDirectory = join(process.cwd(), "configuration");
+const configuredDirectory = process.env[DIRECTORY_ENVIRONMENT_KEY]?.trim();
+const configurationDirectory =
+  configuredDirectory === undefined || configuredDirectory.length === 0
+    ? join(process.cwd(), "configuration")
+    : configuredDirectory;
 
 const copyValue = (value: unknown): unknown => {
   if (isConfigurationObject(value)) return merge({}, value);
@@ -95,21 +119,17 @@ const readConfigurationFile = async (
 /**
  * Reads every YAML section once and returns an immutable snapshot.
  *
- * Sections merge in lexicographic order and optional `local.yaml` merges last,
- * which is what makes it the place for a real API key without touching a tracked
- * file. Values come back as `unknown` on purpose: the consumer that reads a key
- * is the only thing that knows whether it may be absent.
+ * Sections merge in lexicographic order and optional `local.yaml` merges after
+ * them. A confined, explicitly selected overlay may merge last for an isolated
+ * process such as a browser test. Values come back as `unknown` on purpose: the
+ * consumer that reads a key is the only thing that knows whether it may be absent.
  *
  * Reading is the whole of this object's acquisition, and it either completes or
  * throws — there is no half-read snapshot to release.
  */
 export const createConfiguration = async (): Promise<Configuration> => {
-  const entries = (await readdir(configurationDirectory))
-    .filter((name) => name.endsWith(".yaml"))
-    .sort();
-
-  const sections = entries.filter((name) => name !== LOCAL_FILE);
-  const names = entries.includes(LOCAL_FILE) ? [...sections, LOCAL_FILE] : sections;
+  const entries = await readdir(configurationDirectory);
+  const names = configurationFileOrder(entries, process.env[OVERLAY_ENVIRONMENT_KEY]);
 
   let root = Object.create(null) as ConfigurationObject;
   for (const name of names) {

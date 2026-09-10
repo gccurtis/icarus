@@ -5,7 +5,7 @@ import type { StoreUnitOfWork } from "$model/server/store/index.server";
 type Row = Record<string, unknown> & { _id: string; _creationTime: number };
 
 const model = vi.hoisted(() => ({
-  scope: { projectId: "p", userId: "u", username: "Uma" },
+  scope: { projectId: "projects:p", userId: "users:u", username: "Uma" },
   tables: {} as Record<string, Row[]>,
   store: {
     create: (table: string, fields: unknown) => {
@@ -75,6 +75,9 @@ const { enqueueSemanticSync } = await import("$capabilities/semantic-overlay/ind
 const { readResourceTemplate } = await import(
   "$capabilities/templates/api/read-resource-template/read-resource-template"
 );
+const { readTemplateStageIndex } = await import(
+  "$capabilities/templates/api/read-template-stage-index/read-template-stage-index"
+);
 const { readTemplateLibrary } = await import(
   "$capabilities/templates/api/read-template-library/read-template-library"
 );
@@ -118,13 +121,13 @@ const row = (table: string, id: string, fields: Record<string, unknown>): Row =>
 
 const template = (id: string, body: unknown = documentBody, extra: Record<string, unknown> = {}): Row =>
   row("templates", id, {
-    projectId: "p",
-    userId: "u",
+    projectId: "projects:p",
+    userId: "users:u",
     name: `Template ${id}`,
     tags: [],
     body,
     holes: [],
-    createdBy: { kind: "user", userId: "u" },
+    createdBy: { kind: "user", userId: "users:u" },
     revision: 2,
     updatedAt: 20,
     ...extra
@@ -132,10 +135,15 @@ const template = (id: string, body: unknown = documentBody, extra: Record<string
 
 beforeEach(() => {
   vi.spyOn(Date, "now").mockReturnValue(500);
-  model.scope = { projectId: "p", userId: "u", username: "Uma" };
+  model.scope = { projectId: "projects:p", userId: "users:u", username: "Uma" };
   model.tables = {
-    users: [{ _id: "u", _creationTime: 1, displayName: "Uma" }],
-    memberships: [row("memberships", "1", { userId: "u", projectId: "p", token: "u", role: "owner" })],
+    users: [{ _id: "users:u", _creationTime: 1, displayName: "Uma" }],
+    memberships: [row("memberships", "1", {
+      userId: "users:u",
+      projectId: "projects:p",
+      token: "u",
+      role: "owner"
+    })],
     templates: [template("1"), template("2", deckBody)],
     templateVersions: [],
     templateStages: [],
@@ -170,12 +178,12 @@ describe("opening a stage", () => {
     assert.deepEqual(model.tables.templateStages[0], {
       _id: "templateStages:1",
       _creationTime: 1,
-      projectId: "p",
+      projectId: "projects:p",
       templateId: "templates:1",
       templateRevision: 2,
       target: "document",
       resourceId: "documents:1",
-      createdBy: { kind: "user", userId: "u" },
+      createdBy: { kind: "user", userId: "users:u" },
       updatedAt: 500
     });
 
@@ -199,11 +207,11 @@ describe("opening a stage", () => {
   test("is refused by the overlay, however the question is asked", async () => {
     await openTemplateStage({ templateId: "templates:1" });
     model.tables.documents.push(
-      row("documents", "9", { projectId: "p", title: "A real document" })
+      row("documents", "9", { projectId: "projects:p", title: "A real document" })
     );
     model.tables.documentSnapshots.push(
       row("documentSnapshots", "9", {
-        projectId: "p",
+        projectId: "projects:p",
         resourceId: "documents:9",
         role: "leader",
         revision: 1,
@@ -229,7 +237,7 @@ describe("opening a stage", () => {
     assert.equal(read.stage?.stageId, "templateStages:1");
     assert.equal("mine" in (read.stage ?? {}), false);
 
-    model.scope = { projectId: "p", userId: "v", username: "Victor" };
+    model.scope = { projectId: "projects:p", userId: "users:v", username: "Victor" };
     const saved = await commitTemplateStage({ stageId: "templateStages:1", baseRevision: 2 });
     assert.equal(saved.accepted, true);
     assert.equal(model.tables.templates[0].revision, 3);
@@ -279,7 +287,7 @@ describe("opening a stage", () => {
 describe("reading what a resource is", () => {
   test("names the stage, and nothing for a plain resource", async () => {
     await openTemplateStage({ templateId: "templates:1" });
-    model.tables.documents.push(row("documents", "10", { projectId: "p", title: "Plain" }));
+    model.tables.documents.push(row("documents", "10", { projectId: "projects:p", title: "Plain" }));
 
     assert.deepEqual(await readResourceTemplate({ resourceId: "documents:1" }), {
       resourceId: "documents:1",
@@ -296,6 +304,34 @@ describe("reading what a resource is", () => {
       resourceId: "documents:10",
       stage: null
     });
+  });
+
+  test("indexes only exact live stage identities in the current project", async () => {
+    await openTemplateStage({ templateId: "templates:1" });
+    await openTemplateStage({ templateId: "templates:2" });
+
+    assert.deepEqual(await readTemplateStageIndex(), {
+      stages: [
+        {
+          stageId: "templateStages:1",
+          templateId: "templates:1",
+          templateName: "Template 1",
+          target: "document",
+          resourceId: "documents:1"
+        },
+        {
+          stageId: "templateStages:2",
+          templateId: "templates:2",
+          templateName: "Template 2",
+          target: "slides",
+          resourceId: "slideDecks:1"
+        }
+      ],
+      unavailable: []
+    });
+
+    model.scope = { projectId: "projects:other", userId: "users:u", username: "Uma" };
+    assert.deepEqual(await readTemplateStageIndex(), { stages: [], unavailable: [] });
   });
 });
 
@@ -319,6 +355,7 @@ describe("saving a stage", () => {
               type: "prompt",
               atoms: [{ id: "p1-a", kind: "literal", text: "Sum up" }],
               display: "Sum up",
+              prompt: "Sum up",
               marks: [],
               scope: { include: [{ select: "hole", name: "evidence" }], exclude: [] },
               state: "idle"
@@ -339,13 +376,65 @@ describe("saving a stage", () => {
     const held = model.tables.templates[0];
     assert.equal(held.revision, 3);
     assert.deepEqual((held.body as { rows: unknown[] }).rows.length, 1);
-    assert.deepEqual(held.holes, [{ name: "evidence", label: "evidence" }]);
+    assert.deepEqual(held.holes, [{ name: "evidence", label: "evidence", kind: "scope" }]);
     assert.equal(model.tables.templateVersions.length, 1);
     assert.equal(model.tables.templateStages[0].templateRevision, 3);
 
     const stale = await commitTemplateStage({ stageId: "templateStages:1", baseRevision: 2 });
     assert.equal(stale.accepted, false);
     assert.equal(stale.accepted === false && stale.reason, "stale");
+  });
+
+  test("refuses a staged prompt scope owned by another resource", async () => {
+    await openTemplateStage({ templateId: "templates:1" });
+    model.tables.documentSnapshots[0].body = {
+      rows: [
+        {
+          id: "r1",
+          kind: "blocks",
+          blocks: [
+            {
+              id: "p1",
+              type: "prompt",
+              atoms: [{ id: "p1-a", kind: "literal", text: "Sum up" }],
+              display: "Sum up",
+              marks: [],
+              derivedOutputId: "derivedOutputs:1",
+              hole: { name: "evidence" },
+              state: "idle"
+            }
+          ]
+        }
+      ]
+    };
+    model.tables.derivedOutputs = [
+      row("derivedOutputs", "1", {
+        projectId: "projects:p",
+        prompt: "What matters?",
+        scope: { include: [{ select: "set", setId: "resourceSets:1" }], exclude: [] }
+      })
+    ];
+    model.tables.resourceSets.push(
+      row("resourceSets", "1", {
+        projectId: "projects:p",
+        boundTo: { kind: "resource", resourceId: "documents:9", hole: "evidence" },
+        set: {
+          include: [{ select: "resources", refs: [{ kind: "document", id: "documents:9" }] }],
+          exclude: []
+        },
+        createdBy: { kind: "user", userId: "users:u" },
+        revision: 1,
+        updatedAt: 1
+      })
+    );
+
+    const saved = await commitTemplateStage({ stageId: "templateStages:1", baseRevision: 2 });
+
+    assert.equal(saved.accepted, false);
+    assert.equal(saved.accepted ? "" : saved.reason, "unsupported-body");
+    assert.match(saved.accepted ? "" : saved.detail, /private/);
+    assert.equal(model.tables.templates[0].revision, 2);
+    assert.deepEqual(model.tables.templateVersions, []);
   });
 
   test("saves a deck stage back however many slides it holds now", async () => {
@@ -366,7 +455,7 @@ describe("saving a stage", () => {
 
   test("refuses to save a stage from another project", async () => {
     await openTemplateStage({ templateId: "templates:1" });
-    model.scope = { projectId: "other", userId: "u", username: "Uma" };
+    model.scope = { projectId: "projects:other", userId: "users:u", username: "Uma" };
     const saved = await commitTemplateStage({ stageId: "templateStages:1", baseRevision: 2 });
     assert.equal(saved.accepted === false && saved.reason, "not-found");
   });
@@ -376,15 +465,15 @@ describe("discarding a stage", () => {
   test("removes the stage and everything the scratch resource accumulated", async () => {
     await openTemplateStage({ templateId: "templates:1" });
     model.tables.documentChangeSets.push(
-      row("documentChangeSets", "1", { projectId: "p", resourceId: "documents:1", revision: 1 })
+      row("documentChangeSets", "1", { projectId: "projects:p", resourceId: "documents:1", revision: 1 })
     );
     model.tables.commentThreads.push(
-      row("commentThreads", "1", { projectId: "p", target: { kind: "document", id: "documents:1" } }),
-      row("commentThreads", "2", { projectId: "p", target: { kind: "document", id: "documents:7" } })
+      row("commentThreads", "1", { projectId: "projects:p", target: { kind: "document", id: "documents:1" } }),
+      row("commentThreads", "2", { projectId: "projects:p", target: { kind: "document", id: "documents:7" } })
     );
     model.tables.comments.push(
-      row("comments", "1", { projectId: "p", threadId: "commentThreads:1" }),
-      row("comments", "2", { projectId: "p", threadId: "commentThreads:2" })
+      row("comments", "1", { projectId: "projects:p", threadId: "commentThreads:1" }),
+      row("comments", "2", { projectId: "projects:p", threadId: "commentThreads:2" })
     );
 
     const discarded = await discardTemplateStage({ stageId: "templateStages:1" });
@@ -415,29 +504,29 @@ describe("discarding a stage", () => {
     const mine = { kind: "document", id: "documents:1" };
     const other = { kind: "document", id: "documents:9" };
     model.tables.semanticSyncJobs = [
-      row("semanticSyncJobs", "1", { projectId: "p", ref: mine, state: "queued" }),
-      row("semanticSyncJobs", "2", { projectId: "p", ref: other, state: "queued" })
+      row("semanticSyncJobs", "1", { projectId: "projects:p", ref: mine, state: "queued" }),
+      row("semanticSyncJobs", "2", { projectId: "projects:p", ref: other, state: "queued" })
     ];
     model.tables.semanticMaterialJobs = [
-      row("semanticMaterialJobs", "1", { projectId: "p", ref: mine, state: "queued" })
+      row("semanticMaterialJobs", "1", { projectId: "projects:p", ref: mine, state: "queued" })
     ];
     model.tables.semanticSources = [
-      row("semanticSources", "1", { projectId: "p", ref: mine, revision: 1 }),
-      row("semanticSources", "2", { projectId: "p", ref: other, revision: 1 })
+      row("semanticSources", "1", { projectId: "projects:p", ref: mine, revision: 1 }),
+      row("semanticSources", "2", { projectId: "projects:p", ref: other, revision: 1 })
     ];
     model.tables.semanticMaterials = [
-      row("semanticMaterials", "1", { projectId: "p", source: { kind: "resourceContent", ref: mine } })
+      row("semanticMaterials", "1", { projectId: "projects:p", source: { kind: "resourceContent", ref: mine } })
     ];
     model.tables.semanticMaterialPlacements = [
-      row("semanticMaterialPlacements", "1", { projectId: "p", ref: mine })
+      row("semanticMaterialPlacements", "1", { projectId: "projects:p", ref: mine })
     ];
     model.tables.semanticMaterialHistory = [
-      row("semanticMaterialHistory", "1", { projectId: "p", material: { source: { ref: mine } } })
+      row("semanticMaterialHistory", "1", { projectId: "projects:p", material: { source: { ref: mine } } })
     ];
     model.tables.semanticObjects = [
-      row("semanticObjects", "1", { projectId: "p", lane: "text", semanticSourceId: "semanticSources:1" }),
-      row("semanticObjects", "2", { projectId: "p", lane: "material", semanticMaterialId: "semanticMaterials:1" }),
-      row("semanticObjects", "3", { projectId: "p", lane: "text", semanticSourceId: "semanticSources:2" })
+      row("semanticObjects", "1", { projectId: "projects:p", lane: "text", semanticSourceId: "semanticSources:1" }),
+      row("semanticObjects", "2", { projectId: "projects:p", lane: "material", semanticMaterialId: "semanticMaterials:1" }),
+      row("semanticObjects", "3", { projectId: "projects:p", lane: "text", semanticSourceId: "semanticSources:2" })
     ];
 
     await discardTemplateStage({ stageId: "templateStages:1" });
@@ -454,11 +543,11 @@ describe("discarding a stage", () => {
   test("goes with the template when the template is deleted, and is out of reach from another project", async () => {
     await openTemplateStage({ templateId: "templates:1" });
 
-    model.scope = { projectId: "other", userId: "u", username: "Uma" };
+    model.scope = { projectId: "projects:other", userId: "users:u", username: "Uma" };
     const elsewhere = await removeTemplate({ templateId: "templates:1", baseRevision: 2 });
     assert.equal(elsewhere.accepted === false && elsewhere.reason, "not-found");
 
-    model.scope = { projectId: "p", userId: "u", username: "Uma" };
+    model.scope = { projectId: "projects:p", userId: "users:u", username: "Uma" };
     const here = await removeTemplate({ templateId: "templates:1", baseRevision: 2 });
     assert.equal(here.accepted, true);
     assert.deepEqual(model.tables.templateStages, []);

@@ -7,8 +7,11 @@ const model = vi.hoisted(() => ({
   tables: new Map<string, Row[]>(),
   writes: [] as { path: string; value: unknown }[],
   removals: [] as string[],
+  transactions: 0,
+  failCreateTable: undefined as string | undefined,
   store: {
     create: (table: string, fields: Record<string, unknown>) => {
+      if (model.failCreateTable === table) throw new Error(`failed creating ${table}`);
       const rows = model.tables.get(table) ?? [];
       const id = `${table}:${rows.length + 1}`;
       model.tables.set(table, [...rows, { ...fields, _id: id }]);
@@ -20,30 +23,115 @@ const model = vi.hoisted(() => ({
     },
     remove: (path: string) => {
       model.removals.push(path);
+    },
+    transaction: <T>(work: (unit: typeof model.store) => T): T => {
+      model.transactions += 1;
+      const before = new Map(
+        [...model.tables].map(([table, rows]) => [table, structuredClone(rows)] as const)
+      );
+      const writes = [...model.writes];
+      const removals = [...model.removals];
+      try {
+        return work(model.store);
+      } catch (error) {
+        model.tables = before;
+        model.writes = writes;
+        model.removals = removals;
+        throw error;
+      }
     }
   }
 }));
 
 vi.mock("$runtime/server/start.server", () => ({ serverModel: () => model }));
 vi.mock("$runtime/server/scope.server", () => ({
-  requireScope: () => Promise.resolve({ projectId: "p", userId: "users:1", username: "You" })
+  requireScope: () => Promise.resolve({ projectId: "projects:p", userId: "users:1", username: "You" })
 }));
 
 const { startThread } = await import("$capabilities/comments/api/start-thread/start-thread");
 const { reply } = await import("$capabilities/comments/api/reply/reply");
 const { resolveThread } = await import("$capabilities/comments/api/resolve-thread/resolve-thread");
+const { readComments } = await import("$capabilities/comments/api/read-comments/read-comments");
 const { validateStartThread } = await import("$capabilities/comments/api/start-thread/validate-start-thread");
+
+const currentResource = (table: "documents" | "slideDecks" | "spreadsheets", id: string, title: string): Row => ({
+  _id: `${table}:${id}`,
+  _creationTime: 1,
+  projectId: "projects:p",
+  title,
+  createdBy: { kind: "system" },
+  updatedBy: { kind: "system" },
+  updatedAt: 1
+});
+
+const currentUser = (id = "users:1", name = "You"): Row => ({
+  _id: id,
+  _creationTime: 1,
+  authSubject: `auth:${id}`,
+  displayName: name,
+  settings: "{}",
+  updatedAt: 1
+});
+
+const currentMembership = (id = "memberships:1", userId = "users:1"): Row => ({
+  _id: id,
+  _creationTime: 1,
+  projectId: "projects:p",
+  userId,
+  token: `token:${id}`,
+  role: "owner"
+});
+
+const paragraph = (id: string, display: string) => ({
+  id,
+  type: "text",
+  variant: "paragraph",
+  atoms: [{ id: `${id}:atom`, kind: "literal", text: display }],
+  display,
+  marks: []
+});
+
+const currentThread = (
+  id: string,
+  projectId = "projects:p",
+  extra: Record<string, unknown> = {}
+): Row => ({
+  _id: `commentThreads:${id}`,
+  _creationTime: 1,
+  projectId,
+  target: { kind: "slides", id: projectId === "projects:p" ? "slideDecks:1" : "slideDecks:2" },
+  createdBy: { kind: "system" },
+  updatedAt: 1,
+  ...extra
+});
 
 beforeEach(() => {
   model.tables = new Map();
   model.writes = [];
   model.removals = [];
+  model.transactions = 0;
+  model.failCreateTable = undefined;
+  model.tables.set("slideDecks", [currentResource("slideDecks", "1", "Deck")]);
+  model.tables.set("documents", [currentResource("documents", "1", "Document")]);
+  model.tables.set("spreadsheets", [currentResource("spreadsheets", "1", "Sheet")]);
+  model.tables.set("memberships", [currentMembership()]);
+  model.tables.set("users", [currentUser()]);
 });
 
 describe("startThread", () => {
   it("refuses a thread on a template's working copy", async () => {
     model.tables.set("templateStages", [
-      { _id: "templateStages:1", projectId: "p", templateId: "templates:1", resourceId: "slideDecks:1" }
+      {
+        _id: "templateStages:1",
+        _creationTime: 1,
+        projectId: "projects:p",
+        templateId: "templates:1",
+        templateRevision: 1,
+        target: "slides",
+        resourceId: "slideDecks:1",
+        createdBy: { kind: "system" },
+        updatedAt: 1
+      }
     ]);
 
     await assert.rejects(
@@ -64,11 +152,55 @@ describe("startThread", () => {
     const comment = model.tables.get("comments")?.[0];
     assert.equal(made.threadId, thread?._id);
     assert.equal(made.commentId, comment?._id);
-    assert.equal(thread?.projectId, "p");
+    assert.equal(thread?.projectId, "projects:p");
     assert.deepEqual(thread?.createdBy, { kind: "user", userId: "users:1" });
     assert.deepEqual(thread?.within, { kind: "element", elementId: "el-5" });
     assert.equal(comment?.threadId, thread?._id);
     assert.equal((comment?.blocks as { display: string }[])[0].display, "Is this the right feeder?");
+    assert.equal(model.transactions, 1);
+  });
+
+  it("rolls back the thread when its opening comment cannot be written", async () => {
+    model.failCreateTable = "comments";
+    await assert.rejects(
+      startThread({ target: { kind: "slides", id: "slideDecks:1" }, text: "Atomic" }),
+      /failed creating comments/
+    );
+    assert.equal(model.tables.get("commentThreads"), undefined);
+  });
+
+  it("refuses a target that belongs to another project", async () => {
+    model.tables.set("slideDecks", [{
+      ...currentResource("slideDecks", "2", "Other"),
+      projectId: "projects:other"
+    }]);
+    await assert.rejects(
+      startThread({ target: { kind: "slides", id: "slideDecks:2" }, text: "No" }),
+      /no slides/
+    );
+  });
+
+  it("refuses partial or duplicate target rows instead of repairing one", async () => {
+    model.tables.set("slideDecks", [{
+      _id: "slideDecks:1",
+      _creationTime: 1,
+      projectId: "projects:p",
+      title: "Partial"
+    }]);
+    await assert.rejects(
+      startThread({ target: { kind: "slides", id: "slideDecks:1" }, text: "No" }),
+      /no slides/
+    );
+
+    model.tables.set("slideDecks", [
+      currentResource("slideDecks", "1", "Deck"),
+      currentResource("slideDecks", "1", "Duplicate")
+    ]);
+    await assert.rejects(
+      startThread({ target: { kind: "slides", id: "slideDecks:1" }, text: "Still no" }),
+      /no slides/
+    );
+    assert.equal(model.tables.get("commentThreads"), undefined);
   });
 
   it("refuses an empty remark and an unknown anchor", () => {
@@ -111,8 +243,8 @@ describe("startThread", () => {
 describe("reply and resolve", () => {
   it("replies only into a thread of the asking project", async () => {
     model.tables.set("commentThreads", [
-      { _id: "commentThreads:1", projectId: "p", target: { kind: "slides", id: "slideDecks:1" } },
-      { _id: "commentThreads:2", projectId: "other", target: { kind: "slides", id: "slideDecks:2" } }
+      currentThread("1"),
+      currentThread("2", "projects:other")
     ]);
 
     const made = await reply({ threadId: "commentThreads:1", text: "Yes." });
@@ -124,7 +256,7 @@ describe("reply and resolve", () => {
 
   it("settles a thread with who did it, and reopens by removing that", async () => {
     model.tables.set("commentThreads", [
-      { _id: "commentThreads:1", projectId: "p", target: { kind: "slides", id: "slideDecks:1" }, resolution: { by: "users:2", at: 1 } }
+      currentThread("1", "projects:p", { resolution: { by: "users:1", at: 1 } })
     ]);
 
     await resolveThread({ threadId: "commentThreads:1", resolved: true });
@@ -133,5 +265,238 @@ describe("reply and resolve", () => {
 
     await resolveThread({ threadId: "commentThreads:1", resolved: false });
     assert.deepEqual(model.removals, ["commentThreads.commentThreads:1.resolution"]);
+  });
+
+  it("refuses replies and resolution changes on a partial current-row claimant", async () => {
+    model.tables.set("commentThreads", [{
+      _id: "commentThreads:1",
+      projectId: "projects:p",
+      target: { kind: "slides", id: "slideDecks:1" }
+    }]);
+
+    await assert.rejects(reply({ threadId: "commentThreads:1", text: "No" }));
+    await assert.rejects(resolveThread({ threadId: "commentThreads:1", resolved: true }));
+    assert.equal(model.tables.get("comments"), undefined);
+    assert.deepEqual(model.writes, []);
+    assert.deepEqual(model.removals, []);
+  });
+});
+
+describe("readComments", () => {
+  it("projects only owned current-shape threads and excludes flat text anchors", async () => {
+    model.tables.set("commentThreads", [
+      {
+        _id: "commentThreads:1",
+        _creationTime: 1,
+        projectId: "projects:p",
+        target: { kind: "document", id: "documents:1" },
+        within: {
+          kind: "text",
+          spans: [{
+            blockId: "block-1",
+            from: { atom: "atom-1", offset: 0 },
+            to: { atom: "atom-1", offset: 2 }
+          }]
+        },
+        createdBy: { kind: "user", userId: "users:1" },
+        updatedAt: 1
+      },
+      {
+        _id: "commentThreads:flat",
+        _creationTime: 1,
+        projectId: "projects:p",
+        target: { kind: "document", id: "documents:1" },
+        within: { kind: "text", blockId: "block-1", from: 0, to: 2 },
+        createdBy: { kind: "user", userId: "users:1" },
+        updatedAt: 1
+      }
+    ]);
+    model.tables.set("comments", [
+      {
+        _id: "comments:1",
+        _creationTime: 1,
+        projectId: "projects:p",
+        threadId: "commentThreads:1",
+        blocks: [paragraph("comment-1", "Current")],
+        mentions: [],
+        author: { kind: "user", userId: "users:1" }
+      },
+      {
+        _id: "comments:flat",
+        _creationTime: 1,
+        projectId: "projects:p",
+        threadId: "commentThreads:flat",
+        blocks: [paragraph("comment-flat", "Retired")],
+        mentions: [],
+        author: { kind: "user", userId: "users:1" }
+      }
+    ]);
+
+    const projected = await readComments();
+    assert.deepEqual(projected.threads.map((thread) => thread._id), ["commentThreads:1"]);
+    assert.deepEqual(projected.remarks.map((remark) => remark._id), ["comments:1"]);
+    assert.deepEqual(projected.people, [{ _id: "users:1", displayName: "You" }]);
+    assert.equal("authSubject" in projected.people[0], false);
+  });
+
+  it("admits every current mention arm and recursively projects image and table blocks", async () => {
+    model.tables.set("agentTasks", [{
+      _id: "agentTasks:1",
+      _creationTime: 1,
+      projectId: "projects:p",
+      threadId: "threads:1",
+      title: "Agent",
+      instruction: "Review",
+      personaId: "personas:1",
+      origin: { kind: "person" },
+      state: "running",
+      tools: [],
+      plan: [],
+      outputs: [],
+      questions: [],
+      createdBy: { kind: "system" },
+      startedAt: 1,
+      revision: 1,
+      updatedAt: 1
+    }]);
+    model.tables.set("connectors", [{
+      _id: "connectors:1",
+      _creationTime: 1,
+      projectId: "projects:p",
+      name: "Drive",
+      configuration: { kind: "provider", provider: "googleDrive", selection: "folder" },
+      createdBy: { kind: "system" },
+      updatedAt: 1
+    }]);
+    model.tables.set("commentThreads", [{
+      _id: "commentThreads:1",
+      _creationTime: 1,
+      projectId: "projects:p",
+      target: { kind: "document", id: "documents:1" },
+      createdBy: { kind: "system" },
+      updatedAt: 1
+    }]);
+    model.tables.set("comments", [{
+      _id: "comments:1",
+      _creationTime: 1,
+      projectId: "projects:p",
+      threadId: "commentThreads:1",
+      blocks: [
+        { id: "image-1", type: "image", alt: "Diagram" },
+        {
+          id: "table-1",
+          type: "table",
+          headerRows: 0,
+          rows: [{
+            id: "row-1",
+            cells: [{ id: "cell-1", blocks: [paragraph("cell-text", "Cell value")] }]
+          }]
+        }
+      ],
+      mentions: [
+        { kind: "url", url: "https://example.test", note: "source" },
+        { kind: "actor", actor: { kind: "system" } },
+        { kind: "actor", actor: { kind: "user", userId: "users:1" } },
+        { kind: "actor", actor: { kind: "agent", taskId: "agentTasks:1" } },
+        { kind: "actor", actor: { kind: "connector", connectorId: "connectors:1" } },
+        { kind: "persona", personaId: "personas:1" },
+        { kind: "resource", ref: { kind: "document", id: "documents:1" } }
+      ],
+      author: { kind: "system" }
+    }]);
+
+    const projected = await readComments();
+    assert.equal(projected.remarks[0]?.text, "Diagram\nCell value");
+    assert.deepEqual(projected.remarks[0]?.mentionedUserIds, ["users:1"]);
+  });
+
+  it("omits a whole conversation for a partial block, malformed claimant, or duplicate target", async () => {
+    model.tables.set("commentThreads", [{
+      _id: "commentThreads:1",
+      _creationTime: 1,
+      projectId: "projects:p",
+      target: { kind: "document", id: "documents:1" },
+      createdBy: { kind: "user", userId: "users:1" },
+      updatedAt: 1
+    }]);
+    model.tables.set("comments", [
+      {
+        _id: "comments:1",
+        _creationTime: 1,
+        projectId: "projects:p",
+        threadId: "commentThreads:1",
+        blocks: [paragraph("valid", "Valid")],
+        mentions: [],
+        author: { kind: "user", userId: "users:1" }
+      },
+      {
+        _id: "comments:2",
+        threadId: "commentThreads:1",
+        blocks: [{ display: "partial" }]
+      }
+    ]);
+
+    let projected = await readComments();
+    assert.deepEqual(projected.threads, []);
+    assert.deepEqual(projected.remarks, []);
+
+    model.tables.set("comments", [{
+      _id: "comments:1",
+      _creationTime: 1,
+      projectId: "projects:p",
+      threadId: "commentThreads:1",
+      blocks: [paragraph("valid", "Valid")],
+      mentions: [],
+      author: { kind: "user", userId: "users:1" }
+    }]);
+    model.tables.set("documents", [
+      currentResource("documents", "1", "Document"),
+      { _id: "documents:1", projectId: "projects:p", title: "partial duplicate" }
+    ]);
+    projected = await readComments();
+    assert.deepEqual(projected.threads, []);
+  });
+
+  it("does not project a foreign user id through authors or mentions", async () => {
+    model.tables.set("users", [currentUser(), currentUser("users:2", "Other")]);
+    model.tables.set("commentThreads", [{
+      _id: "commentThreads:1",
+      _creationTime: 1,
+      projectId: "projects:p",
+      target: { kind: "document", id: "documents:1" },
+      createdBy: { kind: "user", userId: "users:2" },
+      updatedAt: 1
+    }]);
+    model.tables.set("comments", [{
+      _id: "comments:1",
+      _creationTime: 1,
+      projectId: "projects:p",
+      threadId: "commentThreads:1",
+      blocks: [paragraph("comment-1", "Private actor")],
+      mentions: [{ kind: "actor", actor: { kind: "user", userId: "users:2" } }],
+      author: { kind: "user", userId: "users:2" }
+    }]);
+
+    const projected = await readComments();
+    assert.deepEqual(projected.threads, []);
+    assert.deepEqual(projected.remarks, []);
+    assert.equal(JSON.stringify(projected).includes("users:2"), false);
+  });
+
+  it("omits a conversation whose mention actor uses a non-nominal id", async () => {
+    model.tables.set("commentThreads", [currentThread("1")]);
+    model.tables.set("comments", [{
+      _id: "comments:1",
+      _creationTime: 1,
+      projectId: "projects:p",
+      threadId: "commentThreads:1",
+      blocks: [paragraph("comment-1", "Bad mention")],
+      mentions: [{ kind: "actor", actor: { kind: "user", userId: "banana" } }],
+      author: { kind: "user", userId: "users:1" }
+    }]);
+
+    const projected = await readComments();
+    assert.deepEqual(projected.threads, []);
+    assert.deepEqual(projected.remarks, []);
   });
 });

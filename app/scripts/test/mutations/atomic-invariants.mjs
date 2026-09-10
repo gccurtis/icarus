@@ -70,13 +70,13 @@ export const MUTATIONS = [
   },
   {
     check: "revision-state-advances-together",
-    says: "a revision-bearing subject has no failpoint atomicity contract",
+    says: "a resource-revision submission has no failpoint atomicity contract",
     names: "capabilities/revision-probe",
     changes: [
       { path: "src/lib/capabilities/revision-probe/index.ts", write: `export {};\n` },
       {
-        path: "src/lib/capabilities/revision-probe/api/commit/commit.ts",
-        write: `export const commit = (Snapshots: unknown, ChangeSets: unknown, revision: number): unknown[] => [Snapshots, ChangeSets, revision];\n`
+        path: "src/lib/capabilities/revision-probe/api/submit-revision-changes/submit-revision-changes.ts",
+        write: `export const submitRevisionChanges = (Snapshots: unknown, ChangeSets: unknown, revision: number): unknown[] => [Snapshots, ChangeSets, revision];\n`
       }
     ]
   }

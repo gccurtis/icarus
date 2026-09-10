@@ -85,8 +85,10 @@ export const materialDescriptorInputHash = (seed: MaterialSeed): string =>
 
 export const describeMaterial = async (
   model: ServerModel,
-  seed: MaterialSeed
+  seed: MaterialSeed,
+  signal?: AbortSignal
 ): Promise<GeneratedMaterialDescriptor | undefined> => {
+  signal?.throwIfAborted();
   if (model.configuration.get("semanticOverlay.materials.generateDescriptors") !== true) return undefined;
   if (!shouldDescribeMaterial(seed)) return undefined;
   const envelope = contextValue(seed);
@@ -106,7 +108,8 @@ export const describeMaterial = async (
       description: "A bounded discovery description with explicit uncertainty",
       schema: descriptorSchema,
       parse: parsedDescriptor
-    }
+    },
+    ...(signal === undefined ? {} : { signal })
   });
   const value = result.value;
   const sampled = seed.profile.kind === "csv" && seed.profile.truncated ||

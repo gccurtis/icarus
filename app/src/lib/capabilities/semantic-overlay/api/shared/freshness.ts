@@ -1,6 +1,7 @@
 import type { StoreUnitOfWork, TableRow } from "$model/server/store/index.server";
 import type { Id } from "$representation/data/types/core/id";
 import type { ResourceRef } from "$representation/data/types/core/resource";
+import { externalFileResourceKind } from "$representation/data/behavior/core/resource";
 import type {
   MaterialSource,
   SemanticMaterialPlacementFields
@@ -84,7 +85,7 @@ export const materialSourceIsCurrent = (
   const subkind = file.subkind;
   return (
     externalSource.ref.id === file._id &&
-    externalSource.ref.kind === `externalFile::${subkind}` &&
+    externalSource.ref.kind === externalFileResourceKind(subkind) &&
     externalSource.hash === file.hash &&
     externalSource.mediaType === file.mediaType &&
     externalSource.subkind === subkind
