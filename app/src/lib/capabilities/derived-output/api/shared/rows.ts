@@ -3,7 +3,6 @@ import type { TextBlock } from "$representation/data/types/content/content-block
 import type { Id } from "$representation/data/types/core/id";
 import type { DerivedOutputFields } from "$representation/data/types/semantic/derived-output";
 import type { SemanticSourceSnapshot } from "$representation/data/types/semantic/source";
-import { fileSubkindFor } from "$representation/data/behavior/external/file";
 import { materialRecordIsCurrent } from "$capabilities/semantic-overlay";
 
 export const rowsOf = <T extends TableName>(
@@ -97,7 +96,7 @@ export const activeSources = (
   }
   for (const file of rowsOf(store, "externalFiles")) {
     if (file.projectId !== projectId) continue;
-    const subkind = file.subkind ?? fileSubkindFor(file.mediaType, file.name);
+    const subkind = file.subkind;
     if (subkind !== "text") continue;
     const ref = { kind: "externalFile::text", id: file._id };
     active.set(`${ref.kind}\u0000${ref.id}`, {

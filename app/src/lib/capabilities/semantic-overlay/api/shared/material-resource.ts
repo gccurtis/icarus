@@ -1,7 +1,6 @@
 import { Buffer } from "node:buffer";
 
 import type { ServerModel } from "$runtime/server/start.server";
-import { fileSubkindFor } from "$representation/data/behavior/external/file";
 import type { Id } from "$representation/data/types/core/id";
 import type { ResourceRef } from "$representation/data/types/core/resource";
 import type { MaterialSeed } from "$representation/data/types/semantic/material";
@@ -84,7 +83,7 @@ export const readMaterialSyncTargetFor = (
     (row) => row.projectId === projectId && row._id === ref.id
   );
   if (file === undefined) return undefined;
-  const subkind = file.subkind ?? fileSubkindFor(file.mediaType, file.name);
+  const subkind = file.subkind;
   return { ref: { kind: `externalFile::${subkind}`, id: file._id }, revision };
 };
 
@@ -97,7 +96,7 @@ const external = async (
     (row) => row.projectId === projectId && row._id === ref.id
   );
   if (file === undefined) return undefined;
-  const subkind = file.subkind ?? fileSubkindFor(file.mediaType, file.name);
+  const subkind = file.subkind;
   const csv = isCsvFile(file.name, file.mediaType);
   const code = codeLanguage(file.name, file.mediaType) !== "unknown";
   const bytes = subkind === "image" || csv || code

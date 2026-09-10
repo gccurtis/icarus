@@ -4,7 +4,7 @@ import {
 } from "$app-views/categories/templates/procedures/library.svelte";
 import type { WorkspaceStateModel } from "$model/client/workspace-state";
 
-/** Owns the one asynchronous handoff from the compatibility editor route. */
+/** Owns the one asynchronous handoff from the template editor route. */
 export class EditorOpenState {
   opening = $state<string | undefined>(undefined);
   refused = $state<string | undefined>(undefined);

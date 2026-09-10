@@ -965,7 +965,7 @@ representation/data/behavior/semantic/materials/
         <p>
           Resource-specific adapters now own document and slide traversal; one writer emits exact
           text, locators, and hard boundaries while that same walk inventories first-class material.
-          The old resource-text file is only a compatibility facade.
+          Callers consume the authoritative projector's exact or material output directly.
         </p>
       </div>
 

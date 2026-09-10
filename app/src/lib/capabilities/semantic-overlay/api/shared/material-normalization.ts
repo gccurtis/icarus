@@ -1,5 +1,4 @@
 import type { ServerModel } from "$runtime/server/start.server";
-import { fileSubkindFor } from "$representation/data/behavior/external/file";
 import type { Id } from "$representation/data/types/core/id";
 import type { ResourceRef } from "$representation/data/types/core/resource";
 import type {
@@ -113,7 +112,7 @@ export const withDepartedExternalImages = (
         (row) => row.projectId === projectId && row._id === source.fileId
       );
       if (file === undefined || file.hash !== source.hash) return [];
-      const subkind = file.subkind ?? fileSubkindFor(file.mediaType, file.name);
+      const subkind = file.subkind;
       desired.add(material.identityKey);
       const context = {
         title: file.name,

@@ -104,7 +104,7 @@ Queued work becomes searchable through four implemented paths:
   bounded exact batch and then one bounded material batch.
 - `backfillSemanticOverlay` enumerates current document, deck, and spreadsheet
   leaders plus external files, coalesces the appropriate jobs, and immediately
-  processes a bounded batch. It is the development/migration entry.
+  processes bounded work. It is the development maintenance entry.
 - `syncSemanticResource` directly projects, embeds, and guardedly publishes one
   exact-text resource. It bypasses the durable queue and does not process the
   material lane.

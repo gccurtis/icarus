@@ -330,10 +330,10 @@ treating contextual slide renders as evidence.
 
 The live projector is rooted at
 `app/src/lib/representation/data/behavior/semantic/projection/project-resource.ts`.
-`resource-text.ts` is now a compatibility facade over its exact output. The
-projector uses one UTF-16 coordinate space, joins actual text units with blank
-lines, retains document/slide locators, records hard slide boundaries out of
-band, omits synthetic labels such as `Slide 1`, and excludes Prompt Blocks.
+Callers consume its exact or material output directly. The projector uses one
+UTF-16 coordinate space, joins actual text units with blank lines, retains
+document/slide locators, records hard slide boundaries out of band, omits
+synthetic labels such as `Slide 1`, and excludes Prompt Blocks.
 It projects authored table header labels and image alt/caption text, while raw
 table bodies, chart values, and pixels remain native material.
 

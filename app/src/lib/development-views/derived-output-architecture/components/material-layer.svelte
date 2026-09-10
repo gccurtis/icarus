@@ -373,7 +373,7 @@ capabilities/semantic-overlay/api/
       status: "live",
       path: "representation/data/types/external/file.ts + store/tables.ts",
       symbols: "FileSubkind · ExternalFileFields",
-      note: "Files persist name, media type, subkind, storage ID, hash, and origin; legacy rows use deterministic fallback classification."
+      note: "Files persist name, media type, required subkind, storage ID, hash, and origin; readers consume that one current shape directly."
     },
     {
       status: "live",

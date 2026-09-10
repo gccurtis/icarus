@@ -1,6 +1,5 @@
 import type { IntelligenceTool } from "$model/server/intelligence/index.server";
 import { kindMatches } from "$representation/data/behavior/core/resource";
-import { fileSubkindFor } from "$representation/data/behavior/external/file";
 import { rowsOf } from "$capabilities/derived-output/api/shared/rows";
 import type { ResourceReadingContext } from "$capabilities/derived-output/api/shared/resource-reading-context";
 import { describedAgentTool } from "$capabilities/derived-output/api/shared/tool-catalog";
@@ -65,7 +64,7 @@ export const textReadingTools = (context: ResourceReadingContext): IntelligenceT
           })),
           ...rowsOf(input.model.store, "externalFiles").map((row) => ({
             ref: {
-              kind: `externalFile::${row.subkind ?? fileSubkindFor(row.mediaType, row.name)}`,
+              kind: `externalFile::${row.subkind}`,
               id: row._id
             },
             name: row.name,

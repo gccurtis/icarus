@@ -170,7 +170,7 @@ describe("Derived Output resource-reading session", () => {
       },
       {
         _id: "externalFiles:image", _creationTime: 3, projectId, name: "diagram.png",
-        mediaType: "image/png", storageId: "_storage:image", hash: hash("c")
+        mediaType: "image/png", subkind: "image", storageId: "_storage:image", hash: hash("c")
       }
     ]);
     put("semanticMaterials", [

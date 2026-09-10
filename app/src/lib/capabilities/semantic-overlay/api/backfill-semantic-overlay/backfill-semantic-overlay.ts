@@ -8,10 +8,9 @@ import { processSemanticSyncQueueFor } from "$capabilities/semantic-overlay/api/
 import { validateBackfillSemanticOverlay } from "$capabilities/semantic-overlay/api/backfill-semantic-overlay/validate-backfill-semantic-overlay";
 import type { BackfillSemanticOverlayResult } from "$capabilities/semantic-overlay/types/semantic-sync-queue";
 import { enqueueMaterialSyncFor } from "$capabilities/semantic-overlay/api/shared/material-queue";
-import { fileSubkindFor } from "$representation/data/behavior/external/file";
 import { semanticUnitModel } from "$capabilities/semantic-overlay/api/shared/unit-of-work";
 
-/** Development/migration entry point: coalesce every leader revision, then drain a batch. */
+/** Development maintenance entry: coalesce every leader revision, then drain bounded work. */
 export const backfillSemanticOverlay = async (
   input: unknown
 ): Promise<BackfillSemanticOverlayResult> => {
@@ -42,7 +41,7 @@ export const backfillSemanticOverlay = async (
       .filter((row) => row.projectId === projectId)
       .map((row) => ({
         ref: {
-          kind: `externalFile::${row.subkind ?? fileSubkindFor(row.mediaType, row.name)}`,
+          kind: `externalFile::${row.subkind}`,
           id: row._id
         },
         revision: 0

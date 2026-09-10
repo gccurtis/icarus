@@ -62,9 +62,9 @@ image alt/caption text, and authored table header rows. Native table bodies,
 charts, image pixels, and spreadsheets use the material lane. Prompt Blocks are
 excluded everywhere.
 
-`resource-text.ts` remains only a compatibility facade over
-`projectResource(input).exact`; traversal lives under
-`representation/data/behavior/semantic/projection/`.
+All callers use `projectResource(input)` directly; traversal lives under
+`representation/data/behavior/semantic/projection/`, and exact-text consumers
+read its `exact` projection.
 
 ### External exact text
 
@@ -89,7 +89,7 @@ The public procedure derives project scope from the request and canonicalizes
 external-file aliases. Enqueueing is revision-only: it does not walk the body,
 read native bytes, or call a provider.
 
-`backfillSemanticOverlay` is the development/migration path. It enumerates all
+`backfillSemanticOverlay` is the development/maintenance path. It enumerates all
 document, deck, and spreadsheet leaders plus external files, enqueues the same
 job shapes, and drains one bounded batch. It is safe to call repeatedly because
 jobs coalesce and synchronization is idempotent unless `force` is requested.
@@ -259,19 +259,19 @@ semantic or Derived Output capability.
 
 The JSON store has durable source/object/index/history rows, separate exact and
 material job tables, and a coalesced `derivedOutputRefreshJobs` table keyed by
-Derived Output. Concurrent browsers join one server flight. Repeating the same
-request is a pure join; only a changed definition revision or selection advances
-the durable request version. The worker also compares semantic-input watermarks
-around synthesis and retries when authoritative revisions, pending semantic
-work, material revisions, or the overlay generation actually move. Refresh job
-state is projected separately from value freshness, so the last published value
-stays readable while replacement work runs. It does not
-provide a cross-table transaction between an accepted leader and its outbox
-enqueue, and this repository has no always-on worker host. The current writes
-are adjacent, workers are explicitly callable,
-and every publication has supersession guards. A production deployment still
-needs transactional outbox semantics, leases/recovery, retry policy, and an
-always-on host.
+Derived Output. Every accepted authored mutation and its semantic outbox row
+commit in one journal-recoverable Store transaction. Queue workers claim one
+job immediately before execution, renew its five-minute lease during provider
+work, recheck ownership inside publication and settlement transactions, and
+stop after three failed attempts. Concurrent browsers join one server flight.
+Repeating the same request is a pure join; only a changed definition revision
+or selection advances the durable request version. The worker also compares
+semantic-input watermarks around synthesis and retries when authoritative
+revisions, pending semantic work, material revisions, or the overlay generation
+actually move. Refresh job state is projected separately from value freshness,
+so the last published value stays readable while replacement work runs. This
+repository still has no always-on worker host; production deployment must
+schedule the existing durable processors continuously.
 
 ## Primary code map
 

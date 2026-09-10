@@ -1,5 +1,4 @@
 import type { StoreUnitOfWork, TableRow } from "$model/server/store/index.server";
-import { fileSubkindFor } from "$representation/data/behavior/external/file";
 import type { Id } from "$representation/data/types/core/id";
 import type { ResourceRef } from "$representation/data/types/core/resource";
 import type {
@@ -62,7 +61,7 @@ export const semanticSourceIsCurrent = (
       (row) => row.projectId === projectId && row._id === source.ref.id
     );
     if (file === undefined) return false;
-    const subkind = file.subkind ?? fileSubkindFor(file.mediaType, file.name);
+    const subkind = file.subkind;
     return subkind === "text" && source.revision === 0 && source.contentHash === file.hash;
   }
   return true;
@@ -82,7 +81,7 @@ export const materialSourceIsCurrent = (
     (row) => row.projectId === projectId && row._id === externalSource.fileId
   );
   if (file === undefined) return false;
-  const subkind = file.subkind ?? fileSubkindFor(file.mediaType, file.name);
+  const subkind = file.subkind;
   return (
     externalSource.ref.id === file._id &&
     externalSource.ref.kind === `externalFile::${subkind}` &&

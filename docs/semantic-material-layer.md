@@ -331,8 +331,8 @@ The live tables are:
 - `semanticIndexes`: one row per lane with independent roots;
 - `semanticObjectHistory`: retired text or material object values.
 
-`externalFiles.subkind` is persisted. `fileSubkindFor` remains a compatibility
-fallback for older rows.
+`externalFiles.subkind` is required and persisted. Every reader consumes that
+current field directly; missing-subkind rows are not interpreted.
 
 Native bytes sit behind `MaterialContentModel.read({ storageId, hash })`. The
 current filesystem adapter derives the path only from a validated SHA-256 hash,

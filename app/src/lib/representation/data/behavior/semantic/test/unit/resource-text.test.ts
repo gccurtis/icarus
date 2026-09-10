@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { projectResourceText } from "$representation/data/behavior/semantic/resource-text";
+import { projectResource } from "$representation/data/behavior/semantic/projection/project-resource";
 import type { TextBlock } from "$representation/data/types/content/content-block";
 import type { SlideDeckBody } from "$representation/data/types/slide-decks/body";
 
@@ -14,7 +14,7 @@ const text = (id: string, display: string): TextBlock => ({
 
 describe("semantic resource text projection", () => {
   it("flattens document content while retaining exact block locators", () => {
-    const projection = projectResourceText({
+    const projection = projectResource({
       kind: "document",
       ref: { kind: "document", id: "people" },
       revision: 7,
@@ -38,7 +38,7 @@ describe("semantic resource text projection", () => {
           }
         ]
       }
-    });
+    }).exact;
 
     expect(projection.text).toBe("Avery is 37 years old.");
     expect(projection.encoding).toBe("utf-16");
@@ -110,13 +110,13 @@ describe("semantic resource text projection", () => {
       ]
     };
 
-    const projection = projectResourceText({
+    const projection = projectResource({
       kind: "slides",
       ref: { kind: "slides", id: "brief" },
       revision: 2,
       title: "Brief",
       body
-    });
+    }).exact;
 
     expect(projection.text).toBe("First\n\nSecond\n\nRemember the age source");
     expect(projection.text).not.toContain("Do not re-ingest me");

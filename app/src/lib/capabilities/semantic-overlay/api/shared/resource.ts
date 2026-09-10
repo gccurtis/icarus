@@ -6,7 +6,6 @@ import type { Id } from "$representation/data/types/core/id";
 import type { ResourceRef } from "$representation/data/types/core/resource";
 import type { SemanticResourceProjection } from "$representation/data/types/semantic/source";
 import { rowsOf } from "$capabilities/semantic-overlay/api/shared/rows";
-import { fileSubkindFor } from "$representation/data/behavior/external/file";
 
 const MAX_EXTERNAL_TEXT_BYTES = 5_000_000;
 
@@ -22,7 +21,7 @@ const externalFileLookup = (store: StoreModel, projectId: Id<"projects">) => {
       fileId: file._id,
       name: file.name,
       mediaType: file.mediaType,
-      subkind: file.subkind ?? fileSubkindFor(file.mediaType, file.name),
+      subkind: file.subkind,
       hash: file.hash
     };
   };
@@ -59,7 +58,7 @@ export const readSemanticResourceRevisionFor = (
       (row) => row.projectId === projectId && row._id === ref.id
     );
     if (file === undefined) return undefined;
-    const subkind = file.subkind ?? fileSubkindFor(file.mediaType, file.name);
+    const subkind = file.subkind;
     return subkind === "text" ? 0 : undefined;
   }
   return undefined;
@@ -154,7 +153,7 @@ export const readSemanticResourceForModel = async (
     (row) => row.projectId === projectId && row._id === ref.id
   );
   if (file === undefined) return undefined;
-  const subkind = file.subkind ?? fileSubkindFor(file.mediaType, file.name);
+  const subkind = file.subkind;
   if (subkind !== "text") return undefined;
   const bytes = await model.materialContent.read({ storageId: file.storageId, hash: file.hash });
   if (bytes === undefined) throw new Error(`Native text for '${file.name}' is unavailable`);
