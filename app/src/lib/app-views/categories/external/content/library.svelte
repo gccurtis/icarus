@@ -1,10 +1,10 @@
 <script lang="ts">
-  import { onMount } from "svelte";
   import ArrowDownNarrowWide from "@lucide/svelte/icons/arrow-down-narrow-wide";
   import ArrowUpNarrowWide from "@lucide/svelte/icons/arrow-up-narrow-wide";
   import Braces from "@lucide/svelte/icons/braces";
   import ChevronRight from "@lucide/svelte/icons/chevron-right";
   import File from "@lucide/svelte/icons/file";
+  import FileText from "@lucide/svelte/icons/file-text";
   import FileImage from "@lucide/svelte/icons/file-image";
   import FileMusic from "@lucide/svelte/icons/file-music";
   import FileVideo from "@lucide/svelte/icons/file-video";
@@ -26,6 +26,8 @@
     ScreenTable
   } from "$authored-components/screen";
   import { Button } from "$vendored-components/button";
+  import { ExternalLibraryState } from "$app-views/categories/external/content/library.state.svelte";
+  import { keepExternalLibraryCurrent } from "$app-views/categories/external/procedures/effects/library.svelte";
   import {
     externalDirectoriesIn,
     externalFileLibrary,
@@ -35,80 +37,18 @@
     inspectExternalFile,
     type LibraryExternalDirectory,
     type LibraryExternalFile
-  } from "$app-views/categories/external/procedures/library.svelte";
+  } from "$app-views/categories/external/procedures";
   import { workspaceState } from "$model/client/workspace-state";
 
   const view = workspaceState();
+  const state = new ExternalLibraryState();
   const library = externalFileLibrary();
   const fileUpload = externalFileUpload.for("files");
   const folderUpload = externalFileUpload.for("folder");
-  let now = $state(Date.now());
-  onMount(() => {
-    const timer = setInterval(() => (now = Date.now()), 60_000);
-    return () => clearInterval(timer);
-  });
   const answer = $derived(library.ready ? library.current : undefined);
-  const files = $derived(externalFilesIn(answer, now));
+  const files = $derived(externalFilesIn(answer, state.now));
   const directories = $derived(externalDirectoriesIn(answer));
   const unavailable = $derived(answer?.unavailable ?? []);
-
-  let fileCount = $state(0);
-  let folderCount = $state(0);
-  let filePaths = $state<string[]>([]);
-  let folderPaths = $state<string[]>([]);
-  let handledFiles = $state<string>();
-  let handledFolder = $state<string>();
-  let latestUploadResult: typeof fileUpload.result = $state.raw();
-
-  const receive = (
-    form: typeof fileUpload,
-    input: HTMLInputElement,
-    setCount: (count: number) => void,
-    setPaths: (paths: string[]) => void
-  ) => {
-    const selected = Array.from(input.files ?? []);
-    setCount(selected.length);
-    const paths = selected.map((file) => file.webkitRelativePath || file.name);
-    setPaths(paths);
-    form.fields.relativePaths.set(paths);
-  };
-
-  const inspectFirst = (result: typeof fileUpload.result) => {
-    const first = result?.outcomes.find((outcome) => outcome.status !== "rejected");
-    if (first !== undefined) inspectExternalFile(view, first.externalFileId);
-  };
-
-  $effect(() => {
-    const result = fileUpload.result;
-    if (result === undefined) return;
-    const receipt = JSON.stringify(result);
-    if (receipt === handledFiles) return;
-    handledFiles = receipt;
-    latestUploadResult = result;
-    fileCount = 0;
-    filePaths = [];
-    inspectFirst(result);
-  });
-
-  $effect(() => {
-    const result = folderUpload.result;
-    if (result === undefined) return;
-    const receipt = JSON.stringify(result);
-    if (receipt === handledFolder) return;
-    handledFolder = receipt;
-    latestUploadResult = result;
-    folderCount = 0;
-    folderPaths = [];
-    inspectFirst(result);
-  });
-
-  let mode = $state<"table" | "directory">("table");
-  let currentDirectory = $state("");
-  let search = $state("");
-  let kind = $state("all");
-  let semantic = $state("all");
-  let sortBy = $state("updated");
-  let direction = $state<"asc" | "desc">("asc");
 
   const SORTS = [
     { value: "updated", label: "Updated" },
@@ -116,16 +56,18 @@
     { value: "size", label: "Size" },
     { value: "kind", label: "Kind" }
   ] as const;
-  const KINDS = ["code", "data", "image", "audio", "video", "unknown"] as const;
+  const KINDS = ["text", "code", "data", "image", "audio", "video", "unknown"] as const;
   const KIND_LABEL = {
-    code: "Text / code",
-    data: "CSV / TSV",
+    text: "Text",
+    code: "Code",
+    data: "Structured data",
     image: "Image",
     audio: "Audio",
     video: "Video",
     unknown: "Other"
   } as const;
   const KIND_ICON = {
+    text: FileText,
     code: Braces,
     data: Table2,
     image: FileImage,
@@ -134,76 +76,69 @@
     unknown: File
   } as const;
 
-  const query = $derived(search.trim().toLocaleLowerCase());
+  const query = $derived(state.search.trim().toLocaleLowerCase());
   const matchesSemantic = (row: LibraryExternalFile): boolean => {
-    if (semantic === "all") return true;
-    if (semantic === "current") return row.semanticTone === "current";
-    if (semantic === "queued") return row.semanticTone === "queued";
-    if (semantic === "attention") return row.semanticTone === "failed";
+    if (state.semantic === "all") return true;
+    if (state.semantic === "current") return row.semanticTone === "current";
+    if (state.semantic === "queued") return row.semanticTone === "queued";
+    if (state.semantic === "attention") return row.semanticTone === "failed";
     return row.semanticTone === "limited";
   };
   const filtered = $derived(files
-    .filter((row) => kind === "all" || row.subkind === kind)
+    .filter((row) => state.kind === "all" || row.subkind === state.kind)
     .filter(matchesSemantic)
     .filter((row) => query === "" ||
       `${row.name} ${row.originalName} ${row.relativePath} ${row.mediaType}`
         .toLocaleLowerCase().includes(query)));
   const compare = (left: LibraryExternalFile, right: LibraryExternalFile): number => {
-    if (sortBy === "name") return left.name.localeCompare(right.name);
-    if (sortBy === "size") return (left.size ?? -1) - (right.size ?? -1);
-    if (sortBy === "kind") {
+    if (state.sortBy === "name") return left.name.localeCompare(right.name);
+    if (state.sortBy === "size") return left.size - right.size;
+    if (state.sortBy === "kind") {
       return KIND_LABEL[left.subkind].localeCompare(KIND_LABEL[right.subkind]) ||
         left.name.localeCompare(right.name);
     }
     return right.updatedAt - left.updatedAt || left.name.localeCompare(right.name);
   };
   const ordered = $derived([...filtered].sort((left, right) =>
-    direction === "asc" ? compare(left, right) : -compare(left, right)));
-  const filtersActive = $derived(query !== "" || kind !== "all" || semantic !== "all");
+    state.direction === "asc" ? compare(left, right) : -compare(left, right)));
+  const filtersActive = $derived(
+    query !== "" || state.kind !== "all" || state.semantic !== "all"
+  );
   const selectedFile = (id: string): boolean =>
     view.selection?.kind === "external-file" && view.selection.id === id;
   const selectedDirectory = (path: string): boolean =>
     view.selection?.kind === "external-directory" && view.selection.id === path;
-  const clear = () => {
-    search = "";
-    kind = "all";
-    semantic = "all";
-  };
-
   const directFiles = $derived(ordered.filter((row) => {
     const split = row.relativePath.lastIndexOf("/");
-    return (split < 0 ? "" : row.relativePath.slice(0, split)) === currentDirectory;
+    return (split < 0 ? "" : row.relativePath.slice(0, split)) === state.currentDirectory;
   }));
-  const visibleFiles = $derived(mode === "table" ? ordered : directFiles);
+  const visibleFiles = $derived(state.mode === "table" ? ordered : directFiles);
   const directDirectories = $derived(directories.filter((row) =>
-    row.path !== "" && row.parentPath === currentDirectory));
-  const current = $derived(directories.find((row) => row.path === currentDirectory));
+    row.relativePath !== "" && row.parentPath === state.currentDirectory));
+  const current = $derived(
+    directories.find((row) => row.relativePath === state.currentDirectory)
+  );
   const crumbs = $derived.by(() => {
-    const segments = currentDirectory.split("/").filter(Boolean);
+    const segments = state.currentDirectory.split("/").filter(Boolean);
     return [
       { label: "External", path: "" },
       ...segments.map((label, index) => ({ label, path: segments.slice(0, index + 1).join("/") }))
     ];
   });
   const enterDirectory = (directory: LibraryExternalDirectory) => {
-    currentDirectory = directory.path;
-    inspectExternalDirectory(view, directory.path);
+    state.currentDirectory = directory.relativePath;
+    inspectExternalDirectory(view, directory.relativePath);
   };
 
-  $effect(() => {
-    if (!library.ready || currentDirectory === "") return;
-    if (!directories.some((row) => row.path === currentDirectory)) currentDirectory = "";
+  keepExternalLibraryCurrent(state, view, {
+    fileResult: () => fileUpload.result,
+    folderResult: () => folderUpload.result,
+    ready: () => library.ready,
+    files: () => files,
+    directories: () => directories
   });
 
-  $effect(() => {
-    const focus = view.active.focus;
-    if (!library.ready || focus === undefined) return;
-    if (view.selection?.kind === "external-directory") return;
-    if (view.selection?.kind === "external-file" && view.selection.id === focus) return;
-    if (files.some((row) => row.id === focus)) inspectExternalFile(view, focus);
-  });
-
-  const uploadResult = $derived(latestUploadResult);
+  const uploadResult = $derived(state.latestUploadResult);
   const pending = $derived(fileUpload.pending + folderUpload.pending > 0);
 </script>
 
@@ -213,31 +148,31 @@
       {#snippet actions()}
         <div class="upload-bar" aria-label="External file ingestion">
           <form {...fileUpload} class="upload-form" enctype="multipart/form-data">
-            {#each filePaths as path, index (index)}
+            {#each state.filePaths as path, index (index)}
               <input {...fileUpload.fields.relativePaths[index].as("hidden", path)} />
             {/each}
             <label class="pick-action">
               <Upload size={14} aria-hidden="true" />
-              <span>{fileCount === 0 ? "Choose files" : `${fileCount} selected`}</span>
+              <span>{state.fileCount === 0 ? "Choose files" : `${state.fileCount} selected`}</span>
               <input {...fileUpload.fields.files.as("file multiple")} class="visually-hidden"
-                onchange={(event) => receive(fileUpload, event.currentTarget, (count) => (fileCount = count), (paths) => (filePaths = paths))} />
+                onchange={(event) => state.receive(event.currentTarget, "files", (paths) => fileUpload.fields.relativePaths.set(paths))} />
             </label>
-            <Button type="submit" size="sm" disabled={pending || fileCount === 0}>
+            <Button type="submit" size="sm" disabled={pending || state.fileCount === 0}>
               {fileUpload.pending > 0 ? "Uploading…" : "Upload files"}
             </Button>
           </form>
           <form {...folderUpload} class="upload-form" enctype="multipart/form-data">
-            {#each folderPaths as path, index (index)}
+            {#each state.folderPaths as path, index (index)}
               <input {...folderUpload.fields.relativePaths[index].as("hidden", path)} />
             {/each}
             <label class="pick-action secondary">
               <FolderUp size={14} aria-hidden="true" />
-              <span>{folderCount === 0 ? "Choose folder" : `${folderCount} selected`}</span>
+              <span>{state.folderCount === 0 ? "Choose folder" : `${state.folderCount} selected`}</span>
               <input {...folderUpload.fields.files.as("file multiple")} class="visually-hidden"
                 webkitdirectory={true}
-                onchange={(event) => receive(folderUpload, event.currentTarget, (count) => (folderCount = count), (paths) => (folderPaths = paths))} />
+                onchange={(event) => state.receive(event.currentTarget, "folder", (paths) => folderUpload.fields.relativePaths.set(paths))} />
             </label>
-            <Button type="submit" variant="outline" size="sm" disabled={pending || folderCount === 0}>
+            <Button type="submit" variant="outline" size="sm" disabled={pending || state.folderCount === 0}>
               {folderUpload.pending > 0 ? "Uploading…" : "Upload folder"}
             </Button>
           </form>
@@ -248,10 +183,10 @@
     <div class="library-lead">
       <p>Native project files live here as one managed library. Select a file or virtual directory to manage it in the Inspector; External never opens a file-type editor.</p>
       <div class="view-switcher" role="group" aria-label="Library view">
-        <Button variant={mode === "table" ? "secondary" : "ghost"} size="sm" aria-pressed={mode === "table"} onclick={() => (mode = "table")}>
+        <Button variant={state.mode === "table" ? "secondary" : "ghost"} size="sm" aria-pressed={state.mode === "table"} onclick={() => (state.mode = "table")}>
           <Table2 aria-hidden="true" /> Table
         </Button>
-        <Button variant={mode === "directory" ? "secondary" : "ghost"} size="sm" aria-pressed={mode === "directory"} onclick={() => (mode = "directory")}>
+        <Button variant={state.mode === "directory" ? "secondary" : "ghost"} size="sm" aria-pressed={state.mode === "directory"} onclick={() => (state.mode = "directory")}>
           <FolderTree aria-hidden="true" /> Directory
         </Button>
       </div>
@@ -280,14 +215,14 @@
         <ScreenNote tone="gap">{unavailable.length} represented file {unavailable.length === 1 ? "row is" : "rows are"} hidden because its metadata did not pass admission.</ScreenNote>
       {/if}
 
-      <ScreenGroup label={mode === "table" ? "All files" : (current?.name ?? "External")} count={String(mode === "table" ? files.length : (current?.descendantFileCount ?? files.length))}>
+      <ScreenGroup label={state.mode === "table" ? "All files" : (current?.name ?? "External")} count={String(state.mode === "table" ? files.length : (current?.descendantFileCount ?? files.length))}>
         <div class="table-stack">
-          <ScreenFilters placeholder="Search names, paths, or media types" sorts={SORTS} bind:sort={sortBy} bind:value={search}>
-            <select class="filter-control" bind:value={kind} aria-label="File kind">
+          <ScreenFilters placeholder="Search names, paths, or media types" sorts={SORTS} bind:sort={state.sortBy} bind:value={state.search}>
+            <select class="filter-control" bind:value={state.kind} aria-label="File kind">
               <option value="all">All kinds</option>
               {#each KINDS as option (option)}<option value={option}>{KIND_LABEL[option]}</option>{/each}
             </select>
-            <select class="filter-control" bind:value={semantic} aria-label="Semantic status">
+            <select class="filter-control" bind:value={state.semantic} aria-label="Semantic status">
               <option value="all">All semantic states</option>
               <option value="current">Ready</option>
               <option value="queued">In progress</option>
@@ -295,30 +230,30 @@
               <option value="limited">Stored only</option>
             </select>
             {#snippet order()}
-              <Button variant="ghost" size="icon-sm" aria-label={direction === "asc" ? "Reverse order" : "Restore order"}
-                onclick={() => (direction = direction === "asc" ? "desc" : "asc")}>
-                {#if direction === "asc"}<ArrowUpNarrowWide aria-hidden="true" />{:else}<ArrowDownNarrowWide aria-hidden="true" />{/if}
+              <Button variant="ghost" size="icon-sm" aria-label={state.direction === "asc" ? "Reverse order" : "Restore order"}
+                onclick={() => (state.direction = state.direction === "asc" ? "desc" : "asc")}>
+                {#if state.direction === "asc"}<ArrowUpNarrowWide aria-hidden="true" />{:else}<ArrowDownNarrowWide aria-hidden="true" />{/if}
               </Button>
             {/snippet}
           </ScreenFilters>
 
-          {#if mode === "directory"}
+          {#if state.mode === "directory"}
             <nav class="breadcrumbs" aria-label="External directory">
               {#each crumbs as crumb, index (crumb.path)}
                 {#if index > 0}<ChevronRight size={12} aria-hidden="true" />{/if}
-                <button type="button" aria-current={crumb.path === currentDirectory ? "page" : undefined}
-                  onclick={() => (currentDirectory = crumb.path)}>{crumb.label}</button>
+                <button type="button" aria-current={crumb.path === state.currentDirectory ? "page" : undefined}
+                  onclick={() => (state.currentDirectory = crumb.path)}>{crumb.label}</button>
               {/each}
             </nav>
           {/if}
 
-          {#if visibleFiles.length === 0 && (mode === "table" || directDirectories.length === 0)}
+          {#if visibleFiles.length === 0 && (state.mode === "table" || directDirectories.length === 0)}
             <ScreenEmpty kind={filtersActive ? "no-matches" : "nothing-yet"}
               title={filtersActive ? "No file matches" : "No external files yet"}
-              onclear={filtersActive ? clear : undefined}>
+              onclear={filtersActive ? () => state.clearFilters() : undefined}>
               {filtersActive ? "Try another name, kind, or semantic state." : "Choose files or a folder above. Unsupported formats remain safely stored and downloadable."}
             </ScreenEmpty>
-          {:else if mode === "table"}
+          {:else if state.mode === "table"}
             <ScreenTable columns={["Name", "Path", "Kind", "Size", "Meaning", "Updated"]}>
               {#each visibleFiles as row (row.id)}
                 {@const Icon = KIND_ICON[row.subkind]}
@@ -334,9 +269,9 @@
             </ScreenTable>
           {:else}
             <ScreenTable columns={["Name", "Type", "Contents", "Size", "Updated"]}>
-              {#each directDirectories as directory (directory.path)}
-                <ScreenRow selected={selectedDirectory(directory.path)} onselect={() => inspectExternalDirectory(view, directory.path)} onopen={() => enterDirectory(directory)}>
-                  <ScreenCell><button class="item-name" type="button" ondblclick={() => enterDirectory(directory)} onclick={() => inspectExternalDirectory(view, directory.path)}><Folder size={15} aria-hidden="true" /><span>{directory.name}</span></button></ScreenCell>
+              {#each directDirectories as directory (directory.relativePath)}
+                <ScreenRow selected={selectedDirectory(directory.relativePath)} onselect={() => inspectExternalDirectory(view, directory.relativePath)} onopen={() => enterDirectory(directory)}>
+                  <ScreenCell><button class="item-name" type="button" ondblclick={() => enterDirectory(directory)} onclick={() => inspectExternalDirectory(view, directory.relativePath)}><Folder size={15} aria-hidden="true" /><span>{directory.name}</span></button></ScreenCell>
                   <ScreenCell>Folder</ScreenCell>
                   <ScreenCell num>{directory.descendantFileCount} {directory.descendantFileCount === 1 ? "file" : "files"}</ScreenCell>
                   <ScreenCell num>{directory.sizeLabel}</ScreenCell>

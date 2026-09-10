@@ -1,19 +1,17 @@
 <script lang="ts">
-  import { onMount } from "svelte";
   import ClockArrowLeft from "@lucide/svelte/icons/clock-arrow-left";
   import { Panel, PanelBanner, PanelEmpty, PanelSkeleton } from "$authored-components/panel";
   import {
     externalFileHistory,
     externalHistoryIn
-  } from "$app-views/categories/external/procedures/library.svelte";
+  } from "$app-views/categories/external/procedures";
+  import { startExternalClock } from "$app-views/categories/external/procedures/effects/clock.svelte";
 
   const history = externalFileHistory();
-  let now = $state(Date.now());
-  onMount(() => {
-    const timer = setInterval(() => (now = Date.now()), 60_000);
-    return () => clearInterval(timer);
-  });
-  const entries = $derived(externalHistoryIn(history.ready ? history.current.entries : undefined, now));
+  const clock = startExternalClock();
+  const entries = $derived(
+    externalHistoryIn(history.ready ? history.current.entries : undefined, clock.now)
+  );
   const label = (event: (typeof entries)[number]["event"]): string => ({
     uploaded: "Uploaded",
     "re-uploaded": "Re-uploaded",

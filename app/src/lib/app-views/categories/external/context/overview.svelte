@@ -4,7 +4,7 @@
     bytesLabel,
     externalFileLibrary,
     externalFilesIn
-  } from "$app-views/categories/external/procedures/library.svelte";
+  } from "$app-views/categories/external/procedures";
 
   const library = externalFileLibrary();
   const files = $derived(externalFilesIn(library.ready ? library.current : undefined, Date.now()));

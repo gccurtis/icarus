@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { tick } from "svelte";
   import File from "@lucide/svelte/icons/file";
   import Folder from "@lucide/svelte/icons/folder";
   import FolderCog from "@lucide/svelte/icons/folder-cog";
@@ -10,97 +9,30 @@
   import { Panel, PanelBanner, PanelEmpty, PanelSkeleton } from "$authored-components/panel";
   import { Button } from "$vendored-components/button";
   import { Input } from "$vendored-components/input";
+  import { ExternalDirectoryInspectorState } from "$app-views/categories/external/inspector/directory.state.svelte";
+  import { keepExternalDirectoryInspectorCurrent } from "$app-views/categories/external/procedures/effects/directory-inspector.svelte";
   import {
     externalDirectoriesIn,
     externalFileLibrary,
     externalFilesIn,
     inspectExternalDirectory,
     inspectExternalFile,
-    relocateExternalDirectory,
-    type LibraryExternalDirectory
-  } from "$app-views/categories/external/procedures/library.svelte";
+  } from "$app-views/categories/external/procedures";
   import { workspaceState } from "$model/client/workspace-state";
 
   const view = workspaceState();
+  const state = new ExternalDirectoryInspectorState();
   const library = externalFileLibrary();
   const directories = $derived(externalDirectoriesIn(library.ready ? library.current : undefined));
   const files = $derived(externalFilesIn(library.ready ? library.current : undefined, Date.now()));
   const selectedPath = $derived(view.selection?.kind === "external-directory" ? view.selection.id : undefined);
-  const directory = $derived(directories.find((row) => row.path === selectedPath));
-  const children = $derived(directory === undefined ? [] : directories.filter((row) => row.parentPath === directory.path));
+  const directory = $derived(directories.find((row) => row.relativePath === selectedPath));
+  const children = $derived(directory === undefined ? [] : directories.filter((row) => row.parentPath === directory.relativePath));
   const childFiles = $derived(directory === undefined ? [] : files.filter((row) => {
     const split = row.relativePath.lastIndexOf("/");
-    return (split < 0 ? "" : row.relativePath.slice(0, split)) === directory.path;
+    return (split < 0 ? "" : row.relativePath.slice(0, split)) === directory.relativePath;
   }));
-
-  let editing = $state<"rename" | "move">();
-  let draft = $state("");
-  let input = $state<HTMLInputElement | null>(null);
-  let base = $state<LibraryExternalDirectory>();
-  let pending = $state(false);
-  let actionError = $state<string>();
-
-  $effect(() => {
-    if (base?.path === directory?.path) return;
-    base = undefined;
-    editing = undefined;
-    draft = directory?.path ?? "";
-    actionError = undefined;
-  });
-
-  const start = async (kind: "rename" | "move") => {
-    if (directory === undefined || pending) return;
-    base = directory;
-    editing = kind;
-    draft = kind === "rename" ? directory.name : directory.path;
-    await tick();
-    input?.focus();
-    input?.select();
-  };
-
-  const cancel = () => {
-    base = undefined;
-    editing = undefined;
-    draft = directory?.path ?? "";
-  };
-
-  const destinationFor = (held: LibraryExternalDirectory): string => {
-    const value = draft.trim();
-    if (editing === "move") return value;
-    return held.parentPath === "" || held.parentPath === null
-      ? value
-      : `${held.parentPath}/${value}`;
-  };
-
-  const commit = async () => {
-    const held = base;
-    if (held === undefined || editing === undefined || pending) return;
-    const destination = destinationFor(held);
-    if (destination === "") return void (actionError = "A directory name or path is required.");
-    if (destination === held.path) return cancel();
-    pending = true;
-    actionError = undefined;
-    try {
-      const result = await relocateExternalDirectory(view, held, destination);
-      if (!result.accepted) actionError = result.detail;
-      else {
-        cancel();
-        inspectExternalDirectory(view, result.destination);
-      }
-    } catch (error) {
-      actionError = error instanceof Error ? error.message : String(error);
-    } finally { pending = false; }
-  };
-
-  const keydown = (event: KeyboardEvent) => {
-    if (event.key === "Escape") {
-      event.preventDefault();
-      cancel();
-    } else if (event.key === "Enter") {
-      event.preventDefault();
-      void commit();
-    }
-  };
+  keepExternalDirectoryInspectorCurrent(state, () => directory);
 </script>
 
 {#snippet heading()}<span class="panel-heading"><FolderCog size={14} aria-hidden="true" /> Directory</span>{/snippet}
@@ -110,27 +42,27 @@
     <PanelBanner title="Directory unavailable" tone="danger">{library.error instanceof Error ? library.error.message : String(library.error)}</PanelBanner>
   {:else if !library.ready}
     <PanelSkeleton shape="fields" count={7} />
-  {:else if directory === undefined || directory.path === ""}
+  {:else if directory === undefined || directory.relativePath === ""}
     <PanelEmpty title="Select a directory to manage it." />
   {:else}
     <div class="stack">
       <div class="toolbar" role="toolbar" aria-label="Directory actions">
-        <Button variant="ghost" size="sm" disabled={pending} onclick={() => start("rename")}><Pencil aria-hidden="true" /> Rename</Button>
-        <Button variant="ghost" size="sm" disabled={pending} onclick={() => start("move")}><FolderInput aria-hidden="true" /> Move</Button>
+        <Button variant="ghost" size="sm" disabled={state.pending} onclick={() => state.start("rename", directory)}><Pencil aria-hidden="true" /> Rename</Button>
+        <Button variant="ghost" size="sm" disabled={state.pending} onclick={() => state.start("move", directory)}><FolderInput aria-hidden="true" /> Move</Button>
       </div>
-      {#if actionError}<PanelBanner title="The directory did not change" tone="attention">{actionError}</PanelBanner>{/if}
+      {#if state.actionError}<PanelBanner title="The directory did not change" tone="attention">{state.actionError}</PanelBanner>{/if}
 
       <section>
         <h3>Directory</h3>
-        {#if editing}
+        {#if state.editing}
           <div class="inline-editor">
-            <Input bind:ref={input} bind:value={draft} aria-label={editing === "rename" ? "Directory name" : "Directory path"} maxlength={512} disabled={pending} onkeydown={keydown} />
-            <Button size="sm" disabled={pending || draft.trim() === ""} onclick={commit}>{pending ? "Moving…" : (editing === "rename" ? "Rename" : "Move")}</Button>
-            <Button variant="ghost" size="icon-sm" aria-label="Cancel directory change" onclick={cancel}><X aria-hidden="true" /></Button>
+            <Input bind:ref={state.input} bind:value={state.draft} aria-label={state.editing === "rename" ? "Directory name" : "Directory path"} maxlength={512} disabled={state.pending} onkeydown={(event) => state.keydown(event, view, directory)} />
+            <Button size="sm" disabled={state.pending || state.draft.trim() === ""} onclick={() => state.commit(view, directory)}>{state.pending ? "Moving…" : (state.editing === "rename" ? "Rename" : "Move")}</Button>
+            <Button variant="ghost" size="icon-sm" aria-label="Cancel directory change" onclick={() => state.cancel(directory)}><X aria-hidden="true" /></Button>
           </div>
         {:else}
-          <button type="button" class="editable-name" title="Double-click to rename" ondblclick={() => start("rename")}><span>{directory.name}</span><Pencil size={12} aria-hidden="true" /></button>
-          <p class="path">{directory.path}</p>
+          <button type="button" class="editable-name" title="Double-click to rename" ondblclick={() => state.start("rename", directory)}><span>{directory.name}</span><Pencil size={12} aria-hidden="true" /></button>
+          <p class="path">{directory.relativePath}</p>
         {/if}
       </section>
 
@@ -147,8 +79,8 @@
           <p class="empty">This virtual directory is empty.</p>
         {:else}
           <ul class="children">
-            {#each children as child (child.path)}
-              <li><button type="button" onclick={() => inspectExternalDirectory(view, child.path)}><Folder size={13} aria-hidden="true" /><span>{child.name}</span><small>{child.descendantFileCount}</small></button></li>
+            {#each children as child (child.relativePath)}
+              <li><button type="button" onclick={() => inspectExternalDirectory(view, child.relativePath)}><Folder size={13} aria-hidden="true" /><span>{child.name}</span><small>{child.descendantFileCount}</small></button></li>
             {/each}
             {#each childFiles as file (file.id)}
               <li><button type="button" onclick={() => inspectExternalFile(view, file.id)}><File size={13} aria-hidden="true" /><span>{file.name}</span><small>{file.sizeLabel}</small></button></li>

@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { onDestroy, onMount, tick } from "svelte";
   import Download from "@lucide/svelte/icons/download";
   import FileCog from "@lucide/svelte/icons/file-cog";
   import FolderInput from "@lucide/svelte/icons/folder-input";
@@ -12,24 +11,21 @@
   import { Panel, PanelBanner, PanelChip, PanelEmpty, PanelSkeleton } from "$authored-components/panel";
   import { Button } from "$vendored-components/button";
   import { Input } from "$vendored-components/input";
+  import { ExternalFileInspectorState } from "$app-views/categories/external/inspector/file.state.svelte";
+  import { keepExternalFileInspectorCurrent } from "$app-views/categories/external/procedures/effects/file-inspector.svelte";
   import {
     detailIn,
     externalFileDetail,
     externalFileDownloadHref,
     externalFileLibrary,
     externalFileReupload,
-    inspectExternalFile,
-    relocateExternalFile,
-    removeExternalFile,
-    renameExternalFile,
     selectedExternalFileIdIn,
     unavailableIn,
-    updateExternalFileContext,
-    type LibraryExternalFileDetail
-  } from "$app-views/categories/external/procedures/library.svelte";
+  } from "$app-views/categories/external/procedures";
   import { workspaceState } from "$model/client/workspace-state";
 
   const view = workspaceState();
+  const state = new ExternalFileInspectorState();
   const selectedId = $derived(view.selection?.kind === "external-file" ? view.selection.id : undefined);
   const library = externalFileLibrary();
   const availableIds = $derived(library.ready ? library.current.files.map((file) => file.id) : []);
@@ -37,206 +33,13 @@
   const detail = $derived(externalFileDetail(readableId));
   const answer = $derived(detail !== undefined && detail.ready ? detail.current : undefined);
   const unavailable = $derived(unavailableIn(answer));
-  let now = $state(Date.now());
-  onMount(() => {
-    const timer = setInterval(() => (now = Date.now()), 60_000);
-    return () => clearInterval(timer);
-  });
-  const file = $derived(detailIn(answer, now));
+  const file = $derived(detailIn(answer, state.now));
   const reupload = externalFileReupload.for("reupload");
 
-  let editingName = $state(false);
-  let editingPath = $state(false);
-  let nameDraft = $state("");
-  let pathDraft = $state("");
-  let contextDraft = $state("");
-  let nameInput = $state<HTMLInputElement | null>(null);
-  let pathInput = $state<HTMLInputElement | null>(null);
-  let base = $state<LibraryExternalFileDetail>();
-  let confirmingDelete = $state(false);
-  let pending = $state<"rename" | "move" | "delete" | "context">();
-  let actionError = $state<string>();
-  let actionNotice = $state<string>();
-  let handledReupload = $state<string>();
-  let activeId = $state<string>();
-  let live = true;
-  onDestroy(() => { live = false; });
-
-  $effect(() => {
-    if (file?.id === activeId) return;
-    activeId = file?.id;
-    nameDraft = file?.name ?? "";
-    pathDraft = file?.relativePath ?? "";
-    contextDraft = file?.semanticContext ?? "";
-    base = undefined;
-    editingName = false;
-    editingPath = false;
-    confirmingDelete = false;
-    pending = undefined;
-    actionError = undefined;
-    actionNotice = undefined;
+  keepExternalFileInspectorCurrent(state, {
+    file: () => file,
+    reuploadResult: () => reupload.result
   });
-
-  $effect(() => {
-    if (file === undefined || editingName || editingPath || pending === "context") return;
-    nameDraft = file.name;
-    pathDraft = file.relativePath;
-    contextDraft = file.semanticContext ?? "";
-  });
-
-  $effect(() => {
-    const result = reupload.result;
-    if (result === undefined) return;
-    const receipt = JSON.stringify(result);
-    if (receipt === handledReupload) return;
-    handledReupload = receipt;
-    if (!result.accepted) {
-      actionNotice = undefined;
-      actionError = result.detail;
-    } else {
-      actionError = undefined;
-      actionNotice = `Re-uploaded ${result.size.toLocaleString()} bytes as revision ${result.revision}.`;
-    }
-  });
-
-  const stillInspecting = (tabId: string, id: string): boolean =>
-    live && view.activeId === tabId && view.selection?.kind === "external-file" && view.selection.id === id;
-
-  const startName = async () => {
-    if (file === undefined || pending !== undefined || reupload.pending > 0) return;
-    base = file;
-    nameDraft = file.name;
-    editingPath = false;
-    confirmingDelete = false;
-    editingName = true;
-    await tick();
-    nameInput?.focus();
-    nameInput?.select();
-  };
-
-  const startPath = async () => {
-    if (file === undefined || pending !== undefined || reupload.pending > 0) return;
-    base = file;
-    pathDraft = file.relativePath;
-    editingName = false;
-    confirmingDelete = false;
-    editingPath = true;
-    await tick();
-    pathInput?.focus();
-    pathInput?.select();
-  };
-
-  const cancelEdit = () => {
-    nameDraft = file?.name ?? "";
-    pathDraft = file?.relativePath ?? "";
-    base = undefined;
-    editingName = false;
-    editingPath = false;
-  };
-
-  const commitName = async () => {
-    const held = base;
-    const name = nameDraft.trim();
-    if (held === undefined || file?.id !== held.id || pending !== undefined) return;
-    if (name === held.name) return cancelEdit();
-    if (name === "") return void (actionError = "A file name is required.");
-    const tabId = view.activeId;
-    pending = "rename";
-    actionError = undefined;
-    actionNotice = undefined;
-    try {
-      const result = await renameExternalFile(view, held, name);
-      if (!stillInspecting(tabId, held.id)) return;
-      if (!result.accepted) actionError = result.detail;
-      else {
-        editingName = false;
-        base = undefined;
-        actionNotice = "File renamed.";
-      }
-    } catch (error) {
-      if (stillInspecting(tabId, held.id)) actionError = error instanceof Error ? error.message : String(error);
-    } finally { pending = undefined; }
-  };
-
-  const commitPath = async () => {
-    const held = base;
-    const path = pathDraft.trim();
-    if (held === undefined || file?.id !== held.id || pending !== undefined) return;
-    if (path === held.relativePath) return cancelEdit();
-    if (path === "") return void (actionError = "A project-relative path is required.");
-    const tabId = view.activeId;
-    pending = "move";
-    actionError = undefined;
-    actionNotice = undefined;
-    try {
-      const result = await relocateExternalFile(view, held, path);
-      if (!stillInspecting(tabId, held.id)) return;
-      if (!result.accepted) actionError = result.detail;
-      else {
-        editingPath = false;
-        base = undefined;
-        actionNotice = "File moved.";
-      }
-    } catch (error) {
-      if (stillInspecting(tabId, held.id)) actionError = error instanceof Error ? error.message : String(error);
-    } finally { pending = undefined; }
-  };
-
-  const editKeydown = (event: KeyboardEvent, commit: () => Promise<void>) => {
-    if (event.key === "Escape") {
-      event.preventDefault();
-      cancelEdit();
-    } else if (event.key === "Enter") {
-      event.preventDefault();
-      void commit();
-    }
-  };
-
-  const saveContext = async () => {
-    const held = file;
-    if (held === undefined || pending !== undefined) return;
-    pending = "context";
-    actionError = undefined;
-    actionNotice = undefined;
-    try {
-      const result = await updateExternalFileContext(view, held, contextDraft);
-      if (!result.accepted) actionError = result.detail;
-      else actionNotice = result.semantic === "queued"
-        ? "Dataset context saved and semantic processing queued."
-        : "Dataset context saved.";
-    } catch (error) {
-      actionError = error instanceof Error ? error.message : String(error);
-    } finally { pending = undefined; }
-  };
-
-  const remove = async () => {
-    const held = file;
-    if (held === undefined || pending !== undefined) return;
-    const nextId = library.ready ? library.current.files.find((candidate) => candidate.id !== held.id)?.id : undefined;
-    pending = "delete";
-    actionError = undefined;
-    try {
-      const result = await removeExternalFile(view, held);
-      if (!result.accepted) {
-        actionError = result.detail;
-        confirmingDelete = false;
-        return;
-      }
-      if (nextId === undefined) view.showContent("external.library");
-      else inspectExternalFile(view, nextId);
-    } catch (error) {
-      actionError = error instanceof Error ? error.message : String(error);
-    } finally { pending = undefined; }
-  };
-
-  const chooseReplacement = async (input: HTMLInputElement) => {
-    if ((input.files?.length ?? 0) !== 1 || file === undefined) return;
-    actionError = undefined;
-    actionNotice = undefined;
-    await tick();
-    await reupload.submit();
-    input.value = "";
-  };
 
   const exactDate = (at: number): string => new Intl.DateTimeFormat(undefined, {
     dateStyle: "medium",
@@ -244,9 +47,10 @@
   }).format(new Date(at));
 
   const material = $derived(file?.semantic.material);
+  const exact = $derived(file?.semantic.exact);
   const descriptor = $derived(material?.descriptor);
-  const showSemantic = $derived(material?.eligible === true || material?.profile !== undefined || descriptor !== undefined);
-  const busy = $derived(pending !== undefined || reupload.pending > 0);
+  const showSemantic = $derived(file !== undefined);
+  const busy = $derived(state.busy(reupload.pending));
 </script>
 
 {#snippet heading()}<span class="panel-heading"><FileCog size={14} aria-hidden="true" /> File</span>{/snippet}
@@ -267,14 +71,14 @@
   {:else if file}
     <div class="stack">
       <div class="toolbar" role="toolbar" aria-label="File actions">
-        <Button variant="ghost" size="sm" disabled={busy} onclick={startName}><Pencil aria-hidden="true" /> Rename</Button>
+        <Button variant="ghost" size="sm" disabled={busy} onclick={() => state.startName(file, reupload.pending)}><Pencil aria-hidden="true" /> Rename</Button>
         <form {...reupload} class="reupload-form" enctype="multipart/form-data">
           <input {...reupload.fields.externalFileId.as("hidden", file.id)} />
           <input {...reupload.fields.baseRevision.as("hidden", file.revision)} />
           <label class:disabled={busy} class="action-link reupload-action">
             <RefreshCw size={13} aria-hidden="true" /> {reupload.pending > 0 ? "Uploading…" : "Re-upload"}
             <input {...reupload.fields.file.as("file")} class="visually-hidden" disabled={busy}
-              onchange={(event) => void chooseReplacement(event.currentTarget)} />
+              onchange={(event) => void state.chooseReplacement(event.currentTarget, file, reupload)} />
           </label>
         </form>
         {#if file.native.state === "available"}
@@ -282,14 +86,14 @@
         {:else}
           <span class="action-link disabled"><Download size={13} aria-hidden="true" /> Download</span>
         {/if}
-        <Button variant="ghost" size="sm" disabled={busy} onclick={startPath}><FolderInput aria-hidden="true" /> Move</Button>
+        <Button variant="ghost" size="sm" disabled={busy} onclick={() => state.startPath(file, reupload.pending)}><FolderInput aria-hidden="true" /> Move</Button>
         <Button variant="ghost" size="sm" class="delete-action" disabled={busy || file.usage.total > 0}
           title={file.usage.total > 0 ? "Remove references first" : "Delete from project"}
-          onclick={() => { cancelEdit(); confirmingDelete = true; }}><Trash2 aria-hidden="true" /> Delete</Button>
+          onclick={() => state.askToDelete(file)}><Trash2 aria-hidden="true" /> Delete</Button>
       </div>
 
-      {#if actionError}<PanelBanner title="The file did not change" tone="attention">{actionError}</PanelBanner>{/if}
-      {#if actionNotice}<PanelBanner title="File updated" tone="intelligence">{actionNotice}</PanelBanner>{/if}
+      {#if state.actionError}<PanelBanner title="The file did not change" tone="attention">{state.actionError}</PanelBanner>{/if}
+      {#if state.actionNotice}<PanelBanner title="File updated" tone="intelligence">{state.actionNotice}</PanelBanner>{/if}
       {#if file.native.state === "missing"}
         <PanelBanner title="Native bytes are missing" tone="danger">The manager row remains, but download and semantic processing are unavailable.</PanelBanner>
       {:else if file.native.state === "corrupt"}
@@ -298,35 +102,35 @@
 
       <section class="identity" aria-labelledby="file-name-heading">
         <div class="section-head"><h3 id="file-name-heading">File</h3><PanelChip>{file.usage.total} {file.usage.total === 1 ? "reference" : "references"}</PanelChip></div>
-        {#if editingName}
+        {#if state.editingName}
           <div class="inline-editor">
-            <Input bind:ref={nameInput} bind:value={nameDraft} aria-label="File name" maxlength={240} disabled={busy}
-              onkeydown={(event) => editKeydown(event, commitName)} />
-            <Button size="sm" disabled={busy || nameDraft.trim() === ""} onclick={commitName}>{pending === "rename" ? "Saving…" : "Save"}</Button>
-            <Button variant="ghost" size="icon-sm" aria-label="Cancel rename" onclick={cancelEdit}><X aria-hidden="true" /></Button>
+            <Input bind:ref={state.nameInput} bind:value={state.nameDraft} aria-label="File name" maxlength={240} disabled={busy}
+              onkeydown={(event) => state.editKeydown(event, () => state.commitName(view, file), file)} />
+            <Button size="sm" disabled={busy || state.nameDraft.trim() === ""} onclick={() => state.commitName(view, file)}>{state.pending === "rename" ? "Saving…" : "Save"}</Button>
+            <Button variant="ghost" size="icon-sm" aria-label="Cancel rename" onclick={() => state.cancelEdit(file)}><X aria-hidden="true" /></Button>
           </div>
         {:else}
-          <button type="button" class="editable-value primary" title="Double-click to rename" ondblclick={startName}><span>{file.name}</span><Pencil size={12} aria-hidden="true" /></button>
+          <button type="button" class="editable-value primary" title="Double-click to rename" ondblclick={() => state.startName(file, reupload.pending)}><span>{file.name}</span><Pencil size={12} aria-hidden="true" /></button>
         {/if}
-        {#if editingPath}
+        {#if state.editingPath}
           <div class="inline-editor">
-            <Input bind:ref={pathInput} bind:value={pathDraft} aria-label="Project-relative path" maxlength={512} disabled={busy}
-              onkeydown={(event) => editKeydown(event, commitPath)} />
-            <Button size="sm" disabled={busy || pathDraft.trim() === ""} onclick={commitPath}>{pending === "move" ? "Moving…" : "Move"}</Button>
-            <Button variant="ghost" size="icon-sm" aria-label="Cancel move" onclick={cancelEdit}><X aria-hidden="true" /></Button>
+            <Input bind:ref={state.pathInput} bind:value={state.pathDraft} aria-label="Destination directory; blank means External root" maxlength={512} disabled={busy}
+              placeholder="External root" onkeydown={(event) => state.editKeydown(event, () => state.commitPath(view, file), file)} />
+            <Button size="sm" disabled={busy} onclick={() => state.commitPath(view, file)}>{state.pending === "move" ? "Moving…" : "Move"}</Button>
+            <Button variant="ghost" size="icon-sm" aria-label="Cancel move" onclick={() => state.cancelEdit(file)}><X aria-hidden="true" /></Button>
           </div>
         {:else}
-          <button type="button" class="editable-value path" title="Double-click to change path" ondblclick={startPath}><span>{file.relativePath}</span><Pencil size={11} aria-hidden="true" /></button>
+          <button type="button" class="editable-value path" title="Double-click to change directory" ondblclick={() => state.startPath(file, reupload.pending)}><span>{file.relativePath}</span><Pencil size={11} aria-hidden="true" /></button>
         {/if}
       </section>
 
-      {#if confirmingDelete}
+      {#if state.confirmingDelete}
         <section class="delete-confirm" role="alert" aria-labelledby="delete-file-heading">
           <h3 id="delete-file-heading">Delete {file.name} from this project?</h3>
           <p>The manager record and semantic representation are removed. Shared content-addressed bytes remain while another file refers to them.</p>
           <div class="confirm-actions">
-            <Button class="confirm-delete" size="sm" disabled={busy} onclick={remove}>{pending === "delete" ? "Deleting…" : "Delete file"}</Button>
-            <Button variant="ghost" size="sm" disabled={busy} onclick={() => (confirmingDelete = false)}>Cancel</Button>
+            <Button class="confirm-delete" size="sm" disabled={busy} onclick={() => state.remove(view, file, library.ready ? library.current.files.find((candidate) => candidate.id !== file.id)?.id : undefined)}>{state.pending === "delete" ? "Deleting…" : "Delete file"}</Button>
+            <Button variant="ghost" size="sm" disabled={busy} onclick={() => (state.confirmingDelete = false)}>Cancel</Button>
           </div>
         </section>
       {/if}
@@ -339,9 +143,11 @@
           <dt>Type</dt><dd title={file.mediaType}>{file.mediaType}</dd>
           <dt>Kind</dt><dd>{file.subkind}</dd>
           <dt>Size</dt><dd>{file.sizeLabel}</dd>
+          <dt>Availability</dt><dd>{file.native.state === "available" ? "Available" : file.native.state === "missing" ? "Missing" : "Corrupt"}</dd>
           <dt>Uploaded</dt><dd title={exactDate(file.createdAt)}>{exactDate(file.createdAt)}</dd>
           <dt>Updated</dt><dd title={exactDate(file.updatedAt)}>{exactDate(file.updatedAt)}</dd>
           <dt>Added by</dt><dd>{file.createdByName}</dd>
+          <dt>Updated by</dt><dd>{file.updatedByName}</dd>
           <dt>Origin</dt><dd>{file.origin.label}</dd>
         </dl>
       </section>
@@ -351,15 +157,18 @@
         <section aria-labelledby="context-heading">
           <h3 id="context-heading">Dataset context</h3>
           <p class="section-copy">Add the business meaning, collection method, units, or caveats that cannot be inferred safely from rows alone.</p>
-          <textarea bind:value={contextDraft} maxlength={4000} rows={6} placeholder="What does this dataset represent?" disabled={busy}></textarea>
-          <div class="context-actions"><span>{contextDraft.length.toLocaleString()} / 4,000</span><Button variant="outline" size="sm" disabled={busy || contextDraft.trim() === (file.semanticContext ?? "")} onclick={saveContext}>{pending === "context" ? "Saving…" : "Save context"}</Button></div>
+          <textarea bind:value={state.contextDraft} maxlength={4000} rows={6} placeholder="What does this dataset represent?" disabled={busy}></textarea>
+          <div class="context-actions"><span>{state.contextDraft.length.toLocaleString()} / 4,000</span><Button variant="outline" size="sm" disabled={busy || state.contextDraft.trim() === (file.semanticContext ?? "")} onclick={() => state.saveContext(view, file)}>{state.pending === "context" ? "Saving…" : "Save context"}</Button></div>
         </section>
       {/if}
 
       {#if showSemantic}
         <div class="divider" aria-hidden="true"></div>
         <section aria-labelledby="semantic-heading">
-          <div class="section-head"><h3 id="semantic-heading">Semantic representation</h3><span class="semantic-pill {file.semanticTone}">{file.semanticLabel}</span></div>
+          <div class="section-head"><h3 id="semantic-heading">Semantic status</h3><span class="semantic-pill {file.semanticTone}">{file.semanticLabel}</span></div>
+          {#if exact?.eligible}
+            <div class="profile"><h4>Exact text lane</h4><p>Prose is indexed from the original UTF-8 text without a generated summary. {exact.objectCount} semantic {exact.objectCount === 1 ? "object is" : "objects are"} currently published.</p></div>
+          {/if}
           {#if material?.error}<p class="semantic-error">{material.error}</p>{/if}
           {#if material?.profile}
             <div class="profile"><h4>{file.subkind === "image" ? "Native visual" : "Material profile"}</h4><ul>
@@ -369,11 +178,14 @@
           {/if}
           {#if descriptor}
             <div class="summary">
-              <div class="summary-title"><Sparkles size={13} aria-hidden="true" /><h4>Semantic summary</h4></div>
+              <div class="summary-title"><Sparkles size={13} aria-hidden="true" /><h4>Generated description</h4></div>
               <p class="summary-body">{descriptor.summary}</p>
               {#if descriptor.purpose}<p><strong>Purpose:</strong> {descriptor.purpose}</p>{/if}
               {#if descriptor.entities.length > 0 || descriptor.themes.length > 0}<div class="chips">{#each [...descriptor.entities, ...descriptor.themes] as value (value)}<PanelChip>{value}</PanelChip>{/each}</div>{/if}
             </div>
+          {/if}
+          {#if exact?.eligible !== true && material?.eligible !== true}
+            <p class="section-copy">This format is retained and downloadable, but it is not currently admitted to a semantic lane.</p>
           {/if}
         </section>
       {/if}
