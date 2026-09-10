@@ -1,6 +1,9 @@
 import type { Configuration } from "$model/server/configuration/index.server";
 import { defineExternalFileStorage } from "$model/server/external-file-storage/definition";
-import type { ExternalFileStorageModel } from "$model/server/external-file-storage/types";
+import type {
+  ExternalFileStorageFailpoint,
+  ExternalFileStorageModel
+} from "$model/server/external-file-storage/types";
 
 const configuredDirectory = (
   configuration: Configuration,
@@ -13,17 +16,13 @@ const configuredDirectory = (
 
 export const createExternalFileStorage = (
   configuration: Configuration,
-  directoryOverride?: string
+  directoryOverride?: string,
+  failpoint?: (point: ExternalFileStorageFailpoint) => void
 ): ExternalFileStorageModel => {
   const primary = directoryOverride?.trim() || configuredDirectory(
     configuration,
     "externalFiles.storage.directory",
     "data/external-files"
   );
-  const legacy = configuredDirectory(
-    configuration,
-    "externalFiles.storage.legacyDirectory",
-    configuredDirectory(configuration, "representation.materials.directory", "data/materials")
-  );
-  return defineExternalFileStorage(primary, [legacy]);
+  return defineExternalFileStorage(primary, failpoint);
 };

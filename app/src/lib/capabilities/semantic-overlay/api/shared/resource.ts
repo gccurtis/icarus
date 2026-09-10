@@ -22,7 +22,8 @@ const externalFileLookup = (store: StoreModel, projectId: Id<"projects">) => {
       name: file.name,
       mediaType: file.mediaType,
       subkind: file.subkind,
-      hash: file.hash
+      hash: file.hash,
+      ...(file.semanticContext === undefined ? {} : { semanticContext: file.semanticContext })
     };
   };
 };
@@ -59,7 +60,7 @@ export const readSemanticResourceRevisionFor = (
     );
     if (file === undefined) return undefined;
     const subkind = file.subkind;
-    return subkind === "text" ? 0 : undefined;
+    return subkind === "text" ? file.revision : undefined;
   }
   return undefined;
 };
@@ -155,7 +156,11 @@ export const readSemanticResourceForModel = async (
   if (file === undefined) return undefined;
   const subkind = file.subkind;
   if (subkind !== "text") return undefined;
-  const bytes = await model.materialContent.read({ storageId: file.storageId, hash: file.hash });
+  const bytes = await model.externalFileStorage.read({
+    storageId: file.storageId,
+    hash: file.hash,
+    size: file.size
+  });
   if (bytes === undefined) throw new Error(`Native text for '${file.name}' is unavailable`);
   if (bytes.byteLength > MAX_EXTERNAL_TEXT_BYTES) {
     throw new Error(`Native text for '${file.name}' exceeds the bounded exact-text limit`);
@@ -169,7 +174,7 @@ export const readSemanticResourceForModel = async (
   const canonicalRef = { kind: "externalFile::text", id: file._id };
   return {
     ref: canonicalRef,
-    revision: 0,
+    revision: file.revision,
     contentHash: file.hash,
     text: content,
     encoding: "utf-16",

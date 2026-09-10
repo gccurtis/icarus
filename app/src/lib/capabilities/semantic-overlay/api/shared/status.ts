@@ -1,8 +1,13 @@
+import type { TableRow } from "$model/server/store/index.server";
 import type { ServerModel } from "$runtime/server/start.server";
 import type { Id } from "$representation/data/types/core/id";
 import type { ResourceRef } from "$representation/data/types/core/resource";
 
-import { semanticSourceIsCurrent, materialRecordIsCurrent } from "$capabilities/semantic-overlay/api/shared/freshness";
+import {
+  materialRecordIsCurrent,
+  materialSourceIsCurrent,
+  semanticSourceIsCurrent
+} from "$capabilities/semantic-overlay/api/shared/freshness";
 import { materialProfileDigest } from "$capabilities/semantic-overlay/api/shared/material-facets";
 import { readMaterialSyncTargetFor } from "$capabilities/semantic-overlay/api/shared/material-resource";
 import { readSemanticSyncTargetFor } from "$capabilities/semantic-overlay/api/shared/resource";
@@ -26,6 +31,15 @@ const newest = <T extends { updatedAt: number; _creationTime: number }>(rows: re
     right.updatedAt - left.updatedAt || right._creationTime - left._creationTime
   )[0];
 
+const grouped = <T>(rows: readonly T[], key: (row: T) => string): ReadonlyMap<string, readonly T[]> => {
+  const groups = new Map<string, T[]>();
+  for (const row of rows) {
+    const id = key(row);
+    groups.set(id, [...(groups.get(id) ?? []), row]);
+  }
+  return groups;
+};
+
 const laneState = (
   eligible: boolean,
   current: boolean,
@@ -45,87 +59,137 @@ const laneFields = (eligible: boolean, current: boolean, stale: boolean, job: Jo
   ...(job?.error === undefined ? {} : { error: job.error })
 });
 
-/** Server-to-server status projection used by External without owning semantic tables. */
-export const readSemanticStatusFor = (
+export type SemanticStatusReader = (asked: ResourceRef) => ReadSemanticStatusResult;
+
+/**
+ * Indexes every semantic table once, then answers any number of status reads.
+ * External's library constructs one reader per library response, keeping its
+ * cost linear in rows rather than files multiplied by semantic rows.
+ */
+export const semanticStatusReaderFor = (
   model: ServerModel,
-  projectId: Id<"projects">,
-  asked: ResourceRef
-): ReadSemanticStatusResult => {
-  const exactTarget = readSemanticSyncTargetFor(model.store, projectId, asked);
-  const materialTarget = readMaterialSyncTargetFor(model, projectId, asked);
-  if (exactTarget === undefined && materialTarget === undefined) {
-    const exists = rowsOf(model.store, "externalFiles").some(
-      (row) => row.projectId === projectId && row._id === asked.id
-    );
-    if (!exists) return null;
-  }
-
+  projectId: Id<"projects">
+): SemanticStatusReader => {
+  const files = new Map(rowsOf(model.store, "externalFiles")
+    .filter((row) => row.projectId === projectId)
+    .map((row) => [row._id, row]));
   const sources = rowsOf(model.store, "semanticSources").filter(
-    (row) => row.projectId === projectId && row.ref.id === asked.id
+    (row) => row.projectId === projectId
   );
-  const currentSource = sources.find((source) =>
-    semanticSourceIsCurrent(model.store, projectId, source)
+  const sourcesByResource = grouped(sources, (row) => row.ref.id);
+  const exactJobsByResource = grouped(
+    rowsOf(model.store, "semanticSyncJobs").filter((row) => row.projectId === projectId),
+    (row) => row.ref.id
   );
-  const exactJob = newest(rowsOf(model.store, "semanticSyncJobs").filter(
-    (row) => row.projectId === projectId && row.ref.id === asked.id
-  ));
-  const exactObjectCount = rowsOf(model.store, "semanticObjects").filter(
-    (row) =>
-      row.projectId === projectId &&
-      (row.lane ?? "text") === "text" &&
-      "semanticSourceId" in row &&
-      row.semanticSourceId === currentSource?._id
-  ).length;
-  const exact: ExactSemanticStatus = {
-    ...laneFields(
-      exactTarget !== undefined,
-      currentSource !== undefined,
-      sources.length > 0 && currentSource === undefined,
-      exactJob
-    ),
-    objectCount: currentSource === undefined ? 0 : exactObjectCount
-  };
-
+  const exactObjectCount = new Map<string, number>();
+  for (const row of rowsOf(model.store, "semanticObjects")) {
+    if (row.projectId !== projectId || row.lane !== "text") continue;
+    exactObjectCount.set(row.semanticSourceId, (exactObjectCount.get(row.semanticSourceId) ?? 0) + 1);
+  }
   const placements = rowsOf(model.store, "semanticMaterialPlacements").filter(
     (row) => row.projectId === projectId
   );
+  const placementsByMaterial = grouped(placements, (row) => row.semanticMaterialId);
   const materials = rowsOf(model.store, "semanticMaterials").filter(
-    (row) =>
-      row.projectId === projectId &&
-      row.source.kind === "externalFile" &&
-      row.source.fileId === asked.id
+    (row) => row.projectId === projectId
   );
-  const currentMaterial = newest(materials.filter((material) =>
-    materialRecordIsCurrent(model.store, projectId, material, placements)
-  ));
-  const materialJob = newest(rowsOf(model.store, "semanticMaterialJobs").filter(
-    (row) => row.projectId === projectId && row.ref.id === asked.id
-  ));
-  const material: MaterialSemanticStatus = {
-    ...laneFields(
-      materialTarget !== undefined,
-      currentMaterial !== undefined,
-      materials.length > 0 && currentMaterial === undefined,
-      materialJob
-    ),
-    ...(currentMaterial === undefined
-      ? {}
-      : {
-          kind: currentMaterial.kind,
-          profile: materialProfileDigest(currentMaterial.profile),
-          ...(currentMaterial.descriptor === undefined
-            ? {}
-            : { descriptor: currentMaterial.descriptor })
-        })
-  };
+  const materialsByResource = grouped(materials, (row) => row.source.ref.id);
+  const materialJobsByResource = grouped(
+    rowsOf(model.store, "semanticMaterialJobs").filter((row) => row.projectId === projectId),
+    (row) => row.ref.id
+  );
   const overlay = newest(rowsOf(model.store, "semanticOverlays").filter(
     (row) => row.projectId === projectId
   ));
 
-  return {
-    ref: materialTarget?.ref ?? exactTarget?.ref ?? asked,
-    overlayGeneration: overlay?.generation ?? 0,
-    exact,
-    material
+  const currentSource = (source: TableRow<"semanticSources">): boolean => {
+    if (source.ref.kind !== "externalFile::text") {
+      return semanticSourceIsCurrent(model.store, projectId, source);
+    }
+    const file = files.get(source.ref.id as Id<"externalFiles">);
+    return file !== undefined &&
+      file.subkind === "text" &&
+      source.revision === file.revision &&
+      source.contentHash === file.hash;
+  };
+
+  const currentMaterial = (material: TableRow<"semanticMaterials">): boolean => {
+    if (material.source.kind !== "externalFile") {
+      return materialRecordIsCurrent(model.store, projectId, material, placements);
+    }
+    const file = files.get(material.source.fileId);
+    if (
+      file === undefined ||
+      material.source.ref.id !== file._id ||
+      material.source.ref.kind !== `externalFile::${file.subkind}` ||
+      material.source.hash !== file.hash ||
+      material.source.mediaType !== file.mediaType ||
+      material.source.subkind !== file.subkind ||
+      material.revisionKey !== `hash:${file.hash}` ||
+      material.name !== file.name
+    ) return false;
+    const own = placementsByMaterial.get(material._id) ?? [];
+    return material.profile.kind !== "image" || material.profile.placementCount === own.length;
+  };
+
+  return (asked) => {
+    const file = files.get(asked.id as Id<"externalFiles">);
+    const exactTarget = file === undefined
+      ? readSemanticSyncTargetFor(model.store, projectId, asked)
+      : file.subkind === "text"
+        ? { ref: { kind: "externalFile::text", id: file._id }, revision: file.revision }
+        : undefined;
+    const materialTarget = file === undefined
+      ? readMaterialSyncTargetFor(model, projectId, asked)
+      : file.subkind === "code" || file.subkind === "data" || file.subkind === "image"
+        ? { ref: { kind: `externalFile::${file.subkind}`, id: file._id }, revision: file.revision }
+        : undefined;
+    if (exactTarget === undefined && materialTarget === undefined && file === undefined) return null;
+
+    const ownSources = sourcesByResource.get(asked.id) ?? [];
+    const currentExact = ownSources.find(currentSource);
+    const exactJob = newest(exactJobsByResource.get(asked.id) ?? []);
+    const exact: ExactSemanticStatus = {
+      ...laneFields(
+        exactTarget !== undefined,
+        currentExact !== undefined,
+        ownSources.length > 0 && currentExact === undefined,
+        exactJob
+      ),
+      objectCount: currentExact === undefined ? 0 : (exactObjectCount.get(currentExact._id) ?? 0)
+    };
+
+    const ownMaterials = materialsByResource.get(asked.id) ?? [];
+    const current = newest(ownMaterials.filter(currentMaterial));
+    const materialJob = newest(materialJobsByResource.get(asked.id) ?? []);
+    const material: MaterialSemanticStatus = {
+      ...laneFields(
+        materialTarget !== undefined,
+        current !== undefined,
+        ownMaterials.length > 0 && current === undefined,
+        materialJob
+      ),
+      ...(current === undefined
+        ? {}
+        : {
+            kind: current.kind,
+            profile: materialProfileDigest(current.profile),
+            ...(current.descriptor === undefined ? {} : { descriptor: current.descriptor })
+          })
+    };
+
+    return {
+      ref: materialTarget?.ref ?? exactTarget?.ref ?? asked,
+      overlayGeneration: overlay?.generation ?? 0,
+      exact,
+      material
+    };
   };
 };
+
+/** Server-to-server status projection used by one-off reads. */
+export const readSemanticStatusFor = (
+  model: ServerModel,
+  projectId: Id<"projects">,
+  asked: ResourceRef
+): ReadSemanticStatusResult => semanticStatusReaderFor(model, projectId)(asked);

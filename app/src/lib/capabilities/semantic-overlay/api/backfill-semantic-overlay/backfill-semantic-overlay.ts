@@ -44,7 +44,7 @@ export const backfillSemanticOverlay = async (
           kind: `externalFile::${row.subkind}`,
           id: row._id
         },
-        revision: 0
+        revision: row.revision
       }))
   ];
 
@@ -59,7 +59,14 @@ export const backfillSemanticOverlay = async (
       ) {
         enqueueSemanticSyncFor(atomic, projectId, resource.ref, resource.revision, asked.force);
       }
-      enqueueMaterialSyncFor(atomic, projectId, resource.ref, resource.revision, asked.force);
+      if (
+        resource.ref.kind !== "externalFile::text" &&
+        resource.ref.kind !== "externalFile::audio" &&
+        resource.ref.kind !== "externalFile::video" &&
+        resource.ref.kind !== "externalFile::unknown"
+      ) {
+        enqueueMaterialSyncFor(atomic, projectId, resource.ref, resource.revision, asked.force);
+      }
     }
     return {
       text: rowsOf(unit, "semanticSyncJobs").filter(

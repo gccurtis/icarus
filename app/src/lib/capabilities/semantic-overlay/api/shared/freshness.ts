@@ -44,6 +44,11 @@ export const currentResourceRevisionFor = (
         )?.revision
       : undefined;
   }
+  if (ref.kind === "externalFile" || ref.kind.startsWith("externalFile::")) {
+    return rowsOf(store, "externalFiles").find(
+      (row) => row.projectId === projectId && row._id === ref.id
+    )?.revision;
+  }
   return undefined;
 };
 
@@ -62,7 +67,7 @@ export const semanticSourceIsCurrent = (
     );
     if (file === undefined) return false;
     const subkind = file.subkind;
-    return subkind === "text" && source.revision === 0 && source.contentHash === file.hash;
+    return subkind === "text" && source.revision === file.revision && source.contentHash === file.hash;
   }
   return true;
 };

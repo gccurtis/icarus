@@ -162,15 +162,24 @@ describe("Derived Output resource-reading session", () => {
     put("externalFiles", [
       {
         _id: "externalFiles:csv", _creationTime: 1, projectId, name: "sales.csv",
-        mediaType: "text/csv", subkind: "data", storageId: "_storage:csv", hash: hash("a")
+        originalName: "sales.csv", relativePath: "sales.csv", mediaType: "text/csv",
+        subkind: "data", storageId: `_storage:${hash("a")}`, hash: hash("a"), size: 35,
+        origin: { kind: "upload" }, createdBy: { kind: "system" },
+        updatedBy: { kind: "system" }, revision: 1, updatedAt: 1
       },
       {
         _id: "externalFiles:code", _creationTime: 2, projectId, name: "answer.ts",
-        mediaType: "text/typescript", subkind: "code", storageId: "_storage:code", hash: hash("b")
+        originalName: "answer.ts", relativePath: "answer.ts", mediaType: "text/typescript",
+        subkind: "code", storageId: `_storage:${hash("b")}`, hash: hash("b"), size: 46,
+        origin: { kind: "upload" }, createdBy: { kind: "system" },
+        updatedBy: { kind: "system" }, revision: 1, updatedAt: 2
       },
       {
         _id: "externalFiles:image", _creationTime: 3, projectId, name: "diagram.png",
-        mediaType: "image/png", subkind: "image", storageId: "_storage:image", hash: hash("c")
+        originalName: "diagram.png", relativePath: "diagram.png", mediaType: "image/png",
+        subkind: "image", storageId: `_storage:${hash("c")}`, hash: hash("c"), size: 4,
+        origin: { kind: "upload" }, createdBy: { kind: "system" },
+        updatedBy: { kind: "system" }, revision: 1, updatedAt: 3
       }
     ]);
     put("semanticMaterials", [
@@ -212,9 +221,9 @@ describe("Derived Output resource-reading session", () => {
     put("spreadsheets", []);
     put("resourceSets", []);
     const content = new Map([
-      ["_storage:csv", new TextEncoder().encode("Region,Revenue\nNorth,120\nSouth,200\n")],
-      ["_storage:code", new TextEncoder().encode("export const answer = 42;\nconsole.log(answer);")],
-      ["_storage:image", new Uint8Array([137, 80, 78, 71])]
+      [`_storage:${hash("a")}`, new TextEncoder().encode("Region,Revenue\nNorth,120\nSouth,200\n")],
+      [`_storage:${hash("b")}`, new TextEncoder().encode("export const answer = 42;\nconsole.log(answer);")],
+      [`_storage:${hash("c")}`, new Uint8Array([137, 80, 78, 71])]
     ]);
     model = {
       store: {

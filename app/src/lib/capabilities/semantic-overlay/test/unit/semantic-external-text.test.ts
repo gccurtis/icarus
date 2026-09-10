@@ -4,30 +4,29 @@ import { describe, it } from "vitest";
 import { defineStore } from "$model/server/store/index.server";
 import type { ServerModel } from "$runtime/server/start.server";
 import type { Id } from "$representation/data/types/core/id";
-import { semanticSourceIsCurrent } from "$capabilities/semantic-overlay/api/shared/freshness";
-import {
-  materialDescriptorInputHash,
-  shouldDescribeMaterial
-} from "$capabilities/semantic-overlay/api/shared/material-description";
 import { readMaterialInventoryFor } from "$capabilities/semantic-overlay/api/shared/material-resource";
-import { syncSemanticResourceFor } from "$capabilities/semantic-overlay/api/shared/sync";
+import { readSemanticResourceForModel } from "$capabilities/semantic-overlay/api/shared/resource";
 
 const projectId = "projects:external-text" as Id<"projects">;
 
-describe("External textual material boundary", () => {
-  it("canonicalizes legacy text as one code material while keeping the exact lane stale", async () => {
+describe("External prose semantic boundary", () => {
+  it("reads current prose through the exact-text lane and never profiles it as code", async () => {
     const store = defineStore({});
     const hash = "a".repeat(64);
     const fileId = store.create("externalFiles", {
       projectId,
       name: "facts.md",
+      originalName: "facts.md",
+      relativePath: "facts.md",
       mediaType: "text/markdown",
       subkind: "text",
       storageId: `_storage:${hash}`,
       hash,
-      size: 22,
+      size: 21,
       origin: { kind: "upload" },
       createdBy: { kind: "system" },
+      updatedBy: { kind: "system" },
+      revision: 1,
       updatedAt: 1
     });
     let nativeReads = 0;
@@ -43,35 +42,20 @@ describe("External textual material boundary", () => {
     } as unknown as ServerModel;
     const ref = { kind: "externalFile::text", id: fileId };
 
-    const inventory = await readMaterialInventoryFor(model, projectId, {
-      kind: "externalFile",
-      id: fileId
-    });
-    assert.equal(inventory?.seeds.length, 1);
-    const seed = inventory?.seeds[0];
-    assert.equal(seed?.kind, "code");
-    assert.equal(seed?.source.kind === "externalFile" ? seed.source.ref.kind : undefined, "externalFile::code");
-    assert.equal(seed?.profile.kind === "code" ? seed.profile.language : undefined, "markdown");
-    assert.equal(seed?.sourceText, "Gary is twenty-seven.");
-    assert.equal(seed === undefined ? false : shouldDescribeMaterial(seed), true);
-    if (seed !== undefined) {
-      assert.notEqual(
-        materialDescriptorInputHash(seed),
-        materialDescriptorInputHash({ ...seed, sourceText: "Different verified text." })
-      );
-    }
+    const inventory = await readMaterialInventoryFor(model, projectId, ref);
+    assert.deepEqual(inventory?.seeds, []);
+    assert.equal(nativeReads, 0, "the material lane does not read prose bytes");
 
-    const result = await syncSemanticResourceFor(model, projectId, ref);
-    assert.equal(result.outcome, "missing");
-    assert.equal(nativeReads, 1);
-    assert.equal(
-      (store.read("semanticSources") as unknown as { rows: unknown[] }).rows.length,
-      0
-    );
-    assert.equal(semanticSourceIsCurrent(store, projectId, {
+    const exact = await readSemanticResourceForModel(model, projectId, ref);
+    assert.deepEqual(exact, {
       ref,
-      revision: 0,
-      contentHash: hash
-    }), false);
+      revision: 1,
+      contentHash: hash,
+      text: "Gary is twenty-seven.",
+      encoding: "utf-16",
+      locators: [{ from: 0, to: 21, locator: { kind: "externalFileContent" } }],
+      hardBoundaries: []
+    });
+    assert.equal(nativeReads, 1);
   });
 });

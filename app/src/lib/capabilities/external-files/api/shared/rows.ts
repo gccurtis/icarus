@@ -1,18 +1,22 @@
-import type { StoreModel, TableRow } from "$model/server/store/index.server";
+import type { StoreUnitOfWork, TableRow } from "$model/server/store/index.server";
 import type { Scope, ServerModel } from "$runtime/server/start.server";
 import { asId } from "$representation/data/behavior/core/id";
-import { canonicalFileSubkind, normalizeExternalRelativePath } from "$representation/data/behavior/external/file";
+import { admitExternalFileRow } from "$representation/data/behavior/external/row";
 import type { Actor } from "$representation/data/types/core/actor";
 import type { ExternalFileOrigin } from "$representation/data/types/external/file";
-import { readSemanticStatusFor } from "$capabilities/semantic-overlay";
+import {
+  semanticStatusReaderFor,
+  type SemanticStatusReader
+} from "$capabilities/semantic-overlay";
+import { externalFilesLimits } from "$capabilities/external-files/api/shared/configuration";
 import type {
   ExternalFileLibraryItem,
   ExternalFileOriginView,
   ExternalFileUnavailable
 } from "$capabilities/external-files/types/external-files";
 
-export const rowsOf = <T extends Parameters<StoreModel["create"]>[0]>(
-  store: StoreModel,
+export const rowsOf = <T extends Parameters<StoreUnitOfWork["create"]>[0]>(
+  store: StoreUnitOfWork,
   table: T
 ): readonly TableRow<T>[] => {
   const found = store.read(table);
@@ -21,104 +25,7 @@ export const rowsOf = <T extends Parameters<StoreModel["create"]>[0]>(
     : [];
 };
 
-const canonicalId = (value: unknown): string => {
-  if (
-    typeof value !== "string" ||
-    !value.startsWith("externalFiles:") ||
-    value.length <= "externalFiles:".length ||
-    value.length > 500 ||
-    /[.:\s]/.test(value.slice("externalFiles:".length))
-  ) {
-    throw new Error("external file id is one canonical row segment");
-  }
-  return value;
-};
-
-const boundedName = (value: unknown, label: string): string => {
-  if (
-    typeof value !== "string" ||
-    value.length === 0 ||
-    value.length > 240 ||
-    value !== value.trim() ||
-    value.includes("\u0000")
-  ) {
-    throw new Error(`${label} is bounded canonical text`);
-  }
-  return value;
-};
-
-const finiteTime = (value: unknown, label: string): number => {
-  if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
-    throw new Error(`${label} is finite and non-negative`);
-  }
-  return value;
-};
-
-const revisionOf = (value: unknown): number => {
-  if (value === undefined) return 0;
-  if (!Number.isSafeInteger(value) || (value as number) < 0) {
-    throw new Error("external file revision is a non-negative safe integer");
-  }
-  return value as number;
-};
-
-const sizeOf = (value: unknown): number | null => {
-  if (value === undefined) return null;
-  if (!Number.isSafeInteger(value) || (value as number) < 0) {
-    throw new Error("external file size is a non-negative safe integer");
-  }
-  return value as number;
-};
-
-const semanticContextOf = (value: unknown): string | undefined => {
-  if (value === undefined || value === "") return undefined;
-  if (
-    typeof value !== "string" ||
-    value.length > 4_000 ||
-    value !== value.trim() ||
-    value.includes("\u0000")
-  ) {
-    throw new Error("external file semantic context is bounded canonical text");
-  }
-  return value;
-};
-
-const actorOf = (value: unknown): Actor => {
-  if (value === null || typeof value !== "object" || Array.isArray(value)) {
-    throw new Error("external file actor is represented");
-  }
-  const actor = value as Record<string, unknown>;
-  const exact = (fields: readonly string[]) =>
-    Object.keys(actor).every((field) => fields.includes(field));
-  if (actor.kind === "system" && exact(["kind"])) return { kind: "system" };
-  if (
-    actor.kind === "user" &&
-    exact(["kind", "userId"]) &&
-    typeof actor.userId === "string" &&
-    actor.userId.length > 0
-  ) {
-    return { kind: "user", userId: actor.userId } as Actor;
-  }
-  if (
-    actor.kind === "connector" &&
-    exact(["kind", "connectorId"]) &&
-    typeof actor.connectorId === "string" &&
-    actor.connectorId.length > 0
-  ) {
-    return { kind: "connector", connectorId: actor.connectorId } as Actor;
-  }
-  if (
-    actor.kind === "agent" &&
-    exact(["kind", "taskId"]) &&
-    typeof actor.taskId === "string" &&
-    actor.taskId.length > 0
-  ) {
-    return { kind: "agent", taskId: actor.taskId } as Actor;
-  }
-  throw new Error("external file actor is represented");
-};
-
-const actorName = (store: StoreModel, scope: Scope, actor: Actor): string => {
+const actorName = (store: StoreUnitOfWork, scope: Scope, actor: Actor): string => {
   if (actor.kind === "system") return "Icarus";
   if (actor.kind === "user") {
     if (actor.userId === scope.userId) return scope.username;
@@ -139,101 +46,77 @@ const actorName = (store: StoreModel, scope: Scope, actor: Actor): string => {
   )?.title ?? "An agent";
 };
 
-const originOf = (value: ExternalFileOrigin): ExternalFileOriginView => {
-  if (value?.kind === "upload" && Object.keys(value).length === 1) {
-    return { kind: "upload", label: "Uploaded" };
-  }
-  if (
-    value?.kind === "connector" &&
-    Object.keys(value).every((field) => ["kind", "connectorId", "sourceId"].includes(field)) &&
-    typeof value.connectorId === "string" &&
-    value.connectorId.length > 0 &&
-    typeof value.sourceId === "string" &&
-    value.sourceId.length > 0 &&
-    value.sourceId.length <= 500
-  ) {
-    return {
+const originView = (value: ExternalFileOrigin): ExternalFileOriginView => value.kind === "upload"
+  ? { kind: "upload", label: "Uploaded" }
+  : {
       kind: "connector",
       label: "Connector",
       connectorId: value.connectorId,
       sourceId: value.sourceId
     };
-  }
-  throw new Error("external file origin is represented");
-};
 
 export type AdmittedExternalFile = {
   readonly row: TableRow<"externalFiles">;
   readonly item: ExternalFileLibraryItem;
 };
 
-export const admitExternalFile = (
+const projectItem = (
   model: ServerModel,
   scope: Scope,
-  row: TableRow<"externalFiles">
+  row: TableRow<"externalFiles">,
+  semanticStatus: SemanticStatusReader
 ): AdmittedExternalFile => {
-  const id = canonicalId(row._id);
-  if (row.projectId !== scope.projectId) throw new Error("external file belongs to the project");
-  const name = boundedName(row.name, "external file name");
-  const originalName = boundedName(row.originalName ?? row.name, "original file name");
-  const relativePath = normalizeExternalRelativePath(row.relativePath ?? originalName);
-  if (
-    typeof row.mediaType !== "string" ||
-    row.mediaType.length === 0 ||
-    row.mediaType.length > 200 ||
-    row.mediaType !== row.mediaType.trim() ||
-    !/^[\x20-\x7e]+$/.test(row.mediaType)
-  ) {
-    throw new Error("external file media type is bounded text");
-  }
-  const subkind = canonicalFileSubkind(row.subkind, row.mediaType, name);
-  if (!["code", "data", "image", "audio", "video", "unknown"].includes(subkind)) {
-    throw new Error("external file subkind is represented");
-  }
-  if (typeof row.hash !== "string" || !/^[a-f0-9]{64}$/i.test(row.hash)) {
-    throw new Error("external file hash is SHA-256");
-  }
-  if (typeof row.storageId !== "string" || row.storageId.length === 0) {
-    throw new Error("external file storage id is represented");
-  }
-  const createdBy = actorOf(row.createdBy);
-  const updatedBy = actorOf(row.updatedBy ?? row.createdBy);
-  const semantic = readSemanticStatusFor(model, asId<"projects">(scope.projectId), {
-    kind: `externalFile::${subkind}`,
-    id
+  const admitted = admitExternalFileRow(row, externalFilesLimits(model.configuration).maxPathBytes);
+  if (admitted.projectId !== scope.projectId) throw new Error("external file belongs to the project");
+  const semantic = semanticStatus({
+    kind: `externalFile::${admitted.subkind}`,
+    id: admitted._id
   });
   if (semantic === null) throw new Error("external file semantic status is readable");
   return {
-    row,
+    row: admitted,
     item: {
-      id,
-      name,
-      originalName,
-      relativePath,
-      mediaType: row.mediaType,
-      subkind,
-      size: sizeOf(row.size),
-      revision: revisionOf(row.revision),
-      createdAt: finiteTime(row._creationTime, "external file creation time"),
-      updatedAt: finiteTime(row.updatedAt, "external file update time"),
-      createdByName: actorName(model.store, scope, createdBy),
-      updatedByName: actorName(model.store, scope, updatedBy),
-      origin: originOf(row.origin),
-      ...(semanticContextOf(row.semanticContext) === undefined
+      id: admitted._id,
+      name: admitted.name,
+      originalName: admitted.originalName,
+      relativePath: admitted.relativePath,
+      mediaType: admitted.mediaType,
+      subkind: admitted.subkind,
+      size: admitted.size,
+      revision: admitted.revision,
+      createdAt: admitted._creationTime,
+      updatedAt: admitted.updatedAt,
+      createdByName: actorName(model.store, scope, admitted.createdBy),
+      updatedByName: actorName(model.store, scope, admitted.updatedBy),
+      origin: originView(admitted.origin),
+      ...(admitted.semanticContext === undefined
         ? {}
-        : { semanticContext: semanticContextOf(row.semanticContext) }),
+        : { semanticContext: admitted.semanticContext }),
       semantic
     }
   };
 };
 
+export const externalFileRowIn = (
+  store: StoreUnitOfWork,
+  projectId: string,
+  externalFileId: string,
+  maxPathBytes: number
+): TableRow<"externalFiles"> | null => {
+  const row = rowsOf(store, "externalFiles").find(
+    (candidate) => candidate.projectId === projectId && candidate._id === externalFileId
+  );
+  return row === undefined ? null : admitExternalFileRow(row, maxPathBytes);
+};
+
 export const externalFilesIn = (model: ServerModel, scope: Scope) => {
   const files: AdmittedExternalFile[] = [];
   const unavailable: ExternalFileUnavailable[] = [];
+  const semanticStatus = semanticStatusReaderFor(model, asId<"projects">(scope.projectId));
   for (const row of rowsOf(model.store, "externalFiles")) {
     if (row.projectId !== scope.projectId) continue;
     try {
-      files.push(admitExternalFile(model, scope, row));
+      files.push(projectItem(model, scope, row, semanticStatus));
     } catch (error) {
       unavailable.push({
         unavailable: true,
@@ -256,7 +139,12 @@ export const externalFileIn = (
   );
   if (row === undefined) return null;
   try {
-    return admitExternalFile(model, scope, row);
+    return projectItem(
+      model,
+      scope,
+      row,
+      semanticStatusReaderFor(model, asId<"projects">(scope.projectId))
+    );
   } catch (error) {
     return {
       unavailable: true,

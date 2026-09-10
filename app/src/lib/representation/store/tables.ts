@@ -28,7 +28,7 @@ import type {
   ConnectorConfiguration,
   ConnectorCredential,
 } from "$representation/data/types/external/connector";
-import type { ExternalFileOrigin, StoredFileSubkind } from "$representation/data/types/external/file";
+import type { ExternalFileOrigin, FileSubkind } from "$representation/data/types/external/file";
 import type { FindingSource } from "$representation/data/types/investigation/finding";
 import type {
   HypothesisAssessment,
@@ -472,20 +472,19 @@ export type ExternalFileFields = {
   projectId: Id<"projects">;
   /** Mutable project-local display name. */
   name: string;
-  /** Compatibility fields are optional because persisted stores predate ingestion. */
-  originalName?: string;
-  relativePath?: string;
+  originalName: string;
+  relativePath: string;
   mediaType: string;
-  subkind: StoredFileSubkind;
+  subkind: FileSubkind;
   storageId: Id<"_storage">;
   hash: string;
-  size?: number;
+  size: number;
   origin: ExternalFileOrigin;
   createdBy: Actor;
-  updatedBy?: Actor;
+  updatedBy: Actor;
   /** Optional user-authored meaning, primarily for datasets with weak intrinsic labels. */
   semanticContext?: string;
-  revision?: number;
+  revision: number;
   updatedAt: number;
 };
 export type ExternalFile = Row<"externalFiles"> & ExternalFileFields;

@@ -18,6 +18,9 @@ The current subject inventory is:
 - `derived-output` owns grounded prompt results and refresh work;
 - `development` owns explicitly non-production fixtures;
 - `document` owns document resources and revisions;
+- `external-files` owns the project-scoped External library, strict file admission,
+  virtual directory projection, lifecycle history, reference-safe management,
+  and semantic outbox intents for supported native files;
 - `project` owns Project Overview summaries, history, people, comments, and resource metadata;
 - `project-resources` projects the resources visible in one project;
 - `research-chat` owns research threads, the turns that answer them, and the run in flight;

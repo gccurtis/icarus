@@ -199,7 +199,7 @@ beforeEach(() => {
         };
       }
     },
-    materialContent: { read: async () => undefined },
+    externalFileStorage: { read: async () => undefined },
     operationFlights: createOperationFlights(),
     observability: { logger: { info: () => {}, warn: () => {} } }
   };

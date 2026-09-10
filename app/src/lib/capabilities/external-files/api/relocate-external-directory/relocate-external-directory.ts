@@ -1,16 +1,20 @@
-import { asId } from "$representation/data/behavior/core/id";
 import {
   externalDirectoryContains,
-  normalizeExternalRelativePath
+  externalRelativePathWithin
 } from "$representation/data/behavior/external/file";
+import { admitExternalFileRow } from "$representation/data/behavior/external/row";
 import { requireScope } from "$runtime/server/scope.server";
 import { serverModel } from "$runtime/server/start.server";
 
-import { externalDirectoriesIn } from "$capabilities/external-files/api/shared/directories";
-import { recordExternalFileHistory } from "$capabilities/external-files/api/shared/history";
-import { externalFilesIn, rowsOf } from "$capabilities/external-files/api/shared/rows";
+import { externalFilesLimits } from "$capabilities/external-files/api/shared/configuration";
+import { externalDirectoryRevisionToken } from "$capabilities/external-files/api/shared/directories";
+import { replaceExternalFileIn } from "$capabilities/external-files/api/shared/mutations";
+import { rowsOf } from "$capabilities/external-files/api/shared/rows";
 import { validateRelocateExternalDirectory } from "$capabilities/external-files/api/relocate-external-directory/validate-relocate-external-directory";
 import type { RelocateExternalDirectoryResult } from "$capabilities/external-files/types/external-files";
+
+const failure = (error: unknown): string =>
+  (error instanceof Error ? error.message : String(error)).slice(0, 400);
 
 export const relocateExternalDirectory = async (
   input: unknown
@@ -18,89 +22,116 @@ export const relocateExternalDirectory = async (
   const scope = await requireScope();
   const asked = validateRelocateExternalDirectory(input);
   if (
-    asked.path === "" ||
-    asked.destination === "" ||
-    asked.destination === asked.path ||
-    asked.destination.startsWith(`${asked.path}/`)
+    asked.sourceDirectory === "" ||
+    asked.destinationDirectory === "" ||
+    asked.destinationDirectory === asked.sourceDirectory ||
+    asked.destinationDirectory.startsWith(`${asked.sourceDirectory}/`)
   ) return {
     accepted: false,
-    path: asked.path,
+    sourceDirectory: asked.sourceDirectory,
     reason: "invalid-destination",
     detail: "A directory destination must be a different non-root path outside itself."
   };
 
   const model = serverModel();
-  const release = await model.externalFileStorage.acquireMutation();
+  const limits = externalFilesLimits(model.configuration);
   try {
-    const admitted = externalFilesIn(model, scope).files;
-    const directory = externalDirectoriesIn(admitted).find((entry) => entry.path === asked.path);
-    if (directory === undefined || directory.descendantFileCount === 0) return {
-      accepted: false,
-      path: asked.path,
-      reason: "not-found",
-      detail: "That virtual directory no longer contains project files."
-    };
-    if (directory.revisionToken !== asked.baseRevisionToken) return {
-      accepted: false,
-      path: asked.path,
-      reason: "stale",
-      detail: "Files in that directory changed. Refresh before moving it."
-    };
-    const members = admitted.filter(({ item }) =>
-      externalDirectoryContains(asked.path, item.relativePath)
-    );
-    const memberIds = new Set(members.map(({ row }) => row._id));
-    const destinations = members.map(({ item }) => normalizeExternalRelativePath(
-      `${asked.destination}/${item.relativePath.slice(asked.path.length + 1)}`
-    ));
-    const duplicate = destinations.find((path, index) => destinations.indexOf(path) !== index);
-    const heldPaths = new Set(rowsOf(model.store, "externalFiles").flatMap((row) => {
-      if (row.projectId !== scope.projectId || memberIds.has(row._id)) return [];
-      try {
-        return [normalizeExternalRelativePath(row.relativePath ?? row.originalName ?? row.name)];
-      } catch {
-        return [];
-      }
-    }));
-    if (duplicate !== undefined || destinations.some((path) => heldPaths.has(path))) return {
-      accepted: false,
-      path: asked.path,
-      reason: "path-conflict",
-      detail: "The destination would collide with another project file."
-    };
-
-    const at = Date.now();
-    const actor = { kind: "user" as const, userId: asId<"users">(scope.userId) };
-    model.store.replaceRows("externalFiles", members.map(({ row, item }, index) => {
-      const { _id, _creationTime, ...held } = row;
-      void _id;
-      void _creationTime;
-      return {
-        id: row._id,
-        fields: {
-          ...held,
-          relativePath: destinations[index],
-          updatedBy: actor,
-          revision: item.revision + 1,
-          updatedAt: at
-        }
-      };
-    }));
-    members.forEach(({ row, item }, index) => recordExternalFileHistory(model, scope, {
-      event: "moved",
-      externalFileId: row._id,
-      name: item.name,
-      relativePath: destinations[index],
-      detail: `${item.relativePath} → ${destinations[index]}`
-    }));
+    externalRelativePathWithin(asked.sourceDirectory, limits.maxPathBytes);
+    externalRelativePathWithin(asked.destinationDirectory, limits.maxPathBytes);
+  } catch (error) {
     return {
-      accepted: true,
-      path: asked.path,
-      destination: asked.destination,
-      movedFiles: members.length,
-      externalFileIds: members.map(({ row }) => row._id)
+      accepted: false,
+      sourceDirectory: asked.sourceDirectory,
+      reason: "invalid-destination",
+      detail: failure(error)
     };
-  } finally {
-    release();
+  }
+  try {
+    return model.store.transaction((unit): RelocateExternalDirectoryResult => {
+      let projectRows;
+      try {
+        projectRows = rowsOf(unit, "externalFiles")
+          .filter((row) => row.projectId === scope.projectId)
+          .map((row) => admitExternalFileRow(row, limits.maxPathBytes));
+      } catch (error) {
+        return {
+          accepted: false,
+          sourceDirectory: asked.sourceDirectory,
+          reason: "corrupt",
+          detail: failure(error)
+        };
+      }
+      const members = projectRows.filter((row) =>
+        externalDirectoryContains(asked.sourceDirectory, row.relativePath)
+      );
+      if (members.length === 0) return {
+        accepted: false,
+        sourceDirectory: asked.sourceDirectory,
+        reason: "not-found",
+        detail: "That virtual directory no longer contains project files."
+      };
+      const token = externalDirectoryRevisionToken(members.map((row) => ({
+        item: { id: row._id, revision: row.revision, relativePath: row.relativePath }
+      })));
+      if (token !== asked.baseRevisionToken) return {
+        accepted: false,
+        sourceDirectory: asked.sourceDirectory,
+        reason: "stale",
+        detail: "Files in that directory changed. Refresh before moving it."
+      };
+
+      let destinations: string[];
+      try {
+        destinations = members.map((row) => externalRelativePathWithin(
+          `${asked.destinationDirectory}/${row.relativePath.slice(asked.sourceDirectory.length + 1)}`,
+          limits.maxPathBytes
+        ));
+      } catch (error) {
+        return {
+          accepted: false,
+          sourceDirectory: asked.sourceDirectory,
+          reason: "invalid-destination",
+          detail: failure(error)
+        };
+      }
+      const memberIds = new Set(members.map((row) => row._id));
+      const heldPaths = new Set(projectRows
+        .filter((row) => !memberIds.has(row._id))
+        .map((row) => row.relativePath));
+      const uniqueDestinations = new Set(destinations);
+      if (
+        uniqueDestinations.size !== destinations.length ||
+        destinations.some((relativePath) => heldPaths.has(relativePath))
+      ) return {
+        accepted: false,
+        sourceDirectory: asked.sourceDirectory,
+        reason: "path-conflict",
+        detail: "The destination would collide with another project file."
+      };
+
+      const at = Date.now();
+      members.forEach((row, index) => {
+        replaceExternalFileIn(model, unit, scope, row, {
+          relativePath: destinations[index]!
+        }, {
+          event: "moved",
+          detail: `${row.relativePath} → ${destinations[index]}`
+        }, at);
+      });
+      return {
+        accepted: true,
+        sourceDirectory: asked.sourceDirectory,
+        destinationDirectory: asked.destinationDirectory,
+        movedFiles: members.length,
+        externalFileIds: members.map((row) => row._id)
+      };
+    });
+  } catch (error) {
+    return {
+      accepted: false,
+      sourceDirectory: asked.sourceDirectory,
+      reason: "store-failed",
+      detail: failure(error)
+    };
   }
 };

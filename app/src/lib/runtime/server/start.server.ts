@@ -6,6 +6,7 @@ import { createEmbedding } from "$model/server/embedding/index.server";
 import { createIntelligence } from "$model/server/intelligence/index.server";
 import { createOperationFlights } from "$model/server/operation-flights/index.server";
 import { createExternalFileStorage } from "$model/server/external-file-storage/index.server";
+import { admitExternalFileRow } from "$representation/data/behavior/external/row";
 
 export type { ServerModel } from "$runtime/server/types";
 export type { Scope, Session } from "$runtime/server/scope.server";
@@ -57,6 +58,20 @@ const buildServerModel = async (): Promise<ServerModel> => {
     configuration,
     process.env.ICARUS_EXTERNAL_FILE_DIRECTORY
   );
+  const heldExternalFiles = store.read("externalFiles");
+  const maxPathBytes = configuration.get("externalFiles.upload.maxPathBytes");
+  if (!Number.isSafeInteger(maxPathBytes) || (maxPathBytes as number) <= 0) {
+    throw new Error("External file path configuration must be a positive safe integer");
+  }
+  const externalRows = heldExternalFiles?.kind === "table" && heldExternalFiles.table === "externalFiles"
+    ? heldExternalFiles.rows.map((row) => admitExternalFileRow(row, maxPathBytes as number))
+    : [];
+  await externalFileStorage.reconcile(externalRows.map((row) => ({
+    ownerId: row._id,
+    storageId: row.storageId,
+    hash: row.hash,
+    size: row.size
+  })));
   const operationFlights = createOperationFlights();
 
   observability.logger.info("model.started");

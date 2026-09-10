@@ -2,10 +2,8 @@
 # before the capability receives them, so these are intentionally conservative.
 externalFiles:
   storage:
-    # External owns new native files. The legacy directory remains read-compatible
-    # for represented rows created before this boundary was corrected.
+    # External is the sole owner of native uploaded bytes.
     directory: data/external-files
-    legacyDirectory: data/materials
   upload:
     maxFiles: 100
     maxFileBytes: 50000000

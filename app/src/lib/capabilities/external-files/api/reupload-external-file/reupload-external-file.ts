@@ -1,15 +1,17 @@
-import { asId } from "$representation/data/behavior/core/id";
 import { requireScope } from "$runtime/server/scope.server";
 import { serverModel } from "$runtime/server/start.server";
-import { enqueueSemanticSync, retireSemanticResource } from "$capabilities/semantic-overlay";
 
 import { externalFilesLimits } from "$capabilities/external-files/api/shared/configuration";
-import { recordExternalFileHistory } from "$capabilities/external-files/api/shared/history";
+import { replaceExternalFileIn } from "$capabilities/external-files/api/shared/mutations";
 import {
   admitNativeFile,
-  releaseUnclaimedNativeFile
+  claimExternalPublication,
+  cleanupExternalBlobIfUnreferenced,
+  discardExternalPublication,
+  releaseExternalBlobClaim,
+  settleExternalPublicationAfterStoreFailure
 } from "$capabilities/external-files/api/shared/native-file";
-import { externalFileIn, rowsOf } from "$capabilities/external-files/api/shared/rows";
+import { externalFileIn, externalFileRowIn } from "$capabilities/external-files/api/shared/rows";
 import { validateReuploadExternalFile } from "$capabilities/external-files/api/reupload-external-file/validate-reupload-external-file";
 import type { ReuploadExternalFileResult } from "$capabilities/external-files/types/external-files";
 
@@ -23,11 +25,26 @@ export const reuploadExternalFile = async (
   const asked = validateReuploadExternalFile(input);
   const model = serverModel();
   const limits = externalFilesLimits(model.configuration);
+  const preliminary = externalFileIn(model, scope, asked.externalFileId);
+  if (preliminary === null) return {
+    accepted: false,
+    externalFileId: asked.externalFileId,
+    reason: "not-found",
+    revision: null,
+    detail: "No file in this project has that id."
+  };
+  if ("unavailable" in preliminary) return {
+    accepted: false,
+    externalFileId: asked.externalFileId,
+    reason: "corrupt",
+    revision: null,
+    detail: preliminary.detail
+  };
   if (asked.file.size > limits.maxFileBytes) return {
     accepted: false,
     externalFileId: asked.externalFileId,
     reason: "file-too-large",
-    revision: asked.baseRevision,
+    revision: preliminary.item.revision,
     detail: `A file can contain at most ${limits.maxFileBytes} bytes.`
   };
 
@@ -42,37 +59,14 @@ export const reuploadExternalFile = async (
       accepted: false,
       externalFileId: asked.externalFileId,
       reason: "read-failed",
-      revision: asked.baseRevision,
+      revision: preliminary.item.revision,
       detail: failure(error)
     };
   }
 
+  const native = admitNativeFile(bytes, asked.file.type, preliminary.item.name);
   const release = await model.externalFileStorage.acquireMutation();
   try {
-    const found = externalFileIn(model, scope, asked.externalFileId);
-    if (found === null) return {
-      accepted: false,
-      externalFileId: asked.externalFileId,
-      reason: "not-found",
-      revision: null,
-      detail: "No file in this project has that id."
-    };
-    if ("unavailable" in found) return {
-      accepted: false,
-      externalFileId: asked.externalFileId,
-      reason: "corrupt",
-      revision: null,
-      detail: found.detail
-    };
-    if (found.item.revision !== asked.baseRevision) return {
-      accepted: false,
-      externalFileId: asked.externalFileId,
-      reason: "stale",
-      revision: found.item.revision,
-      detail: `Authored against revision ${asked.baseRevision}; the file is at ${found.item.revision}.`
-    };
-
-    const native = admitNativeFile(bytes, asked.file.type, found.item.name);
     let receipt;
     try {
       receipt = await model.externalFileStorage.put({
@@ -85,106 +79,91 @@ export const reuploadExternalFile = async (
         accepted: false,
         externalFileId: asked.externalFileId,
         reason: "storage-failed",
-        revision: found.item.revision,
+        revision: preliminary.item.revision,
         detail: failure(error)
       };
     }
 
     try {
-      await retireSemanticResource({
-        ref: { kind: `externalFile::${found.item.subkind}`, id: found.row._id }
+      const committed = model.store.transaction((unit) => {
+        const row = externalFileRowIn(
+          unit,
+          scope.projectId,
+          asked.externalFileId,
+          limits.maxPathBytes
+        );
+        if (row === null) return { kind: "not-found" as const };
+        if (row.revision !== asked.baseRevision) {
+          return { kind: "stale" as const, revision: row.revision };
+        }
+        const changed = replaceExternalFileIn(model, unit, scope, row, {
+          storageId: receipt.storageId,
+          hash: receipt.hash,
+          size: receipt.size,
+          mediaType: native.mediaType,
+          subkind: native.subkind
+        }, {
+          event: "re-uploaded",
+          detail: `${asked.file.name} · ${receipt.size} bytes · revision ${row.revision + 1}`
+        }, Date.now());
+        return { kind: "changed" as const, previous: row, ...changed };
       });
-    } catch (error) {
-      await releaseUnclaimedNativeFile(model, receipt);
-      return {
-        accepted: false,
-        externalFileId: asked.externalFileId,
-        reason: "cleanup-failed",
-        revision: found.item.revision,
-        detail: failure(error)
-      };
-    }
 
-    const { _id, _creationTime, ...held } = found.row;
-    void _id;
-    void _creationTime;
-    const revision = found.item.revision + 1;
-    try {
-      model.store.update(`externalFiles.${found.row._id}`, {
-        ...held,
-        storageId: receipt.storageId,
-        hash: receipt.hash,
-        size: receipt.size,
-        mediaType: native.mediaType,
-        subkind: native.subkind,
-        updatedBy: { kind: "user", userId: asId<"users">(scope.userId) },
-        revision,
-        updatedAt: Date.now()
-      });
-    } catch (error) {
-      await releaseUnclaimedNativeFile(model, receipt);
-      try {
-        await enqueueSemanticSync({
-          ref: { kind: `externalFile::${found.item.subkind}`, id: found.row._id }
-        });
-      } catch {
-        // The source row remains authoritative; a later backfill can recover semantics.
+      if (committed.kind !== "changed") {
+        await discardExternalPublication(model, receipt);
+        await cleanupExternalBlobIfUnreferenced(model, receipt);
+        return committed.kind === "not-found"
+          ? {
+              accepted: false,
+              externalFileId: asked.externalFileId,
+              reason: "not-found",
+              revision: null,
+              detail: "No file in this project has that id."
+            }
+          : {
+              accepted: false,
+              externalFileId: asked.externalFileId,
+              reason: "stale",
+              revision: committed.revision,
+              detail: `Authored against revision ${asked.baseRevision}; the file is at ${committed.revision}.`
+            };
       }
+
+      await claimExternalPublication(model, receipt, committed.row._id);
+      const previousReference = {
+        storageId: committed.previous.storageId,
+        hash: committed.previous.hash,
+        size: committed.previous.size
+      };
+      const sameBlob = committed.previous.storageId === committed.row.storageId;
+      const released = sameBlob || await releaseExternalBlobClaim(
+        model,
+        committed.previous._id,
+        previousReference
+      );
+      const previousBlob = released
+        ? await cleanupExternalBlobIfUnreferenced(model, previousReference)
+        : "retained-after-error";
+      return {
+        accepted: true,
+        externalFileId: committed.row._id,
+        revision: committed.row.revision,
+        size: committed.row.size,
+        mediaType: committed.row.mediaType,
+        subkind: committed.row.subkind,
+        semantic: committed.semantic,
+        previousBlob
+      };
+    } catch (error) {
+      await settleExternalPublicationAfterStoreFailure(model, receipt);
       return {
         accepted: false,
         externalFileId: asked.externalFileId,
         reason: "store-failed",
-        revision: found.item.revision,
+        revision: asked.baseRevision,
         detail: failure(error)
       };
     }
-
-    recordExternalFileHistory(model, scope, {
-      event: "re-uploaded",
-      externalFileId: found.row._id,
-      name: found.item.name,
-      relativePath: found.item.relativePath,
-      detail: `${asked.file.name} · ${receipt.size} bytes · revision ${revision}`
-    });
-
-    let semantic: "queued" | "unsupported" | "enqueue-failed" = "unsupported";
-    let semanticDetail: string | undefined;
-    try {
-      semantic = await enqueueSemanticSync({
-        ref: { kind: `externalFile::${native.subkind}`, id: found.row._id }
-      }) === null ? "unsupported" : "queued";
-    } catch (error) {
-      semantic = "enqueue-failed";
-      semanticDetail = failure(error);
-    }
-
-    let previousBlob: Extract<ReuploadExternalFileResult, { accepted: true }>["previousBlob"] =
-      "shared";
-    if (found.row.hash !== receipt.hash) {
-      const shared = rowsOf(model.store, "externalFiles").some((row) => row.hash === found.row.hash);
-      if (!shared) {
-        try {
-          previousBlob = await model.externalFileStorage.remove({
-            storageId: found.row.storageId,
-            hash: found.row.hash,
-            ...(found.item.size === null ? {} : { size: found.item.size })
-          }) ? "removed" : "already-missing";
-        } catch {
-          previousBlob = "retained-after-error";
-        }
-      }
-    }
-    return {
-      accepted: true,
-      externalFileId: found.row._id,
-      revision,
-      size: receipt.size,
-      mediaType: native.mediaType,
-      subkind: native.subkind,
-      semantic,
-      ...(semanticDetail === undefined ? {} : { semanticDetail }),
-      previousBlob
-    };
   } finally {
     release();
   }

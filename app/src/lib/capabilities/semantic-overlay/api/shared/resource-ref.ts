@@ -36,8 +36,9 @@ export const semanticResourceRef = (value: unknown): ResourceRef =>
     value,
     (kind) =>
       kind === "document" ||
-      kind === "slides",
-    "'document' or 'slides'"
+      kind === "slides" ||
+      kind === "externalFile::text",
+    "'document', 'slides', or 'externalFile::text'"
   );
 
 /** Resource kinds whose save/upload event can enqueue either semantic lane. */

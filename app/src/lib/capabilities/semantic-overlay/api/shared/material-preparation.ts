@@ -55,8 +55,8 @@ const nativeImageReader = (model: ServerModel, projectId: Id<"projects">) => {
     if (file === undefined) return { seed, error: "Original image content is unavailable" };
     let pending = pendingByHash.get(file.hash);
     if (pending === undefined) {
-      pending = model.materialContent
-        .read({ storageId: file.storageId, hash: file.hash })
+      pending = model.externalFileStorage
+        .read({ storageId: file.storageId, hash: file.hash, size: file.size })
         .then((bytes) =>
           bytes === undefined || bytes.byteLength > 5_000_000
             ? undefined

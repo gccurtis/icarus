@@ -61,9 +61,13 @@ export const readMaterialRevisionFor = (
         )?.revision;
   }
   if (ref.kind === "externalFile" || ref.kind.startsWith("externalFile::")) {
-    return rowsOf(model.store, "externalFiles").some(
+    const file = rowsOf(model.store, "externalFiles").find(
       (row) => row.projectId === projectId && row._id === ref.id
-    ) ? 0 : undefined;
+    );
+    return file !== undefined &&
+      (file.subkind === "code" || file.subkind === "data" || file.subkind === "image")
+      ? file.revision
+      : undefined;
   }
   return undefined;
 };
@@ -100,7 +104,11 @@ const external = async (
   const csv = isCsvFile(file.name, file.mediaType);
   const code = codeLanguage(file.name, file.mediaType) !== "unknown";
   const bytes = subkind === "image" || csv || code
-    ? await model.materialContent.read({ storageId: file.storageId, hash: file.hash })
+    ? await model.externalFileStorage.read({
+        storageId: file.storageId,
+        hash: file.hash,
+        size: file.size
+      })
     : undefined;
   let text: string | undefined;
   if (bytes !== undefined && (code || csv)) {
@@ -132,7 +140,7 @@ const external = async (
       mediaType: file.mediaType
     };
   }
-  return { ref, revision: 0, seeds: seed === undefined ? [] : [seed] };
+  return { ref, revision: file.revision, seeds: seed === undefined ? [] : [seed] };
 };
 
 export const readMaterialInventoryFor = async (

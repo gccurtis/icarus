@@ -18,7 +18,7 @@ export const readExternalFileContent = async (
   const bytes = await model.externalFileStorage.read({
     storageId: found.row.storageId,
     hash: found.row.hash,
-    ...(found.item.size === null ? {} : { size: found.item.size })
+    size: found.item.size
   });
   if (bytes === undefined) throw new Error("The file's native bytes are unavailable.");
   const { maxResponseBytes } = externalFilesLimits(model.configuration);

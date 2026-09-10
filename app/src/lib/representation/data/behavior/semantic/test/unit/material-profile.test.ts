@@ -62,9 +62,9 @@ describe("bounded semantic material profilers", () => {
     });
   });
 
-  it("uses one code-profile language boundary for prose and source text", () => {
-    expect(codeLanguage("notes.md", "text/markdown")).toBe("markdown");
-    expect(codeLanguage("notes.txt", "text/plain")).toBe("plain-text");
+  it("keeps prose outside the code-profile language boundary", () => {
+    expect(codeLanguage("notes.md", "text/markdown")).toBe("unknown");
+    expect(codeLanguage("notes.txt", "text/plain")).toBe("unknown");
     expect(codeLanguage("worker.ts", "text/plain")).toBe("typescript");
     expect(codeLanguage("config.json", "application/json")).toBe("json");
   });

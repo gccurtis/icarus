@@ -61,13 +61,17 @@ const fixture = (
   const createdFileId = store.create("externalFiles", {
     projectId,
     name: "logo.png",
+    originalName: "logo.png",
+    relativePath: "logo.png",
     mediaType: "image/png",
     subkind: "image",
-    size: 128,
-    storageId: "_storage:logo",
+    size: 4,
+    storageId: `_storage:${"a".repeat(64)}`,
     hash: "a".repeat(64),
     origin: { kind: "upload" },
     createdBy: { kind: "system" },
+    updatedBy: { kind: "system" },
+    revision: 1,
     updatedAt: 1
   });
   const rewired = body(2, createdFileId);
@@ -382,8 +386,9 @@ describe("semantic material synchronization", () => {
       hash,
       origin: { kind: "upload" },
       createdBy: { kind: "system" },
+      updatedBy: { kind: "system" },
       updatedAt: 1,
-      revision: 0
+      revision: 1
     });
     let visualCalls = 0;
     const model = {

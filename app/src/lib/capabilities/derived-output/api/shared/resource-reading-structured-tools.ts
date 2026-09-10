@@ -206,9 +206,10 @@ export const structuredReadingTools = (
           throw new Error("read_csv requires bounded rows and columns");
         }
         const file = externalFile(material.source.fileId);
-        const bytes = await input.model.materialContent.read({
+        const bytes = await input.model.externalFileStorage.read({
           storageId: file.storageId,
-          hash: file.hash
+          hash: file.hash,
+          size: file.size
         });
         if (bytes === undefined) throw new Error("CSV native content is unavailable");
         const parsed = parseCsv(new TextDecoder("utf-8", { fatal: true }).decode(bytes));

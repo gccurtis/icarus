@@ -8,7 +8,6 @@ import { backfillSemanticOverlay as backfillSemanticOverlayProcedure } from "$ca
 import { enqueueSemanticSync as enqueueSemanticSyncProcedure } from "$capabilities/semantic-overlay/api/enqueue-semantic-sync/enqueue-semantic-sync";
 import { querySemanticMaterials as querySemanticMaterialsProcedure } from "$capabilities/semantic-overlay/api/query-semantic-materials/query-semantic-materials";
 import { readSemanticStatus as readSemanticStatusProcedure } from "$capabilities/semantic-overlay/api/read-semantic-status/read-semantic-status";
-import { retireSemanticResource as retireSemanticResourceProcedure } from "$capabilities/semantic-overlay/api/retire-semantic-resource/retire-semantic-resource";
 
 export const querySemanticOverlay = query("unchecked", querySemanticOverlayProcedure);
 export const rebuildSemanticIndex = command("unchecked", rebuildSemanticIndexProcedure);
@@ -19,7 +18,6 @@ export const backfillSemanticOverlay = command("unchecked", backfillSemanticOver
 export const enqueueSemanticSync = command("unchecked", enqueueSemanticSyncProcedure);
 export const querySemanticMaterials = query("unchecked", querySemanticMaterialsProcedure);
 export const readSemanticStatus = query("unchecked", readSemanticStatusProcedure);
-export const retireSemanticResource = command("unchecked", retireSemanticResourceProcedure);
 
 export type {
   QuerySemanticOverlayInput,
@@ -59,7 +57,3 @@ export type {
   SemanticLaneState,
   SemanticLaneStatus
 } from "$capabilities/semantic-overlay/types/read-semantic-status";
-export type {
-  RetireSemanticResourceInput,
-  RetireSemanticResourceResult
-} from "$capabilities/semantic-overlay/types/retire-semantic-resource";

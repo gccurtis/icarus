@@ -15,8 +15,6 @@ representation:
 
   # Content-addressed native bytes used by material profilers/readers. A future
   # uploaded-object-store adapter replaces this model port without API changes.
-  materials:
-    directory: data/materials
 
   domains:
     agents: [content, core]

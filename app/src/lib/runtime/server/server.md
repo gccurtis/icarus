@@ -10,8 +10,8 @@ identity arrive per request through `Scope`.
 | ------ | ---- |
 | [`configuration`](configuration/configuration.md) | One frozen snapshot of `configuration/*.yaml`, read once |
 | [`embedding`](../../model/server/embedding/embedding.md) | The server-only semantic embedding port |
+| [`external-file-storage`](../../model/server/external-file-storage/external-file-storage.md) | Immutable content-addressed native External bytes and reconciliation |
 | [`intelligence`](../../model/server/intelligence/intelligence.md) | The bounded tool-calling model port |
-| [`material-content`](../../model/server/material-content/material-content.md) | Hash-addressed native material bytes |
 | [`observability`](observability/observability.md) | The root logger, and the log stream if it opened one |
 | [`operation-flights`](../../model/server/operation-flights/operation-flights.md) | Process-local promises, abort controllers, and deadlines |
 | [`store`](../../model/server/store/store.md) | The represented tables and their persistence boundary |
@@ -34,10 +34,11 @@ hooks.server.ts  init()          before the first request is answered
     └── buildServerModel()
         ├── configuration
         ├── observability
-        ├── store
+        ├── store (journal recovery completes in construction)
+        ├── external-file-storage
+        ├── strict External row admission + native reconciliation
         ├── embedding
         ├── intelligence
-        ├── material-content
         └── operation-flights
 
 serverModel()                    every later caller
@@ -67,6 +68,22 @@ The accessor is therefore synchronous, and it distinguishes its two refusals: a
 caller arriving during the drain hears "shutting down", and one arriving before
 startup finished hears "not built". Collapsing them would report a defect and an
 ordinary shutdown in the same words.
+
+## External startup recovery order
+
+The native repository deliberately starts after the represented Store has
+recovered its journal. The current `externalFiles` table is then admitted through
+the strict row validator; startup does not migrate or synthesize any field.
+Finally, `externalFileStorage.reconcile` receives one hash/size/storage-id claim
+per admitted row.
+
+That order is the commit decision across the Store/filesystem boundary. A Store
+transaction that reached durable journal commit owns its bytes even when the
+request process stopped before finalizing the native claim. Reconciliation can
+restore those bytes from a fsynced publication or garbage-quarantine artifact,
+recreate missing row claims, and remove interrupted uncommitted publications and
+true orphans. A represented row with no recoverable bytes fails startup instead
+of being silently treated as available.
 
 ## Shutdown is one-way
 
@@ -121,6 +138,6 @@ server/
 ```
 
 The objects the graph is built from — `configuration`, `observability`, `store`,
-`embedding`, `intelligence`, `material-content`, and `operation-flights` — are
+`external-file-storage`, `embedding`, `intelligence`, and `operation-flights` — are
 definitional and live in [`model/server/`](../../model/model.md). This tree calls
 their constructors; it does not define them.

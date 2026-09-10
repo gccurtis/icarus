@@ -1,4 +1,5 @@
 import { asId } from "$representation/data/behavior/core/id";
+import type { StoreUnitOfWork } from "$model/server/store/index.server";
 import type { ServerModel, Scope } from "$runtime/server/start.server";
 import type {
   ExternalFileHistoryEntry,
@@ -7,7 +8,7 @@ import type {
 import { rowsOf } from "$capabilities/external-files/api/shared/rows";
 
 export const recordExternalFileHistory = (
-  model: ServerModel,
+  store: StoreUnitOfWork,
   scope: Scope,
   input: {
     readonly event: ExternalFileHistoryEvent;
@@ -17,7 +18,7 @@ export const recordExternalFileHistory = (
     readonly detail?: string;
   }
 ): void => {
-  model.store.create("activity", {
+  store.create("activity", {
     projectId: asId<"projects">(scope.projectId),
     actor: { kind: "user", userId: asId<"users">(scope.userId) },
     actorLabel: scope.username,

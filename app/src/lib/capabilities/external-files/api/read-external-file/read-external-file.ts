@@ -18,7 +18,7 @@ export const readExternalFile = async (input: unknown): Promise<ReadExternalFile
     const bytes = await model.externalFileStorage.read({
       storageId: found.row.storageId,
       hash: found.row.hash,
-      ...(found.item.size === null ? {} : { size: found.item.size })
+      size: found.item.size
     });
     native = bytes === undefined ? { state: "missing" } : { state: "available", size: bytes.byteLength };
   } catch (error) {

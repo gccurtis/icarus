@@ -334,11 +334,13 @@ The live tables are:
 `externalFiles.subkind` is required and persisted. Every reader consumes that
 current field directly; missing-subkind rows are not interpreted.
 
-Native bytes sit behind `MaterialContentModel.read({ storageId, hash })`. The
-current filesystem adapter derives the path only from a validated SHA-256 hash,
-reads the complete object, recomputes its hash, and returns no bytes when the
-object is missing. Current profilers/readers then apply their bounded parse or
-selection. A future object-store range/stream adapter can replace this port
+Native External bytes sit behind
+`ExternalFileStorageModel.read({ storageId, hash, size })`. External derives the
+descriptor at admission; the storage model validates the content-addressed ID,
+recomputes both hash and size on every read, and returns no bytes when the object
+is missing. Current profilers/readers then apply their bounded parse or
+selection. The same model owns durable publication claims and startup
+reconciliation; a future object-store adapter must preserve those semantics
 without changing the semantic or Derived Output APIs.
 
 ## Retrieval and resource reading
@@ -409,7 +411,7 @@ never persists runtime handles as provenance.
 ## Freshness and failure behavior
 
 Editable resources are current by leader revision. External exact text is
-current by revision zero plus content hash. External material is current by
+current by the required External row revision plus content hash. External material is current by
 canonical subkind, media type, name, and content hash. Placements are current by
 their containing resource revision.
 
@@ -500,7 +502,7 @@ capabilities/derived-output/api/shared/
 model/server/
 ├── embedding/
 ├── intelligence/
-└── material-content/
+└── external-file-storage/
 ```
 
 ## Required verification

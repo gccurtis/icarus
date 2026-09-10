@@ -16,6 +16,7 @@ describe("external file admission", () => {
     expect(() => normalizeExternalRelativePath("/tmp/notes.md")).toThrow(/relative/);
     expect(() => normalizeExternalRelativePath("C:\\notes.md")).toThrow(/relative/);
     expect(() => normalizeExternalRelativePath("folder//notes.md")).toThrow(/empty/);
+    expect(() => normalizeExternalRelativePath("folder/bad\nname.md")).toThrow(/control/);
   });
 
   it("reconciles common signatures and keeps unknown bytes safely generic", () => {
@@ -33,10 +34,10 @@ describe("external file admission", () => {
       ),
     ).toBe("text/plain");
     expect(fileSubkindFor("text/csv", "facts.csv")).toBe("data");
-    expect(fileSubkindFor("text/markdown", "notes.md")).toBe("code");
-    expect(fileSubkindFor("text/plain", "README")).toBe("code");
-    expect(externalCodeLanguage("notes.md", "text/markdown")).toBe("markdown");
-    expect(externalCodeLanguage("README", "text/plain")).toBe("plain-text");
+    expect(fileSubkindFor("text/markdown", "notes.md")).toBe("text");
+    expect(fileSubkindFor("text/plain", "README")).toBe("text");
+    expect(externalCodeLanguage("notes.md", "text/markdown")).toBe("unknown");
+    expect(externalCodeLanguage("README", "text/plain")).toBe("unknown");
     expect(fileSubkindFor("application/pdf", "brief.pdf")).toBe("unknown");
   });
 
@@ -51,5 +52,12 @@ describe("external file admission", () => {
       "application/octet-stream",
       "data.tsv"
     )).toBe("text/tab-separated-values");
+    const signedPdf = mediaTypeForExternalBytes(
+      new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2d, 0x31]),
+      "text/markdown",
+      "misleading.md"
+    );
+    expect(signedPdf).toBe("application/pdf");
+    expect(fileSubkindFor(signedPdf, "misleading.md")).toBe("unknown");
   });
 });

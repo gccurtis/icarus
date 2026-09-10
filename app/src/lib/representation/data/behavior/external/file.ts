@@ -1,13 +1,13 @@
-import type { FileSubkind, StoredFileSubkind } from "$representation/data/types/external/file";
+import type { FileSubkind } from "$representation/data/types/external/file";
 
 const CODE_EXTENSIONS: Record<string, string> = {
   js: "javascript", jsx: "javascript", mjs: "javascript", cjs: "javascript",
   ts: "typescript", tsx: "typescript", py: "python", rb: "ruby", rs: "rust",
   go: "go", java: "java", c: "c", h: "c", cc: "cpp", cpp: "cpp", hpp: "cpp",
   css: "css", html: "html", sql: "sql", sh: "shell", zsh: "shell",
-  json: "json", yaml: "yaml", yml: "yaml", toml: "toml",
-  txt: "plain-text", text: "plain-text", md: "markdown", markdown: "markdown",
-  xml: "xml"
+  vue: "vue", svelte: "svelte", swift: "swift", kt: "kotlin", kts: "kotlin",
+  json: "json", jsonl: "json", ndjson: "json", xml: "xml", yaml: "yaml", yml: "yaml",
+  toml: "toml"
 };
 
 const CODE_MEDIA_TYPES: Record<string, string> = {
@@ -18,10 +18,11 @@ const CODE_MEDIA_TYPES: Record<string, string> = {
   "text/typescript": "typescript",
   "application/json": "json",
   "application/ld+json": "json",
-  "text/plain": "plain-text",
-  "text/markdown": "markdown",
-  "text/xml": "xml",
+  "application/x-ndjson": "json",
   "application/xml": "xml",
+  "text/xml": "xml",
+  "application/yaml": "yaml",
+  "application/toml": "toml",
   "application/sql": "sql",
   "text/css": "css",
   "text/html": "html",
@@ -39,13 +40,11 @@ export const externalCodeLanguage = (name: string, mediaType = ""): string => {
   const extension = name.toLowerCase().split(".").at(-1) ?? "";
   if (CODE_EXTENSIONS[extension] !== undefined) return CODE_EXTENSIONS[extension];
   const media = mediaType.toLowerCase().split(";", 1)[0]?.trim() ?? "";
-  return CODE_MEDIA_TYPES[media] ?? (
-    media.startsWith("text/")
-      ? "plain-text"
-      : media.endsWith("+xml")
-        ? "xml"
-        : "unknown"
-  );
+  return CODE_MEDIA_TYPES[media] ?? (media.endsWith("+json")
+    ? "json"
+    : media.endsWith("+xml")
+      ? "xml"
+      : "unknown");
 };
 
 /** Deterministic subkind used by material adapters; callers may override `unknown`. */
@@ -55,23 +54,26 @@ export const fileSubkindFor = (mediaType: string, name = ""): FileSubkind => {
   if (media.startsWith("image/")) return "image";
   if (media.startsWith("audio/")) return "audio";
   if (media.startsWith("video/")) return "video";
-  if (media.includes("csv") || media.includes("tab-separated") || /\.(csv|tsv)$/.test(lowerName)) {
+  // These media types are produced by byte signatures. Their binary/container
+  // identity must win over a misleading prose, code, or data filename.
+  if (media === "application/pdf" || media === "application/zip") return "unknown";
+  if (
+    media.includes("csv") ||
+    media.includes("tab-separated") ||
+    media.includes("json") ||
+    media.includes("xml") ||
+    /\.(csv|tsv|json|jsonl|ndjson|xml|yaml|yml|toml)$/.test(lowerName)
+  ) {
     return "data";
   }
   if (externalCodeLanguage(name, mediaType) !== "unknown") return "code";
+  if (
+    media === "text/plain" ||
+    media === "text/markdown" ||
+    media === "text/x-markdown" ||
+    /\.(txt|text|md|markdown|rst)$/.test(lowerName)
+  ) return "text";
   return "unknown";
-};
-
-/** Canonicalizes the retired `text` family without rewriting persisted rows. */
-export const canonicalFileSubkind = (
-  held: StoredFileSubkind | undefined,
-  mediaType: string,
-  name: string
-): FileSubkind => {
-  const inferred = fileSubkindFor(mediaType, name);
-  if (held === undefined) return inferred;
-  if (held === "text") return inferred === "unknown" ? "code" : inferred;
-  return held;
 };
 
 /** A browser folder selection becomes safe metadata, never a server filesystem path. */
@@ -79,7 +81,9 @@ export const normalizeExternalRelativePath = (value: string): string => {
   if (typeof value !== "string" || value.length === 0) {
     throw new Error("an external file path is required");
   }
-  if (value.includes("\u0000")) throw new Error("an external file path cannot contain NUL");
+  if (/[\u0000-\u001f\u007f]/.test(value)) {
+    throw new Error("an external file path cannot contain control characters");
+  }
   const normalized = value.normalize("NFC").replaceAll("\\", "/");
   if (normalized.startsWith("/") || /^[a-z]:\//i.test(normalized)) {
     throw new Error("an external file path must be relative");
@@ -88,8 +92,17 @@ export const normalizeExternalRelativePath = (value: string): string => {
   if (segments.some((segment) => segment === "" || segment === "." || segment === "..")) {
     throw new Error("an external file path cannot contain empty or traversal segments");
   }
-  if (new TextEncoder().encode(normalized).byteLength > 512) {
-    throw new Error("an external file path exceeds 512 UTF-8 bytes");
+  return normalized;
+};
+
+/** Applies the one configured UTF-8 path limit after canonicalization. */
+export const externalRelativePathWithin = (value: string, maxBytes: number): string => {
+  const normalized = normalizeExternalRelativePath(value);
+  if (!Number.isSafeInteger(maxBytes) || maxBytes <= 0) {
+    throw new Error("an external file path limit must be a positive safe integer");
+  }
+  if (new TextEncoder().encode(normalized).byteLength > maxBytes) {
+    throw new Error(`an external file path exceeds ${maxBytes} UTF-8 bytes`);
   }
   return normalized;
 };
@@ -156,17 +169,28 @@ export const mediaTypeForExternalBytes = (
     bytes[8] === 0x57 && bytes[9] === 0x45 && bytes[10] === 0x42 && bytes[11] === 0x50
   ) return "image/webp";
   if (starts(0x25, 0x50, 0x44, 0x46, 0x2d)) return "application/pdf";
-  if (starts(0x50, 0x4b, 0x03, 0x04)) {
-    return supplied || "application/zip";
-  }
+  if (starts(0x50, 0x4b, 0x03, 0x04)) return "application/zip";
+  if (starts(0x49, 0x44, 0x33) || starts(0xff, 0xfb)) return "audio/mpeg";
+  if (
+    starts(0x52, 0x49, 0x46, 0x46) &&
+    bytes[8] === 0x57 && bytes[9] === 0x41 && bytes[10] === 0x56 && bytes[11] === 0x45
+  ) return "audio/wav";
+  if (
+    bytes[4] === 0x66 && bytes[5] === 0x74 && bytes[6] === 0x79 && bytes[7] === 0x70
+  ) return "video/mp4";
   const lower = name.toLowerCase();
   if (/\.csv$/.test(lower)) return "text/csv";
   if (/\.tsv$/.test(lower)) return "text/tab-separated-values";
   if (/\.json$/.test(lower)) return "application/json";
+  if (/\.(jsonl|ndjson)$/.test(lower)) return "application/x-ndjson";
+  if (/\.ya?ml$/.test(lower)) return "application/yaml";
+  if (/\.toml$/.test(lower)) return "application/toml";
+  if (/\.xml$/.test(lower)) return "application/xml";
   if (/\.md$/.test(lower)) return "text/markdown";
   if (/\.tsx?$/.test(lower)) return "text/typescript";
   if (/\.jsx?$/.test(lower)) return "text/javascript";
-  if (/\.(txt|py|rb|rs|go|java|c|cc|cpp|h|hpp|css|html|sql)$/.test(lower)) {
+  if (/\.(txt|text|rst)$/.test(lower)) return "text/plain";
+  if (/\.(py|rb|rs|go|java|c|cc|cpp|h|hpp|css|html|sql|sh|zsh|vue|svelte|swift|kt|kts)$/.test(lower)) {
     return "text/plain";
   }
   if (supplied && supplied !== "application/octet-stream") return supplied;

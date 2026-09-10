@@ -24,8 +24,20 @@ vi.mock("$model/server/configuration/index.server", () => ({
   createConfiguration: async () => {
     build.calls += 1;
     if (build.fail) throw new Error("configuration was invalid");
-    return { get: () => undefined };
+    return {
+      get: (key: string) => key === "externalFiles.upload.maxPathBytes" ? 512 : undefined
+    };
   }
+}));
+
+vi.mock("$model/server/external-file-storage/index.server", () => ({
+  createExternalFileStorage: () => ({
+    acquireMutation: async () => () => {},
+    put: async () => { throw new Error("not used"); },
+    read: async () => undefined,
+    remove: async () => false,
+    reconcile: async () => ({ removedTemporaryFiles: 0, removedOrphanBlobs: 0, retainedBlobs: 0 })
+  })
 }));
 
 vi.mock("$model/server/embedding/index.server", () => ({

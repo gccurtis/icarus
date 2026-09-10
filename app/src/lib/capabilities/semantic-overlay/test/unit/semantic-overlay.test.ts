@@ -123,9 +123,6 @@ const { enqueueSemanticSync } = await import(
 const { readSemanticStatus } = await import(
   "$capabilities/semantic-overlay/api/read-semantic-status/read-semantic-status"
 );
-const { retireSemanticResource } = await import(
-  "$capabilities/semantic-overlay/api/retire-semantic-resource/retire-semantic-resource"
-);
 
 const seed = (table: string, row: Row): void => {
   state.tables.set(table, [...(state.tables.get(table) ?? []), row]);
@@ -205,13 +202,17 @@ test("external-file enqueue records only material work without reading native by
     _creationTime: 1,
     projectId: "projects:1",
     name: "large.csv",
+    originalName: "large.csv",
+    relativePath: "large.csv",
     mediaType: "text/csv",
     subkind: "data",
     size: 8_000_000,
-    storageId: "storage:1",
+    storageId: `_storage:${"a".repeat(64)}`,
     hash: "a".repeat(64),
     origin: { kind: "upload" },
     createdBy: { kind: "system" },
+    updatedBy: { kind: "system" },
+    revision: 1,
     updatedAt: 1
   });
 
@@ -220,7 +221,7 @@ test("external-file enqueue records only material work without reading native by
   });
 
   assert.equal(result?.jobId, undefined);
-  assert.equal(result?.revision, 0);
+  assert.equal(result?.revision, 1);
   assert.deepEqual(result?.ref, { kind: "externalFile::data", id: "externalFiles:1" });
   assert.equal(state.calls.nativeReads, 0);
   assert.deepEqual((state.tables.get("semanticSyncJobs") ?? []).length, 0);
@@ -230,31 +231,36 @@ test("external-file enqueue records only material work without reading native by
   );
 });
 
-test("legacy plain-text rows canonicalize to the code material lane only", async () => {
+test("current prose rows enter only the exact-text lane", async () => {
   seed("externalFiles", {
     _id: "externalFiles:notes",
     _creationTime: 2,
     projectId: "projects:1",
     name: "notes.md",
+    originalName: "notes.md",
+    relativePath: "notes.md",
     mediaType: "text/markdown",
     subkind: "text",
-    storageId: "storage:notes",
+    storageId: `_storage:${"b".repeat(64)}`,
     hash: "b".repeat(64),
+    size: 24,
     origin: { kind: "upload" },
     createdBy: { kind: "system" },
+    updatedBy: { kind: "system" },
+    revision: 1,
     updatedAt: 1
   });
 
   const result = await enqueueSemanticSync({
-    ref: { kind: "externalFile", id: "externalFiles:notes" }
+    ref: { kind: "externalFile::text", id: "externalFiles:notes" }
   });
 
-  assert.equal(result?.jobId, undefined);
-  assert.ok(result?.materialJobId !== undefined);
-  assert.deepEqual(result?.ref, { kind: "externalFile::code", id: "externalFiles:notes" });
+  assert.ok(result?.jobId !== undefined);
+  assert.equal(result?.materialJobId, undefined);
+  assert.deepEqual(result?.ref, { kind: "externalFile::text", id: "externalFiles:notes" });
   assert.equal(state.calls.nativeReads, 0);
-  assert.equal((state.tables.get("semanticSyncJobs") ?? []).length, 0);
-  assert.equal((state.tables.get("semanticMaterialJobs") ?? []).length, 1);
+  assert.equal((state.tables.get("semanticSyncJobs") ?? []).length, 1);
+  assert.equal((state.tables.get("semanticMaterialJobs") ?? []).length, 0);
 });
 
 const seedCurrentCodeFile = (): void => {
@@ -264,12 +270,17 @@ const seedCurrentCodeFile = (): void => {
     _creationTime: 10,
     projectId: "projects:1",
     name: "pricing.ts",
+    originalName: "pricing.ts",
+    relativePath: "pricing.ts",
     mediaType: "text/typescript",
     subkind: "code",
-    storageId: "storage:code",
+    storageId: `_storage:${hash}`,
     hash,
+    size: 120,
     origin: { kind: "upload" },
     createdBy: { kind: "system" },
+    updatedBy: { kind: "system" },
+    revision: 1,
     updatedAt: 10
   });
   seed("semanticSources", {
@@ -363,39 +374,6 @@ test("semantic status projects code only through the material lane", async () =>
   assert.equal(status?.material.descriptor?.summary, "Calculates plan pricing.");
   assert.equal(status?.material.descriptor?.model, "test-model");
   assert.ok(status?.material.profile?.facts.some((fact) => fact.toLowerCase().includes("typescript")));
-});
-
-test("semantic retirement removes one file's active products behind rebuilt lane indexes", async () => {
-  seedCurrentCodeFile();
-
-  const result = await retireSemanticResource({
-    ref: { kind: "externalFile::text", id: "externalFiles:10" }
-  });
-
-  assert.equal(result.exactSources, 1);
-  assert.equal(result.materials, 1);
-  assert.equal(result.objects, 2);
-  assert.equal(result.generationBefore, 4);
-  assert.equal(result.generationAfter, 5);
-  assert.equal(
-    (state.tables.get("externalFiles") ?? []).some((row) => row._id === "externalFiles:10"),
-    true,
-    "retirement does not own source metadata"
-  );
-  assert.equal(
-    (state.tables.get("semanticSources") ?? []).some((row) => row._id === "semanticSources:10"),
-    false
-  );
-  assert.equal(
-    (state.tables.get("semanticMaterials") ?? []).some((row) => row._id === "semanticMaterials:10"),
-    false
-  );
-  assert.equal((state.tables.get("semanticObjectHistory") ?? []).length >= 2, true);
-  assert.equal((state.tables.get("semanticMaterialHistory") ?? []).length, 1);
-  assert.deepEqual(
-    (state.tables.get("semanticIndexes") ?? []).map((row) => row.lane).sort(),
-    ["material", "text"]
-  );
 });
 
 test("rebuild publishes a complete replacement before retiring the old tree", async () => {

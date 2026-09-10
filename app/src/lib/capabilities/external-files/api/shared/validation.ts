@@ -9,8 +9,7 @@ import type {
   UploadExternalFilesInput
 } from "$capabilities/external-files/types/external-files";
 import {
-  normalizeExternalDirectoryPath,
-  normalizeExternalRelativePath
+  normalizeExternalDirectoryPath
 } from "$representation/data/behavior/external/file";
 
 const record = (value: unknown, procedure: string): Record<string, unknown> => {
@@ -41,19 +40,22 @@ export const externalFileId = (value: unknown, procedure: string): string => {
 };
 
 export const baseRevision = (value: unknown, procedure: string): number => {
-  if (!Number.isSafeInteger(value) || (value as number) < 0) {
-    throw new Error(`external-files/${procedure}: baseRevision is a non-negative safe integer`);
+  if (!Number.isSafeInteger(value) || (value as number) < 1) {
+    throw new Error(`external-files/${procedure}: baseRevision is a positive safe integer`);
   }
   return value as number;
 };
 
 export const displayName = (value: unknown): string => {
   if (typeof value !== "string") throw new Error("external file name is text");
-  const name = value.trim().normalize("NFC");
+  const normalized = value.normalize("NFC");
+  if (/[\u0000-\u001f\u007f]/.test(normalized)) {
+    throw new Error("external file name cannot contain control characters");
+  }
+  const name = normalized.trim();
   if (
     name.length === 0 ||
     name.length > 240 ||
-    name.includes("\u0000") ||
     name.includes("/") ||
     name.includes("\\")
   ) {
@@ -100,14 +102,14 @@ const fileValue = (value: unknown): value is File => {
 
 export const validateRelocateExternalFile = (input: unknown): RelocateExternalFileInput => {
   const candidate = record(input, "relocate");
-  only(candidate, ["externalFileId", "baseRevision", "relativePath"], "relocate");
-  if (typeof candidate.relativePath !== "string") {
-    throw new Error("external-files/relocate: relativePath is text");
+  only(candidate, ["externalFileId", "baseRevision", "destinationDirectory"], "relocate");
+  if (typeof candidate.destinationDirectory !== "string") {
+    throw new Error("external-files/relocate: destinationDirectory is text");
   }
   return {
     externalFileId: externalFileId(candidate.externalFileId, "relocate"),
     baseRevision: baseRevision(candidate.baseRevision, "relocate"),
-    relativePath: normalizeExternalRelativePath(candidate.relativePath)
+    destinationDirectory: normalizeExternalDirectoryPath(candidate.destinationDirectory)
   };
 };
 
@@ -115,8 +117,15 @@ export const validateRelocateExternalDirectory = (
   input: unknown
 ): RelocateExternalDirectoryInput => {
   const candidate = record(input, "relocate-directory");
-  only(candidate, ["path", "destination", "baseRevisionToken"], "relocate-directory");
-  if (typeof candidate.path !== "string" || typeof candidate.destination !== "string") {
+  only(
+    candidate,
+    ["sourceDirectory", "destinationDirectory", "baseRevisionToken"],
+    "relocate-directory"
+  );
+  if (
+    typeof candidate.sourceDirectory !== "string" ||
+    typeof candidate.destinationDirectory !== "string"
+  ) {
     throw new Error("external-files/relocate-directory: paths are text");
   }
   if (
@@ -126,8 +135,8 @@ export const validateRelocateExternalDirectory = (
     throw new Error("external-files/relocate-directory: baseRevisionToken is canonical");
   }
   return {
-    path: normalizeExternalDirectoryPath(candidate.path),
-    destination: normalizeExternalDirectoryPath(candidate.destination),
+    sourceDirectory: normalizeExternalDirectoryPath(candidate.sourceDirectory),
+    destinationDirectory: normalizeExternalDirectoryPath(candidate.destinationDirectory),
     baseRevisionToken: candidate.baseRevisionToken
   };
 };

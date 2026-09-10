@@ -27,7 +27,7 @@ export type ExternalFileLibraryItem = {
   readonly relativePath: string;
   readonly mediaType: string;
   readonly subkind: FileSubkind;
-  readonly size: number | null;
+  readonly size: number;
   readonly revision: number;
   readonly createdAt: number;
   readonly updatedAt: number;
@@ -40,14 +40,13 @@ export type ExternalFileLibraryItem = {
 
 export type ExternalDirectoryItem = {
   /** Empty string is the virtual project root. */
-  readonly path: string;
+  readonly relativePath: string;
   readonly name: string;
   readonly parentPath: string | null;
   readonly directFileCount: number;
   readonly descendantFileCount: number;
   readonly directDirectoryCount: number;
   readonly knownBytes: number;
-  readonly unknownSizeCount: number;
   /** Opaque compare-and-swap token over descendant ids, revisions, and paths. */
   readonly revisionToken: string;
 };
@@ -92,9 +91,21 @@ export type ReadExternalFileHistoryResult = {
 export type ExternalFileUsageKind =
   | "document"
   | "slide-deck"
+  | "spreadsheet"
   | "template"
   | "resource-set"
-  | "finding";
+  | "finding"
+  | "question"
+  | "hypothesis"
+  | "comment"
+  | "research"
+  | "thread"
+  | "persona"
+  | "agent-task"
+  | "automation"
+  | "derived-output"
+  | "variable"
+  | "formula";
 
 export type ExternalFileUsageItem = {
   readonly kind: ExternalFileUsageKind;
@@ -149,7 +160,7 @@ export type UploadedExternalFile = {
   readonly mediaType: string;
   readonly subkind: FileSubkind;
   readonly revision: number;
-  readonly semantic: "queued" | "unsupported" | "enqueue-failed";
+  readonly semantic: "queued" | "unsupported";
   readonly semanticDetail?: string;
 };
 
@@ -182,13 +193,19 @@ export type RenameExternalFileResult =
       readonly externalFileId: string;
       readonly revision: number;
       readonly relativePath: string;
-      readonly semantic: "queued" | "unsupported" | "enqueue-failed";
+      readonly semantic: "queued" | "unsupported";
       readonly semanticDetail?: string;
     }
   | {
       readonly accepted: false;
       readonly externalFileId: string;
-      readonly reason: "not-found" | "stale" | "corrupt" | "path-conflict" | "cleanup-failed";
+      readonly reason:
+        | "not-found"
+        | "stale"
+        | "corrupt"
+        | "invalid-path"
+        | "path-conflict"
+        | "store-failed";
       readonly revision: number | null;
       readonly detail: string;
     };
@@ -196,30 +213,36 @@ export type RenameExternalFileResult =
 export type RelocateExternalFileInput = {
   readonly externalFileId: string;
   readonly baseRevision: number;
-  /** Complete destination path, including the file-name leaf. */
-  readonly relativePath: string;
+  /** Virtual destination directory; the existing file name is preserved. */
+  readonly destinationDirectory: string;
 };
 
 export type RelocateExternalFileResult = RenameExternalFileResult;
 
 export type RelocateExternalDirectoryInput = {
-  readonly path: string;
-  readonly destination: string;
+  readonly sourceDirectory: string;
+  readonly destinationDirectory: string;
   readonly baseRevisionToken: string;
 };
 
 export type RelocateExternalDirectoryResult =
   | {
       readonly accepted: true;
-      readonly path: string;
-      readonly destination: string;
+      readonly sourceDirectory: string;
+      readonly destinationDirectory: string;
       readonly movedFiles: number;
       readonly externalFileIds: readonly string[];
     }
   | {
       readonly accepted: false;
-      readonly path: string;
-      readonly reason: "not-found" | "stale" | "path-conflict" | "invalid-destination";
+      readonly sourceDirectory: string;
+      readonly reason:
+        | "not-found"
+        | "stale"
+        | "corrupt"
+        | "path-conflict"
+        | "invalid-destination"
+        | "store-failed";
       readonly detail: string;
     };
 
@@ -238,7 +261,7 @@ export type ReuploadExternalFileResult =
       readonly size: number;
       readonly mediaType: string;
       readonly subkind: FileSubkind;
-      readonly semantic: "queued" | "unsupported" | "enqueue-failed";
+      readonly semantic: "queued" | "unsupported";
       readonly semanticDetail?: string;
       readonly previousBlob: "removed" | "shared" | "already-missing" | "retained-after-error";
     }
@@ -261,13 +284,13 @@ export type UpdateExternalFileContextResult =
       readonly accepted: true;
       readonly externalFileId: string;
       readonly revision: number;
-      readonly semantic: "queued" | "unsupported" | "enqueue-failed";
+      readonly semantic: "queued" | "unsupported";
       readonly semanticDetail?: string;
     }
   | {
       readonly accepted: false;
       readonly externalFileId: string;
-      readonly reason: "not-found" | "stale" | "corrupt" | "cleanup-failed";
+      readonly reason: "not-found" | "stale" | "corrupt" | "wrong-kind" | "store-failed";
       readonly revision: number | null;
       readonly detail: string;
     };
@@ -288,7 +311,7 @@ export type RemoveExternalFileResult =
   | {
       readonly accepted: false;
       readonly externalFileId: string;
-      readonly reason: "not-found" | "stale" | "corrupt" | "in-use" | "cleanup-failed";
+      readonly reason: "not-found" | "stale" | "corrupt" | "in-use" | "store-failed";
       readonly revision: number | null;
       readonly detail: string;
       readonly usage?: ExternalFileUsage;

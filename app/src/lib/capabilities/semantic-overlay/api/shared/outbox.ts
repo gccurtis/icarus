@@ -30,10 +30,17 @@ export const enqueueSemanticOutboxFor = (
   if (isStagedResource(unit, projectId, ref)) return {};
 
   const atomic = semanticUnitModel(model, unit);
-  const exactText = ref.kind === "document" || ref.kind === "slides";
-  const material = exactText || ref.kind === "spreadsheet";
+  const exactText =
+    ref.kind === "document" || ref.kind === "slides" || ref.kind === "externalFile::text";
+  const material =
+    ref.kind === "document" ||
+    ref.kind === "slides" ||
+    ref.kind === "spreadsheet" ||
+    ref.kind === "externalFile::code" ||
+    ref.kind === "externalFile::data" ||
+    ref.kind === "externalFile::image";
   if (!exactText && !material) {
-    throw new Error(`No semantic outbox lane accepts resource kind '${ref.kind}'`);
+    return {};
   }
 
   return {

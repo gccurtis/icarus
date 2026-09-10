@@ -1,28 +1,30 @@
 import { asId } from "$representation/data/behavior/core/id";
 import {
   externalFileNameIn,
-  normalizeExternalRelativePath
+  externalRelativePathWithin
 } from "$representation/data/behavior/external/file";
-import type { Id } from "$representation/data/types/core/id";
 import { requireScope } from "$runtime/server/scope.server";
 import { serverModel } from "$runtime/server/start.server";
-import { enqueueSemanticSync } from "$capabilities/semantic-overlay";
 
 import { externalFilesLimits } from "$capabilities/external-files/api/shared/configuration";
-import type { ExternalFileStorageReceipt } from "$model/server/external-file-storage/index.server";
-import { recordExternalFileHistory } from "$capabilities/external-files/api/shared/history";
+import {
+  createExternalFileIn,
+  externalPathIsAvailable
+} from "$capabilities/external-files/api/shared/mutations";
 import {
   admitNativeFile,
-  releaseUnclaimedNativeFile
+  claimExternalPublication,
+  cleanupExternalBlobIfUnreferenced,
+  discardExternalPublication,
+  settleExternalPublicationAfterStoreFailure
 } from "$capabilities/external-files/api/shared/native-file";
-import { externalFileIn, rowsOf } from "$capabilities/external-files/api/shared/rows";
+import { externalFileRowIn } from "$capabilities/external-files/api/shared/rows";
 import { displayName } from "$capabilities/external-files/api/shared/validation";
 import { validateUploadExternalFiles } from "$capabilities/external-files/api/upload-external-files/validate-upload-external-files";
 import type {
   RejectedExternalFile,
   UploadExternalFileOutcome,
-  UploadExternalFilesResult,
-  UploadedExternalFile
+  UploadExternalFilesResult
 } from "$capabilities/external-files/types/external-files";
 
 const safeFailure = (error: unknown): string =>
@@ -87,12 +89,18 @@ export const uploadExternalFiles = async (input: unknown): Promise<UploadExterna
 
     let relativePath: string;
     let name: string;
+    let originalName: string;
     try {
-      relativePath = normalizeExternalRelativePath(asked.relativePaths?.[index] || file.name);
-      if (new TextEncoder().encode(relativePath).byteLength > limits.maxPathBytes) {
-        throw new Error(`an external file path exceeds ${limits.maxPathBytes} UTF-8 bytes`);
+      relativePath = externalRelativePathWithin(
+        asked.relativePaths?.[index] || file.name,
+        limits.maxPathBytes
+      );
+      const pathName = externalFileNameIn(relativePath);
+      name = displayName(pathName);
+      if (name !== pathName) {
+        throw new Error("an external file path leaf must already be canonical");
       }
-      name = displayName(externalFileNameIn(relativePath));
+      originalName = displayName(file.name);
     } catch (error) {
       outcomes.push(rejected(file, "invalid-path", safeFailure(error)));
       continue;
@@ -118,11 +126,11 @@ export const uploadExternalFiles = async (input: unknown): Promise<UploadExterna
       outcomes.push(rejected(file, "read-failed", safeFailure(error), relativePath));
       continue;
     }
+
     const native = admitNativeFile(bytes, file.type, name);
-    const { mediaType, subkind } = native;
     const releaseStorage = await model.externalFileStorage.acquireMutation();
     try {
-      let receipt: ExternalFileStorageReceipt;
+      let receipt;
       try {
         receipt = await model.externalFileStorage.put({
           ...native,
@@ -133,119 +141,100 @@ export const uploadExternalFiles = async (input: unknown): Promise<UploadExterna
         outcomes.push(rejected(file, "storage-failed", safeFailure(error), relativePath));
         continue;
       }
-      const existing = rowsOf(model.store, "externalFiles").find((row) => {
-        if (row.projectId !== scope.projectId) return false;
-        const held = row.relativePath ?? row.originalName ?? row.name;
-        try {
-          return normalizeExternalRelativePath(held) === relativePath;
-        } catch {
-          return false;
-        }
-      });
-      if (existing !== undefined) {
-        if (existing.hash !== receipt.hash) {
-          await releaseUnclaimedNativeFile(model, receipt);
+
+      try {
+        const committed = model.store.transaction((unit) => {
+          const existing = unit.read("externalFiles");
+          const occupied = existing?.kind === "table" && existing.table === "externalFiles"
+            ? existing.rows.find(
+                (row) => row.projectId === scope.projectId && row.relativePath === relativePath
+              )
+            : undefined;
+          if (occupied !== undefined) {
+            const row = externalFileRowIn(
+              unit,
+              scope.projectId,
+              occupied._id,
+              limits.maxPathBytes
+            );
+            if (row === null || row.hash !== receipt.hash) return { kind: "conflict" as const };
+            return { kind: "reused" as const, row };
+          }
+          if (!externalPathIsAvailable(unit, scope.projectId, relativePath)) {
+            return { kind: "conflict" as const };
+          }
+          const at = Date.now();
+          const actor = { kind: "user" as const, userId: asId<"users">(scope.userId) };
+          return {
+            kind: "created" as const,
+            ...createExternalFileIn(model, unit, scope, {
+              projectId: asId<"projects">(scope.projectId),
+              name,
+              originalName,
+              relativePath,
+              mediaType: native.mediaType,
+              subkind: native.subkind,
+              storageId: receipt.storageId,
+              hash: receipt.hash,
+              size: receipt.size,
+              origin: { kind: "upload" },
+              createdBy: actor,
+              updatedBy: actor,
+              revision: 1,
+              updatedAt: at
+            }, {
+              event: "uploaded",
+              detail: `${receipt.size} bytes · ${native.mediaType}`
+            })
+          };
+        });
+
+        if (committed.kind === "conflict") {
+          await discardExternalPublication(model, receipt);
+          await cleanupExternalBlobIfUnreferenced(model, receipt);
           outcomes.push(rejected(
             file,
             "path-conflict",
-            "That relative path already names a different file in this project.",
+            "That relative path already names a different file in this project. Select it and use Re-upload to replace its contents without changing its identity.",
             relativePath
           ));
           continue;
         }
-        const admitted = externalFileIn(model, scope, existing._id);
-        if (admitted === null || "unavailable" in admitted) {
-          await releaseUnclaimedNativeFile(model, receipt);
-          outcomes.push(rejected(
-            file,
-            "path-conflict",
-            "That relative path is reserved by file metadata that cannot be safely read.",
-            relativePath
-          ));
+        if (committed.kind === "reused") {
+          await claimExternalPublication(model, receipt, committed.row._id);
+          outcomes.push({
+            status: "reused",
+            externalFileId: committed.row._id,
+            name: committed.row.name,
+            relativePath: committed.row.relativePath,
+            size: committed.row.size,
+            mediaType: committed.row.mediaType,
+            subkind: committed.row.subkind,
+            revision: committed.row.revision,
+            semantic: committed.row.subkind === "audio" ||
+              committed.row.subkind === "video" ||
+              committed.row.subkind === "unknown"
+              ? "unsupported"
+              : "queued"
+          });
           continue;
         }
-        const revision = admitted.item.revision;
-        let semantic: UploadedExternalFile["semantic"] = "unsupported";
-        let semanticDetail: string | undefined;
-        try {
-          semantic = await enqueueSemanticSync({
-            ref: { kind: `externalFile::${subkind}`, id: existing._id }
-          }) === null ? "unsupported" : "queued";
-        } catch (error) {
-          semantic = "enqueue-failed";
-          semanticDetail = safeFailure(error);
-        }
+        await claimExternalPublication(model, receipt, committed.row._id);
         outcomes.push({
-          status: "reused",
-          externalFileId: admitted.row._id,
-          name: admitted.item.name,
-          relativePath,
-          size: receipt.size,
-          mediaType: admitted.item.mediaType,
-          subkind: admitted.item.subkind,
-          revision,
-          semantic,
-          ...(semanticDetail === undefined ? {} : { semanticDetail })
-        });
-        continue;
-      }
-
-      const at = Date.now();
-      let externalFileId: Id<"externalFiles">;
-      try {
-        const actor = { kind: "user" as const, userId: asId<"users">(scope.userId) };
-        externalFileId = model.store.create("externalFiles", {
-          projectId: asId<"projects">(scope.projectId),
-          name,
-          originalName: displayName(file.name),
-          relativePath,
-          mediaType,
-          subkind,
-          storageId: receipt.storageId,
-          hash: receipt.hash,
-          size: receipt.size,
-          origin: { kind: "upload" },
-          createdBy: actor,
-          updatedBy: actor,
-          revision: 1,
-          updatedAt: at
+          status: "uploaded",
+          externalFileId: committed.row._id,
+          name: committed.row.name,
+          relativePath: committed.row.relativePath,
+          size: committed.row.size,
+          mediaType: committed.row.mediaType,
+          subkind: committed.row.subkind,
+          revision: committed.row.revision,
+          semantic: committed.semantic
         });
       } catch (error) {
-        await releaseUnclaimedNativeFile(model, receipt);
+        await settleExternalPublicationAfterStoreFailure(model, receipt);
         outcomes.push(rejected(file, "store-failed", safeFailure(error), relativePath));
-        continue;
       }
-
-      recordExternalFileHistory(model, scope, {
-        event: "uploaded",
-        externalFileId,
-        name,
-        relativePath,
-        detail: `${receipt.size} bytes · ${mediaType}`
-      });
-
-      let semantic: UploadedExternalFile["semantic"] = "unsupported";
-      let semanticDetail: string | undefined;
-      try {
-        semantic = await enqueueSemanticSync({
-          ref: { kind: `externalFile::${subkind}`, id: externalFileId }
-        }) === null ? "unsupported" : "queued";
-      } catch (error) {
-        semantic = "enqueue-failed";
-        semanticDetail = safeFailure(error);
-      }
-      outcomes.push({
-        status: "uploaded",
-        externalFileId,
-        name,
-        relativePath,
-        size: receipt.size,
-        mediaType,
-        subkind,
-        revision: 1,
-        semantic,
-        ...(semanticDetail === undefined ? {} : { semanticDetail })
-      });
     } finally {
       releaseStorage();
     }

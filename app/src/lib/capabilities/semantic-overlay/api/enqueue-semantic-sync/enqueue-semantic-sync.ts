@@ -30,12 +30,16 @@ export const enqueueSemanticSync = async (
       ...(textTarget === undefined
         ? {}
         : { jobId: enqueueSemanticSyncFor(atomic, projectId, textTarget.ref, textTarget.revision) }),
-      materialJobId: enqueueMaterialSyncFor(
-        atomic,
-        projectId,
-        materialTarget.ref,
-        materialTarget.revision
-      )
+      ...(materialTarget === undefined
+        ? {}
+        : {
+            materialJobId: enqueueMaterialSyncFor(
+              atomic,
+              projectId,
+              materialTarget.ref,
+              materialTarget.revision
+            )
+          })
     };
   });
   return {

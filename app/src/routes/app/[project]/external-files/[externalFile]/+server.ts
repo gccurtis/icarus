@@ -5,7 +5,10 @@ import { readExternalFileContent } from "$capabilities/external-files";
 
 const contentDisposition = (name: string): string => {
   const fallback = name.replace(/[^\x20-\x7e]/g, "_").replace(/["\\]/g, "_") || "download";
-  return `attachment; filename="${fallback}"; filename*=UTF-8''${encodeURIComponent(name)}`;
+  const encoded = encodeURIComponent(name).replace(/[!'()*]/g, (value) =>
+    `%${value.charCodeAt(0).toString(16).toUpperCase()}`
+  );
+  return `attachment; filename="${fallback}"; filename*=UTF-8''${encoded}`;
 };
 
 const rangeIn = (

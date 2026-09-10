@@ -82,9 +82,11 @@ beforeEach(() => {
   }]);
   set("externalFiles", [{
     _id: "externalFiles:logo", _creationTime: 1, projectId: "projects:materials",
-    name: "Launch diagram", mediaType: "image/png", subkind: "image",
-    storageId: "_storage:logo", hash: "a".repeat(64), origin: { kind: "upload" },
-    createdBy: { kind: "system" }, updatedAt: 1
+    name: "launch-diagram.png", originalName: "launch-diagram.png",
+    relativePath: "launch-diagram.png", mediaType: "image/png", subkind: "image",
+    storageId: `_storage:${"a".repeat(64)}`, hash: "a".repeat(64), size: 12,
+    origin: { kind: "upload" }, createdBy: { kind: "system" },
+    updatedBy: { kind: "system" }, revision: 1, updatedAt: 1
   }]);
   set("semanticMaterials", [
     {
@@ -129,7 +131,7 @@ beforeEach(() => {
       projectId: "projects:materials",
       identityKey: "logo",
       kind: "image",
-      name: "Launch diagram",
+      name: "launch-diagram.png",
       source: {
         kind: "externalFile",
         ref: { kind: "externalFile::image", id: "externalFiles:logo" },
