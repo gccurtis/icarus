@@ -5,7 +5,6 @@ import type { ProjectSemanticProjection } from "$representation/data/behavior/se
 import type { Id } from "$representation/data/types/core/id";
 import type { ResourceRef } from "$representation/data/types/core/resource";
 import type { SemanticResourceProjection } from "$representation/data/types/semantic/source";
-import { normalizeSlideDeckBody } from "$representation/data/behavior/slide-decks/normalize";
 import { rowsOf } from "$capabilities/semantic-overlay/api/shared/rows";
 import { fileSubkindFor } from "$representation/data/behavior/external/file";
 
@@ -126,7 +125,7 @@ export const readProjectSemanticProjectionFor = (
       ref,
       revision: leader.revision,
       title: resource.title,
-      body: normalizeSlideDeckBody(leader.body),
+      body: leader.body,
       externalFile
     });
   }

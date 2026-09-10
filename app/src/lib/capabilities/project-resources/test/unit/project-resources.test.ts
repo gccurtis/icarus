@@ -52,7 +52,7 @@ describe("createProjectResource", () => {
       title: "Memo",
       revision: 0
     });
-    expect(model.writes).toHaveLength(2);
+    expect(model.writes).toHaveLength(4);
     expect(model.writes[0]).toMatchObject({
       table: "documents",
       fields: {
@@ -93,6 +93,10 @@ describe("createProjectResource", () => {
     expect(snapshot.rows[0].id).toMatch(/^row-[0-9a-f-]{36}$/);
     expect(snapshot.rows[0].blocks[0].id).toMatch(/^block-[0-9a-f-]{36}$/);
     expect(snapshot.rows[0].blocks[0].atoms[0].id).toMatch(/^atom-[0-9a-f-]{36}$/);
+    expect(model.writes.slice(2).map((write) => write.table)).toEqual([
+      "semanticSyncJobs",
+      "semanticMaterialJobs"
+    ]);
   });
 
   it("creates an editor-ready empty deck", async () => {

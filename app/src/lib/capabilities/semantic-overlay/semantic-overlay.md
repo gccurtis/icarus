@@ -3,14 +3,19 @@
 The project-scoped bridge from authoritative resources to two explicit search
 lanes: exact text and interpreted semantic material.
 
-- Accepted document and slide-deck mutations call `enqueueSemanticSync`, which
+- Accepted document and slide-deck mutations, material spreadsheet mutations,
+  project-resource creation and template instantiation stage their authored rows
+  and `enqueueSemanticOutboxFor` in the same Store transaction. The outbox
   coalesces exact work in `semanticSyncJobs` and material work in
-  `semanticMaterialJobs` without reading resource bodies or native bytes.
+  `semanticMaterialJobs` without invoking a provider inside that transaction.
 - `projectResource` walks a leader once and emits canonical UTF-16 text plus
   locator spans and first-class table/chart/image material seeds. Prompt blocks
   are excluded from both outputs.
 - `readSemanticResourceForModel` also resolves hash-pinned UTF-8 external text.
-- `processSemanticSyncQueue` claims bounded exact and material batches.
+- `processSemanticSyncQueue` atomically claims bounded exact and material
+  batches with random owner tokens and five-minute leases. Only the owner may
+  settle a claim; expired work is recoverable, failures stop after three
+  attempts, and a newer requested revision requeues terminal or obsolete work.
   `syncSemanticResource`
   runs token-field embedding, deterministic segmentation, contextual passage
   embedding, a latest-revision check, and guarded publication.
@@ -50,8 +55,8 @@ visual evidence. Orientation tools issue no evidence IDs.
 No public procedure accepts a project ID. The request scope provides the project,
 and every joined table is filtered to it before use.
 
-The current JSON store has no cross-table transaction, so leader and outbox
-writes are adjacent rather than atomic. The queues are durable, but an always-on
-worker host/recovery loop and object-store upload adapter remain deployment
-infrastructure. See `docs/semantic-overlay.md` and
+The current Store unit of work makes each multi-table authored mutation and its
+outbox intent atomic and journal-recoverable. Provider work stays outside that
+boundary. An always-on worker host and object-store upload adapter remain
+deployment infrastructure. See `docs/semantic-overlay.md` and
 `docs/semantic-material-layer.md` for the complete contract and bounds.

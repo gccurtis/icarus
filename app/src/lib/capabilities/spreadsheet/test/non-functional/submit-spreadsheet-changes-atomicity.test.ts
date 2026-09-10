@@ -141,6 +141,7 @@ const expectUntouched = (
   expect(rowsIn(store, "dataBackReferences")).toHaveLength(0);
   expect(rowsIn(store, "sheetCells")).toHaveLength(1);
   expect(updatedAtOf(store, ids.resourceId)).toBe(1000);
+  expect(rowsIn(store, "semanticMaterialJobs")).toHaveLength(0);
 };
 
 /** Every part of the revision arrived: none of them is readable without the rest. */
@@ -165,6 +166,12 @@ const expectAdvanced = (store: StoreModel, ids: ReturnType<typeof seeded>): void
   expect(backReferences[0].formulaId).toBe(formulas[0]._id);
 
   expect(updatedAtOf(store, ids.resourceId)).not.toBe(1000);
+  expect(rowsIn(store, "semanticMaterialJobs")).toHaveLength(1);
+  expect(rowsIn(store, "semanticMaterialJobs")[0]).toMatchObject({
+    ref: { kind: "spreadsheet", id: ids.resourceId },
+    requestedRevision: 1,
+    state: "queued"
+  });
 };
 
 describe("submit spreadsheet changes transaction atomicity", () => {
@@ -184,6 +191,7 @@ describe("submit spreadsheet changes transaction atomicity", () => {
     expect([...touched].sort()).toEqual([
       "dataBackReferences",
       "formulas",
+      "semanticMaterialJobs",
       "sheetCells",
       "spreadsheetChangeSets",
       "spreadsheetSnapshots",
@@ -211,6 +219,7 @@ describe("submit spreadsheet changes transaction atomicity", () => {
       "transaction:after-table:spreadsheetChangeSets",
       "transaction:after-table:spreadsheetSnapshots",
       "transaction:after-table:spreadsheets",
+      "transaction:after-table:semanticMaterialJobs",
       "transaction:before-journal-remove"
     ];
 

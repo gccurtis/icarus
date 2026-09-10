@@ -920,6 +920,7 @@
       },
       "layouts": [
         {
+          "id": "#layout-board-brief",
           "key": "board-brief",
           "name": "Board brief",
           "locked": [],
@@ -960,8 +961,11 @@
                 "width": 0.86,
                 "height": 0.18
               },
-              "blocks": [
-                {
+              "overflow": "shrink",
+              "fromPlaceholder": "title",
+              "content": {
+                "type": "text",
+                "block": {
                   "id": "#tboard-title",
                   "type": "text",
                   "variant": "heading",
@@ -977,20 +981,21 @@
                   "display": "Board review · operating performance",
                   "marks": []
                 }
-              ],
-              "overflow": "shrink",
-              "fromPlaceholder": "title"
+              }
             },
             {
-              "id": "#tboard-body-element",
+              "id": "#tboard-body-element-1",
               "frame": {
                 "x": 0.07,
                 "y": 0.35,
                 "width": 0.86,
-                "height": 0.52
+                "height": 0.2525
               },
-              "blocks": [
-                {
+              "overflow": "shrink",
+              "fromPlaceholder": "body",
+              "content": {
+                "type": "text",
+                "block": {
                   "id": "#tboard-example",
                   "type": "text",
                   "variant": "paragraph",
@@ -1003,9 +1008,34 @@
                     }
                   ],
                   "display": "Performance is stable, but winter resilience depends on approving the accelerated transformer replacement this quarter.",
-                  "marks": []
-                },
-                {
+                  "marks": [],
+                  "format": {
+                    "padding": {
+                      "x": 18,
+                      "y": 16
+                    },
+                    "border": {
+                      "color": "--token-color-active-border",
+                      "width": 1,
+                      "style": "solid"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "id": "#tboard-body-element-2",
+              "frame": {
+                "x": 0.07,
+                "y": 0.6175,
+                "width": 0.86,
+                "height": 0.2525
+              },
+              "overflow": "shrink",
+              "fromPlaceholder": "body",
+              "content": {
+                "type": "prompt",
+                "block": {
                   "id": "#tboard-prompt",
                   "type": "prompt",
                   "atoms": [
@@ -1026,20 +1056,18 @@
                     ],
                     "exclude": []
                   },
-                  "state": "idle"
-                }
-              ],
-              "overflow": "shrink",
-              "fromPlaceholder": "body",
-              "format": {
-                "padding": {
-                  "x": 18,
-                  "y": 16
-                },
-                "border": {
-                  "color": "--token-color-active-border",
-                  "width": 1,
-                  "style": "solid"
+                  "state": "idle",
+                  "format": {
+                    "padding": {
+                      "x": 18,
+                      "y": 16
+                    },
+                    "border": {
+                      "color": "--token-color-active-border",
+                      "width": 1,
+                      "style": "solid"
+                    }
+                  }
                 }
               }
             }
@@ -1152,6 +1180,7 @@
       },
       "layouts": [
         {
+          "id": "#layout-field-plan",
           "key": "field-plan",
           "name": "Field plan",
           "locked": [],
@@ -1192,8 +1221,11 @@
                 "width": 0.88,
                 "height": 0.18
               },
-              "blocks": [
-                {
+              "overflow": "shrink",
+              "fromPlaceholder": "title",
+              "content": {
+                "type": "text",
+                "block": {
                   "id": "#tfield-title",
                   "type": "text",
                   "variant": "heading",
@@ -1209,20 +1241,21 @@
                   "display": "Today’s objective, controls, and stop conditions",
                   "marks": []
                 }
-              ],
-              "overflow": "shrink",
-              "fromPlaceholder": "title"
+              }
             },
             {
-              "id": "#tfield-body-element",
+              "id": "#tfield-body-element-1",
               "frame": {
                 "x": 0.06,
                 "y": 0.31,
                 "width": 0.88,
-                "height": 0.59
+                "height": 0.2875
               },
-              "blocks": [
-                {
+              "overflow": "shrink",
+              "fromPlaceholder": "body",
+              "content": {
+                "type": "text",
+                "block": {
                   "id": "#tfield-example",
                   "type": "text",
                   "variant": "paragraph",
@@ -1235,9 +1268,30 @@
                     }
                   ],
                   "display": "Objective: isolate and inspect Transformer Bank 2. Stop work on unexpected pressure, gas, or protection indications.",
-                  "marks": []
-                },
-                {
+                  "marks": [],
+                  "format": {
+                    "background": "--token-color-attention-surface",
+                    "padding": {
+                      "x": 18,
+                      "y": 16
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "id": "#tfield-body-element-2",
+              "frame": {
+                "x": 0.06,
+                "y": 0.6125,
+                "width": 0.88,
+                "height": 0.2875
+              },
+              "overflow": "shrink",
+              "fromPlaceholder": "body",
+              "content": {
+                "type": "prompt",
+                "block": {
                   "id": "#tfield-prompt",
                   "type": "prompt",
                   "atoms": [
@@ -1258,16 +1312,14 @@
                     ],
                     "exclude": []
                   },
-                  "state": "idle"
-                }
-              ],
-              "overflow": "shrink",
-              "fromPlaceholder": "body",
-              "format": {
-                "background": "--token-color-attention-surface",
-                "padding": {
-                  "x": 18,
-                  "y": 16
+                  "state": "idle",
+                  "format": {
+                    "background": "--token-color-attention-surface",
+                    "padding": {
+                      "x": 18,
+                      "y": 16
+                    }
+                  }
                 }
               }
             }
@@ -1363,6 +1415,7 @@
       },
       "layouts": [
         {
+          "id": "#layout-executive-summary",
           "key": "executive-summary",
           "name": "Executive summary",
           "locked": [],
@@ -1403,8 +1456,11 @@
                 "width": 0.84,
                 "height": 0.2
               },
-              "blocks": [
-                {
+              "overflow": "shrink",
+              "fromPlaceholder": "title",
+              "content": {
+                "type": "text",
+                "block": {
                   "id": "#texec-title",
                   "type": "text",
                   "variant": "heading",
@@ -1420,20 +1476,21 @@
                   "display": "Portfolio trajectory · decisions this week",
                   "marks": []
                 }
-              ],
-              "overflow": "shrink",
-              "fromPlaceholder": "title"
+              }
             },
             {
-              "id": "#texec-body-element",
+              "id": "#texec-body-element-1",
               "frame": {
                 "x": 0.08,
                 "y": 0.38,
                 "width": 0.84,
-                "height": 0.48
+                "height": 0.2325
               },
-              "blocks": [
-                {
+              "overflow": "shrink",
+              "fromPlaceholder": "body",
+              "content": {
+                "type": "text",
+                "block": {
                   "id": "#texec-example",
                   "type": "text",
                   "variant": "paragraph",
@@ -1446,9 +1503,34 @@
                     }
                   ],
                   "display": "On plan overall · Transformer procurement at risk · Replacement-window approval due Friday",
-                  "marks": []
-                },
-                {
+                  "marks": [],
+                  "format": {
+                    "padding": {
+                      "x": 18,
+                      "y": 16
+                    },
+                    "border": {
+                      "color": "--token-color-intelligence-border",
+                      "width": 1,
+                      "style": "solid"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "id": "#texec-body-element-2",
+              "frame": {
+                "x": 0.08,
+                "y": 0.6275,
+                "width": 0.84,
+                "height": 0.2325
+              },
+              "overflow": "shrink",
+              "fromPlaceholder": "body",
+              "content": {
+                "type": "prompt",
+                "block": {
                   "id": "#texec-prompt",
                   "type": "prompt",
                   "atoms": [
@@ -1469,20 +1551,18 @@
                     ],
                     "exclude": []
                   },
-                  "state": "idle"
-                }
-              ],
-              "overflow": "shrink",
-              "fromPlaceholder": "body",
-              "format": {
-                "padding": {
-                  "x": 18,
-                  "y": 16
-                },
-                "border": {
-                  "color": "--token-color-intelligence-border",
-                  "width": 1,
-                  "style": "solid"
+                  "state": "idle",
+                  "format": {
+                    "padding": {
+                      "x": 18,
+                      "y": 16
+                    },
+                    "border": {
+                      "color": "--token-color-intelligence-border",
+                      "width": 1,
+                      "style": "solid"
+                    }
+                  }
                 }
               }
             }
@@ -1580,6 +1660,7 @@
       },
       "layouts": [
         {
+          "id": "#layout-option-frame",
           "key": "option-frame",
           "name": "Option frame",
           "locked": [],
@@ -1620,8 +1701,11 @@
                 "width": 0.86,
                 "height": 0.18
               },
-              "blocks": [
-                {
+              "overflow": "shrink",
+              "fromPlaceholder": "title",
+              "content": {
+                "type": "text",
+                "block": {
                   "id": "#toptions-title",
                   "type": "text",
                   "variant": "heading",
@@ -1637,20 +1721,21 @@
                   "display": "Options assessment · choose a path",
                   "marks": []
                 }
-              ],
-              "overflow": "shrink",
-              "fromPlaceholder": "title"
+              }
             },
             {
-              "id": "#toptions-body-element",
+              "id": "#toptions-body-element-1",
               "frame": {
                 "x": 0.07,
                 "y": 0.33,
                 "width": 0.86,
-                "height": 0.57
+                "height": 0.13125
               },
-              "blocks": [
-                {
+              "overflow": "shrink",
+              "fromPlaceholder": "body",
+              "content": {
+                "type": "text",
+                "block": {
                   "id": "#toptions-evidence-example",
                   "type": "text",
                   "variant": "paragraph",
@@ -1663,9 +1748,34 @@
                     }
                   ],
                   "display": "Viable paths: covered conductor, selective undergrounding, and targeted rebuild.",
-                  "marks": []
-                },
-                {
+                  "marks": [],
+                  "format": {
+                    "padding": {
+                      "x": 18,
+                      "y": 16
+                    },
+                    "border": {
+                      "color": "--token-color-active-border",
+                      "width": 1,
+                      "style": "solid"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "id": "#toptions-body-element-2",
+              "frame": {
+                "x": 0.07,
+                "y": 0.47625,
+                "width": 0.86,
+                "height": 0.13125
+              },
+              "overflow": "shrink",
+              "fromPlaceholder": "body",
+              "content": {
+                "type": "prompt",
+                "block": {
                   "id": "#toptions-evidence-prompt",
                   "type": "prompt",
                   "atoms": [
@@ -1686,9 +1796,34 @@
                     ],
                     "exclude": []
                   },
-                  "state": "idle"
-                },
-                {
+                  "state": "idle",
+                  "format": {
+                    "padding": {
+                      "x": 18,
+                      "y": 16
+                    },
+                    "border": {
+                      "color": "--token-color-active-border",
+                      "width": 1,
+                      "style": "solid"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "id": "#toptions-body-element-3",
+              "frame": {
+                "x": 0.07,
+                "y": 0.6225,
+                "width": 0.86,
+                "height": 0.13125
+              },
+              "overflow": "shrink",
+              "fromPlaceholder": "body",
+              "content": {
+                "type": "text",
+                "block": {
                   "id": "#toptions-model-example",
                   "type": "text",
                   "variant": "paragraph",
@@ -1701,9 +1836,34 @@
                     }
                   ],
                   "display": "Decision lens: lifecycle cost, delivery sensitivity, risk reduction, and reversibility.",
-                  "marks": []
-                },
-                {
+                  "marks": [],
+                  "format": {
+                    "padding": {
+                      "x": 18,
+                      "y": 16
+                    },
+                    "border": {
+                      "color": "--token-color-active-border",
+                      "width": 1,
+                      "style": "solid"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "id": "#toptions-body-element-4",
+              "frame": {
+                "x": 0.07,
+                "y": 0.76875,
+                "width": 0.86,
+                "height": 0.13125
+              },
+              "overflow": "shrink",
+              "fromPlaceholder": "body",
+              "content": {
+                "type": "prompt",
+                "block": {
                   "id": "#toptions-model-prompt",
                   "type": "prompt",
                   "atoms": [
@@ -1724,20 +1884,18 @@
                     ],
                     "exclude": []
                   },
-                  "state": "idle"
-                }
-              ],
-              "overflow": "shrink",
-              "fromPlaceholder": "body",
-              "format": {
-                "padding": {
-                  "x": 18,
-                  "y": 16
-                },
-                "border": {
-                  "color": "--token-color-active-border",
-                  "width": 1,
-                  "style": "solid"
+                  "state": "idle",
+                  "format": {
+                    "padding": {
+                      "x": 18,
+                      "y": 16
+                    },
+                    "border": {
+                      "color": "--token-color-active-border",
+                      "width": 1,
+                      "style": "solid"
+                    }
+                  }
                 }
               }
             }

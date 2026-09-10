@@ -39,12 +39,14 @@ const subjects = [
     target: "document",
     resources: "documents",
     snapshots: "documentSnapshots",
+    exact: true,
     body: { resource: "document", rows: [] }
   },
   {
     target: "slides",
     resources: "slideDecks",
     snapshots: "slideDeckSnapshots",
+    exact: true,
     body: {
       resource: "slides",
       aspectRatio: "16:9",
@@ -54,17 +56,37 @@ const subjects = [
       slides: [],
       sections: []
     }
+  },
+  {
+    target: "spreadsheet",
+    resources: "spreadsheets",
+    snapshots: "spreadsheetSnapshots",
+    exact: false,
+    body: {
+      resource: "spreadsheet",
+      cells: { A1: { value: { kind: "text", value: "Ready" } } },
+      formatRules: [],
+      print: {
+        page: {
+          paper: "letter",
+          orientation: "portrait",
+          margins: { top: 0.5, right: 0.5, bottom: 0.5, left: 0.5 }
+        }
+      },
+      styles: { defaultKey: "body", styles: { body: { name: "Body" } } }
+    }
   }
 ] as const;
 
 const seeded = (directory: string, subject: (typeof subjects)[number]) => {
   const store = storeAt(directory);
   const templateId = store.create("templates", {
+    projectId: "projects:p",
     userId: "users:u",
     name: "Plan",
     tags: [],
     body: subject.body,
-    variables: [],
+    holes: [],
     createdBy: { kind: "user", userId: "users:u" },
     revision: 2,
     updatedAt: 1000
@@ -81,13 +103,22 @@ const rowsIn = (store: StoreModel, table: string): readonly Record<string, unkno
   return found?.kind === "table" ? (found.rows as readonly Record<string, unknown>[]) : [];
 };
 
-const expectWhole = (store: StoreModel, subject: (typeof subjects)[number]): void => {
+const expectWhole = (
+  store: StoreModel,
+  subject: (typeof subjects)[number],
+  templateId: string
+): void => {
   const resources = rowsIn(store, subject.resources);
   const snapshots = rowsIn(store, subject.snapshots);
   expect(resources).toHaveLength(1);
   expect(snapshots).toHaveLength(1);
   expect(snapshots[0].resourceId).toBe(resources[0]._id);
   expect(snapshots[0]).toMatchObject({ revision: 0, role: "leader", part: 0 });
+  expect(rowsIn(store, "semanticSyncJobs")).toHaveLength(subject.exact ? 1 : 0);
+  expect(rowsIn(store, "semanticMaterialJobs")).toHaveLength(1);
+  expect(rowsIn(store, "sheetCells")).toHaveLength(subject.target === "spreadsheet" ? 1 : 0);
+  const lastUsedAt = store.read(`templates.${templateId}.lastUsedAt`);
+  expect(lastUsedAt?.kind === "field" ? lastUsedAt.value : undefined).toBeTypeOf("number");
 };
 
 describe("instantiate template transaction atomicity", () => {
@@ -102,6 +133,10 @@ describe("instantiate template transaction atomicity", () => {
       const restarted = storeAt(directory);
       expect(rowsIn(restarted, subject.resources)).toHaveLength(0);
       expect(rowsIn(restarted, subject.snapshots)).toHaveLength(0);
+      expect(rowsIn(restarted, "semanticSyncJobs")).toHaveLength(0);
+      expect(rowsIn(restarted, "semanticMaterialJobs")).toHaveLength(0);
+      expect(rowsIn(restarted, "sheetCells")).toHaveLength(0);
+      expect(restarted.read(`templates.${templateId}.lastUsedAt`)).toBeUndefined();
     });
 
     it(`${subject.target} instantiation recovers whole after every commit boundary`, async () => {
@@ -109,6 +144,14 @@ describe("instantiate template transaction atomicity", () => {
         "transaction:after-journal",
         `transaction:after-table:${subject.resources}` as StoreFailpoint,
         `transaction:after-table:${subject.snapshots}` as StoreFailpoint,
+        ...(subject.exact
+          ? ["transaction:after-table:semanticSyncJobs" as StoreFailpoint]
+          : []),
+        "transaction:after-table:semanticMaterialJobs",
+        ...(subject.target === "spreadsheet"
+          ? ["transaction:after-table:sheetCells" as StoreFailpoint]
+          : []),
+        "transaction:after-table:templates",
         "transaction:before-journal-remove"
       ];
 
@@ -119,7 +162,7 @@ describe("instantiate template transaction atomicity", () => {
 
         await expect(instantiateTemplate({ templateId })).rejects.toThrow(/interrupted/);
 
-        expectWhole(storeAt(directory), subject);
+        expectWhole(storeAt(directory), subject, templateId);
       }
     });
   }

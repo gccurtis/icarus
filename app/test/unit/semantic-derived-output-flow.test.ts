@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { beforeEach, describe, it, vi } from "vitest";
 import { defineStore } from "$model/server/store/index.server";
 import type { IntelligenceTool } from "$model/server/intelligence/index.server";
+import { createOperationFlights } from "$model/server/operation-flights/index.server";
 
 const state = vi.hoisted(() => ({
   model: undefined as unknown as {
@@ -199,6 +200,7 @@ beforeEach(() => {
       }
     },
     materialContent: { read: async () => undefined },
+    operationFlights: createOperationFlights(),
     observability: { logger: { info: () => {}, warn: () => {} } }
   };
 });

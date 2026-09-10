@@ -1,10 +1,10 @@
-import type { BlockFormat } from "$representation/data/types/content/block-format";
 import type { Mark } from "$representation/data/types/content/content-block";
 import type { VariableValue } from "$representation/data/types/content/variable-value";
 import type { TemplatedResourceSet } from "$representation/data/types/core/resource-set";
 import type { DocumentBody } from "$representation/data/types/documents/body";
 import type { SlideDeckBody } from "$representation/data/types/slide-decks/body";
 import type { PrintScale } from "$representation/data/types/spreadsheets/body";
+import type { CellFormat } from "$representation/data/types/spreadsheets/cell-format";
 import type { PageSetup } from "$representation/data/types/spreadsheets/page-setup";
 import type { StyleSet } from "$representation/data/types/spreadsheets/style-set";
 
@@ -33,15 +33,16 @@ export type TemplateCell = {
   value?: VariableValue;
   expression?: string;
   marks?: Mark[];
-  format?: BlockFormat;
+  format?: CellFormat;
   merge?: string;
 };
 
 export type TemplateFormatRule = {
+  id: string;
   from: string;
   to: string;
   style?: string;
-  format?: BlockFormat;
+  format?: CellFormat;
 };
 
 export type TemplatePrint = {

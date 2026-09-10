@@ -3,6 +3,8 @@ import type { ResourceRef } from "$representation/data/types/core/resource";
 import type { ResourceSet } from "$representation/data/types/core/resource-set";
 import type {
   MaterialFacetKind,
+  ContextualMaterialFacetKind,
+  IntrinsicMaterialFacetKind,
   MaterialHit,
   MaterialKind
 } from "$representation/data/types/semantic/material";
@@ -81,13 +83,16 @@ export type SearchableSemanticObject = IndexableSemanticObject & {
   partition?: string;
 };
 
-export type SearchableMaterialObject = IndexableSemanticObject & {
+type SearchableMaterialObjectBase = IndexableSemanticObject & {
   materialId: Id<"semanticMaterials">;
-  facet: MaterialFacetKind;
   facetText?: string;
   inputHash: string;
-  scopeRefs?: ResourceRef[];
 };
+
+export type SearchableMaterialObject = SearchableMaterialObjectBase & (
+  | { facet: ContextualMaterialFacetKind; scopeRefs: ResourceRef[] }
+  | { facet: IntrinsicMaterialFacetKind; scopeRefs?: never }
+);
 
 export type ScoredSemanticObject = {
   id: Id<"semanticObjects">;

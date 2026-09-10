@@ -16,11 +16,13 @@ export type ProcessedSemanticSyncJob = {
   readonly ref: ResourceRef;
   readonly result?: SyncSemanticResourceResult;
   readonly error?: string;
+  readonly retrying?: string;
 };
 
 export type ProcessSemanticSyncQueueResult = {
   readonly processed: readonly ProcessedSemanticSyncJob[];
   readonly remaining: number;
+  readonly failed: readonly ProcessedSemanticSyncJob[];
   readonly materials: ProcessSemanticMaterialQueueResult;
 };
 

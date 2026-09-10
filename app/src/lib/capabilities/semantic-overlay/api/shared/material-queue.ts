@@ -36,6 +36,10 @@ export const enqueueMaterialSyncFor = (
   if (existing.state === "failed") {
     model.store.update(`semanticMaterialJobs.${existing._id}.state`, "queued");
     model.store.removeFieldFromRows("semanticMaterialJobs", [existing._id], "error");
+    model.store.removeFieldFromRows("semanticMaterialJobs", [existing._id], "claimId");
+    model.store.removeFieldFromRows("semanticMaterialJobs", [existing._id], "leaseExpiresAt");
+    model.store.removeFieldFromRows("semanticMaterialJobs", [existing._id], "startedAt");
+    model.store.update(`semanticMaterialJobs.${existing._id}.attempts`, 0);
     model.store.update(`semanticMaterialJobs.${existing._id}.queuedAt`, at);
   }
   model.store.update(`semanticMaterialJobs.${existing._id}.updatedAt`, at);

@@ -267,6 +267,7 @@ export const materializeSpreadsheet = (template: SpreadsheetTemplate): Materiali
     if (from === undefined || to === undefined) return [];
     return [
       {
+        id: rule.id,
         from,
         to,
         ...(rule.style === undefined ? {} : { style: rule.style }),

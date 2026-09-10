@@ -149,7 +149,7 @@ export type TableBlock = {
   format?: BlockFormat;
 };
 
-export type PromptState = "idle" | "fresh" | "stale" | "generating" | "error";
+export type PromptState = "idle" | "fresh" | "stale" | "error";
 
 /**
  * What this prompt becomes when its resource is made a template.

@@ -78,32 +78,31 @@ export const querySemanticMaterials = async (
       )
       .map((material) => material._id)
   );
-  const objects: SearchableMaterialObject[] = rowsOf(model.store, "semanticObjects").flatMap((object) =>
-    object.projectId === projectId &&
-    object.lane === "material" &&
-    "semanticMaterialId" in object &&
-    materialById.has(object.semanticMaterialId)
-      ? [{
-          id: object._id,
-          vector: object.vector,
-          materialId: object.semanticMaterialId,
-          facet: object.facet,
-          ...(object.facetText === undefined ? {} : { facetText: object.facetText }),
-          inputHash: object.inputHash,
-          ...(object.scopeRefs === undefined ? {} : { scopeRefs: object.scopeRefs })
-        }]
-      : []
+  const objects: SearchableMaterialObject[] = rowsOf(model.store, "semanticObjects").flatMap(
+    (object): SearchableMaterialObject[] => {
+    if (
+      object.projectId !== projectId ||
+      object.lane !== "material" ||
+      !materialById.has(object.semanticMaterialId)
+    ) return [];
+    const base = {
+      id: object._id,
+      vector: object.vector,
+      materialId: object.semanticMaterialId,
+      ...(object.facetText === undefined ? {} : { facetText: object.facetText }),
+      inputHash: object.inputHash
+    };
+    return object.facet === "authored" || object.facet === "generated"
+      ? [{ ...base, facet: object.facet, scopeRefs: object.scopeRefs }]
+      : [{ ...base, facet: object.facet }];
+    }
   );
   const eligibleObjectIds = objects
     .filter((object) => {
       if (!eligibleMaterials.has(object.materialId)) return false;
       const contextual = object.facet === "authored" || object.facet === "generated";
       if (!contextual || asked.scope === undefined) return true;
-      // Old rows predate facet-level contributor provenance. Keep them usable
-      // for whole-project search, but fail closed for an explicit Resource Set
-      // until backfill republishes them with scopeRefs.
-      return object.scopeRefs !== undefined &&
-        object.scopeRefs.length > 0 &&
+      return object.scopeRefs.length > 0 &&
         object.scopeRefs.every(matchesScope);
     })
     .map((object) => object.id);

@@ -8,7 +8,7 @@ import type { SlideDeckBody } from "$representation/data/types/slide-decks/body"
 
 import { validateCreateProjectResource } from "$capabilities/project-resources/api/create-project-resource/validate-create-project-resource";
 import type { CreateProjectResourceResult } from "$capabilities/project-resources/types/project-resources";
-import { enqueueSemanticSync } from "$capabilities/semantic-overlay/index";
+import { enqueueSemanticOutboxFor } from "$capabilities/semantic-overlay/index";
 
 /** A represented blank deck still needs somewhere to edit. */
 const emptyDeck = (): SlideDeckBody => ({
@@ -122,7 +122,14 @@ export const createProjectResource = async (input: unknown): Promise<CreateProje
         body: emptyDocument(),
         at
       });
-      return { accepted: true, target: asked.target, resourceId, title, revision: 0 };
+      enqueueSemanticOutboxFor(
+        model,
+        unit,
+        projectId,
+        { kind: "document", id: resourceId },
+        0
+      );
+      return { accepted: true as const, target: asked.target, resourceId, title, revision: 0 as const };
     }
 
     if (asked.target === "slides") {
@@ -136,7 +143,14 @@ export const createProjectResource = async (input: unknown): Promise<CreateProje
         body: emptyDeck(),
         at
       });
-      return { accepted: true, target: asked.target, resourceId, title, revision: 0 };
+      enqueueSemanticOutboxFor(
+        model,
+        unit,
+        projectId,
+        { kind: "slides", id: resourceId },
+        0
+      );
+      return { accepted: true as const, target: asked.target, resourceId, title, revision: 0 as const };
     }
 
     const resourceId = unit.create("spreadsheets", fields);
@@ -149,11 +163,14 @@ export const createProjectResource = async (input: unknown): Promise<CreateProje
       body: emptySpreadsheet(),
       at
     });
-    return { accepted: true, target: asked.target, resourceId, title, revision: 0 };
+    enqueueSemanticOutboxFor(
+      model,
+      unit,
+      projectId,
+      { kind: "spreadsheet", id: resourceId },
+      0
+    );
+    return { accepted: true as const, target: asked.target, resourceId, title, revision: 0 as const };
   });
-
-  if (created.target === "document" || created.target === "slides") {
-    await enqueueSemanticSync({ ref: { kind: created.target, id: created.resourceId } });
-  }
   return created;
 };

@@ -11,6 +11,7 @@ export { materialProfileDigest } from "$capabilities/semantic-overlay/api/shared
 export { forgetSemanticResourceFor } from "$capabilities/semantic-overlay/api/shared/forget";
 export { isStagedResource } from "$capabilities/semantic-overlay/api/shared/staged";
 export { processSemanticSyncQueueFor } from "$capabilities/semantic-overlay/api/shared/queue-processor";
+export { enqueueSemanticOutboxFor } from "$capabilities/semantic-overlay/api/shared/outbox";
 export {
   currentResourceRevisionFor,
   materialPlacementIsCurrent,

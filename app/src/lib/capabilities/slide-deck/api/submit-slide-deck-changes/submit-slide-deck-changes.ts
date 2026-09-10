@@ -6,7 +6,7 @@ import { leaderOf } from "$capabilities/slide-deck/api/shared/leader";
 import { applyOps } from "$capabilities/slide-deck/api/submit-slide-deck-changes/apply-ops";
 import { validateSubmitSlideDeckChanges } from "$capabilities/slide-deck/api/submit-slide-deck-changes/validate-submit-slide-deck-changes";
 import type { SubmitSlideDeckChangesResult } from "$capabilities/slide-deck/types/submit-slide-deck-changes";
-import { enqueueSemanticSync } from "$capabilities/semantic-overlay/index";
+import { enqueueSemanticOutboxFor } from "$capabilities/semantic-overlay/index";
 
 export const submitSlideDeckChanges = async (
   input: unknown
@@ -56,31 +56,39 @@ export const submitSlideDeckChanges = async (
   const next = revision + 1;
   const at = Date.now();
 
-  store.create("slideDeckChangeSets", {
-    projectId,
-    resourceId,
-    revision: next,
-    baseRevision: changeSet.baseRevision,
-    tier: "recent",
-    ops: changeSet.ops,
-    touched: changeSet.touched,
-    actor,
-    at
-  });
+  store.transaction((unit) => {
+    unit.create("slideDeckChangeSets", {
+      projectId,
+      resourceId,
+      revision: next,
+      baseRevision: changeSet.baseRevision,
+      tier: "recent",
+      ops: changeSet.ops,
+      touched: changeSet.touched,
+      actor,
+      at
+    });
 
-  store.update(`slideDeckSnapshots.${leader._id}`, {
-    projectId,
-    resourceId,
-    revision: next,
-    role: "leader",
-    part: 0,
-    body,
-    at
-  });
+    unit.update(`slideDeckSnapshots.${leader._id}`, {
+      projectId,
+      resourceId,
+      revision: next,
+      role: "leader",
+      part: 0,
+      body,
+      at
+    });
 
-  store.update(`slideDecks.${resourceId}.updatedAt`, at);
-  store.update(`slideDecks.${resourceId}.updatedBy`, actor);
-  await enqueueSemanticSync({ ref: { kind: "slides", id: resourceId } });
+    unit.update(`slideDecks.${resourceId}.updatedAt`, at);
+    unit.update(`slideDecks.${resourceId}.updatedBy`, actor);
+    enqueueSemanticOutboxFor(
+      model,
+      unit,
+      projectId,
+      { kind: "slides", id: resourceId },
+      next
+    );
+  });
 
   return { accepted: true, revision: next };
 };

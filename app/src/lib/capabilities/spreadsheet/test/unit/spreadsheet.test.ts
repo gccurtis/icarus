@@ -14,6 +14,7 @@ const model = vi.hoisted(() => ({
   variables: [] as Row[],
   formulas: [] as Row[],
   backReferences: [] as Row[],
+  materialJobs: [] as Row[],
   minted: 0,
   tableOf(path: string): Row[] {
     const table = path.split(".")[0];
@@ -23,6 +24,7 @@ const model = vi.hoisted(() => ({
     if (table === "variables") return model.variables;
     if (table === "formulas") return model.formulas;
     if (table === "dataBackReferences") return model.backReferences;
+    if (table === "semanticMaterialJobs") return model.materialJobs;
     return model.snapshots;
   },
   store: {
@@ -138,6 +140,7 @@ beforeEach(() => {
   model.variables.length = 0;
   model.formulas.length = 0;
   model.backReferences.length = 0;
+  model.materialJobs.length = 0;
   model.minted = 0;
 });
 

@@ -46,7 +46,11 @@ export const enqueueSemanticSyncFor = (
   }
   if (existing.state === "failed") {
     model.store.update(`semanticSyncJobs.${existing._id}.state`, "queued");
-    model.store.update(`semanticSyncJobs.${existing._id}.error`, undefined);
+    model.store.removeFieldFromRows("semanticSyncJobs", [existing._id], "error");
+    model.store.removeFieldFromRows("semanticSyncJobs", [existing._id], "claimId");
+    model.store.removeFieldFromRows("semanticSyncJobs", [existing._id], "leaseExpiresAt");
+    model.store.removeFieldFromRows("semanticSyncJobs", [existing._id], "startedAt");
+    model.store.update(`semanticSyncJobs.${existing._id}.attempts`, 0);
     model.store.update(`semanticSyncJobs.${existing._id}.queuedAt`, at);
   }
   model.store.update(`semanticSyncJobs.${existing._id}.updatedAt`, at);

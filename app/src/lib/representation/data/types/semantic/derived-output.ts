@@ -96,7 +96,7 @@ export type DerivedOutputFields = {
   projectId: Id<"projects">;
   prompt: string;
   /** Advances only when a user-controlled generation input changes. */
-  definitionRevision?: number;
+  definitionRevision: number;
   /** Resource containing the Prompt Block. Navigation context, never evidence. */
   origin?: ResourceRef;
   template?: DerivedTemplateDefinition;

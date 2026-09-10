@@ -1,6 +1,6 @@
 import { requireScope } from "$runtime/server/scope.server";
 import { serverModel } from "$runtime/server/start.server";
-import type { StoreModel } from "$model/server/store/index.server";
+import type { StoreModel, StoreUnitOfWork } from "$model/server/store/index.server";
 import type { Id } from "$representation/data/types/core/id";
 import type { DocumentBody } from "$representation/data/types/documents/body";
 import type { DocumentOp } from "$representation/data/types/documents/op";
@@ -11,7 +11,7 @@ import { applyOps } from "$capabilities/document/api/submit-document-changes/app
 import { validateSubmitDocumentChanges } from "$capabilities/document/api/submit-document-changes/validate-submit-document-changes";
 import { transformCommentAnchor } from "$capabilities/document/api/submit-document-changes/transform-comment-anchor";
 import type { SubmitDocumentChangesResult } from "$capabilities/document/types/submit-document-changes";
-import { enqueueSemanticSync } from "$capabilities/semantic-overlay/index";
+import { enqueueSemanticOutboxFor } from "$capabilities/semantic-overlay/index";
 
 type Landed = { readonly revision: number; readonly ops: readonly DocumentOp[]; readonly touched: readonly string[] };
 
@@ -19,7 +19,7 @@ const related = (a: string, b: string): boolean =>
   a === b || a.startsWith(`${b}/`) || b.startsWith(`${a}/`);
 
 const landedBetween = (
-  store: StoreModel,
+  store: StoreUnitOfWork,
   projectId: Id<"projects">,
   resourceId: Id<"documents">,
   base: number,
@@ -62,7 +62,7 @@ const catchUpFor = (
 };
 
 const updateCommentAnchors = (
-  store: StoreModel,
+  store: StoreUnitOfWork,
   projectId: Id<"projects">,
   resourceId: Id<"documents">,
   ops: readonly DocumentOp[],
@@ -130,36 +130,44 @@ export const submitDocumentChanges = async (
   const next = revision + 1;
   const at = Date.now();
 
-  updateCommentAnchors(store, projectId, resourceId, changeSet.ops, body);
+  store.transaction((unit) => {
+    updateCommentAnchors(unit, projectId, resourceId, changeSet.ops, body);
 
-  store.create("documentChangeSets", {
-    projectId,
-    resourceId,
-    revision: next,
-    baseRevision: changeSet.baseRevision,
-    tier: "recent",
-    ops: changeSet.ops,
-    touched: changeSet.touched,
-    actor,
-    at
+    unit.create("documentChangeSets", {
+      projectId,
+      resourceId,
+      revision: next,
+      baseRevision: changeSet.baseRevision,
+      tier: "recent",
+      ops: changeSet.ops,
+      touched: changeSet.touched,
+      actor,
+      at
+    });
+
+    const snapshot = {
+      projectId,
+      resourceId,
+      revision: next,
+      role: "leader",
+      part: 0,
+      body,
+      at
+    } as const;
+
+    if (leader === undefined) unit.create("documentSnapshots", snapshot);
+    else unit.update(`documentSnapshots.${leader._id}`, snapshot);
+
+    unit.update(`documents.${resourceId}.updatedAt`, at);
+    unit.update(`documents.${resourceId}.updatedBy`, actor);
+    enqueueSemanticOutboxFor(
+      model,
+      unit,
+      projectId,
+      { kind: "document", id: resourceId },
+      next
+    );
   });
-
-  const snapshot = {
-    projectId,
-    resourceId,
-    revision: next,
-    role: "leader",
-    part: 0,
-    body,
-    at
-  };
-
-  if (leader === undefined) store.create("documentSnapshots", snapshot);
-  else store.update(`documentSnapshots.${leader._id}`, snapshot);
-
-  store.update(`documents.${resourceId}.updatedAt`, at);
-  store.update(`documents.${resourceId}.updatedBy`, actor);
-  await enqueueSemanticSync({ ref: { kind: "document", id: resourceId } });
 
   return catchUp.length === 0
     ? { accepted: true, revision: next }

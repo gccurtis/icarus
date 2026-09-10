@@ -19,9 +19,11 @@ export type ProcessedSemanticMaterialJob = {
   ref: ResourceRef;
   result?: SyncSemanticMaterialsResult;
   error?: string;
+  retrying?: string;
 };
 
 export type ProcessSemanticMaterialQueueResult = {
   processed: ProcessedSemanticMaterialJob[];
   remaining: number;
+  failed: ProcessedSemanticMaterialJob[];
 };

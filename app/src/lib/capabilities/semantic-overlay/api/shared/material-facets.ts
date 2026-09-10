@@ -66,12 +66,15 @@ const textFacets = (
   seed: MaterialSeed,
   descriptor: GeneratedMaterialDescriptor | undefined,
   contextRefs: readonly ResourceRef[]
-): Array<{
-  facet: MaterialFacetKind;
-  trust: MaterialTrust;
-  text: string;
-  scopeRefs?: ResourceRef[];
-}> => {
+): Array<
+  | { facet: "identity" | "profile"; trust: MaterialTrust; text: string }
+  | {
+      facet: "authored" | "generated";
+      trust: MaterialTrust;
+      text: string;
+      scopeRefs: ResourceRef[];
+    }
+> => {
   const identity = `${seed.name}. ${seed.kind}.`;
   const profile = profileFacts(seed.profile).join(". ");
   const authored = [

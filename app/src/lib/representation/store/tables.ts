@@ -62,8 +62,13 @@ import type {
   SemanticEncoding,
   SemanticLocatorSpan
 } from "$representation/data/types/semantic/source";
-import type { SemanticSyncJobState } from "$representation/data/types/semantic/sync";
 import type {
+  SemanticJobClaim,
+  SemanticSyncJobState
+} from "$representation/data/types/semantic/sync";
+import type {
+  ContextualMaterialFacetKind,
+  IntrinsicMaterialFacetKind,
   MaterialFacetKind,
   SemanticMaterialFields,
   SemanticMaterialHistoryFields,
@@ -257,7 +262,7 @@ export type SemanticSourceFields = {
 };
 export type SemanticSource = Row<"semanticSources"> & SemanticSourceFields;
 
-export type SemanticSyncJobFields = {
+export type SemanticSyncJobFields = SemanticJobClaim & {
   projectId: Id<"projects">;
   ref: ResourceRef;
   requestedRevision: number;
@@ -283,11 +288,12 @@ export type SemanticObjectFields = {
   | {
       lane: "material";
       semanticMaterialId: Id<"semanticMaterials">;
-      facet: MaterialFacetKind;
       facetText?: string;
       inputHash: string;
-      scopeRefs?: ResourceRef[];
-    }
+    } & (
+      | { facet: ContextualMaterialFacetKind; scopeRefs: ResourceRef[] }
+      | { facet: IntrinsicMaterialFacetKind; scopeRefs?: never }
+    )
 );
 export type SemanticObject = Row<"semanticObjects"> & SemanticObjectFields;
 

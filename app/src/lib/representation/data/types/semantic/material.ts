@@ -16,6 +16,12 @@ export type MaterialFacetKind =
   | "generated"
   | "nativeVisual";
 
+export type ContextualMaterialFacetKind = "authored" | "generated";
+export type IntrinsicMaterialFacetKind = Exclude<
+  MaterialFacetKind,
+  ContextualMaterialFacetKind
+>;
+
 export type MaterialTrust = "exact" | "authored" | "interpreted" | "native";
 
 export type MaterialState = "profiled" | "describing" | "ready" | "stale" | "error";
@@ -229,6 +235,8 @@ export type SemanticMaterialJobFields = {
   error?: string;
   queuedAt: number;
   startedAt?: number;
+  claimId?: string;
+  leaseExpiresAt?: number;
   updatedAt: number;
 };
 
@@ -249,14 +257,24 @@ export type SemanticMaterialHistoryFields = {
   retiredAt: number;
 };
 
-export type SemanticMaterialFacet = {
-  facet: MaterialFacetKind;
+type SemanticMaterialFacetBase = {
   trust: MaterialTrust;
   text?: string;
   inputHash: string;
-  /** Every resource whose authored context contributed to this aggregate facet. */
-  scopeRefs?: ResourceRef[];
 };
+
+export type SemanticMaterialFacet = SemanticMaterialFacetBase & (
+  | {
+      facet: ContextualMaterialFacetKind;
+      text: string;
+      /** Every resource whose authored context contributed to this aggregate facet. */
+      scopeRefs: ResourceRef[];
+    }
+  | {
+      facet: IntrinsicMaterialFacetKind;
+      scopeRefs?: never;
+    }
+);
 
 export type MaterialDescription =
   | { provenance: "authored"; text: string }

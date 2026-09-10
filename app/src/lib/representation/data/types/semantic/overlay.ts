@@ -1,6 +1,9 @@
 import type { Id } from "$representation/data/types/core/id";
 import type { ResourceRef } from "$representation/data/types/core/resource";
-import type { MaterialFacetKind } from "$representation/data/types/semantic/material";
+import type {
+  ContextualMaterialFacetKind,
+  IntrinsicMaterialFacetKind
+} from "$representation/data/types/semantic/material";
 import type { SemanticSourceSnapshot } from "$representation/data/types/semantic/source";
 
 /** The one vector space shared by every active object in a project overlay. */
@@ -25,15 +28,18 @@ export type SemanticTextObjectSnapshot = {
   vector: number[];
 };
 
-export type SemanticMaterialObjectSnapshot = {
+type SemanticMaterialObjectSnapshotBase = {
   lane: "material";
   semanticMaterialId: Id<"semanticMaterials">;
-  facet: MaterialFacetKind;
   facetText?: string;
   inputHash: string;
-  scopeRefs?: ResourceRef[];
   vector: number[];
 };
+
+export type SemanticMaterialObjectSnapshot = SemanticMaterialObjectSnapshotBase & (
+  | { facet: ContextualMaterialFacetKind; scopeRefs: ResourceRef[] }
+  | { facet: IntrinsicMaterialFacetKind; scopeRefs?: never }
+);
 
 export type SemanticObjectSnapshot =
   | SemanticTextObjectSnapshot

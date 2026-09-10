@@ -36,13 +36,14 @@ afterEach(() => {
 });
 
 const subjects = [
-  { target: "document", resources: "documents", snapshots: "documentSnapshots" },
-  { target: "slides", resources: "slideDecks", snapshots: "slideDeckSnapshots" },
-  { target: "spreadsheet", resources: "spreadsheets", snapshots: "spreadsheetSnapshots" }
+  { target: "document", resources: "documents", snapshots: "documentSnapshots", exact: true },
+  { target: "slides", resources: "slideDecks", snapshots: "slideDeckSnapshots", exact: true },
+  { target: "spreadsheet", resources: "spreadsheets", snapshots: "spreadsheetSnapshots", exact: false }
 ] as const satisfies readonly {
   target: ProjectResourceTarget;
   resources: string;
   snapshots: string;
+  exact: boolean;
 }[];
 
 const interruptAt = (target: StoreFailpoint) => (point: StoreFailpoint): void => {
@@ -64,6 +65,12 @@ const expectWhole = (
   expect(snapshots).toHaveLength(1);
   expect(snapshots[0].resourceId).toBe(resources[0]._id);
   expect(snapshots[0]).toMatchObject({ revision: 0, role: "leader", part: 0 });
+  const exactJobs = rowsIn(store, "semanticSyncJobs");
+  const materialJobs = rowsIn(store, "semanticMaterialJobs");
+  expect(exactJobs).toHaveLength(subject.exact ? 1 : 0);
+  expect(materialJobs).toHaveLength(1);
+  if (subject.exact) expect(exactJobs[0]).toMatchObject({ requestedRevision: 0, state: "queued" });
+  expect(materialJobs[0]).toMatchObject({ requestedRevision: 0, state: "queued" });
 };
 
 describe("create project resource transaction atomicity", () => {
@@ -79,7 +86,12 @@ describe("create project resource transaction atomicity", () => {
 
       await createProjectResource({ target: subject.target, title: "Untitled" });
 
-      expect(touched.sort()).toEqual([subject.resources, subject.snapshots].sort());
+      expect(touched.sort()).toEqual([
+        subject.resources,
+        subject.snapshots,
+        ...(subject.exact ? ["semanticSyncJobs"] : []),
+        "semanticMaterialJobs"
+      ].sort());
       expectWhole(storeAt(directory), subject);
     });
 
@@ -94,6 +106,8 @@ describe("create project resource transaction atomicity", () => {
       const restarted = storeAt(directory);
       expect(rowsIn(restarted, subject.resources)).toHaveLength(0);
       expect(rowsIn(restarted, subject.snapshots)).toHaveLength(0);
+      expect(rowsIn(restarted, "semanticSyncJobs")).toHaveLength(0);
+      expect(rowsIn(restarted, "semanticMaterialJobs")).toHaveLength(0);
     });
 
     it(`${subject.target} creation recovers whole after every commit boundary`, async () => {
@@ -101,6 +115,10 @@ describe("create project resource transaction atomicity", () => {
         "transaction:after-journal",
         `transaction:after-table:${subject.resources}` as StoreFailpoint,
         `transaction:after-table:${subject.snapshots}` as StoreFailpoint,
+        ...(subject.exact
+          ? ["transaction:after-table:semanticSyncJobs" as StoreFailpoint]
+          : []),
+        "transaction:after-table:semanticMaterialJobs",
         "transaction:before-journal-remove"
       ];
 

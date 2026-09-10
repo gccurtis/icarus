@@ -1,15 +1,14 @@
 import { requireScope } from "$runtime/server/scope.server";
 import { serverModel } from "$runtime/server/start.server";
 import { asId } from "$representation/data/behavior/core/id";
-import { normalizeDocumentStyleSet } from "$representation/data/behavior/documents/typography";
-import { ensureSlideDeckReady } from "$representation/data/behavior/slide-decks/normalize";
+import { ensureSlideDeckReady } from "$representation/data/behavior/slide-decks/readiness";
 import {
   fillTemplateAtoms,
   resolveTemplateScopes
 } from "$representation/data/behavior/templates/scopes";
 import type { TemplateBody } from "$representation/data/types/templates/template";
 
-import { enqueueSemanticSync } from "$capabilities/semantic-overlay/index";
+import { enqueueSemanticOutboxFor } from "$capabilities/semantic-overlay/index";
 import { validateInstantiateTemplate } from "$capabilities/templates/api/instantiate-template/validate-instantiate-template";
 import { materializeSpreadsheet } from "$capabilities/templates/api/shared/bodies";
 import {
@@ -50,7 +49,8 @@ export const instantiateTemplate = async (input: unknown): Promise<InstantiateTe
   const scope = await requireScope();
   const asked = validateInstantiateTemplate(input);
 
-  const store = serverModel().store;
+  const model = serverModel();
+  const store = model.store;
   const found = visibleTemplate(store, scope, asked.templateId);
   if (found.kind !== "found") {
     return {
@@ -177,18 +177,22 @@ export const instantiateTemplate = async (input: unknown): Promise<InstantiateTe
 
       if (body.resource === "document") {
         const { resource: _resource, ...documentBody } = body;
-        const readyBody = documentBody.styles === undefined
-          ? documentBody
-          : { ...documentBody, styles: normalizeDocumentStyleSet(documentBody.styles) };
         unit.create("documentSnapshots", {
           projectId,
           resourceId,
           revision: 0,
           role: "leader",
           part: 0,
-          body: readyBody,
+          body: documentBody,
           at
         });
+        enqueueSemanticOutboxFor(
+          model,
+          unit,
+          projectId,
+          { kind: "document", id: resourceId },
+          0
+        );
         return {
           semanticKind: "document" as const,
           result: {
@@ -213,6 +217,13 @@ export const instantiateTemplate = async (input: unknown): Promise<InstantiateTe
           body: ensureSlideDeckReady(slideDeckBody),
           at
         });
+        enqueueSemanticOutboxFor(
+          model,
+          unit,
+          projectId,
+          { kind: "slides", id: resourceId },
+          0
+        );
         return {
           semanticKind: "slides" as const,
           result: {
@@ -240,6 +251,13 @@ export const instantiateTemplate = async (input: unknown): Promise<InstantiateTe
         "sheetCells",
         materialized.cells.map((cell) => ({ projectId, resourceId, ...cell }))
       );
+      enqueueSemanticOutboxFor(
+        model,
+        unit,
+        projectId,
+        { kind: "spreadsheet", id: resourceId },
+        0
+      );
       return {
         semanticKind: "spreadsheet" as const,
         result: {
@@ -257,8 +275,5 @@ export const instantiateTemplate = async (input: unknown): Promise<InstantiateTe
     throw error;
   }
 
-  await enqueueSemanticSync({
-    ref: { kind: placed.semanticKind, id: placed.result.resourceId }
-  });
   return placed.result;
 };

@@ -14,6 +14,7 @@ import { applyOps } from "$capabilities/spreadsheet/api/submit-spreadsheet-chang
 import { validateSubmitSpreadsheetChanges } from "$capabilities/spreadsheet/api/submit-spreadsheet-changes/validate-submit-spreadsheet-changes";
 import { writeCells } from "$capabilities/spreadsheet/api/submit-spreadsheet-changes/write-cells";
 import type { SubmitSpreadsheetChangesResult } from "$capabilities/spreadsheet/types/submit-spreadsheet-changes";
+import { enqueueSemanticOutboxFor } from "$capabilities/semantic-overlay/index";
 
 type Landed = {
   readonly revision: number;
@@ -88,7 +89,8 @@ export const submitSpreadsheetChanges = async (
   const submitted = validateSubmitSpreadsheetChanges(input);
 
   const changeSet = withoutSharedReferences(submitted);
-  const store = serverModel().store;
+  const model = serverModel();
+  const store = model.store;
   const projectId = scope.projectId as Id<"projects">;
   const resourceId = changeSet.resourceId as Id<"spreadsheets">;
   const actor = { kind: "user" as const, userId: scope.userId as Id<"users"> };
@@ -194,6 +196,13 @@ export const submitSpreadsheetChanges = async (
 
     unit.update(`spreadsheets.${resourceId}.updatedAt`, at);
     unit.update(`spreadsheets.${resourceId}.updatedBy`, actor);
+    enqueueSemanticOutboxFor(
+      model,
+      unit,
+      projectId,
+      { kind: "spreadsheet", id: resourceId },
+      advanced
+    );
   });
 
   return catchUp.length === 0

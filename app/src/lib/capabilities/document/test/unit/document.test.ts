@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { beforeEach, test, vi } from "vitest";
+import type { StoreUnitOfWork } from "$model/server/store/index.server";
 
 type Row = Record<string, unknown> & { _id: string };
 
@@ -7,6 +8,8 @@ const model = vi.hoisted(() => ({
   calls: [] as string[],
   snapshots: [] as Row[],
   changeSets: [] as Row[],
+  syncJobs: [] as Row[],
+  materialJobs: [] as Row[],
   threads: [] as Row[],
   store: {
     create: (table: string, fields: unknown) => {
@@ -14,6 +17,8 @@ const model = vi.hoisted(() => ({
       const id = `${table}:${model.snapshots.length + model.changeSets.length + 1}`;
       if (table === "documentSnapshots") model.snapshots.push({ ...(fields as Row), _id: id });
       if (table === "documentChangeSets") model.changeSets.push({ ...(fields as Row), _id: id });
+      if (table === "semanticSyncJobs") model.syncJobs.push({ ...(fields as Row), _id: id });
+      if (table === "semanticMaterialJobs") model.materialJobs.push({ ...(fields as Row), _id: id });
       return id;
     },
     read: (path: string) => {
@@ -23,6 +28,12 @@ const model = vi.hoisted(() => ({
       }
       if (path === "commentThreads") {
         return { table: "commentThreads", kind: "table", rows: model.threads };
+      }
+      if (path === "semanticSyncJobs") {
+        return { table: "semanticSyncJobs", kind: "table", rows: model.syncJobs };
+      }
+      if (path === "semanticMaterialJobs") {
+        return { table: "semanticMaterialJobs", kind: "table", rows: model.materialJobs };
       }
       return { table: "documentSnapshots", kind: "table", rows: model.snapshots };
     },
@@ -40,7 +51,9 @@ const model = vi.hoisted(() => ({
         row._id === id ? { ...(value as Row), _id: id } : row
       );
     },
-    remove: (path: string) => model.calls.push(`remove ${path}`)
+    remove: (path: string) => model.calls.push(`remove ${path}`),
+    transaction: <T>(work: (unit: StoreUnitOfWork) => T): T =>
+      work(model.store as unknown as StoreUnitOfWork)
   }
 }));
 
@@ -106,6 +119,8 @@ beforeEach(() => {
   model.calls.length = 0;
   model.snapshots.length = 0;
   model.changeSets.length = 0;
+  model.syncJobs.length = 0;
+  model.materialJobs.length = 0;
   model.threads.length = 0;
 });
 

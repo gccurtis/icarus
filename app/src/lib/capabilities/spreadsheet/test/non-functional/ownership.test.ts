@@ -13,6 +13,7 @@ const model = vi.hoisted(() => ({
   variables: [] as Row[],
   formulas: [] as Row[],
   backReferences: [] as Row[],
+  semanticMaterialJobs: [] as Row[],
   minted: 0,
   tableOf(path: string): Row[] {
     const table = path.split(".")[0];
@@ -22,6 +23,7 @@ const model = vi.hoisted(() => ({
     if (table === "variables") return model.variables;
     if (table === "formulas") return model.formulas;
     if (table === "dataBackReferences") return model.backReferences;
+    if (table === "semanticMaterialJobs") return model.semanticMaterialJobs;
     return model.snapshots;
   },
   store: {
@@ -44,6 +46,20 @@ const model = vi.hoisted(() => ({
       const rows = model.tableOf(path);
       const at = rows.findIndex((row) => row._id === id);
       if (at !== -1) rows.splice(at, 1);
+    },
+    removeRows: (table: string, ids: readonly string[]) => {
+      const rows = model.tableOf(table);
+      const removed = new Set(ids);
+      for (let at = rows.length - 1; at >= 0; at -= 1) {
+        if (removed.has(rows[at]._id)) rows.splice(at, 1);
+      }
+    },
+    removeFieldFromRows: (table: string, ids: readonly string[], field: string) => {
+      const rows = model.tableOf(table);
+      const changed = new Set(ids);
+      for (const row of rows) {
+        if (changed.has(row._id)) delete row[field];
+      }
     },
     transaction: <T>(work: (unit: StoreUnitOfWork) => T): T =>
       work(model.store as unknown as StoreUnitOfWork)
@@ -102,6 +118,7 @@ beforeEach(() => {
   model.variables.length = 0;
   model.formulas.length = 0;
   model.backReferences.length = 0;
+  model.semanticMaterialJobs.length = 0;
   model.minted = 0;
 });
 
@@ -130,6 +147,7 @@ test("submitSpreadsheetChanges accepts the same change on a sheet the scope owns
   assert.equal(answer.accepted, true, JSON.stringify(answer));
   assert.equal(model.cells.length, 1);
   assert.equal(model.changeSets.length, 1);
+  assert.equal(model.semanticMaterialJobs.length, 1);
 });
 
 test("submitSpreadsheetChanges refuses a sheet id that names no row at all", async () => {

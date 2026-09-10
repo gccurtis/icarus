@@ -187,7 +187,7 @@ describe("instantiating with answers", () => {
         body: {
           resource: "slides",
           aspectRatio: "16:9",
-          theme: { colors: { text: "ink", accent: "blue" } },
+          theme: { colors: { text: "ink", accent: "blue", muted: "gray" } },
           styles: { defaultKey: "body", styles: { body: { name: "Body" } } },
           layouts: [],
           slides: [
@@ -198,8 +198,9 @@ describe("instantiating with answers", () => {
                   id: "element-1",
                   frame: { x: 0.1, y: 0.1, width: 0.8, height: 0.2 },
                   overflow: "shrink",
-                  blocks: [
-                    {
+                  content: {
+                    type: "prompt",
+                    block: {
                       id: "deck-prompt",
                       type: "prompt",
                       atoms: [{ id: "deck-prompt-a", kind: "literal", text: "" }],
@@ -208,7 +209,7 @@ describe("instantiating with answers", () => {
                       state: "idle",
                       prompt: "What shipped this winter?"
                     }
-                  ]
+                  }
                 }
               ],
               notes: []

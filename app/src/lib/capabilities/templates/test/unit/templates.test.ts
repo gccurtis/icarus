@@ -151,7 +151,7 @@ const spreadsheetBody = {
   },
   columnWidths: { B: 140 },
   rowHeights: { "2": 30 },
-  formatRules: [{ from: "A1", to: "B2", style: "money" }],
+  formatRules: [{ id: "format-rule-money", from: "A1", to: "B2", style: "money" }],
   frozenRows: 1,
   print: {
     page: {
@@ -641,17 +641,16 @@ describe("instantiation", () => {
     assert.equal(snapshot.styles.styles.body.lineHeight, 16.5);
   });
 
-  test("refuses a spreadsheet template rather than writing a sheet it cannot describe", async () => {
+  test("materializes a current spreadsheet template", async () => {
     model.tables.templates.push(template("1", "u", spreadsheetBody));
 
     const answer = await instantiateTemplate({ templateId: "templates:1" });
 
-    assert.equal(answer.accepted, false);
-    assert.equal(!answer.accepted && answer.reason, "unsupported-body");
-    assert.equal(model.tables.spreadsheets.length, 0);
-    assert.equal(model.tables.spreadsheetSnapshots.length, 0);
-    assert.equal(model.tables.sheetCells.length, 0);
-    assert.equal(model.calls.some((call) => call.startsWith("create")), false);
+    assert.equal(answer.accepted, true);
+    assert.equal(model.tables.spreadsheets.length, 1);
+    assert.equal(model.tables.spreadsheetSnapshots.length, 1);
+    assert.equal(model.tables.sheetCells.length, 2);
+    assert.equal(model.tables.semanticMaterialJobs.length, 1);
   });
 
   test("does not invent a hole-answer contract", async () => {

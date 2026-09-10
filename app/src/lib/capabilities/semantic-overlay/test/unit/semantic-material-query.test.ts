@@ -362,34 +362,6 @@ describe("semantic material query", () => {
     assert.equal(logo.matched.some((match) => match.text?.includes("Secret campaign") === true), true);
   });
 
-  it("fails closed for legacy contextual facets without contributor provenance", async () => {
-    const legacy = (state.tables.get("semanticObjects") ?? []).find(
-      (row) => row._id === "semanticObjects:logo-authored"
-    );
-    assert.ok(legacy);
-    delete legacy.scopeRefs;
-
-    const result = await querySemanticMaterials({
-      text: "secret campaign",
-      kinds: ["image"],
-      topK: 4,
-      scope: {
-        include: [{
-          select: "resources",
-          refs: [
-            { kind: "document", id: "documents:sales" },
-            { kind: "slides", id: "slideDecks:launch" }
-          ]
-        }],
-        exclude: []
-      }
-    });
-    const logo = result.hits.find((hit) => hit.material.materialId === "semanticMaterials:logo");
-
-    assert.ok(logo);
-    assert.equal(logo.matchedFacets.includes("authored"), false);
-  });
-
   it("does not call the embedding provider when scope leaves no eligible material", async () => {
     const result = await querySemanticMaterials({
       text: "anything",

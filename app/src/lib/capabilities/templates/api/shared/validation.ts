@@ -1,13 +1,6 @@
-import type {
-  TemplateBody,
-  TemplateHole
-} from "$representation/data/types/templates/template";
-import type { ResourceSet, SetTerm } from "$representation/data/types/core/resource-set";
-import { normalizeSlideDeckBody } from "$representation/data/behavior/slide-decks/normalize";
+import type { TemplateBody } from "$representation/data/types/templates/template";
 
 import type {
-  TemplateAnswers,
-  TemplateStageTarget,
   TemplateTarget
 } from "$capabilities/templates/types/templates";
 import {
@@ -21,6 +14,11 @@ import {
   validTemplateColumnSelection,
   validTemplateRowSelection
 } from "$capabilities/templates/api/shared/bodies";
+import {
+  TEMPLATE_HOLE_DESCRIPTION_LIMIT,
+  TEMPLATE_HOLE_NAME_LIMIT,
+  validTemplatedResourceSet
+} from "$capabilities/templates/api/shared/hole-validation";
 
 type Fields = Record<string, unknown>;
 
@@ -64,38 +62,8 @@ export const targetOf = (value: unknown, subject: string): TemplateTarget => {
   return value;
 };
 
-export const stageTargetOf = (value: unknown, subject: string): TemplateStageTarget => {
-  if (value !== "document" && value !== "slides") {
-    throw new Error(`templates/${subject}: target is document or slides`);
-  }
-  return value;
-};
+export { resourceIdOf, slideIdOf, stageIdOf, stageTargetOf } from "$capabilities/templates/api/shared/stage-validation";
 
-const rowIdOf = (value: unknown, subject: string, table: string, field: string): string => {
-  const id = requiredId(value, subject, field);
-  if (!new RegExp(`^${table}:[^.:\\s]+$`).test(id)) {
-    throw new Error(`templates/${subject}: ${field} is one canonical ${table} row id`);
-  }
-  return id;
-};
-
-export const stageIdOf = (value: unknown, subject: string): string =>
-  rowIdOf(value, subject, "templateStages", "stageId");
-
-export const resourceIdOf = (value: unknown, subject: string): string => {
-  const id = requiredId(value, subject, "resourceId");
-  if (!/^(documents|slideDecks):[^.:\s]+$/.test(id)) {
-    throw new Error(`templates/${subject}: resourceId is one canonical documents or slideDecks row id`);
-  }
-  return id;
-};
-
-export const slideIdOf = (value: unknown, subject: string): string => {
-  if (typeof value !== "string" || value !== value.trim() || value.length === 0 || value.length > 500) {
-    throw new Error(`templates/${subject}: slideId is an identifier`);
-  }
-  return value;
-};
 
 export const nameOf = (value: unknown, subject: string): string => {
   if (typeof value !== "string" || value.trim().length === 0) {
@@ -269,6 +237,60 @@ const validFormat = (value: unknown): boolean => {
   return true;
 };
 
+const validCellBorder = (value: unknown): boolean =>
+  isRecord(value) &&
+  hasOnlyKeys(value, ["top", "right", "bottom", "left"]) &&
+  Object.values(value).every(
+    (line) =>
+      line === undefined ||
+      (isRecord(line) &&
+        hasOnlyKeys(line, ["color", "width", "style"]) &&
+        Object.keys(line).length === 3 &&
+        validText(line.color, 1_000) &&
+        isFiniteNumber(line.width) &&
+        line.width >= 0 &&
+        line.width <= 1_000 &&
+        ["solid", "dashed", "dotted"].includes(line.style as string))
+  );
+
+const validCellFormat = (value: unknown): boolean => {
+  if (
+    !isRecord(value) ||
+    !hasOnlyKeys(value, [
+      "horizontalAlignment",
+      "verticalAlignment",
+      "fontFamily",
+      "fontSize",
+      "bold",
+      "italic",
+      "underline",
+      "strikethrough",
+      "color",
+      "background",
+      "border",
+      "valueFormat"
+    ])
+  ) {
+    return false;
+  }
+  for (const key of ["fontFamily", "color", "background"] as const) {
+    if (value[key] !== undefined && !validText(value[key], 1_000)) return false;
+  }
+  for (const key of ["bold", "italic", "underline", "strikethrough"] as const) {
+    if (value[key] !== undefined && typeof value[key] !== "boolean") return false;
+  }
+  return (
+    (value.horizontalAlignment === undefined ||
+      ["start", "center", "end", "justify"].includes(value.horizontalAlignment as string)) &&
+    (value.verticalAlignment === undefined ||
+      ["top", "middle", "bottom"].includes(value.verticalAlignment as string)) &&
+    (value.fontSize === undefined ||
+      (isFiniteNumber(value.fontSize) && value.fontSize > 0 && value.fontSize <= 1_000)) &&
+    (value.border === undefined || validCellBorder(value.border)) &&
+    (value.valueFormat === undefined || validText(value.valueFormat, 1_000, true))
+  );
+};
+
 const validTextStyle = (value: unknown): boolean => {
   if (
     !isRecord(value) ||
@@ -334,6 +356,17 @@ const validTextStyle = (value: unknown): boolean => {
   );
 };
 
+const validCellStyle = (value: unknown): boolean => {
+  if (!isRecord(value) || !validCanonicalText(value.name, 160)) return false;
+  const { name: _name, fontWeight, ...format } = value;
+  void _name;
+  return (
+    (fontWeight === undefined ||
+      (isFiniteNumber(fontWeight) && fontWeight >= 1 && fontWeight <= 1_000)) &&
+    validCellFormat(format)
+  );
+};
+
 const validStyles = (value: unknown): boolean => {
   if (
     !isRecord(value) ||
@@ -346,6 +379,21 @@ const validStyles = (value: unknown): boolean => {
   }
   return Object.entries(value.styles).every(
     ([key, style]) => validIdentifier(key) && validTextStyle(style)
+  );
+};
+
+const validCellStyles = (value: unknown): boolean => {
+  if (
+    !isRecord(value) ||
+    !hasOnlyKeys(value, ["defaultKey", "styles"]) ||
+    !validIdentifier(value.defaultKey) ||
+    !isRecord(value.styles) ||
+    Object.keys(value.styles).length > MAX_STYLES
+  ) {
+    return false;
+  }
+  return Object.entries(value.styles).every(
+    ([key, style]) => validIdentifier(key) && validCellStyle(style)
   );
 };
 
@@ -664,10 +712,10 @@ const validAtom = (value: unknown): boolean => {
   if (value.kind === "template") {
     return (
       hasOnlyKeys(value, ["id", "kind", "name", "description", "text"]) &&
-      validCanonicalText(value.name, MAX_HOLE_NAME_LENGTH) &&
+      validCanonicalText(value.name, TEMPLATE_HOLE_NAME_LIMIT) &&
       (value.description === undefined ||
         (isText(value.description) &&
-          value.description.length <= MAX_HOLE_DESCRIPTION_LENGTH &&
+          value.description.length <= TEMPLATE_HOLE_DESCRIPTION_LIMIT &&
           value.description === value.description.trim())) &&
       (value.text === undefined || validText(value.text, MAX_BLOCK_TEXT_LENGTH, true))
     );
@@ -700,10 +748,10 @@ const displayOfAtoms = (atoms: readonly unknown[]): string =>
 const validPromptHole = (value: unknown): boolean =>
   isRecord(value) &&
   hasOnlyKeys(value, ["name", "description"]) &&
-  validCanonicalText(value.name, MAX_HOLE_NAME_LENGTH) &&
+  validCanonicalText(value.name, TEMPLATE_HOLE_NAME_LIMIT) &&
   (value.description === undefined ||
     (isText(value.description) &&
-      value.description.length <= MAX_HOLE_DESCRIPTION_LENGTH &&
+      value.description.length <= TEMPLATE_HOLE_DESCRIPTION_LIMIT &&
       value.description === value.description.trim()));
 
 const validBlock = (value: unknown, depth = 0): boolean => {
@@ -896,8 +944,8 @@ const validBlock = (value: unknown, depth = 0): boolean => {
       validText(value.display, MAX_BLOCK_TEXT_LENGTH, true) &&
       value.display === displayOfAtoms(value.atoms) &&
       validMarks(value.marks, value.atoms) &&
-      (value.scope === undefined || validTemplatedSet(value.scope)) &&
-      ["idle", "fresh", "stale", "generating", "error"].includes(value.state as string) &&
+      (value.scope === undefined || validTemplatedResourceSet(value.scope)) &&
+      ["idle", "fresh", "stale", "error"].includes(value.state as string) &&
       (value.error === undefined || validText(value.error, 10_000, true)) &&
       (value.refreshedAt === undefined ||
         (isFiniteNumber(value.refreshedAt) && value.refreshedAt >= 0)) &&
@@ -1466,7 +1514,7 @@ const validSpreadsheet = (body: Fields): boolean => {
         }
         return (
           (cell.marks === undefined || validMarks(cell.marks)) &&
-          (cell.format === undefined || validFormat(cell.format)) &&
+          (cell.format === undefined || validCellFormat(cell.format)) &&
           (cell.value === undefined || validVariableValue(cell.value))
         );
       }
@@ -1502,14 +1550,15 @@ const validSpreadsheet = (body: Fields): boolean => {
     !body.formatRules.every(
       (rule) =>
         isRecord(rule) &&
-        hasOnlyKeys(rule, ["from", "to", "style", "format"]) &&
+        hasOnlyKeys(rule, ["id", "from", "to", "style", "format"]) &&
+        validIdentifier(rule.id) &&
         isText(rule.from) &&
         validTemplateAddress(rule.from) &&
         isText(rule.to) &&
         validTemplateAddress(rule.to) &&
         orderedAddressRange(rule.from, rule.to) &&
         (rule.style === undefined || validIdentifier(rule.style)) &&
-        (rule.format === undefined || validFormat(rule.format))
+        (rule.format === undefined || validCellFormat(rule.format))
     )
   ) {
     return false;
@@ -1581,7 +1630,7 @@ const validSpreadsheet = (body: Fields): boolean => {
   ) {
     return false;
   }
-  return validStyles(body.styles);
+  return validCellStyles(body.styles);
 };
 
 const assertPortableBody = (value: unknown, subject: string): void => {
@@ -1624,9 +1673,7 @@ export const bodyOf = (value: unknown, subject: string): TemplateBody => {
   assertPortableBody(value, subject);
   const raw = fieldsOf(value, subject);
   const target = targetOf(raw.resource, subject);
-  const normalized =
-    target === "slides" ? { ...normalizeSlideDeckBody(raw), resource: target } : value;
-  const body = fieldsOf(normalized, subject);
+  const body = raw;
   const valid =
     target === "document"
       ? validDocument(body)
@@ -1636,239 +1683,11 @@ export const bodyOf = (value: unknown, subject: string): TemplateBody => {
   if (!valid) {
     throw new Error(`templates/${subject}: body is not a valid ${target} template body`);
   }
-  return normalized as TemplateBody;
+  return value as TemplateBody;
 };
 
-const validSetTerm = (value: unknown): boolean => {
-  if (!isRecord(value)) return false;
-  if (value.select === "project") return Object.keys(value).length === 1;
-  if (value.select === "kinds") return validTerm(value);
-  if (value.select === "set") {
-    return (
-      hasOnlyKeys(value, ["select", "setId"]) &&
-      typeof value.setId === "string" &&
-      /^resourceSets:[^.:\s]+$/.test(value.setId)
-    );
-  }
-  return (
-    value.select === "resources" &&
-    hasOnlyKeys(value, ["select", "refs"]) &&
-    Array.isArray(value.refs) &&
-    value.refs.length <= 1_000 &&
-    value.refs.every(
-      (ref) =>
-        isRecord(ref) &&
-        hasOnlyKeys(ref, ["kind", "id"]) &&
-        validCanonicalText(ref.kind, MAX_RESOURCE_KIND_LENGTH) &&
-        validIdentifier(ref.id)
-    )
-  );
-};
+export { answersOf, holesOf, resourceSetOf, textsOf } from "$capabilities/templates/api/shared/hole-validation";
 
-export const resourceSetOf = (value: unknown, subject: string): ResourceSet => {
-  if (
-    !isRecord(value) ||
-    !hasOnlyKeys(value, ["include", "exclude"]) ||
-    !Array.isArray(value.include) ||
-    !Array.isArray(value.exclude) ||
-    value.include.length > MAX_TEMPLATE_TERMS_PER_SIDE ||
-    value.exclude.length > MAX_TEMPLATE_TERMS_PER_SIDE ||
-    !value.include.every(validSetTerm) ||
-    !value.exclude.every(validSetTerm)
-  ) {
-    throw new Error(`templates/${subject}: a resource set is an include list and an exclude list`);
-  }
-  return {
-    include: (value.include as SetTerm[]).map((term) => structuredClone(term)),
-    exclude: (value.exclude as SetTerm[]).map((term) => structuredClone(term))
-  };
-};
-
-export const answersOf = (value: unknown, subject: string): TemplateAnswers => {
-  if (!isRecord(value)) {
-    throw new Error(`templates/${subject}: answers map hole names to resource sets`);
-  }
-  const entries = Object.entries(value);
-  if (entries.length > MAX_TEMPLATE_HOLES) {
-    throw new Error(`templates/${subject}: at most ${MAX_TEMPLATE_HOLES} holes are answered`);
-  }
-  const answers: Record<string, ResourceSet> = {};
-  for (const [name, answer] of entries) {
-    if (!validCanonicalText(name, MAX_HOLE_NAME_LENGTH)) {
-      throw new Error(`templates/${subject}: every answered hole has a name`);
-    }
-    answers[name] = resourceSetOf(answer, subject);
-  }
-  return answers;
-};
-
-/** The words a caller filled the template's text holes in with. */
-export const textsOf = (value: unknown, subject: string): Readonly<Record<string, string>> => {
-  if (!isRecord(value)) {
-    throw new Error(`templates/${subject}: texts map hole names to words`);
-  }
-  const entries = Object.entries(value);
-  if (entries.length > MAX_TEMPLATE_HOLES) {
-    throw new Error(`templates/${subject}: at most ${MAX_TEMPLATE_HOLES} holes are answered`);
-  }
-  const texts: Record<string, string> = {};
-  for (const [name, words] of entries) {
-    if (!validCanonicalText(name, MAX_HOLE_NAME_LENGTH)) {
-      throw new Error(`templates/${subject}: every answered hole has a name`);
-    }
-    if (!validText(words, MAX_BLOCK_TEXT_LENGTH, true)) {
-      throw new Error(`templates/${subject}: a text answer is words`);
-    }
-    texts[name] = words as string;
-  }
-  return texts;
-};
-
-const MAX_TEMPLATE_HOLES = 100;
-const MAX_TEMPLATE_TERMS_PER_SIDE = 100;
-const MAX_TEMPLATE_KINDS_PER_TERM = 100;
-const MAX_HOLE_NAME_LENGTH = 160;
-const MAX_HOLE_LABEL_LENGTH = 500;
-const MAX_HOLE_DESCRIPTION_LENGTH = 4_000;
-const MAX_RESOURCE_KIND_LENGTH = 160;
-
-const validTerm = (value: unknown): boolean => {
-  if (!isRecord(value)) return false;
-  if (value.select === "project") {
-    return hasOnlyKeys(value, ["select"]) && Object.keys(value).length === 1;
-  }
-  if (value.select === "hole") {
-    return (
-      hasOnlyKeys(value, ["select", "name"]) &&
-      Object.keys(value).length === 2 &&
-      validCanonicalText(value.name, MAX_HOLE_NAME_LENGTH)
-    );
-  }
-  if (value.select === "set") {
-    return (
-      hasOnlyKeys(value, ["select", "setId"]) &&
-      Object.keys(value).length === 2 &&
-      typeof value.setId === "string" &&
-      /^resourceSets:[^.:\s]+$/.test(value.setId)
-    );
-  }
-  if (
-    value.select !== "kinds" ||
-    !hasOnlyKeys(value, ["select", "kinds"]) ||
-    Object.keys(value).length !== 2 ||
-    !Array.isArray(value.kinds) ||
-    value.kinds.length === 0 ||
-    value.kinds.length > MAX_TEMPLATE_KINDS_PER_TERM ||
-    !value.kinds.every((kind) => validCanonicalText(kind, MAX_RESOURCE_KIND_LENGTH))
-  ) {
-    return false;
-  }
-  return new Set(value.kinds.map((kind) => kind.toLocaleLowerCase())).size === value.kinds.length;
-};
-
-const validTemplatedSet = (value: unknown): boolean =>
-  isRecord(value) &&
-  hasOnlyKeys(value, ["include", "exclude"]) &&
-  Object.keys(value).length === 2 &&
-  "include" in value &&
-  "exclude" in value &&
-  Array.isArray(value.include) &&
-  value.include.length <= MAX_TEMPLATE_TERMS_PER_SIDE &&
-  value.include.every(validTerm) &&
-  Array.isArray(value.exclude) &&
-  value.exclude.length <= MAX_TEMPLATE_TERMS_PER_SIDE &&
-  value.exclude.every(validTerm);
-
-/**
- * A rule somebody just built, before it is normalised.
- *
- * It may exclude things and it may name particular resources, neither of which a
- * stored default can carry. Both become one `set` term naming a bound row, which
- * is why the wire shape is wider than the stored one.
- */
-const validChosenSet = (value: unknown): boolean =>
-  isRecord(value) &&
-  hasOnlyKeys(value, ["include", "exclude"]) &&
-  Object.keys(value).length === 2 &&
-  Array.isArray(value.include) &&
-  value.include.length <= MAX_TEMPLATE_TERMS_PER_SIDE &&
-  value.include.every((term) => validTerm(term) || validSetTerm(term)) &&
-  Array.isArray(value.exclude) &&
-  value.exclude.length <= MAX_TEMPLATE_TERMS_PER_SIDE &&
-  value.exclude.every((term) => validTerm(term) || validSetTerm(term));
-
-export const holesOf = (
-  value: unknown,
-  subject: string,
-  chosen = false
-): readonly TemplateHole[] => {
-  if (!Array.isArray(value)) throw new Error(`templates/${subject}: holes is a list`);
-  if (value.length > MAX_TEMPLATE_HOLES) {
-    throw new Error(`templates/${subject}: a template has at most ${MAX_TEMPLATE_HOLES} holes`);
-  }
-  const seen = new Set<string>();
-  const declared = new Set<string>();
-  for (const hole of value) {
-    if (
-      !isRecord(hole) ||
-      !hasOnlyKeys(hole, ["name", "label", "description", "kind", "default", "text"])
-    ) {
-      throw new Error(`templates/${subject}: a hole has only represented fields`);
-    }
-    if (hole.kind !== undefined && hole.kind !== "scope" && hole.kind !== "text") {
-      throw new Error(`templates/${subject}: a hole is answered with a scope or with text`);
-    }
-    if (hole.kind === "text" && hole.default !== undefined) {
-      throw new Error(`templates/${subject}: a text hole has no default scope`);
-    }
-    if (hole.text !== undefined) {
-      if (hole.kind !== "text") {
-        throw new Error(`templates/${subject}: only a text hole has default words`);
-      }
-      if (!validText(hole.text, MAX_BLOCK_TEXT_LENGTH, true)) {
-        throw new Error(`templates/${subject}: a hole's default words are text`);
-      }
-    }
-    if (!validCanonicalText(hole.name, MAX_HOLE_NAME_LENGTH)) {
-      throw new Error(`templates/${subject}: every hole has a name`);
-    }
-    if (!validCanonicalText(hole.label, MAX_HOLE_LABEL_LENGTH)) {
-      throw new Error(`templates/${subject}: every hole has a label`);
-    }
-    if (
-      hole.description !== undefined &&
-      (!isText(hole.description) ||
-        hole.description.length > MAX_HOLE_DESCRIPTION_LENGTH ||
-        hole.description !== hole.description.trim())
-    ) {
-      throw new Error(`templates/${subject}: a hole description is text`);
-    }
-    if (
-      hole.default !== undefined &&
-      !(chosen ? validChosenSet(hole.default) : validTemplatedSet(hole.default))
-    ) {
-      throw new Error(`templates/${subject}: a hole default is a templated resource set`);
-    }
-    const key = hole.name.toLocaleLowerCase();
-    if (seen.has(key)) throw new Error(`templates/${subject}: hole names are unique`);
-    seen.add(key);
-    declared.add(hole.name);
-  }
-  for (const hole of value as Fields[]) {
-    if (!isRecord(hole.default)) continue;
-    const terms = [
-      ...((hole.default.include as unknown[]) ?? []),
-      ...((hole.default.exclude as unknown[]) ?? [])
-    ];
-    for (const term of terms) {
-      if (isRecord(term) && term.select === "hole" && !declared.has(term.name as string)) {
-        throw new Error(`templates/${subject}: a hole default names a declared hole`);
-      }
-    }
-  }
-  assertStoredValue(value, subject);
-  return value as readonly TemplateHole[];
-};
 
 export const has = (fields: Fields, field: string): boolean =>
   Object.prototype.hasOwnProperty.call(fields, field);
