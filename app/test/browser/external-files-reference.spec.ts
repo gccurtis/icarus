@@ -1,4 +1,4 @@
-import { expect, test, type Page, type TestInfo } from "@playwright/test";
+import { expect, test, type Page, type TestInfo } from "./fixtures";
 
 let unexpected: string[] = [];
 
@@ -36,7 +36,7 @@ test("external-files overview describes the implemented architecture", async ({ 
   await expect(page.locator(".diagram-error")).toHaveCount(0);
   await expect(page.locator(".truth-grid")).toContainText("External is a permanent category singleton");
   await expect(page.locator(".truth-grid")).toContainText("External reads the admitted File");
-  await expect(page.locator(".truth-grid")).toContainText("standalone image");
+  await expect(page.locator(".truth-grid")).toContainText("images use the native-visual material lane");
   await expect(page.locator('.page-grid a[href="/demo/external-files/ingestion"]')).toHaveAttribute(
     "href",
     "/demo/external-files/ingestion"
@@ -121,8 +121,9 @@ test("implementation page records live discoveries and final concessions", async
   await expect(page.locator(".learning-grid")).toContainText("multipart/form-data");
   await expect(page.locator(".learning-grid")).toContainText("indexed hidden relativePaths");
   await expect(page.locator(".learning-grid")).toContainText("externalFileStorage");
-  await expect(page.locator(".learning-grid")).toContainText("Status-bar name resolution");
-  await expect(page.locator(".concession-grid")).toContainText("No cross-store transaction");
+  await expect(page.locator(".learning-grid")).toContainText("Store atomicity");
+  await expect(page.locator(".concession-grid")).toContainText("Filesystem backend");
+  await expect(page.locator(".reference-table")).toContainText("one Store.transaction");
   await expect(page.getByText("The name shown to the user is External")).toBeVisible();
 });
 

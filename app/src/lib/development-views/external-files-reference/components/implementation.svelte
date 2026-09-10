@@ -12,70 +12,55 @@
     autonumber
     actor User
     participant UI as External content
-    participant Cap as external-files capability
-    participant Admit as External native admission
+    participant Cap as external-files
     participant Blob as externalFileStorage
-    participant Rows as representation store
-    participant Sem as semantic-overlay
-    participant Cache as remote query caches
+    participant Tx as Store.transaction
+    participant Sem as semantic outbox
 
     User->>UI: select files or browser directory
-    UI->>Cap: multipart File[] + relativePaths[]
-    Cap->>Cap: scope, limits, path admission and bounded byte read
-    loop each candidate
-      Cap->>Admit: derive hash, size, storageId, MIME and subkind
-      Admit-->>Cap: authoritative descriptor
-      Cap->>Blob: put verified descriptor plus complete bytes
-      Blob-->>Cap: hash + storageId + size + reused
-      alt project path already exists
-        Cap->>Rows: compare existing hash and admit row
-        Rows-->>Cap: reuse or path conflict
-      else new project path
-        Cap->>Rows: create externalFiles row at revision 1
-        Rows-->>Cap: externalFileId
-      end
-      Cap->>Rows: append uploaded History event
-      opt code, CSV/TSV or image material is eligible
-        Cap->>Sem: enqueue committed resource reference
-        Sem-->>Cap: queued ids or recoverable error
-      end
+    UI->>Cap: multipart File[] + indexed relativePaths[]
+    Cap->>Cap: scope, limits, canonical path, bounded bytes
+    Cap->>Cap: signature-first descriptor
+    Cap->>Blob: put descriptor + bytes
+    Blob-->>Cap: canonical blob + recovery token
+    Cap->>Tx: uniqueness + row + History + forget + outbox
+    Tx->>Sem: durable exact/material/no-op intent
+    alt Store rolls back
+      Cap->>Blob: discard publication + collect orphan
+    else Store commits
+      Cap->>Blob: claim publication for row id
+    else Store result unavailable after commit
+      Cap->>Blob: leave recovery token for restart
     end
-    Cap-->>UI: mixed uploaded / reused / rejected receipt
-    UI->>Cache: refresh library + project resource index
-    UI->>UI: focus first successful row and inspect file`;
+    Cap-->>UI: per-file uploaded / reused / rejected
+    UI->>UI: refresh singleton and focus success`;
 
   const lifecycle = `stateDiagram-v2
     [*] --> Candidate
-    Candidate --> Rejected: invalid form, limit, path, read, or storage
-    Candidate --> DescriptorReady: External derives native descriptor
-    DescriptorReady --> BlobReady: storage verifies and publishes receipt
-    BlobReady --> Rejected: same path, different hash
-    BlobReady --> ExistingRow: same path, same hash
-    BlobReady --> Represented: new externalFiles row
-    ExistingRow --> SemanticQueued: supported lane
-    ExistingRow --> ManagedOnly: no supported lane
-    Represented --> SemanticQueued: supported lane
-    Represented --> ManagedOnly: no supported lane
-    SemanticQueued --> SemanticCurrent: queue host publishes
-    SemanticQueued --> SemanticFailed: adapter or provider failure
-    SemanticFailed --> SemanticQueued: backfill after correction
-    SemanticCurrent --> Replacing: user selects Re-upload
-    Replacing --> SemanticQueued: same row id, new receipt and revision
-    Replacing --> SemanticCurrent: replacement rejected; original row remains
-    SemanticCurrent --> SemanticQueued: local rename changes semantic name
-    Represented --> DeleteRefused: represented usage exists or revision changed
-    ManagedOnly --> DeleteRefused: represented usage exists or revision changed
-    SemanticCurrent --> DeleteRefused: represented usage exists or revision changed
-    Represented --> Retiring: confirmed and unused
-    ManagedOnly --> Retiring: confirmed and unused
-    SemanticCurrent --> Retiring: confirmed and unused
-    Retiring --> Removed: semantic retirement + row removal + History
-    Removed --> BlobRetained: another row shares hash or removal fails safely
-    Removed --> BlobRemoved: no row shares hash and remove succeeds
-    BlobRetained --> [*]
-    BlobRemoved --> [*]
-    Rejected --> [*]
-    DeleteRefused --> Represented`;
+    Candidate --> Rejected: scope, path, size, read, or storage failure
+    Candidate --> Published: verified canonical bytes + recovery copy
+    Published --> RolledBack: Store transaction rejects
+    Published --> Represented: row + History + semantic intent commit
+    RolledBack --> Collected: discard unclaimed publication
+    Represented --> Claimed: native row claim finalized
+    Represented --> RestartRecoverable: interrupted after Store commit
+    RestartRecoverable --> Claimed: Store recovery then reconcile
+    Claimed --> ExactQueued: text
+    Claimed --> MaterialQueued: code, CSV/TSV, or image
+    Claimed --> ManagedOnly: other formats
+    ExactQueued --> Current: queue worker publishes
+    MaterialQueued --> Current: queue worker publishes
+    ExactQueued --> Failed: worker/provider failure
+    MaterialQueued --> Failed: worker/provider failure
+    Claimed --> Mutating: rename, move, context, or re-upload
+    Current --> Mutating
+    Mutating --> Claimed: atomic revision + History + outbox
+    Claimed --> DeleteRefused: stale revision or live typed reference
+    Current --> DeleteRefused: stale revision or live typed reference
+    Claimed --> Removed: atomic forget + outbox + History + row delete
+    Current --> Removed: atomic forget + outbox + History + row delete
+    Removed --> BlobRetained: another claim shares hash
+    Removed --> BlobRemoved: no claimant after quarantine recheck`;
 
   const workspace = `flowchart TB
     classDef permanent fill:#201f35,stroke:#806fa9,color:#f6ebe2
@@ -83,22 +68,21 @@
     classDef state fill:#e8f0ef,stroke:#347f78,color:#172232
     classDef later fill:#fff1df,stroke:#d06b32,color:#492c17,stroke-dasharray:5 4
 
-    TAB["Permanent tab<br/>category = external<br/>no resourceId"]:::permanent
     OPEN["open({ category: external, focus? })"]:::state
+    TAB["Permanent External tab<br/>category/id = external<br/>no resourceId"]:::permanent
     CONTENT["Content · external.library<br/>Table / Directory · upload · search"]:::surface
     CONTEXT["Context<br/>Overview · durable History"]:::surface
     SELECT["Selection<br/>external-file id<br/>or external-directory path"]:::state
-    INSPECT["Inspector<br/>external.file · external.directory<br/>rename · re-upload · move · delete"]:::surface
-    STATUS["Status bar<br/>subject-capability name read"]:::surface
-    OLD["Older workspace snapshot"]:::state
-    ADOPT["adopt missing singleton<br/>preserve existing landings"]:::state
-    FIND["Findings manager adapter<br/>explicitly deferred"]:::later
+    INSPECT["Inspector manager<br/>file or directory"]:::surface
+    STATUS["Status bar<br/>name via owning capability"]:::surface
+    SNAP["current workspace snapshot<br/>focus + selection"]:::state
+    FIND["Findings adapter<br/>deferred"]:::later
 
-    OLD --> ADOPT --> TAB
     OPEN --> TAB --> CONTENT
     TAB --> CONTEXT
     CONTENT --> SELECT --> INSPECT
     SELECT --> STATUS
+    TAB --> SNAP --> TAB
     FIND -. later .-> CONTENT
     FIND -. later .-> INSPECT`;
 
@@ -108,165 +92,140 @@
     classDef material fill:#fff1df,stroke:#d06b32,color:#492c17
     classDef off fill:#f1efe9,stroke:#aaa194,color:#615b54
 
-    FILE["Committed external file<br/>External-owned bytes + row revision"]:::source
-    PROFILE{"text/code,<br/>CSV/TSV, or image?"}:::material
-    MJOB["semanticMaterialJob<br/>one resource material"]:::material
-    CODE["plain text / source code<br/>code profile + bounded source descriptor"]:::material
-    DATA["CSV/TSV<br/>profile + authored context<br/>+ optional descriptor"]:::material
-    IMAGE["image<br/>direct original visual vector<br/>no descriptor"]:::material
-    NONE["unsupported<br/>no poison job"]:::off
-    STATUS["readSemanticStatus<br/>not-started · queued · running<br/>failed · stale · current"]:::source
-    REVIEW["File Inspector<br/>conditional status, profile<br/>and summary review"]:::source
-    RETIRE["retireSemanticResource<br/>archive + remove + reindex"]:::source
+    FILE["Committed External row<br/>revision + content hash"]:::source
+    KIND{"current subkind"}:::source
+    TEXT["text / Markdown<br/>verified UTF-8"]:::exact
+    EXACT["exact semantic source<br/>quoteable locators"]:::exact
+    CODE["programming source<br/>code profile"]:::material
+    DATA["CSV / TSV<br/>profile + authored context"]:::material
+    IMAGE["image<br/>original pixels"]:::material
+    MAT["material facets<br/>optional description"]:::material
+    NONE["PDF / Office / audio / video / unknown<br/>managed only"]:::off
+    REVIEW["Inspector<br/>status always truthful<br/>description only when present"]:::source
 
-    FILE --> PROFILE
-    PROFILE -->|code| CODE --> MJOB --> STATUS
-    PROFILE -->|CSV / TSV| DATA --> MJOB
-    PROFILE -->|image| IMAGE --> MJOB
-    PROFILE -->|no| NONE
-    NONE --> STATUS
-    STATUS --> REVIEW
-    FILE -->|delete| RETIRE`;
+    FILE --> KIND
+    KIND -->|text| TEXT --> EXACT --> REVIEW
+    KIND -->|code| CODE --> MAT --> REVIEW
+    KIND -->|data| DATA --> MAT
+    KIND -->|image| IMAGE --> MAT
+    KIND -->|other| NONE --> REVIEW`;
 
   const discoveries = [
     {
-      stage: "Browser upload",
-      assumption: "Spreading the SvelteKit remote form attributes was enough for File inputs.",
-      observed: "The enhanced form rejects file fields unless the HTML form explicitly declares multipart/form-data.",
-      change: "Both file and folder forms now set enctype=\"multipart/form-data\". The browser test locks the real transport boundary.",
-      effect: "Upload works in enhanced and native form paths without browser-dependent serialization."
+      stage: "Browser transport",
+      assumption: "Remote-form bindings alone would serialize File values and folder metadata.",
+      observed: "Enhanced submission requires multipart/form-data, and webkitRelativePath is not a successful form control.",
+      change: "Both upload forms declare multipart encoding and render indexed hidden relativePaths controls aligned with File inputs.",
+      effect: "Chromium preserves nested directory paths through upload and reload."
     },
     {
-      stage: "Folder path serialization",
-      assumption: "Assigning an aligned relativePaths array through the remote-form fields object would make directory paths part of the request.",
-      observed: "The browser serialized only successful DOM controls. Files arrived, but nested webkitRelativePath values silently collapsed to leaf names.",
-      change: "The Content view snapshots every browser relative path and renders one indexed hidden relativePaths control beside each selected File.",
-      effect: "A real directory tree reaches the capability with stable File/path index alignment; Chromium proves nested paths survive upload and reload."
-    },
-    {
-      stage: "Receipt handling",
-      assumption: "A remote form result could be consumed once by comparing object identity in a Svelte effect.",
-      observed: "Reactive result snapshots can be proxies with fresh identity; equality produced warnings and an effect update-depth loop.",
-      change: "The view compares a serializable receipt signature and keeps the latest result as raw immutable state.",
-      effect: "One submission causes one focus transition and the most recent file/folder receipt stays visible."
+      stage: "Reactive receipts",
+      assumption: "Remote form result object identity could identify a newly completed submission.",
+      observed: "Reactive proxy snapshots can have fresh identities, producing repeat consumption and an update loop.",
+      change: "The library consumes one stable serialized receipt signature and stores immutable result data.",
+      effect: "One submission creates one focus transition and one persistent mixed-result notice."
     },
     {
       stage: "Directory selection",
-      assumption: "A focus-restoration effect could always realign Inspector selection with the tab's file focus.",
-      observed: "Selecting a virtual directory was immediately overwritten by the older selected-file focus, so the directory Inspector flashed and vanished.",
-      change: "Restoration now yields while selection.kind is external-directory; file focus is used only when no directory subject is active.",
-      effect: "Folder selection is stable, restorable library focus remains useful, and directory rename/move can be tested in the real surface."
+      assumption: "File-focus restoration could always run after a library refresh.",
+      observed: "It immediately replaced a deliberate virtual-directory selection.",
+      change: "Restoration yields while the selected subject is an external directory.",
+      effect: "Directory inspection, rename, and move remain stable."
     },
     {
-      stage: "Launcher integration",
-      assumption: "Adding every External row to the shared resource index was sufficient for New Tab search and Recent.",
-      observed: "File cards had no opening target, and one directory upload filled all eight Recent slots with manager-only files, hiding ordinary editor work.",
-      change: "New Tab file results now open the External singleton with file focus. Search keeps every file, while Recent keeps only the newest file entry for the manager-only family.",
-      effect: "A file launcher reaches the real manager without creating an editor tab, and one batch cannot monopolize the project recency shelf."
+      stage: "Native ownership",
+      assumption: "A material model could continue serving as a general uploaded-byte service.",
+      observed: "That made a downstream interpretation layer own hashing, publication, removal, and file lifecycle.",
+      change: "External derives descriptors; externalFileStorage became the only native-I/O owner; all current consumers were ported and material-content was removed.",
+      effect: "Byte lifecycle and semantic interpretation now have explicit, testable boundaries."
     },
     {
-      stage: "Status bar",
-      assumption: "Adding externalFiles to the generic name table would make selected-file labels work.",
-      observed: "The generic store reader intentionally rejects externalFiles because subject data must pass through its owning capability.",
-      change: "Status-bar name resolution now calls readExternalFile, mirroring the existing Template special case.",
-      effect: "The status bar displays the local file name without weakening the generic store allowlist."
+      stage: "Crash boundary",
+      assumption: "Publish-first plus best-effort cleanup and a process mutex were sufficient.",
+      observed: "A process can stop after either Store or filesystem commitment, and another process can publish while GC scans rows.",
+      change: "Fsynced publication copies, per-row claims, quarantine/recheck removal, ambiguous-commit settlement, and startup reconciliation now bridge the stores.",
+      effect: "The mutex is only an optimization; committed rows win and true orphans converge away."
     },
     {
-      stage: "Native-byte ownership",
-      assumption: "The existing materialContent object could remain a general blob service and calculate native identity for External.",
-      observed: "That made the downstream interpretation layer own hashing, storage, deletion, and concurrency for an unrelated source-resource lifecycle.",
-      change: "material-content was removed. External now derives its complete native descriptor, while a narrow externalFileStorage model only verifies, publishes, reads, and removes that descriptor.",
-      effect: "The semantic material lane receives an admitted resource reference and can focus on profiles, summaries, and embeddings instead of byte management."
+      stage: "Store atomicity",
+      assumption: "History and semantic retirement/enqueue could follow the row write.",
+      observed: "Every follow-up creates a crash point where lifecycle truth diverges.",
+      change: "Row/CAS, path uniqueness, History, semantic forget, and outbox now share one Store.transaction for every mutation.",
+      effect: "Failpoint tests prove rollback and restart recovery preserve one revision/history/outbox decision."
     },
     {
-      stage: "Browser isolation",
-      assumption: "A disposable represented row directory was sufficient to isolate end-to-end upload tests.",
-      observed: "External native bytes have an independent lifecycle and would otherwise survive browser runs.",
-      change: "Runtime accepts ICARUS_EXTERNAL_FILE_DIRECTORY; browser-server provisions a second disposable directory while configured legacy storage remains read-compatible.",
-      effect: "System tests upload, replace, download, and delete real bytes without polluting development storage."
+      stage: "Text classification",
+      assumption: "Prose and source code could share a convenient textual material family.",
+      observed: "Prose needs exact quoteability while source code needs structural profiling; one family weakens both contracts.",
+      change: "Text/Markdown is current subkind text in the exact lane; programming source is current subkind code in the material lane.",
+      effect: "There are no aliases or canonicalization fallbacks, and each semantic lane receives the right source shape."
     },
     {
-      stage: "Semantic eligibility",
-      assumption: "Plain text needed a separate managed-only subkind while source code had a material profile, and External text/code might also enter the exact lane.",
-      observed: "That split the same textual byte boundary into two policies, denied useful summaries to ordinary text, and duplicated source files across semantic concepts the product does not promise.",
-      change: "External exact ingestion was removed. Plain text and source code now canonicalize to externalFile::code and one bounded code-profile material; a 64 KB source excerpt feeds its descriptor. CSV/TSV remains data with authored context, and standalone images use only their original visual vector.",
-      effect: "There is one textual delegation path, legacy text rows migrate on read, summary text is separately embedded from deterministic profile facets, and image meaning is not diluted by generated text."
+      stage: "Signature authority",
+      assumption: "Canonical file extensions could precede all other hints.",
+      observed: "A PDF can be named .txt and declared text/plain, which would otherwise enter exact processing.",
+      change: "Recognized byte signatures take precedence over caller MIME and filename classification.",
+      effect: "Mislabelled active/binary content remains attachment-only and cannot poison a text lane."
     },
     {
-      stage: "Re-upload identity",
-      assumption: "A same-path different-hash conflict was enough; replacement lineage could remain future work.",
-      observed: "Users need to update referenced content without deleting the object or changing every reference.",
-      change: "The file Inspector now has an explicit Re-upload form. It CAS-checks the row, publishes candidate bytes, retires old semantics, updates the same id/revision, queues supported meaning, and reclaims the previous unshared blob.",
-      effect: "Upload remains collision-safe, while re-upload is a deliberate same-object content update with a stable URL and references."
+      stage: "Directory mutation",
+      assumption: "A directory view could rename descendants one file at a time.",
+      observed: "Partial relocation is not a coherent directory operation and concurrent descendants make a single-row revision insufficient.",
+      change: "A token covers the complete descendant id/revision/path set; all destinations validate, then all row/history/outbox changes commit together.",
+      effect: "A folder is still a projection, but directory relocation is atomic."
     },
     {
-      stage: "Directory management",
-      assumption: "Relative paths could be displayed as folder groupings without needing a mutation contract.",
-      observed: "A useful directory view needs rename/move, but creating durable folder rows would introduce a second hierarchy to synchronize.",
-      change: "Directories are projected from canonical paths and carry an opaque token over descendant id/revision/path. A collision-checked store.replaceRows commit rewrites every descendant atomically.",
-      effect: "People can manage a mock directory hierarchy while native blobs remain content-addressed and no folder entity can drift."
+      stage: "Deletion references",
+      assumption: "A short list of likely resource tables could protect common uses.",
+      observed: "References also live in leaders, nested content, scopes, jobs, research, comments, and formula values, while historical copies must not block.",
+      change: "An exhaustive table policy and typed traversal cover every current identity-bearing location and distinguish by-value history/caches.",
+      effect: "New tables require an explicit policy at compile time and deletion never relies on recursive string matching."
     },
     {
-      stage: "Deletion",
-      assumption: "The reference originally proposed tombstones, a grace period, and later garbage collection.",
-      observed: "No tombstone/audit scheduler exists in this architecture, but the store can scan every external row by hash synchronously.",
-      change: "Deletion refuses represented usage, retires semantics, rechecks revision/usage, hard-deletes the row, then immediately removes only an unshared blob.",
-      effect: "The behavior is complete and testable now; a failed byte removal leaves a safe orphan and is reported as retained-after-error."
+      stage: "Inspector truth",
+      assumption: "Every semantically eligible file could reserve a summary section.",
+      observed: "Exact text has no generated summary, images intentionally keep a pure visual vector, and descriptor generation can be disabled or fail.",
+      change: "Semantic status is shown for the applicable lane; generated descriptions render only when data exists.",
+      effect: "The manager never invents a summary or implies unsupported parsing."
     },
     {
-      stage: "Legacy rows",
-      assumption: "New provenance and revision fields could become required immediately.",
-      observed: "The represented seed and existing installations can contain the earlier externalFiles shape.",
-      change: "Table additions are optional; strict capability admission derives originalName/path/subkind, size=null, updater=creator, and revision=0 fallbacks.",
-      effect: "Old valid files remain readable while every new upload writes the complete shape."
+      stage: "UI architecture",
+      assumption: "One large library procedure module and inline async handlers were acceptable for a single surface.",
+      observed: "State lifetime, queries, formatting, and effect chains became coupled and violated current architecture checks.",
+      change: "Library/file/directory state is instance-owned; pure query modules and named procedures/effects split each entry chain.",
+      effect: "External is live with zero architecture findings and no new baseline debt."
     },
     {
-      stage: "History context",
-      assumption: "A current-row Activity projection was sufficient for recency.",
-      observed: "It erased deletions and could not distinguish initial upload, re-upload, rename, move, and dataset-context changes.",
-      change: "The Policy view was removed and Activity became History, backed by scoped activity rows appended by each lifecycle procedure and retained after file deletion.",
-      effect: "Context stays library-wide and gives a truthful durable lifecycle record instead of reconstructing history from surviving rows."
-    },
-    {
-      stage: "Blob reclamation race",
-      assumption: "Scanning externalFiles for a shared hash immediately before removal was enough to protect an in-flight upload.",
-      observed: "An upload can publish a hash before creating its row; deletion could see no claimant in that interval and remove the just-published bytes.",
-      change: "Upload/re-upload publication and row claims, plus delete/reclamation, share externalFileStorage's process-level mutation lease.",
-      effect: "The process-local represented store cannot create a successful row whose native blob was concurrently reclaimed."
+      stage: "Fixture admission",
+      assumption: "Every development leader already used the represented current schema declared by its TypeScript type.",
+      observed: "Two seeded slide-deck leaders still placed blocks directly on elements and omitted layout ids, which a typed reference walk exposed at runtime.",
+      change: "The fixtures were reset to content-based slide elements and explicit layout ids; no fallback shape was added to External's traversal.",
+      effect: "Browser data and production types now agree, and complete reference safety stays typed without preserving a legacy reader."
     }
   ] as const;
 
-  const concessions = [
-    ["Buffered request", "Remote forms materialize each File as an ArrayBuffer before External admission. The enforced 50 MB/file and 250 MB/batch limits make this finite, but it is not resumable or streaming upload."],
-    ["No cross-store transaction", "External native storage, represented JSON tables, semantic tables, and History rows cannot commit together. Ordering and compensation prevent dangling resource rows; rare cleanup or event-append failure can leave safe recoverable state."],
-    ["Process-local lease", "The storage mutation lease closes upload/delete races inside one server process. A multi-process deployment would need a shared lock, transactional object-store claim system, or durable claim record."],
-    ["Immediate physical GC", "There is no tombstone or retention window. After durable History is appended, the file row is hard-deleted and a global externalFiles hash scan protects shared bytes before physical removal."],
-    ["Explicit worker-host gap", "Jobs and backfill procedures are durable and coalesced, but this branch does not deploy an always-on queue host. The Inspector intentionally has no manual refresh button; queued status remains honest until an operational host runs."],
-    ["Partial media sniffing", "PNG, JPEG, GIF, WebP, PDF, and ZIP signatures override weak claims; known textual/code and data extensions override arbitrary browser MIME. Other families retain a sanitized declared type and remain attachment-only."],
-    ["No inline media experiences", "External manages files. It does not preview PDF/image/audio/video, render spreadsheets, or edit code. Native download is the content action."],
-    ["Re-upload, not version browser", "Re-upload advances the same row and preserves History, but there is no UI to browse or restore prior byte revisions. An unshared predecessor blob is reclaimed immediately."],
-    ["Legacy storage compatibility", "New bytes publish under data/external-files. Reads and removal also address the prior data/materials directory so pre-boundary rows remain usable; there is no eager migration job."],
-    ["Findings excluded", "Findings are not implemented in this slice. The category can gain a second managed-kind adapter later without changing the stable-tab identity."]
+  const boundaries = [
+    ["Buffered upload", "Remote forms materialize each File. Limits of 50 MB/file, 250 MB/batch, and 100 files bound the work; upload is not resumable or streaming."],
+    ["Provider-dependent meaning", "Outbox/queue/lease intent is durable, but embeddings and generated descriptions require configured providers and a worker host. Ingestion does not wait for either."],
+    ["Managed, not viewed", "There is no PDF/Office parser, archive extraction, OCR, preview, media playback, transcription, code editor, or image editor. Download is the native-content action."],
+    ["No version browser", "Re-upload retains the External identity and durable History, but the UI cannot browse or restore predecessor bytes after an unshared blob is collected."],
+    ["Filesystem backend", "The current publication/claim/quarantine protocol is safe for processes sharing this repository. A future object-store implementation must preserve equivalent conditional claims."],
+    ["Findings deferred", "Findings are not part of this implementation. They can later add an External-managed adapter without changing singleton identity or making files into editors."]
   ] as const;
 
   const actualContract = [
-    ["Upload limit", "100 files · 50,000,000 bytes each · 250,000,000 bytes total · 512 UTF-8 path bytes"],
-    ["Path", "NFC; slash-normalized; relative; no empty, dot, dot-dot, NUL, or drive-root segment"],
-    ["Project identity", "externalFiles:<UUID>; row revision begins at 1 for new uploads"],
-    ["Native identity", "_storage:<lowercase SHA-256>; actual size comes from received bytes"],
-    ["Descriptor owner", "External derives SHA-256, actual size, _storage:<hash>, canonical media type, and subkind before storage I/O"],
-    ["Retry", "same normalized path + same hash → reused row; same path + different hash → path conflict and explicit Re-upload guidance"],
-    ["Rename", "compare baseRevision; update local name and path leaf; preserve original upload name/bytes; revision + 1; retire/requeue supported material"],
-    ["Move file", "compare baseRevision; normalize full destination; reject collisions; update name/path and revision"],
-    ["Move directory", "compare opaque descendant token; reject self/descendant/collision destinations; replace all member rows in one table commit"],
-    ["Re-upload", "compare baseRevision; preserve id/name/path/original name; replace native receipt; revision + 1; retire/requeue material; reclaim old unshared hash"],
-    ["Delete", "compare revision; refuse references; retire semantics; recheck; hard-delete; append History; scan hashes; remove only when unshared"],
-    ["Download", "project-authorized GET; max 50,000,000-byte response; attachment; private/no-cache; ranges; SHA-256 ETag; nosniff; CSP sandbox"],
-    ["Exact semantics", "unsupported for every External file kind; legacy external exact sources are always stale"],
-    ["Material semantics", "plain text/source → externalFile::code, bounded code profile and 64 KB source-backed descriptor; CSV/TSV → bounded profile/authored context/optional descriptor; image → direct original visual vector only"],
-    ["Selection", "workspace Selection is external-file id or external-directory path; tab target remains category external"],
-    ["Context", "Overview = aggregate; History = durable project lifecycle events; there is no Policy view"],
-    ["Inspector", "top actions Rename/Re-upload/Download/Move/Delete; double-click name/path; Details; References; conditional dataset context and material review; no hash"]
+    ["Schema", "one strict required External row; no migration, alias, synthesized default, or fallback reader"],
+    ["Upload", "100 files · 50,000,000 bytes/file · 250,000,000 bytes/batch · 512 UTF-8 path bytes"],
+    ["Path", "NFC, relative, slash-normalized, no control/empty/dot/dot-dot/drive-root segment; same rule for every move/rename"],
+    ["Native identity", "_storage:<lowercase SHA-256>; hash and actual size derived from received bytes"],
+    ["Publication", "fsynced recovery copy + immutable canonical link + durable row claim; startup reconciles after Store recovery"],
+    ["Mutation", "one Store.transaction for row/CAS/uniqueness/History/forget/outbox; cleanup only after commit"],
+    ["Directory move", "one descendant-set token and one transaction for every affected row"],
+    ["References", "typed exhaustive live traversal; historical by-value records and transient focus do not block"],
+    ["Semantics", "prose exact; source code material; CSV/TSV material with optional context; image native visual; remaining formats managed only"],
+    ["Download", "authorized attachment, safe dual filename, max response, single range, SHA-256 ETag, nosniff, sandbox CSP"],
+    ["Selection", "external-file id or external-directory path inside the singleton; never a file tab"],
+    ["Inspector", "top actions, availability/details/references/context/status; generated description only when present; no hash/editor"]
   ] as const;
 </script>
 
@@ -279,100 +238,66 @@
         <a class="back" href="/demo/external-files">← External-files system</a>
         <span class="kicker">04 · implementation findings and final contract</span>
         <h1>What the system became in code.</h1>
-        <p class="hero-copy">
-          This page is the feedback loop from implementation and live testing. It records the actual commit
-          ordering, state transitions, UI identity, semantic coverage, concessions, and defects discovered only
-          by exercising the production feature—not the earlier aspirational design.
-        </p>
+        <p class="hero-copy">This is the feedback loop from implementation and live testing: the actual commit protocol, recovery boundary, singleton identity, semantic split, architecture shape, and deliberate v1 limits.</p>
       </div>
       <aside class="hero-aside">
-        <header><span>Truth source</span><span>implementation + tests</span></header>
-        <div>
-          <h2>The build contract has been retired.</h2>
-          <p>All five pages now describe <code>work/external-files</code> as implemented. Anything not present is labeled limitation or deferred work.</p>
-          <div class="status-pills"><span class="status-pill exists">implemented</span><span class="status-pill extend">concession</span><span class="status-pill defer">deferred</span></div>
-        </div>
+        <header><span>Truth source</span><span>implementation + executable contracts</span></header>
+        <div><h2>No compatibility layer.</h2><p>Current main infrastructure wins. External uses the current Store journal, atomic semantic outbox, queue leases, operationFlights, and split resource readers.</p><div class="status-pills"><span class="status-pill exists">implemented</span><span class="status-pill extend">hardened</span></div></div>
       </aside>
     </header>
 
     <section class="section">
-      <div class="section-head">
-        <div><span class="kicker">Commit topology</span><h2>The row is the usability boundary</h2></div>
-        <p>External derives identity before its storage model is called. Bytes publish first so a row never intentionally points at absent native content; material enqueue happens after the row and is recoverable.</p>
-      </div>
-      <div class="diagram-frame"><MermaidDiagram source={commitTopology} label="Implemented external file upload sequence" caption="The operation is an ordered workflow across filesystem, represented store, and semantic store—not a cross-system transaction." minHeight="43rem" /></div>
+      <div class="section-head"><div><span class="kicker">Commit topology</span><h2>A row revision is one lifecycle decision</h2></div><p>Immutable bytes publish first. Everything represented commits once. Native claim finalization and collection are idempotent after the Store decision.</p></div>
+      <div class="diagram-frame"><MermaidDiagram source={commitTopology} label="Implemented External commit topology" caption="The durable publication token bridges process interruption after either side has made progress." minHeight="42rem" /></div>
     </section>
 
-    <section class="section two-diagrams">
-      <div>
-        <div class="section-head compact"><div><span class="kicker">Lifecycle</span><h2>Every durable and recoverable state</h2></div></div>
-        <div class="diagram-frame"><MermaidDiagram source={lifecycle} label="Implemented external file lifecycle" caption="In-use or stale deletion returns to management. A removed row may safely leave a shared or cleanup-failed blob." minHeight="49rem" /></div>
-      </div>
-      <div>
-        <div class="section-head compact"><div><span class="kicker">Meaning</span><h2>One delegated material lane</h2></div></div>
-        <div class="diagram-frame"><MermaidDiagram source={semantic} label="Implemented external semantic routing" caption="Unsupported is a status, not a failed job. Code/data profiles and native image vectors remain derived from the External-owned source." minHeight="49rem" /></div>
+    <section class="section">
+      <div class="section-head"><div><span class="kicker">State and recovery</span><h2>Every crash boundary has an owner</h2></div><p>Store rollback preserves old row/history/semantic state. Store recovery establishes committed ownership before native reconciliation restores or collects bytes.</p></div>
+      <div class="diagram-frame"><MermaidDiagram source={lifecycle} label="External lifecycle and recovery states" caption="A provider failure is downstream from a usable file; a reference or stale revision refuses deletion before the atomic decision." minHeight="44rem" /></div>
+    </section>
+
+    <section class="section">
+      <div class="section-head"><div><span class="kicker">Surface and meaning</span><h2>Stable manager, explicit semantic lanes</h2></div><p>Workspace identity and semantic identity are separate. The manager remains one tab while each current classification delegates only the meaning it supports.</p></div>
+      <div class="two-diagrams">
+        <div class="diagram-frame"><MermaidDiagram source={workspace} label="External singleton workspace topology" caption="Focus and selection are state inside External, not file tabs." minHeight="36rem" /></div>
+        <div class="diagram-frame"><MermaidDiagram source={semantic} label="Current External semantic routing" caption="Text and code remain distinct; managed-only bytes do not create poison jobs." minHeight="36rem" /></div>
       </div>
     </section>
 
     <section class="section">
-      <div class="section-head">
-        <div><span class="kicker">Workspace identity</span><h2>External is the stable thing; files are subjects</h2></div>
-        <p>The category carries no resourceId. Focus restores a file; Selection drives external.file or external.directory; older snapshots are adopted forward without erasing their existing landings.</p>
-      </div>
-      <div class="diagram-frame"><MermaidDiagram source={workspace} label="Implemented External workspace surface architecture" caption="There is one permanent External tab and one file manager Inspector. No MIME family mints an editor tab." minHeight="37rem" /></div>
-    </section>
-
-    <section class="section">
-      <div class="section-head">
-        <div><span class="kicker">Live-test discoveries</span><h2>Where implementation changed the design</h2></div>
-        <p>Each item names the original assumption, what executable behavior revealed, the resulting code change, and the product effect.</p>
-      </div>
+      <div class="section-head"><div><span class="kicker">Implementation discoveries</span><h2>Changes forced by running the real system</h2></div><p>Each item names the assumption, observed behavior, implementation change, and resulting contract.</p></div>
       <div class="learning-grid">
         {#each discoveries as item, index}
-          <article>
-            <header><span>{String(index + 1).padStart(2, "0")}</span><strong>{item.stage}</strong></header>
-            <dl><dt>Assumption</dt><dd>{item.assumption}</dd><dt>Observed</dt><dd>{item.observed}</dd><dt>Implemented</dt><dd>{item.change}</dd><dt>User effect</dt><dd>{item.effect}</dd></dl>
-          </article>
+          <article><header><FlaskConical size={16} aria-hidden="true" /><span>L{String(index + 1).padStart(2, "0")}</span><strong>{item.stage}</strong></header><dl><dt>Assumption</dt><dd>{item.assumption}</dd><dt>Observed</dt><dd>{item.observed}</dd><dt>Change</dt><dd>{item.change}</dd><dt>Effect</dt><dd>{item.effect}</dd></dl></article>
         {/each}
       </div>
-      <div class="callout success"><FlaskConical size={18} strokeWidth={1.8} aria-hidden="true" /><div><h3>The production browser path is part of the architecture proof.</h3><p>It caught transport, reactivity, capability ownership, and storage-isolation issues that type checks and capability tests could not expose.</p></div></div>
     </section>
 
     <section class="section">
-      <div class="section-head">
-        <div><span class="kicker">Final contract</span><h2>Concrete values and mutation rules</h2></div>
-        <p>These values are read directly from runtime configuration and implemented procedures. They are not recommendations.</p>
-      </div>
-      <div class="table-wrap"><table class="reference-table"><thead><tr><th>Concern</th><th>Implemented behavior</th></tr></thead><tbody>{#each actualContract as row}<tr><td><strong>{row[0]}</strong></td><td>{row[1]}</td></tr>{/each}</tbody></table></div>
-    </section>
-
-    <section class="section">
-      <div class="section-head">
-        <div><span class="kicker">Concessions and limits</span><h2>What this implementation deliberately does not hide</h2></div>
-        <p>These are current architectural facts. Changing one requires coordinated model, capability, UI, test, and reference updates.</p>
-      </div>
+      <div class="section-head"><div><span class="kicker">Deliberate boundaries</span><h2>What v1 truthfully does not promise</h2></div><p>These limits are product and deployment boundaries, not legacy support or partial transactional behavior.</p></div>
       <div class="concession-grid">
-        {#each concessions as item, index}<article><div><AlertTriangle size={16} strokeWidth={1.7} aria-hidden="true" /><span>C{index + 1}</span></div><h3>{item[0]}</h3><p>{item[1]}</p></article>{/each}
+        {#each boundaries as item, index}<article><div><AlertTriangle size={15} aria-hidden="true" /><span>B{index + 1}</span></div><h3>{item[0]}</h3><p>{item[1]}</p></article>{/each}
       </div>
     </section>
 
     <section class="section">
-      <div class="section-head">
-        <div><span class="kicker">Durable invariants</span><h2>What must stay true during refinement</h2></div>
-        <p>Visual refinement and future adapters are free to evolve around these boundaries.</p>
-      </div>
+      <div class="section-head"><div><span class="kicker">Final contract</span><h2>The implemented system at a glance</h2></div><p>This table replaces the pre-rebase build contract.</p></div>
+      <div class="table-wrap"><table class="reference-table"><thead><tr><th>Boundary</th><th>Implemented behavior</th></tr></thead><tbody>{#each actualContract as row}<tr><td><strong>{row[0]}</strong></td><td>{row[1]}</td></tr>{/each}</tbody></table></div>
+    </section>
+
+    <section class="section">
+      <div class="section-head"><div><span class="kicker">Durable invariants</span><h2>What refinement must preserve</h2></div><p>Visual design and future managed kinds can change without weakening these truths.</p></div>
       <ul class="invariants">
-        <li><CheckCircle2 aria-hidden="true" /><span>A file can be useful and downloadable with zero semantic products.</span></li>
-        <li><CheckCircle2 aria-hidden="true" /><span>Local rename changes the name and relative-path leaf but never originalName, storage receipt, origin, creator, or native bytes.</span></li>
-        <li><CheckCircle2 aria-hidden="true" /><span>Re-upload is the only content replacement gesture and preserves the External row id, local name/path, and represented references.</span></li>
-        <li><CheckCircle2 aria-hidden="true" /><span>Corrupt metadata is quarantined; corrupt or missing native bytes are explicit Inspector states.</span></li>
-        <li><CheckCircle2 aria-hidden="true" /><span>Every external-file read is project-scoped through the owning capability.</span></li>
-        <li><CheckCircle2 aria-hidden="true" /><span>External never delegates to exact semantics; unsupported material types do not create durable failing jobs.</span></li>
-        <li><CheckCircle2 aria-hidden="true" /><span>Deletion cannot silently break represented references or remove a hash shared by another file row.</span></li>
-        <li><CheckCircle2 aria-hidden="true" /><span>Generated summaries appear only for material types that produced one; standalone images remain a pure native visual vector.</span></li>
-        <li><CheckCircle2 aria-hidden="true" /><span>The name shown to the user is External. Resources is not the category or stable-tab label.</span></li>
+        <li><CheckCircle2 aria-hidden="true" /><span>The name shown to the user is External; Resources is not the category label.</span></li>
+        <li><CheckCircle2 aria-hidden="true" /><span>A file is manageable and downloadable with zero semantic products.</span></li>
+        <li><CheckCircle2 aria-hidden="true" /><span>Row, History, semantic forget, and outbox are atomic for every revision.</span></li>
+        <li><CheckCircle2 aria-hidden="true" /><span>Committed Store ownership wins over apparent native garbage after restart.</span></li>
+        <li><CheckCircle2 aria-hidden="true" /><span>Equal hashes remain safe until every represented row claim is released.</span></li>
+        <li><CheckCircle2 aria-hidden="true" /><span>Every read/mutation is project scoped and every live typed reference blocks deletion.</span></li>
+        <li><CheckCircle2 aria-hidden="true" /><span>Prose and source code stay distinct current classifications and semantic lanes.</span></li>
+        <li><CheckCircle2 aria-hidden="true" /><span>Generated descriptions appear only when actually produced.</span></li>
       </ul>
-      <div class="callout"><Lightbulb size={18} strokeWidth={1.8} aria-hidden="true" /><div><h3>Next design work can happen against the real surface.</h3><p>The live route supports file/folder upload, Table/Directory navigation, file and folder inspection, durable History, name/path edits, re-upload, dataset context, conditional semantic review, download, and reference-safe delete. Findings remains deferred.</p></div></div>
+      <div class="callout"><Lightbulb size={18} aria-hidden="true" /><div><h3>Refine against the production surface.</h3><p>The live route supports ingestion, directory navigation, rename, move, atomic directory move, re-upload, dataset context, download, History, deletion, reload, and truthful failure states. Findings remains deferred.</p></div></div>
     </section>
   </main>
 
@@ -380,12 +305,25 @@
 </div>
 
 <style>
-  .two-diagrams { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }.two-diagrams > div { min-width: 0; }.section-head.compact { display: block; }.section-head.compact h2 { margin-bottom: .9rem; }
+  .two-diagrams { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+  .two-diagrams > div { min-width: 0; }
   .learning-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; margin-top: 1.2rem; border: 1px solid var(--rule); border-radius: var(--token-radius-panel); background: var(--rule); overflow: hidden; }
-  .learning-grid article { padding: 1rem; background: var(--raised); }.learning-grid header { display: flex; align-items: center; gap: .6rem; }.learning-grid header span { color: var(--active); font: 650 8px/1 var(--token-font-mono); }.learning-grid header strong { font-size: 11px; }
-  .learning-grid dl { display: grid; grid-template-columns: 5.5rem 1fr; gap: .55rem .75rem; margin: 1rem 0 0; }.learning-grid dt { color: var(--ink-3); font: 650 7px/1.45 var(--token-font-mono); text-transform: uppercase; }.learning-grid dd { margin: 0; color: var(--ink-2); font-size: 9.5px; }
-  .concession-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .8rem; margin-top: 1.2rem; }.concession-grid article { padding: 1rem; border: 1px solid var(--rule); border-radius: var(--token-radius-panel); background: var(--raised); }.concession-grid article > div { display: flex; align-items: center; justify-content: space-between; color: var(--attention); }.concession-grid article > div span { font: 650 7px/1 var(--token-font-mono); }.concession-grid h3 { margin: 1rem 0 .4rem; font-size: 10px; }.concession-grid p { margin: 0; color: var(--ink-2); font-size: 9.5px; }
-  .invariants { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; margin: 1.2rem 0 0; padding: 1px; border-radius: var(--token-radius-panel); background: var(--rule); list-style: none; overflow: hidden; }.invariants li { display: grid; grid-template-columns: 1.4rem 1fr; gap: .65rem; padding: .85rem; background: var(--raised); color: var(--ink-2); font-size: 10px; }.invariants :global(svg) { width: 15px; color: var(--success); }
-  @media (max-width: 78rem) { .concession-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }.two-diagrams { grid-template-columns: minmax(0, 1fr); } }
-  @media (max-width: 52rem) { .learning-grid, .concession-grid, .invariants { grid-template-columns: 1fr; }.learning-grid dl { grid-template-columns: 1fr; }.learning-grid dt { margin-top: .35rem; } }
+  .learning-grid article { padding: 1rem; background: var(--raised); }
+  .learning-grid header { display: flex; align-items: center; gap: .6rem; }
+  .learning-grid header span { color: var(--active); font: 650 8px/1 var(--token-font-mono); }
+  .learning-grid header strong { font-size: 11px; }
+  .learning-grid dl { display: grid; grid-template-columns: 5.5rem 1fr; gap: .55rem .75rem; margin: 1rem 0 0; }
+  .learning-grid dt { color: var(--ink-3); font: 650 7px/1.45 var(--token-font-mono); text-transform: uppercase; }
+  .learning-grid dd { margin: 0; color: var(--ink-2); font-size: 9.5px; }
+  .concession-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .8rem; margin-top: 1.2rem; }
+  .concession-grid article { padding: 1rem; border: 1px solid var(--rule); border-radius: var(--token-radius-panel); background: var(--raised); }
+  .concession-grid article > div { display: flex; align-items: center; justify-content: space-between; color: var(--attention); }
+  .concession-grid article > div span { font: 650 7px/1 var(--token-font-mono); }
+  .concession-grid h3 { margin: 1rem 0 .4rem; font-size: 10px; }
+  .concession-grid p { margin: 0; color: var(--ink-2); font-size: 9.5px; }
+  .invariants { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; margin: 1.2rem 0 0; padding: 1px; border-radius: var(--token-radius-panel); background: var(--rule); list-style: none; overflow: hidden; }
+  .invariants li { display: grid; grid-template-columns: 1.4rem 1fr; gap: .65rem; padding: .85rem; background: var(--raised); color: var(--ink-2); font-size: 10px; }
+  .invariants :global(svg) { width: 15px; color: var(--success); }
+  @media (max-width: 78rem) { .concession-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .two-diagrams { grid-template-columns: minmax(0, 1fr); } }
+  @media (max-width: 52rem) { .learning-grid, .concession-grid, .invariants { grid-template-columns: 1fr; } .learning-grid dl { grid-template-columns: 1fr; } .learning-grid dt { margin-top: .35rem; } }
 </style>

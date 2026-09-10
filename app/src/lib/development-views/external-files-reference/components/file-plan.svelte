@@ -23,16 +23,16 @@
 
     CFG["external-files.yaml<br/>actual runtime bounds"]:::source
     NATIVE["External native admission<br/>derive descriptor"]:::owner
-    STORAGE["externalFileStorage<br/>verify · publish · read · remove"]:::owner
-    REP["externalFiles row<br/>path + provenance + CAS"]:::owner
-    CAP["external-files capability<br/>lifecycle + paths + History"]:::owner
-    SEM["semantic-overlay<br/>material enqueue · status · retire"]:::owner
+    STORAGE["externalFileStorage<br/>publish · claim · reconcile · collect"]:::owner
+    REP["strict externalFiles row<br/>path + provenance + CAS"]:::owner
+    CAP["external-files capability<br/>atomic lifecycle + typed references"]:::owner
+    SEM["semantic-overlay<br/>atomic outbox · exact/material status"]:::owner
     ROUTE["authorized attachment route<br/>ranges + ETag"]:::source
     GEN["category-keys output<br/>external.library"]:::generated
     VIEW["External singleton<br/>Content · Context · Inspector"]:::source
     INDEX["project resource index<br/>file launcher"]:::source
     UNIT["unit tests<br/>bytes + capability + semantics"]:::proof
-    BROWSER["Chromium system test<br/>upload → download → rename → delete"]:::proof
+    BROWSER["Chromium system test<br/>complete library lifecycle + failures"]:::proof
     REF["five reference pages<br/>implementation truth"]:::proof
 
     CFG --> CAP
@@ -53,34 +53,40 @@
     BROWSER --> REF`;
 
   const verification = [
-    ["Native content", "External descriptor derivation plus storage verification, reuse, legacy lookup, bounds, removal, and hash/size/id mismatch rejection", "Vitest filesystem integration", "passing"],
-    ["Representation", "relative-path traversal, roots, separators, signatures, and fallback media types", "Vitest unit", "passing"],
-    ["External capability", "upload/reuse/conflict, re-upload identity, file/directory moves, History, dataset context, scope, CAS, reference-safe delete and blob reclaim", "Vitest capability integration", "passing"],
-    ["Semantic overlay", "no External exact lane, code/data material profiles, direct original-image vector, status, retirement and backfill", "Vitest integration", "passing"],
-    ["Real workspace", "code lifecycle, same-URL re-upload, durable History, a copied 33-file source directory, atomic folder rename, and exact 8 MiB download", "Playwright Chromium", "passing"],
-    ["Reference suite", "Mermaid rendering, interactive specimen, file filtering, compact viewport, implementation lessons", "Playwright Chromium", "covered in final validation"]
+    ["Native publication", "descriptor verification, durable recovery copies, row claims, quarantine recheck, interrupted publication, orphan cleanup, and shared-hash safety", "Vitest filesystem integration", "executable"],
+    ["Representation", "strict exact row fields, SHA/storage/path/name/subkind agreement, signature precedence, controls, and one path-size rule", "Vitest unit", "executable"],
+    ["Atomic lifecycle", "Store rollback and restart after every post-commit failpoint for upload, re-upload, rename, file/directory move, context, and deletion", "Vitest non-functional contracts", "executable"],
+    ["Ownership + references", "cross-project reads/mutations and exhaustive typed live-reference deletion policy with historical by-value exclusions", "Vitest non-functional contracts", "executable"],
+    ["Semantic overlay", "plain prose exact text; distinct code/data/image material lanes; status, outbox, freshness, and native reads", "Vitest integration", "executable"],
+    ["Real workspace", "ingestion, search/filter/sort/selection, folders, rename/move/directory move, re-upload, context, download, History, deletion, reload, and failures", "Playwright Chromium", "final verification"],
+    ["Reference suite", "all Mermaid diagrams, interactive manager, complete file filtering, implementation lessons, and compact responsiveness", "Playwright Chromium", "final verification"]
   ] as const;
 
   const settled = [
     ["Identity", "A file row is the project resource; SHA-256 is the shared immutable native-blob identity."],
     ["Replacement", "Upload rejects a different hash at an occupied path. Explicit Re-upload updates the same file id, keeps references, replaces its native receipt, and advances revision."],
-    ["Deletion", "Deletion is a revision-aware hard delete after usage refusal and semantic retirement, followed by immediate unshared-blob reclamation."],
+    ["Deletion", "Deletion is a revision-aware hard delete after exhaustive typed usage refusal; forget/outbox/History/row removal commit once, then the row claim is released and only an unshared blob is collected."],
     ["Serving", "Every supported format is attachment-only. The route never provides an inline viewer and never serializes bytes through a remote query."],
-    ["Workers", "External mutations enqueue supported material work. There is no manual Inspector refresh and no always-on worker host is deployed by this branch."],
-    ["Compatibility", "New metadata fields are optional in the table shape; strict read admission supplies safe fallbacks for pre-feature rows."],
+    ["Workers", "External mutations write exact/material outbox intent atomically. There is no manual Inspector refresh and provider execution remains asynchronous."],
+    ["Current schema", "Every External row field is current and strict. There is no compatibility workspace adoption, migration, alias, old reader, or synthesized required value."],
     ["Findings", "Deferred. The External category is shaped to accept another manager adapter later, but no Findings UI or mutation was implemented."]
   ] as const;
 
   let layer = $state<LayerFilter>("all");
   let action = $state<ActionFilter>("all");
   let query = $state("");
-  const normalizedQuery = $derived(query.trim().toLocaleLowerCase());
+  const searchable = (value: string): string => value
+    .toLocaleLowerCase()
+    .replaceAll(/[^a-z0-9]+/g, " ")
+    .trim();
+  const normalizedQuery = $derived(searchable(query));
   const visibleFiles = $derived(
     IMPLEMENTATION_FILES.filter((file) => {
       if (layer !== "all" && file.layer !== layer) return false;
       if (action !== "all" && file.action !== action) return false;
-      return normalizedQuery === "" ||
-        `${file.path} ${file.layer} ${file.owner} ${file.reason}`.toLocaleLowerCase().includes(normalizedQuery);
+      return normalizedQuery === "" || searchable(
+        `${file.path} ${file.layer} ${file.owner} ${file.reason}`
+      ).includes(normalizedQuery);
     })
   );
   const count = (value: ImplementationFile["action"]) =>

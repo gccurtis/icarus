@@ -1,180 +1,274 @@
 import type { ImplementationFile } from "$development-views/external-files-reference/types";
 
-const created = (
-  path: string,
+const files = (
+  paths: readonly string[],
+  action: ImplementationFile["action"],
   layer: ImplementationFile["layer"],
   owner: string,
   reason: string
-): ImplementationFile => ({ path, action: "created", layer, owner, reason });
-
-const modified = (
-  path: string,
-  layer: ImplementationFile["layer"],
-  owner: string,
-  reason: string
-): ImplementationFile => ({ path, action: "modified", layer, owner, reason });
-
-const generated = (
-  path: string,
-  layer: ImplementationFile["layer"],
-  owner: string,
-  reason: string
-): ImplementationFile => ({ path, action: "generated", layer, owner, reason });
-
-const removed = (
-  path: string,
-  layer: ImplementationFile["layer"],
-  owner: string,
-  reason: string
-): ImplementationFile => ({ path, action: "removed", layer, owner, reason });
+): ImplementationFile[] => paths.map((path) => ({ path, action, layer, owner, reason }));
 
 /**
- * Exact implementation footprint relative to work/derived-output-architecture.
- * Entries are explicit so this page doubles as a review checklist.
+ * Complete final footprint relative to current origin/main. Paths are explicit
+ * so the rendered page is both an architecture map and a review checklist.
  */
 export const IMPLEMENTATION_FILES: readonly ImplementationFile[] = [
-  created("app/configuration/external-files.yaml", "configuration", "External capability", "Runtime limits for file count, individual bytes, batch bytes, path bytes, and authorized response bytes."),
-  modified("app/configuration/semantic-overlay.yaml", "configuration", "Semantic overlay", "Set the admitted native-image ceiling used only when a material worker requests original image input."),
-  modified("app/scripts/browser-server.mjs", "verification", "Browser harness", "Give represented rows and External-owned native bytes independent disposable directories and clean both on exit."),
+  ...files([
+    "app/configuration/category-readiness.yaml",
+    "app/configuration/representation.yaml",
+    "app/configuration/semantic-overlay.yaml"
+  ], "modified", "configuration", "Current architecture", "Declare External live, register its current representation, and configure semantic adapter bounds."),
+  ...files([
+    "app/configuration/external-files.yaml"
+  ], "created", "configuration", "External capability", "Define the one native repository and upload, batch, path, and response limits."),
+  ...files([
+    "app/seed/slideDeckSnapshots.json"
+  ], "modified", "representation", "Current development fixtures", "Replace the remaining pre-current slide element records with the one current content-based schema so typed reference traversal needs no compatibility reader."),
+  ...files([
+    "app/scripts/browser-server.mjs"
+  ], "modified", "verification", "Browser harness", "Provision isolated represented and native stores and reset both through the current harness."),
 
-  created("app/src/lib/model/server/external-file-storage/types.ts", "model", "External file storage", "Name the narrow verified descriptor, receipt, mutation-lease, put/read/remove interface owned by External."),
-  created("app/src/lib/model/server/external-file-storage/definition.ts", "model", "External file storage", "Verify caller-derived identity, atomically publish/dedupe, read primary/legacy repositories with integrity checks, serialize mutation gaps, and remove idempotently."),
-  created("app/src/lib/model/server/external-file-storage/constructor.ts", "model", "Runtime composition", "Resolve configured primary and legacy directories plus a browser-test override."),
-  created("app/src/lib/model/server/external-file-storage/index.server.ts", "model", "External file storage", "Expose the model constructor and contracts across the server seam."),
-  created("app/src/lib/model/server/external-file-storage/test/unit/external-file-storage.test.ts", "verification", "External file storage", "Prove defensive descriptor checks, atomic reuse, legacy reads, integrity/size failures, mutation ordering, and idempotent removal."),
-  removed("app/src/lib/model/server/material-content/types.ts", "model", "Retired material-content model", "Remove the general native-byte interface from the semantic material concern."),
-  removed("app/src/lib/model/server/material-content/definition.ts", "model", "Retired material-content model", "Remove hashing/storage implementation now owned by External admission and externalFileStorage."),
-  removed("app/src/lib/model/server/material-content/constructor.ts", "model", "Retired material-content model", "Remove obsolete material-directory runtime construction."),
-  removed("app/src/lib/model/server/material-content/index.server.ts", "model", "Retired material-content model", "Remove obsolete server export seam."),
-  removed("app/src/lib/model/server/material-content/test/unit/material-content.test.ts", "verification", "Retired material-content model", "Replace generic byte tests with External-specific repository tests."),
-  modified("app/src/lib/runtime/server/start.server.ts", "model", "Runtime composition", "Compose externalFileStorage and wire ICARUS_EXTERNAL_FILE_DIRECTORY."),
-  modified("app/src/lib/runtime/server/types.ts", "model", "Runtime composition", "Replace material content on ServerModel with the External-specific storage object."),
-  modified("app/src/lib/model/server/store/types.ts", "model", "Representation store", "Add one-table atomic replaceRows for virtual-directory descendant rewrites."),
-  modified("app/src/lib/model/server/store/definition.ts", "model", "Representation store", "Admit every replacement before one persistence commit while retaining row identity and creation time."),
-  modified("app/src/lib/model/server/store/test/unit/store.test.ts", "verification", "Representation store", "Prove atomic multi-row replacement and refusal of missing or duplicate row ids."),
+  ...files([
+    "app/src/lib/app-views/categories/external/content/library.svelte",
+    "app/src/lib/app-views/categories/external/content/library.state.svelte.ts",
+    "app/src/lib/app-views/categories/external/context/history.svelte",
+    "app/src/lib/app-views/categories/external/context/overview.svelte",
+    "app/src/lib/app-views/categories/external/external.md",
+    "app/src/lib/app-views/categories/external/inspector/directory.svelte",
+    "app/src/lib/app-views/categories/external/inspector/directory.state.svelte.ts",
+    "app/src/lib/app-views/categories/external/inspector/file.svelte",
+    "app/src/lib/app-views/categories/external/inspector/file.state.svelte.ts"
+  ], "created", "workspace", "External stable tab", "Implement the singleton library, Overview/History Context, and instance-owned file/directory manager state."),
+  ...files([
+    "app/src/lib/app-views/categories/external/procedures/detail-query.ts",
+    "app/src/lib/app-views/categories/external/procedures/download.ts",
+    "app/src/lib/app-views/categories/external/procedures/effects/clock.svelte.ts",
+    "app/src/lib/app-views/categories/external/procedures/effects/directory-inspector.svelte.ts",
+    "app/src/lib/app-views/categories/external/procedures/effects/file-inspector.svelte.ts",
+    "app/src/lib/app-views/categories/external/procedures/effects/library.svelte.ts",
+    "app/src/lib/app-views/categories/external/procedures/index.ts",
+    "app/src/lib/app-views/categories/external/procedures/inspect-directory.ts",
+    "app/src/lib/app-views/categories/external/procedures/inspect-file.ts",
+    "app/src/lib/app-views/categories/external/procedures/library-query.ts",
+    "app/src/lib/app-views/categories/external/procedures/move-directory.ts",
+    "app/src/lib/app-views/categories/external/procedures/move-file.ts",
+    "app/src/lib/app-views/categories/external/procedures/read-detail.ts",
+    "app/src/lib/app-views/categories/external/procedures/read-history.ts",
+    "app/src/lib/app-views/categories/external/procedures/read-library.ts",
+    "app/src/lib/app-views/categories/external/procedures/remove-file.ts",
+    "app/src/lib/app-views/categories/external/procedures/rename-file.ts",
+    "app/src/lib/app-views/categories/external/procedures/reupload.ts",
+    "app/src/lib/app-views/categories/external/procedures/update-context.ts",
+    "app/src/lib/app-views/categories/external/procedures/upload.ts"
+  ], "created", "workspace", "External view procedures", "Split pure projections, named commands, and lifecycle effects into cohesive entry chains instead of inline async handlers."),
+  ...files([
+    "app/src/lib/app-views/categories/new-tab/procedures/opening.ts",
+    "app/src/lib/app-views/categories/new-tab/procedures/resources.ts",
+    "app/src/lib/app-views/categories/new-tab/procedures/test/unit/resources.test.ts",
+    "app/src/lib/app-views/categories/project-overview/content/overview.svelte",
+    "app/src/lib/app-views/categories/project-overview/procedures/opening.ts"
+  ], "modified", "workspace", "External discovery", "Discover files while preserving all current resource kinds; focus the selected file inside the External singleton."),
 
-  modified("app/src/lib/representation/store/tables.ts", "representation", "Representation", "Extend externalFiles with backward-compatible originalName, relativePath, size, semanticContext, updater, and revision fields."),
-  modified("app/src/lib/representation/data/types/external/file.ts", "representation", "External representation", "Expose one canonical text/code subkind while retaining the old text value solely as stored-row compatibility input."),
-  modified("app/src/lib/representation/data/behavior/external/file.ts", "representation", "External representation", "Normalize file/directory paths, derive hierarchy helpers, sniff selected signatures, and canonicalize plain text plus source code into one code family."),
-  created("app/src/lib/representation/data/behavior/external/test/unit/file.test.ts", "verification", "External representation", "Lock traversal/root/path hierarchy, legacy text canonicalization, signature precedence, and misleading browser-MIME behavior."),
-  modified("app/src/lib/representation/data/behavior/semantic/materials/code.ts", "semantic", "Material representation", "Reuse External's authoritative code-language family instead of maintaining a divergent byte classifier."),
-  modified("app/src/lib/representation/data/behavior/semantic/test/unit/material-profile.test.ts", "verification", "Material representation", "Prove plain text, Markdown, and recognized source files share the code-profile language boundary."),
-  modified("app/src/lib/representation/data/behavior/semantic/materials/external-file.ts", "semantic", "Material representation", "Project External text/code with ephemeral verified source, CSV/TSV with authored context, or original images into one material seed."),
-  modified("app/src/lib/representation/data/types/semantic/material.ts", "semantic", "Material representation", "Carry verified UTF-8 ephemerally for descriptor generation without persisting native content in semantic rows."),
-  modified("app/src/lib/representation/data/behavior/semantic/projection/contract.ts", "semantic", "Material representation", "Carry optional authored External context and native image input across the projection boundary."),
+  ...files([
+    "app/src/lib/capabilities/capabilities.md"
+  ], "modified", "capability", "Capability architecture", "Declare External's current authority and cross-capability seams."),
+  ...files([
+    "app/src/lib/capabilities/derived-output/api/shared/resource-reading-media-tools.ts",
+    "app/src/lib/capabilities/derived-output/api/shared/resource-reading-structured-tools.ts",
+    "app/src/lib/capabilities/derived-output/test/unit/resource-reading.test.ts"
+  ], "modified", "semantic", "Derived Output readers", "Preserve the current split readers while resolving authorized External bytes through externalFileStorage."),
 
-  created("app/src/lib/capabilities/external-files/external-files.md", "capability", "External capability", "Document ownership, ordering, compatibility, failure, and non-transactional recovery contracts."),
-  created("app/src/lib/capabilities/external-files/types/external-files.ts", "capability", "External capability", "Define safe file/directory/history/library/detail/usage/native-state and every mutation outcome DTO."),
-  created("app/src/lib/capabilities/external-files/index.ts", "capability", "External capability", "Expose server-only authorized native-byte resolution without a remote round trip."),
-  created("app/src/lib/capabilities/external-files/index.remote.ts", "capability", "External capability", "Publish list/detail/history queries, multipart upload/re-upload forms, path/context/delete commands, and dependent cache refreshes."),
-  created("app/src/lib/capabilities/external-files/api/shared/configuration.ts", "capability", "External capability", "Strictly read all five configured positive integer limits."),
-  created("app/src/lib/capabilities/external-files/api/shared/rows.ts", "capability", "External capability", "Project-scope and strictly admit rows, canonicalize legacy code, quarantine bad metadata, and project safe details/material status."),
-  created("app/src/lib/capabilities/external-files/api/shared/usage.ts", "capability", "External capability", "Scan represented document/deck/template/set/finding references and hide foreign template names."),
-  created("app/src/lib/capabilities/external-files/api/shared/validation.ts", "capability", "External capability", "Validate opaque ids, row/directory revisions, bounded names/context, canonical destinations, and multipart shape."),
-  created("app/src/lib/capabilities/external-files/api/shared/native-file.ts", "capability", "External native admission", "Derive hash, size, storage id, media type and subkind before I/O; reclaim unclaimed candidate bytes best-effort."),
-  created("app/src/lib/capabilities/external-files/api/shared/directories.ts", "capability", "External hierarchy", "Project virtual directories, counts and byte totals from file paths and calculate opaque descendant revision tokens."),
-  created("app/src/lib/capabilities/external-files/api/shared/history.ts", "capability", "External history", "Append and strictly project durable scoped lifecycle events independently of current file rows."),
-  created("app/src/lib/capabilities/external-files/api/upload-external-files/validate-upload-external-files.ts", "capability", "External ingestion", "Admit only the two known form instances, real File arrays, and aligned path hints."),
-  created("app/src/lib/capabilities/external-files/api/upload-external-files/upload-external-files.ts", "capability", "External ingestion", "Derive native identity and coordinate mixed-result publication, path reuse/conflict, row/history creation, compensation, and material enqueue."),
-  created("app/src/lib/capabilities/external-files/api/read-external-file-library/read-external-file-library.ts", "capability", "External reads", "Return scoped admitted files, projected directories, quarantined rows, and actual upload/download limits."),
-  created("app/src/lib/capabilities/external-files/api/read-external-file-history/read-external-file-history.ts", "capability", "External reads", "Authorize and return the newest 200 durable lifecycle events for the project."),
-  created("app/src/lib/capabilities/external-files/api/read-external-file/validate-read-external-file.ts", "capability", "External reads", "Validate one opaque externalFileId."),
-  created("app/src/lib/capabilities/external-files/api/read-external-file/read-external-file.ts", "capability", "External reads", "Add native integrity and represented usage to one admitted library row for the Inspector."),
-  created("app/src/lib/capabilities/external-files/api/read-external-file-content/validate-read-external-file-content.ts", "capability", "Native content", "Validate the file id before native content resolution."),
-  created("app/src/lib/capabilities/external-files/api/read-external-file-content/read-external-file-content.ts", "capability", "Native content", "Authorize, verify, and bound bytes for the response route without exposing storage paths."),
-  created("app/src/lib/capabilities/external-files/api/rename-external-file/validate-rename-external-file.ts", "capability", "File management", "Validate compare-and-swap revision and local display name."),
-  created("app/src/lib/capabilities/external-files/api/rename-external-file/rename-external-file.ts", "capability", "File management", "CAS-update local name and path leaf, preserve original provenance/bytes, retire old meaning, reclassify, and enqueue supported material."),
-  created("app/src/lib/capabilities/external-files/api/reupload-external-file/validate-reupload-external-file.ts", "capability", "File management", "Admit a single real bounded replacement File with target id and base revision."),
-  created("app/src/lib/capabilities/external-files/api/reupload-external-file/reupload-external-file.ts", "capability", "File management", "Keep file identity/name/path while replacing its native receipt, revision and material output; reclaim an unshared predecessor."),
-  created("app/src/lib/capabilities/external-files/api/relocate-external-file/validate-relocate-external-file.ts", "capability", "File management", "Validate file id, base revision and complete canonical destination path."),
-  created("app/src/lib/capabilities/external-files/api/relocate-external-file/relocate-external-file.ts", "capability", "File management", "CAS-move one file, reject collisions, update its local leaf/subkind, and retire/requeue supported meaning."),
-  created("app/src/lib/capabilities/external-files/api/relocate-external-directory/validate-relocate-external-directory.ts", "capability", "Directory management", "Validate source/destination paths and opaque descendant revision token."),
-  created("app/src/lib/capabilities/external-files/api/relocate-external-directory/relocate-external-directory.ts", "capability", "Directory management", "Reject stale/self/collision moves and atomically rewrite every descendant path with one table replacement."),
-  created("app/src/lib/capabilities/external-files/api/update-external-file-context/validate-update-external-file-context.ts", "capability", "Dataset management", "Validate target/revision and bounded optional authored context."),
-  created("app/src/lib/capabilities/external-files/api/update-external-file-context/update-external-file-context.ts", "capability", "Dataset management", "CAS add/clear CSV/TSV context, retire old material, advance revision/history, and enqueue revised meaning."),
-  created("app/src/lib/capabilities/external-files/api/remove-external-file/validate-remove-external-file.ts", "capability", "File management", "Validate compare-and-swap deletion input."),
-  created("app/src/lib/capabilities/external-files/api/remove-external-file/remove-external-file.ts", "capability", "File management", "Refuse in-use/stale deletion, retire material state, recheck, hard-delete, preserve History, and reclaim only unshared bytes."),
-  created("app/src/lib/capabilities/external-files/test/unit/external-files.test.ts", "verification", "External capability", "Exercise native ownership, upload/reuse/conflict, re-upload, file/directory moves, context/history, scoped reads, reference refusal and reclamation."),
+  ...files([
+    "app/src/lib/capabilities/external-files/api/read-external-file-content/read-external-file-content.ts",
+    "app/src/lib/capabilities/external-files/api/read-external-file-content/validate-read-external-file-content.ts",
+    "app/src/lib/capabilities/external-files/api/read-external-file-history/read-external-file-history.ts",
+    "app/src/lib/capabilities/external-files/api/read-external-file-library/read-external-file-library.ts",
+    "app/src/lib/capabilities/external-files/api/read-external-file/read-external-file.ts",
+    "app/src/lib/capabilities/external-files/api/read-external-file/validate-read-external-file.ts"
+  ], "created", "capability", "External reads", "Provide scoped strict library/detail/history and verified native-content read boundaries."),
+  ...files([
+    "app/src/lib/capabilities/external-files/api/relocate-external-directory/relocate-external-directory.ts",
+    "app/src/lib/capabilities/external-files/api/relocate-external-directory/validate-relocate-external-directory.ts",
+    "app/src/lib/capabilities/external-files/api/relocate-external-file/relocate-external-file.ts",
+    "app/src/lib/capabilities/external-files/api/relocate-external-file/validate-relocate-external-file.ts",
+    "app/src/lib/capabilities/external-files/api/remove-external-file/remove-external-file.ts",
+    "app/src/lib/capabilities/external-files/api/remove-external-file/validate-remove-external-file.ts",
+    "app/src/lib/capabilities/external-files/api/rename-external-file/rename-external-file.ts",
+    "app/src/lib/capabilities/external-files/api/rename-external-file/validate-rename-external-file.ts",
+    "app/src/lib/capabilities/external-files/api/reupload-external-file/reupload-external-file.ts",
+    "app/src/lib/capabilities/external-files/api/reupload-external-file/validate-reupload-external-file.ts",
+    "app/src/lib/capabilities/external-files/api/update-external-file-context/update-external-file-context.ts",
+    "app/src/lib/capabilities/external-files/api/update-external-file-context/validate-update-external-file-context.ts",
+    "app/src/lib/capabilities/external-files/api/upload-external-files/upload-external-files.ts",
+    "app/src/lib/capabilities/external-files/api/upload-external-files/validate-upload-external-files.ts"
+  ], "created", "capability", "External mutations", "Implement scoped validation, CAS, path policy, atomic row/History/forget/outbox decisions, and post-commit native cleanup."),
+  ...files([
+    "app/src/lib/capabilities/external-files/api/shared/configuration.ts",
+    "app/src/lib/capabilities/external-files/api/shared/directories.ts",
+    "app/src/lib/capabilities/external-files/api/shared/history.ts",
+    "app/src/lib/capabilities/external-files/api/shared/mutations.ts",
+    "app/src/lib/capabilities/external-files/api/shared/native-file.ts",
+    "app/src/lib/capabilities/external-files/api/shared/resource-references.ts",
+    "app/src/lib/capabilities/external-files/api/shared/rows.ts",
+    "app/src/lib/capabilities/external-files/api/shared/usage.ts",
+    "app/src/lib/capabilities/external-files/api/shared/validation.ts",
+    "app/src/lib/capabilities/external-files/external-files.md",
+    "app/src/lib/capabilities/external-files/index.remote.ts",
+    "app/src/lib/capabilities/external-files/index.ts",
+    "app/src/lib/capabilities/external-files/types/external-files.ts"
+  ], "created", "capability", "External capability", "Define current configuration, admission, projections, transaction helpers, reference traversal, public APIs, DTOs, and implemented documentation."),
+  ...files([
+    "app/src/lib/capabilities/external-files/test/unit/external-files.test.ts"
+  ], "created", "verification", "External behavior", "Exercise ingestion, reuse/conflict, mutation, directory, scope, History, reference refusal, and blob lifecycle behavior."),
+  ...files([
+    "app/src/lib/capabilities/external-files/test/non-functional/atomicity-fixture.ts",
+    "app/src/lib/capabilities/external-files/test/non-functional/concurrent-mutations.test.ts",
+    "app/src/lib/capabilities/external-files/test/non-functional/ownership.test.ts",
+    "app/src/lib/capabilities/external-files/test/non-functional/relocate-external-directory-atomicity.test.ts",
+    "app/src/lib/capabilities/external-files/test/non-functional/relocate-external-file-atomicity.test.ts",
+    "app/src/lib/capabilities/external-files/test/non-functional/remove-external-file-atomicity.test.ts",
+    "app/src/lib/capabilities/external-files/test/non-functional/rename-external-file-atomicity.test.ts",
+    "app/src/lib/capabilities/external-files/test/non-functional/resource-reference-safety.test.ts",
+    "app/src/lib/capabilities/external-files/test/non-functional/reupload-external-file-atomicity.test.ts",
+    "app/src/lib/capabilities/external-files/test/non-functional/update-external-file-context-atomicity.test.ts",
+    "app/src/lib/capabilities/external-files/test/non-functional/upload-external-files-atomicity.test.ts"
+  ], "created", "verification", "External executable contracts", "Prove ownership, concurrency, rollback/restart failpoints, revision/History/outbox atomicity, directory atomicity, and complete typed reference safety."),
 
-  modified("app/src/lib/capabilities/semantic-overlay/types/enqueue-semantic-sync.ts", "semantic", "Semantic overlay", "Represent zero/one-lane enqueue results without requiring an exact job id."),
-  modified("app/src/lib/capabilities/semantic-overlay/api/enqueue-semantic-sync/enqueue-semantic-sync.ts", "semantic", "Semantic overlay", "Resolve generic exact/material targets independently while External now contributes material targets only."),
-  modified("app/src/lib/capabilities/semantic-overlay/api/backfill-semantic-overlay/backfill-semantic-overlay.ts", "semantic", "Semantic overlay", "Backfill only the actual supported lane targets and capture current External revisions."),
-  modified("app/src/lib/capabilities/semantic-overlay/api/shared/resource-ref.ts", "semantic", "Semantic overlay", "Exclude every External subkind from exact resource admission while retaining External as an ingestible material reference."),
-  modified("app/src/lib/capabilities/semantic-overlay/api/shared/resource.ts", "semantic", "Semantic overlay", "Remove External native text reading from the exact projection boundary."),
-  modified("app/src/lib/capabilities/semantic-overlay/api/shared/freshness.ts", "semantic", "Semantic overlay", "Treat legacy External exact sources as stale and validate materials against current External classification/hash/name."),
-  modified("app/src/lib/capabilities/semantic-overlay/api/shared/material-resource.ts", "semantic", "Semantic overlay", "Read verified native values through External storage and target image, true CSV/TSV, and unified plain-text/source code at row revision."),
-  modified("app/src/lib/capabilities/semantic-overlay/api/shared/material-description.ts", "semantic", "Semantic overlay", "Summarize a bounded verified text/code excerpt, bound descriptor rows, include authored dataset context, and suppress descriptions for standalone External images."),
-  modified("app/src/lib/capabilities/semantic-overlay/api/shared/material-facets.ts", "semantic", "Semantic overlay", "Keep identity/profile/generated vectors separate, label textual profiles accurately, and embed standalone image pixels with no text facets."),
-  modified("app/src/lib/capabilities/semantic-overlay/api/shared/material-sync.ts", "semantic", "Semantic overlay", "Carry the corrected external source identity/revision through material synchronization."),
-  created("app/src/lib/capabilities/semantic-overlay/types/read-semantic-status.ts", "semantic", "Semantic overlay", "Define lane states, current profile/descriptor data, errors, and overlay generation."),
-  created("app/src/lib/capabilities/semantic-overlay/api/shared/status.ts", "semantic", "Semantic overlay", "Project exact/material job and publication state without exposing semantic tables to External."),
-  created("app/src/lib/capabilities/semantic-overlay/api/read-semantic-status/validate-read-semantic-status.ts", "semantic", "Semantic overlay", "Validate resource references for the public status query."),
-  created("app/src/lib/capabilities/semantic-overlay/api/read-semantic-status/read-semantic-status.ts", "semantic", "Semantic overlay", "Scope and serve the semantic status projection."),
-  created("app/src/lib/capabilities/semantic-overlay/types/retire-semantic-resource.ts", "semantic", "Semantic overlay", "Define semantic retirement input and removal counts."),
-  created("app/src/lib/capabilities/semantic-overlay/api/retire-semantic-resource/validate-retire-semantic-resource.ts", "semantic", "Semantic overlay", "Validate the resource reference to retire."),
-  created("app/src/lib/capabilities/semantic-overlay/api/retire-semantic-resource/retire-semantic-resource.ts", "semantic", "Semantic overlay", "Stage replacement indexes, archive products, remove placements/sources/materials/jobs, and advance generation idempotently."),
-  modified("app/src/lib/capabilities/semantic-overlay/index.remote.ts", "semantic", "Semantic overlay", "Expose scoped remote status and retirement entry points."),
-  modified("app/src/lib/capabilities/semantic-overlay/index.ts", "semantic", "Semantic overlay", "Expose server-to-server status and retirement for External without remote wrappers."),
-  modified("app/src/lib/capabilities/semantic-overlay/test/unit/semantic-external-text.test.ts", "verification", "Semantic overlay", "Prove External text is not an exact target and legacy exact source is stale."),
-  modified("app/src/lib/capabilities/semantic-overlay/test/unit/semantic-material-sync.test.ts", "verification", "Semantic overlay", "Prove native reads, row revisions, code/data context and pure direct-image visual embedding."),
-  modified("app/src/lib/capabilities/semantic-overlay/test/unit/semantic-overlay.test.ts", "verification", "Semantic overlay", "Prove material-only External enqueue, status/profile projection, backfill and full idempotent retirement."),
-  modified("app/test/unit/semantic-derived-output-flow.test.ts", "verification", "Semantic/derived-output integration", "Update the cross-capability fixture for External-owned storage and material-only eligibility."),
-  modified("app/src/lib/capabilities/derived-output/api/shared/resource-reading.ts", "semantic", "Derived output", "Read authorized External native bytes through externalFileStorage rather than the retired material-content model."),
-  modified("app/src/lib/capabilities/derived-output/test/unit/resource-reading.test.ts", "verification", "Derived output", "Substitute and assert the External-owned native repository at the downstream read seam."),
+  ...files([
+    "app/src/lib/capabilities/project-resources/api/read-project-resource-index/read-project-resource-index.ts",
+    "app/src/lib/capabilities/project-resources/project-resources.md",
+    "app/src/lib/capabilities/project-resources/types/project-resources.ts"
+  ], "modified", "workspace", "Project resource index", "Index External files for discovery without changing other resource identities or openings."),
+  ...files([
+    "app/src/lib/capabilities/semantic-overlay/api/backfill-semantic-overlay/backfill-semantic-overlay.ts",
+    "app/src/lib/capabilities/semantic-overlay/api/enqueue-semantic-sync/enqueue-semantic-sync.ts",
+    "app/src/lib/capabilities/semantic-overlay/api/shared/freshness.ts",
+    "app/src/lib/capabilities/semantic-overlay/api/shared/material-description.ts",
+    "app/src/lib/capabilities/semantic-overlay/api/shared/material-facets.ts",
+    "app/src/lib/capabilities/semantic-overlay/api/shared/material-preparation.ts",
+    "app/src/lib/capabilities/semantic-overlay/api/shared/material-resource.ts",
+    "app/src/lib/capabilities/semantic-overlay/api/shared/outbox.ts",
+    "app/src/lib/capabilities/semantic-overlay/api/shared/resource-ref.ts",
+    "app/src/lib/capabilities/semantic-overlay/api/shared/resource.ts",
+    "app/src/lib/capabilities/semantic-overlay/index.remote.ts",
+    "app/src/lib/capabilities/semantic-overlay/index.ts",
+    "app/src/lib/capabilities/semantic-overlay/types/enqueue-semantic-sync.ts"
+  ], "modified", "semantic", "Current semantic architecture", "Route text/code/data/image separately and integrate External mutations with the current atomic outbox and queue/lease system."),
+  ...files([
+    "app/src/lib/capabilities/semantic-overlay/api/read-semantic-status/read-semantic-status.ts",
+    "app/src/lib/capabilities/semantic-overlay/api/read-semantic-status/validate-read-semantic-status.ts",
+    "app/src/lib/capabilities/semantic-overlay/api/shared/status.ts",
+    "app/src/lib/capabilities/semantic-overlay/types/read-semantic-status.ts"
+  ], "created", "semantic", "Semantic status", "Expose scoped exact/material job and publication status without leaking semantic tables into External views."),
+  ...files([
+    "app/src/lib/capabilities/semantic-overlay/test/unit/semantic-external-text.test.ts",
+    "app/src/lib/capabilities/semantic-overlay/test/unit/semantic-material-query.test.ts",
+    "app/src/lib/capabilities/semantic-overlay/test/unit/semantic-material-sync.test.ts",
+    "app/src/lib/capabilities/semantic-overlay/test/unit/semantic-overlay.test.ts",
+    "app/test/unit/semantic-derived-output-flow.test.ts"
+  ], "modified", "verification", "Semantic integration", "Prove current External exact text, code/data/image material behavior, status, outbox, native reads, and Derived Output flow."),
 
-  modified("app/src/lib/capabilities/project-resources/types/project-resources.ts", "workspace", "Project resource index", "Add the file resource kind."),
-  modified("app/src/lib/capabilities/project-resources/api/read-project-resource-index/read-project-resource-index.ts", "workspace", "Project resource index", "Collect project-scoped externalFiles using safe actor fallback."),
-  modified("app/src/lib/capabilities/project-resources/project-resources.md", "workspace", "Project resource index", "Record file membership in the actual index contract."),
-  modified("app/src/lib/app-views/categories/project-overview/procedures/opening.ts", "workspace", "Project Overview", "Route file launchers to category-only External focus rather than an identified editor target."),
-  modified("app/src/lib/app-views/categories/new-tab/procedures/opening.ts", "workspace", "New Tab", "Route searchable file results to the External singleton with file focus instead of an unwired editor alert."),
-  modified("app/src/lib/app-views/categories/new-tab/procedures/resources.ts", "workspace", "New Tab", "Keep all files searchable while collapsing manager-only file rows to the newest entry in the bounded Recent shelf."),
-  modified("app/src/lib/app-views/categories/new-tab/procedures/test/unit/resources.test.ts", "verification", "New Tab", "Prove manager-only Recent collapse and External-focused file opening without losing searchable rows."),
-  modified("app/src/lib/app-views/categories/project-overview/content/overview.svelte", "workspace", "Project Overview", "Inspect external.file after opening a file result."),
+  ...files([
+    "app/src/lib/capabilities/workspace/test/unit/workspace.test.ts",
+    "app/src/lib/model/client/workspace-state/test/unit/persistence.test.ts"
+  ], "modified", "verification", "Workspace", "Lock the current External permanent singleton and workspace persistence behavior."),
 
-  created("app/src/lib/app-views/categories/external/external.md", "workspace", "External view", "Record the stable library and manager ownership contract, including deferred Findings."),
-  created("app/src/lib/app-views/categories/external/procedures/library.svelte.ts", "workspace", "External view", "Project remote file/directory/history answers and coordinate selection, name/path/context mutations, re-upload, download and delete."),
-  created("app/src/lib/app-views/categories/external/content/library.svelte", "workspace", "External content", "Render real indexed multipart file/folder ingestion, mixed receipt, Table/Directory modes, breadcrumbs, search/filter/sort, and stable subject selection."),
-  created("app/src/lib/app-views/categories/external/context/overview.svelte", "workspace", "External context", "Summarize project-wide file/folder, byte, quarantine, and material-coverage counts."),
-  created("app/src/lib/app-views/categories/external/context/history.svelte", "workspace", "External context", "Render durable project-wide upload, re-upload, rename, move, context-update and delete events."),
-  created("app/src/lib/app-views/categories/external/inspector/file.svelte", "workspace", "File Inspector", "Implement the compact manager with top actions, double-click name/path, Details/References, dataset context and conditional material review."),
-  created("app/src/lib/app-views/categories/external/inspector/directory.svelte", "workspace", "Directory Inspector", "Inspect projected folder counts/children and invoke token-protected rename/move without a folder row."),
-  generated("app/src/lib/representation/data/types/workspace/categories.ts", "workspace", "category-keys", "Register external and external.library in generated workspace vocabulary."),
-  generated("app/src/lib/representation/data/behavior/workspace/categories.ts", "workspace", "category-keys", "Register External category and Content implementations."),
-  modified("app/src/lib/representation/data/types/workspace/views.ts", "workspace", "Workspace vocabulary", "Add external Overview/History Context and file/directory Inspector keys."),
-  modified("app/src/lib/representation/data/behavior/workspace/views.ts", "workspace", "Workspace vocabulary", "Bind External Overview/History and file/directory manager implementations."),
-  modified("app/src/lib/representation/data/behavior/workspace/opening.ts", "workspace", "Workspace opening", "Give External its category-only opening and default overview rail."),
-  modified("app/src/lib/representation/data/behavior/workspace/starting.ts", "workspace", "Workspace defaults", "Add External to the permanent singleton set."),
-  modified("app/src/lib/model/client/workspace-state/methods/shared/adopt.ts", "workspace", "Workspace restore", "Adopt missing permanent singleton landings into older persisted workspaces without replacing user state."),
-  modified("app/src/lib/model/client/workspace-state/test/unit/persistence.test.ts", "verification", "Workspace restore", "Verify older persisted rows retain their landings and gain every missing permanent singleton, including External."),
-  modified("app/src/lib/capabilities/workspace/test/unit/workspace.test.ts", "verification", "Workspace capability", "Update the empty-workspace contract to include External in the permanent singleton set."),
-  modified("app/src/lib/surfaces/tab-bar/tab-bar.svelte", "workspace", "Tab bar", "Render the permanent External tab beside Overview, Agents, and Templates."),
-  modified("app/src/lib/surfaces/context/procedures/rail-entries.ts", "workspace", "Context rail", "Expose exactly External Overview and History views."),
-  modified("app/src/lib/surfaces/status-bar/procedures/resource-name.ts", "workspace", "Status bar", "Name selected external files through their subject capability instead of the forbidden generic store reader."),
+  ...files([
+    "app/src/lib/model/server/external-file-storage/constructor.ts",
+    "app/src/lib/model/server/external-file-storage/definition.ts",
+    "app/src/lib/model/server/external-file-storage/external-file-storage.md",
+    "app/src/lib/model/server/external-file-storage/index.server.ts",
+    "app/src/lib/model/server/external-file-storage/test/unit/external-file-storage.test.ts",
+    "app/src/lib/model/server/external-file-storage/types.ts"
+  ], "created", "model", "External file storage", "Own all native I/O, verified content addresses, durable publication/row claims, quarantine GC, restart reconciliation, failpoints, and shared-hash proof."),
+  ...files([
+    "app/src/lib/model/server/material-content/constructor.ts",
+    "app/src/lib/model/server/material-content/definition.ts",
+    "app/src/lib/model/server/material-content/index.server.ts",
+    "app/src/lib/model/server/material-content/material-content.md",
+    "app/src/lib/model/server/material-content/test/unit/material-content.test.ts",
+    "app/src/lib/model/server/material-content/types.ts"
+  ], "removed", "model", "Retired material-content model", "Remove the obsolete general byte owner after porting every current consumer to External storage."),
+  ...files([
+    "app/src/lib/model/server/store/test/unit/store.test.ts"
+  ], "modified", "verification", "Current Store", "Exercise the existing durable transaction, journal, recovery, and failpoint boundary used by External."),
 
-  created("app/src/routes/app/[project]/external-files/[externalFile]/+server.ts", "transport", "Native response", "Serve authorized verified bytes as attachments with ranges, ETag, no-cache, nosniff, CSP sandbox, and correct 416 handling."),
+  ...files([
+    "app/src/lib/representation/data/behavior/external/file.ts",
+    "app/src/lib/representation/data/behavior/external/reference-policy.ts",
+    "app/src/lib/representation/data/behavior/external/row.ts",
+    "app/src/lib/representation/data/behavior/external/test/unit/file.test.ts",
+    "app/src/lib/representation/data/behavior/external/test/unit/row.test.ts"
+  ], "created", "representation", "External representation", "Define signature-first classification, path helpers, strict current row admission, exhaustive table policy, and unit contracts."),
+  ...files([
+    "app/src/lib/representation/data/behavior/semantic/materials/code.ts",
+    "app/src/lib/representation/data/behavior/semantic/materials/external-file.ts",
+    "app/src/lib/representation/data/behavior/semantic/projection/contract.ts",
+    "app/src/lib/representation/data/behavior/semantic/test/unit/material-profile.test.ts",
+    "app/src/lib/representation/data/types/external/file.ts",
+    "app/src/lib/representation/data/types/semantic/material.ts",
+    "app/src/lib/representation/store/tables.ts"
+  ], "modified", "representation", "External and semantic schemas", "Add one strict file row and distinct text/code/data/image material projection contracts."),
+  ...files([
+    "app/src/lib/representation/data/behavior/workspace/categories.ts",
+    "app/src/lib/representation/data/types/workspace/categories.ts"
+  ], "generated", "workspace", "category-keys", "Register the External category and external.library content key in generated vocabulary."),
+  ...files([
+    "app/src/lib/representation/data/behavior/workspace/opening.ts",
+    "app/src/lib/representation/data/behavior/workspace/starting.ts",
+    "app/src/lib/representation/data/behavior/workspace/views.ts",
+    "app/src/lib/representation/data/types/workspace/views.ts"
+  ], "modified", "workspace", "Workspace vocabulary", "Bind External singleton opening, permanent start state, Context views, and file/directory Inspector keys."),
 
-  modified("app/src/lib/development-views/demo-shell/demo-shell.svelte", "reference", "Demo index", "Link the External implementation reference suite."),
-  created("app/src/lib/development-views/external-files-reference/types.ts", "reference", "Reference suite", "Define reference navigation, file-ledger, and format contracts."),
-  created("app/src/lib/development-views/external-files-reference/procedures/navigation.ts", "reference", "Reference suite", "Define the five-page implementation reference route."),
-  created("app/src/lib/development-views/external-files-reference/procedures/contracts.ts", "reference", "Reference suite", "Project actual ingestion steps, format coverage, and verified current truths."),
-  created("app/src/lib/development-views/external-files-reference/procedures/file-plan.ts", "reference", "Reference suite", "Maintain this exact production/reference footprint with ownership and rationale."),
-  created("app/src/lib/development-views/external-files-reference/components/reference-header.svelte", "reference", "Reference suite", "Provide persistent branch-aware navigation."),
-  created("app/src/lib/development-views/external-files-reference/components/reference.css", "reference", "Reference suite", "Share responsive visual language across the reference pages."),
-  created("app/src/lib/development-views/external-files-reference/components/overview.svelte", "reference", "Reference suite", "Explain the implemented architecture and invariants."),
-  created("app/src/lib/development-views/external-files-reference/components/ingestion.svelte", "reference", "Reference suite", "Explain actual upload ordering, classification, recovery, limits, and semantic routing."),
-  created("app/src/lib/development-views/external-files-reference/components/stable-tab-mock.svelte", "reference", "Reference suite", "Provide an interactive manager specimen; production behavior is separately live under /app/dev-project."),
-  created("app/src/lib/development-views/external-files-reference/components/stable-tab.svelte", "reference", "Reference suite", "Explain actual stable-tab, context, selection, and Inspector behavior."),
-  created("app/src/lib/development-views/external-files-reference/components/file-plan.svelte", "reference", "Reference suite", "Render the actual reviewable file map and verification matrix."),
-  created("app/src/lib/development-views/external-files-reference/components/implementation.svelte", "reference", "Reference suite", "Collect implementation learnings, concessions, recovery boundaries, and live-test discoveries."),
-  created("app/src/lib/development-views/external-files-reference/external-files-reference.svelte", "reference", "Reference suite", "Compose the overview route."),
-  created("app/src/lib/development-views/external-files-reference/external-files-reference.md", "reference", "Reference suite", "Preserve the same implementation truth as durable textual architecture documentation."),
-  created("app/src/routes/demo/external-files/+page.svelte", "reference", "Reference routes", "Serve the system overview."),
-  created("app/src/routes/demo/external-files/ingestion/+page.svelte", "reference", "Reference routes", "Serve ingestion."),
-  created("app/src/routes/demo/external-files/stable-tab/+page.svelte", "reference", "Reference routes", "Serve the stable library reference."),
-  created("app/src/routes/demo/external-files/file-plan/+page.svelte", "reference", "Reference routes", "Serve the exact file map."),
-  created("app/src/routes/demo/external-files/implementation/+page.svelte", "reference", "Reference routes", "Serve implementation learnings."),
-  created("app/test/browser/external-files-reference.spec.ts", "verification", "Reference suite", "Verify all diagrams, interactive manager specimen, file map, implementation page, and compact responsiveness."),
-  created("app/test/browser/external-files.spec.ts", "verification", "External system", "Prove real upload, verified attachment response, rename provenance, deletion, and no editor tab in Chromium.")
+  ...files([
+    "app/src/lib/runtime/server/server.md",
+    "app/src/lib/runtime/server/start.server.ts",
+    "app/src/lib/runtime/server/test/construction.test.ts",
+    "app/src/lib/runtime/server/test/lifetime.test.ts",
+    "app/src/lib/runtime/server/types.ts"
+  ], "modified", "model", "Runtime composition", "Compose one External storage instance and reconcile strict row claims only after Store journal recovery."),
+  ...files([
+    "app/src/lib/surfaces/context/procedures/rail-entries.ts",
+    "app/src/lib/surfaces/status-bar/procedures/resource-name.ts",
+    "app/src/lib/surfaces/tab-bar/tab-bar.svelte"
+  ], "modified", "workspace", "Shared surfaces", "Expose External Overview/History, resolve file names through their owning capability, and render the permanent tab."),
+
+  ...files([
+    "app/src/routes/app/[project]/external-files/[externalFile]/+server.ts"
+  ], "created", "transport", "Native response", "Serve project-authorized verified attachments with safe filenames, ranges, ETag, response bounds, nosniff, and sandbox CSP."),
+
+  ...files([
+    "app/src/lib/development-views/demo-shell/demo-shell.svelte"
+  ], "modified", "reference", "Demo index", "Link the served External reference suite."),
+  ...files([
+    "app/src/lib/development-views/external-files-reference/components/file-plan.svelte",
+    "app/src/lib/development-views/external-files-reference/components/implementation.svelte",
+    "app/src/lib/development-views/external-files-reference/components/ingestion.svelte",
+    "app/src/lib/development-views/external-files-reference/components/overview.svelte",
+    "app/src/lib/development-views/external-files-reference/components/reference-header.svelte",
+    "app/src/lib/development-views/external-files-reference/components/reference.css",
+    "app/src/lib/development-views/external-files-reference/components/stable-tab-mock.svelte",
+    "app/src/lib/development-views/external-files-reference/components/stable-tab.svelte",
+    "app/src/lib/development-views/external-files-reference/external-files-reference.md",
+    "app/src/lib/development-views/external-files-reference/external-files-reference.svelte",
+    "app/src/lib/development-views/external-files-reference/procedures/contracts.ts",
+    "app/src/lib/development-views/external-files-reference/procedures/file-plan.ts",
+    "app/src/lib/development-views/external-files-reference/procedures/navigation.ts",
+    "app/src/lib/development-views/external-files-reference/types.ts",
+    "app/src/routes/demo/external-files/+page.svelte",
+    "app/src/routes/demo/external-files/file-plan/+page.svelte",
+    "app/src/routes/demo/external-files/implementation/+page.svelte",
+    "app/src/routes/demo/external-files/ingestion/+page.svelte",
+    "app/src/routes/demo/external-files/stable-tab/+page.svelte"
+  ], "created", "reference", "Served implementation reference", "Provide detailed responsive architecture, ingestion, manager, file-ledger, and implementation-learning pages with Mermaid diagrams."),
+  ...files([
+    "app/test/browser/external-files-reference.spec.ts",
+    "app/test/browser/external-files.spec.ts"
+  ], "created", "verification", "Chromium", "Drive the served references and real External lifecycle, directory, persistence, attachment, and failure flows."),
+  ...files([
+    "docs/semantic-material-layer.md",
+    "docs/semantic-overlay.md"
+  ], "modified", "semantic", "Semantic architecture", "Document current External exact/material freshness and the External-owned native storage model.")
 ] as const;
 
 export const IMPLEMENTATION_LAYERS = [

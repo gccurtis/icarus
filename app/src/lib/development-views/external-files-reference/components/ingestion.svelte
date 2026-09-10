@@ -17,7 +17,8 @@
     participant Native as External native admission
     participant Bytes as externalFileStorage
     participant Store as representation store
-    participant Sem as semantic-overlay queue
+    participant UoW as Store transaction
+    participant Sem as semantic outbox
     participant Library as External singleton
 
     Person->>View: choose files or directory
@@ -36,12 +37,11 @@
       alt same path and hash
         Store-->>Cap: reuse admitted row
       else new path
-        Cap->>Store: create externalFiles row at revision 1
-        Store-->>Cap: externalFileId
+        Cap->>UoW: row + History + forget + outbox
+        UoW-->>Cap: one durable commit
       end
-      Cap->>Store: append durable uploaded history event
-      Cap->>Sem: enqueue material only when code, CSV/TSV or image
-      Sem-->>Cap: queued, unsupported, or recoverable enqueue failure
+      Cap->>Bytes: claim publication for committed row id
+      UoW->>Sem: exact text, material, or no work
     end
     Cap-->>View: successes plus per-file rejections
     deactivate Cap
@@ -55,13 +55,15 @@
     classDef base fill:#fffdf8,stroke:#315a72,color:#172232
 
     A["Verified bytes + canonical name"]:::base --> B{"Server-sniffed family"}:::base
-    B -->|plain text or source code| C["externalFile::code<br/>one material target"]:::yes
+    B -->|plain prose / Markdown| T["externalFile::text<br/>one exact-text target"]:::yes
+    B -->|programming source| C["externalFile::code<br/>one material target"]:::yes
     B -->|CSV / TSV| D["externalFile::data"]:::yes
     B -->|image| I["externalFile::image"]:::yes
     B -->|PDF / Office| P["managed + download<br/>no extraction claim"]:::warn
     B -->|audio / video| AV["managed + download<br/>no transcript claim"]:::warn
     B -->|unknown or active| R["manage + force attachment<br/>no inline execution"]:::stop
 
+    T --> TE["exact lane<br/>verified UTF-8 text<br/>one quoteable source"]:::yes
     C --> CM["material lane<br/>bounded code profile<br/>64 KB source excerpt to descriptor"]:::yes
     D --> DM["material lane<br/>bounded data profile<br/>+ optional authored context"]:::yes
     I --> IM["material lane<br/>direct original visual vector<br/>no generated summary"]:::yes
@@ -75,7 +77,7 @@
     participant External as external-files capability
     participant Native as externalFileStorage
     participant Rows as externalFiles table
-    participant Sem as semantic-overlay
+    participant UoW as Store transaction
     participant History as durable History
 
     Person->>Inspector: choose Re-upload and select bytes
@@ -83,15 +85,15 @@
     External->>External: scope, bound, recount, derive descriptor
     External->>Native: publish and verify candidate bytes
     Native-->>External: new or reused receipt
-    External->>Sem: retire prior revision's semantic products
-    alt retirement fails
-      External->>Native: compensate candidate if unclaimed
-      External-->>Inspector: rejected, original row stays unchanged
-    else retirement succeeds
-      External->>Rows: CAS same id, preserve identity, replace receipt, revision + 1
-      External->>History: append re-uploaded event
-      External->>Sem: queue supported material for new revision
-      External->>Native: remove previous hash only if now unshared
+    External->>UoW: CAS row + forget + outbox + History
+    alt transaction rolls back
+      External->>Native: discard candidate publication
+      External-->>Inspector: rejected and original row and semantics remain
+    else transaction commits
+      UoW->>Rows: same id/name/path, new receipt, revision + 1
+      UoW->>History: append re-uploaded event
+      External->>Native: claim new bytes and release old row claim
+      External->>Native: collect predecessor only when unclaimed
       External-->>Inspector: accepted with same URL and resource id
     end`;
 
@@ -100,15 +102,16 @@
     Selected --> Rejected: validation fails
     Selected --> Receiving: accepted candidate
     Receiving --> Rejected: byte read or storage failure
-    Receiving --> BytesPublished: complete hash and atomic rename
-    BytesPublished --> ResourceCommitted: metadata row created
-    BytesPublished --> OrphanedBytes: metadata write fails
-    OrphanedBytes --> Reclaimed: best-effort immediate compensation
-    OrphanedBytes --> SafeOrphan: compensation also fails
-    ResourceCommitted --> SemanticQueued: enqueue succeeds
-    ResourceCommitted --> SemanticNotApplicable: no eligible lane
-    ResourceCommitted --> SemanticPending: enqueue fails
-    SemanticPending --> SemanticQueued: later backfill or queue host
+    Receiving --> BytesPublished: fsynced recovery copy + immutable canonical link
+    BytesPublished --> AtomicCommit: begin Store transaction
+    AtomicCommit --> RolledBack: failure before durable journal decision
+    AtomicCommit --> ResourceCommitted: row + History + forget + outbox commit
+    RolledBack --> Reclaimed: discard recovery copy; collect unclaimed canonical
+    ResourceCommitted --> Claimed: row claim replaces publication recovery copy
+    ResourceCommitted --> RestartRecoverable: claim finalization is interrupted
+    RestartRecoverable --> Claimed: Store recovery then storage reconciliation
+    Claimed --> SemanticQueued: outbox is eligible
+    Claimed --> SemanticNotApplicable: no eligible lane
     SemanticQueued --> SemanticCurrent: worker publishes
     SemanticQueued --> SemanticFailed: provider or adapter failure
     SemanticFailed --> SemanticQueued: backfill after correction
@@ -123,21 +126,21 @@
     ["Single file", "50,000,000 bytes", "The implemented remote-form path buffers each File before bounded native publication."],
     ["Whole batch", "250,000,000 bytes", "Bounds declared multipart memory and request work; every received file is re-counted."],
     ["Download response", "50,000,000 bytes", "The authorized route refuses a native response beyond the configured ceiling."],
-    ["External exact lane", "none", "No External file kind is chunked into exact semantic spans."],
+    ["Exact text", "5,000,000 bytes", "Plain prose/Markdown becomes one verified UTF-8 exact source; source code is not collapsed into this lane."],
     ["Image input", "50,000,000 bytes", "Matches the upload ceiling; admitted standalone images pass their original pixels directly to visual embedding."],
     ["CSV profile", "20k rows / 200k cells", "Matches the bounded existing CSV parser, including a 256-column ceiling."],
-    ["Text descriptor input", "64,000 bytes", "A deterministic head/tail excerpt gives the material summarizer verified UTF-8 without putting the full native file in a semantic row."],
+    ["Code descriptor input", "64,000 bytes", "A deterministic head/tail excerpt gives the material summarizer verified UTF-8 without putting the full source file in a semantic row."],
     ["Path length", "512 UTF-8 bytes", "Enforced after NFC and slash normalization; there is no separate leaf-name filesystem operation."]
   ] as const;
 
   const failureRows = [
     ["Batch validation", "No bytes written", "Return field/file errors", "Choose again"],
     ["File.arrayBuffer", "No row; no blob", "Return read-failed for that candidate", "Retry candidate"],
-    ["Native put", "No row; temporary sibling is removed", "Return storage-failed for that candidate", "Retry candidate"],
-    ["Metadata create", "Verified orphan may exist", "Return store-failed and remove the unclaimed blob best-effort", "Retry safely; same hash can reuse an orphan"],
-    ["Semantic enqueue", "File row and native bytes are usable", "Return enqueue-failed on the successful receipt", "A queue host or backfill can requeue"],
+    ["Native publication", "No row; a complete recovery copy may exist", "Return storage-failed or settle the ambiguous publication", "Startup removes interrupted unclaimed copies"],
+    ["Store before journal commit", "All row, History, semantic-forget and outbox changes roll back", "Discard publication recovery state", "Original state remains exact"],
+    ["Store after journal commit", "Committed row and outbox are recoverable even when the request fails", "Retain publication recovery state", "Store journal recovery runs before native reconciliation and claims the committed bytes"],
     ["Semantic worker", "File row is usable", "Durable failed job with sanitized reason", "Backfill after correcting provider, bytes, or adapter input"],
-    ["Re-upload before row CAS", "Original row still points at original bytes; prior semantics may have been retired", "Reject and compensate unclaimed candidate bytes", "Old resource remains usable; backfill can restore retired semantics"],
+    ["Re-upload transaction rollback", "Original row, History and semantic products remain together", "Discard candidate publication", "Retry against the same base revision"],
     ["Download response", "Source remains manageable", "Missing/corrupt/oversized bytes fail explicitly; invalid Range returns 416", "Repair native storage or retry a valid attachment range"]
   ] as const;
 
@@ -145,7 +148,7 @@
     ["Scope before input", "Call requireScope() before validation and never accept browser-authored projectId, createdBy, storageId, hash, or subkind."],
     ["Path normalization", "Convert backslashes, normalize NFC, preserve folder display, and reject dot/empty segments, absolute roots, drive prefixes, NUL, traversal, and duplicate canonical paths."],
     ["Byte authority", "Recount received bytes and calculate SHA-256 server-side. File.size is checked twice; extension and browser MIME remain classification hints."],
-    ["Format policy", "Sniff PNG, JPEG, GIF, WebP, PDF, and ZIP signatures. Canonical textual/code and data extensions override arbitrary browser MIME; other valid declared types are retained. All bytes remain attachment-only."],
+    ["Format policy", "Sniff PNG, JPEG, GIF, WebP, PDF, ZIP, MP3, WAV, and MP4 signatures before caller MIME. Then use canonical extensions to distinguish prose, source code, and structured data. All bytes remain attachment-only."],
     ["Safe serving", "Authorize every read. Use nosniff, sandbox CSP, escaped dual filenames, bounded single ranges, a SHA-256 ETag, private/no-cache, and Content-Disposition attachment."],
     ["Operational bounds", "Cap candidates, bytes, paths, parser work, and concurrent uploads. If archives arrive later, add entry/decompression/ratio limits before extraction."]
   ] as const;
@@ -186,7 +189,7 @@
         </p>
       </div>
       <div class="diagram-frame">
-        <MermaidDiagram source={uploadSequence} label="External file upload sequence" caption="The semantic enqueue is deliberately after the externalFiles row exists and is safe to retry." minHeight="39rem" />
+        <MermaidDiagram source={uploadSequence} label="External file upload sequence" caption="Row identity, History, semantic forget, and semantic outbox commit together; native recovery copies bridge the filesystem/Store boundary." minHeight="39rem" />
       </div>
       <ol class="number-list steps">
         {#each INGESTION_STEPS as step}
@@ -247,7 +250,7 @@ File.webkitRelativePath`}</code></pre>
         <p>Every accepted format gets a manageable library row. Classification decides safe Inspector actions and eligible semantic lanes; it does not require a dedicated editor or imply that a parser succeeded.</p>
       </div>
       <div class="diagram-frame">
-        <MermaidDiagram source={routingDiagram} label="Format classification and semantic routing" caption="Unified text/code, CSV/TSV, and image are the only External material adapters. External has no exact lane; every other family is intentionally managed-only." minHeight="38rem" />
+        <MermaidDiagram source={routingDiagram} label="Format classification and semantic routing" caption="Plain prose uses exact semantics. Source code, CSV/TSV, and images use distinct material adapters. Every other family is intentionally managed-only." minHeight="38rem" />
       </div>
       <div class="table-wrap formats">
         <table class="reference-table">
@@ -269,7 +272,7 @@ File.webkitRelativePath`}</code></pre>
       </div>
       <div class="callout">
         <AlertTriangle size={18} strokeWidth={1.8} aria-hidden="true" />
-        <div><h3>External has one canonical textual family.</h3><p>The upload classifier and material profiler share the External-owned language recognizer. Plain text, Markdown, XML, and recognized source code all become <code>externalFile::code</code>; a persisted legacy <code>text</code> subkind is canonicalized on read. Known extensions are resolved before arbitrary browser MIME.</p></div>
+        <div><h3>Prose and source code are intentionally different current families.</h3><p>Plain text, Markdown, and comparable prose become <code>externalFile::text</code> and enter the exact lane. Recognized programming source becomes <code>externalFile::code</code> and enters the code/material lane. Structured data has its own <code>data</code> classification. No alias or read-time canonicalization changes a stored row.</p></div>
       </div>
     </section>
 
@@ -283,14 +286,14 @@ File.webkitRelativePath`}</code></pre>
       </div>
       <div class="callout success">
         <CheckCircle2 size={18} strokeWidth={1.8} aria-hidden="true" />
-        <div><h3>Upload and re-upload intentionally mean different things.</h3><p>Uploading different bytes at an occupied path returns a path conflict. Re-upload from that file's Inspector retires the old material revision and updates the same represented resource, so references remain intact.</p></div>
+        <div><h3>Upload and re-upload intentionally mean different things.</h3><p>Uploading different bytes at an occupied path returns a path conflict. Re-upload from that file's Inspector atomically forgets the old semantic revision, records new outbox intent, and updates the same represented resource, so references remain intact.</p></div>
       </div>
     </section>
 
     <section class="section">
       <div class="section-head">
-        <div><span class="kicker">Consistency and recovery</span><h2>No distributed transaction is assumed</h2></div>
-        <p>The byte directory and JSON-backed table store do not share a transaction. Ordering makes every intermediate condition understandable and repairable.</p>
+        <div><span class="kicker">Consistency and recovery</span><h2>Atomic metadata, recoverable native publication</h2></div>
+        <p>The filesystem and Store use an explicit publication protocol. The Store transaction is the authority for rows, History, semantic forget, and outbox intent; fsynced publication copies and row claims make every crash boundary recoverable.</p>
       </div>
       <div class="diagram-frame">
         <MermaidDiagram source={consistencyDiagram} label="Upload and semantic lifecycle state machine" caption="Manageability begins at ResourceCommitted. Semantic states enrich the selected Inspector subject but do not redefine upload success." minHeight="36rem" />

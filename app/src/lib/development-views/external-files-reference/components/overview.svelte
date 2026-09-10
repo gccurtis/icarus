@@ -33,6 +33,7 @@
     X["Context<br/>overview + history"]:::existing
     I["Inspector<br/>file or directory manager"]:::existing
     G["Findings<br/>deferred managed kind"]:::extend
+    E["exact-text worker<br/>plain prose + locators"]:::existing
     M["material worker<br/>code profile · data profile<br/>or direct image vector"]:::existing
 
     U -->|multipart candidates| F -->|bounded bytes| D
@@ -46,7 +47,8 @@
     W --> X
     W --> I
     G -. future adapter .-> C
-    Q -. asynchronous .-> M`;
+    Q -. text .-> E
+    Q -. code · data · image .-> M`;
 
   const contracts = [
     {
@@ -67,7 +69,7 @@
     {
       icon: Workflow,
       title: "Material receives admitted meaning",
-      text: "Plain text and source code share one code-profile material; CSV/TSV gets one data material; standalone images become one native visual vector. Other media stays managed without semantic rows."
+      text: "Plain prose enters the exact-text lane; programming source enters the code/material lane; CSV/TSV gets a data material; standalone images get one native visual vector. Other media stays managed without semantic rows."
     }
   ] as const;
 
@@ -109,19 +111,19 @@
     ["Selected item", "focus + Selection", "The selected externalFileId restores the row and drives external.file in Inspector without becoming the tab identity."],
     ["Managed kinds", "files now · findings later", "The category is intentionally broader than the first adapter and does not promise editors for either kind."],
     ["Byte owner", "External", "The capability derives hash, size, media type, and subkind; material receives a trusted reference rather than owning general bytes."],
-    ["Byte repository", "externalFileStorage", "A narrowly named model verifies and persists External-owned descriptors; it also reads legacy material-directory blobs for compatibility."],
+    ["Byte repository", "externalFileStorage", "The sole native-I/O owner verifies and persists External-owned descriptors, durable publication copies, represented-row claims, and garbage-collection quarantine."],
     ["Folder model", "relativePath projection", "Directories remain views over rows, but files and whole subtrees can move through revision-aware capability procedures."],
     ["Upload transport", "remote form", "SvelteKit remote forms carry File/File[]; command payloads are not a binary boundary."],
     ["Read transport", "authorized response route", "Verified/ranged bytes are never serialized through metadata queries; every format downloads as an attachment."],
     ["Launcher behavior", "search all · recent one", "Project Overview and New Tab search focus files in External. New Tab Recent keeps only the newest file card so a batch cannot monopolize the shelf."],
     ["Local rename", "name + path leaf", "Double-click or Rename updates the local name and path leaf, preserves original upload name/bytes, advances revision, and requeues eligible meaning."],
     ["Path change", "move", "Double-click Path or use Move; file CAS protects one row and directory tokens protect an atomic subtree replacement."],
-    ["Delete", "usage-safe hard delete", "Retire semantic products, recheck revision and usage, remove the row, then immediately reclaim only an unshared hash."],
-    ["Re-upload", "same resource identity", "Re-upload is the explicit update path: keep id/name/path, replace native receipt, increment revision, retire old meaning, queue supported new meaning, and reclaim an unshared predecessor blob."],
-    ["Semantic routing", "material only", "External exact ingestion is disabled. Plain text and source code share externalFile::code; CSV/TSV uses a bounded data profile; images use their original visual embedding; all other types stay outside the overlay."],
+    ["Delete", "usage-safe atomic delete", "Inside one Store transaction, recheck revision/usage, forget semantic products, write the deletion outbox and History, and remove the row; then release its native claim and reclaim only an unshared hash."],
+    ["Re-upload", "same resource identity", "Re-upload is the explicit update path: publish candidate bytes, atomically keep id/name/path while replacing the receipt and advancing History/outbox/revision, then release the predecessor claim and collect only an unshared blob."],
+    ["Semantic routing", "exact + material", "Plain text and Markdown use externalFile::text in the exact lane. Programming source uses externalFile::code; CSV/TSV uses data; images use original visual input. Other types stay outside the overlay."],
     ["Dataset context", "optional authored text", "CSV/TSV Inspector context is revisioned input to material meaning because tabular values can be ambiguous without human framing."],
     ["Context views", "Overview + History", "There is no Policy page. History is a durable event projection and survives deletion of the managed file."],
-    ["Worker timing", "post-commit durable jobs", "Semantic failure cannot roll back ingestion; queue processors and backfill are real seams, but this branch does not deploy an always-on worker or expose manual Inspector refresh."]
+    ["Worker timing", "atomic outbox, asynchronous workers", "The mutation commits semantic intent with its row and History. Provider work stays asynchronous; failure cannot roll back an admitted file, and Inspector exposes no manual refresh control."]
   ] as const;
 </script>
 
@@ -160,7 +162,7 @@
 
     <section class="section">
       <div class="section-head">
-          <div><span class="kicker">Whole system</span><h2>One library, one byte owner, one eligible semantic lane</h2></div>
+          <div><span class="kicker">Whole system</span><h2>One library, one byte owner, explicit semantic lanes</h2></div>
         <p>
           The capability turns untrusted browser input into a trusted native descriptor, byte receipt, and
           project row. The singleton library consumes that identity; the material lane receives only supported
@@ -197,7 +199,7 @@
         {#each CURRENT_TRUTHS as truth}
           <article>
             <header>
-              <span class:exists={truth.state === "exists"} class:partial={truth.state === "partial"}>{truth.state}</span>
+              <span class:exists={truth.state === "exists"}>{truth.state}</span>
               <strong>{truth.area}</strong>
             </header>
             <p>{truth.contract}</p>
@@ -209,7 +211,7 @@
         <AlertTriangle size={18} strokeWidth={1.8} aria-hidden="true" />
         <div>
           <h3>A stored preview is not the same promise as parsed knowledge.</h3>
-          <p>PDF, Office, audio, video, and unknown binaries can be safely stored and downloaded. They are not viewed, parsed, transcribed, or represented as searchable knowledge in this implementation. Plain text is intentionally part of the unified code-profile material family.</p>
+          <p>PDF, Office, audio, video, and unknown binaries can be safely stored and downloaded. They are not viewed, parsed, transcribed, or represented as searchable knowledge in this implementation. Plain prose and programming source intentionally remain different classifications and enter different semantic lanes.</p>
         </div>
       </div>
     </section>
@@ -278,7 +280,6 @@
   .truth-grid header { display: flex; align-items: center; gap: .55rem; }
   .truth-grid header span { padding: .22rem .38rem; border-radius: 999px; font: 700 7px/1 var(--token-font-mono); letter-spacing: .06em; text-transform: uppercase; }
   .truth-grid header span.exists { background: var(--success-soft); color: var(--success); }
-  .truth-grid header span.partial { background: var(--attention-soft); color: var(--attention); }
   .truth-grid header strong { font-size: 10px; }
   .truth-grid p { margin: .75rem 0; color: var(--ink-2); font-size: 10.5px; }
   .truth-grid code { display: block; margin-top: auto; color: var(--ink-3); font-size: 8px; overflow-wrap: anywhere; }

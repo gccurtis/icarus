@@ -350,7 +350,7 @@
         {/if}
 
         {#if confirmingDelete}
-          <section class="delete-confirm" role="alert"><strong>Delete {nameOf(selected)}?</strong><p>Deletion is refused while references exist. Otherwise semantics and the row retire before unshared bytes are reclaimed.</p><div class="inline-actions"><button class="danger" type="button" disabled={selected.references.length > 0} onclick={removeSelected}>Delete file</button><button type="button" onclick={() => (confirmingDelete = false)}>Cancel</button></div></section>
+          <section class="delete-confirm" role="alert"><strong>Delete {nameOf(selected)}?</strong><p>Deletion is refused while live references exist. Otherwise semantic forget/outbox, History, and row removal commit together before the row's native claim is released.</p><div class="inline-actions"><button class="danger" type="button" disabled={selected.references.length > 0} onclick={removeSelected}>Delete file</button><button type="button" onclick={() => (confirmingDelete = false)}>Cancel</button></div></section>
         {/if}
       {/if}
     </aside>

@@ -39,7 +39,7 @@
     OPEN["OPENING external<br/>library + overview rail"]:::registry
     START["SINGLETONS + permanent<br/>tab-bar control"]:::registry
     CAP["external-files capability<br/>ingest · replace · move · history · delete"]:::state
-    SEM["semantic-overlay capability<br/>material status · retire · enqueue"]:::state
+    SEM["semantic-overlay capability<br/>exact/material status · atomic outbox"]:::state
 
     subgraph Frame["App frame — sibling manager surfaces"]
       CTX["Context host<br/>library-wide state"]:::host
@@ -82,7 +82,7 @@
     T["revision token<br/>hash of descendant id + revision + path"]:::guard
     I["Directory Inspector<br/>rename or move research/site"]:::mutation
     C{"collision and self-descendant checks"}:::guard
-    A["store.replaceRows<br/>all descendant paths in one commit"]:::mutation
+    A["Store.transaction<br/>all descendant rows + History<br/>+ semantic outbox"]:::mutation
 
     R1 --> P
     R2 --> P
@@ -110,7 +110,7 @@
     {
       panel: "Inspector panel",
       question: "What is this selected file, and what can I do to it?",
-      owns: "A compact top action row (Rename, Re-upload, Download, Move, Delete), double-click name/path edits, Details, reference count/list, dataset context, and material status/summary only where applicable. A directory Inspector manages a projected subtree.",
+      owns: "A compact top action row (Rename, Re-upload, Download, Move, Delete), double-click name/path edits, availability and Details, reference count/list, dataset context, semantic status, and generated descriptions only when present. A directory Inspector manages a projected subtree.",
       mustNot: "Edit source bodies, become a format-specific editor, expose internal hash/storage fields, show summary UI for unsupported files, or imply unsupported extraction exists.",
       keys: "external.file · external.directory (Findings deferred)"
     }
@@ -118,16 +118,16 @@
 
   const stateOwnership = [
     ["Native descriptor", "external-files capability", "server-derived hash + size + storage id + MIME + subkind", "Re-derived on re-upload"],
-    ["Source bytes", "externalFileStorage model", "verified content-addressed native value; primary External directory plus legacy read compatibility", "Yes; replaced explicitly"],
+    ["Source bytes", "externalFileStorage model", "verified content-addressed native value, publication recovery copy, and represented-row claim", "Yes; replaced explicitly"],
     ["ExternalFile row", "representation store", "original upload name + mutable local name/path + optional dataset context + revision + actors + native receipt", "Yes"],
     ["Virtual directory", "external-files projection", "path, parent, direct/descendant counts, byte totals, opaque descendant revision token", "No row — refetch"],
     ["Tab identity", "workspace TabRecord", "id external, category external, no resourceId", "Yes"],
     ["Selected subject", "workspace TabView", "focus externalFileId + external.file selection + active Context lens", "Yes"],
     ["Library query", "external-files capability cache", "all admitted project rows plus unavailable entries and live limits", "No — refetch"],
-    ["Inspector edit draft", "external.file component", "rename draft, confirmation, pending action, recoverable error", "Never"],
+    ["Inspector edit draft", "instance-owned file/directory state", "rename/move/context drafts, confirmation, pending action, recoverable error", "Never"],
     ["Semantic products", "semantic overlay", "material eligibility, job, profile/native visual facet, optional generated descriptor, generation", "Yes, but derived"],
     ["History event", "activity table via external-files", "immutable project-scoped lifecycle event independent of the current row", "Yes; last 200 read"],
-    ["Deletion cleanup", "external-files + semantic capabilities", "usage refusal, semantic retirement, hard row removal, history append, shared-hash check, unshared-byte removal", "Ordered workflow"]
+    ["Deletion cleanup", "external-files capability", "typed usage refusal plus one Store transaction for forget/outbox/row/history, then claim release and unshared-byte collection", "Atomic metadata + idempotent cleanup"]
   ] as const;
 
   const managerStates = [
@@ -138,7 +138,7 @@
     ["Unavailable row", "Stored metadata is corrupt", "Report a bounded unavailable count while valid rows remain manageable."],
     ["Selected file missing", "Row was deleted or access changed", "Clear stale selection, keep the singleton open, and return focus to the inventory."],
     ["Bytes unavailable", "Verified read fails", "Inspector preserves trusted metadata, disables download, and exposes report/recovery state."],
-    ["Semantic limited", "Queued, failed, or unsupported", "Inspector describes material state only for unified text/code, data, and image and has no manual refresh or misleading summary block."],
+    ["Semantic limited", "Queued, failed, or unsupported", "Inspector describes exact-text state for prose, material state for code/data/image, and has no manual refresh or misleading generated-summary block."],
     ["Selected directory changed", "A descendant revision token is stale", "Reject the subtree move, refetch, and keep the current directory selected."]
   ] as const;
 
@@ -148,12 +148,12 @@
     ["Select a row", "Single click aligns durable focus with { kind: external-file, id } and opens external.file. Selection changes the Inspector, never the tab list."],
     ["Upload", "Files and directories enter through the library action. Successful rows appear immediately; a chosen receipt may become the inspected subject."],
     ["Rename locally", "Rename or double-click Name performs file CAS, updates the name and path leaf, preserves original upload name and bytes, and advances revision."],
-    ["Move a file", "Move or double-click Path performs file CAS against the complete canonical destination and rejects a collision."],
+    ["Move a file", "Move or double-click Path changes the destination directory while retaining the leaf name; file CAS, canonical path admission, and path uniqueness commit with History and semantic outbox."],
     ["Move a directory", "Select a projected folder and rename/move it in external.directory. A descendant-set token rejects stale work; every affected path commits atomically."],
     ["Re-upload", "The top action chooses replacement bytes for the same row. Name/path/id and existing references remain; byte receipt and material revision change."],
-    ["Delete", "Inspector requires confirmation and zero represented usage; it retires semantics, rechecks revision/usage, hard-deletes the row, then removes only an unshared blob."],
-    ["Review semantics", "Unified text/code and data may expose a generated summary; standalone images explain direct visual embedding; unsupported files show no semantic-summary section."],
-    ["Add dataset context", "CSV/TSV exposes authored context in the Inspector. Saving or clearing it advances revision, retires prior material output, and queues the revised profile."],
+    ["Delete", "Inspector requires confirmation and zero live represented usage. One Store transaction forgets semantics, records deletion intent and History, and removes the row; native cleanup then releases its claim and removes only an unshared blob."],
+    ["Review semantics", "Prose exposes exact-text status without a generated summary. Code/data can expose a generated description only when one exists; standalone images explain direct visual embedding; managed-only formats stay explicit."],
+    ["Add dataset context", "CSV/TSV exposes authored context in the Inspector. Saving or clearing it advances revision while semantic forget and revised outbox intent commit in the same Store transaction."],
     ["Download", "Inspector uses the authorized attachment response with range and integrity headers. No inline quick look and no format-specific Icarus editor is implemented."],
     ["Add Findings later", "The library gains a finding adapter and external.finding lens; singleton identity, Content shell, Context, selection, and routing stay unchanged."]
   ] as const;
@@ -213,7 +213,7 @@
     <section class="section">
       <div class="section-head">
         <div><span class="kicker">Stable identity</span><h2>The category persists; the selected resource changes</h2></div>
-        <p>The implementation special-cases singleton categories: their key and tab ID are the category. External uses that existing mechanism, and workspace adoption adds its missing landing to older snapshots.</p>
+        <p>The implementation special-cases singleton categories: their key and tab ID are the category. External uses that current mechanism and persists its landing, focus, and selection in the current workspace schema.</p>
       </div>
       <div class="diagram-frame">
         <MermaidDiagram source={identityDiagram} label="External singleton identity, file selection, and restoration" caption="The stable identity is external. An externalFiles id is restorable focus and Inspector selection, never a per-file TabRecord.resourceId." minHeight="32rem" />

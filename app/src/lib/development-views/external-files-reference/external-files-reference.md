@@ -1,123 +1,154 @@
-# External files — as implemented
+# External files — implemented reference
 
-Status: implemented and browser-tested on `work/external-files`, from the
-`work/derived-output-architecture` snapshot at `1166f8e`.
+Status: current implementation on `work/external-files`, rebased onto
+`origin/main` at `9f9a13e`. This document describes running code, not a proposed
+contract and not a compatibility design.
 
-This is an implementation reference, not a build contract. The rendered suite is:
+Rendered references:
 
-- `/demo/external-files` — system boundaries and invariants;
-- `/demo/external-files/ingestion` — upload, re-upload, format routing, failure and security;
-- `/demo/external-files/stable-tab` — interactive Content, Context and Inspector mock;
-- `/demo/external-files/file-plan` — exact implementation ledger and verification map;
-- `/demo/external-files/implementation` — consolidated implementation learnings;
-- `/app/dev-project` — the actual production External surface.
+- `/demo/external-files` — ownership, invariants, and system topology;
+- `/demo/external-files/ingestion` — admission, classification, transactions,
+  native publication, failure recovery, and semantic routing;
+- `/demo/external-files/stable-tab` — interactive Content, Context, and
+  Inspector manager specimen;
+- `/demo/external-files/file-plan` — implemented file/change/test ledger;
+- `/demo/external-files/implementation` — consolidated lessons from building it;
+- `/app/dev-project` — the actual External product surface.
 
-## Responsibility boundary
+## 1. Product definition
 
-External is the umbrella capability for native files. It owns admission, identity,
-classification, storage coordination, the project resource row, path management,
-history, authorized download, reference-safe deletion, and delegation of supported
-meaning.
+**External** is a project-scoped library for resources that do not have an
+Icarus editor. It is a permanent singleton tab like Overview and Templates.
+Files are managed *inside* that tab; selecting a file never opens a file-type
+editor or creates another workspace tab. Findings can become another managed
+kind later, but are intentionally outside this implementation.
 
-The semantic material lane does not own general byte management. It receives an
-authorized External resource reference, asks External's storage model for the
-verified value it needs, and produces a derived profile, descriptor, or embedding.
+The three panels have distinct jobs:
+
+| Surface | Responsibility | Explicit non-responsibility |
+| --- | --- | --- |
+| Content | file/folder upload, Table and Directory views, breadcrumbs, navigation, search, kind/semantic filters, sort, selection, mixed-result receipts | previewing or editing file content; lifecycle controls on every row |
+| Context | library Overview and durable History | file-specific actions or generated descriptions |
+| Inspector | selected file/directory identity and actions; availability, details, references, dataset context, semantic status, generated description when present | source-body editing, file-type viewers, hash/storage internals |
 
 ```mermaid
 flowchart LR
-  Browser[Untrusted browser File] --> Scope[External scope + limits]
-  Scope --> Path[Canonical relative path]
-  Path --> Read[Bounded byte read + recount]
-  Read --> Admit[External native admission]
-  Admit --> Descriptor[hash + size + storageId + MIME + subkind]
-  Descriptor --> Storage[externalFileStorage verifies and publishes]
-  Storage --> Row[externalFiles project row]
-  Row --> Library[Permanent External library]
-  Row --> History[Durable External History]
-  Row -. supported committed ref .-> Material[Semantic material lane]
-  Material --> Code[Text/code profile + source-backed descriptor]
-  Material --> Data[CSV/TSV profile + authored context + optional descriptor]
-  Material --> Image[Direct original image vector]
-  Row -. unsupported .-> Managed[Store + manage + download only]
+  Open[Top bar, New Tab, Overview, upload receipt] --> Tab[External singleton tab]
+  Tab --> Content[Content: library]
+  Tab --> Context[Context: Overview / History]
+  Content --> Selection[Selected file or virtual directory]
+  Selection --> Inspector[Inspector: manager actions]
+  Selection -. never .-> Editor[Per-file editor tab]
 ```
 
-The usable-file boundary is a verified native receipt plus an admitted
-`externalFiles` row. Semantic work is downstream and never determines whether
-an upload succeeded.
+The singleton key and `TabRecord.id` are `external`. An optional file focus and
+an `external-file` or `external-directory` selection drive Inspector state, but
+are not tab identity. New Tab search and Project Overview discover files by
+opening this same singleton with the file focused. All existing resource types
+retain their prior opening behavior.
 
-## Durable state
+## 2. Ownership and delegation
 
-Every new `externalFiles` row writes:
+External is the umbrella capability for native files. It owns:
 
-- a project-scoped opaque id;
-- current local `name` and canonical `relativePath`;
-- immutable `originalName` from the selected File;
-- server-derived `mediaType` and `subkind`;
-- External-derived `storageId`, lowercase SHA-256 `hash`, and actual byte
-  `size`;
-- optional authored `semanticContext` for an ambiguous CSV/TSV dataset;
-- upload/connector origin, creator, updater and update time;
-- compare-and-swap `revision`, beginning at 1.
+- authenticated scope and project ownership;
+- hostile-input admission and configured bounds;
+- canonical project-relative file paths;
+- SHA-256, actual size, storage ID, media type, and subkind;
+- native publication coordination and blob reclamation;
+- the strict `externalFiles` representation row;
+- revision/CAS and path-uniqueness decisions;
+- virtual directory projection and subtree relocation;
+- durable lifecycle History;
+- typed reference safety and deletion policy;
+- semantic forget/outbox intent for each authoritative revision;
+- authorized attachment response metadata.
 
-Older rows may lack the newer fields. Strict External admission supplies bounded
-fallbacks (name-derived path, inferred subkind, unknown size, creator as updater,
-revision 0) and quarantines malformed rows instead of leaking partial metadata.
+`external-file-storage` is External's native-I/O subsystem. It owns every
+filesystem call, the content-addressed repository, publication recovery files,
+represented-row claims, garbage quarantines, integrity verification, and startup
+reconciliation. No other model opens native External storage.
 
-Folders are not durable rows. `readExternalFileLibrary` projects root and every
-ancestor directory from canonical file paths. Each projected directory has:
+The semantic overlay does not manage bytes. It receives a committed External
+resource reference and, when eligible, borrows verified content through
+`externalFileStorage` to create exact text or a material representation.
 
-- parent/name/path;
-- direct file and direct child-directory counts;
-- descendant file count and known-byte total;
-- unknown-size count for legacy rows;
-- an opaque SHA-256 token over descendant file id, revision and path.
+```mermaid
+flowchart TB
+  Browser[Untrusted browser File] --> Admission[External admission]
+  Admission --> Descriptor[hash + size + storageId + MIME + subkind]
+  Descriptor --> Native[externalFileStorage]
+  Native --> Blob[(immutable native blob)]
+  Descriptor --> Tx[Store.transaction]
+  Tx --> Row[(externalFiles row)]
+  Tx --> History[(durable History)]
+  Tx --> Forget[semantic forget]
+  Tx --> Outbox[(semantic outbox)]
+  Outbox -. asynchronous .-> Worker[exact/material worker]
+  Worker --> Native
+```
 
-That token is the compare-and-swap boundary for a directory rename/move.
+## 3. One strict current row schema
 
-Lifecycle history is durable and separate from the current file row. External
-appends project-scoped activity events for `uploaded`, `re-uploaded`,
-`renamed`, `moved`, `context-updated`, and `deleted`; the read projection
-returns the newest 200. A deleted file therefore remains visible in History.
-
-## Native storage contract
-
-External calculates the native descriptor:
+There is no legacy External schema. Reads neither migrate nor synthesize
+required values. Development fixtures are current rows.
 
 ```ts
-{
-  storageId: `_storage:${sha256}`,
-  hash: sha256,
-  size: receivedBytes.byteLength,
-  mediaType: signatureAndNameAwareType,
-  subkind: "text" | "code" | "data" | "image" | "audio" | "video" | "unknown"
-}
+type ExternalFile = {
+  _id: Id<"externalFiles">;
+  _creationTime: number;
+  projectId: Id<"projects">;
+  name: string;
+  originalName: string;
+  relativePath: string;
+  mediaType: string;
+  subkind: "text" | "code" | "data" | "image" |
+    "audio" | "video" | "unknown";
+  storageId: Id<"_storage">;
+  hash: string;
+  size: number;
+  origin: { kind: "upload" } | ConnectorOrigin;
+  createdBy: Actor;
+  updatedBy: Actor;
+  semanticContext?: string;
+  revision: number;
+  updatedAt: number;
+};
 ```
 
-`externalFileStorage` is deliberately narrow:
+Admission checks all of these invariants:
 
-```ts
-acquireMutation(): Promise<release>
-put({ storageId, hash, size, bytes, maxBytes? }): verified receipt
-read({ storageId, hash, size? }): verified Uint8Array | undefined
-remove({ storageId, hash, size? }): boolean
-```
+1. Only the exact current field set is accepted; `semanticContext` is the sole
+   optional field.
+2. The External row ID is Store-minted in the `externalFiles:` namespace.
+   Project and actor identities use the current Store's opaque, trimmed NFC,
+   control-free bounded identity form; no route token is persisted as either.
+   Storage identity is content-addressed as described below.
+3. `name` and `originalName` are trimmed NFC text, at most 240 characters, with
+   no slash, backslash, NUL, C0, or DEL control character.
+4. `relativePath` is canonical NFC project metadata, never a native path. It is
+   relative, contains no empty/`.`/`..` segment or control character, and obeys
+   the one configured UTF-8 path-byte ceiling.
+5. The path leaf equals `name` exactly.
+6. `hash` is lowercase 64-hex SHA-256 and `storageId` is exactly
+   `_storage:<hash>`.
+7. `size` is a non-negative safe integer and every native read must recount it.
+8. `mediaType` is bounded printable ASCII and `subkind` agrees with current
+   classification rules for the type/name.
+9. `revision` is a positive safe integer; creation/update times are finite and
+   non-negative.
+10. Dataset context is trimmed NFC, non-empty when present, NUL-free, and at
+    most 4,000 characters.
 
-It never discovers hash, size, MIME, subkind, project or actor. It defensively
-checks storage id ↔ hash, hash ↔ bytes, size ↔ bytes, and the I/O ceiling; verifies
-existing bytes before reuse; writes a unique complete sibling using `wx`; and
-atomically renames it to the digest. Reads re-hash and optionally re-count.
-Removal is idempotent.
+Malformed rows are quarantined from library projections and fail strict startup
+admission. There are no `legacyDirectory` reads, `data/materials` fallbacks,
+text aliases, optional required values, workspace adoption, or migration paths.
 
-New values live in `data/external-files`. Reads/removals also check the configured
-legacy `data/materials` repository so rows written before the boundary change
-remain usable. There is no eager migration.
+## 4. Ingestion
 
-The mutation lease serializes the interval that spans native publication and its
-row claim with deletion/reclamation. This is process-local, matching the current
-JSON-store deployment. Multi-process operation requires a shared claim/lock or a
-transactional object-store protocol.
-
-## Initial upload
+File upload and browser-directory upload use the same capability. A directory
+selection is a bounded list of files plus aligned `webkitRelativePath` values;
+directories are not uploaded or persisted as rows.
 
 ```mermaid
 sequenceDiagram
@@ -126,257 +157,314 @@ sequenceDiagram
   participant UI as External Content
   participant Ext as external-files
   participant Native as externalFileStorage
-  participant Rows as representation store
-  participant Hist as History
-  participant Sem as semantic-overlay
+  participant Tx as Store.transaction
+  participant Sem as semantic outbox
 
-  User->>UI: choose files or a browser directory
+  User->>UI: choose files or browser folder
   UI->>Ext: multipart File[] + indexed relativePaths[]
-  Ext->>Ext: scope, form/batch/path limits
-  loop every candidate
-    Ext->>Ext: read/recount bytes; derive complete descriptor
-    Ext->>Native: put descriptor + bytes
-    Native-->>Ext: verified/reused receipt
-    Ext->>Rows: compare canonical project path
-    alt same path + same hash
-      Rows-->>Ext: reuse current row
-    else same path + different hash
-      Rows-->>Ext: reject and direct user to Re-upload
-    else free path
-      Ext->>Rows: create revision-1 row
-      Ext->>Hist: append uploaded event
-    end
-    Ext->>Sem: enqueue only an eligible material target
+  Ext->>Ext: scope, batch/path limits, read and recount
+  Ext->>Ext: byte-first classify + derive descriptor
+  Ext->>Native: put(descriptor, bytes)
+  Native-->>Ext: canonical blob + durable publication token
+  Ext->>Tx: uniqueness + row + History + forget + outbox
+  Tx->>Sem: record eligible revision intent
+  alt transaction rolls back
+    Ext->>Native: discard token and collect unclaimed blob
+  else transaction commits
+    Ext->>Native: claim publication for row id
+  else outcome is unavailable after durable decision
+    Ext->>Native: retain token for startup reconciliation
   end
-  Ext-->>UI: ordered uploaded/reused/rejected outcomes
-  UI->>UI: refresh library and focus first success
+  Ext-->>UI: uploaded / reused / rejected per file
+  UI->>UI: refresh singleton and focus first success
 ```
 
-The two forms explicitly declare `multipart/form-data`. A browser directory's
-`webkitRelativePath` is copied into actual indexed hidden controls. This matters:
-the enhanced form serializes successful DOM controls; assigning only a remote
-field object caused real nested paths to disappear in Chromium.
+The enhanced forms explicitly declare `multipart/form-data`. Directory paths are
+rendered into real indexed hidden controls beside the selected files; assigning
+only remote-form state does not make browser-only paths successful form controls.
 
-Implemented bounds are 100 files per batch, 50,000,000 bytes per file,
-250,000,000 bytes per batch, and 512 UTF-8 bytes per normalized path. The remote
-form buffers each `File`; this is bounded, not streaming or resumable.
+Implemented configuration:
 
-Path admission normalizes NFC and backslashes, then rejects absolute/drive roots,
-NUL, empty segments, `.`, `..`, duplicate canonical paths, and excess byte
-length. A relative path is display/project metadata and is never joined to the
-server's native repository.
+| Rule | Value |
+| --- | ---: |
+| files per batch | 100 |
+| received bytes per file | 50,000,000 |
+| received bytes per batch | 250,000,000 |
+| canonical relative path | 512 UTF-8 bytes |
+| authorized download response | 50,000,000 bytes |
 
-Signature checks currently recognize PNG, JPEG, GIF, WebP, PDF and ZIP. Known
-CSV/TSV and textual/code extensions are canonicalized before arbitrary browser
-MIME; otherwise a valid `text/*` type joins the same code-profile family. A remaining syntactically valid MIME
-can be retained; otherwise the value is `application/octet-stream`. Unknown
-format is a valid stored outcome.
+The remote form buffers each selected `File`; v1 is bounded but not streaming or
+resumable. Each candidate is independently atomic, so a batch can report mixed
+success without leaving a half-created file.
 
-Each candidate has its own outcome. A native failure creates no row. A row failure
-after publication attempts to reclaim an unclaimed non-reused value. A semantic
-enqueue failure is attached to a successful file receipt. No filesystem,
-represented-store, History and semantic-store transaction is claimed.
+An occupied project path has two outcomes: equal hash reuses the current row;
+different bytes reject with a path conflict and direct the user to explicit
+Re-upload. Upload never silently changes an existing identity.
 
-## Explicit re-upload
+## 5. Byte-first classification and semantic lanes
 
-Uploading different bytes to an occupied path is not an implicit update.
-Re-upload is a distinct file-Inspector action:
+Caller MIME is a hint, never authority. Recognized signatures for PNG, JPEG,
+GIF, WebP, PDF, ZIP, MP3, WAV, and MP4 are evaluated first. Canonical extensions
+then distinguish prose, source code, and structured data. A syntactically valid
+remaining MIME can describe managed-only bytes; otherwise the media type is
+`application/octet-stream`.
 
 ```mermaid
-sequenceDiagram
-  autonumber
-  actor User
-  participant Inspector
-  participant Ext as external-files
-  participant Native as externalFileStorage
-  participant Sem as semantic-overlay
-  participant Row as same externalFiles row
-  participant Hist as History
-
-  User->>Inspector: Re-upload and choose new File
-  Inspector->>Ext: row id + base revision + File
-  Ext->>Ext: authorize, bound, derive descriptor
-  Ext->>Native: publish candidate
-  Ext->>Sem: retire old semantic products
-  alt retirement or row update fails
-    Ext->>Native: compensate candidate when unclaimed
-    Ext-->>Inspector: rejected; original row remains authoritative
-  else accepted
-    Ext->>Row: same id/name/path/originalName; new receipt; revision + 1
-    Ext->>Hist: append re-uploaded
-    Ext->>Sem: enqueue supported new material
-    Ext->>Native: reclaim previous hash only when unshared
-    Ext-->>Inspector: same resource URL and references
-  end
+flowchart TD
+  B[Verified bytes + canonical name] --> S{Known byte signature?}
+  S -->|yes| F[Signature media family wins]
+  S -->|no| E{Canonical extension}
+  E -->|txt/md/rst| Text[text]
+  E -->|ts/py/go/...| Code[code]
+  E -->|csv/tsv/json/yaml/xml/...| Data[data]
+  E -->|none| M[admitted MIME or unknown]
+  F --> Class[current subkind]
+  Text --> Exact[exact-text lane]
+  Code --> CodeMat[code material lane]
+  Data --> DataMat[CSV/TSV material lane when supported]
+  Class -->|image| ImageMat[native visual material lane]
+  Class -->|PDF/Office/audio/video/unknown| Managed[manage + download only]
 ```
 
-There is no prior-version browser or restore action. When old bytes are no longer
-shared, successful re-upload reclaims them immediately.
+| Family | Current subkind | Semantic behavior | Inspector behavior |
+| --- | --- | --- | --- |
+| Plain text, Markdown, comparable prose | `text` | exact lane; verified UTF-8 up to 5 MB, one content-hashed source with exact locators | exact semantic status; no generated summary |
+| Programming source | `code` | material lane; bounded code profile and optional generated description using a deterministic 64 KB head/tail excerpt | profile/status and description only when produced |
+| CSV/TSV | `data` | material lane; bounded sampled profile and optional authored context | editable dataset context, status, optional description |
+| JSON/XML/YAML/TOML | `data` | stored; current material adapter may produce no seed | truthful managed/no-output state |
+| Image | `image` | original verified pixels become one native visual facet when at most 5 MB | direct-visual status; no generated text summary or preview |
+| PDF/Office/archive | `unknown` with admitted MIME | no semantic work | details, references, download, lifecycle only |
+| Audio/video | `audio` / `video` | no semantic work | details, references, download, lifecycle only |
+| Other bytes | `unknown` | no semantic work | details, references, download, lifecycle only |
 
-## Semantic routing
+Storage success never depends on provider availability. Semantic outbox intent
+does commit with the authoritative row revision, while parsing, description,
+embedding, and index publication remain asynchronous queue/lease work.
 
-External never enters the exact semantic lane. Legacy
-`externalFile::text` exact sources are treated as stale.
+## 6. Atomic mutation protocol
 
-| Family | External treatment | Material treatment |
-| --- | --- | --- |
-| Plain text / Markdown / XML / source code | store and manage as subkind `code` | strict UTF-8 bounded code profile; source-backed generated descriptor |
-| CSV / TSV | same, subkind `data`; editable authored context | bounded sampled profile; optional descriptor incorporating context |
-| Image | same, subkind `image` | original pixels embedded directly as one native visual facet; no text facets or generated summary |
-| PDF / Office / archive | store, manage, download | none |
-| Audio / video | store, manage, download | none |
-| Unknown | store, manage, download | none |
+Every represented mutation follows the same Store rule:
 
-Plain text and source code share `externalFile::code`; `text` survives only as a
-legacy stored value that canonicalizes on read. The code profile produces
-language and line facts plus import, export, symbol and warning facts when those
-structures exist. Its descriptor receives a deterministic 64,000-byte head/tail
-excerpt of verified UTF-8. The descriptor becomes its own generated facet, so a
-larger summary does not dilute separately embedded identity/profile vectors. CSV/TSV
-uses existing parser ceilings (20,000 rows, 200,000 cells, 256 columns) and admits
-up to 4,000 characters of user context. Generated summaries appear in Inspector
-only when a descriptor exists. A standalone image's vector remains pure: no
-identity/profile/generated text facets dilute it.
+> In one `Store.transaction`, validate ownership and CAS, enforce path
+> uniqueness, change the External row, append lifecycle History, call
+> `forgetSemanticResourceFor(...)`, and call
+> `enqueueSemanticOutboxFor(...)` for the resulting revision.
 
-Upload, rename, file move, dataset-context change and re-upload capture a resource
-revision and queue recoverable work as appropriate. This branch contains durable
-queue, processor and backfill seams but does not deploy an always-on worker.
-Inspector intentionally has no manual semantic-refresh button.
+| Mutation | CAS / collision boundary | Row result | Native post-commit work |
+| --- | --- | --- | --- |
+| Upload | project path inside transaction | create revision 1 | claim new publication |
+| Rename | file id + base revision; same directory/new leaf unique | update name/path, revision +1 | none |
+| File move | file id + base revision; destination directory/new path unique | update path, revision +1 | none |
+| Directory move/rename | opaque token over every descendant id/revision/path; every destination unique | update all descendants once, each revision +1 | none |
+| Dataset context | file id + base revision; `data` only | set/clear context, revision +1 | none |
+| Re-upload | file id + base revision | same id/name/path, new receipt, revision +1 | claim new publication, release predecessor claim, collect if unshared |
+| Delete | file id + base revision + zero live usage | remove row; deletion outbox uses next revision | release row claim, collect if unshared |
 
-## External stable library
+Directory relocation does not call a public table-replacement escape hatch. It
+updates every admitted descendant in a single Store unit of work, writes History
+and semantic outbox intent there, and publishes one journaled transaction.
 
-The product name is **External**, never Resources. It is a category singleton like
-Overview and Templates:
+The process-local mutation queue is only an optimization. Correctness comes from
+Store CAS/transactions plus durable native publication and claim state.
 
-```ts
-workspace.open({ category: "external", focus?: externalFileId })
-workspace.inspect("external.file", { kind: "external-file", id })
-workspace.inspect("external.directory", { kind: "external-directory", id: path })
+## 7. Native storage, crash recovery, and shared hashes
+
+Repository entries are deliberately internal:
+
+```text
+data/external-files/
+├── <sha256>                                  canonical immutable bytes
+├── .publish.<sha256>.<uuid>.next             fsynced recovery copy
+├── .claim.<sha256>.<digest(externalFileId)>  represented owner claim
+└── .garbage.<sha256>.<uuid>.next             removal quarantine
 ```
 
-Its `TabRecord.id` and target key are `external`; there is no file
-`resourceId` on the tab. Selection changes the manager subject, not the tab
-list. Restoration adopts the missing singleton into old snapshots without
-replacing existing landings.
+Publication writes and fsyncs a mode-0600 recovery copy, then hard-links the
+canonical digest and fsyncs the directory. A successful Store row claim is made
+visible before its recovery copy is removed. If another file has equal bytes,
+it receives its own claim while sharing the canonical blob. Ambiguous Store
+completion claims the receipt for every readable owner of that hash, while an
+unavailable post-commit Store leaves the recovery copy for startup.
 
-New Tab search retains every file result and opens it as `{ category:
-"external", focus: externalFileId }`. Its eight-item Recent shelf keeps only the
-newest file entry from this manager-only family, so a directory upload cannot
-replace all recently edited documents with file cards. Project Overview file
-launchers use the same singleton-focused target.
+Collection first atomically renames the canonical blob into a unique quarantine.
+It then rechecks row claims and in-progress publication copies. If protected, it
+restores the canonical link from quarantine and reports `claimed`; otherwise it
+deletes the quarantine. This closes cross-process publication/deletion races
+without treating the in-process queue as a lock of record.
 
-Content (`external.library`) provides file/folder upload, mixed receipts,
-quarantine count, search/filter/sort, Table and Directory views, breadcrumbs,
-folder entry, row selection, and loading/error/empty/no-match states. It never
-renders a source body or a format editor.
+```mermaid
+stateDiagram-v2
+  [*] --> RecoveryCopy: put writes + fsyncs
+  RecoveryCopy --> Canonical: hard-link digest
+  Canonical --> Claimed: Store commit then row claim
+  Canonical --> Unclaimed: Store rollback
+  Unclaimed --> Removed: discard + collect
+  Claimed --> Quarantine: cleanup candidate
+  Quarantine --> Canonical: another claim/publication protects hash
+  Quarantine --> Removed: no claims or publications
+  RecoveryCopy --> Claimed: startup sees committed Store row
+  RecoveryCopy --> Removed: startup sees no represented owner
+```
 
-Context has exactly two project-wide views:
+Startup order is mandatory:
 
-- `external.overview`: file/folder counts, known bytes, legacy unknown sizes,
-  unavailable rows, and material coverage;
-- `external.history`: durable External lifecycle events, including deletions.
+1. Store constructor completes transaction-journal recovery.
+2. Runtime reads and strictly admits every current External row.
+3. `externalFileStorage.reconcile` receives those authoritative row claims.
+4. Reconciliation restores missing canonical bytes from valid publication or
+   quarantine artifacts, recreates missing claims, and removes stale
+   publication/quarantine/claim files and unreferenced canonical blobs.
+5. A represented row with no recoverable bytes fails startup.
 
-There is no Policy context page.
+This covers process interruption at every post-commit Store failpoint as well as
+interrupted native publication and collection. Repeated reconciliation is
+idempotent.
 
-The file Inspector is a compact manager:
+## 8. Directory projection
 
-- top actions: Rename, Re-upload, Download, Move and Delete;
-- double-click name or path to edit locally;
-- top reference count plus full References list;
-- Details: original upload name, type, kind, size, upload date, update date,
-  creator, updater and origin—no hash or internal storage id;
-- CSV/TSV dataset context editor;
-- conditional material section for code/data/image only;
-- confirmation and CAS/stale/error states for mutations.
+Folders are calculated from admitted `relativePath` values. The projection emits
+root and every ancestor with parent/name/path, direct file and child-directory
+counts, descendant count, known-byte total, and an opaque revision token over
+sorted descendant file ID, revision, and path. No native directory is created
+and native blobs never move when project paths change.
 
-The directory Inspector shows the path, direct/descendant counts, known bytes and
-child listings, and offers rename/move. Directory mutation rejects root, no-op,
-self-descendant, stale-token, and path-collision destinations, then commits every
-descendant path in one `store.replaceRows` persistence boundary. Bytes never move.
+```mermaid
+flowchart LR
+  A[research/site/photo.png rev2] --> P[project directories]
+  B[research/site/notes.csv rev4] --> P
+  C[research/readme-text rev1] --> P
+  P --> R[root]
+  P --> D1[research]
+  P --> D2[research/site]
+  D2 --> T[descendant-set token]
+  T --> Tx[one Store transaction for all descendants]
+```
 
-## Serving and deletion
+A directory cannot move into itself, to its same path, or onto any conflicting
+file path. The configured path-byte rule is applied to source, destination, and
+every resulting descendant path before mutation.
 
-The GET route authorizes through External, reads and re-verifies bytes, enforces
-the 50,000,000-byte response ceiling, and always uses attachment disposition. It
-adds ASCII/UTF-8 filenames, `nosniff`, sandbox CSP, SHA-256 ETag,
-`private, no-cache`, and one bounded byte range (`206` or correct `416`).
-There is no inline quick look.
+## 9. Complete reference safety
 
-Delete:
+Deletion does not recursively search arbitrary objects for matching strings.
+`EXTERNAL_REFERENCE_POLICY` exhaustively maps every current Store table to a
+reference policy. Because it satisfies `Record<TableName, ...>`, a new table is a
+compile failure until its policy is declared.
 
-1. scopes/admit row and compare revision;
-2. refuses any represented document, deck, template, resource-set or finding
-   reference;
-3. retires semantic products/jobs;
-4. rechecks row revision and references;
-5. removes the row;
-6. appends durable deleted History;
-7. scans all projects for another row claiming the hash;
-8. retains shared bytes, otherwise removes the native value;
-9. reports a safe retained orphan if final removal fails.
+The typed traversal understands references in:
 
-Cross-user template names are masked in References while still blocking delete.
+- leader document bodies, headers, footers, marks, atoms, nested tables, prompts,
+  formulas, and image blocks;
+- leader deck themes/layouts/backgrounds, grouped/nested elements, notes, and
+  content blocks;
+- spreadsheet cell values and marks;
+- current templates and resource sets;
+- findings and their sources; questions; hypotheses;
+- comment targets, bodies, mentions, research turns, and conversation
+  attachments;
+- persona, agent-task, and automation scopes/origins/outputs/triggers;
+- current Derived Output origins, scopes, template-variable origins, last
+  responses, and refresh-job selection;
+- variables and formulas.
 
-## Security boundary
+Only live identity-bearing locations block deletion. Activity, change sets,
+non-leader snapshots, template versions, semantic histories/caches, and Derived
+Output evidence are historical by-value records and remain readable after
+deletion. Workspace focus is transient navigation, not represented usage.
+Cross-project rows are never disclosed and never authorize a mutation.
 
-- Scope is resolved before untrusted fields are admitted.
-- The browser cannot author project, actor, hash, storage id, classification,
-  revision, timestamps or authoritative size.
-- Candidate count, bytes, total bytes, path bytes, response bytes and semantic
-  parser work are bounded separately.
-- Paths are metadata only; no upload path becomes a native filesystem path.
-- Native values are content-addressed, atomically published and verified on read.
-- Unknown/active content is served only as a sandboxed attachment.
-- Archives are never expanded; there is no OCR, Office/PDF parsing, transcription,
-  playback or malware-analysis claim.
-- Error strings are bounded and semantic provider credentials are redacted.
+## 10. Inspector and library details
 
-## What live implementation taught us
+File actions appear together at the top: Rename, Re-upload, Download, Move, and
+Delete. Name and path/destination can also be entered from the compact identity
+area. The remaining file Inspector is review-oriented:
 
-1. Explicit multipart encoding is required for real File form enhancement.
-2. Folder paths must be represented by indexed DOM controls, not only assigned
-   through a form helper.
-3. Remote result proxies do not have stable object identity; receipt consumption
-   needs a serializable signature.
-4. File-focus restoration must not overwrite an explicit directory selection.
-5. Subject names must be read through External, not a generic store allowlist.
-6. Native descriptor derivation and storage belong to External, not material
-   content.
-7. Browser tests need an independent disposable native repository in addition
-   to their disposable represented store.
-8. Material eligibility should prevent poison jobs. Plain text and source code
-   need one `externalFile::code` path, a bounded verified source excerpt, and no
-   duplicate exact lane; image vectors need no generated text facets.
-9. Re-upload must preserve row identity because represented references point to
-   the file object, not its current hash.
-10. Folder management needs an atomic descendant rewrite without folder rows.
-11. Deletion can be complete without speculative tombstones when it refuses
-    references, retires semantics, records durable History, and reclaims only an
-    unshared hash.
-12. Stored compatibility fields cannot become required immediately; strict read
-    admission must canonicalize legacy rows without leaking malformed metadata.
-13. A truthful History needs durable events; a current-row Activity projection
-    loses deletions and transition types.
-14. A shared-hash scan needs a mutation lease around the publication/claim gap.
-15. A directory upload can flood a generic Recent shelf. Keep every file
-    searchable and routable to External, but collapse that manager-only family
-    to its newest Recent card.
+- current local name/path and immutable original upload name;
+- media type, subkind, actual size, revision, upload/update timestamps and actors;
+- native availability (`available`, `missing`, or integrity failure behavior);
+- references count and named typed usages;
+- authored dataset context only for `data` resources;
+- semantic status for the eligible exact/material lane;
+- generated description only when a material descriptor really exists;
+- no hash, storage ID, source editor, preview, or fake summary.
 
-An 8 MiB real download and a copied 33-file source directory exposed several of
-these integration defects that small in-memory fixtures could not.
+The directory Inspector shows projected counts/bytes and offers subtree Rename
+and Move. A path change reorders the Directory projection after refetch.
 
-## Deliberate limits
+History records `uploaded`, `re-uploaded`, `renamed`, `moved`,
+`context-updated`, and `deleted`, including actor, timestamp, name/path, and a
+bounded operation detail. It is project scoped, newest first, capped at 200, and
+independent of the current file row, so deletion does not erase the audit trail.
 
-- Findings are deferred.
-- Upload is buffered and bounded, not streaming/resumable/direct-to-object-store.
-- The mutation lease is process-local.
-- Native rows, History and semantic rows do not share a distributed transaction.
-- There is no tombstone, retention window or prior-version restore.
-- There is no always-on semantic worker deployment in this branch.
-- The library query is project-wide and client-filtered, not paginated.
-- Sniffing is intentionally narrow; malware scanning is not implemented.
-- PDF, Office, archive, OCR, audio and video interpretation are deferred.
+Downloads are authorized per project and always attachments. The route returns
+verified bytes with safe ASCII `filename`, encoded UTF-8 `filename*`, SHA-256
+ETag, private/no-cache, `nosniff`, sandbox CSP, accepted single byte ranges, and
+an explicit size ceiling. It never embeds or executes arbitrary file content.
 
-These limits do not prevent any admitted file from being uploaded, organized,
-re-uploaded as the same object, inspected, referenced, downloaded, historically
-tracked, or safely deleted.
+## 11. Implementation structure
+
+Stateful UI components have explicit instance-owned state objects:
+
+- `library.state.svelte.ts` owns library query/view/filter/sort/navigation state;
+- `file.state.svelte.ts` owns one file Inspector's drafts and action state;
+- `directory.state.svelte.ts` owns one directory Inspector's drafts/actions.
+
+Effectful entry chains are named modules under `procedures/effects/`; uploads,
+downloads, reads, selection, file/directory mutation, and History are not inline
+anonymous asynchronous commands. Pure projection/formatting work lives in
+`library-query.ts` and `detail-query.ts`. This keeps each state lifetime local
+and makes architecture checks describe actual ownership.
+
+The current main architecture remains intact: Store journal/recovery and
+failpoints, atomic semantic outbox, queue leases, operationFlights, and split
+Derived Output resource-reading modules all remain authoritative. External was
+adapted to them; none was replaced with a pre-rebase version.
+
+## 12. What implementation taught us
+
+1. Multipart form encoding is part of the transport contract; SvelteKit file
+   fields require an explicit `multipart/form-data` form.
+2. Browser directory paths exist only on `webkitRelativePath`; real indexed
+   hidden controls are necessary to preserve them through enhanced submission.
+3. Reactive remote-form results can have proxy identity, so receipt consumption
+   uses a stable serialized signature rather than object identity.
+4. A focus-restoration effect must not overwrite deliberate virtual-directory
+   selection.
+5. Hashing/classification belongs in External admission; filesystem persistence
+   belongs in `external-file-storage`; semantic processing consumes a reference.
+6. Store rollback alone cannot settle native bytes. Fsynced recovery copies,
+   row-owned claims, quarantine-and-recheck GC, and post-journal reconciliation
+   make the boundary crash recoverable and safe across processes.
+7. History and semantic outbox cannot be follow-up calls. Keeping them in the
+   row transaction prevents partial lifecycle truth at every failpoint.
+8. Delete must emit semantic removal intent as well as forget current artifacts;
+   the deletion revision is one greater than the removed source revision.
+9. Folder relocation needs a set-level CAS token and one transaction, not a loop
+   of individually durable file changes.
+10. Reference safety must be table-exhaustive and type-aware. Historical copies
+    are evidence, not live identities; arbitrary string matching confuses them.
+11. Text and code cannot share a convenient umbrella classification: prose needs
+    exact quoteability while code needs a bounded material profile.
+12. Signature precedence is a security property. A PDF named `.txt` and declared
+    `text/plain` must remain a PDF and must not enter exact semantics.
+13. Semantic status must be indexed once per library read rather than scanning
+    every semantic table once per file.
+14. The Inspector is a narrow manager, so top-aligned actions and progressive
+    review sections work better than an editor-shaped surface.
+15. Generated descriptions are conditional data, not a promised field. Exact
+    text and native images must not show invented summary UI.
+
+## 13. Deliberate v1 boundaries
+
+- Findings management is deferred.
+- Multipart upload is bounded and buffered, not resumable/streaming.
+- There is no source editor, file preview, PDF/Office parser, OCR, archive
+  extraction, media playback, or transcription.
+- There is no prior-revision browser or restore action after re-upload.
+- Semantic providers/workers may be absent in a development environment; this
+  affects downstream generation, not ingestion durability.
+- The current native repository is filesystem-backed. The claim/publication
+  protocol supports correctness across processes sharing that filesystem, but a
+  remote object-store backend would need an equivalent conditional protocol.
+
+These are explicit capability boundaries, not compatibility concessions.
