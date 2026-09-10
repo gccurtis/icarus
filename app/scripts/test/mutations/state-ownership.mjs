@@ -15,6 +15,24 @@ export const MUTATIONS = [
   },
   {
     check: "mutable-state-has-an-instance",
+    says: "a lazy globalThis map is still process state",
+    names: "procedures/ambient-map.ts",
+    changes: [{
+      path: "src/lib/app-views/categories/project-overview/procedures/ambient-map.ts",
+      write: `const root = globalThis as typeof globalThis & { __flights?: Map<string, Promise<void>> };\nexport const flights = (): Map<string, Promise<void>> => {\n  root.__flights ??= new Map();\n  return root.__flights;\n};\n`
+    }]
+  },
+  {
+    check: "mutable-state-has-an-instance",
+    says: "a lazy ambient controller needs a model owner",
+    names: "procedures/ambient-controller.ts",
+    changes: [{
+      path: "src/lib/app-views/categories/project-overview/procedures/ambient-controller.ts",
+      write: `export const controller = (): AbortController => ((globalThis as any).__controller ??= new AbortController());\n`
+    }]
+  },
+  {
+    check: "mutable-state-has-an-instance",
     says: "a production module constructs one shared mutable instance",
     names: "procedures/shared-map.ts",
     changes: [{

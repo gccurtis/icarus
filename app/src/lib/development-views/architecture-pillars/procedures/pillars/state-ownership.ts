@@ -58,10 +58,10 @@ export const STATE_OWNERSHIP: ArchitecturePillar = {
       wave: 1,
       mechanism: "TypeScript AST + repository-home classification",
       guarantee: "Mutable module bindings cannot silently become shared state outside approved composition roots.",
-      detects: "Top-level let/var, const $state runes, module caches, counters, and constructed instances in production modules.",
+      detects: "Top-level let/var, const $state runes, module caches, counters, constructed instances, and lazy globalThis-backed maps, objects, or controllers in production modules.",
       implementation:
         "Generalize model/nothing-builds-at-module-load's mutableBindings scan to production views and surfaces. Permit only documented runtime holders, server process infrastructure, constants, and factory-local closures.",
-      current: "Enforced across production homes; three pre-existing module-level holders are baselined.",
+      current: "Enforced across production homes, including ambient-backed lazy state; only explicit composition roots may hold process instances.",
       limit: "An AST can locate shared state but cannot choose its correct owner; the failure should require an ownership sentence in the repair."
     },
     {

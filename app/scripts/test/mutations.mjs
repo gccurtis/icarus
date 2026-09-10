@@ -91,6 +91,18 @@ export const MUTATIONS = [
     ]
   },
   {
+    check: "capability-holds-nothing",
+    subject: "no-ambient-state",
+    says: "a capability hides a lazy process registry on globalThis",
+    names: "ambient-registry.ts",
+    changes: [
+      {
+        path: "src/lib/capabilities/probe/api/ambient-registry.ts",
+        write: `const root = globalThis as typeof globalThis & { __runs?: Map<string, AbortController> };\nexport const runs = (): Map<string, AbortController> => {\n  root.__runs ??= new Map();\n  return root.__runs;\n};\n`
+      }
+    ]
+  },
+  {
     check: "entry-matches-directory",
     says: "a procedure directory holds no entry named for it",
     names: "probe/api/thing",

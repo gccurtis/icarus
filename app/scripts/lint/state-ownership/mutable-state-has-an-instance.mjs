@@ -1,7 +1,11 @@
 import ts from "typescript";
 
 import { check } from "../shared/check.mjs";
-import { constructionsAtLoad, mutableBindings } from "../shared/module-load.mjs";
+import {
+  ambientStateMutations,
+  constructionsAtLoad,
+  mutableBindings
+} from "../shared/module-load.mjs";
 import { productionSources } from "../shared/production.mjs";
 
 const APPROVED_HOLDERS = new Set([
@@ -107,6 +111,14 @@ export default check({
           line: binding.line,
           fingerprint: `rune:${binding.name}`,
           message: `const ${binding.name} creates module-lifetime reactive state instead of instance-owned state`
+        });
+      }
+      for (const mutation of ambientStateMutations(tree, path)) {
+        found.push({
+          path,
+          line: mutation.line,
+          fingerprint: `ambient:${mutation.name}`,
+          message: `${mutation.name} hides process-lifetime mutable state outside an explicit model owner`
         });
       }
       const lookupSetLines = immutableLookupSetLines(tree, path);
