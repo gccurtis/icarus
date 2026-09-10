@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { expect, test, type Page, type TestInfo } from "./fixtures";
+import { workspaceLandingSaved } from "./workspace-persistence";
 
 let unexpected: string[] = [];
 
@@ -57,6 +58,10 @@ test("duplicate External file names are selected and restored by exact relative 
       .toBeVisible({ timeout: 30_000 });
 
     await tabs(page).getByRole("button", { name: "Agents", exact: true }).click();
+    const personaLanding = workspaceLandingSaved(page, {
+      tab: "agents",
+      content: "agents.persona"
+    });
     await page.locator(".area-create").getByRole("button", { name: "Persona", exact: true }).click();
     const main = page.getByRole("main");
     await main.getByRole("button", { name: "Add resource", exact: true }).click();
@@ -69,6 +74,7 @@ test("duplicate External file names are selected and restored by exact relative 
     const scope = main.locator("ul.scope");
     await expect(scope.getByText(northPath, { exact: true })).toBeVisible();
     await expect(scope.getByText(southPath, { exact: true })).toHaveCount(0);
+    await personaLanding;
     await page.reload({ waitUntil: "networkidle" });
     await expect(scope.getByText(northPath, { exact: true })).toBeVisible();
     await expect(scope.getByText(southPath, { exact: true })).toHaveCount(0);
@@ -100,9 +106,14 @@ test("an agent task inherits one exact uploaded External resource and protects i
 
   await tabs(page).getByRole("button", { name: "Agents", exact: true }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Agents" })).toBeVisible();
+  const personaLanding = workspaceLandingSaved(page, {
+    tab: "agents",
+    content: "agents.persona"
+  });
   await page.locator(".area-create").getByRole("button", { name: "Persona", exact: true }).click();
   const main = page.getByRole("main");
   await expect(main.getByLabel("Persona name")).toHaveValue("Untitled persona");
+  await personaLanding;
 
   await main.getByRole("button", { name: "Add resource", exact: true }).click();
   await page.getByRole("menuitem", { name: /agent-evidence\.md/i }).click();
@@ -117,6 +128,11 @@ test("an agent task inherits one exact uploaded External resource and protects i
   await main
     .getByLabel("Instruction", { exact: true })
     .fill("Read the selected External file and report its verified transformer limit.");
+  const taskLanding = workspaceLandingSaved(page, {
+    tab: "agents",
+    content: "agents.task",
+    focus: (value) => value !== null && value !== "new" && !value.startsWith("new:")
+  });
   await main.getByRole("button", { name: "Create and start", exact: true }).click();
 
   await expect(main.getByLabel("Task name")).toHaveValue("Verify imported transformer limit");
@@ -138,6 +154,7 @@ test("an agent task inherits one exact uploaded External resource and protects i
   await expect(outputs.getByRole("listitem").filter({ hasText: /agent-evidence\.md/i }))
     .toContainText(/agent-evidence\.md/i);
 
+  await taskLanding;
   await page.reload({ waitUntil: "networkidle" });
   await expect(main.locator("ul.scope").getByText(/agent-evidence\.md/i)).toBeVisible();
   await expect(main.getByLabel("Task name")).toHaveValue("Verify imported transformer limit");

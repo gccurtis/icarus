@@ -7,7 +7,8 @@ export const integrationChecks = [
   ["Local Chromium workflows", "Passed", "114 tests passed; the five opt-in provider tests were skipped here and passed separately against the live services. Disposable Store/native-file directories keep these contracts separate from the manual demo."],
   ["Architecture", "Passed", "90 checks clean with no new findings. 179 existing baselined entries remain; this does not claim that the whole repository has no architectural debt."],
   ["Final application certification", "Passed", "The final frozen-source Chromium run passed all 114 local workflows after the Research scope and exact-configuration fixes. Screenshots were reviewed for editor placement, file-path clarity, and External reference layout."],
-  ["Merge and push", "Pending", "Main's 3,054 source files match the preserved pre-integration snapshot byte-for-byte."]
+  ["Merge and push", "Passed", "Certified integration ea7c6f4 was merged into main and pushed. Main's 3,054 pre-integration source files were preserved in its parent snapshot without discarding working files."],
+  ["Live manual demo", "Passed", "The existing development Store was preserved, not reseeded. Eight fictional External files, a Technical glossary document with a North inspection Prompt Block, a grounded Research conversation, and the North Inspection Analyst's completed task are available for manual review. Document, Research, and Agent results were verified after reload against live Jina/OpenRouter."]
 ] as const;
 
 export const integrationWorkflows = [
