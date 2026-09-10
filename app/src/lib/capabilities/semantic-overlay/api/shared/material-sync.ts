@@ -1,4 +1,5 @@
 import type { ServerModel } from "$runtime/server/start.server";
+import type { StoreUnitOfWork } from "$model/server/store/index.server";
 import type { Id } from "$representation/data/types/core/id";
 import type { ResourceRef } from "$representation/data/types/core/resource";
 import { materialsAreCurrent } from "$capabilities/semantic-overlay/api/shared/material-current";
@@ -20,7 +21,8 @@ export const syncSemanticMaterialsFor = async (
   model: ServerModel,
   projectId: Id<"projects">,
   ref: ResourceRef,
-  force = false
+  force = false,
+  assertClaim?: (unit: StoreUnitOfWork) => void
 ): Promise<SyncSemanticMaterialsResult> => {
   const inventory = await readMaterialInventoryFor(model, projectId, ref);
   if (inventory === undefined) return { outcome: "missing", ref };
@@ -85,8 +87,9 @@ export const syncSemanticMaterialsFor = async (
       usage
     };
   }
-  return model.store.transaction((unit) =>
-    publishSemanticMaterials(
+  return model.store.transaction((unit) => {
+    assertClaim?.(unit);
+    return publishSemanticMaterials(
       semanticUnitModel(model, unit),
       projectId,
       ref,
@@ -94,6 +97,6 @@ export const syncSemanticMaterialsFor = async (
       prepared,
       usage,
       force
-    )
-  );
+    );
+  });
 };

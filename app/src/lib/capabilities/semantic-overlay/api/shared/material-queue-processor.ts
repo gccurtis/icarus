@@ -21,8 +21,14 @@ export const processSemanticMaterialQueueFor = async (
     projectId,
     limit,
     ...(ref === undefined ? {} : { ref }),
-    run: async (job) =>
-      await syncSemanticMaterialsFor(model, projectId, job.ref, job.force === true)
+    run: async (job, assertClaim) =>
+      await syncSemanticMaterialsFor(
+        model,
+        projectId,
+        job.ref,
+        job.force === true,
+        assertClaim
+      )
   });
   const adapt = (entry: (typeof material.processed)[number]): ProcessedSemanticMaterialJob => ({
     ...entry,

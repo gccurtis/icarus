@@ -32,8 +32,8 @@ export const TRANSACTION_ENTRIES = [
 ] as const;
 
 export const QUEUE_RULES = [
-  ["Claim", "One Store transaction changes queued → running and writes a random owner token plus a five-minute lease."],
-  ["Join", "Only the token owner may settle a claim; concurrent processors cannot both publish the same job."],
+  ["Claim", "Immediately before work starts, one Store transaction changes queued → running and writes a random owner token plus a five-minute lease."],
+  ["Join", "Active work renews its lease, and only the token owner may publish or settle; concurrent processors cannot both publish the same job."],
   ["Recover", "A running job is reclaimable only after its lease expires, so an interrupted process cannot strand it forever."],
   ["Retry", "Provider failure is bounded at three attempts; exhaustion becomes a terminal failed row rather than an infinite spinner."],
   ["Supersede", "A newer authored revision resets obsolete work to the new revision and prevents an older result from becoming current."],

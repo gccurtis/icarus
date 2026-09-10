@@ -71,6 +71,7 @@ const deferred = () => {
 };
 
 afterEach(() => {
+  vi.useRealTimers();
   vi.restoreAllMocks();
   for (const path of directories.splice(0)) rmSync(path, { recursive: true, force: true });
 });
@@ -79,6 +80,29 @@ describe.each([
   "semanticSyncJobs",
   "semanticMaterialJobs"
 ] as const)("durable %s processing", (table) => {
+  it("claims each queued job only when its work is about to start", async () => {
+    vi.spyOn(Date, "now").mockImplementation(() => clock);
+    const store = defineStore({ directory: directory() });
+    seed(store, table);
+    seed(store, table);
+    const gate = deferred();
+    let runs = 0;
+    const active = process(store, table, async (job) => {
+      runs += 1;
+      if (runs === 1) await gate.promise;
+      return { outcome: "published" as const, revision: job.requestedRevision };
+    });
+
+    expect(runs).toBe(1);
+    expect(rowsIn(store, table).filter((row) => row.state === "running")).toHaveLength(1);
+    expect(rowsIn(store, table).filter((row) => row.state === "queued")).toHaveLength(1);
+
+    gate.resolve();
+    await expect(active).resolves.toMatchObject({ remaining: 0, failed: [] });
+    expect(runs).toBe(2);
+    expect(rowsIn(store, table)).toEqual([]);
+  });
+
   it("lets only one concurrent worker own an unexpired claim", async () => {
     vi.spyOn(Date, "now").mockImplementation(() => clock);
     const store = defineStore({ directory: directory() });
@@ -100,6 +124,61 @@ describe.each([
     expect(second.remaining).toBe(1);
     gate.resolve();
     await expect(first).resolves.toMatchObject({ remaining: 0, failed: [] });
+    expect(rowsIn(store, table)).toEqual([]);
+  });
+
+  it("renews a live claim while provider work is still running", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(clock);
+    const store = defineStore({ directory: directory() });
+    seed(store, table);
+    const gate = deferred();
+    const first = process(store, table, async (job) => {
+      await gate.promise;
+      return { outcome: "published" as const, revision: job.requestedRevision };
+    });
+
+    await vi.advanceTimersByTimeAsync(5 * 60_000 + 1);
+    const second = await process(store, table, async () => {
+      throw new Error("a live worker's renewed claim must not be stolen");
+    });
+
+    expect(second).toMatchObject({ processed: [], remaining: 1, failed: [] });
+    gate.resolve();
+    await expect(first).resolves.toMatchObject({ remaining: 0, failed: [] });
+    expect(rowsIn(store, table)).toEqual([]);
+  });
+
+  it("prevents an expired owner from publishing after another worker takes the claim", async () => {
+    vi.spyOn(Date, "now").mockImplementation(() => clock);
+    const store = defineStore({ directory: directory() });
+    seed(store, table);
+    const oldWorker = deferred();
+    const newWorker = deferred();
+    let oldPublished = false;
+    const first = process(store, table, async (job, assertClaim) => {
+      await oldWorker.promise;
+      store.transaction((unit) => {
+        assertClaim(unit);
+        oldPublished = true;
+      });
+      return { outcome: "published" as const, revision: job.requestedRevision };
+    });
+
+    clock += 5 * 60_000 + 1;
+    const second = process(store, table, async (job) => {
+      await newWorker.promise;
+      return { outcome: "published" as const, revision: job.requestedRevision };
+    });
+    oldWorker.resolve();
+    const lost = await first;
+
+    expect(oldPublished).toBe(false);
+    expect(lost.processed[0].retrying).toMatch(/lost its durable claim/);
+    expect(rowsIn(store, table)[0]).toMatchObject({ state: "running", attempts: 2 });
+
+    newWorker.resolve();
+    await expect(second).resolves.toMatchObject({ remaining: 0, failed: [] });
     expect(rowsIn(store, table)).toEqual([]);
   });
 

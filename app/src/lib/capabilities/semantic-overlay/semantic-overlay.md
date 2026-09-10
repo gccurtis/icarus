@@ -12,10 +12,12 @@ lanes: exact text and interpreted semantic material.
   locator spans and first-class table/chart/image material seeds. Prompt blocks
   are excluded from both outputs.
 - `readSemanticResourceForModel` also resolves hash-pinned UTF-8 external text.
-- `processSemanticSyncQueue` atomically claims bounded exact and material
-  batches with random owner tokens and five-minute leases. Only the owner may
-  settle a claim; expired work is recoverable, failures stop after three
-  attempts, and a newer requested revision requeues terminal or obsolete work.
+- `processSemanticSyncQueue` claims exact and material jobs one at a time,
+  immediately before execution, with random owner tokens and five-minute
+  leases. Active work renews its lease, and the owner token is rechecked inside
+  publication and settlement transactions. Expired work is recoverable,
+  failures stop after three attempts, and a newer requested revision requeues
+  terminal or obsolete work.
   `syncSemanticResource`
   runs token-field embedding, deterministic segmentation, contextual passage
   embedding, a latest-revision check, and guarded publication.

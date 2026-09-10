@@ -1,4 +1,5 @@
 import type { ServerModel } from "$runtime/server/start.server";
+import type { StoreUnitOfWork } from "$model/server/store/index.server";
 import { completeTranslation, prepareTranslation } from "$representation/data/behavior/semantic/translation";
 import type { Id } from "$representation/data/types/core/id";
 import type { ResourceRef } from "$representation/data/types/core/resource";
@@ -59,7 +60,8 @@ export const syncSemanticResourceFor = async (
   model: ServerModel,
   projectId: Id<"projects">,
   ref: ResourceRef,
-  force = false
+  force = false,
+  assertClaim?: (unit: StoreUnitOfWork) => void
 ): Promise<SyncSemanticResourceResult> => {
   const projection = await readSemanticResourceForModel(model, projectId, ref);
   if (projection === undefined) return { outcome: "missing", ref };
@@ -100,9 +102,10 @@ export const syncSemanticResourceFor = async (
     };
   }
 
-  const published = model.store.transaction((unit) =>
-    publishSemanticTranslation(semanticUnitModel(model, unit), projectId, translation, force)
-  );
+  const published = model.store.transaction((unit) => {
+    assertClaim?.(unit);
+    return publishSemanticTranslation(semanticUnitModel(model, unit), projectId, translation, force);
+  });
   model.observability.logger.info("semanticOverlay.resourceSynced", {
     projectId,
     ref: projection.ref,

@@ -22,8 +22,14 @@ export const processSemanticSyncQueueFor = async (
     projectId,
     limit,
     ...(ref === undefined ? {} : { ref }),
-    run: async (job) =>
-      await syncSemanticResourceFor(model, projectId, job.ref, job.force === true)
+    run: async (job, assertClaim) =>
+      await syncSemanticResourceFor(
+        model,
+        projectId,
+        job.ref,
+        job.force === true,
+        assertClaim
+      )
   });
   const adapt = (entry: (typeof exact.processed)[number]): ProcessedSemanticSyncJob => ({
     ...entry,

@@ -39,10 +39,12 @@ semantic outbox rows in one Store transaction. No embedding or intelligence
 provider runs inside that transaction.
 
 Both semantic lanes use one durable queue protocol. A worker atomically claims
-a row with an owner token and a five-minute lease. Only that token can settle
-the job. Expired claims are recoverable, retries stop after three attempts,
-newer revisions supersede old work, and Derived Output or Research Chat fails
-closed while required newer work is unresolved or terminally failed.
+a row immediately before executing it, with an owner token and a five-minute
+lease that is renewed while provider work remains active. Only that token can
+publish or settle the job. Expired claims are recoverable, retries stop after
+three attempts, newer revisions supersede old work, and Derived Output or
+Research Chat fails closed while required newer work is unresolved or
+terminally failed.
 
 Process-local operation state is cohesive and explicit. `OperationFlights` is
 constructed on `ServerModel`, owns Derived Output shared promises and Research
