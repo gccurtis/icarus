@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 
 test("publishes the complete editor audit without layout overflow or diagnostics", async ({ page }) => {
   const diagnostics: string[] = [];

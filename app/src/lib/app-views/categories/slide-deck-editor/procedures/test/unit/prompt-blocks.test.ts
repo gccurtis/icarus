@@ -58,6 +58,7 @@ const output = (display: string): DerivedOutput => ({
   _creationTime: 1,
   projectId: "projects:one" as Id<"projects">,
   prompt: "Give me the answer",
+  definitionRevision: 1,
   origin: { kind: "slides", id: "deck-one" },
   queries: [],
   evidence: [],

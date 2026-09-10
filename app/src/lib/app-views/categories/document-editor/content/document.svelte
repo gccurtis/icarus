@@ -92,7 +92,7 @@
 
   const view = workspaceState();
 
-  const documentId = $derived(view.active.resourceId);
+  const documentId = view.active.resourceId;
   const documentsQuery = tableQuery("documents");
 
   const documentTitle = $derived.by(() => {
@@ -101,6 +101,10 @@
   });
 
   let runtime = $state<DocumentRuntime | undefined>(undefined);
+
+  $effect(() => {
+    runtime = documentId === undefined ? undefined : view.documentRuntime(documentId);
+  });
   let host = $state<HTMLDivElement>();
   let surface = $state<HTMLDivElement>();
   let pageFrame = $state<HTMLDivElement>();
@@ -283,10 +287,6 @@
 
     return marks;
   };
-
-  $effect(() => {
-    runtime = documentId === undefined ? undefined : view.documentRuntime(documentId);
-  });
 
   $effect(() => {
     const body = runtime?.body;

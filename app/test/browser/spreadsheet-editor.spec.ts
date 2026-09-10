@@ -1,4 +1,4 @@
-import { expect, test, type Locator, type Page, type TestInfo } from "@playwright/test";
+import { expect, test, type Locator, type Page, type TestInfo } from "./fixtures";
 
 const unexpected: string[] = [];
 const SHEET_TITLE = "Outage minutes by substation";

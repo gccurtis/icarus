@@ -1,21 +1,17 @@
 import { workspaceState, type SpreadsheetRuntime } from "$model/client/workspace-state";
 
 /**
- * The open sheet's runtime, followed as the active tab changes.
+ * The open sheet's already-owned runtime, fixed for this mounted tab.
  *
  * Every lens, context panel and control on this category needs the same one, and
- * reaching for it is a synchronization rather than a read: the register hands
- * out a runtime that outlives the component asking. One module holds that
- * arrangement so the components hold none of it.
+ * the tab owns its lifetime before a surface is mounted. Capturing it once keeps
+ * a retiring sheet surface from observing the next tab's resource id while
+ * Svelte tears the old branch down.
  */
 export const holdsTheRuntime = (): { readonly current: SpreadsheetRuntime | undefined } => {
   const view = workspaceState();
-  let held = $state<SpreadsheetRuntime | undefined>(undefined);
-
-  $effect(() => {
-    const resourceId = view.active.resourceId;
-    held = resourceId === undefined ? undefined : view.spreadsheetRuntime(resourceId);
-  });
+  const resourceId = view.active.resourceId;
+  const held = resourceId === undefined ? undefined : view.spreadsheetRuntime(resourceId);
 
   return {
     get current(): SpreadsheetRuntime | undefined {

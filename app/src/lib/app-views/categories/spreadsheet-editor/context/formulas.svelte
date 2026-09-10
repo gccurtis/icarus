@@ -35,7 +35,7 @@
   const view = workspaceState();
   const register = variableRegister();
 
-  const sheetId = $derived(view.active.resourceId);
+  const sheetId = view.active.resourceId;
 
   const attached = holdsTheRuntime();
   const runtime = $derived(attached.current);

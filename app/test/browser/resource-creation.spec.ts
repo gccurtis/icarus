@@ -1,4 +1,4 @@
-import { expect, test, type Page, type TestInfo } from "@playwright/test";
+import { expect, test, type Page, type TestInfo } from "./fixtures";
 
 const unexpected: string[] = [];
 
@@ -189,20 +189,27 @@ test("New Tab creates represented documents, decks, and spreadsheets instead of 
   await expect(tabs.getByText("Disconnected", { exact: true })).toHaveCount(0);
 });
 
-test("unsupported Project Overview creation actions explain that they are not wired", async ({ page }) => {
+test("Project Overview creates a research chat and explains the unsupported analysis action", async ({ page }) => {
   const create = await openOverview(page);
-  const expected = new Map([
-    ["Research chat", "Starting a represented research chat is not wired up yet."],
-    ["Analysis graph", "Creating a represented analysis graph is not wired up yet."]
-  ]);
+  await create.getByRole("button", { name: "Research chat", exact: true }).click();
+  await expect(page.getByRole("textbox", { name: "Message" })).toBeVisible();
+  await expect(page.locator("main")).toContainText("Ask the project something.");
+  await expect(
+    page.getByRole("toolbar", { name: "Open tabs" }).getByRole("button", {
+      name: "New chat",
+      exact: true
+    })
+  ).toBeVisible();
 
-  for (const [label, message] of expected) {
-    const observed = page.waitForEvent("dialog").then(async (opened) => {
-      const actual = opened.message();
-      await opened.dismiss();
-      return actual;
-    });
-    await create.getByRole("button", { name: label, exact: true }).click();
-    expect(await observed).toBe(message);
-  }
+  const overview = page
+    .getByRole("toolbar", { name: "Open tabs" })
+    .getByRole("button", { name: "Overview", exact: true });
+  await overview.click();
+  const observed = page.waitForEvent("dialog").then(async (opened) => {
+    const actual = opened.message();
+    await opened.dismiss();
+    return actual;
+  });
+  await page.locator(".area-create").getByRole("button", { name: "Analysis graph" }).click();
+  expect(await observed).toBe("Creating a represented analysis graph is not wired up yet.");
 });

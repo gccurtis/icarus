@@ -41,10 +41,8 @@
   import { workspaceState } from "$model/client/workspace-state";
 
   const view = workspaceState();
-  const documentId = $derived(view.active.resourceId);
-  const runtime = $derived(
-    documentId === undefined ? undefined : view.documentRuntime(documentId)
-  );
+  const documentId = view.active.resourceId;
+  const runtime = documentId === undefined ? undefined : view.documentRuntime(documentId);
 
   const body = $derived(runtime?.body);
   const title = $derived(rowsIn("documents").find((row) => row._id === documentId)?.title);

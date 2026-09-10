@@ -6,11 +6,9 @@
   import { workspaceState } from "$model/client/workspace-state";
 
   const view = workspaceState();
-  const documentId = $derived(view.active.resourceId);
+  const documentId = view.active.resourceId;
 
-  const runtime = $derived(
-    documentId === undefined ? undefined : view.documentRuntime(documentId)
-  );
+  const runtime = documentId === undefined ? undefined : view.documentRuntime(documentId);
 
   const blocks = $derived(promptBlocksIn(runtime?.body));
 

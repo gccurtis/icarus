@@ -1,12 +1,12 @@
-import { expect, test, type Page, type TestInfo } from "@playwright/test";
+import { expect, test, type Page, type TestInfo } from "./fixtures";
 
 const routes = [
-  ["system", "/app/dev-project/reference/templates", "How templates work"],
-  ["changes", "/app/dev-project/reference/templates/changes", "What changed"],
-  ["scope", "/app/dev-project/reference/templates/scope", "What a hole selects"],
-  ["integration", "/app/dev-project/reference/templates/integration", "End to end with prompts"],
-  ["rebase", "/app/dev-project/reference/templates/rebase", "Where it meets the base"],
-  ["walkthrough", "/app/dev-project/reference/templates/walkthrough", "Walk it yourself"]
+  ["system", "/demo/dev-project/reference/templates", "How templates work"],
+  ["changes", "/demo/dev-project/reference/templates/changes", "What changed"],
+  ["scope", "/demo/dev-project/reference/templates/scope", "What a hole selects"],
+  ["integration", "/demo/dev-project/reference/templates/integration", "End to end with prompts"],
+  ["rebase", "/demo/dev-project/reference/templates/rebase", "Where it meets the base"],
+  ["walkthrough", "/demo/dev-project/reference/templates/walkthrough", "Walk it yourself"]
 ] as const;
 
 const unexpected: string[] = [];
@@ -36,7 +36,7 @@ test.afterEach(async ({}, testInfo: TestInfo) => {
   expect(unexpected, `unexpected browser diagnostics in ${testInfo.title}`).toEqual([]);
 });
 
-test("both template reference pages load and stay within the narrow viewport", async ({ page }) => {
+test("all template reference pages load and stay within the narrow viewport", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   for (const [, route, heading] of routes) {
     await page.goto(route, { waitUntil: "networkidle" });
@@ -50,7 +50,7 @@ test("both template reference pages load and stay within the narrow viewport", a
 
 test("the ledger filters by area without changing what the summary measured", async ({ page }) => {
   await page.setViewportSize({ width: 1500, height: 900 });
-  await page.goto("/app/dev-project/reference/templates/changes", { waitUntil: "networkidle" });
+  await page.goto("/demo/dev-project/reference/templates/changes", { waitUntil: "networkidle" });
 
   const total = await page.locator(".summary div").first().locator("dd").innerText();
   const rows = page.locator(".ledger tbody tr");
@@ -68,7 +68,7 @@ test("the ledger filters by area without changing what the summary measured", as
 
 test("the system page carries its diagrams and reaches the change set", async ({ page }) => {
   await page.setViewportSize({ width: 1500, height: 900 });
-  await page.goto("/app/dev-project/reference/templates", { waitUntil: "networkidle" });
+  await page.goto("/demo/dev-project/reference/templates", { waitUntil: "networkidle" });
 
   await expect(page.getByRole("img", { name: /A document becomes a template/ })).toBeVisible();
   await expect(page.getByRole("img", { name: /pressing Save moves the template's revision once/ })).toBeVisible();
@@ -80,7 +80,7 @@ test("the system page carries its diagrams and reaches the change set", async ({
 
 test("the reference pages read in either material, and the choice carries between them", async ({ page }) => {
   await page.setViewportSize({ width: 1500, height: 900 });
-  await page.goto("/app/dev-project/reference/templates/scope", { waitUntil: "networkidle" });
+  await page.goto("/demo/dev-project/reference/templates/scope", { waitUntil: "networkidle" });
 
   const material = page.getByRole("group", { name: "Material" });
   await expect(material.getByRole("button", { name: "Helios" })).toHaveAttribute("aria-pressed", "true");
@@ -88,7 +88,7 @@ test("the reference pages read in either material, and the choice carries betwee
   await material.getByRole("button", { name: "Selene" }).click();
   await expect(page.locator("html")).toHaveAttribute("data-appearance", "selene");
 
-  await page.goto("/app/dev-project/reference/templates", { waitUntil: "networkidle" });
+  await page.goto("/demo/dev-project/reference/templates", { waitUntil: "networkidle" });
   await expect(page.locator("html")).toHaveAttribute("data-appearance", "selene");
   await expect(
     page.getByRole("group", { name: "Material" }).getByRole("button", { name: "Selene" })
@@ -100,7 +100,7 @@ test("the reference pages read in either material, and the choice carries betwee
 
 test("the scope page carries its mock, its file list and its settled decisions", async ({ page }) => {
   await page.setViewportSize({ width: 1500, height: 900 });
-  await page.goto("/app/dev-project/reference/templates/scope", { waitUntil: "networkidle" });
+  await page.goto("/demo/dev-project/reference/templates/scope", { waitUntil: "networkidle" });
 
   await expect(page.getByRole("heading", { level: 2, name: "The builder" })).toBeVisible();
   await expect(page.getByText("Insert “Client status note”").first()).toBeVisible();
@@ -121,7 +121,7 @@ test("the integration page draws the whole chain, with every link carrying", asy
   // Two diagrams render through one serialised queue, and the sequence is a large one.
   test.setTimeout(90_000);
   await page.setViewportSize({ width: 1500, height: 900 });
-  await page.goto("/app/dev-project/reference/templates/integration", { waitUntil: "networkidle" });
+  await page.goto("/demo/dev-project/reference/templates/integration", { waitUntil: "networkidle" });
 
   // Both diagrams render rather than falling back to the error state.
   await expect(page.locator(".mermaid-output svg")).toHaveCount(2, { timeout: 45_000 });
@@ -141,7 +141,7 @@ test("the integration page draws the whole chain, with every link carrying", asy
 
 test("the walkthrough drives the real components, and the rules follow", async ({ page }) => {
   await page.setViewportSize({ width: 1500, height: 1000 });
-  await page.goto("/app/dev-project/reference/templates/walkthrough", { waitUntil: "networkidle" });
+  await page.goto("/demo/dev-project/reference/templates/walkthrough", { waitUntil: "networkidle" });
 
   // Three prompts, one templateified, so one hole and one question when it is placed.
   const holes = page.locator("#made tbody tr");
@@ -162,7 +162,7 @@ test("the walkthrough drives the real components, and the rules follow", async (
 
 test("the rebase page accounts for every conflict and both defects", async ({ page }) => {
   await page.setViewportSize({ width: 1500, height: 900 });
-  await page.goto("/app/dev-project/reference/templates/rebase", { waitUntil: "networkidle" });
+  await page.goto("/demo/dev-project/reference/templates/rebase", { waitUntil: "networkidle" });
 
   await expect(page.locator(".mermaid-output svg")).toHaveCount(1, { timeout: 30_000 });
   await expect(page.locator(".diagram-error")).toHaveCount(0);

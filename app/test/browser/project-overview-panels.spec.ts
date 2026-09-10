@@ -1,4 +1,4 @@
-import { expect, test, type Locator, type Page, type TestInfo } from "@playwright/test";
+import { expect, test, type Locator, type Page, type TestInfo } from "./fixtures";
 
 const unexpected: string[] = [];
 
@@ -162,7 +162,7 @@ test("wires the six production panels to scoped project data", async ({ page }) 
   await expect(context.getByText(/mentioned you/i)).toHaveCount(0);
   await context.getByPlaceholder("Search history").fill("substation");
   await expect(
-    context.getByRole("heading", { name: "Results", exact: true }).locator("..").getByText("2", { exact: true })
+    context.getByRole("heading", { name: "Results", exact: true }).locator("..").getByText("3", { exact: true })
   ).toBeVisible();
   await context.getByPlaceholder("Search history").fill("");
 

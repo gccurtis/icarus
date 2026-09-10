@@ -6,10 +6,8 @@
   import { workspaceState } from "$model/client/workspace-state";
 
   const view = workspaceState();
-  const deckId = $derived(view.active.resourceId);
-  const runtime = $derived(
-    deckId === undefined ? undefined : view.slideDeckRuntime(deckId)
-  );
+  const deckId = view.active.resourceId;
+  const runtime = deckId === undefined ? undefined : view.slideDeckRuntime(deckId);
 
   const prompts = $derived(promptBlocksIn(runtime?.body));
 

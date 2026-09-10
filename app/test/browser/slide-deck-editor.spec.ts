@@ -1,4 +1,4 @@
-import { expect, test, type Page, type TestInfo } from "@playwright/test";
+import { expect, test, type Page, type TestInfo } from "./fixtures";
 
 const unexpected: string[] = [];
 const DECK_TITLE = "Board review — Q1 exposure";

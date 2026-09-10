@@ -433,10 +433,9 @@ const atomsOf = (node: ProseMirrorNode): Walked => {
   let index = 0;
 
   const flush = () => {
-    // Reading a projection must be stable. Legacy Prompt Blocks can have no
-    // represented atoms, and a newly typed run can outnumber its saved IDs.
-    // A random fallback here made the same caret look different on every read,
-    // feeding workspace selection back into ProseMirror until Svelte aborted.
+    // A newly typed run can outnumber the saved IDs. Its provisional identity
+    // must still be deterministic so repeated projection cannot feed a changed
+    // selection back into ProseMirror.
     atoms.push({ id: ids[index] ?? projectedAtomId(node, index), kind: "literal", text: run });
     index += 1;
     run = "";

@@ -3,7 +3,11 @@
   import { Input } from "$vendored-components/input";
   import { Textarea } from "$vendored-components/textarea";
   import { addressOf } from "$app-views/categories/document-editor/procedures/inspecting";
-  import { normalizeLinkUrl, safeLinkHref } from "$app-views/categories/document-editor/procedures/links";
+  import {
+    linkLabel,
+    normalizeLinkUrl,
+    safeLinkHref
+  } from "$app-views/categories/document-editor/procedures/links";
   import {
     blockOf,
     linkOps,
@@ -16,7 +20,7 @@
   import type { DocumentRuntime } from "$model/client/workspace-state";
 
   const view = workspaceState();
-  const documentId = $derived(view.active.resourceId);
+  const documentId = view.active.resourceId;
   let runtime = $state<DocumentRuntime | undefined>(undefined);
 
   $effect(() => {
@@ -48,15 +52,6 @@
 
   const commit = (ops: Parameters<DocumentRuntime["apply"]>[0]) => {
     if (ops.length > 0) runtime?.apply(ops);
-  };
-
-  const labelOf = (link: PlacedLink): string => {
-    const held = link.mark.link;
-    if (held === undefined) return "";
-    if (held.kind === "url") return held.url;
-    if (held.kind === "resource") return `${held.ref.kind} ${held.ref.id}`;
-    if (held.kind === "persona") return `persona ${held.personaId}`;
-    return "actor";
   };
 
   const startEditing = (link: PlacedLink) => {
@@ -125,9 +120,9 @@
                   target="_blank"
                   rel="noopener noreferrer"
                   class="text-body-sm text-ink-primary min-w-0 flex-1 truncate"
-                >{labelOf(link)}</a>
+                >{linkLabel(link.mark.link)}</a>
               {:else}
-                <span class="text-body-sm text-ink-secondary min-w-0 flex-1 truncate">{labelOf(link)}</span>
+                <span class="text-body-sm text-ink-secondary min-w-0 flex-1 truncate">{linkLabel(link.mark.link)}</span>
               {/if}
               {#if link.mark.link?.kind === "url"}
                 <PanelButton label="Edit" tone="ghost" onclick={() => startEditing(link)} />

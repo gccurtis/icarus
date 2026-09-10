@@ -30,11 +30,9 @@
 
 
   const view = workspaceState();
-  const documentId = $derived(view.active.resourceId);
+  const documentId = view.active.resourceId;
 
-  const runtime = $derived(
-    documentId === undefined ? undefined : view.documentRuntime(documentId)
-  );
+  const runtime = documentId === undefined ? undefined : view.documentRuntime(documentId);
   const state = new PromptBlockState();
 
   const body = $derived(runtime?.body);

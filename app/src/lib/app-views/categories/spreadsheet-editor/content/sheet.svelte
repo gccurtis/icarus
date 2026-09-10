@@ -98,7 +98,7 @@
   const channel = pickingChannel();
   const register = variableRegister();
 
-  const sheetId = $derived(view.active.resourceId);
+  const sheetId = view.active.resourceId;
 
   const title = $derived(sheetId === undefined ? undefined : titleOf(titleQuery(sheetId)) || undefined);
 

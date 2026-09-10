@@ -14,8 +14,9 @@
   const KINDS = ["rectangle", "ellipse", "triangle", "diamond", "arrow", "callout"].map((value) => ({ value, label: value[0].toUpperCase() + value.slice(1) }));
 
   const view = workspaceState();
-  const deckId = $derived(view.active.resourceId);
+  const deckId = view.active.resourceId;
   let runtime = $state<SlideDeckRuntime | undefined>(undefined);
+
   $effect(() => {
     runtime = deckId === undefined ? undefined : view.slideDeckRuntime(deckId);
   });

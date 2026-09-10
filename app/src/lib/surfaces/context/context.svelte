@@ -106,7 +106,7 @@
     <div class="content">
       <div class="body">
         {#if Content}
-          {#key active}
+          {#key `${view.activeId}\u0000${active}`}
             <Content />
           {/key}
         {:else if active !== undefined}

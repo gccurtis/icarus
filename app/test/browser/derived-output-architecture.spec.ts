@@ -1,4 +1,4 @@
-import { expect, test, type Page, type TestInfo } from "@playwright/test";
+import { expect, test, type Page, type TestInfo } from "./fixtures";
 
 const unexpected: string[] = [];
 
@@ -42,6 +42,31 @@ test.beforeEach(async ({ page }) => {
 
 test.afterEach(async ({}, testInfo: TestInfo) => {
   expect(unexpected, `unexpected browser diagnostics in ${testInfo.title}`).toEqual([]);
+});
+
+test("the integrated rebase reference shows the actual runtime in Helios and Selene", async ({ page }) => {
+  await page.goto("/demo/dev-project/reference/derived-output-rebase", {
+    waitUntil: "networkidle"
+  });
+
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("rebase landed");
+  await expect(page.locator(".mermaid-output svg")).toHaveCount(1, { timeout: 20_000 });
+  await expect(page.locator(".reb-metrics dd").nth(1)).toHaveText("7");
+
+  await page.getByRole("link", { name: "02 Runtime", exact: true }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("Commit facts first");
+  await expect(page.locator(".mermaid-output svg")).toHaveCount(2, { timeout: 20_000 });
+  await expect(page.locator(".diagram-error")).toHaveCount(0);
+  await expect(page.locator(".reb-transaction-grid article")).toHaveCount(5);
+  await expect(page.locator(".reb-queue-rules li")).toHaveCount(6);
+
+  const appearance = page.getByRole("group", { name: "Appearance" });
+  await appearance.getByRole("button", { name: "Selene" }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-appearance", "selene");
+  await expect(page.locator(".reb-root")).toBeVisible();
+
+  await appearance.getByRole("button", { name: "Helios" }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-appearance", "helios");
 });
 
 test("the procedure page renders all three diagrams and switches its callable spine", async ({ page }) => {

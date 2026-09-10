@@ -34,7 +34,16 @@ const child = spawn(
   ["dev", "--host", "127.0.0.1", "--port", String(port), "--strictPort"],
   {
     stdio: "inherit",
-    env: { ...process.env, ICARUS_STORE_DIRECTORY: storeDirectory }
+    env: {
+      ...process.env,
+      ICARUS_STORE_DIRECTORY: storeDirectory,
+      ...(owned
+        ? {
+            ICARUS_BROWSER_RESET_DIRECTORY: storeDirectory,
+            ICARUS_BROWSER_SEED_DIRECTORY: join(process.cwd(), "seed")
+          }
+        : {})
+    }
   }
 );
 

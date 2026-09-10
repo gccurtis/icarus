@@ -30,6 +30,14 @@ export const safeLinkHref = (link: MarkLink | null | undefined): string | undefi
   return normalized.ok ? normalized.url : undefined;
 };
 
+export const linkLabel = (link: MarkLink | null | undefined): string => {
+  if (link === undefined || link === null) return "";
+  if (link.kind === "url") return link.url;
+  if (link.kind === "resource") return `${link.ref.kind} ${link.ref.id}`;
+  if (link.kind === "persona") return `persona ${link.personaId}`;
+  return "actor";
+};
+
 export type WordRange = { readonly from: number; readonly to: number };
 
 const WORD_CHARACTER = /[\p{L}\p{M}\p{N}_'’]/u;

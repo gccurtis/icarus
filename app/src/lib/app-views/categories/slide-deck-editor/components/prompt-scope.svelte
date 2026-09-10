@@ -53,11 +53,9 @@
   } = $props();
 
   const view = workspaceState();
-  const deckId = $derived(view.active.resourceId);
+  const deckId = view.active.resourceId;
 
-  const runtime = $derived(
-    deckId === undefined ? undefined : view.slideDeckRuntime(deckId)
-  );
+  const runtime = deckId === undefined ? undefined : view.slideDeckRuntime(deckId);
 
   // One control belongs to one immutable Derived Output identity; the parent keys it.
   // svelte-ignore state_referenced_locally

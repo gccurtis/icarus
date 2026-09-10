@@ -52,6 +52,7 @@ const output = (): DerivedOutput => ({
   _creationTime: 1,
   projectId: "projects:1" as Id<"projects">,
   prompt: "What changed?",
+  definitionRevision: 1,
   queries: [],
   evidence: [],
   lastResponse: {

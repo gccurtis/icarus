@@ -72,15 +72,15 @@
     // its offsets to a stable structural identity.
     void subject;
     const selection = view.selection;
-    if (selection === undefined) return inspected;
+    if (selection === undefined) return `${view.activeId}:${inspected}`;
     if (
       selection.kind === "text-selection" ||
       selection.kind === "next-letter" ||
       selection.kind === "empty-line"
     ) {
-      return `${inspected}:${blockOf(selection.id)}:${blockOf(selection.at)}`;
+      return `${view.activeId}:${inspected}:${blockOf(selection.id)}:${blockOf(selection.at)}`;
     }
-    return `${inspected}:${selection.id}:${selection.at ?? ""}`;
+    return `${view.activeId}:${inspected}:${selection.id}:${selection.at ?? ""}`;
   });
 
   const load = $derived(

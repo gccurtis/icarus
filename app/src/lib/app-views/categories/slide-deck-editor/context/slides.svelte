@@ -25,9 +25,10 @@
   const CARRIED = "application/x-icarus-slide";
 
   const view = workspaceState();
-  const deckId = $derived(view.active.resourceId);
+  const deckId = view.active.resourceId;
 
   let runtime = $state<SlideDeckRuntime | undefined>(undefined);
+
   $effect(() => {
     runtime = deckId === undefined ? undefined : view.slideDeckRuntime(deckId);
   });

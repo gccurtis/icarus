@@ -36,11 +36,9 @@
   const outputId = $derived(derivedOutputId as Id<"derivedOutputs">);
 
   const view = workspaceState();
-  const documentId = $derived(view.active.resourceId);
+  const documentId = view.active.resourceId;
 
-  const runtime = $derived(
-    documentId === undefined ? undefined : view.documentRuntime(documentId)
-  );
+  const runtime = documentId === undefined ? undefined : view.documentRuntime(documentId);
   const state = new PromptSettingsState();
 
   const held = $derived(

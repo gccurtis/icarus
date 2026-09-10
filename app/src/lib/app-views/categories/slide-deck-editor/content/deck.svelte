@@ -115,7 +115,7 @@
 
   const view = workspaceState();
 
-  const deckId = $derived(view.active.resourceId);
+  const deckId = view.active.resourceId;
   const decksQuery = readStore("slideDecks");
 
   const deckTitle = $derived.by(() => {

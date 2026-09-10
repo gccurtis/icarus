@@ -9,10 +9,8 @@
   let { elementId }: { elementId: string } = $props();
 
   const view = workspaceState();
-  const deckId = $derived(view.active.resourceId);
-  const runtime = $derived(
-    deckId === undefined ? undefined : view.slideDeckRuntime(deckId)
-  );
+  const deckId = view.active.resourceId;
+  const runtime = deckId === undefined ? undefined : view.slideDeckRuntime(deckId);
 
   const makePrompt = () => {
     const current = runtime;

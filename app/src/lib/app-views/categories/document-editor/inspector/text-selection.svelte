@@ -1,4 +1,3 @@
-<!-- @architecture-complexity reviewed: the one inspector keeps its coupled selection controls together. -->
 <script lang="ts">
   import {
     Panel,
@@ -59,7 +58,11 @@
     type MarkStyle,
     type PlacedLink
   } from "$app-views/categories/document-editor/procedures/marks";
-  import { normalizeLinkUrl, safeLinkHref } from "$app-views/categories/document-editor/procedures/links";
+  import {
+    linkLabel,
+    normalizeLinkUrl,
+    safeLinkHref
+  } from "$app-views/categories/document-editor/procedures/links";
   import {
     projectIdOf,
     refreshAll,
@@ -79,7 +82,7 @@
 
   const view = workspaceState();
 
-  const documentId = $derived(view.active.resourceId);
+  const documentId = view.active.resourceId;
 
   let runtime = $state<DocumentRuntime | undefined>(undefined);
 
@@ -221,15 +224,6 @@
     }));
     editingLink = undefined;
     linkFailed = undefined;
-  };
-
-  const labelOf = (link: PlacedLink): string => {
-    const held = link.mark.link;
-    if (held === undefined) return "";
-    if (held.kind === "url") return held.url;
-    if (held.kind === "resource") return `${held.ref.kind} ${held.ref.id}`;
-    if (held.kind === "persona") return `persona ${held.personaId}`;
-    return "actor";
   };
 
   const addComment = async () => {
@@ -526,10 +520,10 @@
                     rel="noopener noreferrer"
                     class="text-body-sm text-ink-primary min-w-0 flex-1 truncate"
                   >
-                    {labelOf(link)}
+                    {linkLabel(link.mark.link)}
                   </a>
                 {:else}
-                  <span class="text-body-sm text-ink-secondary min-w-0 flex-1 truncate">{labelOf(link)}</span>
+                  <span class="text-body-sm text-ink-secondary min-w-0 flex-1 truncate">{linkLabel(link.mark.link)}</span>
                 {/if}
                 <PanelButton label="Edit" tone="ghost" onclick={() => startEditingLink(link)} />
               </div>

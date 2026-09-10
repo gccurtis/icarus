@@ -51,11 +51,9 @@
   } = $props();
 
   const view = workspaceState();
-  const documentId = $derived(view.active.resourceId);
+  const documentId = view.active.resourceId;
 
-  const runtime = $derived(
-    documentId === undefined ? undefined : view.documentRuntime(documentId)
-  );
+  const runtime = documentId === undefined ? undefined : view.documentRuntime(documentId);
 
   const held = $derived(
     runtime?.body === undefined ? undefined : blockIn(runtime.body, blockId)

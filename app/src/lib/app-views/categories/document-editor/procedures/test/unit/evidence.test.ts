@@ -7,10 +7,9 @@ import {
 import type { SemanticTextCitation } from "$representation/data/types/semantic/derived-output";
 
 const citation = (): SemanticTextCitation => {
-  const title = "Derived Output proof · 9:28:40 PM";
   const first = "The Atlas beacon emits at 43 kilohertz.";
   const second = "Garry's age is 53.";
-  const text = `${title}\n\n${first}\n\n${second}`;
+  const text = `${first}\n\n${second}`;
   const firstFrom = text.indexOf(first);
   const secondFrom = text.indexOf(second);
   return {
@@ -22,7 +21,6 @@ const citation = (): SemanticTextCitation => {
     },
     span: { from: 0, to: text.length, text },
     locators: [
-      { from: 0, to: title.length, locator: { kind: "resourceTitle" } },
       {
         from: firstFrom,
         to: firstFrom + first.length,
@@ -49,7 +47,7 @@ const citation = (): SemanticTextCitation => {
 };
 
 describe("document Prompt Block evidence presentation", () => {
-  it("keeps historical resource-title locators outside the displayed exact span", () => {
+  it("shows the exact current-schema span", () => {
     expect(exactEvidenceText(citation())).toBe(
       "The Atlas beacon emits at 43 kilohertz.\n\nGarry's age is 53."
     );

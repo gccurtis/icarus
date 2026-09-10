@@ -1,4 +1,4 @@
-import { expect, test, type Page, type TestInfo } from "@playwright/test";
+import { expect, test, type Page, type TestInfo } from "./fixtures";
 
 const routes = [
   ["overview", "/demo/document-editor-reference", "Architecture you can inspect."],

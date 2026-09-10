@@ -1,9 +1,15 @@
 import { defineConfig, devices } from "@playwright/test";
+import { randomUUID } from "node:crypto";
 
 const port = Number(process.env.ICARUS_BROWSER_PORT ?? 5203);
 const baseURL = process.env.ICARUS_BROWSER_BASE_URL ?? `http://127.0.0.1:${port}`;
 const executablePath = process.env.ICARUS_CHROMIUM_EXECUTABLE;
 const firefoxExecutablePath = process.env.ICARUS_FIREFOX_EXECUTABLE;
+const ownsWebServer = process.env.ICARUS_BROWSER_BASE_URL === undefined;
+
+if (ownsWebServer) {
+  process.env.ICARUS_BROWSER_RESET_TOKEN ??= randomUUID();
+}
 
 export default defineConfig({
   testDir: "./test/browser",
@@ -19,7 +25,7 @@ export default defineConfig({
     trace: "retain-on-failure",
     screenshot: "only-on-failure"
   },
-  webServer: process.env.ICARUS_BROWSER_BASE_URL
+  webServer: !ownsWebServer
     ? undefined
     : {
         command: `node scripts/browser-server.mjs ${port}`,

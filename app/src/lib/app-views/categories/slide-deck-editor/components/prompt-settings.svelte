@@ -39,11 +39,9 @@
 
   const outputId = $derived(derivedOutputId as Id<"derivedOutputs">);
   const view = workspaceState();
-  const deckId = $derived(view.active.resourceId);
+  const deckId = view.active.resourceId;
 
-  const runtime = $derived(
-    deckId === undefined ? undefined : view.slideDeckRuntime(deckId)
-  );
+  const runtime = deckId === undefined ? undefined : view.slideDeckRuntime(deckId);
   const state = new PromptSettingsState();
 
   const held = $derived(

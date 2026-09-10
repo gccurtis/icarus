@@ -1,4 +1,4 @@
-import { expect, test, type Locator, type Page, type TestInfo } from "@playwright/test";
+import { expect, test, type Locator, type Page, type TestInfo } from "./fixtures";
 
 const viewports = {
   narrow: { width: 1120, height: 850 },
@@ -570,6 +570,10 @@ test("appearance, focus, reduced motion, and grayscale preserve the editor hiera
   await expect(root).toHaveAttribute("data-appearance", "helios");
 
   const appearance = page.getByRole("button", { name: "Switch to Celestial Selene" });
+  await page.evaluate(() => {
+    document.body.tabIndex = -1;
+    document.body.focus();
+  });
   await page.keyboard.press("Tab");
   await expect(appearance).toBeFocused();
   expect(

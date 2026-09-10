@@ -31,7 +31,7 @@
 
   const view = workspaceState();
 
-  const documentId = $derived(view.active.resourceId);
+  const documentId = view.active.resourceId;
 
   let runtime = $state<DocumentRuntime | undefined>(undefined);
 

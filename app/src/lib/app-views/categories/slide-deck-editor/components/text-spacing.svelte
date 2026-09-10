@@ -14,8 +14,9 @@
   let { blockId, open = false }: { blockId: string; open?: boolean } = $props();
 
   const view = workspaceState();
-  const deckId = $derived(view.active.resourceId);
+  const deckId = view.active.resourceId;
   let runtime = $state<SlideDeckRuntime | undefined>(undefined);
+
   $effect(() => {
     runtime = deckId === undefined ? undefined : view.slideDeckRuntime(deckId);
   });
