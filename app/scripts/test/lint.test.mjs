@@ -90,3 +90,61 @@ describe("checks fire on a tree broken the way they describe", () => {
     });
   }
 });
+
+describe("explicit-dependency functions retain their legal boundaries", () => {
+  test("stored model fields and supplied mutator ports stay available", async () => {
+    const check = checks.find(({ name }) => name === "model-functions-are-explicit");
+    assert.ok(check);
+    const found = await breaking(base, [
+      {
+        path: "src/lib/model/client/probe/types.ts",
+        write: `export type ProbeModel = { body: string };\nexport type WritePort = { write(value: string): void };\n`
+      },
+      {
+        path: "src/lib/model/client/probe/definition.ts",
+        write: `import type { ProbeModel } from "$model/client/probe/types";\nexport const defineProbe = (): ProbeModel => ({ body: "ready" });\n`
+      },
+      {
+        path: "src/lib/model/client/probe/methods/get-body.ts",
+        write: `import type { ProbeModel } from "$model/client/probe/types";\nexport const getBody = (runtime: ProbeModel): string => runtime.body;\n`
+      },
+      {
+        path: "src/lib/model/client/probe/methods/save-body.ts",
+        write: `import type { ProbeModel, WritePort } from "$model/client/probe/types";\nexport const saveBody = (runtime: ProbeModel, port: WritePort): void => port.write(runtime.body);\n`
+      }
+    ], (tree) => check.run(tree));
+
+    assert.deepEqual(
+      found.filter(({ path }) => path.includes("/model/client/probe/")),
+      []
+    );
+  });
+
+  test("capabilities and component procedures may call supplied ports", async () => {
+    const capability = checks.find(({ name }) => name === "capability-functions-are-explicit");
+    const component = checks.find(({ name }) => name === "component-procedures-are-explicit");
+    assert.ok(capability);
+    assert.ok(component);
+    const changes = [
+      {
+        path: "src/lib/capabilities/probe/api/act/act.ts",
+        write: `import type { CapabilityContext } from "$runtime/server/scope.server";\ntype WritePort = { write(value: string): void };\nexport const act = (context: CapabilityContext, port: WritePort): void => port.write(context.scope.projectId);\n`
+      },
+      {
+        path: "src/lib/app-views/categories/project-overview/procedures/save-body.ts",
+        write: `type Runtime = { body: string };\ntype WritePort = { write(value: string): void };\nexport const saveBody = (runtime: Runtime, port: WritePort): void => port.write(runtime.body);\n`
+      }
+    ];
+
+    const capabilityFindings = await breaking(base, changes, (tree) => capability.run(tree));
+    const componentFindings = await breaking(base, changes, (tree) => component.run(tree));
+    assert.deepEqual(
+      capabilityFindings.filter(({ path }) => path.includes("/capabilities/probe/")),
+      []
+    );
+    assert.deepEqual(
+      componentFindings.filter(({ path }) => path.endsWith("/procedures/save-body.ts")),
+      []
+    );
+  });
+});

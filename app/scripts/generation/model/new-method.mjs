@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 /**
- * A method on an object, or a step under one.
+ * A free operation over an object, or a step under one.
  *
  *     pnpm new-method -- <client|server> <object> <method>
  *     pnpm new-method -- <client|server> <object> <method>/<step>
  *
- * A method is a file until it has supporting steps. Naming a step promotes the
- * method: the file becomes a directory holding an entry of the same name, which
+ * An operation is a file until it has supporting steps. Naming a step promotes
+ * it: the file becomes a directory holding an entry of the same name, which
  * is what `method-entry-matches-directory` reads, and the step lands beside it.
  */
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";

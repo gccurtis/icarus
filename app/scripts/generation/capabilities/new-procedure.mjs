@@ -5,11 +5,10 @@
  *     pnpm new-procedure -- <capability> <procedure>
  *
  * Writes the procedure directory, the entry already gated and validating, the
- * declaration added to the index, and a failing test. Both calls are generated
- * rather than left to a comment because two checks read exactly those
- * statements — `no-procedure-acts-outside-a-scope` the first,
- * `procedure-validates-first` the next. A template that trips its own checks on
- * the first run is a template nobody trusts.
+ * declaration added to the index, and a failing test. The procedure receives
+ * its authenticated server context explicitly; the remote declaration binds
+ * that context at the one request adapter. A template that trips its own checks
+ * on the first run is a template nobody trusts.
  */
 import { existsSync } from "node:fs";
 import { join } from "node:path";
@@ -38,7 +37,7 @@ if (!existsSync(root)) plan.fail(capability, "no such capability — run pnpm ne
 
 plan.create(
   join(directory, `${procedure}.ts`),
-  `import { requireScope } from "$runtime/server/scope.server";
+  `import type { CapabilityContext } from "$runtime/server/scope.server";
 
 import type { ${Input}, ${Result} } from "$capabilities/${capability}/types/${procedure}";
 import { validate${pascal(procedure)} } from "$capabilities/${capability}/api/${procedure}/validate-${procedure}";
@@ -46,16 +45,13 @@ import { validate${pascal(procedure)} } from "$capabilities/${capability}/api/${
 /**
  * ${procedure}.
  *
- * The gate first: who is asking and about which project, before anything has
- * happened. Then the input, because a type is a claim about what a caller said
- * it sent and this is the check.
+ * CapabilityContext was authenticated before this function was entered. The
+ * input is still checked before the operation acts on it.
  */
-export const ${call} = async (input: ${Input}): Promise<${Result}> => {
-  await requireScope();
-
+export const ${call} = async (context: CapabilityContext, input: ${Input}): Promise<${Result}> => {
   const ${call}Input = validate${pascal(procedure)}(input);
 
-  throw new Error(\`${capability}/${procedure} is not implemented: \${${call}Input.project}\`);
+  throw new Error(\`${capability}/${procedure} is not implemented for \${context.scope.projectId}: \${${call}Input.project}\`);
 };
 `
 );
@@ -90,20 +86,24 @@ export type ${Result} = {
 plan.create(
   join(root, "test", "unit", `${procedure}.test.ts`),
   `import assert from "node:assert/strict";
-import { test, vi } from "vitest";
+import { test } from "vitest";
 
-vi.mock("$runtime/server/scope.server", () => ({
-  requireScope: () => Promise.resolve({ projectId: "p", userId: "u", username: "You" })
-}));
+import type { CapabilityContext } from "$runtime/server/scope.server";
 
 const { ${call} } = await import("$capabilities/${capability}/api/${procedure}/${procedure}");
 
+const context = {
+  scope: { projectId: "p", userId: "u", username: "You" },
+  model: {} as never,
+  now: () => 0
+} satisfies CapabilityContext;
+
 test("${procedure} refuses an input it cannot act on", async () => {
-  await assert.rejects(() => ${call}({ project: "" }));
+  await assert.rejects(() => ${call}(context, { project: "" }));
 });
 
 test.fails("${procedure} answers", async () => {
-  await ${call}({ project: "p" });
+  await ${call}(context, { project: "p" });
 });
 `
 );
@@ -118,9 +118,13 @@ else {
     if (text.includes(`api/${procedure}/${procedure}`)) return text;
 
     const remote = index.endsWith(".remote.ts");
-    const factory = remote ? `query("unchecked", ${call}Procedure)` : `${call}Procedure`;
-    const opening = remote && !text.includes('from "$app/server"')
-      ? 'import { query } from "$app/server";\n\n'
+    const factory = remote ? `query("unchecked", bindCapability(${call}Procedure))` : `${call}Procedure`;
+    const opening = remote
+      ? `${text.includes('from "$app/server"') ? "" : 'import { query } from "$app/server";\n'}${
+          text.includes('bindCapability')
+            ? ""
+            : 'import { bindCapability } from "$runtime/server/scope.server";\n'
+        }\n`
       : "";
 
     const declaration =

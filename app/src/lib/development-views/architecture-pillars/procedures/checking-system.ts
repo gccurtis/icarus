@@ -18,28 +18,28 @@ export const TARGET_LAYERS = [
     layer: "Workspace",
     owner: "WorkspaceState + per-tab view",
     state: "Tabs, focus, selection, zoom, panel geometry",
-    behavior: "Workspace model methods",
+    behavior: "Free workspace queries and commands",
     crossing: "Acquires/releases subject runtimes"
   },
   {
     layer: "Resource",
     owner: "One subject runtime per resource id",
     state: "Body, revision, buffer, history, synchronization",
-    behavior: "Runtime model methods",
+    behavior: "Free runtime queries and commands",
     crossing: "Calls typed subject capabilities"
   },
   {
     layer: "Server intent",
     owner: "Request scope + stateless capability",
     state: "No cross-request state",
-    behavior: "Scope, validation, ownership, domain command",
+    behavior: "Explicit context, validation, ownership, domain command",
     crossing: "Calls ServerModel once per intent"
   },
   {
     layer: "Durable process",
     owner: "Server model + adapter",
     state: "Tables, configuration, observability, connections",
-    behavior: "Transactions, persistence, external protocols",
+    behavior: "Free operations over transactions and external protocol ports",
     crossing: "Only named infrastructure adapters perform I/O"
   }
 ] as const;

@@ -2,7 +2,7 @@ import { error } from "@sveltejs/kit";
 import { getRequestEvent } from "$app/server";
 import type { Configuration } from "$model/server/configuration/index.server";
 import { requiredString } from "$model/server/configuration/index.server";
-import { serverModel } from "$runtime/server/start.server";
+import { serverModel, type ServerModel } from "$runtime/server/start.server";
 
 /**
  * Who is asking. Established by the session cookie and nothing else.
@@ -20,8 +20,8 @@ export type Session = {
 /**
  * Who is asking, and about which project.
  *
- * The first parameter of every capability procedure, and the reason none of them
- * has to remember an authorization check: a `Scope` only exists because
+ * Part of the first parameter of every capability procedure, and the reason none
+ * of them has to remember an authorization check: a `Scope` only exists because
  * `resolveScope` produced one, and it only produces one for a project the asking
  * user holds a handle to.
  *
@@ -32,6 +32,13 @@ export type Scope = {
   readonly projectId: string;
   readonly userId: string;
   readonly username: string;
+};
+
+/** Everything an effectful capability may know that did not arrive from the browser. */
+export type CapabilityContext = {
+  readonly scope: Scope;
+  readonly model: ServerModel;
+  readonly now: () => number;
 };
 
 /**
@@ -89,8 +96,8 @@ export const resolveScope = async (
 /**
  * The scope this request runs in. The one gate.
  *
- * Every capability procedure calls this before it does anything else, which is
- * what `no-procedure-acts-outside-a-scope` reads.
+ * `bindCapability` calls this before it exposes process state to a procedure,
+ * which is what the capability checkers read.
  *
  * Two values meet here. The session comes from the cookie and is resolved once
  * per request in `hooks.server.ts`. The project token comes from the pathname
@@ -105,6 +112,20 @@ export const requireScope = async (): Promise<Scope> => {
   const event = getRequestEvent();
   return resolveScope(event.locals.session, projectTokenIn(event.url.pathname));
 };
+
+/**
+ * The sole adapter from a SvelteKit remote handler to an explicit capability.
+ * Scope is resolved before process state is exposed, and time remains a port so
+ * the operation itself has no ambient dependency.
+ */
+export const bindCapability = <Arguments extends readonly unknown[], Result>(
+  operation: (context: CapabilityContext, ...args: Arguments) => Result
+): ((...args: Arguments) => Promise<Awaited<Result>>) =>
+  async (...args: Arguments): Promise<Awaited<Result>> => {
+    const scope = await requireScope();
+    const model = serverModel();
+    return await operation({ scope, model, now: () => Date.now() }, ...args);
+  };
 
 /** `/app/<token>` in product, or `/demo/<token>` on an executable development surface. */
 const projectTokenIn = (pathname: string): string | undefined => {

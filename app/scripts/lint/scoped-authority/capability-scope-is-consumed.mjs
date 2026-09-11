@@ -2,7 +2,12 @@ import ts from "typescript";
 
 import { check } from "../shared/check.mjs";
 import { bindingNames } from "../shared/production.mjs";
-import { exportedFunctions, firstStatement, isCall } from "../shared/procedures.mjs";
+import {
+  exportedFunctions,
+  firstStatement,
+  hasCapabilityContext,
+  isCall
+} from "../shared/procedures.mjs";
 import { procedureEntries } from "../shared/trees.mjs";
 
 const gateBindings = (statement) => {
@@ -39,6 +44,30 @@ const usagesOf = (body, names) => {
   return [...used];
 };
 
+const explicitScopeIsUsed = (body, parameter) => {
+  if (ts.isIdentifier(parameter.name)) {
+    let used = false;
+    const visit = (node) => {
+      if (
+        ts.isPropertyAccessExpression(node) &&
+        ts.isIdentifier(node.expression) &&
+        node.expression.text === parameter.name.text &&
+        node.name.text === "scope"
+      ) used = true;
+      if (!used) node.forEachChild(visit);
+    };
+    visit(body);
+    return used;
+  }
+  if (!ts.isObjectBindingPattern(parameter.name)) return false;
+  const scope = parameter.name.elements.find(
+    (element) => (element.propertyName ?? element.name).getText() === "scope"
+  );
+  if (!scope) return false;
+  const [name] = bindingNames(scope.name);
+  return name !== undefined && usagesOf(body, [name]).includes(name);
+};
+
 export default check({
   id: "AUTH-02",
   pillar: "scoped-authority",
@@ -49,7 +78,18 @@ export default check({
     const found = [];
     for (const path of procedureEntries(tree)) {
       const source = tree.source(path);
-      for (const { body } of exportedFunctions(source)) {
+      for (const { body, parameters } of exportedFunctions(source)) {
+        if (hasCapabilityContext({ parameters })) {
+          const [context] = parameters;
+          if (context && explicitScopeIsUsed(body, context)) continue;
+          found.push({
+            path,
+            line: context ? tree.lineOf(path, context) : 1,
+            fingerprint: "unused-explicit-scope",
+            message: "CapabilityContext.scope is not consumed by the operation"
+          });
+          continue;
+        }
         const first = firstStatement(body);
         if (!first || !isCall(first, "requireScope")) continue;
         const names = gateBindings(first);

@@ -12,7 +12,8 @@ export const PROCEDURAL_TRANSPARENCY: ArchitecturePillar = {
   contract: [
     ".svelte files declare props, construct a local controller, derive presentation, bind events, and render.",
     "Each nontrivial event calls one named procedure; each nontrivial lifecycle synchronization has one named effects/ module.",
-    "Model definitions declare owned fields, derived accessors, construction, and thin public delegation.",
+    "Model definitions expose stored fields only; every derived read and action is a free function receiving the model explicitly.",
+    "Stored data remains direct (runtime.body); computed reads use free queries such as getBody(runtime), never getters.",
     "Remote command state, validation, sequencing, refresh, and error handling live in a procedure rather than markup.",
     "A procedure directory is split by entry call chain, not used as one category-scale miscellaneous file."
   ],
@@ -41,16 +42,16 @@ export const PROCEDURAL_TRANSPARENCY: ArchitecturePillar = {
     members: [
       "Inline $effect/onMount/onDestroy chains",
       "Capabilities imported directly by a .svelte file",
-      "Timers, persistence, or retry loops inside a model definition",
+      "Methods, getters, timers, persistence, or retry loops attached to a model definition",
       "Async command/loading/error orchestration beside markup",
       "One procedures file holding unrelated entry chains"
     ]
   },
   desiredFlow: [
-    "Markup event → procedures/<gesture>.ts → local controller or client model method",
+    "Markup event → procedures/<gesture>.ts → local controller or free model query/command",
     "Lifecycle trigger → procedures/effects/<synchronization>.svelte.ts → explicit cleanup",
-    "Model public method → methods/<method>.ts → owned state transition",
-    "Remote intent → component procedure → capability index → server procedure"
+    "Model query/command(model, input) → methods/<operation>.ts → explicit owned state",
+    "Remote intent → component procedure(context, input) → capability index adapter → capability(context, input)"
   ],
   checkers: [
     {
@@ -62,7 +63,7 @@ export const PROCEDURAL_TRANSPARENCY: ArchitecturePillar = {
       guarantee: "Presentation components do not own remote procedure chains.",
       detects: "Any runtime import from $capabilities in a production .svelte file.",
       implementation:
-        "Scan production app views and surfaces; type-only imports may be allowed, executable capability indexes may appear only in colocated procedures or model methods.",
+        "Scan production app views and surfaces; type-only imports may be allowed. BEH-03 separately requires a colocated procedure to receive its executable capability port.",
       current: "Enforced; eight production .svelte capability imports are baselined.",
       limit: "Moving one import is insufficient if the extracted procedure remains a giant presentation-specific repository; other checks cover granularity."
     },
@@ -81,16 +82,16 @@ export const PROCEDURAL_TRANSPARENCY: ArchitecturePillar = {
     },
     {
       id: "BEH-03",
-      name: "model-definitions-delegate",
+      name: "explicit-dependency-functions",
       status: "Enforced",
       wave: 2,
       mechanism: "TypeScript AST",
-      guarantee: "A model definition is the state ledger and public surface, not the hidden behavior implementation.",
-      detects: "Nontrivial branches, timers, remote calls, persistence calls, and scheduling inside public model method bodies.",
+      guarantee: "Capability, model, and component-procedure behavior receives every state and effect boundary explicitly.",
+      detects: "Model methods/getters/callable properties, capability entries without explicit context, unbound remote entries, this, ambient clocks/globals, and direct imports of effect authorities.",
       implementation:
-        "Allow field initialization, accessors, constructor assignment, and one-line delegation. Require other public method bodies to call a matching methods/<name> entry.",
-      current: "Enforced with imported matching-method delegation; 61 definition methods are baselined.",
-      limit: "Private derived calculations can remain where they make the state invariant clearer; the rule should target action chains, not punish readable accessors."
+        "Use one shared AST authority scan with capability-, model-, and component-procedure policies. Permit stored fields, constructors, local callbacks, pure helper imports, and calls or mutations rooted in explicit parameters. Bind authenticated capability context only at the remote adapter.",
+      current: "Enforced for new code; existing attached behavior and ambient/imported authority remain exact ratcheted debt.",
+      limit: "Syntax proves where authority is acquired, not the semantics of an arbitrary supplied port. Types and focused contracts still decide whether a port grants the right operations."
     },
     {
       id: "BEH-04",
@@ -98,8 +99,8 @@ export const PROCEDURAL_TRANSPARENCY: ArchitecturePillar = {
       status: "Enforced",
       wave: 1,
       mechanism: "Filesystem + export AST",
-      guarantee: "A procedure or model method has a predictable entry file and export name.",
-      detects: "Mismatched capability procedure entries and model method trees whose paths or names do not resolve.",
+      guarantee: "A procedure or free model operation has a predictable entry file and export name.",
+      detects: "Mismatched capability procedure entries and model-operation trees whose paths or names do not resolve.",
       implementation:
         "Retain capability/entry-matches-directory and model/method-entry-matches-directory; extend the same convention to view procedure entry directories.",
       current: "Enforced for capability, model, and app-view procedure trees; 45 view procedure files are baselined.",
@@ -122,7 +123,7 @@ export const PROCEDURAL_TRANSPARENCY: ArchitecturePillar = {
   rollout: [
     "Move the eight direct capability calls into named component procedures.",
     "Extract one editor's lifecycle effects at a time into colocated procedures/effects modules.",
-    "Move model action chains behind matching methods entries, starting with one runtime family.",
+    "Replace attached model methods and getters with exported queries/commands, starting with one runtime family.",
     "Split multi-entry view procedure files and move pending/error/refresh orchestration out of markup."
   ],
   relatedFindings: ["ARCH-05", "ARCH-09", "ARCH-10", "ARCH-12"]

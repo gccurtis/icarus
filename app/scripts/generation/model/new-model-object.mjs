@@ -82,16 +82,10 @@ export const define${pascal(name)} = (): ${Model} => ({
 `
     : `import type { ${Model} } from "$model/${environment}/${name}/types";
 
-/** The state ${name} holds. Runes live here, which is why this file says so in its name. */
-export const define${pascal(name)} = (): ${Model} => {
-  let ready = $state(true);
-
-  return {
-    get ready() {
-      return ready;
-    }
-  };
-};
+/** The stored fields ${name} holds. Behavior is exported from methods/ as free functions. */
+export const define${pascal(name)} = (): ${Model} => $state({
+  ready: true
+});
 `
 );
 

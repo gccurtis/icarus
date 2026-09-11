@@ -103,6 +103,47 @@ export const MUTATIONS = [
     ]
   },
   {
+    check: "capability-functions-are-explicit",
+    subject: "entry-context",
+    says: "a capability entry receives browser input without authenticated context",
+    names: "act/act.ts",
+    changes: [
+      { path: "src/lib/capabilities/probe/index.ts", write: `export {};\n` },
+      {
+        path: "src/lib/capabilities/probe/api/act/act.ts",
+        write: `export const act = (input: unknown): unknown => input;\n`
+      }
+    ]
+  },
+  {
+    check: "capability-functions-are-explicit",
+    subject: "implicit-dependency",
+    says: "a capability helper reads the ambient clock",
+    names: "ambient-clock.ts",
+    changes: [
+      {
+        path: "src/lib/capabilities/probe/api/shared/ambient-clock.ts",
+        write: `export const ambientClock = (): number => Date.now();\n`
+      }
+    ]
+  },
+  {
+    check: "capability-functions-are-explicit",
+    subject: "remote-adapter",
+    says: "a remote declaration exposes an unbound capability entry",
+    names: "probe/index.remote.ts",
+    changes: [
+      {
+        path: "src/lib/capabilities/probe/index.remote.ts",
+        write: `import { query } from "$app/server";\nimport { act as actProcedure } from "$capabilities/probe/api/act/act";\nexport const act = query("unchecked", actProcedure);\n`
+      },
+      {
+        path: "src/lib/capabilities/probe/api/act/act.ts",
+        write: `import type { CapabilityContext } from "$runtime/server/scope.server";\nexport const act = (context: CapabilityContext): string => context.scope.projectId;\n`
+      }
+    ]
+  },
+  {
     check: "entry-matches-directory",
     says: "a procedure directory holds no entry named for it",
     names: "probe/api/thing",
@@ -223,6 +264,45 @@ export const MUTATIONS = [
     says: "an object root holds something that is not what it is",
     names: "workbench/extra.ts",
     changes: [{ path: "src/lib/model/client/workbench/extra.ts", write: `export const extra = 1;\n` }]
+  },
+  {
+    check: "model-functions-are-explicit",
+    subject: "fields-only",
+    says: "a model exposes a getter on its object",
+    names: "configuration/definition.ts",
+    changes: [
+      {
+        path: "src/lib/model/client/configuration/definition.ts",
+        edit: (text) => text.replace(
+          "export class Configuration implements ConfigurationModel {",
+          "export class Configuration implements ConfigurationModel {\n  get ready(): boolean { return true; }"
+        )
+      }
+    ]
+  },
+  {
+    check: "model-functions-are-explicit",
+    subject: "explicit-input",
+    says: "a model method entry receives no object or data input",
+    names: "methods/probe.ts",
+    changes: [
+      {
+        path: "src/lib/model/client/configuration/methods/probe.ts",
+        write: `export const probe = (): boolean => true;\n`
+      }
+    ]
+  },
+  {
+    check: "model-functions-are-explicit",
+    subject: "implicit-dependency",
+    says: "a model function reads ambient randomness",
+    names: "methods/random.ts",
+    changes: [
+      {
+        path: "src/lib/model/client/configuration/methods/random.ts",
+        write: `import type { ConfigurationModel } from "$model/client/configuration";\nexport const random = (model: ConfigurationModel): number => { void model; return Math.random(); };\n`
+      }
+    ]
   },
   {
     check: "method-tree-paths-resolve",

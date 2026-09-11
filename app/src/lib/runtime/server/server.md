@@ -42,6 +42,7 @@ logger available to record their completion.
 | `initServerModel` | `hooks.server.ts`'s `init` hook, once | the graph, and holds it |
 | `buildServerModel` | the initializer, privately | a complete graph; pure composition |
 | `create<Object>` | `buildServerModel`, once each | one fresh object |
+| `bindCapability` | capability indexes | a remote handler that supplies authenticated context |
 
 ```text
 hooks.server.ts  init()          before the first request is answered
@@ -172,7 +173,7 @@ server/
 ├── initialization.server.ts  one startup command per hook-module lifetime
 ├── lifetime.server.ts  process listener ownership and transition ordering
 ├── types.ts          ServerModel
-├── scope.server.ts   request identity
+├── scope.server.ts   request identity and explicit capability-context adapter
 └── test/             lifetime and composition
 ```
 

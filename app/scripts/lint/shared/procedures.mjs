@@ -7,6 +7,8 @@
  */
 import ts from "typescript";
 
+import { hasCapabilityContext } from "./explicit-dependencies.mjs";
+
 /** The one function that establishes a scope. `scope.server.ts` exports it. */
 export const GATE = "requireScope";
 
@@ -81,3 +83,5 @@ export const exportedFunctions = (source) => {
   }
   return found;
 };
+
+export { hasCapabilityContext };

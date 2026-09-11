@@ -17,7 +17,11 @@
       "model/runes-match-the-extension.mjs",
       "surfaces/effects-declare-runes.mjs"
     ],
-    "BEH-03": ["procedural-transparency/model-definitions-delegate.mjs"],
+    "BEH-03": [
+      "capabilities/capability-functions-are-explicit.mjs",
+      "model/model-functions-are-explicit.mjs",
+      "procedural-transparency/component-procedures-are-explicit.mjs"
+    ],
     "BEH-04": [
       "capabilities/entry-matches-directory.mjs",
       "model/method-entry-matches-directory.mjs",

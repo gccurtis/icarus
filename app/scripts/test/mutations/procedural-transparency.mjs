@@ -26,21 +26,23 @@ export const MUTATIONS = [
     changes: [component("inline-pre-effect", "  $effect.pre(() => {});\n")]
   },
   {
-    check: "model-definitions-delegate",
-    says: "a model definition implements an action instead of delegating",
-    names: "probe/definition.ts",
+    check: "component-procedures-are-explicit",
+    subject: "implicit-dependency",
+    says: "a component procedure reads the ambient clock",
+    names: "procedures/ambient-clock.ts",
     changes: [{
-      path: "src/lib/model/client/probe/definition.ts",
-      write: `export class Probe {\n  run(): number {\n    const value = 1;\n    return value + 1;\n  }\n}\n`
+      path: "src/lib/app-views/categories/project-overview/procedures/ambient-clock.ts",
+      write: `export const ambientClock = (): number => Date.now();\n`
     }]
   },
   {
-    check: "model-definitions-delegate",
-    says: "a one-line direct state action is not mistaken for delegation",
-    names: "direct-definition/definition.ts",
+    check: "component-procedures-are-explicit",
+    subject: "attached-behavior",
+    says: "a component procedure hides state behind this",
+    names: "procedures/attached.ts",
     changes: [{
-      path: "src/lib/model/client/direct-definition/definition.ts",
-      write: `export class DirectDefinition {\n  values: number[] = [];\n  find(value: number): number | undefined {\n    return this.values.find((candidate) => candidate === value);\n  }\n}\n`
+      path: "src/lib/app-views/categories/project-overview/procedures/attached.ts",
+      write: `export class Attached {\n  value = 0;\n  read(): number { return this.value; }\n}\n`
     }]
   },
   {

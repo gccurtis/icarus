@@ -2,7 +2,14 @@ import ts from "typescript";
 
 import { check } from "../shared/check.mjs";
 import { procedureEntries } from "../shared/trees.mjs";
-import { GATE, calleeOf, exportedFunctions, firstStatement, isCall } from "../shared/procedures.mjs";
+import {
+  GATE,
+  calleeOf,
+  exportedFunctions,
+  firstStatement,
+  hasCapabilityContext,
+  isCall
+} from "../shared/procedures.mjs";
 
 /**
  * What a validation call is called. The generator writes one of these into every
@@ -33,7 +40,8 @@ export default check({
     for (const entry of procedureEntries(tree)) {
       for (const { body, parameters } of exportedFunctions(tree.source(entry))) {
         // Nothing arrived, so there is nothing to check. The gate still applies.
-        if (parameters.length === 0) continue;
+        const context = hasCapabilityContext({ parameters });
+        if (parameters.length === (context ? 1 : 0)) continue;
 
         const gated = isCall(firstStatement(body), GATE);
         const first = firstStatement(body, gated ? 1 : 0);
