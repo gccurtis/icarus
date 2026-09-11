@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Activity reference — Answers</title>
+  <link rel="stylesheet" href="reference.css" />
+</head>
+<body>
+  <div class="shell">
+    <aside class="rail">
+      <p class="rail-mark">Icarus · Reference</p>
+      <nav aria-label="Activity reference pages">
+        <a class="is-here" href="index.html" aria-current="page"><b>00</b>Answers</a>
+        <a href="01-system.html"><b>01</b>Current system</a>
+        <a href="02-changes.html"><b>02</b>Proposed changes</a>
+      </nav>
+      <p class="rail-note">Activity inspector review<br />Source snapshot · 11 Sep 2026</p>
+    </aside>
+    <main>
+      <p class="eyebrow">Activity inspector · direct answers</p>
+      <h1>Activity is history for viewing.</h1>
+      <p class="lede">It is an append-only project audit feed. It does not power undo, redo, file restoration, or state reconstruction. The current feed is useful, but its producers and vocabulary need a tighter contract.</p>
+      <div class="meta">
+        <span><b>7</b> product consumers</span><span><b>2</b> production writers</span>
+        <span><b>8</b> production verb values</span><span><b>14</b> seed verb values</span>
+      </div>
+      <section>
+        <div class="head"><span class="n">01</span><h2>Answers to the questions</h2></div>
+        <article class="answer"><h3>Is Activity connected to global undo?</h3><div><p><strong>No.</strong> Activity rows are saved history and read by project and library views. Editor undo and redo live in each editor’s client runtime and never read or write the activity table.</p><p class="evidence">activity table + project projections · editor client runtime histories</p></div></article>
+        <article class="answer"><h3>Is it worth keeping?</h3><div><p><strong>Yes, if the feed only records useful events.</strong> Overview, Project History, two activity inspectors, resource details, person details, and External Files history depend on it. Removing it would erase useful history from seven product surfaces. An empty feed is still better than invented or vague entries.</p><p class="evidence">See 01 Current system for every direct reader.</p></div></article>
+        <article class="answer"><h3>Where did “Reviewed” come from?</h3><div><p><strong>Seed data only.</strong> No production code currently records a <code>reviewed</code> activity. The seeded row points at an Agents task and includes a reviewer, but it is a demonstration fixture rather than evidence of a live review event.</p><p class="evidence">app/seed/activity.json · no matching production writer</p></div></article>
+        <article class="answer"><h3>What about “Started” and “Recalculated”?</h3><div><p>They are also seed-only examples. <code>started</code> is attached to a seeded automation. <code>recalculated</code> is attached to a spreadsheet and names an agent-task actor that is absent from the task seed. Neither has a current trigger.</p><p class="evidence">app/seed/activity.json</p></div></article>
+        <article class="answer"><h3>What does “Asked a question” mean?</h3><div><p>The friendly label comes from the stored verb <code>asked</code>, but that row is seed-only. Research Chat does not currently write activity. Agents tasks are a separate feature: a task can run a persona against project evidence, while Chat creates a research thread.</p><p class="evidence">create-chat.ts · execute-agent-task.ts · activity-label.ts</p></div></article>
+        <article class="answer"><h3>What production events exist?</h3><div><p>External Files records uploads, re-uploads, renames, moves, context changes, and deletions. Agents records <code>answered</code> or <code>found insufficient evidence for</code> when a task finishes. The latter is a result status presented as activity and should be removed from the feed.</p><p class="evidence">recordExternalFileHistory · executeAgentTask</p></div></article>
+        <article class="answer"><h3>How is “What” made?</h3><div><p>The producer saves a free-text <code>verb</code>. The inspector recognizes four values and otherwise capitalizes the first character. This is why specific prose such as “Uploaded 28 KB” is useful while “Reviewed” or “Found insufficient evidence for” lacks context.</p><p class="evidence">activityLabel(verb) · the target kind does not affect the wording</p></div></article>
+        <article class="answer"><h3>What should Where do?</h3><div><p>Native project resources open their editor. External files open External Files with the exact file selected. Personas, tasks, and automations open their exact Agents detail. Findings and connectors show a clear “not wired yet” alert. A target that no longer exists remains readable and says it is missing, deleted, or otherwise unavailable.</p><p class="evidence">Implemented in this worktree and covered by Chromium navigation tests.</p></div></article>
+      </section>
+      <aside class="callout"><h3>Recommendation</h3><p>Keep Activity, replace producer-owned free-text verbs with an Activity-owned typed event catalog, derive all visible wording from structured payloads, and reseed only events the product can actually emit.</p></aside>
+      <footer><nav><span>00 · Answers</span><a href="01-system.html">Next · Current system →</a></nav></footer>
+    </main>
+  </div>
+</body>
+</html>

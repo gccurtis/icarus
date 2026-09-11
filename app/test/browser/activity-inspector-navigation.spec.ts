@@ -89,6 +89,62 @@ test("Where opens each current native resource in its owning surface", async ({ 
   await expect(page.getByPlaceholder("Ask anything about this project")).toBeVisible();
 });
 
+test("Where opens Agents details and explains the connector placeholder", async ({ page }) => {
+  await page.goto("/app/dev-project", { waitUntil: "networkidle" });
+  const agents = page
+    .getByRole("toolbar", { name: "Open tabs" })
+    .getByRole("button", { name: "Agents", exact: true });
+  const main = page.getByRole("main");
+
+  let { inspector } = await activityInspectorFor(
+    page,
+    "Grid Analyst",
+    /Changed the approach of: Grid Analyst/
+  );
+  await inspector.getByRole("button", { name: "Grid Analyst", exact: true }).click();
+  await expect(agents).toHaveAttribute("aria-current", "page");
+  await expect(main.getByLabel("Persona name")).toHaveValue("Grid Analyst");
+
+  ({ inspector } = await activityInspectorFor(
+    page,
+    "Nightly outage digest — 5 September",
+    /Reviewed: Nightly outage digest — 5 September/
+  ));
+  await inspector
+    .getByRole("button", { name: "Nightly outage digest — 5 September", exact: true })
+    .click();
+  await expect(agents).toHaveAttribute("aria-current", "page");
+  await expect(main.getByLabel("Task name")).toHaveValue("Nightly outage digest — 5 September");
+
+  ({ inspector } = await activityInspectorFor(
+    page,
+    "Assemble the board review pack",
+    /Switched off: Assemble the board review pack/
+  ));
+  await inspector
+    .getByRole("button", { name: "Assemble the board review pack", exact: true })
+    .click();
+  await expect(agents).toHaveAttribute("aria-current", "page");
+  await expect(main.getByLabel("Automation name")).toHaveValue("Assemble the board review pack");
+
+  ({ inspector } = await activityInspectorFor(
+    page,
+    "Google Drive — SCADA outage log",
+    /Connected a data source: Google Drive — SCADA outage log/
+  ));
+  const shown = new Promise<void>((resolve) => {
+    page.once("dialog", async (dialog) => {
+      expect(dialog.message()).toBe("Opening connectors is not wired up yet.");
+      await dialog.accept();
+      resolve();
+    });
+  });
+  await inspector
+    .getByRole("button", { name: "Google Drive — SCADA outage log", exact: true })
+    .click();
+  await shown;
+});
+
 test("Where opens a current External file and leaves deleted history as text", async ({ page }, info) => {
   const name = "activity-destination.md";
   await page.goto("/app/dev-project", { waitUntil: "networkidle" });
@@ -127,4 +183,7 @@ test("Where opens a current External file and leaves deleted history as text", a
   await expect(opened.inspector.getByText(name, { exact: true }).first()).toBeVisible();
   await expect(opened.inspector.getByRole("button", { name, exact: true })).toHaveCount(0);
   await expect(opened.inspector.getByRole("button", { name: "Open resource", exact: true })).toHaveCount(0);
+  await expect(opened.inspector.getByText("This item is missing, deleted, or otherwise unavailable."))
+    .toBeVisible();
+  await page.screenshot({ path: info.outputPath("unavailable-external-file-compact-125-percent.png") });
 });

@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Activity reference — Current system</title>
+  <link rel="stylesheet" href="reference.css" />
+</head>
+<body>
+  <div class="shell">
+    <aside class="rail">
+      <p class="rail-mark">Icarus · Reference</p>
+      <nav aria-label="Activity reference pages">
+        <a href="index.html"><b>00</b>Answers</a><a class="is-here" href="01-system.html" aria-current="page"><b>01</b>Current system</a><a href="02-changes.html"><b>02</b>Proposed changes</a>
+      </nav>
+      <p class="rail-note">Observed implementation<br />No proposed behavior on this page</p>
+    </aside>
+    <main>
+      <p class="eyebrow">Activity inspector · implementation trace</p>
+      <h1>What exists today.</h1>
+      <p class="lede">Two capabilities write rows. Seven product surfaces read them. The saved verb is open text, and each surface decides how much formatting to apply.</p>
+      <div class="meta"><span><b>Storage</b> activity table</span><span><b>Lifecycle</b> append-only</span><span><b>Scope</b> project</span><span><b>Undo</b> no dependency</span></div>
+      <section>
+        <div class="head"><span class="n">01</span><h2>The pipeline</h2></div>
+        <div class="flow">
+          <article class="step"><b>1 · Product mutation</b><span class="mono">External Files or Agents</span><p>The feature decides that an event is worth recording.</p></article>
+          <article class="step"><b>2 · Row creation</b><span class="mono">Store transaction</span><p>The producer supplies actor, verb, target snapshots, and optional prose.</p></article>
+          <article class="step"><b>3 · Project projection</b><span class="mono">activityOf</span><p>The server validates fields, applies project scope, and resolves current actors.</p></article>
+          <article class="step"><b>4 · View formatting</b><span class="mono">activityLabel</span><p>The view turns the verb into What and the target snapshot into Where.</p></article>
+        </div>
+        <dl class="contract">
+          <dt>projectId</dt><dd>Owning project; every read projection scopes on it.</dd><dt>actor + actorLabel</dt><dd>Structured identity plus a historical display-name snapshot.</dd>
+          <dt>verb</dt><dd>Any string supplied by the producer. There is no central catalog.</dd><dt>target</dt><dd><code>{ kind, id, label }</code>, preserved even if the target is later deleted.</dd>
+          <dt>context?</dt><dd>An optional second target snapshot; External Files uses it for the path.</dd><dt>detail?</dt><dd>Optional bounded prose shown beneath What.</dd>
+        </dl>
+      </section>
+      <section>
+        <div class="head"><span class="n">02</span><h2>Production writers</h2></div>
+        <p>Filter this table to separate real product events from fixture-only vocabulary.</p>
+        <div class="filters"><button type="button" data-filter="all" aria-pressed="true">All · 8</button><button type="button" data-filter="external" aria-pressed="false">External Files · 6</button><button type="button" data-filter="agents" aria-pressed="false">Agents · 2</button><input id="event-search" type="search" placeholder="Search events or triggers" aria-label="Search events" /></div>
+        <div class="scroll"><table id="production-events">
+          <thead><tr><th>Stored verb</th><th>Trigger</th><th>Payload today</th><th>Assessment</th></tr></thead>
+          <tbody>
+            <tr data-group="external"><td><code>uploaded</code></td><td>New file accepted</td><td>Size, media type, current name and path</td><td><span class="status keep">Keep</span></td></tr>
+            <tr data-group="external"><td><code>re-uploaded</code></td><td>Replacement bytes accepted</td><td>Name, size, revision</td><td><span class="status keep">Keep</span></td></tr>
+            <tr data-group="external"><td><code>renamed</code></td><td>File renamed</td><td>Old name → new name</td><td><span class="status keep">Keep</span></td></tr>
+            <tr data-group="external"><td><code>moved</code></td><td>File or containing directory moved</td><td>Old path → new path</td><td><span class="status keep">Keep</span></td></tr>
+            <tr data-group="external"><td><code>context-updated</code></td><td>Dataset context saved or cleared</td><td>“updated” or “cleared” prose</td><td><span class="status review">Structure</span></td></tr>
+            <tr data-group="external"><td><code>deleted</code></td><td>File removal committed</td><td>Old name/path, size, revision</td><td><span class="status keep">Keep</span></td></tr>
+            <tr data-group="agents"><td><code>answered</code></td><td>Agents task publishes an answered result</td><td>Persona and task snapshots</td><td><span class="status review">Decide</span></td></tr>
+            <tr data-group="agents"><td><code>found insufficient evidence for</code></td><td>Agents task publishes its other completion status</td><td>Persona and task snapshots</td><td><span class="status remove">Remove</span></td></tr>
+          </tbody>
+        </table></div>
+        <aside class="finding"><h3>Agents task is not Research Chat</h3><p>The task writer runs a persona against project evidence and publishes a task result. Creating or using a Research Chat does not write an activity row today.</p></aside>
+      </section>
+      <section>
+        <div class="head"><span class="n">03</span><h2>Every direct product dependency</h2></div>
+        <div class="dependency"><b>Overview feed</b><p>Shows recent project activity on the Overview board.</p><span class="mono">readProjectHistory</span></div>
+        <div class="dependency"><b>Project History</b><p>Searches and filters the full project activity list.</p><span class="mono">readProjectHistory</span></div>
+        <div class="dependency"><b>Activity inspector</b><p>Shows Who, What, Where, and When for one selected row.</p><span class="mono">readProjectActivity</span></div>
+        <div class="dependency"><b>Resource inspector</b><p>Shows up to five recent events whose target matches that resource.</p><span class="mono">readProjectResource</span></div>
+        <div class="dependency"><b>Person inspector</b><p>Shows a person’s activity count and five recent events.</p><span class="mono">readProjectPerson</span></div>
+        <div class="dependency"><b>Agents library</b><p>Shows up to forty activity rows authored by an agent.</p><span class="mono">readAgentsLibrary</span></div>
+        <div class="dependency"><b>External Files</b><p>Builds each file’s recent history and refreshes it after mutations.</p><span class="mono">readExternalFileHistory</span></div>
+        <aside class="callout"><h3>No undo dependency</h3><p>Undo and redo remain local to document, presentation, and spreadsheet editor state. No undo command queries, creates, or replays activity rows.</p></aside>
+      </section>
+      <section>
+        <div class="head"><span class="n">04</span><h2>Why the demo feels vague</h2></div>
+        <p>The seed contains 17 rows and 14 distinct verbs. Only <code>renamed</code> overlaps a live producer, and that live producer applies it to External Files rather than the seeded document. The rest describe imagined product behavior.</p>
+        <div class="scroll"><table>
+          <thead><tr><th>Seed-only verb</th><th>Target</th><th>What it really means today</th></tr></thead><tbody>
+            <tr><td><code>reviewed</code></td><td>Agents task</td><td>No current trigger; fixture prose</td></tr><tr><td><code>started</code> / <code>finished</code></td><td>Automation / task</td><td>No current trigger; fixture prose</td></tr>
+            <tr><td><code>recalculated</code></td><td>Spreadsheet</td><td>No current trigger; actor task is missing from seed</td></tr><tr><td><code>asked</code> / <code>asked a question on</code></td><td>Research / document</td><td>No Chat activity writer</td></tr>
+            <tr><td><code>edited</code> / <code>commented on</code></td><td>Native resource</td><td>No editor activity writer</td></tr><tr><td><code>connected</code> / <code>synced</code></td><td>Connector</td><td>No connector activity writer</td></tr>
+            <tr><td><code>wrote a finding on</code></td><td>Agents task</td><td>No finding activity writer; the seeded Where is the task</td></tr><tr><td><code>changed approach of</code> / <code>switched off</code></td><td>Persona / automation</td><td>No settings activity writer</td></tr>
+          </tbody>
+        </table></div>
+      </section>
+      <section>
+        <div class="head"><span class="n">05</span><h2>Current rendering inconsistency</h2></div>
+        <div class="cards"><article class="card"><h3>Four special labels</h3><p><code>asked</code>, <code>accepted a finding on</code>, <code>commented on</code>, and <code>connected</code> get custom phrases. Every other verb is only trimmed and capitalized.</p></article><article class="card"><h3>Different consumers, different prose</h3><p>Overview and Agents display raw verbs, History and the Activity inspector use the shared formatter, and the Person inspector maintains another local label map.</p></article></div>
+      </section>
+      <footer><nav><a href="index.html">← Previous · Answers</a><a href="02-changes.html">Next · Proposed changes →</a></nav></footer>
+    </main>
+  </div>
+  <script>
+    const buttons = [...document.querySelectorAll("[data-filter]")];
+    const rows = [...document.querySelectorAll("#production-events tbody tr")];
+    const search = document.querySelector("#event-search");
+    let group = "all";
+    const apply = () => { const query = search.value.trim().toLowerCase(); for (const row of rows) row.hidden = (group !== "all" && row.dataset.group !== group) || !row.textContent.toLowerCase().includes(query); };
+    for (const button of buttons) button.addEventListener("click", () => { group = button.dataset.filter; for (const item of buttons) item.setAttribute("aria-pressed", String(item === button)); apply(); });
+    search.addEventListener("input", apply);
+  </script>
+</body>
+</html>

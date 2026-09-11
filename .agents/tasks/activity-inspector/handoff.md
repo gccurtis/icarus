@@ -3,116 +3,145 @@
 ## Snapshot
 
 - Updated: 2026-09-11
-- Status: implemented and verified; ready for review
+- Status: implemented and verified; ready for user review
 - Worktree: `/tmp/icarus-activity-inspector`
 - Branch: `work/activity-inspector`
-- Starting head and `origin/main`: `ab809ac647060f29c55afd99c0054ac311094f75`
-- Verified implementation head: `45e49e38e6c3e9a81fdeeeaa0f07aff1ed4cbaae`
-- Explainer and evidence commit: `6a8533cf5034a061dc2c951c35c7d8a07796a914`
+- Starting head and base: `ab809ac647060f29c55afd99c0054ac311094f75`
+- Previous published head: `660277bbab64c073dffbe8d03ae72ba838180f6c`
 - Starting worktree/base record: `worktree.json` beside this handoff
 
 ## Request and completion criteria
 
-Explain the Project Overview Activity inspector in a task-owned served web page:
-enumerate the persisted activity verbs, identify the capability/call paths that
-create them, and show how stored row fields become the displayed What and Where.
-Implement navigation so a resource-backed Where opens the corresponding file or
-resource. Verify the interaction in Chromium and inspect the changed panel.
+Explain how Activity works, what creates it, how its fields become What and Where,
+whether it supports undo, and which product surfaces depend on it. Serve the
+answers as Icarus-style reference pages. Make current Where targets useful:
+native resources and External Files open their owning surfaces; persona, task,
+and automation open exact Agents details; findings and connectors expose clear
+future placeholders; missing targets explain that they are unavailable.
 
-Storage schema changes, new activity semantics, and making non-resource targets
-navigable remain outside scope.
+The follow-up asks for a structured Activity capability design. That persistence
+rewrite is documented as the proposed next change because Research Chat and
+Agents task semantics still require product decisions. This branch does not
+change the activity schema, producer vocabulary, or seed data.
 
 ## Decisions and authority
 
-The user explicitly requested implementation in a new worktree and a served
-explanation page. Root `AGENTS.md` permits scoped commits and publication to
+The user explicitly requested implementation in this worktree and a locally
+served explanation. Root `AGENTS.md` permits scoped commits and publication to
 `work/activity-inspector`. No rebase, main merge/push, deployment, production
 data mutation, or live-provider use is authorized.
 
-The activity target is a historical snapshot, so link eligibility comes from the
-current scoped resource index. The implementation matches exact ID and kind;
-`external-file` normalizes to the index's `file` kind. Missing or deleted targets
-remain readable text. Documents, presentations, spreadsheets, and research open
-their owning editor; External Files opens its singleton and focuses the exact file;
-findings retain the existing Project resource inspector.
+Activity is an append-only viewing/audit feed. It is not part of editor undo or
+redo. Historical labels remain readable after a target disappears, while link
+eligibility comes from current project-scoped indexes and exact ID/kind matches.
+External-file activity normalizes to the resource index's `file` kind.
 
-## Ownership and orientation
-
-| Owner | Owned paths / work | Read-only or excluded paths | Acceptance check |
-| --- | --- | --- | --- |
-| Lead | Handoff, explainer page, Project Overview navigation changes, tests, server, final verification and Git | Unrelated product areas and human Store data | Focused unit/Chromium, quick checks, inspected screenshots |
-| Producer trace | Read activity representation, project history capability, and all production create call sites | No writes or data mutation | Complete verb/caller/input inventory with exact paths |
-| Navigation trace | Read inspector/workspace opening patterns and relevant tests | No writes or server/test commands | Recommended target mapping and regression scenarios |
-
-Applicable skills are `icarus-editor-change`, `icarus-store-change`, and
-`icarus-branch-integration`. The lead owns every edit and final integration.
+Finding targets are verified against the resource index, then display a not-built
+alert. Connector targets display the same kind of placeholder because no current
+connector index/detail destination exists. Persona, task, and automation queries
+start only for those target kinds and resolve through the scoped Agents library.
 
 ## Implemented state
 
-- `activity-map.html` explains the row contract, What transformation, all eight
-  production verbs and their triggers, the 14-verb seed vocabulary, known gaps,
-  and the current Where routing rules. Its production table supports source and
-  text filters.
-- `activity-target.ts` resolves a historical activity target only when the current
-  scoped resource index contains the same ID and corresponding kind.
-- The Activity inspector renders current resource targets as direct links and
-  exposes the same destination in its `Open resource` action. Deleted and unknown
-  targets stay as historical text.
-- `openingFor` now accepts the minimal resource shape used by both the board and
-  the activity target resolver; destination behavior is unchanged.
-- Unit coverage checks all six resource-kind mappings and stale/mismatched targets.
-  Chromium coverage opens a document, spreadsheet, presentation, research thread,
-  and uploaded External file, then proves a deleted file is no longer linked.
+- The reference suite uses the established standalone Icarus reference-page
+  language, shared CSS, numbered rail navigation, light/dark tokens, compact
+  responsive behavior, and horizontally contained data tables:
+  - `index.html`: direct answers and recommendation.
+  - `01-system.html`: persisted pipeline, live writers, all direct readers,
+    seed-only vocabulary, and rendering inconsistency.
+  - `02-changes.html`: proposed typed event catalog, transaction boundary,
+    destination contract, implementation sequence, and open product decisions.
+  - `activity-map.html`: redirects the previous review URL to the new suite.
+- The Activity inspector resolves current document, presentation, spreadsheet,
+  research, External File, finding, persona, task, and automation targets by exact
+  ID and kind.
+- Documents, presentations, spreadsheets, and research open their editor.
+  External Files opens its permanent singleton and focuses the exact file.
+  Personas, tasks, and automations open their exact Agents detail.
+- Existing findings and connector snapshots are links that explain their
+  destinations are not wired yet. Known resource/Agents targets that do not
+  resolve remain historical text with: “This item is missing, deleted, or
+  otherwise unavailable.”
+- The header action uses a resource label for resources and the specific Agents
+  kind for Agents targets. The Agents index query is conditional on an Agents
+  target.
+- Unit coverage checks all resource mappings, Agents mappings, destination-source
+  classification, exact matching, missing targets, and opening targets. Chromium
+  covers native editors, all three Agents details, connector alert behavior,
+  current External Files selection, and deleted-file history.
 
-The trace found two production activity creation sites and eight emitted verbs:
-External Files writes `uploaded`, `re-uploaded`, `renamed`, `moved`, `deleted`, and
-`context-updated`; completed grounded agent runs write `answered` or
-`found insufficient evidence for`. The demo seed has 17 rows and 14 distinct
-verbs; apart from External Files `renamed`, its verbs have no production writer.
+## Audit findings
+
+The stored row is `{ projectId, actor, actorLabel, verb, target, context?, detail? }`.
+The producer owns a free-text verb; the inspector special-cases four values and
+otherwise trims and capitalizes it. Other consumers use raw verbs or duplicate
+formatting, so visible language is inconsistent.
+
+There are two production creation paths and eight live verb values:
+
+- External Files: `uploaded`, `re-uploaded`, `renamed`, `moved`,
+  `context-updated`, and `deleted`.
+- Agents task execution: `answered` and `found insufficient evidence for`.
+
+Research Chat does not write Activity. Agents tasks are separate stored task
+objects. `reviewed`, `started`, `recalculated`, and the other broad demo verbs are
+seed-only; the seed has 17 rows and 14 distinct verb values. Only `renamed`
+overlaps a live producer, and the live producer applies it to External Files.
+
+Seven product areas directly consume Activity: Overview feed, Project History,
+Project Activity inspector, project-resource details, person details, Agents
+library/inspector, and External Files history. Editor undo/redo has no dependency.
+
+The proposed design keeps useful history while moving event ownership into an
+Activity capability. Producers submit a discriminated event and structured facts
+through a transaction-aware recorder. Activity owns validation, frozen target
+construction, display formatting, and destinations. The recorder must use the
+originating Store unit of work so the domain mutation and history remain atomic.
 
 ## Verification evidence
 
-| Command / check | Tree or scope tested | Result, counts, and skips | Evidence |
+| Command / check | Scope | Result | Evidence |
 | --- | --- | --- | --- |
-| `verify.mjs unit -- .../activity-target.test.ts` | Pure target resolution and destinations | Passed: 1 file, 8 tests | `.agents/runtime/runs/1789100853519-unit-14cb481c` |
-| `verify.mjs quick` | TypeScript/Svelte and architecture lint | Passed: 0 diagnostics; 90/90 checks clean, 0 new findings | `.agents/runtime/runs/1789100914430-quick-a0909ad5` |
-| `verify.mjs browser --port 5249 -- activity-inspector-navigation.spec.ts` | Real Chromium navigation with disposable seeded Store | Passed: 2 tests; no browser diagnostics | `.agents/runtime/runs/1789101171580-browser-7acdba88` |
-| `verify.mjs agents` | Worktree, handoff, and agent helper contracts | Passed: 45 tests | `.agents/runtime/runs/1789101361127-agents-7a304017` |
-| Compact Activity inspector screenshot | 1100×760 viewport at 125% zoom, inspector at minimum width | Inspected: link and header action visible with no clipping | `.../linked-external-file-compact-125-percent.png` beneath the browser evidence directory |
-| Local explainer Playwright check | Served page, filters, search, 1440px and 390px layouts | Passed: 8 rows; 6 External Files; 2 Agent tasks; search 1; mobile document width 390px | `.agents/runtime/activity-map-wide.png`, `.agents/runtime/activity-map-mobile.png` |
+| `verify.mjs unit -- .../activity-target.test.ts` | Destination resolution | 1 file, 16 tests passed | `.agents/runtime/runs/1789104160520-unit-e206dc21` |
+| `verify.mjs quick` | TypeScript/Svelte + architecture | 0 diagnostics; 90/90 checks clean; 0 findings | `.agents/runtime/runs/1789104109881-quick-6355853a` |
+| `verify.mjs browser --port 5249 -- activity-inspector-navigation.spec.ts` | Real Chromium with disposable Store | 3 tests passed; no browser diagnostics | `.agents/runtime/runs/1789104136829-browser-030a4f51` |
+| Local reference Playwright check | Three served pages, nav, filters, search, 1440px + 390px | Passed; no document overflow at 390px | `.agents/runtime/activity-reference-{wide,compact}.png` |
+| Visual inspection | Reference suite and Activity inspector at 125% compact zoom | Inspected; content remains legible and contained | Browser evidence screenshots plus local reference screenshots |
+| `verify.mjs agents` | Worktree, handoff, and helper contracts | 45 tests passed | `.agents/runtime/runs/1789104218668-agents-02e10a28` |
 
 No live-provider tests ran. Full repository verification was not run; the focused
-unit, quick, and Chromium profiles cover the changed behavior.
+unit, quick, and Chromium profiles cover the changed code and interactions.
 
 ## Server and data ownership
 
-- Owned explainer server: `http://127.0.0.1:5311/activity-map.html`, rooted at
-  `.agents/tasks/activity-inspector`, running in the task session
+- Owned reference server: `http://127.0.0.1:5311/`, rooted at
+  `.agents/tasks/activity-inspector`
+- Previous URL: `/activity-map.html` redirects to `/index.html`
 - Review app server: none running
-- Store/native-file mode: disposable browser fixtures only; cleaned by verifier
-- Worktree lease / active command: no verifier or cache lease remains
+- Store/native-file mode: disposable browser fixtures only; verifier cleaned them
+- Worktree lease: none after verification
 - Human review data: untouched
-- Local configuration: `app/configuration/local.yaml` is linked to the primary
-  checkout's ignored override. Tracked YAML was not edited through the link.
-- Ignored local artifacts: independent `app/node_modules`, `.svelte-kit`, generated
-  `app/pnpm-lock.yaml`, Nix `infra/devshell/flake.lock`, and verification evidence
+- Local configuration: the worktree's ignored local configuration remains linked
+  to the primary checkout; tracked YAML was not edited through it
+- Ignored local artifacts: independent dependencies/caches, verification output,
+  screenshots, and local Nix lock output
 
 ## Risks and next executable step
 
-Activity rows remain snapshots and do not guarantee a destination will continue
-to exist. The exact current-index check handles that case intentionally. History
-queries refresh on a new request; the deletion browser scenario reloads before
-selecting the newly written deletion event.
+Connector snapshots cannot be checked for current existence until a scoped
+connector index exists, so they intentionally remain placeholder links. Activity
+still accepts arbitrary verbs and the seed still describes behavior the product
+cannot emit; the design suite makes that debt and the required decisions explicit.
 
-Review the served explainer and `work/activity-inspector`. Main integration still
-needs explicit authorization.
+Review `http://127.0.0.1:5311/` and `work/activity-inspector`. Main integration
+still needs explicit authorization.
 
 ## Publication / handoff
 
-- Commits created by this task: `45e49e3` (`Make activity destinations navigable`)
-  and `6a8533c` (`Document the activity event pipeline`); a status-only handoff
-  update sits atop them
-- Push / merge state: published to `origin/work/activity-inspector`; no main integration
-- Worktree cleanup: retain because the served explainer and branch review are active
-- Next owner: review the served explainer and task branch, then authorize main
-  integration separately if desired
+- Existing commits: `45e49e3`, `6a8533c`, `2b1220e`, `660277b`
+- Follow-up commit: pending final commit and publication
+- Push / merge state: previous head published to `origin/work/activity-inspector`;
+  follow-up changes not yet published; no main integration
+- Worktree cleanup: retain because the local reference server and review remain active
+- Next owner: review the served suite and task branch, then decide the event semantics
+  before the typed Activity persistence rewrite

@@ -20,9 +20,13 @@
     workspaceState
   } from "$model/client/workspace-state";
   import { activityLabel } from "$app-views/categories/project-overview/procedures/activity-label";
-  import { currentActivityResource } from "$app-views/categories/project-overview/procedures/activity-target";
+  import {
+    activityDestinationSource,
+    currentActivityDestination,
+    openingForActivityDestination
+  } from "$app-views/categories/project-overview/procedures/activity-target";
   import { ticksTheClock } from "$app-views/categories/project-overview/procedures/effects/ticks-the-clock.svelte";
-  import { openingFor } from "$app-views/categories/project-overview/procedures/opening";
+  import { projectAgents } from "$app-views/categories/project-overview/procedures/read-agents";
   import { projectActivity } from "$app-views/categories/project-overview/procedures/read-activity";
   import { projectResources } from "$app-views/categories/project-overview/procedures/read-resources";
   import { shortSince } from "$app-views/categories/project-overview/procedures/rows";
@@ -35,14 +39,38 @@
   );
   const answer = $derived(projectActivity(activityId));
   const event = $derived(answer?.ready ? answer.current : undefined);
+  const agentsAnswer = $derived(projectAgents(event?.target.kind));
   const resourceIndex = $derived(resourceAnswer.ready ? resourceAnswer.current : undefined);
-  const targetResource = $derived(
+  const agentsIndex = $derived(agentsAnswer?.ready ? agentsAnswer.current : undefined);
+  const targetSource = $derived(
     event === null || event === undefined
       ? undefined
-      : currentActivityResource(event.target, resourceIndex)
+      : activityDestinationSource(event.target.kind)
+  );
+  const targetDestination = $derived(
+    event === null || event === undefined
+      ? undefined
+      : currentActivityDestination(event.target, resourceIndex, agentsIndex)
   );
   const targetOpening = $derived(
-    targetResource === undefined ? undefined : openingFor(targetResource)
+    targetDestination === undefined
+      ? undefined
+      : openingForActivityDestination(targetDestination)
+  );
+  const targetUnavailable = $derived(
+    targetDestination === undefined &&
+      (targetSource === "resources"
+        ? resourceAnswer.ready || resourceAnswer.error !== undefined
+        : targetSource === "agents"
+          ? agentsAnswer !== undefined && (agentsAnswer.ready || agentsAnswer.error !== undefined)
+          : false)
+  );
+  const targetActionLabel = $derived(
+    targetDestination?.kind === "persona" ||
+      targetDestination?.kind === "task" ||
+      targetDestination?.kind === "automation"
+      ? `Open ${targetDestination.kind}`
+      : "Open resource"
   );
   const question = $derived(
     event !== null &&
@@ -94,12 +122,12 @@
     }
   };
 
-  const inspectFinding = () => {
-    if (targetResource?.kind !== "finding") return;
-    view.inspect("project-overview.resource", {
-      kind: targetResource.kind,
-      id: targetResource.id
-    });
+  const explainFinding = () => {
+    alert("Opening findings is not wired up yet.");
+  };
+
+  const explainConnector = () => {
+    alert("Opening connectors is not wired up yet.");
   };
 
   const openTarget = () => {
@@ -121,7 +149,7 @@
 
   {#snippet actions()}
     {#if targetOpening !== undefined}
-      <PanelButton label="Open resource" icon={ExternalLink} tone="ghost" onclick={openTarget} />
+      <PanelButton label={targetActionLabel} icon={ExternalLink} tone="ghost" onclick={openTarget} />
     {/if}
   {/snippet}
 
@@ -168,15 +196,27 @@
               lines={2}
               onselect={openTarget}
             />
-          {:else if targetResource?.kind === "finding"}
+          {:else if targetDestination?.kind === "finding"}
             <PanelLink
               label={event.target.label}
-              title={`Inspect Finding · ${event.target.label}`}
+              title={`Open Finding · ${event.target.label}`}
               lines={2}
-              onselect={inspectFinding}
+              onselect={explainFinding}
+            />
+          {:else if targetSource === "placeholder"}
+            <PanelLink
+              label={event.target.label}
+              title={`Open Connector · ${event.target.label}`}
+              lines={2}
+              onselect={explainConnector}
             />
           {:else}
             {event.target.label}
+          {/if}
+          {#if targetUnavailable}
+            <p class="text-caption text-ink-muted m-0">
+              This item is missing, deleted, or otherwise unavailable.
+            </p>
           {/if}
           {#if event.context !== undefined}
             <p class="text-caption text-ink-muted m-0 line-clamp-2 break-words" title={event.context.label}>

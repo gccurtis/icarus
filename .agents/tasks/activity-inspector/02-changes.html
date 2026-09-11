@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Activity reference — Proposed changes</title>
+  <link rel="stylesheet" href="reference.css" />
+</head>
+<body>
+  <div class="shell">
+    <aside class="rail">
+      <p class="rail-mark">Icarus · Reference</p>
+      <nav aria-label="Activity reference pages"><a href="index.html"><b>00</b>Answers</a><a href="01-system.html"><b>01</b>Current system</a><a class="is-here" href="02-changes.html" aria-current="page"><b>02</b>Proposed changes</a></nav>
+      <p class="rail-note">Concrete design direction<br />Persistence change not implemented yet</p>
+    </aside>
+    <main>
+      <p class="eyebrow">Activity inspector · proposed design</p>
+      <h1>Make Activity own its vocabulary.</h1>
+      <p class="lede">Producers should submit typed events with structured facts. Activity should validate them and derive What, Where, and detail consistently for every consumer.</p>
+      <div class="meta"><span><b>Decision</b> retain useful history</span><span><b>Contract</b> typed event union</span><span><b>Rendering</b> one formatter</span><span><b>Atomicity</b> same mutation transaction</span></div>
+      <section>
+        <div class="head"><span class="n">01</span><h2>The boundary</h2></div>
+        <aside class="callout"><h3>One Activity capability, one closed event catalog</h3><p>Expose a transaction-aware recorder through the Activity capability index. Each producer passes an existing Store unit of work, trusted project/actor scope, and one discriminated event. The capability constructs and validates the stored row.</p></aside>
+        <div class="flow">
+          <article class="step"><b>Producer</b><span class="mono">renameExternalFile</span><p>Knows the mutation-specific facts: ID, old name, new name, and paths.</p></article><article class="step"><b>Typed event</b><span class="mono">external-file.renamed</span><p>Carries fields required by that exact event and no display prose.</p></article>
+          <article class="step"><b>Activity capability</b><span class="mono">recordActivity(unit, scope, event)</span><p>Builds snapshots, admits the schema, and writes through the supplied transaction.</p></article><article class="step"><b>Shared projection</b><span class="mono">formatActivity(event)</span><p>Derives one title, detail, target, and destination for all views.</p></article>
+        </div>
+        <aside class="finding"><h3>Why it must accept the existing transaction</h3><p>A standalone remote “record activity” call could commit history after the originating change fails, or lose history after the change succeeds. External-file state and its activity must remain one atomic Store intent.</p></aside>
+      </section>
+      <section>
+        <div class="head"><span class="n">02</span><h2>Proposed event catalog</h2></div>
+        <div class="scroll"><table>
+          <thead><tr><th>Typed event</th><th>Required facts</th><th>Derived What</th><th>Decision</th></tr></thead><tbody>
+            <tr><td><code>external-file.uploaded</code></td><td>ID, name, path, byte size, media type</td><td>Uploaded 28 KB PDF</td><td><span class="status keep">Implement</span></td></tr><tr><td><code>external-file.reuploaded</code></td><td>ID, name, path, byte size, revision</td><td>Replaced file contents</td><td><span class="status keep">Implement</span></td></tr>
+            <tr><td><code>external-file.renamed</code></td><td>ID, old name, new name, old/new path</td><td>Renamed “old.csv” to “new.csv”</td><td><span class="status keep">Implement</span></td></tr><tr><td><code>external-file.moved</code></td><td>ID, name, old path, new path</td><td>Moved from /Intake to /Archive</td><td><span class="status keep">Implement</span></td></tr>
+            <tr><td><code>external-file.context-changed</code></td><td>ID, name, path, change: set or cleared</td><td>Added dataset context</td><td><span class="status keep">Implement</span></td></tr><tr><td><code>external-file.deleted</code></td><td>ID, old name/path, byte size, revision</td><td>Deleted 28 KB file</td><td><span class="status keep">Implement</span></td></tr>
+            <tr><td><code>research.message-sent</code></td><td>Thread ID/title, message ID</td><td>Sent a research message</td><td><span class="status review">Product decision</span></td></tr><tr><td><code>research.response-received</code></td><td>Thread ID/title, response ID/status</td><td>Received a research response</td><td><span class="status review">Product decision</span></td></tr>
+            <tr><td><code>agents.task-completed</code></td><td>Task ID/title, persona ID/name, outcome</td><td>Completed an Agents task</td><td><span class="status review">Product decision</span></td></tr>
+          </tbody>
+        </table></div>
+        <p><code>found insufficient evidence</code> remains a task outcome that belongs in the task result. It should not become the headline of a project activity. If task completion is worth recording, the event title stays stable while its structured outcome appears in detail.</p>
+      </section>
+      <section>
+        <div class="head"><span class="n">03</span><h2>Example contract</h2></div>
+        <dl class="contract"><dt>type</dt><dd><code>"external-file.renamed"</code></dd><dt>file</dt><dd><code>{ id, previousName, name }</code></dd><dt>location</dt><dd><code>{ previousPath, path }</code></dd><dt>actor</dt><dd>Derived from trusted capability scope; never accepted as client proof.</dd><dt>presentation</dt><dd>Derived centrally as “Renamed ‘old.csv’ to ‘new.csv’.” Consumers do not reinterpret the event.</dd><dt>destination</dt><dd>External Files singleton with the exact current file selected; unavailable copy after deletion.</dd></dl>
+        <div class="cards"><article class="card"><h3>Keep historical snapshots</h3><p>IDs enable current navigation. Names and paths preserve what the event meant when the target has changed or disappeared.</p></article><article class="card"><h3>Keep the catalog closed</h3><p>Producer call sites cannot submit arbitrary verbs. Adding an event requires its payload, validation, formatting, and destination behavior together.</p></article></div>
+      </section>
+      <section>
+        <div class="head"><span class="n">04</span><h2>Where behavior</h2></div>
+        <div class="scroll"><table><thead><tr><th>Target kind</th><th>Destination</th><th>Behavior now</th></tr></thead><tbody>
+          <tr><td>Document, presentation, spreadsheet, research</td><td>Owning editor</td><td><span class="status real">Works</span></td></tr><tr><td>External file</td><td>External Files with exact file selected</td><td><span class="status real">Works</span></td></tr><tr><td>Persona, task, automation</td><td>Exact Agents detail</td><td><span class="status real">Added here</span></td></tr><tr><td>Finding</td><td>Future finding surface</td><td><span class="status defer">Alert for now</span></td></tr><tr><td>Connector</td><td>Future connector surface</td><td><span class="status defer">Alert for now</span></td></tr><tr><td>Missing, deleted, unavailable</td><td>None</td><td>Historical label plus explicit unavailable message</td></tr>
+        </tbody></table></div>
+      </section>
+      <section>
+        <div class="head"><span class="n">05</span><h2>Implementation sequence</h2></div>
+        <ol class="sequence"><li><strong>Define activity events</strong><p>Add the discriminated event union, target builders, payload validation, and shared presentation model under the Activity capability.</p></li><li><strong>Move live producers</strong><p>Convert External Files within its existing transactions. Decide whether an Agents task completion merits one stable event; remove status-as-verb.</p></li><li><strong>Unify consumers</strong><p>Move Overview, History, Activity, Person, Agents, resource details, and External Files history onto the same formatter and destination rules.</p></li><li><strong>Replace fixtures</strong><p>Seed only typed events a live producer can emit. It is acceptable for categories without real writers to have no activity.</p></li><li><strong>Verify the boundary</strong><p>Test schema rejection, transaction rollback, project scope, deleted-target snapshots, consistent presentation, and Chromium navigation.</p></li></ol>
+      </section>
+      <section>
+        <div class="head"><span class="n">06</span><h2>Decisions still needed before that rewrite</h2></div>
+        <ul><li>Should Research Chat record user-message and response events, or remain outside project history?</li><li>Should Agents tasks record a single completion event, or should task results remain only on the task?</li><li>Does Activity remain indefinitely append-only, or will it eventually need an explicit retention policy?</li></ul>
+        <p>Those choices alter product semantics and persistence. The typed boundary can be designed now, but the event set should be settled before changing stored data.</p>
+      </section>
+      <footer><nav><a href="01-system.html">← Previous · Current system</a><span>02 · Proposed changes</span></nav></footer>
+    </main>
+  </div>
+</body>
+</html>
