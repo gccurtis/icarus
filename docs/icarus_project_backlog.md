@@ -1,726 +1,834 @@
-# Icarus Project Backlog
+# Icarus delivery backlog
+
+Updated September 10, 2026 · source baseline: `main@c2505f0`.
+
+**Direction confirmed by the owner: reliable end-to-end work first.** This is a
+planning and dispatch file, not a declaration that its features are missing or
+permission to implement everything in it. The proposed ordering below is a
+recommendation; no package has an assigned implementation owner yet.
+
+This revision consolidates the September 10 intake, retains its settled choices,
+and separates delivery status, work type, evidence, and priority. Source inspection
+is identified explicitly; no product workflows were run for this backlog review.
+
+Navigate: [Dispatch](#dispatch) · [Register](#register) · [Constraints](#constraints) ·
+[Work packages](#packages) · [Decisions](#decisions) · [Evidence](#evidence) ·
+[Intake coverage](#coverage) · [Maintenance](#maintenance).
+
+<a id="dispatch"></a>
+## 1. What to work on next
+
+Start by closing complete journeys, including reload, failure, inspection, and
+recovery. A green unit test or an attractive panel alone does not close a journey.
+Do not defer a confirmed data-loss or authorization defect behind this ordering.
+
+| Proposed tranche | User outcome | Packages | Exit evidence |
+| --- | --- | --- | --- |
+| A — Trust the current workspace | Upload and distinguish files; inspect their state/history; use variables without losing context | [EXT-01](#ext-01), [EXT-02](#ext-02), [EXT-04](#ext-04), [EXT-05](#ext-05), [COL-01](#col-01), [COL-02](#col-02), [EDIT-01](#edit-01) | Realistic same-name files, re-upload/reload, navigable activity, and document/presentation variable workflows pass; compact and zoomed Chromium states inspected |
+| B — Trust project knowledge | Inspect a research claim and its sources, accept only intended material, then use that knowledge in another resource | [RSH-01](#rsh-01), [RSH-02](#rsh-02), [RSH-03](#rsh-03), [SCOPE-01](#scope-01), [SCOPE-02](#scope-02), [AI-01](#ai-01), [AI-03](#ai-03) | Unaccepted material stays outside accepted project knowledge; accepted material survives reload and has provenance; task/chat configuration is reproducible |
+| C — Trust reuse and analysis | Instantiate spreadsheet templates; calculate across native surfaces; carry structured content and linked charts without flattening it | [ASSET-04](#asset-04), [ASSET-05](#asset-05), [EDIT-02](#edit-02), [ANL-01](#anl-01), [ANL-03](#anl-03), [IO-02](#io-02), [IO-03](#io-03) | Two distinct source scopes produce distinct correct outputs; formula/clipboard/embedding behavior and rendered appearance are verified |
+| D — Expand deliberately | Add the selected connector, wider analytics/import formats, real accounts and collaboration, Copilot, and product Skills | Remaining P2 packages, promoted when needed by an actual workflow | Each package's own acceptance criteria, not a feature-count target |
+| Separate authorized initiative | Replace the documentation/reference system with the Markdown wiki | [WIKI-01](#wiki-01), [WIKI-02](#wiki-02) | Approved deletion inventory, replacement navigation, and resolved code links |
+
+These are delivery groupings, **not a waterfall**. Metadata discovery, a bounded
+variable fix, and activity navigation can run independently. Tranche B design can
+start while A lands. Connector discovery and identity design can also start early.
+Only explicit gates in the register block implementation; related themes do not.
+
+Authentication is not optional for a real multi-user deployment. [ID-01](#id-01)
+is a release gate even when single-user workflow reliability is scheduled first.
+
+### Dispatch rules
+
+1. Select a package and its **first slice**, not an entire epic. Record its owner
+   in the register and create a task handoff using the existing agent tooling.
+2. Reproduce/recheck the relevant current behavior before changing it. Preserve
+   working foundations; finding code is not proof that the requested workflow works.
+3. Resolve only the package's open gates. Do not reopen [settled choices](#constraints).
+4. Name exact owned paths and overlapping state/representation boundaries in the
+   handoff. Different editor procedures remain independently owned.
+5. Return evidence and a small reviewable change. A package remains open when only
+   one slice is delivered; record the remaining slice instead of checking it off.
+
+<a id="register"></a>
+## 2. Delivery register
+
+The register is the single source of scheduling state. Package cards carry scope,
+not a second status list. All owners are **unassigned** until explicitly recorded;
+the backlog rewrite itself does not mean any of this implementation is active.
+
+- **Ready:** a bounded next action can be assigned; it may be an investigation.
+- **Gated:** discovery may proceed, but implementation needs the named decision or dependency.
+- **Active / Verify:** an owner is working / collecting acceptance and integration evidence.
+- **Done:** the package's outcome and applicable completion gate are met, with evidence linked.
+- **Deferred:** deliberately outside the current delivery sequence, not cancelled.
+
+Work type belongs in the card: **Audit**, **Design**, **Build**, **Refine**, or
+**Tactical**. Priority is independent: **P0** confirmed urgent integrity/security
+failure; **P1** reliability-critical current workflows; **P2** capability expansion;
+**P3** deliberately later. No P0 incident is asserted by this source-only review.
+Priorities are proposed; gates are requirements, not estimated dates or effort.
+
+| ID | Package | State | Priority | Implementation gate | Owner |
+| --- | --- | --- | --- | --- | --- |
+| [EXT-01](#ext-01) | External metadata contract | Ready | P1 | None for investigation; Q2 for product choices | — |
+| [EXT-02](#ext-02) | Complete and verify ingestion lifecycle | Ready | P1 | None for current upload/re-upload audit | — |
+| [EXT-03](#ext-03) | First operational connector | Gated | P2 | EXT-02 admission contract; Q1 | — |
+| [EXT-04](#ext-04) | File table and directory clarity | Ready | P1 | EXT-01 for attribution column only | — |
+| [EXT-05](#ext-05) | File inspector and context cleanup | Ready | P1 | EXT-01 for metadata changes only | — |
+| [RSH-01](#rsh-01) | Findings lifecycle and publication | Ready | P1 | Existing finding representation is fixed | — |
+| [RSH-02](#rsh-02) | Explicit source acceptance | Gated | P1 | EXT-02; acceptance contract coordinated with RSH-01 | — |
+| [RSH-03](#rsh-03) | Research turn and result inspection | Ready | P1 | Acceptance actions depend on RSH-01/RSH-02 | — |
+| [AI-01](#ai-01) | Task execution contract and reliability | Ready | P1 | None for audit; coordinate tool removal with SCOPE-02 | — |
+| [AI-02](#ai-02) | Copilot task supervision | Gated | P2 | AI-01 | — |
+| [AI-03](#ai-03) | Chat modes, personas, and execution tools | Ready | P1 | Coordinate persona-tool change with SCOPE-02 | — |
+| [AI-04](#ai-04) | Collaborative chat branching | Gated | P2 | ID-01; AI-03 turn contract | — |
+| [SCOPE-01](#scope-01) | Inspectable resource sets across surfaces | Ready | P1 | None for existing-foundation audit | — |
+| [SCOPE-02](#scope-02) | Persona scope and execution-owned tools | Ready | P1 | AI-01/AI-03 tool contract before removing persistence | — |
+| [ID-01](#id-01) | Authentication and access lifecycle | Gated | P2 / release gate | Q3 | — |
+| [ID-02](#id-02) | Coherent personal/project asset ownership | Ready | P2 | Design now; runtime ownership depends on ID-01 | — |
+| [ID-03](#id-03) | Top bar and settings boundaries | Gated | P2 | ID-01 and ID-02 for live account controls | — |
+| [ASSET-01](#asset-01) | Independent template copies across scopes | Gated | P2 | ID-01; ID-02 | — |
+| [ASSET-02](#asset-02) | Independent persona copies across scopes | Gated | P2 | ID-01; ID-02 | — |
+| [ASSET-03](#asset-03) | Product Skills | Gated | P2 | AI-01; SCOPE-02; ID-02 | — |
+| [ASSET-04](#asset-04) | Spreadsheet template editor | Ready | P1 | None for editor/instantiation gap audit | — |
+| [ASSET-05](#asset-05) | Template UI and terminology | Ready | P1 | Q6 gates renaming, not layout correction | — |
+| [ANL-01](#anl-01) | Canonical analytic identity and editing contract | Ready | P2 | None for design against existing types | — |
+| [ANL-02](#anl-02) | Analysis graph tabs and graph editor | Gated | P2 | ANL-01 where analytic identity is involved | — |
+| [ANL-03](#anl-03) | Linked analytic placements across editors | Gated | P2 | ANL-01; Q5 | — |
+| [ANL-04](#anl-04) | Inspectable text-to-table extraction | Ready | P2 | Output/correction contract before materialization | — |
+| [EDIT-01](#edit-01) | Document/presentation Variables panels | Ready | P1 | Reproduce current defects first | — |
+| [EDIT-02](#edit-02) | Cross-editor formula contract and built-ins | Ready | P1 | None for inventory; settle evaluation semantics before expansion | — |
+| [IO-01](#io-01) | Native import/export | Gated | P2 | Q4; current-schema mappings for selected formats | — |
+| [IO-02](#io-02) | External rich paste and external-copy contract | Ready | P1 | Q4 gates committed format/fidelity promises | — |
+| [IO-03](#io-03) | Native structured and linked copy/paste | Gated | P2 | IO-02 copy contract; ANL-01/ANL-03 for analytic links | — |
+| [KEY-01](#key-01) | Retire the product command abstraction | Ready | P2 | KEY-02 shortcut inventory before deleting behavior | — |
+| [KEY-02](#key-02) | Direct keyboard shortcuts and desktop behavior | Ready | P2 | Platform/shortcut conflict inventory | — |
+| [COL-01](#col-01) | Project activity navigation and readable history | Ready | P1 | Existing resource/actor routing inventory | — |
+| [COL-02](#col-02) | External/Agents activity parity | Ready | P1 | Coordinate COL-01 interaction; EXT-01 gates changed attribution only | — |
+| [COL-03](#col-03) | Presence with explicit lifetime | Gated | P2 | ID-01 | — |
+| [WIKI-01](#wiki-01) | Wiki reset inventory and replacement plan | Deferred | P3 | Explicit wiki-work authorization | — |
+| [WIKI-02](#wiki-02) | Markdown wiki and retirement of old pages | Deferred | P3 | WIKI-01; exact deletion/replacement approval | — |
 
-> Captured September 10, 2026. This document separates operational workstreams from tactical interface work, records settled product decisions, and scopes remaining design investigations without reopening those decisions.
+The tool/scope dependencies are a **shared contract**, not a circular build order:
+agree chat/task-owned configuration first, then wire consumers and remove persona
+tool persistence in one coordinated landing. Likewise, findings/source acceptance
+shares vocabulary; accepting one need not force acceptance of the other.
 
-## Status Legend
+<a id="constraints"></a>
+## 3. Settled constraints — do not turn these back into open questions
 
-- **Build** — a system or capability that needs to be implemented.
-- **Refine** — an existing system that needs material redesign or cleanup.
-- **Tactical** — a bounded interface or behavior correction.
-- **Investigate** — intent is known, but the present behavior, data model, or correct solution still needs inspection.
-- **Decision** — a settled product or design choice that should be treated as an implementation constraint.
+These combine the intake's settled choices with standing owner instructions:
+Chromium/current-schema-only work, independently owned editor behavior, and keeping
+resource-set management out of Project Overview. Broader reusable context views
+remain in scope at their points of use.
 
----
+| Constraint | Required interpretation |
+| --- | --- |
+| External boundary | Connectors, direct uploads/re-uploads, and accepted external research sources enter the External Files system; retain origin and stable identity. |
+| Acceptance | A discovered research source does not become an external file merely because a model found or cited it. Explicit user acceptance is required. An already-existing project file is not a new external source. |
+| Findings | The existing canonical finding representation is authoritative. Design inspection, lifecycle, publication, dismissal, and history around it. |
+| Chat versus tasks | Delegated tasks have their own configuration, state, execution, and outputs. They are not a renamed chat mode. |
+| Tools and personas | Tools belong to chats/tasks. Personas carry behavior and scope, not a persistent tool bundle. |
+| Asset transfers | Personal/project template and persona transfers are independent copies in either direction, never shared mutable moves. Design both inside the broader per-user system. |
+| Context scope | Reuse resource-set/context concepts across surfaces; inspect individual members. Define context where it is needed; do not restore the removed Project Overview resource-set management panel. |
+| Native analytics | A chart is a canonical analytic object; native placements link to it by default and propagate changes. This is deliberately different from personal/project asset copies. |
+| Product commands | Retire the partial command palette/registry architecture; implement keyboard shortcuts directly. This does not mean deleting backend command admission or ordinary procedural calls. |
+| External UX | Paths are compressed secondary metadata with full-path hover text. Table/Directory is one toggle in the same control row. Preserve directory exploration in the inspector and Generated Description. |
+| Unchanged comments | Leave the document/presentation empty Comments state alone; the proposed extra empty-state action was withdrawn. |
+| Naming and browser | Use presentation for the resource, slide for its contents. Chromium is the target; browser versus desktop shortcut behavior is not a cross-browser project. |
+| Architecture and quality | Follow root AGENTS: explicit state lifetime, bounded procedural chains, modular/reviewable files, no new baseline debt, current-schema-only changes, atomic Store intents and recovery. No legacy readers, renamed aliases, or migration scaffolding. |
+| Wiki | Markdown with useful Mermaid diagrams and selective HTML replaces the old system in a separately authorized reset. This backlog rewrite does not perform that reset. |
 
-# 1. Operational Workstreams
+<a id="packages"></a>
+## 4. Work packages
 
-## 1.1 External Files and Connector System
+Each card supplies a dispatchable first slice and an outcome-based closeout. Source
+links in [the evidence ledger](#evidence) are starting points, not exhaustive audits.
+For multi-slice packages, put execution details in `.agents/tasks/<task>/handoff.md`
+and link that handoff from the register when assigning an owner.
 
-### Objective
+### External Files and connectors
 
-Make **External Files** the ingestion boundary for connected, uploaded, and accepted research material, with a consistent path into the semantic overlay.
+<a id="ext-01"></a>
+#### EXT-01 — Establish the external metadata contract
 
-### Backlog
+**Work:** Audit / Design. **First slice:** trace each displayed field from stored row or generated material to the inspector and retrieval input; publish a field/provenance/use matrix.
 
-- [ ] **Build — Implement connectors inside the connector system.**
-  - Connectors should live under or feed the **External Files** category.
-  - They should pull externally hosted files into the Icarus external-file model.
-  - The connector system should preserve enough source and origin metadata to explain where each file came from.
+- Cover quarantine metadata, Material Profile, Generated Description, Purpose, tags/entities/themes, Semantic Status, origin/author, added-by, updated-by, and the event that counts as a re-upload update.
+- Distinguish user-authored, connector-provided, system-derived, and AI-generated values. Purpose and visible facet chips already participate in generated material; do not assume a separate Purpose generation call or decorative-only tags ([E2](#e2)).
+- **Close when:** every field has a defined source, meaning, editability, retrieval effect, generation cost basis, and display/hide/remove decision. Keep Generated Description; if retained, Purpose sits immediately below it. Resolve Q2 with evidence, not renamed ambiguity.
 
-- [ ] **Build — Define the external-file ingestion lifecycle.**
-  - Cover files introduced through connectors, direct upload, re-upload, and accepted research sources.
-  - Define when a file is added to the semantic overlay.
-  - Preserve the distinction between an available source and an accepted project file.
+<a id="ext-02"></a>
+#### EXT-02 — Complete and certify one ingestion lifecycle
 
-- [ ] **Build — Handle duplicate file names across different paths or origins.**
-  - Multiple files may have the same name but different paths.
-  - Identity cannot rely on display name alone.
-  - The interface should still make the distinction understandable without allowing the path column to dominate the table.
+**Work:** Audit / Refine. **First slice:** run and inspect upload → semantic state → re-upload → download → history → reload with realistic duplicate-name fixtures.
 
-- [ ] **Investigate — Clarify the metadata model for external files.**
-  - Determine which metadata is user-authored, system-derived, connector-provided, or AI-generated.
-  - Resolve the meaning and product value of:
-    - quarantine metadata;
-    - material profile;
-    - generated description;
-    - purpose;
-    - tags;
-    - semantic status;
-    - origin/author;
-    - added-by versus last-updated-by.
+- Extend the existing transactional upload/revision/semantic-outbox path; do not rebuild it. Specify admission boundaries for upload, re-upload, connector refresh, and accepted research material.
+- Stable resource identity is not the filename. Preserve same-name files at different paths/origins; decide same-path conflict/reuse rules and retain the source attribution needed to explain them.
+- **Close when:** accepted bytes, revision/history, semantic status, and downloaded content agree after success, failure, retry, and restart; rejected admission leaves no partial intent; changed content is not silently represented by stale semantic output. Connector/source paths must consume this contract when added.
 
-- [ ] **Investigate — Understand the purpose of Tags.**
-  - Inspect the current implementation and intended product role.
-  - Determine whether tags are meant for semantic retrieval, filtering, organization, display, or are only placeholders.
-  - Do not redesign or expose them as retrieval-significant metadata until their purpose is understood.
+<a id="ext-03"></a>
+#### EXT-03 — Deliver the first operational connector
 
-- [ ] **Investigate — Understand the purpose of the Purpose field.**
-  - Determine why the field exists, how it differs from Generated Description, and whether it is user-authored, connector-provided, system-derived, or AI-generated.
-  - Evaluate generation cost only after its intended product purpose is clear.
-  - If retained, place it directly beneath Generated Description.
+**Work:** Build on existing connector representation. **First slice:** after Q1, connect one real source through the External boundary; do not begin with an unbounded adapter catalog.
 
----
+- Cover credential ownership, source selection, initial fetch, refresh/re-upload, origin/path collisions, permission loss, failure/retry, and disconnect. Decide what disconnect does to already accepted project files before coding deletion behavior.
+- **Close when:** the selected connector's files use EXT-02 identity/revision/semantic rules, keep origin metadata, and can be inspected/downloaded after reload. Bounded live-provider evidence and deterministic failure tests are both recorded; no secrets enter rows intended for display or logs.
 
-## 1.2 Research, Findings, Sources, and the Semantic Overlay
+<a id="ext-04"></a>
+#### EXT-04 — Make the file table and directory view clear
 
-### Objective
+**Work:** Tactical. **First slice:** compare compact and wide Chromium views with long paths, duplicate names, large sizes, and recent updates; recheck already-implemented path truncation/tooltip behavior.
 
-Turn research output into inspectable, user-controlled project knowledge rather than automatically importing every generated or retrieved item.
+- Add the attribution column once its meaning is settled; show compressed paths with full-path hover text, readable Size, and compact times such as `3 HR` without repeating “ago.”
+- Put the Table/Directory toggle in the same control row. Remove “native project files live here,” the directory-path explanation, and the repeated directory name. Preserve directory exploration inside the inspector.
+- **Close when:** both views remain usable at narrow widths and zoom, duplicate files stay distinguishable, and sorting/filtering/selection/navigation still work. Do not mark already-correct behavior as newly implemented.
 
-### Backlog
+<a id="ext-05"></a>
+#### EXT-05 — Simplify the file inspector and context panel
 
-- [ ] **Build — Design and implement the Findings system.**
-  - The finding representation is already settled by the existing representation specification and must not be redesigned here.
-  - Design the surrounding system: lifecycle, inspection, acceptance, rejection/dismissal, activity/history, and semantic-overlay integration.
-  - Findings produced during research must be individually inspectable.
-  - Users must be able to accept a finding into the semantic overlay using the existing finding representation.
+**Work:** Tactical / Refine. **First slice:** land layout-only improvements without waiting for metadata decisions.
 
-- [ ] **Build — Implement explicit source acceptance.**
-  - Sources must be inspectable.
-  - Sources must **not** automatically become external files.
-  - A user must explicitly accept a source before it is materialized as an external file and added to the semantic overlay.
+- Put file information first, actions below in a two-by-two grid; remove duplicate Rename, the “selection belongs to file inspector” block, and the separate path inspector. Preserve rename in its owning file section and secondary path information elsewhere.
+- Evaluate collapsible sections in both panels. Replace the uneven Semantic Status pill with simple aligned status text; use green for ready without relying on color alone. Remove redundant explanatory text, not meaningful error/recovery information.
+- **Close when:** EXT-01's metadata decisions are applied, useful Generated Description remains, Purpose placement is correct if retained, and compact/zoomed inspectors show no clipped controls or broken actions. History behavior belongs to COL-02.
 
-- [ ] **Build — Define acceptance states and transitions.**
-  - At minimum, distinguish discovered, inspectable, accepted, and rejected/dismissed material.
-  - Make the resulting state visible in research and external-file views.
-  - Ensure acceptance is auditable through activity/history.
+### Research and accepted project knowledge
 
-- [ ] **Refine — Overhaul the AI research chat tabs.**
-  - Make the tabs cleaner, more professional, and enterprise-ready.
-  - Redesign the turn-level context panel.
-  - Make findings and sources first-class inspectable objects.
-  - Align the research interface with the explicit acceptance workflow.
+<a id="rsh-01"></a>
+#### RSH-01 — Make findings inspectable and publishable
 
----
+**Work:** Design / Build. **First slice:** map a turn-local claim to inspection and explicit publication using the existing stored finding representation; do not redesign that representation.
 
-## 1.3 Copilot, AI Tasks, and Chat
+- Define discovered, inspectable, accepted, and rejected/dismissed behavior, with supersession/history. Distinguish a transient research claim from an accepted finding resource and preserve evidence/source snapshots.
+- Coordinate source acceptance with RSH-02. Recommended contract: finding and source acceptance are independent actions, with dependencies shown rather than silently accepted; validate it against actual workflows before implementation.
+- **Close when:** the user can inspect, accept, dismiss, revisit, and locate the resulting finding in the semantic overlay; provenance/history survives reload; cancellation, repeated acceptance, storage failure, and project isolation have executable contracts.
 
-### Objective
+<a id="rsh-02"></a>
+#### RSH-02 — Require explicit source acceptance
 
-Create a clear AI interaction model in which conversational work and delegated task execution are separate but interoperable systems.
+**Work:** Design / Build. **First slice:** distinguish citations to existing project resources from newly discovered external sources and define an inspectable acceptance transition.
 
-### Backlog
+- Preserve source metadata and content/revision provenance when accepted material enters External Files and the semantic overlay. Do not create another external file simply to cite an existing one.
+- Make state visible in research and External views; record acceptance/dismissal/supersession in activity. Decide what a changed or unavailable source means before retrying acceptance. Direct upload already expresses an import intent; do not add an unrelated confirmation flow by accident.
+- **Close when:** unaccepted new sources are not imported/indexed, accepted ones are durable and inspectable, and double-click/retry cannot duplicate publication. Prove the negative case as well as success. The intake's prohibition on automatic import is an invariant, not a reproduced current bug ([E3](#e3)).
 
-- [ ] **Build — Implement the Copilot system.**
-  - Copilot should support the creation, supervision, and use of AI tasks.
-  - AI tasks need a clear execution and project-resource contract.
+<a id="rsh-03"></a>
+#### RSH-03 — Redesign research turns around inspectable results
 
-- [ ] **Build — Implement AI Tasks as a distinct system.**
-  - Maintain a strong separation between **chat** and **tasks**.
-  - A task is delegated work with its own configuration, state, and output, not merely another chat mode.
-  - Tool selection should be configured per task.
+**Work:** Refine. **First slice:** define and render one complete turn with answer, findings, sources, and turn context, including empty/error/cancelled states.
 
-- [ ] **Refine — Overhaul general AI chat.**
-  - Allow persona switching while a chat is active.
-  - Allow mode switching while a chat is active.
-  - Preserve the distinction between conversational turns and task execution.
-  - Improve the overall professional and enterprise-ready presentation.
+- Findings and sources are first-class inspection targets; acceptance actions reflect RSH-01/RSH-02, not decorative rows. Redesign the turn-level context panel and professional visual hierarchy.
+- Align persona/mode controls and overall chat appearance with AI-03 while retaining research-specific behavior.
+- **Close when:** a user can move answer → finding → evidence/source → accepted resource without dead targets or stale inspectors; keyboard navigation, reload/tab switching, and narrow/zoomed states are verified with realistic data.
 
-- [ ] **Build — Implement chat branching for collaborative use.**
-  - When another user was the last person to edit or continue a chat, a new user continuing from that state should create a branch rather than silently append to the same conversational line.
-  - Define how branch origin, ownership, and ancestry are displayed.
+### Chats, tasks, and Copilot
 
-- [ ] **Decision — Remove persistent tool configuration from personas.**
-  - Tools should be chosen per task and per chat.
-  - Personas should carry behavioral configuration and scope, not a persistent tool bundle.
-  - Replace “default tools” with a simpler **scope** or **default scope** concept.
+<a id="ai-01"></a>
+#### AI-01 — Certify the task execution and output contract
 
----
+**Work:** Audit / Refine. **First slice:** exercise one existing task through create, configure, run, observe, cancel/retry, review output, and reload; task execution already exists ([E5](#e5)).
 
-## 1.4 Authentication, Top Bar, and Personal/Per-User Work
+- Specify task-owned configuration, execution state, resources, tools, outputs, and supervision. Trace workspace/client lifetime and backend ownership; keep tasks separate from chat turns.
+- Agree per-task/per-chat tool storage with AI-03/SCOPE-02 before removing persona tool persistence. A provider/storage fault must not appear as a successful task or a silent refusal.
+- **Close when:** lifecycle, cancellation/resumption, output provenance, project isolation, and no half-persisted result are tested through the real capabilities; every user-visible state has an actionable outcome. Report configured-provider skips honestly.
 
-### Objective
+<a id="ai-02"></a>
+#### AI-02 — Build Copilot around supervised tasks
 
-Introduce identity and ownership while designing templates, personas, and related personal assets as part of one broader personal/per-user system rather than as isolated subsystems.
+**Work:** Design / Build. **First slice:** one complete create-and-supervise task journey using AI-01, not a second task executor.
 
-### Backlog
+- Define how conversational intent becomes a task, where its configuration is reviewed, and how progress/output returns to the user. Surface authority, failure, cancellation, and any approval boundary explicitly.
+- **Close when:** the user can create, inspect, supervise, and use a task's project-resource output from Copilot; chat history and task state remain distinct and traceable after reload.
 
-- [ ] **Build — Implement sign-in and authentication.**
-  - Establish user identity for ownership, authorship, activity, presence, and personal resources.
+<a id="ai-03"></a>
+#### AI-03 — Make chat configuration coherent during a conversation
 
-- [ ] **Build — Implement the application top bar.**
-  - Sign-in and account access.
-  - User settings and options.
-  - Project settings and options.
-  - Clear separation between personal and project-level controls.
+**Work:** Refine. **First slice:** trace persona switching, the currently fixed research mode, and effective tools through a new turn and a reload.
 
-- [ ] **Build — Implement personal and project templates.**
-  - Users should have a personal template set.
-  - Projects should have a project template set.
-  - Moving a template between the two scopes must always be a **copy**, never a shared mutable move.
-  - Support copying personal templates into a project and copying project templates into the user’s personal set.
+- Allow active persona and mode switching and explicit chat-owned tools. Recommended temporal rule: changes apply to future turns; completed turns retain an inspectable configuration snapshot. Resolve the exact snapshot/policy contract with AI-01 before persistence changes.
+- Redesign general chat for a cleaner professional hierarchy, coordinating research-specific context in RSH-03. Do not turn a task into a chat mode.
+- **Close when:** switching controls affect exactly the intended turns, an in-flight turn is not silently reconfigured, persona tool defaults no longer leak into execution, and reload preserves the same interpretable history.
 
-- [ ] **Build — Implement personal and project personas.**
-  - Users should have a personal persona set.
-  - Projects should have a project persona set.
-  - Transfer between scopes must be a copy operation in either direction.
+<a id="ai-04"></a>
+#### AI-04 — Branch collaborative chats without rewriting another user's line
 
-- [ ] **Design — Define templates and personas within the broader personal/per-user system.**
-  - Do not design template and persona tables in isolation.
-  - The broader personal/per-user architecture should define ownership, persistence, versioning, copied provenance, and the relationship between personal and project-scoped assets.
-  - The copy-only transfer rule between personal and project scopes remains settled.
+**Work:** Design / Build. **First slice:** specify ancestry, inherited context/configuration, ownership, and the “another user last continued/edited” trigger using two real identities.
 
-- [ ] **Build — Implement the spreadsheet template editor.**
-  - At minimum, spreadsheet templates need a first-class editor.
+- Continuing another user's line creates a branch instead of silently appending. Define simultaneous continuation behavior and how origin/ancestry are shown.
+- **Close when:** concurrent users cannot overwrite or ambiguously append to the same line, branches retain inspectable origins, inherited state follows the agreed contract, and access checks and reload preserve both histories.
 
-- [ ] **Build — Implement Skills.**
-  - Keep Skills in the product model rather than deleting them.
-  - The full skill configuration and execution model can follow the core persona/task work.
+### Scope and identity
 
-- [ ] **Refine — Revisit template terminology and template UI.**
-  - Consider whether “Templates” should be renamed globally.
-  - Revisit the prompt-block terminology.
-  - Redesign the template section beneath the selected prompt block, especially in the document editor.
+<a id="scope-01"></a>
+#### SCOPE-01 — Complete inspectable resource-set context
 
----
+**Work:** Audit / Refine. **First slice:** audit existing resource-set CRUD, scope-builder reuse, and attachment UX before adding another scope component ([E4](#e4)).
 
-## 1.5 Resource Sets and Context Scoping
+- Provide a reusable context view for individual resources and sets, with every member inspectable, across personas/chats/tasks and relevant editor surfaces. Create/manage context where it is needed, not through a restored global Overview panel.
+- Define membership update/removal, nested/cyclic references, permission loss, and whether an attachment is live or snapshotted. Recommended execution rule: resolve and record scope for each run so later set edits do not rewrite past evidence.
+- **Close when:** attach → inspect member → edit/remove set → execute → reload has explicit behavior, dangling/private/cross-project references fail safely, and state is owned by the relevant workspace/resource lifetime.
 
-### Objective
+<a id="scope-02"></a>
+#### SCOPE-02 — Keep persona context inspectable and move tools to execution
 
-Create a reusable context/scoping system that can be applied consistently across chats, tasks, personas, and editor surfaces.
+**Work:** Refine. **First slice:** inspect existing individual-resource/set attachment and effective tool inheritance; agree the removal/wiring boundary with AI-01/AI-03.
 
-### Backlog
+- Make attached resources and sets inspectable; keep the working add controls. Rename Default to Scope or Default Scope according to meaning. Preserve behavioral persona configuration.
+- Investigate whether personas also carry a reusable default execution policy, how it differs from behavior/scope, and which settings belong only to a chat/task. That question does not reopen persistent persona tool bundles.
+- Remove persona Tools UI and persistent tool configuration only as execution-owned configuration lands. Do not preserve old fields or aliases as compatibility bridges.
+- **Close when:** personas reload with correct inspectable scope, chats/tasks choose their own tools, no retired persona-tool consumer remains, and coordinated changes preserve current task/chat execution.
 
-- [ ] **Build — Implement Resource Sets.**
-  - A resource set should be a reusable collection of resources that can be attached as context.
-  - Each resource inside a set should remain individually inspectable.
+<a id="id-01"></a>
+#### ID-01 — Replace development identity with real authentication
 
-- [ ] **Build — Implement a reusable Resource Set context panel/view.**
-  - The context view should be available broadly across Icarus rather than reimplemented per screen.
-  - It should support inspecting and managing both individual resources and resource sets.
+**Work:** Design / Build. **First slice:** decide Q3 and inventory the current session/Scope boundary; development configuration is not a login system ([E6](#e6)).
 
-- [ ] **Build — Add resource scoping to personas.**
-  - From a persona in the Agents Library, a user should be able to add an individual resource.
-  - A user should also be able to add a resource set.
-  - Every attached resource should be inspectable.
+- Define sign-in/out, session expiry/revocation, project membership/access, authorship, and the relation between account and person/profile records. Identity must come from server-established authority, never a client-supplied user ID.
+- **Close when:** two users and two projects exercise successful access, denied access without disclosure, expired/revoked sessions, sign-out across tabs, and personal-resource isolation. No development identity remains reachable in the chosen real-user deployment. This is a release gate, not just a UI task.
 
-- [ ] **Decision — Keep persona configuration focused on scope.**
-  - Remove the tools section from persona configuration.
-  - Use **Scope** as the primary contextual configuration.
-  - Configure tools at the point of chat/task execution instead.
+<a id="id-02"></a>
+#### ID-02 — Design one personal/project asset ownership system
 
----
+**Work:** Design. **First slice:** map existing user/project template/persona rows and versions into a common ownership and copy-provenance contract.
 
-## 1.6 Analysis, Graphs, Charts, and Structured Data
+- Cover persistence, versioning, permissions, common versus asset-specific storage, and future personal asset types. Template/persona tables must not be designed independently of this system.
+- **Close when:** both copy directions, fresh identity, immediate independence, future versions, deletion, and access loss are specified with executable-test scenarios. No migration/legacy-reader requirement is introduced; fixture replacement and real-data handling are explicit choices, not silent deletions.
 
-### Objective
+<a id="id-03"></a>
+#### ID-03 — Complete the top bar and settings model
 
-Complete the analytical system around a canonical, portable analytic/chart object that can be edited in Analysis and reused throughout all native editors.
+**Work:** Refine / Build. **First slice:** separate account/personal actions from current-project actions in the existing top bar.
 
-### Backlog
+- Include sign-in/account access, user options/settings, and project options/settings; preserve useful current controls instead of inventing a second top bar.
+- **Close when:** authenticated/unauthenticated and project/no-project states have clear controls; changing identity or project cannot leave stale personal settings or controls pointing at the previous scope; compact/zoomed layouts remain usable.
 
-- [ ] **Build — Implement the Analysis graph tabs.**
+### Personal assets and templates
 
-- [ ] **Build — Implement the graph editor.**
+<a id="asset-01"></a>
+#### ASSET-01 — Copy templates between personal and project scopes
 
-- [ ] **Build — Implement the general chart/analytic type.**
-  - The canonical chart object should be usable in Analysis.
-  - It must also be embeddable in documents, presentations, and spreadsheets.
-  - Reuse should not require rebuilding a chart separately in each editor.
+**Work:** Build on existing templates/versioning. **First slice:** implement one copy direction against ID-02, then the reverse using the same ownership contract.
 
-- [ ] **Build — Make analytic objects portable across editors.**
-  - A chart created in a spreadsheet should be copyable into a document or presentation.
-  - The pasted instance should remain linked to the same underlying analytic object.
-  - Changes to the shared chart should propagate wherever it is embedded.
+- Copy body, holes/default scope, styles, relevant versions/provenance, and referenced-resource behavior deliberately. A cross-scope reference must not smuggle inaccessible project material into a personal asset.
+- **Close when:** personal → project and project → personal produce new independent IDs; editing/versioning/deleting either copy does not mutate its origin; permission and provenance tests cover both directions.
 
-- [ ] **Build — Implement automatic structured-data derivation.**
-  - Extract structured data from unstructured or semi-structured text.
-  - Support creating native tables from extracted information.
-  - Prioritize quantitative-data extraction for spreadsheet workflows.
-  - Make the extraction inspectable and correctable rather than silently authoritative.
+<a id="asset-02"></a>
+#### ASSET-02 — Copy personas between personal and project scopes
 
----
+**Work:** Build on existing project personas. **First slice:** apply ID-02 to behavior and scope copies, respecting SCOPE-02's execution-owned tools.
 
-## 1.7 Formulas and Native Editor Interoperability
+- Define copied resource/set access and provenance; copying does not grant access to the source's private resources.
+- **Close when:** both directions create immediately independent personas, future changes do not propagate, permissions remain correct, and scope inspection explains any unavailable references.
 
-### Objective
+<a id="asset-03"></a>
+#### ASSET-03 — Implement product Skills
 
-Make formulas and structured values behave consistently across documents, presentations, spreadsheets, and reusable content blocks.
+**Work:** Design / Build. **First slice:** define the product Skill's configuration, ownership, and execution relationship to personas, chats, and tasks after the core task/persona contracts.
 
-### Backlog
+- Keep Skills in the product; do not delete the section to close this item. Product Skills are distinct from this repository's `.agents/skills` instructions.
+- **Close when:** one Skill can be configured, inspected, used in the intended execution context, and reloaded with clear provenance/authority. The full configuration model follows the agreed core contract, not a placeholder list.
 
-- [ ] **Refine — Audit and complete the formula system.**
-  - Ensure formulas work in documents.
-  - Ensure formulas work in presentations/slide decks.
-  - Ensure formulas work wherever shared analytic or structured content is embedded.
-  - Review the built-in formula catalog and add the missing built-ins needed by the product.
+<a id="asset-04"></a>
+#### ASSET-04 — Make spreadsheet templates first-class editable resources
 
-- [ ] **Build — Fix Variables in editor context panels.**
-  - Correct the Variables experience in the document editor context panel.
-  - Correct the Variables experience in the presentation editor context panel.
+**Work:** Build / Refine. **First slice:** connect the existing spreadsheet template representation/materialization to an actual editor; do not rebuild all templates as greenfield ([E7](#e7)).
 
----
+- Cover editing, save/discard, revisions, text holes, scope holes, formulas/references, and instantiation into a usable spreadsheet with a real resource ID. Preserve source template independence.
+- **Close when:** editing survives reload and two instantiations using distinct scopes/content remain isolated and correct. Verify formulas, cell/range behavior, rendering, and failure recovery through Chromium and capability tests.
 
-## 1.8 Import, Export, Rich Paste, and Linked Copy/Paste
+<a id="asset-05"></a>
+#### ASSET-05 — Clarify the selected-template/prompt-block interface
 
-### Objective
+**Work:** Tactical / Design. **First slice:** improve the section beneath a selected prompt block, especially in documents, without coupling the layout fix to a global rename.
 
-Allow users to bring existing work into Icarus, preserve useful formatting, and move native Icarus objects between editors without flattening them.
+- Inventory template and prompt-block terminology across editors; Q6 decides whether to rename. Any approved rename must be coherent and current-only, not an alias layer.
+- **Close when:** selected block → scope/hole inspection → edit → save/instantiate is visually coherent in documents and presentations, normal/compact/zoomed states are inspected, and existing white presentation canvas/source-isolation contracts remain intact.
 
-### Backlog
+### Analysis and structured data
 
-- [ ] **Build — Implement the native import/export system.**
-  - Import supported documents and files.
-  - Convert them into Icarus native document, presentation, and spreadsheet representations.
-  - Export native Icarus resources into appropriate external formats.
+<a id="anl-01"></a>
+#### ANL-01 — Define the canonical analytic object and edit boundary
 
-- [ ] **Build — Implement rich external paste.**
-  - Accept formatted content copied from Markdown, Word, Google Docs, and similar sources.
-  - Preserve as much meaningful structure and formatting as the clipboard representation permits.
-  - Normalize imported structure into the Icarus native model.
+**Work:** Audit / Design. **First slice:** inspect existing analysis/chart types, formula data and render paths; distinguish a graph editor, a chart, and an embedding before introducing new representation.
 
-- [ ] **Design — Determine external-copy behavior as part of the Copy System design.**
-  - Copying external content into Icarus is required.
-  - The Copy System design must determine which Icarus content can be copied back into external applications, through which clipboard formats, and at what fidelity.
-  - Do not treat external copy as a separate product decision or promise full-fidelity bidirectional round-tripping before that system is designed and validated.
+- Define canonical identity, source data, editing ownership, object-level versus placement-level formatting, and references across Analysis/documents/presentations/spreadsheets. Reuse one analytic object rather than rebuilding charts per editor.
+- **Close when:** the identity/link/update/access/deletion contract, schema changes actually needed, and representative embedding tests are specified. Resolve Q5 before committing retention/access behavior.
 
-- [ ] **Build — Implement rich native copy/paste between Icarus editors.**
-  - Preserve native block identity and semantics.
-  - Support documents, presentations, spreadsheets, charts, tables, and other rich blocks.
-  - Avoid flattening a native object into an image or plain text when both source and destination understand the object.
+<a id="anl-02"></a>
+#### ANL-02 — Complete Analysis graph tabs and graph editing
 
-- [ ] **Build — Translate spreadsheet formula references during copy/paste.**
-  - When cells or ranges containing formulas are copied to a new location, shift each relative (unanchored) row and column reference by the same offset as the pasted cell.
-  - Preserve absolute (anchored) references, and shift only the relative axis in mixed references.
-  - Apply the same rules when copying formula-bearing spreadsheet content between compatible spreadsheet surfaces.
-  - Fix the current behavior where relative references keep their original coordinates after paste.
+**Work:** Build / Refine. **First slice:** one graph tab with real persisted data and a working edit/inspect/reload loop, using the applicable ANL-01 boundaries.
 
-- [ ] **Build — Implement linked paste for shared objects.**
-  - Copying a chart between native editors should create another linked view of the same underlying object by default.
-  - Define whether users can optionally detach or duplicate the object later.
-  - Ensure updates propagate consistently across all linked placements.
+- Implement both navigable Analysis graph tabs and the graph editor; do not count a static chart preview as completing either. Define how structured/analytic inputs enter the editor.
+- **Close when:** create/open/edit/save/reopen and inspect work on realistic graphs, invalid edits/failures are visible, and workspace/tab state cannot leak between graphs or projects.
 
----
+<a id="anl-03"></a>
+#### ANL-03 — Embed one analytic object across native editors
 
-## 1.9 Keyboard Shortcuts and Desktop Behavior
+**Work:** Build. **First slice:** create a spreadsheet chart and place linked views in a document and presentation.
 
-### Objective
+- All placements reference the same canonical analytic object by default. Separate shared data/chart edits from per-placement layout; coordinate native clipboard behavior with IO-03.
+- **Close when:** editing the object updates all placements across tabs and reload, per-placement styling behaves as specified, and deletion/access-loss behavior follows Q5 without exposing stale private content.
 
-Remove the broader command system and provide efficient keyboard-driven operation directly through shortcuts, with a clear distinction between browser-safe behavior and desktop-client capabilities.
+<a id="anl-04"></a>
+#### ANL-04 — Derive inspectable, correctable tables from text
 
-### Backlog
+**Work:** Design / Build. **First slice:** extract one useful quantitative table with a source span for each value, review it, and materialize it as native spreadsheet/table data.
 
-- [ ] **Build — Remove the broader command system.**
-  - Delete the partial command abstraction rather than completing it.
-  - Do not retain a command palette or parallel command architecture unless a future requirement explicitly reintroduces one.
-  - Keyboard shortcuts should be implemented independently.
+- Specify units, dates, currencies, ranges, percentages, and confidence/uncertainty. Define the proposed-table versus accepted-native-table boundary, correction provenance, and regeneration behavior.
+- **Close when:** users can inspect supporting text, correct values, accept a native table, and regenerate without silently overwriting corrections. Ambiguous/missing values remain identifiable; extracted data is not silently authoritative. Keep this independent of finishing all chart features.
 
-- [ ] **Build — Implement keyboard shortcuts.**
-  - Define the essential control-key shortcuts across the product.
-  - Prioritize the Electron/desktop client, where Icarus can safely own more keyboard combinations.
-  - Provide browser-compatible fallbacks where the browser reserves a shortcut.
+### Native editors and interoperability
 
----
+<a id="edit-01"></a>
+#### EDIT-01 — Repair document and presentation Variables workflows
 
-## 1.10 Presence, Collaboration, Activity, and History
+**Work:** Audit / targeted fix. **First slice:** reproduce the reported panel defects in each editor and record actual versus expected behavior before editing.
 
-### Objective
+- Trace list/read/edit/use, project scope, active selection/next-letter state where relevant, inspector switching, errors, and reload. Keep document and presentation panel procedures independently owned.
+- **Close when:** realistic variables can be discovered, edited and used in both editors without stale inspectors, wrong-project values, lost edits, or broken focus; add focused regressions for the reproduced causes. Existing spreadsheet formula evaluation is not proof these panels work.
 
-Make user participation and project change history visible, navigable, and consistent across the application.
+<a id="edit-02"></a>
+#### EDIT-02 — Complete cross-editor formula semantics and the needed catalog
 
-### Backlog
+**Work:** Audit / Design / Refine. **First slice:** inventory implemented built-ins and execution consumers; contrast spreadsheet evaluation with document/presentation resolved formula snapshots ([E8](#e8)).
 
-- [ ] **Build — Implement a presence system.**
-  - Profiles should visibly highlight when a user is present.
-  - Presence should be available within each resource tab/editor.
-  - Users should be able to tell who is currently viewing or editing a document, presentation, spreadsheet, or other resource.
+- Specify evaluation/refresh/revision semantics in documents, presentations and embedded structured/analytic content. Name missing built-ins from concrete workflow gaps, not an unbounded formula-parity target.
+- **Close when:** representative formulas yield consistent documented values/errors in all supported placements, references and project-scoped variables update correctly, and stale snapshots/cycles/invalid inputs have explicit behavior. Parser-only tests do not close this package.
 
-- [ ] **Build — Make activity destinations navigable.**
-  - Every meaningful **Where** value in Project Overview activity should point to a resource that can be opened.
-  - The destination should generally be a document, file, chat, task, analytic object, or another inspectable project resource.
+<a id="io-01"></a>
+#### IO-01 — Import and export supported native resources
 
-- [ ] **Investigate — Clarify ambiguous activity “What” values.**
-  - Inspect existing activity types and labels.
-  - Replace opaque or internally phrased event names with clear user-facing descriptions.
+**Work:** Design / Build. **First slice:** choose Q4's first format pair, define current-schema mappings and acceptable losses, then complete a real import/edit/export journey.
 
-- [ ] **Refine — Standardize activity across Project Overview and Agents Library.**
-  - The Agents Library/persona activity experience should use the same interaction and presentation model as Project Overview.
+- Cover documents, presentations and spreadsheets incrementally with an explicit support matrix. Report unsupported structures and fidelity loss; do not promise full external-format parity or round-tripping by implication.
+- **Close when:** each declared format has realistic fixtures, safe invalid/oversized input handling, usable native IDs/resources, and verified exported content. Import/convert failures do not leave partially persisted resources.
 
-- [x] **Refine — Simplify the Project Overview history filter.**
-  - Replace the current presentation with a simple dropdown.
+<a id="io-02"></a>
+#### IO-02 — Define and deliver external rich clipboard behavior
 
-- [ ] **Build — Make history entries inspectable and navigable.**
-  - History items should be selectable activities.
-  - Person names should open the relevant profile/person inspector.
-  - File names should open the relevant file.
-  - Show file names rather than paths as the primary linked target.
+**Work:** Audit / Design / Build. **First slice:** inspect current clipboard paths and actual Chromium clipboard formats from Markdown, Word and Google Docs; define the initial fidelity matrix.
 
----
+- Normalize meaningful structure/formatting into current native models. Test lists, tables, links, styles and unsupported content instead of only plain paragraphs.
+- Decide copying back into external applications **inside this Copy System design**, including available formats, desktop/browser differences, and disclosed losses. Do not treat it as a separate settled product promise.
+- **Close when:** the declared paste/copy paths preserve their promised structure, sanitize unsafe content, fail visibly when unsupported, and have real clipboard plus visual regressions. Q4 bounds what “supported” means.
 
-## 1.11 Codebase Wiki and Documentation Reset
+<a id="io-03"></a>
+#### IO-03 — Preserve rich native semantics through copy/paste
 
-### Objective
+**Work:** Design / Build. **First slice:** one native structured-content transfer and one linked analytic transfer across editors, with an explicit identity table for each object kind.
 
-Replace the current documentation/reference structure with a visual, maintainable Markdown wiki tied directly to the codebase’s important structures.
+- Cover documents, presentations, spreadsheets, charts, tables and rich blocks without flattening understood content to images/plain text. Preserve semantics and intended shared references without accidentally duplicating unique placement IDs.
+- Charts link to the canonical object by default. Define optional duplicate/detach behavior and distinguish it from ordinary content copying and copy-only personal assets.
+- **Close when:** source changes propagate only to intended linked views, independent copies remain independent, and cut/paste, undo/redo, reload, source deletion and access revocation follow the declared contract.
 
-### Backlog
+### Keyboard operation and activity
 
-- [ ] **Build — Remove the current documentation and reference pages.**
-  - Delete the existing documentation/reference pages as part of the reset rather than maintaining two competing systems.
+<a id="key-01"></a>
+#### KEY-01 — Retire the product command system cleanly
 
-- [ ] **Build — Create a Markdown-based codebase wiki.**
-  - Use Markdown as the source format.
-  - Use Mermaid diagrams heavily where they improve architectural understanding.
-  - Use embedded HTML where Markdown alone cannot communicate the structure clearly.
+**Work:** Refine / removal. **First slice:** inventory the live command model, registry, dialog, and runtime key dispatcher; map useful behavior to direct shortcuts before deleting it ([E10](#e10)).
 
-- [ ] **Build — Document every structurally important directory.**
-  - Create a page for directories with a defined internal format, role, or expected child structure.
-  - Explain ownership, allowed contents, naming, and the expected flow through the directory.
+- Remove the partial product command abstraction and palette, including dead wiring/configuration/tests. Do not keep a parallel architecture or compatibility facade.
+- **Close when:** useful shortcut behavior is preserved through KEY-02, retired product-command imports/UI are absent, and backend command admission/ordinary application procedures remain intact.
 
-- [ ] **Build — Document key files individually.**
-  - Important architectural, schema, execution, state, and configuration files should have dedicated wiki pages.
-  - Link file pages to their directory and system-level pages.
+<a id="key-02"></a>
+#### KEY-02 — Define direct shortcuts for Chromium and desktop
 
-- [ ] **Build — Establish wiki navigation and cross-linking.**
-  - Provide system, directory, and key-file paths through the wiki.
-  - Keep diagrams and pages close enough to implementation that future changes can be reflected without rewriting a monolithic document.
+**Work:** Design / Build. **First slice:** publish and test an essential shortcut/focus matrix, including what the browser reserves and what a desktop shell can own.
 
----
+- Prioritize keyboard-efficient desktop behavior, preserve browser-compatible alternatives, and define platform conflicts, editor/input focus, composition, and modifier handling. Decide whether customization is needed and where it would be stored; it is not assumed in v1.
+- **Close when:** documented shortcuts work in their declared contexts without firing while typing or stealing reserved browser actions; desktop-only claims have actual desktop evidence, otherwise are explicitly unverified.
 
-# 2. Tactical UX and Interface Backlog
+<a id="col-01"></a>
+#### COL-01 — Make project activity readable and navigable
 
-## 2.1 Project Overview
+**Work:** Audit / Tactical. **First slice:** inventory activity verbs and target/actor types and exercise their current routes; some inspection/opening already exists ([E11](#e11)).
 
-- [ ] **Tactical — Make Activity “Where” clickable.**
-  - Route users directly to the referenced resource.
+- Make meaningful Where values open the correct document, presentation, spreadsheet, external file, chat, task, analytic or other supported resource. Improve opaque What labels without rewriting historical actor identity.
+- Simplify the existing History filter to a straightforward dropdown, preserving useful search/filter behavior. Make history activities selectable; person links open profiles and resource links use names rather than paths.
+- **Close when:** each supported target/actor type has a tested inspect/open route; deleted/inaccessible/unsupported targets have explicit states rather than dead tabs; duplicate names remain disambiguated. Existing navigation is retained and gaps are closed.
 
-- [ ] **Investigate — Review Activity “What” labels.**
-  - Several current values are not self-explanatory.
+<a id="col-02"></a>
+#### COL-02 — Align External and Agents history with project activity
 
-- [x] **Tactical — Replace the History filter with a simple dropdown.**
+**Work:** Refine / Tactical. **First slice:** implement the COL-01 interaction pattern for external history and compare persona/Agents activity against it. Existing actor labels can support search, selection and navigation now; EXT-01 only gates changed attribution semantics.
 
----
+- External history rows are selectable activity records, searchable, and free of redundant bottom explanations. Person names open profiles; file names are primary clickable targets; secondary path/origin distinguishes duplicate names.
+- Match Agents Library/persona activity to Project Overview's presentation and behavior. Preserve domain-owned state/procedures; share appropriate UI primitives rather than forcing one editor implementation.
+- **Close when:** filtering/selecting/inspecting/opening and reload work consistently in all three surfaces, with correct attribution and empty/error/unavailable-target states.
 
-## 2.2 External Files — Overview and Table
+<a id="col-03"></a>
+#### COL-03 — Show presence without stale or cross-project state
 
-- [x] **Tactical — Rename the user-facing External category to External Files.**
+**Work:** Design / Build. **First slice:** two authenticated users viewing/editing one resource, with connect, disconnect, tab change, and expiry behavior.
 
-- [x] **Tactical — Add an Author column and filter.**
-  - Use the existing **Updated by** identity, meaning the person who last updated or re-uploaded the file.
+- Highlight present profiles and show participation within document, presentation, spreadsheet and other resource tabs. Define viewing versus editing and resource/project lifetime; do not use browser-global shortcuts for resource state.
+- **Close when:** joining/leaving/idle/disconnected users produce accurate resource-local indicators, stale presence expires, and unauthorized projects cannot observe one another.
 
-- [x] **Tactical — Rework path presentation.**
-  - Path may still be required to distinguish same-named files.
-  - Keep it visually compressed with an ellipsis.
-  - Show the full path in a tooltip.
-  - Do not use path as the main linked label in history.
+### Later wiki reset
 
-- [x] **Tactical — Expand the Size column enough to remain readable.**
+<a id="wiki-01"></a>
+#### WIKI-01 — Inventory and plan the Markdown wiki reset
 
-- [x] **Tactical — Simplify relative update times.**
-  - Use compact values such as `3 HR`.
-  - The column heading can communicate “Last updated”; individual cells do not need to repeat “ago.”
+**Work:** Audit / Design, deferred. **First slice:** after authorization, inventory current documentation/reference routes, important directories/files, dependencies, and replacement ownership.
 
-- [x] **Tactical — Remove the “native project files live here” helper text.**
-  - The wording is inaccurate for the External Files area and the helper text is unnecessary.
+- Name the exact old material to retire and what must be captured before deletion. Define navigation, coverage, maintenance responsibility, and source-to-page links; this backlog and agent instructions need explicit treatment in that inventory.
+- **Close when:** the replacement/deletion map is reviewed and scoped, including broken-link/route tests. Do not start deleting old material as an incidental cleanup task.
 
-- [x] **Tactical — Make Table/Directory a standalone view toggle.**
-  - Use one compact toggle to switch between Table view and Directory view.
-  - Keep the toggle separate from the filter row.
+<a id="wiki-02"></a>
+#### WIKI-02 — Build the Markdown wiki and retire the old system
 
----
+**Work:** Build / retirement, deferred. **First slice:** deliver one end-to-end system → directory → key-file navigation path from WIKI-01's approved plan.
 
-## 2.3 External Files — Directory View
+- Describe every structurally important directory's role, ownership, allowed contents, naming and flow; provide individual pages for key architecture/schema/execution/state/configuration files. Use Mermaid where it clarifies relationships and HTML where Markdown is insufficient.
+- Keep links/navigation maintainable and remove approved old documentation/reference pages as the reset lands; do not leave two competing authoritative systems.
+- **Close when:** the approved coverage exists, code/page links and replacement routes validate, and the exact old system has been retired with a recoverable Git record.
 
-- [x] **Tactical — Remove the bottom explanation that directories are a view over file paths.**
+<a id="decisions"></a>
+## 5. Decisions that need the owner — at the point they block work
 
-- [ ] **Tactical — Stop restating the directory name underneath the directory section.**
+The delivery objective is already answered: **reliable end-to-end work first**.
+The questions below are not all required to start tranche A. An assigned agent
+should first collect the grounding material specified by its package, then request
+the relevant choice. Recommendations are proposals, not silently settled policy.
+Technical decisions within the established guardrails remain delegated.
 
-- [x] **Preserve — Keep directory exploration inside the inspector panel.**
-  - This interaction is working well and should not be lost during cleanup.
+| Decision | Needed before | Can proceed meanwhile |
+| --- | --- | --- |
+| [Q1](#q1) First connector/source | EXT-03 adapter implementation | EXT-02 lifecycle audit and External UX |
+| [Q2](#q2) User-facing metadata meaning | EXT-01 product contract; metadata portion of EXT-04/EXT-05 | Field provenance tracing and layout-only fixes |
+| [Q3](#q3) First real-user deployment/access model | ID-01 implementation and real-user release | ID-02 ownership design; single-user workflow work |
+| [Q4](#q4) First import/export/clipboard fidelity promise | Declaring supported IO-01/IO-02 paths | Existing clipboard inventory and test-fixture collection |
+| [Q5](#q5) Shared-object deletion/access experience | ANL-03 linked placements and analytic part of IO-03 | ANL-01 identity/edit-boundary design |
+| [Q6](#q6) Template/prompt-block terminology | Global rename in ASSET-05 | Selected-block layout and template reliability fixes |
 
----
+<a id="q1"></a>
+### Q1 — Which real external source should the first connector serve?
 
-## 2.4 External Files — Context Panel and File Inspector
+**Context:** uploads and connector representation already exist, but an operational
+connector adds credentials, synchronization, source identity, permission failure,
+and retention choices. Selecting a real source bounds that work and supplies an
+honest acceptance fixture. EXT-03 must also determine what disconnect retains.
 
-- [ ] **Investigate — Resolve or remove quarantine metadata.**
-  - Its meaning is currently unclear in the external-library context/overview panel.
+**Recommendation:** name the provider/source you actually use and prove one complete
+connector before generalizing adapters. Evaluate immediate usefulness, coverage of
+the lifecycle, and credential/operational complexity.
 
-- [x] **Tactical — Remove the bottom “selection belongs to file inspector” block.**
+| Alternative | Real-work usefulness | Lifecycle proof | Scope/operations |
+| --- | --- | --- | --- |
+| One concrete connected source (recommended) | High when chosen from your work | Exercises actual identity/refresh failures | Bounded adapter and credential surface |
+| A constrained generic URL/API connector first | Useful for varied public/simple sources | May miss provider-specific lifecycle behavior | General request/auth rules need careful limits |
+| Several providers in the first release | Broad coverage | Harder to certify each thoroughly | Largest maintenance and credential surface |
 
-- [x] **Tactical — Remove Rename from the right-hand file inspector.**
-  - Rename already exists in the file section.
+**Owner response:** _Provider/source, representative files, refresh expectation,
+and any credential or retention constraints._
 
-- [x] **Tactical — Move the file information section to the top.**
+<a id="q2"></a>
+### Q2 — Which file metadata deserves user-facing prominence?
 
-- [x] **Tactical — Move actions below the file information section.**
-  - Present the actions as a two-by-two grid.
+**Context:** original author, project uploader, connector identity, accepter, and
+last re-uploader are not the same actor. Purpose, entities and themes already come
+from generated material and affect retrieval ([E2](#e2)); hiding a field and removing
+its retrieval contribution are different changes. “Quarantined metadata” currently
+indicates corrupt projection, not research material awaiting acceptance.
 
-- [ ] **Investigate — Consider collapsible/dropdown sections.**
-  - Evaluate this for both the file inspector and the context panel.
+**Recommendation:** after EXT-01's field matrix, use explicitly named attribution
+such as Added by/Updated by, with source author/origin separate when known. Keep
+Generated Description; make Purpose/facet retention a product choice informed by
+their observed retrieval value and cost, not cosmetic terminology alone.
 
-- [x] **Tactical — Remove unnecessary explanatory text at the bottom of History.**
+| Alternative | Meaning/provenance | Panel density | Retrieval/operations impact |
+| --- | --- | --- | --- |
+| Separate actor/origin labels; useful derived details (recommended) | Least ambiguous | Can expose detail on inspection | Keeps display and retrieval choices explicit |
+| One Author column with one precisely defined meaning | Simple but omits other roles | Most compact | Other provenance still needs an inspection home |
+| Full technical metadata in the main inspector | Maximum detail | Highest reading burden | Makes operational fields visible but may obscure useful work |
 
-- [x] **Tactical — Make History searchable.**
+**Owner response:** _Primary attribution to show, derived fields to expose, and
+which technical state belongs only in diagnostics. EXT-01 supplies evidence first._
 
-- [ ] **Tactical — Improve ambiguous metadata labels.**
-  - Replace labels whose meaning is not apparent without internal product knowledge.
+<a id="q3"></a>
+### Q3 — What is the first deployment that must support real identities?
 
-- [x] **Tactical — Simplify Semantic Status styling.**
-  - The current pill is visually uneven.
-  - Preferred direction: simpler bold status text, using green for a positive/ready state rather than a poorly aligned pill.
+**Context:** current session resolution uses development configuration. Choosing
+desktop-first account behavior, hosted project collaboration, or both changes the
+authentication/session design, user provisioning, settings, and presence scope.
+The current development identity must not be mistaken for production authentication.
 
-- [ ] **Investigate — Remove or redefine Material Profile.**
-  - Do not display it until its user-facing meaning and value are clear.
+**Recommendation:** if the stated Chromium desktop-client direction still holds,
+certify desktop-first real accounts before supporting both deployment models.
+Confirm that assumption here before choosing a login provider or enterprise feature
+set. Server-side ownership and personal/project isolation remain non-negotiable.
 
-- [ ] **Preserve — Keep Generated Description.**
-  - It appears useful.
+| Alternative | Near-term scope | Collaboration capability | Verification burden |
+| --- | --- | --- | --- |
+| Desktop-first real accounts (conditional recommendation) | Matches the stated desktop direction | Must define access to any shared backend | One desktop/session/access lifecycle first |
+| Hosted multi-user projects first | Membership/account UX required immediately | Directly unlocks shared work and presence | Session, permissions and concurrency checks upfront |
+| Desktop and hosted identities together | Broadest initial design | Both targets | Multiple session/storage/runtime behaviors to certify |
 
-- [ ] **Investigate — Place Purpose beneath Generated Description if retained.**
-  - First determine its source, cost, and distinction from the description.
+**Owner response:** _Initial deployment, who signs in, how they join projects,
+and any account/identity-provider requirements._
 
-- [ ] **Investigate — Resolve the role of Tags.**
-  - Confirm whether they are editable, generated, retrieved against, filterable, or merely decorative.
+<a id="q4"></a>
+### Q4 — Which external formats and fidelity losses are acceptable first?
 
-- [ ] **Tactical — Remove the path inspector.**
-  - Path remains compressed, secondary disambiguating metadata in the table and does not need its own inspector.
+**Context:** file import/export and clipboard transfer are distinct paths. External
+clipboard data may contain a different structure than the source file. Promising
+every native object in every outside application would hide important fidelity
+limits. Copying outward is part of the Copy System design, not a separate decision.
 
----
+**Recommendation:** provide representative documents/presentations/spreadsheets and
+pick the first paths you actually need. Commit to a tested format/fidelity matrix;
+explicitly disclose unsupported structures and losses.
 
-## 2.5 External Files — History
+| Alternative | Useful feedback speed | Fidelity certainty | Scope |
+| --- | --- | --- | --- |
+| Real workflow samples and a narrow support matrix (recommended) | Fast on the chosen work | High for declared paths | Bounded, expand with evidence |
+| Basic text/tabular transfer across many formats | Broad early reach | Formatting/structure losses likely | More adapters, shallower guarantees |
+| Broad high-fidelity round-tripping immediately | Slowest | Requires extensive format-specific proof | Largest converter/clipboard/test effort |
 
-- [ ] **Build — Make history rows selectable as activity records.**
+**Owner response:** _Required formats/applications, example material, top clipboard
+journeys, and structures whose loss would make the result unusable._
 
-- [ ] **Tactical — Make person names clickable.**
-  - Open the associated person/profile inspector.
+<a id="q5"></a>
+### Q5 — What should users see when a linked analytic object is deleted or inaccessible?
 
-- [ ] **Tactical — Show and link the file name.**
-  - The file name, not the path, should be the primary resource link.
+**Context:** linked charts and propagated edits are settled. The open choice is
+deletion/access behavior and whether users may explicitly make independent copies.
+A hidden cached copy must not silently keep private content visible after access
+is revoked. Shared chart edits and placement-only layout must remain distinct.
 
-- [ ] **Tactical — Preserve enough path/origin context to disambiguate duplicate names.**
-  - Keep that context secondary rather than making it the primary interaction target.
+**Recommendation:** show an explicit unavailable/broken-link state and allow an
+authorized independent copy before destructive removal where the product supports
+it. Never infer permission to retain a private snapshot.
 
----
+| Alternative | Access clarity | Continuity of an embedding | User/retention cost |
+| --- | --- | --- | --- |
+| Explicit unavailable state; optional authorized copy (recommended) | Clear | Link may become unavailable | Predictable, no silent retention |
+| Block deletion until linked placements are resolved | Clear | Forces a deliberate transition | More coordination before deleting |
+| Offer explicit snapshot conversion during authorized deletion | Requires a clear permission policy | Can preserve selected placements | Extra stored copies and retention decisions |
 
-## 2.6 Agents Library, Personas, and Skills
+**Owner response:** _Preferred deletion experience and whether explicit detach/copy
+is required in the first linked-chart release. Access revocation cannot be bypassed._
 
-- [ ] **Refine — Match Agents Library activity to Project Overview activity.**
+<a id="q6"></a>
+### Q6 — Should Templates and prompt blocks be renamed?
 
-- [ ] **Build — Make persona resources inspectable.**
+**Context:** the intake asks to reconsider terminology, not to perform a predetermined
+rename. The selected-block UI can improve independently. A rename touches creation,
+editing, inspection, empty states, testing and navigation, so it should clarify a
+concept rather than merely replace a label everywhere.
 
-- [ ] **Build — Allow an individual resource to be added to a persona’s scope.**
+**Recommendation:** retain Templates initially and test prompt-block wording against
+the corrected UI. Bring concrete alternatives and screenshots before a global rename.
 
-- [ ] **Build — Allow a Resource Set to be added to a persona’s scope.**
+| Alternative | Immediate clarity | Consistency/change surface | Delivery cost |
+| --- | --- | --- | --- |
+| Keep Templates; improve the selected-block experience (recommended) | Tests whether wording is really the issue | Small | Lowest |
+| Rename only the prompt-block concept | Can clarify generation behavior | Requires consistent editor terminology | Bounded |
+| Rename the whole template concept and its blocks | Useful only if the current concept is genuinely misleading | Largest | Highest |
 
-- [ ] **Decision — Remove Tools from persona configuration.**
-  - Configure tools per chat or task.
+**Owner response:** _Keep current names, or describe the misunderstanding new names
+should fix. Candidate labels should be evaluated in the actual UI._
 
-- [x] **Tactical — Rename Default to Scope or Default Scope.**
-  - Prefer the simplest label that accurately describes the attached context.
+<a id="evidence"></a>
+## 6. Current implementation evidence — extend these foundations
 
-- [ ] **Build — Implement Skills rather than removing the section.**
+All entries are **source-observed at c2505f0**, not runtime-certified. Test files
+below were inspected as contracts that exist; their presence is not a claimed
+passing result. Recheck the relevant source/test head when assigning a package.
 
----
+<a id="e1"></a>
+### E1 — External lifecycle and duplicate paths already have implementation
 
-## 2.7 Research Chat
+[Upload transaction](../app/src/lib/capabilities/external-files/api/upload-external-files/transaction.ts)
+and [mutation coordination](../app/src/lib/capabilities/external-files/api/shared/mutations.ts)
+cover existing upload/revision/history/semantic intent. [Upload admission tests](../app/src/lib/capabilities/external-files/test/unit/upload-admission.test.ts)
+include identical leaf names under different directories; [Chromium workflows](../app/test/browser/external-files.spec.ts)
+cover much of the lifecycle. [File table](../app/src/lib/app-views/categories/external/components/file-table.svelte)
+already has path truncation and hover text. The gap is not “invent file IDs/upload.”
+The [connector type](../app/src/lib/representation/data/types/external/connector.ts)
+is not evidence that operational provider sync is complete.
 
-- [ ] **Refine — Redesign the turn context panel.**
+<a id="e2"></a>
+### E2 — Purpose/facets have provenance and retrieval use
 
-- [ ] **Build — Make Findings inspectable.**
+[Material description](../app/src/lib/capabilities/semantic-overlay/api/shared/material-description.ts)
+obtains summary, purpose, entities and themes in one structured response;
+[material facets](../app/src/lib/capabilities/semantic-overlay/api/shared/material-facets.ts)
+uses them in embedded generated text. [Semantic status UI](../app/src/lib/app-views/categories/external/components/file-semantic-status.svelte)
+already places Purpose below Generated Description. [External projection](../app/src/lib/capabilities/external-files/api/shared/rows.ts)
+identifies corrupt/unavailable metadata; do not confuse that with source acceptance.
 
-- [ ] **Build — Make Sources inspectable.**
+<a id="e3"></a>
+### E3 — Turn claims are not yet the complete accepted-finding workflow
 
-- [ ] **Build — Require explicit source acceptance before creating an external file.**
+[Canonical finding storage](../app/src/lib/representation/store/tables/investigation.ts)
+and [turn-local findings/sources](../app/src/lib/representation/data/types/investigation/research-turn.ts)
+are distinct. [Ask](../app/src/lib/capabilities/research-chat/api/ask/ask.ts)
+persists turn claims; [turn inspection](../app/src/lib/app-views/categories/research/inspector/turn.svelte)
+shows rows without the requested inspection/acceptance actions. Sampled sources
+reference existing project resources; automatic external import was not demonstrated.
 
-- [ ] **Refine — Align the entire chat view with the broader chat overhaul.**
-  - Persona switching.
-  - Mode switching.
-  - Chat/task separation.
-  - Enterprise-ready visual treatment.
+<a id="e4"></a>
+### E4 — Resource sets, attachment, and scope-building already exist
 
----
+[Create Resource Set](../app/src/lib/capabilities/resource-sets/api/create-resource-set/create-resource-set.ts),
+[resource-set tests](../app/src/lib/capabilities/resource-sets/test/unit/resource-sets.test.ts),
+[Agents scope editor](../app/src/lib/app-views/categories/agents/components/scope-editor.svelte),
+and [reusable scope builder](../app/src/lib/components/authored/scope-builder/scope-builder.svelte)
+provide foundations. The sampled attachment rows lack inspection actions;
+reusable member inspection and cross-surface consistency remain work.
 
-## 2.8 Document and Presentation Editors
+<a id="e5"></a>
+### E5 — Tasks execute; chat/persona configuration is partly wired
 
-- [ ] **Refine — Fix Variables in the document editor context panel.**
+[Task creation](../app/src/lib/capabilities/agents/api/create-task/create-task.ts),
+[task execution](../app/src/lib/capabilities/agents/api/shared/execute-agent-task.ts),
+and [grounded-runner contracts](../app/src/lib/capabilities/agents/test/non-functional/grounded-runner.test.ts)
+exist. [Thread UI](../app/src/lib/app-views/categories/research/content/thread.svelte)
+wires persona switching but fixes mode to explore; [set-persona](../app/src/lib/capabilities/research-chat/api/set-thread-persona/set-thread-persona.ts)
+persists that choice. Persona tools are persisted/inherited, so removal affects
+execution and [agent storage](../app/src/lib/representation/store/tables/agents.ts), not just labels.
 
-- [ ] **Refine — Fix Variables in the presentation editor context panel.**
+<a id="e6"></a>
+### E6 — Real authentication is not provided by the development session
 
-- [ ] **Refine — Rework the template section under the selected prompt block.**
-  - The current document-editor treatment does not look right.
+[Session and Scope](../app/src/lib/runtime/server/scope.server.ts) resolve the
+development identity and configured project mapping. This is an existing authority
+boundary to complete, not production sign-in. The [top bar](../app/src/lib/surfaces/top-bar/top-bar.svelte)
+already exists; account/project settings extend it.
 
-- [ ] **No change — Empty Comments state.**
-  - The initial idea was to add a comment action directly to the empty context panel, but that change was reconsidered. Leave it as-is unless a later design decision reopens it.
+<a id="e7"></a>
+### E7 — Templates have versions/materialization; spreadsheet editing is unfinished
 
----
+[Template storage](../app/src/lib/representation/store/tables/templates.ts) and
+[duplication](../app/src/lib/capabilities/templates/api/duplicate-template/duplicate-template.ts)
+already create project-local copies/versions. [Spreadsheet materialization](../app/src/lib/capabilities/templates/api/shared/spreadsheet-materialization.ts)
+and [its body tests](../app/src/lib/capabilities/templates/test/unit/template-spreadsheet-body.test.ts)
+exist, while [template editor UI](../app/src/lib/app-views/categories/templates/content/editor.svelte)
+excludes first-class spreadsheet editing. [Persona duplication](../app/src/lib/capabilities/agents/api/duplicate-persona/duplicate-persona.ts)
+is also project-local, not the requested personal/project transfer system.
 
-## 2.9 Workspace Tab Bar
+<a id="e8"></a>
+### E8 — Formula infrastructure is not the same as content evaluation
 
-- [x] **Tactical — Keep the four permanent singleton tabs fixed while transient tabs scroll.**
+[Built-ins](../app/src/lib/representation/data/behavior/formulas/builtins.ts) and
+[spreadsheet recalculation](../app/src/lib/app-views/categories/spreadsheet-editor/procedures/recalculation.ts)
+exist. [Content blocks](../app/src/lib/representation/data/types/content/content-block.ts)
+describe resolved document/presentation formula snapshots without a content evaluator;
+[presentation Variables](../app/src/lib/app-views/categories/presentation-editor/context/variables.svelte)
+is a placeholder. EDIT-01/EDIT-02 must inspect actual consumers, not only the parser.
 
-- [x] **Tactical — Scroll transient tabs with ordinary wheel and horizontal trackpad input.**
+<a id="e9"></a>
+### E9 — Chart rendering prototypes and cell clipboard paths are useful but insufficient
 
----
+[Analysis procedures](../app/src/lib/app-views/categories/analysis/procedures/analysis.ts)
+use stub reads; [ChartSpec](../app/src/lib/components/authored/chart/chart-spec.ts)
+exists without proving a durable canonical analytic resource. [Spreadsheet clipboard](../app/src/lib/app-views/categories/spreadsheet-editor/procedures/clipboard.ts)
+already handles cell operations. Preserve that behavior while designing native rich
+objects and linked placements; neither foundation proves cross-editor linking.
 
-# 3. Scoped Design Investigations
+<a id="e10"></a>
+### E10 — Product command removal is still work, not a completed fact
 
-These are defined design and implementation investigations. They do not reopen the settled decisions recorded in this backlog.
+[Command registry](../app/src/lib/model/client/commands/methods/registry.ts),
+[runtime composition](../app/src/lib/runtime/client/start.ts),
+[command dialog](../app/src/lib/surfaces/command-bar/command-bar.svelte), and
+[key dispatch](../app/src/lib/surfaces/app/effects/dispatch-commands.svelte.ts)
+are live. The intake's “removed” language records the desired decision; deletion
+must still preserve useful keyboard behavior.
 
-## 3.1 External File Semantics
+<a id="e11"></a>
+### E11 — Project history already has filtering and some navigation
 
-1. What exactly does **quarantine metadata** represent, and is it user-facing?
-2. What is a **material profile**, and does it provide enough value to expose?
-3. Is **purpose** generated independently from the description, user-authored, connector-provided, or derived?
-4. Do **tags** power retrieval, filtering, organization, or nothing yet?
-5. Does **author** mean document author, uploader, connector identity, original accepter, or last re-uploader?
-6. Which file event counts as an update when a re-upload occurs?
-7. Beyond the settled compressed path column and full-path tooltip, is any additional origin metadata needed to disambiguate same-name files?
+[History](../app/src/lib/app-views/categories/project-overview/context/history.svelte)
+already contains a dropdown, search and selectable activities; the requested filter
+change is simplification of its presentation. [Activity inspection](../app/src/lib/app-views/categories/project-overview/inspector/activity.svelte)
+includes actor inspection and document/presentation opening. Complete the target
+matrix and consistency; do not remove working inspection to rebuild the feed.
 
-## 3.2 Findings-System and Research-Acceptance Design
+<a id="coverage"></a>
+## 7. Intake coverage and consolidation
 
-The finding representation is already settled by the existing representation specification. The remaining design work concerns system behavior around that representation.
+Every operational/tactical theme from the original September 10 intake has a home
+below. Repeated checkboxes become one package with multiple acceptance criteria;
+preserve/no-change statements become constraints, not unfinished build tasks.
+Original epic names map to the corresponding ID prefixes; the UX epics are folded
+into their owning feature packages instead of being scheduled twice.
 
-1. How should the Findings system expose inspection, acceptance, rejection/dismissal, and status using the existing representation?
-2. What lifecycle and event model moves an accepted finding into the semantic overlay?
-3. What source metadata is retained when an accepted source becomes an external file?
-4. Can a source be accepted without accepting the finding that referenced it, and vice versa?
-5. How are rejected or superseded findings and sources recorded?
+| Original intake | Canonical home |
+| --- | --- |
+| 1.1 Connectors, lifecycle, duplicate identity, metadata/Purpose/Tags | EXT-01–EXT-03; EXT-04/EXT-05; Q1/Q2 |
+| 1.2 Findings, explicit source acceptance, states, research overhaul | RSH-01–RSH-03 |
+| 1.3 Copilot, tasks, active chat configuration, branching, persona tools | AI-01–AI-04; SCOPE-02 |
+| 1.4 Auth/top bar, personal templates/personas, ownership, spreadsheet editor, Skills, terminology | ID-01–ID-03; ASSET-01–ASSET-05; Q3/Q6 |
+| 1.5 Sets, reusable context, persona resource/set scope and inspection | SCOPE-01/SCOPE-02 |
+| 1.6 Graph tabs/editor, canonical/portable charts, structured extraction | ANL-01–ANL-04 |
+| 1.7 Cross-editor formulas/catalog and Variables | EDIT-01/EDIT-02 |
+| 1.8 Native import/export, external paste/outward-copy design, rich/linked native transfer | IO-01–IO-03; ANL-03; Q4/Q5 |
+| 1.9 Remove commands; direct desktop/browser-safe shortcuts | KEY-01/KEY-02 |
+| 1.10 Presence, Where/What, activity parity, simple filter, clickable history/people/file names | COL-01–COL-03 |
+| 1.11 Retire old material, Markdown wiki, directories, key files, diagrams, navigation | WIKI-01/WIKI-02, deferred |
+| 2.1 Overview activity/navigation/filter | COL-01 |
+| 2.2 Attribution, path/size/time, inaccurate helper text, same-row toggle | EXT-04; EXT-01 for semantics |
+| 2.3 Directory explanations/repeated name; preserve inspector exploration | EXT-04; settled constraints |
+| 2.4 Quarantine, duplicate Rename, info/actions, collapsing, history text/search, labels/status, Material Profile, description/Purpose/Tags, path inspector | EXT-01/EXT-05; COL-02; Q2 |
+| 2.5 Selectable history, people/file links, duplicate-name context | COL-02 |
+| 2.6 Agents activity, inspectable scope, add resource/set, remove Tools, scope label, preserve Skills | COL-02; SCOPE-01/SCOPE-02; ASSET-03 |
+| 2.7 Turn panel, finding/source inspection/acceptance, chat overhaul | RSH-01–RSH-03; AI-03 |
+| 2.8 Variables, selected-template section, unchanged empty Comments | EDIT-01; ASSET-05; settled constraints |
+| 3.1 Metadata meaning/lineage/cost/update event/duplicate origins | EXT-01/EXT-02; Q2 |
+| 3.2 Canonical findings lifecycle, overlay events, source metadata, independent acceptance, rejected/superseded state | RSH-01/RSH-02 |
+| 3.3 Task/chat boundary, branch inheritance, temporal configuration, tool storage, persona policy, Skills | AI-01/AI-03/AI-04; SCOPE-02; ASSET-03 |
+| 3.4 Canonical identity, linked default/detach, deletion/access, shared versus local edits, external formats/fidelity | ANL-01/ANL-03; IO-01–IO-03; Q4/Q5 |
+| 3.5 Per-user ownership/persistence/versioning/copy provenance/independence/common versus asset-specific storage | ID-02; ASSET-01/ASSET-02 |
+| 3.6 Extraction schema, units/confidence, source evidence, corrections, proposed versus accepted tables | ANL-04 |
+| 3.7 Reserved shortcuts, platform conflicts, optional customization/storage | KEY-02 |
+| 4–6 Dependencies, epic index, settled decisions and investigations | Register/gates, constraints, package cards and decision briefs replace the duplicated lists |
 
-## 3.3 Chat, Tasks, Personas, and Tools
+Two intake dependencies have been made more precise: activity UX can improve using
+existing actors before full sign-in ships; extraction does not require completion
+of every analytical feature. Conversely, real multi-user presence/branching does
+require authentication, and a prototype renderer does not satisfy canonical linked
+analytic identity. No blanket “stabilize the whole schema first” gate is imposed on
+bounded current-format work.
 
-1. What is the minimal formal boundary between a chat and a task?
-2. What state is inherited when a user branches another user’s chat?
-3. Which persona and mode changes apply only to future turns versus the full chat?
-4. How is per-chat/per-task tool selection stored?
-5. Does a persona have only scope, or also a reusable default execution policy?
-6. How do Skills relate to personas, chats, and tasks?
+<a id="maintenance"></a>
+## 8. Keep the backlog useful
 
-## 3.4 Copy System, Linked Native Objects, and Clipboard Behavior
+### Completion gate
 
-1. What is the canonical identity model for a chart embedded in multiple resources?
-2. Is native paste linked by default, with an explicit “duplicate/detach” option?
-3. What happens when the source resource is deleted or access is revoked?
-4. Which edits affect the shared analytic object versus only one embedding’s presentation?
-5. Which browser and desktop clipboard formats can preserve acceptable structure from Word, Google Docs, and Markdown?
-6. Which external export/paste paths can reliably retain Icarus formatting?
+- **Audit/Design:** link source evidence, observed versus intended behavior,
+  decisions made or still needed, the implementation contract, and executable
+  acceptance scenarios. A completed investigation does not mean its feature shipped.
+- **Implementation:** the defined user journey works on the agreed current schema;
+  relevant failure/ownership/revision/recovery checks and Chromium interaction tests
+  pass; changed UI is visually inspected with realistic data and relevant compact/
+  zoomed states. Report untested platforms and provider skips separately.
+- **Integration:** record reviewed commit/head, target base, actual commands/results,
+  remaining scope, and the authorized merge/push. Mark a delivery package Done only
+  after its required slices land on main and its acceptance evidence is recorded.
+  Do not run every application suite for a Markdown-only planning edit.
 
-## 3.5 Broader Personal/Per-User System Design
+### Small working record, not a second backlog
 
-Template and persona persistence must be designed inside the broader personal/per-user architecture, not as standalone table decisions. That broader design must define:
+Assign an owner in the register and link the task handoff there. A useful dispatch
+request names: package ID, first slice, expected outcome, owned paths, constraints,
+unresolved gates, acceptance scenarios, and exact integration authority. Use the
+existing [AGENTS.md](../AGENTS.md), [task template](../.agents/tasks/_template/handoff.md)
+and [worktree helper](../.agents/scripts/worktree.mjs); do not invent another task runner.
 
-1. The common ownership and scoping model for personal and project assets.
-2. Persistence and versioning patterns for templates, personas, and future per-user asset types.
-3. How copy provenance is represented when an asset is copied between personal and project scopes.
-4. How copied assets become independent immediately, including future updates and versions.
-5. Which concerns belong in shared per-user tables versus asset-specific tables.
+After each material finding or landing, update only the affected register/card:
+state, owner/handoff, actual evidence, remaining slice, and dependency effects.
+Add newly discovered work with a stable ID; do not recycle IDs or silently broaden
+an active assignment. Before adding a duplicate, search the coverage map and cards.
+Keep finished evidence concise and linked; move detailed execution history to the
+task handoff, not into an ever-growing narrative here.
 
-## 3.6 Structured Data Extraction
-
-1. What output schema should text-to-table extraction produce?
-2. How are units, dates, currencies, ranges, percentages, and confidence represented?
-3. How does the user inspect the supporting text for each extracted value?
-4. How are corrections preserved and distinguished from regenerated data?
-5. When does extracted data become a native table versus a proposed table awaiting acceptance?
-
-## 3.7 Keyboard Shortcuts
-
-The command system is removed. Remaining design work is limited to the shortcut implementation:
-
-1. Which shortcuts are desktop-only because browsers reserve them?
-2. How are shortcut conflicts and platform differences handled?
-3. Is shortcut customization required, and if so, where is it stored?
-
----
-
-# 4. Dependency Map
-
-This is a dependency map, not a priority ranking.
-
-```mermaid
-flowchart TD
-    AUTH[Authentication and Identity] --> TOP[Top Bar and Settings]
-    AUTH --> OWN[Personal/Per-User and Project Ownership]
-    AUTH --> PRES[Presence and Authorship]
-    AUTH --> ACT[Activity and History]
-
-    EXT[External File Model] --> CONN[Connectors]
-    EXT --> ACCEPT[Research Source Acceptance]
-    EXT --> SEM[Semantic Overlay Ingestion]
-    ACCEPT --> SEM
-    FIND[Findings Model] --> ACCEPT
-
-    TASK[Task Execution Contract] --> COP[Copilot]
-    TASK --> CHATSEP[Chat and Task Separation]
-    CHATSEP --> CHATUX[Chat Overhaul]
-    AUTH --> BRANCH[Collaborative Chat Branching]
-    CHATSEP --> BRANCH
-
-    RES[Resource and Resource Set Model] --> PERSONA[Persona Scope]
-    RES --> CHATCTX[Chat Context]
-    RES --> TASKCTX[Task Context]
-
-    ANALYTIC[Canonical Analytic Object] --> GRAPH[Graph Editor and Tabs]
-    ANALYTIC --> EMBED[Document/Presentation/Spreadsheet Embedding]
-    ANALYTIC --> LINKED[Linked Native Copy/Paste]
-
-    NATIVE[Stable Native Editor Schemas] --> IMPORT[Import and Export]
-    NATIVE --> RICH[Rich External Paste]
-    NATIVE --> FORMULA[Cross-Editor Formulas]
-    NATIVE --> LINKED
-
-    STRUCT[Structured Data Extraction] --> TABLES[Native Tables]
-    TABLES --> ANALYTIC
-
-    CODE[Directory and Key-File Inventory] --> WIKI[Markdown Wiki Reset]
-```
-
-## Critical Couplings
-
-- The **external-file model** must be stable enough to support connector ingestion and accepted research sources.
-- The **Findings/Source acceptance model** must be explicit before research results are automatically added to the semantic overlay.
-- The **canonical analytic object** must exist before chart embedding and linked copy/paste can be implemented cleanly.
-- The **native editor schemas** must be stable before import/export and high-fidelity clipboard normalization can be reliable.
-- **Authentication and identity** underpin personal/project ownership, presence, authorship, and collaborative branching.
-- The **resource/resource-set model** should be shared by personas, chats, tasks, and context panels.
-- The **chat/task execution contract** should be settled before polishing the chat UI around personas, modes, and tools.
-
----
-
-# 5. Consolidated Epic Index
-
-| Epic | Workstream | Type |
-|---|---|---|
-| ICARUS-EXT | External Files and Connectors | Build / Investigate |
-| ICARUS-RSH | Research Findings and Source Acceptance | Build / Refine |
-| ICARUS-AI | Copilot, AI Tasks, and Chat | Build / Refine |
-| ICARUS-ID | Authentication, Top Bar, and Ownership | Build |
-| ICARUS-ASSET | Personal/Per-User Templates, Personas, and Skills | Build / Design |
-| ICARUS-SCOPE | Resources, Resource Sets, and Context | Build |
-| ICARUS-ANL | Analysis, Graphs, Charts, and Structured Data | Build |
-| ICARUS-EDIT | Formulas and Editor Context | Build / Refine |
-| ICARUS-IO | Import, Export, Rich Paste, and Linked Copy/Paste | Build / Design |
-| ICARUS-KEY | Keyboard Shortcuts and Desktop Behavior | Build / Design |
-| ICARUS-COL | Presence, Activity, History, and Branching | Build / Refine |
-| ICARUS-WIKI | Markdown Codebase Wiki | Build |
-| ICARUS-UX-EXT | External Files UX Cleanup | Tactical / Investigate |
-| ICARUS-UX-CHAT | Chat and Research UX Cleanup | Refine |
-| ICARUS-UX-EDITOR | Document/Presentation Context Cleanup | Refine |
-
----
-
-# 6. Settled Decisions and Scoped Investigations
-
-## Settled Decisions
-
-- External connectors feed the **External Files** system.
-- Research sources require explicit user acceptance before becoming external files.
-- The existing finding representation specification is authoritative; the Findings system must be designed around it rather than redefining it.
-- Chat and AI tasks are separate systems.
-- Tools are configured per chat/task rather than permanently attached to personas.
-- Personal/project template and persona transfer is always a copy operation.
-- Template and persona architecture belongs to the broader personal/per-user workstream rather than an isolated table-design exercise.
-- The broader command system is removed; keyboard shortcuts are implemented directly.
-- Path remains visible only as compressed, secondary metadata, with the full value available through a tooltip.
-- Table view and Directory view are selected through a toggle in the same control row.
-- Charts should be canonical, portable, and linked across native editors.
-- The codebase documentation should become a Markdown wiki using Mermaid and HTML.
-- Directory inspection inside the External Files inspector is a good interaction and should be preserved.
-
-## Scoped Investigations
-
-- Investigate the intended purpose, provenance, and product value of the **Purpose** field.
-- Investigate the intended purpose of **Tags**, including whether they affect retrieval, filtering, organization, or display.
-- Design the Findings system lifecycle and UX around the already-settled finding representation.
-- Determine external-copy behavior within the broader Copy System design.
-- Define template/persona persistence and provenance within the broader personal/per-user architecture.
-- Resolve remaining external-file metadata semantics such as quarantine metadata, material profile, and author attribution.
+This file does not schedule dates, allocate people, certify today's product, or
+authorize the wiki deletion, a deployment, broad provider spending, or a main merge.
+Those are separate explicit decisions. No implementation package was completed by
+the act of reorganizing this backlog.
