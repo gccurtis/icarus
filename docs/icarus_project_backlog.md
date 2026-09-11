@@ -24,9 +24,9 @@ Do not defer a confirmed data-loss or authorization defect behind this ordering.
 
 | Proposed tranche | User outcome | Packages | Exit evidence |
 | --- | --- | --- | --- |
-| A — Trust the current workspace | Upload and distinguish files; inspect their state/history; use variables without losing context | [EXT-02](#ext-02), [EXT-04](#ext-04), [EXT-05](#ext-05), [COL-01](#col-01), [COL-02](#col-02), [EDIT-01](#edit-01) | Realistic same-name files, re-upload/reload, navigable activity, and document/presentation variable workflows pass; compact and zoomed Chromium states inspected |
-| B — Trust project knowledge | Inspect a research claim and its sources, accept only intended material, then use that knowledge in another resource | [RSH-01](#rsh-01), [RSH-02](#rsh-02), [RSH-03](#rsh-03), [SCOPE-01](#scope-01), [SCOPE-02](#scope-02), [AI-01](#ai-01), [AI-03](#ai-03) | Unaccepted material stays outside accepted project knowledge; accepted material survives reload and has provenance; task/chat configuration is reproducible |
-| C — Trust reuse and analysis | Instantiate spreadsheet templates; calculate across native surfaces; carry structured content and linked charts without flattening it | [ASSET-04](#asset-04), [ASSET-05](#asset-05), [EDIT-02](#edit-02), [ANL-01](#anl-01), [ANL-03](#anl-03), [IO-02](#io-02), [IO-03](#io-03) | Two distinct source scopes produce distinct correct outputs; formula/clipboard/embedding behavior and rendered appearance are verified |
+| A — Trust the current workspace | Upload and distinguish files; inspect their state/history; use variables without losing context | [EXT-02](#ext-02), [EXT-04](#ext-04), [EXT-05](#ext-05), [COL-01](#col-01), [COL-02](#col-02), [EDIT-01](#edit-01) | Realistic same-name files reach terminal semantic state without another workflow, survive re-upload/reload, expose navigable activity, and document/presentation variable workflows pass; compact and zoomed Chromium states inspected |
+| B — Trust project knowledge | Inspect a research claim and its sources, accept only intended material, then use that knowledge in another resource | [RSH-01](#rsh-01), [RSH-02](#rsh-02), [RSH-03](#rsh-03), [SCOPE-01](#scope-01), [SCOPE-02](#scope-02), [AI-01](#ai-01), [AI-03](#ai-03), [AI-05](#ai-05), [AI-06](#ai-06) | Unaccepted material stays outside accepted project knowledge; accepted material survives reload and has provenance; task/chat configuration is reproducible; independent prompt, chat, and agent work can progress concurrently without cross-cancellation; incomplete prompt-block answers expose what remains unanswered |
+| C — Trust reuse and analysis | Instantiate spreadsheet templates; calculate across native surfaces; carry structured content and linked charts without flattening it | [ASSET-04](#asset-04), [ASSET-05](#asset-05), [EDIT-02](#edit-02), [ANL-01](#anl-01), [ANL-03](#anl-03), [IO-02](#io-02), [IO-03](#io-03), [AI-07](#ai-07) | Two distinct source scopes produce distinct correct outputs; formula/clipboard/embedding behavior and rendered appearance are verified; quantitative and repetitive programmatic work runs in an isolated Python sandbox |
 | D — Expand deliberately | Add the selected connector, wider analytics/import formats, real accounts and collaboration, Copilot, and product Skills | Remaining P2 packages, promoted when needed by an actual workflow | Each package's own acceptance criteria, not a feature-count target |
 | Separate authorized initiative | Replace the documentation/reference system with the Markdown wiki | [WIKI-01](#wiki-01), [WIKI-02](#wiki-02) | Approved deletion inventory, replacement navigation, and resolved code links |
 
@@ -99,6 +99,9 @@ Priorities are proposed; gates are requirements, not estimated dates or effort.
 | [AI-02](#ai-02)       | Copilot task supervision                         | P2                |
 | [AI-03](#ai-03)       | Chat modes, personas, and execution tools        | P1                |
 | [AI-04](#ai-04)       | Collaborative chat branching                     | P2                |
+| [AI-05](#ai-05)       | Concurrent independent AI work                   | P1                |
+| [AI-06](#ai-06)       | Prompt-block answer completeness                 | P1                |
+| [AI-07](#ai-07)       | Sandboxed Python execution                       | P2                |
 | [SCOPE-01](#scope-01) | Inspectable resource sets across surfaces        | P1                |
 | [SCOPE-02](#scope-02) | Persona scope and execution-owned tools          | P1                |
 | [ID-01](#id-01)       | Authentication and access lifecycle              | P2 / release gate |
@@ -146,7 +149,7 @@ remain in scope at their points of use.
 | Acceptance | A discovered research source does not become an external file merely because a model found or cited it. Explicit user acceptance is required. An already-existing project file is not a new external source. |
 | Findings | The existing canonical finding representation is authoritative. Design inspection, lifecycle, publication, dismissal, and history around it. |
 | Chat versus tasks | Delegated tasks have their own configuration, state, execution, and outputs. They are not a renamed chat mode. |
-| Tools and personas | Tools belong to chats/tasks. Personas carry behavior and scope, not a persistent tool bundle. |
+| Tools and personas | Tools belong to the execution that uses them: prompt blocks, chats, or tasks/agent runs. Personas carry behavior and scope, not a persistent tool bundle. |
 | Asset transfers | Personal/project template and persona transfers are independent copies in either direction, never shared mutable moves. Design both inside the broader per-user system. |
 | Context scope | Reuse resource-set/context concepts across surfaces; inspect individual members. Define context where it is needed; do not restore the removed Project Overview resource-set management panel. |
 | Native analytics | A chart is a canonical analytic object; native placements link to it by default and propagate changes. This is deliberately different from personal/project asset copies. |
@@ -173,8 +176,9 @@ For multi-slice packages, put execution details and active ownership in
 **Work:** Audit / Refine. **First slice:** run and inspect upload → semantic state → re-upload → download → history → reload with realistic duplicate-name fixtures.
 
 - Extend the existing transactional upload/revision/semantic-outbox path; do not rebuild it. Specify admission boundaries for upload, re-upload, connector refresh, and accepted research material.
+- Complete the process-owned semantic worker host after the durable outbox commit. Upload requests must not own fire-and-forget provider work: wake a bounded consumer, drain eligible queued work at startup, honor leases/retries, and stop cleanly with the server.
 - Stable resource identity is not the filename. Preserve same-name files at different paths/origins; decide same-path conflict/reuse rules and retain the source attribution needed to explain them.
-- **Close when:** accepted bytes, revision/history, semantic status, and downloaded content agree after success, failure, retry, and restart; rejected admission leaves no partial intent; changed content is not silently represented by stale semantic output. Connector/source paths must consume this contract when added.
+- **Close when:** a direct upload begins semantic processing without requiring Research, Derived Output, or a manual queue command; accepted bytes, revision/history, semantic status, and downloaded content agree after success, provider failure, retry, and server restart; rejected admission leaves no partial intent; changed content is not silently represented by stale semantic output. Prove the automatic path with deterministic worker tests plus one bounded live-provider test using disposable non-user content. Connector/source paths must consume this contract when added.
 
 <a id="ext-03"></a>
 #### EXT-03 — Deliver the first operational connector
@@ -266,6 +270,37 @@ For multi-slice packages, put execution details and active ownership in
 
 - Continuing another user's line creates a branch instead of silently appending. Define simultaneous continuation behavior and how origin/ancestry are shown.
 - **Close when:** concurrent users cannot overwrite or ambiguously append to the same line, branches retain inspectable origins, inherited state follows the agreed contract, and access checks and reload preserve both histories.
+
+<a id="ai-05"></a>
+#### AI-05 — Run independent AI work concurrently
+
+**Work:** Audit / Refine. **First slice:** reproduce two prompt-block fills, two chat turns in different threads, and two agent-task runs started together; trace client pending state, process flights, durable rows, provider calls, cancellation, and publication by stable operation identity.
+
+- Independent prompt blocks, chat threads, and agent tasks must progress concurrently. Coalesce only duplicate signals for the same logical operation; do not impose a workspace-wide or process-wide lock that serializes unrelated work.
+- Keep abort signals, deadlines, streaming/progress state, scopes, tool calls, outputs, revisions, and errors owned by their individual operation. Failure or cancellation of one run must not cancel, overwrite, or strand another.
+- Define bounded provider/project/user concurrency and visible backpressure rather than silently queuing behind one active operation. Recovery after reload or server restart must resume durable work without duplicating publication.
+- **Close when:** two prompt blocks can fill concurrently, separate chats can answer concurrently, and separate agent tasks can run concurrently with independently visible progress and cancellation; same-operation retries still coalesce safely; one run's failure does not affect the others; deterministic interleaving tests and a bounded live-provider workflow pass.
+
+<a id="ai-06"></a>
+#### AI-06 — Check prompt-block answers for completeness
+
+**Work:** Design / Refine. **First slice:** define an inspectable completion contract for one multi-part prompt block and reproduce a response that answers only part of it. This is a completeness check—whether the requested work was actually answered—not a consistency label or a generic style score.
+
+- Check every explicit question, requested section, constraint, and required output shape against the generated result. Evidence insufficiency and an unanswered requirement must remain distinct: never fill either gap by inventing facts.
+- Make an incomplete result visible with the specific unanswered parts and a bounded retry/correct action. Preserve the original output and check provenance so regeneration cannot silently replace useful work or loop indefinitely.
+- Keep the check owned by the prompt-block execution lifecycle and stable revision. A later prompt edit, scope change, or concurrent fill must not apply an obsolete completeness result to a newer output.
+- **Close when:** complete, partially answered, structurally unusable, and evidence-insufficient outputs take distinct tested paths; a multi-part prompt cannot be marked complete when one part is omitted; the user can inspect what remains and retry once deliberately; deterministic contracts and bounded provider workflows cover false-positive and false-negative cases.
+
+<a id="ai-07"></a>
+#### AI-07 — Give AI executions sandboxed Python
+
+**Work:** Design / Build. **First slice:** run one quantitative prompt-block task and one repetitive chat/task transformation through the same explicitly bounded Python tool contract.
+
+- Offer Python to prompt blocks, chats, and tasks/agent runs as execution-owned capability. Tool availability and each invocation must be inspectable; do not hide it in persona persistence or give a model ambient host-process authority.
+- Default to no network, an ephemeral isolated filesystem, explicit staged inputs, bounded CPU/memory/time/output, cancellation, and an allowlisted environment. Define package availability, secret handling, artifact publication, and project ownership before adding broader access.
+- Capture code, stdout/stderr, exit state, generated artifacts, resource usage, and the initiating operation for audit and retry. Invalid or hostile code must fail inside the sandbox without exposing host files, credentials, other projects, or concurrent runs.
+- Integrate with AI-05 so independent Python calls may run concurrently within explicit backpressure while cancellation or failure remains operation-local.
+- **Close when:** representative quantitative and repetitive programmatic work succeeds from prompt blocks, separate chats, and agent tasks; artifacts are inspectable and deliberately published; timeout, memory, filesystem, network, cancellation, reload, and cross-project isolation tests pass; no server credential or host path is reachable from executed code.
 
 ### Scope and identity
 
@@ -722,6 +757,19 @@ instead returns no actor when the exact related subject cannot be resolved, and
 renders a non-linking fallback. DATA-01 should establish one product contract while
 keeping authority and current-row admission inside each owning capability.
 
+<a id="e13"></a>
+### E13 — Semantic jobs are durable but have no always-on worker host
+
+[External upload publication](../app/src/lib/capabilities/external-files/api/upload-external-files/transaction.ts)
+commits semantic intent with the file, and the [semantic outbox](../app/src/lib/capabilities/semantic-overlay/api/shared/outbox.ts)
+correctly keeps provider work outside that transaction. The bounded
+[queue processor](../app/src/lib/capabilities/semantic-overlay/api/shared/queue-processor.ts)
+is invoked explicitly by Research, Derived Output, backfill, or a direct command;
+[server activation](../app/src/lib/runtime/server/start.server.ts) does not host it.
+The upload test currently proves only that the job remains `queued`. EXT-02 must
+close this runtime and end-to-end verification gap rather than treating durable
+enqueueing as a completed ingestion lifecycle.
+
 <a id="coverage"></a>
 ## 7. Intake coverage and consolidation
 
@@ -735,7 +783,7 @@ into their owning feature packages instead of being scheduled twice.
 | --- | --- |
 | 1.1 Connectors, lifecycle and duplicate identity | EXT-02–EXT-05; Q1 |
 | 1.2 Findings, explicit source acceptance, states, research overhaul | RSH-01–RSH-03 |
-| 1.3 Copilot, tasks, active chat configuration, branching, persona tools | AI-01–AI-04; SCOPE-02 |
+| 1.3 Copilot, tasks, active chat configuration, branching, persona tools, concurrent AI execution, answer completeness, sandboxed Python | AI-01–AI-07; SCOPE-02 |
 | 1.4 Auth/top bar, personal templates/personas, ownership, spreadsheet editor, Skills, terminology | ID-01–ID-03; ASSET-01–ASSET-05; Q3/Q6 |
 | 1.5 Sets, reusable context, persona resource/set scope and inspection | SCOPE-01/SCOPE-02 |
 | 1.6 Graph tabs/editor, canonical/portable charts, structured extraction | ANL-01–ANL-04 |
