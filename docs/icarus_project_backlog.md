@@ -1,14 +1,14 @@
 # Icarus delivery backlog
 
-Updated September 10, 2026 · source baseline: `main@4a7be0c`.
+Updated September 11, 2026 · source baseline: `main@7d14ddb`.
 
 **Direction confirmed by the owner: reliable end-to-end work first.** This is a
 planning and dispatch file, not a declaration that its features are missing or
 permission to implement everything in it. The proposed ordering below is a
-recommendation; no package has an assigned implementation owner yet.
+recommendation.
 
 This revision consolidates the September 10 intake, retains its settled choices,
-and separates delivery status, work type, evidence, and priority. Source inspection
+and separates work type, evidence, and priority. Source inspection
 is identified explicitly; no product workflows were run for this backlog review.
 
 Navigate: [Dispatch](#dispatch) · [Register](#register) · [Constraints](#constraints) ·
@@ -33,15 +33,16 @@ Do not defer a confirmed data-loss or authorization defect behind this ordering.
 These are delivery groupings, **not a waterfall**. Metadata discovery, a bounded
 variable fix, and activity navigation can run independently. Tranche B design can
 start while A lands. Connector discovery and identity design can also start early.
-Only explicit gates in the register block implementation; related themes do not.
+Only explicit gates in package cards and decision briefs block implementation;
+related themes do not.
 
 Authentication is not optional for a real multi-user deployment. [ID-01](#id-01)
 is a release gate even when single-user workflow reliability is scheduled first.
 
 ### Dispatch rules
 
-1. Select a package and its **first slice**, not an entire epic. Record its owner
-   in the register and create a task handoff using the existing agent tooling.
+1. Select a package and its **first slice**, not an entire epic. Create a task
+   handoff using the existing agent tooling; record active ownership there.
 2. Reproduce/recheck the relevant current behavior before changing it. Preserve
    working foundations; finding code is not proof that the requested workflow works.
 3. Resolve only the package's open gates. Do not reopen [settled choices](#constraints).
@@ -74,15 +75,10 @@ still follow the package cards below.
 <a id="register"></a>
 ## 2. Delivery register
 
-The register is the single source of scheduling state. Package cards carry scope,
-not a second status list. All owners are **unassigned** until explicitly recorded;
-the backlog rewrite itself does not mean any of this implementation is active.
-
-- **Ready:** a bounded next action can be assigned.
-- **Gated:** discovery may proceed, but implementation needs the named decision or dependency.
-- **Active / Verify:** an owner is working / collecting acceptance and integration evidence.
-- **Done:** the package's outcome and applicable completion gate are met, with evidence linked.
-- **Deferred:** deliberately outside the current delivery sequence, not cancelled.
+The register is a compact navigation and priority index. Package cards carry scope,
+first slices, dependencies, and completion criteria. Active scheduling state,
+ownership, and detailed execution evidence belong in the assigned task handoff so
+this index stays readable.
 
 Work type belongs in the card: **Audit**, **Design**, **Build**, **Refine**, or
 **Tactical**. Priority is independent: **P0** confirmed urgent integrity/security
@@ -90,46 +86,46 @@ failure; **P1** reliability-critical current workflows; **P2** capability expans
 **P3** deliberately later. No P0 incident is asserted by this source-only review.
 Priorities are proposed; gates are requirements, not estimated dates or effort.
 
-| ID | Package | State | Priority | Implementation gate | Owner |
-| --- | --- | --- | --- | --- | --- |
-| [EXT-02](#ext-02) | Complete and verify ingestion lifecycle | Ready | P1 | None for current upload/re-upload audit | — |
-| [EXT-03](#ext-03) | First operational connector | Gated | P2 | EXT-02 admission contract; Q1 | — |
-| [EXT-04](#ext-04) | File table and directory clarity | Ready | P1 | None | — |
-| [EXT-05](#ext-05) | File inspector and context cleanup | Ready | P1 | None | — |
-| [RSH-01](#rsh-01) | Findings lifecycle and publication | Ready | P1 | Existing finding representation is fixed | — |
-| [RSH-02](#rsh-02) | Explicit source acceptance | Gated | P1 | EXT-02; acceptance contract coordinated with RSH-01 | — |
-| [RSH-03](#rsh-03) | Research turn and result inspection | Ready | P1 | Acceptance actions depend on RSH-01/RSH-02 | — |
-| [AI-01](#ai-01) | Task execution contract and reliability | Ready | P1 | None for audit; coordinate tool removal with SCOPE-02 | — |
-| [AI-02](#ai-02) | Copilot task supervision | Gated | P2 | AI-01 | — |
-| [AI-03](#ai-03) | Chat modes, personas, and execution tools | Ready | P1 | Coordinate persona-tool change with SCOPE-02 | — |
-| [AI-04](#ai-04) | Collaborative chat branching | Gated | P2 | ID-01; AI-03 turn contract | — |
-| [SCOPE-01](#scope-01) | Inspectable resource sets across surfaces | Ready | P1 | None for existing-foundation audit | — |
-| [SCOPE-02](#scope-02) | Persona scope and execution-owned tools | Ready | P1 | AI-01/AI-03 tool contract before removing persistence | — |
-| [ID-01](#id-01) | Authentication and access lifecycle | Gated | P2 / release gate | Q3 | — |
-| [ID-02](#id-02) | Coherent personal/project asset ownership | Ready | P2 | Design now; runtime ownership depends on ID-01 | — |
-| [ID-03](#id-03) | Top bar and settings boundaries | Gated | P2 | ID-01 and ID-02 for live account controls | — |
-| [DATA-01](#data-01) | Graceful stale display references | Ready | P2 | Define the shared display contract before broad rollout | — |
-| [ASSET-01](#asset-01) | Independent template copies across scopes | Gated | P2 | ID-01; ID-02 | — |
-| [ASSET-02](#asset-02) | Independent persona copies across scopes | Gated | P2 | ID-01; ID-02 | — |
-| [ASSET-03](#asset-03) | Product Skills | Gated | P2 | AI-01; SCOPE-02; ID-02 | — |
-| [ASSET-04](#asset-04) | Spreadsheet template editor | Ready | P1 | None for editor/instantiation gap audit | — |
-| [ASSET-05](#asset-05) | Template UI and terminology | Ready | P1 | Q6 gates renaming, not layout correction | — |
-| [ANL-01](#anl-01) | Canonical analytic identity and editing contract | Ready | P2 | None for design against existing types | — |
-| [ANL-02](#anl-02) | Analysis graph tabs and graph editor | Gated | P2 | ANL-01 where analytic identity is involved | — |
-| [ANL-03](#anl-03) | Linked analytic placements across editors | Gated | P2 | ANL-01 | — |
-| [ANL-04](#anl-04) | Inspectable text-to-table extraction | Ready | P2 | Output/correction contract before materialization | — |
-| [EDIT-01](#edit-01) | Document/presentation Variables panels | Ready | P1 | Reproduce current defects first | — |
-| [EDIT-02](#edit-02) | Cross-editor formula contract and built-ins | Ready | P1 | None for inventory; settle evaluation semantics before expansion | — |
-| [IO-01](#io-01) | Native import/export | Ready | P2 | Current-schema mappings for the first selected formats | — |
-| [IO-02](#io-02) | External rich paste and external-copy contract | Ready | P1 | Bound each slice to explicit format/fidelity promises | — |
-| [IO-03](#io-03) | Native structured and linked copy/paste | Gated | P2 | IO-02 copy contract; ANL-01/ANL-03 for analytic links | — |
-| [KEY-01](#key-01) | Retire the product command abstraction | Ready | P2 | KEY-02 shortcut inventory before deleting behavior | — |
-| [KEY-02](#key-02) | Direct keyboard shortcuts and desktop behavior | Ready | P2 | Platform/shortcut conflict inventory | — |
-| [COL-01](#col-01) | Project activity navigation and readable history | Ready | P1 | Existing resource/actor routing inventory | — |
-| [COL-02](#col-02) | External/Agents activity parity | Ready | P1 | Coordinate COL-01 interaction | — |
-| [COL-03](#col-03) | Presence with explicit lifetime | Gated | P2 | ID-01 | — |
-| [WIKI-01](#wiki-01) | Wiki reset inventory and replacement plan | Deferred | P3 | Explicit wiki-work authorization | — |
-| [WIKI-02](#wiki-02) | Markdown wiki and retirement of old pages | Deferred | P3 | WIKI-01; exact deletion/replacement approval | — |
+| ID                    | Package                                          | Priority          |
+| --------------------- | ------------------------------------------------ | ----------------- |
+| [EXT-02](#ext-02)     | Complete and verify ingestion lifecycle          | P1                |
+| [EXT-03](#ext-03)     | First operational connector                      | P2                |
+| [EXT-04](#ext-04)     | File table and directory clarity                 | P1                |
+| [EXT-05](#ext-05)     | File inspector and context cleanup               | P1                |
+| [RSH-01](#rsh-01)     | Findings lifecycle and publication               | P1                |
+| [RSH-02](#rsh-02)     | Explicit source acceptance                       | P1                |
+| [RSH-03](#rsh-03)     | Research turn and result inspection              | P1                |
+| [AI-01](#ai-01)       | Task execution contract and reliability          | P1                |
+| [AI-02](#ai-02)       | Copilot task supervision                         | P2                |
+| [AI-03](#ai-03)       | Chat modes, personas, and execution tools        | P1                |
+| [AI-04](#ai-04)       | Collaborative chat branching                     | P2                |
+| [SCOPE-01](#scope-01) | Inspectable resource sets across surfaces        | P1                |
+| [SCOPE-02](#scope-02) | Persona scope and execution-owned tools          | P1                |
+| [ID-01](#id-01)       | Authentication and access lifecycle              | P2 / release gate |
+| [ID-02](#id-02)       | Coherent personal/project asset ownership        | P2                |
+| [ID-03](#id-03)       | Top bar and settings boundaries                  | P2                |
+| [DATA-01](#data-01)   | Graceful stale display references                | P2                |
+| [ASSET-01](#asset-01) | Independent template copies across scopes        | P2                |
+| [ASSET-02](#asset-02) | Independent persona copies across scopes         | P2                |
+| [ASSET-03](#asset-03) | Product Skills                                   | P2                |
+| [ASSET-04](#asset-04) | Spreadsheet template editor                      | P1                |
+| [ASSET-05](#asset-05) | Template UI and terminology                      | P1                |
+| [ANL-01](#anl-01)     | Canonical analytic identity and editing contract | P2                |
+| [ANL-02](#anl-02)     | Analysis graph tabs and graph editor             | P2                |
+| [ANL-03](#anl-03)     | Linked analytic placements across editors        | P2                |
+| [ANL-04](#anl-04)     | Inspectable text-to-table extraction             | P2                |
+| [EDIT-01](#edit-01)   | Document/presentation Variables panels           | P1                |
+| [EDIT-02](#edit-02)   | Cross-editor formula contract and built-ins      | P1                |
+| [IO-01](#io-01)       | Native import/export                             | P2                |
+| [IO-02](#io-02)       | External rich paste and external-copy contract   | P1                |
+| [IO-03](#io-03)       | Native structured and linked copy/paste          | P2                |
+| [KEY-01](#key-01)     | Retire the product command abstraction           | P2                |
+| [KEY-02](#key-02)     | Direct keyboard shortcuts and desktop behavior   | P2                |
+| [COL-01](#col-01)     | Project activity navigation and readable history | P1                |
+| [COL-02](#col-02)     | External/Agents activity parity                  | P1                |
+| [COL-03](#col-03)     | Presence with explicit lifetime                  | P2                |
+| [WIKI-01](#wiki-01)   | Wiki reset inventory and replacement plan        | P3                |
+| [WIKI-02](#wiki-02)   | Markdown wiki and retirement of old pages        | P3                |
 
 The tool/scope dependencies are a **shared contract**, not a circular build order:
 agree chat/task-owned configuration first, then wire consumers and remove persona
@@ -166,8 +162,8 @@ remain in scope at their points of use.
 
 Each card supplies a dispatchable first slice and an outcome-based closeout. Source
 links in [the evidence ledger](#evidence) are starting points, not exhaustive audits.
-For multi-slice packages, put execution details in `.agents/tasks/<task>/handoff.md`
-and link that handoff from the register when assigning an owner.
+For multi-slice packages, put execution details and active ownership in
+`.agents/tasks/<task>/handoff.md`.
 
 ### External Files and connectors
 
@@ -778,20 +774,22 @@ bounded current-format work.
   pass; changed UI is visually inspected with realistic data and relevant compact/
   zoomed states. Report untested platforms and provider skips separately.
 - **Integration:** record reviewed commit/head, target base, actual commands/results,
-  remaining scope, and the authorized merge/push. Mark a delivery package Done only
-  after its required slices land on main and its acceptance evidence is recorded.
+  remaining scope, and the authorized merge/push. Treat a delivery package as
+  complete only after its required slices land on main and its acceptance evidence
+  is recorded.
   Do not run every application suite for a Markdown-only planning edit.
 
 ### Small working record, not a second backlog
 
-Assign an owner in the register and link the task handoff there. A useful dispatch
-request names: package ID, first slice, expected outcome, owned paths, constraints,
-unresolved gates, acceptance scenarios, and exact integration authority. Use the
-existing [AGENTS.md](../AGENTS.md), [task template](../.agents/tasks/_template/handoff.md)
-and [worktree helper](../.agents/scripts/worktree.mjs); do not invent another task runner.
+Create a task handoff for the selected package and record its active owner there.
+A useful dispatch request names: package ID, first slice, expected outcome, owned
+paths, constraints, unresolved gates, acceptance scenarios, and exact integration
+authority. Use the existing [AGENTS.md](../AGENTS.md),
+[task template](../.agents/tasks/_template/handoff.md) and
+[worktree helper](../.agents/scripts/worktree.mjs); do not invent another task runner.
 
-After each material finding or landing, update only the affected register/card:
-state, owner/handoff, actual evidence, remaining slice, and dependency effects.
+After each material finding or landing, update only the affected package card and
+task handoff: actual evidence, remaining slice, ownership, and dependency effects.
 Add newly discovered work with a stable ID; do not recycle IDs or silently broaden
 an active assignment. Before adding a duplicate, search the coverage map and cards.
 Keep finished evidence concise and linked; move detailed execution history to the
