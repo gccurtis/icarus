@@ -6,14 +6,14 @@ Do not include credentials or copy sensitive logs.
 
 ## Snapshot
 
-- Updated: 2026-09-11T11:50:43-04:00
-- Status: implemented, verified, committed, and pushed
+- Updated: 2026-09-11T13:53:48-04:00
+- Status: superseding architecture contract drafted, adversarially reviewed, and
+  documentation-verified; commit/push pending
 - Worktree: `/home/jakul/cyberia/icarus-worktrees/pure-functions`
 - Branch: `work/pure-functions`
 - Head when initialized: `b152b52ddd1fef5dfdaf8e2a4b6d03796cf011fd`
-- Current verified implementation commit / dirty paths:
-  `9bef8e2977f0c7397bb5f45b8afb8bee3ca3eafa`; clean before this publication-only
-  handoff update
+- Current branch head / dirty paths: `99b31b9fa3c5d233bba42aaf89792f480fb4c234`;
+  modified `handoff.md` and new `contract.md`
 - Integration target / base SHA, if relevant: `origin/main` / `b152b52ddd1fef5dfdaf8e2a4b6d03796cf011fd`
 - Starting worktree/base record: optional `worktree.json` beside this handoff;
   link it when present and verify it against Git
@@ -33,6 +33,12 @@ and ratchet existing findings without hiding new debt. Product-model and feature
 migration is outside this checker-only slice unless a small fixture or generated
 template must change to prove the enforcement.
 
+The follow-up request supersedes the prototype design, but does not yet authorize
+product migration: write a detailed task contract for capability, model-method,
+and component-procedure pure islands; model acquire/commit/release ports; runtime
+capability transformers and remote registration; exact checker guarantees; and
+an adversarial loophole review. Describe the resulting file architecture in chat.
+
 ## Decisions and authority
 
 - Current authority: scoped checker implementation on `work/pure-functions`,
@@ -46,16 +52,33 @@ template must change to prove the enforcement.
   allowed. Getters/accessors are behavior and must instead be free queries such
   as `getBody(runtime)`. Model objects expose no methods, getters, setters, or
   callable properties.
-- Composition boundary: `bindCapability` in `runtime/server/scope.server.ts` is
-  the sole generated remote adapter. It resolves authenticated scope, obtains the
-  server model, and supplies a clock port. Component wiring supplies component-
-  procedure ports; procedures may not acquire capabilities or model accessors.
+- Prototype composition boundary (superseded by `contract.md`): `bindCapability`
+  in `runtime/server/scope.server.ts` is the sole generated remote adapter. It
+  resolves authenticated scope, obtains the server model, and supplies a clock
+  port.
+- Superseding direction under contract: `CapabilityContext` must not carry the
+  full model graph. Runtime owns singleton creation, bound model adapters,
+  per-use acquisition/release, capability-specific transformation, authentication,
+  scope, and remote exposure. Acquired model ports expose operations plus commit,
+  but not acquire/release. Every source under capability APIs, model methods, and
+  component procedures—including nested helpers—is a closed pure island.
+- Model `port.ts` co-locates the exact outer adapter and `bind<Model>()`. Runtime
+  alone creates singleton state/infrastructure and binds it. Each acquire returns
+  a distinct frozen lease facade with model operations plus commit; release is
+  runtime-only, always runs in `finally`, and never commits.
+- Normal return is the automatic staged commit vote; throw/cancellation/invalid
+  result aborts. Domain refusals are typed failure-atomic results, never exceptions
+  classified by message/shape. One invocation has at most one staged commit
+  owner; explicit checkpoints are named and require recovery/idempotency evidence.
+- The central static registry governs remote and production-internal capability
+  calls. Remote calls authenticate and resolve a server-created scope grant;
+  capability transformers receive only a fresh exact acquired-model subset.
 
 ## Ownership and orientation
 
 | Owner | Owned paths / work | Read-only or excluded paths | Acceptance check |
 | --- | --- | --- | --- |
-| Lead | Checker implementation, mutation fixtures, checker catalog/contracts, governed generators, baseline, and this handoff | Product behavior and model migration beyond checker fixtures | New violations fail; existing violations are exact ratcheted debt; checker mutation suite passes |
+| Lead | Task contract and this handoff; prior checker prototype remains unchanged in this pass | Product/checker migration beyond the contract | Contract specifies enforceable topology, lifecycle, checkers, generators, verification, and adversarial cases |
 
 - Worktree workflow: `.agents/skills/icarus-branch-integration/SKILL.md`
 - Capability/Store boundary: `.agents/skills/icarus-store-change/SKILL.md`
@@ -67,6 +90,28 @@ template must change to prove the enforcement.
   EDGE-01, and the checker catalog/mutation registry.
 
 ## Progress and current state
+
+- Added `.agents/tasks/pure-functions/contract.md`, a normative 17-section
+  architecture contract covering target file layout, pure-island syntax/type
+  closure, model state/ports/lifetimes, acquire/commit/release semantics, central
+  runtime authority/registry/gateway, component adapters/effects, 16 checker
+  contracts, executable boundary tests, generators, migration order, and
+  completion criteria.
+- Performed an adversarial review and incorporated defenses for dependency/type
+  laundering, broad/generic ports, model/capability/component behavior relocation,
+  exact adapter routing, raw-state aliasing, forged/stale authority, detached
+  async work, use-after-release, duplicate/deadlocking acquisitions, false multi-
+  model atomicity, invalid-result commits, remote/internal bypasses, and checker
+  suppressions.
+- Grounded concurrency limitations in the current tree: Store's callback
+  transaction cannot be mechanically held across an async lease; Store needs an
+  acquisition-local stage and short durable commit. Current Store,
+  OperationFlights, and native-file queues do not prove cross-process exclusion.
+- This pass deliberately did not change product, generator, or checker sources.
+  The earlier checker prototype remains committed but is superseded as a future
+  implementation specification by the new contract.
+
+Prior prototype state, retained for branch history but superseded by the contract:
 
 - Added one shared TypeScript AST authority analyzer and three BEH-03 checkers:
   `capability-functions-are-explicit`, `model-functions-are-explicit`, and
@@ -103,6 +148,8 @@ template must change to prove the enforcement.
 | `node scripts/test/generation.test.mjs` | All governed generators | 15/15 passed | Terminal output |
 | `nix develop ./infra/devshell --command node .agents/scripts/verify.mjs quick` | Svelte/TypeScript + all architecture checks | 0 diagnostics; 92 clean checks, 1,218 baselined findings, 0 fresh | `.agents/runtime/runs/1789141741682-quick-d95cfb8e` |
 | `node .agents/scripts/verify.mjs agents` | Worktree/agent helpers | 45/45 passed | `.agents/runtime/runs/1789141426521-agents-0de83ffe` |
+| `git diff --check` | Contract and handoff documentation | Passed before handoff finalization | Terminal output |
+| `node .agents/scripts/verify.mjs agents` | Contract worktree helper invariants | 45/45 passed | `.agents/runtime/runs/1789149219756-agents-187df964` |
 
 Record visual states actually inspected and remaining gaps. Link logs/screenshots
 in ignored runtime storage or a task-owned temporary directory; local evidence
@@ -122,15 +169,22 @@ skipped live-provider tests as passing.
 
 ## Risks and next executable step
 
-- The checker is syntactic: it proves where authority is acquired, not that an
-  arbitrarily typed supplied port is semantically narrow. Focused types and
-  contracts remain responsible for port scope.
-- This slice does not migrate the 1,096 pre-existing findings; the baseline makes
-  that inventory exact and blocks additions.
+- The currently implemented prototype checker is syntactic and baseline-backed;
+  it does not yet provide the contract's resolved type closure, exact leases,
+  registry/gateway, adapter grammar, or behavioral guarantees.
+- This contract-only pass does not migrate the 1,096 prototype findings or alter
+  product behavior. The superseding contract ultimately permits no baseline or
+  checker exemption; the migration branch remains red until governed production
+  complies.
+- Store staging, scope-grant revocation semantics, durable checkpoints, and
+  single-writer versus multi-process deployment guarantees require executable
+  exemplars before broad migration.
 - Dependencies and generated tool state are ignored local artifacts. No server,
   Store, browser, or provider test was needed or started.
-- Next executable step: review `work/pure-functions`; when separately authorized,
-  integrate it or begin a focused migration that removes one exact baseline slice.
+- Next executable step after user approval: replace the prototype checker design
+  with PF-01/PF-02 shared discovery/provenance foundations, then implement one
+  read-only model port and the Store staged port plus the central invocation
+  runner before migrating capabilities broadly.
 
 ## Publication / handoff
 
@@ -140,4 +194,5 @@ skipped live-provider tests as passing.
 - Push / merge state: pushed to `origin/work/pure-functions`; no main integration
 - Worktree cleanup / retained local artifacts: worktree intentionally retained;
   ignored local-configuration symlink exists
-- Next owner and remaining work: lead owns checker implementation and verification
+- Next owner and remaining work: lead owns contract publication; product/checker
+  rollout waits for user approval of the contract
