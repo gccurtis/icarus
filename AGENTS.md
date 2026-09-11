@@ -18,12 +18,35 @@ agent. Keep it operational and compact; task history belongs in task handoffs.
 4. Read the applicable skill below in full. Follow its relevant source pointers,
    not the entire repository's historical material.
 5. State the scope and first meaningful check. For multi-step or delegated work,
-   create/update a handoff before substantial changes.
+   create/update a handoff in the task worktree before substantial changes.
 
 Use the Nix toolchain when Node/pnpm are unavailable or inconsistent:
 `nix develop ./infra/devshell` from the root. App commands run in `app/`.
 `app/package.json` is the command authority; install missing dependencies with
 `pnpm install` there when authorized. Never include credentials in handoffs/logs.
+
+## Worktree-first implementation
+
+Make implementation changes on an owned `work/<task>` branch in a dedicated
+worktree. Reserve `main` for integration and review; direct implementation there
+requires an explicit user exception. Read-only review/diagnosis need not create a
+worktree. Reuse the assigned task worktree across turns and small edits; create
+another only for a distinct task or independently owned write stream.
+
+`worktree.mjs start <task>` fetches `origin/main`, creates the branch there without
+tracking `main`, and records the base and handoff. Its default destination is a
+sibling `<primary-repo-name>-worktrees/<task>`; `--path` chooses an absolute path.
+It refuses existing local/remote task branches and destinations. If setup fails
+partway, inspect the reported branch/worktree instead of retrying destructively.
+It does not copy credentials, development data, dependencies, or caches, or
+install packages.
+Install dependencies within the worktree when needed; pnpm may reuse its package
+store, but do not symlink another worktree's `node_modules`.
+
+Run existing server/verification helpers from that worktree with its own port,
+cache, and test data. Git metadata is still shared: one lead coordinates branch
+creation, history changes, and integration. The helpers are conveniences and
+safety checks, not mandatory wrappers for ordinary Git commands or commit grouping.
 
 ## Where things live
 
@@ -79,7 +102,7 @@ Search locally with `rg` before creating a parallel implementation.
 
 - UI/editor changes: [.agents/skills/icarus-editor-change/SKILL.md](.agents/skills/icarus-editor-change/SKILL.md)
 - Persistence/capability changes: [.agents/skills/icarus-store-change/SKILL.md](.agents/skills/icarus-store-change/SKILL.md)
-- Workbranch evaluation/integration: [.agents/skills/icarus-branch-integration/SKILL.md](.agents/skills/icarus-branch-integration/SKILL.md)
+- Worktree setup and workbranch evaluation/integration: [.agents/skills/icarus-branch-integration/SKILL.md](.agents/skills/icarus-branch-integration/SKILL.md)
 
 Skills provide task procedures, not additional authorization. For mixed work,
 read only the relevant skills and retain one owner for integration.
@@ -90,6 +113,9 @@ Run from the root, inside the Nix shell if needed. Each script supports `--help`
 
 ```sh
 node .agents/scripts/status.mjs
+node .agents/scripts/worktree.mjs start my-task
+node .agents/scripts/worktree.mjs status
+node .agents/scripts/worktree.mjs ready
 node .agents/scripts/handoff.mjs my-task
 node .agents/scripts/dev.mjs --port 3123 --store disposable
 node .agents/scripts/dev.mjs --port 3123 --store development
@@ -130,9 +156,14 @@ settled by the request, adding dependencies, changing security/retention policy,
 deleting non-disposable data, expanding paid-provider use beyond scoped checks,
 or making broad cross-feature representation changes.
 
-Commit, push, rebase, merge, deploy, and external messages require authorization
-for that task; “evaluate” is not “merge.” Prior requests are not standing permission
-to publish unrelated future work. Stage exact owned changes in focused commits.
+An implementation request includes standing permission to commit and push its
+verified, exact owned changes to that task's `work/<task>` branch. Use focused
+commits and an explicit destination: `git push -u origin HEAD:refs/heads/work/<task>`.
+This does not authorize unrelated changes, force-pushes, history rewrites, changes
+to another worker's branch, or publishing secrets or unintended local data.
+Rebase, merge into `main`, push to `main`, deploy, and external messages still
+require explicit task authorization. Review/diagnosis remain read-only;
+“evaluate” is not “merge.”
 
 Delegate bounded independent subtasks when useful and tools permit. Assign each
 worker an objective, owned paths, read/write limits, acceptance checks, and a
@@ -151,6 +182,14 @@ open risks, server/data ownership, and the next executable step. Update on hando
 or material changes, not for every tool call. Keep logs/screenshots in ignored
 runtime storage or a task-owned temporary directory and link them, noting local
 evidence may not exist on another machine.
+
+`worktree.mjs ready` fetches `origin/main` and reports Git preflight only; it is not
+test certification or permission to merge. After approved integration, cleanup is
+explicit: `worktree.mjs remove <task> --confirm <task>`. It requires a clean tree
+merged into both local and freshly fetched remote `main`, no worktree/Git leases
+or visible processes rooted there, no pending Git operations or hidden index flags,
+and no ignored/untracked data. Inspect and handle owned local artifacts before
+removal; never bypass these guards with force. Branches are kept.
 
 Completion means the requested behavior is implemented and proportionately
 verified. Report what changed, evidence, remaining limitations, and commit/push

@@ -1,0 +1,7 @@
+{
+  "task": "agent-worktrees",
+  "branch": "work/agent-worktrees",
+  "baseRef": "origin/main",
+  "baseSha": "0b3153802dd8a755deae45f93385196f636e0328",
+  "createdAt": "2026-09-11T00:16:13.410Z"
+}

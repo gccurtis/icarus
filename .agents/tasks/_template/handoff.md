@@ -13,6 +13,8 @@ Do not include credentials or copy sensitive logs.
 - Head when initialized: `{{HEAD}}`
 - Current verified head / dirty paths: not yet recorded
 - Integration target / base SHA, if relevant: not yet recorded
+- Starting worktree/base record: optional `worktree.json` beside this handoff;
+  link it when present and verify it against Git
 - Lead / delegated workers: not yet recorded
 
 ## Request and completion criteria
@@ -24,8 +26,12 @@ of scope. Separate required changes from optional follow-up.
 
 Record settled product decisions and granted authority for this task. State any
 pending decision with context, recommendation, and alternatives. Explicitly note
-whether commits, push, rebase, merge, data changes, and live-provider checks are
-authorized; absence of an entry is not permission.
+whether the current request is implementation or read-only review/diagnosis.
+For implementation, root `AGENTS.md` permits scoped commits/pushes to the owned
+`work/<task>` branch; record the exact branch and any narrower user limits.
+Separately record explicit authority for rebase, merge/push to `main`, data
+changes, and live-provider checks. This handoff records authority; it does not
+grant it, and an old entry is not permission for a new task.
 
 ## Ownership and orientation
 
@@ -70,4 +76,5 @@ safe rollback or restart information needed to continue without guessing.
 
 - Commits created by this task: none
 - Push / merge state: not performed
+- Worktree cleanup / retained local artifacts: not yet assessed
 - Next owner and remaining work: not yet assigned
