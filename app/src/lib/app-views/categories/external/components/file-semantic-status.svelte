@@ -12,7 +12,7 @@
 </script>
 
 <section aria-labelledby="semantic-heading">
-  <div class="section-head"><h3 id="semantic-heading">Semantic status</h3><span class="semantic-pill {file.semanticTone}">{file.semanticLabel}</span></div>
+  <div class="section-head"><h3 id="semantic-heading">Semantic status</h3><strong class="semantic-status {file.semanticTone}">{file.semanticLabel}</strong></div>
   {#if exact.eligible}
     <div class="profile"><h4>Exact text lane</h4><p>Prose is indexed from the original UTF-8 text without a generated summary. {exact.objectCount} semantic {exact.objectCount === 1 ? "object is" : "objects are"} currently published.</p></div>
   {/if}
@@ -42,10 +42,10 @@
   h3, h4, p, ul { margin: 0; }
   h3 { color: var(--token-ink-muted); font-size: var(--token-text-caption); font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
   h4 { color: var(--token-ink-secondary); font-size: var(--token-text-caption); font-weight: 600; }
-  .semantic-pill { display: inline-flex; padding: calc(var(--token-spacing-unit) * 1) calc(var(--token-spacing-unit) * 1.5); border-radius: 999px; background: var(--token-surface-panel-hover); color: var(--token-ink-muted); font-size: var(--token-text-caption); }
-  .semantic-pill.current { background: var(--token-color-success-surface); color: var(--token-color-success-text); }
-  .semantic-pill.queued { background: var(--token-color-attention-surface); color: var(--token-color-attention-text); }
-  .semantic-pill.failed, .semantic-error { color: var(--token-color-danger-text); }
+  .semantic-status { color: var(--token-ink-muted); font-size: var(--token-text-caption); font-weight: 600; }
+  .semantic-status.current { color: var(--token-color-success-text); }
+  .semantic-status.queued { color: var(--token-color-attention-text); }
+  .semantic-status.failed, .semantic-error { color: var(--token-color-danger-text); }
   .summary, .profile { display: flex; flex-direction: column; gap: calc(var(--token-spacing-unit) * 2); padding: calc(var(--token-spacing-unit) * 2.5); border: 1px solid var(--token-border-subtle); border-radius: var(--token-radius-control); background: var(--token-surface-panel-hover); }
   .profile, .summary, .semantic-error, .section-copy { margin-top: calc(var(--token-spacing-unit) * 2); }
   .section-copy, .semantic-error, .summary p, .profile li, .profile p { color: var(--token-ink-muted); font-size: var(--token-text-caption); line-height: var(--token-text-caption-leading); }

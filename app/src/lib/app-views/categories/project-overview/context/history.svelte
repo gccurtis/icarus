@@ -62,8 +62,7 @@
 <!-- Activity is the project record. Directed comments remain in the centre's Mentions feed. -->
 <Panel title="History">
   <div class="flex flex-col pt-1">
-    <div class="border-border-subtle bg-surface-panel-hover mx-3 my-1.5 flex flex-col gap-1 rounded-control border p-2">
-      <span class="text-caption text-ink-secondary font-semibold tracking-wide uppercase">Filter</span>
+    <div class="mx-3 my-1.5">
       <PanelSelect
         label="History period"
         value={window}

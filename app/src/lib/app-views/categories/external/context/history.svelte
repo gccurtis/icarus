@@ -1,25 +1,20 @@
 <script lang="ts">
   import ClockArrowLeft from "@lucide/svelte/icons/clock-arrow-left";
-  import { Panel, PanelBanner, PanelEmpty, PanelSkeleton } from "$authored-components/panel";
+  import { Panel, PanelBanner, PanelSearch, PanelSkeleton } from "$authored-components/panel";
   import {
     externalFileHistory,
     externalHistoryIn
   } from "$app-views/categories/external/procedures";
   import { startExternalClock } from "$app-views/categories/external/procedures/effects/clock.svelte";
+  import { externalHistoryLabel, matchingExternalHistory } from "$app-views/categories/external/procedures/history-query";
 
   const history = externalFileHistory();
   const clock = startExternalClock();
+  let search = $state("");
   const entries = $derived(
     externalHistoryIn(history.ready ? history.current.entries : undefined, clock.now)
   );
-  const label = (event: (typeof entries)[number]["event"]): string => ({
-    uploaded: "Uploaded",
-    "re-uploaded": "Re-uploaded",
-    renamed: "Renamed",
-    moved: "Moved",
-    deleted: "Deleted",
-    "context-updated": "Updated context for"
-  })[event];
+  const matches = $derived(matchingExternalHistory(entries, search));
 </script>
 
 <Panel title="History">
@@ -27,22 +22,25 @@
     <PanelBanner title="History unavailable" tone="danger">{history.error instanceof Error ? history.error.message : String(history.error)}</PanelBanner>
   {:else if !history.ready}
     <PanelSkeleton shape="rows" count={6} />
-  {:else if entries.length === 0}
-    <PanelEmpty title="No External changes yet." />
   {:else}
-    <div class="history-list">
-      {#each entries as entry (entry.id)}
-        <article>
-          <span class="icon"><ClockArrowLeft size={13} aria-hidden="true" /></span>
-          <div>
-            <strong>{label(entry.event)} {entry.name}</strong>
-            <span>{entry.when} · {entry.actorName}</span>
-            <small>{entry.relativePath}</small>
-            {#if entry.detail}<p>{entry.detail}</p>{/if}
-          </div>
-        </article>
-      {/each}
-      <p class="note">The newest 200 durable upload, re-upload, rename, move, context, and deletion events are shown.</p>
+    <div title="Search the latest 200 events">
+    <PanelSearch placeholder="Search history" bind:value={search}
+      matched={matches.length} total={entries.length} flush
+      empty={entries.length === 0 ? "No External Files changes yet." : "No recent events match."}>
+      <div class="history-list">
+        {#each matches as entry (entry.id)}
+          <article>
+            <span class="icon"><ClockArrowLeft size={13} aria-hidden="true" /></span>
+            <div>
+              <strong>{externalHistoryLabel(entry.event)} {entry.name}</strong>
+              <span>{entry.when} · {entry.actorName}</span>
+              <small title={entry.relativePath}>{entry.relativePath}</small>
+              {#if entry.detail}<p>{entry.detail}</p>{/if}
+            </div>
+          </article>
+        {/each}
+      </div>
+    </PanelSearch>
     </div>
   {/if}
 </Panel>
@@ -57,5 +55,4 @@
   span, small, p { color: var(--token-ink-muted); }
   small { font-family: var(--token-font-mono); white-space: nowrap; }
   article p { margin-top: calc(var(--token-spacing-unit) * 1); white-space: normal; }
-  .note { padding-block: calc(var(--token-spacing-unit) * 3); white-space: normal; }
 </style>

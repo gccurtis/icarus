@@ -3,7 +3,7 @@ import { expect, type Page } from "../fixtures";
 export const tabs = (page: Page) => page.getByRole("toolbar", { name: "Open tabs" });
 
 export const uploadEvidence = async (page: Page) => {
-  await tabs(page).getByRole("button", { name: "External", exact: true }).click();
+  await tabs(page).getByRole("button", { name: "External Files", exact: true }).click();
   await page.locator('form.upload-form input[type="file"]').first().setInputFiles([
     { name: "north-portfolio.md", mimeType: "text/markdown", buffer: Buffer.from("# North portfolio\n\nThe remaining transfer capability is 731 MW. Approve the North transformer replacement on Friday.\n") },
     { name: "south-portfolio.md", mimeType: "text/markdown", buffer: Buffer.from("# South portfolio\n\nThe remaining transfer capability is 842 MW. Defer the South cable renewal until November.\n") }

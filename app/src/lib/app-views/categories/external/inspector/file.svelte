@@ -65,28 +65,6 @@
     <PanelBanner title="File metadata unavailable" tone="danger">{unavailable.detail}</PanelBanner>
   {:else if file}
     <div class="stack">
-      <div class="toolbar" role="toolbar" aria-label="File actions">
-        <Button variant="ghost" size="sm" disabled={busy} onclick={() => fileInspector.startEdit(state, file, reupload.pending, "name")}><Pencil aria-hidden="true" /> Rename</Button>
-        <form {...reupload} class="reupload-form" enctype="multipart/form-data">
-          <input {...reupload.fields.externalFileId.as("hidden", file.id)} />
-          <input {...reupload.fields.baseRevision.as("hidden", file.revision)} />
-          <label class:disabled={busy} class="action-link reupload-action">
-            <RefreshCw size={13} aria-hidden="true" /> {reupload.pending > 0 ? "Uploading…" : "Re-upload"}
-            <input {...reupload.fields.file.as("file")} class="visually-hidden" disabled={busy}
-              onchange={(event) => void fileInspector.chooseReplacement(state, event.currentTarget, file, reupload)} />
-          </label>
-        </form>
-        {#if file.native.state === "available"}
-          <a class="action-link" href={externalFileDownloadHref(view.project, file.id)} download><Download size={13} aria-hidden="true" /> Download</a>
-        {:else}
-          <span class="action-link disabled"><Download size={13} aria-hidden="true" /> Download</span>
-        {/if}
-        <Button variant="ghost" size="sm" disabled={busy} onclick={() => fileInspector.startEdit(state, file, reupload.pending, "path")}><FolderInput aria-hidden="true" /> Move</Button>
-        <Button variant="ghost" size="sm" class="delete-action" disabled={busy || file.usage.total > 0}
-          title={file.usage.total > 0 ? "Remove references first" : "Delete from project"}
-          onclick={() => fileInspector.askToDelete(state, file)}><Trash2 aria-hidden="true" /> Delete</Button>
-      </div>
-
       {#if state.actionError}<PanelBanner title="The file did not change" tone="attention">{state.actionError}</PanelBanner>{/if}
       {#if state.actionNotice}<PanelBanner title="File updated" tone="intelligence">{state.actionNotice}</PanelBanner>{/if}
       {#if file.native.state === "missing"}
@@ -109,8 +87,8 @@
         {/if}
         {#if state.editingPath}
           <div class="inline-editor">
-            <Input bind:ref={state.pathInput} bind:value={state.pathDraft} aria-label="Destination directory; blank means External root" maxlength={512} disabled={busy}
-              placeholder="External root" onkeydown={(event) => fileInspector.editKeydown(state, event, () => fileInspector.commitPath(state, view, file), file)} />
+            <Input bind:ref={state.pathInput} bind:value={state.pathDraft} aria-label="Destination directory; blank means External Files root" maxlength={512} disabled={busy}
+              placeholder="External Files root" onkeydown={(event) => fileInspector.editKeydown(state, event, () => fileInspector.commitPath(state, view, file), file)} />
             <Button size="sm" disabled={busy} onclick={() => fileInspector.commitPath(state, view, file)}>{state.pending === "move" ? "Moving…" : "Move"}</Button>
             <Button variant="ghost" size="icon-sm" aria-label="Cancel move" onclick={() => fileInspector.cancelEdit(state, file)}><X aria-hidden="true" /></Button>
           </div>
@@ -118,6 +96,29 @@
           <button type="button" class="editable-value path" title="Double-click to change directory" ondblclick={() => fileInspector.startEdit(state, file, reupload.pending, "path")}><span>{file.relativePath}</span><Pencil size={11} aria-hidden="true" /></button>
         {/if}
       </section>
+
+      <div class="divider" aria-hidden="true"></div><FileDetails />
+      <div class="divider" aria-hidden="true"></div>
+      <div class="toolbar" role="toolbar" aria-label="File actions">
+        <form {...reupload} class="reupload-form" enctype="multipart/form-data">
+          <input {...reupload.fields.externalFileId.as("hidden", file.id)} />
+          <input {...reupload.fields.baseRevision.as("hidden", file.revision)} />
+          <label class:disabled={busy} class="action-link reupload-action">
+            <RefreshCw size={13} aria-hidden="true" /> {reupload.pending > 0 ? "Uploading…" : "Re-upload"}
+            <input {...reupload.fields.file.as("file")} class="visually-hidden" disabled={busy}
+              onchange={(event) => void fileInspector.chooseReplacement(state, event.currentTarget, file, reupload)} />
+          </label>
+        </form>
+        {#if file.native.state === "available"}
+          <a class="action-link" href={externalFileDownloadHref(view.project, file.id)} download><Download size={13} aria-hidden="true" /> Download</a>
+        {:else}
+          <span class="action-link disabled"><Download size={13} aria-hidden="true" /> Download</span>
+        {/if}
+        <Button variant="ghost" size="sm" disabled={busy} onclick={() => fileInspector.startEdit(state, file, reupload.pending, "path")}><FolderInput aria-hidden="true" /> Move</Button>
+        <Button variant="ghost" size="sm" class="delete-action" disabled={busy || file.usage.total > 0}
+          title={file.usage.total > 0 ? "Remove references first" : "Delete from project"}
+          onclick={() => fileInspector.askToDelete(state, file)}><Trash2 aria-hidden="true" /> Delete</Button>
+      </div>
 
       {#if state.confirmingDelete}
         <section class="delete-confirm" role="alert" aria-labelledby="delete-file-heading">
@@ -130,7 +131,6 @@
         </section>
       {/if}
 
-      <div class="divider" aria-hidden="true"></div><FileDetails />
       {#if file.subkind === "data"}
         <div class="divider" aria-hidden="true"></div>
         <section aria-labelledby="context-heading">
@@ -144,19 +144,19 @@
       <div class="divider" aria-hidden="true"></div><FileReferences />
     </div>
   {:else}
-    <PanelEmpty title="That file is no longer in External." />
+    <PanelEmpty title="That file is no longer in External Files." />
   {/if}
 </Panel>
 
 <style>
-  .panel-heading, .toolbar, .action-link, .section-head, .confirm-actions, .inline-editor, .context-actions { display: flex; align-items: center; }
+  .panel-heading, .action-link, .section-head, .confirm-actions, .inline-editor, .context-actions { display: flex; align-items: center; }
   .panel-heading, .action-link { gap: calc(var(--token-spacing-unit) * 1.5); }
   .stack { display: flex; flex-direction: column; gap: calc(var(--token-spacing-unit) * 3); padding: 0 calc(var(--token-spacing-unit) * 3) calc(var(--token-spacing-unit) * 5); }
   h3, p { margin: 0; }
   h3 { color: var(--token-ink-muted); font-size: var(--token-text-caption); font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
-  .toolbar { flex-wrap: wrap; gap: calc(var(--token-spacing-unit) * 1); padding-bottom: calc(var(--token-spacing-unit) * 2); border-bottom: 1px solid var(--token-border-subtle); }
+  .toolbar { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: center; gap: calc(var(--token-spacing-unit) * 1); }
   .reupload-form { display: contents; }
-  .action-link { min-height: calc(var(--token-spacing-unit) * 8); cursor: pointer; padding-inline: calc(var(--token-spacing-unit) * 2.5); border-radius: var(--token-radius-control); color: var(--token-ink-secondary); font-size: var(--token-text-caption); }
+  .action-link { justify-content: center; min-width: 0; min-height: calc(var(--token-spacing-unit) * 8); cursor: pointer; padding-inline: calc(var(--token-spacing-unit) * 2.5); border-radius: var(--token-radius-control); color: var(--token-ink-secondary); font-size: var(--token-text-caption); white-space: nowrap; }
   .action-link:hover { background: var(--token-surface-panel-hover); color: var(--token-ink-primary); }
   .action-link.disabled { cursor: not-allowed; opacity: .5; }
   .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }

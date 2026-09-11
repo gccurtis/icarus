@@ -125,7 +125,7 @@
     spreadsheet: "Spreadsheet",
     research: "Research",
     analysis: "Analysis",
-    file: "External",
+    file: "External file",
     finding: "Finding"
   };
 
@@ -135,7 +135,7 @@
     spreadsheet: "Spreadsheets",
     research: "Research",
     analysis: "Analyses",
-    file: "External",
+    file: "External Files",
     finding: "Findings"
   };
 

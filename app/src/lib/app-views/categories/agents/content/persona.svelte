@@ -250,7 +250,7 @@
             <DefinitionPanel personaId={persona.id} disabled={surface.busy !== undefined} />
           </ScreenGroup>
 
-          <Grants label="Default" owner={persona.id} aligned disabled={surface.busy !== undefined} />
+          <Grants label="Scope" owner={persona.id} aligned disabled={surface.busy !== undefined} />
         </div>
 
         <ScreenGroup label={surface.band} fill>

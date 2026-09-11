@@ -16,7 +16,7 @@
 
 <Panel title="Overview">
   {#if library.error}
-    <PanelBanner title="External unavailable" tone="danger">
+    <PanelBanner title="External Files unavailable" tone="danger">
       {library.error instanceof Error ? library.error.message : String(library.error)}
     </PanelBanner>
   {:else if !library.ready}
@@ -45,7 +45,6 @@
           <dt>Managed only</dt><dd>{files.filter((file) => file.semanticTone === "limited").length}</dd>
         </dl>
       </section>
-      <p class="note">Selection belongs to the file Inspector. This context stays a project-wide reading of External.</p>
     </div>
   {/if}
 </Panel>
@@ -60,8 +59,7 @@
 
   .eyebrow,
   h3,
-  .caption,
-  .note {
+  .caption {
     margin: 0;
     color: var(--token-ink-muted);
     font-size: var(--token-text-caption);
@@ -108,11 +106,5 @@
   dd {
     color: var(--token-ink-secondary);
     font-variant-numeric: tabular-nums;
-  }
-
-  .note {
-    padding: calc(var(--token-spacing-unit) * 2);
-    border: 1px dashed var(--token-border-subtle);
-    border-radius: var(--token-radius-control);
   }
 </style>

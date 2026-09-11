@@ -15,6 +15,7 @@ export class ExternalLibraryState {
   currentDirectory = $state("");
   search = $state("");
   kind = $state("all");
+  author = $state("");
   semantic = $state("all");
   sortBy = $state("updated");
   direction = $state<"asc" | "desc">("asc");

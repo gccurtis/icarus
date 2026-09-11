@@ -37,18 +37,17 @@ test.afterEach(async ({}, testInfo: TestInfo) => {
 const openExternal = async (page: Page) => {
   await page.goto("/app/dev-project", { waitUntil: "networkidle" });
   const tabs = page.getByRole("toolbar", { name: "Open tabs" });
-  const externalTab = tabs.getByRole("button", { name: "External", exact: true });
+  const externalTab = tabs.getByRole("button", { name: "External Files", exact: true });
   await expect(externalTab).toBeVisible();
   await externalTab.click();
   await expect(externalTab).toHaveAttribute("aria-current", "page");
-  await expect(page.getByRole("heading", { level: 1, name: "External" })).toBeVisible();
-  await expect(page.getByText("External never opens a file-type editor")).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "External Files" })).toBeVisible();
   return tabs;
 };
 
 test("External remains one production singleton across inspection, navigation, and reload", async ({ page }) => {
   const tabs = await openExternal(page);
-  const externalTab = tabs.getByRole("button", { name: "External", exact: true });
+  const externalTab = tabs.getByRole("button", { name: "External Files", exact: true });
   await expect(externalTab).toHaveCount(1);
 
   await page.locator('form.upload-form input[type="file"]').first().setInputFiles({
@@ -80,8 +79,8 @@ test("External remains one production singleton across inspection, navigation, a
 
   await page.reload({ waitUntil: "networkidle" });
   const reloadedTabs = page.getByRole("toolbar", { name: "Open tabs" });
-  await expect(reloadedTabs.getByRole("button", { name: "External", exact: true })).toHaveCount(1);
-  await expect(reloadedTabs.getByRole("button", { name: "External", exact: true }))
+  await expect(reloadedTabs.getByRole("button", { name: "External Files", exact: true })).toHaveCount(1);
+  await expect(reloadedTabs.getByRole("button", { name: "External Files", exact: true }))
     .toHaveAttribute("aria-current", "page");
   await expect(page.getByRole("complementary", { name: "Inspector" })
     .getByText("singleton-proof.md", { exact: true }).first()).toBeVisible();
@@ -115,8 +114,8 @@ test("External manages rename, move, re-upload, download, History, and deletion 
   await expect(inspector.getByText("live-code.ts", { exact: true })).toBeVisible();
 
   await inspector.getByRole("button", { name: "Move", exact: true }).first().click();
-  await inspector.getByLabel("Destination directory; blank means External root").fill("validation");
-  await inspector.getByRole("button", { name: "Move", exact: true }).last().click();
+  await inspector.getByLabel("Destination directory; blank means External Files root").fill("validation");
+  await inspector.getByRole("region", { name: "File", exact: true }).getByRole("button", { name: "Move", exact: true }).click();
   await expect(inspector.getByText("validation/managed-code.ts", { exact: true })).toBeVisible();
 
   await inspector.locator('form.reupload-form input[type="file"]').setInputFiles({
@@ -178,7 +177,7 @@ test("External manages rename, move, re-upload, download, History, and deletion 
   expect((await page.request.get(secondHref!)).status()).toBe(404);
 
   await page.reload({ waitUntil: "networkidle" });
-  await expect(page.getByRole("heading", { level: 1, name: "External" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "External Files" })).toBeVisible();
   await expect(page.getByRole("table").getByRole("button", {
     name: "managed-code.ts",
     exact: true
@@ -320,7 +319,7 @@ test("directory ingestion handles the real External source tree plus a substanti
     await page.getByRole("button", { name: "Upload folder", exact: true }).click();
     await expect(page.getByText(`${paths.length} uploaded · 0 already present · 0 rejected.`)).toBeVisible({ timeout: 60_000 });
 
-    await page.getByRole("button", { name: "Directory", exact: true }).click();
+    await page.getByRole("radio", { name: "Directory", exact: true }).click();
     const rootTable = page.getByRole("table");
     await expect(rootTable.getByRole("button", { name: "external-source", exact: true })).toBeVisible();
     await rootTable.getByRole("button", { name: "external-source", exact: true }).click();
@@ -338,12 +337,12 @@ test("directory ingestion handles the real External source tree plus a substanti
     await expect(rootTable.getByRole("button", { name: "archive", exact: true })).toBeVisible({ timeout: 60_000 });
 
     await page.reload({ waitUntil: "networkidle" });
-    await expect(page.getByRole("heading", { level: 1, name: "External" })).toBeVisible();
-    await page.getByRole("button", { name: "Directory", exact: true }).click();
+    await expect(page.getByRole("heading", { level: 1, name: "External Files" })).toBeVisible();
+    await page.getByRole("radio", { name: "Directory", exact: true }).click();
     const reloaded = page.getByRole("table");
     await reloaded.getByRole("button", { name: "archive", exact: true }).dblclick();
     await reloaded.getByRole("button", { name: "external-source-verified", exact: true }).dblclick();
-    const breadcrumbs = page.getByRole("navigation", { name: "External directory" });
+    const breadcrumbs = page.getByRole("navigation", { name: "External Files directory" });
     await expect(breadcrumbs).toContainText("archive");
     await expect(breadcrumbs).toContainText("external-source-verified");
     await reloaded.getByRole("button", { name: "large-payload.bin", exact: true }).click();
@@ -357,7 +356,7 @@ test("directory ingestion handles the real External source tree plus a substanti
     expect(createHash("sha256").update(downloadedBytes).digest("hex")).toBe(largeHash);
     expect(response.headers()["etag"]).toBe(`"sha256-${largeHash}"`);
 
-    await page.getByRole("button", { name: "Table", exact: true }).click();
+    await page.getByRole("radio", { name: "Table", exact: true }).click();
     const search = page.getByLabel("Search names, paths, or media types");
     for (const [path] of exactPaths) {
       const movedPath = `archive/external-source-verified/${path}`;

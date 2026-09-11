@@ -428,7 +428,7 @@ test("a slide Prompt Block is grounded by one exact uploaded External file", asy
 
   await page.goto("/app/dev-project", { waitUntil: "networkidle" });
   const tabs = page.getByRole("toolbar", { name: "Open tabs" });
-  await tabs.getByRole("button", { name: "External", exact: true }).click();
+  await tabs.getByRole("button", { name: "External Files", exact: true }).click();
   await page.locator('form.upload-form input[type="file"]').first().setInputFiles({
     name: "slide-grounding.md",
     mimeType: "text/markdown",

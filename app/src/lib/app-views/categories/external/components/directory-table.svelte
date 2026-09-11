@@ -34,7 +34,7 @@
   } as const;
 </script>
 
-<ScreenTable columns={["Name", "Type", "Contents", "Size", "Updated"]}>
+<ScreenTable columns={["Name", "Type", "Contents", "Size", "Author", "Last updated"]}>
   {#each directories as directory (directory.relativePath)}
     <ScreenRow selected={externalDirectoryIsSelected(view, directory.relativePath)}
       onselect={() => inspectExternalDirectory(view, directory.relativePath)}
@@ -44,7 +44,8 @@
         onclick={() => inspectExternalDirectory(view, directory.relativePath)}><Folder size={15} aria-hidden="true" /><span>{directory.name}</span></button></ScreenCell>
       <ScreenCell>Folder</ScreenCell>
       <ScreenCell num>{directory.descendantFileCount} {directory.descendantFileCount === 1 ? "file" : "files"}</ScreenCell>
-      <ScreenCell num>{directory.sizeLabel}</ScreenCell>
+      <ScreenCell num><span class="file-size">{directory.sizeLabel}</span></ScreenCell>
+      <ScreenCell>—</ScreenCell>
       <ScreenCell num>—</ScreenCell>
     </ScreenRow>
   {/each}
@@ -52,11 +53,12 @@
     {@const Icon = icons[row.subkind]}
     <ScreenRow selected={externalFileIsSelected(view, row.id)}
       onselect={() => inspectExternalFile(view, row.id)} onopen={() => inspectExternalFile(view, row.id)}>
-      <ScreenCell><button class="item-name" type="button" onclick={() => inspectExternalFile(view, row.id)}><Icon size={14} aria-hidden="true" /><span>{row.name}</span></button></ScreenCell>
+      <ScreenCell><button class="item-name" type="button" title={row.name} onclick={() => inspectExternalFile(view, row.id)}><Icon size={14} aria-hidden="true" /><span>{row.name}</span></button></ScreenCell>
       <ScreenCell>{KIND_LABEL[row.subkind]}</ScreenCell>
-      <ScreenCell><span class="semantic-pill {row.semanticTone}">{row.semanticLabel}</span></ScreenCell>
-      <ScreenCell num>{row.sizeLabel}</ScreenCell>
-      <ScreenCell num>{row.updated}</ScreenCell>
+      <ScreenCell><span class="semantic-status {row.semanticTone}">{row.semanticLabel}</span></ScreenCell>
+      <ScreenCell num><span class="file-size">{row.sizeLabel}</span></ScreenCell>
+      <ScreenCell><span class="file-author" title={`Last updated by ${row.updatedByName}`}>{row.updatedByName}</span></ScreenCell>
+      <ScreenCell num><span class="file-updated" title={new Date(row.updatedAt).toLocaleString()}>{row.updated}</span></ScreenCell>
     </ScreenRow>
   {/each}
 </ScreenTable>
@@ -64,9 +66,13 @@
 <style>
   .item-name { display: flex; min-height: calc(var(--token-spacing-unit) * 8); align-items: center; gap: calc(var(--token-spacing-unit) * 2); color: var(--token-ink-primary); text-align: start; }
   .item-name:hover span { text-decoration: underline; }
+  .item-name span { max-width: 16rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .item-name :global(svg) { flex: none; color: var(--token-ink-muted); }
-  .semantic-pill { display: inline-flex; padding: calc(var(--token-spacing-unit) * 1) calc(var(--token-spacing-unit) * 1.5); border-radius: 999px; background: var(--token-surface-panel-hover); color: var(--token-ink-muted); font-size: var(--token-text-caption); white-space: nowrap; }
-  .semantic-pill.current { background: var(--token-color-success-surface); color: var(--token-color-success-text); }
-  .semantic-pill.queued { background: var(--token-color-attention-surface); color: var(--token-color-attention-text); }
-  .semantic-pill.failed { background: var(--token-color-danger-surface); color: var(--token-color-danger-text); }
+  .file-size { display: inline-block; min-width: 4.5rem; white-space: nowrap; }
+  .file-author { display: block; max-width: 9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .file-updated { white-space: nowrap; }
+  .semantic-status { color: var(--token-ink-muted); font-size: var(--token-text-caption); font-weight: 600; }
+  .semantic-status.current { color: var(--token-color-success-text); }
+  .semantic-status.queued { color: var(--token-color-attention-text); }
+  .semantic-status.failed { color: var(--token-color-danger-text); }
 </style>

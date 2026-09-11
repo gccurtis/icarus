@@ -92,8 +92,8 @@
     class="tab icon"
     class:on={here === "external"}
     aria-current={here === "external" ? "page" : undefined}
-    title="External"
-    aria-label="External"
+    title="External Files"
+    aria-label="External Files"
     onclick={() => view.open({ category: "external" })}
   >
     <FolderOpen size={15} aria-hidden="true" />

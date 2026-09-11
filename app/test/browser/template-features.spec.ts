@@ -592,7 +592,7 @@ test("a template scope can choose an uploaded External file and ground its Promp
   test.setTimeout(180_000);
 
   await page.goto("/app/dev-project", { waitUntil: "networkidle" });
-  await tabs(page).getByRole("button", { name: "External", exact: true }).click();
+  await tabs(page).getByRole("button", { name: "External Files", exact: true }).click();
   await page.locator('form.upload-form input[type="file"]').first().setInputFiles({
     name: "external-grounding.md",
     mimeType: "text/markdown",
