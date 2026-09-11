@@ -10,6 +10,8 @@
   import { tabAgentNames } from "$surfaces/tab-bar/procedures/read-agents";
   import { tabResourceNames } from "$surfaces/tab-bar/procedures/read-resources";
   import { tabTemplateStageNames } from "$surfaces/tab-bar/procedures/read-template-stages";
+  import { scrollTabs } from "$surfaces/tab-bar/procedures/scroll-tabs";
+  import { revealActiveTab } from "$surfaces/tab-bar/effects/reveals-active-tab.svelte";
 
   /**
    * The tab bar — what is open, and which one is active.
@@ -18,7 +20,7 @@
    * than in a route. It renders the list and reports two intents; the model owns
    * order, activation, and what happens after a close.
    *
-   * The three permanent tabs are written out. `open` on one of those categories
+   * The four permanent tabs are written out. `open` on one of those categories
    * finds the tab already there and activates it, so none of them needs an id.
    *
    * **Not an ARIA tablist.** A `role="tab"` makes its children presentational,
@@ -48,9 +50,11 @@
   );
 
   const NewTab = CATEGORY_ENTRIES["new-tab"].icon;
+  let transientTabs = $state<HTMLDivElement>();
+  revealActiveTab(() => transientTabs, () => view.activeId);
 </script>
 
-<div class="strip" role="toolbar" aria-label="Open tabs">
+<div class="strip" role="toolbar" aria-label="Open tabs" use:scrollTabs={() => transientTabs}>
   <button
     type="button"
     class="tab icon"
@@ -101,28 +105,30 @@
 
   <span class="divider" aria-hidden="true"></span>
 
-  {#each opened as { tab, label, Icon } (tab.id)}
-    <div class="tab named" class:on={tab.id === view.activeId}>
-      <button
-        type="button"
-        class="face"
-        aria-current={tab.id === view.activeId ? "page" : undefined}
-        onclick={() => view.activate(tab.id)}
-      >
-        <Icon size={14} aria-hidden="true" />
-        <span class="truncate">{label}</span>
-      </button>
-      <button
-        type="button"
-        class="close"
-        title="Close {label}"
-        aria-label="Close {label}"
-        onclick={() => view.close(tab.id)}
-      >
-        <X size={12} aria-hidden="true" />
-      </button>
-    </div>
-  {/each}
+  <div class="transient-tabs" bind:this={transientTabs}>
+    {#each opened as { tab, label, Icon } (tab.id)}
+      <div class="tab named" class:on={tab.id === view.activeId}>
+        <button
+          type="button"
+          class="face"
+          aria-current={tab.id === view.activeId ? "page" : undefined}
+          onclick={() => view.activate(tab.id)}
+        >
+          <Icon size={14} aria-hidden="true" />
+          <span class="truncate">{label}</span>
+        </button>
+        <button
+          type="button"
+          class="close"
+          title="Close {label}"
+          aria-label="Close {label}"
+          onclick={() => view.close(tab.id)}
+        >
+          <X size={12} aria-hidden="true" />
+        </button>
+      </div>
+    {/each}
+  </div>
 
   <button
     type="button"
@@ -138,18 +144,30 @@
 <style>
   .strip {
     display: flex;
+    min-width: 0;
     height: 100%;
     align-items: stretch;
     gap: var(--token-spacing-unit);
-    overflow-x: auto;
+    overflow: hidden;
     padding-inline: calc(var(--token-spacing-unit) * 2);
     background-color: var(--token-surface-panel);
     border-bottom: 1px solid var(--token-border-subtle);
+  }
+
+  .transient-tabs {
+    display: flex;
+    flex: 0 1 auto;
+    min-width: 0;
+    align-items: stretch;
+    gap: var(--token-spacing-unit);
+    overflow-x: auto;
+    overflow-y: hidden;
     scrollbar-width: none;
   }
 
   .tab {
     display: flex;
+    flex: none;
     align-items: center;
     gap: calc(var(--token-spacing-unit) * 1.5);
     border-bottom: 2px solid transparent;

@@ -17,7 +17,7 @@ import { nameOf, type ResourceNames } from "$surfaces/tab-bar/procedures/resourc
  * publishes a `Category` and never interprets it, and each surface reads that
  * one vocabulary its own way.
  *
- * The three permanent categories are not in the table. The strip writes them out.
+ * The four permanent categories are not in the table. The strip writes them out.
  */
 
 /** A category a person opens, rather than one that is always there. */
