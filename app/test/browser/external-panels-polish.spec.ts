@@ -107,7 +107,7 @@ test("External Files inspector keeps four actions above collapsible details at w
   const details = inspector.getByRole("button", { name: "Details", exact: true });
   await expect(details).toBeVisible();
   await checkActionLayout(inspector);
-  await expect(inspector.getByRole("button", { name: /^Status (In progress|Ready)$/ })).toBeVisible();
+  await expect(inspector.getByRole("button", { name: /^Status (Queued|In progress|Ready)$/ })).toBeVisible();
   await expect(inspector.getByText("References", { exact: true })).toBeVisible();
   await details.click();
   await expect(inspector.getByText("References", { exact: true })).toHaveCount(0);

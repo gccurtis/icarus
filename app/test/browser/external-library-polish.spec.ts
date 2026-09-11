@@ -49,7 +49,7 @@ test("External Files has a standalone view toggle, author filtering and readable
   await expect(row.locator(".file-author")).toHaveText(authorName);
   await expect(row.locator(".file-author")).toHaveAttribute("title", `Last updated by ${authorName}`);
   await expect(row.locator(".file-updated")).toHaveText("NOW");
-  await expect(row.locator(".semantic-status")).toHaveText(/^(In progress|Ready)$/);
+  await expect(row.locator(".semantic-status")).toHaveText(/^(Queued|In progress|Ready)$/);
 
   await inspector.getByRole("button", { name: "Move", exact: true }).click();
   const directory = "research/quarterly-reports/long-origin-name-for-path-disambiguation";

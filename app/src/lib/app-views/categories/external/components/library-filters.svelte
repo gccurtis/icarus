@@ -23,13 +23,13 @@
   const statusTitle = $derived({
     all: "All statuses",
     current: "Ready",
-    queued: "In progress",
+    queued: "Queued / in progress",
     attention: "Needs attention",
     limited: "Stored only"
   }[state.semantic] ?? "All statuses");
 </script>
 
-<ScreenFilters placeholder="Search names, paths, or media types" sorts={sorts}
+<ScreenFilters placeholder="Search names, paths, or media types" fluidSearch sorts={sorts}
   bind:sort={state.sortBy} bind:value={state.search}>
   <select class="filter-control kind-filter" bind:value={state.kind} aria-label="File kind" title={kindTitle}>
     <option value="all" title="All kinds">All kinds</option>
@@ -42,7 +42,7 @@
   <select class="filter-control status-filter" bind:value={state.semantic} aria-label="Status" title={statusTitle}>
     <option value="all" title="All statuses">All statuses</option>
     <option value="current" title="Ready">Ready</option>
-    <option value="queued" title="In progress">In progress</option>
+    <option value="queued" title="Queued / in progress">Queued / in progress</option>
     <option value="attention" title="Needs attention">Needs attention</option>
     <option value="limited" title="Stored only">Stored only</option>
   </select>

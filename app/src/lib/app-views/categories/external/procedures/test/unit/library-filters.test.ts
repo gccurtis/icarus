@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 import { ExternalLibraryState } from "$app-views/categories/external/content/library.state.svelte";
 import { clearLibraryFilters } from "$app-views/categories/external/procedures/clear-library-filters";
 import { externalAuthors, libraryFiltersActive, visibleExternalFiles } from "$app-views/categories/external/procedures/library-view";
-import type { LibraryExternalFile } from "$app-views/categories/external/procedures/library-query";
+import {
+  semanticPresentation,
+  type LibraryExternalFile
+} from "$app-views/categories/external/procedures/library-query";
 import { updatedTime } from "$app-views/categories/external/procedures/updated-time";
 import type { Id } from "$representation/data/types/core/id";
 
@@ -65,5 +68,26 @@ describe("compact update times", () => {
   ])("formats elapsed %i milliseconds as %s", (elapsed, label) => {
     const now = Date.UTC(2026, 8, 10);
     expect(updatedTime(now - elapsed, now)).toBe(label);
+  });
+});
+
+describe("External Files semantic status labels", () => {
+  const current = file("one", "notes.md", "Mira", 10);
+
+  it("distinguishes durable queued work from a claimed running job", () => {
+    expect(semanticPresentation({
+      ...current,
+      semantic: {
+        ...current.semantic,
+        exact: { eligible: true, state: "queued", objectCount: 0 }
+      }
+    })).toEqual({ semanticLabel: "Queued", semanticTone: "queued" });
+    expect(semanticPresentation({
+      ...current,
+      semantic: {
+        ...current.semantic,
+        exact: { eligible: true, state: "running", objectCount: 0 }
+      }
+    })).toEqual({ semanticLabel: "In progress", semanticTone: "queued" });
   });
 });

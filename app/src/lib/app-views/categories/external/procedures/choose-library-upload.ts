@@ -17,6 +17,10 @@ export const chooseLibraryUpload = async (
 ): Promise<void> => {
   if (!receiveLibraryPicker(state, input, picker, setRelativePaths)) return;
   await tick();
-  await upload.submit();
-  input.value = "";
+  try {
+    await upload.submit();
+  } finally {
+    // Let a user retry the same file after either a refusal or a transport fault.
+    input.value = "";
+  }
 };

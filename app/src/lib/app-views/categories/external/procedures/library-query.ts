@@ -57,7 +57,7 @@ export const semanticPresentation = (
 ): Pick<LibraryExternalFile, "semanticLabel" | "semanticTone"> => {
   const states = [row.semantic.exact.state, row.semantic.material.state];
   if (states.includes("running")) return { semanticLabel: "In progress", semanticTone: "queued" };
-  if (states.includes("queued")) return { semanticLabel: "In progress", semanticTone: "queued" };
+  if (states.includes("queued")) return { semanticLabel: "Queued", semanticTone: "queued" };
   if (states.includes("failed")) return { semanticLabel: "Needs attention", semanticTone: "failed" };
   if (states.includes("stale")) return { semanticLabel: "Needs attention", semanticTone: "failed" };
   if (row.semantic.material.descriptor !== undefined) {

@@ -60,6 +60,7 @@
 <ScreenGroup label="Resources" fill>
   <ScreenFilters
     placeholder="Search this project"
+    fluidSearch
     sorts={SORTS}
     bind:sort={filters.sortBy}
     bind:value={filters.search}

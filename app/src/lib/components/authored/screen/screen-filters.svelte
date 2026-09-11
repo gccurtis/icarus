@@ -45,6 +45,7 @@
     sorts,
     sort = $bindable(""),
     value = $bindable(""),
+    fluidSearch = false,
     onsort,
     order,
     children
@@ -58,6 +59,8 @@
     sorts?: readonly { value: string; label: string }[];
     sort?: string;
     value?: string;
+    /** Let the search consume all space left by sibling controls. */
+    fluidSearch?: boolean;
     onsort?: (next: string) => void;
     /**
      * Which way the order runs, drawn inside the order's own frame. A control
@@ -85,7 +88,7 @@
 </script>
 
 <div {...trace} class="flex flex-wrap items-center gap-2">
-  <InputGroup.Root class="h-7 min-w-45 flex-1">
+  <InputGroup.Root class={cn("h-7 min-w-45 flex-1", !fluidSearch && "max-w-75")}>
     <InputGroup.Addon class="text-ink-muted [&>svg]:size-3.5">
       <Search aria-hidden="true" />
     </InputGroup.Addon>
