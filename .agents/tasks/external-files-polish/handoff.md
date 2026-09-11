@@ -50,4 +50,6 @@ Browser fixtures used isolated seeded Store/native-file directories, app port 52
 
 ## Next step
 
-Commit the exact reviewed task changes and publish `HEAD:refs/heads/work/external-files-polish`, then confirm clean status and matching upstream. Keep this worktree for review. Integration into main requires separate authorization. The final task head is the commit containing this completed handoff on `work/external-files-polish`; resolve it with `git log -1 work/external-files-polish`.
+Implementation commit `e1b35bc8f4a3e96349fda4c6c6837b42ce8e3cc2` is committed and pushed to `origin/work/external-files-polish`. This follow-up handoff commit records completion without changing the verified app tree. Resolve the final task head with `git log -1 work/external-files-polish`.
+
+Keep the worktree for review. No implementation or verification step remains for this request. Integration into main requires separate authorization; neither main nor the user's backlog file was changed.
