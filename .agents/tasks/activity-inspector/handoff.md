@@ -19,9 +19,10 @@ native resources and External Files open their owning surfaces; persona, task,
 and automation open exact Agents details; findings and connectors expose clear
 future placeholders; missing targets explain that they are unavailable.
 
-The follow-up asks for a structured Activity capability design. That persistence
-rewrite is documented as the proposed next change because Research Chat and
-Agents task semantics still require product decisions. This branch does not
+The follow-up asks for a structured Activity capability design. The user settled
+its remaining scope: Research Chat and prompt blocks do not emit Activity; Agents
+tasks emit initial-start and completion events; retention remains a future
+database/storage policy. This branch documents that next change but does not
 change the activity schema, producer vocabulary, or seed data.
 
 ## Decisions and authority
@@ -97,6 +98,9 @@ Activity capability. Producers submit a discriminated event and structured facts
 through a transaction-aware recorder. Activity owns validation, frozen target
 construction, display formatting, and destinations. The recorder must use the
 originating Store unit of work so the domain mutation and history remain atomic.
+Its settled task events are `agents.task-started` and `agents.task-completed`;
+completion outcome is structured detail rather than a verb. Research Chat and
+prompt blocks stay outside Activity, and retention is deferred to storage policy.
 
 ## Verification evidence
 
@@ -131,7 +135,7 @@ unit, quick, and Chromium profiles cover the changed code and interactions.
 Connector snapshots cannot be checked for current existence until a scoped
 connector index exists, so they intentionally remain placeholder links. Activity
 still accepts arbitrary verbs and the seed still describes behavior the product
-cannot emit; the design suite makes that debt and the required decisions explicit.
+cannot emit; the design suite makes that debt and settled replacement explicit.
 
 Review `http://127.0.0.1:5311/` and `work/activity-inspector`. Main integration
 still needs explicit authorization.
@@ -140,7 +144,8 @@ still needs explicit authorization.
 
 - Existing commits: `45e49e3`, `6a8533c`, `2b1220e`, `660277b`
 - Follow-up implementation commit: `e01853b` (`Expand activity destinations and reference`)
+- Settled scope: no Research Chat/prompt-block activity; Agents initial start and
+  completion; retention deferred to the future storage layer
 - Publication target: `origin/work/activity-inspector`; no main integration
 - Worktree cleanup: retain because the local reference server and review remain active
-- Next owner: review the served suite and task branch, then decide the event semantics
-  before the typed Activity persistence rewrite
+- Next owner: implement the settled typed Activity persistence rewrite in a distinct task
