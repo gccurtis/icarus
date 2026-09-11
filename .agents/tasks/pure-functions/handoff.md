@@ -6,14 +6,15 @@ Do not include credentials or copy sensitive logs.
 
 ## Snapshot
 
-- Updated: 2026-09-11T13:53:48-04:00
-- Status: superseding architecture contract drafted, adversarially reviewed, and
-  documentation-verified; commit/push pending
+- Updated: 2026-09-11T13:55:21-04:00
+- Status: superseding architecture contract drafted, adversarially reviewed,
+  documentation-verified, and committed; push pending
 - Worktree: `/home/jakul/cyberia/icarus-worktrees/pure-functions`
 - Branch: `work/pure-functions`
 - Head when initialized: `b152b52ddd1fef5dfdaf8e2a4b6d03796cf011fd`
-- Current branch head / dirty paths: `99b31b9fa3c5d233bba42aaf89792f480fb4c234`;
-  modified `handoff.md` and new `contract.md`
+- Current verified contract commit / dirty paths:
+  `fcc92c5e92a7e4330779db387d915240438c8a8d`; clean before this publication-only
+  handoff update
 - Integration target / base SHA, if relevant: `origin/main` / `b152b52ddd1fef5dfdaf8e2a4b6d03796cf011fd`
 - Starting worktree/base record: optional `worktree.json` beside this handoff;
   link it when present and verify it against Git
@@ -189,9 +190,13 @@ skipped live-provider tests as passing.
 ## Publication / handoff
 
 - Commits created by this task: `9bef8e2977f0c7397bb5f45b8afb8bee3ca3eafa`
-  (`Enforce explicit-dependency functions`), plus the publication-only handoff
-  update that follows it
-- Push / merge state: pushed to `origin/work/pure-functions`; no main integration
+  (`Enforce explicit-dependency functions`) and
+  `fcc92c5e92a7e4330779db387d915240438c8a8d`
+  (`Document pure-islands runtime contract`), plus publication-only handoff
+  commits
+- Push / merge state: earlier branch commits pushed to
+  `origin/work/pure-functions`; contract publication push pending; no main
+  integration
 - Worktree cleanup / retained local artifacts: worktree intentionally retained;
   ignored local-configuration symlink exists
 - Next owner and remaining work: lead owns contract publication; product/checker
