@@ -57,19 +57,19 @@ export const semanticPresentation = (
   row: ExternalFileLibraryItem
 ): Pick<LibraryExternalFile, "semanticLabel" | "semanticTone"> => {
   const states = [row.semantic.exact.state, row.semantic.material.state];
-  if (states.includes("running")) return { semanticLabel: "Processing", semanticTone: "queued" };
-  if (states.includes("queued")) return { semanticLabel: "Queued", semanticTone: "queued" };
+  if (states.includes("running")) return { semanticLabel: "In progress", semanticTone: "queued" };
+  if (states.includes("queued")) return { semanticLabel: "In progress", semanticTone: "queued" };
   if (states.includes("failed")) return { semanticLabel: "Needs attention", semanticTone: "failed" };
-  if (states.includes("stale")) return { semanticLabel: "Refresh needed", semanticTone: "failed" };
+  if (states.includes("stale")) return { semanticLabel: "Needs attention", semanticTone: "failed" };
   if (row.semantic.material.descriptor !== undefined) {
-    return { semanticLabel: "Summary ready", semanticTone: "current" };
+    return { semanticLabel: "Ready", semanticTone: "current" };
   }
   if (states.includes("current")) return {
-    semanticLabel: row.semantic.exact.state === "current" ? "Search ready" : "Profile ready",
+    semanticLabel: "Ready",
     semanticTone: "current"
   };
   if (states.every((state) => state === "unsupported")) {
-    return { semanticLabel: "Managed only", semanticTone: "limited" };
+    return { semanticLabel: "Stored only", semanticTone: "limited" };
   }
   return { semanticLabel: "Not processed", semanticTone: "idle" };
 };

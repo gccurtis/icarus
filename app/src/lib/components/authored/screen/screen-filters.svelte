@@ -85,7 +85,7 @@
 </script>
 
 <div {...trace} class="flex flex-wrap items-center gap-2">
-  <InputGroup.Root class="h-7 min-w-45 max-w-75 flex-1">
+  <InputGroup.Root class="h-7 min-w-45 flex-1">
     <InputGroup.Addon class="text-ink-muted [&>svg]:size-3.5">
       <Search aria-hidden="true" />
     </InputGroup.Addon>

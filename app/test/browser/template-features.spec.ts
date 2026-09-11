@@ -600,8 +600,10 @@ test("a template scope can choose an uploaded External file and ground its Promp
       "# Imported operating limit\n\nThe remaining transfer capability is 731 MW after imports.\n"
     )
   });
-  await page.getByRole("button", { name: "Upload files", exact: true }).click();
-  await expect(page.getByText("1 uploaded · 0 already present · 0 rejected.")).toBeVisible();
+  await expect(page.getByRole("table").getByRole("button", {
+    name: "external-grounding.md",
+    exact: true
+  })).toBeVisible();
 
   await tabs(page).getByRole("button", { name: "Templates", exact: true }).click();
   await page.getByRole("button", { name: "Technical glossary", exact: true }).first().click();

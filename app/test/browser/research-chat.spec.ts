@@ -208,9 +208,10 @@ test("a deterministic research turn reads only one selected uploaded External fi
     const tabs = page.getByRole("toolbar", { name: "Open tabs" });
     await tabs.getByRole("button", { name: "External Files", exact: true }).click();
     await page.locator('form.upload-form input[type="file"]').nth(1).setInputFiles(folder);
-    await page.getByRole("button", { name: "Upload folder", exact: true }).click();
-    await expect(page.getByText("2 uploaded · 0 already present · 0 rejected."))
-      .toBeVisible({ timeout: 30_000 });
+    await expect(page.getByRole("table").getByRole("button", {
+      name: "research-evidence.md",
+      exact: true
+    }).first()).toBeVisible({ timeout: 30_000 });
 
     await tabs.getByRole("button", { name: "Overview", exact: true }).click();
     await page.locator(".area-create").getByRole("button", { name: "Research chat" }).click();

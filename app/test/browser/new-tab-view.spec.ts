@@ -43,6 +43,20 @@ const inspectLayout = async (page: Page, info: TestInfo, name: string) => {
     buttons.filter((button) => button.scrollWidth > button.clientWidth + 2).map((button) => button.textContent?.trim())
   );
   expect(overflowing, `${name}: create labels fit their buttons`).toEqual([]);
+  const scrolling = await page.evaluate(() => {
+    const surface = document.querySelector<HTMLElement>(".launcher-surface")!;
+    const table = document.querySelector<HTMLElement>(
+      '.area-resources [data-slot="table-container"]'
+    )!;
+    return {
+      surfaceClient: surface.clientHeight,
+      surfaceScroll: surface.scrollHeight,
+      tableClient: table.clientHeight,
+      tableScroll: table.scrollHeight
+    };
+  });
+  expect(scrolling.surfaceScroll - scrolling.surfaceClient, `${name}: launcher owns no scroll`).toBeLessThanOrEqual(1);
+  expect(scrolling.tableScroll, `${name}: resource rows scroll inside the table`).toBeGreaterThan(scrolling.tableClient);
   await page.locator(".area-create").scrollIntoViewIfNeeded();
   await page.screenshot({ path: info.outputPath(`${name}.png`) });
 };
@@ -106,9 +120,21 @@ test("the resource table filters, sorts, inspects, and opens with double-click o
   await visitNewTab(page);
   const table = resources(page);
   const rows = table.locator("tbody tr");
-  await table.getByRole("combobox", { name: "Kind", exact: true }).selectOption("document");
+  const search = table.getByRole("searchbox");
+  const kind = table.getByRole("combobox", { name: "Kind", exact: true });
+  const actor = table.getByRole("combobox", { name: "Updated by", exact: true });
+  const widths = await Promise.all([search.locator(".."), kind, actor].map(async (control) =>
+    (await control.boundingBox())!.width
+  ));
+  expect(widths[0]).toBeGreaterThan(widths[1]);
+  expect(widths[0]).toBeGreaterThan(widths[2]);
+  await expect(actor).toHaveAttribute("title", "Anyone");
+  await expect(actor.locator('option[value="all"]')).toHaveAttribute("title", "Anyone");
+  await kind.selectOption("document");
   await expect(rows).toHaveCount(4);
-  await table.getByRole("combobox", { name: "Updated by", exact: true }).selectOption({ label: "Mira Okonkwo" });
+  await actor.selectOption({ label: "Mira Okonkwo" });
+  await expect(actor).toHaveAttribute("title", "Mira Okonkwo");
+  await expect(actor.locator('option[value="Mira Okonkwo"]')).toHaveAttribute("title", "Mira Okonkwo");
   await expect(rows).toHaveCount(2);
   await expect(rows.locator("td:nth-child(4)")).toHaveText(["Mira Okonkwo", "Mira Okonkwo"]);
   await table.getByRole("searchbox").fill("Winter readiness");
@@ -144,9 +170,9 @@ test("the resource table filters, sorts, inspects, and opens with double-click o
   await expect(launchers(page)).toHaveCount(0);
 });
 
-test("only New Tab hides the resource count, including after filtering", async ({ page }) => {
+test("resource tables omit redundant matched totals in New Tab and Project Overview", async ({ page }) => {
   await page.goto("/app/dev-project", { waitUntil: "networkidle" });
-  await expect(resources(page).getByText(/^\d+ of \d+$/, { exact: true })).toBeVisible();
+  await expect(resources(page).getByText(/^\d+ of \d+$/, { exact: true })).toHaveCount(0);
   await openNewTab(page);
   await expect(resources(page).getByText(/^\d+ of \d+$/, { exact: true })).toHaveCount(0);
   await resources(page).getByRole("combobox", { name: "Kind", exact: true }).selectOption("research");
@@ -155,7 +181,7 @@ test("only New Tab hides the resource count, including after filtering", async (
   )]).toEqual(["Research"]);
   await expect(resources(page).getByText(/^\d+ of \d+$/, { exact: true })).toHaveCount(0);
   await tabs(page).getByRole("button", { name: "Overview", exact: true }).click();
-  await expect(resources(page).getByText(/^\d+ of \d+$/, { exact: true })).toBeVisible();
+  await expect(resources(page).getByText(/^\d+ of \d+$/, { exact: true })).toHaveCount(0);
 });
 
 test("New Tab offers real chat and spreadsheet actions, with an alert-only finding action", async ({ page }, info) => {

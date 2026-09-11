@@ -51,8 +51,10 @@ test("a directly authored document Prompt Block reads one exact uploaded Externa
       "# Imported transfer evidence\n\nThe remaining transfer capability is 764 MW for the direct document scenario.\n"
     )
   });
-  await page.getByRole("button", { name: "Upload files", exact: true }).click();
-  await expect(page.getByText("1 uploaded · 0 already present · 0 rejected.")).toBeVisible();
+  await expect(page.getByRole("table").getByRole("button", {
+    name: "document-prompt-evidence.md",
+    exact: true
+  })).toBeVisible();
 
   await tabs.locator('button.tab.icon[aria-label="New tab"]').click();
   await page

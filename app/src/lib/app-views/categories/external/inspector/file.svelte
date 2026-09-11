@@ -7,11 +7,10 @@
   import Trash2 from "@lucide/svelte/icons/trash-2";
   import X from "@lucide/svelte/icons/x";
 
-  import { Panel, PanelBanner, PanelChip, PanelEmpty, PanelSkeleton } from "$authored-components/panel";
+  import { Panel, PanelBanner, PanelEmpty, PanelSection, PanelSkeleton } from "$authored-components/panel";
   import { Button } from "$vendored-components/button";
   import { Input } from "$vendored-components/input";
   import FileDetails from "$app-views/categories/external/components/file-details.svelte";
-  import FileReferences from "$app-views/categories/external/components/file-references.svelte";
   import FileSemanticStatus from "$app-views/categories/external/components/file-semantic-status.svelte";
   import { ExternalFileInspectorState } from "$app-views/categories/external/inspector/file.state.svelte";
   import { keepExternalFileInspectorCurrent } from "$app-views/categories/external/procedures/effects/file-inspector.svelte";
@@ -46,7 +45,7 @@
   });
 </script>
 
-{#snippet heading()}<span class="panel-heading"><FileCog size={14} aria-hidden="true" /> File</span>{/snippet}
+{#snippet heading()}<h2 class="panel-heading text-body-sm text-ink-secondary font-semibold"><FileCog size={14} aria-hidden="true" /> File</h2>{/snippet}
 
 <Panel title={file?.name ?? "File"} heading={heading}>
   {#if !library.ready}
@@ -69,8 +68,7 @@
         <PanelBanner title="Native bytes failed verification" tone="danger">{file.native.detail}</PanelBanner>
       {/if}
 
-      <section class="identity" aria-labelledby="file-name-heading">
-        <div class="section-head"><h3 id="file-name-heading">File</h3><PanelChip>{file.usage.total} {file.usage.total === 1 ? "reference" : "references"}</PanelChip></div>
+      <div class="identity">
         {#if state.editingName}
           <div class="inline-editor">
             <Input bind:ref={state.nameInput} bind:value={state.nameDraft} aria-label="File name" maxlength={240} disabled={busy}
@@ -91,30 +89,29 @@
         {:else}
           <button type="button" class="editable-value path" title="Double-click to change directory" ondblclick={() => fileInspector.startEdit(state, file, reupload.pending, "path")}><span>{file.relativePath}</span><Pencil size={11} aria-hidden="true" /></button>
         {/if}
-      </section>
+      </div>
 
-      <div class="divider" aria-hidden="true"></div><FileDetails />
-      <div class="divider" aria-hidden="true"></div>
-      <div class="toolbar" role="toolbar" aria-label="File actions">
-        <form {...reupload} class="reupload-form" enctype="multipart/form-data">
-          <input {...reupload.fields.externalFileId.as("hidden", file.id)} />
-          <input {...reupload.fields.baseRevision.as("hidden", file.revision)} />
-          <label class:disabled={busy} class="action-link reupload-action">
-            <RefreshCw size={13} aria-hidden="true" /> {reupload.pending > 0 ? "Uploading…" : "Re-upload"}
-            <input {...reupload.fields.file.as("file")} class="visually-hidden" disabled={busy}
-              onchange={(event) => void fileInspector.chooseReplacement(state, event.currentTarget, file, reupload)} />
-          </label>
-        </form>
+      <PanelSection title="Actions">
+        <div class="action-grid" role="toolbar" aria-label="File actions">
         {#if file.native.state === "available"}
-          <a class="action-link" href={externalFileDownloadHref(view.project, file.id)} download><Download size={13} aria-hidden="true" /> Download</a>
+          <Button class="action-button" href={externalFileDownloadHref(view.project, file.id)} download><Download aria-hidden="true" /> Download</Button>
         {:else}
-          <span class="action-link disabled"><Download size={13} aria-hidden="true" /> Download</span>
+          <Button class="action-button" disabled title="Native bytes are unavailable"><Download aria-hidden="true" /> Download</Button>
         {/if}
-        <Button variant="ghost" size="sm" disabled={busy} onclick={() => fileInspector.startEdit(state, file, reupload.pending, "path")}><FolderInput aria-hidden="true" /> Move</Button>
-        <Button variant="ghost" size="sm" class="delete-action" disabled={busy || file.usage.total > 0}
+          <form {...reupload} class="reupload-form" enctype="multipart/form-data">
+            <input {...reupload.fields.externalFileId.as("hidden", file.id)} />
+            <input {...reupload.fields.baseRevision.as("hidden", file.revision)} />
+            <Button type="button" variant="outline" class="action-button" disabled={busy} onclick={() => state.reuploadInput?.click()}>
+              <RefreshCw aria-hidden="true" /> {reupload.pending > 0 ? "Uploading…" : "Re-upload"}
+            </Button>
+            <input bind:this={state.reuploadInput} {...reupload.fields.file.as("file")} hidden disabled={busy}
+              onchange={(event) => void fileInspector.chooseReplacement(state, event.currentTarget, file, reupload)} />
+          </form>
+        <Button variant="outline" class="action-button" disabled={busy} onclick={() => fileInspector.startEdit(state, file, reupload.pending, "path")}><FolderInput aria-hidden="true" /> Move</Button>
+        <Button variant="destructive" class="action-button" disabled={busy || file.usage.total > 0}
           title={file.usage.total > 0 ? "Remove references first" : "Delete from project"}
           onclick={() => fileInspector.askToDelete(state, file)}><Trash2 aria-hidden="true" /> Delete</Button>
-      </div>
+        </div>
 
       {#if state.confirmingDelete}
         <section class="delete-confirm" role="alert" aria-labelledby="delete-file-heading">
@@ -126,18 +123,22 @@
           </div>
         </section>
       {/if}
+      </PanelSection>
+
+      <PanelSection title="Details">
+        <FileDetails />
+      </PanelSection>
 
       {#if file.subkind === "data"}
-        <div class="divider" aria-hidden="true"></div>
-        <section aria-labelledby="context-heading">
-          <h3 id="context-heading">Dataset context</h3>
+        <PanelSection title="Dataset context">
           <p class="section-copy">Add the business meaning, collection method, units, or caveats that cannot be inferred safely from rows alone.</p>
           <textarea bind:value={state.contextDraft} maxlength={4000} rows={6} placeholder="What does this dataset represent?" disabled={busy}></textarea>
           <div class="context-actions"><span>{state.contextDraft.length.toLocaleString()} / 4,000</span><Button variant="outline" size="sm" disabled={busy || state.contextDraft.trim() === (file.semanticContext ?? "")} onclick={() => fileInspector.saveContext(state, view, file)}>{state.pending === "context" ? "Saving…" : "Save context"}</Button></div>
-        </section>
+        </PanelSection>
       {/if}
-      <div class="divider" aria-hidden="true"></div><FileSemanticStatus />
-      <div class="divider" aria-hidden="true"></div><FileReferences />
+      <PanelSection title="Status" count={file.semanticLabel}>
+        <FileSemanticStatus />
+      </PanelSection>
     </div>
   {:else}
     <PanelEmpty title="That file is no longer in External Files." />
@@ -145,20 +146,16 @@
 </Panel>
 
 <style>
-  .panel-heading, .action-link, .section-head, .confirm-actions, .inline-editor, .context-actions { display: flex; align-items: center; }
-  .panel-heading, .action-link { gap: calc(var(--token-spacing-unit) * 1.5); }
-  .stack { display: flex; flex-direction: column; gap: calc(var(--token-spacing-unit) * 3); padding: 0 calc(var(--token-spacing-unit) * 3) calc(var(--token-spacing-unit) * 5); }
-  h3, p { margin: 0; }
+  .panel-heading, .confirm-actions, .inline-editor, .context-actions { display: flex; align-items: center; }
+  .panel-heading { gap: calc(var(--token-spacing-unit) * 1.5); }
+  .stack { display: flex; flex-direction: column; gap: calc(var(--token-spacing-unit) * 2); padding-bottom: calc(var(--token-spacing-unit) * 5); }
+  .identity { padding-inline: calc(var(--token-spacing-unit) * 3); }
+  h2, h3, p { margin: 0; }
   h3 { color: var(--token-ink-muted); font-size: var(--token-text-caption); font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
-  .toolbar { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: center; gap: calc(var(--token-spacing-unit) * 1); }
+  .action-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: calc(var(--token-spacing-unit) * 1); }
   .reupload-form { display: contents; }
-  .action-link { justify-content: center; min-width: 0; min-height: calc(var(--token-spacing-unit) * 8); cursor: pointer; padding-inline: calc(var(--token-spacing-unit) * 2.5); border-radius: var(--token-radius-control); color: var(--token-ink-secondary); font-size: var(--token-text-caption); white-space: nowrap; }
-  .action-link:hover { background: var(--token-surface-panel-hover); color: var(--token-ink-primary); }
-  .action-link.disabled { cursor: not-allowed; opacity: .5; }
-  .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
-  :global(.delete-action) { color: var(--token-color-danger-text); }
+  :global(.action-button) { width: 100%; }
   :global(.confirm-delete) { background: var(--token-color-danger-fill); color: var(--token-color-danger-on-fill); }
-  .section-head { justify-content: space-between; gap: calc(var(--token-spacing-unit) * 2); }
   .editable-value { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: calc(var(--token-spacing-unit) * 2); color: var(--token-ink-primary); text-align: start; }
   .editable-value span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .editable-value.primary { margin-top: calc(var(--token-spacing-unit) * 2); font-size: var(--token-text-body-sm); font-weight: 600; }
@@ -170,7 +167,6 @@
   .delete-confirm { display: flex; flex-direction: column; gap: calc(var(--token-spacing-unit) * 2); padding: calc(var(--token-spacing-unit) * 2.5); border: 1px solid var(--token-color-danger-border); border-radius: var(--token-radius-control); background: var(--token-color-danger-surface); }
   .delete-confirm h3 { color: var(--token-color-danger-text); }
   .delete-confirm p, .section-copy { color: var(--token-ink-muted); font-size: var(--token-text-caption); line-height: var(--token-text-caption-leading); }
-  .divider { border-top: 1px solid var(--token-border-subtle); }
   textarea { box-sizing: border-box; width: 100%; margin-top: calc(var(--token-spacing-unit) * 2); resize: vertical; padding: calc(var(--token-spacing-unit) * 2); border: 1px solid var(--token-border-subtle); border-radius: var(--token-radius-control); outline: none; background: var(--token-surface-panel); color: var(--token-ink-primary); font: inherit; font-size: var(--token-text-caption); line-height: var(--token-text-caption-leading); }
   textarea:focus { border-color: var(--token-border-strong); }
   .section-copy { margin-top: calc(var(--token-spacing-unit) * 2); }

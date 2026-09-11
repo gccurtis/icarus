@@ -9,6 +9,7 @@
 
   import { ScreenCell, ScreenRow, ScreenTable } from "$authored-components/screen";
   import { externalLibraryContext } from "$app-views/categories/external/procedures/library-context.svelte";
+  import { EXTERNAL_LIBRARY_COLUMNS } from "$app-views/categories/external/procedures/library-columns";
   import {
     externalFileIsSelected,
     KIND_LABEL
@@ -29,7 +30,7 @@
   } as const;
 </script>
 
-<ScreenTable columns={["Name", "Path", "Kind", "Size", "Author", "Meaning", "Last updated"]}>
+<div class="external-table"><ScreenTable columns={EXTERNAL_LIBRARY_COLUMNS}>
   {#each files as row (row.id)}
     {@const Icon = icons[row.subkind]}
     <ScreenRow selected={externalFileIsSelected(view, row.id)}
@@ -43,7 +44,7 @@
       <ScreenCell num><span class="file-updated" title={new Date(row.updatedAt).toLocaleString()}>{row.updated}</span></ScreenCell>
     </ScreenRow>
   {/each}
-</ScreenTable>
+</ScreenTable></div>
 
 <style>
   .item-name { display: flex; min-height: calc(var(--token-spacing-unit) * 8); align-items: center; gap: calc(var(--token-spacing-unit) * 2); color: var(--token-ink-primary); text-align: start; }
@@ -58,4 +59,5 @@
   .semantic-status.current { color: var(--token-color-success-text); }
   .semantic-status.queued { color: var(--token-color-attention-text); }
   .semantic-status.failed { color: var(--token-color-danger-text); }
+  .external-table :global(th:last-child) { text-transform: none; }
 </style>

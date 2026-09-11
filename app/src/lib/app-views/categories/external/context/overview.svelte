@@ -32,7 +32,7 @@
       <section>
         <h3>Native storage</h3>
         <dl>
-          <dt>Known footprint</dt><dd>{bytesLabel(knownBytes)}</dd>
+          <dt>Estimated size</dt><dd>{bytesLabel(knownBytes)}</dd>
         </dl>
       </section>
       <section>

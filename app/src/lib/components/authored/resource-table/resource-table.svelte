@@ -27,7 +27,6 @@
     kindPlurals,
     ready,
     failed,
-    showCount = true,
     unavailable = 0,
     selectedId,
     onretry,
@@ -39,7 +38,6 @@
     kindPlurals: Readonly<Record<string, string>>;
     ready: boolean;
     failed: boolean;
-    showCount?: boolean;
     unavailable?: number;
     selectedId?: string;
     onretry: () => void;
@@ -49,38 +47,46 @@
 
   const filters = new ResourceTableState();
   const rows = $derived(tableRows(resources, filters, kindLabels, kindPlurals));
+  const kindTitle = $derived(
+    filters.kind === "all"
+      ? "All kinds"
+      : filters.kind === WITHOUT_FILES
+        ? "Less external"
+        : kindPlurals[filters.kind]
+  );
+  const actorTitle = $derived(filters.actor === "all" ? "Anyone" : filters.actor);
 </script>
 
 <ScreenGroup label="Resources" fill>
   <ScreenFilters
     placeholder="Search this project"
-    matched={showCount ? rows.matched : undefined}
-    total={showCount ? resources.length : undefined}
     sorts={SORTS}
     bind:sort={filters.sortBy}
     bind:value={filters.search}
   >
     <select
-      class="border-border-subtle bg-surface-panel text-caption rounded-control border px-2 py-1"
+      class="resource-filter kind-filter border-border-subtle bg-surface-panel text-caption rounded-control border px-2 py-1"
       bind:value={filters.kind}
       aria-label="Kind"
+      title={kindTitle}
     >
-      <option value="all">All kinds</option>
+      <option value="all" title="All kinds">All kinds</option>
       {#if rows.kinds.includes("file")}
-        <option value={WITHOUT_FILES}>Less external</option>
+        <option value={WITHOUT_FILES} title="Less external">Less external</option>
       {/if}
       {#each rows.kinds as option (option)}
-        <option value={option}>{kindPlurals[option]}</option>
+        <option value={option} title={kindPlurals[option]}>{kindPlurals[option]}</option>
       {/each}
     </select>
     <select
-      class="border-border-subtle bg-surface-panel text-caption rounded-control border px-2 py-1"
+      class="resource-filter actor-filter border-border-subtle bg-surface-panel text-caption rounded-control border px-2 py-1"
       bind:value={filters.actor}
       aria-label="Updated by"
+      title={actorTitle}
     >
-      <option value="all">Anyone</option>
+      <option value="all" title="Anyone">Anyone</option>
       {#each rows.actors as name (name)}
-        <option value={name}>{name}</option>
+        <option value={name} title={name}>{name}</option>
       {/each}
     </select>
 
@@ -164,5 +170,21 @@
     flex-direction: column;
     align-items: flex-start;
     gap: calc(var(--token-spacing-unit) * 2);
+  }
+
+  .resource-filter {
+    min-width: 0;
+    flex: 0 1 auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .kind-filter {
+    width: 8.5rem;
+  }
+
+  .actor-filter {
+    width: 10rem;
   }
 </style>

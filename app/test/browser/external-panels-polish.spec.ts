@@ -14,8 +14,10 @@ const uploadNotes = async (page: Page) => {
     { name: "launch-notes.md", mimeType: "text/markdown", buffer: Buffer.from("# Launch notes\n\nReady for launch.\n") },
     { name: "review-notes.md", mimeType: "text/markdown", buffer: Buffer.from("# Review notes\n\nReview completed.\n") }
   ]);
-  await page.getByRole("button", { name: "Upload files", exact: true }).click();
-  await expect(page.getByText("2 uploaded · 0 already present · 0 rejected.")).toBeVisible();
+  await expect(page.getByRole("table").getByRole("button", {
+    name: "launch-notes.md",
+    exact: true
+  })).toBeVisible();
 };
 
 const checkActionLayout = async (inspector: Locator) => {
@@ -25,7 +27,7 @@ const checkActionLayout = async (inspector: Locator) => {
   const geometry = await inspector.evaluate((node) => {
     const box = (selector: string) => node.querySelector(selector)!.getBoundingClientRect();
     const actions = node.querySelector('[aria-label="File actions"]')!;
-    const cells = Array.from(actions.querySelectorAll(".action-link, button"));
+    const cells = Array.from(actions.querySelectorAll(":scope > a, :scope > button, :scope > form > button"));
     const rows = cells.map((cell) => {
       const rect = cell.getBoundingClientRect();
       return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom };
@@ -34,22 +36,25 @@ const checkActionLayout = async (inspector: Locator) => {
     return {
       rows,
       identityBottom: box(".identity").bottom,
-      detailsTop: box('[aria-labelledby="details-heading"]').top,
-      detailsBottom: box('[aria-labelledby="details-heading"]').bottom,
+      detailsTop: Array.from(node.querySelectorAll("button"))
+        .find((button) => button.textContent?.trim() === "Details")!.getBoundingClientRect().top,
       toolbarTop: toolbarBox.top,
+      toolbarBottom: toolbarBox.bottom,
       fits: rows.every((row) => row.left >= toolbarBox.left - 1 && row.right <= toolbarBox.right + 1),
       labelsFit: cells.every((cell) => cell.scrollWidth <= cell.clientWidth + 1)
     };
   });
   expect(geometry.rows).toHaveLength(4);
-  expect(geometry.identityBottom).toBeLessThan(geometry.detailsTop);
-  expect(geometry.detailsBottom).toBeLessThan(geometry.toolbarTop);
-  const [reupload, download, move, remove] = geometry.rows;
-  expect(Math.abs(reupload!.top - download!.top)).toBeLessThanOrEqual(2);
+  expect(geometry.identityBottom).toBeLessThan(geometry.toolbarTop);
+  expect(geometry.toolbarBottom).toBeLessThan(geometry.detailsTop);
+  const [download, reupload, move, remove] = geometry.rows;
+  expect(Math.abs(download!.top - reupload!.top)).toBeLessThanOrEqual(2);
   expect(Math.abs(move!.top - remove!.top)).toBeLessThanOrEqual(2);
-  expect(move!.top).toBeGreaterThanOrEqual(reupload!.bottom);
-  expect(Math.abs(reupload!.left - move!.left)).toBeLessThanOrEqual(1);
-  expect(Math.abs(download!.left - remove!.left)).toBeLessThanOrEqual(1);
+  expect(move!.top).toBeGreaterThanOrEqual(download!.bottom);
+  expect(Math.abs(download!.left - move!.left)).toBeLessThanOrEqual(1);
+  expect(Math.abs(reupload!.left - remove!.left)).toBeLessThanOrEqual(1);
+  expect(Math.max(...geometry.rows.map((row) => row.right - row.left)) -
+    Math.min(...geometry.rows.map((row) => row.right - row.left))).toBeLessThanOrEqual(2);
   expect(geometry.fits, "all four actions stay within the inspector").toBe(true);
   expect(geometry.labelsFit, "action labels remain readable at narrow widths").toBe(true);
 };
@@ -92,19 +97,21 @@ test("External Files history searches recent events and distinguishes empty and 
   expect(diagnostics).toEqual([]);
 });
 
-test("External Files inspector keeps details above four actions at wide, narrow and zoomed sizes", async ({ page }, info) => {
+test("External Files inspector keeps four actions above collapsible details at wide, narrow and zoomed sizes", async ({ page }, info) => {
   const diagnostics = watchBrowserDiagnostics(page);
   await openExternalFiles(page);
   await uploadNotes(page);
   await page.getByRole("table").getByRole("button", { name: "launch-notes.md", exact: true }).click();
   const inspector = page.getByRole("complementary", { name: "Inspector" });
-  await expect(inspector.getByRole("heading", { name: "Details", exact: true })).toBeVisible();
+  const details = inspector.getByRole("button", { name: "Details", exact: true });
+  await expect(details).toBeVisible();
   await checkActionLayout(inspector);
-  const semantic = inspector.locator(".semantic-status");
-  await expect(semantic).toHaveText(/^(Queued|Processing|Search ready)$/);
-  await expect(semantic).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
-  await expect(semantic).toHaveCSS("padding", "0px");
-  await expect(semantic).toHaveCSS("font-weight", "600");
+  await expect(inspector.getByRole("button", { name: /^Status (In progress|Ready)$/ })).toBeVisible();
+  await expect(inspector.getByText("References", { exact: true })).toBeVisible();
+  await details.click();
+  await expect(inspector.getByText("References", { exact: true })).toHaveCount(0);
+  await details.click();
+  await expect(inspector.getByText("References", { exact: true })).toBeVisible();
   await page.screenshot({ path: info.outputPath("inspector-wide.png") });
 
   const rename = inspector.getByTitle("Rename file");

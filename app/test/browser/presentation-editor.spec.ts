@@ -436,8 +436,10 @@ test("a slide Prompt Block is grounded by one exact uploaded External file", asy
       "# Transfer note\n\nThe remaining transfer capability is 842 MW for the slide scenario.\n"
     )
   });
-  await page.getByRole("button", { name: "Upload files", exact: true }).click();
-  await expect(page.getByText("1 uploaded · 0 already present · 0 rejected.")).toBeVisible();
+  await expect(page.getByRole("table").getByRole("button", {
+    name: "slide-grounding.md",
+    exact: true
+  })).toBeVisible();
 
   const surface = await openPresentation(page);
   const context = page.locator('aside[aria-label="Context"]');

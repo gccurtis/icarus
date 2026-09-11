@@ -11,8 +11,7 @@
   const descriptor = $derived(material.descriptor);
 </script>
 
-<section aria-labelledby="semantic-heading">
-  <div class="section-head"><h3 id="semantic-heading">Semantic status</h3><strong class="semantic-status {file.semanticTone}">{file.semanticLabel}</strong></div>
+<div class="semantic-details">
   {#if exact.eligible}
     <div class="profile"><h4>Exact text lane</h4><p>Prose is indexed from the original UTF-8 text without a generated summary. {exact.objectCount} semantic {exact.objectCount === 1 ? "object is" : "objects are"} currently published.</p></div>
   {/if}
@@ -34,18 +33,13 @@
   {#if !exact.eligible && !material.eligible}
     <p class="section-copy">This format is retained and downloadable, but it is not currently admitted to a semantic lane.</p>
   {/if}
-</section>
+</div>
 
 <style>
-  .section-head, .summary-title, .chips { display: flex; align-items: center; }
-  .section-head { justify-content: space-between; gap: calc(var(--token-spacing-unit) * 2); }
-  h3, h4, p, ul { margin: 0; }
-  h3 { color: var(--token-ink-muted); font-size: var(--token-text-caption); font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
+  .summary-title, .chips { display: flex; align-items: center; }
+  h4, p, ul { margin: 0; }
   h4 { color: var(--token-ink-secondary); font-size: var(--token-text-caption); font-weight: 600; }
-  .semantic-status { color: var(--token-ink-muted); font-size: var(--token-text-caption); font-weight: 600; }
-  .semantic-status.current { color: var(--token-color-success-text); }
-  .semantic-status.queued { color: var(--token-color-attention-text); }
-  .semantic-status.failed, .semantic-error { color: var(--token-color-danger-text); }
+  .semantic-error { color: var(--token-color-danger-text); }
   .summary, .profile { display: flex; flex-direction: column; gap: calc(var(--token-spacing-unit) * 2); padding: calc(var(--token-spacing-unit) * 2.5); border: 1px solid var(--token-border-subtle); border-radius: var(--token-radius-control); background: var(--token-surface-panel-hover); }
   .profile, .summary, .semantic-error, .section-copy { margin-top: calc(var(--token-spacing-unit) * 2); }
   .section-copy, .semantic-error, .summary p, .profile li, .profile p { color: var(--token-ink-muted); font-size: var(--token-text-caption); line-height: var(--token-text-caption-leading); }

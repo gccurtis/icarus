@@ -53,9 +53,10 @@ test("duplicate External file names are selected and restored by exact relative 
     await page.goto("/app/dev-project", { waitUntil: "networkidle" });
     await tabs(page).getByRole("button", { name: "External Files", exact: true }).click();
     await page.locator('form.upload-form input[type="file"]').nth(1).setInputFiles(folder);
-    await page.getByRole("button", { name: "Upload folder", exact: true }).click();
-    await expect(page.getByText("2 uploaded · 0 already present · 0 rejected."))
-      .toBeVisible({ timeout: 30_000 });
+    await expect(page.getByRole("table").getByRole("button", {
+      name: "inspection.md",
+      exact: true
+    }).first()).toBeVisible({ timeout: 30_000 });
 
     await tabs(page).getByRole("button", { name: "Agents", exact: true }).click();
     const personaLanding = workspaceLandingSaved(page, {
@@ -101,8 +102,10 @@ test("an agent task inherits one exact uploaded External resource and protects i
       "# Transformer evidence\n\nThe verified emergency transformer limit is 913 MVA.\n"
     )
   });
-  await page.getByRole("button", { name: "Upload files", exact: true }).click();
-  await expect(page.getByText("1 uploaded · 0 already present · 0 rejected.")).toBeVisible();
+  await expect(page.getByRole("table").getByRole("button", {
+    name: "agent-evidence.md",
+    exact: true
+  })).toBeVisible();
 
   await tabs(page).getByRole("button", { name: "Agents", exact: true }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Agents" })).toBeVisible();

@@ -19,7 +19,7 @@
   const recent = $derived(recentsOf(resourceIndex.ready ? resourceIndex.current : undefined, state.now));
 </script>
 
-<ScreenSurface wide>
+<ScreenSurface wide class="launcher-surface">
   <div class="launcher-board">
     <div class="area-create">
       <ScreenGroup label="Create">
@@ -101,6 +101,7 @@
     display: flex;
     min-width: 0;
     flex: 1;
+    min-height: 0;
     flex-direction: column;
     gap: calc(var(--token-spacing-unit) * 6);
   }
@@ -137,8 +138,27 @@
 
   .area-resources {
     display: flex;
-    min-height: calc(var(--token-spacing-unit) * 72);
+    min-height: 0;
     flex: 1;
     flex-direction: column;
+  }
+
+  :global(.launcher-surface) {
+    overflow-y: hidden;
+  }
+
+  @media (max-height: 46rem) {
+    .launcher-board {
+      flex: none;
+      min-height: auto;
+    }
+
+    .area-resources {
+      min-height: calc(var(--token-spacing-unit) * 72);
+    }
+
+    :global(.launcher-surface) {
+      overflow-y: auto;
+    }
   }
 </style>

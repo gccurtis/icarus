@@ -50,7 +50,7 @@ test("External remains one production singleton across inspection, navigation, a
   const externalTab = tabs.getByRole("button", { name: "External Files", exact: true });
   await expect(externalTab).toHaveCount(1);
   const context = page.getByRole("complementary", { name: "Context" });
-  await expect(context.getByText("Known footprint", { exact: true })).toBeVisible();
+  await expect(context.getByText("Estimated size", { exact: true })).toBeVisible();
   await expect(context.getByText("Quarantined metadata", { exact: true })).toHaveCount(0);
 
   await page.locator('form.upload-form input[type="file"]').first().setInputFiles({
@@ -58,7 +58,6 @@ test("External remains one production singleton across inspection, navigation, a
     mimeType: "text/markdown",
     buffer: Buffer.from("# Singleton proof\n\nThe selected file stays in External.\n")
   });
-  await page.getByRole("button", { name: "Upload files", exact: true }).click();
   await page.getByRole("table").getByRole("button", {
     name: "singleton-proof.md",
     exact: true
@@ -100,10 +99,8 @@ test("External manages rename, move, re-upload, download, History, and deletion 
     mimeType: "text/typescript",
     buffer: Buffer.from("export const version = 1;\n")
   });
-  await page.getByRole("button", { name: "Upload files", exact: true }).click();
-
-  await expect(page.getByText("1 uploaded · 0 already present · 0 rejected.")).toBeVisible();
   await expect(table.getByRole("button", { name: "live-code.ts", exact: true })).toBeVisible();
+  await expect(page.getByText(/uploaded · .*already present · .*rejected/i)).toHaveCount(0);
   await expect(inspector.getByText("code", { exact: true })).toBeVisible();
   await expect(tabs.getByRole("button", { name: /live-code\.ts/ })).toHaveCount(0);
 
@@ -118,7 +115,8 @@ test("External manages rename, move, re-upload, download, History, and deletion 
 
   await inspector.getByRole("button", { name: "Move", exact: true }).first().click();
   await inspector.getByLabel("Destination directory; blank means External Files root").fill("validation");
-  await inspector.getByRole("region", { name: "File", exact: true }).getByRole("button", { name: "Move", exact: true }).click();
+  await inspector.getByLabel("Destination directory; blank means External Files root")
+    .locator("..").getByRole("button", { name: "Move", exact: true }).click();
   await expect(inspector.getByText("validation/managed-code.ts", { exact: true })).toBeVisible();
 
   await inspector.locator('form.reupload-form input[type="file"]').setInputFiles({
@@ -219,8 +217,7 @@ test("External library keeps prose, code, data, and signed binary behavior disti
       buffer: Buffer.from("%PDF-1.7\nnot actually markdown\n")
     }
   ]);
-  await page.getByRole("button", { name: "Upload files", exact: true }).click();
-  await expect(page.getByText("4 uploaded · 0 already present · 0 rejected.")).toBeVisible();
+  await expect(table.getByRole("button", { name: "metrics.csv", exact: true })).toBeVisible();
 
   await page.getByLabel("Search names, paths, or media types").fill("metrics");
   await expect(table.getByRole("button", { name: "metrics.csv", exact: true })).toBeVisible();
@@ -253,8 +250,7 @@ test("External library keeps prose, code, data, and signed binary behavior disti
     mimeType: "text/csv",
     buffer: Buffer.from("region,revenue\nNorth,999\n")
   });
-  await page.getByRole("button", { name: "Upload files", exact: true }).click();
-  await expect(page.getByText("0 uploaded · 0 already present · 1 rejected.")).toBeVisible();
+  await expect(page.getByText("Some files were not uploaded.")).toBeVisible();
   await expect(page.getByText(/use Re-upload to replace its contents/i)).toBeVisible();
 
   await table.getByRole("button", { name: "misleading.md", exact: true }).click();
@@ -319,8 +315,10 @@ test("directory ingestion handles the real External source tree plus a substanti
         Array.from((node as HTMLInputElement).files ?? []).map((file) => file.webkitRelativePath)
       )).sort()
     ).toEqual(relativePaths);
-    await page.getByRole("button", { name: "Upload folder", exact: true }).click();
-    await expect(page.getByText(`${paths.length} uploaded · 0 already present · 0 rejected.`)).toBeVisible({ timeout: 60_000 });
+    await expect(page.getByRole("table").getByRole("button", {
+      name: "large-payload.bin",
+      exact: true
+    })).toBeVisible({ timeout: 60_000 });
 
     await page.getByRole("radio", { name: "Directory", exact: true }).click();
     const rootTable = page.getByRole("table");
@@ -329,7 +327,8 @@ test("directory ingestion handles the real External source tree plus a substanti
     const inspector = page.getByRole("complementary", { name: "Inspector" });
     await expect(inspector.getByText(`${paths.length}`, { exact: true }).first()).toBeVisible();
 
-    await inspector.getByRole("button", { name: "Rename", exact: true }).last().click();
+    await expect(inspector.getByRole("button", { name: "Rename", exact: true })).toHaveCount(0);
+    await inspector.getByTitle("Double-click to rename").dblclick();
     await inspector.getByLabel("Directory name").fill("external-source-verified");
     await inspector.getByRole("button", { name: "Rename", exact: true }).last().click();
     await expect(rootTable.getByRole("button", { name: "external-source-verified", exact: true })).toBeVisible({ timeout: 60_000 });

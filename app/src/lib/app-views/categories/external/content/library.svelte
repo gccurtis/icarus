@@ -67,11 +67,9 @@
     <ScreenHeader title="External Files">
       {#snippet actions()}<Uploads />{/snippet}
     </ScreenHeader>
-    <LibraryControls />
-
-    {#if uploadResult}
-      <ScreenNote tone={uploadResult.rejected > 0 ? "gap" : "muted"}>
-        {uploadResult.uploaded} uploaded · {uploadResult.reused} already present · {uploadResult.rejected} rejected.
+    {#if uploadResult && uploadResult.rejected > 0}
+      <ScreenNote tone="gap">
+        Some files were not uploaded.
         {#each uploadResult.outcomes.filter((outcome) => outcome.status === "rejected") as outcome}
           <span class="receipt-error">{outcome.name}: {outcome.detail}</span>
         {/each}
@@ -94,7 +92,6 @@
       <ScreenGroup label={state.mode === "table" ? "All files" : (current?.name ?? "External Files")}
         count={String(state.mode === "table" ? files.length : (current?.descendantFileCount ?? files.length))}>
         <div class="table-stack">
-          <LibraryFilters />
           {#if state.mode === "directory"}
             <nav class="breadcrumbs" aria-label="External Files directory">
               {#each crumbs as crumb, index (crumb.path)}
@@ -104,11 +101,15 @@
               {/each}
             </nav>
           {/if}
+          <div class="library-controls">
+            <div class="library-filters"><LibraryFilters /></div>
+            <LibraryControls />
+          </div>
           {#if visibleFiles.length === 0 && (state.mode === "table" || directDirectories.length === 0)}
             <ScreenEmpty kind={filtersActive ? "no-matches" : "nothing-yet"}
               title={filtersActive ? "No file matches" : "No external files yet"}
               onclear={filtersActive ? () => clearLibraryFilters(state) : undefined}>
-              {filtersActive ? "Try another name, author, kind, or semantic state." : "Choose files or a folder above. Unsupported formats remain safely stored and downloadable."}
+              {filtersActive ? "Try another name, author, kind, or status." : "Upload files or a folder above. Unsupported formats remain safely stored and downloadable."}
             </ScreenEmpty>
           {:else if state.mode === "table"}
             <FileTable />
@@ -129,4 +130,7 @@
   .breadcrumbs button[aria-current="page"] { color: var(--token-ink-primary); font-weight: 600; }
   .breadcrumbs button:hover { text-decoration: underline; }
   .receipt-error { display: block; margin-top: calc(var(--token-spacing-unit) * 1); }
+  .library-controls { display: flex; min-width: 0; align-items: center; gap: calc(var(--token-spacing-unit) * 2); }
+  .library-filters { min-width: 0; flex: 1; }
+  @media (max-width: 58rem) { .library-controls { align-items: stretch; flex-direction: column; } }
 </style>

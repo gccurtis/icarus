@@ -8,8 +8,10 @@ export const uploadEvidence = async (page: Page) => {
     { name: "north-portfolio.md", mimeType: "text/markdown", buffer: Buffer.from("# North portfolio\n\nThe remaining transfer capability is 731 MW. Approve the North transformer replacement on Friday.\n") },
     { name: "south-portfolio.md", mimeType: "text/markdown", buffer: Buffer.from("# South portfolio\n\nThe remaining transfer capability is 842 MW. Defer the South cable renewal until November.\n") }
   ]);
-  await page.getByRole("button", { name: "Upload files", exact: true }).click();
-  await expect(page.getByText("2 uploaded · 0 already present · 0 rejected.")).toBeVisible();
+  await expect(page.getByRole("table").getByRole("button", {
+    name: "north-portfolio.md",
+    exact: true
+  })).toBeVisible();
 };
 
 /** Use the real library dialog, hole binding, resource picker and creation path. */

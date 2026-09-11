@@ -28,7 +28,7 @@ const compare = (
   return b.updatedAt - a.updatedAt;
 };
 
-/** Filter choices describe the whole project; the count describes its matched rows. */
+/** Filter choices describe the whole project; listed rows reflect the current choices. */
 export const tableRows = (
   resources: readonly ResourceTableRow[],
   filters: ResourceTableState,
@@ -36,17 +36,16 @@ export const tableRows = (
   kindPlurals: Readonly<Record<string, string>>
 ) => {
   const search = filters.search.trim().toLowerCase();
-  const matched = resources.filter((row) =>
+  const filtered = resources.filter((row) =>
     (filters.kind === "all" ||
       (filters.kind === WITHOUT_FILES ? row.kind !== "file" : row.kind === filters.kind)) &&
     (filters.actor === "all" || row.updatedBy === filters.actor) &&
     row.name.toLowerCase().includes(search)
   );
-  const ordered = [...matched].sort((a, b) =>
+  const ordered = [...filtered].sort((a, b) =>
     (filters.direction === "asc" ? 1 : -1) * compare(a, b, filters.sortBy, kindLabels)
   );
   return {
-    matched: matched.length,
     listed: ordered,
     kinds: [...new Set(resources.map((row) => row.kind))].sort((a, b) =>
       kindPlurals[a].localeCompare(kindPlurals[b])

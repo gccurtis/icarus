@@ -6,7 +6,7 @@
   import Pencil from "@lucide/svelte/icons/pencil";
   import X from "@lucide/svelte/icons/x";
 
-  import { Panel, PanelBanner, PanelEmpty, PanelSkeleton } from "$authored-components/panel";
+  import { Panel, PanelBanner, PanelEmpty, PanelSection, PanelSkeleton } from "$authored-components/panel";
   import { Button } from "$vendored-components/button";
   import { Input } from "$vendored-components/input";
   import { ExternalDirectoryInspectorState } from "$app-views/categories/external/inspector/directory.state.svelte";
@@ -36,7 +36,7 @@
   keepExternalDirectoryInspectorCurrent(state, () => directory);
 </script>
 
-{#snippet heading()}<span class="panel-heading"><FolderCog size={14} aria-hidden="true" /> Directory</span>{/snippet}
+{#snippet heading()}<h2 class="panel-heading text-body-sm text-ink-secondary font-semibold"><FolderCog size={14} aria-hidden="true" /> Directory</h2>{/snippet}
 
 <Panel title={directory?.name ?? "Directory"} heading={heading}>
   {#if library.error}
@@ -47,14 +47,9 @@
     <PanelEmpty title="Select a directory to manage it." />
   {:else}
     <div class="stack">
-      <div class="toolbar" role="toolbar" aria-label="Directory actions">
-        <Button variant="ghost" size="sm" disabled={state.pending} onclick={() => directoryInspector.start(state, "rename", directory)}><Pencil aria-hidden="true" /> Rename</Button>
-        <Button variant="ghost" size="sm" disabled={state.pending} onclick={() => directoryInspector.start(state, "move", directory)}><FolderInput aria-hidden="true" /> Move</Button>
-      </div>
       {#if state.actionError}<PanelBanner title="The directory did not change" tone="attention">{state.actionError}</PanelBanner>{/if}
 
-      <section>
-        <h3>Directory</h3>
+      <div class="identity">
         {#if state.editing}
           <div class="inline-editor">
             <Input bind:ref={state.input} bind:value={state.draft} aria-label={state.editing === "rename" ? "Directory name" : "Directory path"} maxlength={512} disabled={state.pending} onkeydown={(event) => directoryInspector.keydown(state, event, view, directory)} />
@@ -64,17 +59,16 @@
         {:else}
           <button type="button" class="editable-name" title="Double-click to rename" ondblclick={() => directoryInspector.start(state, "rename", directory)}><span>{directory.name}</span><Pencil size={12} aria-hidden="true" /></button>
           <p class="path">{directory.relativePath}</p>
+          <Button variant="outline" class="move-action" disabled={state.pending} onclick={() => directoryInspector.start(state, "move", directory)}><FolderInput aria-hidden="true" /> Move</Button>
         {/if}
-      </section>
+      </div>
 
-      <div class="divider" aria-hidden="true"></div>
-      <section>
-        <h3>Contents</h3>
+      <PanelSection title="Contents">
         <dl>
           <dt>Files here</dt><dd>{directory.directFileCount}</dd>
           <dt>Subdirectories</dt><dd>{directory.directDirectoryCount}</dd>
           <dt>All files below</dt><dd>{directory.descendantFileCount}</dd>
-          <dt>Known size</dt><dd>{directory.sizeLabel}</dd>
+          <dt>Estimated size</dt><dd>{directory.sizeLabel}</dd>
         </dl>
         {#if children.length === 0 && childFiles.length === 0}
           <p class="empty">This virtual directory is empty.</p>
@@ -88,26 +82,25 @@
             {/each}
           </ul>
         {/if}
-      </section>
+      </PanelSection>
     </div>
   {/if}
 </Panel>
 
 <style>
-  .panel-heading, .toolbar, .inline-editor, .editable-name, .children button { display: flex; align-items: center; }
+  .panel-heading, .inline-editor, .editable-name, .children button { display: flex; align-items: center; }
   .panel-heading { gap: calc(var(--token-spacing-unit) * 1.5); }
-  .stack { display: flex; flex-direction: column; gap: calc(var(--token-spacing-unit) * 3); padding: 0 calc(var(--token-spacing-unit) * 3) calc(var(--token-spacing-unit) * 5); }
-  .toolbar { gap: calc(var(--token-spacing-unit) * 1); padding-bottom: calc(var(--token-spacing-unit) * 2); border-bottom: 1px solid var(--token-border-subtle); }
-  h3, p, dl, ul { margin: 0; }
-  h3 { color: var(--token-ink-muted); font-size: var(--token-text-caption); font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
+  .stack { display: flex; flex-direction: column; gap: calc(var(--token-spacing-unit) * 2); padding-bottom: calc(var(--token-spacing-unit) * 5); }
+  .identity { padding-inline: calc(var(--token-spacing-unit) * 3); }
+  h2, p, dl, ul { margin: 0; }
   .inline-editor { gap: calc(var(--token-spacing-unit) * 1); margin-top: calc(var(--token-spacing-unit) * 2); }
-  .editable-name { width: 100%; justify-content: space-between; gap: calc(var(--token-spacing-unit) * 2); margin-top: calc(var(--token-spacing-unit) * 2); color: var(--token-ink-primary); font-size: var(--token-text-body-sm); font-weight: 600; text-align: start; }
+  .editable-name { width: 100%; justify-content: space-between; gap: calc(var(--token-spacing-unit) * 2); color: var(--token-ink-primary); font-size: var(--token-text-body-sm); font-weight: 600; text-align: start; }
   .editable-name :global(svg) { flex: none; opacity: 0; }
   .editable-name:hover :global(svg), .editable-name:focus-visible :global(svg) { opacity: 1; }
   .path, .empty { color: var(--token-ink-muted); font-size: var(--token-text-caption); line-height: var(--token-text-caption-leading); }
   .path { margin-top: calc(var(--token-spacing-unit) * 1); font-family: var(--token-font-mono); }
-  .divider { border-top: 1px solid var(--token-border-subtle); }
-  dl { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: calc(var(--token-spacing-unit) * 1.5) calc(var(--token-spacing-unit) * 2); margin-top: calc(var(--token-spacing-unit) * 2); color: var(--token-ink-muted); font-size: var(--token-text-caption); }
+  :global(.move-action) { width: 100%; margin-top: calc(var(--token-spacing-unit) * 2); }
+  dl { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: calc(var(--token-spacing-unit) * 1.5) calc(var(--token-spacing-unit) * 2); color: var(--token-ink-muted); font-size: var(--token-text-caption); }
   dt, dd { margin: 0; } dd { color: var(--token-ink-secondary); font-variant-numeric: tabular-nums; }
   .children { display: flex; flex-direction: column; margin-top: calc(var(--token-spacing-unit) * 2); padding: 0; list-style: none; }
   .children button { width: 100%; gap: calc(var(--token-spacing-unit) * 1.5); padding-block: calc(var(--token-spacing-unit) * 1.5); border-bottom: 1px solid var(--token-border-subtle); color: var(--token-ink-secondary); font-size: var(--token-text-caption); text-align: start; }

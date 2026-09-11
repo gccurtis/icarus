@@ -24,13 +24,22 @@ test("External Files has a standalone view toggle, author filtering and readable
   await expect(tableChoice).toHaveAttribute("data-state", "on");
   await expect(toggle.getByRole("combobox")).toHaveCount(0);
   expect(await toggle.evaluate((node) => node.closest(".view-switcher") !== null)).toBe(true);
+  await expect(page.getByRole("button", { name: "Upload files", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Upload folder", exact: true })).toBeVisible();
+  await expect(page.getByText("Choose files", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("Choose folder", { exact: true })).toHaveCount(0);
 
   await page.locator('form.upload-form input[type="file"]').first().setInputFiles([
     { name: "quarterly-report.md", mimeType: "text/markdown", buffer: Buffer.from("# Quarterly report\n".repeat(180)) },
     { name: "analysis.ts", mimeType: "text/typescript", buffer: Buffer.from("export const count = 42;\n") }
   ]);
-  await page.getByRole("button", { name: "Upload files", exact: true }).click();
   const table = page.getByRole("table");
+  await expect(table.getByRole("columnheader")).toHaveText([
+    "Name", "Path", "Kind", "Size", "Author", "Status", "Last updated"
+  ]);
+  await expect(table.getByRole("columnheader", { name: "Meaning", exact: true })).toHaveCount(0);
+  await expect(table.getByRole("columnheader", { name: "Last updated", exact: true }))
+    .toHaveCSS("text-transform", "none");
   const row = table.getByRole("row").filter({ has: page.getByRole("button", { name: "quarterly-report.md", exact: true }) });
   await row.getByRole("button", { name: "quarterly-report.md", exact: true }).click();
   const inspector = page.getByRole("complementary", { name: "Inspector" });
@@ -40,11 +49,13 @@ test("External Files has a standalone view toggle, author filtering and readable
   await expect(row.locator(".file-author")).toHaveText(authorName);
   await expect(row.locator(".file-author")).toHaveAttribute("title", `Last updated by ${authorName}`);
   await expect(row.locator(".file-updated")).toHaveText("NOW");
+  await expect(row.locator(".semantic-status")).toHaveText(/^(In progress|Ready)$/);
 
   await inspector.getByRole("button", { name: "Move", exact: true }).click();
   const directory = "research/quarterly-reports/long-origin-name-for-path-disambiguation";
   await inspector.getByLabel("Destination directory; blank means External Files root").fill(directory);
-  await inspector.getByRole("region", { name: "File", exact: true }).getByRole("button", { name: "Move", exact: true }).click();
+  await inspector.getByLabel("Destination directory; blank means External Files root")
+    .locator("..").getByRole("button", { name: "Move", exact: true }).click();
   const path = row.locator(".file-path");
   await expect(path).toHaveAttribute("title", `${directory}/quarterly-report.md`);
   expect(await path.evaluate((node) => node.scrollWidth > node.clientWidth)).toBe(true);
@@ -52,7 +63,26 @@ test("External Files has a standalone view toggle, author filtering and readable
 
   const author = page.getByRole("combobox", { name: "Author", exact: true });
   await author.selectOption({ label: authorName });
+  await expect(author).toHaveAttribute("title", authorName);
+  await expect(author.locator("option:checked")).toHaveAttribute("title", authorName);
   const search = page.getByLabel("Search names, paths, or media types");
+  const controlWidths = await Promise.all([
+    search.locator(".."),
+    page.getByLabel("File kind", { exact: true }),
+    author,
+    page.getByLabel("Status", { exact: true })
+  ].map(async (control) => (await control.boundingBox())!.width));
+  expect(controlWidths[0]).toBeGreaterThan(controlWidths[1]);
+  expect(controlWidths[0]).toBeGreaterThan(controlWidths[2]);
+  expect(controlWidths[0]).toBeGreaterThan(controlWidths[3]);
+  const [controlsBox, orderBox, toggleBox] = await Promise.all([
+    page.locator(".library-controls").boundingBox(),
+    page.getByRole("button", { name: "Order", exact: true }).boundingBox(),
+    toggle.boundingBox()
+  ]);
+  expect(orderBox!.x + orderBox!.width).toBeLessThanOrEqual(toggleBox!.x);
+  expect(Math.abs(controlsBox!.x + controlsBox!.width - (toggleBox!.x + toggleBox!.width)))
+    .toBeLessThanOrEqual(1);
   await search.fill("quarterly");
   await expect(table.getByRole("button", { name: "analysis.ts", exact: true })).toHaveCount(0);
   await page.getByLabel("File kind", { exact: true }).selectOption("code");
@@ -65,11 +95,34 @@ test("External Files has a standalone view toggle, author filtering and readable
 
   await toggle.getByRole("radio", { name: "Directory", exact: true }).click();
   await expect(toggle.getByRole("radio", { name: "Directory", exact: true })).toHaveAttribute("data-state", "on");
+  await expect(table.getByRole("columnheader")).toHaveText([
+    "Name", "Path", "Kind", "Size", "Author", "Status", "Last updated"
+  ]);
   await table.getByRole("button", { name: "research", exact: true }).click();
   await expect(inspector).toHaveAttribute("data-inspected", "external.directory");
   await inspector.getByRole("button", { name: /quarterly-reports/ }).click();
   await expect(inspector).toContainText("long-origin-name-for-path-disambiguation");
-  await expect(page.getByRole("navigation", { name: "External Files directory" })).toContainText("External Files");
+  const breadcrumbs = page.getByRole("navigation", { name: "External Files directory" });
+  await expect(breadcrumbs).toContainText("External Files");
+  const pathAndSearch = await Promise.all([breadcrumbs, search].map(async (node) => node.boundingBox()));
+  expect(pathAndSearch[0]!.y + pathAndSearch[0]!.height).toBeLessThanOrEqual(pathAndSearch[1]!.y);
+  await expect(inspector.getByRole("button", { name: "Rename", exact: true })).toHaveCount(0);
+  const directoryMove = inspector.getByRole("button", { name: "Move", exact: true });
+  await expect(directoryMove).toBeVisible();
+  const [moveBox, identityGeometry] = await Promise.all([
+    directoryMove.boundingBox(),
+    inspector.locator(".identity").evaluate((node) => {
+      const box = node.getBoundingClientRect();
+      const style = getComputedStyle(node);
+      return {
+        width: box.width,
+        padding: Number.parseFloat(style.paddingLeft) + Number.parseFloat(style.paddingRight)
+      };
+    })
+  ]);
+  expect(Math.abs(moveBox!.width - (identityGeometry.width - identityGeometry.padding)))
+    .toBeLessThanOrEqual(1);
+  await expect(inspector.getByRole("button", { name: "Contents", exact: true })).toBeVisible();
   await table.getByRole("button", { name: "research", exact: true }).dblclick();
   await table.getByRole("button", { name: "quarterly-reports", exact: true }).dblclick();
   await expect(table.getByRole("button", {

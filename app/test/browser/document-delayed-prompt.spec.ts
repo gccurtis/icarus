@@ -29,8 +29,10 @@ test("a document adopts a delayed publication after its initiating request is lo
     mimeType: "text/markdown",
     buffer: Buffer.from("# Transfer evidence\n\nThe remaining transfer capability is 764 MW.\n")
   });
-  await page.getByRole("button", { name: "Upload files", exact: true }).click();
-  await expect(page.getByText("1 uploaded · 0 already present · 0 rejected.")).toBeVisible();
+  await expect(page.getByRole("table").getByRole("button", {
+    name: "delayed-transfer-evidence.md",
+    exact: true
+  })).toBeVisible();
 
   await tabs.locator('button.tab.icon[aria-label="New tab"]').click();
   await page.locator(".area-create").getByRole("button", { name: "Document", exact: true }).click();

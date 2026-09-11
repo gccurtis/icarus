@@ -11,7 +11,7 @@ const file = (id: string, path: string, author: string, updatedAt: number): Libr
   mediaType: "text/markdown", subkind: "text", size: 1200, revision: 1,
   createdAt: 1, updatedAt, createdByName: "Original uploader", updatedByName: author,
   origin: { kind: "upload", label: "Uploaded" }, updated: "NOW", sizeLabel: "1.2 KB",
-  semanticLabel: "Search ready", semanticTone: "current",
+  semanticLabel: "Ready", semanticTone: "current",
   semantic: {
     ref: { kind: "externalFile::text", id: id as Id<"externalFiles"> }, overlayGeneration: 1,
     exact: { eligible: true, state: "current", objectCount: 1 },

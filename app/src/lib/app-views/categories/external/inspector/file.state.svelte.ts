@@ -13,6 +13,7 @@ export class ExternalFileInspectorState {
   contextDraft = $state("");
   nameInput = $state<HTMLInputElement | null>(null);
   pathInput = $state<HTMLInputElement | null>(null);
+  reuploadInput = $state<HTMLInputElement | null>(null);
   base = $state<LibraryExternalFileDetail>();
   confirmingDelete = $state(false);
   pending = $state<FileInspectorCommand>();
