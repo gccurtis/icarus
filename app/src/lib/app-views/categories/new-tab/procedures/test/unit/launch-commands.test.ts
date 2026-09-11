@@ -6,6 +6,7 @@ import { createWorkspaceState } from "$model/client/workspace-state";
 import { LauncherState } from "$app-views/categories/new-tab/content/launcher.state.svelte";
 import { createResource } from "$app-views/categories/new-tab/procedures/create-resource";
 import { useTemplate } from "$app-views/categories/new-tab/procedures/use-template";
+import { openInspectedResource } from "$app-views/categories/project-overview/procedures/open-inspected-resource";
 import type { LibraryTemplate } from "$app-views/categories/templates/procedures/library-types";
 
 const commands = vi.hoisted(() => ({
@@ -36,7 +37,36 @@ const template: LibraryTemplate = {
   canEdit: true, canDelete: true
 };
 
-afterEach(() => vi.resetAllMocks());
+afterEach(() => {
+  vi.resetAllMocks();
+  vi.unstubAllGlobals();
+});
+
+test.each([
+  ["document", "documents:one", "document-editor"],
+  ["presentation", "presentations:one", "presentation-editor"],
+  ["spreadsheet", "spreadsheets:one", "spreadsheet-editor"],
+  ["research", "researchThreads:one", "research"]
+] as const)("the inspected %s opens its real resource and consumes the launcher", (kind, id, category) => {
+  const view = workspace();
+  const origin = view.open({ category: "new-tab" });
+  openInspectedResource(view, { kind, id });
+  expect(view.active.category).toBe(category);
+  expect(view.active.resourceId).toBe(id);
+  expect(view.tabs.some((tab) => tab.id === origin.id)).toBe(false);
+});
+
+test("Open finding alerts without opening a placeholder or consuming the launcher", () => {
+  const alert = vi.fn();
+  vi.stubGlobal("alert", alert);
+  const view = workspace();
+  const origin = view.open({ category: "new-tab" });
+  view.inspect("project-overview.resource", { kind: "finding", id: "findings:one" });
+  openInspectedResource(view, { kind: "finding", id: "findings:one" });
+  expect(alert).toHaveBeenCalledWith("Opening a finding in its own view is not wired up yet.");
+  expect(view.activeId).toBe(origin.id);
+  expect(view.selection).toEqual({ kind: "finding", id: "findings:one" });
+});
 
 test("failed creation retains its launcher, clears pending state and permits retry", async () => {
   const view = workspace();

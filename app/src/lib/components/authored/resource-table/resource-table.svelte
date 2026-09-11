@@ -27,6 +27,7 @@
     kindPlurals,
     ready,
     failed,
+    showCount = true,
     unavailable = 0,
     selectedId,
     onretry,
@@ -38,6 +39,7 @@
     kindPlurals: Readonly<Record<string, string>>;
     ready: boolean;
     failed: boolean;
+    showCount?: boolean;
     unavailable?: number;
     selectedId?: string;
     onretry: () => void;
@@ -52,8 +54,8 @@
 <ScreenGroup label="Resources" fill>
   <ScreenFilters
     placeholder="Search this project"
-    matched={rows.matched}
-    total={resources.length}
+    matched={showCount ? rows.matched : undefined}
+    total={showCount ? resources.length : undefined}
     sorts={SORTS}
     bind:sort={filters.sortBy}
     bind:value={filters.search}

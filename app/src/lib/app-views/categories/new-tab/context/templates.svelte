@@ -15,9 +15,13 @@
   const launch = new LauncherState();
   keepLauncherCurrent(launch);
   const library = launcherTemplates();
-  let selectedTemplateId = $state<string>();
+  const selectedTemplateId = $derived(view.selection?.kind === "template" ? view.selection.id : undefined);
   const templates = $derived(availableTemplates(library.ready ? library.current : undefined, launch.now));
   const ICON = { Document: FileText, Presentation, Spreadsheet: Sheet };
+  const inspect = (id: string) => {
+    launch.error = undefined;
+    view.inspect("templates.template", { kind: "template", id });
+  };
   const openLibrary = () => view.open({
     category: "templates",
     content: "templates.library",
@@ -44,12 +48,17 @@
         {@const Icon = ICON[template.makes]}
         <Button
           variant="ghost"
-          class="template-choice"
-          aria-label={"Open with " + template.name + " template"}
-          title={"Open with " + template.name + " template"}
+          class={selectedTemplateId === template.id ? "template-choice bg-active-surface hover:bg-active-surface" : "template-choice"}
+          aria-label={"Inspect " + template.name + " template"}
+          aria-pressed={selectedTemplateId === template.id}
+          title={template.name + ": click to inspect; double-click to open with this template"}
           disabled={launch.pending !== undefined}
-          onclick={() => {
-            selectedTemplateId = template.id;
+          onclick={() => inspect(template.id)}
+          ondblclick={() => void useTemplate(view, launch, template)}
+          onkeydown={(event) => {
+            if (event.key !== "Enter") return;
+            event.preventDefault();
+            inspect(template.id);
             void useTemplate(view, launch, template);
           }}
         >

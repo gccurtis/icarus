@@ -77,7 +77,8 @@ describe("current workspace storage", () => {
     ["project-overview.resource", { kind: "document", id: "documents:one" }],
     ["project-overview.file", { kind: "file", id: "externalFiles:one" }],
     ["project-overview.connector", { kind: "connector", id: "connectors:one" }],
-    ["agents.task", { kind: "task", id: "agentTasks:one" }]
+    ["agents.task", { kind: "task", id: "agentTasks:one" }],
+    ["templates.template", { kind: "template", id: "templates:one" }]
   ] as const)("admits New Tab's %s inspection in snapshots and open/close logs", (inspected, selection) => {
     const selected = selectedLauncher(inspected, selection);
     expect(isStoredWorkspaceSnapshot(selected)).toBe(true);
@@ -100,7 +101,7 @@ describe("current workspace storage", () => {
   });
 
   it.each([
-    "templates.template",
+    "templates.template-variable",
     "document-editor.text-block",
     "project-overview.comment",
     "agents.persona"

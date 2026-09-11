@@ -7,6 +7,13 @@ const inspector = (page: Page) => page.locator('aside[aria-label="Inspector"]');
 const context = (page: Page) => page.locator('aside[aria-label="Context"]');
 const diagnostics: string[] = [];
 
+const workspaceSaved = (page: Page, operation: string) => page.waitForResponse((response) => {
+  if (response.request().method() !== "POST" || !response.url().includes("submitWorkspaceChanges")) return false;
+  const request = response.request().postDataJSON();
+  return typeof request?.payload === "string" &&
+    Buffer.from(request.payload, "base64url").toString("utf8").includes(JSON.stringify(operation));
+});
+
 const openNewTab = async (page: Page) => {
   await tabs(page).locator('button.tab.icon[aria-label="New tab"]').click();
   await expect(page.locator(".launcher-board")).toBeVisible();
@@ -137,14 +144,52 @@ test("the resource table filters, sorts, inspects, and opens with double-click o
   await expect(launchers(page)).toHaveCount(0);
 });
 
+test("only New Tab hides the resource count, including after filtering", async ({ page }) => {
+  await page.goto("/app/dev-project", { waitUntil: "networkidle" });
+  await expect(resources(page).getByText(/^\d+ of \d+$/, { exact: true })).toBeVisible();
+  await openNewTab(page);
+  await expect(resources(page).getByText(/^\d+ of \d+$/, { exact: true })).toHaveCount(0);
+  await resources(page).getByRole("combobox", { name: "Kind", exact: true }).selectOption("research");
+  await expect.poll(async () => [...new Set(
+    (await resources(page).locator("tbody tr td:nth-child(2)").allTextContents()).map((text) => text.trim())
+  )]).toEqual(["Research"]);
+  await expect(resources(page).getByText(/^\d+ of \d+$/, { exact: true })).toHaveCount(0);
+  await tabs(page).getByRole("button", { name: "Overview", exact: true }).click();
+  await expect(resources(page).getByText(/^\d+ of \d+$/, { exact: true })).toBeVisible();
+});
+
+test("New Tab offers real chat and spreadsheet actions, with an alert-only finding action", async ({ page }, info) => {
+  await visitNewTab(page);
+  await resources(page).getByRole("button", { name: "Three feeders carry 41% of customer-minutes", exact: true }).click();
+  const finding = inspector(page).getByRole("button", { name: "Open finding", exact: true });
+  await expect(finding).toBeVisible();
+  await page.screenshot({ path: info.outputPath("new-tab-finding-action.png") });
+  const dialog = page.waitForEvent("dialog").then(async (opened) => {
+    const message = opened.message();
+    await opened.dismiss();
+    return message;
+  });
+  await finding.click();
+  expect(await dialog).toBe("Opening a finding in its own view is not wired up yet.");
+  await expect(launchers(page)).toHaveCount(1);
+  await expect(finding).toBeVisible();
+
+  await resources(page).getByRole("button", { name: "What is the binding winter constraint?", exact: true }).click();
+  await inspector(page).getByRole("button", { name: "Open chat", exact: true }).click();
+  await expect(page.getByRole("textbox", { name: "Message", exact: true })).toBeVisible();
+  await expect(tabs(page).locator('button.face[aria-current="page"]')).toContainText("What is the binding winter constraint?");
+  await expect(launchers(page)).toHaveCount(0);
+
+  await openNewTab(page);
+  await resources(page).getByRole("button", { name: "Outage minutes by substation", exact: true }).click();
+  await inspector(page).getByRole("button", { name: "Open spreadsheet", exact: true }).click();
+  await expect(page.locator(".area-title h1")).toHaveText("Outage minutes by substation");
+  await expect(launchers(page)).toHaveCount(0);
+});
+
 test("resource inspection and launcher consumption survive workspace reloads", async ({ page }) => {
   await page.goto("/app/dev-project", { waitUntil: "networkidle" });
-  const saved = (operation: string) => page.waitForResponse((response) => {
-    if (response.request().method() !== "POST" || !response.url().includes("submitWorkspaceChanges")) return false;
-    const request = response.request().postDataJSON();
-    return typeof request?.payload === "string" &&
-      Buffer.from(request.payload, "base64url").toString("utf8").includes(JSON.stringify(operation));
-  });
+  const saved = (operation: string) => workspaceSaved(page, operation);
   const initial = saved("open");
   await openNewTab(page);
   expect((await (await initial).json()).type).toBe("result");
@@ -209,7 +254,7 @@ test("Analysis explains its limit while Research creates a focused chat", async 
 for (const [name, kind] of [["Incident write-up", "document"], ["Board review", "presentation"]] as const) {
   test(`the template context creates a ${kind} using saved defaults`, async ({ page }) => {
     await visitNewTab(page);
-    await context(page).getByRole("button", { name: `Open with ${name} template`, exact: true }).click();
+    await context(page).getByRole("button", { name: `Inspect ${name} template`, exact: true }).dblclick();
     const editor = kind === "document" ? page.locator(".ProseMirror") : page.locator(".area-canvas").getByRole("application", { name: "Slide" });
     await expect(editor).toBeVisible();
     await expect(launchers(page)).toHaveCount(0);
@@ -217,13 +262,48 @@ for (const [name, kind] of [["Incident write-up", "document"], ["Board review", 
   });
 }
 
+test("template single-click inspects persistently, while Enter opens the selected template", async ({ page }, info) => {
+  await visitNewTab(page);
+  const chosen = context(page).getByRole("button", { name: "Inspect Incident write-up template", exact: true });
+  const saved = workspaceSaved(page, "templates.template");
+  await chosen.click();
+  await expect(chosen).toHaveAttribute("aria-pressed", "true");
+  await expect(inspector(page)).toHaveAttribute("data-inspected", "templates.template");
+  await expect(inspector(page).getByRole("heading", { level: 2 })).toHaveText("Incident write-up");
+  await expect(inspector(page).getByRole("button", { name: "Use template", exact: true })).toBeVisible();
+  await expect(launchers(page)).toHaveCount(1);
+  expect((await (await saved).json()).type).toBe("result");
+  await page.reload({ waitUntil: "networkidle" });
+  await expect(chosen).toHaveAttribute("aria-pressed", "true");
+  await expect(inspector(page).getByRole("heading", { level: 2 })).toHaveText("Incident write-up");
+  await page.screenshot({ path: info.outputPath("new-tab-template-inspection-wide.png") });
+
+  await page.setViewportSize({ width: 1180, height: 800 });
+  await page.evaluate(() => { document.documentElement.style.zoom = "1.25"; });
+  await expect(inspector(page).getByRole("button", { name: "Use template", exact: true })).toBeVisible();
+  await page.screenshot({ path: info.outputPath("new-tab-template-inspection-compact.png") });
+  const consumed = workspaceSaved(page, "close");
+  await chosen.press("Enter");
+  await expect(page.locator(".ProseMirror")).toBeVisible();
+  expect((await (await consumed).json()).type).toBe("result");
+  await page.reload({ waitUntil: "networkidle" });
+  await expect(page.locator(".ProseMirror")).toBeVisible();
+  await expect(launchers(page)).toHaveCount(0);
+});
+
 test("a template with missing required words keeps its launcher and offers the library", async ({ page }) => {
   await visitNewTab(page);
-  await context(page).getByRole("button", { name: "Open with Technical glossary template", exact: true }).click();
+  await context(page).getByRole("button", { name: "Inspect Technical glossary template", exact: true }).dblclick();
   await expect(context(page)).toContainText("these need words before the template can be placed: subject_line");
   await expect(launchers(page)).toHaveCount(1);
+  await context(page).getByRole("button", { name: "Inspect Incident write-up template", exact: true }).click();
+  await expect(context(page)).not.toContainText("these need words before the template can be placed: subject_line");
+  await expect(launchers(page)).toHaveCount(1);
+  await context(page).getByRole("button", { name: "Inspect Technical glossary template", exact: true }).press("Enter");
+  await expect(context(page)).toContainText("these need words before the template can be placed: subject_line");
   await context(page).getByRole("button", { name: "Choose template inputs in the library", exact: true }).click();
   await expect(tabs(page).getByRole("button", { name: "Templates", exact: true })).toHaveAttribute("aria-current", "page");
+  await expect(inspector(page).getByRole("heading", { level: 2 })).toHaveText("Technical glossary");
   await expect(launchers(page)).toHaveCount(0);
 });
 

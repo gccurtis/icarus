@@ -37,6 +37,29 @@ No rebase, main integration/push, deployment, or external messages authorized.
 
 ## Implementation
 
+### Review follow-up
+
+- Reuse this worktree from `15dab2c`; no new branch or main changes.
+- User's final scoping limits count removal to New Tab. Overview keeps its count.
+- Template context single-click inspects the existing template panel; double-click
+  and Enter use the template. Keep shared panel selection reloadable with a narrow
+  workspace admission for `templates.template`, not arbitrary template lenses.
+- New Tab's resource inspector adds Open chat (real research tab), Open spreadsheet
+  (real editor) and Open finding (alert-only). Overview action availability stays
+  unchanged. Finding/external consolidation is explicitly excluded.
+- External-file absence is expected in the review server's seeded disposable
+  Store: `app/seed` has no externalFiles table. Its query/projection is shared with
+  Overview and does not exclude files. Do not copy the primary development Store.
+- Template selection is workspace-owned, visibly highlighted and persisted;
+  selecting another template clears the previous launch error. Enter first
+  selects its subject so a missing-input shortcut cannot target an older template.
+- The shared resource inspector's action procedure stays with its owning Overview
+  category; new action availability is conditional on New Tab. No cross-category
+  view import or architecture-baseline allowance was added.
+- Storage change admits only the existing template inspector in New Tab snapshots
+  and open/close logs. The normal project/user-scoped workspace transaction still
+  publishes revisions and snapshots atomically; unrelated lenses remain refused.
+
 - Workspace `open` captures the active launcher, opens/activates the destination,
   then closes that exact launcher through normal workspace operations. Existing
   destination tabs are reused, and other launchers remain.
@@ -65,6 +88,32 @@ No rebase, main integration/push, deployment, or external messages authorized.
 ## Verification
 
 Evidence below is local ignored runtime storage, not portable to another checkout.
+
+### Review follow-up evidence
+
+- Final focused unit run: 164 tests / 9 files passed, including all resource Open
+  routes, finding's alert-only behavior and template inspector admission/reload.
+  `.agents/runtime/runs/1789095219854-unit-c38a2711/`
+- Final Chromium run: 18 scenarios passed (14 New Tab, 4 Overview panels), including
+  New Tab-only count omission, real chat/spreadsheet Open actions, finding alert,
+  template single-click/reload, double-click/Enter creation and error retargeting.
+  `.agents/runtime/runs/1789095140140-browser-3d53e8a9/`
+- Inspected final template inspector screenshots at wide and compact/125% sizes,
+  the finding action screenshot and the count-free table. Selection and action
+  states are readable; artifacts are in the final run's `chromium/` directory.
+- The first browser run had 16 passes and two test-assumption failures: the seed
+  contains five research threads, and the existing editable template heading's
+  accessible name includes "Edit template name". Corrected those assertions.
+  `.agents/runtime/runs/1789095008787-browser-292bc4ac/`
+- The first architecture run caught a cross-category view import. Moved the open
+  procedure to the inspector's owning category; subsequent checks are clean.
+- Final typecheck: zero errors/warnings. Architecture: all 90 checks clean, no
+  new findings or baseline debt. `git diff --check` passed.
+  `.agents/runtime/runs/1789095244847-quick-3bbe1208/`
+- No live provider tests, external-data consolidation, or full-suite run.
+  Production build evidence below belongs to the initial implementation.
+
+### Initial implementation evidence
 
 - Focused workspace/resource/projection unit run: 113 tests passed.
   `.agents/runtime/runs/1789093032220-unit-7e6bfa86/`
@@ -104,15 +153,16 @@ Browser verification used isolated seeded Store/native-file data on port 5267
 (provider fixture 15267), cleaned by the harness on completion. Port 5237 was
 already occupied; no process there was touched.
 
-Human review server: `http://127.0.0.1:3197/app/dev-project`, exec session 42945,
+Human review server: `http://127.0.0.1:3197/app/dev-project`, exec session 67263,
 started from this worktree with:
 `nix develop ./infra/devshell --command node .agents/scripts/dev.mjs --port 3197 --store disposable`.
 It uses the requested provider-configuration symlink and owns a development-server
 lease and separate seeded disposable Store/native files. Earlier unconfigured and
 local-provider-fixture review sessions (95594 / 14120) were stopped; their owned
 disposable data was removed by the helpers. The temporary fixture wrapper was
-removed; no user data was deleted. Stop only session 42945 with Ctrl-C before
-running another cache user;
+removed; no primary development data was deleted. Session 42945 was stopped for
+follow-up verification and its disposable review data cleaned by the helper.
+Stop only session 67263 with Ctrl-C before running another cache user;
 shutdown removes its disposable review data. Never reset human review data with
 browser fixtures. The printed URL opens Overview; use the tab-bar plus for New Tab.
 

@@ -33,6 +33,7 @@
 </script>
 
 <ResourceTable
+  showCount={false}
   resources={work}
   kindLabels={KIND_LABEL}
   kindPlurals={KIND_PLURAL}

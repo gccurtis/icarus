@@ -27,6 +27,7 @@
   import { projectResource } from "$app-views/categories/project-overview/procedures/read-resource";
   import { resourceSummaryCommand } from "$app-views/categories/project-overview/procedures/resource-summary-command.svelte";
   import { shortSince } from "$app-views/categories/project-overview/procedures/rows";
+  import { openInspectedResource } from "$app-views/categories/project-overview/procedures/open-inspected-resource";
 
   const KIND_LABEL: Record<ProjectResourceKind, string> = {
     document: "Document",
@@ -51,6 +52,7 @@
   const answer = $derived(projectResource(resourceId));
   const resource = $derived(answer?.ready ? answer.current : undefined);
   const now = $derived(clock.current);
+  const inLauncher = $derived(view.active.category === "new-tab");
 
   const exactTime = (at: number): string =>
     new Date(at).toLocaleString(undefined, {
@@ -74,7 +76,9 @@
 
   const openResource = () => {
     if (resource === null || resource === undefined) return;
-    if (resource.kind === "document") {
+    if (inLauncher) {
+      openInspectedResource(view, resource);
+    } else if (resource.kind === "document") {
       view.open({ category: "document-editor", resourceId: resource.id });
     } else if (resource.kind === "presentation") {
       view.open({ category: "presentation-editor", resourceId: resource.id });
@@ -109,9 +113,9 @@
   {/snippet}
 
   {#snippet actions()}
-    {#if resource?.openable}
+    {#if resource && (resource.openable || inLauncher)}
       <PanelButton
-        label={`Open ${KIND_LABEL[resource.kind].toLocaleLowerCase()}`}
+        label={resource.kind === "research" ? "Open chat" : `Open ${KIND_LABEL[resource.kind].toLocaleLowerCase()}`}
         icon={ExternalLink}
         tone="primary"
         onclick={openResource}

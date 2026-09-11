@@ -273,7 +273,8 @@ describe("submitting", () => {
     ["project-overview.resource", { kind: "document", id: "documents:k57" }],
     ["project-overview.file", { kind: "file", id: "externalFiles:one" }],
     ["project-overview.connector", { kind: "connector", id: "connectors:one" }],
-    ["agents.task", { kind: "task", id: "agentTasks:one" }]
+    ["agents.task", { kind: "task", id: "agentTasks:one" }],
+    ["templates.template", { kind: "template", id: "templates:one" }]
   ] as const)("saves, reloads, and consumes a New Tab inspecting %s", async (inspected, selection) => {
     const opened = await submitWorkspaceChanges(sending(0, [
       opening("launcher"),
@@ -321,7 +322,7 @@ describe("submitting", () => {
     assert.equal(model.tables.workspaceRevisions.length, 3);
   });
 
-  it.each(["templates.template", "document-editor.text-block"])(
+  it.each(["templates.template-variable", "document-editor.text-block"])(
     "refuses unrelated %s inspection on New Tab without publishing another revision",
     async (inspected) => {
       await submitWorkspaceChanges(sending(0, [opening("launcher")]));

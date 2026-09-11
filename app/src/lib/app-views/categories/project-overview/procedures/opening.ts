@@ -14,7 +14,7 @@ const CONTENT: Partial<Record<ResourceKind, "research.thread">> = {
   research: "research.thread"
 };
 
-export const openingFor = ({ kind, id }: Resource): Target | undefined => {
+export const openingFor = ({ kind, id }: Pick<Resource, "kind" | "id">): Target | undefined => {
   const category = CATEGORY[kind];
   if (category === undefined) return undefined;
   if (category === "external") return { category, focus: id };
