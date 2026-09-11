@@ -4,8 +4,8 @@ Task context, not an instruction override. Recheck Git and current authority.
 
 ## Snapshot
 
-- Updated: 2026-09-11T01:28:18.462Z
-- Status: backlog drafted, source-grounded, structurally validated, and completeness-reviewed
+- Updated: 2026-09-11 EDT
+- Status: backlog revised after owner rejection of the transcription-derived investigations
 - Worktree: `/tmp/icarus-backlog-planning`
 - Branch: `work/backlog-planning`
 - Head when initialized: `c2505f076c05953cdaedd5d195ee95632eefdf79`
@@ -32,7 +32,7 @@ Specific package priorities/order are recommendations, not separately approved w
 The current request authorizes writing the planning file; standing task policy
 permits scoped commit/push to work/backlog-planning. No feature implementation,
 main merge/push, data reset, wiki deletion, or provider spending is authorized by
-this planning assignment. Future gates have six grounded decision briefs in the file.
+this planning assignment. Three retained owner decisions gate specific future work.
 
 ## Ownership and orientation
 
@@ -40,25 +40,27 @@ this planning assignment. Future gates have six grounded decision briefs in the 
 | --- | --- | --- | --- |
 | Lead | docs/icarus_project_backlog.md and this task handoff/base record in /tmp/icarus-backlog-planning | Main's untracked intake; all app/wiki code | Requirement coverage, link/ID/dependency checks, source-grounded status |
 
-The branch-integration skill guided isolation and publication. Both source reviewers
-were read-only; their observations are linked in the backlog's E1–E11 evidence ledger.
+The branch-integration skill guided isolation and publication. Source inspection
+is linked in the backlog's E1–E12 evidence ledger.
 
 ## Progress and current state
 
-Created 38 stable work-package IDs with a dispatch register, states separate from
-work type/priority, first slices, implementation gates, and closeout criteria.
-Preserved settled choices and original themes through a section-by-section coverage
-map. Added six decision briefs with context, recommendations, alternatives/tradeoffs,
-and response prompts. Existing ingestion/tasks/resource sets/templates and partially
-wired UI are acknowledged rather than incorrectly described as greenfield.
+Retained 38 stable work-package IDs with a matching dispatch register, states
+separate from work type/priority, first slices, implementation gates, and closeout
+criteria. Removed the rejected scoped-investigation list, its External metadata
+package, and three derived decision briefs. Added DATA-01 for the owner-requested
+cross-resource rule: an otherwise valid resource remains visible when a display-only
+user/owner/task/connector relation no longer resolves, using a neutral non-linking
+fallback. Independently requested product builds remain; the rejected hosted report
+is explicitly not a requirement or evidence source.
 
 ## Verification evidence
 
 | Command / check | Tree or scope tested | Result, counts, and skips | Evidence |
 | --- | --- | --- | --- |
-| Node read-only Markdown/record validation | Backlog draft | 38 unique package cards and matching register entries; 6 decisions; 63 anchors; 136 links; no missing paths/anchors/IDs/required fields | Tool output in task conversation |
-| Source-grounding review | c2505f0, sampled relevant entry points | Two read-only reviews, no runtime certification | E1–E11 source links |
-| Intake completeness review | Original versus rewritten file | Restored persona execution-policy investigation; narrowed activity attribution gate; standing owner constraints explicitly distinguished from intake | Coverage map and review conversation |
+| Node Markdown/record validation | Revised backlog | 38 unique package cards and matching register entries; 3 retained decisions; 61 anchors; 83 internal links; no missing anchors/IDs | Tool output in task conversation |
+| Source-grounding review | c2505f0, sampled relevant entry points | Source inspection only, no runtime certification | E1–E12 source links |
+| Owner correction review | Rejected report versus revised backlog | Withdrawn investigation material removed; independently requested build work retained; DATA-01 added from the owner's explicit replacement requirement | Coverage map and task conversation |
 | git diff --check | Authored paths | Passed; recheck staged new files before commit | Git output |
 | SHA-256 comparison | Main's original intake | Unchanged | Digest recorded above |
 
@@ -90,4 +92,4 @@ authoritative backlog or erased by this task.
 - Publication target: origin/work/backlog-planning
 - Main merge: not authorized for this task
 - Worktree cleanup: retain until any later authorized integration
-- Next owner: user reviews the dispatch order and assigns packages; future agents resolve only the decisions that gate their assigned work
+- Next owner: user reviews the dispatch order and assigns packages; future agents must not revive the withdrawn investigation report as requirements

@@ -1,6 +1,6 @@
 # Icarus delivery backlog
 
-Updated September 10, 2026 · source baseline: `main@c2505f0`.
+Updated September 11, 2026 · source baseline: `main@c2505f0`.
 
 **Direction confirmed by the owner: reliable end-to-end work first.** This is a
 planning and dispatch file, not a declaration that its features are missing or
@@ -24,7 +24,7 @@ Do not defer a confirmed data-loss or authorization defect behind this ordering.
 
 | Proposed tranche | User outcome | Packages | Exit evidence |
 | --- | --- | --- | --- |
-| A — Trust the current workspace | Upload and distinguish files; inspect their state/history; use variables without losing context | [EXT-01](#ext-01), [EXT-02](#ext-02), [EXT-04](#ext-04), [EXT-05](#ext-05), [COL-01](#col-01), [COL-02](#col-02), [EDIT-01](#edit-01) | Realistic same-name files, re-upload/reload, navigable activity, and document/presentation variable workflows pass; compact and zoomed Chromium states inspected |
+| A — Trust the current workspace | Upload and distinguish files; inspect their state/history; use variables without losing context | [EXT-02](#ext-02), [EXT-04](#ext-04), [EXT-05](#ext-05), [COL-01](#col-01), [COL-02](#col-02), [EDIT-01](#edit-01) | Realistic same-name files, re-upload/reload, navigable activity, and document/presentation variable workflows pass; compact and zoomed Chromium states inspected |
 | B — Trust project knowledge | Inspect a research claim and its sources, accept only intended material, then use that knowledge in another resource | [RSH-01](#rsh-01), [RSH-02](#rsh-02), [RSH-03](#rsh-03), [SCOPE-01](#scope-01), [SCOPE-02](#scope-02), [AI-01](#ai-01), [AI-03](#ai-03) | Unaccepted material stays outside accepted project knowledge; accepted material survives reload and has provenance; task/chat configuration is reproducible |
 | C — Trust reuse and analysis | Instantiate spreadsheet templates; calculate across native surfaces; carry structured content and linked charts without flattening it | [ASSET-04](#asset-04), [ASSET-05](#asset-05), [EDIT-02](#edit-02), [ANL-01](#anl-01), [ANL-03](#anl-03), [IO-02](#io-02), [IO-03](#io-03) | Two distinct source scopes produce distinct correct outputs; formula/clipboard/embedding behavior and rendered appearance are verified |
 | D — Expand deliberately | Add the selected connector, wider analytics/import formats, real accounts and collaboration, Copilot, and product Skills | Remaining P2 packages, promoted when needed by an actual workflow | Each package's own acceptance criteria, not a feature-count target |
@@ -57,7 +57,7 @@ The register is the single source of scheduling state. Package cards carry scope
 not a second status list. All owners are **unassigned** until explicitly recorded;
 the backlog rewrite itself does not mean any of this implementation is active.
 
-- **Ready:** a bounded next action can be assigned; it may be an investigation.
+- **Ready:** a bounded next action can be assigned.
 - **Gated:** discovery may proceed, but implementation needs the named decision or dependency.
 - **Active / Verify:** an owner is working / collecting acceptance and integration evidence.
 - **Done:** the package's outcome and applicable completion gate are met, with evidence linked.
@@ -71,11 +71,10 @@ Priorities are proposed; gates are requirements, not estimated dates or effort.
 
 | ID | Package | State | Priority | Implementation gate | Owner |
 | --- | --- | --- | --- | --- | --- |
-| [EXT-01](#ext-01) | External metadata contract | Ready | P1 | None for investigation; Q2 for product choices | — |
 | [EXT-02](#ext-02) | Complete and verify ingestion lifecycle | Ready | P1 | None for current upload/re-upload audit | — |
 | [EXT-03](#ext-03) | First operational connector | Gated | P2 | EXT-02 admission contract; Q1 | — |
-| [EXT-04](#ext-04) | File table and directory clarity | Ready | P1 | EXT-01 for attribution column only | — |
-| [EXT-05](#ext-05) | File inspector and context cleanup | Ready | P1 | EXT-01 for metadata changes only | — |
+| [EXT-04](#ext-04) | File table and directory clarity | Ready | P1 | None | — |
+| [EXT-05](#ext-05) | File inspector and context cleanup | Ready | P1 | None | — |
 | [RSH-01](#rsh-01) | Findings lifecycle and publication | Ready | P1 | Existing finding representation is fixed | — |
 | [RSH-02](#rsh-02) | Explicit source acceptance | Gated | P1 | EXT-02; acceptance contract coordinated with RSH-01 | — |
 | [RSH-03](#rsh-03) | Research turn and result inspection | Ready | P1 | Acceptance actions depend on RSH-01/RSH-02 | — |
@@ -88,6 +87,7 @@ Priorities are proposed; gates are requirements, not estimated dates or effort.
 | [ID-01](#id-01) | Authentication and access lifecycle | Gated | P2 / release gate | Q3 | — |
 | [ID-02](#id-02) | Coherent personal/project asset ownership | Ready | P2 | Design now; runtime ownership depends on ID-01 | — |
 | [ID-03](#id-03) | Top bar and settings boundaries | Gated | P2 | ID-01 and ID-02 for live account controls | — |
+| [DATA-01](#data-01) | Graceful stale display references | Ready | P2 | Define the shared display contract before broad rollout | — |
 | [ASSET-01](#asset-01) | Independent template copies across scopes | Gated | P2 | ID-01; ID-02 | — |
 | [ASSET-02](#asset-02) | Independent persona copies across scopes | Gated | P2 | ID-01; ID-02 | — |
 | [ASSET-03](#asset-03) | Product Skills | Gated | P2 | AI-01; SCOPE-02; ID-02 | — |
@@ -95,17 +95,17 @@ Priorities are proposed; gates are requirements, not estimated dates or effort.
 | [ASSET-05](#asset-05) | Template UI and terminology | Ready | P1 | Q6 gates renaming, not layout correction | — |
 | [ANL-01](#anl-01) | Canonical analytic identity and editing contract | Ready | P2 | None for design against existing types | — |
 | [ANL-02](#anl-02) | Analysis graph tabs and graph editor | Gated | P2 | ANL-01 where analytic identity is involved | — |
-| [ANL-03](#anl-03) | Linked analytic placements across editors | Gated | P2 | ANL-01; Q5 | — |
+| [ANL-03](#anl-03) | Linked analytic placements across editors | Gated | P2 | ANL-01 | — |
 | [ANL-04](#anl-04) | Inspectable text-to-table extraction | Ready | P2 | Output/correction contract before materialization | — |
 | [EDIT-01](#edit-01) | Document/presentation Variables panels | Ready | P1 | Reproduce current defects first | — |
 | [EDIT-02](#edit-02) | Cross-editor formula contract and built-ins | Ready | P1 | None for inventory; settle evaluation semantics before expansion | — |
-| [IO-01](#io-01) | Native import/export | Gated | P2 | Q4; current-schema mappings for selected formats | — |
-| [IO-02](#io-02) | External rich paste and external-copy contract | Ready | P1 | Q4 gates committed format/fidelity promises | — |
+| [IO-01](#io-01) | Native import/export | Ready | P2 | Current-schema mappings for the first selected formats | — |
+| [IO-02](#io-02) | External rich paste and external-copy contract | Ready | P1 | Bound each slice to explicit format/fidelity promises | — |
 | [IO-03](#io-03) | Native structured and linked copy/paste | Gated | P2 | IO-02 copy contract; ANL-01/ANL-03 for analytic links | — |
 | [KEY-01](#key-01) | Retire the product command abstraction | Ready | P2 | KEY-02 shortcut inventory before deleting behavior | — |
 | [KEY-02](#key-02) | Direct keyboard shortcuts and desktop behavior | Ready | P2 | Platform/shortcut conflict inventory | — |
 | [COL-01](#col-01) | Project activity navigation and readable history | Ready | P1 | Existing resource/actor routing inventory | — |
-| [COL-02](#col-02) | External/Agents activity parity | Ready | P1 | Coordinate COL-01 interaction; EXT-01 gates changed attribution only | — |
+| [COL-02](#col-02) | External/Agents activity parity | Ready | P1 | Coordinate COL-01 interaction | — |
 | [COL-03](#col-03) | Presence with explicit lifetime | Gated | P2 | ID-01 | — |
 | [WIKI-01](#wiki-01) | Wiki reset inventory and replacement plan | Deferred | P3 | Explicit wiki-work authorization | — |
 | [WIKI-02](#wiki-02) | Markdown wiki and retirement of old pages | Deferred | P3 | WIKI-01; exact deletion/replacement approval | — |
@@ -137,6 +137,7 @@ remain in scope at their points of use.
 | External UX | Paths are compressed secondary metadata with full-path hover text. Table/Directory is one toggle in the same control row. Preserve directory exploration in the inspector and Generated Description. |
 | Unchanged comments | Leave the document/presentation empty Comments state alone; the proposed extra empty-state action was withdrawn. |
 | Naming and browser | Use presentation for the resource, slide for its contents. Chromium is the target; browser versus desktop shortcut behavior is not a cross-browser project. |
+| Rejected investigation material | The transcription-derived scoped investigations and the separate hosted investigation report are withdrawn. They are not requirements, decisions, or evidence for future implementation. Independently requested build and tactical work remains in this backlog. |
 | Architecture and quality | Follow root AGENTS: explicit state lifetime, bounded procedural chains, modular/reviewable files, no new baseline debt, current-schema-only changes, atomic Store intents and recovery. No legacy readers, renamed aliases, or migration scaffolding. |
 | Wiki | Markdown with useful Mermaid diagrams and selective HTML replaces the old system in a separately authorized reset. This backlog rewrite does not perform that reset. |
 
@@ -149,15 +150,6 @@ For multi-slice packages, put execution details in `.agents/tasks/<task>/handoff
 and link that handoff from the register when assigning an owner.
 
 ### External Files and connectors
-
-<a id="ext-01"></a>
-#### EXT-01 — Establish the external metadata contract
-
-**Work:** Audit / Design. **First slice:** trace each displayed field from stored row or generated material to the inspector and retrieval input; publish a field/provenance/use matrix.
-
-- Cover quarantine metadata, Material Profile, Generated Description, Purpose, tags/entities/themes, Semantic Status, origin/author, added-by, updated-by, and the event that counts as a re-upload update.
-- Distinguish user-authored, connector-provided, system-derived, and AI-generated values. Purpose and visible facet chips already participate in generated material; do not assume a separate Purpose generation call or decorative-only tags ([E2](#e2)).
-- **Close when:** every field has a defined source, meaning, editability, retrieval effect, generation cost basis, and display/hide/remove decision. Keep Generated Description; if retained, Purpose sits immediately below it. Resolve Q2 with evidence, not renamed ambiguity.
 
 <a id="ext-02"></a>
 #### EXT-02 — Complete and certify one ingestion lifecycle
@@ -181,7 +173,7 @@ and link that handoff from the register when assigning an owner.
 
 **Work:** Tactical. **First slice:** compare compact and wide Chromium views with long paths, duplicate names, large sizes, and recent updates; recheck already-implemented path truncation/tooltip behavior.
 
-- Add the attribution column once its meaning is settled; show compressed paths with full-path hover text, readable Size, and compact times such as `3 HR` without repeating “ago.”
+- Give any attribution column one explicit label and meaning; show compressed paths with full-path hover text, readable Size, and compact times such as `3 HR` without repeating “ago.”
 - Put the Table/Directory toggle in the same control row. Remove “native project files live here,” the directory-path explanation, and the repeated directory name. Preserve directory exploration inside the inspector.
 - **Close when:** both views remain usable at narrow widths and zoom, duplicate files stay distinguishable, and sorting/filtering/selection/navigation still work. Do not mark already-correct behavior as newly implemented.
 
@@ -192,7 +184,7 @@ and link that handoff from the register when assigning an owner.
 
 - Put file information first, actions below in a two-by-two grid; remove duplicate Rename, the “selection belongs to file inspector” block, and the separate path inspector. Preserve rename in its owning file section and secondary path information elsewhere.
 - Evaluate collapsible sections in both panels. Replace the uneven Semantic Status pill with simple aligned status text; use green for ready without relying on color alone. Remove redundant explanatory text, not meaningful error/recovery information.
-- **Close when:** EXT-01's metadata decisions are applied, useful Generated Description remains, Purpose placement is correct if retained, and compact/zoomed inspectors show no clipped controls or broken actions. History behavior belongs to COL-02.
+- **Close when:** useful Generated Description remains, any retained adjacent fields are clearly labeled, and compact/zoomed inspectors show no clipped controls or broken actions. History behavior belongs to COL-02.
 
 ### Research and accepted project knowledge
 
@@ -202,7 +194,7 @@ and link that handoff from the register when assigning an owner.
 **Work:** Design / Build. **First slice:** map a turn-local claim to inspection and explicit publication using the existing stored finding representation; do not redesign that representation.
 
 - Define discovered, inspectable, accepted, and rejected/dismissed behavior, with supersession/history. Distinguish a transient research claim from an accepted finding resource and preserve evidence/source snapshots.
-- Coordinate source acceptance with RSH-02. Recommended contract: finding and source acceptance are independent actions, with dependencies shown rather than silently accepted; validate it against actual workflows before implementation.
+- Coordinate source acceptance with RSH-02 so neither action silently publishes the other.
 - **Close when:** the user can inspect, accept, dismiss, revisit, and locate the resulting finding in the semantic overlay; provenance/history survives reload; cancellation, repeated acceptance, storage failure, and project isolation have executable contracts.
 
 <a id="rsh-02"></a>
@@ -247,7 +239,7 @@ and link that handoff from the register when assigning an owner.
 
 **Work:** Refine. **First slice:** trace persona switching, the currently fixed research mode, and effective tools through a new turn and a reload.
 
-- Allow active persona and mode switching and explicit chat-owned tools. Recommended temporal rule: changes apply to future turns; completed turns retain an inspectable configuration snapshot. Resolve the exact snapshot/policy contract with AI-01 before persistence changes.
+- Allow active persona and mode switching and explicit chat-owned tools. Completed turns must remain honestly attributable to the configuration that produced them; settle in-flight change behavior as part of implementation.
 - Redesign general chat for a cleaner professional hierarchy, coordinating research-specific context in RSH-03. Do not turn a task into a chat mode.
 - **Close when:** switching controls affect exactly the intended turns, an in-flight turn is not silently reconfigured, persona tool defaults no longer leak into execution, and reload preserves the same interpretable history.
 
@@ -267,7 +259,7 @@ and link that handoff from the register when assigning an owner.
 **Work:** Audit / Refine. **First slice:** audit existing resource-set CRUD, scope-builder reuse, and attachment UX before adding another scope component ([E4](#e4)).
 
 - Provide a reusable context view for individual resources and sets, with every member inspectable, across personas/chats/tasks and relevant editor surfaces. Create/manage context where it is needed, not through a restored global Overview panel.
-- Define membership update/removal, nested/cyclic references, permission loss, and whether an attachment is live or snapshotted. Recommended execution rule: resolve and record scope for each run so later set edits do not rewrite past evidence.
+- Define membership update/removal, nested/cyclic references, permission loss, and whether an attachment is live or snapshotted. Past execution evidence must remain interpretable after later set edits.
 - **Close when:** attach → inspect member → edit/remove set → execute → reload has explicit behavior, dangling/private/cross-project references fail safely, and state is owned by the relevant workspace/resource lifetime.
 
 <a id="scope-02"></a>
@@ -276,7 +268,6 @@ and link that handoff from the register when assigning an owner.
 **Work:** Refine. **First slice:** inspect existing individual-resource/set attachment and effective tool inheritance; agree the removal/wiring boundary with AI-01/AI-03.
 
 - Make attached resources and sets inspectable; keep the working add controls. Rename Default to Scope or Default Scope according to meaning. Preserve behavioral persona configuration.
-- Investigate whether personas also carry a reusable default execution policy, how it differs from behavior/scope, and which settings belong only to a chat/task. That question does not reopen persistent persona tool bundles.
 - Remove persona Tools UI and persistent tool configuration only as execution-owned configuration lands. Do not preserve old fields or aliases as compatibility bridges.
 - **Close when:** personas reload with correct inspectable scope, chats/tasks choose their own tools, no retired persona-tool consumer remains, and coordinated changes preserve current task/chat execution.
 
@@ -303,6 +294,27 @@ and link that handoff from the register when assigning an owner.
 
 - Include sign-in/account access, user options/settings, and project options/settings; preserve useful current controls instead of inventing a second top bar.
 - **Close when:** authenticated/unauthenticated and project/no-project states have clear controls; changing identity or project cannot leave stale personal settings or controls pointing at the previous scope; compact/zoomed layouts remain usable.
+
+<a id="data-01"></a>
+#### DATA-01 — Keep valid resources visible when display references go stale
+
+**Work:** Refine / Build. **First slice:** inventory user, owner, connector, task,
+and similar relations used only to render names or links, starting with resource
+lists and inspectors ([E12](#e12)).
+
+- Strictly validate the resource being shown and its project ownership. A missing
+  related display record must not hide an otherwise valid resource or create a
+  dead tab.
+- When a related subject no longer exists or is no longer visible in the project,
+  show a neutral non-linking value such as **User no longer available**. Never
+  recover a label by disclosing a record outside the current project.
+- Distinguish stale display relations from malformed authoritative resource data.
+  The latter remains a real integrity fault and must not be disguised with a
+  friendly missing-user label.
+- **Close when:** removal and access-loss scenarios across resource lists,
+  inspectors, history, and activity keep valid resources usable, disable only the
+  stale relation link, disclose no cross-project identity, and pass reload plus
+  Chromium interaction tests.
 
 ### Personal assets and templates
 
@@ -354,7 +366,7 @@ and link that handoff from the register when assigning an owner.
 **Work:** Audit / Design. **First slice:** inspect existing analysis/chart types, formula data and render paths; distinguish a graph editor, a chart, and an embedding before introducing new representation.
 
 - Define canonical identity, source data, editing ownership, object-level versus placement-level formatting, and references across Analysis/documents/presentations/spreadsheets. Reuse one analytic object rather than rebuilding charts per editor.
-- **Close when:** the identity/link/update/access/deletion contract, schema changes actually needed, and representative embedding tests are specified. Resolve Q5 before committing retention/access behavior.
+- **Close when:** the identity/link/update/access/deletion contract, schema changes actually needed, and representative embedding tests are specified before implementation.
 
 <a id="anl-02"></a>
 #### ANL-02 — Complete Analysis graph tabs and graph editing
@@ -370,7 +382,7 @@ and link that handoff from the register when assigning an owner.
 **Work:** Build. **First slice:** create a spreadsheet chart and place linked views in a document and presentation.
 
 - All placements reference the same canonical analytic object by default. Separate shared data/chart edits from per-placement layout; coordinate native clipboard behavior with IO-03.
-- **Close when:** editing the object updates all placements across tabs and reload, per-placement styling behaves as specified, and deletion/access-loss behavior follows Q5 without exposing stale private content.
+- **Close when:** editing the object updates all placements across tabs and reload, per-placement styling behaves as specified, and deletion/access-loss behavior is explicit without exposing stale private content.
 
 <a id="anl-04"></a>
 #### ANL-04 — Derive inspectable, correctable tables from text
@@ -401,7 +413,7 @@ and link that handoff from the register when assigning an owner.
 <a id="io-01"></a>
 #### IO-01 — Import and export supported native resources
 
-**Work:** Design / Build. **First slice:** choose Q4's first format pair, define current-schema mappings and acceptable losses, then complete a real import/edit/export journey.
+**Work:** Design / Build. **First slice:** choose one required format pair, define current-schema mappings and acceptable losses, then complete a real import/edit/export journey.
 
 - Cover documents, presentations and spreadsheets incrementally with an explicit support matrix. Report unsupported structures and fidelity loss; do not promise full external-format parity or round-tripping by implication.
 - **Close when:** each declared format has realistic fixtures, safe invalid/oversized input handling, usable native IDs/resources, and verified exported content. Import/convert failures do not leave partially persisted resources.
@@ -413,7 +425,7 @@ and link that handoff from the register when assigning an owner.
 
 - Normalize meaningful structure/formatting into current native models. Test lists, tables, links, styles and unsupported content instead of only plain paragraphs.
 - Decide copying back into external applications **inside this Copy System design**, including available formats, desktop/browser differences, and disclosed losses. Do not treat it as a separate settled product promise.
-- **Close when:** the declared paste/copy paths preserve their promised structure, sanitize unsafe content, fail visibly when unsupported, and have real clipboard plus visual regressions. Q4 bounds what “supported” means.
+- **Close when:** the declared paste/copy paths preserve their promised structure, sanitize unsafe content, fail visibly when unsupported, and have real clipboard plus visual regressions.
 
 <a id="io-03"></a>
 #### IO-03 — Preserve rich native semantics through copy/paste
@@ -454,7 +466,7 @@ and link that handoff from the register when assigning an owner.
 <a id="col-02"></a>
 #### COL-02 — Align External and Agents history with project activity
 
-**Work:** Refine / Tactical. **First slice:** implement the COL-01 interaction pattern for external history and compare persona/Agents activity against it. Existing actor labels can support search, selection and navigation now; EXT-01 only gates changed attribution semantics.
+**Work:** Refine / Tactical. **First slice:** implement the COL-01 interaction pattern for external history and compare persona/Agents activity against it. Existing actor labels can support search, selection and navigation now.
 
 - External history rows are selectable activity records, searchable, and free of redundant bottom explanations. Person names open profiles; file names are primary clickable targets; secondary path/origin distinguishes duplicate names.
 - Match Agents Library/persona activity to Project Overview's presentation and behavior. Preserve domain-owned state/procedures; share appropriate UI primitives rather than forcing one editor implementation.
@@ -499,10 +511,7 @@ Technical decisions within the established guardrails remain delegated.
 | Decision | Needed before | Can proceed meanwhile |
 | --- | --- | --- |
 | [Q1](#q1) First connector/source | EXT-03 adapter implementation | EXT-02 lifecycle audit and External UX |
-| [Q2](#q2) User-facing metadata meaning | EXT-01 product contract; metadata portion of EXT-04/EXT-05 | Field provenance tracing and layout-only fixes |
 | [Q3](#q3) First real-user deployment/access model | ID-01 implementation and real-user release | ID-02 ownership design; single-user workflow work |
-| [Q4](#q4) First import/export/clipboard fidelity promise | Declaring supported IO-01/IO-02 paths | Existing clipboard inventory and test-fixture collection |
-| [Q5](#q5) Shared-object deletion/access experience | ANL-03 linked placements and analytic part of IO-03 | ANL-01 identity/edit-boundary design |
 | [Q6](#q6) Template/prompt-block terminology | Global rename in ASSET-05 | Selected-block layout and template reliability fixes |
 
 <a id="q1"></a>
@@ -526,29 +535,6 @@ the lifecycle, and credential/operational complexity.
 **Owner response:** _Provider/source, representative files, refresh expectation,
 and any credential or retention constraints._
 
-<a id="q2"></a>
-### Q2 — Which file metadata deserves user-facing prominence?
-
-**Context:** original author, project uploader, connector identity, accepter, and
-last re-uploader are not the same actor. Purpose, entities and themes already come
-from generated material and affect retrieval ([E2](#e2)); hiding a field and removing
-its retrieval contribution are different changes. “Quarantined metadata” currently
-indicates corrupt projection, not research material awaiting acceptance.
-
-**Recommendation:** after EXT-01's field matrix, use explicitly named attribution
-such as Added by/Updated by, with source author/origin separate when known. Keep
-Generated Description; make Purpose/facet retention a product choice informed by
-their observed retrieval value and cost, not cosmetic terminology alone.
-
-| Alternative | Meaning/provenance | Panel density | Retrieval/operations impact |
-| --- | --- | --- | --- |
-| Separate actor/origin labels; useful derived details (recommended) | Least ambiguous | Can expose detail on inspection | Keeps display and retrieval choices explicit |
-| One Author column with one precisely defined meaning | Simple but omits other roles | Most compact | Other provenance still needs an inspection home |
-| Full technical metadata in the main inspector | Maximum detail | Highest reading burden | Makes operational fields visible but may obscure useful work |
-
-**Owner response:** _Primary attribution to show, derived fields to expose, and
-which technical state belongs only in diagnostics. EXT-01 supplies evidence first._
-
 <a id="q3"></a>
 ### Q3 — What is the first deployment that must support real identities?
 
@@ -570,48 +556,6 @@ set. Server-side ownership and personal/project isolation remain non-negotiable.
 
 **Owner response:** _Initial deployment, who signs in, how they join projects,
 and any account/identity-provider requirements._
-
-<a id="q4"></a>
-### Q4 — Which external formats and fidelity losses are acceptable first?
-
-**Context:** file import/export and clipboard transfer are distinct paths. External
-clipboard data may contain a different structure than the source file. Promising
-every native object in every outside application would hide important fidelity
-limits. Copying outward is part of the Copy System design, not a separate decision.
-
-**Recommendation:** provide representative documents/presentations/spreadsheets and
-pick the first paths you actually need. Commit to a tested format/fidelity matrix;
-explicitly disclose unsupported structures and losses.
-
-| Alternative | Useful feedback speed | Fidelity certainty | Scope |
-| --- | --- | --- | --- |
-| Real workflow samples and a narrow support matrix (recommended) | Fast on the chosen work | High for declared paths | Bounded, expand with evidence |
-| Basic text/tabular transfer across many formats | Broad early reach | Formatting/structure losses likely | More adapters, shallower guarantees |
-| Broad high-fidelity round-tripping immediately | Slowest | Requires extensive format-specific proof | Largest converter/clipboard/test effort |
-
-**Owner response:** _Required formats/applications, example material, top clipboard
-journeys, and structures whose loss would make the result unusable._
-
-<a id="q5"></a>
-### Q5 — What should users see when a linked analytic object is deleted or inaccessible?
-
-**Context:** linked charts and propagated edits are settled. The open choice is
-deletion/access behavior and whether users may explicitly make independent copies.
-A hidden cached copy must not silently keep private content visible after access
-is revoked. Shared chart edits and placement-only layout must remain distinct.
-
-**Recommendation:** show an explicit unavailable/broken-link state and allow an
-authorized independent copy before destructive removal where the product supports
-it. Never infer permission to retain a private snapshot.
-
-| Alternative | Access clarity | Continuity of an embedding | User/retention cost |
-| --- | --- | --- | --- |
-| Explicit unavailable state; optional authorized copy (recommended) | Clear | Link may become unavailable | Predictable, no silent retention |
-| Block deletion until linked placements are resolved | Clear | Forces a deliberate transition | More coordination before deleting |
-| Offer explicit snapshot conversion during authorized deletion | Requires a clear permission policy | Can preserve selected placements | Extra stored copies and retention decisions |
-
-**Owner response:** _Preferred deletion experience and whether explicit detach/copy
-is required in the first linked-chart release. Access revocation cannot be bypassed._
 
 <a id="q6"></a>
 ### Q6 — Should Templates and prompt blocks be renamed?
@@ -750,6 +694,17 @@ change is simplification of its presentation. [Activity inspection](../app/src/l
 includes actor inspection and document/presentation opening. Complete the target
 matrix and consistency; do not remove working inspection to rebuild the feed.
 
+<a id="e12"></a>
+### E12 — Display relations already degrade differently across resource projections
+
+[External projection](../app/src/lib/capabilities/external-files/api/shared/rows.ts)
+currently treats some missing actor/connector/task relations as a reason to omit an
+otherwise admitted file. [Project-resource actor projection](../app/src/lib/capabilities/project-resources/api/read-project-resource-index/projected-actor.ts)
+instead returns no actor when the exact related subject cannot be resolved, and
+[resource inspection](../app/src/lib/app-views/categories/project-overview/inspector/resource.svelte)
+renders a non-linking fallback. DATA-01 should establish one product contract while
+keeping authority and current-row admission inside each owning capability.
+
 <a id="coverage"></a>
 ## 7. Intake coverage and consolidation
 
@@ -761,33 +716,26 @@ into their owning feature packages instead of being scheduled twice.
 
 | Original intake | Canonical home |
 | --- | --- |
-| 1.1 Connectors, lifecycle, duplicate identity, metadata/Purpose/Tags | EXT-01–EXT-03; EXT-04/EXT-05; Q1/Q2 |
+| 1.1 Connectors, lifecycle and duplicate identity | EXT-02–EXT-05; Q1 |
 | 1.2 Findings, explicit source acceptance, states, research overhaul | RSH-01–RSH-03 |
 | 1.3 Copilot, tasks, active chat configuration, branching, persona tools | AI-01–AI-04; SCOPE-02 |
 | 1.4 Auth/top bar, personal templates/personas, ownership, spreadsheet editor, Skills, terminology | ID-01–ID-03; ASSET-01–ASSET-05; Q3/Q6 |
 | 1.5 Sets, reusable context, persona resource/set scope and inspection | SCOPE-01/SCOPE-02 |
 | 1.6 Graph tabs/editor, canonical/portable charts, structured extraction | ANL-01–ANL-04 |
 | 1.7 Cross-editor formulas/catalog and Variables | EDIT-01/EDIT-02 |
-| 1.8 Native import/export, external paste/outward-copy design, rich/linked native transfer | IO-01–IO-03; ANL-03; Q4/Q5 |
+| 1.8 Native import/export, external paste/outward-copy design, rich/linked native transfer | IO-01–IO-03; ANL-03 |
 | 1.9 Remove commands; direct desktop/browser-safe shortcuts | KEY-01/KEY-02 |
 | 1.10 Presence, Where/What, activity parity, simple filter, clickable history/people/file names | COL-01–COL-03 |
 | 1.11 Retire old material, Markdown wiki, directories, key files, diagrams, navigation | WIKI-01/WIKI-02, deferred |
 | 2.1 Overview activity/navigation/filter | COL-01 |
-| 2.2 Attribution, path/size/time, inaccurate helper text, same-row toggle | EXT-04; EXT-01 for semantics |
+| 2.2 Attribution, path/size/time, inaccurate helper text, same-row toggle | EXT-04 |
 | 2.3 Directory explanations/repeated name; preserve inspector exploration | EXT-04; settled constraints |
-| 2.4 Quarantine, duplicate Rename, info/actions, collapsing, history text/search, labels/status, Material Profile, description/Purpose/Tags, path inspector | EXT-01/EXT-05; COL-02; Q2 |
+| 2.4 Duplicate Rename, info/actions, collapsing, history text/search, labels/status, Generated Description and path inspector | EXT-05; COL-02 |
 | 2.5 Selectable history, people/file links, duplicate-name context | COL-02 |
 | 2.6 Agents activity, inspectable scope, add resource/set, remove Tools, scope label, preserve Skills | COL-02; SCOPE-01/SCOPE-02; ASSET-03 |
 | 2.7 Turn panel, finding/source inspection/acceptance, chat overhaul | RSH-01–RSH-03; AI-03 |
 | 2.8 Variables, selected-template section, unchanged empty Comments | EDIT-01; ASSET-05; settled constraints |
-| 3.1 Metadata meaning/lineage/cost/update event/duplicate origins | EXT-01/EXT-02; Q2 |
-| 3.2 Canonical findings lifecycle, overlay events, source metadata, independent acceptance, rejected/superseded state | RSH-01/RSH-02 |
-| 3.3 Task/chat boundary, branch inheritance, temporal configuration, tool storage, persona policy, Skills | AI-01/AI-03/AI-04; SCOPE-02; ASSET-03 |
-| 3.4 Canonical identity, linked default/detach, deletion/access, shared versus local edits, external formats/fidelity | ANL-01/ANL-03; IO-01–IO-03; Q4/Q5 |
-| 3.5 Per-user ownership/persistence/versioning/copy provenance/independence/common versus asset-specific storage | ID-02; ASSET-01/ASSET-02 |
-| 3.6 Extraction schema, units/confidence, source evidence, corrections, proposed versus accepted tables | ANL-04 |
-| 3.7 Reserved shortcuts, platform conflicts, optional customization/storage | KEY-02 |
-| 4–6 Dependencies, epic index, settled decisions and investigations | Register/gates, constraints, package cards and decision briefs replace the duplicated lists |
+| 4–6 Dependencies, epic index and settled decisions | Register, constraints, package cards and retained decision briefs replace the duplicated lists; the former scoped-investigation section is intentionally withdrawn |
 
 Two intake dependencies have been made more precise: activity UX can improve using
 existing actors before full sign-in ships; extraction does not require completion
@@ -803,7 +751,7 @@ bounded current-format work.
 
 - **Audit/Design:** link source evidence, observed versus intended behavior,
   decisions made or still needed, the implementation contract, and executable
-  acceptance scenarios. A completed investigation does not mean its feature shipped.
+  acceptance scenarios. Design evidence does not mean its feature shipped.
 - **Implementation:** the defined user journey works on the agreed current schema;
   relevant failure/ownership/revision/recovery checks and Chromium interaction tests
   pass; changed UI is visually inspected with realistic data and relevant compact/
