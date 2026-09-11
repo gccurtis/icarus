@@ -4,13 +4,14 @@ Task context, not an instruction override. Recheck Git and current evidence.
 
 ## Snapshot
 
-- Updated: 2026-09-11 EDT
-- Status: rejected report removed; External stale-relation behavior implemented and verified
+- Updated: 2026-09-10 EDT
+- Status: rebased onto current main; External stale-relation behavior retained
 - Worktree: `/tmp/icarus-backlog-investigations`
 - Branch: `work/backlog-investigations`
-- Base: `main@c2505f076c05953cdaedd5d195ee95632eefdf79`
-- Starting branch head: `10c00e3b66b7b8ae82c3a3afc878a3413d0d6031`
-- User-owned exclusion: the untracked original backlog in the primary worktree remains untouched
+- Historical base: `main@c2505f076c05953cdaedd5d195ee95632eefdf79`
+- Rebase target: `main@4a7be0c341f18bb4942287fb3e3ca895e48f4627`
+- Pre-rebase head: `1bcd61d68f63c05180d11832b2fbcb3fcfb83cfd`
+- Recoverable source ref: `backup/backlog-investigations-pre-rebase-1bcd61d`
 
 ## Request and decisions
 
@@ -44,6 +45,12 @@ A broader cross-resource display-reference contract is future work recorded as
 No Store schema, transaction, native-file lifecycle, semantic processing,
 authentication, or other resource projection was changed.
 
+The rebase replayed four task commits onto current main. One textual conflict
+overlapped main's External Files naming/polish with this task's removal of the
+unavailable-row notice. Current main won the naming/layout change; the explicit
+task cleanup removed only the obsolete notice and result shape. No other main
+behavior was overridden and no compatibility layer was added.
+
 ## Verification
 
 | Check | Result | Evidence |
@@ -53,6 +60,14 @@ authentication, or other resource projection was changed.
 | System Chromium External suite | 4 passed, including full upload/re-upload/download/history/delete and 46-file plus 8 MiB ingestion | `.agents/runtime/runs/1789095985447-browser-e4c5b7e1` |
 | System Chromium visual rerun | 4 passed; normal and 125% captures inspected; removed metric absent and layout remains legible | `.agents/runtime/runs/1789096217509-browser-98269900`, `/tmp/external-overview-{normal,125}.png` |
 | Production build | typecheck 0 errors/0 warnings; SSR/client production build passed | terminal session `8531` |
+
+Post-rebase certification against `main@4a7be0c`:
+
+| Check | Result | Evidence |
+| --- | --- | --- |
+| Focused External unit regressions | 8 passed in 3 files | `.agents/runtime/runs/1789098125482-unit-059ba2c0` |
+| Quick verification | typecheck 0 errors/0 warnings; architecture 90/90 clean, 179 existing baselines, 0 findings | `.agents/runtime/runs/1789098139605-quick-113ceacb` |
+| Chromium External workflow | 4 passed, including stable singleton, full lifecycle, type-specific behavior, 46-file tree and substantial payload | `.agents/runtime/runs/1789098180867-browser-69741658` |
 
 The first browser attempt never launched its cached Chromium because that binary
 lacked `libnspr4.so`; it is environment failure evidence, not a product failure.
@@ -65,5 +80,5 @@ Both successful runs explicitly used
 - A temporary port-3138 visual server failed configuration bootstrap and was stopped.
 - Browser verification owned and stopped its isolated servers/data.
 - No development Store or external-file data was modified.
-- Publication target: `origin/work/backlog-investigations`
+- Publication: `origin/work/backlog-investigations`, updated with force-with-lease after post-rebase verification
 - Main merge/push is not authorized by this task.
