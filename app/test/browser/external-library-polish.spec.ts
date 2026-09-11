@@ -70,6 +70,11 @@ test("External Files has a standalone view toggle, author filtering and readable
   await inspector.getByRole("button", { name: /quarterly-reports/ }).click();
   await expect(inspector).toContainText("long-origin-name-for-path-disambiguation");
   await expect(page.getByRole("navigation", { name: "External Files directory" })).toContainText("External Files");
+  await table.getByRole("button", { name: "research", exact: true }).dblclick();
+  await table.getByRole("button", { name: "quarterly-reports", exact: true }).dblclick();
+  await expect(table.getByRole("button", {
+    name: "long-origin-name-for-path-disambiguation", exact: true
+  })).toHaveAttribute("title", "long-origin-name-for-path-disambiguation");
   await page.screenshot({ path: info.outputPath("external-files-directory.png"), fullPage: true });
 
   await tableChoice.click();

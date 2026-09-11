@@ -39,7 +39,7 @@
     <ScreenRow selected={externalDirectoryIsSelected(view, directory.relativePath)}
       onselect={() => inspectExternalDirectory(view, directory.relativePath)}
       onopen={() => enterLibraryDirectory(state, view, directory)}>
-      <ScreenCell><button class="item-name" type="button"
+      <ScreenCell><button class="item-name" type="button" title={directory.name}
         ondblclick={() => enterLibraryDirectory(state, view, directory)}
         onclick={() => inspectExternalDirectory(view, directory.relativePath)}><Folder size={15} aria-hidden="true" /><span>{directory.name}</span></button></ScreenCell>
       <ScreenCell>Folder</ScreenCell>

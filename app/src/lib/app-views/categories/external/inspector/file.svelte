@@ -83,7 +83,7 @@
             <Button variant="ghost" size="icon-sm" aria-label="Cancel rename" onclick={() => fileInspector.cancelEdit(state, file)}><X aria-hidden="true" /></Button>
           </div>
         {:else}
-          <button type="button" class="editable-value primary" title="Double-click to rename" ondblclick={() => fileInspector.startEdit(state, file, reupload.pending, "name")}><span>{file.name}</span><Pencil size={12} aria-hidden="true" /></button>
+          <button type="button" class="editable-value primary" title="Rename file" onclick={() => fileInspector.startEdit(state, file, reupload.pending, "name")}><span>{file.name}</span><Pencil size={12} aria-hidden="true" /></button>
         {/if}
         {#if state.editingPath}
           <div class="inline-editor">

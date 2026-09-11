@@ -107,7 +107,7 @@ test("External manages rename, move, re-upload, download, History, and deletion 
   const firstHref = await inspector.getByRole("link", { name: "Download", exact: true }).getAttribute("href");
   expect(firstHref).not.toBeNull();
 
-  await inspector.getByTitle("Double-click to rename").dblclick();
+  await inspector.getByTitle("Rename file").click();
   await inspector.getByLabel("File name").fill("managed-code.ts");
   await inspector.getByRole("button", { name: "Save", exact: true }).click();
   await expect(table.getByRole("button", { name: "managed-code.ts", exact: true })).toBeVisible();

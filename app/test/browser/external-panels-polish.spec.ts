@@ -107,10 +107,17 @@ test("External Files inspector keeps details above four actions at wide, narrow 
   await expect(semantic).toHaveCSS("font-weight", "600");
   await page.screenshot({ path: info.outputPath("inspector-wide.png") });
 
-  await inspector.getByTitle("Double-click to rename").dblclick();
+  const rename = inspector.getByTitle("Rename file");
+  await rename.focus();
+  await page.keyboard.press("Enter");
   await inspector.getByRole("textbox", { name: "File name", exact: true }).fill("unsaved-name.md");
-  await inspector.getByRole("button", { name: "Cancel rename", exact: true }).click();
-  await expect(inspector.getByTitle("Double-click to rename")).toHaveText("launch-notes.md");
+  await page.keyboard.press("Escape");
+  await expect(rename).toHaveText("launch-notes.md");
+  await rename.focus();
+  await page.keyboard.press("Space");
+  await inspector.getByRole("textbox", { name: "File name", exact: true }).fill("keyboard-renamed.md");
+  await page.keyboard.press("Enter");
+  await expect(rename).toHaveText("keyboard-renamed.md");
 
   await page.setViewportSize({ width: 1100, height: 760 });
   await inspector.getByRole("separator", { name: "Resize the inspector" }).press("Home");

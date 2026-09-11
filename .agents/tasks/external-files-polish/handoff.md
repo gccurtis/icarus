@@ -90,3 +90,30 @@ Inspected wide/newest, wide/scrolled and compact/125% tab-bar screenshots in the
 Browser verification used disposable Store/native data and deterministic providers on ports 5237/15237, including after configuration linking. No live provider tests ran. Owned servers exited and the lease was released. No known issue remains within the follow-up scope.
 
 Tab implementation commit `3ef9be3` and configuration-support commit `793a535` are committed and pushed to `origin/work/external-files-polish`. This handoff update records their completed verification/publication. Keep the worktree for review; main integration requires separate authorization. No implementation step remains.
+
+## Pre-merge review fixes
+
+The user authorized fixing all three findings from the review of task head `12825944bd40016556019db5b1a607ba0d222cc8`: pointer clicks lost when a clipped tab scrolls during focus, keyboard-inaccessible inline file rename, and truncated directory names without full hover text. Main remains outside the authorized write scope.
+
+The fixes stay at their owning UI boundaries. The mounted tab-bar action will suppress focus reveal only for the pointer-down focus transition while preserving keyboard/programmatic focus reveal and active-tab reveal. The inline file-name button will use normal button click activation, covering pointer, Enter and Space without restoring the duplicate toolbar action. Directory buttons will expose their full names in a title. Convert the review reproductions into permanent Chromium assertions, then rerun focused Chromium, quick checks, relevant units and production build before committing and pushing the exact fixes.
+
+All three findings are fixed:
+
+- The tab-bar DOM action remembers the tab involved in pointer-down and skips only that immediate focus reveal, so the control remains under the pointer through mouse-up. Pointer-up/cancel and component destruction clear the mounted state. Keyboard/programmatic focus and explicit activation still reveal the complete tab.
+- The inline file-name control now uses ordinary button click activation. Pointer click, Enter and Space open the same existing inline editor; Escape cancels and Enter commits. The duplicate toolbar Rename remains removed.
+- Directory rows now expose the complete directory name through their button title when the visible label is truncated.
+
+The temporary failing review reproductions are retained only under ignored `.agents/runtime/reviews/1282594/`. Permanent regression assertions were added to `tab-bar-scroll.spec.ts`, `external-panels-polish.spec.ts`, and `external-library-polish.spec.ts`; the existing file-management test was updated for normal Rename button activation.
+
+Final validation of the fixed tree:
+
+1. `node .agents/scripts/verify.mjs quick`: passed, Svelte 0 errors/0 warnings; architecture 90 checks clean, 179 existing baselined entries, 0 findings. `.agents/runtime/runs/1789095674111-quick-eef6aa0d/`.
+2. Focused Chromium command covering `external-files.spec.ts`, `external-library-polish.spec.ts`, `external-panels-polish.spec.ts`, `tab-bar-scroll.spec.ts`, and `workspace-naming-polish.spec.ts`: 9 tests passed. `.agents/runtime/runs/1789095711317-browser-88cab5d7/`.
+3. `node .agents/scripts/verify.mjs unit`: 277 files passed, 2 skipped; 2,055 tests passed, 2 skipped. `.agents/runtime/runs/1789095783207-unit-580f5841/`. Skips are existing suite declarations, not provider failures.
+4. `node .agents/scripts/verify.mjs scripts`: all 328 generator, architecture-mutation, schema and script tests passed with no skips. `.agents/runtime/runs/1789095817428-scripts-d074663d/`.
+5. `pnpm build` under the worktree process/lease guards: passed with 0 Svelte errors/warnings. `.agents/runtime/runs/premerge-fixes-build/build.log`. Existing Vite large/empty chunk warnings remain nonfatal.
+6. `git diff --check`: passed.
+
+Inspected the final wide scrolled tab bar, External Files directory view, and wide inspector screenshots from the successful focused Chromium run. The tab close regression uses raw pointer coordinates on a partly clipped button and verifies the tab count drops on the first click. The rename regression verifies Enter open/Escape cancel and Space open/Enter commit. The directory regression navigates until the long truncated folder is a direct table row and verifies its complete title.
+
+Review servers used disposable Store/native data and deterministic providers on ports 5237/15237. No live provider checks or human review data were used. All task-owned processes exited and the cache lease was released. The branch remained based on freshly fetched `origin/main` at `c2505f076c05953cdaedd5d195ee95632eefdf79`, zero commits behind, before these fixes. No unresolved review finding remains; commit and push this exact fix set, then keep the worktree for review. Main integration still requires separate authorization.

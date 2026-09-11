@@ -70,6 +70,29 @@ test("ordinary wheel scrolls transient tabs while permanent tabs stay fixed", as
   await page.mouse.wheel(120, 0);
   await expect.poll(() => scrollLeft(transient)).toBeGreaterThan(afterVertical + 50);
   await expectFixed(fixed, widePositions);
+
+  // Pointer focus must not move a partly clipped control before mouse-up.
+  const clippedTab = transient.locator(".tab.named").nth(5);
+  await clippedTab.evaluate((node) => {
+    const track = node.parentElement!;
+    const close = node.querySelector("button.close")!;
+    track.scrollLeft += close.getBoundingClientRect().left - track.getBoundingClientRect().left - 4;
+  });
+  const clipped = await clippedTab.evaluate((node) => {
+    const tab = node.getBoundingClientRect();
+    const close = node.querySelector("button.close")!.getBoundingClientRect();
+    const track = node.parentElement!.getBoundingClientRect();
+    return { tabLeft: tab.left, trackLeft: track.left, close };
+  });
+  expect(clipped.tabLeft).toBeLessThan(clipped.trackLeft);
+  expect(clipped.close.x + clipped.close.width / 2).toBeGreaterThan(clipped.trackLeft);
+  const beforeClippedClose = await faces.count();
+  await page.mouse.click(
+    clipped.close.x + clipped.close.width / 2,
+    clipped.close.y + clipped.close.height / 2
+  );
+  await expect(faces).toHaveCount(beforeClippedClose - 1);
+  await expectFixed(fixed, widePositions);
   await toolbar.screenshot({ path: info.outputPath("tabs-wide-wheel.png") });
 
   // A cancelable Ctrl+wheel event must reach the browser's zoom default untouched.
