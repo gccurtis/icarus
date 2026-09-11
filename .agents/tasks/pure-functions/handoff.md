@@ -5,12 +5,12 @@ evidence before acting. Never copy credentials into this file.
 
 ## Snapshot
 
-- Updated: 2026-09-11T16:19:50-04:00
-- Status: PF-01 through PF-16 checker layer implemented and verified; product
-  migration intentionally not performed in this checker-only pass
+- Updated: 2026-09-11T17:25:40-04:00
+- Status: PF-01 through PF-16 checker layer implemented; client configuration
+  is the first end-to-end migrated model and has two served reference pages
 - Worktree: `/home/jakul/cyberia/icarus-worktrees/pure-functions`
 - Branch: `work/pure-functions`
-- Current implementation head: `4abfa144d3b1b17db305b0d6f70e489bbfac4f32`
+- Current implementation head: `cc39cabc1a8ff51066b4902be85ed3d2330bb488`
 - Integration target / recorded base: `origin/main` /
   `b152b52ddd1fef5dfdaf8e2a4b6d03796cf011fd`
 - Lead: root; no delegated workers
@@ -30,9 +30,10 @@ exact capability transformers, a static registry and central authenticated
 gateway, one staged commit owner, component adapter/effect boundaries, and
 generator requirements.
 
-The user clarified during implementation that this delivery is the checker
-layer only. Do not fold product/runtime/model migration into this checkpoint.
-Existing findings are the migration roadmap and remain unbaselined.
+The initial delivery was checker-only. The subsequent request explicitly
+authorized one complete model migration, beginning with the small read-only
+client configuration model. Existing findings outside that slice remain the
+migration roadmap and remain unbaselined.
 
 ## Implemented
 
@@ -52,6 +53,17 @@ Existing findings are the migration roadmap and remain unbaselined.
 - Shared AST/type/registry helpers, catalog wiring, positive fixtures, and
   adversarial mutations were added. All new checks use `baseline: false`; no
   suppression or architecture baseline was added.
+- Client configuration now has flat field-only state, a closed 13-key numeric
+  contract, state-first free operations, and a runtime-owned read-only adapter
+  with fresh acquire/commit/release leases and workspace close.
+- The split client composition root constructs and binds configuration once,
+  translates it into downstream-owned settings records, and releases its lease
+  in `finally`. Server layout admission publishes one exact finite-number
+  allowlist.
+- `/demo/pure-functions` documents the complete contract and all 16 enforcement
+  layers. `/demo/pure-functions/configuration` documents the migrated model and
+  embeds exact live worktree source, including server-only source loaded across
+  a server data boundary.
 
 ## Verification
 
@@ -63,6 +75,11 @@ Run from `app/` unless noted:
 | `node --test --test-isolation=none scripts/test/pure-functions.test.mjs` | 16/16 passed |
 | `node --test --test-isolation=none scripts/test/checker-catalog.test.mjs` | 1/1 passed |
 | `node --test --test-isolation=none scripts/test/lint.test.mjs` | 286/286 passed |
+| `pnpm test` | 2,086 passed; 2 existing skips |
+| `pnpm typecheck` | 0 errors; 0 warnings |
+| Focused PF-01 through PF-07 scan of `client/configuration` and its runtime builder | all 7 clean |
+| Focused legacy runtime/ownership architecture checks | 6/6 clean |
+| Chromium `pure-functions-reference.spec.ts` | 3/3 passed at desktop and 390px; 6 Mermaid diagrams, exact source, diagnostics, navigation, and overflow checked |
 | Direct execution of PF-03 through PF-16 against the production tree | all ran without checker errors; current architecture intentionally reports findings |
 | `git diff --cached --check` before implementation commit | passed |
 
@@ -85,18 +102,23 @@ Earlier PF-01/PF-02 production observations were 5,864 and 3,862 findings.
 - `fcc92c5` — normative pure-islands runtime contract
 - `b8e72c7` — resolved PF-01/PF-02 enforcement foundation
 - `4abfa14` — complete PF-03 through PF-16 checker layer and tests
+- `cc39cab` — migrate client configuration end to end and add the served contract/model references
 - Branch push is authorized to `origin/work/pure-functions`; no integration,
   rebase, deployment, or push to `main` is authorized.
 
 ## Remaining work and next step
 
-- The product and generators do not yet conform; architecture lint is expected
-  to stay red without a baseline until migration completes.
+- The rest of the product and generators do not yet conform; architecture lint
+  is expected to stay red without a baseline until migration completes.
 - Runtime descriptor/lifecycle, concurrency, rollback, durable recovery, and
   authority-race behavior still require executable product implementations and
   their focused tests. Static checks deliberately do not claim those runtime
   properties by themselves.
-- No server, browser, Store, native-file data, or provider process was started.
-- Next executable step, if requested: choose one vertical migration slice
-  (recommended: one read-only model plus one read capability), make its new PF
-  findings green, then prove the lifecycle behavior before broad rollout.
+- An isolated disposable review server is intentionally left running on port
+  `3197`; it owns no development Store data and should be stopped through its
+  recorded helper session when review is complete. Chromium used the configured
+  system executable; no providers were called.
+- Next executable step: review the configuration slice and contract pages, then
+  choose the next client model. A staged mutable model should follow soon enough
+  to prove commit isolation, rollback, and conflict behavior rather than
+  generalizing only from this read-only slice.
