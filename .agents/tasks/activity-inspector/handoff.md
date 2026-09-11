@@ -139,9 +139,8 @@ still needs explicit authorization.
 ## Publication / handoff
 
 - Existing commits: `45e49e3`, `6a8533c`, `2b1220e`, `660277b`
-- Follow-up commit: pending final commit and publication
-- Push / merge state: previous head published to `origin/work/activity-inspector`;
-  follow-up changes not yet published; no main integration
+- Follow-up implementation commit: `e01853b` (`Expand activity destinations and reference`)
+- Publication target: `origin/work/activity-inspector`; no main integration
 - Worktree cleanup: retain because the local reference server and review remain active
 - Next owner: review the served suite and task branch, then decide the event semantics
   before the typed Activity persistence rewrite
