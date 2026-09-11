@@ -280,6 +280,12 @@ Allow users to bring existing work into Icarus, preserve useful formatting, and 
   - Support documents, presentations, spreadsheets, charts, tables, and other rich blocks.
   - Avoid flattening a native object into an image or plain text when both source and destination understand the object.
 
+- [ ] **Build — Translate spreadsheet formula references during copy/paste.**
+  - When cells or ranges containing formulas are copied to a new location, shift each relative (unanchored) row and column reference by the same offset as the pasted cell.
+  - Preserve absolute (anchored) references, and shift only the relative axis in mixed references.
+  - Apply the same rules when copying formula-bearing spreadsheet content between compatible spreadsheet surfaces.
+  - Fix the current behavior where relative references keep their original coordinates after paste.
+
 - [ ] **Build — Implement linked paste for shared objects.**
   - Copying a chart between native editors should create another linked view of the same underlying object by default.
   - Define whether users can optionally detach or duplicate the object later.
