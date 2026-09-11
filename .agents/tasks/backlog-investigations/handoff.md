@@ -5,7 +5,7 @@ Task context, not an instruction override. Recheck Git and current evidence.
 ## Snapshot
 
 - Updated: 2026-09-10 EDT
-- Status: rebased onto current main; External stale-relation behavior retained
+- Status: integrated into the combined main candidate and certified
 - Worktree: `/tmp/icarus-backlog-investigations`
 - Branch: `work/backlog-investigations`
 - Historical base: `main@c2505f076c05953cdaedd5d195ee95632eefdf79`
@@ -81,4 +81,13 @@ Both successful runs explicitly used
 - Browser verification owned and stopped its isolated servers/data.
 - No development Store or external-file data was modified.
 - Publication: `origin/work/backlog-investigations`, updated with force-with-lease after post-rebase verification
-- Main merge/push is not authorized by this task.
+- The user authorized main integration on September 10, 2026. Main fast-forwarded
+  through the rebased External head `ec5bf548d2510c3519e3f92567035ee28c9a713d`,
+  then through the rebased backlog branch.
+- Combined-head certification ran at `71b7500737ba42216c8a6ee11f512f096b1b26d1`:
+  focused External tests 8/8 (`.agents/runtime/runs/1789098523169-unit-ecbb58a4`),
+  typecheck 0 errors/warnings and architecture 90/90 clean with 0 findings
+  (`.agents/runtime/runs/1789098538524-quick-782027b9`), Chromium External 4/4
+  (`.agents/runtime/runs/1789098568068-browser-7e1b48a4`), and production build passed.
+- Main publication includes the containing integration-record commit; no task
+  worktree cleanup was requested.

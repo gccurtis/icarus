@@ -5,7 +5,7 @@ Task context, not an instruction override. Recheck Git and current authority.
 ## Snapshot
 
 - Updated: 2026-09-10 EDT
-- Status: rebased onto current main; target-only backlog updates reconciled
+- Status: integrated into the combined main candidate and certified
 - Worktree: `/tmp/icarus-backlog-planning`
 - Branch: `work/backlog-planning`
 - Historical starting base: `main@c2505f076c05953cdaedd5d195ee95632eefdf79`
@@ -34,8 +34,8 @@ The current request authorizes writing the planning file; standing task policy
 permits scoped commit/push to work/backlog-planning. No feature implementation,
 main merge/push, data reset, wiki deletion, or provider spending is authorized by
 this planning assignment. Three retained owner decisions gate specific future work.
-The user explicitly authorized rebasing this task branch onto current main; main
-merge/push remains outside this task. During rebase, current main is authoritative
+The user explicitly authorized rebasing this task branch onto current main and then
+authorized its integration and publication on main. During rebase, current main is authoritative
 for every overlap except the task's explicitly agreed backlog restructuring and
 owner-directed removal/replacement of the rejected investigations.
 
@@ -74,6 +74,10 @@ side selection was introduced.
 | Owner correction review | Rejected report versus revised backlog | Withdrawn investigation material removed; independently requested build work retained; DATA-01 added from the owner's explicit replacement requirement | Coverage map and task conversation |
 | git diff --check | Authored paths | Passed; recheck staged new files before commit | Git output |
 | Rebase reconciliation | main@4a7be0c versus rebased backlog | Landed interface slices and formula-copy requirement retained | Backlog landed-baseline and IO-03 sections |
+| Combined focused regressions | Integrated candidate 71b7500 | 8 External tests passed in 3 files | `.agents/runtime/runs/1789098523169-unit-ecbb58a4` |
+| Combined quick verification | Integrated candidate 71b7500 | typecheck 0 errors/0 warnings; architecture 90/90 clean, 179 baselined, 0 findings | `.agents/runtime/runs/1789098538524-quick-782027b9` |
+| Combined Chromium | Integrated candidate 71b7500 | 4 External workflows passed | `.agents/runtime/runs/1789098568068-browser-7e1b48a4` |
+| Combined production build | Integrated candidate 71b7500 | Passed | terminal session `56295` |
 
 No application tests, builds, browser runs, or provider calls were needed or run
 for this Markdown-only change. Cited tests are existing evidence locations, not
@@ -88,14 +92,14 @@ assertions of current passing execution. No product feature is marked Done here.
 
 ## Risks and next executable step
 
-The reconciled Markdown record is validated, committed, and published on the
-rewritten task branch. Main now tracks the older backlog; that textual conflict has
-been resolved in this branch, but main integration still requires a later explicit
-instruction.
+The reconciled Markdown record is validated and integrated after the External
+cleanup. Main fast-forwarded through both branches; no merge conflict or semantic
+override was needed during the second rebase. The containing integration-record
+commit is the final publication candidate.
 
 ## Publication / handoff
 
 - Publication: origin/work/backlog-planning, updated with force-with-lease after validation
-- Main merge: not authorized for this task
+- Main integration: authorized; fast-forwarded locally and certified before push
 - Worktree cleanup: retain until any later authorized integration
 - Next owner: user reviews the dispatch order and assigns packages; future agents must not revive the withdrawn investigation report as requirements
