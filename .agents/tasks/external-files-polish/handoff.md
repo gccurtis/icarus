@@ -4,7 +4,7 @@
 
 Implement the complete small-item shortlist from this conversation, plus the user's corrections: Table/Directory is a standalone toggle, rename the product category External to External Files, Author means Updated by and has its own filter, rename persona Default to Scope. Remove four helper/footer texts and duplicate toolbar Rename; simplify times and semantic status; reorder file information before a 2x2 action grid; readable Size and compressed paths; searchable External Files history. Simplify the Project Overview History filter's surrounding presentation. Preserve directory exploration and inline rename.
 
-Implementation is authorized. Root AGENTS.md authorizes verified owned commits and push to work/external-files-polish. No merge, main push, deployment, or data deletion is authorized. Existing untracked docs/icarus_project_backlog.md in the primary checkout belongs to the user and is excluded.
+Implementation and task-branch publication were initially authorized. The user later authorized the main merge, main push, and backlog update recorded under **Main integration**. Deployment and data deletion remain outside scope.
 
 ## Checkout and ownership
 
@@ -118,4 +118,14 @@ Inspected the final wide scrolled tab bar, External Files directory view, and wi
 
 Review servers used disposable Store/native data and deterministic providers on ports 5237/15237. No live provider checks or human review data were used. All task-owned processes exited and the cache lease was released. The branch remained based on freshly fetched `origin/main` at `c2505f076c05953cdaedd5d195ee95632eefdf79`, zero commits behind, before these fixes. No unresolved review finding remains.
 
-Fix commit `ff9d440` is committed and pushed to `origin/work/external-files-polish`. This handoff-only follow-up records publication; resolve the final task head with `git log -1 work/external-files-polish`. Keep the worktree for review. Main integration still requires separate authorization.
+Fix commit `ff9d440` is committed and pushed to `origin/work/external-files-polish`. This handoff-only follow-up records task-branch publication; resolve the final task head with `git log -1 work/external-files-polish`. At that stage, the task worktree was retained for review and main integration had not yet been authorized.
+
+## Main integration
+
+On September 10, 2026, the user explicitly authorized merging this work into `main`, pushing `main`, and marking the completed backlog items. Freshly fetched `origin/main` remained at `c2505f076c05953cdaedd5d195ee95632eefdf79`; the verified source and its remote both resolved to `5121d2f72502d85381fee0622dc8361594439560`, seven commits ahead and zero behind. Local `main` was fast-forwarded with `git merge --ff-only work/external-files-polish`, so the product and agent-support tree is exactly the reviewed branch tree.
+
+The previously untracked `docs/icarus_project_backlog.md` was added in main-only commit `95db12e`. It marks only shipped work complete, updates the Table/Directory wording to the user's standalone-toggle correction, records Author as the existing Updated by identity with its filter, and adds the completed tab-bar follow-up. Broader metadata, history-navigation, directory-name, and path-inspector work remains open.
+
+Combined-tree review confirmed that `5121d2f` is an ancestor of main and that the executable app, agent scripts, workflow skill, root instructions, and handoff template are byte-for-byte identical to that fully verified source. `git diff --check` also passed. A redundant primary-checkout quick run was skipped because the repository helper detected the user's existing Vite server (PID 3294) as an active cache user; it was not stopped. The main-only changes are this handoff and the Markdown backlog, so the branch's full unit, script, production-build, and focused Chromium evidence remains applicable.
+
+The integrated history, backlog commit, and this final handoff are published to `origin/main` using the explicit destination `git push origin HEAD:refs/heads/main`. The task worktree remains available after integration; cleanup was not requested and it contains ignored local dependencies, verification evidence, and the shared configuration symlink.
