@@ -16,7 +16,7 @@ const CONSTRUCTOR = /^create[A-Z]/;
 const constructions = (tree, path, body) => {
   const found = [];
   const record = (name, call) => {
-    if (!ts.isCallExpression(call) || !ts.isIdentifier(call.expression)) return;
+    if (!call || !ts.isCallExpression(call) || !ts.isIdentifier(call.expression)) return;
     if (!CONSTRUCTOR.test(call.expression.text)) return;
     const takes = [];
     for (const argument of call.arguments) {
@@ -32,13 +32,17 @@ const constructions = (tree, path, body) => {
   const unwrap = (node) => (node && ts.isAwaitExpression(node) ? node.expression : node);
 
   if (ts.isBlock(body)) {
-    for (const statement of body.statements) {
-      if (!ts.isVariableStatement(statement)) continue;
-      for (const declaration of statement.declarationList.declarations) {
-        if (!ts.isIdentifier(declaration.name)) continue;
-        record(declaration.name.text, unwrap(declaration.initializer));
+    const visit = (node) => {
+      // Construction may be guarded by try/finally or another control-flow
+      // block. Follow those blocks, but never mistake a nested callback's local
+      // construction for part of the composition root itself.
+      if (node !== body && ts.isFunctionLike(node)) return;
+      if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name)) {
+        record(node.name.text, unwrap(node.initializer));
       }
-    }
+      node.forEachChild(visit);
+    };
+    visit(body);
   }
 
   const literal = returnedObject(body);
@@ -72,12 +76,12 @@ export default check({
   },
   run(tree) {
     const found = [];
-    for (const { builder, startPath } of roots(tree)) {
-      if (!tree.isFile(startPath)) continue;
-      const body = bodyOfDeclaration(declarationNamed(tree, startPath, builder));
+    for (const { builder, builderPath } of roots(tree)) {
+      if (!tree.isFile(builderPath)) continue;
+      const body = bodyOfDeclaration(declarationNamed(tree, builderPath, builder));
       if (!body) continue;
 
-      const built = constructions(tree, startPath, body);
+      const built = constructions(tree, builderPath, body);
       const order = new Map(built.map(({ name }, index) => [name, index]));
       const edges = new Map(built.map(({ name, takes }) => [name, takes.filter((n) => order.has(n))]));
 
@@ -87,7 +91,7 @@ export default check({
           if (at === undefined || at < index) continue;
           found.push({
             subject: "after-dependencies",
-            path: startPath,
+            path: builderPath,
             line,
             message: `${name} is handed ${taken}, which is constructed after it`
           });
@@ -100,7 +104,7 @@ export default check({
         if (count === 1) continue;
         found.push({
           subject: "constructed-once",
-          path: startPath,
+          path: builderPath,
           message: `${callee}() is called ${count} times, which is ${count} instances of one object`
         });
       }
@@ -112,7 +116,7 @@ export default check({
         const key = [...cycle].sort().join(",");
         if (reported.has(key)) continue;
         reported.add(key);
-        found.push({ subject: "no-cycle", path: startPath, message: `cycle: ${cycle.join(" → ")}` });
+        found.push({ subject: "no-cycle", path: builderPath, message: `cycle: ${cycle.join(" → ")}` });
       }
     }
     return found;

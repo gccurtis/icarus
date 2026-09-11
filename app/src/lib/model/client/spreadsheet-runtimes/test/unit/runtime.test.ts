@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import { afterEach, beforeEach, test, vi } from "vitest";
 import type { SpreadsheetOp } from "$representation/data/types/spreadsheets/op";
-import { createConfiguration } from "$model/client/configuration";
 import { createSpreadsheetRuntimes } from "$model/client/spreadsheet-runtimes";
 import type { SpreadsheetRuntime } from "$model/client/spreadsheet-runtimes";
 
@@ -41,14 +40,7 @@ vi.mock("$capabilities/spreadsheet/index.remote", () => ({
 }));
 
 const runtimeFor = (afterOps = 3, afterMs = 2000): SpreadsheetRuntime =>
-  createSpreadsheetRuntimes(
-    createConfiguration({
-      revisions: {
-        changeSets: { flushAfterOps: afterOps, flushAfterMs: afterMs },
-        sync: { everyMs: 0 }
-      }
-    })
-  ).attach("x9");
+  createSpreadsheetRuntimes({ afterOps, afterMs, syncEveryMs: 0 }).attach("x9");
 
 const set = (cell: string, value: number): SpreadsheetOp => ({
   op: "set",

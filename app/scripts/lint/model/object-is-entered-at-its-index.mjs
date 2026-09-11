@@ -3,6 +3,10 @@ import { objects, unitOf } from "../shared/trees.mjs";
 
 /** `index` or `index.server` — the environment decides which, and `object-layout` checks that. */
 const isIndex = (rest) => rest.length === 1 && /^index(\.server)?$/.test(rest[0]);
+const isRuntimeBindingSurface = (tree, path, rest) =>
+  tree.within(tree.path("runtime"), path) &&
+  rest.length === 1 &&
+  ["port", "state"].includes(rest[0]);
 
 export default check({
   name: "object-is-entered-at-its-index",
@@ -22,7 +26,7 @@ export default check({
         const [environment, name, ...rest] = target.segments;
         if (!name) continue;
         if (self && self.id === `${environment}/${name}`) continue;
-        if (rest.length === 0 || isIndex(rest)) continue;
+        if (rest.length === 0 || isIndex(rest) || isRuntimeBindingSurface(tree, path, rest)) continue;
 
         found.push({
           path,

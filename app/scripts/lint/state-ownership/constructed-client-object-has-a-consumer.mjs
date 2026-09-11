@@ -2,6 +2,7 @@ import ts from "typescript";
 
 import { check } from "../shared/check.mjs";
 import { productionSources } from "../shared/production.mjs";
+import { roots } from "../shared/runtime.mjs";
 import { objects } from "../shared/trees.mjs";
 
 const aggregateProperty = (name) =>
@@ -106,7 +107,7 @@ export default check({
   run(tree) {
     const sources = productionSources(tree);
     const found = [];
-    const start = tree.path("runtime", "client", "start.ts");
+    const start = roots(tree).find(({ environment }) => environment === "client").builderPath;
     const startText = tree.read(start);
     for (const object of objects(tree).filter((candidate) => candidate.environment === "client")) {
       const specifier = `$model/client/${object.name}`;

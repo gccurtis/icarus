@@ -1,6 +1,7 @@
 import ts from "typescript";
 
 import { check } from "../shared/check.mjs";
+import { roots } from "../shared/runtime.mjs";
 
 const STATEFUL_FACTORY = /create(?:[A-Z]\w*)?(?:Runtimes|Storage|WorkspaceState|Queries|Preferences)\b/;
 
@@ -27,7 +28,7 @@ export default check({
   name: "stateful-client-object-has-release",
   says: "Every stateful object built by the client composition root is reached by client shutdown cleanup.",
   run(tree) {
-    const path = tree.path("runtime", "client", "start.ts");
+    const path = roots(tree).find(({ environment }) => environment === "client").builderPath;
     const built = [];
     tree.eachNode(path, (node) => {
       if (!ts.isVariableDeclaration(node) || !ts.isIdentifier(node.name) || !node.initializer) return;

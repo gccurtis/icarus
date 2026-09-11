@@ -1,5 +1,4 @@
 import { afterEach, expect, test, vi } from "vitest";
-import { createConfiguration } from "$model/client/configuration";
 import { createTabList } from "$model/client/tab-list";
 import { createTabViews } from "$model/client/tab-views";
 import { createWorkspaceState } from "$model/client/workspace-state";
@@ -28,7 +27,7 @@ const workspace = () => createWorkspaceState(
   "project",
   createTabList(),
   createTabViews(),
-  createConfiguration({ workspace: { changeSets: { flushAfterOps: 0, flushAfterMs: 0 } } })
+  { afterOps: 0, afterMs: 0 }
 );
 const template: LibraryTemplate = {
   id: "templates:1", name: "Brief", description: "", makes: "Document",

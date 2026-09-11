@@ -31,6 +31,29 @@ const frozenObject = (expression) => {
   return null;
 };
 
+/**
+ * A lease sometimes has to be registered by identity before it is returned, so
+ * accept either a direct frozen literal or one top-level const initialized with
+ * that literal and returned by name. Both shapes allocate inside acquire().
+ */
+const acquiredFacade = (fn) => {
+  const returns = returnExpressions(fn);
+  if (returns.length !== 1) return null;
+  const direct = frozenObject(returns[0]);
+  if (direct) return direct;
+  if (!ts.isIdentifier(returns[0]) || !fn.body || !ts.isBlock(fn.body)) return null;
+
+  for (const statement of fn.body.statements) {
+    if (!ts.isVariableStatement(statement)) continue;
+    if (!(statement.declarationList.flags & ts.NodeFlags.Const)) continue;
+    for (const declaration of statement.declarationList.declarations) {
+      if (!ts.isIdentifier(declaration.name) || declaration.name.text !== returns[0].text) continue;
+      return frozenObject(declaration.initializer);
+    }
+  }
+  return null;
+};
+
 const memberCalls = (node) => {
   const calls = [];
   visit(node, (child) => {
@@ -148,8 +171,7 @@ export default check({
         }
 
         const acquire = propertyValue(propertyNamed(outer.literal, "acquire"));
-        const acquiredReturns = isFunction(acquire) ? returnExpressions(acquire) : [];
-        const acquired = acquiredReturns.length === 1 ? frozenObject(acquiredReturns[0]) : null;
+        const acquired = isFunction(acquire) ? acquiredFacade(acquire) : null;
         if (!acquired || !acquired.frozen) {
           found.push({
             subject: "acquired-port",

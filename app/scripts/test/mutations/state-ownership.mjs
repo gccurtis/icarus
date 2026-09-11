@@ -122,7 +122,7 @@ export const MUTATIONS = [
         write: `export const createProbe = (): object => ({});\n`
       },
       {
-        path: "src/lib/runtime/client/start.ts",
+        path: "src/lib/runtime/client/models/build.ts",
         edit: (before) =>
           before
             .replace(
@@ -130,8 +130,8 @@ export const MUTATIONS = [
               `import { createCommands } from "$model/client/commands";\nimport { createProbe } from "$model/client/probe";`
             )
             .replace(
-              "  const settings = createConfiguration(configuration);",
-              "  const settings = createConfiguration(configuration);\n  const probe = createProbe();\n  void probe;"
+              "  const configurationState = createConfigurationState(configuration);",
+              "  const configurationState = createConfigurationState(configuration);\n  const probe = createProbe();\n  void probe;"
             )
       }
     ]

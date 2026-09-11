@@ -1,19 +1,18 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
 
-import { createConfiguration } from "$model/client/configuration";
 import { createTabList } from "$model/client/tab-list";
 import { createTabViews } from "$model/client/tab-views";
 import { createWorkspaceState, type WorkspaceStateModel } from "$model/client/workspace-state";
 
-const UNPERSISTED = { workspace: { changeSets: { flushAfterOps: 0, flushAfterMs: 0 } } };
+const UNPERSISTED = { afterOps: 0, afterMs: 0 };
 
 const workspace = (): WorkspaceStateModel =>
   createWorkspaceState(
     "project-one",
     createTabList(),
     createTabViews(),
-    createConfiguration(UNPERSISTED)
+    UNPERSISTED
   );
 
 const deferred = <Value>() => {

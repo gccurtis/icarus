@@ -13,7 +13,6 @@ vi.mock("$capabilities/workspace/index.remote", () => ({
   submitWorkspaceChanges: () => Promise.resolve({ accepted: true, revision: 1, merged: false })
 }));
 
-const { createConfiguration } = await import("$model/client/configuration");
 const { createTabList } = await import("$model/client/tab-list");
 const { createTabViews } = await import("$model/client/tab-views");
 const { createWorkspaceState } = await import("$model/client/workspace-state");
@@ -58,11 +57,6 @@ class Register<Runtime extends object> {
 }
 
 const setup = (persists = false) => {
-  const configuration = createConfiguration({
-    workspace: {
-      changeSets: { flushAfterOps: persists ? 1_000 : 0, flushAfterMs: 60_000 }
-    }
-  });
   const documents = new Register<object>();
   const presentations = new Register<object>();
   const spreadsheets = new Register<object>();
@@ -70,7 +64,7 @@ const setup = (persists = false) => {
     "p1",
     createTabList(),
     createTabViews(),
-    configuration,
+    { afterOps: persists ? 1_000 : 0, afterMs: 60_000 },
     documents as unknown as DocumentRuntimesModel,
     presentations as unknown as PresentationRuntimesModel,
     spreadsheets as unknown as SpreadsheetRuntimesModel

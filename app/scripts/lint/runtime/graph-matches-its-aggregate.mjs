@@ -18,8 +18,8 @@ export default check({
   },
   run(tree) {
     const found = [];
-    for (const { environment, aggregate, builder, startPath, typesPath } of roots(tree)) {
-      if (!tree.isFile(startPath) || !tree.isFile(typesPath)) continue;
+    for (const { environment, aggregate, builder, builderPath, typesPath } of roots(tree)) {
+      if (!tree.isFile(builderPath) || !tree.isFile(typesPath)) continue;
 
       const declared = interfaceFields(tree, typesPath, aggregate);
       if (!declared) {
@@ -31,11 +31,11 @@ export default check({
         continue;
       }
 
-      const literal = returnedObject(bodyOfDeclaration(declarationNamed(tree, startPath, builder)));
+      const literal = returnedObject(bodyOfDeclaration(declarationNamed(tree, builderPath, builder)));
       if (!literal) {
         found.push({
           subject: "built-is-declared",
-          path: startPath,
+          path: builderPath,
           message: `${builder} returns no object literal, so the ${environment} graph cannot be read`
         });
         continue;
@@ -44,16 +44,16 @@ export default check({
 
       for (const field of declared) {
         if (built.includes(field)) continue;
-        found.push({ subject: "declared-is-built", path: startPath, message: `${aggregate}.${field} is never assigned` });
+        found.push({ subject: "declared-is-built", path: builderPath, message: `${aggregate}.${field} is never assigned` });
       }
       for (const field of built) {
         if (declared.includes(field)) continue;
-        found.push({ subject: "built-is-declared", path: startPath, message: `${field} is returned but ${aggregate} does not declare it` });
+        found.push({ subject: "built-is-declared", path: builderPath, message: `${field} is returned but ${aggregate} does not declare it` });
       }
       for (const field of new Set(built)) {
         const count = built.filter((candidate) => candidate === field).length;
         if (count > 1) {
-          found.push({ subject: "assigned-once", path: startPath, message: `${field} is assigned ${count} times` });
+          found.push({ subject: "assigned-once", path: builderPath, message: `${field} is assigned ${count} times` });
         }
       }
     }

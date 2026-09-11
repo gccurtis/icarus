@@ -33,14 +33,33 @@ export default check({
       if (!files.includes("types.ts")) {
         found.push({ subject: "required-files", path, message: "no types.ts" });
       }
-      if (!DEFINITIONS.some((candidate) => files.includes(candidate))) {
-        found.push({ subject: "required-files", path, message: `no ${DEFINITIONS.join(" or ")}` });
-      }
-      if (!files.includes("constructor.ts")) {
-        found.push({ subject: "required-files", path, message: "no constructor.ts" });
+      const migrated = files.includes("state.ts") || files.includes("port.ts");
+      if (migrated) {
+        for (const required of ["state.ts", "port.ts"]) {
+          if (!files.includes(required)) {
+            found.push({ subject: "required-files", path, message: `no ${required}` });
+          }
+        }
+        for (const legacy of [...DEFINITIONS, "constructor.ts"]) {
+          if (!files.includes(legacy)) continue;
+          found.push({
+            subject: "permitted-root-entries",
+            path: join(path, legacy),
+            message: "a migrated model has state.ts and port.ts, not a compatibility surface"
+          });
+        }
+      } else {
+        if (!DEFINITIONS.some((candidate) => files.includes(candidate))) {
+          found.push({ subject: "required-files", path, message: `no ${DEFINITIONS.join(" or ")}` });
+        }
+        if (!files.includes("constructor.ts")) {
+          found.push({ subject: "required-files", path, message: "no constructor.ts" });
+        }
       }
 
-      const permitted = new Set([index, "types.ts", "constructor.ts", `${name}.md`, ...DEFINITIONS]);
+      const permitted = migrated
+        ? new Set([index, "types.ts", "state.ts", "port.ts", `${name}.md`])
+        : new Set([index, "types.ts", "constructor.ts", `${name}.md`, ...DEFINITIONS]);
       for (const file of files) {
         if (permitted.has(file)) continue;
         found.push({

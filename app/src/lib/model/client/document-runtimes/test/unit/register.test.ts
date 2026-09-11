@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
 import { test, vi } from "vitest";
-import { createConfiguration } from "$model/client/configuration";
 import { createDocumentRuntimes } from "$model/client/document-runtimes";
 
 vi.mock("$capabilities/document/index.remote", () => ({
@@ -11,14 +10,7 @@ vi.mock("$capabilities/document/index.remote", () => ({
 }));
 
 const register = (afterOps = 50, afterMs = 2000) =>
-  createDocumentRuntimes(
-    createConfiguration({
-      revisions: {
-        changeSets: { flushAfterOps: afterOps, flushAfterMs: afterMs },
-        sync: { everyMs: 0 }
-      }
-    })
-  );
+  createDocumentRuntimes({ afterOps, afterMs, syncEveryMs: 0 });
 
 test("attach opens a document", () => {
   const runtimes = register();
@@ -106,11 +98,4 @@ test("the map is not reachable through the surface", () => {
   assert.deepEqual(Object.keys(runtimes), []);
   assert.equal((runtimes as unknown as { open: unknown[] }).open.length, 1);
   assert.ok(Array.isArray(runtimes.open));
-});
-
-test("the register refuses to build without its thresholds", () => {
-  assert.throws(
-    () => createDocumentRuntimes(createConfiguration({})),
-    /revisions\.changeSets\.flushAfterOps/
-  );
 });

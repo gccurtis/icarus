@@ -1,6 +1,5 @@
 import { getContext, hasContext, setContext } from "svelte";
 
-import { createConfiguration } from "$model/client/configuration";
 import { createDocumentRuntimes } from "$model/client/document-runtimes";
 import { createPresentationRuntimes } from "$model/client/presentation-runtimes";
 import { createSpreadsheetRuntimes } from "$model/client/spreadsheet-runtimes";
@@ -62,14 +61,17 @@ export {
 
 const KEY = Symbol.for("icarus.workspace-state");
 
-const UNPERSISTED = {
-  workspace: { changeSets: { flushAfterOps: 0, flushAfterMs: 0 } },
-  revisions: { changeSets: { flushAfterOps: 50, flushAfterMs: 2000 }, sync: { everyMs: 0 } },
-  presentation: {
-    stage: { unitsHigh: 720, widthRem: 52, averageGlyphWidthEm: 0.52 },
-    zoom: { minimum: 50, maximum: 200, step: 5 },
-    gutter: { minimumRem: 0.75, maximumRem: 2.5 }
-  }
+const REVISION_THRESHOLDS = { afterOps: 50, afterMs: 2000, syncEveryMs: 0 };
+const WORKSPACE_THRESHOLDS = { afterOps: 0, afterMs: 0 };
+const STAGE_SETTINGS = {
+  unitsHigh: 720,
+  widthRem: 52,
+  averageGlyphWidthEm: 0.52,
+  minimumZoom: 50,
+  maximumZoom: 200,
+  zoomStep: 5,
+  minimumGutterRem: 0.75,
+  maximumGutterRem: 2.5
 };
 
 export const provideWorkspaceState = (model: WorkspaceStateModel): WorkspaceStateModel => {
@@ -78,16 +80,14 @@ export const provideWorkspaceState = (model: WorkspaceStateModel): WorkspaceStat
 };
 
 const forDevelopment = (): WorkspaceStateModel => {
-  const configuration = createConfiguration(UNPERSISTED);
-
   return createWorkspaceState(
     "dev-project",
     createTabList(),
     createTabViews(),
-    configuration,
-    createDocumentRuntimes(configuration),
-    createPresentationRuntimes(configuration),
-    createSpreadsheetRuntimes(configuration)
+    WORKSPACE_THRESHOLDS,
+    createDocumentRuntimes(REVISION_THRESHOLDS),
+    createPresentationRuntimes(REVISION_THRESHOLDS, STAGE_SETTINGS),
+    createSpreadsheetRuntimes(REVISION_THRESHOLDS)
   );
 };
 

@@ -5,6 +5,7 @@ import { productionSources } from "../shared/production.mjs";
 
 const ALLOWED = new Set([
   "src/lib/runtime/client/start.ts",
+  "src/lib/runtime/client/models/build.ts",
   "src/lib/model/client/workspace-state/methods/shared/apply.ts",
   "src/lib/model/client/workspace-state/methods/shared/adopt.ts",
   "src/lib/model/client/workspace-state/methods/shared/acquire-runtime.ts",

@@ -3,65 +3,74 @@ import type { Configuration } from "$runtime/server/start.server";
 import type { LayoutServerLoad } from "./$types";
 
 /**
- * Every configuration key the browser may see.
- *
- * **An allowlist, and the reason it is one is worth stating.** The merged YAML
- * holds the development project token and the observability settings alongside
- * these, and a load function's return value is serialized into the document
- * where anyone can read it. Publishing by omission is how a secret ships, so the
- * list is what crosses rather than the tree minus what we remembered to remove.
- *
- * Adding a key here is a deliberate act with a reviewer. Nothing reads
- * configuration on the client that is not named in this array.
+ * Admits one published numeric value. Configuration faults fail on the server,
+ * before an incomplete or mistyped transport object reaches the client model.
  */
-const PUBLISHED_KEYS = [
-  "revisions.changeSets.flushAfterOps",
-  "revisions.changeSets.flushAfterMs",
-  "revisions.sync.everyMs",
-  "workspace.changeSets.flushAfterOps",
-  "workspace.changeSets.flushAfterMs",
-  "presentation.stage.unitsHigh",
-  "presentation.stage.widthRem",
-  "presentation.stage.averageGlyphWidthEm",
-  "presentation.zoom.minimum",
-  "presentation.zoom.maximum",
-  "presentation.zoom.step",
-  "presentation.gutter.minimumRem",
-  "presentation.gutter.maximumRem"
-] as const;
+const requiredPublishedNumber = (
+  configuration: Configuration,
+  key: string
+): number => {
+  const value = configuration.get(key);
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    throw new Error(
+      `Published configuration key '${key}' must be a finite number — check configuration/`
+    );
+  }
+  return value;
+};
 
 /**
- * Rebuilds the named keys into the nested shape they had, so a client reading
- * `revisions.changeSets.flushAfterOps` asks for the same path the YAML wrote.
- *
- * Flattening to single-segment keys was the alternative and would have made the
- * two sides name the same value differently — which is the drift the client's
- * `get` being a copy of the server's exists to avoid.
- *
- * A key with no value is omitted rather than published as `undefined`: the
- * client's `requiredNumber` then reports it as missing and names this file,
- * which is a better failure than a key that exists and holds nothing.
+ * The literal is the browser allowlist. It cannot accidentally serialize a
+ * sibling secret, and its exact nested shape is inferred into LayoutServerData.
  */
-const publish = (configuration: Configuration): Record<string, unknown> => {
-  const snapshot: Record<string, unknown> = {};
-
-  for (const key of PUBLISHED_KEYS) {
-    const value = configuration.get(key);
-    if (value === undefined) continue;
-
-    const segments = key.split(".");
-    const leaf = segments.pop()!;
-
-    let node = snapshot;
-    for (const segment of segments) {
-      node[segment] ??= {};
-      node = node[segment] as Record<string, unknown>;
+const publish = (configuration: Configuration) => ({
+  revisions: {
+    changeSets: {
+      flushAfterOps: requiredPublishedNumber(
+        configuration,
+        "revisions.changeSets.flushAfterOps"
+      ),
+      flushAfterMs: requiredPublishedNumber(
+        configuration,
+        "revisions.changeSets.flushAfterMs"
+      )
+    },
+    sync: {
+      everyMs: requiredPublishedNumber(configuration, "revisions.sync.everyMs")
     }
-    node[leaf] = value;
+  },
+  workspace: {
+    changeSets: {
+      flushAfterOps: requiredPublishedNumber(
+        configuration,
+        "workspace.changeSets.flushAfterOps"
+      ),
+      flushAfterMs: requiredPublishedNumber(
+        configuration,
+        "workspace.changeSets.flushAfterMs"
+      )
+    }
+  },
+  presentation: {
+    stage: {
+      unitsHigh: requiredPublishedNumber(configuration, "presentation.stage.unitsHigh"),
+      widthRem: requiredPublishedNumber(configuration, "presentation.stage.widthRem"),
+      averageGlyphWidthEm: requiredPublishedNumber(
+        configuration,
+        "presentation.stage.averageGlyphWidthEm"
+      )
+    },
+    zoom: {
+      minimum: requiredPublishedNumber(configuration, "presentation.zoom.minimum"),
+      maximum: requiredPublishedNumber(configuration, "presentation.zoom.maximum"),
+      step: requiredPublishedNumber(configuration, "presentation.zoom.step")
+    },
+    gutter: {
+      minimumRem: requiredPublishedNumber(configuration, "presentation.gutter.minimumRem"),
+      maximumRem: requiredPublishedNumber(configuration, "presentation.gutter.maximumRem")
+    }
   }
-
-  return snapshot;
-};
+});
 
 /**
  * Hands the client instance its settings.

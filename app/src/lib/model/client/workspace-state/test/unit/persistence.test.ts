@@ -34,7 +34,6 @@ vi.mock("$capabilities/workspace/index.remote", () => ({
   }
 }));
 
-const { createConfiguration } = await import("$model/client/configuration");
 const { createTabList } = await import("$model/client/tab-list");
 const { createTabViews } = await import("$model/client/tab-views");
 const { createWorkspaceState } = await import("$model/client/workspace-state");
@@ -43,7 +42,7 @@ const { startingWorkspace } = await import(
 );
 
 const thresholds = (flushAfterOps: number, flushAfterMs: number) =>
-  createConfiguration({ workspace: { changeSets: { flushAfterOps, flushAfterMs } } });
+  ({ afterOps: flushAfterOps, afterMs: flushAfterMs });
 
 const workspaceState = (afterOps = 3, afterMs = 60_000) =>
   createWorkspaceState("p1", createTabList(), createTabViews(), thresholds(afterOps, afterMs));

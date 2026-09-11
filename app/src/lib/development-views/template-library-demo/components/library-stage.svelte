@@ -3,7 +3,6 @@
   import CircleCheck from "@lucide/svelte/icons/circle-check";
   import RotateCcw from "@lucide/svelte/icons/rotate-ccw";
 
-  import { createConfiguration } from "$model/client/configuration";
   import { createTabList } from "$model/client/tab-list";
   import { createTabViews } from "$model/client/tab-views";
   import {
@@ -31,14 +30,11 @@
    * this stage.
    */
   const app = clientModel();
-  const unpersisted = createConfiguration({
-    workspace: { changeSets: { flushAfterOps: 0, flushAfterMs: 0 } }
-  });
   const view = createWorkspaceState(
     app.project,
     createTabList(),
     createTabViews(),
-    unpersisted,
+    { afterOps: 0, afterMs: 0 },
     app.documentRuntimes,
     app.presentationRuntimes
   );

@@ -271,13 +271,13 @@ export const MUTATIONS = [
     check: "model-functions-are-explicit",
     subject: "fields-only",
     says: "a model exposes a getter on its object",
-    names: "configuration/definition.ts",
+    names: "tab-list/definition.svelte.ts",
     changes: [
       {
-        path: "src/lib/model/client/configuration/definition.ts",
+        path: "src/lib/model/client/tab-list/definition.svelte.ts",
         edit: (text) => text.replace(
-          "export class Configuration implements ConfigurationModel {",
-          "export class Configuration implements ConfigurationModel {\n  get ready(): boolean { return true; }"
+          "export class TabList implements TabListModel {",
+          "export class TabList implements TabListModel {\n  get ready(): boolean { return true; }"
         )
       }
     ]
@@ -302,7 +302,7 @@ export const MUTATIONS = [
     changes: [
       {
         path: "src/lib/model/client/configuration/methods/random.ts",
-        write: `import type { ConfigurationModel } from "$model/client/configuration";\nexport const random = (model: ConfigurationModel): number => { void model; return Math.random(); };\n`
+        write: `import type { ConfigurationState } from "$model/client/configuration/state";\nexport const random = (state: ConfigurationState): number => { void state; return Math.random(); };\n`
       }
     ]
   },
@@ -374,10 +374,13 @@ export const MUTATIONS = [
   // ----------------------------------------------------------------- runtime ----
   {
     check: "builder-is-not-exported",
-    says: "the builder leaves its module",
-    names: "client/start.ts",
+    says: "a second module imports the split builder",
+    names: "runtime/client/bypass.ts",
     changes: [
-      { path: "src/lib/runtime/client/start.ts", edit: (text) => text.replace("const buildClientModel", "export const buildClientModel") }
+      {
+        path: "src/lib/runtime/client/bypass.ts",
+        write: `import { buildClientModel } from "$runtime/client/models/build";\nexport const bypass = buildClientModel;\n`
+      }
     ]
   },
   {
@@ -399,7 +402,7 @@ export const MUTATIONS = [
     check: "graph-matches-its-aggregate",
     subject: "declared-is-built",
     says: "the aggregate names a field the builder never assigns",
-    names: "client/start.ts",
+    names: "client/models/build.ts",
     changes: [
       {
         path: "src/lib/runtime/client/types.ts",
@@ -407,8 +410,8 @@ export const MUTATIONS = [
         // input type first, and a replace would land there instead.
         edit: (text) =>
           text.replace(
-            "  readonly configuration: ConfigurationModel;",
-            "  readonly configuration: ConfigurationModel;\n  readonly probe: string;"
+            "export interface ClientModel {\n  readonly project: string;",
+            "export interface ClientModel {\n  readonly project: string;\n  readonly probe: string;"
           )
       }
     ]
@@ -417,21 +420,21 @@ export const MUTATIONS = [
     check: "objects-are-built-in-order",
     subject: "constructed-once",
     says: "one object constructor is called twice",
-    names: "client/start.ts",
+    names: "client/models/build.ts",
     changes: [
       {
-        path: "src/lib/runtime/client/start.ts",
+        path: "src/lib/runtime/client/models/build.ts",
         edit: (text) => {
           const call =
-            "  const workspaceState = createWorkspaceState(\n" +
-            "    project,\n" +
-            "    tabList,\n" +
-            "    tabViews,\n" +
-            "    settings,\n" +
-            "    documentRuntimes,\n" +
-            "    presentationRuntimes,\n" +
-            "    spreadsheetRuntimes\n" +
-            "  );";
+            "    const workspaceState = createWorkspaceState(\n" +
+            "      project,\n" +
+            "      tabList,\n" +
+            "      tabViews,\n" +
+            "      workspaceThresholds,\n" +
+            "      documentRuntimes,\n" +
+            "      presentationRuntimes,\n" +
+            "      spreadsheetRuntimes\n" +
+            "    );";
           const again = call.replace("const workspaceState", "const probe");
           return text.replace(call, `${call}\n${again}\n  void probe;`);
         }

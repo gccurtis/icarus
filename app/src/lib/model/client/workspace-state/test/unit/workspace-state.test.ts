@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
-import { createConfiguration } from "$model/client/configuration";
 import { createTabList } from "$model/client/tab-list";
 import { createTabViews } from "$model/client/tab-views";
 import { createWorkspaceState } from "$model/client/workspace-state";
@@ -50,10 +49,10 @@ import { startingWorkspace } from "$representation/data/behavior/workspace/start
  * those. Every other category has one centre, and a subject inside one of those
  * categories is a `focus` rather than a centre of its own.
  */
-const UNPERSISTED = { workspace: { changeSets: { flushAfterOps: 0, flushAfterMs: 0 } } };
+const UNPERSISTED = { afterOps: 0, afterMs: 0 };
 
 const workspaceState = (): WorkspaceStateModel =>
-  createWorkspaceState("p1", createTabList(), createTabViews(), createConfiguration(UNPERSISTED));
+  createWorkspaceState("p1", createTabList(), createTabViews(), UNPERSISTED);
 
 const document = (id: string): Target => ({ category: "document-editor", resourceId: id });
 const thread = (id: string): Target => ({ category: "research", resourceId: id });

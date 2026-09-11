@@ -1,133 +1,129 @@
 # Configuration
 
-Lives at the object root as `configuration.md`. It is the entry point: a
-reviewer reads this, then follows the file tree into the document that answers
-their question.
+The client configuration model is the first complete pure-islands model slice.
+It owns the numeric configuration admitted for one client workspace without
+attaching behavior to state or exposing lifecycle authority to consumers.
 
-## Description
+The interactive source reference is served at
+[`/demo/pure-functions/configuration`](/demo/pure-functions/configuration).
 
-Configuration holds the settings the **server** published to this browser tab, so
-that any client object needing a tuned value reads it from one place instead of
-carrying a constant that silently disagrees with `configuration/`.
+## Contract
 
-It exists because the YAML is read by
-[`$model/server/configuration`](../../server/configuration/configuration.md) and
-the `environment` rule forbids the client tree from importing it. Without this
-object, a client-side threshold has to be a literal — and a literal beside a YAML
-file holding the same number is two sources of truth with nothing keeping them in
-step.
+| Surface | Owner | Contents |
+| --- | --- | --- |
+| `ClientConfigurationInput` | server-to-client boundary | One exact nested record containing 13 required finite numbers |
+| `ConfigurationState` | model | Thirteen flat readonly numeric fields and no behavior |
+| `ConfigurationAdapter` | runtime | `lifetime`, `commitMode`, `acquire`, `release`, and `close` |
+| `AcquiredConfigurationPort` | one runtime acquisition | `getNumber` plus `commit`; no adapter lifecycle members or raw state |
 
-## Ownership Boundary
+## Ownership and lifetime
 
-Configuration owns:
+- One `ConfigurationState` is constructed for each client graph.
+- `runtime/client/models/build.ts` is the only production caller of
+  `createConfigurationState` and `bindConfiguration`.
+- The adapter has `client-workspace` lifetime and is retained until
+  `ClientModel.close()`.
+- Each `acquire(undefined)` returns a distinct frozen facade backed by its own
+  lease. `release(port)` invalidates only that lease.
+- `close()` invalidates all remaining leases and refuses later acquisition.
 
-- The published snapshot for this client instance, for its whole life
-- How a dotted key path resolves against it
-- The refusal when a key that must be present is not
+The model is read-only. Its required `commit()` checks that its lease remains
+open and is otherwise a documented no-op.
 
-Consumers own:
+## State
 
-- Which keys they read, and what shape each value must be
-- Whether a key may be absent — this object never defaults, coerces, or asserts
-- Every value's meaning. This holds numbers; it does not know one is milliseconds
+`state.ts` copies every nested input leaf into a flat primitive field. It never
+retains the caller's transport object, a callback, a promise, a handle, an
+accessor, or another model.
 
-## Lifetime
+The model does not support a generic string path. `ConfigurationNumberKey` is a
+closed union of the 13 published numeric keys, so a missing or newly introduced
+setting must be made explicit at the server admission, input, state, selector,
+runtime translation, and tests.
 
-- **Instance:** one per client instance
-- **Constructed by:** `buildClientModel`, in `constructor.ts`
-- **Released by:** nothing — this object holds nothing releasable
+## Operations
 
-The snapshot arrives with the layout's load data. Switching projects is a full
-page load, so there is no case where a live instance should see different values
-than it started with, and no reload path to build.
-
-## Public Methods
-
-| Method | Shape | Effect | Description | Document |
-| ------ | ----- | ------ | ----------- | -------- |
-| `get` | file | accessor | Resolves a dot-separated key path, or `undefined` | [`methods/methods.md`](methods/methods.md) |
-
-`requiredNumber` is exported beside the interface rather than being a method on
-it. It is a rule about a *consumer's* expectations, and putting it on the object
-would be the first step toward this holding everyone's expectations at once —
-which is exactly what the one-method surface is protecting against.
-
-## Exposed State
-
-None. Everything is read through `get`.
-
-A `snapshot` getter was considered and rejected: handing out the mapping means a
-consumer can walk it, and the moment one does, the published key list stops being
-the contract.
-
-## Construction
+See [`methods/methods.md`](methods/methods.md) for the complete call tree.
 
 ```ts
-export const createConfiguration = (snapshot: ConfigurationSnapshot): ConfigurationModel => ...;
+getNumber(state: ConfigurationState, key: ConfigurationNumberKey): number
+selectNumber(state: ConfigurationState, key: ConfigurationNumberKey): number
 ```
 
-Every call returns a fresh object. The snapshot is a parameter rather than
-something this fetches, which is what makes every read synchronous — an object
-that awaited its own values would make `buildClientModel` async and force every
-consumer of a key to cope with not having one yet.
+Both functions are synchronous and authority-pure. They receive state first,
+import only model-local state and types, and cannot acquire an adapter or discover
+ambient authority. `getNumber` is the public operation; `selectNumber` is its
+exhaustive supporting decision.
 
-| Dependency | Ownership | Usage |
-| ---------- | --------- | ----- |
-| `snapshot` | BORROWED | Held for the instance's life; never mutated, never handed on |
+## Port binding
 
-Nothing is frozen. The server twin freezes because its snapshot is shared by
-every request in the process; this one belongs to a single browser tab and is
-handed to nobody, so a freeze would guard against sharing that does not exist.
+`bindConfiguration(state)` closes over singleton state at the runtime boundary.
+It tracks facade provenance in a local `WeakMap` and live leases in a local
+`Set`, so no lifecycle state exists at module scope or leaks onto the facade.
 
-## Terminal Behaviour
+The acquired wrapper first checks its own lease and then delegates exactly once:
 
-None. This object owns nothing releasable — no timer, no subscription, no
-handle. It is a frozen-in-practice value with one reader.
+```ts
+getNumber: (key) => {
+  assertOpen(lease);
+  return getNumber(state, key);
+}
+```
 
-## Concurrency and SSR
+This closure check means an extracted `getNumber` function cannot be called after
+release or adapter close. Forged and foreign facades are refused; release is
+idempotent only for a valid facade created by that adapter.
 
-- Every method is synchronous and pure, so overlapping calls cannot interleave
-  into anything one call would not produce.
-- Nothing is async. There is no state a caller can observe mid-flight.
-- This object touches no browser API at all — no storage, no timer, no `window`.
-  It is the one client object that would work unchanged on the server, and it
-  lives here because *what it holds* is per-tab, not because of what it uses.
+## Runtime transformation
+
+`runtime/client/models/build.ts` performs the complete composition sequence:
+
+1. Construct owned state from admitted input.
+2. Bind the singleton state to the runtime-only adapter.
+3. Acquire one read lease inside `try/finally`.
+4. Read the 13 closed keys and translate them into revision, presentation-stage,
+   and workspace threshold records owned by downstream models.
+5. Build the client graph, call the read-only `commit()`, and release in
+   `finally` on both success and failure.
+6. Close the adapter after dependent client models during graph teardown.
+
+No downstream model receives `ConfigurationState`, `ConfigurationAdapter`, or a
+generic configuration bag.
+
+## Server admission
+
+[`src/routes/app/[project]/+layout.server.ts`](../../../../routes/app/%5Bproject%5D/+layout.server.ts)
+constructs the transport as an explicit object literal and admits each leaf with
+`requiredPublishedNumber`. Missing, non-number, `NaN`, and infinite values fail
+before browser serialization. The allowlist cannot include provider credentials,
+observability settings, or a newly added YAML sibling by omission.
 
 ## Invariants
 
-- **The snapshot is never mutated.** It is held in a private readonly field and
-  no method writes; a consumer that could change it would change what every later
-  reader sees.
-- **A key that resolves to nothing is `undefined`, never a default.** The
-  consumer decides whether that is an error.
-- **Key resolution matches the server's exactly.** The two traversals are
-  deliberate copies; a divergence would make one key mean two things.
-- **Nothing unpublished is reachable.** This holds only what
-  `+layout.server.ts` put in the snapshot, so a key that was never published is
-  indistinguishable from one that does not exist.
+- State is fields only; methods are free functions with explicit state.
+- Every acquisition is a fresh, exact, frozen facade.
+- Acquired ports expose operations and `commit`, never `acquire`, `release`,
+  `close`, the adapter, or raw state.
+- Port operations remain usable only while their own lease is open.
+- Construction and binding occur once and only in runtime.
+- Reads are deterministic and contain no clock, randomness, framework context,
+  storage, browser API, or external library authority.
 
-## File Tree
+## File tree
 
 ```text
 configuration/
 ├── configuration.md
-├── index.ts
-├── types.ts
-├── definition.ts
-├── constructor.ts
+├── index.ts                 # type-only public entry
+├── port.ts                  # adapter, acquired port, and binding
+├── state.ts                 # stored fields and state constructor
+├── types.ts                 # exact input and closed key vocabulary
 ├── methods/
 │   ├── methods.md
-│   └── get.ts
-└── test/
+│   └── get-number/
+│       ├── get-number.ts
+│       └── select-number.ts
+└── test/unit/
+    ├── get-number.test.ts
+    └── port.test.ts
 ```
-
-## What publishes into it
-
-[`src/routes/app/[project]/+layout.server.ts`](../../../../routes/app/%5Bproject%5D/+layout.server.ts)
-holds the list of keys the browser may see, and projects them out of the server's
-configuration into the snapshot.
-
-**An allowlist, never the whole tree.** The merged YAML also carries the
-development project token and the observability settings, and a page's load data
-is serialized into the document where anyone can read it. Publishing by omission
-is how a secret ships.

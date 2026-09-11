@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import { afterEach, beforeEach, test, vi } from "vitest";
 import type { DocumentOp } from "$representation/data/types/documents/op";
-import { createConfiguration } from "$model/client/configuration";
 import { createDocumentRuntimes } from "$model/client/document-runtimes";
 import type { DocumentRuntime, DocumentRuntimesModel } from "$model/client/document-runtimes";
 
@@ -47,14 +46,7 @@ vi.mock("$capabilities/document/index.remote", () => ({
 }));
 
 const register = (syncEveryMs: number, afterMs = 100_000): DocumentRuntimesModel =>
-  createDocumentRuntimes(
-    createConfiguration({
-      revisions: {
-        changeSets: { flushAfterOps: 50, flushAfterMs: afterMs },
-        sync: { everyMs: syncEveryMs }
-      }
-    })
-  );
+  createDocumentRuntimes({ afterOps: 50, afterMs, syncEveryMs });
 
 const shows = (runtime: DocumentRuntime): string => {
   const row = runtime.body?.rows[0];

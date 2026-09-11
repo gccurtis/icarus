@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import { afterEach, beforeEach, test, vi } from "vitest";
 import type { PresentationOp } from "$representation/data/types/presentations/op";
-import { createConfiguration } from "$model/client/configuration";
 import { createPresentationRuntimes } from "$model/client/presentation-runtimes";
 import type { PresentationRuntime } from "$model/client/presentation-runtimes";
 
@@ -16,16 +15,21 @@ vi.mock("$capabilities/presentation/index.remote", () => ({
     Promise.resolve({ accepted: true, revision: changeSet.baseRevision + 1 })
 }));
 
+const STAGE = {
+  unitsHigh: 720,
+  widthRem: 52,
+  averageGlyphWidthEm: 0.52,
+  minimumZoom: 50,
+  maximumZoom: 200,
+  zoomStep: 5,
+  minimumGutterRem: 0.75,
+  maximumGutterRem: 2.5
+};
+
 const runtimeFor = (afterOps = 3, afterMs = 2000): PresentationRuntime =>
   createPresentationRuntimes(
-    createConfiguration({
-      revisions: { changeSets: { flushAfterOps: afterOps, flushAfterMs: afterMs }, sync: { everyMs: 0 } },
-      presentation: {
-        stage: { unitsHigh: 720, widthRem: 52, averageGlyphWidthEm: 0.52 },
-        zoom: { minimum: 50, maximum: 200, step: 5 },
-        gutter: { minimumRem: 0.75, maximumRem: 2.5 }
-      }
-    })
+    { afterOps, afterMs, syncEveryMs: 0 },
+    STAGE
   ).attach("s1");
 
 const set = (slide: string, value: number): PresentationOp => ({

@@ -1,12 +1,5 @@
 import { browser } from "$app/environment";
-import { createCommands } from "$model/client/commands";
-import { createConfiguration } from "$model/client/configuration";
-import { createDocumentRuntimes } from "$model/client/document-runtimes";
-import { createPresentationRuntimes } from "$model/client/presentation-runtimes";
-import { createSpreadsheetRuntimes } from "$model/client/spreadsheet-runtimes";
-import { createTabList } from "$model/client/tab-list";
-import { createTabViews } from "$model/client/tab-views";
-import { createWorkspaceState } from "$model/client/workspace-state";
+import { buildClientModel } from "$runtime/client/models/build";
 import type { ClientModel, ClientModelInput } from "$runtime/client/types";
 
 export type { ClientModel, ClientModelInput } from "$runtime/client/types";
@@ -18,46 +11,6 @@ export type {
   CommandsModel
 } from "$model/client/commands";
 export { COMMAND_IDS, DEFAULT_BINDINGS, chordOf, isCommandId } from "$model/client/commands";
-export type { ConfigurationModel, ConfigurationSnapshot } from "$model/client/configuration";
-export { requiredNumber } from "$model/client/configuration";
-
-const buildClientModel = ({ project, configuration }: ClientModelInput): ClientModel => {
-  const settings = createConfiguration(configuration);
-
-  const documentRuntimes = createDocumentRuntimes(settings);
-  const presentationRuntimes = createPresentationRuntimes(settings);
-  const spreadsheetRuntimes = createSpreadsheetRuntimes(settings);
-
-  const tabList = createTabList();
-  const tabViews = createTabViews();
-  const workspaceState = createWorkspaceState(
-    project,
-    tabList,
-    tabViews,
-    settings,
-    documentRuntimes,
-    presentationRuntimes,
-    spreadsheetRuntimes
-  );
-
-  return {
-    project,
-    workspaceState,
-    configuration: settings,
-    documentRuntimes,
-    presentationRuntimes,
-    spreadsheetRuntimes,
-    commands: createCommands(workspaceState),
-
-    close: () => {
-      void workspaceState.flush().catch(() => undefined);
-      documentRuntimes.releaseAll();
-      presentationRuntimes.releaseAll();
-      spreadsheetRuntimes.releaseAll();
-      workspaceState.release();
-    }
-  };
-};
 
 let instance: ClientModel | undefined;
 

@@ -21,6 +21,7 @@
       { href: "/demo/editor-audit", label: "Editor audit" },
       { href: "/demo/state-behavior-audit", label: "Architecture audit" },
       { href: "/demo/architecture-pillars", label: "Pillars" },
+      { href: "/demo/pure-functions", label: "Pure functions" },
       { href: "/demo/vocabulary", label: "Composition" },
       { href: "/demo/templates", label: "Templates" },
       { href: "/demo/agents-reference", label: "Agents" }

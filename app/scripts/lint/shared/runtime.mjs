@@ -10,6 +10,7 @@ import ts from "typescript";
 export const ROOTS = {
   client: {
     start: ["runtime", "client", "start.ts"],
+    build: ["runtime", "client", "models", "build.ts"],
     types: ["runtime", "client", "types.ts"],
     builder: "buildClientModel",
     initializer: "initClientModel",
@@ -32,6 +33,10 @@ export const roots = (tree) =>
     environment,
     ...shape,
     startPath: tree.path(...shape.start),
+    builderPath:
+      shape.build && tree.isFile(tree.path(...shape.build))
+        ? tree.path(...shape.build)
+        : tree.path(...shape.start),
     typesPath: tree.path(...shape.types)
   }));
 

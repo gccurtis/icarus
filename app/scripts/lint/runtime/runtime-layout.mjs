@@ -9,7 +9,8 @@ import { check } from "../shared/check.mjs";
  */
 const LAYOUT = {
   "": { files: [], documents: ["runtime.md"], dirs: ["client", "server"] },
-  client: { files: ["start.ts", "types.ts"], documents: ["client.md"], dirs: ["test"] },
+  client: { files: ["start.ts", "types.ts"], documents: ["client.md"], dirs: ["models", "test"] },
+  "client/models": { files: ["build.ts", "types.ts"], documents: [], dirs: [] },
   server: {
     files: [
       "start.server.ts",

@@ -39,9 +39,9 @@ export const MUTATIONS = [
   {
     check: "stateful-client-object-has-release",
     says: "the composition root constructs state omitted from shutdown",
-    names: "runtime/client/start.ts",
+    names: "runtime/client/models/build.ts",
     changes: [{
-      path: "src/lib/runtime/client/start.ts",
+      path: "src/lib/runtime/client/models/build.ts",
       edit: (before) => `${before}\nconst unreleasedProbe = createProbeRuntimes();\n`
     }]
   },

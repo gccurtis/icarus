@@ -3,7 +3,6 @@ import { render } from "svelte/server";
 
 import ContextPanel from "$surfaces/context/context.svelte";
 import Inspector from "$surfaces/inspector/inspector.svelte";
-import { createConfiguration } from "$model/client/configuration";
 import { createTabList } from "$model/client/tab-list";
 import { createTabViews } from "$model/client/tab-views";
 import {
@@ -31,7 +30,7 @@ import {
 const KEY = Symbol.for("icarus.workspace-state");
 const withModel = (model: unknown) => ({ context: new Map([[KEY, model]]) });
 
-const UNPERSISTED = { workspace: { changeSets: { flushAfterOps: 0, flushAfterMs: 0 } } };
+const UNPERSISTED = { afterOps: 0, afterMs: 0 };
 
 describe("every key the vocabulary declares reaches something", () => {
   it("renders a context for every entry of every rail", () => {
@@ -39,7 +38,7 @@ describe("every key the vocabulary declares reaches something", () => {
 
     for (const category of CATEGORIES) {
       for (const id of railFor(category)) {
-        const model = createWorkspaceState("probe", createTabList(), createTabViews(), createConfiguration(UNPERSISTED));
+        const model = createWorkspaceState("probe", createTabList(), createTabViews(), UNPERSISTED);
         model.open({ category });
         model.selectContext(id);
 
@@ -59,7 +58,7 @@ describe("every key the vocabulary declares reaches something", () => {
 
   it("renders a lens for every inspection key, about what was selected", () => {
     for (const key of INSPECTOR_VIEWS) {
-      const model = createWorkspaceState("probe", createTabList(), createTabViews(), createConfiguration(UNPERSISTED));
+      const model = createWorkspaceState("probe", createTabList(), createTabViews(), UNPERSISTED);
       model.inspect(key, { kind: "person", id: "mira", at: "C2" });
 
       const { body } = render(Inspector, withModel(model));

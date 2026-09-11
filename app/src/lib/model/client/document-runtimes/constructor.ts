@@ -1,15 +1,9 @@
-import type { ConfigurationModel } from "$model/client/configuration";
-import { requiredNumber } from "$model/client/configuration";
 import { DocumentRuntimes } from "$model/client/document-runtimes/definition.svelte";
-import type { DocumentRuntimesModel } from "$model/client/document-runtimes/types";
+import type {
+  DocumentRuntimesModel,
+  Thresholds
+} from "$model/client/document-runtimes/types";
 
-const FLUSH_AFTER_OPS = "revisions.changeSets.flushAfterOps";
-const FLUSH_AFTER_MS = "revisions.changeSets.flushAfterMs";
-const SYNC_EVERY_MS = "revisions.sync.everyMs";
-
-export const createDocumentRuntimes = (configuration: ConfigurationModel): DocumentRuntimesModel =>
-  new DocumentRuntimes({
-    afterOps: requiredNumber(configuration, FLUSH_AFTER_OPS),
-    afterMs: requiredNumber(configuration, FLUSH_AFTER_MS),
-    syncEveryMs: requiredNumber(configuration, SYNC_EVERY_MS)
-  });
+export const createDocumentRuntimes = (
+  thresholds: Thresholds
+): DocumentRuntimesModel => new DocumentRuntimes(thresholds);

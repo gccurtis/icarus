@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
 import { test, vi } from "vitest";
-import { createConfiguration } from "$model/client/configuration";
 import { createSpreadsheetRuntimes } from "$model/client/spreadsheet-runtimes";
 
 vi.mock("$capabilities/spreadsheet/index.remote", () => ({
@@ -11,14 +10,7 @@ vi.mock("$capabilities/spreadsheet/index.remote", () => ({
 }));
 
 const register = (afterOps = 50, afterMs = 2000) =>
-  createSpreadsheetRuntimes(
-    createConfiguration({
-      revisions: {
-        changeSets: { flushAfterOps: afterOps, flushAfterMs: afterMs },
-        sync: { everyMs: 0 }
-      }
-    })
-  );
+  createSpreadsheetRuntimes({ afterOps, afterMs, syncEveryMs: 0 });
 
 test("attach opens a sheet", () => {
   const runtimes = register();
@@ -114,21 +106,4 @@ test("the map is not reachable through the surface", () => {
   assert.deepEqual(Object.keys(runtimes), []);
   assert.equal((runtimes as unknown as { open: unknown[] }).open.length, 1);
   assert.ok(Array.isArray(runtimes.open));
-});
-
-test("the register refuses to build without its thresholds", () => {
-  assert.throws(
-    () => createSpreadsheetRuntimes(createConfiguration({})),
-    /revisions\.changeSets\.flushAfterOps/
-  );
-});
-
-test("the register refuses to build without a sync interval", () => {
-  assert.throws(
-    () =>
-      createSpreadsheetRuntimes(
-        createConfiguration({ revisions: { changeSets: { flushAfterOps: 1, flushAfterMs: 1 } } })
-      ),
-    /revisions\.sync\.everyMs/
-  );
 });

@@ -2,60 +2,46 @@
 
 Lives at `methods/methods.md`.
 
-`methods/` holds the execution behind the public surface. The definition is the
-readable surface and delegates to these files, so reading `types.ts` tells you
-what this object offers and reading a method tells you how it holds.
+`methods/` is the model's authority-pure operation island. The acquired port
+delegates to its entry; every function receives state and data explicitly.
 
 ## Methods
 
 | Method | Shape | Location | Effect | Description |
 | ------ | ----- | -------- | ------ | ----------- |
-| `get` | file | [`get.ts`](get.ts) | accessor | Resolves a dot-separated key path against the snapshot |
+| `getNumber` | tree | [`get-number/get-number.ts`](get-number/get-number.ts) | read | Selects one member of the closed numeric-key vocabulary |
 
 ## Shape
 
-One method, one file. It becomes a directory when it owns supporting flow, and
-nothing suggests it will: a traversal that grew a second step would be a sign
-that configuration had started interpreting values, which is the thing it exists
-not to do.
+`getNumber` is a small call tree. Its entry owns the public operation while
+[`get-number/select-number.ts`](get-number/select-number.ts) maps each closed key
+to one stored field. Neither function acquires state or authority.
 
 ## State Access
 
-`get` receives the snapshot itself rather than the definition's state, because
-the snapshot *is* the state and there is nothing else on the instance. Nothing
-mutates it — the object exposes no writer, and the definition holds it in a
-private readonly field.
+Both functions receive `ConfigurationState` first. No model instance, adapter,
+or acquired port is imported into the operation tree.
 
 ## Shared Methods
 
-Nothing has been promoted. There is one method.
+Nothing is shared with another method. There is one public operation.
 
 ## Common Shape
 
 ```text
-1. Reject a key that cannot address anything — empty, or with an empty segment
-2. Walk the segments, stopping at the first that is not an own key of a mapping
-3. Return what is there, or undefined
+1. `getNumber(state, key)` delegates to `selectNumber(state, key)`.
+2. `selectNumber` exhaustively maps the 13-key union to primitive state fields.
+3. An untyped runtime caller supplying any other key is refused.
 ```
 
-## The duplication with the server
+## Server relationship
 
-`get` is deliberately identical to
-[`$model/server/configuration/methods/get.ts`](../../../server/configuration/methods/get.ts),
-and so is `isConfigurationObject` in `types.ts`. The `environment` lint rule
-forbids the client tree from importing the server tree, and no third place
-exists for a model helper.
-
-That is the right trade in both directions. Sharing them would mean either a
-module both environments import — which is what the rule exists to prevent — or
-a capability holding something that is not stored data. Resolving paths
-*differently* on the two sides would be far worse than writing the traversal
-twice: the same key would mean two things depending on who asked.
-
-If the two ever need to diverge, that is a defect in one of them.
+The server route owns raw configuration admission and publishes one exact
+nested numeric object. The client does not duplicate the server's generic dotted
+path traversal; its state constructor copies only that admitted transport shape.
 
 ## Concurrency
 
-Nothing here is asynchronous and nothing mutates. Every call is a pure read of a
-value fixed at construction, so two calls cannot interleave into anything a
-single call would not produce.
+Nothing here is asynchronous and nothing mutates. Concurrent acquisitions may
+read the same immutable singleton state, while release invalidates each facade
+independently.

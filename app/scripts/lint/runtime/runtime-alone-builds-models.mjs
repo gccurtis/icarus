@@ -148,7 +148,9 @@ export default check({
       }
 
       if (tree.isFile(portPath) && /\bclose\s*[?(]/.test(tree.read(portPath))) {
-        const lifetime = tree.path("runtime", environment, environment === "server" ? "lifetime.server.ts" : "lifetime.ts");
+        const lifetime = environment === "server"
+          ? tree.path("runtime", environment, "lifetime.server.ts")
+          : builder;
         if (!tree.isFile(lifetime) || !new RegExp(`\\b${expectedKey}\\b[\\s\\S]*?\\.close\\s*\\(`).test(tree.read(lifetime))) {
           found.push({
             subject: "shutdown",

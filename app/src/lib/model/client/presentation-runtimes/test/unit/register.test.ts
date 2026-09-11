@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
 import { test, vi } from "vitest";
-import { createConfiguration } from "$model/client/configuration";
 import { createPresentationRuntimes } from "$model/client/presentation-runtimes";
 
 vi.mock("$capabilities/presentation/index.remote", () => ({
@@ -14,16 +13,21 @@ vi.mock("$capabilities/presentation/index.remote", () => ({
     Promise.resolve({ accepted: true, revision: changeSet.baseRevision + 1 })
 }));
 
+const STAGE = {
+  unitsHigh: 720,
+  widthRem: 52,
+  averageGlyphWidthEm: 0.52,
+  minimumZoom: 50,
+  maximumZoom: 200,
+  zoomStep: 5,
+  minimumGutterRem: 0.75,
+  maximumGutterRem: 2.5
+};
+
 const register = (afterOps = 50, afterMs = 2000) =>
   createPresentationRuntimes(
-    createConfiguration({
-      revisions: { changeSets: { flushAfterOps: afterOps, flushAfterMs: afterMs }, sync: { everyMs: 0 } },
-      presentation: {
-        stage: { unitsHigh: 720, widthRem: 52, averageGlyphWidthEm: 0.52 },
-        zoom: { minimum: 50, maximum: 200, step: 5 },
-        gutter: { minimumRem: 0.75, maximumRem: 2.5 }
-      }
-    })
+    { afterOps, afterMs, syncEveryMs: 0 },
+    STAGE
   );
 
 test("attach opens a presentation", () => {
@@ -112,11 +116,4 @@ test("the map is not reachable through the surface", () => {
   assert.deepEqual(Object.keys(runtimes), []);
   assert.equal((runtimes as unknown as { open: unknown[] }).open.length, 1);
   assert.ok(Array.isArray(runtimes.open));
-});
-
-test("the register refuses to build without its thresholds", () => {
-  assert.throws(
-    () => createPresentationRuntimes(createConfiguration({})),
-    /revisions\.changeSets\.flushAfterOps/
-  );
 });
