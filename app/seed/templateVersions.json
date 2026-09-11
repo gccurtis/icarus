@@ -882,7 +882,7 @@
       "theme": {
         "background": {
           "kind": "color",
-          "color": "--token-surface-primary"
+          "color": "--token-surface-elevated"
         },
         "colors": {
           "text": "--token-ink-primary",
@@ -1144,7 +1144,7 @@
       "theme": {
         "background": {
           "kind": "color",
-          "color": "--token-surface-primary"
+          "color": "--token-surface-elevated"
         },
         "colors": {
           "text": "--token-ink-primary",
@@ -1375,7 +1375,7 @@
       "theme": {
         "background": {
           "kind": "color",
-          "color": "--token-surface-primary"
+          "color": "--token-surface-elevated"
         },
         "colors": {
           "text": "--token-ink-primary",
@@ -1615,7 +1615,7 @@
       "theme": {
         "background": {
           "kind": "color",
-          "color": "--token-surface-primary"
+          "color": "--token-surface-elevated"
         },
         "colors": {
           "text": "--token-ink-primary",
@@ -1959,7 +1959,7 @@
       "theme": {
         "background": {
           "kind": "color",
-          "color": "--token-surface-primary"
+          "color": "--token-surface-elevated"
         },
         "colors": {
           "text": "--token-ink-primary",
