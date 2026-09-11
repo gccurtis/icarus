@@ -6,9 +6,9 @@ Do not include credentials or copy sensitive logs.
 
 ## Snapshot
 
-- Updated: 2026-09-11T13:55:21-04:00
+- Updated: 2026-09-11T13:56:05-04:00
 - Status: superseding architecture contract drafted, adversarially reviewed,
-  documentation-verified, and committed; push pending
+  documentation-verified, committed, and pushed for user review
 - Worktree: `/home/jakul/cyberia/icarus-worktrees/pure-functions`
 - Branch: `work/pure-functions`
 - Head when initialized: `b152b52ddd1fef5dfdaf8e2a4b6d03796cf011fd`
@@ -194,10 +194,9 @@ skipped live-provider tests as passing.
   `fcc92c5e92a7e4330779db387d915240438c8a8d`
   (`Document pure-islands runtime contract`), plus publication-only handoff
   commits
-- Push / merge state: earlier branch commits pushed to
-  `origin/work/pure-functions`; contract publication push pending; no main
-  integration
+- Push / merge state: contract and publication handoff pushed to
+  `origin/work/pure-functions`; no main integration
 - Worktree cleanup / retained local artifacts: worktree intentionally retained;
   ignored local-configuration symlink exists
-- Next owner and remaining work: lead owns contract publication; product/checker
-  rollout waits for user approval of the contract
+- Next owner and remaining work: user reviews the contract; lead retains the
+  worktree, and product/checker rollout waits for that approval
