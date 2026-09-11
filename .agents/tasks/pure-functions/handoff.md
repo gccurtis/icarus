@@ -5,12 +5,12 @@ evidence before acting. Never copy credentials into this file.
 
 ## Snapshot
 
-- Updated: 2026-09-11T17:25:40-04:00
+- Updated: 2026-09-11T18:18:04-04:00
 - Status: PF-01 through PF-16 checker layer implemented; client configuration
   is the first end-to-end migrated model and has two served reference pages
 - Worktree: `/home/jakul/cyberia/icarus-worktrees/pure-functions`
 - Branch: `work/pure-functions`
-- Current implementation head: `cc39cabc1a8ff51066b4902be85ed3d2330bb488`
+- Current implementation head: `0186484b13d5d9717faa65ba14c40f16fe1647ef`
 - Integration target / recorded base: `origin/main` /
   `b152b52ddd1fef5dfdaf8e2a4b6d03796cf011fd`
 - Lead: root; no delegated workers
@@ -64,6 +64,10 @@ migration roadmap and remain unbaselined.
   layers. `/demo/pure-functions/configuration` documents the migrated model and
   embeds exact live worktree source, including server-only source loaded across
   a server data boundary.
+- The prior 86-file TypeScript Wiki application was moved byte-for-byte to
+  `docs/archive/wiki/`. The replacement Markdown Wiki begins with the reusable
+  `wiki/templates/model.md` contract and the comprehensive
+  `wiki/models/configuration.md` instance.
 
 ## Verification
 
@@ -80,6 +84,8 @@ Run from `app/` unless noted:
 | Focused PF-01 through PF-07 scan of `client/configuration` and its runtime builder | all 7 clean |
 | Focused legacy runtime/ownership architecture checks | 6/6 clean |
 | Chromium `pure-functions-reference.spec.ts` | 3/3 passed at desktop and 390px; 6 Mermaid diagrams, exact source, diagnostics, navigation, and overflow checked |
+| Replacement Wiki structure | all 86 previous Wiki files detected as 100% Git renames; template has balanced fences; configuration reference has four Mermaid blocks |
+| Configuration Wiki source audit | all 11 embedded production source blocks matched their current files exactly |
 | Direct execution of PF-03 through PF-16 against the production tree | all ran without checker errors; current architecture intentionally reports findings |
 | `git diff --cached --check` before implementation commit | passed |
 
@@ -103,6 +109,7 @@ Earlier PF-01/PF-02 production observations were 5,864 and 3,862 findings.
 - `b8e72c7` — resolved PF-01/PF-02 enforcement foundation
 - `4abfa14` — complete PF-03 through PF-16 checker layer and tests
 - `cc39cab` — migrate client configuration end to end and add the served contract/model references
+- `0186484` — archive the prior Wiki and add the model template plus configuration reference
 - Branch push is authorized to `origin/work/pure-functions`; no integration,
   rebase, deployment, or push to `main` is authorized.
 
