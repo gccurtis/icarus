@@ -11,8 +11,8 @@ Do not include credentials or copy sensitive logs.
 - Worktree: `/tmp/icarus-resource-external-layout`
 - Branch: `work/resource-external-layout`
 - Head when initialized: `3a9a6d3f5db20862d6bb15d9a38af0226731ded2`
-- Current verified head / dirty paths: implementation commit `a6f4397`; only
-  this final handoff update remains dirty
+- Current verified head / dirty paths: implementation commit `a6f4397` followed
+  by task-handoff metadata commits; no product paths remain dirty
 - Integration target / base SHA, if relevant: `origin/main` at `3a9a6d3f5db20862d6bb15d9a38af0226731ded2`
 - Starting worktree/base record: optional `worktree.json` beside this handoff;
   link it when present and verify it against Git
@@ -128,15 +128,14 @@ Chromium executable and passed. No live-provider tests were run or needed.
 External Files History/context redesign remains explicitly deferred. New Tab's
 visible row count naturally varies with viewport height; the verified contract is
 the Project Overview-style bounded screen and table-owned overflow, with a
-reachability fallback for very short windows. Next: commit this handoff and push
-the exact owned commits to `work/resource-external-layout`, then retain the
-worktree for user review. Do not merge or push main without fresh explicit
-authorization.
+reachability fallback for very short windows. Next: push the exact owned commits
+to `work/resource-external-layout`, then retain the worktree for user review. Do
+not merge or push main without fresh explicit authorization.
 
 ## Publication / handoff
 
-- Commits created by this task: `a6f4397` (product behavior and regression tests);
-  final handoff commit pending
+- Commits created by this task: `a6f4397` (product behavior and regression tests),
+  followed by task-handoff metadata commits
 - Push / merge state: task branch push pending; main untouched
 - Worktree cleanup / retained local artifacts: keep the worktree and ignored
   dependencies/runtime evidence for review; no owned server remains
