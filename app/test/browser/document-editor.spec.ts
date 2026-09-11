@@ -139,7 +139,7 @@ const openDocumentNamed = async (page: Page, title: string) => {
       .getByRole("button", { name: "New tab" })
       .click();
     await page.getByRole("searchbox", { name: "Search this project" }).fill(title);
-    await page.getByRole("button", { name: title }).first().click();
+    await page.getByRole("button", { name: title }).first().dblclick();
   }
   await expect(page.locator(".title-bar h1")).toHaveText(title);
   await expect(page.locator(".ProseMirror")).toBeVisible();
@@ -852,7 +852,7 @@ test("a Prompt Block affordance lives in the gutter and keeps its inspector open
   const tabs = page.getByRole("toolbar", { name: "Open tabs" });
   await tabs.locator('button.tab.icon[aria-label="New tab"]').click();
   await page
-    .locator(".area-editors")
+    .locator(".area-create")
     .getByRole("button", { name: "Document", exact: true })
     .click();
 

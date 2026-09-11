@@ -31,7 +31,7 @@ export const createsEditorResource = async (asked: EditorCreation): Promise<void
 
   try {
     const target = targetOf(kind);
-    const { resourceId } = await createProjectResource(view, { target });
+    const { resourceId } = await createProjectResource(view, originTabId, { target });
     if (view.activeId !== originTabId) return;
     const opening = openingFor(target, resourceId);
     if (opening === undefined) throw new Error(`No editor owns '${target}'.`);

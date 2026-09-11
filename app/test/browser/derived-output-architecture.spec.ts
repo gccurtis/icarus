@@ -285,7 +285,7 @@ test("a document Prompt Block resolves a Derived Output from another resource", 
   const tabs = page.getByRole("toolbar", { name: "Open tabs" });
   await tabs.locator('button.tab.icon[aria-label="New tab"]').click();
   await page
-    .locator(".area-editors")
+    .locator(".area-create")
     .getByRole("button", { name: "Document", exact: true })
     .click();
   await expect(page.locator(".title-bar h1")).toHaveText(/^Untitled document \d+$/);
@@ -300,7 +300,7 @@ test("a document Prompt Block resolves a Derived Output from another resource", 
   // Create a second document, convert its empty line, and configure generation in the inspector.
   await tabs.locator('button.tab.icon[aria-label="New tab"]').click();
   await page
-    .locator(".area-editors")
+    .locator(".area-create")
     .getByRole("button", { name: "Document", exact: true })
     .click();
   await expect(page.locator(".title-bar h1")).toHaveText(/^Untitled document \d+$/);

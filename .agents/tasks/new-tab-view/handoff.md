@@ -113,6 +113,73 @@ Evidence below is local ignored runtime storage, not portable to another checkou
 - No live provider tests, external-data consolidation, or full-suite run.
   Production build evidence below belongs to the initial implementation.
 
+### Integration audit
+
+- User explicitly authorized merging this work into main and requested a code-
+  quality/bug audit first. Fresh `worktree.mjs ready` resolved both the historical
+  and current target to `origin/main` `c2505f076c05953cdaedd5d195ee95632eefdf79`;
+  source was `f4f31b51d20be224d959c90c88159077cc38f7b0`, two commits ahead, zero behind,
+  with no textual conflicts or dirty task files.
+- Full certification exposed a stale architecture mutation-test expectation:
+  removing the resolved New Tab state-ownership baseline reduced that profile's
+  debt count from 7 to 6, while `scripts/test/baseline.test.mjs` still asserted 7.
+  Updated both exact assertions. This preserves the ratchet rather than restoring
+  obsolete debt. Initial full evidence (expected failure):
+  `.agents/runtime/runs/1789095579984-full-46081a42/`.
+- Main's untracked `docs/icarus_project_backlog.md` and its existing Vite process
+  remain unrelated, unstaged and untouched. Task review server was stopped and its
+  disposable data cleaned before certification. No live providers are used.
+- Read-only integration review found a cross-surface race: the center launcher and
+  template context owned separate pending state, so two clicks in one New Tab
+  could persist two resources. They now share one workspace-owned, tab-scoped
+  command gate. New Tab creation/instantiation also stays independently owned, so
+  separate New Tabs no longer share a result.
+- Review also found that a failed template lost its library focus after resource
+  inspection, Enter behaved differently from a native button click, and the reused
+  template focus is now retained and Enter behaved differently from a native
+  button click. Enter now inspects like a click and double-click opens. Per the
+  explicit product boundary, shared Templates code is unchanged and spreadsheet
+  templates remain unsupported; the New Tab context alerts without materializing
+  one.
+- Corrected-candidate evidence so far:
+  - quick type/architecture profile: 0 errors, 0 warnings, 90/90 checks clean,
+    `.agents/runtime/runs/1789096308758-quick-56748416/`;
+  - focused lifecycle unit tests: 13 passed,
+    `.agents/runtime/runs/1789096347807-unit-9d043fb8/`;
+  - focused Chromium workflow: 15 passed, including the cross-surface race,
+    delayed completion, reload, keyboard, failure, table, and compact/zoomed paths,
+    `.agents/runtime/runs/1789096363004-browser-4b7f91ff/`.
+    Wide, 1180 px, and 125% zoom screenshots were visually inspected.
+- The full audit found old browser consumers of the retired `.area-editors`
+  launcher selector and one helper that still single-clicked a row to open it.
+  Those exact workflows now use `.area-create` and the resource table's specified
+  double-click open interaction. Five affected browser files passed together:
+  43 passed and one expected live-provider skip,
+  `.agents/runtime/runs/1789097039593-browser-8389f8cb/`.
+- The delayed-publication harness also treated an ordinary SvelteKit `__data.json`
+  navigation cancellation as an application diagnostic in one run. Its collector
+  now applies the same `net::ERR_ABORTED` filter as the other browser suites. The
+  delayed workflow and all 15 New Tab workflows passed together:
+  `.agents/runtime/runs/1789097996854-browser-e991c0b0/`.
+- Per the clarified product boundary, all shared Templates inspector/procedure
+  experiments were reverted. `git diff` has no shared Templates source changes.
+  Spreadsheet templates remain unsupported: the existing inspector explanation
+  remains, and New Tab's context alerts without creating a resource. Final focused
+  evidence after that correction and ownership cleanup:
+  - quick: 0 errors/warnings, 90/90 architecture checks clean,
+    `.agents/runtime/runs/1789098957973-quick-9c35c622/`;
+  - lifecycle unit: 14 passed (including alert-only spreadsheet templates),
+    `.agents/runtime/runs/1789098988300-unit-cd4f17aa/`.
+- Complete profile `.agents/runtime/runs/1789098080116-full-cb9852c4/` passed agent
+  infrastructure (38), typecheck, 90/90 architecture checks, script tests (328),
+  application tests (2,075 with two expected skips), and production build. Its
+  Chromium phase passed 140 with five expected skips and one timing failure in an
+  unchanged spreadsheet merged-cell focus test. No spreadsheet source or test was
+  changed. Immediate rerun of the complete spreadsheet file passed 19/19, including
+  that case: `.agents/runtime/runs/1789098832428-browser-3a221383/`.
+- Live paid-provider tests were not enabled. Local deterministic provider-fixture
+  workflows ran under the ordinary full/browser profiles.
+
 ### Initial implementation evidence
 
 - Focused workspace/resource/projection unit run: 113 tests passed.

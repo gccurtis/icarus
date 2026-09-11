@@ -262,7 +262,7 @@ for (const [name, kind] of [["Incident write-up", "document"], ["Board review", 
   });
 }
 
-test("template single-click inspects persistently, while Enter opens the selected template", async ({ page }, info) => {
+test("template Enter matches single-click inspection before double-click opens it", async ({ page }, info) => {
   await visitNewTab(page);
   const chosen = context(page).getByRole("button", { name: "Inspect Incident write-up template", exact: true });
   const saved = workspaceSaved(page, "templates.template");
@@ -282,8 +282,12 @@ test("template single-click inspects persistently, while Enter opens the selecte
   await page.evaluate(() => { document.documentElement.style.zoom = "1.25"; });
   await expect(inspector(page).getByRole("button", { name: "Use template", exact: true })).toBeVisible();
   await page.screenshot({ path: info.outputPath("new-tab-template-inspection-compact.png") });
-  const consumed = workspaceSaved(page, "close");
   await chosen.press("Enter");
+  await expect(inspector(page).getByRole("heading", { level: 2 })).toHaveText("Incident write-up");
+  await expect(launchers(page)).toHaveCount(1);
+  await expect(page.locator(".ProseMirror")).toHaveCount(0);
+  const consumed = workspaceSaved(page, "close");
+  await chosen.dblclick();
   await expect(page.locator(".ProseMirror")).toBeVisible();
   expect((await (await consumed).json()).type).toBe("result");
   await page.reload({ waitUntil: "networkidle" });
@@ -296,15 +300,47 @@ test("a template with missing required words keeps its launcher and offers the l
   await context(page).getByRole("button", { name: "Inspect Technical glossary template", exact: true }).dblclick();
   await expect(context(page)).toContainText("these need words before the template can be placed: subject_line");
   await expect(launchers(page)).toHaveCount(1);
-  await context(page).getByRole("button", { name: "Inspect Incident write-up template", exact: true }).click();
-  await expect(context(page)).not.toContainText("these need words before the template can be placed: subject_line");
-  await expect(launchers(page)).toHaveCount(1);
-  await context(page).getByRole("button", { name: "Inspect Technical glossary template", exact: true }).press("Enter");
+  await resources(page).getByRole("button", { name: "Winter readiness brief", exact: true }).click();
   await expect(context(page)).toContainText("these need words before the template can be placed: subject_line");
+  await expect(launchers(page)).toHaveCount(1);
   await context(page).getByRole("button", { name: "Choose template inputs in the library", exact: true }).click();
   await expect(tabs(page).getByRole("button", { name: "Templates", exact: true })).toHaveAttribute("aria-current", "page");
   await expect(inspector(page).getByRole("heading", { level: 2 })).toHaveText("Technical glossary");
   await expect(launchers(page)).toHaveCount(0);
+});
+
+test("one New Tab admits only one durable command across launcher surfaces", async ({ page }) => {
+  await visitNewTab(page);
+  let release = () => {};
+  const gate = new Promise<void>((resolve) => { release = resolve; });
+  let creationWaiting = false;
+  let templateRequests = 0;
+  page.on("request", (request) => {
+    if (request.method() === "POST" && request.url().includes("instantiateTemplate")) {
+      templateRequests += 1;
+    }
+  });
+  await page.route("**/remote/**", async (route) => {
+    if (route.request().method() !== "POST" || !route.request().url().includes("createProjectResource")) {
+      return route.fallback();
+    }
+    creationWaiting = true;
+    await gate;
+    await route.continue();
+  });
+
+  try {
+    await page.locator(".area-create").getByRole("button", { name: "Document", exact: true }).click();
+    await expect.poll(() => creationWaiting).toBe(true);
+    await context(page).getByRole("button", { name: "Inspect Incident write-up template", exact: true }).dblclick();
+    await expect(context(page)).toContainText("Another New Tab action is already in progress.");
+    await expect.poll(() => templateRequests).toBe(0);
+    release();
+    await expect(page.locator(".ProseMirror")).toBeVisible();
+    await expect(launchers(page)).toHaveCount(0);
+  } finally {
+    release();
+  }
 });
 
 test("an empty template library offers a shortcut without changing stored templates", async ({ page }) => {

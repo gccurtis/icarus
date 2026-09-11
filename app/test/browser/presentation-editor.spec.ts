@@ -490,7 +490,7 @@ test("a slide Prompt Block generates grounded editable text from another resourc
   const tabs = page.getByRole("toolbar", { name: "Open tabs" });
   await tabs.locator('button.tab.icon[aria-label="New tab"]').click();
   await page
-    .locator(".area-editors")
+    .locator(".area-create")
     .getByRole("button", { name: "Document", exact: true })
     .click();
   await expect(page.locator(".title-bar h1")).toHaveText(/^Untitled document \d+$/);

@@ -194,7 +194,7 @@ test("a templateified prompt becomes a hole the template asks about", async ({ p
 
   await page.goto("/app/dev-project", { waitUntil: "networkidle" });
   await tabs(page).locator('button.tab.icon[aria-label="New tab"]').click();
-  await page.locator(".area-editors").getByRole("button", { name: "Document", exact: true }).click();
+  await page.locator(".area-create").getByRole("button", { name: "Document", exact: true }).click();
 
   const editor = page.locator(".ProseMirror");
   await expect(editor).toBeVisible();

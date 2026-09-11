@@ -20,12 +20,15 @@
   const ICON = { Document: FileText, Presentation, Spreadsheet: Sheet };
   const inspect = (id: string) => {
     launch.error = undefined;
+    launch.errorFocus = undefined;
     view.inspect("templates.template", { kind: "template", id });
   };
   const openLibrary = () => view.open({
     category: "templates",
     content: "templates.library",
-    ...(selectedTemplateId === undefined ? {} : { focus: selectedTemplateId })
+    ...((selectedTemplateId ?? launch.errorFocus) === undefined
+      ? {}
+      : { focus: selectedTemplateId ?? launch.errorFocus })
   });
 </script>
 
@@ -55,12 +58,6 @@
           disabled={launch.pending !== undefined}
           onclick={() => inspect(template.id)}
           ondblclick={() => void useTemplate(view, launch, template)}
-          onkeydown={(event) => {
-            if (event.key !== "Enter") return;
-            event.preventDefault();
-            inspect(template.id);
-            void useTemplate(view, launch, template);
-          }}
         >
           <Icon aria-hidden="true" />
           <span class="min-w-0 flex-1">

@@ -13,8 +13,11 @@ test("a document adopts a delayed publication after its initiating request is lo
     if (message.type() === "error" || message.type() === "warning") diagnostics.push(message.text());
   });
   page.on("requestfailed", (failed) => {
-    const expectedAbort = reloading && failed.failure()?.errorText === "net::ERR_ABORTED" &&
-      (failed.url().endsWith("/refreshDerivedOutput") || failed.url().includes("/__data.json"));
+    const aborted = failed.failure()?.errorText === "net::ERR_ABORTED";
+    const expectedAbort = aborted && (
+      failed.url().includes("/__data.json") ||
+      (reloading && failed.url().endsWith("/refreshDerivedOutput"))
+    );
     if (!expectedAbort) diagnostics.push(`${failed.url()}: ${failed.failure()?.errorText}`);
   });
   await page.setViewportSize({ width: 1440, height: 1000 });
@@ -30,7 +33,7 @@ test("a document adopts a delayed publication after its initiating request is lo
   await expect(page.getByText("1 uploaded · 0 already present · 0 rejected.")).toBeVisible();
 
   await tabs.locator('button.tab.icon[aria-label="New tab"]').click();
-  await page.locator(".area-editors").getByRole("button", { name: "Document", exact: true }).click();
+  await page.locator(".area-create").getByRole("button", { name: "Document", exact: true }).click();
   const title = page.locator(".title-bar h1");
   await expect(title).toHaveText(/^Untitled document \d+$/);
   const documentTitle = (await title.textContent())!;

@@ -20,8 +20,8 @@ vi.mock("$app-views/categories/new-tab/procedures/creating", () => ({
 vi.mock("$app-views/categories/project-overview/procedures/create-chat", () => ({
   createChat: commands.chat
 }));
-vi.mock("$app-views/categories/templates/procedures/instantiate-template", () => ({
-  instantiateTemplate: commands.template
+vi.mock("$app-views/categories/new-tab/procedures/instantiate-template", () => ({
+  instantiateLauncherTemplate: commands.template
 }));
 
 const workspace = () => createWorkspaceState(
@@ -136,7 +136,61 @@ test("a refused template preserves the launcher and its actionable explanation",
   await useTemplate(view, state, template);
   expect(view.activeId).toBe(origin.id);
   expect(state.error).toBe("Subject line needs words");
+  expect(state.errorFocus).toBe(template.id);
   expect(state.pending).toBeUndefined();
+});
+
+test("a spreadsheet template alerts without starting work or consuming its launcher", async () => {
+  const alert = vi.fn();
+  vi.stubGlobal("alert", alert);
+  const view = workspace();
+  const origin = view.open({ category: "new-tab" });
+  await useTemplate(view, new LauncherState(), { ...template, makes: "Spreadsheet" });
+  expect(alert).toHaveBeenCalledWith("Creating from a spreadsheet template is not wired up yet.");
+  expect(commands.template).not.toHaveBeenCalled();
+  expect(view.activeId).toBe(origin.id);
+});
+
+test("one launcher admits only one durable command across independent surfaces", async () => {
+  const view = workspace();
+  view.open({ category: "new-tab" });
+  const creationState = new LauncherState();
+  const templateState = new LauncherState();
+  const response = Promise.withResolvers<{ resourceId: string }>();
+  commands.create.mockReturnValueOnce(response.promise);
+
+  const creation = createResource(view, creationState, "document");
+  await useTemplate(view, templateState, template);
+
+  expect(commands.template).not.toHaveBeenCalled();
+  expect(templateState.error).toBe("Another New Tab action is already in progress.");
+  response.resolve({ resourceId: "documents:only" });
+  await creation;
+  expect(view.active.resourceId).toBe("documents:only");
+});
+
+test("the same creation in two New Tabs remains independently owned", async () => {
+  const view = workspace();
+  const firstTab = view.open({ category: "new-tab" });
+  const firstResponse = Promise.withResolvers<{ resourceId: string }>();
+  const secondResponse = Promise.withResolvers<{ resourceId: string }>();
+  commands.create
+    .mockReturnValueOnce(firstResponse.promise)
+    .mockReturnValueOnce(secondResponse.promise);
+
+  const first = createResource(view, new LauncherState(), "document");
+  const secondTab = view.open({ category: "new-tab" });
+  const second = createResource(view, new LauncherState(), "document");
+  await Promise.resolve();
+  expect(commands.create).toHaveBeenCalledTimes(2);
+
+  firstResponse.resolve({ resourceId: "documents:first" });
+  await first;
+  expect(view.activeId).toBe(secondTab.id);
+  secondResponse.resolve({ resourceId: "documents:second" });
+  await second;
+  expect(view.active.resourceId).toBe("documents:second");
+  expect(view.tabs.some((tab) => tab.id === firstTab.id)).toBe(true);
 });
 
 test("a template finishing after tab navigation does not redirect the new selection", async () => {

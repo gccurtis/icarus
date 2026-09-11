@@ -56,7 +56,7 @@ test("a directly authored document Prompt Block reads one exact uploaded Externa
 
   await tabs.locator('button.tab.icon[aria-label="New tab"]').click();
   await page
-    .locator(".area-editors")
+    .locator(".area-create")
     .getByRole("button", { name: "Document", exact: true })
     .click();
 
