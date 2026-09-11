@@ -19,13 +19,15 @@ Ordinary tab-bar switching preserves New Tab; choosing a destination through the
 launcher consumes it. Recent single-click inspects; double-click/Enter opens.
 
 Root AGENTS.md authorizes exact owned commits/push to `work/new-tab-view`.
-No rebase, main integration/push, deployment, or external messages authorized.
+The user explicitly authorized integration into local `main` after the audit.
+Pushing `main`, deployment, and external messages remain unauthorized.
 
 ## Checkout and ownership
 
 - Worktree: `/tmp/icarus-new-tab-view`
 - Branch: `work/new-tab-view`
 - Starting base: `c2505f076c05953cdaedd5d195ee95632eefdf79`, origin/main at setup.
+- Final target reconciled: `ab809ac647060f29c55afd99c0054ac311094f75`.
 - Lead owns final integration, launcher UI/procedures, inspector and test verification.
 - Worker `resource_table`: reusable table extraction and narrow workspace admission.
 - Worker `tab_lifecycle`: workspace open lifecycle and Chromium scenarios.
@@ -180,6 +182,44 @@ Evidence below is local ignored runtime storage, not portable to another checkou
 - Live paid-provider tests were not enabled. Local deterministic provider-fixture
   workflows ran under the ordinary full/browser profiles.
 
+### Final main reconciliation
+
+- While the audit was running, `origin/main` advanced to
+  `7d14ddb350b857898af97086af049da7d669c188`. The combined product tree was
+  reconciled in `d91c291e1ee15610fdba098cee05ed0afc6863a0`. Two textual conflicts had
+  established combined outcomes: Project Overview keeps the reusable resource
+  table while consuming main's current project-resource index, and the tab bar
+  keeps main's **External Files** label while permanent-tab activation preserves
+  an unfinished New Tab.
+- Shared Templates source has no branch diff. Document and presentation templates
+  remain operational. Spreadsheet templates remain explicitly unsupported in New
+  Tab and produce only the placeholder alert; no spreadsheet template resource is
+  materialized.
+- Final combined quick profile passed with zero type errors/warnings and 90/90
+  clean architecture checks:
+  `.agents/runtime/runs/1789099324488-quick-fd5c959a/`.
+- Final combined focused unit profile passed 100/100 New Tab and workspace lifecycle
+  tests: `.agents/runtime/runs/1789099359863-unit-e2271081/`.
+- The first final Chromium attempt never reached the application because the
+  downloaded browser binary lacked host `libnspr4.so`; this is environment-only
+  evidence: `.agents/runtime/runs/1789099375782-browser-cc45849d/`. Rerunning with
+  the repository-documented system Chromium passed all 24 New Tab, Overview,
+  External Files, and tab-strip scenarios:
+  `.agents/runtime/runs/1789099410130-browser-39a247c2/`. Wide, compact, 125% zoom,
+  template-inspector, and tab-strip screenshots were inspected.
+- Full combined certification passed: agent infrastructure 45/45, typecheck with
+  zero errors/warnings, architecture 90/90 clean, scripts 328/328, application
+  tests 2,091 passed with two expected skips, production build, and Chromium 146
+  passed with five expected live-provider skips. Evidence:
+  `.agents/runtime/runs/1789099525243-full-d6c9f85e/`.
+- During that full run, main advanced once more to
+  `ab809ac647060f29c55afd99c0054ac311094f75` through a Markdown-only backlog
+  simplification. It was merged in `01b1390c792379edf84c62793c680e0a2dd5a899`.
+  The certified product tree did not change; the task branch has no diff for that
+  backlog file. The final post-reconciliation quick profile also passed with zero
+  type errors/warnings and 90/90 clean architecture checks:
+  `.agents/runtime/runs/1789100463392-quick-221033f5/`.
+
 ### Initial implementation evidence
 
 - Focused workspace/resource/projection unit run: 113 tests passed.
@@ -216,25 +256,14 @@ Evidence below is local ignored runtime storage, not portable to another checkou
 
 ## Runtime and next step
 
-Browser verification used isolated seeded Store/native-file data on port 5267
-(provider fixture 15267), cleaned by the harness on completion. Port 5237 was
-already occupied; no process there was touched.
+Final browser/full verification used isolated seeded Store/native-file data on
+ports 5297 and 5307. The helpers cleaned those owned fixtures on completion. No
+task review server or lease remains, and no primary development data was changed.
+The requested ignored provider-configuration symlink remains in the task worktree
+and was not read, edited, or staged.
 
-Human review server: `http://127.0.0.1:3197/app/dev-project`, exec session 67263,
-started from this worktree with:
-`nix develop ./infra/devshell --command node .agents/scripts/dev.mjs --port 3197 --store disposable`.
-It uses the requested provider-configuration symlink and owns a development-server
-lease and separate seeded disposable Store/native files. Earlier unconfigured and
-local-provider-fixture review sessions (95594 / 14120) were stopped; their owned
-disposable data was removed by the helpers. The temporary fixture wrapper was
-removed; no primary development data was deleted. Session 42945 was stopped for
-follow-up verification and its disposable review data cleaned by the helper.
-Stop only session 67263 with Ctrl-C before running another cache user;
-shutdown removes its disposable review data. Never reset human review data with
-browser fixtures. The printed URL opens Overview; use the tab-bar plus for New Tab.
-
-Completion: implementation and verification are finished. This handoff travels
-with the owned changes on `work/new-tab-view`; the branch HEAD identifies the
-completion commit. Publication destination is `origin work/new-tab-view`.
-Next: user review on port 3197. Retain the worktree and ignored verification
-evidence; main integration and cleanup require separate authorization.
+Completion: implementation, current-main reconciliation, full certification, and
+visual inspection are finished. Publish the exact task branch, run fresh readiness,
+then fast-forward the clean local `main` checkout under the user's integration
+authority. Do not push `main`. Retain the worktree, provider symlink, and ignored
+evidence; cleanup requires separate exact authorization and a remote-main landing.
