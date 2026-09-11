@@ -52,4 +52,41 @@ Browser fixtures used isolated seeded Store/native-file directories, app port 52
 
 Implementation commit `e1b35bc8f4a3e96349fda4c6c6837b42ce8e3cc2` is committed and pushed to `origin/work/external-files-polish`. This follow-up handoff commit records completion without changing the verified app tree. Resolve the final task head with `git log -1 work/external-files-polish`.
 
-Keep the worktree for review. No implementation or verification step remains for this request. Integration into main requires separate authorization; neither main nor the user's backlog file was changed.
+Keep the worktree for review. Integration into main requires separate authorization; neither main nor the user's backlog file was changed.
+
+## Follow-up: fixed permanent tabs and ordinary wheel scrolling
+
+The user explicitly extended this task to make tab scrolling work without Shift and keep the four permanent singleton tabs stationary. Work resumed from `ff71459832fe0149b9e802df1907b907dec91afa`. The original strip put all buttons inside its horizontal overflow area, with no mapping from ordinary vertical wheel input to horizontal scrolling.
+
+Lead owned `app/src/lib/surfaces/tab-bar/` source and final verification/Git. Worker category_naming owned new `app/test/browser/tab-bar-scroll.spec.ts`, without executing tests or starting a server. The completed fix separates the four fixed buttons from the transient scroll area, routes ordinary wheel gestures to that area, and reveals newly activated/opened or focused transient tabs. The New tab button also stays outside the scroller. Scroll position/listeners belong to the mounted tab-bar DOM; tab order, activation and close behavior remain owned by WorkspaceStateModel. Horizontal wheel gestures and Ctrl+wheel zoom remain supported.
+
+Chromium initially found partially clipped keyboard-focused tabs; the mounted focus listener now reveals the complete tab. Source layout follows the surface checker contract: reactive effects live in `tab-bar/effects/`, and the nonreactive DOM action lives in `tab-bar/procedures/`. No checker or baseline was changed.
+
+## Follow-up: shared local configuration
+
+The user also authorized updating worktree supporting assets to use configuration symlinks. Worker external_panels implemented the setup CLI/helpers, supporting script tests, AGENTS.md, branch workflow skill and handoff template; lead reviewed the exact changes and ran final verification.
+
+- `worktree.mjs start` now links ignored `app/configuration/local.yaml` from Git's primary checkout when present, including when setup starts from another linked worktree.
+- New `worktree.mjs configure [--path <registered-worktree>]` applies the same setup to existing worktrees and safely reuses a matching link. Missing source configuration is reported without creating a dangling link.
+- Both paths must be ignored and untracked. Existing files or different symlinks, tracked/unignored paths, symlinked configuration directories and invalid source file types are refused. The helper inspects metadata and never reads or prints credential contents.
+- Tracked configuration remains branch-owned. Dependencies, Store/native data and caches remain per-worktree. The instructions explain shared-setting ownership and unlink-only cleanup; removal safeguards still refuse ignored links and other local artifacts.
+
+Applied `node .agents/scripts/worktree.mjs configure` here: `linked`, followed by `already-linked` on a repeat. The ignored link is `/tmp/icarus-external-files-polish/app/configuration/local.yaml` -> `/home/jakul/cyberia/icarus/app/configuration/local.yaml`. It is not staged or committed. Do not edit through it for task-specific settings or remove the primary source during cleanup.
+
+## Follow-up verification and publication
+
+All commands ran from this task worktree. App/agent profiles used the Nix toolchain. Final evidence:
+
+1. `node .agents/scripts/verify.mjs quick`: passed, Svelte 0 errors/0 warnings; architecture 90 clean checks, 179 existing baselined entries, 0 findings. `.agents/runtime/runs/1789094576519-quick-c9c99c96/`.
+2. `node .agents/scripts/verify.mjs unit -- src/lib/surfaces/tab-bar/test/unit src/lib/model/client/workspace-state/test/unit/workspace-state.test.ts`: 2 files, 75 tests passed. `.agents/runtime/runs/1789094621311-unit-97b2c687/`.
+3. `env ICARUS_CHROMIUM_EXECUTABLE=/etc/profiles/per-user/jakul/bin/chromium node .agents/scripts/verify.mjs browser --port 5237 -- test/browser/tab-bar-scroll.spec.ts test/browser/workspace-naming-polish.spec.ts`: 2 tests passed. `.agents/runtime/runs/1789094546558-browser-880092a7/`.
+4. The same browser command restricted to `test/browser/tab-bar-scroll.spec.ts` passed again after applying the actual configuration symlink. `.agents/runtime/runs/1789094854729-browser-b840d3fc/`.
+5. `pnpm build` in `app/` under the worktree cache lease: passed. `.agents/runtime/runs/tab-bar-followup-build/build.log`. Large-chunk and two empty-chunk warnings remain nonfatal.
+6. `node .agents/scripts/verify.mjs agents`: all 45 tests passed, no skips, including configuration source selection, conflict preservation, repeated setup, ignored-link removal refusal and source preservation. `.agents/runtime/runs/1789094794135-agents-41d1c5fc/`.
+7. `git diff --check`: passed.
+
+Inspected wide/newest, wide/scrolled and compact/125% tab-bar screenshots in the successful Chromium run's `chromium/tab-bar-scroll-ordinary-wh-31a65-e-permanent-tabs-stay-fixed-chromium/` directory. The four singleton buttons stay fixed while transient tabs scroll; newly active and keyboard-focused tabs remain fully visible. Tests cover activation/closing and capture browser console/page errors. These screenshots and logs are ignored local evidence.
+
+Browser verification used disposable Store/native data and deterministic providers on ports 5237/15237, including after configuration linking. No live provider tests ran. Owned servers exited and the lease was released. No known issue remains within the follow-up scope.
+
+Tab implementation commit `3ef9be3` and configuration-support commit `793a535` are committed and pushed to `origin/work/external-files-polish`. This handoff update records their completed verification/publication. Keep the worktree for review; main integration requires separate authorization. No implementation step remains.
