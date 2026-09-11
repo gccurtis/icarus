@@ -55,12 +55,20 @@ export type CreateTemplateInput = {
   readonly tags?: readonly string[];
 };
 
-export type CreateTemplateResult = {
-  readonly accepted: true;
-  readonly templateId: string;
-  readonly target: TemplateTarget;
-  readonly revision: 1;
-};
+export type CreateTemplateResult =
+  | {
+      readonly accepted: true;
+      readonly templateId: string;
+      readonly target: TemplateTarget;
+      readonly revision: 1;
+    }
+  | {
+      readonly accepted: false;
+      readonly templateId: null;
+      readonly target: TemplateTarget;
+      readonly reason: "name-in-use";
+      readonly detail: string;
+    };
 
 export type CreateTemplateFromResourceInput = {
   readonly target: TemplateStageTarget;
@@ -82,7 +90,7 @@ export type CreateTemplateFromResourceResult =
   | {
       readonly accepted: false;
       readonly resourceId: string;
-      readonly reason: "not-found" | "unsupported-body";
+      readonly reason: "not-found" | "unsupported-body" | "name-in-use";
       readonly detail: string;
     };
 
@@ -108,7 +116,7 @@ export type UpdateTemplateResult =
   | {
       readonly accepted: false;
       readonly templateId: string;
-      readonly reason: "not-found" | "stale" | "unsupported-body" | "slot-in-use";
+      readonly reason: "not-found" | "stale" | "unsupported-body" | "slot-in-use" | "name-in-use";
       readonly revision: number | null;
       readonly detail: string;
     };
@@ -129,7 +137,7 @@ export type DuplicateTemplateResult =
   | {
       readonly accepted: false;
       readonly templateId: string;
-      readonly reason: "not-found" | "unsupported-body";
+      readonly reason: "not-found" | "unsupported-body" | "name-in-use";
       readonly revision: number | null;
       readonly detail: string;
     };

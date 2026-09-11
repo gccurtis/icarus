@@ -114,7 +114,7 @@ describe("a template from a live resource — scopes and presentations", () => {
     });
   });
 
-  test("keeps whatever the templateified prompt reads as its slot's default", async () => {
+  test("keeps whatever the slotted prompt reads as its default", async () => {
     model.tables.documents.push(row("documents", "1", { projectId: "projects:1", title: "Winter brief" }));
     model.tables.documentSnapshots.push(
       row("documentSnapshots", "1", {

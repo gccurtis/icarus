@@ -72,6 +72,16 @@ describe("marking a run", () => {
     expect(slotNameOver(atoms, marks, 0, 5)).toBeUndefined();
     expect(slotNameOver(atoms, marks, 14, 20)).toBeUndefined();
   });
+
+  it("reports an existing template atom in a stage as a slot", () => {
+    const staged: Atom[] = [
+      words("a1", "Dear "),
+      { id: "a2", kind: "template", name: "client", text: "Northwind" },
+      words("a3", ".")
+    ];
+    expect(slotNameOver(staged, [], 6, 12)).toBe("client");
+    expect(slotNameOver(staged, [], 0, 5)).toBeUndefined();
+  });
 });
 
 describe("a marked run becoming a slot, on the copy", () => {

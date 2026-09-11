@@ -82,8 +82,8 @@ export const STAGES = [
     leaves: "A prompt block reading whatever its Scope says, linked to a derived output"
   },
   {
-    title: "Something is templateified",
-    what: "A prompt, or a run of selected text. Nothing about the resource changes: the block gains a record, the words gain a mark. Until this, a template built from the document asks nothing at all.",
+    title: "Something in the stage becomes a slot",
+    what: "A prompt, or a run of selected text in a template stage. The block gains a record or the words gain a mark. Until this, the template asks nothing at all.",
     runs: "promptSlotOps writes a slot record; markSlotOps writes a mark over the run",
     leaves: "A slot named Slot 1, whose default is what the thing already is, and prose that reads exactly as it did"
   },

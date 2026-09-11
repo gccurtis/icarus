@@ -82,6 +82,20 @@ describe("a template from a live resource — documents", () => {
     assert.deepEqual(kept, { kind: "url", url: "https://example.com/plan", note: "Scope" });
     assert.equal("templateId" in model.tables.documents[0], false);
     assert.equal(model.tables.templateVersions.length, 1);
+
+    const repeated = await createTemplateFromResource({
+      target: "document",
+      resourceId: "documents:1",
+      name: "WINTER BRIEF SHELL"
+    });
+    assert.deepEqual(repeated, {
+      accepted: false,
+      resourceId: "documents:1",
+      reason: "name-in-use",
+      detail: "a template named “WINTER BRIEF SHELL” already exists in this project"
+    });
+    assert.equal(model.tables.templates.length, 2);
+    assert.equal(model.tables.templateVersions.length, 1);
   });
 
   /**
@@ -154,11 +168,11 @@ describe("a template from a live resource — documents", () => {
   /**
    * A slot is made, never found.
    *
-   * A prompt nobody templateified keeps the scope it reads and produces no
+   * A prompt nobody made into a slot keeps the scope it reads and produces no
    * slot, so placing the template asks nothing about it. That is what keeps
    * the questions to the ones somebody meant to ask.
    */
-  test("gives no slot to a prompt nobody templateified", async () => {
+  test("gives no slot to a prompt nobody made into one", async () => {
     model.tables.documents.push(row("documents", "1", { projectId: "projects:1", title: "Winter brief" }));
     model.tables.documentSnapshots.push(
       row("documentSnapshots", "1", {

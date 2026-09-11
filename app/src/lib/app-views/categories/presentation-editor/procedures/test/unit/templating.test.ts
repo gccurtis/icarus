@@ -7,7 +7,8 @@ import type { ProjectResourceIndex } from "$capabilities/project-resources/index
 import {
   presentationTemplatesIn,
   insertionOf,
-  resourcesIn
+  resourcesIn,
+  slotSignal
 } from "$app-views/categories/presentation-editor/procedures/templating";
 
 const externalIndex: ProjectResourceIndex = {
@@ -124,6 +125,18 @@ describe("inserting a template into a presentation", () => {
     const element = insertion.body.slides[2].elements[0];
     if (element.content.type !== "prompt") throw new Error("prompt expected");
     expect(element.content.block.scope).toEqual({ include: [{ select: "slot", name: "evidence" }], exclude: [] });
+  });
+
+  it("resolves a stage slot to its slide and inspector selection", () => {
+    const source = template(1).body;
+    if (source.resource !== "presentation") throw new Error("presentation template expected");
+    expect(slotSignal(source, "evidence")).toEqual({
+      slideId: "ts1",
+      signal: {
+        key: "presentation-editor.prompt-block",
+        selection: { kind: "elements", id: "te1", ids: ["te1"] }
+      }
+    });
   });
 
   it("falls back to the end when the anchor is not in the presentation, and does nothing for a document", () => {

@@ -15,8 +15,10 @@ export {
   slotNamesIn,
   nextSlotName,
   offeredSlotName,
+  promptSlotNameIn,
   promptWordsIn
 } from "$representation/data/behavior/templates/prompt-slots";
+export { liveSlotsOf } from "$representation/data/behavior/templates/slot-inventory";
 export {
   answerRowsOf,
   missingIn,
@@ -65,6 +67,7 @@ export {
   mergedSlots,
   readableScope,
   selectedWords,
+  slotSignal,
   withSlotField,
   type ChosenSlot
 } from "$app-views/categories/presentation-editor/procedures/template-slots";

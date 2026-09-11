@@ -7,6 +7,7 @@ import {
   mergedSlots,
   openStage,
   saveAsTemplate,
+  slotSignal,
   templateDetail,
   termFor,
   updateSlots,
@@ -96,6 +97,16 @@ export class TemplatesContextState {
       return false;
     }
     return true;
+  }
+
+  showSlot(name: string): void {
+    const body = this.context.body();
+    const runtime = this.context.runtime();
+    if (body === undefined || runtime === undefined) return;
+    const target = slotSignal(body, name);
+    if (target === undefined) return;
+    runtime.scrollTo = target.blockId;
+    this.context.view.inspect(target.signal.key, target.signal.selection);
   }
 
   save(): void {

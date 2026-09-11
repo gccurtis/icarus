@@ -69,10 +69,6 @@
     prompts = prompts.map((prompt) => (prompt.id === id ? { ...prompt, name } : prompt));
   };
 
-  const describe = (id: string, description: string) => {
-    prompts = prompts.map((prompt) => (prompt.id === id ? { ...prompt, description } : prompt));
-  };
-
   /** The builder is a modal in the app; here it cycles, because the point is the consequence. */
   const cycleScope = (id: string) => {
     const order = ["project", "kinds", "set"] as const;
@@ -102,7 +98,7 @@
         <span class="tref-kicker">06 · Driven</span>
         <h1>Walk it yourself</h1>
         <p class="tref-lede">
-          Three prompts, written the way anybody writes them. Templateify the ones worth asking about,
+          Three prompts in a template stage. Make slots from the ones worth asking about,
           change what they read, and watch the template that comes out — then place it. Every control
           here is the component the application ships, and the slot list beneath them is computed by
           the same pure functions the capability runs, so the consequences are real even though
@@ -112,7 +108,7 @@
       <div class="tref-facts">
         <dl>
           <div><dt>Prompts</dt><dd>{prompts.length}</dd></div>
-          <div><dt>Templateified</dt><dd>{slots.length}</dd></div>
+          <div><dt>Slots made</dt><dd>{slots.length}</dd></div>
           <div><dt>Asked when placed</dt><dd>{slots.length}</dd></div>
           <div><dt>Saved anywhere</dt><dd>Nothing</dd></div>
         </dl>
@@ -131,7 +127,7 @@
         <div><span class="tref-kicker">Step one</span><h2>Write the prompts</h2></div>
         <p>
           Each card is a prompt block's Template section, exactly as it appears in the inspector. One
-          is templateified already; the other two are not, and a template built now would not ask
+          is already a slot; the other two are not, and the template would not ask
           about them. What each prompt reads cycles here; in the editor that button opens the scope
           builder.
         </p>
@@ -150,12 +146,9 @@
             </div>
             <PromptTemplate
               name={prompt.name === "" ? undefined : prompt.name}
-              description={prompt.description}
               offered={`Slot ${index + 1}`}
               standing={scopeWords(prompt.scope)}
               onmake={() => rename(prompt.id, `Slot ${index + 1}`)}
-              onname={(next) => rename(prompt.id, next)}
-              ondescription={(next) => describe(prompt.id, next)}
             />
           </article>
         {/each}
@@ -166,7 +159,7 @@
       <div class="tref-section-head">
         <div><span class="tref-kicker">Step two</span><h2>Make the template</h2></div>
         <p>
-          Only what was templateified becomes a slot, and its default is whatever the thing already
+          Only what was deliberately made into a slot is asked, and its default is whatever the thing already
           is. The prompt's question is copied onto the block as its link to the derived output is left
           behind, so a placed copy is a working prompt rather than words about one.
         </p>
@@ -187,7 +180,7 @@
               </tr>
             {/each}
             {#if slots.length === 0}
-              <tr><td class="none" colspan="4">Nothing was templateified, so this template asks nothing.</td></tr>
+              <tr><td class="none" colspan="4">No slots were made, so this template asks nothing.</td></tr>
             {/if}
           </tbody>
         </table>
@@ -207,7 +200,7 @@
       <div class="tref-section-head">
         <div><span class="tref-kicker">Step three</span><h2>Place it</h2></div>
         <p>
-          This is the ask modal itself, holding only what was templateified above. Use the tabs, or
+          This is the ask modal itself, holding only the slots made above. Use the tabs, or
           Previous and Next. Pressing a scope opens the builder in the application — here it toggles
           between the default and something chosen, so the tag and the rule move.
         </p>

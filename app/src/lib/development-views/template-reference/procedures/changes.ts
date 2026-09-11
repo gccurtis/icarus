@@ -130,7 +130,7 @@ export const SYSTEMATIC: SystematicChange[] = [
     title: "A slot is made, never found",
     before:
       "A scope slot could only come from a body that already carried a slot term. A prompt somebody wrote kept its own sources, so a template made from it asked nothing and every copy read what the author read.",
-    now: "Templateify, in the Template section of a prompt block or of a text selection, makes one slot named Slot 1, Slot 2 with an optional description. Making a template keeps exactly those. A prompt nobody templateified keeps its scope and is never asked about.",
+    now: "Make slot, in the Template section of a prompt block or text selection while editing a template stage, makes Slot 1, Slot 2, and so on. Its metadata lives in the stage's Slots panel. Ordinary resources expose no slot-authoring control.",
     why: "Turning every prompt into a slot asks about things nobody meant to be asked about. One deliberate gesture at the thing itself keeps placing a template to the questions somebody wrote down.",
     area: "editors"
   },
@@ -154,16 +154,16 @@ export const SYSTEMATIC: SystematicChange[] = [
   },
   {
     index: "20",
-    title: "Templateifying marks a run, and never edits it",
+    title: "Making a slot marks a run, and never edits it",
     before:
       "Templateifying a selection spliced the words out of the paragraph and put a template atom in their place. The document now read {Slot 1} where the prose had been, marks reaching into the run were lost, and taking it back meant typing the words again.",
-    now: "A slot over text is an ordinary mark, addressed the way a comment or a link is. The resource is untouched — same words, same formatting, and the Template section reads back which slot those words are. Only the copy the template is built from turns each marked run into its atom. Measuring a mark now counts a slot as the width of what it displays, which the validator could not do before and which refused every template holding both a slot and a formatted run.",
+    now: "Inside a template stage, a slot over text is an ordinary mark, addressed the way a comment or a link is. The words and formatting stay untouched, and the Template section reads back which slot those words are. Saving the stage turns each marked run into its template atom.",
     why: "A resource is not a template and must not be damaged to make one. Marking says these words are where a slot goes; it does not say the words are gone.",
     area: "editors"
   },
   {
     index: "21",
-    title: "A presentation templateifies its words too",
+    title: "A presentation stage can make its words slots too",
     before:
       "A presentation's slots could only come from its prompts. Selecting words on a slide offered nothing, so a presentation template could not ask for a client name.",
     now: "The presentation's text-selection inspector carries the same Template section as the document's, over the same marks and the same functions. What differs is only how a selection is addressed.",
@@ -383,8 +383,8 @@ export const MODEL_DELTA = {
     { name: "templates.lastUsedAt", note: "optional — when it was last instantiated, which is what recency reads" },
     { name: "TemplatedTerm { select: \"set\" }", note: "a slot default may name one of the project's sets" },
     { name: "Target.context", note: "a tab can be opened straight onto a named context view" },
-    { name: "Mark.slot", note: "{ name, description? } — a run of words somebody templateified, addressed like any other mark" },
-    { name: "PromptBlock.slot", note: "{ name, description? } — set by Templateify, absent until then" },
+    { name: "Mark.slot", note: "{ name, description? } — a run of words made into a slot inside a template stage" },
+    { name: "PromptBlock.slot", note: "{ name, description? } — set by Make slot inside a template stage" },
     { name: "PromptBlock.prompt", note: "the block's own prompt, copied on the way into a template" },
     {
       name: "PromptBlock.scope",

@@ -27,6 +27,10 @@
   import { createPromptBlock } from "$app-views/categories/document-editor/procedures/create-prompt-block";
   import { synchronizePromptBlockDraft } from "$app-views/categories/document-editor/procedures/effects/prompt-block-draft.svelte";
   import { setPromptDefinition } from "$app-views/categories/document-editor/procedures/set-prompt-definition";
+  import {
+    resourceTemplate,
+    stageIn
+  } from "$app-views/categories/document-editor/procedures/templating";
   import { isInspectorView, workspaceState } from "$model/client/workspace-state";
 
 
@@ -35,6 +39,12 @@
 
   const runtime = documentId === undefined ? undefined : view.documentRuntime(documentId);
   const state = new PromptBlockState();
+  const templateQuery = $derived(
+    documentId === undefined ? undefined : resourceTemplate(documentId)
+  );
+  const templateStage = $derived(
+    stageIn(templateQuery?.ready ? templateQuery.current : undefined)
+  );
 
   const body = $derived(runtime?.body);
   const blockId = $derived(view.selection?.id ?? "");
@@ -132,13 +142,15 @@
       {/key}
     {/if}
 
-    {#key linked?.derivedOutputId ?? "unlinked"}
-      <PromptTemplateSection
-        blockId={prompt.id}
-        derivedOutputId={linked?.derivedOutputId}
-        disabled={state.phase !== undefined}
-      />
-    {/key}
+    {#if templateStage !== undefined}
+      {#key linked?.derivedOutputId ?? "unlinked"}
+        <PromptTemplateSection
+          blockId={prompt.id}
+          derivedOutputId={linked?.derivedOutputId}
+          disabled={state.phase !== undefined}
+        />
+      {/key}
+    {/if}
   {/if}
 </Panel>
 

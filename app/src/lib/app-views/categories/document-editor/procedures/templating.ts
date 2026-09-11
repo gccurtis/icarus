@@ -21,8 +21,11 @@ export {
   slotNamesIn,
   nextSlotName,
   offeredSlotName,
+  promptSlotNameIn,
   promptWordsIn
 } from "$representation/data/behavior/templates/prompt-slots";
+
+export { liveSlotsOf } from "$representation/data/behavior/templates/slot-inventory";
 
 export {
   PROJECT_KINDS as KINDS,
@@ -68,6 +71,7 @@ export {
   readableScope,
   selectedRange,
   selectedWords,
+  slotSignal,
   withSlotField,
   type ChosenSlot
 } from "$app-views/categories/document-editor/procedures/template-slots";

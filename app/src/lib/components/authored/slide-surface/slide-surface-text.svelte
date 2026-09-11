@@ -1,11 +1,15 @@
 <script lang="ts">
-  import { tick } from "svelte";
-
-  import type { SurfaceText, SurfaceTextEdit } from "$authored-components/slide-surface/slide-surface-types";
+  import type {
+    SurfaceText,
+    SurfaceTextEdit,
+    SurfaceTextSelection
+  } from "$authored-components/slide-surface/slide-surface-types";
+  import { synchronizesSlideSurfaceText } from "$authored-components/slide-surface/procedures/effects/synchronizes-slide-surface-text.svelte";
 
   let {
     text,
     editing = false,
+    selection,
     fit = false,
     onedit,
     oncaret,
@@ -13,6 +17,7 @@
   }: {
     text: SurfaceText;
     editing?: boolean;
+    selection?: SurfaceTextSelection;
     fit?: boolean;
     onedit?: (edit: SurfaceTextEdit) => void;
     oncaret?: (from: number, to: number) => void;
@@ -96,17 +101,20 @@
     return { from: offsetOf(held.startContainer, held.startOffset), to: offsetOf(held.endContainer, held.endOffset) };
   };
 
-  const placeCaret = (at: number) => {
+  const placeSelection = (from: number, to: number) => {
     if (host === null) return;
-    const selection = window.getSelection();
-    if (selection === null) return;
-    const position = positionAt(Math.max(0, Math.min(at, text.display.length)));
+    const browserSelection = window.getSelection();
+    if (browserSelection === null) return;
+    const start = positionAt(Math.max(0, Math.min(from, text.display.length)));
+    const end = positionAt(Math.max(0, Math.min(to, text.display.length)));
     const held = document.createRange();
-    held.setStart(position.node, position.offset);
-    held.collapse(true);
-    selection.removeAllRanges();
-    selection.addRange(held);
+    held.setStart(start.node, start.offset);
+    held.setEnd(end.node, end.offset);
+    browserSelection.removeAllRanges();
+    browserSelection.addRange(held);
   };
+
+  const placeCaret = (at: number) => placeSelection(at, at);
 
   const emit = (from: number, to: number, insert: string) => {
     pendingCaret = Math.min(from, to) + insert.length;
@@ -203,24 +211,6 @@
     if (held !== undefined) oncaret?.(held.from, held.to);
   };
 
-  $effect(() => {
-    if (!editing) return;
-    document.addEventListener("selectionchange", report);
-    return () => document.removeEventListener("selectionchange", report);
-  });
-
-  $effect(() => {
-    void text.display;
-    if (!editing || pendingCaret === undefined) return;
-    const at = pendingCaret;
-    pendingCaret = undefined;
-    void tick().then(() => {
-      host?.focus({ preventScroll: true });
-      placeCaret(at);
-      report();
-    });
-  });
-
   const POINT_LIFETIME = 600;
 
   let lastPoint: { x: number; y: number; at: number } | undefined;
@@ -240,36 +230,26 @@
     return true;
   };
 
-  $effect(() => {
-    if (!editing || host === null) return;
-    const element = host;
-    void tick().then(() => {
-      element.focus({ preventScroll: true });
-      if (!caretFromPoint()) placeCaret(text.display.length);
-      lastPoint = undefined;
-      report();
-    });
-  });
-
-  $effect(() => {
-    void text.display;
-    void text.size;
-    if (!fit || host === null) {
-      shrink = 1;
-      return;
-    }
-    const element = host;
-    const box = element.parentElement;
-    if (box === null) return;
-    shrink = 1;
-    void tick().then(() => {
-      let factor = 1;
-      for (let step = 0; step < 12 && element.scrollHeight > box.clientHeight + 1; step += 1) {
-        factor *= 0.92;
-        element.style.fontSize = `${text.size * factor}px`;
-      }
-      shrink = factor;
-    });
+  synchronizesSlideSurfaceText({
+    editing: () => editing,
+    host: () => host,
+    display: () => text.display,
+    size: () => text.size,
+    fit: () => fit,
+    selection: () => selection?.blockId === text.blockId ? selection : undefined,
+    pendingCaret: () => pendingCaret,
+    takePendingCaret: () => {
+      const held = pendingCaret;
+      pendingCaret = undefined;
+      return held;
+    },
+    range,
+    report,
+    placeCaret,
+    placeSelection,
+    caretFromPoint,
+    clearLastPoint: () => (lastPoint = undefined),
+    setShrink: (value) => (shrink = value)
   });
 </script>
 

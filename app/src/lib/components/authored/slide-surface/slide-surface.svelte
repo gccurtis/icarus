@@ -13,7 +13,8 @@
     SurfacePoint,
     SurfacePrompt,
     SurfaceScene,
-    SurfaceTextEdit
+    SurfaceTextEdit,
+    SurfaceTextSelection
   } from "$authored-components/slide-surface/slide-surface-types";
 
   type Handle = "nw" | "n" | "ne" | "e" | "se" | "s" | "sw" | "w";
@@ -35,6 +36,7 @@
     selected = [],
     cells = [],
     editing,
+    textSelection,
     badges = [],
     prompts = [],
     interactive = true,
@@ -61,6 +63,7 @@
     selected?: readonly string[];
     cells?: readonly string[];
     editing?: string;
+    textSelection?: SurfaceTextSelection;
     badges?: readonly SurfaceBadge[];
     prompts?: readonly SurfacePrompt[];
     interactive?: boolean;
@@ -494,7 +497,7 @@
     oncontextmenu={context}
   >
     {#each shown as { item, frame, rotation, drawn } (item.id)}
-      <SlideSurfaceItem item={drawn} {frame} {rotation} {units} {scale} {editing} cells={liveCells} {busy} {onedit} {oncaret} {onexit} ongrow={grow} />
+      <SlideSurfaceItem item={drawn} {frame} {rotation} {units} {scale} {editing} {textSelection} cells={liveCells} {busy} {onedit} {oncaret} {onexit} ongrow={grow} />
     {/each}
 
     <div class="overlay" aria-hidden="true">

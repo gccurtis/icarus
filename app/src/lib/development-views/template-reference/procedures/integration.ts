@@ -19,16 +19,16 @@ export const CHAIN: ChainLink[] = [
   },
   {
     index: "02",
-    step: "Something is templateified, and nothing about the resource changes",
-    gesture: "Templateify, in the Template section of a prompt or of a text selection",
+    step: "Something in a template stage is made into a slot",
+    gesture: "Make slot, in the Template section of a prompt or text selection",
     runs: "promptSlotOps writes a record on the block; markSlotOps writes a mark over the run",
     state: "works",
-    evidence: "template-features.spec.ts — Templateify marks a run without changing the document"
+    evidence: "template-features.spec.ts — a template-stage text slot appears immediately"
   },
   {
     index: "03",
     step: "The slot is named and, if it helps, described",
-    gesture: "Two fields. Blank the name and the offered one comes back",
+    gesture: "The Slots panel holds metadata; the editor assigns the next sequential name",
     runs: "Slot 1, Slot 2 by what the body already holds",
     state: "works",
     evidence: "prompt-slots.test.ts — a slot is made, never found"
@@ -39,7 +39,7 @@ export const CHAIN: ChainLink[] = [
     gesture: "None — it is what saving means",
     runs: "promptSlotsOf · withPrompts · portableBodyOf · withPromptSlots · withMarkedSlots · textSlotsOf",
     state: "works",
-    evidence: "answers.test.ts — gives no slot to a prompt nobody templateified"
+    evidence: "answers.test.ts — gives no slot to a prompt that was not made into one"
   },
   {
     index: "05",
@@ -80,13 +80,13 @@ export const CHAIN_DIAGRAM = `flowchart LR
     direction TB
     A["A prompt block<br/>with a scope it reads"]
     T["A run of selected text"]
-    M{{"Templateify"}}
+    M{{"Make slot"}}
     A --> M
     T --> M
   end
   subgraph making["04 · Making a template"]
     direction TB
-    D["promptSlotsOf · textSlotsOf<br/>only what was templateified"]
+    D["promptSlotsOf · textSlotsOf<br/>only declared slots"]
     E["withPrompts<br/>copies the prompt onto the block"]
     F["withPromptSlots<br/>those scopes become slot terms"]
     D --> E --> F
@@ -100,7 +100,7 @@ export const CHAIN_DIAGRAM = `flowchart LR
     G --> H --> I --> N
   end
   M --> D
-  A -. "not templateified" .-> K["Stays what it is,<br/>and is never asked about"]
+  A -. "not made a slot" .-> K["Stays what it is,<br/>and is never asked about"]
   F --> G
   N --> J["A copy whose prompts read<br/>what the placer chose,<br/>and that the project can find"]
   classDef quiet stroke-dasharray: 6 4
@@ -114,7 +114,7 @@ export const RESOLUTION_DIAGRAM = `sequenceDiagram
   participant R as resolveTemplateScopes
   participant D as The new copy
   P->>M: Insert "Incident one-pager"
-  M-->>P: A tab per slot — only what somebody templateified
+  M-->>P: A tab per slot — only what the template declares
   M-->>P: winter_sources — its description, its prompt, its default
   P->>M: winter_sources → Findings, minus one document
   M->>S: answers { winter_sources }
@@ -160,28 +160,28 @@ export const SETTLED: Decision[] = [
   {
     round: "This round",
     question: "Is a slot found or made?",
-    answer: "Made. Templateify, on the thing itself.",
+    answer: "Made. Use Make slot on the thing inside its template stage.",
     became:
-      "A prompt keeps its scope and produces no slot until somebody presses the button. Placing a template asks only about what somebody meant to be asked about."
+      "Ordinary resources have no slot control. A prompt in a template stage produces no slot until somebody presses Make slot."
   },
   {
     round: "This round",
     question: "What can become one?",
     answer: "A prompt block, and a run of selected text — in a document and on a slide alike, by the same gesture.",
     became:
-      "The Template section appears in both editors' prompt inspectors and in both editors' text-selection inspectors, in the ordinary editor as much as in a working copy."
+      "The Template section appears in both editors' prompt and text-selection inspectors only for a template stage."
   },
   {
     round: "This round",
-    question: "What does templateifying do to the resource?",
-    answer: "Nothing. It marks where a slot goes; it does not put one there.",
+    question: "What does making a text slot do to the stage?",
+    answer: "It marks where a slot goes without changing the words.",
     became:
       "A text slot is an ordinary mark, addressed like a comment or a link. The words, the formatting and the display are exactly what they were, and withMarkedSlots turns each marked run into its atom only on the copy the template is built from."
   },
   {
     round: "This round",
     question: "What is it called?",
-    answer: "Slot 1, Slot 2 — offered, typed over when it matters.",
+    answer: "Slot 1, Slot 2 — assigned in sequence.",
     became: "nextSlotName counts across every slot the body already holds, whichever kind it is."
   },
   {
@@ -203,7 +203,7 @@ export const SETTLED: Decision[] = [
     question: "May two prompts share one slot?",
     answer: "Yes, by carrying the same name. Nothing enforces it either way.",
     became:
-      "A name is the whole of a slot's identity, and resolveTemplateScopes memoises by name. In practice each templateified thing gets its own."
+      "A name is the whole of a slot's identity, and resolveTemplateScopes memoises by name. The editor assigns a fresh sequential name to each new slot."
   }
 ];
 

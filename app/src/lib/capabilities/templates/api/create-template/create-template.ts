@@ -6,6 +6,10 @@ import { validateCreateTemplate } from "$capabilities/templates/api/create-templ
 import { emptyTemplateBody } from "$capabilities/templates/api/shared/empty-body";
 import type { RowFields } from "$capabilities/templates/api/shared/store";
 import { writeTemplateVersion } from "$capabilities/templates/api/shared/template-rows";
+import {
+  templateNameConflictDetail,
+  templateNameTaken
+} from "$capabilities/templates/api/shared/template-names";
 import type { CreateTemplateResult } from "$capabilities/templates/types/templates";
 
 export const createTemplate = async (input: unknown): Promise<CreateTemplateResult> => {
@@ -28,10 +32,21 @@ export const createTemplate = async (input: unknown): Promise<CreateTemplateResu
     updatedAt: at
   };
   const templateId = store.transaction((unit) => {
+    if (templateNameTaken(unit, scope.projectId, asked.name)) return undefined;
     const id = unit.create("templates", fields);
     writeTemplateVersion(unit, id, fields, at);
     return id;
   });
+
+  if (templateId === undefined) {
+    return {
+      accepted: false,
+      templateId: null,
+      target: asked.target,
+      reason: "name-in-use",
+      detail: templateNameConflictDetail(asked.name)
+    };
+  }
 
   return { accepted: true, templateId, target: asked.target, revision: 1 };
 };

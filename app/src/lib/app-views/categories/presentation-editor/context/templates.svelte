@@ -21,6 +21,7 @@
     answerRowsOf,
     builderView,
     missingIn,
+    liveSlotsOf,
     presentationTemplatesIn,
     detailIn,
     offeringOf,
@@ -63,6 +64,9 @@
   const template = $derived(detailIn(detailQuery?.ready ? detailQuery.current : undefined));
   const templates = $derived(presentationTemplatesIn(library.ready ? library.current : undefined));
   const currentRevision = $derived(template?.revision ?? stage?.currentRevision ?? null);
+  const slots = $derived(
+    body === undefined || template === undefined ? [] : liveSlotsOf(body, template.slots)
+  );
 
   const state = new TemplatesContextState({
     view,
@@ -125,46 +129,52 @@
       <PanelNote>Reading this presentation…</PanelNote>
     {:else if stage !== undefined}
       <div class="after-verbs">
-        <PanelSection title="Slots" count={template?.slots.length} chevron="end">
+        <PanelSection title="Slots" count={slots.length} chevron="end">
           {#if template === undefined}
             <PanelNote>Reading the template…</PanelNote>
-          {:else if template.slots.length === 0}
-            <PanelNote>
-              Nothing here is a slot yet. Open a prompt and press Templateify in its Template section.
-            </PanelNote>
+          {:else if slots.length === 0}
+            <PanelEmpty title="No slots" />
           {:else}
-            {#each template.slots as slot (slot.name)}
+            {#each slots as slot (slot.name)}
+              {@const persisted = template.slots.some((held) => held.name === slot.name)}
               <article class="slot">
-                <header>
+                <button
+                  type="button"
+                  class="slot-target"
+                  title={`Go to ${slot.label}`}
+                  onclick={() => state.showSlot(slot.name)}
+                >
                   <PanelChip tone="accent-1">{slot.name}</PanelChip>
                   <span class="slot-label">{slot.label}</span>
-                </header>
-                <PanelEditableText
-                  value={slot.description ?? ""}
-                  label={`Description for ${slot.label}`}
-                  placeholder="What this slot stands for"
-                  multiline
-                  disabled={busy}
-                  onchange={(next) => state.changeSlots(withSlotField(template.slots, slot.name, { description: next }))}
-                />
-                {#if slot.kind === "text"}
+                </button>
+                {#if persisted}
                   <PanelEditableText
-                    value={slot.text ?? ""}
-                    label={`Default words for ${slot.label}`}
-                    placeholder="What it says when nobody says otherwise"
+                    value={slot.description ?? ""}
+                    label={`Description for ${slot.label}`}
+                    placeholder="What this slot stands for"
                     multiline
                     disabled={busy}
-                    onchange={(next) => state.changeSlots(withSlotField(template.slots, slot.name, { text: next }))}
+                    onchange={(next) => state.changeSlots(withSlotField(template.slots, slot.name, { description: next }))}
                   />
-                {:else}
-                  <div class="scope">
-                    <PanelButton
-                      label="Default scope"
+                  {#if slot.kind === "text"}
+                    <PanelEditableText
+                      value={slot.text ?? ""}
+                      label={`Default words for ${slot.label}`}
+                      placeholder="What it says when nobody says otherwise"
+                      multiline
                       disabled={busy}
-                      title={`${ruleOf(slot.default, setNames)} — change what ${slot.label} selects by default`}
-                      onclick={() => state.openDefault(slot)}
+                      onchange={(next) => state.changeSlots(withSlotField(template.slots, slot.name, { text: next }))}
                     />
-                  </div>
+                  {:else}
+                    <div class="scope">
+                      <PanelButton
+                        label="Default scope"
+                        disabled={busy}
+                        title={`${ruleOf(slot.default, setNames)} — change what ${slot.label} selects by default`}
+                        onclick={() => state.openDefault(slot)}
+                      />
+                    </div>
+                  {/if}
                 {/if}
               </article>
             {/each}
@@ -291,6 +301,8 @@
 
   .save-actions {
     display: flex;
+    flex-direction: column;
+    align-items: stretch;
     gap: calc(var(--token-spacing-unit) * 1);
   }
 
@@ -320,11 +332,22 @@
     margin-top: calc(var(--token-spacing-unit) * 1.5);
   }
 
-  .slot header {
+  .slot-target {
     display: flex;
+    width: 100%;
     flex-wrap: wrap;
     align-items: center;
     gap: calc(var(--token-spacing-unit) * 1.5);
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    text-align: start;
+    cursor: pointer;
+  }
+
+  .slot-target:hover .slot-label {
+    color: var(--token-color-interactive-text);
   }
 
   .slot-label {

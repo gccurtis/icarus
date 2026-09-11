@@ -42,6 +42,10 @@
   import { createPromptBlock } from "$app-views/categories/presentation-editor/procedures/create-prompt-block";
   import { synchronizePromptBlockDraft } from "$app-views/categories/presentation-editor/procedures/effects/prompt-block-draft.svelte";
   import { setPromptDefinition } from "$app-views/categories/presentation-editor/procedures/set-prompt-definition";
+  import {
+    resourceTemplate,
+    stageIn
+  } from "$app-views/categories/presentation-editor/procedures/templating";
   import { workspaceState } from "$model/client/workspace-state";
 
   const PHASE: Record<PromptBlockPhase, string> = {
@@ -55,6 +59,12 @@
 
   const runtime = presentationId === undefined ? undefined : view.presentationRuntime(presentationId);
   const state = new PromptBlockState();
+  const templateQuery = $derived(
+    presentationId === undefined ? undefined : resourceTemplate(presentationId)
+  );
+  const templateStage = $derived(
+    stageIn(templateQuery?.ready ? templateQuery.current : undefined)
+  );
 
   const body = $derived(runtime?.body);
   const elementId = $derived(selectedIds(view.selection)[0] ?? "");
@@ -161,13 +171,15 @@
       {/key}
     {/if}
 
-    {#key linked?.derivedOutputId ?? "unlinked"}
-      <PromptTemplateSection
-        blockId={block.id}
-        derivedOutputId={linked?.derivedOutputId}
-        disabled={state.phase !== undefined}
-      />
-    {/key}
+    {#if templateStage !== undefined}
+      {#key linked?.derivedOutputId ?? "unlinked"}
+        <PromptTemplateSection
+          blockId={block.id}
+          derivedOutputId={linked?.derivedOutputId}
+          disabled={state.phase !== undefined}
+        />
+      {/key}
+    {/if}
 
     <TextStyle blockId={block.id} whole wrapping />
     <ElementGeometry elementId={element.id} />

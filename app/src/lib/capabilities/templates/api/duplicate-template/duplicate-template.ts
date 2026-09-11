@@ -12,11 +12,12 @@ import {
 import { expandedScope } from "$capabilities/templates/api/shared/scopes";
 import type { RowFields } from "$capabilities/templates/api/shared/store";
 import { writeTemplateVersion } from "$capabilities/templates/api/shared/template-rows";
+import {
+  availableTemplateCopyName,
+  templateNameConflictDetail,
+  templateNameTaken
+} from "$capabilities/templates/api/shared/template-names";
 import type { DuplicateTemplateResult } from "$capabilities/templates/types/templates";
-
-const COPY_SUFFIX = " copy";
-const copyName = (name: string): string =>
-  `${name.slice(0, 160 - COPY_SUFFIX.length).trimEnd()}${COPY_SUFFIX}`;
 
 export const duplicateTemplate = async (input: unknown): Promise<DuplicateTemplateResult> => {
   const scope = await requireScope();
@@ -60,10 +61,9 @@ export const duplicateTemplate = async (input: unknown): Promise<DuplicateTempla
 
   const at = Date.now();
   const actor = { kind: "user" as const, userId: asId<"users">(scope.userId) };
-  const fields: RowFields<"templates"> = {
+  const fields: Omit<RowFields<"templates">, "name"> = {
     projectId: asId<"projects">(scope.projectId),
     userId: actor.userId,
-    name: asked.name ?? copyName(source.name),
     ...(source.description === undefined ? {} : { description: source.description }),
     tags: [...source.tags],
     body: structuredClone(source.body),
@@ -72,18 +72,31 @@ export const duplicateTemplate = async (input: unknown): Promise<DuplicateTempla
     revision: 1,
     updatedAt: at
   };
-  const templateId = store.transaction((unit) => {
-    const id = unit.create("templates", fields);
-    const slots = settledSlotDefaults(unit, scope.projectId, actor, id, fields.slots, at);
-    const stored = { ...fields, slots: [...slots] };
+  const created = store.transaction((unit) => {
+    const name = asked.name ?? availableTemplateCopyName(unit, scope.projectId, source.name);
+    if (asked.name !== undefined && templateNameTaken(unit, scope.projectId, name)) return undefined;
+    const named: RowFields<"templates"> = { ...fields, name };
+    const id = unit.create("templates", named);
+    const slots = settledSlotDefaults(unit, scope.projectId, actor, id, named.slots, at);
+    const stored = { ...named, slots: [...slots] };
     unit.update(`templates.${id}`, stored);
     writeTemplateVersion(unit, id, stored, at);
-    return id;
+    return { id, name };
   });
+
+  if (created === undefined) {
+    return {
+      accepted: false,
+      templateId: source._id,
+      reason: "name-in-use",
+      revision: source.revision,
+      detail: templateNameConflictDetail(asked.name ?? source.name)
+    };
+  }
 
   return {
     accepted: true,
-    templateId,
+    templateId: created.id,
     sourceTemplateId: source._id,
     target: source.body.resource,
     revision: 1

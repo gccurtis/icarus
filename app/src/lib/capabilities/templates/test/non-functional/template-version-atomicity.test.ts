@@ -51,6 +51,7 @@ const rowsIn = (store: StoreModel, table: string): readonly Record<string, unkno
 const seed = async (directory: string): Promise<string> => {
   runtime.store = storeAt(directory);
   const created = await createTemplate({ target: "document", name: "Plan" });
+  if (!created.accepted) throw new Error(created.detail);
   return created.templateId;
 };
 

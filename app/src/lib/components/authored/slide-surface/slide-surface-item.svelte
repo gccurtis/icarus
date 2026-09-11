@@ -3,7 +3,8 @@
   import type {
     SurfaceFrame,
     SurfaceItem,
-    SurfaceTextEdit
+    SurfaceTextEdit,
+    SurfaceTextSelection
   } from "$authored-components/slide-surface/slide-surface-types";
 
   let {
@@ -13,6 +14,7 @@
     units,
     scale = 1,
     editing,
+    textSelection,
     cells = [],
     busy = false,
     onedit,
@@ -26,6 +28,7 @@
     units: { readonly width: number; readonly height: number };
     scale?: number;
     editing?: string;
+    textSelection?: SurfaceTextSelection;
     cells?: readonly string[];
     busy?: boolean;
     onedit?: (edit: SurfaceTextEdit) => void;
@@ -128,6 +131,8 @@
   const rule = $derived(item.stroke ?? "var(--token-border-strong)");
 
   const textFor = (blockId: string) => editing === blockId;
+  const selectionFor = (blockId: string) =>
+    textSelection?.blockId === blockId ? textSelection : undefined;
 
   let prose = $state<HTMLDivElement | null>(null);
 
@@ -249,7 +254,7 @@
                 <span class="rim" style="border: {cell.border.width}px {cell.border.style} {cell.border.color};"></span>
               {/if}
               {#if cell.text}
-                <SlideSurfaceText text={cell.text} editing={textFor(cell.text.blockId)} {onedit} oncaret={(from, to) => oncaret?.(cell.text!.blockId, from, to)} {onexit} />
+                <SlideSurfaceText text={cell.text} editing={textFor(cell.text.blockId)} selection={selectionFor(cell.text.blockId)} {onedit} oncaret={(from, to) => oncaret?.(cell.text!.blockId, from, to)} {onexit} />
               {/if}
             </div>
           {/each}
@@ -270,6 +275,7 @@
         <SlideSurfaceText
           text={item.text}
           editing={textFor(item.text.blockId)}
+          selection={selectionFor(item.text.blockId)}
           fit={item.overflow === "shrink"}
           {onedit}
           oncaret={(from, to) => oncaret?.(item.text!.blockId, from, to)}

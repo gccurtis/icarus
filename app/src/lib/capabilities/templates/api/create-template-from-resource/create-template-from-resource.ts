@@ -13,6 +13,10 @@ import {
 } from "$capabilities/templates/api/shared/stages";
 import { recordsIn, type RowFields } from "$capabilities/templates/api/shared/store";
 import { writeTemplateVersion } from "$capabilities/templates/api/shared/template-rows";
+import {
+  templateNameConflictDetail,
+  templateNameTaken
+} from "$capabilities/templates/api/shared/template-names";
 import { bodyOf } from "$capabilities/templates/api/shared/body-validation/body-validation";
 import { declaredFor } from "$capabilities/templates/api/shared/slots";
 import { expandedScope } from "$capabilities/templates/api/shared/scopes";
@@ -109,6 +113,7 @@ export const createTemplateFromResource = async (
     updatedAt: at
   };
   const templateId = store.transaction((unit) => {
+    if (templateNameTaken(unit, scope.projectId, asked.name)) return undefined;
     const id = unit.create("templates", fields);
     const settled = settledSlotDefaults(unit, scope.projectId, actor, id, fields.slots, at);
     if (settled !== fields.slots) {
@@ -118,6 +123,15 @@ export const createTemplateFromResource = async (
     writeTemplateVersion(unit, id, fields, at);
     return id;
   });
+
+  if (templateId === undefined) {
+    return {
+      accepted: false,
+      resourceId: asked.resourceId,
+      reason: "name-in-use",
+      detail: templateNameConflictDetail(asked.name)
+    };
+  }
 
   return { accepted: true, templateId, target: asked.target, revision: 1, dropped: portable.dropped };
 };

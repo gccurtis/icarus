@@ -117,6 +117,9 @@ export const syncsDocumentSession = (context: DocumentSyncContext): void => {
       block: "center",
       behavior: "smooth"
     });
+    if (context.view.selection?.kind === "text-selection") {
+      context.session.editor?.focus();
+    }
     context.runtime.scrollTo = undefined;
   });
 };

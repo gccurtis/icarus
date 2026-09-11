@@ -4,11 +4,18 @@ import {
   slotMarkOver,
   slotNameOver
 } from "$representation/data/behavior/templates/prompt-slots";
+import { slotOccurrenceIn } from "$representation/data/behavior/templates/slot-inventory";
 import type { ResourceSet } from "$representation/data/types/core/resource-set";
 import type { PresentationBody } from "$representation/data/types/presentations/body";
 import type { PresentationOp } from "$representation/data/types/presentations/op";
 import type { TemplateSlot } from "$representation/data/types/templates/template";
 import { mint } from "$app-views/categories/presentation-editor/procedures/ids";
+import { placedOn } from "$app-views/categories/presentation-editor/procedures/presentation-placement";
+import {
+  elementsSignal,
+  textSignal,
+  type Signal
+} from "$app-views/categories/presentation-editor/procedures/selecting";
 
 export type ChosenSlot = Omit<TemplateSlot, "default"> & { default?: ScopeDraft };
 
@@ -43,7 +50,7 @@ export const mergedSlots = (
 
 const blockAt = (body: PresentationBody, blockId: string) => {
   for (const slide of body.slides) {
-    for (const element of slide.elements) {
+    for (const { element } of placedOn(slide)) {
       const content = element.content;
       if (content.type !== "text" && content.type !== "prompt") continue;
       if (content.block.id === blockId) return content.block;
@@ -99,4 +106,30 @@ export const markSlotOps = (
     after: block.marks.at(-1)?.id ?? null,
     values: [mark]
   }];
+};
+
+export type PresentationSlotSignal = {
+  readonly slideId: string;
+  readonly signal: Signal;
+};
+
+/** Where a template-stage slot lives in this presentation and how to inspect it. */
+export const slotSignal = (
+  body: PresentationBody,
+  name: string
+): PresentationSlotSignal | undefined => {
+  const occurrence = slotOccurrenceIn(body, name);
+  if (occurrence === undefined) return undefined;
+  for (const slide of body.slides) {
+    for (const { element } of placedOn(slide)) {
+      const content = element.content;
+      if (content.type !== "text" && content.type !== "prompt") continue;
+      if (content.block.id !== occurrence.blockId) continue;
+      const signal = occurrence.kind === "prompt"
+        ? elementsSignal([element])
+        : textSignal(occurrence.blockId, occurrence.from, occurrence.to);
+      return signal === undefined ? undefined : { slideId: slide.id, signal };
+    }
+  }
+  return undefined;
 };

@@ -39,10 +39,10 @@
         <h1>End to end with prompts</h1>
         <p class="tref-lede">
           A template is a function and a slot is where it takes an argument. One gesture makes one —
-          Templateify, on a prompt or on a run of selected text — and everything after it follows:
+          Make slot, on a prompt or on selected text in a template stage — and everything after it follows:
           the template keeps exactly those slots, placing it asks about exactly those, and the copy
-          reads what was chosen. All {working} links carry, and a template you never templateify
-          anything in is simply a copy, which is also correct.
+          reads what was chosen. All {working} links carry, and a template in which you never make
+          a slot is simply a copy, which is also correct.
         </p>
       </div>
       <div class="tref-facts">
@@ -137,7 +137,7 @@
 
       <div class="tref-scroll">
         <table class="tref-table">
-          <thead><tr><th>What was templateified</th><th>The slot defaults to</th><th>Because</th></tr></thead>
+          <thead><tr><th>What became a slot</th><th>The slot defaults to</th><th>Because</th></tr></thead>
           <tbody>
             {#each DEFAULT_RULE as row (row.scope)}
               <tr>

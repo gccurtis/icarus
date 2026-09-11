@@ -1,16 +1,20 @@
 import type { ScopeDraft } from "$representation/data/behavior/core/scope-draft";
-import { linearOf } from "$representation/data/behavior/content/positions";
+import { endAt, linearOf } from "$representation/data/behavior/content/positions";
 import {
   defaultScopeOf,
   slotMarkOver,
   slotNameOver
 } from "$representation/data/behavior/templates/prompt-slots";
+import { slotOccurrenceIn } from "$representation/data/behavior/templates/slot-inventory";
 import type { ResourceSet } from "$representation/data/types/core/resource-set";
 import type { DocumentBody } from "$representation/data/types/documents/body";
 import type { DocumentOp } from "$representation/data/types/documents/op";
 import type { TemplateSlot } from "$representation/data/types/templates/template";
 import { mint } from "$app-views/categories/document-editor/procedures/ids";
-import { addressOf } from "$app-views/categories/document-editor/procedures/inspecting";
+import {
+  addressOf,
+  type Signal
+} from "$app-views/categories/document-editor/procedures/inspecting";
 import type { Selection } from "$model/client/workspace-state";
 
 /** A chosen rule may exclude things or name resources before the server stores it. */
@@ -117,4 +121,42 @@ export const markSlotOps = (
     after: block.marks.at(-1)?.id ?? null,
     values: [mark]
   }];
+};
+
+export type DocumentSlotSignal = {
+  readonly blockId: string;
+  readonly signal: Signal;
+};
+
+/** Where a template-stage slot lives in this document and how to inspect it. */
+export const slotSignal = (
+  body: DocumentBody,
+  name: string
+): DocumentSlotSignal | undefined => {
+  const occurrence = slotOccurrenceIn(body, name);
+  if (occurrence === undefined) return undefined;
+  if (occurrence.kind === "prompt") {
+    return {
+      blockId: occurrence.blockId,
+      signal: {
+        key: "document-editor.prompt-block",
+        selection: { kind: "prompt", id: occurrence.blockId }
+      }
+    };
+  }
+  const block = blockWithAtoms(body, occurrence.blockId);
+  if (block === undefined) return undefined;
+  const from = endAt(block.atoms, occurrence.from, "from");
+  const to = endAt(block.atoms, occurrence.to, "to");
+  return {
+    blockId: block.id,
+    signal: {
+      key: "document-editor.text-selection",
+      selection: {
+        kind: "text-selection",
+        id: `${block.id}/atoms/${from.atom}@${from.offset}`,
+        at: `${block.id}/atoms/${to.atom}@${to.offset}`
+      }
+    }
+  };
 };

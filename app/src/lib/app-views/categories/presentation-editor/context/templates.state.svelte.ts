@@ -9,6 +9,7 @@ import {
   mergedSlots,
   openStage,
   saveAsTemplate,
+  slotSignal,
   templateDetail,
   termFor,
   updateSlots,
@@ -104,6 +105,20 @@ export class TemplatesContextState {
     if (presentationId === undefined) return;
     this.context.view.open({ category: "presentation-editor", resourceId: presentationId, focus: slideId });
     this.context.view.inspect("presentation-editor.slide", slideSignal(slideId).selection);
+  }
+
+  showSlot(name: string): void {
+    const body = this.context.body();
+    const presentationId = this.context.presentationId();
+    if (body === undefined || presentationId === undefined) return;
+    const target = slotSignal(body, name);
+    if (target === undefined) return;
+    this.context.view.open({
+      category: "presentation-editor",
+      resourceId: presentationId,
+      focus: target.slideId
+    });
+    this.context.view.inspect(target.signal.key, target.signal.selection);
   }
 
   save(): void {

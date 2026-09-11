@@ -12,6 +12,10 @@ import {
   withPromptSlots,
   withPrompts
 } from "$representation/data/behavior/templates/prompt-slots";
+import {
+  liveSlotsOf,
+  slotOccurrenceIn
+} from "$representation/data/behavior/templates/slot-inventory";
 import type { TemplateBody, TemplateSlot } from "$representation/data/types/templates/template";
 
 const prompt = (id: string, extra: Record<string, unknown> = {}) => ({
@@ -62,6 +66,21 @@ describe("a slot is made, never found", () => {
     ]);
     expect([...slotNamesIn(held)].sort()).toEqual(["Slot 1", "Slot 2"]);
     expect(nextSlotName(held)).toBe("Slot 3");
+  });
+
+  it("counts slots already represented by a staged prompt scope", () => {
+    const held = body([
+      prompt("a", {
+        scope: { include: [{ select: "slot", name: "Slot 1" }], exclude: [] }
+      })
+    ]);
+    expect(slotNamesIn(held)).toEqual(["Slot 1"]);
+    expect(nextSlotName(held)).toBe("Slot 2");
+    expect(slotOccurrenceIn(held, "Slot 1")).toEqual({
+      kind: "prompt",
+      name: "Slot 1",
+      blockId: "a"
+    });
   });
 });
 
@@ -129,6 +148,50 @@ describe("text slots", () => {
     expect(textSlotsOf(held)).toEqual([
       { name: "Slot 1", label: "Slot 1", kind: "text", description: "Who it is for", text: "Ana" }
     ]);
+  });
+
+  it("combines saved metadata with live atoms and unsaved marks", () => {
+    const held = body([
+      {
+        id: "t1",
+        type: "text",
+        variant: "paragraph",
+        atoms: [
+          { id: "a1", kind: "template", name: "Slot 1", text: "Ana" },
+          { id: "a2", kind: "literal", text: " reviews Northwind" }
+        ],
+        display: "{Slot 1} reviews Northwind",
+        marks: [{
+          id: "m1",
+          from: { atom: "a2", offset: 9 },
+          to: { atom: "a2", offset: 18 },
+          slot: { name: "Slot 2" }
+        }]
+      }
+    ]);
+    const slots = liveSlotsOf(held, [{
+      name: "Slot 1",
+      label: "Client",
+      kind: "text",
+      description: "Who receives this"
+    }]);
+    expect(slots).toEqual([
+      {
+        name: "Slot 1",
+        label: "Client",
+        kind: "text",
+        description: "Who receives this",
+        text: "Ana"
+      },
+      { name: "Slot 2", label: "Slot 2", kind: "text", text: "Northwind" }
+    ]);
+    expect(slotOccurrenceIn(held, "Slot 2")).toEqual({
+      kind: "text",
+      name: "Slot 2",
+      blockId: "t1",
+      from: 17,
+      to: 26
+    });
   });
 });
 

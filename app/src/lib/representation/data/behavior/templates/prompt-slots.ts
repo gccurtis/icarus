@@ -54,12 +54,34 @@ const named = (held: unknown): string => {
   return typeof held.name === "string" ? held.name.trim() : "";
 };
 
+/** The slot names a prompt asks for, whether freshly marked or already templated. */
+export const promptSlotNamesIn = (prompt: unknown): readonly string[] => {
+  if (!isPrompt(prompt)) return [];
+  const names = new Set<string>();
+  const marked = named(prompt.slot);
+  if (marked !== "") names.add(marked);
+  if (!isRecord(prompt.scope)) return [...names];
+  for (const side of ["include", "exclude"]) {
+    const terms = prompt.scope[side];
+    if (!Array.isArray(terms)) continue;
+    for (const term of terms) {
+      if (!isRecord(term) || term.select !== "slot") continue;
+      const held = named(term);
+      if (held !== "") names.add(held);
+    }
+  }
+  return [...names];
+};
+
+/** The one authored slot a prompt inspector can name. */
+export const promptSlotNameIn = (prompt: unknown): string | undefined =>
+  promptSlotNamesIn(prompt)[0];
+
 /** Every slot this body already carries, whichever kind it is. */
 export const slotNamesIn = (body: unknown): readonly string[] => {
   const names = new Set<string>();
   for (const prompt of promptsIn(body)) {
-    const held = named(prompt.slot);
-    if (held !== "") names.add(held);
+    for (const held of promptSlotNamesIn(prompt)) names.add(held);
   }
   for (const atom of atomsIn(body)) names.add(atom.name as string);
   for (const mark of slotMarksIn(body)) names.add((mark.slot as Fields).name as string);
@@ -267,17 +289,24 @@ export const slotNameOver = (
 ): string | undefined => {
   const start = Math.min(from, to);
   const end = Math.max(from, to);
-  for (const run of markedRunsIn(atoms, marks)) {
+  for (const segment of segmentsOf(atoms)) {
+    if (segment.atom.kind !== "template") continue;
+    if (segment.start < end && segment.end > start) return segment.atom.name;
+  }
+  for (const run of markedSlotRunsIn(atoms, marks)) {
     if (run.start < end && run.end > start) return run.slot.name as string;
   }
   return undefined;
 };
 
-type Marked = { readonly start: number; readonly end: number; readonly slot: Fields };
+export type MarkedSlotRun = { readonly start: number; readonly end: number; readonly slot: Fields };
 
 /** Where each slot mark sits on the block's display, sorted and non-overlapping. */
-const markedRunsIn = (atoms: readonly Atom[], marks: readonly Mark[]): readonly Marked[] => {
-  const runs: Marked[] = [];
+export const markedSlotRunsIn = (
+  atoms: readonly Atom[],
+  marks: readonly Mark[]
+): readonly MarkedSlotRun[] => {
+  const runs: MarkedSlotRun[] = [];
   for (const mark of marks) {
     if (!isRecord(mark.slot) || typeof mark.slot.name !== "string") continue;
     const from = linearOf(atoms, mark.from);
@@ -316,7 +345,7 @@ export const withSlotsAt = (
   marks: readonly Mark[],
   mint: () => string
 ): { readonly atoms: readonly Atom[]; readonly marks: readonly Mark[] } => {
-  const runs = markedRunsIn(atoms, marks);
+  const runs = markedSlotRunsIn(atoms, marks);
   if (runs.length === 0) {
     return { atoms, marks: marks.filter((mark) => mark.slot === undefined) };
   }

@@ -25,8 +25,11 @@
   import {
     markSlotOps,
     markedSlotAt,
+    liveSlotsOf,
     nextSlotName,
-    selectedWords
+    resourceTemplate,
+    selectedWords,
+    stageIn
   } from "$app-views/categories/document-editor/procedures/templating";
   import {
     commentsQuery,
@@ -81,6 +84,12 @@
   const documentId = view.active.resourceId;
 
   const state = createTextSelectionState();
+  const templateQuery = $derived(
+    documentId === undefined ? undefined : resourceTemplate(documentId)
+  );
+  const templateStage = $derived(
+    stageIn(templateQuery?.ready ? templateQuery.current : undefined)
+  );
 
   $effect(() => {
     state.runtime = documentId === undefined ? undefined : view.documentRuntime(documentId);
@@ -260,6 +269,11 @@
     slotBody === undefined ? "" : selectedWords(slotBody, view.selection)
   );
   const slotHere = $derived(slotBody === undefined ? undefined : markedSlotAt(slotBody, view.selection));
+  const slotExcerpt = $derived(
+    slotBody === undefined || slotHere === undefined
+      ? slotWords
+      : (liveSlotsOf(slotBody, []).find((slot) => slot.name === slotHere)?.text ?? slotWords)
+  );
 
   const templateify = () => {
     if (state.runtime === undefined || slotBody === undefined) return;
@@ -358,25 +372,19 @@
       onchange={setSpacing}
     />
 
-    {#if slotWords !== ""}
-      <PanelSection title="Template" chevron="end">
+    {#if templateStage !== undefined && selectionCount === 1 && slotWords !== ""}
+      <PanelSection title="Template" open={slotHere !== undefined} chevron="end">
         <div class="flex flex-col items-start gap-2">
           {#if slotHere === undefined}
-            <PanelNote tone="muted">
-              Mark this as a slot and a template built from this document will ask what fills it,
-              starting from what it says now. The document itself does not change.
-            </PanelNote>
             <PanelButton
-              label="Templateify"
+              label="Make slot"
               tone="primary"
               title={`Mark the selection as a slot called ${slotOffer}`}
               onclick={templateify}
             />
           {:else}
-            <PanelNote tone="muted">
-              These words are the slot <b>{slotHere}</b>. They stay exactly as they are here; the
-              template made from this document asks what goes in their place.
-            </PanelNote>
+            <span class="text-caption text-ink-muted font-semibold tracking-wide uppercase">{slotHere}</span>
+            <PanelQuote>{slotExcerpt}</PanelQuote>
           {/if}
         </div>
       </PanelSection>

@@ -34,6 +34,12 @@ export type SurfaceText = {
   readonly padding: number;
 };
 
+export type SurfaceTextSelection = {
+  readonly blockId: string;
+  readonly from: number;
+  readonly to: number;
+};
+
 export type SurfaceCell = {
   readonly id: string;
   readonly text?: SurfaceText;

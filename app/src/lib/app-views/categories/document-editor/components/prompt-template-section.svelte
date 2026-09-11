@@ -8,6 +8,7 @@
   import {
     defaultScopeOf,
     nextSlotName,
+    promptSlotNameIn,
     projectResources,
     resourceSets,
     resourcesIn,
@@ -64,7 +65,7 @@
   );
 
   const offered = $derived(body === undefined ? "Slot 1" : nextSlotName(body));
-  const named = $derived(block?.slot);
+  const named = $derived(promptSlotNameIn(block));
   const reads = $derived(
     ruleOf(defaultScopeOf(derivedOutputId === undefined ? block?.scope : linked?.scope), setNames)
   );
@@ -79,24 +80,12 @@
     write(promptSlotOps(block, { name: offered }));
   };
 
-  const rename = (name: string) => {
-    if (block === undefined) return;
-    write(promptSlotOps(block, { name, description: named?.description }));
-  };
-
-  const describe = (description: string) => {
-    if (block === undefined) return;
-    write(promptSlotOps(block, { name: named?.name ?? offered, description }));
-  };
 </script>
 
 <PromptTemplate
-  name={named?.name}
-  description={named?.description ?? ""}
+  name={named}
   {offered}
   standing={reads}
   {disabled}
   onmake={make}
-  onname={rename}
-  ondescription={describe}
 />

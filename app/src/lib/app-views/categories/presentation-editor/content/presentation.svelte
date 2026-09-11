@@ -42,7 +42,7 @@
     resourceIndex
   } from "$app-views/categories/presentation-editor/procedures/resource-index";
   import { sceneOf } from "$app-views/categories/presentation-editor/procedures/scene";
-  import { notesSignal, selectedCells, selectedIds } from "$app-views/categories/presentation-editor/procedures/selecting";
+  import { notesSignal, rangeOf, selectedCells, selectedIds } from "$app-views/categories/presentation-editor/procedures/selecting";
   import { drawn, fitted, percent, slideUnits } from "$app-views/categories/presentation-editor/procedures/stage";
   import { resourceTemplate } from "$app-views/categories/presentation-editor/procedures/template-resources";
   import { workspaceState, type SyncState } from "$model/client/workspace-state";
@@ -114,6 +114,7 @@
     return chosen;
   });
   const cells = $derived(selectedCells(view.selection));
+  const textSelection = $derived(rangeOf(view.selection));
 
   const comments = commentsQuery();
   const threads = $derived.by(() => {
@@ -198,6 +199,7 @@
                 {selected}
                 {cells}
                 editing={held.editing}
+                {textSelection}
                 {badges}
                 prompts={promptMarkers}
                 board={held.board}

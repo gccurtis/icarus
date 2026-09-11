@@ -32,6 +32,68 @@ describe("template mutations — create, update, and duplicate", () => {
     assert.deepEqual(model.tables.templateVersions.map((version) => version.revision), [1, 1, 1]);
   });
 
+  test("keeps one case-insensitive template-name namespace across targets in a project", async () => {
+    model.tables.templates.push(
+      template("1", "users:u", documentBody, { name: "Weekly Review" }),
+      template("2", "users:u", slidesBody, { name: "Board", revision: 2 }),
+      template("3", "users:x", documentBody, {
+        projectId: "projects:other",
+        name: "Other project only"
+      })
+    );
+
+    assert.deepEqual(
+      await createTemplate({ target: "presentation", name: "weekly review" }),
+      {
+        accepted: false,
+        templateId: null,
+        target: "presentation",
+        reason: "name-in-use",
+        detail: "a template named “weekly review” already exists in this project"
+      }
+    );
+    assert.deepEqual(
+      await updateTemplate({
+        templateId: "templates:2",
+        baseRevision: 2,
+        patch: { name: "WEEKLY REVIEW" }
+      }),
+      {
+        accepted: false,
+        templateId: "templates:2",
+        reason: "name-in-use",
+        revision: 2,
+        detail: "a template named “WEEKLY REVIEW” already exists in this project"
+      }
+    );
+    assert.deepEqual(
+      await duplicateTemplate({ templateId: "templates:2", name: "Weekly Review" }),
+      {
+        accepted: false,
+        templateId: "templates:2",
+        reason: "name-in-use",
+        revision: 2,
+        detail: "a template named “Weekly Review” already exists in this project"
+      }
+    );
+    const allowed = await createTemplate({ target: "spreadsheet", name: "Other project only" });
+    assert.equal(allowed.accepted, true);
+    assert.equal(model.tables.templateVersions.length, 1);
+  });
+
+  test("numbers generated duplicate names instead of creating collisions", async () => {
+    model.tables.templates.push(
+      template("1", "users:u", slidesBody, { name: "Board" }),
+      template("2", "users:u", slidesBody, { name: "Board copy" })
+    );
+
+    const answer = await duplicateTemplate({ templateId: "templates:1" });
+    assert.equal(answer.accepted, true);
+    if (!answer.accepted) return;
+    const copy = model.tables.templates.find((candidate) => candidate._id === answer.templateId);
+    assert.equal(copy?.name, "Board copy 2");
+  });
+
   test("updates only this project's current revision and snapshots the accepted result", async () => {
     model.tables.templates.push(
       template("1", "users:u"),

@@ -14,6 +14,7 @@ import {
   mergedSlots,
   resourcesIn,
   ruleOf,
+  slotSignal,
   withSlotField
 } from "$app-views/categories/document-editor/procedures/templating";
 
@@ -112,6 +113,19 @@ test("inserting into a stage keeps slot terms", () => {
   const first = after.rows[1];
   if (first.kind !== "blocks" || first.blocks[0].type !== "prompt") throw new Error("prompt expected");
   assert.deepEqual(first.blocks[0].scope, { include: [{ select: "slot", name: "evidence" }], exclude: [] });
+});
+
+test("a slot in the stage resolves to the inspector signal that owns it", () => {
+  const source = template.body;
+  if (source.resource !== "document") throw new Error("document template expected");
+  const signal = slotSignal(source, "evidence");
+  assert.deepEqual(signal, {
+    blockId: "tp1",
+    signal: {
+      key: "document-editor.prompt-block",
+      selection: { kind: "prompt", id: "tp1" }
+    }
+  });
 });
 
 test("a slot without a default resolves to the whole project on insert", () => {

@@ -7,10 +7,8 @@
   import { Panel, PanelBanner, PanelSkeleton } from "$authored-components/panel";
   import { Button } from "$vendored-components/button";
   import { Input } from "$vendored-components/input";
+  import { OverviewLibraryState } from "$app-views/categories/templates/context/overview-library.state.svelte";
   import {
-    createTemplate,
-    inspectTemplate,
-    nextTemplateName,
     templateLibrary,
     templateLibrarySummaryIn,
     templatesIn,
@@ -20,10 +18,8 @@
 
   const view = workspaceState();
   const library = templateLibrary();
-  let live = true;
-  onDestroy(() => {
-    live = false;
-  });
+  const creation = new OverviewLibraryState(view);
+  onDestroy(() => creation.dispose());
   let now = $state(Date.now());
   onMount(() => {
     const timer = setInterval(() => (now = Date.now()), 60_000);
@@ -31,35 +27,6 @@
   });
   const templates = $derived(templatesIn(library.ready ? library.current : undefined, now));
   const summary = $derived(templateLibrarySummaryIn(templates));
-
-  let creating = $state<TemplateTarget>();
-  let nameDraft = $state("");
-  let actionError = $state<string>();
-
-  const create = async (target: TemplateTarget) => {
-    if (creating !== undefined) return;
-
-    const originTabId = view.activeId;
-    const originSelectionId = view.selection?.id;
-    const name = nameDraft.trim() || nextTemplateName(target, templates);
-    creating = target;
-    actionError = undefined;
-    try {
-      const result = await createTemplate(view, target, name);
-      if (
-        live &&
-        view.activeId === originTabId &&
-        view.selection?.id === originSelectionId
-      ) {
-        nameDraft = "";
-        inspectTemplate(view, result.templateId);
-      }
-    } catch (error) {
-      actionError = error instanceof Error ? error.message : String(error);
-    } finally {
-      creating = undefined;
-    }
-  };
 
   const TARGETS = [
     {
@@ -105,9 +72,9 @@
     <PanelSkeleton shape="fields" count={7} />
   {:else}
     <div class="context-stack">
-      {#if actionError}
+      {#if creation.actionError}
         <PanelBanner title="Template was not created" tone="attention">
-          {actionError}
+          {creation.actionError}
         </PanelBanner>
       {/if}
 
@@ -115,11 +82,11 @@
         <h3 id="new-template-heading" class="section-title">New template</h3>
         <Input
           class="template-name"
-          bind:value={nameDraft}
+          bind:value={creation.nameDraft}
           aria-label="Optional template name"
           placeholder="Optional name"
           maxlength={160}
-          disabled={creating !== undefined}
+          disabled={creation.creating !== undefined}
         />
         <div class="target-actions" role="group" aria-label="Create a template">
           {#each TARGETS as target (target.value)}
@@ -130,16 +97,16 @@
               class="target-action {target.tint}"
               aria-label={`Create ${target.label.toLocaleLowerCase()} template`}
               title={`Create ${target.label.toLocaleLowerCase()} template`}
-              disabled={creating !== undefined}
-              onclick={() => create(target.value)}
+              disabled={creation.creating !== undefined}
+              onclick={() => creation.create(target.value, templates)}
             >
               <Icon aria-hidden="true" />
             </Button>
           {/each}
         </div>
-        {#if creating !== undefined}
+        {#if creation.creating !== undefined}
           <span class="creation-status" aria-live="polite">
-            Creating {creating.toLocaleLowerCase()} template…
+            Creating {creation.creating.toLocaleLowerCase()} template…
           </span>
         {/if}
       </section>

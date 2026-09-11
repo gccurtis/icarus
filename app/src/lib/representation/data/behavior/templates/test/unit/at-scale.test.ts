@@ -121,7 +121,7 @@ describe("a template of real size", () => {
     expect(new Set(slotNamesIn(held)).size).toBe(scopes.length + texts.length);
   });
 
-  it("leaves every untemplateified prompt reading exactly what it read", () => {
+  it("leaves every ordinary prompt reading exactly what it read", () => {
     const held = templated(large());
     const untouched = blocksOf(held).filter(
       (block) => block.type === "prompt" && block.slot === undefined
@@ -142,7 +142,7 @@ describe("a template of real size", () => {
     expect(blocksOf(held)[1].display).toBe("Paragraph 1 names Northwind and closes.");
   });
 
-  it("keeps the formatting on every paragraph nobody templateified", () => {
+  it("keeps the formatting on every paragraph without a slot mark", () => {
     const held = templated(large());
     const styled = blocksOf(held).filter(
       (block) => block.type === "text" && (block.marks as Mark[]).length > 0

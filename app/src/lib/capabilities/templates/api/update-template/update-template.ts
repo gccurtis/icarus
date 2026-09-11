@@ -16,6 +16,10 @@ import { removeRowsBoundTo } from "$capabilities/templates/api/shared/scope-rows
 import { stagesIn } from "$capabilities/templates/api/shared/stages";
 import type { RowFields } from "$capabilities/templates/api/shared/store";
 import { writeTemplateVersion } from "$capabilities/templates/api/shared/template-rows";
+import {
+  templateNameConflictDetail,
+  templateNameTaken
+} from "$capabilities/templates/api/shared/template-names";
 import { validateUpdateTemplate } from "$capabilities/templates/api/update-template/validate-update-template";
 import type { UpdateTemplateResult } from "$capabilities/templates/types/templates";
 
@@ -128,7 +132,9 @@ export const updateTemplate = async (input: unknown): Promise<UpdateTemplateResu
       return asking.description === null ? rest : { ...rest, description: asking.description };
     });
   }
-  const fields = store.transaction((unit): RowFields<"templates"> => {
+  const fields = store.transaction((unit): RowFields<"templates"> | undefined => {
+    const name = asked.patch.name ?? template.name;
+    if (templateNameTaken(unit, scope.projectId, name, template._id)) return undefined;
     let storedSlots = slots;
     if (asked.patch.slots !== undefined) {
       for (const held of template.slots) {
@@ -161,7 +167,7 @@ export const updateTemplate = async (input: unknown): Promise<UpdateTemplateResu
     const next: RowFields<"templates"> = {
       projectId: template.projectId,
       userId: template.userId,
-      name: asked.patch.name ?? template.name,
+      name,
       ...(description === undefined ? {} : { description }),
       tags: [...(asked.patch.tags ?? template.tags)],
       body: template.body,
@@ -178,6 +184,17 @@ export const updateTemplate = async (input: unknown): Promise<UpdateTemplateResu
     }
     return next;
   });
+
+  if (fields === undefined) {
+    const name = asked.patch.name ?? template.name;
+    return {
+      accepted: false,
+      templateId: template._id,
+      reason: "name-in-use",
+      revision: template.revision,
+      detail: templateNameConflictDetail(name)
+    };
+  }
 
   return { accepted: true, templateId: template._id, revision: fields.revision };
 };

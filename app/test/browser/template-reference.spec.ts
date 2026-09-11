@@ -147,15 +147,16 @@ test("the walkthrough drives the real components, and the rules follow", async (
   await page.setViewportSize({ width: 1500, height: 1000 });
   await page.goto("/demo/dev-project/reference/templates/walkthrough", { waitUntil: "networkidle" });
 
-  // Three prompts, one templateified, so one slot and one question when it is placed.
+  // Three prompts, one made into a slot, so one question when it is placed.
   const slots = page.locator("#made tbody tr");
   await expect(slots).toHaveCount(1);
   await expect(slots.nth(0).locator("code")).toHaveText("open_decisions");
   await expect(page.locator(".tab")).toHaveCount(1);
 
-  // Templateifying another prompt adds its slot, everywhere at once.
+  // Making another prompt a slot adds it everywhere at once.
   const first = page.locator(".prompt").first();
-  await first.getByRole("button", { name: "Templateify", exact: true }).click();
+  await first.getByRole("button", { name: "Template", exact: true }).click();
+  await first.getByRole("button", { name: "Make slot", exact: true }).click();
   await expect(slots).toHaveCount(2);
   await expect(page.getByRole("tab", { name: "Slot 1" })).toBeVisible();
 
