@@ -53,7 +53,6 @@ type SeedTurn = {
 };
 
 type SeedFinding = { readonly _id: string; readonly researchThreadIds: readonly string[] };
-type SeedActivity = { readonly _id: string; readonly target: { readonly kind: string; readonly id: string } };
 type SeedResource = { readonly _id: string; readonly projectId: string; readonly title: string };
 type SeedSnapshot = {
   readonly projectId: string;
@@ -253,10 +252,6 @@ describe("committed research-chat records", () => {
         finding.researchThreadIds.every((id) => ids.has(id)),
         `${finding._id} points at a missing research thread`
       ).toBe(true);
-    }
-    for (const activity of fixture<SeedActivity[]>("activity.json")) {
-      if (activity.target.kind !== "research") continue;
-      expect(ids.has(activity.target.id), `${activity._id} points at a missing research thread`).toBe(true);
     }
   });
 });

@@ -1,6 +1,7 @@
 import { requireScope } from "$runtime/server/scope.server";
 import { serverModel } from "$runtime/server/start.server";
 
+import { recordExternalFileActivity } from "$capabilities/activity";
 import { externalFilesLimits } from "$capabilities/external-files/api/shared/configuration";
 import { replaceExternalFileIn } from "$capabilities/external-files/api/shared/mutations";
 import { externalFileRowIn } from "$capabilities/external-files/api/shared/rows";
@@ -39,10 +40,16 @@ export const updateExternalFileContext = async (
       }
       const changed = replaceExternalFileIn(model, unit, scope, row, {
         semanticContext: asked.semanticContext === "" ? undefined : asked.semanticContext
-      }, {
-        event: "context-updated",
-        detail: asked.semanticContext === "" ? "Dataset context cleared" : "Dataset context updated"
       }, Date.now());
+      recordExternalFileActivity(unit, scope, {
+        kind: "external-file.context-changed",
+        file: {
+          id: changed.row._id,
+          name: changed.row.name,
+          relativePath: changed.row.relativePath
+        },
+        change: asked.semanticContext === "" ? "cleared" : "set"
+      });
       return { kind: "changed" as const, ...changed };
     });
 

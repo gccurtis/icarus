@@ -2,6 +2,7 @@ import { requireScope } from "$runtime/server/scope.server";
 import { serverModel } from "$runtime/server/start.server";
 import { asId } from "$representation/data/behavior/core/id";
 
+import { recordExternalFileActivity } from "$capabilities/activity";
 import { externalFilesLimits } from "$capabilities/external-files/api/shared/configuration";
 import { removeExternalFileIn } from "$capabilities/external-files/api/shared/mutations";
 import {
@@ -38,13 +39,13 @@ export const removeExternalFile = async (input: unknown): Promise<RemoveExternal
       const usage = externalFileUsage(unit, scope, row._id);
       if (usage.total > 0) return { kind: "in-use" as const, revision: row.revision, usage };
 
-      removeExternalFileIn(
-        model,
-        unit,
-        scope,
-        row,
-        `${row.size} bytes · deleted at revision ${row.revision + 1}`
-      );
+      recordExternalFileActivity(unit, scope, {
+        kind: "external-file.deleted",
+        file: { id: row._id, name: row.name, relativePath: row.relativePath },
+        size: row.size,
+        revision: row.revision + 1
+      });
+      removeExternalFileIn(model, unit, scope, row);
       return {
         kind: "removed" as const,
         revision: row.revision + 1,

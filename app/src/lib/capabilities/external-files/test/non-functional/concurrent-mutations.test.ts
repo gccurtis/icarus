@@ -43,7 +43,7 @@ describe("concurrent External mutations", () => {
     )).toHaveLength(1);
     expect(rowsIn(runtime.model.store, "externalFiles")[0]).toMatchObject({ revision: 2 });
     expect(rowsIn(runtime.model.store, "activity").filter(
-      (row) => row.verb === "renamed"
+      (row) => (row.event as { kind?: string } | undefined)?.kind === "external-file.renamed"
     )).toHaveLength(1);
     expect(rowsIn(runtime.model.store, "semanticMaterialJobs")).toEqual([
       expect.objectContaining({ requestedRevision: 2, state: "queued" })

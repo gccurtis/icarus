@@ -6,6 +6,7 @@ import type { Message } from "$representation/data/types/agents/message";
 import type { TaskOutput } from "$representation/data/types/agents/agent-task";
 import { sameResourceRef } from "$representation/data/behavior/core/resource";
 import { answerQuestion, personaPrompt } from "$capabilities/research-chat";
+import { recordAgentTaskCompletedActivity } from "$capabilities/activity";
 
 import { agentRunnerConfiguration } from "$capabilities/agents/api/shared/runner-configuration";
 import {
@@ -204,12 +205,12 @@ export const executeAgentTask = async (
       updatedAt: at
     };
     unit.update(`agentTasks.${current._id}`, fields);
-    unit.create("activity", {
-      projectId: current.projectId,
-      actor: { kind: "agent", taskId: asId<"agentTasks">(current._id) },
-      actorLabel: currentPersona.name,
-      verb: answer.status === "answered" ? "answered" : "found insufficient evidence for",
-      target: { kind: "task", id: current._id, label: current.title }
+    recordAgentTaskCompletedActivity(unit, current.projectId, {
+      kind: "agents.task-completed",
+      task: { id: asId<"agentTasks">(current._id), title: current.title },
+      persona: { id: currentPersona._id, name: currentPersona.name },
+      outcome: answer.status === "answered" ? "answered" : "insufficient-evidence",
+      sourceCount: answer.sources.length
     });
     return "complete";
   });

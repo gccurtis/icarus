@@ -31,8 +31,7 @@ export const FOUNDATION_ROW_POLICIES = {
     resolution: "optional", createdBy: "required", updatedAt: "required"
   },
   activity: {
-    projectId: "required", actor: "required", actorLabel: "required", verb: "required",
-    target: "required", context: "optional", detail: "optional"
+    projectId: "required", actor: "required", actorLabel: "required", event: "required"
   }
 } satisfies Pick<
   CurrentRowPolicies,

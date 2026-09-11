@@ -49,7 +49,7 @@ describe("re-upload External file failpoint atomicity", () => {
         })).toBeUndefined();
       },
       verifyAfter: async (model, fixture) => {
-        expectRevisionBundle(model, fixture.ids[0]!, 2, "re-uploaded");
+        expectRevisionBundle(model, fixture.ids[0]!, 2, "external-file.reuploaded");
         const row = rowsIn(model.store, "externalFiles")[0];
         expect(row).toMatchObject({ hash: replacementHash, storageId: `_storage:${replacementHash}` });
         expect(await model.externalFileStorage.read({

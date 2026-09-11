@@ -1,9 +1,9 @@
 import {
-  isStoredAgentActivity,
   isStoredAgentTask,
   isStoredAutomation,
   isStoredPersona
 } from "$representation/data/behavior/agents/stored-rows";
+import { isStoredActivity } from "$representation/data/behavior/collaboration/stored-activity";
 import {
   isStoredThread,
   isStoredThreadPart
@@ -88,7 +88,7 @@ type CurrentRowValueValidator = (value: unknown) => boolean;
 
 /** Every Store table has one representation-owned, recursive current-row predicate. */
 export const CURRENT_ROW_VALUE_VALIDATORS = {
-  activity: isStoredAgentActivity,
+  activity: isStoredActivity,
   agentTasks: isStoredAgentTask,
   automations: isStoredAutomation,
   comments: isStoredComment,

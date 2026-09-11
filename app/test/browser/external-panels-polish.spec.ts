@@ -54,7 +54,7 @@ const checkActionLayout = async (inspector: Locator) => {
   expect(geometry.labelsFit, "action labels remain readable at narrow widths").toBe(true);
 };
 
-test("External Files history searches recent events and distinguishes empty and no-match states", async ({ page }, info) => {
+test("External Files history searches seeded and newly recorded events", async ({ page }, info) => {
   const diagnostics = watchBrowserDiagnostics(page);
   await openExternalFiles(page);
   const context = page.getByRole("complementary", { name: "Context" });
@@ -62,21 +62,21 @@ test("External Files history searches recent events and distinguishes empty and 
   await context.getByRole("button", { name: "History", exact: true }).click();
   const search = context.getByRole("searchbox", { name: "Search history" });
   await expect(search).toBeVisible();
-  await expect(context.getByRole("status")).toHaveText("No External Files changes yet.");
-  await uploadNotes(page);
   const entries = context.locator(".history-list article");
-  await expect(entries).toHaveCount(2);
+  await expect(entries).toHaveCount(6);
+  await uploadNotes(page);
+  await expect(entries).toHaveCount(8);
   await search.fill("  LAUNCH-NOTES  ");
   await expect(entries).toHaveCount(1);
-  await expect(entries.first()).toContainText("Uploaded launch-notes.md");
-  await expect(context.getByText("1 of 2", { exact: true })).toBeVisible();
+  await expect(entries.first()).toContainText(/Uploaded .*: launch-notes\.md/);
+  await expect(context.getByText("1 of 8", { exact: true })).toBeVisible();
   await search.fill("no-such-event");
   await expect(entries).toHaveCount(0);
   await expect(context.getByRole("status")).toHaveText("No recent events match.");
   await page.screenshot({ path: info.outputPath("history-no-match.png") });
   await search.fill("");
-  await expect(entries).toHaveCount(2);
-  await expect(context.getByText("2 of 2", { exact: true })).toBeVisible();
+  await expect(entries).toHaveCount(8);
+  await expect(context.getByText("8 of 8", { exact: true })).toBeVisible();
   const actorLine = await entries.first().locator("div > span").innerText();
   await search.fill(actorLine.split(" · ").slice(1).join(" · "));
   await expect(entries).toHaveCount(2);
@@ -86,7 +86,7 @@ test("External Files history searches recent events and distinguishes empty and 
   await context.getByRole("button", { name: "Overview", exact: true }).click();
   await context.getByRole("button", { name: "History", exact: true }).click();
   await expect(search).toHaveValue("");
-  await expect(entries).toHaveCount(2);
+  await expect(entries).toHaveCount(8);
   await expect(context.getByText(/newest 200 durable/)).toHaveCount(0);
   await page.screenshot({ path: info.outputPath("history-search-restored.png") });
   expect(diagnostics).toEqual([]);

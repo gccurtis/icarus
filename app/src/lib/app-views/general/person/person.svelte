@@ -24,21 +24,6 @@
   const HOUR = 60 * MINUTE;
   const DAY = 24 * HOUR;
 
-  const ACTIVITY_LABELS: Readonly<Record<string, string>> = {
-    asked: "Started a research question",
-    "accepted a finding on": "Accepted a finding",
-    "commented on": "Added a comment",
-    connected: "Connected a data source"
-  };
-
-  // A general view cannot import another view's presentation procedure. Keep
-  // the small consumer-facing vocabulary local to this independently owned lens.
-  const activityLabel = (verb: string): string => {
-    const clean = verb.trim();
-    return ACTIVITY_LABELS[clean.toLocaleLowerCase()] ??
-      (clean.length === 0 ? "Updated" : `${clean[0].toLocaleUpperCase()}${clean.slice(1)}`);
-  };
-
   const view = workspaceState();
   const userId = $derived(
     view.selection?.kind === "person" ? view.selection.id : undefined
@@ -68,7 +53,7 @@
   const recent = $derived(
     (person?.recentActivity ?? []).map((entry) => ({
       id: entry.id,
-      what: `${activityLabel(entry.verb)}: ${entry.target.label}`,
+      what: `${entry.what}: ${entry.target.label}`,
       ...(entry.context === undefined && entry.detail === undefined
         ? {}
         : { detail: entry.detail ?? entry.context?.label }),

@@ -1,6 +1,7 @@
 import { requireScope } from "$runtime/server/scope.server";
 import { serverModel } from "$runtime/server/start.server";
 import { asId } from "$representation/data/behavior/core/id";
+import { recordAgentTaskStartedActivity } from "$capabilities/activity";
 
 import { validateCreateTask } from "$capabilities/agents/api/create-task/validate-create-task";
 import { findVisible, notFound, refused, viewer } from "$capabilities/agents/api/shared/lookup";
@@ -53,7 +54,14 @@ export const createTask = async (input: unknown): Promise<WriteResult> => {
       revision: 1,
       updatedAt: at
     };
-    return unit.create("agentTasks", fields);
+    const opened = unit.create("agentTasks", fields);
+    recordAgentTaskStartedActivity(unit, scope, {
+      kind: "agents.task-started",
+      task: { id: opened, title: fields.title },
+      persona: { id: persona._id, name: persona.name },
+      origin: { kind: "person" }
+    });
+    return opened;
   });
   dispatchAgentTask(model, id);
   return { accepted: true, id, revision: 1 };

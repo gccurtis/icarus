@@ -161,22 +161,26 @@ test("wires the six production panels to scoped project data", async ({ page }) 
   await expect(context.getByRole("heading", { name: "History", exact: true })).toBeVisible();
   await expect(context.getByText("Addressed to you", { exact: true })).toHaveCount(0);
   await expect(context.getByText(/mentioned you/i)).toHaveCount(0);
-  const editedBrief = context.getByRole("button", { name: /Edited: Winter readiness brief/ });
-  await expect(editedBrief).toBeVisible();
+  const completedTask = context.getByRole("button", {
+    name: /Completed an Agents task: Summarise winter storm precedents/
+  });
+  await expect(completedTask).toBeVisible();
   await context.getByLabel("History period", { exact: true }).click();
   await page.getByRole("option", { name: "Today", exact: true }).click();
-  await expect(editedBrief).toHaveCount(0);
+  await expect(completedTask).toHaveCount(0);
   await context.getByLabel("History period", { exact: true }).click();
   await page.getByRole("option", { name: "All time", exact: true }).click();
-  await expect(editedBrief).toBeVisible();
-  await context.getByPlaceholder("Search history").fill("substation");
+  await expect(completedTask).toBeVisible();
+  await context.getByPlaceholder("Search history").fill("external-file");
   await expect(
-    context.getByRole("heading", { name: "Results", exact: true }).locator("..").getByText("3", { exact: true })
+    context.getByRole("heading", { name: "Results", exact: true }).locator("..").getByText("6", { exact: true })
   ).toBeVisible();
   await context.getByPlaceholder("Search history").fill("");
 
   await context
-    .getByRole("button", { name: /Edited: Winter readiness brief/ })
+    .getByRole("button", {
+      name: /Completed an Agents task: Summarise winter storm precedents/
+    })
     .click();
   const inspector = page.locator('aside[aria-label="Inspector"]');
   await expect(inspector).toHaveAttribute("data-inspected", "project-overview.activity");
@@ -185,14 +189,8 @@ test("wires the six production panels to scoped project data", async ({ page }) 
   await expect(inspector.getByText("Where", { exact: true })).toBeVisible();
   await expect(inspector.getByText("Who", { exact: true })).toBeVisible();
   await expect(inspector.getByText("When", { exact: true })).toBeVisible();
-  await expect(inspector.getByText(/Sep 1, 2026.*8d ago/)).toBeVisible();
-  await expect(inspector.getByText("activity:1", { exact: true })).toHaveCount(0);
-
-  await context
-    .getByRole("button", { name: /Started a research question: What is the binding winter constraint/ })
-    .click();
-  await expect(inspector.locator("blockquote")).toContainText("What is the binding winter constraint?");
-  await expect(inspector.getByText("Research chat", { exact: true })).toBeVisible();
+  await expect(inspector.getByText(/Sep 4, 2026.*5d ago/)).toBeVisible();
+  await expect(inspector.getByText("activity:task-completed", { exact: true })).toHaveCount(0);
 
   await resources
     .getByRole("button", { name: "Winter readiness brief", exact: true })

@@ -156,26 +156,26 @@ test("External manages rename, move, re-upload, download, History, and deletion 
 
   await page.getByRole("button", { name: "History", exact: true }).click();
   const context = page.getByRole("complementary", { name: "Context" });
-  await expect(context.getByText(/Re-uploaded managed-code\.ts/)).toBeVisible();
-  await expect(context.getByText(/Moved managed-code\.ts/)).toBeVisible();
-  await expect(context.getByText(/Renamed managed-code\.ts/)).toBeVisible();
+  await expect(context.getByText(/Replaced file contents: managed-code\.ts/)).toBeVisible();
+  await expect(context.getByText(/Moved from \/ to \/validation: managed-code\.ts/)).toBeVisible();
+  await expect(context.getByText(/Renamed “live-code\.ts” to “managed-code\.ts”/)).toBeVisible();
   const historyLabels = await context.locator(".history-list article strong").evaluateAll((nodes) =>
     nodes.slice(0, 4).map((node) => node.textContent?.trim())
   );
   expect(historyLabels).toEqual([
-    "Re-uploaded managed-code.ts",
-    "Moved managed-code.ts",
-    "Renamed managed-code.ts",
-    "Uploaded live-code.ts"
+    "Replaced file contents: managed-code.ts",
+    "Moved from / to /validation: managed-code.ts",
+    "Renamed “live-code.ts” to “managed-code.ts”: managed-code.ts",
+    "Uploaded 26 B TYPESCRIPT: live-code.ts"
   ]);
 
   await inspector.getByRole("button", { name: "Delete", exact: true }).click();
   await expect(inspector.getByRole("heading", { name: "Delete managed-code.ts from this project?" })).toBeVisible();
   await inspector.getByRole("button", { name: "Delete file", exact: true }).click();
   await expect(table.getByRole("button", { name: "managed-code.ts", exact: true })).toHaveCount(0);
-  await expect(context.getByText(/Deleted managed-code\.ts/)).toBeVisible();
+  await expect(context.getByText(/Deleted 26 B file: managed-code\.ts/)).toBeVisible();
   await expect(context.locator(".history-list article strong").first()).toHaveText(
-    "Deleted managed-code.ts"
+    "Deleted 26 B file: managed-code.ts"
   );
   expect((await page.request.get(secondHref!)).status()).toBe(404);
 
@@ -187,7 +187,9 @@ test("External manages rename, move, re-upload, download, History, and deletion 
   })).toHaveCount(0);
   await page.getByRole("button", { name: "History", exact: true }).click();
   await expect(page.getByRole("complementary", { name: "Context" })
-    .locator(".history-list article strong").first()).toHaveText("Deleted managed-code.ts");
+    .locator(".history-list article strong").first()).toHaveText(
+    "Deleted 26 B file: managed-code.ts"
+  );
   expect((await page.request.get(secondHref!)).status()).toBe(404);
 });
 

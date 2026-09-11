@@ -36,7 +36,7 @@ describe("relocate External file failpoint atomicity", () => {
         });
       },
       verifyAfter: (model, fixture) => {
-        expectRevisionBundle(model, fixture.ids[0]!, 2, "moved");
+        expectRevisionBundle(model, fixture.ids[0]!, 2, "external-file.moved");
         expect(rowsIn(model.store, "externalFiles")[0]).toMatchObject({
           relativePath: "archive/file-1.ts"
         });

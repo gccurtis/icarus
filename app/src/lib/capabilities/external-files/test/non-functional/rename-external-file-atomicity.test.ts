@@ -37,7 +37,7 @@ describe("rename External file failpoint atomicity", () => {
         expect(rowsIn(model.store, "activity")).toHaveLength(0);
       },
       verifyAfter: (model, fixture) => {
-        expectRevisionBundle(model, fixture.ids[0]!, 2, "renamed");
+        expectRevisionBundle(model, fixture.ids[0]!, 2, "external-file.renamed");
         expect(rowsIn(model.store, "externalFiles")[0]).toMatchObject({
           name: "renamed.ts", relativePath: "renamed.ts"
         });

@@ -160,10 +160,10 @@
                 >
                   <span class="block truncate">
                     <strong>{event.actorName}</strong>
-                    {event.verb}
+                    {event.action}
                   </span>
-                  <span class="text-caption text-ink-secondary block truncate" title={event.subject}>
-                    {event.subject}
+                  <span class="text-caption text-ink-secondary block truncate" title={event.target.label}>
+                    {event.target.label}
                   </span>
                 </ScreenItem>
               {:else}

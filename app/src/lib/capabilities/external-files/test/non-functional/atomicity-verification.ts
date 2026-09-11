@@ -78,7 +78,8 @@ export const expectRevisionBundle = (
   );
   expect(row).toMatchObject({ revision });
   expect(rowsIn(model.store, "activity").filter((entry) =>
-    entry.verb === event && (entry.target as { id?: string } | undefined)?.id === externalFileId
+    (entry.event as { kind?: string } | undefined)?.kind === event &&
+    (entry.event as { file?: { id?: string } } | undefined)?.file?.id === externalFileId
   )).toHaveLength(1);
   expect(rowsIn(model.store, "semanticMaterialJobs")).toContainEqual(expect.objectContaining({
     ref: expect.objectContaining({ id: externalFileId }),

@@ -3,11 +3,12 @@
 ## Snapshot
 
 - Updated: 2026-09-11
-- Status: implemented and verified; ready for user review
+- Status: approved typed Activity pipeline implemented and verified
 - Worktree: `/tmp/icarus-activity-inspector`
 - Branch: `work/activity-inspector`
 - Starting head and base: `ab809ac647060f29c55afd99c0054ac311094f75`
 - Previous published head: `660277bbab64c073dffbe8d03ae72ba838180f6c`
+- Typed-activity implementation base: `f7764d53ee41abce39211dda40a31f0927c2cce1`
 - Starting worktree/base record: `worktree.json` beside this handoff
 
 ## Request and completion criteria
@@ -22,8 +23,8 @@ future placeholders; missing targets explain that they are unavailable.
 The follow-up asks for a structured Activity capability design. The user settled
 its remaining scope: Research Chat and prompt blocks do not emit Activity; Agents
 tasks emit initial-start and completion events; retention remains a future
-database/storage policy. This branch documents that next change but does not
-change the activity schema, producer vocabulary, or seed data.
+database/storage policy. This branch implements that current-only schema,
+producer vocabulary, shared presentation, and replacement seed data.
 
 ## Decisions and authority
 
@@ -31,6 +32,12 @@ The user explicitly requested implementation in this worktree and a locally
 served explanation. Root `AGENTS.md` permits scoped commits and publication to
 `work/activity-inspector`. No rebase, main merge/push, deployment, production
 data mutation, or live-provider use is authorized.
+
+The user subsequently authorized the proposed Activity changes. Implementation
+scope is a central typed event contract/recorder, the six existing External Files
+events, Agents initial-start and completion events, shared presentation for all
+consumers, and replacement seed rows limited to those real events. Research Chat,
+prompt blocks, and application-level retention remain excluded.
 
 Activity is an append-only viewing/audit feed. It is not part of editor undo or
 redo. Historical labels remain readable after a target disappears, while link
@@ -43,6 +50,17 @@ connector index/detail destination exists. Persona, task, and automation queries
 start only for those target kinds and resolve through the scoped Agents library.
 
 ## Implemented state
+
+- Activity persists a closed eight-event union: six External Files events plus
+  one initial start and one completion per Agents task. Store admission rejects
+  free-form verbs, malformed payloads, and incoherent actors.
+- The Activity capability verifies current project ownership inside the caller's
+  transaction, derives trusted actors, deduplicates task lifecycle events, and
+  owns the shared `type`, `what`, `action`, target, context, and detail.
+- All External mutations and Agents task creation/completion record atomically.
+  Project, Agents, and External Files consume the same presentation.
+- Seed data now contains only events that live writers can emit. Research Chat,
+  prompt blocks, editor actions, and configuration changes do not emit Activity.
 
 - The reference suite uses the established standalone Icarus reference-page
   language, shared CSS, numbered rail navigation, light/dark tokens, compact
@@ -71,7 +89,7 @@ start only for those target kinds and resolve through the scoped Agents library.
   covers native editors, all three Agents details, connector alert behavior,
   current External Files selection, and deleted-file history.
 
-## Audit findings
+## Prior audit findings resolved by this implementation
 
 The stored row is `{ projectId, actor, actorLabel, verb, target, context?, detail? }`.
 The producer owns a free-text verb; the inspector special-cases four values and
@@ -112,9 +130,13 @@ prompt blocks stay outside Activity, and retention is deferred to storage policy
 | Local reference Playwright check | Three served pages, nav, filters, search, 1440px + 390px | Passed; no document overflow at 390px | `.agents/runtime/activity-reference-{wide,compact}.png` |
 | Visual inspection | Reference suite and Activity inspector at 125% compact zoom | Inspected; content remains legible and contained | Browser evidence screenshots plus local reference screenshots |
 | `verify.mjs agents` | Worktree, handoff, and helper contracts | 45 tests passed | `.agents/runtime/runs/1789104218668-agents-02e10a28` |
+| `verify.mjs unit` | Complete unit and non-functional suite | 2,074 passed; 2 existing skips | `.agents/runtime/runs/1789110109342-unit-f2d68e89` |
+| `verify.mjs quick` | Final TypeScript/Svelte + architecture | 0 diagnostics; 90/90 checks clean; 0 findings | `.agents/runtime/runs/1789110540407-quick-56a2421e` |
+| `verify.mjs browser --port 5327 -- ...` | Activity navigation, External lifecycle/history, Project panels, compact/zoom states | 12 Chromium tests passed | `.agents/runtime/runs/1789110311930-browser-a9cffdf6` |
 
-No live-provider tests ran. Full repository verification was not run; the focused
-unit, quick, and Chromium profiles cover the changed code and interactions.
+No live-provider tests ran. The complete unit suite, final quick profile, and
+targeted Chromium suite cover the changed contracts and interactions; a full
+production build was not run separately.
 
 ## Server and data ownership
 
@@ -132,10 +154,10 @@ unit, quick, and Chromium profiles cover the changed code and interactions.
 
 ## Risks and next executable step
 
-Connector snapshots cannot be checked for current existence until a scoped
-connector index exists, so they intentionally remain placeholder links. Activity
-still accepts arbitrary verbs and the seed still describes behavior the product
-cannot emit; the design suite makes that debt and settled replacement explicit.
+The schema change is current only, so an existing development Store with old
+Activity rows must be reset or reseeded. Retention remains a future storage-layer
+policy. Connector and finding destinations remain documented placeholders, but
+no current producer emits those event types.
 
 Review `http://127.0.0.1:5311/` and `work/activity-inspector`. Main integration
 still needs explicit authorization.
@@ -148,4 +170,4 @@ still needs explicit authorization.
   completion; retention deferred to the future storage layer
 - Publication target: `origin/work/activity-inspector`; no main integration
 - Worktree cleanup: retain because the local reference server and review remain active
-- Next owner: implement the settled typed Activity persistence rewrite in a distinct task
+- Next owner: review the published implementation; integrate only with explicit authorization

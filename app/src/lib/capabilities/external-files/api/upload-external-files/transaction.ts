@@ -10,6 +10,7 @@ import { externalFileRowIn } from "$capabilities/external-files/api/shared/rows"
 import type { AdmittedUploadFile, UploadStoreDecision } from "$capabilities/external-files/api/upload-external-files/contracts";
 import type { ExternalFilesLimits } from "$capabilities/external-files/types/shared";
 import type { ExternalFileStorageReceipt } from "$model/server/external-file-storage/index.server";
+import { recordExternalFileActivity } from "$capabilities/activity";
 
 /** Commits path uniqueness, represented identity, history, and semantic intent together. */
 export const commitUploadFile = (
@@ -46,9 +47,16 @@ export const commitUploadFile = (
     updatedBy: actor,
     revision: 1,
     updatedAt: Date.now()
-  }, {
-    event: "uploaded",
-    detail: `${receipt.size} bytes · ${file.native.mediaType}`
+  });
+  recordExternalFileActivity(unit, scope, {
+    kind: "external-file.uploaded",
+    file: {
+      id: created.row._id,
+      name: created.row.name,
+      relativePath: created.row.relativePath
+    },
+    size: receipt.size,
+    mediaType: file.native.mediaType
   });
   return { kind: "created", ...created };
 });

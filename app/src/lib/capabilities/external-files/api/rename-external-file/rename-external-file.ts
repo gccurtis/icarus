@@ -7,6 +7,7 @@ import {
 import { requireScope } from "$runtime/server/scope.server";
 import { serverModel } from "$runtime/server/start.server";
 
+import { recordExternalFileActivity } from "$capabilities/activity";
 import { externalFilesLimits } from "$capabilities/external-files/api/shared/configuration";
 import {
   externalPathIsAvailable,
@@ -55,10 +56,17 @@ export const renameExternalFile = async (input: unknown): Promise<RenameExternal
         name: asked.name,
         relativePath,
         subkind: fileSubkindFor(row.mediaType, asked.name)
-      }, {
-        event: "renamed",
-        detail: `${row.name} → ${asked.name}`
       }, Date.now());
+      recordExternalFileActivity(unit, scope, {
+        kind: "external-file.renamed",
+        file: {
+          id: changed.row._id,
+          name: changed.row.name,
+          relativePath: changed.row.relativePath
+        },
+        previousName: row.name,
+        previousRelativePath: row.relativePath
+      });
       return { kind: "changed" as const, ...changed };
     });
 

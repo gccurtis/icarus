@@ -53,7 +53,7 @@ export const STORE_MUTATIONS = [
     names: "representation/store/current-values.ts",
     changes: [{
       path: "src/lib/representation/store/current-values.ts",
-      edit: (before) => before.replace("  activity: isStoredAgentActivity,\n", "")
+      edit: (before) => before.replace("  activity: isStoredActivity,\n", "")
     }]
   },
   {

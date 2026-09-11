@@ -10,7 +10,6 @@
     PanelField,
     PanelFields,
     PanelLink,
-    PanelQuote,
     PanelSkeleton
   } from "$authored-components/panel";
   import type { ProjectPanelActor } from "$capabilities/project/index.remote";
@@ -19,7 +18,6 @@
     isInspectorView,
     workspaceState
   } from "$model/client/workspace-state";
-  import { activityLabel } from "$app-views/categories/project-overview/procedures/activity-label";
   import {
     activityDestinationSource,
     currentActivityDestination,
@@ -71,14 +69,6 @@
       targetDestination?.kind === "automation"
       ? `Open ${targetDestination.kind}`
       : "Open resource"
-  );
-  const question = $derived(
-    event !== null &&
-      event !== undefined &&
-      event.target.kind === "research" &&
-      event.verb.trim().toLocaleLowerCase() === "asked"
-      ? event.target.label
-      : undefined
   );
   const now = $derived(clock.current);
 
@@ -141,7 +131,7 @@
     <PanelCrumbs
       trail={[
         { label: "Project history", key: "project-overview.history" },
-        { label: event === null || event === undefined ? "Activity" : activityLabel(event.verb) }
+        { label: event === null || event === undefined ? "Activity" : event.what }
       ]}
       onnavigate={navigate}
     />
@@ -170,14 +160,10 @@
           <h3 id="project-activity-what" class="text-caption text-ink-muted m-0 font-semibold tracking-wide uppercase">
             What
           </h3>
-          <p class="text-body text-ink-primary m-0 font-semibold">{activityLabel(event.verb)}</p>
+          <p class="text-body text-ink-primary m-0 font-semibold">{event.what}</p>
         </div>
 
-        {#if question !== undefined}
-          <PanelQuote collapsible={question.length > 240}>
-            <span class="text-body text-ink-primary font-medium">{question}</span>
-          </PanelQuote>
-        {:else if event.detail !== undefined}
+        {#if event.detail !== undefined}
           <p
             class="text-body-sm text-ink-secondary border-border-strong mx-3 my-0 line-clamp-3 break-words border-s-2 ps-2"
             title={event.detail}
@@ -191,7 +177,7 @@
         <PanelField label="Where" stacked hierarchy>
           {#if targetOpening !== undefined}
             <PanelLink
-              label={question === undefined ? event.target.label : "Research chat"}
+              label={event.target.label}
               title={`Open ${event.target.kind === "external-file" ? "External file" : titleCase(event.target.kind)} · ${event.target.label}`}
               lines={2}
               onselect={openTarget}
@@ -227,13 +213,13 @@
         <PanelField label="Who" stacked hierarchy>
           {#if event.actor?.id !== undefined}
             <PanelLink
-              label={event.actor.label}
-              title={`Open ${event.actor.label}`}
+              label={event.actorLabel}
+              title={`Open ${event.actorLabel}`}
               lines={2}
               onselect={() => inspectActor(event.actor!)}
             />
           {:else}
-            {event.actor?.label ?? event.actorLabel}
+            {event.actorLabel}
           {/if}
         </PanelField>
         <PanelField label="When" stacked hierarchy>

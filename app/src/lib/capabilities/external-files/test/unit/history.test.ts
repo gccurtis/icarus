@@ -1,13 +1,10 @@
 import { describe, expect, it } from "vitest";
 
+import { recordExternalFileActivity } from "$capabilities/activity";
+import { externalFileHistoryIn } from "$capabilities/external-files/api/shared/history";
 import { asId } from "$representation/data/behavior/core/id";
 import { defineStore } from "$model/server/store/index.server";
 import type { Scope, ServerModel } from "$runtime/server/start.server";
-import {
-  externalFileHistoryIn,
-  externalPathActivityId,
-  recordExternalFileHistory
-} from "$capabilities/external-files/api/shared/history";
 
 const scope: Scope = {
   projectId: "projects:history",
@@ -28,44 +25,61 @@ const modelWith = (store: ReturnType<typeof defineStore>): ServerModel => ({
   configuration: { get: (key: string) => limits[key] }
 } as unknown as ServerModel);
 
+const addFile = (store: ReturnType<typeof defineStore>) => store.create("externalFiles", {
+  projectId: asId<"projects">(scope.projectId),
+  name: "readme.md",
+  originalName: "readme.md",
+  relativePath: "folder/readme.md",
+  mediaType: "text/markdown",
+  subkind: "text",
+  storageId: `_storage:${"a".repeat(64)}`,
+  hash: "a".repeat(64),
+  size: 4,
+  origin: { kind: "upload" },
+  createdBy: { kind: "user", userId: asId<"users">(scope.userId) },
+  updatedBy: { kind: "user", userId: asId<"users">(scope.userId) },
+  revision: 1,
+  updatedAt: 10
+});
+
 describe("External file history current shape", () => {
-  it("stores a stable identifier while preserving the exact path in the label", () => {
+  it("stores typed facts and derives one shared presentation", () => {
     const store = defineStore({ now: () => 10 });
-    recordExternalFileHistory(store, scope, {
-      event: "uploaded",
-      externalFileId: asId<"externalFiles">("externalFiles:one"),
-      name: "readme",
-      relativePath: "folder/readme",
-      detail: "4 bytes"
-    });
+    const id = addFile(store);
+    store.transaction((unit) => recordExternalFileActivity(unit, scope, {
+      kind: "external-file.uploaded",
+      file: { id, name: "readme.md", relativePath: "folder/readme.md" },
+      size: 4,
+      mediaType: "text/markdown"
+    }));
 
     const held = store.read("activity");
     expect(held?.kind).toBe("table");
     if (held?.kind !== "table" || held.table !== "activity") return;
-    expect(held.rows[0].context).toEqual({
-      kind: "external-path",
-      id: externalPathActivityId("folder/readme"),
-      label: "folder/readme"
+    expect(held.rows[0].event).toEqual({
+      kind: "external-file.uploaded",
+      file: { id, name: "readme.md", relativePath: "folder/readme.md" },
+      size: 4,
+      mediaType: "text/markdown"
     });
     expect(externalFileHistoryIn(modelWith(store), scope)).toMatchObject([{
-      externalFileId: "externalFiles:one",
-      name: "readme",
-      relativePath: "folder/readme",
+      type: "external-file.uploaded",
+      what: "Uploaded 4 B MARKDOWN",
+      externalFileId: id,
+      name: "readme.md",
+      relativePath: "folder/readme.md",
       actorName: "Author"
     }]);
   });
 
-  it("does not read the former path-as-id activity shape", () => {
+  it("rejects the former free-form Activity row", () => {
     const store = defineStore({ now: () => 10 });
-    store.create("activity", {
+    expect(() => store.create("activity", {
       projectId: asId<"projects">(scope.projectId),
       actor: { kind: "user", userId: asId<"users">(scope.userId) },
       actorLabel: scope.username,
       verb: "uploaded",
-      target: { kind: "external-file", id: "externalFiles:old", label: "readme" },
-      context: { kind: "external-path", id: "folder/readme", label: "folder/readme" }
-    });
-
-    expect(externalFileHistoryIn(modelWith(store), scope)).toEqual([]);
+      target: { kind: "external-file", id: "externalFiles:old", label: "readme.md" }
+    })).toThrow();
   });
 });

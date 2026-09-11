@@ -316,7 +316,10 @@ describe("grounded Agent task runner", () => {
       state: "complete"
     });
     expect(tableRows(store, "activity")).toMatchObject([
-      { actor: { kind: "agent", taskId }, verb: "answered" }
+      {
+        actor: { kind: "agent", taskId },
+        event: { kind: "agents.task-completed", outcome: "answered", sourceCount: 1 }
+      }
     ]);
   });
 

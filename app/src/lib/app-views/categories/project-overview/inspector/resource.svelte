@@ -26,7 +26,6 @@
     isInspectorView,
     workspaceState
   } from "$model/client/workspace-state";
-  import { activityLabel } from "$app-views/categories/project-overview/procedures/activity-label";
   import { ticksTheClock } from "$app-views/categories/project-overview/procedures/effects/ticks-the-clock.svelte";
   import { projectResource } from "$app-views/categories/project-overview/procedures/read-resource";
   import { resourceSummaryCommand } from "$app-views/categories/project-overview/procedures/resource-summary-command.svelte";
@@ -93,7 +92,7 @@
   const recent = $derived(
     (resource?.recentActivity ?? []).map((entry) => ({
       id: entry.id,
-      what: `${activityLabel(entry.verb)} by ${entry.actorLabel}`,
+      what: `${entry.what} by ${entry.actorLabel}`,
       ...(entry.detail === undefined && entry.context === undefined
         ? {}
         : { detail: entry.detail ?? entry.context?.label }),

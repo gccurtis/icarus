@@ -57,7 +57,9 @@ describe("Project Overview snapshot projections", () => {
           at: NOW - 60_000,
           actorLabel: "Historical name",
           actor: null,
-          verb: "updated",
+          type: "external-file.context-changed",
+          what: "Added dataset context",
+          action: "added dataset context",
           target: { kind: "document", id: "documents:1", label: "Winter brief" }
         }
       ],
@@ -71,7 +73,7 @@ describe("Project Overview snapshot projections", () => {
         id: "activity:1",
         at: "1 minute ago",
         actor: "Historical name",
-        verb: "updated",
+        action: "added dataset context",
         subject: "Winter brief"
       }
     ]);

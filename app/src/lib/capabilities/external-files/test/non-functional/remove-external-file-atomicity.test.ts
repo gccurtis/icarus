@@ -43,8 +43,10 @@ describe("remove External file failpoint atomicity", () => {
           })
         ]);
         expect(rowsIn(model.store, "activity")).toContainEqual(expect.objectContaining({
-          verb: "deleted",
-          target: expect.objectContaining({ id: fixture.ids[0] })
+          event: expect.objectContaining({
+            kind: "external-file.deleted",
+            file: expect.objectContaining({ id: fixture.ids[0] })
+          })
         }));
         expect(await model.externalFileStorage.read({
           storageId: asId<"_storage">(`_storage:${fixture.hashes[0]}`),

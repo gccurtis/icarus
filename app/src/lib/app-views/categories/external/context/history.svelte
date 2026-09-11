@@ -6,7 +6,7 @@
     externalHistoryIn
   } from "$app-views/categories/external/procedures";
   import { startExternalClock } from "$app-views/categories/external/procedures/effects/clock.svelte";
-  import { externalHistoryLabel, matchingExternalHistory } from "$app-views/categories/external/procedures/history-query";
+  import { matchingExternalHistory } from "$app-views/categories/external/procedures/history-query";
 
   const history = externalFileHistory();
   const clock = startExternalClock();
@@ -32,7 +32,7 @@
           <article>
             <span class="icon"><ClockArrowLeft size={13} aria-hidden="true" /></span>
             <div>
-              <strong>{externalHistoryLabel(entry.event)} {entry.name}</strong>
+              <strong>{entry.what}: {entry.target.label}</strong>
               <span>{entry.when} · {entry.actorName}</span>
               <small title={entry.relativePath}>{entry.relativePath}</small>
               {#if entry.detail}<p>{entry.detail}</p>{/if}

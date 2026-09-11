@@ -1,6 +1,7 @@
 import { requireScope } from "$runtime/server/scope.server";
 import { serverModel } from "$runtime/server/start.server";
 
+import { recordExternalFileActivity } from "$capabilities/activity";
 import { externalFilesLimits } from "$capabilities/external-files/api/shared/configuration";
 import { replaceExternalFileIn } from "$capabilities/external-files/api/shared/mutations";
 import {
@@ -97,10 +98,18 @@ export const reuploadExternalFile = async (
           size: receipt.size,
           mediaType: native.mediaType,
           subkind: native.subkind
-        }, {
-          event: "re-uploaded",
-          detail: `${asked.file.name} · ${receipt.size} bytes · revision ${row.revision + 1}`
         }, Date.now());
+        recordExternalFileActivity(unit, scope, {
+          kind: "external-file.reuploaded",
+          file: {
+            id: changed.row._id,
+            name: changed.row.name,
+            relativePath: changed.row.relativePath
+          },
+          replacementName: asked.file.name,
+          size: receipt.size,
+          revision: changed.row.revision
+        });
         return { kind: "changed" as const, previous: row, ...changed };
       });
 

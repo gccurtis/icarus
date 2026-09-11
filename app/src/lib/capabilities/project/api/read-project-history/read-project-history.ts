@@ -22,7 +22,9 @@ export const readProjectHistory = async (input: unknown): Promise<ReadProjectHis
       : windowed.filter((entry) =>
           [
             entry.actorLabel,
-            entry.verb,
+            entry.type,
+            entry.what,
+            entry.action,
             entry.target.label,
             entry.context?.label ?? "",
             entry.detail ?? ""

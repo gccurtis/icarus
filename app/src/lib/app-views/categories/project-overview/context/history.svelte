@@ -8,7 +8,6 @@
     PanelTimeline
   } from "$authored-components/panel";
   import { workspaceState } from "$model/client/workspace-state";
-  import { activityLabel } from "$app-views/categories/project-overview/procedures/activity-label";
   import { followsHistoryFilter } from "$app-views/categories/project-overview/procedures/effects/follows-history-filter.svelte";
   import { ticksTheClock } from "$app-views/categories/project-overview/procedures/effects/ticks-the-clock.svelte";
   import { shortSince } from "$app-views/categories/project-overview/procedures/rows";
@@ -48,7 +47,7 @@
 
   const lineOf = (entry: NonNullable<typeof history>["entries"][number]) => ({
     id: entry.id,
-    what: `${activityLabel(entry.verb)}: ${entry.target.label}`,
+    what: `${entry.what}: ${entry.target.label}`,
     detail: entry.actorLabel,
     time: shortSince(entry.at, now),
     tone: entry.actor?.kind === "agent" ? ("intelligence" as const) : undefined,

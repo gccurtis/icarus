@@ -1,6 +1,7 @@
 import { requireScope } from "$runtime/server/scope.server";
 import { serverModel } from "$runtime/server/start.server";
 import { asId } from "$representation/data/behavior/core/id";
+import { recordAgentTaskStartedActivity } from "$capabilities/activity";
 
 import { validateRunAutomation } from "$capabilities/agents/api/run-automation/validate-run-automation";
 import { findVisible, notFound, refused, viewer } from "$capabilities/agents/api/shared/lookup";
@@ -22,6 +23,9 @@ export const runAutomation = async (input: unknown): Promise<RunAutomationResult
   const found = findVisible(store, scope, "automations", asked.automationId);
   if (found.kind !== "found") return notFound(asked.automationId, "automation");
   const automation = found.row;
+  const foundPersona = findVisible(store, scope, "personas", automation.personaId);
+  if (foundPersona.kind !== "found") return notFound(automation.personaId, "persona");
+  const persona = foundPersona.row;
   if (automation.instruction.trim() === "") {
     return refused(
       asked.automationId,
@@ -63,6 +67,16 @@ export const runAutomation = async (input: unknown): Promise<RunAutomationResult
       updatedAt: at
     };
     const opened = unit.create("agentTasks", fields);
+    recordAgentTaskStartedActivity(unit, scope, {
+      kind: "agents.task-started",
+      task: { id: opened, title: fields.title },
+      persona: { id: persona._id, name: persona.name },
+      origin: {
+        kind: "automation",
+        automationId: automation._id,
+        automationName: automation.name
+      }
+    });
     unit.update(`automations.${automation._id}.firedCount`, automation.firedCount + 1);
     unit.update(`automations.${automation._id}.lastFiredAt`, at);
     unit.update(`automations.${automation._id}.updatedAt`, at);

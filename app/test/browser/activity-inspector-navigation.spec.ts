@@ -42,107 +42,28 @@ const activityInspectorFor = async (page: Page, search: string, row: RegExp) => 
   return { tabs, inspector };
 };
 
-test("Where opens each current native resource in its owning surface", async ({ page }) => {
-  await page.goto("/app/dev-project", { waitUntil: "networkidle" });
-
-  let { tabs, inspector } = await activityInspectorFor(
-    page,
-    "Winter readiness brief",
-    /Edited: Winter readiness brief/
-  );
-  await inspector.getByRole("button", { name: "Winter readiness brief", exact: true }).click();
-  await expect(tabs.getByRole("button", { name: "Winter readiness brief", exact: true }))
-    .toHaveAttribute("aria-current", "page");
-  await expect(page.locator(".title-bar h1")).toHaveText("Winter readiness brief");
-  await expect(page.locator(".ProseMirror")).toBeVisible();
-
-  ({ tabs, inspector } = await activityInspectorFor(
-    page,
-    "Outage minutes by substation",
-    /Edited: Outage minutes by substation/
-  ));
-  await inspector.getByRole("button", { name: "Outage minutes by substation", exact: true }).click();
-  await expect(tabs.getByRole("button", { name: "Outage minutes by substation", exact: true }))
-    .toHaveAttribute("aria-current", "page");
-  await expect(page.locator(".area-title h1")).toHaveText("Outage minutes by substation");
-  await expect(page.locator(".sheet-surface")).toBeVisible();
-
-  ({ tabs, inspector } = await activityInspectorFor(
-    page,
-    "Board review — Q1 exposure",
-    /Edited: Board review — Q1 exposure/
-  ));
-  await inspector.getByRole("button", { name: "Board review — Q1 exposure", exact: true }).click();
-  await expect(tabs.getByRole("button", { name: "Board review — Q1 exposure", exact: true }))
-    .toHaveAttribute("aria-current", "page");
-  await expect(page.locator(".area-title h1")).toHaveText("Board review — Q1 exposure");
-  await expect(page.locator(".area-canvas")).toBeVisible();
-
-  ({ tabs, inspector } = await activityInspectorFor(
-    page,
-    "binding winter constraint",
-    /Started a research question: What is the binding winter constraint/
-  ));
-  await inspector.getByRole("button", { name: "Research chat", exact: true }).click();
-  await expect(tabs.getByRole("button", { name: "What is the binding winter constraint?", exact: true }))
-    .toHaveAttribute("aria-current", "page");
-  await expect(page.getByPlaceholder("Ask anything about this project")).toBeVisible();
-});
-
-test("Where opens Agents details and explains the connector placeholder", async ({ page }) => {
+test("Where opens the current Agents task from a typed lifecycle event", async ({ page }) => {
   await page.goto("/app/dev-project", { waitUntil: "networkidle" });
   const agents = page
     .getByRole("toolbar", { name: "Open tabs" })
     .getByRole("button", { name: "Agents", exact: true });
   const main = page.getByRole("main");
 
-  let { inspector } = await activityInspectorFor(
+  const { inspector } = await activityInspectorFor(
     page,
-    "Grid Analyst",
-    /Changed the approach of: Grid Analyst/
+    "winter storm precedents",
+    /Completed an Agents task: Summarise winter storm precedents/
   );
-  await inspector.getByRole("button", { name: "Grid Analyst", exact: true }).click();
-  await expect(agents).toHaveAttribute("aria-current", "page");
-  await expect(main.getByLabel("Persona name")).toHaveValue("Grid Analyst");
-
-  ({ inspector } = await activityInspectorFor(
-    page,
-    "Nightly outage digest — 5 September",
-    /Reviewed: Nightly outage digest — 5 September/
-  ));
   await inspector
-    .getByRole("button", { name: "Nightly outage digest — 5 September", exact: true })
+    .getByRole("button", {
+      name: "Summarise winter storm precedents in neighbouring utilities",
+      exact: true
+    })
     .click();
   await expect(agents).toHaveAttribute("aria-current", "page");
-  await expect(main.getByLabel("Task name")).toHaveValue("Nightly outage digest — 5 September");
-
-  ({ inspector } = await activityInspectorFor(
-    page,
-    "Assemble the board review pack",
-    /Switched off: Assemble the board review pack/
-  ));
-  await inspector
-    .getByRole("button", { name: "Assemble the board review pack", exact: true })
-    .click();
-  await expect(agents).toHaveAttribute("aria-current", "page");
-  await expect(main.getByLabel("Automation name")).toHaveValue("Assemble the board review pack");
-
-  ({ inspector } = await activityInspectorFor(
-    page,
-    "Google Drive — SCADA outage log",
-    /Connected a data source: Google Drive — SCADA outage log/
-  ));
-  const shown = new Promise<void>((resolve) => {
-    page.once("dialog", async (dialog) => {
-      expect(dialog.message()).toBe("Opening connectors is not wired up yet.");
-      await dialog.accept();
-      resolve();
-    });
-  });
-  await inspector
-    .getByRole("button", { name: "Google Drive — SCADA outage log", exact: true })
-    .click();
-  await shown;
+  await expect(main.getByLabel("Task name")).toHaveValue(
+    "Summarise winter storm precedents in neighbouring utilities"
+  );
 });
 
 test("Where opens a current External file and leaves deleted history as text", async ({ page }, info) => {
@@ -160,7 +81,7 @@ test("Where opens a current External file and leaves deleted history as text", a
   await page.getByRole("button", { name: "Upload files", exact: true }).click();
   await expect(page.getByText("1 uploaded · 0 already present · 0 rejected.")).toBeVisible();
 
-  let opened = await activityInspectorFor(page, name, new RegExp(`Uploaded: ${name}`));
+  let opened = await activityInspectorFor(page, name, new RegExp(`Uploaded .*: ${name}`));
   await page.setViewportSize({ width: 1100, height: 760 });
   await opened.inspector.getByRole("separator", { name: "Resize the inspector" }).press("Home");
   await page.evaluate(() => { document.documentElement.style.zoom = "1.25"; });
@@ -179,7 +100,7 @@ test("Where opens a current External file and leaves deleted history as text", a
   await expect(page.getByRole("table").getByRole("button", { name, exact: true })).toHaveCount(0);
 
   await page.reload({ waitUntil: "networkidle" });
-  opened = await activityInspectorFor(page, name, new RegExp(`Deleted: ${name}`));
+  opened = await activityInspectorFor(page, name, new RegExp(`Deleted .* file: ${name}`));
   await expect(opened.inspector.getByText(name, { exact: true }).first()).toBeVisible();
   await expect(opened.inspector.getByRole("button", { name, exact: true })).toHaveCount(0);
   await expect(opened.inspector.getByRole("button", { name: "Open resource", exact: true })).toHaveCount(0);

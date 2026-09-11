@@ -52,8 +52,8 @@ describe("External replacement and authored context", () => {
       "export const version = 2;"
     );
     assert.deepEqual(
-      (await readExternalFileHistory()).entries.map((entry) => entry.event),
-      ["re-uploaded", "uploaded"]
+      (await readExternalFileHistory()).entries.map((entry) => entry.type),
+      ["external-file.reuploaded", "external-file.uploaded"]
     );
   });
 
@@ -77,7 +77,10 @@ describe("External replacement and authored context", () => {
     assert.ok(after !== null);
     if (after === null) return;
     assert.equal(after.semanticContext, "Monthly invoiced value in US dollars; test accounts are excluded.");
-    assert.equal((await readExternalFileHistory()).entries[0].event, "context-updated");
+    assert.equal(
+      (await readExternalFileHistory()).entries[0].type,
+      "external-file.context-changed"
+    );
   });
 
   it("refuses dataset context on a non-data file", async () => {

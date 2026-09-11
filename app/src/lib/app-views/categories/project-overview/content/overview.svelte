@@ -429,7 +429,7 @@
                 >
                   <span class="block truncate">
                     <strong>{event.actor}</strong>
-                    {event.verb}
+                    {event.action}
                   </span>
                   <span class="text-caption text-ink-secondary block truncate" title={event.subject}>
                     {event.subject}

@@ -36,7 +36,7 @@ describe("update External context failpoint atomicity", () => {
         expect(rowsIn(model.store, "externalFiles")[0]).not.toHaveProperty("semanticContext");
       },
       verifyAfter: (model, fixture) => {
-        expectRevisionBundle(model, fixture.ids[0]!, 2, "context-updated");
+        expectRevisionBundle(model, fixture.ids[0]!, 2, "external-file.context-changed");
         expect(rowsIn(model.store, "externalFiles")[0]).toMatchObject({
           semanticContext: "Monthly revenue in USD"
         });

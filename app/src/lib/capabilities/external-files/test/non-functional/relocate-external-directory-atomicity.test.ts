@@ -53,7 +53,9 @@ describe("relocate External directory failpoint atomicity", () => {
           "archive/group-2/file-2.ts"
         ]);
         expect(rows.map((row) => row.revision)).toEqual([2, 2]);
-        expect(rowsIn(model.store, "activity").filter((row) => row.verb === "moved")).toHaveLength(2);
+        expect(rowsIn(model.store, "activity").filter(
+          (row) => (row.event as { kind?: string } | undefined)?.kind === "external-file.moved"
+        )).toHaveLength(2);
         expect(rowsIn(model.store, "semanticMaterialJobs").map((row) => row.requestedRevision))
           .toEqual([2, 2]);
       }

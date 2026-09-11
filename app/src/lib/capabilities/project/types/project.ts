@@ -17,7 +17,9 @@ export type ProjectActivityEntry = {
   readonly actorLabel: string;
   /** A current, inspectable actor when one remains visible in this project. */
   readonly actor: ProjectPanelActor | null;
-  readonly verb: string;
+  readonly type: ActivityEvent["kind"];
+  readonly what: string;
+  readonly action: string;
   readonly target: ProjectActivityTarget;
   readonly context?: ProjectActivityTarget;
   readonly detail?: string;
@@ -159,3 +161,4 @@ export type UpdateProjectResourceSummaryResult = {
   readonly summary: string;
   readonly updatedAt: number;
 };
+import type { ActivityEvent } from "$representation/data/types/collaboration/activity";

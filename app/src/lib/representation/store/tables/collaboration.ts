@@ -1,4 +1,4 @@
-import type { ActivityTarget } from "$representation/data/types/collaboration/activity";
+import type { ActivityEvent } from "$representation/data/types/collaboration/activity";
 import type { AnchorWithin, Resolution } from "$representation/data/types/collaboration/anchor";
 import type { CommentTarget } from "$representation/data/types/collaboration/comment";
 import type { ContentBlock, MarkLink } from "$representation/data/types/content/content-block";
@@ -30,9 +30,6 @@ export type ActivityFields = {
   projectId: Id<"projects">;
   actor: Actor;
   actorLabel: string;
-  verb: string;
-  target: ActivityTarget;
-  context?: ActivityTarget;
-  detail?: string;
+  event: ActivityEvent;
 };
 export type Activity = Row<"activity"> & ActivityFields;

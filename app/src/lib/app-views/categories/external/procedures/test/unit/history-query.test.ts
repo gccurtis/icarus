@@ -6,19 +6,26 @@ import type { LibraryExternalHistoryEntry } from "$app-views/categories/external
 const entries: readonly LibraryExternalHistoryEntry[] = [
   {
     id: "activity:context", externalFileId: "externalFiles:revenue",
-    event: "context-updated", name: "Revenue.csv", relativePath: "finance/Revenue.csv",
+    type: "external-file.context-changed", what: "Added dataset context",
+    action: "added dataset context",
+    target: { kind: "external-file", id: "externalFiles:revenue", label: "Revenue.csv" },
+    context: { kind: "external-path", id: "external-path:one", label: "finance/Revenue.csv" },
+    name: "Revenue.csv", relativePath: "finance/Revenue.csv",
     actorName: "Morgan Lee", detail: "Amounts are in USD", at: 200, when: "1m ago"
   },
   {
     id: "activity:upload", externalFileId: "externalFiles:brief",
-    event: "uploaded", name: "Brief.md", relativePath: "research/Brief.md",
+    type: "external-file.uploaded", what: "Uploaded 20 B MARKDOWN", action: "uploaded a file",
+    target: { kind: "external-file", id: "externalFiles:brief", label: "Brief.md" },
+    context: { kind: "external-path", id: "external-path:two", label: "research/Brief.md" },
+    name: "Brief.md", relativePath: "research/Brief.md",
     actorName: "Sam Rivera", at: 100, when: "2m ago"
   }
 ];
 
 describe("External Files recent history search", () => {
   it("matches displayed event, filename, path, actor, and optional detail", () => {
-    for (const search of ["updated context", "revenue.CSV", "finance/", "MORGAN LEE", "USD"]) {
+    for (const search of ["added context", "revenue.CSV", "finance/", "MORGAN LEE", "USD"]) {
       expect(matchingExternalHistory(entries, search), search).toEqual([entries[0]]);
     }
     expect(matchingExternalHistory(entries, "uploaded")).toEqual([entries[1]]);

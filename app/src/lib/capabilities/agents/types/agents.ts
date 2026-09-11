@@ -10,6 +10,10 @@ import type { Cast, PersonaAvatar, PersonaDefinition } from "$representation/dat
 import type { Tool, ToolId } from "$representation/data/types/agents/tool";
 import type { ResourceRef } from "$representation/data/types/core/resource";
 import type { ResourceSet } from "$representation/data/types/core/resource-set";
+import type {
+  ActivityEvent,
+  ActivityTarget
+} from "$representation/data/types/collaboration/activity";
 
 export type PersonaCounts = {
   readonly tasks: number;
@@ -135,11 +139,14 @@ export type ResourceSetOption = {
 export type ActivityItem = {
   readonly id: string;
   readonly actorName: string;
-  readonly personaId: string | null;
-  readonly verb: string;
-  readonly subject: string;
-  readonly targetKind: string;
-  readonly targetId: string;
+  readonly personaId: string;
+  readonly personaName: string;
+  readonly type: ActivityEvent["kind"];
+  readonly what: string;
+  readonly action: string;
+  readonly target: ActivityTarget;
+  readonly context?: ActivityTarget;
+  readonly detail?: string;
   readonly at: number;
 };
 

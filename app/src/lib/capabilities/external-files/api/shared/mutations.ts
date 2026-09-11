@@ -15,9 +15,7 @@ import {
   type SemanticOutboxReceipt
 } from "$capabilities/semantic-overlay";
 import { externalFilesLimits } from "$capabilities/external-files/api/shared/configuration";
-import { recordExternalFileHistory } from "$capabilities/external-files/api/shared/history";
 import { rowsOf } from "$capabilities/external-files/api/shared/rows";
-import type { ExternalFileHistoryEvent } from "$capabilities/external-files/types/external-files";
 
 type ExternalFileFields = Omit<TableRow<"externalFiles">, "_id" | "_creationTime">;
 
@@ -52,17 +50,11 @@ export const externalPathIsAvailable = (
     externalPathsConflict(row.relativePath, relativePath)
 );
 
-type History = {
-  readonly event: ExternalFileHistoryEvent;
-  readonly detail?: string;
-};
-
 export const createExternalFileIn = (
   model: ServerModel,
   unit: StoreUnitOfWork,
   scope: Scope,
-  fields: ExternalFileFields,
-  history: History
+  fields: ExternalFileFields
 ): { readonly row: TableRow<"externalFiles">; readonly semantic: "queued" | "unsupported" } => {
   const id = unit.create("externalFiles", fields);
   const created = readCurrentRows(unit, "externalFiles").filter((row) => row._id === id);
@@ -75,12 +67,6 @@ export const createExternalFileIn = (
   );
   const projectId = asId<"projects">(scope.projectId);
   forgetSemanticResourceFor(unit, projectId, externalFileRef(row));
-  recordExternalFileHistory(unit, scope, {
-    ...history,
-    externalFileId: row._id,
-    name: row.name,
-    relativePath: row.relativePath
-  });
   const receipt = enqueueSemanticOutboxFor(
     model,
     unit,
@@ -97,7 +83,6 @@ export const replaceExternalFileIn = (
   scope: Scope,
   row: TableRow<"externalFiles">,
   changes: Partial<ExternalFileFields>,
-  history: History,
   at: number
 ): { readonly row: TableRow<"externalFiles">; readonly semantic: "queued" | "unsupported" } => {
   const fields: ExternalFileFields = {
@@ -120,12 +105,6 @@ export const replaceExternalFileIn = (
   const projectId = asId<"projects">(scope.projectId);
   forgetSemanticResourceFor(unit, projectId, externalFileRef(row));
   unit.update(`externalFiles.${row._id}`, fields);
-  recordExternalFileHistory(unit, scope, {
-    ...history,
-    externalFileId: next._id,
-    name: next.name,
-    relativePath: next.relativePath
-  });
   const receipt = enqueueSemanticOutboxFor(
     model,
     unit,
@@ -140,8 +119,7 @@ export const removeExternalFileIn = (
   model: ServerModel,
   unit: StoreUnitOfWork,
   scope: Scope,
-  row: TableRow<"externalFiles">,
-  detail: string
+  row: TableRow<"externalFiles">
 ): void => {
   const projectId = asId<"projects">(scope.projectId);
   forgetSemanticResourceFor(
@@ -157,11 +135,4 @@ export const removeExternalFileIn = (
     row.revision + 1
   );
   unit.removeRows("externalFiles", [row._id]);
-  recordExternalFileHistory(unit, scope, {
-    event: "deleted",
-    externalFileId: row._id,
-    name: row.name,
-    relativePath: row.relativePath,
-    detail
-  });
 };

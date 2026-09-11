@@ -7,6 +7,7 @@ import { admitExternalFileRow } from "$representation/data/behavior/external/row
 import { requireScope } from "$runtime/server/scope.server";
 import { serverModel } from "$runtime/server/start.server";
 
+import { recordExternalFileActivity } from "$capabilities/activity";
 import { externalFilesLimits } from "$capabilities/external-files/api/shared/configuration";
 import { externalDirectoryRevisionToken } from "$capabilities/external-files/api/shared/directories";
 import { replaceExternalFileIn } from "$capabilities/external-files/api/shared/mutations";
@@ -108,12 +109,23 @@ export const relocateExternalDirectory = async (
 
       const at = Date.now();
       members.forEach((row, index) => {
-        replaceExternalFileIn(model, unit, scope, row, {
-          relativePath: destinations[index]!
-        }, {
-          event: "moved",
-          detail: `${row.relativePath} → ${destinations[index]}`
-        }, at);
+        const changed = replaceExternalFileIn(
+          model,
+          unit,
+          scope,
+          row,
+          { relativePath: destinations[index]! },
+          at
+        );
+        recordExternalFileActivity(unit, scope, {
+          kind: "external-file.moved",
+          file: {
+            id: changed.row._id,
+            name: changed.row.name,
+            relativePath: changed.row.relativePath
+          },
+          previousRelativePath: row.relativePath
+        });
       });
       return {
         accepted: true,

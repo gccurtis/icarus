@@ -2,6 +2,7 @@ import { externalPathIn, externalRelativePathWithin } from "$representation/data
 import { requireScope } from "$runtime/server/scope.server";
 import { serverModel } from "$runtime/server/start.server";
 
+import { recordExternalFileActivity } from "$capabilities/activity";
 import { externalFilesLimits } from "$capabilities/external-files/api/shared/configuration";
 import {
   externalPathIsAvailable,
@@ -48,10 +49,23 @@ export const relocateExternalFile = async (
       if (!externalPathIsAvailable(unit, scope.projectId, relativePath, new Set([row._id]))) {
         return { kind: "path-conflict" as const, revision: row.revision };
       }
-      const changed = replaceExternalFileIn(model, unit, scope, row, { relativePath }, {
-        event: "moved",
-        detail: `${row.relativePath} → ${relativePath}`
-      }, Date.now());
+      const changed = replaceExternalFileIn(
+        model,
+        unit,
+        scope,
+        row,
+        { relativePath },
+        Date.now()
+      );
+      recordExternalFileActivity(unit, scope, {
+        kind: "external-file.moved",
+        file: {
+          id: changed.row._id,
+          name: changed.row.name,
+          relativePath: changed.row.relativePath
+        },
+        previousRelativePath: row.relativePath
+      });
       return { kind: "changed" as const, ...changed };
     });
 

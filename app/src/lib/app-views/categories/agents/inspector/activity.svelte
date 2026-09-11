@@ -14,11 +14,7 @@
   import { agentsLibrary, messageOf } from "$app-views/categories/agents/procedures/agents";
   import { startClock } from "$app-views/categories/agents/procedures/effects/clock.svelte";
   import { inspectAgent } from "$app-views/categories/agents/procedures/inspect";
-  import {
-    openAutomation,
-    openPersona,
-    openTask
-  } from "$app-views/categories/agents/procedures/navigate";
+  import { openTask } from "$app-views/categories/agents/procedures/navigate";
   import { dateAndTime, relativeTime } from "$app-views/categories/agents/procedures/time";
   import { workspaceState } from "$model/client/workspace-state";
 
@@ -43,24 +39,23 @@
     ["finding", "Finding"]
   ]);
 
-  const REACHABLE: readonly string[] = ["task", "persona", "automation"];
-  const reachable = $derived(event !== undefined && REACHABLE.includes(event.targetKind));
+  const reachable = $derived(
+    event !== undefined &&
+    event.target.kind === "task" &&
+    answer?.tasks.some((task) => task.id === event.target.id) === true
+  );
+  const personaReachable = $derived(
+    event !== undefined && answer?.personas.some((persona) => persona.id === event.personaId) === true
+  );
 
   const inspectTarget = () => {
     if (event === undefined) return;
-    if (event.targetKind === "task") inspectAgent(view, { kind: "task", id: event.targetId });
-    else if (event.targetKind === "persona") {
-      inspectAgent(view, { kind: "persona", id: event.targetId });
-    } else if (event.targetKind === "automation") {
-      inspectAgent(view, { kind: "automation", id: event.targetId });
-    }
+    if (event.target.kind === "task") inspectAgent(view, { kind: "task", id: event.target.id });
   };
 
   const openTarget = () => {
     if (event === undefined) return;
-    if (event.targetKind === "task") openTask(view, event.targetId);
-    else if (event.targetKind === "persona") openPersona(view, event.targetId);
-    else if (event.targetKind === "automation") openAutomation(view, event.targetId);
+    if (event.target.kind === "task") openTask(view, event.target.id);
   };
 </script>
 
@@ -88,28 +83,29 @@
   <Panel title="Activity" actions={reachable ? openAction : undefined}>
     <p class="sentence">
       <strong>{event.actorName}</strong>
-      {event.verb}
-      <strong>{event.subject}</strong>
+      {event.action}
+      <strong>{event.target.label}</strong>
     </p>
     <PanelFields>
       <PanelField label="Persona">
-        {#if event.personaId !== null}
+        {#if personaReachable}
           {@const personaId = event.personaId}
           <PanelLink
-            label={event.actorName}
+            label={event.personaName}
             onselect={() => inspectAgent(view, { kind: "persona", id: personaId })}
           />
         {:else}
-          {event.actorName}
+          {event.personaName}
         {/if}
       </PanelField>
-      <PanelField label={TARGET_LABEL.get(event.targetKind) ?? "Subject"}>
+      <PanelField label={TARGET_LABEL.get(event.target.kind) ?? "Subject"}>
         {#if reachable}
-          <PanelLink label={event.subject} onselect={inspectTarget} />
+          <PanelLink label={event.target.label} onselect={inspectTarget} />
         {:else}
-          {event.subject}
+          {event.target.label}
         {/if}
       </PanelField>
+      {#if event.detail}<PanelField label="Details">{event.detail}</PanelField>{/if}
       <PanelField label="When">
         {relativeTime(event.at, clock.now)} · {dateAndTime(event.at)}
       </PanelField>

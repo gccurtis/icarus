@@ -69,6 +69,28 @@ const { updateProjectResourceSummary } = await import(
 
 const user = (id: string) => ({ kind: "user", userId: id });
 
+const uploadedActivity = (
+  id: string,
+  at: number,
+  projectId: string,
+  actorId: string,
+  actorLabel: string,
+  fileId: string,
+  name: string
+) => ({
+  _id: id,
+  _creationTime: at,
+  projectId,
+  actor: user(actorId),
+  actorLabel,
+  event: {
+    kind: "external-file.uploaded",
+    file: { id: fileId, name, relativePath: `evidence/${name}` },
+    size: 24,
+    mediaType: "application/pdf"
+  }
+});
+
 const paragraph = (display: string, suffix = "1") => ({
   id: `block:${suffix}`,
   type: "text" as const,
@@ -207,33 +229,9 @@ describe("project panel reads", () => {
 
   it("searches only scoped activity and never joins directed comments", async () => {
     model.tables.set("activity", [
-      {
-        _id: "activity:2",
-        _creationTime: 30,
-        projectId: "projects:mine",
-        actor: user("users:me"),
-        actorLabel: "Me then",
-        verb: "edited",
-        target: { kind: "document", id: "documents:1", label: "Brief" }
-      },
-      {
-        _id: "activity:1",
-        _creationTime: 20,
-        projectId: "projects:mine",
-        actor: user("users:me"),
-        actorLabel: "Me then",
-        verb: "opened",
-        target: { kind: "document", id: "documents:1", label: "Brief" }
-      },
-      {
-        _id: "activity:foreign",
-        _creationTime: 40,
-        projectId: "projects:other",
-        actor: user("users:other"),
-        actorLabel: "Other secret",
-        verb: "edited",
-        target: { kind: "document", id: "documents:other", label: "Foreign" }
-      }
+      uploadedActivity("activity:2", 30, "projects:mine", "users:me", "Me then", "externalFiles:1", "Brief.pdf"),
+      uploadedActivity("activity:1", 20, "projects:mine", "users:me", "Me then", "externalFiles:1", "Brief.pdf"),
+      uploadedActivity("activity:foreign", 40, "projects:other", "users:other", "Other secret", "externalFiles:other", "Foreign.pdf")
     ]);
     model.tables.set("comments", [
       {
@@ -261,15 +259,7 @@ describe("project panel reads", () => {
 
   it("returns one visible member with policy-safe profile and contribution fields", async () => {
     model.tables.set("activity", [
-      {
-        _id: "activity:mine",
-        _creationTime: 30,
-        projectId: "projects:mine",
-        actor: user("users:me"),
-        actorLabel: "Me",
-        verb: "edited",
-        target: { kind: "document", id: "documents:1", label: "Brief" }
-      }
+      uploadedActivity("activity:mine", 30, "projects:mine", "users:me", "Me", "externalFiles:1", "Brief.pdf")
     ]);
     model.tables.set("commentThreads", [
       currentThread("commentThreads:mine", { kind: "document", id: "documents:1" })
@@ -295,42 +285,16 @@ describe("project panel reads", () => {
 
   it("returns only the selected recorded event", async () => {
     model.tables.set("activity", [
-      {
-        _id: "activity:selected",
-        _creationTime: 30,
-        projectId: "projects:mine",
-        actor: user("users:me"),
-        actorLabel: "Me then",
-        verb: "edited",
-        target: { kind: "document", id: "documents:1", label: "Brief then" },
-        context: { kind: "section", id: "section:1", label: "Exposure" },
-        detail: "Updated the assumptions."
-      },
-      {
-        _id: "activity:nearby",
-        _creationTime: 20,
-        projectId: "projects:mine",
-        actor: user("users:me"),
-        actorLabel: "Me then",
-        verb: "opened",
-        target: { kind: "document", id: "documents:1", label: "Brief then" }
-      },
-      {
-        _id: "activity:elsewhere",
-        _creationTime: 10,
-        projectId: "projects:mine",
-        actor: user("users:me"),
-        actorLabel: "Me then",
-        verb: "opened",
-        target: { kind: "document", id: "documents:2", label: "Other" }
-      }
+      uploadedActivity("activity:selected", 30, "projects:mine", "users:me", "Me then", "externalFiles:1", "Brief.pdf"),
+      uploadedActivity("activity:nearby", 20, "projects:mine", "users:me", "Me then", "externalFiles:1", "Brief.pdf"),
+      uploadedActivity("activity:elsewhere", 10, "projects:mine", "users:me", "Me then", "externalFiles:2", "Other.pdf")
     ]);
 
     const result = await readProjectActivity({ activityId: "activity:selected" });
     expect(result).toMatchObject({
       id: "activity:selected",
-      detail: "Updated the assumptions.",
-      context: { label: "Exposure" }
+      detail: "application/pdf",
+      context: { label: "evidence/Brief.pdf" }
     });
     expect(JSON.stringify(result)).not.toMatch(/activity:nearby|activity:elsewhere/);
   });
@@ -397,15 +361,7 @@ describe("project panel reads", () => {
       }
     ]);
     model.tables.set("activity", [
-      {
-        _id: "activity:1",
-        _creationTime: 30,
-        projectId: "projects:mine",
-        actor: user("users:me"),
-        actorLabel: "Me",
-        verb: "edited",
-        target: { kind: "document", id: "documents:1", label: "Brief" }
-      }
+      uploadedActivity("activity:1", 30, "projects:mine", "users:me", "Me", "externalFiles:1", "Brief.pdf")
     ]);
 
     const result = await readProjectResource({ resourceId: "documents:1" });
@@ -420,7 +376,7 @@ describe("project panel reads", () => {
       ],
       openable: true
     });
-    expect(result?.recentActivity).toHaveLength(1);
+    expect(result?.recentActivity).toHaveLength(0);
     expect(JSON.stringify(result)).not.toMatch(/authored body/);
 
     await expect(readProjectResource({ resourceId: "researchThreads:1" })).resolves.toMatchObject({

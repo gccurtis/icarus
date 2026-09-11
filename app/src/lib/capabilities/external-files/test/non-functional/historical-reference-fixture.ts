@@ -13,8 +13,16 @@ export const populateHistoricalExternalReferences = (store: StoreModel) => {
     projectId: referenceScope.projectId,
     actor: referenceActor,
     actorLabel: referenceScope.username,
-    verb: "deleted",
-    target: { kind: "externalFile", id: externalFileId, label: "Deleted file" }
+    event: {
+      kind: "external-file.deleted",
+      file: {
+        id: externalFileId,
+        name: "deleted-file.txt",
+        relativePath: "history/deleted-file.txt"
+      },
+      size: 1,
+      revision: 1
+    }
   });
   store.create("documentSnapshots", {
     projectId: referenceScope.projectId,

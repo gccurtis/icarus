@@ -5,7 +5,7 @@ export type Event = {
   readonly id: string;
   readonly at: string;
   readonly actor: string;
-  readonly verb: string;
+  readonly action: string;
   readonly subject: string;
 };
 
@@ -26,6 +26,6 @@ export const activity = (
       id: event.id,
       at: since(event.at, now),
       actor: event.actorLabel,
-      verb: event.verb,
+      action: event.action,
       subject: event.target.label
     }));

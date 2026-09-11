@@ -1,4 +1,5 @@
 import type { FileSubkind } from "$representation/data/types/external/file";
+import type { ActivityPresentation } from "$representation/data/types/collaboration/activity";
 import type {
   ExternalFileOriginView,
   ExternalFileSemanticStatus,
@@ -42,23 +43,13 @@ export type ReadExternalFileLibraryResult = {
   readonly limits: ExternalFilesLimits;
 };
 
-export type ExternalFileHistoryEvent =
-  | "uploaded"
-  | "re-uploaded"
-  | "renamed"
-  | "moved"
-  | "deleted"
-  | "context-updated";
-
-export type ExternalFileHistoryEntry = {
+export type ExternalFileHistoryEntry = ActivityPresentation & {
   readonly id: string;
   readonly externalFileId: string;
-  readonly event: ExternalFileHistoryEvent;
   readonly name: string;
   readonly relativePath: string;
   readonly actorName: string;
   readonly at: number;
-  readonly detail?: string;
 };
 
 export type ReadExternalFileHistoryResult = {

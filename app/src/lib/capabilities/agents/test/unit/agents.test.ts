@@ -317,26 +317,39 @@ beforeEach(() => {
         projectId: "projects:p",
         actor: user("users:u"),
         actorLabel: "Uma",
-        verb: "edited",
-        target: { kind: "document", id: "documents:1", label: "Brief" }
+        event: {
+          kind: "agents.task-started",
+          task: { id: "agentTasks:1", title: "Task 1" },
+          persona: { id: "personas:a", name: "Persona a" },
+          origin: { kind: "person" }
+        }
       },
       {
         _id: "activity:2",
         _creationTime: 40,
         projectId: "projects:p",
         actor: { kind: "agent", taskId: "agentTasks:1" },
-        actorLabel: "",
-        verb: "finished",
-        target: { kind: "task", id: "agentTasks:1", label: "Task 1" }
+        actorLabel: "Persona a",
+        event: {
+          kind: "agents.task-completed",
+          task: { id: "agentTasks:1", title: "Task 1" },
+          persona: { id: "personas:a", name: "Persona a" },
+          outcome: "answered",
+          sourceCount: 2
+        }
       },
       {
         _id: "activity:3",
         _creationTime: 50,
-        projectId: "projects:p",
+        projectId: "projects:other",
         actor: user("users:v"),
         actorLabel: "Victor",
-        verb: "switched off",
-        target: { kind: "automation", id: "automations:m", label: "Rule m" }
+        event: {
+          kind: "agents.task-started",
+          task: { id: "agentTasks:gone", title: "Task gone" },
+          persona: { id: "personas:elsewhere", name: "Persona elsewhere" },
+          origin: { kind: "person" }
+        }
       }
     ]
   };
@@ -378,8 +391,11 @@ describe("reading the library", () => {
     assert.equal(library.tools.length, 6);
     assert.deepEqual(library.resources.map((row) => row.name), ["Brief"]);
     assert.deepEqual(
-      library.activity.map((row) => [row.actorName, row.verb, row.subject, row.personaId]),
-      [["", "finished", "Task 1", "personas:a"]]
+      library.activity.map((row) => [row.actorName, row.type, row.target.label, row.personaId]),
+      [
+        ["Persona a", "agents.task-completed", "Task 1", "personas:a"],
+        ["Uma", "agents.task-started", "Task 1", "personas:a"]
+      ]
     );
     assert.equal(fired?.startedByName, "Uma");
   });
@@ -668,6 +684,12 @@ describe("tasks", () => {
     assert.deepEqual(row?.tools, ["retrieve", "web.search"]);
     const part = model.tables.threadParts.find((candidate) => candidate.threadId === row?.threadId);
     assert.equal((part?.messages as unknown[]).length, 1);
+    assert.deepEqual(model.tables.activity.at(-1)?.event, {
+      kind: "agents.task-started",
+      task: { id: result.id, title: "Check it" },
+      persona: { id: "personas:a", name: "Persona a" },
+      origin: { kind: "person" }
+    });
   });
 
   test("stops a running task and refuses a second finish", async () => {
@@ -771,6 +793,16 @@ describe("automations", () => {
     });
     assert.equal(model.tables.automations[0].firedCount, 1);
     assert.equal(model.tables.automations[0].lastFiredAt, 500);
+    assert.deepEqual(model.tables.activity.at(-1)?.event, {
+      kind: "agents.task-started",
+      task: { id: result.accepted ? result.taskId : "", title: "Rule m" },
+      persona: { id: "personas:a", name: "Persona a" },
+      origin: {
+        kind: "automation",
+        automationId: "automations:m",
+        automationName: "Rule m"
+      }
+    });
   });
 
   test("validates a trigger before anything is written", async () => {

@@ -6,14 +6,15 @@ import { openQuestions, planProgress } from "$representation/data/behavior/agent
 import { TOOLS, orderedTools } from "$representation/data/behavior/agents/tools";
 import { triggerSummary } from "$representation/data/behavior/agents/triggers";
 import {
-  isStoredAgentActivity,
   isStoredAgentTask,
   isStoredAutomation,
   isStoredPersona
 } from "$representation/data/behavior/agents/stored-rows";
+import { isStoredActivity } from "$representation/data/behavior/collaboration/stored-activity";
 import { admittedReusableResourceSets } from "$representation/data/behavior/core/resource-set-rows";
 
 import { externalResourceOptionsIn } from "$capabilities/agents/api/shared/external-resource-options";
+import { activityPresentation } from "$capabilities/activity";
 import { namesIn, type Names } from "$capabilities/agents/api/shared/names";
 import { rowsIn } from "$capabilities/agents/api/shared/store";
 import { taskItem } from "$capabilities/agents/api/shared/task-projection";
@@ -162,27 +163,25 @@ export const chatItem = (store: StoreModel, chat: Chat, visible: Visible): ChatI
 const byName = <T extends { readonly name: string }>(left: T, right: T): number =>
   left.name.localeCompare(right.name);
 
-const agentActivity = (store: StoreModel, visible: Visible, projectId: string) =>
+const agentActivity = (store: StoreModel, projectId: string) =>
   rowsIn(store, "activity")
     .filter(
       (row) =>
-        isStoredAgentActivity(row) &&
+        isStoredActivity(row) &&
         row.projectId === projectId &&
-        row.actor.kind === "agent"
+        (row.event.kind === "agents.task-started" || row.event.kind === "agents.task-completed")
     )
     .toSorted((left, right) => right._creationTime - left._creationTime)
     .slice(0, 40)
     .map((row) => {
-      const actor = row.actor as Extract<Task["createdBy"], { kind: "agent" }>;
-      const task = visible.tasks.find((candidate) => candidate._id === actor.taskId);
+      const event = row.event as Extract<typeof row.event, { kind: `agents.${string}` }>;
+      const presentation = activityPresentation(event);
       return {
         id: row._id as string,
         actorName: row.actorLabel,
-        personaId: task?.personaId ?? null,
-        verb: row.verb,
-        subject: row.target.label,
-        targetKind: row.target.kind,
-        targetId: row.target.id,
+        personaId: event.persona.id,
+        personaName: event.persona.name,
+        ...presentation,
         at: row._creationTime
       };
     });
@@ -207,7 +206,7 @@ export const library = (store: StoreModel, scope: Scope): ReadAgentsLibraryResul
     chats: visible.chats
       .map((row) => chatItem(store, row, visible))
       .toSorted((left, right) => right.updatedAt - left.updatedAt),
-    activity: agentActivity(store, visible, scope.projectId),
+    activity: agentActivity(store, scope.projectId),
     tools: TOOLS,
     resources: resources.toSorted(byName),
     resourceSets: [...admittedReusableResourceSets(

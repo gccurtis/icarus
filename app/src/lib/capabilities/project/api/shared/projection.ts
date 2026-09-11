@@ -1,5 +1,7 @@
 import type { Scope } from "$runtime/server/scope.server";
 
+import { activityPresentation } from "$capabilities/activity";
+import { isStoredActivity } from "$representation/data/behavior/collaboration/stored-activity";
 import { isStoredActor } from "$representation/data/behavior/core/stored";
 
 import { projectActor } from "$capabilities/project/api/shared/actors";
@@ -48,29 +50,33 @@ export const activityOf = (
     row === undefined ||
     !exact(
       row,
-      ["_id", "_creationTime", "projectId", "actor", "actorLabel", "verb", "target"],
-      ["context", "detail"]
+      ["_id", "_creationTime", "projectId", "actor", "actorLabel", "event"]
     ) ||
     row.projectId !== scope.projectId ||
-    !isStoredActor(row.actor)
+    !isStoredActivity(row)
   ) return undefined;
 
+  const presentation = activityPresentation(row.event);
   const id = idOf(row._id);
   const at = finiteTime(row._creationTime);
-  const actorLabel = boundedText(row.actorLabel, 160);
-  const verb = boundedText(row.verb, 240);
-  const target = targetOf(row.target);
+  const actorLabel = boundedText(row.actorLabel, 240);
+  const what = boundedText(presentation.what, 240);
+  const action = boundedText(presentation.action, 240);
+  const target = targetOf(presentation.target);
   const actor = actorOf(store, scope, row.actor);
-  const context = row.context === undefined ? undefined : targetOf(row.context);
-  const detail = row.detail === undefined ? undefined : boundedText(row.detail, 20_000);
+  const context = presentation.context === undefined ? undefined : targetOf(presentation.context);
+  const detail = presentation.detail === undefined
+    ? undefined
+    : boundedText(presentation.detail, 20_000);
   if (
     id === undefined ||
     at === undefined ||
     actorLabel === undefined ||
-    verb === undefined ||
+    what === undefined ||
+    action === undefined ||
     target === undefined ||
-    (row.context !== undefined && context === undefined) ||
-    (row.detail !== undefined && detail === undefined)
+    (presentation.context !== undefined && context === undefined) ||
+    (presentation.detail !== undefined && detail === undefined)
   ) {
     return undefined;
   }
@@ -80,7 +86,9 @@ export const activityOf = (
     at,
     actorLabel,
     actor,
-    verb,
+    type: presentation.type,
+    what,
+    action,
     target,
     ...(context === undefined ? {} : { context }),
     ...(detail === undefined ? {} : { detail })

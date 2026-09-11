@@ -103,7 +103,6 @@ export type {
   ExternalFileDetail,
   ExternalDirectoryItem,
   ExternalFileHistoryEntry,
-  ExternalFileHistoryEvent,
   ExternalFileLibraryItem,
   ExternalFileNativeState,
   ExternalFileOriginView,

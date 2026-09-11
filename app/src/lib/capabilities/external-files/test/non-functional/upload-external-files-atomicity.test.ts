@@ -50,8 +50,10 @@ describe("upload External files failpoint atomicity", () => {
           name: "uploaded.ts", hash: sourceHash, revision: 1
         });
         expect(rowsIn(model.store, "activity")).toContainEqual(expect.objectContaining({
-          verb: "uploaded",
-          target: expect.objectContaining({ id: rows[0]._id })
+          event: expect.objectContaining({
+            kind: "external-file.uploaded",
+            file: expect.objectContaining({ id: rows[0]._id })
+          })
         }));
         expect(rowsIn(model.store, "semanticMaterialJobs")).toContainEqual(expect.objectContaining({
           requestedRevision: 1,
