@@ -6,14 +6,14 @@ Do not include credentials or copy sensitive logs.
 
 ## Snapshot
 
-- Updated: 2026-09-11T11:49:22-04:00
-- Status: implemented and verified; pending commit/push
+- Updated: 2026-09-11T11:50:43-04:00
+- Status: implemented, verified, committed, and pushed
 - Worktree: `/home/jakul/cyberia/icarus-worktrees/pure-functions`
 - Branch: `work/pure-functions`
 - Head when initialized: `b152b52ddd1fef5dfdaf8e2a4b6d03796cf011fd`
-- Current verified head / dirty paths: `b152b52ddd1fef5dfdaf8e2a4b6d03796cf011fd`;
-  task-owned checker, generator, runtime-adapter, architecture documentation,
-  baseline, mutation-test, and handoff changes are dirty pending commit
+- Current verified implementation commit / dirty paths:
+  `9bef8e2977f0c7397bb5f45b8afb8bee3ca3eafa`; clean before this publication-only
+  handoff update
 - Integration target / base SHA, if relevant: `origin/main` / `b152b52ddd1fef5dfdaf8e2a4b6d03796cf011fd`
 - Starting worktree/base record: optional `worktree.json` beside this handoff;
   link it when present and verify it against Git
@@ -129,13 +129,15 @@ skipped live-provider tests as passing.
   that inventory exact and blocks additions.
 - Dependencies and generated tool state are ignored local artifacts. No server,
   Store, browser, or provider test was needed or started.
-- Next executable step: run the final quick verification after the last doc/test
-  edits, review/stage the exact task paths, then commit and push the work branch.
+- Next executable step: review `work/pure-functions`; when separately authorized,
+  integrate it or begin a focused migration that removes one exact baseline slice.
 
 ## Publication / handoff
 
-- Commits created by this task: none yet
-- Push / merge state: pending task-branch commit and explicit push; no main integration
+- Commits created by this task: `9bef8e2977f0c7397bb5f45b8afb8bee3ca3eafa`
+  (`Enforce explicit-dependency functions`), plus the publication-only handoff
+  update that follows it
+- Push / merge state: pushed to `origin/work/pure-functions`; no main integration
 - Worktree cleanup / retained local artifacts: worktree intentionally retained;
   ignored local-configuration symlink exists
 - Next owner and remaining work: lead owns checker implementation and verification
