@@ -6,13 +6,14 @@ Do not include credentials or copy sensitive logs.
 
 ## Snapshot
 
-- Updated: 2026-09-11T01:45:34-04:00
-- Status: implemented, verified, and committed; awaiting review/integration
+- Updated: 2026-09-11T02:22:16-04:00
+- Status: External History follow-up implemented, verified, and committed; task
+  branch push remains
 - Worktree: `/tmp/icarus-resource-external-layout`
 - Branch: `work/resource-external-layout`
 - Head when initialized: `3a9a6d3f5db20862d6bb15d9a38af0226731ded2`
-- Current verified head / dirty paths: implementation commit `a6f4397` followed
-  by task-handoff metadata commits; no product paths remain dirty
+- Current verified head / dirty paths: History implementation `151ae0c`; only this
+  task handoff remains dirty
 - Integration target / base SHA, if relevant: `origin/main` at `3a9a6d3f5db20862d6bb15d9a38af0226731ded2`
 - Starting worktree/base record: optional `worktree.json` beside this handoff;
   link it when present and verify it against Git
@@ -48,8 +49,14 @@ Implement the requested resource and External Files layout refinement:
 - In the directory inspector, put name and path first, remove the visible Rename
   action, keep rename on the existing name double-click, provide one full-width
   Move button, and place collapsible Contents below it.
+- Make each External History item an interactive file target. Selecting one
+  inspects its stable file identity; in Directory mode the centre also moves to
+  the file's containing directory. Make the recorded username independently
+  inspect its person profile, and use compact `m`, `h`, and `d` relative times.
 
-External Files History/context redesign is explicitly deferred to a later pass.
+Any broader External Files History/context redesign remains deferred to a later
+pass; the requested row, file-navigation, author, and compact-time interactions
+are in this task.
 
 ## Decisions and authority
 
@@ -62,11 +69,20 @@ Interpret “four buttons” in context as reducing upload UI to the two file/fo
 pickers by removing the separate queue/submit steps. Upload failures and active
 progress must remain visible; only the persistent success tally is removed.
 
+The user's current External text file has a durable exact-lane job queued since
+2026-09-11 01:02:47-04:00 with zero attempts and no `startedAt`; the main server
+on port 3000 is responsive. This is not provider latency: uploads persist queue
+intent, while the current process has no always-on worker host. Triggering that
+job would disclose eligible file contents to configured Jina. A proposed direct
+run was rejected before execution; no user data or queue state changed. Explicit
+consent has been requested before either one scoped live run or automatic future
+processing is added.
+
 ## Ownership and orientation
 
 | Owner | Owned paths / work | Read-only or excluded paths | Acceptance check |
 | --- | --- | --- | --- |
-| Lead | New Tab/shared resource table; External Files library/table/inspector/upload UI; focused tests | External Files History; persistence schema; shared Templates; unrelated editors | Type/architecture, focused unit + Chromium, wide/compact/zoom screenshots |
+| Lead | New Tab/shared resource table; External Files library/table/inspector/upload UI; focused History interaction and current workspace-view admission; focused tests | Shared Templates; unrelated editors; semantic worker-host architecture | Type/architecture, focused unit + Chromium, wide/compact/zoom screenshots |
 
 Entry points: `categories/new-tab/content/launcher.svelte`, authored
 `resource-table/`, and `categories/external/` content/components/inspector and
@@ -97,6 +113,16 @@ The lead owns all shared surfaces and final integration within the task branch.
   in a shared collapsible section. Estimated-size wording is consistent.
 - Browser coverage that selected uploads was updated to assert the automatic
   upload result instead of clicking a removed submit control.
+- External History rows now inspect their stable file identity. In Directory
+  mode a fresh History file selection also moves the library to that file's
+  containing directory; Table mode keeps its current directory-independent view.
+- History actor names are separate hover-underlined controls that inspect the
+  shared person profile, while event ages use compact `now`, `m`, `h`, and `d`
+  labels and retain the exact local timestamp as hover text.
+- External tab-view admission now accepts shared inspectors that the category
+  already offers, while preserving exact file/directory selection checks for
+  External-owned inspectors. This prevents author inspection from being rejected
+  during workspace persistence.
 
 ## Verification evidence
 
@@ -107,6 +133,10 @@ The lead owns all shared surfaces and final integration within the task branch.
 | Same browser runner, selected downstream upload consumers | agents external, document delayed/external prompt, research chat, template features, presentation editor | 7/7 passed | `.agents/runtime/runs/1789105340640-browser-6facfe68` |
 | Chromium screenshot inspection | New Tab, External flat/directory, file and directory inspectors at wide, compact, and 125% zoom states | Inspected: table-owned New Tab overflow at ordinary heights, responsive short-height fallback, aligned compact controls, reachable horizontally scrolled columns, standardized headings, and requested action layouts | Screenshots under the browser evidence directories above |
 | `git diff --check` | Final unstaged tracked diff | Passed | Terminal evidence |
+| `node .agents/scripts/verify.mjs quick` through the Nix dev shell | Final History product/test tree | Typecheck: 0 errors, 0 warnings. Architecture: 90 clean, 176 baselined, 0 findings. | `.agents/runtime/runs/1789107332579-quick-0dd68f79` |
+| Focused unit profile | External History projection/query and External workspace admission | 3 files, 14 tests passed | `.agents/runtime/runs/1789107361562-unit-0b08ff67` |
+| Focused Chromium profile | External file lifecycle and panel History interactions | 6/6 passed | `.agents/runtime/runs/1789107379147-browser-0eed4946` |
+| `nix develop ./infra/devshell --command pnpm --dir app build` | Final History product/test tree | Typecheck: 0 errors, 0 warnings; production SSR/client build and adapter completed | Terminal evidence |
 
 The first browser invocation using Playwright's cached headless shell failed to
 start because that local binary could not resolve `libnspr4.so`. This was an
@@ -125,8 +155,8 @@ Chromium executable and passed. No live-provider tests were run or needed.
 
 ## Risks and next executable step
 
-External Files History/context redesign remains explicitly deferred. New Tab's
-visible row count naturally varies with viewport height; the verified contract is
+Broader External Files History/context redesign remains explicitly deferred. New
+Tab's visible row count naturally varies with viewport height; the verified contract is
 the Project Overview-style bounded screen and table-owned overflow, with a
 reachability fallback for very short windows. Next: push the exact owned commits
 to `work/resource-external-layout`, then retain the worktree for user review. Do
@@ -134,9 +164,10 @@ not merge or push main without fresh explicit authorization.
 
 ## Publication / handoff
 
-- Commits created by this task: `a6f4397` (product behavior and regression tests),
-  followed by task-handoff metadata commits
-- Push / merge state: task branch push pending; main untouched
+- Commits created by this task: prior layout `a6f4397`; External History follow-up
+  `151ae0c`, followed by task-handoff metadata commits
+- Push / merge state: prior layout is pushed; History follow-up task-branch push
+  pending; main untouched
 - Worktree cleanup / retained local artifacts: keep the worktree and ignored
   dependencies/runtime evidence for review; no owned server remains
 - Next owner and remaining work: user review, then separately authorized main
