@@ -59,7 +59,7 @@ const resourceSet = (value: unknown): boolean => {
   const held = storedFields(value);
   if (held === undefined) return false;
   const terms = [...held.include as unknown[], ...held.exclude as unknown[]];
-  return terms.every((term) => storedFields(term)?.select !== "hole");
+  return terms.every((term) => storedFields(term)?.select !== "slot");
 };
 
 const variableResolution = (value: unknown): boolean => {

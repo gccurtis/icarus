@@ -15,24 +15,24 @@ describe("a rule that cannot be said inline becomes a row", () => {
     exclude: [{ select: "kinds", kinds: ["presentation"] }]
   };
 
-  test("a default that excludes something is stored, and the hole holds one term", async () => {
+  test("a default that excludes something is stored, and the slot holds one term", async () => {
     const result = await updateTemplate({
       templateId: "templates:1",
       baseRevision: 1,
-      patch: { holes: [{ name: "evidence", label: "Evidence", kind: "scope", default: excluding }] }
+      patch: { slots: [{ name: "evidence", label: "Evidence", kind: "scope", default: excluding }] }
     });
     assert.ok(result.accepted);
 
     const bound = model.tables.resourceSets.filter((set) => set.boundTo !== undefined);
     assert.equal(bound.length, 1);
     assert.deepEqual(bound[0].boundTo, {
-      kind: "hole",
+      kind: "slot",
       templateId: "templates:1",
-      hole: "evidence"
+      slot: "evidence"
     });
     assert.equal(bound[0].name, undefined);
     assert.deepEqual(bound[0].set, excluding);
-    assert.deepEqual(model.tables.templates[0].holes, [
+    assert.deepEqual(model.tables.templates[0].slots, [
       {
         name: "evidence",
         label: "Evidence",
@@ -46,13 +46,13 @@ describe("a rule that cannot be said inline becomes a row", () => {
     await updateTemplate({
       templateId: "templates:1",
       baseRevision: 1,
-      patch: { holes: [{ name: "evidence", label: "Evidence", kind: "scope", default: excluding }] }
+      patch: { slots: [{ name: "evidence", label: "Evidence", kind: "scope", default: excluding }] }
     });
     const result = await updateTemplate({
       templateId: "templates:1",
       baseRevision: 2,
       patch: {
-        holes: [
+        slots: [
           {
             name: "evidence",
             label: "Evidence",
@@ -66,18 +66,18 @@ describe("a rule that cannot be said inline becomes a row", () => {
     assert.equal(model.tables.resourceSets.filter((set) => set.boundTo !== undefined).length, 0);
   });
 
-  test("the same hole rewrites its own row rather than piling them up", async () => {
+  test("the same slot rewrites its own row rather than piling them up", async () => {
     await updateTemplate({
       templateId: "templates:1",
       baseRevision: 1,
-      patch: { holes: [{ name: "evidence", label: "Evidence", kind: "scope", default: excluding }] }
+      patch: { slots: [{ name: "evidence", label: "Evidence", kind: "scope", default: excluding }] }
     });
     const first = model.tables.resourceSets.find((set) => set.boundTo !== undefined);
     await updateTemplate({
       templateId: "templates:1",
       baseRevision: 2,
       patch: {
-        holes: [
+        slots: [
           {
             name: "evidence",
             label: "Evidence",
@@ -101,7 +101,7 @@ describe("a rule that cannot be said inline becomes a row", () => {
       templateId: "templates:1",
       baseRevision: 1,
       patch: {
-        holes: [
+        slots: [
           {
             name: "evidence",
             label: "Evidence",
@@ -133,7 +133,7 @@ describe("a rule that cannot be said inline becomes a row", () => {
     assert.deepEqual(bound[0].boundTo, {
       kind: "resource",
       ref: { kind: "document", id: placed.resourceId },
-      hole: "evidence"
+      slot: "evidence"
     });
     assert.deepEqual(scopeOf(model.tables.documentSnapshots[0]), {
       include: [{ select: "set", setId: bound[0]._id }],
@@ -156,7 +156,7 @@ describe("a rule that cannot be said inline becomes a row", () => {
       templateId: "templates:1",
       baseRevision: 1,
       patch: {
-        holes: [
+        slots: [
           {
             name: "evidence",
             label: "Evidence",
@@ -177,7 +177,7 @@ describe("a rule that cannot be said inline becomes a row", () => {
         boundTo: {
           kind: "resource",
           ref: { kind: "document", id: "documents:9" },
-          hole: "evidence"
+          slot: "evidence"
         },
         set: {
           include: [{ select: "resources", refs: [{ kind: "document", id: "documents:9" }] }],
@@ -194,7 +194,7 @@ describe("a rule that cannot be said inline becomes a row", () => {
       templateId: "templates:1",
       baseRevision: 1,
       patch: {
-        holes: [
+        slots: [
           {
             name: "evidence",
             label: "Evidence",

@@ -1,11 +1,11 @@
 import type { ChainLink, Decision, ScopeGap } from "$development-views/template-reference/types";
 
 /**
- * The chain from making a hole to reading a filled copy.
+ * The chain from making a slot to reading a filled copy.
  *
- * A hole is made, never found. Two things can become one — a prompt, and a run
- * of selected text — and both are turned into holes by the same gesture at the
- * thing itself. Until somebody makes it there is no hole, which is what keeps
+ * A slot is made, never found. Two things can become one — a prompt, and a run
+ * of selected text — and both are turned into slots by the same gesture at the
+ * thing itself. Until somebody makes it there is no slot, which is what keeps
  * placing a template to the questions somebody meant to ask.
  */
 export const CHAIN: ChainLink[] = [
@@ -21,41 +21,41 @@ export const CHAIN: ChainLink[] = [
     index: "02",
     step: "Something is templateified, and nothing about the resource changes",
     gesture: "Templateify, in the Template section of a prompt or of a text selection",
-    runs: "promptHoleOps writes a record on the block; markHoleOps writes a mark over the run",
+    runs: "promptSlotOps writes a record on the block; markSlotOps writes a mark over the run",
     state: "works",
     evidence: "template-features.spec.ts — Templateify marks a run without changing the document"
   },
   {
     index: "03",
-    step: "The hole is named and, if it helps, described",
+    step: "The slot is named and, if it helps, described",
     gesture: "Two fields. Blank the name and the offered one comes back",
-    runs: "Hole 1, Hole 2 by what the body already holds",
+    runs: "Slot 1, Slot 2 by what the body already holds",
     state: "works",
-    evidence: "prompt-holes.test.ts — a hole is made, never found"
+    evidence: "prompt-slots.test.ts — a slot is made, never found"
   },
   {
     index: "04",
-    step: "Making a template keeps exactly those holes",
+    step: "Making a template keeps exactly those slots",
     gesture: "None — it is what saving means",
-    runs: "promptHolesOf · withPrompts · portableBodyOf · withPromptHoles · withMarkedHoles · textHolesOf",
+    runs: "promptSlotsOf · withPrompts · portableBodyOf · withPromptSlots · withMarkedSlots · textSlotsOf",
     state: "works",
-    evidence: "answers.test.ts — gives no hole to a prompt nobody templateified"
+    evidence: "answers.test.ts — gives no slot to a prompt nobody templateified"
   },
   {
     index: "05",
-    step: "Placing it asks about each hole, one at a time",
+    step: "Placing it asks about each slot, one at a time",
     gesture: "Insert or Use · tabs, Previous and Next, Accept all defaults",
     runs: "answerRowsOf · promptWordsIn · the scope builder · normalizeScope",
     state: "works",
-    evidence: "template-features.spec.ts — inserting a template asks for each hole"
+    evidence: "template-features.spec.ts — inserting a template asks for each slot"
   },
   {
     index: "06",
     step: "The copy reads what was chosen",
     gesture: "None — it is already true of the resource that lands",
-    runs: "resolveTemplateScopes substitutes each hole term; fillTemplateAtoms fills each text hole",
+    runs: "resolveTemplateScopes substitutes each slot term; fillTemplateAtoms fills each text slot",
     state: "works",
-    evidence: "template-features.spec.ts — a hole's default is built with an exclusion and read back"
+    evidence: "template-features.spec.ts — a slot's default is built with an exclusion and read back"
   },
   {
     index: "07",
@@ -86,14 +86,14 @@ export const CHAIN_DIAGRAM = `flowchart LR
   end
   subgraph making["04 · Making a template"]
     direction TB
-    D["promptHolesOf · textHolesOf<br/>only what was templateified"]
+    D["promptSlotsOf · textSlotsOf<br/>only what was templateified"]
     E["withPrompts<br/>copies the prompt onto the block"]
-    F["withPromptHoles<br/>those scopes become hole terms"]
+    F["withPromptSlots<br/>those scopes become slot terms"]
     D --> E --> F
   end
   subgraph placing["05–07 · Placing it"]
     direction TB
-    G["One hole at a time"]
+    G["One slot at a time"]
     H["resolveTemplateScopes<br/>answer, else the default"]
     I["withFreshOutputs<br/>a derived output per prompt"]
     N["enqueueSemanticSync<br/>the copy is material now"]
@@ -114,13 +114,13 @@ export const RESOLUTION_DIAGRAM = `sequenceDiagram
   participant R as resolveTemplateScopes
   participant D as The new copy
   P->>M: Insert "Incident one-pager"
-  M-->>P: A tab per hole — only what somebody templateified
+  M-->>P: A tab per slot — only what somebody templateified
   M-->>P: winter_sources — its description, its prompt, its default
   P->>M: winter_sources → Findings, minus one document
   M->>S: answers { winter_sources }
   S->>S: normalizeScope — the difference cannot be said inline,<br/>so it is stored as a bound resourceSets row
-  S->>R: body, holes, answers
-  R-->>S: every hole term settled: the answer, else the default
+  S->>R: body, slots, answers
+  R-->>S: every slot term settled: the answer, else the default
   S->>S: withFreshOutputs — one derived output per prompt,<br/>from the question the template carried
   S->>D: one document, revision 0, no reference back
   S->>S: enqueueSemanticSync — the copy is the project's material now
@@ -145,7 +145,7 @@ export const DEFAULT_RULE = [
   },
   {
     scope: "A prompt reading particular resources, or excluding something",
-    carries: "The same rule, stored as a row the hole owns",
+    carries: "The same rule, stored as a row the slot owns",
     because:
       "The templated vocabulary has no term for particular resources, so the rule lives in a resourceSets row and a single set term points at it."
   },
@@ -159,10 +159,10 @@ export const DEFAULT_RULE = [
 export const SETTLED: Decision[] = [
   {
     round: "This round",
-    question: "Is a hole found or made?",
+    question: "Is a slot found or made?",
     answer: "Made. Templateify, on the thing itself.",
     became:
-      "A prompt keeps its scope and produces no hole until somebody presses the button. Placing a template asks only about what somebody meant to be asked about."
+      "A prompt keeps its scope and produces no slot until somebody presses the button. Placing a template asks only about what somebody meant to be asked about."
   },
   {
     round: "This round",
@@ -174,22 +174,22 @@ export const SETTLED: Decision[] = [
   {
     round: "This round",
     question: "What does templateifying do to the resource?",
-    answer: "Nothing. It marks where a hole goes; it does not put one there.",
+    answer: "Nothing. It marks where a slot goes; it does not put one there.",
     became:
-      "A text hole is an ordinary mark, addressed like a comment or a link. The words, the formatting and the display are exactly what they were, and withMarkedHoles turns each marked run into its atom only on the copy the template is built from."
+      "A text slot is an ordinary mark, addressed like a comment or a link. The words, the formatting and the display are exactly what they were, and withMarkedSlots turns each marked run into its atom only on the copy the template is built from."
   },
   {
     round: "This round",
     question: "What is it called?",
-    answer: "Hole 1, Hole 2 — offered, typed over when it matters.",
-    became: "nextHoleName counts across every hole the body already holds, whichever kind it is."
+    answer: "Slot 1, Slot 2 — offered, typed over when it matters.",
+    became: "nextSlotName counts across every slot the body already holds, whichever kind it is."
   },
   {
     round: "This round",
     question: "What is its default?",
     answer: "Whatever the thing already is. There is no default control.",
     became:
-      "A prompt's hole defaults to the scope it reads; a text hole defaults to the words that were selected. Changing a default means changing the thing, where the thing is."
+      "A prompt's slot defaults to the scope it reads; a text slot defaults to the words that were selected. Changing a default means changing the thing, where the thing is."
   },
   {
     round: "This round",
@@ -200,18 +200,18 @@ export const SETTLED: Decision[] = [
   },
   {
     round: "This round",
-    question: "May two prompts share one hole?",
+    question: "May two prompts share one slot?",
     answer: "Yes, by carrying the same name. Nothing enforces it either way.",
     became:
-      "A name is the whole of a hole's identity, and resolveTemplateScopes memoises by name. In practice each templateified thing gets its own."
+      "A name is the whole of a slot's identity, and resolveTemplateScopes memoises by name. In practice each templateified thing gets its own."
   }
 ];
 
 export const LIMITS: ScopeGap[] = [
   {
-    title: "A mark that reaches into a hole is dropped — on the copy",
+    title: "A mark that reaches into a slot is dropped — on the copy",
     detail:
-      "In the template, a bold run that crossed a hole's edge is gone: those words are a question now, and formatting a question means nothing. Every other mark keeps exactly the words it covered, mapped by position. The resource itself keeps all of them.",
+      "In the template, a bold run that crossed a slot's edge is gone: those words are a question now, and formatting a question means nothing. Every other mark keeps exactly the words it covered, mapped by position. The resource itself keeps all of them.",
     order: "Settled. This is the only thing templating drops, and it drops it where it is harmless."
   },
   {
@@ -221,9 +221,9 @@ export const LIMITS: ScopeGap[] = [
     order: "Correct as long as a template is a copy, which is the whole model. Nothing to do."
   },
   {
-    title: "A hole cannot span two blocks",
+    title: "A slot cannot span two blocks",
     detail:
       "A mark lives inside one block, so a selection running across a paragraph break marks nothing. Selecting within a paragraph, or a whole one, is what is offered.",
-    order: "Worth revisiting only if somebody wants a hole that swallows structure."
+    order: "Worth revisiting only if somebody wants a slot that swallows structure."
   }
 ];

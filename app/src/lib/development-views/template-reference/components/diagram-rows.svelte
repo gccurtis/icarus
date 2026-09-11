@@ -5,7 +5,7 @@
   <section class="group template">
     <h4>What the template is</h4>
     <ul>
-      <li><code>templates</code><span>projectId, name, tags, body, holes, revision, lastUsedAt</span></li>
+      <li><code>templates</code><span>projectId, name, tags, body, slots, revision, lastUsedAt</span></li>
       <li><code>templateVersions</code><span>one row per revision, never read back yet</span></li>
     </ul>
     <p class="writer">Written by <code>createTemplate</code>, <code>createTemplateFromResource</code>, <code>updateTemplate</code>, <code>commitTemplateStage</code>, <code>duplicateTemplate</code>, <code>removeTemplate</code></p>

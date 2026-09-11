@@ -11309,8 +11309,8 @@ index 0000000..d05ec88
 +    };
 +
 +/**
-+ * Fills represented variable holes from represented defaults. There is no
-+ * caller-supplied answer shape yet, so an unbound hole is returned explicitly.
++ * Fills represented variable slots from represented defaults. There is no
++ * caller-supplied answer shape yet, so an unbound slot is returned explicitly.
 + */
 +export const resolveTemplateDefaults = (
 +  body: TemplateBody,
@@ -13853,7 +13853,7 @@ index 0000000..6bc884f
 +There is deliberately no ad-hoc variable-values input. The representation
 +defines portable defaults, so instantiation substitutes those defaults into
 +prompt scopes (including nested defaults) and can open the seeded templates
-+without inventing another data shape. An unbound or cyclic variable hole returns
++without inventing another data shape. An unbound or cyclic variable slot returns
 +`variables-required` and writes nothing. Caller-supplied overrides wait for the
 +representation to define the command payload that records a person's answers.
 +Formula evaluation and derived-output creation are downstream editor/runtime

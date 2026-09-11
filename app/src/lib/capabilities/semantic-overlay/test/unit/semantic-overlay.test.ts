@@ -692,7 +692,7 @@ test("a caller cannot resolve an unnamed private Resource Set as a reusable scop
     boundTo: {
       kind: "resource",
       ref: { kind: "externalFile::text", id: "externalFiles:4" },
-      hole: "evidence"
+      slot: "evidence"
     },
     set: {
       include: [{ select: "resources", refs: [{ kind: "externalFile::text", id: "externalFiles:4" }] }],

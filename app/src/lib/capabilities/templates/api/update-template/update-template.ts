@@ -1,7 +1,7 @@
 import { requireScope } from "$runtime/server/scope.server";
 import { serverModel } from "$runtime/server/start.server";
 import { asId } from "$representation/data/behavior/core/id";
-import { scopeHoleNamesIn } from "$representation/data/behavior/templates/scopes";
+import { scopeSlotNamesIn } from "$representation/data/behavior/templates/scopes";
 
 import {
   admitStoredTemplate,
@@ -72,24 +72,24 @@ export const updateTemplate = async (input: unknown): Promise<UpdateTemplateResu
       : (asked.patch.description ?? template.description);
   const at = Date.now();
   const actor = { kind: "user" as const, userId: asId<"users">(scope.userId) };
-  let holes = [...(asked.patch.holes ?? template.holes)];
-  if (asked.patch.holes !== undefined) {
-    const declared = new Set(holes.map((hole) => hole.name));
-    const orphaned = scopeHoleNamesIn(template.body).filter((name) => !declared.has(name));
+  let slots = [...(asked.patch.slots ?? template.slots)];
+  if (asked.patch.slots !== undefined) {
+    const declared = new Set(slots.map((slot) => slot.name));
+    const orphaned = scopeSlotNamesIn(template.body).filter((name) => !declared.has(name));
     if (orphaned.length > 0) {
       return {
         accepted: false,
         templateId: asked.templateId,
-        reason: "hole-in-use",
+        reason: "slot-in-use",
         revision: template.revision,
         detail: `the body still names ${orphaned.join(", ")}`
       };
     }
-    for (const hole of holes) {
+    for (const slot of slots) {
       const references = setReferencesIn(
         store,
         scope.projectId,
-        hole.default ?? { include: [], exclude: [] }
+        slot.default ?? { include: [], exclude: [] }
       );
       if (references.missing.length > 0) {
         return {
@@ -111,49 +111,49 @@ export const updateTemplate = async (input: unknown): Promise<UpdateTemplateResu
       }
     }
   }
-  if (asked.patch.holeDescription !== undefined) {
-    const asking = asked.patch.holeDescription;
-    if (!holes.some((candidate) => candidate.name === asking.name)) {
+  if (asked.patch.slotDescription !== undefined) {
+    const asking = asked.patch.slotDescription;
+    if (!slots.some((candidate) => candidate.name === asking.name)) {
       return {
         accepted: false,
         templateId: asked.templateId,
         reason: "unsupported-body",
         revision: template.revision,
-        detail: `the template no longer declares hole ${asking.name}`
+        detail: `the template no longer declares slot ${asking.name}`
       };
     }
-    holes = holes.map((candidate) => {
+    slots = slots.map((candidate) => {
       if (candidate.name !== asking.name) return candidate;
       const { description: _description, ...rest } = candidate;
       return asking.description === null ? rest : { ...rest, description: asking.description };
     });
   }
   const fields = store.transaction((unit): RowFields<"templates"> => {
-    let storedHoles = holes;
-    if (asked.patch.holes !== undefined) {
-      for (const held of template.holes) {
-        if (holes.some((hole) => hole.name === held.name)) continue;
+    let storedSlots = slots;
+    if (asked.patch.slots !== undefined) {
+      for (const held of template.slots) {
+        if (slots.some((slot) => slot.name === held.name)) continue;
         removeRowsBoundTo(unit, scope.projectId, {
-          kind: "hole",
+          kind: "slot",
           templateId: template._id,
-          hole: held.name
+          slot: held.name
         });
       }
-      storedHoles = holes.map((hole) => {
+      storedSlots = slots.map((slot) => {
         const written = normalizeScope(
           unit,
           scope.projectId,
           actor,
-          { kind: "hole", templateId: template._id, hole: hole.name },
-          hole.default,
+          { kind: "slot", templateId: template._id, slot: slot.name },
+          slot.default,
           at
         );
         return {
-          name: hole.name,
-          label: hole.label,
-          ...(hole.description === undefined ? {} : { description: hole.description }),
-          kind: hole.kind,
-          ...(hole.text === undefined ? {} : { text: hole.text }),
+          name: slot.name,
+          label: slot.label,
+          ...(slot.description === undefined ? {} : { description: slot.description }),
+          kind: slot.kind,
+          ...(slot.text === undefined ? {} : { text: slot.text }),
           ...(written === undefined ? {} : { default: written.term })
         };
       });
@@ -165,7 +165,7 @@ export const updateTemplate = async (input: unknown): Promise<UpdateTemplateResu
       ...(description === undefined ? {} : { description }),
       tags: [...(asked.patch.tags ?? template.tags)],
       body: template.body,
-      holes: storedHoles,
+      slots: storedSlots,
       createdBy: template.createdBy,
       revision: template.revision + 1,
       updatedAt: at

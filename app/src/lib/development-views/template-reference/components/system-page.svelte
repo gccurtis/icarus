@@ -43,7 +43,7 @@
           <div><dt>Belongs to</dt><dd>One project</dd></div>
           <div><dt>Edited through</dt><dd>One shared working copy</dd></div>
           <div><dt>Placed by</dt><dd>Insert · Use</dd></div>
-          <div><dt>Holes come from</dt><dd>Prompt scopes in the body</dd></div>
+          <div><dt>Slots come from</dt><dd>Prompt scopes in the body</dd></div>
           <div><dt>Links back</dt><dd>None, in either direction</dd></div>
         </dl>
       </div>
@@ -55,7 +55,7 @@
       <a href="#nouns">Every word</a>
       <a href="#rows">Where it lives</a>
       <a href="#lifecycle">Step by step</a>
-      <a href="#holes">Holes and scope</a>
+      <a href="#slots">Slots and scope</a>
       <a href="#portable">What a template may not carry</a>
       <a href="#panels">The panels</a>
       <a href="#rules">Rules and refusals</a>
@@ -66,7 +66,7 @@
         <div><span class="tref-kicker">The shape of it</span><h2>Three verbs, and nothing else</h2></div>
         <p>
           Templates were real before this work; what was missing was a way to edit one, a way to say what a
-          hole selects, and a way to pull one into something already open. All three are the same act
+          slot selects, and a way to pull one into something already open. All three are the same act
           seen from different sides: making a copy.
         </p>
       </div>
@@ -177,12 +177,12 @@
       </div>
     </section>
 
-    <section class="tref-section" id="holes">
+    <section class="tref-section" id="slots">
       <div class="tref-section-head">
-        <div><span class="tref-kicker">Holes and what fills them</span><h2>Holes and scope</h2></div>
+        <div><span class="tref-kicker">Slots and what fills them</span><h2>Slots and scope</h2></div>
         <p>
-          A scope hole is an empty place a prompt punched. Saving a template declares exactly the names the body's
-          prompt scopes use — which is why the panels let you describe a hole and set its scope, and
+          A scope slot is an empty place a prompt punched. Saving a template declares exactly the names the body's
+          prompt scopes use — which is why the panels let you describe a slot and set its scope, and
           never let you add or remove one.
         </p>
       </div>
@@ -198,22 +198,22 @@
       <div class="tref-note">
         <h4>Where the names come from today, and where they will come from</h4>
         <p>
-          A body carries a hole when a prompt's scope holds <code>{"{ select: \"hole\", name }"}</code>.
+          A body carries a slot when a prompt's scope holds <code>{"{ select: \"slot\", name }"}</code>.
           Prompt blocks are not built yet, so today that happens when a template that already has one is
-          inserted into a working copy: the terms are kept as holes and the inserted template's holes
+          inserted into a working copy: the terms are kept as slots and the inserted template's slots
           join this one's.
         </p>
         <p>
           The agreed shape for when prompt blocks land is pull-based: making a template walks the prompts
           it found and asks what each one's scope should be, and two prompts may point at the same
-          hole. Nothing about the model here changes when that arrives — it only starts declaring
-          holes on its own.
+          slot. Nothing about the model here changes when that arrives — it only starts declaring
+          slots on its own.
         </p>
       </div>
 
       <p class="tref-prose">
         A <b>resource set</b> persists a scope rule. The current UI creates private, owned rows at the
-        point a template hole or a placed Prompt Block needs a rule that cannot be written inline.
+        point a template slot or a placed Prompt Block needs a rule that cannot be written inline.
         Existing named rows remain explicit reusable choices in scope builders, but Project Overview
         no longer exposes a global place to create or manage them.
       </p>
@@ -270,7 +270,7 @@
 
       <p class="tref-prose">
         Project Overview carries no Resource Sets panel. The templates library carries the other
-        surface, the inspector, where a template's name, description, tags and holes are read and Use,
+        surface, the inspector, where a template's name, description, tags and slots are read and Use,
         Edit, Duplicate and Delete sit in one row. Scope rules are created from the control that needs
         them, not curated globally first.
       </p>
@@ -308,7 +308,7 @@
       <div class="tref-note attention">
         <h4>Not built yet</h4>
         <p>
-          Prompt blocks that pick a hole; images stored with a template so they travel; making a new
+          Prompt blocks that pick a slot; images stored with a template so they travel; making a new
           formula instance for a project-neutral atom; and opening a spreadsheet template for editing,
           which waits on the spreadsheet editor. Each is listed with a recommendation on
           <a href={hrefOf(project, "changes")}>What changed</a>.

@@ -54,7 +54,7 @@
     { value: "updated", label: "Updated" },
     { value: "name", label: "Name" },
     { value: "makes", label: "Makes" },
-    { value: "holes", label: "Holes" }
+    { value: "slots", label: "Slots" }
   ] as const;
 
   const TARGETS: readonly TemplateTarget[] = ["Document", "Presentation", "Spreadsheet"];
@@ -124,8 +124,8 @@
   const compare = (a: LibraryTemplate, b: LibraryTemplate): number => {
     if (sortBy === "name") return a.name.localeCompare(b.name);
     if (sortBy === "makes") return a.makes.localeCompare(b.makes) || a.name.localeCompare(b.name);
-    if (sortBy === "holes") {
-      return a.holeCount - b.holeCount || a.name.localeCompare(b.name);
+    if (sortBy === "slots") {
+      return a.slotCount - b.slotCount || a.name.localeCompare(b.name);
     }
     return b.updatedAt - a.updatedAt || a.name.localeCompare(b.name);
   };
@@ -162,11 +162,11 @@
     updated: { asc: "Newest first", desc: "Oldest first" },
     name: { asc: "A to Z", desc: "Z to A" },
     makes: { asc: "A to Z", desc: "Z to A" },
-    holes: { asc: "Fewest holes first", desc: "Most holes first" }
+    slots: { asc: "Fewest slots first", desc: "Most slots first" }
   };
 
-  const holeCount = (row: LibraryTemplate): string =>
-    `${row.holeCount} ${row.holeCount === 1 ? "hole" : "holes"}`;
+  const slotCount = (row: LibraryTemplate): string =>
+    `${row.slotCount} ${row.slotCount === 1 ? "slot" : "slots"}`;
 
   const clear = () => {
     search = "";
@@ -214,12 +214,12 @@
           <ScreenThumb
             ratio={TARGET_RATIO[row.makes]}
             lines={4}
-            variables={Math.min(row.holeCount, 4)}
+            variables={Math.min(row.slotCount, 4)}
           />
         </span>
       {/snippet}
       <span class="text-caption text-ink-muted truncate">
-        Used {row.lastUsed} · {holeCount(row)}
+        Used {row.lastUsed} · {slotCount(row)}
       </span>
     </ScreenCard>
   </div>
@@ -375,7 +375,7 @@
                 : "Templates will appear here when one is created."}
             </ScreenEmpty>
           {:else}
-            <ScreenTable columns={["Name", "Makes", "Scope", "Holes", "Tags", "Updated"]}>
+            <ScreenTable columns={["Name", "Makes", "Scope", "Slots", "Tags", "Updated"]}>
               {#each ordered as row (row.id)}
                 {@const Icon = TARGET_ICON[row.makes]}
                 <ScreenRow
@@ -398,7 +398,7 @@
                   </ScreenCell>
                   <ScreenCell>{row.makes}</ScreenCell>
                   <ScreenCell>{row.scope}</ScreenCell>
-                  <ScreenCell num>{row.holeCount}</ScreenCell>
+                  <ScreenCell num>{row.slotCount}</ScreenCell>
                   <ScreenCell>{row.tags.join(", ") || "—"}</ScreenCell>
                   <ScreenCell num>{row.updated}</ScreenCell>
                 </ScreenRow>

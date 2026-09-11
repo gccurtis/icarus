@@ -4,11 +4,11 @@
   import { traceNode } from "$development-components/trace.svelte";
 
   /**
-   * Every hole a template asks for, one at a time.
+   * Every slot a template asks for, one at a time.
    *
-   * **One question on screen, and all of them in view.** A hole is a question,
+   * **One question on screen, and all of them in view.** A slot is a question,
    * and a page of twelve questions is read as a form rather than answered as
-   * one. So the body holds a single hole — its name, what it stands for, the
+   * one. So the body holds a single slot — its name, what it stands for, the
    * prompt it fills if it fills one, and the control — while the tabs above
    * keep the whole shape visible and say which still need an answer.
    *
@@ -22,7 +22,7 @@
    */
 
   export type AnswerRow = {
-    /** The hole's name, and this component's key for it. */
+    /** The slot's name, and this component's key for it. */
     readonly key: string;
     readonly label: string;
     readonly description?: string;
@@ -31,7 +31,7 @@
     readonly value: string;
     /** Whether the caller has said anything, as against taking what was suggested. */
     readonly answered: boolean;
-    /** Whether it has no answer at all, which only a text hole can be. */
+    /** Whether it has no answer at all, which only a text slot can be. */
     readonly missing: boolean;
   };
 
@@ -45,14 +45,14 @@
     onaccept
   }: {
     rows: readonly AnswerRow[];
-    /** The prompt behind a hole, by hole name, when a prompt is behind it. */
+    /** The prompt behind a slot, by slot name, when a prompt is behind it. */
     prompts?: Readonly<Record<string, string>>;
     disabled?: boolean;
-    /** Open the builder for one scope hole. */
+    /** Open the builder for one scope slot. */
     onscope: (key: string) => void;
-    /** The words typed for one text hole. */
+    /** The words typed for one text slot. */
     ontext: (key: string, words: string) => void;
-    /** Put one hole back to what the template suggests. */
+    /** Put one slot back to what the template suggests. */
     onreset: (key: string) => void;
     /** Take everything as it stands and place the template. */
     onaccept?: () => void;
@@ -60,7 +60,7 @@
 
   let at = $state(0);
 
-  /** A hole answered and then removed must not leave the walk past its end. */
+  /** A slot answered and then removed must not leave the walk past its end. */
   const index = $derived(Math.min(at, Math.max(rows.length - 1, 0)));
   const shown = $derived(rows[index]);
   const asked = $derived(shown === undefined ? undefined : prompts[shown.key]);
@@ -69,7 +69,7 @@
 
   const trace = traceNode("TemplateAnswers", () => ({ rows: rows.length, missing, at: index }));
 
-  /** Next lands on the first hole that still needs words, if any are left after this one. */
+  /** Next lands on the first slot that still needs words, if any are left after this one. */
   const step = (by: number) => {
     at = Math.min(Math.max(index + by, 0), Math.max(rows.length - 1, 0));
   };
@@ -79,7 +79,7 @@
   {#if rows.length === 0}
     <p class="none">This template asks for nothing. Place it as it is.</p>
   {:else}
-    <div class="tabs" role="tablist" aria-label="Holes to fill">
+    <div class="tabs" role="tablist" aria-label="Slots to fill">
       {#each rows as row, position (row.key)}
         <button
           type="button"

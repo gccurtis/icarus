@@ -43,7 +43,7 @@ export const insertionOf = (
 
   let source: PresentationBody = template.body;
   if (mode === "resolve") {
-    const resolved = resolveTemplateScopes(template.body, template.holes, answers);
+    const resolved = resolveTemplateScopes(template.body, template.slots, answers);
     if (!resolved.accepted || resolved.body.resource !== "presentation") return none(body);
     const filled = fillTemplateAtoms(resolved.body, texts);
     if (filled.resource !== "presentation") return none(body);

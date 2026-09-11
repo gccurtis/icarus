@@ -42,8 +42,8 @@ export const CORE_MUTATIONS = [
     changes: [{
       path: "src/lib/representation/data/types/core/resource-set.ts",
       edit: (before) => before.replace(
-        '| { kind: "resource"; ref: ResourceRef; hole: string };',
-        '| { kind: "resource"; resourceId: string; hole: string };'
+        '| { kind: "resource"; ref: ResourceRef; slot: string };',
+        '| { kind: "resource"; resourceId: string; slot: string };'
       )
     }]
   },

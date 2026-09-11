@@ -60,7 +60,7 @@ describe("stored template validation — spreadsheet bodies", () => {
     }
   });
 
-  test("keeps body hole lookup exact when declarations differ only by case", async () => {
+  test("keeps body slot lookup exact when declarations differ only by case", async () => {
     model.tables.templates.push(
       template(
         "1",
@@ -80,7 +80,7 @@ describe("stored template validation — spreadsheet bodies", () => {
                   prompt: "Summarize",
                   marks: [],
                   scope: {
-                    include: [{ select: "hole", name: "Region" }],
+                    include: [{ select: "slot", name: "Region" }],
                     exclude: []
                   },
                   state: "idle"
@@ -90,7 +90,7 @@ describe("stored template validation — spreadsheet bodies", () => {
           ]
         },
         {
-          holes: [
+          slots: [
             {
               name: "region",
               label: "Region",

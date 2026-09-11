@@ -31,7 +31,7 @@ export const populateHistoricalExternalReferences = (store: StoreModel) => {
     name: "Historical",
     tags: [],
     body: { resource: "document", rows: [] },
-    holes: [{
+    slots: [{
       name: "source",
       label: "Source",
       kind: "scope",

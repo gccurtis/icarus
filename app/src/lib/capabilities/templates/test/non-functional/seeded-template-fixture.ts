@@ -14,7 +14,7 @@ import {
   defineStore,
   type StoreModel
 } from "$model/server/store/index.server";
-import type { TemplateHole } from "$representation/data/types/templates/template";
+import type { TemplateSlot } from "$representation/data/types/templates/template";
 
 const runtimeState = vi.hoisted(() => ({ store: undefined as unknown as StoreModel }));
 
@@ -45,7 +45,7 @@ export type SeedTemplate = {
   readonly tags: readonly string[];
   readonly revision: number;
   readonly body: { readonly resource: "document" | "presentation" | "spreadsheet" };
-  readonly holes: readonly TemplateHole[];
+  readonly slots: readonly TemplateSlot[];
 };
 export type SeedTemplateVersion = {
   readonly _id: string;
@@ -55,7 +55,7 @@ export type SeedTemplateVersion = {
   readonly description?: string;
   readonly tags: readonly string[];
   readonly body: { readonly resource: "document" | "presentation" | "spreadsheet" };
-  readonly holes: readonly TemplateHole[];
+  readonly slots: readonly TemplateSlot[];
 };
 
 export const seedDirectory = dirname(

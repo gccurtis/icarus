@@ -1,7 +1,7 @@
 import type { StoreUnitOfWork } from "$model/server/store/index.server";
-import type { TemplateHole } from "$representation/data/types/templates/template";
+import type { TemplateSlot } from "$representation/data/types/templates/template";
 
-import { kindOf } from "$capabilities/templates/api/shared/holes";
+import { kindOf } from "$capabilities/templates/api/shared/slots";
 import { setReferencesIn } from "$capabilities/templates/api/shared/scopes";
 import type { TemplateAnswers } from "$capabilities/templates/types/templates";
 
@@ -9,24 +9,24 @@ type PlacementInputs =
   | { readonly accepted: true; readonly texts: Record<string, string> }
   | { readonly accepted: false; readonly detail: string };
 
-/** Matches placement input fields to declared hole kinds and fills text defaults. */
+/** Matches placement input fields to declared slot kinds and fills text defaults. */
 export const placementInputsOf = (
-  holes: readonly TemplateHole[],
+  slots: readonly TemplateSlot[],
   answers: TemplateAnswers,
   suppliedTexts: Readonly<Record<string, string>>
 ): PlacementInputs => {
   const scopeNames = new Set(
-    holes.filter((hole) => kindOf(hole) === "scope").map((hole) => hole.name)
+    slots.filter((slot) => kindOf(slot) === "scope").map((slot) => slot.name)
   );
   const textNames = new Set(
-    holes.filter((hole) => kindOf(hole) === "text").map((hole) => hole.name)
+    slots.filter((slot) => kindOf(slot) === "text").map((slot) => slot.name)
   );
   const wrongAnswers = Object.keys(answers).filter((name) => !scopeNames.has(name));
   const wrongTexts = Object.keys(suppliedTexts).filter((name) => !textNames.has(name));
   if (wrongAnswers.length > 0 || wrongTexts.length > 0) {
     return {
       accepted: false,
-      detail: `these answers do not match declared holes of their kind: ${[
+      detail: `these answers do not match declared slots of their kind: ${[
         ...wrongAnswers.map((name) => `scope answer '${name}'`),
         ...wrongTexts.map((name) => `text answer '${name}'`)
       ].join(", ")}`
@@ -34,9 +34,9 @@ export const placementInputsOf = (
   }
 
   const texts: Record<string, string> = { ...suppliedTexts };
-  for (const hole of holes) {
-    if (kindOf(hole) === "text" && hole.text !== undefined && texts[hole.name] === undefined) {
-      texts[hole.name] = hole.text;
+  for (const slot of slots) {
+    if (kindOf(slot) === "text" && slot.text !== undefined && texts[slot.name] === undefined) {
+      texts[slot.name] = slot.text;
     }
   }
   const unfilled = [...textNames].filter(

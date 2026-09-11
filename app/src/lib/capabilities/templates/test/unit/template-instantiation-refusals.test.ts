@@ -12,7 +12,7 @@ import {
 
 describe("instantiation — bounded exact input", () => {
   test("bounds recursively expanding represented defaults before writing", async () => {
-    const holes = Array.from({ length: 16 }, (_, index) => ({
+    const slots = Array.from({ length: 16 }, (_, index) => ({
       name: `branch-${index}`,
       label: `Branch ${index}`,
       kind: "scope" as const,
@@ -21,8 +21,8 @@ describe("instantiation — bounded exact input", () => {
           ? { include: [{ select: "project" as const }], exclude: [] }
           : {
               include: [
-                { select: "hole" as const, name: `branch-${index + 1}` },
-                { select: "hole" as const, name: `branch-${index + 1}` }
+                { select: "slot" as const, name: `branch-${index + 1}` },
+                { select: "slot" as const, name: `branch-${index + 1}` }
               ],
               exclude: []
             }
@@ -46,7 +46,7 @@ describe("instantiation — bounded exact input", () => {
                   prompt: "Summarize",
                   marks: [],
                   scope: {
-                    include: [{ select: "hole", name: "branch-0" }],
+                    include: [{ select: "slot", name: "branch-0" }],
                     exclude: []
                   },
                   state: "idle"
@@ -55,7 +55,7 @@ describe("instantiation — bounded exact input", () => {
             }
           ]
         },
-        { holes }
+        { slots }
       )
     );
 
@@ -67,7 +67,7 @@ describe("instantiation — bounded exact input", () => {
     assert.equal(model.tables.documents.length, 0);
   });
 
-  test("refuses a hole-set difference rather than broadening its scope", async () => {
+  test("refuses a slot-set difference rather than broadening its scope", async () => {
     model.tables.templates.push(
       template(
         "1",
@@ -88,7 +88,7 @@ describe("instantiation — bounded exact input", () => {
                   marks: [],
                   scope: {
                     include: [{ select: "kinds", kinds: ["document"] }],
-                    exclude: [{ select: "hole", name: "other-material" }]
+                    exclude: [{ select: "slot", name: "other-material" }]
                   },
                   state: "idle"
                 }
@@ -97,7 +97,7 @@ describe("instantiation — bounded exact input", () => {
           ]
         },
         {
-          holes: [
+          slots: [
             {
               name: "other-material",
               label: "Other material",

@@ -150,7 +150,7 @@ export const schema = new Schema({
     text: { group: "inline" },
 
     /**
-     * A template's own hole, drawn as its name in braces.
+     * A template's own slot, drawn as its name in braces.
      *
      * It is an atom like a formula is: one indivisible thing the caret steps
      * over, because half a parameter name is not a thing anyone means to type.

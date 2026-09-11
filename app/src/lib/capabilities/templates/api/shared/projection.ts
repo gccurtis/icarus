@@ -15,7 +15,7 @@ import {
   templateIdOf
 } from "$capabilities/templates/api/shared/validation";
 import { bodyOf } from "$capabilities/templates/api/shared/body-validation/body-validation";
-import { holesOf } from "$capabilities/templates/api/shared/hole-validation";
+import { slotsOf } from "$capabilities/templates/api/shared/slot-validation";
 import type {
   TemplateDetail,
   TemplateLibraryItem,
@@ -103,7 +103,7 @@ export const admitStoredTemplate = (template: Template): Template => {
       : descriptionOf(template.description, subject);
   const tags = tagsOf(template.tags, subject);
   const body = bodyOf(template.body, subject);
-  const holes = holesOf(template.holes, subject);
+  const slots = slotsOf(template.slots, subject);
   const createdBy = actorOf(template.createdBy, subject);
   const { description: _description, ...withoutDescription } = template;
   return {
@@ -112,7 +112,7 @@ export const admitStoredTemplate = (template: Template): Template => {
     ...(description === undefined ? {} : { description }),
     tags: [...tags],
     body,
-    holes: [...holes],
+    slots: [...slots],
     createdBy
   };
 };
@@ -233,7 +233,7 @@ const itemOf = (store: StoreModel, scope: Scope, template: Template): TemplateLi
     target: template.body.resource,
     availability: "project",
     tags: template.tags,
-    holeCount: template.holes.length,
+    slotCount: template.slots.length,
     createdByName: actorName(store, scope, template.createdBy),
     revision: template.revision,
     updatedAt: template.updatedAt,
@@ -249,23 +249,23 @@ export const detailOf = (
   template: Template
 ): TemplateDetail => {
   const admitted = admitStoredTemplate(template);
-  const { holeCount: _holeCount, ...item } = itemOf(store, scope, admitted);
+  const { slotCount: _slotCount, ...item } = itemOf(store, scope, admitted);
   return {
     ...item,
     body: admitted.body,
     /**
      * A default naming a bound row is read back as the rule it holds, because
-     * that row is the hole's value rather than a set anyone chose. A named set
+     * that row is the slot's value rather than a set anyone chose. A named set
      * stays a named set.
      */
-    holes: admitted.holes.map((hole) => {
+    slots: admitted.slots.map((slot) => {
       const expanded = expandedScope(
         store,
         scope.projectId,
-        { kind: "hole", templateId: admitted._id, hole: hole.name },
-        hole.default
+        { kind: "slot", templateId: admitted._id, slot: slot.name },
+        slot.default
       );
-      return expanded === undefined ? hole : { ...hole, default: expanded };
+      return expanded === undefined ? slot : { ...slot, default: expanded };
     })
   };
 };

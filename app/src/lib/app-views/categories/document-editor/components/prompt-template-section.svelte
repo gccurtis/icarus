@@ -2,12 +2,12 @@
   import { PromptTemplate } from "$authored-components/prompt-template";
   import { blockIn } from "$app-views/categories/document-editor/procedures/blocks";
   import {
-    promptHoleOps,
+    promptSlotOps,
     type Id
   } from "$app-views/categories/document-editor/procedures/prompt-blocks";
   import {
     defaultScopeOf,
-    nextHoleName,
+    nextSlotName,
     projectResources,
     resourceSets,
     resourcesIn,
@@ -20,9 +20,9 @@
   import type { DocumentOp } from "$representation/data/types/documents/op";
 
   /**
-   * Turning a prompt into a hole, and saying what the hole is.
+   * Turning a prompt into a slot, and saying what the slot is.
    *
-   * What the hole would default to is the scope the prompt reads, and once the
+   * What the slot would default to is the scope the prompt reads, and once the
    * prompt is linked that lives on the derived output. This reads it from the
    * same place the agent does, so the default shown here is the default a
    * template would actually carry.
@@ -63,8 +63,8 @@
     )
   );
 
-  const offered = $derived(body === undefined ? "Hole 1" : nextHoleName(body));
-  const named = $derived(block?.hole);
+  const offered = $derived(body === undefined ? "Slot 1" : nextSlotName(body));
+  const named = $derived(block?.slot);
   const reads = $derived(
     ruleOf(defaultScopeOf(derivedOutputId === undefined ? block?.scope : linked?.scope), setNames)
   );
@@ -76,17 +76,17 @@
 
   const make = () => {
     if (block === undefined) return;
-    write(promptHoleOps(block, { name: offered }));
+    write(promptSlotOps(block, { name: offered }));
   };
 
   const rename = (name: string) => {
     if (block === undefined) return;
-    write(promptHoleOps(block, { name, description: named?.description }));
+    write(promptSlotOps(block, { name, description: named?.description }));
   };
 
   const describe = (description: string) => {
     if (block === undefined) return;
-    write(promptHoleOps(block, { name: named?.name ?? offered, description }));
+    write(promptSlotOps(block, { name: named?.name ?? offered, description }));
   };
 </script>
 

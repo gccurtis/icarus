@@ -352,7 +352,7 @@ template is for.
 ## Not here yet
 
 **A spreadsheet template carries values, not prompts.** A prompt block in a
-document template becomes a variable and a hole for someone to fill. A cell has
+document template becomes a variable and a slot for someone to fill. A cell has
 no equivalent, because it holds a value rather than a block. When derived content
 reaches cells, a template cell gains what a prompt block already has — a key, a
 label, and a selection supplied at instantiation.

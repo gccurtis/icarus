@@ -14,22 +14,22 @@
     <li class="fallback">
       <span class="rank">2</span>
       <div>
-        <b>Else the hole's default scope</b>
-        <p>Everything in the project, particular kinds, one of the project's named sets — or another hole, expanded the same way.</p>
+        <b>Else the slot's default scope</b>
+        <p>Everything in the project, particular kinds, one of the project's named sets — or another slot, expanded the same way.</p>
       </div>
-      <code>hole.default</code>
+      <code>slot.default</code>
     </li>
     <li class="floor">
       <span class="rank">3</span>
       <div>
         <b>Else everything in the project</b>
-        <p>A hole with no default, or one that reaches itself. There is always an answer, so a template always resolves.</p>
+        <p>A slot with no default, or one that reaches itself. There is always an answer, so a template always resolves.</p>
       </div>
       <code>{"{ select: \"project\" }"}</code>
     </li>
   </ol>
   <p class="undeclared">
-    A prompt naming a hole the template does not declare is the one thing that refuses:
+    A prompt naming a slot the template does not declare is the one thing that refuses:
     <code>unsupported-body</code>, with the names, rather than a guess.
   </p>
 </div>

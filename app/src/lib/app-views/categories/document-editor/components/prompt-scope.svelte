@@ -40,7 +40,7 @@
     blockId,
     derivedOutputId,
     disabled = false,
-    description = "The sources it is answered from. If it is a hole, this is also what the hole selects until whoever places the template says otherwise.",
+    description = "The sources it is answered from. If it is a slot, this is also what the slot selects until whoever places the template says otherwise.",
     onconfirm
   }: {
     blockId: string;

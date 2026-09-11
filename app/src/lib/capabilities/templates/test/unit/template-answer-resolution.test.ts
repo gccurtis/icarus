@@ -10,7 +10,7 @@ import {
 } from "$capabilities/templates/test/unit/template-answer-fixture";
 
 describe("instantiating with answers — resolution", () => {
-  test("refuses answers that do not name a declared hole of the matching kind", async () => {
+  test("refuses answers that do not name a declared slot of the matching kind", async () => {
     const extraScope = await instantiateTemplate({
       templateId: "templates:1",
       answers: { missing: { include: [{ select: "project" }], exclude: [] } }
@@ -21,12 +21,12 @@ describe("instantiating with answers — resolution", () => {
     });
     const extraText = await instantiateTemplate({
       templateId: "templates:1",
-      texts: { missing: "No such hole" }
+      texts: { missing: "No such slot" }
     });
 
     for (const refused of [extraScope, textForScope, extraText]) {
       assert.equal(refused.accepted, false);
-      assert.match(refused.accepted ? "" : refused.detail, /do not match declared holes/);
+      assert.match(refused.accepted ? "" : refused.detail, /do not match declared slots/);
     }
     assert.equal(model.tables.documents.length, 0);
 
@@ -49,7 +49,7 @@ describe("instantiating with answers — resolution", () => {
         }
       ]
     };
-    model.tables.templates[0].holes = [
+    model.tables.templates[0].slots = [
       { name: "title", label: "Title", kind: "text", text: "Default" }
     ];
     const scopeForText = await instantiateTemplate({
@@ -57,7 +57,7 @@ describe("instantiating with answers — resolution", () => {
       answers: { title: { include: [{ select: "project" }], exclude: [] } }
     });
     assert.equal(scopeForText.accepted, false);
-    assert.match(scopeForText.accepted ? "" : scopeForText.detail, /do not match declared holes/);
+    assert.match(scopeForText.accepted ? "" : scopeForText.detail, /do not match declared slots/);
     assert.equal(model.tables.documents.length, 0);
   });
 
@@ -81,7 +81,7 @@ describe("instantiating with answers — resolution", () => {
   });
 
   test("a default may name one of the project's sets", async () => {
-    model.tables.templates[0].holes = [
+    model.tables.templates[0].slots = [
       {
         name: "evidence",
         label: "Evidence",
@@ -124,7 +124,7 @@ describe("instantiating with answers — resolution", () => {
   });
 
   test("a stored default fails closed on a malformed or globally duplicated named set", async () => {
-    model.tables.templates[0].holes = [
+    model.tables.templates[0].slots = [
       {
         name: "evidence",
         label: "Evidence",
@@ -217,7 +217,7 @@ describe("instantiating with answers — resolution", () => {
           ],
           sections: []
         },
-        holes: [],
+        slots: [],
         createdBy: { kind: "user", userId: "users:1" },
         revision: 1,
         updatedAt: 20

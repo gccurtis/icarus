@@ -8,7 +8,7 @@ import {
   tagsOf,
   templateIdOf
 } from "$capabilities/templates/api/shared/validation";
-import { holesOf } from "$capabilities/templates/api/shared/hole-validation";
+import { slotsOf } from "$capabilities/templates/api/shared/slot-validation";
 import type {
   UpdateTemplateInput,
   UpdateTemplatePatch
@@ -18,16 +18,16 @@ export const validateUpdateTemplate = (input: unknown): UpdateTemplateInput => {
   const fields = fieldsOf(input, "update-template");
   only(fields, ["templateId", "baseRevision", "patch"], "update-template");
   const incoming = fieldsOf(fields.patch, "update-template");
-  only(incoming, ["name", "description", "tags", "holeDescription", "holes"], "update-template");
+  only(incoming, ["name", "description", "tags", "slotDescription", "slots"], "update-template");
   if (Object.keys(incoming).length === 0) {
     throw new Error("templates/update-template: patch changes at least one field");
   }
 
-  const holeDescription = has(incoming, "holeDescription")
-    ? fieldsOf(incoming.holeDescription, "update-template")
+  const slotDescription = has(incoming, "slotDescription")
+    ? fieldsOf(incoming.slotDescription, "update-template")
     : undefined;
-  if (holeDescription !== undefined) {
-    only(holeDescription, ["name", "description"], "update-template");
+  if (slotDescription !== undefined) {
+    only(slotDescription, ["name", "description"], "update-template");
   }
 
   const patch: UpdateTemplatePatch = {
@@ -41,18 +41,18 @@ export const validateUpdateTemplate = (input: unknown): UpdateTemplateInput => {
         }
       : {}),
     ...(has(incoming, "tags") ? { tags: tagsOf(incoming.tags, "update-template") } : {}),
-    ...(has(incoming, "holes")
-      ? { holes: holesOf(incoming.holes, "update-template", true) }
+    ...(has(incoming, "slots")
+      ? { slots: slotsOf(incoming.slots, "update-template", true) }
       : {}),
-    ...(holeDescription === undefined
+    ...(slotDescription === undefined
       ? {}
       : {
-          holeDescription: {
-            name: nameOf(holeDescription.name, "update-template"),
+          slotDescription: {
+            name: nameOf(slotDescription.name, "update-template"),
             description:
-              holeDescription.description === null
+              slotDescription.description === null
                 ? null
-                : descriptionOf(holeDescription.description, "update-template")
+                : descriptionOf(slotDescription.description, "update-template")
           }
         })
   };

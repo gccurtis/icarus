@@ -8,7 +8,7 @@ import type {
 } from "$representation/data/types/core/resource-set";
 import type {
   TemplateBody,
-  TemplateHole
+  TemplateSlot
 } from "$representation/data/types/templates/template";
 
 type Term = SetTerm | TemplatedTerm;
@@ -44,7 +44,7 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 const isTemplateAtom = (value: Record<string, unknown>): boolean =>
   value.kind === "template" && typeof value.name === "string" && typeof value.id === "string";
 
-/** Every hole the body's template atoms ask for words for. */
+/** Every slot the body's template atoms ask for words for. */
 export const templateAtomNamesIn = (body: TemplateBody): readonly string[] => {
   const names = new Set<string>();
   const walk = (value: unknown): void => {
@@ -64,7 +64,7 @@ export const templateAtomNamesIn = (body: TemplateBody): readonly string[] => {
  * A template atom becomes the words it was answered with.
  *
  * An atom nobody answered is left exactly as it is, because a template being
- * edited is full of unanswered holes and that is what it is for. A block's
+ * edited is full of unanswered slots and that is what it is for. A block's
  * display is rebuilt from its atoms afterwards, since the words changed.
  */
 export const fillTemplateAtoms = (
@@ -87,7 +87,7 @@ export const fillTemplateAtoms = (
   return walk(body) as TemplateBody;
 };
 
-export const scopeHoleNamesIn = (body: TemplateBody): readonly string[] => {
+export const scopeSlotNamesIn = (body: TemplateBody): readonly string[] => {
   const names = new Set<string>();
   const walk = (value: unknown): void => {
     if (Array.isArray(value)) {
@@ -100,7 +100,7 @@ export const scopeHoleNamesIn = (body: TemplateBody): readonly string[] => {
         const terms = value.scope[side];
         if (!Array.isArray(terms)) continue;
         for (const term of terms) {
-          if (isRecord(term) && term.select === "hole" && typeof term.name === "string") {
+          if (isRecord(term) && term.select === "slot" && typeof term.name === "string") {
             names.add(term.name);
           }
         }
@@ -114,10 +114,10 @@ export const scopeHoleNamesIn = (body: TemplateBody): readonly string[] => {
 
 export const resolveTemplateScopes = (
   body: TemplateBody,
-  holes: readonly TemplateHole[],
+  slots: readonly TemplateSlot[],
   answers: ScopeAnswers = {}
 ): ResolvedScopes => {
-  const definitions = new Map(holes.map((hole) => [hole.name, hole]));
+  const definitions = new Map(slots.map((slot) => [slot.name, slot]));
   const memo = new Map<string, Scope>();
   const undeclared = new Set<string>();
   let emitted = 0;
@@ -136,7 +136,7 @@ export const resolveTemplateScopes = (
     const same: Term[] = [];
     const opposite: Term[] = [];
     for (const term of terms) {
-      if (term.select !== "hole") {
+      if (term.select !== "slot") {
         append(same, [term]);
         continue;
       }
@@ -201,7 +201,7 @@ export const resolveTemplateScopes = (
       return {
         accepted: false,
         reason: "unsupported-body",
-        detail: "a hole answered with exclusions cannot be flattened without changing scope"
+        detail: "a slot answered with exclusions cannot be flattened without changing scope"
       };
     }
     if (error instanceof RangeError && error.message === OVERFLOW) {

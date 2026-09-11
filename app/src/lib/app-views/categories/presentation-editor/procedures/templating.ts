@@ -6,17 +6,17 @@ export type {
   TemplateLibraryItem
 } from "$capabilities/templates/index.remote";
 export type { TemplatedResourceSet } from "$representation/data/types/core/resource-set";
-export type { TemplateHole } from "$representation/data/types/templates/template";
+export type { TemplateSlot } from "$representation/data/types/templates/template";
 
 export {
   defaultScopeOf,
-  holeMarkOver,
-  holeNameOver,
-  holeNamesIn,
-  nextHoleName,
-  offeredHoleName,
+  slotMarkOver,
+  slotNameOver,
+  slotNamesIn,
+  nextSlotName,
+  offeredSlotName,
   promptWordsIn
-} from "$representation/data/behavior/templates/prompt-holes";
+} from "$representation/data/behavior/templates/prompt-slots";
 export {
   answerRowsOf,
   missingIn,
@@ -60,16 +60,16 @@ export {
 } from "$app-views/categories/presentation-editor/procedures/template-resources";
 export { insertionOf, type Insertion } from "$app-views/categories/presentation-editor/procedures/template-insertion";
 export {
-  markedHoleAt,
-  markHoleOps,
-  mergedHoles,
+  markedSlotAt,
+  markSlotOps,
+  mergedSlots,
   readableScope,
   selectedWords,
-  withHoleField,
-  type ChosenHole
-} from "$app-views/categories/presentation-editor/procedures/template-holes";
+  withSlotField,
+  type ChosenSlot
+} from "$app-views/categories/presentation-editor/procedures/template-slots";
 export { saveAsTemplate } from "$app-views/categories/presentation-editor/procedures/save-template";
 export { openStage } from "$app-views/categories/presentation-editor/procedures/open-template-stage";
 export { commitStage } from "$app-views/categories/presentation-editor/procedures/commit-template-stage";
 export { discardStage } from "$app-views/categories/presentation-editor/procedures/discard-template-stage";
-export { updateHoles } from "$app-views/categories/presentation-editor/procedures/update-template-holes";
+export { updateSlots } from "$app-views/categories/presentation-editor/procedures/update-template-slots";

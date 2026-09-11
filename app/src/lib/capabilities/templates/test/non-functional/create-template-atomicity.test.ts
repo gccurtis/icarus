@@ -61,14 +61,14 @@ const expectWhole = (store: StoreModel): void => {
     name: "Plan",
     revision: 1,
     body: { resource: "document" },
-    holes: []
+    slots: []
   });
   expect(versions[0]).toMatchObject({
     templateId: templates[0]._id,
     name: "Plan",
     revision: 1,
     body: { resource: "document" },
-    holes: []
+    slots: []
   });
 };
 

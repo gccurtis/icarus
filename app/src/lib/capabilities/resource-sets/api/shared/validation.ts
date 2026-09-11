@@ -87,34 +87,34 @@ export const boundToOf = (value: unknown, subject: string): BoundTo => {
   if (owner === undefined) {
     throw new Error(`resource-sets/${subject}: boundTo is an exact current data object`);
   }
-  if (owner.kind === "hole") {
+  if (owner.kind === "slot") {
     if (
-      !hasExactFields(owner, ["kind", "templateId", "hole"]) ||
+      !hasExactFields(owner, ["kind", "templateId", "slot"]) ||
       !isStoredRowId(owner.templateId, "templates") ||
-      !canonicalText(owner.hole, MAX_KIND_LENGTH)
+      !canonicalText(owner.slot, MAX_KIND_LENGTH)
     ) {
-      throw new Error(`resource-sets/${subject}: a hole owner names a template and a hole`);
+      throw new Error(`resource-sets/${subject}: a slot owner names a template and a slot`);
     }
     return {
-      kind: "hole",
+      kind: "slot",
       templateId: owner.templateId,
-      hole: owner.hole
+      slot: owner.slot
     };
   }
   if (owner.kind === "resource") {
     if (
-      !hasExactFields(owner, ["kind", "ref", "hole"]) ||
-      !canonicalText(owner.hole, MAX_KIND_LENGTH)
+      !hasExactFields(owner, ["kind", "ref", "slot"]) ||
+      !canonicalText(owner.slot, MAX_KIND_LENGTH)
     ) {
-      throw new Error(`resource-sets/${subject}: a resource owner names one resource and a hole`);
+      throw new Error(`resource-sets/${subject}: a resource owner names one resource and a slot`);
     }
     return {
       kind: "resource",
       ref: admitResourceRef(owner.ref, `resource-sets/${subject}.ref`),
-      hole: owner.hole
+      slot: owner.slot
     };
   }
-  throw new Error(`resource-sets/${subject}: an owner is a hole or a resource`);
+  throw new Error(`resource-sets/${subject}: an owner is a slot or a resource`);
 };
 
 export const descriptionOf = (value: unknown, subject: string): string => {

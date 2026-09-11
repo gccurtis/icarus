@@ -6,17 +6,17 @@ import {
 } from "$representation/data/behavior/templates/scopes";
 import type {
   TemplateBody,
-  TemplateHole
+  TemplateSlot
 } from "$representation/data/types/templates/template";
 import type { Id } from "$representation/data/types/core/id";
 import type { ResourceRef } from "$representation/data/types/core/resource";
 
 import { writeTemplateResource } from "$capabilities/templates/api/shared/template-resource";
-import { kindOf } from "$capabilities/templates/api/shared/holes";
+import { kindOf } from "$capabilities/templates/api/shared/slots";
 import { placementSetRefusal } from "$capabilities/templates/api/shared/placement-inputs";
 import {
   normalizeScope,
-  privateHoleDefaultOf
+  privateSlotDefaultOf
 } from "$capabilities/templates/api/shared/scopes";
 import { withFreshOutputs } from "$capabilities/templates/api/shared/prompts";
 import type {
@@ -32,7 +32,7 @@ type PlaceTemplateInput = {
   readonly templateRevision: number;
   readonly templateName: string;
   readonly body: TemplateBody;
-  readonly holes: readonly TemplateHole[];
+  readonly slots: readonly TemplateSlot[];
   readonly answers: TemplateAnswers;
   readonly texts: Readonly<Record<string, string>>;
   readonly name?: string;
@@ -67,7 +67,7 @@ const placedResourceRef = (target: TemplateBody["resource"], resourceId: string)
       ? { kind: "presentation", id: asId<"presentations">(resourceId) }
       : { kind: "spreadsheet", id: asId<"spreadsheets">(resourceId) };
 
-/** Resolves holes and commits one complete new resource revision atomically. */
+/** Resolves slots and commits one complete new resource revision atomically. */
 export const placeTemplate = ({
   model,
   projectId: project,
@@ -76,7 +76,7 @@ export const placeTemplate = ({
   templateRevision,
   templateName,
   body,
-  holes,
+  slots,
   answers,
   texts,
   name
@@ -106,31 +106,31 @@ export const placeTemplate = ({
         throw rejected(templateId, templateRevision, setRefusal);
       }
 
-      for (const [hole, rule] of Object.entries(answers)) {
+      for (const [slot, rule] of Object.entries(answers)) {
         const term = normalizeScope(
           unit,
           project,
           actor,
-          { kind: "resource", ref, hole },
+          { kind: "resource", ref, slot },
           rule,
           at
         );
-        if (term !== undefined) answered[hole] = term.term as TemplateAnswers[string];
+        if (term !== undefined) answered[slot] = term.term as TemplateAnswers[string];
       }
 
-      for (const hole of holes) {
-        if (kindOf(hole) !== "scope" || answers[hole.name] !== undefined) continue;
-        const storedDefault = privateHoleDefaultOf(
+      for (const slot of slots) {
+        if (kindOf(slot) !== "scope" || answers[slot.name] !== undefined) continue;
+        const storedDefault = privateSlotDefaultOf(
           unit,
           project,
-          { kind: "hole", templateId, hole: hole.name },
-          hole.default
+          { kind: "slot", templateId, slot: slot.name },
+          slot.default
         );
         if (storedDefault.kind === "invalid") {
           throw rejected(
             templateId,
             templateRevision,
-            `scope hole '${hole.name}' has an invalid private resource set ${storedDefault.setId}`
+            `scope slot '${slot.name}' has an invalid private resource set ${storedDefault.setId}`
           );
         }
         if (storedDefault.kind !== "private") continue;
@@ -138,14 +138,14 @@ export const placeTemplate = ({
           unit,
           project,
           actor,
-          { kind: "resource", ref, hole: hole.name },
+          { kind: "resource", ref, slot: slot.name },
           storedDefault.rule,
           at
         );
-        if (term !== undefined) answered[hole.name] = term.term as TemplateAnswers[string];
+        if (term !== undefined) answered[slot.name] = term.term as TemplateAnswers[string];
       }
 
-      const resolved = resolveTemplateScopes(body, holes, answered);
+      const resolved = resolveTemplateScopes(body, slots, answered);
       if (!resolved.accepted) {
         throw new PlacementRejected({
           accepted: false,
@@ -159,7 +159,7 @@ export const placeTemplate = ({
         throw rejected(
           templateId,
           templateRevision,
-          `the body names a hole the template does not declare: ${resolved.undeclared.join(", ")}`
+          `the body names a slot the template does not declare: ${resolved.undeclared.join(", ")}`
         );
       }
 

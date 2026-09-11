@@ -5,8 +5,8 @@ import {
   editTemplate,
   instantiateTemplate,
   termFor,
-  updateTemplateHoleDescription,
-  updateTemplateHoleDefault,
+  updateTemplateSlotDescription,
+  updateTemplateSlotDefault,
   withTerm,
   withWholeProject,
   withoutTerm,
@@ -16,7 +16,7 @@ import {
   type ScopeDraft,
   type ScopeSide,
   type TemplateAnswers,
-  type TemplateHole
+  type TemplateSlot
 } from "$app-views/categories/templates/procedures/library.svelte";
 import type { WorkspaceStateModel } from "$model/client/workspace-state";
 
@@ -24,29 +24,29 @@ type Context = {
   readonly view: WorkspaceStateModel;
   readonly template: () => LibraryTemplateDetail | undefined;
   readonly pending: () => string | undefined;
-  readonly setPending: (value: "use" | "edit" | "default" | "hole" | undefined) => void;
+  readonly setPending: (value: "use" | "edit" | "default" | "slot" | undefined) => void;
   readonly setError: (value: string | undefined) => void;
   readonly stillInspecting: (tabId: string, subjectId: string) => boolean;
-  readonly prepareHoleEditing: () => void;
+  readonly prepareSlotEditing: () => void;
 };
 
 const SPREADSHEET_HANDOFF =
   "Spreadsheet templates are represented and can be materialized, but Use is paused until the spreadsheet editor consumes the created resource id.";
 
-/** Owns the new hole-answering and default-scope workflow in the Template inspector. */
+/** Owns the new slot-answering and default-scope workflow in the Template inspector. */
 export class TemplatePromptState {
-  defaultFor = $state<TemplateHole | undefined>(undefined);
+  defaultFor = $state<TemplateSlot | undefined>(undefined);
   defaultOpen = $state(false);
   draft = $state<ScopeDraft>(draftOf(undefined));
   useOpen = $state(false);
   answerOpen = $state(false);
   useChoices = $state<Record<string, ScopeDraft | undefined>>({});
   useTexts = $state<Record<string, string | undefined>>({});
-  answering = $state<TemplateHole | undefined>(undefined);
-  editingHole = $state<string | undefined>(undefined);
-  holeDescriptionDraft = $state("");
-  holeBase = $state<LibraryTemplateDetail | undefined>(undefined);
-  holeEditor = $state<HTMLTextAreaElement | null>(null);
+  answering = $state<TemplateSlot | undefined>(undefined);
+  editingSlot = $state<string | undefined>(undefined);
+  slotDescriptionDraft = $state("");
+  slotBase = $state<LibraryTemplateDetail | undefined>(undefined);
+  slotEditor = $state<HTMLTextAreaElement | null>(null);
 
   constructor(private readonly context: Context) {}
 
@@ -57,7 +57,7 @@ export class TemplatePromptState {
       this.context.setError(SPREADSHEET_HANDOFF);
       return;
     }
-    if (template.holes.length === 0) {
+    if (template.slots.length === 0) {
       void this.instantiate({});
       return;
     }
@@ -72,10 +72,10 @@ export class TemplatePromptState {
   }
 
   openAnswer(name: string): void {
-    const hole = this.context.template()?.holes.find((candidate) => candidate.name === name);
-    if (hole === undefined) return;
-    this.answering = hole;
-    this.draft = draftOf(this.useChoices[name] ?? hole.default);
+    const slot = this.context.template()?.slots.find((candidate) => candidate.name === name);
+    if (slot === undefined) return;
+    this.answering = slot;
+    this.draft = draftOf(this.useChoices[name] ?? slot.default);
     this.useOpen = false;
     this.answerOpen = true;
   }
@@ -129,45 +129,45 @@ export class TemplatePromptState {
     this.draft = { include: [], exclude: [] };
   }
 
-  startHoleDescription(hole: TemplateHole): void {
+  startSlotDescription(slot: TemplateSlot): void {
     const template = this.context.template();
     if (template === undefined || !template.canEdit || this.context.pending() !== undefined) return;
-    this.context.prepareHoleEditing();
-    this.holeBase = template;
-    this.editingHole = hole.name;
-    this.holeDescriptionDraft = hole.description ?? "";
+    this.context.prepareSlotEditing();
+    this.slotBase = template;
+    this.editingSlot = slot.name;
+    this.slotDescriptionDraft = slot.description ?? "";
     queueMicrotask(() => {
-      this.holeEditor?.focus();
-      this.holeEditor?.select();
+      this.slotEditor?.focus();
+      this.slotEditor?.select();
     });
   }
 
-  cancelHoleDescription(): void {
-    this.editingHole = undefined;
-    this.holeDescriptionDraft = "";
-    this.holeBase = undefined;
+  cancelSlotDescription(): void {
+    this.editingSlot = undefined;
+    this.slotDescriptionDraft = "";
+    this.slotBase = undefined;
   }
 
-  commitHoleDescription(hole: TemplateHole): void {
-    const subject = this.holeBase;
+  commitSlotDescription(slot: TemplateSlot): void {
+    const subject = this.slotBase;
     if (
       subject === undefined ||
       this.context.template()?.id !== subject.id ||
-      this.editingHole !== hole.name ||
+      this.editingSlot !== slot.name ||
       !subject.canEdit ||
       this.context.pending() !== undefined
     ) return;
-    if (this.holeDescriptionDraft.trim() === (hole.description ?? "").trim()) {
-      this.cancelHoleDescription();
+    if (this.slotDescriptionDraft.trim() === (slot.description ?? "").trim()) {
+      this.cancelSlotDescription();
       return;
     }
-    void this.performHoleDescription(subject, hole);
+    void this.performSlotDescription(subject, slot);
   }
 
-  holeKeydown(event: KeyboardEvent): void {
+  slotKeydown(event: KeyboardEvent): void {
     if (event.key !== "Escape") return;
     event.preventDefault();
-    this.cancelHoleDescription();
+    this.cancelSlotDescription();
   }
 
   edit(): void {
@@ -180,19 +180,19 @@ export class TemplatePromptState {
     void this.performEdit(subject);
   }
 
-  openDefault(hole: TemplateHole): void {
+  openDefault(slot: TemplateSlot): void {
     const template = this.context.template();
     if (template === undefined || !template.canEdit || this.context.pending() !== undefined) return;
-    this.defaultFor = hole;
-    this.draft = draftOf(hole.default);
+    this.defaultFor = slot;
+    this.draft = draftOf(slot.default);
     this.defaultOpen = true;
   }
 
   setDefault(): void {
     const subject = this.context.template();
-    const hole = this.defaultFor;
-    if (subject === undefined || hole === undefined || this.context.pending() !== undefined) return;
-    void this.performDefault(subject, hole, this.draft);
+    const slot = this.defaultFor;
+    if (subject === undefined || slot === undefined || this.context.pending() !== undefined) return;
+    void this.performDefault(subject, slot, this.draft);
   }
 
   private async instantiate(
@@ -247,17 +247,17 @@ export class TemplatePromptState {
 
   private async performDefault(
     subject: LibraryTemplateDetail,
-    hole: TemplateHole,
+    slot: TemplateSlot,
     rule: ScopeDraft
   ): Promise<void> {
     const originTabId = this.context.view.activeId;
     this.context.setPending("default");
     this.context.setError(undefined);
     try {
-      const result = await updateTemplateHoleDefault(
+      const result = await updateTemplateSlotDefault(
         this.context.view,
         subject,
-        hole.name,
+        slot.name,
         rule
       );
       if (!this.context.stillInspecting(originTabId, subject.id)) return;
@@ -271,23 +271,23 @@ export class TemplatePromptState {
     }
   }
 
-  private async performHoleDescription(
+  private async performSlotDescription(
     subject: LibraryTemplateDetail,
-    hole: TemplateHole
+    slot: TemplateSlot
   ): Promise<void> {
     const originTabId = this.context.view.activeId;
-    this.context.setPending("hole");
+    this.context.setPending("slot");
     this.context.setError(undefined);
     try {
-      const result = await updateTemplateHoleDescription(
+      const result = await updateTemplateSlotDescription(
         this.context.view,
         subject,
-        hole.name,
-        this.holeDescriptionDraft
+        slot.name,
+        this.slotDescriptionDraft
       );
       if (!this.context.stillInspecting(originTabId, subject.id)) return;
       if (!result.accepted) this.context.setError(result.detail);
-      else this.cancelHoleDescription();
+      else this.cancelSlotDescription();
     } catch (error) {
       if (this.context.stillInspecting(originTabId, subject.id)) {
         this.context.setError(error instanceof Error ? error.message : String(error));

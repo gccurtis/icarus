@@ -94,7 +94,7 @@ const template = $derived(detailIn(templateDetail(stage?.templateId)?.current));
         lacks. In <code>resolve</code> mode the template's prompt scopes are resolved through the answers,
         then the defaults. In <code>keep</code> mode, when the open document is itself a stage, nothing is
         asked: scopes are left as variable terms and the inserted template's variables are merged into
-        the stage's template, because a template inserted into a template should bring its holes with it.
+        the stage's template, because a template inserted into a template should bring its slots with it.
       </p>
       <p>
         The presentation's <code>insertionOf</code> does the same for slides: layouts whose key the presentation lacks are

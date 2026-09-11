@@ -1,9 +1,9 @@
 import type { StoreUnitOfWork, TableRow } from "$model/server/store/index.server";
-import type { TemplateVersionHole } from "$representation/data/types/templates/template";
+import type { TemplateVersionSlot } from "$representation/data/types/templates/template";
 
 import { versionScopeOf } from "$capabilities/templates/api/shared/scopes";
 import type { RowFields } from "$capabilities/templates/api/shared/store";
-import { versionHolesOf } from "$capabilities/templates/api/shared/hole-validation";
+import { versionSlotsOf } from "$capabilities/templates/api/shared/slot-validation";
 
 type TemplateFields = RowFields<"templates">;
 type Template = TableRow<"templates">;
@@ -14,19 +14,19 @@ export const writeTemplateVersion = (
   fields: TemplateFields,
   at: number
 ): void => {
-  const snapshot = fields.holes.map((hole): TemplateVersionHole => {
-    const { default: liveDefault, ...identity } = structuredClone(hole);
+  const snapshot = fields.slots.map((slot): TemplateVersionSlot => {
+    const { default: liveDefault, ...identity } = structuredClone(slot);
     const versionDefault = versionScopeOf(
       store,
       fields.projectId,
-      { kind: "hole", templateId, hole: hole.name },
+      { kind: "slot", templateId, slot: slot.name },
       liveDefault
     );
     return versionDefault === undefined
       ? identity
       : { ...identity, default: versionDefault };
   });
-  const holes = versionHolesOf(snapshot, `version-${templateId}-${fields.revision}`);
+  const slots = versionSlotsOf(snapshot, `version-${templateId}-${fields.revision}`);
   store.create("templateVersions", {
     templateId,
     revision: fields.revision,
@@ -34,7 +34,7 @@ export const writeTemplateVersion = (
     ...(fields.description === undefined ? {} : { description: fields.description }),
     tags: fields.tags,
     body: fields.body,
-    holes: [...holes],
+    slots: [...slots],
     at
   });
 };
@@ -46,7 +46,7 @@ export const fieldsOfTemplate = (template: Template): TemplateFields => ({
   ...(template.description === undefined ? {} : { description: template.description }),
   tags: template.tags,
   body: template.body,
-  holes: template.holes,
+  slots: template.slots,
   createdBy: template.createdBy,
   revision: template.revision,
   updatedAt: template.updatedAt

@@ -8,9 +8,9 @@
     PanelSection
   } from "$authored-components/panel";
   import {
-    markHoleOps,
-    markedHoleAt,
-    nextHoleName,
+    markSlotOps,
+    markedSlotAt,
+    nextSlotName,
     selectedWords
   } from "$app-views/categories/presentation-editor/procedures/templating";
   import TextSpacing from "$app-views/categories/presentation-editor/components/text-spacing.svelte";
@@ -34,16 +34,16 @@
   const position = $derived(body === undefined ? 0 : slideIndexOf(body, view.active.focus ?? undefined) + 1);
 
   /**
-   * A run of a slide's text marked as a hole. Nothing about the presentation changes —
-   * the words stay, and only a template made from it holds a hole here.
+   * A run of a slide's text marked as a slot. Nothing about the presentation changes —
+   * the words stay, and only a template made from it holds a slot here.
    */
-  const offered = $derived(body === undefined ? "Hole 1" : nextHoleName(body));
+  const offered = $derived(body === undefined ? "Slot 1" : nextSlotName(body));
   const words = $derived(body === undefined ? "" : selectedWords(body, range));
-  const here = $derived(body === undefined ? undefined : markedHoleAt(body, range));
+  const here = $derived(body === undefined ? undefined : markedSlotAt(body, range));
 
   const templateify = () => {
     if (runtime === undefined || body === undefined) return;
-    const ops = markHoleOps(body, range, offered);
+    const ops = markSlotOps(body, range, offered);
     if (ops.length > 0) runtime.apply(ops);
   };
 </script>
@@ -65,18 +65,18 @@
         <div class="template">
           {#if here === undefined}
             <PanelNote tone="muted">
-              Mark this as a hole and a template built from this presentation will ask what fills it, starting
+              Mark this as a slot and a template built from this presentation will ask what fills it, starting
               from what it says now. The presentation itself does not change.
             </PanelNote>
             <PanelButton
               label="Templateify"
               tone="primary"
-              title={`Mark the selection as a hole called ${offered}`}
+              title={`Mark the selection as a slot called ${offered}`}
               onclick={templateify}
             />
           {:else}
             <PanelNote tone="muted">
-              These words are the hole <b>{here}</b>. They stay exactly as they are here; the template
+              These words are the slot <b>{here}</b>. They stay exactly as they are here; the template
               made from this presentation asks what goes in their place.
             </PanelNote>
           {/if}

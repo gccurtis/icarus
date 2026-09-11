@@ -7,16 +7,16 @@ import {
   storedFields
 } from "$representation/data/behavior/core/stored";
 import type {
-  TemplateHole,
-  TemplateVersionHole
+  TemplateSlot,
+  TemplateVersionSlot
 } from "$representation/data/types/templates/template";
 
-type HoleKind = "live" | "version";
+type SlotKind = "live" | "version";
 
 const canonical = (value: unknown, maximum = 160): value is string =>
   isStoredText(value, maximum) && value.length > 0 && value === value.trim();
 
-const scopeTerm = (value: unknown, kind: HoleKind): boolean => {
+const scopeTerm = (value: unknown, kind: SlotKind): boolean => {
   const term = storedFields(value);
   if (term === undefined) return false;
   if (term.select === "project") return hasExactFields(term, ["select"]);
@@ -32,7 +32,7 @@ const scopeTerm = (value: unknown, kind: HoleKind): boolean => {
     return hasExactFields(term, ["select", "setId"]) &&
       isStoredRowId(term.setId, "resourceSets");
   }
-  if (term.select === "hole") {
+  if (term.select === "slot") {
     return hasExactFields(term, ["select", "name"]) && canonical(term.name);
   }
   return kind === "version" &&
@@ -43,7 +43,7 @@ const scopeTerm = (value: unknown, kind: HoleKind): boolean => {
     term.refs.every(currentResourceRef);
 };
 
-const scope = (value: unknown, kind: HoleKind): boolean => {
+const scope = (value: unknown, kind: SlotKind): boolean => {
   const held = storedFields(value);
   return held !== undefined &&
     hasExactFields(held, ["include", "exclude"]) &&
@@ -51,7 +51,7 @@ const scope = (value: unknown, kind: HoleKind): boolean => {
     Array.isArray(held.exclude) && held.exclude.length <= 100 && held.exclude.every((term) => scopeTerm(term, kind));
 };
 
-const hole = (value: unknown, kind: HoleKind): boolean => {
+const slot = (value: unknown, kind: SlotKind): boolean => {
   const held = storedFields(value);
   if (
     held === undefined ||
@@ -70,8 +70,8 @@ const hole = (value: unknown, kind: HoleKind): boolean => {
     (held.default === undefined || scope(held.default, kind));
 };
 
-const holes = (value: unknown, kind: HoleKind): boolean => {
-  if (!Array.isArray(value) || value.length > 100 || !value.every((entry) => hole(entry, kind))) {
+const slots = (value: unknown, kind: SlotKind): boolean => {
+  if (!Array.isArray(value) || value.length > 100 || !value.every((entry) => slot(entry, kind))) {
     return false;
   }
   const held = value as Array<{ name: string; default?: { include: unknown[]; exclude: unknown[] } }>;
@@ -83,15 +83,15 @@ const holes = (value: unknown, kind: HoleKind): boolean => {
     const terms = [...entry.default.include, ...entry.default.exclude];
     return terms.every((term) => {
       const fields = storedFields(term);
-      return fields?.select !== "hole" || (
+      return fields?.select !== "slot" || (
         typeof fields.name === "string" && declared.has(fields.name)
       );
     });
   });
 };
 
-export const isStoredTemplateHoles = (value: unknown): value is TemplateHole[] =>
-  holes(value, "live");
+export const isStoredTemplateSlots = (value: unknown): value is TemplateSlot[] =>
+  slots(value, "live");
 
-export const isStoredTemplateVersionHoles = (value: unknown): value is TemplateVersionHole[] =>
-  holes(value, "version");
+export const isStoredTemplateVersionSlots = (value: unknown): value is TemplateVersionSlot[] =>
+  slots(value, "version");

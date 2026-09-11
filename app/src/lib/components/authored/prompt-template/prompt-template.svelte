@@ -3,14 +3,14 @@
   import { traceNode } from "$development-components/trace.svelte";
 
   /**
-   * Turning this thing into a hole, and saying what the hole is.
+   * Turning this thing into a slot, and saying what the slot is.
    *
-   * A hole is made, never found: until somebody presses the button there is
+   * A slot is made, never found: until somebody presses the button there is
    * none, and a template made from this body will not ask about it. That is
    * what makes placing a template short — the questions are the ones somebody
    * meant to ask.
    *
-   * There is no default control. A hole's default is simply whatever the thing
+   * There is no default control. A slot's default is simply whatever the thing
    * already is: the scope this prompt reads, or the words that were selected.
    * Changing the default means changing the thing, which is done where the
    * thing is.
@@ -25,7 +25,7 @@
     onname,
     ondescription
   }: {
-    /** The hole's name, or undefined while this is not a hole. */
+    /** The slot's name, or undefined while this is not a slot. */
     name?: string;
     description?: string;
     /** The name the button will give it. */
@@ -51,7 +51,7 @@
   <div class="template" {...trace}>
     {#if name === undefined}
       <PanelNote tone="muted">
-        Not a hole. Make it one and a template built from this will ask what fills it, starting from
+        Not a slot. Make it one and a template built from this will ask what fills it, starting from
         what it is now — {standing}.
       </PanelNote>
       <div class="act">
@@ -59,16 +59,16 @@
           label="Templateify"
           tone="primary"
           {disabled}
-          title={`Make this a hole called ${offered}`}
+          title={`Make this a slot called ${offered}`}
           onclick={onmake}
         />
       </div>
     {:else}
       <div class="field">
-        <span class="label">Hole name</span>
+        <span class="label">Slot name</span>
         <PanelEditableText
           value={name}
-          label="What this hole is called"
+          label="What this slot is called"
           placeholder={offered}
           {disabled}
           onchange={rename}
@@ -79,7 +79,7 @@
         <span class="label">Description <em>optional</em></span>
         <PanelEditableText
           value={description}
-          label="What this hole stands for"
+          label="What this slot stands for"
           placeholder="What whoever places this is choosing"
           multiline
           {disabled}

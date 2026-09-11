@@ -129,9 +129,9 @@ new template's working copy in its own tab. A slide saved this way is a presenta
 template holding one slide, and nothing marks it afterwards.
 
 A working copy shows Save and Discard in the panel's header instead of the name
-field, because the tab title already says which template is open. Its Holes band
-lists every hole: a scope hole is found from the slides' prompt scopes and
-cannot be added by hand; a text hole is made by Create hole, which names it and
+field, because the tab title already says which template is open. Its Slots band
+lists every slot: a scope slot is found from the slides' prompt scopes and
+cannot be added by hand; a text slot is made by Create slot, which names it and
 drops its atom into the selected text. Each is a card carrying that name, its
 label, its description, and either default words or a button that opens the
 default-scope modal.
@@ -139,9 +139,9 @@ default-scope modal.
 A divider separates the band from a collapsible List section holding every presentation
 template, searchable, each row inserting after the current slide or opening the
 template for editing. Inserting brings fresh identifiers and any layouts and
-named styles the presentation lacks. A template with holes first asks, in one modal,
-what fills each; inserting into a working copy asks nothing, keeps the hole
-terms, and merges the two hole lists.
+named styles the presentation lacks. A template with slots first asks, in one modal,
+what fills each; inserting into a working copy asks nothing, keeps the slot
+terms, and merges the two slot lists.
 
 ## Inspectors
 

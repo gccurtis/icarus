@@ -26,9 +26,9 @@ export const TOPOLOGY = `gitGraph
   checkout work/template-features
   commit id: "the template system"
   commit id: "the scope builder"
-  commit id: "one list of holes"
+  commit id: "one list of slots"
   commit id: "one row per term"
-  commit id: "holes, and Create hole"`;
+  commit id: "slots, and Create slot"`;
 
 export const RECONCILED: Reconciliation[] = [
   {
@@ -36,7 +36,7 @@ export const RECONCILED: Reconciliation[] = [
     path: "capabilities/templates/api/instantiate-template/instantiate-template.ts",
     when: "Onto main, before the move",
     base: "Normalized a document's styles and readied a presentation before the leader snapshot was written, both inside the same block this branch had rewritten.",
-    branch: "Resolved every prompt scope through the caller's answers and the holes' defaults, then wrote the snapshot.",
+    branch: "Resolved every prompt scope through the caller's answers and the slots' defaults, then wrote the snapshot.",
     kept: "Both. The style normalisation and the presentation readying run where the base put them, the scope resolution runs before them, and the presentation branch took the base's destructuring rather than keeping two spellings of the same read.",
     why: "Neither side was making a claim about the other. One prepares a body to be stored; the other decides what the body says. Ordering them was the whole decision."
   },
@@ -54,7 +54,7 @@ export const RECONCILED: Reconciliation[] = [
     path: "app-views/categories/presentation-editor/presentation-editor.md",
     when: "Twice — onto main, then onto the base",
     base: "First cut the document from 714 lines to 221 and listed Templates as a deferred placeholder; later added a Prompts section describing the Prompt Block and how a text box converts into one.",
-    branch: "Described the Templates panel — the working copy, the Holes band, the List — in the same place, directly after Comments.",
+    branch: "Described the Templates panel — the working copy, the Slots band, the List — in the same place, directly after Comments.",
     kept: "The base's rewrite whole, both times, with the Templates section written again beside Prompts in the base's terse register.",
     why: "A document is prose, so a three-way merge has nothing structural to work with and both sides had rewritten the same neighbourhood. Taking one side whole and re-adding the other by hand is the only way to end with a document that reads."
   },
@@ -81,14 +81,14 @@ export const RECONCILED: Reconciliation[] = [
 export const DEFECTS: Defect[] = [
   {
     index: "01",
-    title: "A text hole's kind and default words were thrown away on every write",
+    title: "A text slot's kind and default words were thrown away on every write",
     symptom:
-      "Typing default words into a text hole looked like it worked — the panel showed them — and they were gone on the next read. A text hole could also come back as a scope hole, with a Default scope button where its words had been.",
+      "Typing default words into a text slot looked like it worked — the panel showed them — and they were gone on the next read. A text slot could also come back as a scope slot, with a Default scope button where its words had been.",
     cause:
-      "updateTemplate rebuilds each hole after normalising its scope, and the rebuild listed name, label, description and default. It was written before text holes existed and nobody widened it when they arrived, so kind and text fell off the object on the way to the store.",
+      "updateTemplate rebuilds each slot after normalising its scope, and the rebuild listed name, label, description and default. It was written before text slots existed and nobody widened it when they arrived, so kind and text fell off the object on the way to the store.",
     fix: "The rebuild carries kind and text through, both still omitted rather than written as undefined when they are absent.",
     proof:
-      "The browser case that makes a hole with default words now reads both the words and the description back off the card after the round trip, which fails against the old rebuild."
+      "The browser case that makes a slot with default words now reads both the words and the description back off the card after the round trip, which fails against the old rebuild."
   },
   {
     index: "02",
@@ -108,15 +108,15 @@ export const DIVERGENCE: Divergence[] = [
     layer: "Vocabulary",
     base: "The semantic overlay: derived outputs, evidence spans, material profiles, embeddings, and a PromptBlock that carries a derived output id and a generation state.",
     branch:
-      "templateStages; templates gains projectId, lastUsedAt and holes; resourceSets gains name and boundTo; TemplatedTerm gains a hole term; Atom gains TemplateAtom; Target gains context.",
+      "templateStages; templates gains projectId, lastUsedAt and slots; resourceSets gains name and boundTo; TemplatedTerm gains a slot term; Atom gains TemplateAtom; Target gains context.",
     meets:
-      "PromptBlock.scope. The base writes prompt blocks; this branch reads their scopes to find holes and substitutes answers back into them."
+      "PromptBlock.scope. The base writes prompt blocks; this branch reads their scopes to find slots and substitutes answers back into them."
   },
   {
     layer: "Capabilities",
     base: "derived-output, with grounded synthesis, agent tool rounds, citation and refresh coalescing.",
     branch:
-      "templates rewritten as a project subject with working copies, holes and scope normalisation; a new resource-sets capability; startThread refusing a working copy.",
+      "templates rewritten as a project subject with working copies, slots and scope normalisation; a new resource-sets capability; startThread refusing a working copy.",
     meets:
       "Nothing calls across. A template is made from a body that already holds prompt blocks, and the generated answer is dropped on the way in."
   },
@@ -124,7 +124,7 @@ export const DIVERGENCE: Divergence[] = [
     layer: "Editors",
     base: "Live Prompt Blocks in both editors: a text box converts in place, a prompt inspector generates and refreshes, a Prompts context panel indexes them.",
     branch:
-      "A Templates context panel in both editors: save, open a working copy, the Holes band with Create hole, and the template List.",
+      "A Templates context panel in both editors: save, open a working copy, the Slots band with Create slot, and the template List.",
     meets:
       "The document and presentation bodies, and one shared measurement of an atom's width in `positions.ts`."
   },

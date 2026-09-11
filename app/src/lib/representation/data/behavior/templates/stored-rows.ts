@@ -9,9 +9,9 @@ import {
 } from "$representation/data/behavior/core/stored";
 import { isStoredTemplateBody } from "$representation/data/behavior/templates/stored-body";
 import {
-  isStoredTemplateHoles,
-  isStoredTemplateVersionHoles
-} from "$representation/data/behavior/templates/stored-holes";
+  isStoredTemplateSlots,
+  isStoredTemplateVersionSlots
+} from "$representation/data/behavior/templates/stored-slots";
 import type { TableRow } from "$representation/store/tables";
 
 const positiveRevision = (value: unknown): value is number =>
@@ -39,7 +39,7 @@ export const isStoredTemplate = (value: unknown): value is TableRow<"templates">
     hasExactFields(
       row,
       [
-        "_id", "_creationTime", "projectId", "userId", "name", "tags", "body", "holes",
+        "_id", "_creationTime", "projectId", "userId", "name", "tags", "body", "slots",
         "createdBy", "revision", "updatedAt"
       ],
       ["description", "lastUsedAt"]
@@ -52,7 +52,7 @@ export const isStoredTemplate = (value: unknown): value is TableRow<"templates">
     (row.description === undefined || canonicalText(row.description, 4_000, true)) &&
     tags(row.tags) &&
     isStoredTemplateBody(row.body) &&
-    isStoredTemplateHoles(row.holes) &&
+    isStoredTemplateSlots(row.slots) &&
     isStoredActor(row.createdBy) &&
     positiveRevision(row.revision) &&
     isStoredTime(row.updatedAt) &&
@@ -67,7 +67,7 @@ export const isStoredTemplateVersion = (
   return row !== undefined &&
     hasExactFields(
       row,
-      ["_id", "_creationTime", "templateId", "revision", "name", "tags", "body", "holes", "at"],
+      ["_id", "_creationTime", "templateId", "revision", "name", "tags", "body", "slots", "at"],
       ["description"]
     ) &&
     isStoredRowId(row._id, "templateVersions") &&
@@ -78,6 +78,6 @@ export const isStoredTemplateVersion = (
     (row.description === undefined || canonicalText(row.description, 4_000, true)) &&
     tags(row.tags) &&
     isStoredTemplateBody(row.body) &&
-    isStoredTemplateVersionHoles(row.holes) &&
+    isStoredTemplateVersionSlots(row.slots) &&
     isStoredTime(row.at);
 };

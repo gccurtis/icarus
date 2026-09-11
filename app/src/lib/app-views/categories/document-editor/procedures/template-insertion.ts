@@ -58,7 +58,7 @@ export const insertionOf = (
 
   let source = template.body;
   if (mode === "resolve") {
-    const resolved = resolveTemplateScopes(template.body, template.holes, answers);
+    const resolved = resolveTemplateScopes(template.body, template.slots, answers);
     if (!resolved.accepted || resolved.body.resource !== "document") {
       return { ops: [], firstBlockId: undefined };
     }

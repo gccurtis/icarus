@@ -86,7 +86,7 @@ const seeded = (directory: string, subject: (typeof subjects)[number]) => {
     name: "Plan",
     tags: [],
     body: subject.body,
-    holes: [],
+    slots: [],
     createdBy: { kind: "user", userId: "users:u" },
     revision: 2,
     updatedAt: 1000

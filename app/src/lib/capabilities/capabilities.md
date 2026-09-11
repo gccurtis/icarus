@@ -29,7 +29,7 @@ The current subject inventory is:
 - `presentation` owns presentation resources and revisions;
 - `spreadsheet` owns spreadsheet resources, cells, formatting, formulas, and revisions;
 - `store` exposes scoped reads of represented data;
-- `templates` owns templates, stages, holes, and instantiation;
+- `templates` owns templates, stages, slots, and instantiation;
 - `variables` owns project-scoped named values;
 - `workspace` reads and writes the workspace state a person has per project.
 

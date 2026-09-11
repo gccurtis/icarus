@@ -1,8 +1,8 @@
 import { isStoredRowId } from "$representation/data/behavior/core/stored";
 import {
-  TEMPLATE_HOLE_DESCRIPTION_LIMIT,
-  TEMPLATE_HOLE_NAME_LIMIT
-} from "$capabilities/templates/api/shared/hole-validation";
+  TEMPLATE_SLOT_DESCRIPTION_LIMIT,
+  TEMPLATE_SLOT_NAME_LIMIT
+} from "$capabilities/templates/api/shared/slot-validation";
 import {
   validFormulaValue,
   validMarkLink
@@ -67,7 +67,7 @@ export const validMarks = (value: unknown, atoms?: readonly unknown[]): boolean 
     const to = isRecord(mark) ? markEndOf(mark.to) : undefined;
     if (
       !isRecord(mark) ||
-      !hasOnlyKeys(mark, ["id", "from", "to", "style", "link", "color", "background", "hole"]) ||
+      !hasOnlyKeys(mark, ["id", "from", "to", "style", "link", "color", "background", "slot"]) ||
       !validIdentifier(mark.id) ||
       from === undefined ||
       to === undefined
@@ -98,7 +98,7 @@ export const validMarks = (value: unknown, atoms?: readonly unknown[]): boolean 
       (mark.link === undefined || validMarkLink(mark.link)) &&
       (mark.color === undefined || validText(mark.color, 1_000)) &&
       (mark.background === undefined || validText(mark.background, 1_000)) &&
-      (mark.hole === undefined || validPromptHole(mark.hole))
+      (mark.slot === undefined || validPromptSlot(mark.slot))
     );
   });
 
@@ -113,10 +113,10 @@ export const validAtom = (value: unknown): boolean => {
   if (value.kind === "template") {
     return (
       hasOnlyKeys(value, ["id", "kind", "name", "description", "text"]) &&
-      validCanonicalText(value.name, TEMPLATE_HOLE_NAME_LIMIT) &&
+      validCanonicalText(value.name, TEMPLATE_SLOT_NAME_LIMIT) &&
       (value.description === undefined ||
         (isText(value.description) &&
-          value.description.length <= TEMPLATE_HOLE_DESCRIPTION_LIMIT &&
+          value.description.length <= TEMPLATE_SLOT_DESCRIPTION_LIMIT &&
           value.description === value.description.trim())) &&
       (value.text === undefined || validText(value.text, MAX_BLOCK_TEXT_LENGTH, true))
     );
@@ -143,12 +143,12 @@ export const validAtom = (value: unknown): boolean => {
 export const displayOfAtoms = (atoms: readonly unknown[]): string =>
   atoms.map((atom) => atomDisplayOf(atom) ?? "").join("");
 
-/** What a prompt says its hole is called, before the hole itself is declared. */
-export const validPromptHole = (value: unknown): boolean =>
+/** What a prompt says its slot is called, before the slot itself is declared. */
+export const validPromptSlot = (value: unknown): boolean =>
   isRecord(value) &&
   hasOnlyKeys(value, ["name", "description"]) &&
-  validCanonicalText(value.name, TEMPLATE_HOLE_NAME_LIMIT) &&
+  validCanonicalText(value.name, TEMPLATE_SLOT_NAME_LIMIT) &&
   (value.description === undefined ||
     (isText(value.description) &&
-      value.description.length <= TEMPLATE_HOLE_DESCRIPTION_LIMIT &&
+      value.description.length <= TEMPLATE_SLOT_DESCRIPTION_LIMIT &&
       value.description === value.description.trim()));

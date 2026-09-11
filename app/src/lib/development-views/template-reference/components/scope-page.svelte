@@ -43,9 +43,9 @@
     <header class="tref-mast">
       <div>
         <span class="tref-kicker">03 · Scope</span>
-        <h1>What a hole selects</h1>
+        <h1>What a slot selects</h1>
         <p class="tref-lede">
-          A scope hole is an empty place a prompt punched. What fills it is a group of resources, and until this work that group
+          A scope slot is an empty place a prompt punched. What fills it is a group of resources, and until this work that group
           could only be said in the crudest terms: everything, or some kinds, or one of the project's
           named sets. It can now be built term by term, excluded from, and pointed at particular
           resources. This page is how it works and every file it touched.
@@ -63,7 +63,7 @@
     </header>
 
     <nav class="tref-jumps" aria-label="On this page">
-      <a href="#holes">Two kinds of hole</a>
+      <a href="#slots">Two kinds of slot</a>
       <a href="#why">Why a row at all</a>
       <a href="#terms">Every term</a>
       <a href="#difference">A set is a difference</a>
@@ -77,13 +77,13 @@
       <a href="#missing">What is still missing</a>
     </nav>
 
-    <section class="tref-section" id="holes">
+    <section class="tref-section" id="slots">
       <div class="tref-section-head">
-        <div><span class="tref-kicker">What a template asks for</span><h2>Two kinds of hole</h2></div>
+        <div><span class="tref-kicker">What a template asks for</span><h2>Two kinds of slot</h2></div>
         <p>
           A template is a function and these are the places it leaves empty. Both are declared in one
           list and both carry a name, a label and a description written by whoever made the template.
-          A scope hole is found from the body; a text hole is placed by hand, because only the writer
+          A scope slot is found from the body; a text slot is placed by hand, because only the writer
           knows where in the prose it belongs.
         </p>
       </div>
@@ -108,11 +108,11 @@
       </div>
 
       <div class="tref-note attention">
-        <h4>A hole is not a variable</h4>
+        <h4>A slot is not a variable</h4>
         <p>
           A variable in this application is a named value a formula reads, and it has nothing to do
           with templates. That is why none of this is called one: a template's empty places are
-          holes, the atom that marks a text hole in the prose is a <code>template</code> atom, and it
+          slots, the atom that marks a text slot in the prose is a <code>template</code> atom, and it
           appears nowhere outside a template body and the copy that template is edited through. The
           word is worth guarding: two unrelated ideas sharing it is how a vocabulary stops being one.
         </p>
@@ -123,24 +123,24 @@
       <div class="tref-section-head">
         <div><span class="tref-kicker">The load-bearing fact</span><h2>Why a row, and not a bigger rule</h2></div>
         <p>
-          The obvious move is to let a hole's default hold a richer rule inline. It does not work, and
+          The obvious move is to let a slot's default hold a richer rule inline. It does not work, and
           the reason is already in the code rather than in anyone's opinion.
         </p>
       </div>
 
       <p class="tref-prose">
-        Resolving a template substitutes each hole term for what fills it. A hole term can appear
+        Resolving a template substitutes each slot term for what fills it. A slot term can appear
         on either side of a prompt's scope: a prompt may say <em>these, and not those</em>. Substituting
         one term for one term works on both sides. Substituting one term for
         <em>a difference</em> does not, because a difference on the exclude side is not expressible as a
         flat difference. So the resolver refuses it, in as many words:
-        <code>a hole answered with exclusions cannot be flattened without changing scope</code>.
+        <code>a slot answered with exclusions cannot be flattened without changing scope</code>.
       </p>
 
       <div class="tref-note">
         <h4>Which meant, before this, no exclusions anywhere</h4>
         <p>
-          Neither a hole's default nor an answer given at Insert could exclude anything. A builder
+          Neither a slot's default nor an answer given at Insert could exclude anything. A builder
           mostly about excluding things would have refused on its first use.
         </p>
         <p>
@@ -176,7 +176,7 @@
               <th>Reads as</th>
               <th>Picks</th>
               <th>In a template body</th>
-              <th>In a hole's default</th>
+              <th>In a slot's default</th>
               <th>In a live resource</th>
             </tr>
           </thead>
@@ -218,7 +218,7 @@
       <div class="tref-section-head">
         <div><span class="tref-kicker">The change of stance</span><h2>Named, or bound</h2></div>
         <p>
-          A set stopped being a thing people curate and became a value a hole holds. Both still exist,
+          A set stopped being a thing people curate and became a value a slot holds. Both still exist,
           and the only difference between them is whether a person gave it a name.
         </p>
       </div>
@@ -244,7 +244,7 @@
       <div class="tref-section-head">
         <div><span class="tref-kicker">The thing itself</span><h2>The builder</h2></div>
         <p>
-          One modal. It edits a rule and knows nothing about templates, holes, or which of its four
+          One modal. It edits a rule and knows nothing about templates, slots, or which of its four
           callers opened it. The mock below is what shipped, drawn rather than screenshotted so it stays
           readable at any width.
         </p>
@@ -253,7 +253,7 @@
       <figure class="tref-figure">
         <DiagramBuilder />
         <figcaption>
-          <b>Two modals, and never a third.</b> The ask lists every hole and holds Insert while any
+          <b>Two modals, and never a third.</b> The ask lists every slot and holds Insert while any
           words are missing; a value opens the builder, which is two tabs and, inside one, two panes.
         </figcaption>
       </figure>
@@ -427,11 +427,11 @@
       <div class="tref-note attention">
         <h4>One thing the sequence assumes that is not obviously true</h4>
         <p>
-          Holes are found from prompt scopes. Until prompt blocks exist, the only way a hole comes
+          Slots are found from prompt scopes. Until prompt blocks exist, the only way a slot comes
           into being is by inserting a template that already has one, which means a template made on main
-          from a fresh document will have no holes and the builder will have nothing to open on. The
+          from a fresh document will have no slots and the builder will have nothing to open on. The
           order still works, but this piece has to land <b>with</b> prompt blocks rather than after them,
-          or the first thing anyone sees is an empty Holes band.
+          or the first thing anyone sees is an empty Slots band.
         </p>
       </div>
     </section>

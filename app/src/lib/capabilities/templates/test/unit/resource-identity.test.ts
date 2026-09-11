@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { resourceSetOf } from "$capabilities/templates/api/shared/hole-validation";
+import { resourceSetOf } from "$capabilities/templates/api/shared/slot-validation";
 
 const setWith = (term: unknown): unknown => ({ include: [term], exclude: [] });
 

@@ -7,7 +7,7 @@ import {
   type TemplateUnavailable,
   type TemplateTarget as StoredTemplateTarget
 } from "$capabilities/templates/index.remote";
-import { promptWordsIn } from "$representation/data/behavior/templates/prompt-holes";
+import { promptWordsIn } from "$representation/data/behavior/templates/prompt-slots";
 import { relativeTime } from "$app-views/categories/templates/procedures/library-time";
 import type {
   LibraryTemplate,
@@ -34,7 +34,7 @@ const project = (row: TemplateLibraryItem, now: number): LibraryTemplate => ({
   makes: TARGET_LABEL[row.target],
   scope: SCOPE_LABEL[row.availability],
   tags: row.tags,
-  holeCount: row.holeCount,
+  slotCount: row.slotCount,
   createdBy: row.createdByName,
   revision: row.revision,
   updatedAt: row.updatedAt,
@@ -64,11 +64,11 @@ export const detailIn = (
   now: number
 ): LibraryTemplateDetail | undefined => {
   if (answer === null || answer === undefined || "unavailable" in answer) return undefined;
-  const row = project({ ...answer, holeCount: answer.holes.length }, now);
+  const row = project({ ...answer, slotCount: answer.slots.length }, now);
   return {
     ...row,
     prompts: promptWordsIn(answer.body),
-    holes: answer.holes.map((hole) => ({ ...hole, id: `${answer.id}:${hole.name}` }))
+    slots: answer.slots.map((slot) => ({ ...slot, id: `${answer.id}:${slot.name}` }))
   };
 };
 export const unavailableTemplateIn = (

@@ -10,8 +10,8 @@
       <div class="hint">The name is required; Save opens the new template's working copy in a new tab.</div>
       <div class="section">List <em>⌄</em></div>
       <div class="search">Search templates…</div>
-      <div class="row"><b>Decision memo</b><small>2 holes · revision 4</small><span><span class="button">Insert</span><span class="button">Edit</span></span></div>
-      <div class="row"><b>Technical glossary</b><small>1 hole · revision 3</small><span><span class="button">Insert</span><span class="button">Edit</span></span></div>
+      <div class="row"><b>Decision memo</b><small>2 slots · revision 4</small><span><span class="button">Insert</span><span class="button">Edit</span></span></div>
+      <div class="row"><b>Technical glossary</b><small>1 slot · revision 3</small><span><span class="button">Insert</span><span class="button">Edit</span></span></div>
     </div>
   </figure>
 
@@ -19,8 +19,8 @@
     <figcaption>The same panel on a working copy</figcaption>
     <div class="panel">
       <header><b>Templates</b><span class="actions"><span class="button primary">Save</span><span class="button danger">Discard</span></span></header>
-      <div class="section">Holes <em>1 ⌄</em></div>
-      <div class="hole">
+      <div class="section">Slots <em>1 ⌄</em></div>
+      <div class="slot">
         <span class="chip">source_material</span>
         <b>Source material</b>
         <span class="description">Documents and findings whose terminology should be normalized.</span>
@@ -28,16 +28,16 @@
       </div>
       <div class="section">List <em>⌄</em></div>
       <div class="search">Search templates…</div>
-      <div class="row"><b>Decision memo</b><small>2 holes · revision 4</small><span><span class="button">Insert</span><span class="button">Edit</span></span></div>
+      <div class="row"><b>Decision memo</b><small>2 slots · revision 4</small><span><span class="button">Insert</span><span class="button">Edit</span></span></div>
     </div>
   </figure>
 </div>
 
 <ul class="notes">
   <li><b>No name field</b> on a working copy — the tab already says <code>Template · name</code>, and Save and Discard sit where it was, above a rule.</li>
-  <li><b>Create hole</b> sits at the top of Holes and makes a text hole: it takes a name, a description and default words, then drops the atom at the caret. A scope hole cannot be made here — that list is what the body's prompts ask for.</li>
+  <li><b>Create slot</b> sits at the top of Slots and makes a text slot: it takes a name, a description and default words, then drops the atom at the caret. A scope slot cannot be made here — that list is what the body's prompts ask for.</li>
   <li><b>Default scope</b> opens the modal; what it currently selects is on the button's title rather than in its label.</li>
-  <li><b>List</b> is a collapsible section of its own behind a rule, so inserting a template into a template is plainly a different thing from the holes above it.</li>
+  <li><b>List</b> is a collapsible section of its own behind a rule, so inserting a template into a template is plainly a different thing from the slots above it.</li>
 </ul>
 
 <style>
@@ -109,7 +109,7 @@
   .row small { color: var(--token-ink-muted); font-size: 10px; }
   .row span { display: flex; gap: .3rem; margin-top: .2rem; }
 
-  .hole { display: grid; justify-items: start; gap: .35rem; padding: .5rem; border: 1px solid var(--token-border-subtle); border-radius: 6px; background: var(--token-surface-elevated); }
+  .slot { display: grid; justify-items: start; gap: .35rem; padding: .5rem; border: 1px solid var(--token-border-subtle); border-radius: 6px; background: var(--token-surface-elevated); }
   .description { color: var(--token-ink-secondary); }
 
   .chip {

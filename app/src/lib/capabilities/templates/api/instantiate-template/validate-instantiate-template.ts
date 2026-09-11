@@ -8,7 +8,7 @@ import {
 import {
   answersOf,
   textsOf
-} from "$capabilities/templates/api/shared/hole-validation";
+} from "$capabilities/templates/api/shared/slot-validation";
 import type { InstantiateTemplateInput } from "$capabilities/templates/types/templates";
 
 export const validateInstantiateTemplate = (input: unknown): InstantiateTemplateInput => {

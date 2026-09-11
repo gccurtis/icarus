@@ -147,7 +147,7 @@
     "app/src/lib/capabilities/templates/api/read-template/validate-read-template.ts":
       "Added canonical template-id validation for the direct read.",
     "app/src/lib/capabilities/templates/api/remove-template/remove-template.ts":
-      "Added owner-only revision-checked deletion of versions, private hole rows, and any stage in one recoverable transaction; independent resources are untouched.",
+      "Added owner-only revision-checked deletion of versions, private slot rows, and any stage in one recoverable transaction; independent resources are untouched.",
     "app/src/lib/capabilities/templates/api/remove-template/validate-remove-template.ts":
       "Added canonical id and positive base-revision validation for deletion.",
     "app/src/lib/capabilities/templates/api/shared/bodies.ts":

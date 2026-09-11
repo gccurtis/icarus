@@ -3,7 +3,7 @@ import { expect, test, type Page, type TestInfo } from "./fixtures";
 const routes = [
   ["system", "/demo/dev-project/reference/templates", "How templates work"],
   ["changes", "/demo/dev-project/reference/templates/changes", "What changed"],
-  ["scope", "/demo/dev-project/reference/templates/scope", "What a hole selects"],
+  ["scope", "/demo/dev-project/reference/templates/scope", "What a slot selects"],
   ["integration", "/demo/dev-project/reference/templates/integration", "End to end with prompts"],
   ["rebase", "/demo/dev-project/reference/templates/rebase", "Where it meets the base"],
   ["walkthrough", "/demo/dev-project/reference/templates/walkthrough", "Walk it yourself"]
@@ -109,7 +109,7 @@ test("the scope page carries its mock, its file list and its settled decisions",
   await expect(page.getByRole("heading", { level: 2, name: "The builder" })).toBeVisible();
   await expect(page.getByText("Insert “Client status note”").first()).toBeVisible();
   await expect(page.getByText("From", { exact: true }).first()).toBeVisible();
-  await expect(page.getByRole("heading", { level: 2, name: "Two kinds of hole" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: "Two kinds of slot" })).toBeVisible();
 
   await expect(page.getByRole("heading", { level: 2, name: "Every file it touched" })).toBeVisible();
   await expect(page.locator("#work tbody tr").first()).toBeVisible();
@@ -135,8 +135,8 @@ test("the integration page draws the whole chain, with every link carrying", asy
   await expect(page.locator(".tref-badge.clean")).toHaveCount(8);
   await expect(page.locator(".tref-badge.known")).toHaveCount(0);
 
-  // A hole's default is whatever the thing already is, so nothing arrives empty.
-  await expect(page.getByRole("heading", { level: 2, name: "What a hole defaults to" })).toBeVisible();
+  // A slot's default is whatever the thing already is, so nothing arrives empty.
+  await expect(page.getByRole("heading", { level: 2, name: "What a slot defaults to" })).toBeVisible();
   await expect(page.getByRole("cell", { name: "A run of selected text", exact: true })).toBeVisible();
 
   await page.getByRole("link", { name: "Walk it yourself", exact: false }).first().click();
@@ -147,19 +147,19 @@ test("the walkthrough drives the real components, and the rules follow", async (
   await page.setViewportSize({ width: 1500, height: 1000 });
   await page.goto("/demo/dev-project/reference/templates/walkthrough", { waitUntil: "networkidle" });
 
-  // Three prompts, one templateified, so one hole and one question when it is placed.
-  const holes = page.locator("#made tbody tr");
-  await expect(holes).toHaveCount(1);
-  await expect(holes.nth(0).locator("code")).toHaveText("open_decisions");
+  // Three prompts, one templateified, so one slot and one question when it is placed.
+  const slots = page.locator("#made tbody tr");
+  await expect(slots).toHaveCount(1);
+  await expect(slots.nth(0).locator("code")).toHaveText("open_decisions");
   await expect(page.locator(".tab")).toHaveCount(1);
 
-  // Templateifying another prompt adds its hole, everywhere at once.
+  // Templateifying another prompt adds its slot, everywhere at once.
   const first = page.locator(".prompt").first();
   await first.getByRole("button", { name: "Templateify", exact: true }).click();
-  await expect(holes).toHaveCount(2);
-  await expect(page.getByRole("tab", { name: "Hole 1" })).toBeVisible();
+  await expect(slots).toHaveCount(2);
+  await expect(page.getByRole("tab", { name: "Slot 1" })).toBeVisible();
 
-  // Nothing is ever red, because a hole's default is whatever the thing already is.
+  // Nothing is ever red, because a slot's default is whatever the thing already is.
   await expect(page.locator(".tab.missing")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Accept all defaults" })).toBeEnabled();
 });

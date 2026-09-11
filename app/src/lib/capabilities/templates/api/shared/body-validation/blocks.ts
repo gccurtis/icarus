@@ -1,5 +1,5 @@
 import { isStoredRowId } from "$representation/data/behavior/core/stored";
-import { validTemplatedResourceSet } from "$capabilities/templates/api/shared/hole-validation";
+import { validTemplatedResourceSet } from "$capabilities/templates/api/shared/slot-validation";
 import { MAX_TEMPLATE_COLUMNS } from "$capabilities/templates/api/shared/spreadsheet-address";
 import { validFormat } from "$capabilities/templates/api/shared/body-validation/formats";
 import { validFormulaValue } from "$capabilities/templates/api/shared/body-validation/formula-values";
@@ -7,7 +7,7 @@ import {
   displayOfAtoms,
   validAtom,
   validMarks,
-  validPromptHole
+  validPromptSlot
 } from "$capabilities/templates/api/shared/body-validation/inline-content";
 import {
   type Fields,
@@ -191,14 +191,14 @@ export const validBlock = (value: unknown, depth = 0): boolean => {
         "marks",
         "scope",
         "prompt",
-        "hole",
+        "slot",
         "state",
         "format"
       ]) &&
       (value.style === undefined || validIdentifier(value.style)) &&
       validText(value.prompt, MAX_BLOCK_TEXT_LENGTH) &&
       value.prompt.trim().length > 0 &&
-      (value.hole === undefined || validPromptHole(value.hole)) &&
+      (value.slot === undefined || validPromptSlot(value.slot)) &&
       Array.isArray(value.atoms) &&
       value.atoms.length <= MAX_BLOCKS_PER_CONTAINER &&
       value.atoms.every(validAtom) &&

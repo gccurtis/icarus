@@ -46,7 +46,7 @@ resource (the variables fill those). The save tells you each thing it dropped. E
 in a template keeps `=SUM(costs)` and has no `formulaId`; the editor draws it with a dashed outline,
 and a new formula is made for it when the copy is bound.
 
-**Variable** (`TemplateVariable`) — A hole in the template that a prompt's scope can name. It has a
+**Variable** (`TemplateVariable`) — A slot in the template that a prompt's scope can name. It has a
 name (`lower_snake`, minted from the label), a label, a description, and a default. Example: a brief
 template's prompt says "summarise *readiness_record*"; *Readiness record* is the variable, and whoever
 inserts the template says what it selects. Not a value: prompt blocks that pick a variable are a later

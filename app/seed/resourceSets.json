@@ -31,9 +31,9 @@
     "_creationTime": 1787000000000,
     "projectId": "default",
     "boundTo": {
-      "kind": "hole",
+      "kind": "slot",
       "templateId": "templates:1",
-      "hole": "incident_evidence"
+      "slot": "incident_evidence"
     },
     "set": {
       "include": [{ "select": "kinds", "kinds": ["finding", "document", "spreadsheet"] }],
@@ -48,9 +48,9 @@
     "_creationTime": 1787244300000,
     "projectId": "default",
     "boundTo": {
-      "kind": "hole",
+      "kind": "slot",
       "templateId": "templates:3",
-      "hole": "source_material"
+      "slot": "source_material"
     },
     "set": {
       "include": [

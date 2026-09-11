@@ -32,7 +32,7 @@ export const CONTENT_GATES = [
   {
     path: ["representation", "data", "behavior", "content", "admission.ts"],
     name: "prompt-block-exact-lifecycle",
-    required: /const presentation = \["style", "hole", "format"\];[\s\S]*?if \(!linked\) \{[\s\S]*?block\.state !== "idle"[\s\S]*?exact\(block, base, \[\.\.\.presentation, "scope", "prompt"\]\)[\s\S]*?isStoredRowId\(block\.derivedOutputId, "derivedOutputs"\)[\s\S]*?block\.state === "idle"[\s\S]*?exact\(block, linkedBase, presentation\)[\s\S]*?block\.state === "stale"[\s\S]*?exact\(block, linkedBase, \[\.\.\.presentation, "refreshedAt"\]\)[\s\S]*?block\.state === "fresh"[\s\S]*?exact\(block, \[\.\.\.linkedBase, "refreshedAt"\], presentation\)[\s\S]*?block\.state === "error"[\s\S]*?exact\(block, \[\.\.\.linkedBase, "error"\], \[\.\.\.presentation, "refreshedAt"\]\)/,
+    required: /const presentation = \["style", "slot", "format"\];[\s\S]*?if \(!linked\) \{[\s\S]*?block\.state !== "idle"[\s\S]*?exact\(block, base, \[\.\.\.presentation, "scope", "prompt"\]\)[\s\S]*?isStoredRowId\(block\.derivedOutputId, "derivedOutputs"\)[\s\S]*?block\.state === "idle"[\s\S]*?exact\(block, linkedBase, presentation\)[\s\S]*?block\.state === "stale"[\s\S]*?exact\(block, linkedBase, \[\.\.\.presentation, "refreshedAt"\]\)[\s\S]*?block\.state === "fresh"[\s\S]*?exact\(block, \[\.\.\.linkedBase, "refreshedAt"\], presentation\)[\s\S]*?block\.state === "error"[\s\S]*?exact\(block, \[\.\.\.linkedBase, "error"\], \[\.\.\.presentation, "refreshedAt"\]\)/,
     message: "prompt-block admission no longer enforces exact unlinked-idle and linked lifecycle arms"
   },
   {

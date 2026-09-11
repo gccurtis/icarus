@@ -6,7 +6,7 @@ import {
 import { isStoredTemplateStage } from "$representation/data/behavior/templates/stored-stage";
 
 const body = () => ({ resource: "document", rows: [] });
-const holes = () => [{
+const slots = () => [{
   name: "scope",
   label: "Scope",
   kind: "scope",
@@ -21,7 +21,7 @@ const template = () => ({
   name: "Memo",
   tags: ["Operations"],
   body: body(),
-  holes: holes(),
+  slots: slots(),
   createdBy: { kind: "user", userId: "users:1" },
   revision: 1,
   updatedAt: 2
@@ -35,7 +35,7 @@ const version = () => ({
   name: "Memo",
   tags: ["Operations"],
   body: body(),
-  holes: holes(),
+  slots: slots(),
   at: 2
 });
 
@@ -58,11 +58,11 @@ describe("current template storage", () => {
     expect(isStoredTemplateStage(stage())).toBe(true);
   });
 
-  it("rejects retired row fields and malformed nested holes whole", () => {
+  it("rejects retired row fields and malformed nested slots whole", () => {
     expect(isStoredTemplateVersion({ ...version(), createdBy: template().createdBy })).toBe(false);
     expect(isStoredTemplate({
       ...template(),
-      holes: [{ ...holes()[0], placement: "old" }]
+      slots: [{ ...slots()[0], placement: "old" }]
     })).toBe(false);
     expect(isStoredTemplate({ ...template(), body: { ...body(), oldRows: [] } })).toBe(false);
     expect(isStoredTemplateStage({ ...stage(), templateRevision: 0 })).toBe(false);

@@ -8,7 +8,7 @@ export type ReferencePage = {
 export const PAGES: ReferencePage[] = [
   { slug: "system", index: "01", label: "How templates work", sub: "The model, the verbs, the panels" },
   { slug: "changes", index: "02", label: "What changed", sub: "Every file, decision and check" },
-  { slug: "scope", index: "03", label: "What a hole selects", sub: "The scope builder, and what it cost" },
+  { slug: "scope", index: "03", label: "What a slot selects", sub: "The scope builder, and what it cost" },
   { slug: "integration", index: "04", label: "End to end with prompts", sub: "Every link, and the rule behind it" },
   { slug: "rebase", index: "05", label: "Where it meets the base", sub: "Every conflict, every defect" },
   { slug: "walkthrough", index: "06", label: "Walk it yourself", sub: "The whole design, driven" }

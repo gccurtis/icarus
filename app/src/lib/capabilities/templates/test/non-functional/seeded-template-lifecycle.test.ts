@@ -34,7 +34,7 @@ describe("the committed template fixtures", () => {
       boundTo: {
         kind: "resource",
         ref: { kind: "document", id: placed.resourceId },
-        hole: "source_material"
+        slot: "source_material"
       },
       set: {
         include: [
@@ -69,7 +69,7 @@ describe("the committed template fixtures", () => {
       templateId: "templates:3",
       baseRevision: 3,
       patch: {
-        holes: [
+        slots: [
           {
             name: "source_material",
             label: "Source material",

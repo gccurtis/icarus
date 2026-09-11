@@ -43,7 +43,7 @@ const seeded = (directory: string) => {
     name: "Plan",
     tags: [],
     body: { resource: "document", rows: [] },
-    holes: [],
+    slots: [],
     createdBy: { kind: "user", userId: "users:u" },
     revision: 2,
     updatedAt: 1000
@@ -54,7 +54,7 @@ const seeded = (directory: string) => {
     name: "Plan",
     tags: [],
     body: { resource: "document", rows: [] },
-    holes: [],
+    slots: [],
     at: 1000
   });
   return { templateId, versionId };

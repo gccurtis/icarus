@@ -38,9 +38,9 @@
         <span class="tref-kicker">04 · Integration</span>
         <h1>End to end with prompts</h1>
         <p class="tref-lede">
-          A template is a function and a hole is where it takes an argument. One gesture makes one —
+          A template is a function and a slot is where it takes an argument. One gesture makes one —
           Templateify, on a prompt or on a run of selected text — and everything after it follows:
-          the template keeps exactly those holes, placing it asks about exactly those, and the copy
+          the template keeps exactly those slots, placing it asks about exactly those, and the copy
           reads what was chosen. All {working} links carry, and a template you never templateify
           anything in is simply a copy, which is also correct.
         </p>
@@ -48,9 +48,9 @@
       <div class="tref-facts">
         <dl>
           <div><dt>Links in the chain</dt><dd>{CHAIN.length} of {CHAIN.length}</dd></div>
-          <div><dt>Holes are</dt><dd>Made, never found</dd></div>
+          <div><dt>Slots are</dt><dd>Made, never found</dd></div>
           <div><dt>What can become one</dt><dd>A prompt · a selection</dd></div>
-          <div><dt>Offered name</dt><dd>Hole 1, Hole 2, …</dd></div>
+          <div><dt>Offered name</dt><dd>Slot 1, Slot 2, …</dd></div>
           <div><dt>Its default</dt><dd>Whatever it already is</dd></div>
         </dl>
       </div>
@@ -98,10 +98,10 @@
         <h4>One gesture, and the rest is consequence</h4>
         <p>
           Link 02 is the only one anybody performs on purpose. Everything before it is ordinary
-          authoring, and everything after it happens because a hole exists: the template keeps it,
+          authoring, and everything after it happens because a slot exists: the template keeps it,
           placing asks about it, resolution fills it, and the copy generates over what was chosen.
           That is what makes placing short — the questions are the ones somebody meant to ask, and a
-          document with nine prompts and one hole asks once.
+          document with nine prompts and one slot asks once.
         </p>
       </div>
     </section>
@@ -110,9 +110,9 @@
       <div class="tref-section-head">
         <div><span class="tref-kicker">The shape of it</span><h2>Where each piece runs</h2></div>
         <p>
-          Three groups, and the ordering inside the middle one is the whole of the design: the holes
+          Three groups, and the ordering inside the middle one is the whole of the design: the slots
           are read before the body is made portable, because whether a prompt's scope survives is
-          exactly what decides whether its hole gets a default.
+          exactly what decides whether its slot gets a default.
         </p>
       </div>
 
@@ -128,16 +128,16 @@
 
     <section class="tref-section" id="defaults">
       <div class="tref-section-head">
-        <div><span class="tref-kicker">The rule</span><h2>What a hole defaults to</h2></div>
+        <div><span class="tref-kicker">The rule</span><h2>What a slot defaults to</h2></div>
         <p>
-          Whatever the thing already is. Nothing is judged portable or not, because a hole that arrives
+          Whatever the thing already is. Nothing is judged portable or not, because a slot that arrives
           empty is a toll and this design does not charge one.
         </p>
       </div>
 
       <div class="tref-scroll">
         <table class="tref-table">
-          <thead><tr><th>What was templateified</th><th>The hole defaults to</th><th>Because</th></tr></thead>
+          <thead><tr><th>What was templateified</th><th>The slot defaults to</th><th>Because</th></tr></thead>
           <tbody>
             {#each DEFAULT_RULE as row (row.scope)}
               <tr>
@@ -153,11 +153,11 @@
       <div class="tref-note">
         <h4>Nothing is ever red</h4>
         <p>
-          A hole always has an answer, because its answer is what the thing already said. Placing a
+          A slot always has an answer, because its answer is what the thing already said. Placing a
           template is therefore always one press away from done, and the walk exists for the times you
-          want a copy to read something else — which is the only reason you made the hole. The Scope
+          want a copy to read something else — which is the only reason you made the slot. The Scope
           control on a prompt is a real control now: it opens the same builder the ask modal does, and
-          what it writes is what the hole will offer.
+          what it writes is what the slot will offer.
         </p>
       </div>
     </section>
@@ -191,7 +191,7 @@
       <div class="tref-section-head">
         <div><span class="tref-kicker">Links 05 and 06</span><h2>What happens when a template is placed</h2></div>
         <p>
-          One hole at a time, and the person walking it never has to hold the whole shape in their
+          One slot at a time, and the person walking it never has to hold the whole shape in their
           head — the tabs do that.
           <a href={hrefOf(project, "walkthrough")}>Walk it yourself</a> to see the same modal working.
         </p>
@@ -234,7 +234,7 @@
       <span>Every link carries</span>
     </div>
     <div>
-      <a href={hrefOf(project, "scope")}>← What a hole selects</a>
+      <a href={hrefOf(project, "scope")}>← What a slot selects</a>
       <a href={hrefOf(project, "walkthrough")}>Walk it yourself →</a>
     </div>
   </footer>

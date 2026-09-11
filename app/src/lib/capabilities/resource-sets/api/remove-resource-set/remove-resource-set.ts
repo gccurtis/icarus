@@ -101,7 +101,7 @@ export const removeResourceSet = async (input: unknown): Promise<RemoveResourceS
   }
 
   const usedByTemplate = recordsIn(store, "templates").find(
-    (row) => row.projectId === scope.projectId && namesSet(row.holes, stored._id)
+    (row) => row.projectId === scope.projectId && namesSet(row.slots, stored._id)
   );
   if (usedByTemplate !== undefined) {
     return {

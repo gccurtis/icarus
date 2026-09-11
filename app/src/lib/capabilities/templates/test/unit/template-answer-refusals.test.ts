@@ -10,8 +10,8 @@ import {
 } from "$capabilities/templates/test/unit/template-answer-fixture";
 
 describe("instantiating with answers — ownership and declaration refusals", () => {
-  test("a hole without a default means the whole project", async () => {
-    model.tables.templates[0].holes = [{ name: "evidence", label: "Evidence", kind: "scope" }];
+  test("a slot without a default means the whole project", async () => {
+    model.tables.templates[0].slots = [{ name: "evidence", label: "Evidence", kind: "scope" }];
     const made = await instantiateTemplate({ templateId: "templates:1" });
     assert.ok(made.accepted);
     assert.deepEqual(scopeOf(model.tables.documentSnapshots[0]), {
@@ -24,7 +24,7 @@ describe("instantiating with answers — ownership and declaration refusals", ()
     model.tables.resourceSets.push(
       row("resourceSets", "2", {
         projectId: "projects:1",
-        boundTo: { kind: "hole", templateId: "templates:1", hole: "evidence" },
+        boundTo: { kind: "slot", templateId: "templates:1", slot: "evidence" },
         set: {
           include: [{ select: "set", setId: "resourceSets:3" }],
           exclude: []
@@ -38,7 +38,7 @@ describe("instantiating with answers — ownership and declaration refusals", ()
         boundTo: {
           kind: "resource",
           ref: { kind: "document", id: "documents:3" },
-          hole: "evidence"
+          slot: "evidence"
         },
         set: { include: [{ select: "project" }], exclude: [] },
         createdBy: { kind: "user", userId: "users:1" },
@@ -46,7 +46,7 @@ describe("instantiating with answers — ownership and declaration refusals", ()
         updatedAt: 1
       })
     );
-    model.tables.templates[0].holes = [
+    model.tables.templates[0].slots = [
       {
         name: "evidence",
         label: "Evidence",
@@ -62,7 +62,7 @@ describe("instantiating with answers — ownership and declaration refusals", ()
     assert.deepEqual(model.tables.documents, []);
   });
 
-  test("refuses an answer naming a set the project does not hold, and a body naming an undeclared hole", async () => {
+  test("refuses an answer naming a set the project does not hold, and a body naming an undeclared slot", async () => {
     const unknownSet = await instantiateTemplate({
       templateId: "templates:1",
       answers: { evidence: { include: [{ select: "set", setId: "resourceSets:9" }], exclude: [] } }
@@ -73,7 +73,7 @@ describe("instantiating with answers — ownership and declaration refusals", ()
     model.tables.resourceSets.push(
       row("resourceSets", "2", {
         projectId: "projects:1",
-        boundTo: { kind: "hole", templateId: "templates:1", hole: "evidence" },
+        boundTo: { kind: "slot", templateId: "templates:1", slot: "evidence" },
         set: { include: [{ select: "project" }], exclude: [] },
         createdBy: { kind: "user", userId: "users:1" },
         revision: 1,
@@ -93,14 +93,14 @@ describe("instantiating with answers — ownership and declaration refusals", ()
     assert.match(privateSet.accepted === false ? privateSet.detail : "", /private/);
     assert.deepEqual(model.tables.documents, []);
 
-    model.tables.templates[0].holes = [];
+    model.tables.templates[0].slots = [];
     const undeclared = await instantiateTemplate({ templateId: "templates:1" });
     assert.deepEqual(undeclared, {
       accepted: false,
       templateId: "templates:1",
       reason: "unsupported-body",
       revision: 1,
-      detail: "the body names a hole the template does not declare: evidence"
+      detail: "the body names a slot the template does not declare: evidence"
     });
     assert.deepEqual(model.tables.documents, []);
     await assert.rejects(

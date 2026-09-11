@@ -34,7 +34,7 @@
     stageIn,
     templateDetail,
     templateLibrary,
-    withHoleField,
+    withSlotField,
   } from "$app-views/categories/document-editor/procedures/templating";
   import { releaseTemplatesContext } from "$app-views/categories/document-editor/procedures/effects/templates-context.svelte";
   import { workspaceState } from "$model/client/workspace-state";
@@ -73,7 +73,7 @@
   releaseTemplatesContext(state);
 
   const askRows = $derived(
-    answerRowsOf(state.insertFor?.holes ?? [], state.choices, state.texts, setNames)
+    answerRowsOf(state.insertFor?.slots ?? [], state.choices, state.texts, setNames)
   );
   const askBlocked = $derived(
     missingIn(askRows).length === 0 ? undefined : `${missingIn(askRows).join(", ")} still needs words.`
@@ -120,45 +120,45 @@
       <PanelNote>Reading this document…</PanelNote>
     {:else if stage !== undefined}
       <div class="after-verbs">
-        <PanelSection title="Holes" count={template?.holes.length} chevron="end">
+        <PanelSection title="Slots" count={template?.slots.length} chevron="end">
           {#if template === undefined}
             <PanelNote>Reading the template…</PanelNote>
-          {:else if template.holes.length === 0}
+          {:else if template.slots.length === 0}
             <PanelNote>
-              Nothing here is a hole yet. Select some text, or open a prompt, and press Templateify
+              Nothing here is a slot yet. Select some text, or open a prompt, and press Templateify
               in its Template section.
             </PanelNote>
           {:else}
-            {#each template.holes as hole (hole.name)}
-              <article class="hole">
+            {#each template.slots as slot (slot.name)}
+              <article class="slot">
                 <header>
-                  <PanelChip tone="accent-1">{hole.name}</PanelChip>
-                  <span class="hole-label">{hole.label}</span>
+                  <PanelChip tone="accent-1">{slot.name}</PanelChip>
+                  <span class="slot-label">{slot.label}</span>
                 </header>
                 <PanelEditableText
-                  value={hole.description ?? ""}
-                  label={`Description for ${hole.label}`}
-                  placeholder="What this hole stands for"
+                  value={slot.description ?? ""}
+                  label={`Description for ${slot.label}`}
+                  placeholder="What this slot stands for"
                   multiline
                   disabled={busy}
-                  onchange={(next) => state.changeHoles(withHoleField(template.holes, hole.name, { description: next }))}
+                  onchange={(next) => state.changeSlots(withSlotField(template.slots, slot.name, { description: next }))}
                 />
-                {#if hole.kind === "text"}
+                {#if slot.kind === "text"}
                   <PanelEditableText
-                    value={hole.text ?? ""}
-                    label={`Default words for ${hole.label}`}
+                    value={slot.text ?? ""}
+                    label={`Default words for ${slot.label}`}
                     placeholder="What it says when nobody says otherwise"
                     multiline
                     disabled={busy}
-                    onchange={(next) => state.changeHoles(withHoleField(template.holes, hole.name, { text: next }))}
+                    onchange={(next) => state.changeSlots(withSlotField(template.slots, slot.name, { text: next }))}
                   />
                 {:else}
                   <div class="scope">
                     <PanelButton
                       label="Default scope"
                       disabled={busy}
-                      title={`${ruleOf(hole.default, setNames)} — change what ${hole.label} selects by default`}
-                      onclick={() => state.openDefault(hole)}
+                      title={`${ruleOf(slot.default, setNames)} — change what ${slot.label} selects by default`}
+                      onclick={() => state.openDefault(slot)}
                     />
                   </div>
                 {/if}
@@ -174,7 +174,7 @@
       </div>
     {/if}
 
-    <div class="after-holes">
+    <div class="after-slots">
     <PanelSection title="List" chevron="end" flush>
       {#if library.error}
         <PanelBanner title="Templates unavailable" tone="danger">
@@ -190,7 +190,7 @@
             <div class="item">
               <PanelRow title={item.name}>
                 <span class="item-title">{item.name}</span>
-                <span class="item-sub">{item.holeCount} {item.holeCount === 1 ? "hole" : "holes"} · revision {item.revision}</span>
+                <span class="item-sub">{item.slotCount} {item.slotCount === 1 ? "slot" : "slots"} · revision {item.revision}</span>
                 <span class="item-actions">
                   <PanelButton label="Insert" tone="ghost" disabled={busy} title={`Insert “${item.name}” after the current row`} onclick={() => state.insert(item)} />
                   <PanelButton label="Edit" tone="ghost" disabled={busy} title={`Edit “${item.name}” in the editor`} onclick={() => state.edit(item)} />
@@ -208,7 +208,7 @@
 <OverlayModal
   bind:open={state.insertOpen}
   title={`Insert “${state.insertFor?.name ?? "the template"}”`}
-  description="One hole at a time. The tabs say which still need words."
+  description="One slot at a time. The tabs say which still need words."
   confirm="Insert"
   width="wide"
   blocked={askBlocked}
@@ -226,7 +226,7 @@
 
 <OverlayModal
   bind:open={state.answerOpen}
-  title={`What ${state.answering?.label ?? "the hole"} selects here`}
+  title={`What ${state.answering?.label ?? "the slot"} selects here`}
   description="For this copy only. Nothing here changes the template."
   confirm="Use this"
   width="wide"
@@ -247,7 +247,7 @@
 
 <OverlayModal
   bind:open={state.defaultOpen}
-  title={`Default scope for ${state.defaultFor?.label ?? "the hole"}`}
+  title={`Default scope for ${state.defaultFor?.label ?? "the slot"}`}
   description="What it selects until whoever places the template says otherwise."
   confirm="Set the default scope"
   width="wide"
@@ -287,13 +287,13 @@
     border-top: 1px solid var(--token-border-subtle);
   }
 
-  .after-holes {
+  .after-slots {
     margin-top: calc(var(--token-spacing-unit) * 2);
     padding-top: calc(var(--token-spacing-unit) * 1);
     border-top: 1px solid var(--token-border-subtle);
   }
 
-  .hole {
+  .slot {
     display: flex;
     flex-direction: column;
     gap: calc(var(--token-spacing-unit) * 1.5);
@@ -303,18 +303,18 @@
     background: var(--token-surface-elevated);
   }
 
-  .hole + .hole {
+  .slot + .slot {
     margin-top: calc(var(--token-spacing-unit) * 1.5);
   }
 
-  .hole header {
+  .slot header {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: calc(var(--token-spacing-unit) * 1.5);
   }
 
-  .hole-label {
+  .slot-label {
     color: var(--token-ink-primary);
     font-size: var(--token-text-body-sm);
     font-weight: 600;

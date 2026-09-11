@@ -9,21 +9,21 @@ import { recordsIn } from "$capabilities/templates/api/shared/store";
 export type ScopeOwner = BoundTo;
 
 export const sameScopeOwner = (held: BoundTo, owner: ScopeOwner): boolean => {
-  if (owner.kind === "hole") {
+  if (owner.kind === "slot") {
     return (
-      held.kind === "hole" &&
+      held.kind === "slot" &&
       held.templateId === owner.templateId &&
-      held.hole === owner.hole
+      held.slot === owner.slot
     );
   }
   return (
     held.kind === "resource" &&
     sameResourceRef(held.ref, owner.ref) &&
-    held.hole === owner.hole
+    held.slot === owner.slot
   );
 };
 
-/** Every private scope row bound to one resource, whichever hole it answered. */
+/** Every private scope row bound to one resource, whichever slot it answered. */
 export const rowsOfResource = (
   store: StoreUnitOfWork,
   projectId: string,

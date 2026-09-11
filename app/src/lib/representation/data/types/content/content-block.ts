@@ -28,7 +28,7 @@ export type FormulaAtom = FormulaBinding & {
 };
 
 /**
- * A hole in a template's prose, filled with words when the template is placed.
+ * A slot in a template's prose, filled with words when the template is placed.
  *
  * **It is a template's parameter, not a variable.** A variable in this
  * application is a named value a formula can read; this is unrelated to that and
@@ -41,9 +41,9 @@ export type FormulaAtom = FormulaBinding & {
  * atoms may name one parameter and there must be one answer.
  */
 /**
- * A hole in the prose, made by turning a run of text into one.
+ * A slot in the prose, made by turning a run of text into one.
  *
- * `text` is what the selection said, kept as what the hole says when nobody
+ * `text` is what the selection said, kept as what the slot says when nobody
  * says otherwise — so a template placed with every default reads exactly like
  * the document it was made from.
  */
@@ -68,14 +68,14 @@ export type MarkLink =
 export type MarkEnd = { atom: string; offset: number };
 
 /**
- * A run marked as a hole: a template made from this body puts one here.
+ * A run marked as a slot: a template made from this body puts one here.
  *
  * Marking changes nothing. The words stay where they are, every other mark over
- * them stays, and the resource reads exactly as it did — a hole is a note about
+ * them stays, and the resource reads exactly as it did — a slot is a note about
  * where a template's argument goes, not an edit. The run only becomes a
  * template atom on the copy, when the template is made.
  */
-export type MarkHole = { name: string; description?: string };
+export type MarkSlot = { name: string; description?: string };
 
 export type Mark = {
   id: string;
@@ -85,7 +85,7 @@ export type Mark = {
   link?: MarkLink;
   color?: string;
   background?: string;
-  hole?: MarkHole;
+  slot?: MarkSlot;
 };
 
 export type TextVariant = "paragraph" | "heading" | "list" | "quote" | "code";
@@ -159,11 +159,11 @@ export type PromptState = "idle" | "fresh" | "stale" | "error";
 /**
  * What this prompt becomes when its resource is made a template.
  *
- * Every prompt becomes one hole, so this is what the hole is called and what it
+ * Every prompt becomes one slot, so this is what the slot is called and what it
  * says rather than whether there is one. Absent means the name is still the
  * offered default, which is why nothing has to be filled in to make a template.
  */
-export type PromptHole = {
+export type PromptSlot = {
   name: string;
   description?: string;
 };
@@ -175,7 +175,7 @@ type PromptBlockPresentation = {
   atoms: Atom[];
   display: string;
   marks: Mark[];
-  hole?: PromptHole;
+  slot?: PromptSlot;
   format?: BlockFormat;
 };
 

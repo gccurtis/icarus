@@ -105,7 +105,7 @@ const projectedPrompt = (
     state: "stale",
     ...(prompt.refreshedAt === undefined ? {} : { refreshedAt: prompt.refreshedAt }),
     ...(style === undefined ? {} : { style }),
-    ...(prompt.hole === undefined ? {} : { hole: prompt.hole }),
+    ...(prompt.slot === undefined ? {} : { slot: prompt.slot }),
     ...(format === undefined ? {} : { format })
   };
 };

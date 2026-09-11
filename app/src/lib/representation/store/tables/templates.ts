@@ -3,8 +3,8 @@ import type { Id, Row } from "$representation/data/types/core/id";
 import type { BoundTo, ResourceSet } from "$representation/data/types/core/resource-set";
 import type {
   TemplateBody,
-  TemplateHole,
-  TemplateVersionHole
+  TemplateSlot,
+  TemplateVersionSlot
 } from "$representation/data/types/templates/template";
 
 export type TemplateFields = {
@@ -14,7 +14,7 @@ export type TemplateFields = {
   description?: string;
   tags: string[];
   body: TemplateBody;
-  holes: TemplateHole[];
+  slots: TemplateSlot[];
   createdBy: Actor;
   revision: number;
   updatedAt: number;
@@ -29,7 +29,7 @@ export type TemplateVersionFields = {
   description?: string;
   tags: string[];
   body: TemplateBody;
-  holes: TemplateVersionHole[];
+  slots: TemplateVersionSlot[];
   at: number;
 };
 export type TemplateVersion = Row<"templateVersions"> & TemplateVersionFields;

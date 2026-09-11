@@ -4,15 +4,15 @@ import { portableBodyOf } from "$representation/data/behavior/templates/portable
 import type { Actor } from "$representation/data/types/core/actor";
 import type { ResourceRef } from "$representation/data/types/core/resource";
 import {
-  mergedPromptHoles,
-  promptHolesOf,
-  textHolesOf,
-  withMarkedHoles,
+  mergedPromptSlots,
+  promptSlotsOf,
+  textSlotsOf,
+  withMarkedSlots,
   withPrompts,
-  withPromptHoles,
+  withPromptSlots,
   withScopes
-} from "$representation/data/behavior/templates/prompt-holes";
-import type { TemplateHole } from "$representation/data/types/templates/template";
+} from "$representation/data/behavior/templates/prompt-slots";
+import type { TemplateSlot } from "$representation/data/types/templates/template";
 
 import {
   normalizeScope,
@@ -133,7 +133,7 @@ export const withFreshOutputs = <T>(
 export type TemplatedBody<T> = {
   readonly body: T;
   readonly dropped: readonly string[];
-  readonly holes: readonly TemplateHole[];
+  readonly slots: readonly TemplateSlot[];
 };
 
 /**
@@ -144,68 +144,68 @@ export type TemplatedBody<T> = {
  * onto that owner. No intermediate body carries both definition owners.
  */
 /**
- * A hole's default, once the template it belongs to has an identity.
+ * A slot's default, once the template it belongs to has an identity.
  *
  * The default is whatever the prompt read, and what a prompt reads can name
  * particular resources — which the templated vocabulary has no term for. Those
- * are written as a `resourceSets` row owned by the hole and pointed at by a
+ * are written as a `resourceSets` row owned by the slot and pointed at by a
  * single `set` term, the same way a default built in the scope builder is. It
  * has to happen after the template row exists, because the row is owned by it.
  */
-export const settledHoleDefaults = (
+export const settledSlotDefaults = (
   store: StoreUnitOfWork,
   projectId: string,
   actor: Actor,
   templateId: string,
-  holes: readonly TemplateHole[],
+  slots: readonly TemplateSlot[],
   at: number
-): readonly TemplateHole[] =>
-  holes.map((hole) => {
+): readonly TemplateSlot[] =>
+  slots.map((slot) => {
     const owner = {
-      kind: "hole" as const,
+      kind: "slot" as const,
       templateId: asId<"templates">(templateId),
-      hole: hole.name
+      slot: slot.name
     };
     const references = setReferencesIn(
       store,
       projectId,
-      hole.default ?? { include: [], exclude: [] }
+      slot.default ?? { include: [], exclude: [] }
     );
     const invalid = references.missing[0] ?? references.private[0];
     if (invalid !== undefined) {
-      throw new Error(`template hole '${hole.name}' cannot borrow private or missing set ${invalid}`);
+      throw new Error(`template slot '${slot.name}' cannot borrow private or missing set ${invalid}`);
     }
     const written = normalizeScope(
       store,
       projectId,
       actor,
       owner,
-      hole.default,
+      slot.default,
       at
     );
     if (written === undefined) {
-      const { default: _removed, ...withoutDefault } = hole;
+      const { default: _removed, ...withoutDefault } = slot;
       void _removed;
       return withoutDefault;
     }
-    return { ...hole, default: written.term };
+    return { ...slot, default: written.term };
   });
 
 export const templatedBodyOf = <T>(
   store: StoreUnitOfWork,
   candidate: T,
-  known: readonly TemplateHole[]
+  known: readonly TemplateSlot[]
 ): TemplatedBody<T> => {
   const definition = definedBy(store, candidate);
   const portable = portableBodyOf(candidate);
   const scoped = withScopes(portable.body, definition.scopes);
-  const drafts = promptHolesOf(scoped);
+  const drafts = promptSlotsOf(scoped);
   const asked = withPrompts(scoped, definition.prompts);
   let minted = 0;
-  const body = withMarkedHoles(withPromptHoles(asked, drafts), () => {
+  const body = withMarkedSlots(withPromptSlots(asked, drafts), () => {
     minted += 1;
-    return `hole-${minted}`;
+    return `slot-${minted}`;
   });
-  const fresh = [...drafts.map((draft) => draft.hole), ...textHolesOf(body)];
-  return { body, dropped: portable.dropped, holes: mergedPromptHoles(known, fresh) };
+  const fresh = [...drafts.map((draft) => draft.slot), ...textSlotsOf(body)];
+  return { body, dropped: portable.dropped, slots: mergedPromptSlots(known, fresh) };
 };

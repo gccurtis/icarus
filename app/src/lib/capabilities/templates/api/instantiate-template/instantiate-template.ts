@@ -41,7 +41,7 @@ export const instantiateTemplate = async (input: unknown): Promise<InstantiateTe
     };
   }
 
-  const inputs = placementInputsOf(template.holes, asked.answers ?? {}, asked.texts ?? {});
+  const inputs = placementInputsOf(template.slots, asked.answers ?? {}, asked.texts ?? {});
   if (!inputs.accepted) {
     return {
       accepted: false,
@@ -60,7 +60,7 @@ export const instantiateTemplate = async (input: unknown): Promise<InstantiateTe
     templateRevision: template.revision,
     templateName: template.name,
     body: template.body,
-    holes: template.holes,
+    slots: template.slots,
     answers: asked.answers ?? {},
     texts: inputs.texts,
     ...(asked.name === undefined ? {} : { name: asked.name })

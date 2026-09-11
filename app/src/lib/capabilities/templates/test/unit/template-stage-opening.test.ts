@@ -97,7 +97,7 @@ describe("opening a stage", () => {
     assert.equal(model.tables.templates[0].revision, 3);
   });
 
-  test("a name or hole edit carries every stage of the template to the new revision", async () => {
+  test("a name or slot edit carries every stage of the template to the new revision", async () => {
     await openTemplateStage({ templateId: "templates:1" });
     const renamed = await updateTemplate({
       templateId: "templates:1",

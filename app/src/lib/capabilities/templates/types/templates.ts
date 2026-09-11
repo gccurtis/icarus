@@ -1,7 +1,7 @@
 import type { ResourceSet } from "$representation/data/types/core/resource-set";
 import type {
   TemplateBody,
-  TemplateHole
+  TemplateSlot
 } from "$representation/data/types/templates/template";
 
 export type TemplateTarget = TemplateBody["resource"];
@@ -19,7 +19,7 @@ export type TemplateLibraryItem = {
   readonly target: TemplateTarget;
   readonly availability: TemplateAvailability;
   readonly tags: readonly string[];
-  readonly holeCount: number;
+  readonly slotCount: number;
   readonly createdByName: string;
   readonly revision: number;
   readonly updatedAt: number;
@@ -28,9 +28,9 @@ export type TemplateLibraryItem = {
   readonly canDelete: boolean;
 };
 
-export type TemplateDetail = Omit<TemplateLibraryItem, "holeCount"> & {
+export type TemplateDetail = Omit<TemplateLibraryItem, "slotCount"> & {
   readonly body: TemplateBody;
-  readonly holes: readonly TemplateHole[];
+  readonly slots: readonly TemplateSlot[];
 };
 
 export type TemplateUnavailable = {
@@ -90,11 +90,11 @@ export type UpdateTemplatePatch = {
   readonly name?: string;
   readonly description?: string | null;
   readonly tags?: readonly string[];
-  readonly holeDescription?: {
+  readonly slotDescription?: {
     readonly name: string;
     readonly description: string | null;
   };
-  readonly holes?: readonly TemplateHole[];
+  readonly slots?: readonly TemplateSlot[];
 };
 
 export type UpdateTemplateInput = {
@@ -108,7 +108,7 @@ export type UpdateTemplateResult =
   | {
       readonly accepted: false;
       readonly templateId: string;
-      readonly reason: "not-found" | "stale" | "unsupported-body" | "hole-in-use";
+      readonly reason: "not-found" | "stale" | "unsupported-body" | "slot-in-use";
       readonly revision: number | null;
       readonly detail: string;
     };
@@ -153,7 +153,7 @@ export type RemoveTemplateResult =
       readonly detail: string;
     };
 
-/** What a caller typed into the template's text holes, by name. */
+/** What a caller typed into the template's text slots, by name. */
 export type TemplateTexts = Readonly<Record<string, string>>;
 
 export type InstantiateTemplateInput = {

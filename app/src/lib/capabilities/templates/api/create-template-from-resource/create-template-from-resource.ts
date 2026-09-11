@@ -2,7 +2,7 @@ import { requireScope } from "$runtime/server/scope.server";
 import { serverModel } from "$runtime/server/start.server";
 import { asId } from "$representation/data/behavior/core/id";
 import { presentationOfSlide } from "$representation/data/behavior/templates/presentation-of-slide";
-import { settledHoleDefaults, templatedBodyOf } from "$capabilities/templates/api/shared/prompts";
+import { settledSlotDefaults, templatedBodyOf } from "$capabilities/templates/api/shared/prompts";
 import type { TemplateBody } from "$representation/data/types/templates/template";
 
 import { validateCreateTemplateFromResource } from "$capabilities/templates/api/create-template-from-resource/validate-create-template-from-resource";
@@ -14,7 +14,7 @@ import {
 import { recordsIn, type RowFields } from "$capabilities/templates/api/shared/store";
 import { writeTemplateVersion } from "$capabilities/templates/api/shared/template-rows";
 import { bodyOf } from "$capabilities/templates/api/shared/body-validation/body-validation";
-import { declaredFor } from "$capabilities/templates/api/shared/holes";
+import { declaredFor } from "$capabilities/templates/api/shared/slots";
 import { expandedScope } from "$capabilities/templates/api/shared/scopes";
 import type { CreateTemplateFromResourceResult } from "$capabilities/templates/types/templates";
 
@@ -73,17 +73,17 @@ export const createTemplateFromResource = async (
     };
   }
 
-  let holes;
+  let slots;
   try {
     const ref = stageResourceRef(asked.target, asked.resourceId);
-    holes = declaredFor(body, portable.holes).map((hole) => {
+    slots = declaredFor(body, portable.slots).map((slot) => {
       const expanded = expandedScope(
         store,
         scope.projectId,
-        { kind: "resource", ref, hole: hole.name },
-        hole.default
+        { kind: "resource", ref, slot: slot.name },
+        slot.default
       );
-      return expanded === undefined ? hole : { ...hole, default: expanded };
+      return expanded === undefined ? slot : { ...slot, default: expanded };
     });
   } catch (error) {
     return {
@@ -103,17 +103,17 @@ export const createTemplateFromResource = async (
     ...(asked.description === undefined ? {} : { description: asked.description }),
     tags: [...(asked.tags ?? [])],
     body,
-    holes,
+    slots,
     createdBy: actor,
     revision: 1,
     updatedAt: at
   };
   const templateId = store.transaction((unit) => {
     const id = unit.create("templates", fields);
-    const settled = settledHoleDefaults(unit, scope.projectId, actor, id, fields.holes, at);
-    if (settled !== fields.holes) {
-      fields.holes = [...settled];
-      unit.update(`templates.${id}.holes`, fields.holes);
+    const settled = settledSlotDefaults(unit, scope.projectId, actor, id, fields.slots, at);
+    if (settled !== fields.slots) {
+      fields.slots = [...settled];
+      unit.update(`templates.${id}.slots`, fields.slots);
     }
     writeTemplateVersion(unit, id, fields, at);
     return id;

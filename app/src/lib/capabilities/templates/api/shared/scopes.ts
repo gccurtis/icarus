@@ -24,14 +24,14 @@ import { recordsIn } from "$capabilities/templates/api/shared/store";
 /**
  * A chosen rule becomes a term, and a row only when it has to.
  *
- * Four surfaces choose a scope: a hole's default from either editor's panel or
+ * Four surfaces choose a scope: a slot's default from either editor's panel or
  * from the library inspector, and an answer given while placing a template.
  * All four send the rule they built and none of them writes anything, because
  * the normalisation is the same every time and a client-side write would put a
  * second round trip in front of a save that can then half-fail.
  *
  * **A rule that excludes anything, or names particular resources, is stored.**
- * Resolving a template substitutes a hole term for what fills it, and a hole
+ * Resolving a template substitutes a slot term for what fills it, and a slot
  * term may sit on either side of a prompt's scope. One term for one term works
  * on both sides; one term for a difference does not. So the difference lives
  * inside a row and what points at it is a single `set` term. Everything else is
@@ -87,7 +87,7 @@ export const setReferencesIn = (
 
 type Written = { readonly term: TemplatedResourceSet; readonly setId?: string };
 
-export type PrivateHoleDefault =
+export type PrivateSlotDefault =
   | { readonly kind: "ordinary" }
   | { readonly kind: "private"; readonly rule: ResourceSet }
   | { readonly kind: "invalid"; readonly setId: string };
@@ -98,7 +98,7 @@ const privateDefaultOf = (
   projectId: string,
   owner: ScopeOwner,
   scope: TemplatedResourceSet | undefined
-): PrivateHoleDefault => {
+): PrivateSlotDefault => {
   if (scope === undefined) return { kind: "ordinary" };
   const terms = [...scope.include, ...scope.exclude].filter(
     (term): term is Extract<(typeof scope.include)[number], { select: "set" }> =>
@@ -136,13 +136,13 @@ const privateDefaultOf = (
   return { kind: "ordinary" };
 };
 
-/** Classify one live template hole's stored default against that exact hole. */
-export const privateHoleDefaultOf = (
+/** Classify one live template slot's stored default against that exact slot. */
+export const privateSlotDefaultOf = (
   store: StoreUnitOfWork,
   projectId: string,
-  owner: Extract<ScopeOwner, { kind: "hole" }>,
+  owner: Extract<ScopeOwner, { kind: "slot" }>,
   scope: TemplatedResourceSet | undefined
-): PrivateHoleDefault => privateDefaultOf(store, projectId, owner, scope);
+): PrivateSlotDefault => privateDefaultOf(store, projectId, owner, scope);
 
 /**
  * The rule as a templated set, writing or rewriting the owner's row when the
@@ -228,17 +228,17 @@ export const expandedScope = (
 };
 
 /**
- * A live hole's private row made independent for immutable history.
+ * A live slot's private row made independent for immutable history.
  *
  * Named project sets remain references because naming that reusable set was the
- * authored choice. A row owned by this exact hole is implementation storage for
+ * authored choice. A row owned by this exact slot is implementation storage for
  * a rule the template itself cannot carry, so a version owns a clone of the
  * concrete rule instead of the mutable row id.
  */
 export const versionScopeOf = (
   store: StoreUnitOfWork,
   projectId: string,
-  owner: Extract<ScopeOwner, { kind: "hole" }>,
+  owner: Extract<ScopeOwner, { kind: "slot" }>,
   scope: TemplatedResourceSet | undefined
 ): TemplateVersionScope | undefined => {
   if (scope === undefined) return undefined;

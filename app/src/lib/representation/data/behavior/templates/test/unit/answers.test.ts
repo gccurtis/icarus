@@ -5,7 +5,7 @@ import {
   fillTemplateAtoms,
   templateAtomNamesIn
 } from "$representation/data/behavior/templates/scopes";
-import type { TemplateBody, TemplateHole } from "$representation/data/types/templates/template";
+import type { TemplateBody, TemplateSlot } from "$representation/data/types/templates/template";
 
 const body = (): TemplateBody => ({
   resource: "document",
@@ -50,7 +50,7 @@ describe("a template's text parameters", () => {
     expect(filled.display).toBe("Dear Ana, about the winter packet");
   });
 
-  it("are left alone when nobody answered, because a template is holes", () => {
+  it("are left alone when nobody answered, because a template is slots", () => {
     const held = blockOf(fillTemplateAtoms(body(), { recipient: "Ana" }));
     expect(held.atoms[3].kind).toBe("template");
     expect(held.display).toBe("Dear Ana, about {subject}");
@@ -58,7 +58,7 @@ describe("a template's text parameters", () => {
 });
 
 describe("what placing a template asks for", () => {
-  const holes: TemplateHole[] = [
+  const slots: TemplateSlot[] = [
     {
       name: "evidence",
       label: "Evidence",
@@ -70,7 +70,7 @@ describe("what placing a template asks for", () => {
   ];
 
   it("gives every parameter a row, and a scope always has a value", () => {
-    const rows = answerRowsOf(holes, {}, {});
+    const rows = answerRowsOf(slots, {}, {});
     expect(rows.map((row) => row.kind)).toEqual(["scope", "text"]);
     expect(rows[0].value).toBe("Findings");
     expect(rows[0].missing).toBe(false);
@@ -87,14 +87,14 @@ describe("what placing a template asks for", () => {
   });
 
   it("marks a text parameter missing until it has words", () => {
-    expect(missingIn(answerRowsOf(holes, {}, {}))).toEqual(["Subject"]);
-    expect(missingIn(answerRowsOf(holes, {}, { subject: "  " }))).toEqual(["Subject"]);
-    expect(missingIn(answerRowsOf(holes, {}, { subject: "Winter" }))).toEqual([]);
+    expect(missingIn(answerRowsOf(slots, {}, {}))).toEqual(["Subject"]);
+    expect(missingIn(answerRowsOf(slots, {}, { subject: "  " }))).toEqual(["Subject"]);
+    expect(missingIn(answerRowsOf(slots, {}, { subject: "Winter" }))).toEqual([]);
   });
 
   it("reads a chosen scope as itself rather than as the default", () => {
     const rows = answerRowsOf(
-      holes,
+      slots,
       { evidence: { include: [{ select: "project" }], exclude: [] } },
       { subject: "Winter" }
     );

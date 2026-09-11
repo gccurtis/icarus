@@ -52,7 +52,7 @@ describe("the Derived Output scope read projection", () => {
         boundTo: {
           kind: "resource",
           ref: { kind: "document", id: asId<"documents">("documents:made") },
-          hole: "source_material"
+          slot: "source_material"
         },
         set: concrete,
         createdBy: { kind: "user", userId: asId<"users">("users:1") },
@@ -86,7 +86,7 @@ describe("the Derived Output scope read projection", () => {
       boundTo: {
         kind: "resource" as const,
         ref: { kind: "document" as const, id: "documents:another" as never },
-        hole: "source_material"
+        slot: "source_material"
       }
     };
     void _name;
@@ -97,7 +97,7 @@ describe("the Derived Output scope read projection", () => {
       boundTo: {
         kind: "resource" as const,
         ref: { kind: "presentation" as const, id: "presentations:made" as never },
-        hole: "source_material"
+        slot: "source_material"
       }
     };
     expect(visibleScopeOf(storeWith([otherKind]), output(scope))).toBe(scope);
@@ -115,7 +115,7 @@ describe("the Derived Output scope read projection", () => {
       boundTo: {
         kind: "resource" as const,
         ref: { kind: "document" as const, id: "documents:made" as never },
-        hole: "source_material"
+        slot: "source_material"
       },
       set: { include: [{ select: "project" as const }], exclude: [] },
       createdBy: { kind: "system" as const },
@@ -139,7 +139,7 @@ describe("the Derived Output scope read projection", () => {
       boundTo: {
         kind: "resource" as const,
         ref: { kind: "document" as const, id: "documents:made" as never },
-        hole: "source_material"
+        slot: "source_material"
       },
       set: { include: [{ select: "project" as const }], exclude: [] },
       createdBy: { kind: "system" as const },
@@ -152,7 +152,7 @@ describe("the Derived Output scope read projection", () => {
       boundTo: {
         kind: "resource" as const,
         ref: { kind: "document" as const, id: "documents:elsewhere" as never },
-        hole: "source_material"
+        slot: "source_material"
       }
     };
 
@@ -172,7 +172,7 @@ describe("the Derived Output scope read projection", () => {
       boundTo: {
         kind: "resource",
         ref: { kind: "document", id: "documents:made" },
-        hole: "source_material"
+        slot: "source_material"
       },
       set: { include: "everything", exclude: [] },
       createdBy: { kind: "system" },

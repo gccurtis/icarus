@@ -339,7 +339,7 @@ lists and inspectors ([E12](#e12)).
 
 **Work:** Build on existing templates/versioning. **First slice:** implement one copy direction against ID-02, then the reverse using the same ownership contract.
 
-- Copy body, holes/default scope, styles, relevant versions/provenance, and referenced-resource behavior deliberately. A cross-scope reference must not smuggle inaccessible project material into a personal asset.
+- Copy body, slots/default scope, styles, relevant versions/provenance, and referenced-resource behavior deliberately. A cross-scope reference must not smuggle inaccessible project material into a personal asset.
 - **Close when:** personal → project and project → personal produce new independent IDs; editing/versioning/deleting either copy does not mutate its origin; permission and provenance tests cover both directions.
 
 <a id="asset-02"></a>
@@ -363,7 +363,7 @@ lists and inspectors ([E12](#e12)).
 
 **Work:** Build / Refine. **First slice:** connect the existing spreadsheet template representation/materialization to an actual editor; do not rebuild all templates as greenfield ([E7](#e7)).
 
-- Cover editing, save/discard, revisions, text holes, scope holes, formulas/references, and instantiation into a usable spreadsheet with a real resource ID. Preserve source template independence.
+- Cover editing, save/discard, revisions, text slots, scope slots, formulas/references, and instantiation into a usable spreadsheet with a real resource ID. Preserve source template independence.
 - **Close when:** editing survives reload and two instantiations using distinct scopes/content remain isolated and correct. Verify formulas, cell/range behavior, rendering, and failure recovery through Chromium and capability tests.
 
 <a id="asset-05"></a>
@@ -372,7 +372,7 @@ lists and inspectors ([E12](#e12)).
 **Work:** Tactical / Design. **First slice:** improve the section beneath a selected prompt block, especially in documents, without coupling the layout fix to a global rename.
 
 - Inventory template and prompt-block terminology across editors; Q6 decides whether to rename. Any approved rename must be coherent and current-only, not an alias layer.
-- **Close when:** selected block → scope/hole inspection → edit → save/instantiate is visually coherent in documents and presentations, normal/compact/zoomed states are inspected, and existing white presentation canvas/source-isolation contracts remain intact.
+- **Close when:** selected block → scope/slot inspection → edit → save/instantiate is visually coherent in documents and presentations, normal/compact/zoomed states are inspected, and existing white presentation canvas/source-isolation contracts remain intact.
 
 ### Analysis and structured data
 

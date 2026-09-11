@@ -466,7 +466,7 @@ describe("Derived Output lifecycle", () => {
       boundTo: {
         kind: "resource",
         ref: { kind: "document", id: "documents:made" },
-        hole: "evidence"
+        slot: "evidence"
       },
       set: {
         include: [{ select: "resources", refs: [{ kind: "document", id: "documents:launch-brief" }] }],
@@ -756,7 +756,7 @@ describe("Derived Output lifecycle", () => {
       boundTo: {
         kind: "resource",
         ref: { kind: "document", id: "documents:made" },
-        hole: "source_material"
+        slot: "source_material"
       },
       set: {
         include: [{ select: "resources", refs: [{ kind: "document", id: "documents:launch-brief" }] }],
@@ -1045,7 +1045,7 @@ describe("Derived Output lifecycle", () => {
       boundTo: {
         kind: "resource",
         ref: { kind: "document", id: "documents:made" },
-        hole: "source_material"
+        slot: "source_material"
       },
       set: {
         include: [{ select: "resources", refs: [{ kind: "document", id: "documents:launch-brief" }] }],

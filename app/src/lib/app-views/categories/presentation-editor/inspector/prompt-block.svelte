@@ -27,7 +27,7 @@
   import {
     promptBlockIn,
     promptElementIn,
-    promptHoleOps,
+    promptSlotOps,
     promptScopeOps,
     type LinkedPromptBlock
   } from "$app-views/categories/presentation-editor/procedures/prompt-blocks";

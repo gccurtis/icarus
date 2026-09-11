@@ -82,19 +82,19 @@ export const boundToContractIn = (node, path, found) => {
     node.name.text !== "BoundTo"
   ) return;
   const arms = unionArms(node.type);
-  const hole = arms.find((arm) => literalProperty(arm, "kind", "hole") !== undefined);
+  const slot = arms.find((arm) => literalProperty(arm, "kind", "slot") !== undefined);
   const resource = arms.find((arm) => literalProperty(arm, "kind", "resource") !== undefined);
   if (
     arms.length !== 2 ||
-    !exactFields(literalFields(hole), new Map([
-      ["kind", { optional: false, type: '"hole"' }],
+    !exactFields(literalFields(slot), new Map([
+      ["kind", { optional: false, type: '"slot"' }],
       ["templateId", { optional: false, type: 'Id<"templates">' }],
-      ["hole", { optional: false, type: "string" }]
+      ["slot", { optional: false, type: "string" }]
     ])) ||
     !exactFields(literalFields(resource), new Map([
       ["kind", { optional: false, type: '"resource"' }],
       ["ref", { optional: false, type: "ResourceRef" }],
-      ["hole", { optional: false, type: "string" }]
+      ["slot", { optional: false, type: "string" }]
     ]))
   ) found.add("BoundTo.contract");
 };

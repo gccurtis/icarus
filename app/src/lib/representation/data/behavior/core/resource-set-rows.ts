@@ -72,29 +72,29 @@ const actorOf = (value: unknown, subject: string): Actor => {
 const boundToOf = (value: unknown, subject: string): BoundTo => {
   const owner = recordOf(value, `${subject}.boundTo`);
   if (
-    owner.kind === "hole" &&
-    exact(owner, ["kind", "templateId", "hole"]) &&
+    owner.kind === "slot" &&
+    exact(owner, ["kind", "templateId", "slot"]) &&
     isStoredRowId(owner.templateId, "templates") &&
-    canonicalText(owner.hole, MAX_KIND_LENGTH)
+    canonicalText(owner.slot, MAX_KIND_LENGTH)
   ) {
     return {
-      kind: "hole",
+      kind: "slot",
       templateId: owner.templateId as Id<"templates">,
-      hole: owner.hole
+      slot: owner.slot
     };
   }
   if (
     owner.kind === "resource" &&
-    exact(owner, ["kind", "ref", "hole"]) &&
-    canonicalText(owner.hole, MAX_KIND_LENGTH)
+    exact(owner, ["kind", "ref", "slot"]) &&
+    canonicalText(owner.slot, MAX_KIND_LENGTH)
   ) {
     return {
       kind: "resource",
       ref: admitResourceRef(owner.ref, `${subject}.boundTo.ref`),
-      hole: owner.hole
+      slot: owner.slot
     };
   }
-  throw new Error(`${subject}.boundTo names exactly one hole or resource`);
+  throw new Error(`${subject}.boundTo names exactly one slot or resource`);
 };
 
 const termOf = (value: unknown, subject: string): SetTerm => {

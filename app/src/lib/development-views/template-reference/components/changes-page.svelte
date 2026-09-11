@@ -228,7 +228,7 @@
         <p>
           Seven commits on <code>work/template-features</code>, sitting on
           <code>work/derived-output-architecture</code> rather than on main — because that is where
-          prompt blocks are, and a prompt's scope is what a scope hole fills. Everything on this page
+          prompt blocks are, and a prompt's scope is what a scope slot fills. Everything on this page
           is measured from there, so the numbers say what this branch adds and nothing else.
         </p>
       </div>

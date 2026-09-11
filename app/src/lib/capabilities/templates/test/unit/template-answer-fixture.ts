@@ -76,7 +76,7 @@ export const prompt = (id: string, name: string) => ({
   display: "Sum up",
   prompt: "Sum up",
   marks: [],
-  scope: { include: [{ select: "hole", name }], exclude: [] },
+  scope: { include: [{ select: "slot", name }], exclude: [] },
   state: "idle"
 });
 
@@ -84,7 +84,7 @@ export const linkedPrompt = (id: string, name: string, derivedOutputId: string) 
   const { prompt: _prompt, scope: _scope, ...block } = prompt(id, name);
   void _prompt;
   void _scope;
-  return { ...block, hole: { name }, derivedOutputId };
+  return { ...block, slot: { name }, derivedOutputId };
 };
 
 export const body = {
@@ -151,7 +151,7 @@ beforeEach(() => {
         name: "Brief",
         tags: [],
         body,
-        holes: [{ name: "evidence", label: "Evidence", kind: "scope", default: { include: [{ select: "kinds", kinds: ["finding"] }], exclude: [] } }],
+        slots: [{ name: "evidence", label: "Evidence", kind: "scope", default: { include: [{ select: "kinds", kinds: ["finding"] }], exclude: [] } }],
         createdBy: { kind: "user", userId: "users:1" },
         revision: 1,
         updatedAt: 20

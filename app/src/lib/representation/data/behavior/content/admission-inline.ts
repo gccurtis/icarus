@@ -35,7 +35,7 @@ const currentSetTerm = (value: unknown): boolean => {
   if (term.select === "set") {
     return exact(term, ["select", "setId"]) && isStoredRowId(term.setId, "resourceSets");
   }
-  return term.select === "hole" && exact(term, ["select", "name"]) && canonical(term.name, 160);
+  return term.select === "slot" && exact(term, ["select", "name"]) && canonical(term.name, 160);
 };
 
 export const currentScope = (value: unknown): boolean => {
@@ -52,7 +52,7 @@ export const currentScope = (value: unknown): boolean => {
   ) return false;
   const selections = [...scope.include, ...scope.exclude]
     .map((term) => recordOf(term)?.select);
-  return !(selections.includes("hole") && selections.includes("resources"));
+  return !(selections.includes("slot") && selections.includes("resources"));
 };
 
 export const currentAtom = (value: unknown): boolean => {
@@ -107,19 +107,19 @@ const currentEnd = (value: unknown): boolean => {
     natural(end.offset);
 };
 
-export const currentHole = (value: unknown): boolean => {
-  const hole = recordOf(value);
-  return hole !== undefined &&
-    exact(hole, ["name"], ["description"]) &&
-    canonical(hole.name, 160) &&
-    (hole.description === undefined || text(hole.description, 10_000));
+export const currentSlot = (value: unknown): boolean => {
+  const slot = recordOf(value);
+  return slot !== undefined &&
+    exact(slot, ["name"], ["description"]) &&
+    canonical(slot.name, 160) &&
+    (slot.description === undefined || text(slot.description, 10_000));
 };
 
 export const currentMark = (value: unknown): boolean => {
   const mark = recordOf(value);
   if (
     mark === undefined ||
-    !exact(mark, ["id", "from", "to"], ["style", "link", "color", "background", "hole"]) ||
+    !exact(mark, ["id", "from", "to"], ["style", "link", "color", "background", "slot"]) ||
     !identifier(mark.id) ||
     !currentEnd(mark.from) ||
     !currentEnd(mark.to)
@@ -136,5 +136,5 @@ export const currentMark = (value: unknown): boolean => {
   return (mark.link === undefined || currentMarkLink(mark.link)) &&
     (mark.color === undefined || text(mark.color, 10_000)) &&
     (mark.background === undefined || text(mark.background, 10_000)) &&
-    (mark.hole === undefined || currentHole(mark.hole));
+    (mark.slot === undefined || currentSlot(mark.slot));
 };

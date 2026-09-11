@@ -23,9 +23,9 @@ export const integrationWorkflows = [
     proof: "Real Chromium folder selection over a source tree and an 8 MiB payload. Nested, dotted, Unicode and duplicate-leaf paths survive directory relocation, reload, and hash-checked download."
   },
   {
-    title: "Fill template text and scope holes",
+    title: "Fill template text and scope slots",
     path: "test/browser/template-features.spec.ts",
-    proof: "Fill a text hole; generate from source A; choose source B and prove A is excluded; reload before and after generation. A separate case scopes the resulting document Prompt Block to an uploaded External file."
+    proof: "Fill a text slot; generate from source A; choose source B and prove A is excluded; reload before and after generation. A separate case scopes the resulting document Prompt Block to an uploaded External file."
   },
   {
     title: "Give an Agent exact evidence",

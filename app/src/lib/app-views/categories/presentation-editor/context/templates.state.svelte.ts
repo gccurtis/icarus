@@ -6,25 +6,25 @@ import {
   discardStage,
   draftOf,
   insertionOf,
-  mergedHoles,
+  mergedSlots,
   openStage,
   saveAsTemplate,
   templateDetail,
   termFor,
-  updateHoles,
-  withHoleField,
+  updateSlots,
+  withSlotField,
   withTerm,
   withWholeProject,
   withoutTerm,
   wordsFrom,
-  type ChosenHole,
+  type ChosenSlot,
   type OfferSource,
   type ScopeDraft,
   type ScopeNames,
   type ScopeSide,
   type TemplateAnswers,
   type TemplateDetail,
-  type TemplateHole,
+  type TemplateSlot,
   type TemplateLibraryItem
 } from "$app-views/categories/presentation-editor/procedures/templating";
 import { slideSignal } from "$app-views/categories/presentation-editor/procedures/selecting";
@@ -53,7 +53,7 @@ export class TemplatesContextState {
   pending = $state<string | undefined>(undefined);
   actionError = $state<string | undefined>(undefined);
   notice = $state<readonly string[]>([]);
-  defaultFor = $state<TemplateHole | undefined>(undefined);
+  defaultFor = $state<TemplateSlot | undefined>(undefined);
   defaultOpen = $state(false);
   draft = $state<ScopeDraft>(draftOf(undefined));
   insertFor = $state<TemplateDetail | undefined>(undefined);
@@ -61,7 +61,7 @@ export class TemplatesContextState {
   answerOpen = $state(false);
   choices = $state<Record<string, ScopeDraft | undefined>>({});
   texts = $state<Record<string, string | undefined>>({});
-  answering = $state<TemplateHole | undefined>(undefined);
+  answering = $state<TemplateSlot | undefined>(undefined);
 
   private live = true;
 
@@ -221,9 +221,9 @@ export class TemplatesContextState {
     runtime.apply(insertion.ops);
     if (insertion.firstSlideId !== undefined) this.show(insertion.firstSlideId);
     if (stage !== undefined && template !== undefined) {
-      const merged = mergedHoles(template.holes, detail.holes);
-      if (merged.length !== template.holes.length) {
-        const result = await updateHoles(this.context.view, template, merged, presentationId);
+      const merged = mergedSlots(template.slots, detail.slots);
+      if (merged.length !== template.slots.length) {
+        const result = await updateSlots(this.context.view, template, merged, presentationId);
         if (this.live && !result.accepted) this.actionError = result.detail;
       }
     }
@@ -238,7 +238,7 @@ export class TemplatesContextState {
         this.actionError = "That template could not be read.";
         return;
       }
-      if (this.context.stage() === undefined && detail.holes.length > 0) {
+      if (this.context.stage() === undefined && detail.slots.length > 0) {
         this.insertFor = detail;
         this.choices = {};
         this.texts = {};
@@ -258,34 +258,34 @@ export class TemplatesContextState {
     );
   }
 
-  changeHoles(next: readonly ChosenHole[]): void {
-    void this.run("holes", async () => {
+  changeSlots(next: readonly ChosenSlot[]): void {
+    void this.run("slots", async () => {
       const template = this.context.template();
       if (template === undefined) return;
-      const result = await updateHoles(this.context.view, template, next, this.context.presentationId());
+      const result = await updateSlots(this.context.view, template, next, this.context.presentationId());
       if (this.live && !result.accepted) this.actionError = result.detail;
     });
   }
 
-  openDefault(hole: TemplateHole): void {
-    this.defaultFor = hole;
-    this.draft = draftOf(hole.default);
+  openDefault(slot: TemplateSlot): void {
+    this.defaultFor = slot;
+    this.draft = draftOf(slot.default);
     this.defaultOpen = true;
   }
 
   confirmDefault(): void {
     const template = this.context.template();
     if (template === undefined || this.defaultFor === undefined) return;
-    this.changeHoles(
-      withHoleField(template.holes, this.defaultFor.name, { default: this.draft })
+    this.changeSlots(
+      withSlotField(template.slots, this.defaultFor.name, { default: this.draft })
     );
   }
 
   openAnswer(name: string): void {
-    const hole = this.insertFor?.holes.find((candidate) => candidate.name === name);
-    if (hole === undefined) return;
-    this.answering = hole;
-    this.draft = draftOf(this.choices[name] ?? hole.default);
+    const slot = this.insertFor?.slots.find((candidate) => candidate.name === name);
+    if (slot === undefined) return;
+    this.answering = slot;
+    this.draft = draftOf(this.choices[name] ?? slot.default);
     this.insertOpen = false;
     this.answerOpen = true;
   }

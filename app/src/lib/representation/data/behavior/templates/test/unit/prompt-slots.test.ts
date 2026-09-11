@@ -2,17 +2,17 @@ import { describe, expect, it } from "vitest";
 
 import {
   defaultScopeOf,
-  holeNamesIn,
-  mergedPromptHoles,
-  nextHoleName,
-  offeredHoleName,
-  promptHolesOf,
+  slotNamesIn,
+  mergedPromptSlots,
+  nextSlotName,
+  offeredSlotName,
+  promptSlotsOf,
   promptWordsIn,
-  textHolesOf,
-  withPromptHoles,
+  textSlotsOf,
+  withPromptSlots,
   withPrompts
-} from "$representation/data/behavior/templates/prompt-holes";
-import type { TemplateBody, TemplateHole } from "$representation/data/types/templates/template";
+} from "$representation/data/behavior/templates/prompt-slots";
+import type { TemplateBody, TemplateSlot } from "$representation/data/types/templates/template";
 
 const prompt = (id: string, extra: Record<string, unknown> = {}) => ({
   id,
@@ -29,43 +29,43 @@ const body = (blocks: readonly unknown[]) => ({
   rows: [{ id: "r1", kind: "blocks", blocks }]
 });
 
-describe("a hole is made, never found", () => {
-  it("gives no hole to a prompt nobody templated", () => {
+describe("a slot is made, never found", () => {
+  it("gives no slot to a prompt nobody templated", () => {
     const held = body([prompt("a"), prompt("b", { scope: { include: [{ select: "project" }], exclude: [] } })]);
-    expect(promptHolesOf(held)).toEqual([]);
-    expect(holeNamesIn(held)).toEqual([]);
+    expect(promptSlotsOf(held)).toEqual([]);
+    expect(slotNamesIn(held)).toEqual([]);
   });
 
   it("gives one to each prompt somebody did", () => {
     const held = body([
-      prompt("a", { hole: { name: "sources" } }),
-      prompt("b", { hole: { name: "decisions", description: "Which threads" } })
+      prompt("a", { slot: { name: "sources" } }),
+      prompt("b", { slot: { name: "decisions", description: "Which threads" } })
     ]);
-    const drafts = promptHolesOf(held);
-    expect(drafts.map((draft) => draft.hole.name)).toEqual(["sources", "decisions"]);
-    expect(drafts[1].hole.description).toBe("Which threads");
+    const drafts = promptSlotsOf(held);
+    expect(drafts.map((draft) => draft.slot.name)).toEqual(["sources", "decisions"]);
+    expect(drafts[1].slot.description).toBe("Which threads");
   });
 
   it("offers the next name across everything the body already holds", () => {
-    expect(offeredHoleName(0)).toBe("Hole 1");
-    expect(nextHoleName(body([prompt("a")]))).toBe("Hole 1");
+    expect(offeredSlotName(0)).toBe("Slot 1");
+    expect(nextSlotName(body([prompt("a")]))).toBe("Slot 1");
     const held = body([
-      prompt("a", { hole: { name: "Hole 1" } }),
+      prompt("a", { slot: { name: "Slot 1" } }),
       {
         id: "t1",
         type: "text",
         variant: "paragraph",
-        atoms: [{ id: "t1-a", kind: "template", name: "Hole 2" }],
-        display: "{Hole 2}",
+        atoms: [{ id: "t1-a", kind: "template", name: "Slot 2" }],
+        display: "{Slot 2}",
         marks: []
       }
     ]);
-    expect([...holeNamesIn(held)].sort()).toEqual(["Hole 1", "Hole 2"]);
-    expect(nextHoleName(held)).toBe("Hole 3");
+    expect([...slotNamesIn(held)].sort()).toEqual(["Slot 1", "Slot 2"]);
+    expect(nextSlotName(held)).toBe("Slot 3");
   });
 });
 
-describe("a hole's default is whatever the thing already is", () => {
+describe("a slot's default is whatever the thing already is", () => {
   it("is the scope the prompt reads, whatever that scope is", () => {
     for (const scope of [
       { include: [{ select: "project" }], exclude: [] },
@@ -86,32 +86,32 @@ describe("a hole's default is whatever the thing already is", () => {
 
 describe("a body as a template holds it", () => {
   const held = body([
-    prompt("a", { hole: { name: "sources" }, scope: { include: [{ select: "set", setId: "resourceSets:1" }], exclude: [] } }),
+    prompt("a", { slot: { name: "sources" }, scope: { include: [{ select: "set", setId: "resourceSets:1" }], exclude: [] } }),
     prompt("b", { scope: { include: [{ select: "project" }], exclude: [] } })
   ]);
 
   it("replaces a templated prompt's scope and leaves the rest alone", () => {
-    const templated = withPromptHoles(held, promptHolesOf(held)) as ReturnType<typeof body>;
+    const templated = withPromptSlots(held, promptSlotsOf(held)) as ReturnType<typeof body>;
     const blocks = templated.rows[0].blocks as { scope: unknown }[];
-    expect(blocks[0].scope).toEqual({ include: [{ select: "hole", name: "sources" }], exclude: [] });
+    expect(blocks[0].scope).toEqual({ include: [{ select: "slot", name: "sources" }], exclude: [] });
     expect(blocks[1].scope).toEqual({ include: [{ select: "project" }], exclude: [] });
   });
 
-  it("keeps the set the prompt read as the hole's default", () => {
-    expect(promptHolesOf(held)[0].hole.default).toEqual({
+  it("keeps the set the prompt read as the slot's default", () => {
+    expect(promptSlotsOf(held)[0].slot.default).toEqual({
       include: [{ select: "set", setId: "resourceSets:1" }],
       exclude: []
     });
   });
 
-  it("writes each prompt onto the block that asks it, and reads it back by hole", () => {
+  it("writes each prompt onto the block that asks it, and reads it back by slot", () => {
     const asked = withPrompts(held, { a: "  What broke?  ", b: "Anything" });
-    const templated = withPromptHoles(asked, promptHolesOf(asked)) as unknown as TemplateBody;
+    const templated = withPromptSlots(asked, promptSlotsOf(asked)) as unknown as TemplateBody;
     expect(promptWordsIn(templated)).toEqual({ sources: "What broke?" });
   });
 });
 
-describe("text holes", () => {
+describe("text slots", () => {
   it("carry the words they stand in for", () => {
     const held = body([
       {
@@ -120,34 +120,34 @@ describe("text holes", () => {
         variant: "paragraph",
         atoms: [
           { id: "a1", kind: "literal", text: "Dear " },
-          { id: "a2", kind: "template", name: "Hole 1", description: "Who it is for", text: "Ana" }
+          { id: "a2", kind: "template", name: "Slot 1", description: "Who it is for", text: "Ana" }
         ],
-        display: "Dear {Hole 1}",
+        display: "Dear {Slot 1}",
         marks: []
       }
     ]);
-    expect(textHolesOf(held)).toEqual([
-      { name: "Hole 1", label: "Hole 1", kind: "text", description: "Who it is for", text: "Ana" }
+    expect(textSlotsOf(held)).toEqual([
+      { name: "Slot 1", label: "Slot 1", kind: "text", description: "Who it is for", text: "Ana" }
     ]);
   });
 });
 
 describe("saving a template again", () => {
   it("takes the name from the thing and leaves a description alone", () => {
-    const known: TemplateHole[] = [
+    const known: TemplateSlot[] = [
       { name: "sources", label: "sources", kind: "scope", description: "Old words" }
     ];
-    const fresh = promptHolesOf(body([prompt("b", { hole: { name: "sources" } })])).map(
-      (draft) => draft.hole
+    const fresh = promptSlotsOf(body([prompt("b", { slot: { name: "sources" } })])).map(
+      (draft) => draft.slot
     );
-    expect(mergedPromptHoles(known, fresh)[0].description).toBe("Old words");
+    expect(mergedPromptSlots(known, fresh)[0].description).toBe("Old words");
   });
 
-  it("keeps a hole nothing in the body asks for any more", () => {
-    const known: TemplateHole[] = [{ name: "subject", label: "Subject", kind: "text" }];
-    const fresh = promptHolesOf(body([prompt("a", { hole: { name: "sources" } })])).map(
-      (draft) => draft.hole
+  it("keeps a slot nothing in the body asks for any more", () => {
+    const known: TemplateSlot[] = [{ name: "subject", label: "Subject", kind: "text" }];
+    const fresh = promptSlotsOf(body([prompt("a", { slot: { name: "sources" } })])).map(
+      (draft) => draft.slot
     );
-    expect(mergedPromptHoles(known, fresh).map((hole) => hole.name)).toEqual(["sources", "subject"]);
+    expect(mergedPromptSlots(known, fresh).map((slot) => slot.name)).toEqual(["sources", "subject"]);
   });
 });

@@ -56,7 +56,7 @@ export const CONFLICTS: readonly ConflictCluster[] = [
       "app/src/lib/representation/store/tables.ts"
     ],
     collision:
-      "The template feature introduces stages, scopes, prompt holes and multi-kind bodies over older document/slide/spreadsheet representations. Main independently makes instantiation atomic, advances the spreadsheet contracts, and adds summary/template metadata to represented resource rows and seed fixtures.",
+      "The template feature introduces stages, scopes, prompt slots and multi-kind bodies over older document/slide/spreadsheet representations. Main independently makes instantiation atomic, advances the spreadsheet contracts, and adds summary/template metadata to represented resource rows and seed fixtures.",
     resolution:
       "Preserve branch template semantics and main's single transaction, including a semantic outbox row in that same commit. Keep summary and templateId fields and matching seed metadata, then port materialization to current document, slide and spreadsheet types without reviving a deleted normalizer.",
     proof:

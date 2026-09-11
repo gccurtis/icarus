@@ -3,7 +3,7 @@ export type { TemplateAnswers } from "$capabilities/templates/index.remote";
 export type {
   LibraryTemplate,
   LibraryTemplateDetail,
-  TemplateHole,
+  TemplateSlot,
   TemplateLibrarySummary,
   TemplateScope,
   TemplateTarget
@@ -60,9 +60,9 @@ export { inspectTemplate } from "$app-views/categories/templates/procedures/insp
 export { createTemplate } from "$app-views/categories/templates/procedures/create-template";
 export { updateTemplateName } from "$app-views/categories/templates/procedures/update-template-name";
 export { updateTemplateDescription } from "$app-views/categories/templates/procedures/update-template-description";
-export { updateTemplateHoleDescription } from "$app-views/categories/templates/procedures/update-template-hole-description";
+export { updateTemplateSlotDescription } from "$app-views/categories/templates/procedures/update-template-slot-description";
 export { updateTemplateTags } from "$app-views/categories/templates/procedures/update-template-tags";
-export { updateTemplateHoleDefault } from "$app-views/categories/templates/procedures/update-template-hole-default";
+export { updateTemplateSlotDefault } from "$app-views/categories/templates/procedures/update-template-slot-default";
 export { duplicateTemplate } from "$app-views/categories/templates/procedures/duplicate-template";
 export { removeTemplate } from "$app-views/categories/templates/procedures/remove-template";
 export { instantiateTemplate } from "$app-views/categories/templates/procedures/instantiate-template";

@@ -623,7 +623,7 @@ describe("Derived Output resource-reading session", () => {
         boundTo: {
           kind: "resource",
           ref: { kind: "document", id: "documents:doc" },
-          hole: "evidence"
+          slot: "evidence"
         },
         set: {
           include: [{ select: "resources", refs: [{ kind: "document", id: "documents:doc" }] }],

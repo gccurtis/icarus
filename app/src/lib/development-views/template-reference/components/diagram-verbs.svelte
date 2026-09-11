@@ -20,7 +20,7 @@
   <g class="box template">
     <rect x="430" y="40" width="240" height="104" rx="10" />
     <text x="450" y="72" class="title">The template</text>
-    <text x="450" y="94" class="sub">A portable body, its holes,</text>
+    <text x="450" y="94" class="sub">A portable body, its slots,</text>
     <text x="450" y="112" class="sub">and a revision that only moves</text>
     <text x="450" y="130" class="sub">when the working copy is saved</text>
   </g>
@@ -46,7 +46,7 @@
 
   <path class="line" d="M 672 96 C 760 100 790 166 838 170" marker-end="url(#tref-arrow)" />
   <text x="690" y="104" class="label">Use · Insert</text>
-  <text x="690" y="120" class="hint">asks what each hole selects</text>
+  <text x="690" y="120" class="hint">asks what each slot selects</text>
 
   <path class="line" d="M 500 146 L 500 226" marker-end="url(#tref-arrow)" />
   <text x="486" y="180" class="label right">Edit</text>

@@ -2,7 +2,7 @@
 
 A template is a copy machine's original, kept by the project, except that the copy it keeps is a
 function rather than a value: what pointed at a particular thing in the project is stripped, and the
-variables fill the holes. Three things happen to it: someone keeps a copy of what they have, someone
+variables fill the slots. Three things happen to it: someone keeps a copy of what they have, someone
 asks for a copy of it here, and someone changes the original by editing a copy of it and saving it
 back. This page draws all three, says what each one reads and writes, and records what the reviews
 settled.
@@ -110,7 +110,7 @@ made. Nothing here is still open.
    something else is still instantiating. *Became:* the inspector's Use opens the same one-modal ask and
    sends the answers to `instantiateTemplate`.
 3. **One modal for all variables, or one per variable?** One modal. *Became:* as built.
-4. **When a template is inserted into a template being edited, does it ask?** No: it brings its holes
+4. **When a template is inserted into a template being edited, does it ask?** No: it brings its slots
    with it and the variables join. *Became:* as built.
 5. **Are comments allowed on a working copy?** No: if the rest is stripped, comments are stripped too,
    and a comment that mentions someone on a copy would be a problem. *Became:* the comments capability

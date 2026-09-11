@@ -1,18 +1,18 @@
 import { displayOfAtom, endAt, linearOf, segmentsOf } from "$representation/data/behavior/content/positions";
 import type { Atom, Mark } from "$representation/data/types/content/content-block";
 import type { TemplatedResourceSet } from "$representation/data/types/core/resource-set";
-import type { TemplateBody, TemplateHole } from "$representation/data/types/templates/template";
+import type { TemplateBody, TemplateSlot } from "$representation/data/types/templates/template";
 
 /**
- * A hole is made, never found.
+ * A slot is made, never found.
  *
- * Two things in a body can become one: a prompt, whose hole selects what it
- * reads, and a run of text, whose hole says what it says. Both are turned into
- * holes by the same gesture at the thing itself, and until somebody makes that
- * gesture there is no hole — a document full of prompts is a document, and a
+ * Two things in a body can become one: a prompt, whose slot selects what it
+ * reads, and a run of text, whose slot says what it says. Both are turned into
+ * slots by the same gesture at the thing itself, and until somebody makes that
+ * gesture there is no slot — a document full of prompts is a document, and a
  * template made from it asks nothing.
  *
- * A hole's default is simply whatever the thing already is: the prompt's own
+ * A slot's default is simply whatever the thing already is: the prompt's own
  * scope, or the words that were selected. Nothing is judged portable or not.
  * A scope naming something the next project does not have selects nothing
  * there, which is what it means for that thing not to exist.
@@ -46,43 +46,43 @@ const walkFor = (body: unknown, take: (value: Fields) => boolean): readonly Fiel
 
 const promptsIn = (body: unknown) => walkFor(body, isPrompt);
 const atomsIn = (body: unknown) => walkFor(body, isTemplateAtom);
-const holeMarksIn = (body: unknown) =>
-  walkFor(body, (value) => isRecord(value.hole) && typeof value.hole.name === "string" && isRecord(value.from));
+const slotMarksIn = (body: unknown) =>
+  walkFor(body, (value) => isRecord(value.slot) && typeof value.slot.name === "string" && isRecord(value.from));
 
 const named = (held: unknown): string => {
   if (!isRecord(held)) return "";
   return typeof held.name === "string" ? held.name.trim() : "";
 };
 
-/** Every hole this body already carries, whichever kind it is. */
-export const holeNamesIn = (body: unknown): readonly string[] => {
+/** Every slot this body already carries, whichever kind it is. */
+export const slotNamesIn = (body: unknown): readonly string[] => {
   const names = new Set<string>();
   for (const prompt of promptsIn(body)) {
-    const held = named(prompt.hole);
+    const held = named(prompt.slot);
     if (held !== "") names.add(held);
   }
   for (const atom of atomsIn(body)) names.add(atom.name as string);
-  for (const mark of holeMarksIn(body)) names.add((mark.hole as Fields).name as string);
+  for (const mark of slotMarksIn(body)) names.add((mark.slot as Fields).name as string);
   return [...names];
 };
 
-export const offeredHoleName = (index: number): string => `Hole ${index + 1}`;
+export const offeredSlotName = (index: number): string => `Slot ${index + 1}`;
 
 /**
- * The name the next hole is offered.
+ * The name the next slot is offered.
  *
  * Counted across everything the body already holds rather than per kind, so a
- * template's holes are numbered in one sequence however they were made.
+ * template's slots are numbered in one sequence however they were made.
  */
-export const nextHoleName = (body: unknown): string => {
-  const taken = new Set(holeNamesIn(body));
+export const nextSlotName = (body: unknown): string => {
+  const taken = new Set(slotNamesIn(body));
   for (let index = 0; ; index += 1) {
-    const offer = offeredHoleName(index);
+    const offer = offeredSlotName(index);
     if (!taken.has(offer)) return offer;
   }
 };
 
-/** What a hole selects when nobody says otherwise: whatever the prompt already read. */
+/** What a slot selects when nobody says otherwise: whatever the prompt already read. */
 export const defaultScopeOf = (scope: unknown): TemplatedResourceSet | undefined => {
   if (!isRecord(scope) || !Array.isArray(scope.include) || scope.include.length === 0) {
     return { include: [{ select: "project" }], exclude: [] };
@@ -90,28 +90,28 @@ export const defaultScopeOf = (scope: unknown): TemplatedResourceSet | undefined
   return scope as unknown as TemplatedResourceSet;
 };
 
-export type PromptHoleDraft = {
+export type PromptSlotDraft = {
   readonly blockId: string;
-  readonly hole: TemplateHole;
+  readonly slot: TemplateSlot;
 };
 
 /**
- * One hole per prompt somebody templated, and none for the rest.
+ * One slot per prompt somebody templated, and none for the rest.
  *
- * Read before the body is made portable, because the hole's default is the
+ * Read before the body is made portable, because the slot's default is the
  * scope as the prompt actually reads it.
  */
-export const promptHolesOf = (body: unknown): readonly PromptHoleDraft[] =>
+export const promptSlotsOf = (body: unknown): readonly PromptSlotDraft[] =>
   promptsIn(body).flatMap((prompt) => {
-    const name = named(prompt.hole);
+    const name = named(prompt.slot);
     if (name === "") return [];
-    const held = isRecord(prompt.hole) ? prompt.hole : {};
+    const held = isRecord(prompt.slot) ? prompt.slot : {};
     const description = typeof held.description === "string" ? held.description.trim() : "";
     const fallback = defaultScopeOf(prompt.scope);
     return [
       {
         blockId: prompt.id as string,
-        hole: {
+        slot: {
           name,
           label: name,
           kind: "scope",
@@ -122,8 +122,8 @@ export const promptHolesOf = (body: unknown): readonly PromptHoleDraft[] =>
     ];
   });
 
-/** One hole per template atom somebody made, carrying the words it stands in for. */
-export const textHolesOf = (body: unknown): readonly TemplateHole[] =>
+/** One slot per template atom somebody made, carrying the words it stands in for. */
+export const textSlotsOf = (body: unknown): readonly TemplateSlot[] =>
   atomsIn(body).map((atom) => {
     const name = atom.name as string;
     const description = typeof atom.description === "string" ? atom.description.trim() : "";
@@ -138,11 +138,11 @@ export const textHolesOf = (body: unknown): readonly TemplateHole[] =>
   });
 
 /**
- * The body with each templated prompt's scope replaced by the hole that stands
+ * The body with each templated prompt's scope replaced by the slot that stands
  * for it. A prompt nobody templated keeps the scope it has.
  */
-export const withPromptHoles = <T>(body: T, drafts: readonly PromptHoleDraft[]): T => {
-  const names = new Map(drafts.map((draft) => [draft.blockId, draft.hole.name]));
+export const withPromptSlots = <T>(body: T, drafts: readonly PromptSlotDraft[]): T => {
+  const names = new Map(drafts.map((draft) => [draft.blockId, draft.slot.name]));
   const walk = (value: unknown): unknown => {
     if (Array.isArray(value)) return value.map(walk);
     if (!isRecord(value)) return value;
@@ -151,7 +151,7 @@ export const withPromptHoles = <T>(body: T, drafts: readonly PromptHoleDraft[]):
     if (!isPrompt(value)) return next;
     const name = names.get(value.id as string);
     if (name === undefined) return next;
-    return { ...next, scope: { include: [{ select: "hole", name }], exclude: [] } };
+    return { ...next, scope: { include: [{ select: "slot", name }], exclude: [] } };
   };
   return walk(body) as T;
 };
@@ -199,16 +199,16 @@ export const withScopes = <T>(body: T, scoped: Readonly<Record<string, unknown>>
   return walk(body) as T;
 };
 
-/** The holes a template keeps, with what the author already settled left alone. */
-export const mergedPromptHoles = (
-  known: readonly TemplateHole[],
-  fresh: readonly TemplateHole[]
-): readonly TemplateHole[] => {
-  const held = new Map(known.map((hole) => [hole.name, hole]));
-  const next = fresh.map((hole) => {
-    const settled = held.get(hole.name);
-    if (settled === undefined) return hole;
-    const { description, ...rest } = hole;
+/** The slots a template keeps, with what the author already settled left alone. */
+export const mergedPromptSlots = (
+  known: readonly TemplateSlot[],
+  fresh: readonly TemplateSlot[]
+): readonly TemplateSlot[] => {
+  const held = new Map(known.map((slot) => [slot.name, slot]));
+  const next = fresh.map((slot) => {
+    const settled = held.get(slot.name);
+    if (settled === undefined) return slot;
+    const { description, ...rest } = slot;
     return {
       ...rest,
       ...(description === undefined
@@ -218,11 +218,11 @@ export const mergedPromptHoles = (
         : { description })
     };
   });
-  const taken = new Set(next.map((hole) => hole.name));
-  return [...next, ...known.filter((hole) => !taken.has(hole.name))];
+  const taken = new Set(next.map((slot) => slot.name));
+  return [...next, ...known.filter((slot) => !taken.has(slot.name))];
 };
 
-/** What each hole's prompt asks, so placing a template can show the question. */
+/** What each slot's prompt asks, so placing a template can show the question. */
 export const promptWordsIn = (body: TemplateBody): Readonly<Record<string, string>> => {
   const words: Record<string, string> = {};
   for (const prompt of promptsIn(body)) {
@@ -231,7 +231,7 @@ export const promptWordsIn = (body: TemplateBody): Readonly<Record<string, strin
     const scope = prompt.scope;
     if (!isRecord(scope) || !Array.isArray(scope.include)) continue;
     for (const term of scope.include) {
-      if (isRecord(term) && term.select === "hole" && typeof term.name === "string") {
+      if (isRecord(term) && term.select === "slot" && typeof term.name === "string") {
         words[term.name] ??= asked;
       }
     }
@@ -239,8 +239,8 @@ export const promptWordsIn = (body: TemplateBody): Readonly<Record<string, strin
   return words;
 };
 
-/** The mark that says a run is a hole, addressed the way every other mark is. */
-export const holeMarkOver = (
+/** The mark that says a run is a slot, addressed the way every other mark is. */
+export const slotMarkOver = (
   atoms: readonly Atom[],
   from: number,
   to: number,
@@ -254,12 +254,12 @@ export const holeMarkOver = (
     id: mint(),
     from: endAt(atoms, start, "from"),
     to: endAt(atoms, end, "to"),
-    hole: { name }
+    slot: { name }
   };
 };
 
-/** The hole already covering this run, if one does. */
-export const holeNameOver = (
+/** The slot already covering this run, if one does. */
+export const slotNameOver = (
   atoms: readonly Atom[],
   marks: readonly Mark[],
   from: number,
@@ -268,36 +268,36 @@ export const holeNameOver = (
   const start = Math.min(from, to);
   const end = Math.max(from, to);
   for (const run of markedRunsIn(atoms, marks)) {
-    if (run.start < end && run.end > start) return run.hole.name as string;
+    if (run.start < end && run.end > start) return run.slot.name as string;
   }
   return undefined;
 };
 
-type Marked = { readonly start: number; readonly end: number; readonly hole: Fields };
+type Marked = { readonly start: number; readonly end: number; readonly slot: Fields };
 
-/** Where each hole mark sits on the block's display, sorted and non-overlapping. */
+/** Where each slot mark sits on the block's display, sorted and non-overlapping. */
 const markedRunsIn = (atoms: readonly Atom[], marks: readonly Mark[]): readonly Marked[] => {
   const runs: Marked[] = [];
   for (const mark of marks) {
-    if (!isRecord(mark.hole) || typeof mark.hole.name !== "string") continue;
+    if (!isRecord(mark.slot) || typeof mark.slot.name !== "string") continue;
     const from = linearOf(atoms, mark.from);
     const to = linearOf(atoms, mark.to);
     const start = Math.min(from, to);
     const end = Math.max(from, to);
     if (end <= start) continue;
-    runs.push({ start, end, hole: mark.hole });
+    runs.push({ start, end, slot: mark.slot });
   }
   runs.sort((a, b) => a.start - b.start);
-  /** An overlap would make two holes claim the same words, so the later one is not a hole. */
+  /** An overlap would make two slots claim the same words, so the later one is not a slot. */
   return runs.filter((run, index) => index === 0 || run.start >= runs[index - 1].end);
 };
 
-const holeAtom = (hole: Fields, words: string, id: string): Atom => {
-  const description = typeof hole.description === "string" ? hole.description.trim() : "";
+const slotAtom = (slot: Fields, words: string, id: string): Atom => {
+  const description = typeof slot.description === "string" ? slot.description.trim() : "";
   return {
     id,
     kind: "template",
-    name: (hole.name as string).trim(),
+    name: (slot.name as string).trim(),
     ...(description === "" ? {} : { description }),
     ...(words === "" ? {} : { text: words })
   };
@@ -306,19 +306,19 @@ const holeAtom = (hole: Fields, words: string, id: string): Atom => {
 /**
  * The marked runs, as the atoms and marks that replace them.
  *
- * Every mark that does not reach into a hole keeps the exact words it covered,
+ * Every mark that does not reach into a slot keeps the exact words it covered,
  * because the ends are remapped by position rather than by atom. A mark that
  * does reach into one goes: those words are a question now, and formatting a
  * question is not a thing this vocabulary can mean.
  */
-export const withHolesAt = (
+export const withSlotsAt = (
   atoms: readonly Atom[],
   marks: readonly Mark[],
   mint: () => string
 ): { readonly atoms: readonly Atom[]; readonly marks: readonly Mark[] } => {
   const runs = markedRunsIn(atoms, marks);
   if (runs.length === 0) {
-    return { atoms, marks: marks.filter((mark) => mark.hole === undefined) };
+    return { atoms, marks: marks.filter((mark) => mark.slot === undefined) };
   }
 
   const segments = segmentsOf(atoms);
@@ -357,7 +357,7 @@ export const withHolesAt = (
         return segment.atom.text.slice(start - segment.start, end - segment.start);
       })
       .join("");
-    next.push(holeAtom(run.hole, words, mint()));
+    next.push(slotAtom(run.slot, words, mint()));
     at = run.end;
   }
   carry(at, total);
@@ -366,7 +366,7 @@ export const withHolesAt = (
    * A mark's end, put back where it was.
    *
    * A start prefers the stretch that begins at it and an end prefers the one
-   * that finishes there, so a mark butting up against a hole keeps its words
+   * that finishes there, so a mark butting up against a slot keeps its words
    * rather than reaching across the boundary.
    */
   const endAtLanding = (position: number, prefer: "start" | "end"): Mark["from"] | undefined => {
@@ -378,7 +378,7 @@ export const withHolesAt = (
 
   const kept: Mark[] = [];
   for (const mark of marks) {
-    if (mark.hole !== undefined) continue;
+    if (mark.slot !== undefined) continue;
     const from = linearOf(atoms, mark.from);
     const to = linearOf(atoms, mark.to);
     const start = Math.min(from, to);
@@ -398,20 +398,20 @@ export const withHolesAt = (
 };
 
 /**
- * Every marked run in the body, as a hole in the prose.
+ * Every marked run in the body, as a slot in the prose.
  *
  * This runs on the copy a template is made from, never on the resource itself:
  * marking a run changes nothing about the document, and only the template ends
- * up with a hole where the words were.
+ * up with a slot where the words were.
  */
-export const withMarkedHoles = <T>(body: T, mint: () => string): T => {
+export const withMarkedSlots = <T>(body: T, mint: () => string): T => {
   const walk = (value: unknown): unknown => {
     if (Array.isArray(value)) return value.map(walk);
     if (!isRecord(value)) return value;
     const next: Fields = {};
     for (const [field, nested] of Object.entries(value)) next[field] = walk(nested);
     if (!Array.isArray(next.atoms) || !Array.isArray(next.marks)) return next;
-    const held = withHolesAt(next.atoms as Atom[], next.marks as Mark[], mint);
+    const held = withSlotsAt(next.atoms as Atom[], next.marks as Mark[], mint);
     if (held.atoms === next.atoms && held.marks.length === (next.marks as Mark[]).length) return next;
     return {
       ...next,

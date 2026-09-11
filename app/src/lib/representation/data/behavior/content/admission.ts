@@ -15,7 +15,7 @@ import {
 } from "$representation/data/behavior/content/admission-values";
 import {
   currentAtom,
-  currentHole,
+  currentSlot,
   currentMark,
   currentScope
 } from "$representation/data/behavior/content/admission-inline";
@@ -147,7 +147,7 @@ const currentBlock = (value: unknown, depth = 0): value is ContentBlock => {
   if (block.type !== "prompt") return false;
   const linked = Object.hasOwn(block, "derivedOutputId");
   const base = ["id", "type", "atoms", "display", "marks", "state"];
-  const presentation = ["style", "hole", "format"];
+  const presentation = ["style", "slot", "format"];
   if (!linked) {
     if (
       block.state !== "idle" ||
@@ -171,7 +171,7 @@ const currentBlock = (value: unknown, depth = 0): value is ContentBlock => {
   return (block.style === undefined || identifier(block.style)) &&
     (block.prompt === undefined || text(block.prompt)) &&
     (block.scope === undefined || currentScope(block.scope)) &&
-    (block.hole === undefined || currentHole(block.hole)) &&
+    (block.slot === undefined || currentSlot(block.slot)) &&
     Array.isArray(block.atoms) &&
     block.atoms.length <= 10_000 &&
     block.atoms.every(currentAtom) &&

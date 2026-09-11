@@ -7,15 +7,15 @@ opened in an ordinary editor and saved into.
 | procedure | answers |
 | --- | --- |
 | `readTemplateLibrary` | Every valid template in the scoped project, projected as library metadata with creator name, permissions and last use, plus quarantined invalid row notices |
-| `readTemplate` | The full body and holes for one valid template in the project, `unavailable` for a corrupt row, or `null` |
+| `readTemplate` | The full body and slots for one valid template in the project, `unavailable` for a corrupt row, or `null` |
 | `readResourceTemplate` | For one document or presentation: the stage it is, if any |
 | `readTemplateStageIndex` | Every exact current template working-copy identity in the scoped project, for chrome that must name editor subjects without making them listable project material |
 | `createTemplate` | A template in the scoped project with a server-built valid empty body and revision-one history |
 | `createTemplateFromResource` | A template from a live document, a live presentation, or one slide of a presentation as a one-presentation, its body made portable first; says what could not travel |
-| `updateTemplate` | A compare-and-swap name, description, tag, hole-help or hole-list update plus an immutable version snapshot |
+| `updateTemplate` | A compare-and-swap name, description, tag, slot-help or slot-list update plus an immutable version snapshot |
 | `duplicateTemplate` | A template in the project copied into a new one at revision one |
 | `removeTemplate` | A compare-and-swap delete after the stage and all version rows are removed |
-| `instantiateTemplate` | A regular document, presentation, or spreadsheet with a revision-zero leader snapshot and no reference back to the template, its prompt scopes filled from the caller's answers, else each hole's default |
+| `instantiateTemplate` | A regular document, presentation, or spreadsheet with a revision-zero leader snapshot and no reference back to the template, its prompt scopes filled from the caller's answers, else each slot's default |
 | `openTemplateStage` | The template's stage, made if absent: a scratch document or presentation holding the template body, and the row that says so |
 | `commitTemplateStage` | The stage resource's leader body, made portable and validated, written as the template's next revision |
 | `discardTemplateStage` | The stage row and its scratch resource removed, with the resource's snapshots, change sets and comments |
@@ -47,7 +47,7 @@ A body made from a live resource is made portable first: formula ids, generated
 output ids, links to people and resources, images stored in the project, and
 scope terms naming project resources are dropped, and each is said back to the
 caller. A template turns a value into a function, so this holds inside one
-project as much as across two: a prompt's scope is what the holes fill, and
+project as much as across two: a prompt's scope is what the slots fill, and
 a formula keeps its expression and loses its instance, its project-neutral
 form, drawn as unbound in the editor until a formula is made for it again. The
 body is then admitted exactly as a stored one would be, so a template can never
@@ -64,50 +64,50 @@ matching domain. Spreadsheet address parsing and materialization remain separate
 because one validates portable coordinates while the other builds owned runtime
 rows. There is no alternate or legacy admission path.
 
-## Holes
+## Slots
 
-A hole is a place the body leaves for whoever places the template. A scope hole
+A slot is a place the body leaves for whoever places the template. A scope slot
 exists because the body names it: saving a stage or making a template from a
 resource declares every name the prompts ask for, so that list is found rather
-than authored. A text hole is authored, because nothing but the writer knows
+than authored. A text slot is authored, because nothing but the writer knows
 where in the prose it belongs — the panel declares it and drops its atom at the
 caret in one act, and the next save finds it like any other.
 
-**A body asks in two ways, so a hole is answered in two ways.** A prompt's scope
+**A body asks in two ways, so a slot is answered in two ways.** A prompt's scope
 naming one makes it a `scope`: a group of resources, which always has an answer
 because the whole project is the floor. A template atom in the prose makes it a
-`text`: words, filled from the caller, else the hole's own `text`, else nothing.
+`text`: words, filled from the caller, else the slot's own `text`, else nothing.
 That last case is the only thing that can hold a placement up, and
 `instantiateTemplate` refuses it with the names of what is still empty. A name
 used both ways is a scope, because otherwise the template could never be placed.
-Every hole represents that distinction explicitly as `kind: "scope"` or
+Every slot represents that distinction explicitly as `kind: "scope"` or
 `kind: "text"`; an absent kind is malformed and is never inferred.
 
-A hole's `default` is what it selects when the caller says nothing: the whole
-project, kinds, one of the project's named sets, or another hole. A hole
+A slot's `default` is what it selects when the caller says nothing: the whole
+project, kinds, one of the project's named sets, or another slot. A slot
 declared without one means the whole project. Instantiation fills every prompt
 scope from the caller's answers, else the default; an answer is a resource set,
 and a named set it points at is checked to exist before anything is written. A
-body naming a hole the template does not declare is refused rather than guessed
+body naming a slot the template does not declare is refused rather than guessed
 at.
 
 **A rule that cannot be said inline is stored, and what points at it is one
 term.** Both a default and an answer arrive as whatever somebody built, which
 may exclude things and may name particular resources — neither of which the
 templated vocabulary holds. `normalizeScope` writes those as a `resourceSets`
-row bound to the hole that owns them, and the default or answer becomes a single
+row bound to the slot that owns them, and the default or answer becomes a single
 `set` term naming it. That is not bookkeeping: resolving a template substitutes
-a hole term for what fills it, on either side of a prompt's scope, and one term
+a slot term for what fills it, on either side of a prompt's scope, and one term
 for a difference cannot be expressed on the excluding side. A rule that is only
 the project, kinds or named sets is kept inline and writes nothing. Reading a
 template back expands a bound default into the rule it holds, so a builder opens
 on what was built; a named set is left as the named set somebody chose. The rows
-go when their owner does: a template removed, a hole dropped, a working copy
+go when their owner does: a template removed, a slot dropped, a working copy
 discarded.
 
-`updateTemplate` still takes a whole hole list, because that is how a
-description, a default or a new text hole is written, and it refuses with
-`hole-in-use` while the body still names a scope hole the list drops.
+`updateTemplate` still takes a whole slot list, because that is how a
+description, a default or a new text slot is written, and it refuses with
+`slot-in-use` while the body still names a scope slot the list drops.
 
 ## Stages
 
@@ -118,7 +118,7 @@ everyone in the project; opening again reuses it, so several people editing a
 template are editing one copy through the editor's own collaboration. Saving
 reads the scratch leader body, makes it portable, validates it, and writes it as
 the template's next revision; the stage stays open until it is discarded, so
-saving twice is ordinary. A name, tag or hole edit never touches the body,
+saving twice is ordinary. A name, tag or slot edit never touches the body,
 so it carries the stage to the new revision. The stage is the only thing that
 writes a template's body, so a copy and its template cannot drift apart; the
 compare-and-swap on save refuses only a second session's save that landed

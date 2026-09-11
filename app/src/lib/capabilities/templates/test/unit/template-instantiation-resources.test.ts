@@ -81,7 +81,7 @@ describe("instantiation — resource creation", () => {
     assert.equal(model.tables.semanticMaterialJobs.length, 1);
   });
 
-  test("does not invent a hole-answer contract", async () => {
+  test("does not invent a slot-answer contract", async () => {
     model.tables.templates.push(
       template(
         "1",
@@ -101,7 +101,7 @@ describe("instantiation — resource creation", () => {
                   prompt: "Summarize",
                   marks: [],
                   scope: {
-                    include: [{ select: "hole", name: "region" }],
+                    include: [{ select: "slot", name: "region" }],
                     exclude: []
                   },
                   state: "idle"
@@ -110,7 +110,7 @@ describe("instantiation — resource creation", () => {
             }
           ]
         },
-        { holes: [{ name: "region", label: "Region", kind: "scope" }] }
+        { slots: [{ name: "region", label: "Region", kind: "scope" }] }
       )
     );
 
@@ -150,7 +150,7 @@ describe("instantiation — resource creation", () => {
                   prompt: "Summarize",
                   marks: [],
                   scope: {
-                    include: [{ select: "hole", name: "evidence" }],
+                    include: [{ select: "slot", name: "evidence" }],
                     exclude: []
                   },
                   state: "idle"
@@ -163,7 +163,7 @@ describe("instantiation — resource creation", () => {
                   prompt: "Summarize",
                   marks: [],
                   scope: {
-                    include: [{ select: "hole", name: "evidence" }],
+                    include: [{ select: "slot", name: "evidence" }],
                     exclude: []
                   },
                   state: "idle"
@@ -173,7 +173,7 @@ describe("instantiation — resource creation", () => {
           ]
         },
         {
-          holes: [
+          slots: [
             {
               name: "evidence",
               label: "Evidence",

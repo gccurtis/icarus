@@ -149,7 +149,7 @@ export const template = (id: string, body: unknown = documentBody, extra: Record
     name: `Template ${id}`,
     tags: [],
     body,
-    holes: [],
+    slots: [],
     createdBy: { kind: "user", userId: "users:u" },
     revision: 2,
     updatedAt: 20,

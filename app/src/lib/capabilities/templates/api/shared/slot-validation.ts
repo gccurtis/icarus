@@ -4,8 +4,8 @@ import {
   isResourceSelectorKind
 } from "$representation/data/behavior/core/resource";
 import type {
-  TemplateHole,
-  TemplateVersionHole
+  TemplateSlot,
+  TemplateVersionSlot
 } from "$representation/data/types/templates/template";
 import type { TemplateAnswers } from "$capabilities/templates/types/templates";
 import {
@@ -16,12 +16,12 @@ import {
 
 type Fields = Record<string, unknown>;
 
-const MAX_TEMPLATE_HOLES = 100;
+const MAX_TEMPLATE_SLOTS = 100;
 const MAX_TEMPLATE_TERMS_PER_SIDE = 100;
 const MAX_TEMPLATE_KINDS_PER_TERM = 100;
-export const TEMPLATE_HOLE_NAME_LIMIT = 160;
-const MAX_HOLE_LABEL_LENGTH = 500;
-export const TEMPLATE_HOLE_DESCRIPTION_LIMIT = 4_000;
+export const TEMPLATE_SLOT_NAME_LIMIT = 160;
+const MAX_SLOT_LABEL_LENGTH = 500;
+export const TEMPLATE_SLOT_DESCRIPTION_LIMIT = 4_000;
 const MAX_BLOCK_TEXT_LENGTH = 100_000;
 
 const isRecord = (value: unknown): value is Fields =>
@@ -43,11 +43,11 @@ const validTerm = (value: unknown): boolean => {
   if (value.select === "project") {
     return hasOnlyKeys(value, ["select"]) && Object.keys(value).length === 1;
   }
-  if (value.select === "hole") {
+  if (value.select === "slot") {
     return (
       hasOnlyKeys(value, ["select", "name"]) &&
       Object.keys(value).length === 2 &&
-      validCanonicalText(value.name, TEMPLATE_HOLE_NAME_LIMIT)
+      validCanonicalText(value.name, TEMPLATE_SLOT_NAME_LIMIT)
     );
   }
   if (value.select === "set") {
@@ -117,16 +117,16 @@ export const resourceSetOf = (value: unknown, subject: string): ResourceSet => {
 export const answersOf = (value: unknown, subject: string): TemplateAnswers => {
   assertStoredValue(value, subject);
   if (!isRecord(value)) {
-    throw new Error(`templates/${subject}: answers map hole names to resource sets`);
+    throw new Error(`templates/${subject}: answers map slot names to resource sets`);
   }
   const entries = Object.entries(value);
-  if (entries.length > MAX_TEMPLATE_HOLES) {
-    throw new Error(`templates/${subject}: at most ${MAX_TEMPLATE_HOLES} holes are answered`);
+  if (entries.length > MAX_TEMPLATE_SLOTS) {
+    throw new Error(`templates/${subject}: at most ${MAX_TEMPLATE_SLOTS} slots are answered`);
   }
   const answers: Record<string, ResourceSet> = {};
   for (const [name, answer] of entries) {
-    if (!validCanonicalText(name, TEMPLATE_HOLE_NAME_LIMIT)) {
-      throw new Error(`templates/${subject}: every answered hole has a name`);
+    if (!validCanonicalText(name, TEMPLATE_SLOT_NAME_LIMIT)) {
+      throw new Error(`templates/${subject}: every answered slot has a name`);
     }
     answers[name] = resourceSetOf(answer, subject);
   }
@@ -138,15 +138,15 @@ export const textsOf = (
   subject: string
 ): Readonly<Record<string, string>> => {
   assertStoredValue(value, subject);
-  if (!isRecord(value)) throw new Error(`templates/${subject}: texts map hole names to words`);
+  if (!isRecord(value)) throw new Error(`templates/${subject}: texts map slot names to words`);
   const entries = Object.entries(value);
-  if (entries.length > MAX_TEMPLATE_HOLES) {
-    throw new Error(`templates/${subject}: at most ${MAX_TEMPLATE_HOLES} holes are answered`);
+  if (entries.length > MAX_TEMPLATE_SLOTS) {
+    throw new Error(`templates/${subject}: at most ${MAX_TEMPLATE_SLOTS} slots are answered`);
   }
   const texts: Record<string, string> = {};
   for (const [name, words] of entries) {
-    if (!validCanonicalText(name, TEMPLATE_HOLE_NAME_LIMIT)) {
-      throw new Error(`templates/${subject}: every answered hole has a name`);
+    if (!validCanonicalText(name, TEMPLATE_SLOT_NAME_LIMIT)) {
+      throw new Error(`templates/${subject}: every answered slot has a name`);
     }
     if (!validText(words, MAX_BLOCK_TEXT_LENGTH, true)) {
       throw new Error(`templates/${subject}: a text answer is words`);
@@ -180,71 +180,71 @@ const validChosenSet = (value: unknown): boolean =>
   value.exclude.length <= MAX_TEMPLATE_TERMS_PER_SIDE &&
   value.exclude.every((term) => validTerm(term) || validSetTerm(term));
 
-const checkedHoles = (
+const checkedSlots = (
   value: unknown,
   subject: string,
   chosen = false
 ): readonly Fields[] => {
   assertStoredValue(value, subject);
-  if (!Array.isArray(value)) throw new Error(`templates/${subject}: holes is a list`);
-  if (value.length > MAX_TEMPLATE_HOLES) {
-    throw new Error(`templates/${subject}: a template has at most ${MAX_TEMPLATE_HOLES} holes`);
+  if (!Array.isArray(value)) throw new Error(`templates/${subject}: slots is a list`);
+  if (value.length > MAX_TEMPLATE_SLOTS) {
+    throw new Error(`templates/${subject}: a template has at most ${MAX_TEMPLATE_SLOTS} slots`);
   }
   const seen = new Set<string>();
   const declared = new Set<string>();
-  for (const hole of value) {
+  for (const slot of value) {
     if (
-      !isRecord(hole) ||
-      !hasOnlyKeys(hole, ["name", "label", "description", "kind", "default", "text"])
+      !isRecord(slot) ||
+      !hasOnlyKeys(slot, ["name", "label", "description", "kind", "default", "text"])
     ) {
-      throw new Error(`templates/${subject}: a hole has only represented fields`);
+      throw new Error(`templates/${subject}: a slot has only represented fields`);
     }
-    if (hole.kind !== "scope" && hole.kind !== "text") {
-      throw new Error(`templates/${subject}: a hole is answered with a scope or with text`);
+    if (slot.kind !== "scope" && slot.kind !== "text") {
+      throw new Error(`templates/${subject}: a slot is answered with a scope or with text`);
     }
-    if (hole.kind === "text" && hole.default !== undefined) {
-      throw new Error(`templates/${subject}: a text hole has no default scope`);
-    }
-    if (
-      hole.text !== undefined &&
-      (hole.kind !== "text" || !validText(hole.text, MAX_BLOCK_TEXT_LENGTH, true))
-    ) {
-      throw new Error(`templates/${subject}: a hole's default words are text`);
-    }
-    if (!validCanonicalText(hole.name, TEMPLATE_HOLE_NAME_LIMIT)) {
-      throw new Error(`templates/${subject}: every hole has a name`);
-    }
-    if (!validCanonicalText(hole.label, MAX_HOLE_LABEL_LENGTH)) {
-      throw new Error(`templates/${subject}: every hole has a label`);
+    if (slot.kind === "text" && slot.default !== undefined) {
+      throw new Error(`templates/${subject}: a text slot has no default scope`);
     }
     if (
-      hole.description !== undefined &&
-      (typeof hole.description !== "string" ||
-        hole.description.length > TEMPLATE_HOLE_DESCRIPTION_LIMIT ||
-        hole.description !== hole.description.trim())
+      slot.text !== undefined &&
+      (slot.kind !== "text" || !validText(slot.text, MAX_BLOCK_TEXT_LENGTH, true))
     ) {
-      throw new Error(`templates/${subject}: a hole description is text`);
+      throw new Error(`templates/${subject}: a slot's default words are text`);
+    }
+    if (!validCanonicalText(slot.name, TEMPLATE_SLOT_NAME_LIMIT)) {
+      throw new Error(`templates/${subject}: every slot has a name`);
+    }
+    if (!validCanonicalText(slot.label, MAX_SLOT_LABEL_LENGTH)) {
+      throw new Error(`templates/${subject}: every slot has a label`);
     }
     if (
-      hole.default !== undefined &&
-      !(chosen ? validChosenSet(hole.default) : validTemplatedResourceSet(hole.default))
+      slot.description !== undefined &&
+      (typeof slot.description !== "string" ||
+        slot.description.length > TEMPLATE_SLOT_DESCRIPTION_LIMIT ||
+        slot.description !== slot.description.trim())
     ) {
-      throw new Error(`templates/${subject}: a hole default is a templated resource set`);
+      throw new Error(`templates/${subject}: a slot description is text`);
     }
-    const key = hole.name.toLocaleLowerCase();
-    if (seen.has(key)) throw new Error(`templates/${subject}: hole names are unique`);
+    if (
+      slot.default !== undefined &&
+      !(chosen ? validChosenSet(slot.default) : validTemplatedResourceSet(slot.default))
+    ) {
+      throw new Error(`templates/${subject}: a slot default is a templated resource set`);
+    }
+    const key = slot.name.toLocaleLowerCase();
+    if (seen.has(key)) throw new Error(`templates/${subject}: slot names are unique`);
     seen.add(key);
-    declared.add(hole.name);
+    declared.add(slot.name);
   }
-  for (const hole of value as Fields[]) {
-    if (!isRecord(hole.default)) continue;
+  for (const slot of value as Fields[]) {
+    if (!isRecord(slot.default)) continue;
     const terms = [
-      ...(hole.default.include as unknown[]),
-      ...(hole.default.exclude as unknown[])
+      ...(slot.default.include as unknown[]),
+      ...(slot.default.exclude as unknown[])
     ];
     for (const term of terms) {
-      if (isRecord(term) && term.select === "hole" && !declared.has(term.name as string)) {
-        throw new Error(`templates/${subject}: a hole default names a declared hole`);
+      if (isRecord(term) && term.select === "slot" && !declared.has(term.name as string)) {
+        throw new Error(`templates/${subject}: a slot default names a declared slot`);
       }
     }
   }
@@ -252,16 +252,16 @@ const checkedHoles = (
 };
 
 /** A live template stores only terms its templated scope can own inline. */
-export const holesOf = (
+export const slotsOf = (
   value: unknown,
   subject: string,
   chosen = false
-): readonly TemplateHole[] =>
-  checkedHoles(value, subject, chosen) as readonly TemplateHole[];
+): readonly TemplateSlot[] =>
+  checkedSlots(value, subject, chosen) as readonly TemplateSlot[];
 
 /** A history row additionally owns concrete resource selections. */
-export const versionHolesOf = (
+export const versionSlotsOf = (
   value: unknown,
   subject: string
-): readonly TemplateVersionHole[] =>
-  checkedHoles(value, subject, true) as readonly TemplateVersionHole[];
+): readonly TemplateVersionSlot[] =>
+  checkedSlots(value, subject, true) as readonly TemplateVersionSlot[];

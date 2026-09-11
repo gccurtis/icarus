@@ -553,7 +553,7 @@ describe("reading the library", () => {
         boundTo: {
           kind: "resource",
           ref: { kind: "document", id: "documents:1" },
-          hole: "evidence"
+          slot: "evidence"
         }
         }),
         name: undefined
@@ -848,7 +848,7 @@ describe("scope", () => {
       boundTo: {
         kind: "resource",
         ref: { kind: "document", id: "documents:1" },
-        hole: "evidence"
+        slot: "evidence"
       },
       set: {
         include: [{ select: "resources", refs: [{ kind: "document", id: "documents:1" }] }],

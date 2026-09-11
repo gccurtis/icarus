@@ -57,7 +57,7 @@ describe("complete External resource-reference deletion policy", () => {
         resource: "document",
         rows: [{ id: "row", kind: "blocks", blocks: [linkedBlock("template")] }]
       },
-      holes: [],
+      slots: [],
       createdBy: referenceActor,
       revision: 1,
       updatedAt: 1

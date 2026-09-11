@@ -20,7 +20,7 @@ per-project binding, and a template's editing copy is shared.
 
 - **Template** — a `templates` row in one project: a portable body, its variables, tags. A
   template made from one slide is a presentation template holding one slide; nothing marks it afterwards.
-- **Variable** — a hole a prompt scope can name. Its `default` is what it selects when nobody
+- **Variable** — a slot a prompt scope can name. Its `default` is what it selects when nobody
   says otherwise: the whole project, kinds, one of the project's named sets, or another
   variable. A variable declared without a default means the whole project.
 - **Resource set** — a `resourceSets` row: a named `{ include, exclude }` over one project.
@@ -166,7 +166,7 @@ Settled by the third review, and built that way: the stripping stays, inside one
 as across two, because a template turns a value into a function (a formula keeps its expression
 and loses its instance; a prompt's scope is what the variables fill; stored images are dropped
 for now and may later be stored with the template); Use asks for the variables the way Insert
-does, in one modal; inserting into a template being edited asks nothing and brings the holes;
+does, in one modal; inserting into a template being edited asks nothing and brings the slots;
 comments are stripped too, so a thread cannot be started on a working copy; and no resource
 refers back to a template, so `templateId` is gone from documents, presentations and spreadsheets and the
 template records its own `lastUsedAt`.

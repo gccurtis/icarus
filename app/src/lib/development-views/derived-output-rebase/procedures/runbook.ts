@@ -51,7 +51,7 @@ export const RUNBOOK: readonly RunbookPhase[] = [
     title: "Resolve templates, references and baseline source",
     intent: "Join feature semantics with current durability and route ownership.",
     actions: [
-      "Preserve template stages, scopes and holes while retaining atomic instantiation and semantic outbox writes.",
+      "Preserve template stages, scopes and slots while retaining atomic instantiation and semantic outbox writes.",
       "Union templateStages, project-scoped template metadata, named/bound resource sets, and main's resource summary/template fields in the table schema.",
       "Move formula and variable reference routes under /demo with the other development references.",
       "Union capabilities.md; never select one inventory side wholesale.",

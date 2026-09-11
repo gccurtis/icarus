@@ -39,7 +39,7 @@
         <h1>Where it meets the base</h1>
         <p class="tref-lede">
           This branch no longer sits on main. It sits on <code>{MEETING.base}</code>, because that is
-          where prompt blocks are and a prompt's scope is what a hole fills. Getting there took
+          where prompt blocks are and a prompt's scope is what a slot fills. Getting there took
           {MEETING.rebases} replays in all; {MEETING.conflicted} files have ever needed a decision, over
           {MEETING.events} conflict events, and {ontoBase} of those decisions belong to the move onto
           this base. Every one is written out below with what each side had wanted, what was kept, and
@@ -88,7 +88,7 @@
       <div class="tref-note">
         <h4>Why not main</h4>
         <p>
-          On main, a scope hole could only ever come from a template that already had one, because
+          On main, a scope slot could only ever come from a template that already had one, because
           nothing wrote prompts. On this base, prompts exist and generate. That does not finish the
           chain on its own — see
           <a href={hrefOf(project, "integration")}>end to end with prompts</a> — but it is the
@@ -135,7 +135,7 @@
       <div class="tref-section-head">
         <div><span class="tref-kicker">Actually broken</span><h2>Two defects the move turned up</h2></div>
         <p>
-          Neither was caused by the rebase. One had been latent since text holes were added; the other
+          Neither was caused by the rebase. One had been latent since text slots were added; the other
           was waiting for a project that had ever converted a text box into a Prompt Block, which is
           exactly what the base makes ordinary.
         </p>

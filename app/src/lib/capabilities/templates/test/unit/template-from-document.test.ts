@@ -71,7 +71,7 @@ describe("a template from a live resource — documents", () => {
     const held = model.tables.templates[1];
     assert.equal(held.name, "Winter brief shell");
     assert.deepEqual(held.tags, ["Winter"]);
-    assert.deepEqual(held.holes, [{
+    assert.deepEqual(held.slots, [{
       name: "evidence",
       label: "evidence",
       kind: "scope",
@@ -85,13 +85,13 @@ describe("a template from a live resource — documents", () => {
   });
 
   /**
-   * Marking a run says where a hole goes. It does not put one there.
+   * Marking a run says where a slot goes. It does not put one there.
    *
-   * The template gets the hole and the resource keeps its words, its
+   * The template gets the slot and the resource keeps its words, its
    * formatting and its display exactly as they were, which is the whole reason
-   * a hole over text is a mark rather than an edit.
+   * a slot over text is a mark rather than an edit.
    */
-  test("turns a marked run into a hole on the template and leaves the document alone", async () => {
+  test("turns a marked run into a slot on the template and leaves the document alone", async () => {
     const live = {
       rows: [
         {
@@ -109,7 +109,7 @@ describe("a template from a live resource — documents", () => {
                   id: "m1",
                   from: { atom: "t1-a", offset: 5 },
                   to: { atom: "t1-a", offset: 14 },
-                  hole: { name: "client", description: "Who it is for" }
+                  slot: { name: "client", description: "Who it is for" }
                 },
                 { id: "m2", from: { atom: "t1-a", offset: 22 }, to: { atom: "t1-a", offset: 28 }, style: ["bold"] },
                 { id: "m3", from: { atom: "t1-a", offset: 0 }, to: { atom: "t1-a", offset: 9 }, style: ["italic"] }
@@ -140,7 +140,7 @@ describe("a template from a live resource — documents", () => {
     assert.equal(made.accepted, true);
 
     const held = model.tables.templates[1];
-    assert.deepEqual(held.holes, [
+    assert.deepEqual(held.slots, [
       { name: "client", label: "client", kind: "text", description: "Who it is for", text: "Northwind" }
     ]);
     const block = (held.body as { rows: { blocks: Record<string, unknown>[] }[] }).rows[0].blocks[0];
@@ -152,13 +152,13 @@ describe("a template from a live resource — documents", () => {
   });
 
   /**
-   * A hole is made, never found.
+   * A slot is made, never found.
    *
    * A prompt nobody templateified keeps the scope it reads and produces no
-   * hole, so placing the template asks nothing about it. That is what keeps
+   * slot, so placing the template asks nothing about it. That is what keeps
    * the questions to the ones somebody meant to ask.
    */
-  test("gives no hole to a prompt nobody templateified", async () => {
+  test("gives no slot to a prompt nobody templateified", async () => {
     model.tables.documents.push(row("documents", "1", { projectId: "projects:1", title: "Winter brief" }));
     model.tables.documentSnapshots.push(
       row("documentSnapshots", "1", {
@@ -196,7 +196,7 @@ describe("a template from a live resource — documents", () => {
     });
     assert.ok(made.accepted);
     const held = model.tables.templates[1];
-    assert.deepEqual(held.holes, []);
+    assert.deepEqual(held.slots, []);
     assert.deepEqual(scopeOf(held), { include: [{ select: "project" }], exclude: [] });
   });
 
@@ -230,7 +230,7 @@ describe("a template from a live resource — documents", () => {
                   marks: [],
                   derivedOutputId: "derivedOutputs:3",
                   scope: { include: [{ select: "kinds", kinds: ["research"] }], exclude: [] },
-                  hole: { name: "winter" },
+                  slot: { name: "winter" },
                   state: "idle"
                 }
               ]

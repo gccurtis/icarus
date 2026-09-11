@@ -9,13 +9,13 @@ import {
   writeTemplateVersion
 } from "$capabilities/templates/test/unit/template-answer-fixture";
 
-describe("immutable hole defaults in template history", () => {
+describe("immutable slot defaults in template history", () => {
   const oneDocument = (id: string) => ({
     include: [{ select: "resources" as const, refs: [{ kind: "document" as const, id }] }],
     exclude: []
   });
 
-  test("revision one keeps A after the live hole changes to B and is then removed", async () => {
+  test("revision one keeps A after the live slot changes to B and is then removed", async () => {
     model.tables.templates = [];
     model.tables.templateVersions = [];
     model.tables.resourceSets = [];
@@ -28,7 +28,7 @@ describe("immutable hole defaults in template history", () => {
       name: "Evidence shell",
       tags: [],
       body: { resource: "document", rows: [] },
-      holes: [],
+      slots: [],
       createdBy: { kind: "user", userId: "users:1" as never },
       revision: 1,
       updatedAt: 20
@@ -36,7 +36,7 @@ describe("immutable hole defaults in template history", () => {
     const templateId = model.store.create("templates", base) as never;
     const setId = model.store.create("resourceSets", {
       projectId: "projects:1",
-      boundTo: { kind: "hole", templateId, hole: "evidence" },
+      boundTo: { kind: "slot", templateId, slot: "evidence" },
       set: a,
       createdBy: { kind: "user", userId: "users:1" },
       revision: 1,
@@ -44,7 +44,7 @@ describe("immutable hole defaults in template history", () => {
     });
     const revisionOne: RowFields<"templates"> = {
       ...base,
-      holes: [
+      slots: [
         {
           name: "evidence",
           label: "Evidence",
@@ -65,25 +65,25 @@ describe("immutable hole defaults in template history", () => {
       templateId,
       baseRevision: 1,
       patch: {
-        holes: [{ name: "evidence", label: "Evidence", kind: "scope", default: b }]
+        slots: [{ name: "evidence", label: "Evidence", kind: "scope", default: b }]
       }
     });
     assert.deepEqual(changed, { accepted: true, templateId, revision: 2 });
-    assert.deepEqual(model.tables.templateVersions[0].holes, [
+    assert.deepEqual(model.tables.templateVersions[0].slots, [
       { name: "evidence", label: "Evidence", kind: "scope", default: a }
     ]);
-    assert.deepEqual(model.tables.templateVersions[1].holes, [
+    assert.deepEqual(model.tables.templateVersions[1].slots, [
       { name: "evidence", label: "Evidence", kind: "scope", default: b }
     ]);
 
     const removed = await updateTemplate({
       templateId,
       baseRevision: 2,
-      patch: { holes: [] }
+      patch: { slots: [] }
     });
     assert.deepEqual(removed, { accepted: true, templateId, revision: 3 });
     assert.equal(model.tables.resourceSets.length, 0);
-    assert.deepEqual(model.tables.templateVersions.map((version) => version.holes), [
+    assert.deepEqual(model.tables.templateVersions.map((version) => version.slots), [
       [{ name: "evidence", label: "Evidence", kind: "scope", default: a }],
       [{ name: "evidence", label: "Evidence", kind: "scope", default: b }],
       []

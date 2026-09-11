@@ -27,18 +27,18 @@ export const SYSTEMATIC: SystematicChange[] = [
   },
   {
     index: "04",
-    title: "Holes are found, described and scoped",
-    before: "A hole was fixed at seed time with a portable default and no way to change it.",
-    now: "Saving or committing declares every hole name the body's prompt scopes use. The panels show them read-only, with a description and a default scope set through a modal — everything in the project, kinds, or one of the project's sets.",
-    why: "A hole exists because a prompt asks for one. Typing a name that no prompt uses would be a hole nothing fills.",
+    title: "Slots are found, described and scoped",
+    before: "A slot was fixed at seed time with a portable default and no way to change it.",
+    now: "Saving or committing declares every slot name the body's prompt scopes use. The panels show them read-only, with a description and a default scope set through a modal — everything in the project, kinds, or one of the project's sets.",
+    why: "A slot exists because a prompt asks for one. Typing a name that no prompt uses would be a slot nothing fills.",
     area: "templates"
   },
   {
     index: "05",
-    title: "Placing a template asks what its holes select",
+    title: "Placing a template asks what its slots select",
     before: "Instantiate resolved from the stored defaults and had no way to be told anything.",
-    now: "Insert and Use open one modal listing every hole, its description, and a choice whose first option is the default. The answers win for that copy and are stored nowhere.",
-    why: "Instantiating on its own and instantiating inside something else are the same act. Inserting into a template being edited is the exception: it keeps the holes and merges the holes.",
+    now: "Insert and Use open one modal listing every slot, its description, and a choice whose first option is the default. The answers win for that copy and are stored nowhere.",
+    why: "Instantiating on its own and instantiating inside something else are the same act. Inserting into a template being edited is the exception: it keeps the slots and merges the slots.",
     area: "editors"
   },
   {
@@ -46,7 +46,7 @@ export const SYSTEMATIC: SystematicChange[] = [
     title: "Resource sets became owned scope values",
     before: "The resourceSets table existed, was seeded with two rows, and no capability read or wrote it.",
     now: "The capability still resolves represented reusable sets, while templates and Prompt Blocks create private owned rows from their point-of-use scope builders. Project Overview has no global Resource Sets panel.",
-    why: "A prompt's scope, a hole's default and an answer need durable rules, but a one-use choice should not become a globally curated subject.",
+    why: "A prompt's scope, a slot's default and an answer need durable rules, but a one-use choice should not become a globally curated subject.",
     area: "sets"
   },
   {
@@ -93,8 +93,8 @@ export const SYSTEMATIC: SystematicChange[] = [
     index: "12",
     title: "A scope is built rather than picked",
     before:
-      "A hole's default and an answer were a short list of toggles: everything, some kinds, or one of the project's named sets. Nothing could exclude anything, and nothing could name a particular resource.",
-    now: "One builder, opened from four places, with two term lists and a live count. A rule that excludes something or names resources is stored as a resourceSets row with no name, bound to the hole that owns it, and what points at it is a single set term.",
+      "A slot's default and an answer were a short list of toggles: everything, some kinds, or one of the project's named sets. Nothing could exclude anything, and nothing could name a particular resource.",
+    now: "One builder, opened from four places, with two term lists and a live count. A rule that excludes something or names resources is stored as a resourceSets row with no name, bound to the slot that owns it, and what points at it is a single set term.",
     why: "Resolving a template substitutes one term for what fills it, on either side of a prompt's scope, and a difference cannot be substituted on the excluding side. The row is what makes exclusions expressible at all.",
     area: "sets"
   },
@@ -103,43 +103,43 @@ export const SYSTEMATIC: SystematicChange[] = [
     title: "A template asks for words as well as for resources",
     before:
       "A template's only empty place was a prompt's scope. Prose was fixed: a template that wanted a subject line, a client name or a date had to be edited after it was placed.",
-    now: "A template atom is a hole in the prose, declared beside the scope holes and found from the body once it is placed. Placing a template lists every hole as a key and what answers it, opens each one to its description, and refuses while any words are missing.",
+    now: "A template atom is a slot in the prose, declared beside the scope slots and found from the body once it is placed. Placing a template lists every slot as a key and what answers it, opens each one to its description, and refuses while any words are missing.",
     why: "A template is a function and its empty places are its arguments. Whether they select resources or say words, one list is what the person placing it has to fill.",
     area: "vocabulary"
   },
   {
     index: "14",
-    title: "A hole is a hole, never a variable",
+    title: "A slot is a slot, never a variable",
     before:
       "The empty places a template leaves were called variables, in the types, the tables, the capability, the panels and the seed — the same word this application already uses for a named value a formula reads.",
-    now: "TemplateHole, templates.holes, holeCount, holeDescription, hole-in-use, { select: \"hole\" } and a boundTo of kind hole. The Holes band sits above a rule, with Create hole at its top; the formula Variables panel keeps the word it had first.",
-    why: "Two unrelated ideas sharing a word is how a vocabulary stops being one. A template's holes have nothing to do with formula variables, so they no longer read as though they do.",
+    now: "TemplateSlot, templates.slots, slotCount, slotDescription, slot-in-use, { select: \"slot\" } and a boundTo of kind slot. The Slots band sits above a rule, with Create slot at its top; the formula Variables panel keeps the word it had first.",
+    why: "Two unrelated ideas sharing a word is how a vocabulary stops being one. A template's slots have nothing to do with formula variables, so they no longer read as though they do.",
     area: "vocabulary"
   },
   {
     index: "15",
-    title: "A text hole is made where it goes",
+    title: "A text slot is made where it goes",
     before:
-      "Every hole was found from the body, so a text hole could only appear by inserting a template that already had one. Nothing in the panel could make a place for words.",
-    now: "Create hole, at the top of the Holes band, takes a name, a description and default words, declares the hole and drops its atom at the caret in one act. A scope hole is still found, because a prompt is what asks for one.",
-    why: "Only the writer knows where in the prose a hole belongs, so the panel cannot find it. Declaring without placing would leave a hole nothing fills, which is why the two happen together or not at all.",
+      "Every slot was found from the body, so a text slot could only appear by inserting a template that already had one. Nothing in the panel could make a place for words.",
+    now: "Create slot, at the top of the Slots band, takes a name, a description and default words, declares the slot and drops its atom at the caret in one act. A scope slot is still found, because a prompt is what asks for one.",
+    why: "Only the writer knows where in the prose a slot belongs, so the panel cannot find it. Declaring without placing would leave a slot nothing fills, which is why the two happen together or not at all.",
     area: "editors"
   },
   {
     index: "16",
-    title: "A hole is made, never found",
+    title: "A slot is made, never found",
     before:
-      "A scope hole could only come from a body that already carried a hole term. A prompt somebody wrote kept its own sources, so a template made from it asked nothing and every copy read what the author read.",
-    now: "Templateify, in the Template section of a prompt block or of a text selection, makes one hole named Hole 1, Hole 2 with an optional description. Making a template keeps exactly those. A prompt nobody templateified keeps its scope and is never asked about.",
-    why: "Turning every prompt into a hole asks about things nobody meant to be asked about. One deliberate gesture at the thing itself keeps placing a template to the questions somebody wrote down.",
+      "A scope slot could only come from a body that already carried a slot term. A prompt somebody wrote kept its own sources, so a template made from it asked nothing and every copy read what the author read.",
+    now: "Templateify, in the Template section of a prompt block or of a text selection, makes one slot named Slot 1, Slot 2 with an optional description. Making a template keeps exactly those. A prompt nobody templateified keeps its scope and is never asked about.",
+    why: "Turning every prompt into a slot asks about things nobody meant to be asked about. One deliberate gesture at the thing itself keeps placing a template to the questions somebody wrote down.",
     area: "editors"
   },
   {
     index: "18",
-    title: "A hole's default is whatever the thing already is",
+    title: "A slot's default is whatever the thing already is",
     before:
       "A default was a rule somebody set through a separate control, and portability judged which scopes were allowed to travel — sets and particular resources were stripped out of a prompt's scope on the way into a template.",
-    now: "A prompt's hole defaults to the scope it reads, whatever that scope is; a text hole defaults to the words that were selected. Nothing is stripped and nothing carries a Set default button. A scope naming a set the next project lacks selects nothing there, which is what it means for it not to exist.",
+    now: "A prompt's slot defaults to the scope it reads, whatever that scope is; a text slot defaults to the words that were selected. Nothing is stripped and nothing carries a Set default button. A scope naming a set the next project lacks selects nothing there, which is what it means for it not to exist.",
     why: "A default that has to be filled in is a toll on placing a template. Making the default what the thing already says means every template places with one press, and answering is for when a copy should read something else.",
     area: "vocabulary"
   },
@@ -156,18 +156,18 @@ export const SYSTEMATIC: SystematicChange[] = [
     index: "20",
     title: "Templateifying marks a run, and never edits it",
     before:
-      "Templateifying a selection spliced the words out of the paragraph and put a template atom in their place. The document now read {Hole 1} where the prose had been, marks reaching into the run were lost, and taking it back meant typing the words again.",
-    now: "A hole over text is an ordinary mark, addressed the way a comment or a link is. The resource is untouched — same words, same formatting, and the Template section reads back which hole those words are. Only the copy the template is built from turns each marked run into its atom. Measuring a mark now counts a hole as the width of what it displays, which the validator could not do before and which refused every template holding both a hole and a formatted run.",
-    why: "A resource is not a template and must not be damaged to make one. Marking says these words are where a hole goes; it does not say the words are gone.",
+      "Templateifying a selection spliced the words out of the paragraph and put a template atom in their place. The document now read {Slot 1} where the prose had been, marks reaching into the run were lost, and taking it back meant typing the words again.",
+    now: "A slot over text is an ordinary mark, addressed the way a comment or a link is. The resource is untouched — same words, same formatting, and the Template section reads back which slot those words are. Only the copy the template is built from turns each marked run into its atom. Measuring a mark now counts a slot as the width of what it displays, which the validator could not do before and which refused every template holding both a slot and a formatted run.",
+    why: "A resource is not a template and must not be damaged to make one. Marking says these words are where a slot goes; it does not say the words are gone.",
     area: "editors"
   },
   {
     index: "21",
     title: "A presentation templateifies its words too",
     before:
-      "A presentation's holes could only come from its prompts. Selecting words on a slide offered nothing, so a presentation template could not ask for a client name.",
+      "A presentation's slots could only come from its prompts. Selecting words on a slide offered nothing, so a presentation template could not ask for a client name.",
     now: "The presentation's text-selection inspector carries the same Template section as the document's, over the same marks and the same functions. What differs is only how a selection is addressed.",
-    why: "Both editors hold blocks of atoms with marks over them. A hole that works in one and not the other is an accident of which inspector was built first.",
+    why: "Both editors hold blocks of atoms with marks over them. A slot that works in one and not the other is an accident of which inspector was built first.",
     area: "editors"
   },
   {
@@ -208,11 +208,11 @@ export const SYSTEMATIC: SystematicChange[] = [
   },
   {
     index: "17",
-    title: "Placing a template walks its holes",
+    title: "Placing a template walks its slots",
     before:
-      "Every hole was on screen at once, which read as a form. A template with a dozen was a wall, and the prompt each scope hole filled was nowhere to be seen.",
-    now: "One hole at a time: its name, what it stands for, the prompt it fills, then the control. Tabs across the top carry the shape and mark in red the holes that still need words, and Accept all defaults lights the moment none do.",
-    why: "A hole is a question, and questions are answered one at a time. The tabs keep the whole shape visible without making it the thing you read first.",
+      "Every slot was on screen at once, which read as a form. A template with a dozen was a wall, and the prompt each scope slot filled was nowhere to be seen.",
+    now: "One slot at a time: its name, what it stands for, the prompt it fills, then the control. Tabs across the top carry the shape and mark in red the slots that still need words, and Accept all defaults lights the moment none do.",
+    why: "A slot is a question, and questions are answered one at a time. The tabs keep the whole shape visible without making it the thing you read first.",
     area: "cross-cutting"
   }
 ];
@@ -226,9 +226,9 @@ export const DECISIONS: Decision[] = [
   },
   {
     round: "First review",
-    question: "Where does a hole's meaning live?",
+    question: "Where does a slot's meaning live?",
     answer: "In a default that always exists — everything in the project unless the template says otherwise. There is no binding.",
-    became: "TemplateHole.default, the modal that sets it, and the removal of the per-project binding table and its procedure."
+    became: "TemplateSlot.default, the modal that sets it, and the removal of the per-project binding table and its procedure."
   },
   {
     round: "First review",
@@ -256,14 +256,14 @@ export const DECISIONS: Decision[] = [
   },
   {
     round: "Third review",
-    question: "Should Use ask for holes the way Insert does?",
+    question: "Should Use ask for slots the way Insert does?",
     answer: "Yes — instantiating on its own or inside something else is still instantiating.",
     became: "The library inspector's Use opens the same modal and sends the answers to instantiateTemplate."
   },
   {
     round: "Third review",
-    question: "Can a person add or remove a hole?",
-    answer: "No. Holes come from prompt blocks; adding one by hand asks the author to keep a list in step with a body.",
+    question: "Can a person add or remove a slot?",
+    answer: "No. Slots come from prompt blocks; adding one by hand asks the author to keep a list in step with a body.",
     became: "The Add field and the Remove button are gone from both panels, and the helpers that minted names were deleted with them."
   },
   {
@@ -295,9 +295,9 @@ export const VERIFICATION: Verification[] = [
 
 export const OPEN: OpenItem[] = [
   {
-    title: "Two prompts sharing one hole",
+    title: "Two prompts sharing one slot",
     detail:
-      "Nothing stops it and nothing offers it: typing the same name on two prompts makes them one question, because a name is the whole of a hole's identity. There is no picker of existing names, so it happens only on purpose.",
+      "Nothing stops it and nothing offers it: typing the same name on two prompts makes them one question, because a name is the whole of a slot's identity. There is no picker of existing names, so it happens only on purpose.",
     recommendation: "Leave it until somebody wants it. The offered name would become a list the moment it is worth choosing from."
   },
   {
@@ -381,16 +381,16 @@ export const MODEL_DELTA = {
     { name: "templateStages", note: "projectId, templateId, templateRevision, target, resourceId, createdBy, updatedAt" },
     { name: "templates.projectId", note: "required — the project a template belongs to" },
     { name: "templates.lastUsedAt", note: "optional — when it was last instantiated, which is what recency reads" },
-    { name: "TemplatedTerm { select: \"set\" }", note: "a hole default may name one of the project's sets" },
+    { name: "TemplatedTerm { select: \"set\" }", note: "a slot default may name one of the project's sets" },
     { name: "Target.context", note: "a tab can be opened straight onto a named context view" },
-    { name: "Mark.hole", note: "{ name, description? } — a run of words somebody templateified, addressed like any other mark" },
-    { name: "PromptBlock.hole", note: "{ name, description? } — set by Templateify, absent until then" },
+    { name: "Mark.slot", note: "{ name, description? } — a run of words somebody templateified, addressed like any other mark" },
+    { name: "PromptBlock.slot", note: "{ name, description? } — set by Templateify, absent until then" },
     { name: "PromptBlock.prompt", note: "the block's own prompt, copied on the way into a template" },
     {
       name: "PromptBlock.scope",
       note: "narrowed in meaning: a block holds one only while nothing else can — before it links, and inside a template. The derived output holds it after."
     },
-    { name: "TemplateAtom", note: "kind \"template\" — a hole standing in the prose of a template's body" }
+    { name: "TemplateAtom", note: "kind \"template\" — a slot standing in the prose of a template's body" }
   ],
   removed: [
     { name: "documents.templateId", note: "a copy knows nothing of where it came from" },
@@ -399,7 +399,7 @@ export const MODEL_DELTA = {
   ],
   unchanged: [
     { name: "TemplateBody", note: "document | slides | spreadsheet, exactly as before" },
-    { name: "TemplateHole", note: "name, label, required scope-or-text kind, description?, default?, and text?; an absent kind is rejected rather than inferred" },
+    { name: "TemplateSlot", note: "name, label, required scope-or-text kind, description?, default?, and text?; an absent kind is rejected rather than inferred" },
     { name: "resourceSets", note: "the table was already there; only the capability over it is new" }
   ]
 };

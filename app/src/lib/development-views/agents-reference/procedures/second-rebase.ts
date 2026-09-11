@@ -172,9 +172,9 @@ export const SILENT: readonly {
   {
     n: 1,
     found: "Typecheck · 2 errors",
-    what: "A resource set row's name became optional and boundTo was added, so a row can be bound to one template hole or one resource instead of being a project's named set. git merged the declaration cleanly — it took the base's — and left our reference to the old name dangling one line below.",
+    what: "A resource set row's name became optional and boundTo was added, so a row can be bound to one template slot or one resource instead of being a project's named set. git merged the declaration cleanly — it took the base's — and left our reference to the old name dangling one line below.",
     cost: "agents/api/shared/projection.ts, where the persona scope picker lists the project's named sets.",
-    fix: "The filter that proved name was a string could not carry that proof into the map beside it. One flatMap narrows where it maps. Every row is still the project's — a bound row is not offered in the persona's scope picker because it has no name to offer, being the scope of one hole or one resource rather than a set somebody made and can choose again."
+    fix: "The filter that proved name was a string could not carry that proof into the map beside it. One flatMap narrows where it maps. Every row is still the project's — a bound row is not offered in the persona's scope picker because it has no name to offer, being the scope of one slot or one resource rather than a set somebody made and can choose again."
   },
   {
     n: 2,
@@ -356,7 +356,7 @@ export const CARRIED: readonly (readonly string[])[] = [
   ],
   [
     "The template system, end to end",
-    "Thirteen commits and three hundred and twenty-one files: project-bound templates, shared working copies, holes, and one scope builder behind four doors.",
+    "Thirteen commits and three hundred and twenty-one files: project-bound templates, shared working copies, slots, and one scope builder behind four doors.",
     "Nothing in either new capability touches it. It is why a resource set row is no longer necessarily named."
   ],
   [

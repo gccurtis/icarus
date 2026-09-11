@@ -8,7 +8,7 @@ export const CORE_GATES = [
   {
     path: ["representation", "data", "behavior", "core", "resource-set-rows.ts"],
     name: "resource-set-owner-exactness",
-    required: /owner\.kind === "resource"[\s\S]*?exact\(owner, \["kind", "ref", "hole"\]\)[\s\S]*?ref: admitResourceRef\(owner\.ref/,
+    required: /owner\.kind === "resource"[\s\S]*?exact\(owner, \["kind", "ref", "slot"\]\)[\s\S]*?ref: admitResourceRef\(owner\.ref/,
     forbidden: /owner\.resourceId/,
     message: "private Resource Set owners do not require the exact nominal current ResourceRef arm"
   },

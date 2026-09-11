@@ -2,9 +2,9 @@ import { describe, expect, test, vi } from "vitest";
 import { asId } from "$representation/data/behavior/core/id";
 import { expandedScope } from "$capabilities/templates/api/shared/scopes";
 import {
-  holesOf,
-  versionHolesOf
-} from "$capabilities/templates/api/shared/hole-validation";
+  slotsOf,
+  versionSlotsOf
+} from "$capabilities/templates/api/shared/slot-validation";
 import {
   instantiateTemplate,
   rowIn,
@@ -16,12 +16,12 @@ import {
 } from "$capabilities/templates/test/non-functional/seeded-template-fixture";
 
 describe("the committed template fixtures", () => {
-  test.each(seededTemplates)("$_id has explicit valid live hole kinds", (template) => {
-    expect(() => holesOf(template.holes, `seed-${template._id}`)).not.toThrow();
+  test.each(seededTemplates)("$_id has explicit valid live slot kinds", (template) => {
+    expect(() => slotsOf(template.slots, `seed-${template._id}`)).not.toThrow();
   });
 
-  test.each(seededVersions)("$_id has a valid immutable hole snapshot", (version) => {
-    expect(() => versionHolesOf(version.holes, `seed-${version._id}`)).not.toThrow();
+  test.each(seededVersions)("$_id has a valid immutable slot snapshot", (version) => {
+    expect(() => versionSlotsOf(version.slots, `seed-${version._id}`)).not.toThrow();
   });
 
   test("version history and private defaults name live owners without resource provenance", () => {
@@ -40,12 +40,12 @@ describe("the committed template fixtures", () => {
       expect(new Set(versions.map((version) => version.revision)).size).toBe(versions.length);
       const current = versions.filter((version) => version.revision === template.revision);
       expect(current, `${template._id} must have exactly one current version`).toHaveLength(1);
-      const expandedHoles = template.holes.map((hole) => {
-        const { default: storedDefault, ...identity } = hole;
+      const expandedSlots = template.slots.map((slot) => {
+        const { default: storedDefault, ...identity } = slot;
         const value = expandedScope(
           runtime.store,
           template.projectId,
-          { kind: "hole", templateId: asId<"templates">(template._id), hole: hole.name },
+          { kind: "slot", templateId: asId<"templates">(template._id), slot: slot.name },
           storedDefault
         );
         return value === undefined ? identity : { ...identity, default: value };
@@ -55,27 +55,27 @@ describe("the committed template fixtures", () => {
         description: current[0].description,
         tags: current[0].tags,
         body: current[0].body,
-        holes: current[0].holes
+        slots: current[0].slots
       }).toEqual({
         name: template.name,
         description: template.description,
         tags: template.tags,
         body: template.body,
-        holes: expandedHoles
+        slots: expandedSlots
       });
     }
 
     for (const set of rowsIn(runtime.store, "resourceSets")) {
-      if (set.name !== undefined || (set.boundTo as { kind?: unknown } | undefined)?.kind !== "hole") {
+      if (set.name !== undefined || (set.boundTo as { kind?: unknown } | undefined)?.kind !== "slot") {
         continue;
       }
-      const owner = set.boundTo as { templateId: string; hole: string };
+      const owner = set.boundTo as { templateId: string; slot: string };
       const template = templates.get(owner.templateId);
       expect(template, `${set._id} has no live template owner`).toBeDefined();
-      const hole = template!.holes.find((candidate) => candidate.name === owner.hole);
-      expect(hole, `${set._id} names no live hole`).toBeDefined();
+      const slot = template!.slots.find((candidate) => candidate.name === owner.slot);
+      expect(slot, `${set._id} names no live slot`).toBeDefined();
       expect(
-        hole!.default?.include.some(
+        slot!.default?.include.some(
           (term) => term.select === "set" && term.setId === set._id
         )
       ).toBe(true);
@@ -95,9 +95,9 @@ describe("the committed template fixtures", () => {
       vi.spyOn(Date, "now").mockReturnValue(1_790_000_000_000);
       runtime.store = storeFromCommittedSeed();
       const texts = Object.fromEntries(
-        template.holes
-          .filter((hole) => hole.kind === "text")
-          .map((hole) => [hole.name, `Filled ${template._id} ${hole.name}`])
+        template.slots
+          .filter((slot) => slot.kind === "text")
+          .map((slot) => [slot.name, `Filled ${template._id} ${slot.name}`])
       );
 
       const placed = await instantiateTemplate({ templateId: template._id, texts });
@@ -133,7 +133,7 @@ describe("the committed template fixtures", () => {
 
       const serialized = JSON.stringify(leaders[0].body);
       expect(serialized).not.toContain('"kind":"template"');
-      expect(serialized).not.toContain('"select":"hole"');
+      expect(serialized).not.toContain('"select":"slot"');
       for (const [name, words] of Object.entries(texts)) {
         expect(serialized, `${template._id} did not fill ${name}`).toContain(words);
       }

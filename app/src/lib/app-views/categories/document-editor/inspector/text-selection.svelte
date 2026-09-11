@@ -23,9 +23,9 @@
   } from "$app-views/categories/document-editor/procedures/blocks";
   import { FILLS, INKS, orClear, orNone } from "$app-views/categories/document-editor/procedures/colours";
   import {
-    markHoleOps,
-    markedHoleAt,
-    nextHoleName,
+    markSlotOps,
+    markedSlotAt,
+    nextSlotName,
     selectedWords
   } from "$app-views/categories/document-editor/procedures/templating";
   import {
@@ -248,22 +248,22 @@
   const openPerson = (id: string) => view.inspect("general.person", { kind: "person", id });
 
   /**
-   * A run of text marked as a hole.
+   * A run of text marked as a slot.
    *
-   * Nothing about the document changes. The words are what the hole says by
+   * Nothing about the document changes. The words are what the slot says by
    * default, so a template placed without changing anything reads exactly like
    * the document it came from.
    */
-  const holeBody = $derived(state.runtime?.body);
-  const holeOffer = $derived(holeBody === undefined ? "Hole 1" : nextHoleName(holeBody));
-  const holeWords = $derived(
-    holeBody === undefined ? "" : selectedWords(holeBody, view.selection)
+  const slotBody = $derived(state.runtime?.body);
+  const slotOffer = $derived(slotBody === undefined ? "Slot 1" : nextSlotName(slotBody));
+  const slotWords = $derived(
+    slotBody === undefined ? "" : selectedWords(slotBody, view.selection)
   );
-  const holeHere = $derived(holeBody === undefined ? undefined : markedHoleAt(holeBody, view.selection));
+  const slotHere = $derived(slotBody === undefined ? undefined : markedSlotAt(slotBody, view.selection));
 
   const templateify = () => {
-    if (state.runtime === undefined || holeBody === undefined) return;
-    const ops = markHoleOps(holeBody, view.selection, holeOffer);
+    if (state.runtime === undefined || slotBody === undefined) return;
+    const ops = markSlotOps(slotBody, view.selection, slotOffer);
     if (ops.length > 0) state.runtime.apply(ops);
   };
 </script>
@@ -358,23 +358,23 @@
       onchange={setSpacing}
     />
 
-    {#if holeWords !== ""}
+    {#if slotWords !== ""}
       <PanelSection title="Template" chevron="end">
         <div class="flex flex-col items-start gap-2">
-          {#if holeHere === undefined}
+          {#if slotHere === undefined}
             <PanelNote tone="muted">
-              Mark this as a hole and a template built from this document will ask what fills it,
+              Mark this as a slot and a template built from this document will ask what fills it,
               starting from what it says now. The document itself does not change.
             </PanelNote>
             <PanelButton
               label="Templateify"
               tone="primary"
-              title={`Mark the selection as a hole called ${holeOffer}`}
+              title={`Mark the selection as a slot called ${slotOffer}`}
               onclick={templateify}
             />
           {:else}
             <PanelNote tone="muted">
-              These words are the hole <b>{holeHere}</b>. They stay exactly as they are here; the
+              These words are the slot <b>{slotHere}</b>. They stay exactly as they are here; the
               template made from this document asks what goes in their place.
             </PanelNote>
           {/if}

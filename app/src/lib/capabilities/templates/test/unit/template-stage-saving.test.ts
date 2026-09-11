@@ -32,7 +32,7 @@ describe("saving a stage", () => {
               display: "Sum up",
               prompt: "Sum up",
               marks: [],
-              scope: { include: [{ select: "hole", name: "evidence" }], exclude: [] },
+              scope: { include: [{ select: "slot", name: "evidence" }], exclude: [] },
               state: "idle"
             }
           ]
@@ -51,7 +51,7 @@ describe("saving a stage", () => {
     const held = model.tables.templates[0];
     assert.equal(held.revision, 3);
     assert.deepEqual((held.body as { rows: unknown[] }).rows.length, 1);
-    assert.deepEqual(held.holes, [{ name: "evidence", label: "evidence", kind: "scope" }]);
+    assert.deepEqual(held.slots, [{ name: "evidence", label: "evidence", kind: "scope" }]);
     assert.equal(model.tables.templateVersions.length, 1);
     assert.equal(model.tables.templateStages[0].templateRevision, 3);
 
@@ -75,7 +75,7 @@ describe("saving a stage", () => {
               display: "Sum up",
               marks: [],
               derivedOutputId: "derivedOutputs:1",
-              hole: { name: "evidence" },
+              slot: { name: "evidence" },
               state: "idle"
             }
           ]
@@ -95,7 +95,7 @@ describe("saving a stage", () => {
         boundTo: {
           kind: "resource",
           ref: { kind: "document", id: "documents:9" },
-          hole: "evidence"
+          slot: "evidence"
         },
         set: {
           include: [{ select: "resources", refs: [{ kind: "document", id: "documents:9" }] }],

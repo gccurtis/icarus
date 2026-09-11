@@ -2,10 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import type { PromptBlock } from "$representation/data/types/content/content-block";
 import type { TemplatedTerm } from "$representation/data/types/core/resource-set";
-import type { TemplateBody, TemplateHole } from "$representation/data/types/templates/template";
+import type { TemplateBody, TemplateSlot } from "$representation/data/types/templates/template";
 import {
   resolveTemplateScopes,
-  scopeHoleNamesIn
+  scopeSlotNamesIn
 } from "$representation/data/behavior/templates/scopes";
 
 const prompt = (id: string, include: TemplatedTerm[]): PromptBlock => ({
@@ -31,7 +31,7 @@ const scopeOf = (held: TemplateBody, blockId: string) => {
   return block?.type === "prompt" ? block.scope : undefined;
 };
 
-const evidence: TemplateHole = {
+const evidence: TemplateSlot = {
   name: "evidence",
   label: "Evidence",
   kind: "scope",
@@ -39,8 +39,8 @@ const evidence: TemplateHole = {
 };
 
 describe("resolveTemplateScopes", () => {
-  it("fills a hole term from its default", () => {
-    const resolved = resolveTemplateScopes(body([prompt("p", [{ select: "hole", name: "evidence" }])]), [evidence]);
+  it("fills a slot term from its default", () => {
+    const resolved = resolveTemplateScopes(body([prompt("p", [{ select: "slot", name: "evidence" }])]), [evidence]);
     expect(resolved.accepted).toBe(true);
     if (!resolved.accepted) return;
     expect(resolved.undeclared).toEqual([]);
@@ -52,7 +52,7 @@ describe("resolveTemplateScopes", () => {
 
   it("prefers the caller's answer to the default", () => {
     const resolved = resolveTemplateScopes(
-      body([prompt("p", [{ select: "hole", name: "evidence" }])]),
+      body([prompt("p", [{ select: "slot", name: "evidence" }])]),
       [evidence],
       { evidence: { include: [{ select: "set", setId: "resourceSets:2" as never }], exclude: [] } }
     );
@@ -63,9 +63,9 @@ describe("resolveTemplateScopes", () => {
     });
   });
 
-  it("means the whole project for a hole declared without a default", () => {
+  it("means the whole project for a slot declared without a default", () => {
     const resolved = resolveTemplateScopes(
-      body([prompt("p", [{ select: "hole", name: "models" }])]),
+      body([prompt("p", [{ select: "slot", name: "models" }])]),
       [{ name: "models", label: "Models", kind: "scope" }]
     );
     if (!resolved.accepted) throw new Error(resolved.detail);
@@ -74,37 +74,37 @@ describe("resolveTemplateScopes", () => {
 
   it("keeps the term and reports a name the template does not declare", () => {
     const resolved = resolveTemplateScopes(
-      body([prompt("p", [{ select: "hole", name: "evidence" }, { select: "hole", name: "models" }])]),
+      body([prompt("p", [{ select: "slot", name: "evidence" }, { select: "slot", name: "models" }])]),
       [evidence]
     );
     if (!resolved.accepted) throw new Error(resolved.detail);
     expect(resolved.undeclared).toEqual(["models"]);
     expect(scopeOf(resolved.body, "p")).toEqual({
-      include: [{ select: "kinds", kinds: ["finding"] }, { select: "hole", name: "models" }],
+      include: [{ select: "kinds", kinds: ["finding"] }, { select: "slot", name: "models" }],
       exclude: []
     });
   });
 
   it("refuses a default that excludes, because a difference does not flatten", () => {
-    const resolved = resolveTemplateScopes(body([prompt("p", [{ select: "hole", name: "evidence" }])]), [
+    const resolved = resolveTemplateScopes(body([prompt("p", [{ select: "slot", name: "evidence" }])]), [
       { ...evidence, default: { include: [{ select: "project" }], exclude: [{ select: "kinds", kinds: ["presentation"] }] } }
     ]);
     expect(resolved).toMatchObject({ accepted: false, reason: "unsupported-body" });
   });
 
-  it("treats a hole that reaches itself as the whole project", () => {
-    const resolved = resolveTemplateScopes(body([prompt("p", [{ select: "hole", name: "loop" }])]), [
-      { name: "loop", label: "Loop", kind: "scope", default: { include: [{ select: "hole", name: "loop" }], exclude: [] } }
+  it("treats a slot that reaches itself as the whole project", () => {
+    const resolved = resolveTemplateScopes(body([prompt("p", [{ select: "slot", name: "loop" }])]), [
+      { name: "loop", label: "Loop", kind: "scope", default: { include: [{ select: "slot", name: "loop" }], exclude: [] } }
     ]);
     if (!resolved.accepted) throw new Error(resolved.detail);
     expect(scopeOf(resolved.body, "p")).toEqual({ include: [{ select: "project" }], exclude: [] });
   });
 
-  it("lists the hole names a body refers to", () => {
+  it("lists the slot names a body refers to", () => {
     const held = body([
-      prompt("p", [{ select: "hole", name: "b" }]),
-      prompt("q", [{ select: "hole", name: "a" }, { select: "kinds", kinds: ["document"] }])
+      prompt("p", [{ select: "slot", name: "b" }]),
+      prompt("q", [{ select: "slot", name: "a" }, { select: "kinds", kinds: ["document"] }])
     ]);
-    expect(scopeHoleNamesIn(held)).toEqual(["a", "b"]);
+    expect(scopeSlotNamesIn(held)).toEqual(["a", "b"]);
   });
 });

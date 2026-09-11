@@ -8,7 +8,7 @@ import {
   entries,
   fields,
   fieldsOf,
-  holesOf,
+  slotsOf,
   row,
   spreadsheetBody,
   tagsOf,
@@ -16,7 +16,7 @@ import {
   validateCreateTemplate
 } from "$capabilities/templates/test/unit/template-fixture";
 
-describe("stored template validation — exact fields and holes", () => {
+describe("stored template validation — exact fields and slots", () => {
   test("admits only exact data records and arrays at template input boundaries", () => {
     const hidden = { target: "document", name: "Current" };
     Object.defineProperty(hidden, "retired", { value: true, enumerable: false });
@@ -87,14 +87,14 @@ describe("stored template validation — exact fields and holes", () => {
     assert.doesNotThrow(() => bodyOf(body, "record-keys"));
   });
 
-  test("rejects a hole whose answer kind is absent", () => {
+  test("rejects a slot whose answer kind is absent", () => {
     assert.throws(
-      () => holesOf([{ name: "untyped", label: "Untyped" }], "test"),
-      /a hole is answered with a scope or with text/
+      () => slotsOf([{ name: "untyped", label: "Untyped" }], "test"),
+      /a slot is answered with a scope or with text/
     );
   });
 
-  test("accepts only canonical represented holes and bounded templated defaults", () => {
+  test("accepts only canonical represented slots and bounded templated defaults", () => {
     const valid = [
       {
         name: "region",
@@ -113,7 +113,7 @@ describe("stored template validation — exact fields and holes", () => {
         default: { include: [{ select: "set", setId: "resourceSets:1" }], exclude: [] }
       }
     ];
-    assert.equal(holesOf(valid, "test").length, 2);
+    assert.equal(slotsOf(valid, "test").length, 2);
 
     const invalid = [
       [{ ...valid[0], invented: true }],
@@ -151,7 +151,7 @@ describe("stored template validation — exact fields and holes", () => {
         {
           ...valid[0],
           default: {
-            include: [{ select: "hole", name: "Region" }],
+            include: [{ select: "slot", name: "Region" }],
             exclude: []
           }
         }
@@ -170,15 +170,15 @@ describe("stored template validation — exact fields and holes", () => {
         { name: "Region", label: "Duplicate by case", kind: "scope" }
       ]
     ];
-    for (const holes of invalid) {
-      assert.throws(() => holesOf(holes, "test"), /templates\/test:/);
+    for (const slots of invalid) {
+      assert.throws(() => slotsOf(slots, "test"), /templates\/test:/);
     }
   });
 
-  test("requires exact case for one hole default referencing another", () => {
+  test("requires exact case for one slot default referencing another", () => {
     assert.throws(
       () =>
-        holesOf(
+        slotsOf(
           [
             { name: "region", label: "Region", kind: "scope" },
             {
@@ -186,14 +186,14 @@ describe("stored template validation — exact fields and holes", () => {
               label: "Evidence",
               kind: "scope",
               default: {
-                include: [{ select: "hole", name: "Region" }],
+                include: [{ select: "slot", name: "Region" }],
                 exclude: []
               }
             }
           ],
           "test"
         ),
-      /default names a declared hole/
+      /default names a declared slot/
     );
   });
 

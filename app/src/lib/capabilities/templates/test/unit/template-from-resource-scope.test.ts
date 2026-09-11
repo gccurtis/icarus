@@ -19,7 +19,7 @@ describe("a template from a live resource — scopes and presentations", () => {
         boundTo: {
           kind: "resource",
           ref: { kind: "document", id: "documents:9" },
-          hole: "winter"
+          slot: "winter"
         },
         set: {
           include: [
@@ -58,7 +58,7 @@ describe("a template from a live resource — scopes and presentations", () => {
                   display: "Sum up",
                   marks: [],
                   derivedOutputId: "derivedOutputs:3",
-                  hole: { name: "winter" },
+                  slot: { name: "winter" },
                   state: "idle"
                 }
               ]
@@ -80,7 +80,7 @@ describe("a template from a live resource — scopes and presentations", () => {
     model.tables.resourceSets[1].boundTo = {
       kind: "resource",
       ref: { kind: "document", id: "documents:1" },
-      hole: "winter"
+      slot: "winter"
     };
     const made = await createTemplateFromResource({
       target: "document",
@@ -89,18 +89,18 @@ describe("a template from a live resource — scopes and presentations", () => {
     });
     assert.ok(made.accepted);
     const held = model.tables.templates[1];
-    const defaultScope = (held.holes as { default: { include: { setId?: string }[] } }[])[0]
+    const defaultScope = (held.slots as { default: { include: { setId?: string }[] } }[])[0]
       .default;
     const setId = defaultScope.include[0].setId;
     assert.notEqual(setId, "resourceSets:2");
     const owned = model.tables.resourceSets.find((set) => set._id === setId);
     assert.deepEqual(owned?.boundTo, {
-      kind: "hole",
+      kind: "slot",
       templateId: held._id,
-      hole: "winter"
+      slot: "winter"
     });
     assert.deepEqual(owned?.set, model.tables.resourceSets.find((set) => set._id === "resourceSets:2")?.set);
-    assert.deepEqual((model.tables.templateVersions[0].holes as { default: unknown }[])[0].default, owned?.set);
+    assert.deepEqual((model.tables.templateVersions[0].slots as { default: unknown }[])[0].default, owned?.set);
 
     model.store.update("resourceSets.resourceSets:2.set", {
       include: [{ select: "project" }],
@@ -114,7 +114,7 @@ describe("a template from a live resource — scopes and presentations", () => {
     });
   });
 
-  test("keeps whatever the templateified prompt reads as its hole's default", async () => {
+  test("keeps whatever the templateified prompt reads as its slot's default", async () => {
     model.tables.documents.push(row("documents", "1", { projectId: "projects:1", title: "Winter brief" }));
     model.tables.documentSnapshots.push(
       row("documentSnapshots", "1", {
@@ -135,7 +135,7 @@ describe("a template from a live resource — scopes and presentations", () => {
                   display: "Sum up",
                   prompt: "Sum up",
                   marks: [],
-                  hole: { name: "evidence", description: "What happened" },
+                  slot: { name: "evidence", description: "What happened" },
                   scope: { include: [{ select: "set", setId: "resourceSets:1" }], exclude: [] },
                   state: "idle"
                 }
@@ -153,7 +153,7 @@ describe("a template from a live resource — scopes and presentations", () => {
     });
     assert.ok(made.accepted);
     const held = model.tables.templates[1];
-    assert.deepEqual(held.holes, [
+    assert.deepEqual(held.slots, [
       {
         name: "evidence",
         label: "evidence",
@@ -162,7 +162,7 @@ describe("a template from a live resource — scopes and presentations", () => {
         default: { include: [{ select: "set", setId: "resourceSets:1" }], exclude: [] }
       }
     ]);
-    assert.deepEqual(scopeOf(held), { include: [{ select: "hole", name: "evidence" }], exclude: [] });
+    assert.deepEqual(scopeOf(held), { include: [{ select: "slot", name: "evidence" }], exclude: [] });
   });
 
   test("makes a presentation template from the whole presentation or from one of its slides", async () => {

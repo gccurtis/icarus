@@ -90,7 +90,7 @@
 | new | `src/lib/capabilities/templates/api/read-resource-template/validate-read-resource-template.ts` | +8 | −0 | The templates capability |
 | changed | `src/lib/capabilities/templates/api/remove-template/remove-template.ts` | +10 | −68 | The templates capability |
 | changed | `src/lib/capabilities/templates/api/shared/bodies.ts` | +17 | −171 | The templates capability |
-| new | `src/lib/capabilities/templates/api/shared/holes.ts` | +39 | −0 | The templates capability |
+| new | `src/lib/capabilities/templates/api/shared/slots.ts` | +39 | −0 | The templates capability |
 | changed | `src/lib/capabilities/templates/api/shared/projection.ts` | +32 | −49 | The templates capability |
 | new | `src/lib/capabilities/templates/api/shared/prompts.ts` | +178 | −0 | The templates capability |
 | new | `src/lib/capabilities/templates/api/shared/scopes.ts` | +204 | −0 | The templates capability |
@@ -154,15 +154,15 @@
 | new | `src/lib/representation/data/behavior/templates/deck-of-slide.ts` | +18 | −0 | The vocabulary: one table, five functions, one field |
 | new | `src/lib/representation/data/behavior/templates/fresh-ids.ts` | +71 | −0 | The vocabulary: one table, five functions, one field |
 | new | `src/lib/representation/data/behavior/templates/portable.ts` | +87 | −0 | The vocabulary: one table, five functions, one field |
-| new | `src/lib/representation/data/behavior/templates/prompt-holes.ts` | +425 | −0 | The vocabulary: one table, five functions, one field |
+| new | `src/lib/representation/data/behavior/templates/prompt-slots.ts` | +425 | −0 | The vocabulary: one table, five functions, one field |
 | new | `src/lib/representation/data/behavior/templates/scopes.ts` | +216 | −0 | The vocabulary: one table, five functions, one field |
 | new | `src/lib/representation/data/behavior/templates/test/unit/answers.test.ts` | +104 | −0 | The vocabulary: one table, five functions, one field |
 | new | `src/lib/representation/data/behavior/templates/test/unit/at-scale.test.ts` | +299 | −0 | The vocabulary: one table, five functions, one field |
 | new | `src/lib/representation/data/behavior/templates/test/unit/deck-of-slide.test.ts` | +36 | −0 | The vocabulary: one table, five functions, one field |
 | new | `src/lib/representation/data/behavior/templates/test/unit/fresh-ids.test.ts` | +81 | −0 | The vocabulary: one table, five functions, one field |
-| new | `src/lib/representation/data/behavior/templates/test/unit/marked-holes.test.ts` | +239 | −0 | The vocabulary: one table, five functions, one field |
+| new | `src/lib/representation/data/behavior/templates/test/unit/marked-slots.test.ts` | +239 | −0 | The vocabulary: one table, five functions, one field |
 | new | `src/lib/representation/data/behavior/templates/test/unit/portable.test.ts` | +105 | −0 | The vocabulary: one table, five functions, one field |
-| new | `src/lib/representation/data/behavior/templates/test/unit/prompt-holes.test.ts` | +153 | −0 | The vocabulary: one table, five functions, one field |
+| new | `src/lib/representation/data/behavior/templates/test/unit/prompt-slots.test.ts` | +153 | −0 | The vocabulary: one table, five functions, one field |
 | new | `src/lib/representation/data/behavior/templates/test/unit/scopes.test.ts` | +109 | −0 | The vocabulary: one table, five functions, one field |
 | changed | `src/lib/representation/data/behavior/workspace/opening.ts` | +5 | −1 | The vocabulary: one table, five functions, one field |
 | changed | `src/lib/representation/data/types/content/content-block.ts` | +55 | −1 | The vocabulary: one table, five functions, one field |
@@ -291,7 +291,7 @@
  } from "$representation/data/types/content/content-block";
 
 +/**
-+ * A template atom shows its parameter's name in braces, so a hole reads as one
++ * A template atom shows its parameter's name in braces, so a slot reads as one
 + * wherever prose is measured or drawn, and so its width is stable.
 + */
  export const displayOfAtom = (atom: Atom): string =>
@@ -443,7 +443,7 @@
 +  if (term.select === "project") return "project";
 +  if (term.select === "kinds") return `kinds:${[...term.kinds].sort().join(",")}`;
 +  if (term.select === "set") return `set:${term.setId}`;
-+  if (term.select === "hole") return `hole:${term.name}`;
++  if (term.select === "slot") return `slot:${term.name}`;
 +  return `resources:${term.refs.map((ref) => `${ref.kind}/${ref.id}`).sort().join(",")}`;
 +};
 +
@@ -485,11 +485,11 @@
 +/** The draft with everything cleared back to the floor. */
 +export const withWholeProject = (): ScopeDraft => draftOf(undefined);
 +
-+const isSetTerm = (term: AnyTerm): term is SetTerm => term.select !== "hole";
++const isSetTerm = (term: AnyTerm): term is SetTerm => term.select !== "slot";
 +
 +const isTemplatedTerm = (term: AnyTerm): term is TemplatedTerm => term.select !== "resources";
 +
-+/** The draft as a concrete set, or undefined when it names a hole. */
++/** The draft as a concrete set, or undefined when it names a slot. */
 +export const narrowed = (scope: ScopeDraft): ResourceSet | undefined =>
 +  scope.include.every(isSetTerm) && scope.exclude.every(isSetTerm)
 +    ? {
@@ -567,7 +567,7 @@
 +  if (term.select === "set") {
 +    return names.sets?.get(term.setId) ?? "a chosen group";
 +  }
-+  if (term.select === "hole") return `whatever ${term.name} holds`;
++  if (term.select === "slot") return `whatever ${term.name} holds`;
 +  if (term.refs.length === 1) {
 +    const held = names.resources?.get(term.refs[0].id);
 +    return held ?? "one chosen resource";
@@ -769,7 +769,7 @@
 +
 +  const ofTerm = (term: AnyTerm, seen: ReadonlySet<string>): readonly ResourceRef[] => {
 +    if (term.select === "project") return catalogue;
-+    if (term.select === "hole") return [];
++    if (term.select === "slot") return [];
 +    if (term.select === "kinds") {
 +      return catalogue.filter((ref) => term.kinds.some((kind) => kindMatches(kind, ref.kind)));
 +    }
@@ -972,7 +972,7 @@
 +});
 +
 +describe("the two doors out of a draft", () => {
-+  it("narrows to a concrete set when nothing names a hole", () => {
++  it("narrows to a concrete set when nothing names a slot", () => {
 +    const draft: ScopeDraft = {
 +      include: [{ select: "resources", refs: [{ kind: "document", id: "documents:1" }] }],
 +      exclude: []
@@ -982,7 +982,7 @@
 +  });
 +
 +  it("stays templated when nothing names a resource", () => {
-+    const draft: ScopeDraft = { include: [{ select: "hole", name: "source_material" }], exclude: [] };
++    const draft: ScopeDraft = { include: [{ select: "slot", name: "source_material" }], exclude: [] };
 +    expect(templated(draft)).not.toBeUndefined();
 +    expect(narrowed(draft)).toBeUndefined();
 +  });
@@ -1015,8 +1015,8 @@
 +    ]);
 +  });
 +
-+  it("counts a hole term as nothing, because what fills it is not known here", () => {
-+    const draft: ScopeDraft = { include: [{ select: "hole", name: "source" }], exclude: [] };
++  it("counts a slot term as nothing, because what fills it is not known here", () => {
++    const draft: ScopeDraft = { include: [{ select: "slot", name: "source" }], exclude: [] };
 +    expect(selectedBy(draft, catalogue, named)).toHaveLength(0);
 +  });
 +});
@@ -1104,12 +1104,12 @@
 ~~~~diff
 @@ -0,0 +1,62 @@
 +import { ruleWords, type ScopeDraft, type ScopeNames } from "$representation/data/behavior/core/scope-draft";
-+import type { TemplateHole } from "$representation/data/types/templates/template";
++import type { TemplateSlot } from "$representation/data/types/templates/template";
 +
 +/**
-+ * What placing a template has to ask for, one row per hole.
++ * What placing a template has to ask for, one row per slot.
 + *
-+ * Every hole is listed, because the list is the shape of the thing about to be
++ * Every slot is listed, because the list is the shape of the thing about to be
 + * made. A scope always has a value — what the caller chose, else what the
 + * template suggests — so it is never missing. Text has none until somebody types
 + * some, which is the only thing that can hold a placement up.
@@ -1125,44 +1125,44 @@
 +  readonly missing: boolean;
 +};
 +
-+export const kindOfHole = (hole: TemplateHole): "scope" | "text" =>
-+  hole.kind === "text" ? "text" : "scope";
++export const kindOfSlot = (slot: TemplateSlot): "scope" | "text" =>
++  slot.kind === "text" ? "text" : "scope";
 +
 +export const answerRowsOf = (
-+  holes: readonly TemplateHole[],
++  slots: readonly TemplateSlot[],
 +  chosen: Readonly<Record<string, ScopeDraft | undefined>>,
 +  texts: Readonly<Record<string, string | undefined>>,
 +  names: ScopeNames = {}
 +): readonly AnswerRow[] =>
-+  holes.map((hole) => {
-+    const kind = kindOfHole(hole);
++  slots.map((slot) => {
++    const kind = kindOfSlot(slot);
 +    if (kind === "text") {
-+      const typed = texts[hole.name];
-+      const words = typed ?? hole.text ?? "";
++      const typed = texts[slot.name];
++      const words = typed ?? slot.text ?? "";
 +      return {
-+        key: hole.name,
-+        label: hole.label,
-+        ...(hole.description === undefined ? {} : { description: hole.description }),
++        key: slot.name,
++        label: slot.label,
++        ...(slot.description === undefined ? {} : { description: slot.description }),
 +        kind,
 +        value: words,
-+        answered: typed !== undefined && typed !== (hole.text ?? ""),
++        answered: typed !== undefined && typed !== (slot.text ?? ""),
 +        missing: words.trim() === ""
 +      };
 +    }
-+    const held = chosen[hole.name];
++    const held = chosen[slot.name];
 +    return {
-+      key: hole.name,
-+      label: hole.label,
-+      ...(hole.description === undefined ? {} : { description: hole.description }),
++      key: slot.name,
++      label: slot.label,
++      ...(slot.description === undefined ? {} : { description: slot.description }),
 +      kind,
 +      /** The rule alone; whether it is the template's or the caller's is said beside it. */
-+      value: ruleWords(held ?? hole.default, names),
++      value: ruleWords(held ?? slot.default, names),
 +      answered: held !== undefined,
 +      missing: false
 +    };
 +  });
 +
-+/** The holes still holding a placement up. */
++/** The slots still holding a placement up. */
 +export const missingIn = (rows: readonly AnswerRow[]): readonly string[] =>
 +  rows.filter((row) => row.missing).map((row) => row.label);
 ~~~~
@@ -1361,25 +1361,25 @@
 +};
 ~~~~
 
-### new · `src/lib/representation/data/behavior/templates/prompt-holes.ts` (+425 / −0)
+### new · `src/lib/representation/data/behavior/templates/prompt-slots.ts` (+425 / −0)
 
 ~~~~diff
 @@ -0,0 +1,425 @@
 +import { displayOfAtom, endAt, linearOf, segmentsOf } from "$representation/data/behavior/content/positions";
 +import type { Atom, Mark } from "$representation/data/types/content/content-block";
 +import type { TemplatedResourceSet } from "$representation/data/types/core/resource-set";
-+import type { TemplateBody, TemplateHole } from "$representation/data/types/templates/template";
++import type { TemplateBody, TemplateSlot } from "$representation/data/types/templates/template";
 +
 +/**
-+ * A hole is made, never found.
++ * A slot is made, never found.
 + *
-+ * Two things in a body can become one: a prompt, whose hole selects what it
-+ * reads, and a run of text, whose hole says what it says. Both are turned into
-+ * holes by the same gesture at the thing itself, and until somebody makes that
-+ * gesture there is no hole — a document full of prompts is a document, and a
++ * Two things in a body can become one: a prompt, whose slot selects what it
++ * reads, and a run of text, whose slot says what it says. Both are turned into
++ * slots by the same gesture at the thing itself, and until somebody makes that
++ * gesture there is no slot — a document full of prompts is a document, and a
 + * template made from it asks nothing.
 + *
-+ * A hole's default is simply whatever the thing already is: the prompt's own
++ * A slot's default is simply whatever the thing already is: the prompt's own
 + * scope, or the words that were selected. Nothing is judged portable or not.
 + * A scope naming something the next project does not have selects nothing
 + * there, which is what it means for that thing not to exist.
@@ -1413,43 +1413,43 @@
 +
 +const promptsIn = (body: unknown) => walkFor(body, isPrompt);
 +const atomsIn = (body: unknown) => walkFor(body, isTemplateAtom);
-+const holeMarksIn = (body: unknown) =>
-+  walkFor(body, (value) => isRecord(value.hole) && typeof value.hole.name === "string" && isRecord(value.from));
++const slotMarksIn = (body: unknown) =>
++  walkFor(body, (value) => isRecord(value.slot) && typeof value.slot.name === "string" && isRecord(value.from));
 +
 +const named = (held: unknown): string => {
 +  if (!isRecord(held)) return "";
 +  return typeof held.name === "string" ? held.name.trim() : "";
 +};
 +
-+/** Every hole this body already carries, whichever kind it is. */
-+export const holeNamesIn = (body: unknown): readonly string[] => {
++/** Every slot this body already carries, whichever kind it is. */
++export const slotNamesIn = (body: unknown): readonly string[] => {
 +  const names = new Set<string>();
 +  for (const prompt of promptsIn(body)) {
-+    const held = named(prompt.hole);
++    const held = named(prompt.slot);
 +    if (held !== "") names.add(held);
 +  }
 +  for (const atom of atomsIn(body)) names.add(atom.name as string);
-+  for (const mark of holeMarksIn(body)) names.add((mark.hole as Fields).name as string);
++  for (const mark of slotMarksIn(body)) names.add((mark.slot as Fields).name as string);
 +  return [...names];
 +};
 +
-+export const offeredHoleName = (index: number): string => `Hole ${index + 1}`;
++export const offeredSlotName = (index: number): string => `Slot ${index + 1}`;
 +
 +/**
-+ * The name the next hole is offered.
++ * The name the next slot is offered.
 + *
 + * Counted across everything the body already holds rather than per kind, so a
-+ * template's holes are numbered in one sequence however they were made.
++ * template's slots are numbered in one sequence however they were made.
 + */
-+export const nextHoleName = (body: unknown): string => {
-+  const taken = new Set(holeNamesIn(body));
++export const nextSlotName = (body: unknown): string => {
++  const taken = new Set(slotNamesIn(body));
 +  for (let index = 0; ; index += 1) {
-+    const offer = offeredHoleName(index);
++    const offer = offeredSlotName(index);
 +    if (!taken.has(offer)) return offer;
 +  }
 +};
 +
-+/** What a hole selects when nobody says otherwise: whatever the prompt already read. */
++/** What a slot selects when nobody says otherwise: whatever the prompt already read. */
 +export const defaultScopeOf = (scope: unknown): TemplatedResourceSet | undefined => {
 +  if (!isRecord(scope) || !Array.isArray(scope.include) || scope.include.length === 0) {
 +    return { include: [{ select: "project" }], exclude: [] };
@@ -1457,28 +1457,28 @@
 +  return scope as unknown as TemplatedResourceSet;
 +};
 +
-+export type PromptHoleDraft = {
++export type PromptSlotDraft = {
 +  readonly blockId: string;
-+  readonly hole: TemplateHole;
++  readonly slot: TemplateSlot;
 +};
 +
 +/**
-+ * One hole per prompt somebody templated, and none for the rest.
++ * One slot per prompt somebody templated, and none for the rest.
 + *
-+ * Read before the body is made portable, because the hole's default is the
++ * Read before the body is made portable, because the slot's default is the
 + * scope as the prompt actually reads it.
 + */
-+export const promptHolesOf = (body: unknown): readonly PromptHoleDraft[] =>
++export const promptSlotsOf = (body: unknown): readonly PromptSlotDraft[] =>
 +  promptsIn(body).flatMap((prompt) => {
-+    const name = named(prompt.hole);
++    const name = named(prompt.slot);
 +    if (name === "") return [];
-+    const held = isRecord(prompt.hole) ? prompt.hole : {};
++    const held = isRecord(prompt.slot) ? prompt.slot : {};
 +    const description = typeof held.description === "string" ? held.description.trim() : "";
 +    const fallback = defaultScopeOf(prompt.scope);
 +    return [
 +      {
 +        blockId: prompt.id as string,
-+        hole: {
++        slot: {
 +          name,
 +          label: name,
 +          ...(description === "" ? {} : { description }),
@@ -1488,8 +1488,8 @@
 +    ];
 +  });
 +
-+/** One hole per template atom somebody made, carrying the words it stands in for. */
-+export const textHolesOf = (body: unknown): readonly TemplateHole[] =>
++/** One slot per template atom somebody made, carrying the words it stands in for. */
++export const textSlotsOf = (body: unknown): readonly TemplateSlot[] =>
 +  atomsIn(body).map((atom) => {
 +    const name = atom.name as string;
 +    const description = typeof atom.description === "string" ? atom.description.trim() : "";
@@ -1504,11 +1504,11 @@
 +  });
 +
 +/**
-+ * The body with each templated prompt's scope replaced by the hole that stands
++ * The body with each templated prompt's scope replaced by the slot that stands
 + * for it. A prompt nobody templated keeps the scope it has.
 + */
-+export const withPromptHoles = <T>(body: T, drafts: readonly PromptHoleDraft[]): T => {
-+  const names = new Map(drafts.map((draft) => [draft.blockId, draft.hole.name]));
++export const withPromptSlots = <T>(body: T, drafts: readonly PromptSlotDraft[]): T => {
++  const names = new Map(drafts.map((draft) => [draft.blockId, draft.slot.name]));
 +  const walk = (value: unknown): unknown => {
 +    if (Array.isArray(value)) return value.map(walk);
 +    if (!isRecord(value)) return value;
@@ -1517,7 +1517,7 @@
 +    if (!isPrompt(value)) return next;
 +    const name = names.get(value.id as string);
 +    if (name === undefined) return next;
-+    return { ...next, scope: { include: [{ select: "hole", name }], exclude: [] } };
++    return { ...next, scope: { include: [{ select: "slot", name }], exclude: [] } };
 +  };
 +  return walk(body) as T;
 +};
@@ -1565,16 +1565,16 @@
 +  return walk(body) as T;
 +};
 +
-+/** The holes a template keeps, with what the author already settled left alone. */
-+export const mergedPromptHoles = (
-+  known: readonly TemplateHole[],
-+  fresh: readonly TemplateHole[]
-+): readonly TemplateHole[] => {
-+  const held = new Map(known.map((hole) => [hole.name, hole]));
-+  const next = fresh.map((hole) => {
-+    const settled = held.get(hole.name);
-+    if (settled === undefined) return hole;
-+    const { description, ...rest } = hole;
++/** The slots a template keeps, with what the author already settled left alone. */
++export const mergedPromptSlots = (
++  known: readonly TemplateSlot[],
++  fresh: readonly TemplateSlot[]
++): readonly TemplateSlot[] => {
++  const held = new Map(known.map((slot) => [slot.name, slot]));
++  const next = fresh.map((slot) => {
++    const settled = held.get(slot.name);
++    if (settled === undefined) return slot;
++    const { description, ...rest } = slot;
 +    return {
 +      ...rest,
 +      ...(description === undefined
@@ -1584,11 +1584,11 @@
 +        : { description })
 +    };
 +  });
-+  const taken = new Set(next.map((hole) => hole.name));
-+  return [...next, ...known.filter((hole) => !taken.has(hole.name))];
++  const taken = new Set(next.map((slot) => slot.name));
++  return [...next, ...known.filter((slot) => !taken.has(slot.name))];
 +};
 +
-+/** What each hole's prompt asks, so placing a template can show the question. */
++/** What each slot's prompt asks, so placing a template can show the question. */
 +export const promptWordsIn = (body: TemplateBody): Readonly<Record<string, string>> => {
 +  const words: Record<string, string> = {};
 +  for (const prompt of promptsIn(body)) {
@@ -1597,7 +1597,7 @@
 +    const scope = prompt.scope;
 +    if (!isRecord(scope) || !Array.isArray(scope.include)) continue;
 +    for (const term of scope.include) {
-+      if (isRecord(term) && term.select === "hole" && typeof term.name === "string") {
++      if (isRecord(term) && term.select === "slot" && typeof term.name === "string") {
 +        words[term.name] ??= asked;
 +      }
 +    }
@@ -1605,8 +1605,8 @@
 +  return words;
 +};
 +
-+/** The mark that says a run is a hole, addressed the way every other mark is. */
-+export const holeMarkOver = (
++/** The mark that says a run is a slot, addressed the way every other mark is. */
++export const slotMarkOver = (
 +  atoms: readonly Atom[],
 +  from: number,
 +  to: number,
@@ -1620,12 +1620,12 @@
 +    id: mint(),
 +    from: endAt(atoms, start, "from"),
 +    to: endAt(atoms, end, "to"),
-+    hole: { name }
++    slot: { name }
 +  };
 +};
 +
-+/** The hole already covering this run, if one does. */
-+export const holeNameOver = (
++/** The slot already covering this run, if one does. */
++export const slotNameOver = (
 +  atoms: readonly Atom[],
 +  marks: readonly Mark[],
 +  from: number,
@@ -1634,36 +1634,36 @@
 +  const start = Math.min(from, to);
 +  const end = Math.max(from, to);
 +  for (const run of markedRunsIn(atoms, marks)) {
-+    if (run.start < end && run.end > start) return run.hole.name as string;
++    if (run.start < end && run.end > start) return run.slot.name as string;
 +  }
 +  return undefined;
 +};
 +
-+type Marked = { readonly start: number; readonly end: number; readonly hole: Fields };
++type Marked = { readonly start: number; readonly end: number; readonly slot: Fields };
 +
-+/** Where each hole mark sits on the block's display, sorted and non-overlapping. */
++/** Where each slot mark sits on the block's display, sorted and non-overlapping. */
 +const markedRunsIn = (atoms: readonly Atom[], marks: readonly Mark[]): readonly Marked[] => {
 +  const runs: Marked[] = [];
 +  for (const mark of marks) {
-+    if (!isRecord(mark.hole) || typeof mark.hole.name !== "string") continue;
++    if (!isRecord(mark.slot) || typeof mark.slot.name !== "string") continue;
 +    const from = linearOf(atoms, mark.from);
 +    const to = linearOf(atoms, mark.to);
 +    const start = Math.min(from, to);
 +    const end = Math.max(from, to);
 +    if (end <= start) continue;
-+    runs.push({ start, end, hole: mark.hole });
++    runs.push({ start, end, slot: mark.slot });
 +  }
 +  runs.sort((a, b) => a.start - b.start);
-+  /** An overlap would make two holes claim the same words, so the later one is not a hole. */
++  /** An overlap would make two slots claim the same words, so the later one is not a slot. */
 +  return runs.filter((run, index) => index === 0 || run.start >= runs[index - 1].end);
 +};
 +
-+const holeAtom = (hole: Fields, words: string, id: string): Atom => {
-+  const description = typeof hole.description === "string" ? hole.description.trim() : "";
++const slotAtom = (slot: Fields, words: string, id: string): Atom => {
++  const description = typeof slot.description === "string" ? slot.description.trim() : "";
 +  return {
 +    id,
 +    kind: "template",
-+    name: (hole.name as string).trim(),
++    name: (slot.name as string).trim(),
 +    ...(description === "" ? {} : { description }),
 +    ...(words === "" ? {} : { text: words })
 +  };
@@ -1672,19 +1672,19 @@
 +/**
 + * The marked runs, as the atoms and marks that replace them.
 + *
-+ * Every mark that does not reach into a hole keeps the exact words it covered,
++ * Every mark that does not reach into a slot keeps the exact words it covered,
 + * because the ends are remapped by position rather than by atom. A mark that
 + * does reach into one goes: those words are a question now, and formatting a
 + * question is not a thing this vocabulary can mean.
 + */
-+export const withHolesAt = (
++export const withSlotsAt = (
 +  atoms: readonly Atom[],
 +  marks: readonly Mark[],
 +  mint: () => string
 +): { readonly atoms: readonly Atom[]; readonly marks: readonly Mark[] } => {
 +  const runs = markedRunsIn(atoms, marks);
 +  if (runs.length === 0) {
-+    return { atoms, marks: marks.filter((mark) => mark.hole === undefined) };
++    return { atoms, marks: marks.filter((mark) => mark.slot === undefined) };
 +  }
 +
 +  const segments = segmentsOf(atoms);
@@ -1723,7 +1723,7 @@
 +        return segment.atom.text.slice(start - segment.start, end - segment.start);
 +      })
 +      .join("");
-+    next.push(holeAtom(run.hole, words, mint()));
++    next.push(slotAtom(run.slot, words, mint()));
 +    at = run.end;
 +  }
 +  carry(at, total);
@@ -1732,7 +1732,7 @@
 +   * A mark's end, put back where it was.
 +   *
 +   * A start prefers the stretch that begins at it and an end prefers the one
-+   * that finishes there, so a mark butting up against a hole keeps its words
++   * that finishes there, so a mark butting up against a slot keeps its words
 +   * rather than reaching across the boundary.
 +   */
 +  const endAtLanding = (position: number, prefer: "start" | "end"): Mark["from"] | undefined => {
@@ -1744,7 +1744,7 @@
 +
 +  const kept: Mark[] = [];
 +  for (const mark of marks) {
-+    if (mark.hole !== undefined) continue;
++    if (mark.slot !== undefined) continue;
 +    const from = linearOf(atoms, mark.from);
 +    const to = linearOf(atoms, mark.to);
 +    const start = Math.min(from, to);
@@ -1764,20 +1764,20 @@
 +};
 +
 +/**
-+ * Every marked run in the body, as a hole in the prose.
++ * Every marked run in the body, as a slot in the prose.
 + *
 + * This runs on the copy a template is made from, never on the resource itself:
 + * marking a run changes nothing about the document, and only the template ends
-+ * up with a hole where the words were.
++ * up with a slot where the words were.
 + */
-+export const withMarkedHoles = <T>(body: T, mint: () => string): T => {
++export const withMarkedSlots = <T>(body: T, mint: () => string): T => {
 +  const walk = (value: unknown): unknown => {
 +    if (Array.isArray(value)) return value.map(walk);
 +    if (!isRecord(value)) return value;
 +    const next: Fields = {};
 +    for (const [field, nested] of Object.entries(value)) next[field] = walk(nested);
 +    if (!Array.isArray(next.atoms) || !Array.isArray(next.marks)) return next;
-+    const held = withHolesAt(next.atoms as Atom[], next.marks as Mark[], mint);
++    const held = withSlotsAt(next.atoms as Atom[], next.marks as Mark[], mint);
 +    if (held.atoms === next.atoms && held.marks.length === (next.marks as Mark[]).length) return next;
 +    return {
 +      ...next,
@@ -1806,7 +1806,7 @@
 +} from "$representation/data/types/core/resource-set";
 +import type {
 +  TemplateBody,
-+  TemplateHole
++  TemplateSlot
 +} from "$representation/data/types/templates/template";
 +
 +type Term = SetTerm | TemplatedTerm;
@@ -1842,7 +1842,7 @@
 +const isTemplateAtom = (value: Record<string, unknown>): boolean =>
 +  value.kind === "template" && typeof value.name === "string" && typeof value.id === "string";
 +
-+/** Every hole the body's template atoms ask for words for. */
++/** Every slot the body's template atoms ask for words for. */
 +export const templateAtomNamesIn = (body: TemplateBody): readonly string[] => {
 +  const names = new Set<string>();
 +  const walk = (value: unknown): void => {
@@ -1862,7 +1862,7 @@
 + * A template atom becomes the words it was answered with.
 + *
 + * An atom nobody answered is left exactly as it is, because a template being
-+ * edited is full of unanswered holes and that is what it is for. A block's
++ * edited is full of unanswered slots and that is what it is for. A block's
 + * display is rebuilt from its atoms afterwards, since the words changed.
 + */
 +export const fillTemplateAtoms = (
@@ -1885,7 +1885,7 @@
 +  return walk(body) as TemplateBody;
 +};
 +
-+export const scopeHoleNamesIn = (body: TemplateBody): readonly string[] => {
++export const scopeSlotNamesIn = (body: TemplateBody): readonly string[] => {
 +  const names = new Set<string>();
 +  const walk = (value: unknown): void => {
 +    if (Array.isArray(value)) {
@@ -1898,7 +1898,7 @@
 +        const terms = value.scope[side];
 +        if (!Array.isArray(terms)) continue;
 +        for (const term of terms) {
-+          if (isRecord(term) && term.select === "hole" && typeof term.name === "string") {
++          if (isRecord(term) && term.select === "slot" && typeof term.name === "string") {
 +            names.add(term.name);
 +          }
 +        }
@@ -1912,10 +1912,10 @@
 +
 +export const resolveTemplateScopes = (
 +  body: TemplateBody,
-+  holes: readonly TemplateHole[],
++  slots: readonly TemplateSlot[],
 +  answers: ScopeAnswers = {}
 +): ResolvedScopes => {
-+  const definitions = new Map(holes.map((hole) => [hole.name, hole]));
++  const definitions = new Map(slots.map((slot) => [slot.name, slot]));
 +  const memo = new Map<string, Scope>();
 +  const undeclared = new Set<string>();
 +  let emitted = 0;
@@ -1934,7 +1934,7 @@
 +    const same: Term[] = [];
 +    const opposite: Term[] = [];
 +    for (const term of terms) {
-+      if (term.select !== "hole") {
++      if (term.select !== "slot") {
 +        append(same, [term]);
 +        continue;
 +      }
@@ -1999,7 +1999,7 @@
 +      return {
 +        accepted: false,
 +        reason: "unsupported-body",
-+        detail: "a hole answered with exclusions cannot be flattened without changing scope"
++        detail: "a slot answered with exclusions cannot be flattened without changing scope"
 +      };
 +    }
 +    if (error instanceof RangeError && error.message === OVERFLOW) {
@@ -2025,7 +2025,7 @@
 +  fillTemplateAtoms,
 +  templateAtomNamesIn
 +} from "$representation/data/behavior/templates/scopes";
-+import type { TemplateBody, TemplateHole } from "$representation/data/types/templates/template";
++import type { TemplateBody, TemplateSlot } from "$representation/data/types/templates/template";
 +
 +const body = (): TemplateBody => ({
 +  resource: "document",
@@ -2070,7 +2070,7 @@
 +    expect(filled.display).toBe("Dear Ana, about the winter packet");
 +  });
 +
-+  it("are left alone when nobody answered, because a template is holes", () => {
++  it("are left alone when nobody answered, because a template is slots", () => {
 +    const held = blockOf(fillTemplateAtoms(body(), { recipient: "Ana" }));
 +    expect(held.atoms[3].kind).toBe("template");
 +    expect(held.display).toBe("Dear Ana, about {subject}");
@@ -2078,7 +2078,7 @@
 +});
 +
 +describe("what placing a template asks for", () => {
-+  const holes: TemplateHole[] = [
++  const slots: TemplateSlot[] = [
 +    {
 +      name: "evidence",
 +      label: "Evidence",
@@ -2089,7 +2089,7 @@
 +  ];
 +
 +  it("gives every parameter a row, and a scope always has a value", () => {
-+    const rows = answerRowsOf(holes, {}, {});
++    const rows = answerRowsOf(slots, {}, {});
 +    expect(rows.map((row) => row.kind)).toEqual(["scope", "text"]);
 +    expect(rows[0].value).toBe("Findings");
 +    expect(rows[0].missing).toBe(false);
@@ -2106,14 +2106,14 @@
 +  });
 +
 +  it("marks a text parameter missing until it has words", () => {
-+    expect(missingIn(answerRowsOf(holes, {}, {}))).toEqual(["Subject"]);
-+    expect(missingIn(answerRowsOf(holes, {}, { subject: "  " }))).toEqual(["Subject"]);
-+    expect(missingIn(answerRowsOf(holes, {}, { subject: "Winter" }))).toEqual([]);
++    expect(missingIn(answerRowsOf(slots, {}, {}))).toEqual(["Subject"]);
++    expect(missingIn(answerRowsOf(slots, {}, { subject: "  " }))).toEqual(["Subject"]);
++    expect(missingIn(answerRowsOf(slots, {}, { subject: "Winter" }))).toEqual([]);
 +  });
 +
 +  it("reads a chosen scope as itself rather than as the default", () => {
 +    const rows = answerRowsOf(
-+      holes,
++      slots,
 +      { evidence: { include: [{ select: "project" }], exclude: [] } },
 +      { subject: "Winter" }
 +    );
@@ -2132,22 +2132,22 @@
 +
 +import { asId } from "$representation/data/behavior/core/id";
 +import {
-+  holeNamesIn,
-+  promptHolesOf,
++  slotNamesIn,
++  promptSlotsOf,
 +  promptWordsIn,
-+  textHolesOf,
-+  withMarkedHoles,
-+  withPromptHoles,
++  textSlotsOf,
++  withMarkedSlots,
++  withPromptSlots,
 +  withPrompts
-+} from "$representation/data/behavior/templates/prompt-holes";
++} from "$representation/data/behavior/templates/prompt-slots";
 +import {
 +  fillTemplateAtoms,
 +  resolveTemplateScopes,
-+  scopeHoleNamesIn,
++  scopeSlotNamesIn,
 +  templateAtomNamesIn
 +} from "$representation/data/behavior/templates/scopes";
 +import type { Atom, Mark } from "$representation/data/types/content/content-block";
-+import type { TemplateBody, TemplateHole } from "$representation/data/types/templates/template";
++import type { TemplateBody, TemplateSlot } from "$representation/data/types/templates/template";
 +
 +/**
 + * What a template has to survive once it is worth having.
@@ -2160,11 +2160,11 @@
 +
 +const literal = (id: string, text: string): Atom => ({ id, kind: "literal", text });
 +
-+const holeMark = (id: string, atom: string, from: number, to: number, name: string): Mark => ({
++const slotMark = (id: string, atom: string, from: number, to: number, name: string): Mark => ({
 +  id,
 +  from: { atom, offset: from },
 +  to: { atom, offset: to },
-+  hole: { name }
++  slot: { name }
 +});
 +
 +const styleMark = (id: string, atom: string, from: number, to: number): Mark => ({
@@ -2206,7 +2206,7 @@
 +  };
 +};
 +
-+const templated = <T>(body: T): T => withMarkedHoles(withPromptHoles(body, promptHolesOf(body)), minter());
++const templated = <T>(body: T): T => withMarkedSlots(withPromptSlots(body, promptSlotsOf(body)), minter());
 +
 +const blocksOf = (body: unknown): Record<string, unknown>[] =>
 +  ((body as { rows: { blocks: Record<string, unknown>[] }[] }).rows[0].blocks);
@@ -2229,31 +2229,31 @@
 +          `p${index}`,
 +          [literal(`p${index}a`, words)],
 +          index % 3 === 0
-+            ? [holeMark(`p${index}m`, `p${index}a`, at, at + "Northwind".length, `Text ${index}`)]
++            ? [slotMark(`p${index}m`, `p${index}a`, at, at + "Northwind".length, `Text ${index}`)]
 +            : [styleMark(`p${index}m`, `p${index}a`, 0, 9)]
 +        );
 +      }),
 +      ...Array.from({ length: PROMPTS }, (_, index) =>
 +        prompt(`q${index}`, {
 +          scope: setScope(`resourceSets:${index}`),
-+          ...(index % 2 === 0 ? { hole: { name: `Scope ${index}` } } : {})
++          ...(index % 2 === 0 ? { slot: { name: `Scope ${index}` } } : {})
 +        })
 +      )
 +    ]);
 +
-+  it("keeps every hole somebody made and nothing else", () => {
++  it("keeps every slot somebody made and nothing else", () => {
 +    const held = templated(large());
-+    const scopes = scopeHoleNamesIn(held as unknown as TemplateBody);
++    const scopes = scopeSlotNamesIn(held as unknown as TemplateBody);
 +    const texts = templateAtomNamesIn(held as unknown as TemplateBody);
 +    expect(scopes).toHaveLength(PROMPTS / 2);
 +    expect(texts).toHaveLength(Math.ceil(PROSE / 3));
-+    expect(new Set(holeNamesIn(held)).size).toBe(scopes.length + texts.length);
++    expect(new Set(slotNamesIn(held)).size).toBe(scopes.length + texts.length);
 +  });
 +
 +  it("leaves every untemplateified prompt reading exactly what it read", () => {
 +    const held = templated(large());
 +    const untouched = blocksOf(held).filter(
-+      (block) => block.type === "prompt" && block.hole === undefined
++      (block) => block.type === "prompt" && block.slot === undefined
 +    );
 +    expect(untouched).toHaveLength(PROMPTS / 2);
 +    for (const block of untouched) {
@@ -2261,11 +2261,11 @@
 +    }
 +  });
 +
-+  it("keeps the words each text hole stands for, and the prose around them", () => {
++  it("keeps the words each text slot stands for, and the prose around them", () => {
 +    const held = templated(large());
-+    const holes = textHolesOf(held);
-+    expect(holes).toHaveLength(Math.ceil(PROSE / 3));
-+    expect(holes.every((hole) => hole.text === "Northwind")).toBe(true);
++    const slots = textSlotsOf(held);
++    expect(slots).toHaveLength(Math.ceil(PROSE / 3));
++    expect(slots.every((slot) => slot.text === "Northwind")).toBe(true);
 +    const marked = blocksOf(held)[0];
 +    expect(marked.display).toBe("Paragraph 0 names {Text 0} and closes.");
 +    expect(blocksOf(held)[1].display).toBe("Paragraph 1 names Northwind and closes.");
@@ -2280,21 +2280,21 @@
 +    expect(styled.every((block) => (block.marks as Mark[])[0].style?.[0] === "bold")).toBe(true);
 +  });
 +
-+  it("resolves every scope hole in one pass, with nothing undeclared", () => {
++  it("resolves every scope slot in one pass, with nothing undeclared", () => {
 +    const held = templated(large()) as unknown as TemplateBody;
-+    const holes: TemplateHole[] = promptHolesOf(large()).map((draft) => draft.hole);
-+    const resolved = resolveTemplateScopes(held, holes);
++    const slots: TemplateSlot[] = promptSlotsOf(large()).map((draft) => draft.slot);
++    const resolved = resolveTemplateScopes(held, slots);
 +    expect(resolved.accepted).toBe(true);
 +    if (!resolved.accepted) return;
 +    expect(resolved.undeclared).toEqual([]);
 +    const prompts = blocksOf(resolved.body).filter((block) => block.type === "prompt");
 +    for (const block of prompts) {
 +      const include = (block.scope as { include: { select: string }[] }).include;
-+      expect(include.every((term) => term.select !== "hole")).toBe(true);
++      expect(include.every((term) => term.select !== "slot")).toBe(true);
 +    }
 +  });
 +
-+  it("fills every text hole it is answered for and leaves the rest standing", () => {
++  it("fills every text slot it is answered for and leaves the rest standing", () => {
 +    const held = templated(large()) as unknown as TemplateBody;
 +    const names = templateAtomNamesIn(held);
 +    const answers = Object.fromEntries(names.slice(1).map((name) => [name, "Southwind"]));
@@ -2307,52 +2307,52 @@
 +
 +describe("text that is not simple", () => {
 +  const held = (atoms: readonly Atom[], marks: readonly Mark[]) =>
-+    withMarkedHoles(bodyOf([paragraph("b1", atoms, marks)]), minter());
++    withMarkedSlots(bodyOf([paragraph("b1", atoms, marks)]), minter());
 +
 +  it("takes a run of astral characters whole", () => {
 +    const body = held(
 +      [literal("a1", "Ana 🚀 Ortiz signs.")],
-+      [holeMark("m1", "a1", 4, 6, "launch")]
++      [slotMark("m1", "a1", 4, 6, "launch")]
 +    );
-+    expect(textHolesOf(body)[0].text).toBe("🚀");
++    expect(textSlotsOf(body)[0].text).toBe("🚀");
 +    expect(blocksOf(body)[0].display).toBe("Ana {launch} Ortiz signs.");
 +  });
 +
-+  it("takes two holes that touch, without either eating the other", () => {
++  it("takes two slots that touch, without either eating the other", () => {
 +    const body = held(
 +      [literal("a1", "AnaOrtiz signs.")],
-+      [holeMark("m1", "a1", 0, 3, "first"), holeMark("m2", "a1", 3, 8, "last")]
++      [slotMark("m1", "a1", 0, 3, "first"), slotMark("m2", "a1", 3, 8, "last")]
 +    );
 +    expect(blocksOf(body)[0].display).toBe("{first}{last} signs.");
-+    expect(textHolesOf(body).map((hole) => hole.text)).toEqual(["Ana", "Ortiz"]);
++    expect(textSlotsOf(body).map((slot) => slot.text)).toEqual(["Ana", "Ortiz"]);
 +  });
 +
 +  it("takes the whole block, and a run at each end", () => {
-+    const whole = held([literal("a1", "Everything.")], [holeMark("m1", "a1", 0, 11, "all")]);
++    const whole = held([literal("a1", "Everything.")], [slotMark("m1", "a1", 0, 11, "all")]);
 +    expect(blocksOf(whole)[0].display).toBe("{all}");
 +
 +    const ends = held(
 +      [literal("a1", "Ana writes Ortiz")],
-+      [holeMark("m1", "a1", 0, 3, "first"), holeMark("m2", "a1", 11, 16, "last")]
++      [slotMark("m1", "a1", 0, 3, "first"), slotMark("m2", "a1", 11, 16, "last")]
 +    );
 +    expect(blocksOf(ends)[0].display).toBe("{first} writes {last}");
 +  });
 +
-+  it("holds fifty holes and fifty formatted runs in one paragraph, all of them", () => {
-+    const words = Array.from({ length: 50 }, (_, index) => `hole${index} keep${index} `).join("");
++  it("holds fifty slots and fifty formatted runs in one paragraph, all of them", () => {
++    const words = Array.from({ length: 50 }, (_, index) => `slot${index} keep${index} `).join("");
 +    const marks: Mark[] = [];
 +    let at = 0;
 +    for (let index = 0; index < 50; index += 1) {
-+      const holeText = `hole${index}`;
++      const slotText = `slot${index}`;
 +      const keepText = `keep${index}`;
-+      marks.push(holeMark(`h${index}`, "a1", at, at + holeText.length, `Hole ${index}`));
-+      at += holeText.length + 1;
++      marks.push(slotMark(`h${index}`, "a1", at, at + slotText.length, `Slot ${index}`));
++      at += slotText.length + 1;
 +      marks.push(styleMark(`s${index}`, "a1", at, at + keepText.length));
 +      at += keepText.length + 1;
 +    }
 +    const body = held([literal("a1", words)], marks);
 +    const block = blocksOf(body)[0];
-+    expect(textHolesOf(body)).toHaveLength(50);
++    expect(textSlotsOf(body)).toHaveLength(50);
 +    expect(block.marks).toHaveLength(50);
 +    const atoms = block.atoms as Atom[];
 +    const spans = atoms.map((atom) => (atom.kind === "literal" ? atom.text : ""));
@@ -2367,10 +2367,10 @@
 +  it("refuses a run of nothing but a caret, however many are asked for", () => {
 +    const body = held(
 +      [literal("a1", "Untouched.")],
-+      [holeMark("m1", "a1", 4, 4, "nothing"), holeMark("m2", "a1", 9, 9, "also nothing")]
++      [slotMark("m1", "a1", 4, 4, "nothing"), slotMark("m2", "a1", 9, 9, "also nothing")]
 +    );
 +    expect(blocksOf(body)[0].display).toBe("Untouched.");
-+    expect(textHolesOf(body)).toEqual([]);
++    expect(textSlotsOf(body)).toEqual([]);
 +  });
 +});
 +
@@ -2378,24 +2378,24 @@
 +  const long = `Read every filing and ${"weigh the counterparties, ".repeat(400)}then answer.`;
 +
 +  it("carries a prompt of ten thousand characters onto the block and back off it", () => {
-+    const held = bodyOf([prompt("q1", { hole: { name: "sources" }, scope: setScope("resourceSets:1") })]);
++    const held = bodyOf([prompt("q1", { slot: { name: "sources" }, scope: setScope("resourceSets:1") })]);
 +    const asked = withPrompts(held, { q1: long });
-+    const body = withPromptHoles(asked, promptHolesOf(asked)) as unknown as TemplateBody;
++    const body = withPromptSlots(asked, promptSlotsOf(asked)) as unknown as TemplateBody;
 +    expect(long.length).toBeGreaterThan(10_000);
 +    expect(promptWordsIn(body).sources).toBe(long);
 +  });
 +
 +  it("gives two prompts sharing one name one answer between them", () => {
 +    const held = bodyOf([
-+      prompt("q1", { hole: { name: "winter" }, scope: setScope("resourceSets:1") }),
-+      prompt("q2", { hole: { name: "winter" }, scope: setScope("resourceSets:1") })
++      prompt("q1", { slot: { name: "winter" }, scope: setScope("resourceSets:1") }),
++      prompt("q2", { slot: { name: "winter" }, scope: setScope("resourceSets:1") })
 +    ]);
 +    const body = templated(held) as unknown as TemplateBody;
-+    expect(scopeHoleNamesIn(body)).toEqual(["winter"]);
++    expect(scopeSlotNamesIn(body)).toEqual(["winter"]);
 +
-+    const holes: TemplateHole[] = [{ name: "winter", label: "winter", default: setScope("resourceSets:1") }];
++    const slots: TemplateSlot[] = [{ name: "winter", label: "winter", default: setScope("resourceSets:1") }];
 +    const answer = { include: [{ select: "kinds" as const, kinds: ["research"] }], exclude: [] };
-+    const resolved = resolveTemplateScopes(body, holes, { winter: answer });
++    const resolved = resolveTemplateScopes(body, slots, { winter: answer });
 +    expect(resolved.accepted).toBe(true);
 +    if (!resolved.accepted) return;
 +    const scopes = blocksOf(resolved.body).map((block) => block.scope);
@@ -2403,9 +2403,9 @@
 +    expect(scopes[0]).toEqual({ include: [{ select: "kinds", kinds: ["research"] }], exclude: [] });
 +  });
 +
-+  it("falls back to the whole project for a hole the template never declared", () => {
++  it("falls back to the whole project for a slot the template never declared", () => {
 +    const body = templated(
-+      bodyOf([prompt("q1", { hole: { name: "missing" }, scope: setScope("resourceSets:1") })])
++      bodyOf([prompt("q1", { slot: { name: "missing" }, scope: setScope("resourceSets:1") })])
 +    ) as unknown as TemplateBody;
 +    const resolved = resolveTemplateScopes(body, []);
 +    expect(resolved.accepted).toBe(true);
@@ -2415,10 +2415,10 @@
 +
 +  it("refuses an answer that excludes, because a difference cannot be flattened", () => {
 +    const body = templated(
-+      bodyOf([prompt("q1", { hole: { name: "winter" }, scope: setScope("resourceSets:1") })])
++      bodyOf([prompt("q1", { slot: { name: "winter" }, scope: setScope("resourceSets:1") })])
 +    ) as unknown as TemplateBody;
-+    const holes: TemplateHole[] = [{ name: "winter", label: "winter", default: setScope("resourceSets:1") }];
-+    const resolved = resolveTemplateScopes(body, holes, {
++    const slots: TemplateSlot[] = [{ name: "winter", label: "winter", default: setScope("resourceSets:1") }];
++    const resolved = resolveTemplateScopes(body, slots, {
 +      winter: {
 +        include: [{ select: "project" }],
 +        exclude: [{ select: "kinds", kinds: ["finding"] }]
@@ -2558,25 +2558,25 @@
 +});
 ~~~~
 
-### new · `src/lib/representation/data/behavior/templates/test/unit/marked-holes.test.ts` (+239 / −0)
+### new · `src/lib/representation/data/behavior/templates/test/unit/marked-slots.test.ts` (+239 / −0)
 
 ~~~~diff
 @@ -0,0 +1,239 @@
 +import { describe, expect, it } from "vitest";
 +
 +import {
-+  holeMarkOver,
-+  holeNameOver,
-+  withHolesAt,
-+  withMarkedHoles
-+} from "$representation/data/behavior/templates/prompt-holes";
++  slotMarkOver,
++  slotNameOver,
++  withSlotsAt,
++  withMarkedSlots
++} from "$representation/data/behavior/templates/prompt-slots";
 +import type { Atom, Mark } from "$representation/data/types/content/content-block";
 +
 +/**
 + * Marking a run is not an edit.
 + *
 + * These cases are the foundation the rest of templating stands on: a body may
-+ * be long, may hold many holes, may be formatted heavily, and none of that is
++ * be long, may hold many slots, may be formatted heavily, and none of that is
 + * allowed to change until a template is made from a copy of it.
 + */
 +
@@ -2590,11 +2590,11 @@
 +  };
 +};
 +
-+const hole = (id: string, from: [string, number], to: [string, number], name: string): Mark => ({
++const slot = (id: string, from: [string, number], to: [string, number], name: string): Mark => ({
 +  id,
 +  from: { atom: from[0], offset: from[1] },
 +  to: { atom: to[0], offset: to[1] },
-+  hole: { name }
++  slot: { name }
 +});
 +
 +const style = (id: string, from: [string, number], to: [string, number]): Mark => ({
@@ -2615,43 +2615,43 @@
 +  const atoms = [words("a1", "Dear Northwind, about winter.")];
 +
 +  it("addresses the run the way every other mark does", () => {
-+    const mark = holeMarkOver(atoms, 5, 14, "Hole 1", mint());
++    const mark = slotMarkOver(atoms, 5, 14, "Slot 1", mint());
 +    expect(mark).toEqual({
 +      id: "n1",
 +      from: { atom: "a1", offset: 5 },
 +      to: { atom: "a1", offset: 14 },
-+      hole: { name: "Hole 1" }
++      slot: { name: "Slot 1" }
 +    });
 +  });
 +
 +  it("refuses a caret, a blank name, and an empty block", () => {
-+    expect(holeMarkOver(atoms, 5, 5, "Hole 1", mint())).toBeUndefined();
-+    expect(holeMarkOver(atoms, 5, 14, "  ".trim(), mint())).toBeUndefined();
-+    expect(holeMarkOver([], 0, 3, "Hole 1", mint())).toBeUndefined();
++    expect(slotMarkOver(atoms, 5, 5, "Slot 1", mint())).toBeUndefined();
++    expect(slotMarkOver(atoms, 5, 14, "  ".trim(), mint())).toBeUndefined();
++    expect(slotMarkOver([], 0, 3, "Slot 1", mint())).toBeUndefined();
 +  });
 +
-+  it("reports a run already covered by a hole, and only when it overlaps", () => {
-+    const marks = [hole("m1", ["a1", 5], ["a1", 14], "client")];
-+    expect(holeNameOver(atoms, marks, 6, 9)).toBe("client");
-+    expect(holeNameOver(atoms, marks, 0, 5)).toBeUndefined();
-+    expect(holeNameOver(atoms, marks, 14, 20)).toBeUndefined();
++  it("reports a run already covered by a slot, and only when it overlaps", () => {
++    const marks = [slot("m1", ["a1", 5], ["a1", 14], "client")];
++    expect(slotNameOver(atoms, marks, 6, 9)).toBe("client");
++    expect(slotNameOver(atoms, marks, 0, 5)).toBeUndefined();
++    expect(slotNameOver(atoms, marks, 14, 20)).toBeUndefined();
 +  });
 +});
 +
-+describe("a marked run becoming a hole, on the copy", () => {
-+  it("keeps the words as what the hole says and leaves the rest of the prose", () => {
++describe("a marked run becoming a slot, on the copy", () => {
++  it("keeps the words as what the slot says and leaves the rest of the prose", () => {
 +    const atoms = [words("a1", "Dear Northwind, about winter.")];
-+    const held = withHolesAt(atoms, [hole("m1", ["a1", 5], ["a1", 14], "client")], mint());
++    const held = withSlotsAt(atoms, [slot("m1", ["a1", 5], ["a1", 14], "client")], mint());
 +    expect(display(held.atoms)).toBe("Dear {client}, about winter.");
 +    expect(held.atoms[1]).toEqual({ id: "n2", kind: "template", name: "client", text: "Northwind" });
 +    expect(held.marks).toEqual([]);
 +  });
 +
-+  it("keeps a mark that does not reach into the hole, over exactly the same words", () => {
++  it("keeps a mark that does not reach into the slot, over exactly the same words", () => {
 +    const atoms = [words("a1", "Dear Northwind, about winter.")];
-+    const held = withHolesAt(
++    const held = withSlotsAt(
 +      atoms,
-+      [hole("m1", ["a1", 5], ["a1", 14], "client"), style("m2", ["a1", 22], ["a1", 28])],
++      [slot("m1", ["a1", 5], ["a1", 14], "client"), style("m2", ["a1", 22], ["a1", 28])],
 +      mint()
 +    );
 +    const kept = held.marks.find((mark) => mark.id === "m2");
@@ -2663,34 +2663,34 @@
 +    expect(flat.slice(before + kept!.from.offset, before + kept!.to.offset)).toBe("winter");
 +  });
 +
-+  it("drops a mark that reaches into the hole, because those words are a question now", () => {
++  it("drops a mark that reaches into the slot, because those words are a question now", () => {
 +    const atoms = [words("a1", "Dear Northwind, about winter.")];
-+    const held = withHolesAt(
++    const held = withSlotsAt(
 +      atoms,
-+      [hole("m1", ["a1", 5], ["a1", 14], "client"), style("m2", ["a1", 0], ["a1", 9])],
++      [slot("m1", ["a1", 5], ["a1", 14], "client"), style("m2", ["a1", 0], ["a1", 9])],
 +      mint()
 +    );
 +    expect(held.marks).toEqual([]);
 +  });
 +
-+  it("takes several holes in one block, in order, without disturbing each other", () => {
++  it("takes several slots in one block, in order, without disturbing each other", () => {
 +    const atoms = [words("a1", "Dear Northwind, about winter, from Ana.")];
-+    const held = withHolesAt(
++    const held = withSlotsAt(
 +      atoms,
 +      [
-+        hole("m2", ["a1", 35], ["a1", 38], "sender"),
-+        hole("m1", ["a1", 5], ["a1", 14], "client")
++        slot("m2", ["a1", 35], ["a1", 38], "sender"),
++        slot("m1", ["a1", 5], ["a1", 14], "client")
 +      ],
 +      mint()
 +    );
 +    expect(display(held.atoms)).toBe("Dear {client}, about winter, from {sender}.");
 +  });
 +
-+  it("refuses a second hole that overlaps the first", () => {
++  it("refuses a second slot that overlaps the first", () => {
 +    const atoms = [words("a1", "Dear Northwind, about winter.")];
-+    const held = withHolesAt(
++    const held = withSlotsAt(
 +      atoms,
-+      [hole("m1", ["a1", 5], ["a1", 14], "client"), hole("m2", ["a1", 10], ["a1", 20], "other")],
++      [slot("m1", ["a1", 5], ["a1", 14], "client"), slot("m2", ["a1", 10], ["a1", 20], "other")],
 +      mint()
 +    );
 +    expect(display(held.atoms)).toBe("Dear {client}, about winter.");
@@ -2698,7 +2698,7 @@
 +
 +  it("spans several atoms, taking every literal it covers", () => {
 +    const atoms = [words("a1", "Dear "), words("a2", "North"), words("a3", "wind, hello.")];
-+    const held = withHolesAt(atoms, [hole("m1", ["a1", 5], ["a3", 4], "client")], mint());
++    const held = withSlotsAt(atoms, [slot("m1", ["a1", 5], ["a3", 4], "client")], mint());
 +    expect(display(held.atoms)).toBe("Dear {client}, hello.");
 +    expect(held.atoms.find((atom) => atom.kind === "template")).toMatchObject({ text: "Northwind" });
 +  });
@@ -2716,15 +2716,15 @@
 +      },
 +      words("a3", " today.")
 +    ];
-+    const held = withHolesAt(atoms, [hole("m1", ["a1", 3], ["a3", 3], "figure")], mint());
++    const held = withSlotsAt(atoms, [slot("m1", ["a1", 3], ["a3", 3], "figure")], mint());
 +    expect(display(held.atoms)).toBe("Tot{figure}day.");
 +    expect(held.atoms.some((atom) => atom.kind === "formula")).toBe(false);
 +  });
 +
-+  it("leaves a block with no hole marks exactly as it was", () => {
++  it("leaves a block with no slot marks exactly as it was", () => {
 +    const atoms = [words("a1", "Nothing to see.")];
 +    const marks = [style("m1", ["a1", 0], ["a1", 7])];
-+    const held = withHolesAt(atoms, marks, mint());
++    const held = withSlotsAt(atoms, marks, mint());
 +    expect(held.atoms).toBe(atoms);
 +    expect(held.marks).toEqual(marks);
 +  });
@@ -2744,7 +2744,7 @@
 +            variant: "paragraph",
 +            atoms: [words("a1", "Dear Northwind.")],
 +            display: "Dear Northwind.",
-+            marks: [hole("m1", ["a1", 5], ["a1", 14], "client")]
++            marks: [slot("m1", ["a1", 5], ["a1", 14], "client")]
 +          },
 +          {
 +            id: "b2",
@@ -2760,7 +2760,7 @@
 +  });
 +
 +  it("rewrites the marked block, rebuilds its display, and leaves the others alone", () => {
-+    const held = withMarkedHoles(body(), mint()) as ReturnType<typeof body>;
++    const held = withMarkedSlots(body(), mint()) as ReturnType<typeof body>;
 +    const blocks = held.rows[0].blocks as { display: string; marks: unknown[] }[];
 +    expect(blocks[0].display).toBe("Dear {client}.");
 +    expect(blocks[0].marks).toEqual([]);
@@ -2770,11 +2770,11 @@
 +  it("never touches the body it was given", () => {
 +    const original = body();
 +    const snapshot = JSON.stringify(original);
-+    withMarkedHoles(original, mint());
++    withMarkedSlots(original, mint());
 +    expect(JSON.stringify(original)).toBe(snapshot);
 +  });
 +
-+  it("carries a hundred holes without losing one", () => {
++  it("carries a hundred slots without losing one", () => {
 +    const long = {
 +      resource: "document",
 +      rows: Array.from({ length: 100 }, (_, index) => ({
@@ -2788,17 +2788,17 @@
 +            atoms: [words(`a${index}`, `Row ${index} names Northwind here.`)],
 +            display: `Row ${index} names Northwind here.`,
 +            marks: [
-+              hole(`m${index}`, [`a${index}`, `Row ${index} names `.length], [`a${index}`, `Row ${index} names Northwind`.length], `Hole ${index + 1}`)
++              slot(`m${index}`, [`a${index}`, `Row ${index} names `.length], [`a${index}`, `Row ${index} names Northwind`.length], `Slot ${index + 1}`)
 +            ]
 +          }
 +        ]
 +      }))
 +    };
-+    const held = withMarkedHoles(long, mint()) as typeof long;
++    const held = withMarkedSlots(long, mint()) as typeof long;
 +    const displays = held.rows.map((row) => (row.blocks[0] as { display: string }).display);
-+    expect(displays[0]).toBe("Row 0 names {Hole 1} here.");
-+    expect(displays[99]).toBe("Row 99 names {Hole 100} here.");
-+    expect(displays.every((line) => line.includes("{Hole "))).toBe(true);
++    expect(displays[0]).toBe("Row 0 names {Slot 1} here.");
++    expect(displays[99]).toBe("Row 99 names {Slot 100} here.");
++    expect(displays.every((line) => line.includes("{Slot "))).toBe(true);
 +  });
 +});
 ~~~~
@@ -2914,7 +2914,7 @@
 +});
 ~~~~
 
-### new · `src/lib/representation/data/behavior/templates/test/unit/prompt-holes.test.ts` (+153 / −0)
+### new · `src/lib/representation/data/behavior/templates/test/unit/prompt-slots.test.ts` (+153 / −0)
 
 ~~~~diff
 @@ -0,0 +1,153 @@
@@ -2922,17 +2922,17 @@
 +
 +import {
 +  defaultScopeOf,
-+  holeNamesIn,
-+  mergedPromptHoles,
-+  nextHoleName,
-+  offeredHoleName,
-+  promptHolesOf,
++  slotNamesIn,
++  mergedPromptSlots,
++  nextSlotName,
++  offeredSlotName,
++  promptSlotsOf,
 +  promptWordsIn,
-+  textHolesOf,
-+  withPromptHoles,
++  textSlotsOf,
++  withPromptSlots,
 +  withPrompts
-+} from "$representation/data/behavior/templates/prompt-holes";
-+import type { TemplateBody, TemplateHole } from "$representation/data/types/templates/template";
++} from "$representation/data/behavior/templates/prompt-slots";
++import type { TemplateBody, TemplateSlot } from "$representation/data/types/templates/template";
 +
 +const prompt = (id: string, extra: Record<string, unknown> = {}) => ({
 +  id,
@@ -2949,43 +2949,43 @@
 +  rows: [{ id: "r1", kind: "blocks", blocks }]
 +});
 +
-+describe("a hole is made, never found", () => {
-+  it("gives no hole to a prompt nobody templated", () => {
++describe("a slot is made, never found", () => {
++  it("gives no slot to a prompt nobody templated", () => {
 +    const held = body([prompt("a"), prompt("b", { scope: { include: [{ select: "project" }], exclude: [] } })]);
-+    expect(promptHolesOf(held)).toEqual([]);
-+    expect(holeNamesIn(held)).toEqual([]);
++    expect(promptSlotsOf(held)).toEqual([]);
++    expect(slotNamesIn(held)).toEqual([]);
 +  });
 +
 +  it("gives one to each prompt somebody did", () => {
 +    const held = body([
-+      prompt("a", { hole: { name: "sources" } }),
-+      prompt("b", { hole: { name: "decisions", description: "Which threads" } })
++      prompt("a", { slot: { name: "sources" } }),
++      prompt("b", { slot: { name: "decisions", description: "Which threads" } })
 +    ]);
-+    const drafts = promptHolesOf(held);
-+    expect(drafts.map((draft) => draft.hole.name)).toEqual(["sources", "decisions"]);
-+    expect(drafts[1].hole.description).toBe("Which threads");
++    const drafts = promptSlotsOf(held);
++    expect(drafts.map((draft) => draft.slot.name)).toEqual(["sources", "decisions"]);
++    expect(drafts[1].slot.description).toBe("Which threads");
 +  });
 +
 +  it("offers the next name across everything the body already holds", () => {
-+    expect(offeredHoleName(0)).toBe("Hole 1");
-+    expect(nextHoleName(body([prompt("a")]))).toBe("Hole 1");
++    expect(offeredSlotName(0)).toBe("Slot 1");
++    expect(nextSlotName(body([prompt("a")]))).toBe("Slot 1");
 +    const held = body([
-+      prompt("a", { hole: { name: "Hole 1" } }),
++      prompt("a", { slot: { name: "Slot 1" } }),
 +      {
 +        id: "t1",
 +        type: "text",
 +        variant: "paragraph",
-+        atoms: [{ id: "t1-a", kind: "template", name: "Hole 2" }],
-+        display: "{Hole 2}",
++        atoms: [{ id: "t1-a", kind: "template", name: "Slot 2" }],
++        display: "{Slot 2}",
 +        marks: []
 +      }
 +    ]);
-+    expect([...holeNamesIn(held)].sort()).toEqual(["Hole 1", "Hole 2"]);
-+    expect(nextHoleName(held)).toBe("Hole 3");
++    expect([...slotNamesIn(held)].sort()).toEqual(["Slot 1", "Slot 2"]);
++    expect(nextSlotName(held)).toBe("Slot 3");
 +  });
 +});
 +
-+describe("a hole's default is whatever the thing already is", () => {
++describe("a slot's default is whatever the thing already is", () => {
 +  it("is the scope the prompt reads, whatever that scope is", () => {
 +    for (const scope of [
 +      { include: [{ select: "project" }], exclude: [] },
@@ -3006,32 +3006,32 @@
 +
 +describe("a body as a template holds it", () => {
 +  const held = body([
-+    prompt("a", { hole: { name: "sources" }, scope: { include: [{ select: "set", setId: "resourceSets:1" }], exclude: [] } }),
++    prompt("a", { slot: { name: "sources" }, scope: { include: [{ select: "set", setId: "resourceSets:1" }], exclude: [] } }),
 +    prompt("b", { scope: { include: [{ select: "project" }], exclude: [] } })
 +  ]);
 +
 +  it("replaces a templated prompt's scope and leaves the rest alone", () => {
-+    const templated = withPromptHoles(held, promptHolesOf(held)) as ReturnType<typeof body>;
++    const templated = withPromptSlots(held, promptSlotsOf(held)) as ReturnType<typeof body>;
 +    const blocks = templated.rows[0].blocks as { scope: unknown }[];
-+    expect(blocks[0].scope).toEqual({ include: [{ select: "hole", name: "sources" }], exclude: [] });
++    expect(blocks[0].scope).toEqual({ include: [{ select: "slot", name: "sources" }], exclude: [] });
 +    expect(blocks[1].scope).toEqual({ include: [{ select: "project" }], exclude: [] });
 +  });
 +
-+  it("keeps the set the prompt read as the hole's default", () => {
-+    expect(promptHolesOf(held)[0].hole.default).toEqual({
++  it("keeps the set the prompt read as the slot's default", () => {
++    expect(promptSlotsOf(held)[0].slot.default).toEqual({
 +      include: [{ select: "set", setId: "resourceSets:1" }],
 +      exclude: []
 +    });
 +  });
 +
-+  it("writes each prompt onto the block that asks it, and reads it back by hole", () => {
++  it("writes each prompt onto the block that asks it, and reads it back by slot", () => {
 +    const asked = withPrompts(held, { a: "  What broke?  ", b: "Anything" });
-+    const templated = withPromptHoles(asked, promptHolesOf(asked)) as unknown as TemplateBody;
++    const templated = withPromptSlots(asked, promptSlotsOf(asked)) as unknown as TemplateBody;
 +    expect(promptWordsIn(templated)).toEqual({ sources: "What broke?" });
 +  });
 +});
 +
-+describe("text holes", () => {
++describe("text slots", () => {
 +  it("carry the words they stand in for", () => {
 +    const held = body([
 +      {
@@ -3040,35 +3040,35 @@
 +        variant: "paragraph",
 +        atoms: [
 +          { id: "a1", kind: "literal", text: "Dear " },
-+          { id: "a2", kind: "template", name: "Hole 1", description: "Who it is for", text: "Ana" }
++          { id: "a2", kind: "template", name: "Slot 1", description: "Who it is for", text: "Ana" }
 +        ],
-+        display: "Dear {Hole 1}",
++        display: "Dear {Slot 1}",
 +        marks: []
 +      }
 +    ]);
-+    expect(textHolesOf(held)).toEqual([
-+      { name: "Hole 1", label: "Hole 1", kind: "text", description: "Who it is for", text: "Ana" }
++    expect(textSlotsOf(held)).toEqual([
++      { name: "Slot 1", label: "Slot 1", kind: "text", description: "Who it is for", text: "Ana" }
 +    ]);
 +  });
 +});
 +
 +describe("saving a template again", () => {
 +  it("takes the name from the thing and leaves a description alone", () => {
-+    const known: TemplateHole[] = [
++    const known: TemplateSlot[] = [
 +      { name: "sources", label: "sources", description: "Old words" }
 +    ];
-+    const fresh = promptHolesOf(body([prompt("b", { hole: { name: "sources" } })])).map(
-+      (draft) => draft.hole
++    const fresh = promptSlotsOf(body([prompt("b", { slot: { name: "sources" } })])).map(
++      (draft) => draft.slot
 +    );
-+    expect(mergedPromptHoles(known, fresh)[0].description).toBe("Old words");
++    expect(mergedPromptSlots(known, fresh)[0].description).toBe("Old words");
 +  });
 +
-+  it("keeps a hole nothing in the body asks for any more", () => {
-+    const known: TemplateHole[] = [{ name: "subject", label: "Subject", kind: "text" }];
-+    const fresh = promptHolesOf(body([prompt("a", { hole: { name: "sources" } })])).map(
-+      (draft) => draft.hole
++  it("keeps a slot nothing in the body asks for any more", () => {
++    const known: TemplateSlot[] = [{ name: "subject", label: "Subject", kind: "text" }];
++    const fresh = promptSlotsOf(body([prompt("a", { slot: { name: "sources" } })])).map(
++      (draft) => draft.slot
 +    );
-+    expect(mergedPromptHoles(known, fresh).map((hole) => hole.name)).toEqual(["sources", "subject"]);
++    expect(mergedPromptSlots(known, fresh).map((slot) => slot.name)).toEqual(["sources", "subject"]);
 +  });
 +});
 ~~~~
@@ -3081,10 +3081,10 @@
 +
 +import type { PromptBlock } from "$representation/data/types/content/content-block";
 +import type { TemplatedTerm } from "$representation/data/types/core/resource-set";
-+import type { TemplateBody, TemplateHole } from "$representation/data/types/templates/template";
++import type { TemplateBody, TemplateSlot } from "$representation/data/types/templates/template";
 +import {
 +  resolveTemplateScopes,
-+  scopeHoleNamesIn
++  scopeSlotNamesIn
 +} from "$representation/data/behavior/templates/scopes";
 +
 +const prompt = (id: string, include: TemplatedTerm[]): PromptBlock => ({
@@ -3110,15 +3110,15 @@
 +  return block?.type === "prompt" ? block.scope : undefined;
 +};
 +
-+const evidence: TemplateHole = {
++const evidence: TemplateSlot = {
 +  name: "evidence",
 +  label: "Evidence",
 +  default: { include: [{ select: "kinds", kinds: ["finding"] }], exclude: [] }
 +};
 +
 +describe("resolveTemplateScopes", () => {
-+  it("fills a hole term from its default", () => {
-+    const resolved = resolveTemplateScopes(body([prompt("p", [{ select: "hole", name: "evidence" }])]), [evidence]);
++  it("fills a slot term from its default", () => {
++    const resolved = resolveTemplateScopes(body([prompt("p", [{ select: "slot", name: "evidence" }])]), [evidence]);
 +    expect(resolved.accepted).toBe(true);
 +    if (!resolved.accepted) return;
 +    expect(resolved.undeclared).toEqual([]);
@@ -3130,7 +3130,7 @@
 +
 +  it("prefers the caller's answer to the default", () => {
 +    const resolved = resolveTemplateScopes(
-+      body([prompt("p", [{ select: "hole", name: "evidence" }])]),
++      body([prompt("p", [{ select: "slot", name: "evidence" }])]),
 +      [evidence],
 +      { evidence: { include: [{ select: "set", setId: "resourceSets:2" as never }], exclude: [] } }
 +    );
@@ -3141,9 +3141,9 @@
 +    });
 +  });
 +
-+  it("means the whole project for a hole declared without a default", () => {
++  it("means the whole project for a slot declared without a default", () => {
 +    const resolved = resolveTemplateScopes(
-+      body([prompt("p", [{ select: "hole", name: "models" }])]),
++      body([prompt("p", [{ select: "slot", name: "models" }])]),
 +      [{ name: "models", label: "Models" }]
 +    );
 +    if (!resolved.accepted) throw new Error(resolved.detail);
@@ -3152,38 +3152,38 @@
 +
 +  it("keeps the term and reports a name the template does not declare", () => {
 +    const resolved = resolveTemplateScopes(
-+      body([prompt("p", [{ select: "hole", name: "evidence" }, { select: "hole", name: "models" }])]),
++      body([prompt("p", [{ select: "slot", name: "evidence" }, { select: "slot", name: "models" }])]),
 +      [evidence]
 +    );
 +    if (!resolved.accepted) throw new Error(resolved.detail);
 +    expect(resolved.undeclared).toEqual(["models"]);
 +    expect(scopeOf(resolved.body, "p")).toEqual({
-+      include: [{ select: "kinds", kinds: ["finding"] }, { select: "hole", name: "models" }],
++      include: [{ select: "kinds", kinds: ["finding"] }, { select: "slot", name: "models" }],
 +      exclude: []
 +    });
 +  });
 +
 +  it("refuses a default that excludes, because a difference does not flatten", () => {
-+    const resolved = resolveTemplateScopes(body([prompt("p", [{ select: "hole", name: "evidence" }])]), [
++    const resolved = resolveTemplateScopes(body([prompt("p", [{ select: "slot", name: "evidence" }])]), [
 +      { ...evidence, default: { include: [{ select: "project" }], exclude: [{ select: "kinds", kinds: ["slides"] }] } }
 +    ]);
 +    expect(resolved).toMatchObject({ accepted: false, reason: "unsupported-body" });
 +  });
 +
-+  it("treats a hole that reaches itself as the whole project", () => {
-+    const resolved = resolveTemplateScopes(body([prompt("p", [{ select: "hole", name: "loop" }])]), [
-+      { name: "loop", label: "Loop", default: { include: [{ select: "hole", name: "loop" }], exclude: [] } }
++  it("treats a slot that reaches itself as the whole project", () => {
++    const resolved = resolveTemplateScopes(body([prompt("p", [{ select: "slot", name: "loop" }])]), [
++      { name: "loop", label: "Loop", default: { include: [{ select: "slot", name: "loop" }], exclude: [] } }
 +    ]);
 +    if (!resolved.accepted) throw new Error(resolved.detail);
 +    expect(scopeOf(resolved.body, "p")).toEqual({ include: [{ select: "project" }], exclude: [] });
 +  });
 +
-+  it("lists the hole names a body refers to", () => {
++  it("lists the slot names a body refers to", () => {
 +    const held = body([
-+      prompt("p", [{ select: "hole", name: "b" }]),
-+      prompt("q", [{ select: "hole", name: "a" }, { select: "kinds", kinds: ["document"] }])
++      prompt("p", [{ select: "slot", name: "b" }]),
++      prompt("q", [{ select: "slot", name: "a" }, { select: "kinds", kinds: ["document"] }])
 +    ]);
-+    expect(scopeHoleNamesIn(held)).toEqual(["a", "b"]);
++    expect(scopeSlotNamesIn(held)).toEqual(["a", "b"]);
 +  });
 +});
 ~~~~
@@ -3222,7 +3222,7 @@
 
 -export type Atom = TextAtom | FormulaAtom;
 +/**
-+ * A hole in a template's prose, filled with words when the template is placed.
++ * A slot in a template's prose, filled with words when the template is placed.
 + *
 + * **It is a template's parameter, not a variable.** A variable in this
 + * application is a named value a formula can read; this is unrelated to that and
@@ -3235,9 +3235,9 @@
 + * atoms may name one parameter and there must be one answer.
 + */
 +/**
-+ * A hole in the prose, made by turning a run of text into one.
++ * A slot in the prose, made by turning a run of text into one.
 + *
-+ * `text` is what the selection said, kept as what the hole says when nobody
++ * `text` is what the selection said, kept as what the slot says when nobody
 + * says otherwise — so a template placed with every default reads exactly like
 + * the document it was made from.
 + */
@@ -3258,14 +3258,14 @@
  export type MarkEnd = { atom: string; offset: number };
 
 +/**
-+ * A run marked as a hole: a template made from this body puts one here.
++ * A run marked as a slot: a template made from this body puts one here.
 + *
 + * Marking changes nothing. The words stay where they are, every other mark over
-+ * them stays, and the resource reads exactly as it did — a hole is a note about
++ * them stays, and the resource reads exactly as it did — a slot is a note about
 + * where a template's argument goes, not an edit. The run only becomes a
 + * template atom on the copy, when the template is made.
 + */
-+export type MarkHole = { name: string; description?: string };
++export type MarkSlot = { name: string; description?: string };
 +
  export type Mark = {
    id: string;
@@ -3274,7 +3274,7 @@
    link?: MarkLink;
    color?: string;
    background?: string;
-+  hole?: MarkHole;
++  slot?: MarkSlot;
  };
 
  export type TextVariant = "paragraph" | "heading" | "list" | "quote" | "code";
@@ -3285,11 +3285,11 @@
 +/**
 + * What this prompt becomes when its resource is made a template.
 + *
-+ * Every prompt becomes one hole, so this is what the hole is called and what it
++ * Every prompt becomes one slot, so this is what the slot is called and what it
 + * says rather than whether there is one. Absent means the name is still the
 + * offered default, which is why nothing has to be filled in to make a template.
 + */
-+export type PromptHole = {
++export type PromptSlot = {
 +  name: string;
 +  description?: string;
 +};
@@ -3303,7 +3303,7 @@
    scope?: ResourceSet | TemplatedResourceSet;
 +  /** This block's prompt, written onto it when the derived output that held it is left behind. */
 +  prompt?: string;
-+  hole?: PromptHole;
++  slot?: PromptSlot;
    state: PromptState;
    error?: string;
    refreshedAt?: number;
@@ -3338,12 +3338,12 @@
 -/**
 - * A term a template body may hold. No ids, so it means the same in any project.
 - *
-- * A `variable` is a hole an answer fills at instantiation. It is a term rather
+- * A `variable` is a slot an answer fills at instantiation. It is a term rather
 - * than a field on the set because a template may draw on several variables, and
 - * a variable may be excluded as easily as included.
 - */
 -export type TemplatedTerm = ProjectTerm | KindsTerm | { select: "variable"; name: string };
-+export type TemplatedTerm = ProjectTerm | KindsTerm | NamedSetTerm | { select: "hole"; name: string };
++export type TemplatedTerm = ProjectTerm | KindsTerm | NamedSetTerm | { select: "slot"; name: string };
 
 -/**
 - * Everything in `include`, minus everything in `exclude`.
@@ -3367,8 +3367,8 @@
 + * its owner goes.
 + */
 +export type BoundTo =
-+  | { kind: "hole"; templateId: Id<"templates">; hole: string }
-+  | { kind: "resource"; resourceId: string; hole: string };
++  | { kind: "slot"; templateId: Id<"templates">; slot: string }
++  | { kind: "resource"; resourceId: string; slot: string };
 ~~~~
 
 ### changed · `src/lib/representation/data/types/templates/template.ts` (+12 / −27)
@@ -3379,7 +3379,7 @@
 
  /**
 - * One question a template asks when it is instantiated.
-+ * What a hole is answered with.
++ * What a slot is answered with.
   *
 - * `name` is what a `{ select: "variable" }` term names. Nothing lists which
 - * blocks the answer reaches — instantiation walks the body and fills every term
@@ -3393,15 +3393,15 @@
 + * none until somebody types them, which is why placing a template asks.
   */
 -export type TemplateVariable = {
-+export type TemplateHoleKind = "scope" | "text";
++export type TemplateSlotKind = "scope" | "text";
 +
-+export type TemplateHole = {
++export type TemplateSlot = {
    name: string;
 -  /** What the person filling it in is asked. */
    label: string;
    description?: string;
-+  /** Absent means `scope`, which is what every hole was before text ones existed. */
-+  kind?: TemplateHoleKind;
++  /** Absent means `scope`, which is what every slot was before text ones existed. */
++  kind?: TemplateSlotKind;
 +  /** What a `scope` selects when the caller says nothing. */
    default?: TemplatedResourceSet;
 +  /** What a `text` says when the caller says nothing. Absent means it must be filled in. */
@@ -3477,7 +3477,7 @@
  import type {
    TemplateBody,
 -  TemplateVariable
-+  TemplateHole
++  TemplateSlot
  } from "$representation/data/types/templates/template";
  import type { WorkspaceOp } from "$representation/data/types/workspace/op";
  import type { TabId, TabRecord, TabView } from "$representation/data/types/workspace/tab";
@@ -3517,7 +3517,7 @@
    tags: string[];
    body: TemplateBody;
 -  variables: TemplateVariable[];
-+  holes: TemplateHole[];
++  slots: TemplateSlot[];
    createdBy: Actor;
    revision: number;
    updatedAt: number;
@@ -3530,7 +3530,7 @@
    tags: string[];
    body: TemplateBody;
 -  variables: TemplateVariable[];
-+  holes: TemplateHole[];
++  slots: TemplateSlot[];
    at: number;
  };
  export type TemplateVersion = Row<"templateVersions"> & TemplateVersionFields;
@@ -3550,7 +3550,7 @@
 +
 +export type ResourceSetFields = {
 +  projectId: Id<"projects">;
-+  /** Present on a project's own sets. Absent on a row bound to one hole or one resource. */
++  /** Present on a project's own sets. Absent on a row bound to one slot or one resource. */
 +  name?: string;
    description?: string;
 +  /** Present on a bound row, and never together with a name. */
@@ -3600,7 +3600,7 @@
 @@ -0,0 +1,130 @@
 +import { requireScope } from "$runtime/server/scope.server";
 +import { serverModel } from "$runtime/server/start.server";
-+import { settledHoleDefaults, templatedBodyOf } from "$capabilities/templates/api/shared/prompts";
++import { settledSlotDefaults, templatedBodyOf } from "$capabilities/templates/api/shared/prompts";
 +import type { TemplateBody } from "$representation/data/types/templates/template";
 +
 +import { validateCommitTemplateStage } from "$capabilities/templates/api/commit-template-stage/validate-commit-template-stage";
@@ -3613,7 +3613,7 @@
 +import type { RowFields } from "$capabilities/templates/api/shared/store";
 +import { writeTemplateVersion } from "$capabilities/templates/api/shared/template-rows";
 +import { bodyOf } from "$capabilities/templates/api/shared/validation";
-+import { declaredFor } from "$capabilities/templates/api/shared/holes";
++import { declaredFor } from "$capabilities/templates/api/shared/slots";
 +import type { CommitTemplateStageResult } from "$capabilities/templates/types/templates";
 +
 +export const commitTemplateStage = async (input: unknown): Promise<CommitTemplateStageResult> => {
@@ -3678,7 +3678,7 @@
 +      detail: "the staged copy has no body to save"
 +    };
 +  }
-+  const portable = templatedBodyOf(store, { resource: stage.target, ...leader.body }, template.holes);
++  const portable = templatedBodyOf(store, { resource: stage.target, ...leader.body }, template.slots);
 +  let body: TemplateBody;
 +  try {
 +    body = bodyOf(portable.body, "commit-template-stage");
@@ -3701,13 +3701,13 @@
 +    ...(template.description === undefined ? {} : { description: template.description }),
 +    tags: [...template.tags],
 +    body,
-+    holes: [
-+      ...settledHoleDefaults(
++    slots: [
++      ...settledSlotDefaults(
 +        store,
 +        template.projectId,
 +        template.createdBy,
 +        template._id,
-+        declaredFor(body, portable.holes),
++        declaredFor(body, portable.slots),
 +        at
 +      )
 +    ],
@@ -3760,7 +3760,7 @@
 +import { serverModel } from "$runtime/server/start.server";
 +import { asId } from "$representation/data/behavior/core/id";
 +import { deckOfSlide } from "$representation/data/behavior/templates/deck-of-slide";
-+import { settledHoleDefaults, templatedBodyOf } from "$capabilities/templates/api/shared/prompts";
++import { settledSlotDefaults, templatedBodyOf } from "$capabilities/templates/api/shared/prompts";
 +import type { TemplateBody } from "$representation/data/types/templates/template";
 +
 +import { validateCreateTemplateFromResource } from "$capabilities/templates/api/create-template-from-resource/validate-create-template-from-resource";
@@ -3768,7 +3768,7 @@
 +import { recordsIn, type RowFields } from "$capabilities/templates/api/shared/store";
 +import { writeTemplateVersion } from "$capabilities/templates/api/shared/template-rows";
 +import { bodyOf } from "$capabilities/templates/api/shared/validation";
-+import { declaredFor } from "$capabilities/templates/api/shared/holes";
++import { declaredFor } from "$capabilities/templates/api/shared/slots";
 +import type { CreateTemplateFromResourceResult } from "$capabilities/templates/types/templates";
 +
 +export const createTemplateFromResource = async (
@@ -3835,16 +3835,16 @@
 +    ...(asked.description === undefined ? {} : { description: asked.description }),
 +    tags: [...(asked.tags ?? [])],
 +    body,
-+    holes: declaredFor(body, portable.holes),
++    slots: declaredFor(body, portable.slots),
 +    createdBy: actor,
 +    revision: 1,
 +    updatedAt: at
 +  };
 +  const templateId = store.create("templates", fields);
-+  const settled = settledHoleDefaults(store, scope.projectId, actor, templateId, fields.holes, at);
-+  if (settled !== fields.holes) {
-+    fields.holes = [...settled];
-+    store.update(`templates.${templateId}.holes`, fields.holes);
++  const settled = settledSlotDefaults(store, scope.projectId, actor, templateId, fields.slots, at);
++  if (settled !== fields.slots) {
++    fields.slots = [...settled];
++    store.update(`templates.${templateId}.slots`, fields.slots);
 +  }
 +  writeTemplateVersion(store, templateId, fields, at);
 +
@@ -3916,7 +3916,7 @@
      tags: [...(asked.tags ?? [])],
      body: emptyTemplateBody(asked.target),
 -    variables: [],
-+    holes: [],
++    slots: [],
      createdBy: actor,
      revision: 1,
      updatedAt: at
@@ -3987,7 +3987,7 @@
      tags: [...source.tags],
      body: structuredClone(source.body),
 -    variables: structuredClone(source.variables),
-+    holes: structuredClone(source.holes),
++    slots: structuredClone(source.slots),
      createdBy: actor,
      revision: 1,
      updatedAt: at
@@ -4020,7 +4020,7 @@
  } from "$capabilities/templates/api/shared/projection";
 -import type { InstantiateTemplateResult } from "$capabilities/templates/types/templates";
 +import { normalizeScope, unknownSetsIn } from "$capabilities/templates/api/shared/scopes";
-+import { kindOf } from "$capabilities/templates/api/shared/holes";
++import { kindOf } from "$capabilities/templates/api/shared/slots";
 +import { withFreshOutputs } from "$capabilities/templates/api/shared/prompts";
 +import type {
 +  InstantiateTemplateResult,
@@ -4046,12 +4046,12 @@
    let template: ReturnType<typeof admitStoredTemplate>;
    let body: TemplateBody;
 -  let variables;
-+  let holes;
++  let slots;
    try {
      template = admitStoredTemplate(stored);
      body = template.body;
 -    variables = template.variables;
-+    holes = template.holes;
++    slots = template.slots;
    } catch (error) {
      return {
        accepted: false,
@@ -4071,15 +4071,15 @@
 -      };
 -    }
 +
-+  /** A text hole untouched by the caller falls back to its own default words. */
++  /** A text slot untouched by the caller falls back to its own default words. */
 +  const texts: Record<string, string> = { ...asked.texts };
-+  for (const hole of holes) {
-+    if (kindOf(hole) !== "text" || hole.text === undefined) continue;
-+    if (texts[hole.name] === undefined) texts[hole.name] = hole.text;
++  for (const slot of slots) {
++    if (kindOf(slot) !== "text" || slot.text === undefined) continue;
++    if (texts[slot.name] === undefined) texts[slot.name] = slot.text;
 +  }
-+  const unfilled = holes
-+    .filter((hole) => kindOf(hole) === "text")
-+    .map((hole) => hole.name)
++  const unfilled = slots
++    .filter((slot) => kindOf(slot) === "text")
++    .map((slot) => slot.name)
 +    .filter((name) => texts[name] === undefined || texts[name].trim() === "");
 +  if (unfilled.length > 0) {
 +    return {
@@ -4135,7 +4135,7 @@
 +      store,
 +      scope.projectId,
 +      actor,
-+      { kind: "resource", resourceId, hole: name },
++      { kind: "resource", resourceId, slot: name },
 +      rule,
 +      at
 +    );
@@ -4151,7 +4151,7 @@
 +    store.remove(`${table}.${resourceId}`);
 +  };
 +
-+  const resolved = resolveTemplateScopes(body, holes, answered);
++  const resolved = resolveTemplateScopes(body, slots, answered);
 +  if (!resolved.accepted) {
 +    rollback();
 +    return {
@@ -4169,7 +4169,7 @@
 +      templateId: template._id,
 +      reason: "unsupported-body",
 +      revision: template.revision,
-+      detail: `the body names a hole the template does not declare: ${resolved.undeclared.join(", ")}`
++      detail: `the body names a slot the template does not declare: ${resolved.undeclared.join(", ")}`
 +    };
 +  }
 +  body = fillTemplateAtoms(resolved.body, texts);
@@ -4593,11 +4593,11 @@
 -      "templateId"
 -    );
 +  for (const stage of stages) removeStage(store, stage);
-+  for (const hole of template.holes) {
++  for (const slot of template.slots) {
 +    removeRowsBoundTo(store, scope.projectId, {
-+      kind: "hole",
++      kind: "slot",
 +      templateId: template._id,
-+      hole: hole.name
++      slot: slot.name
 +    });
    }
    store.removeRows(
@@ -4707,8 +4707,8 @@
 -    };
 -
 -/**
-- * Fills represented variable holes from represented defaults. There is no
-- * caller-supplied answer shape yet, so an unbound hole is returned explicitly.
+- * Fills represented variable slots from represented defaults. There is no
+- * caller-supplied answer shape yet, so an unbound slot is returned explicitly.
 - */
 -export const resolveTemplateDefaults = (
 -  body: TemplateBody,
@@ -4822,34 +4822,34 @@
  export type MaterializedSpreadsheet = {
 ~~~~
 
-### new · `src/lib/capabilities/templates/api/shared/holes.ts` (+39 / −0)
+### new · `src/lib/capabilities/templates/api/shared/slots.ts` (+39 / −0)
 
 ~~~~diff
 @@ -0,0 +1,39 @@
 +import {
-+  scopeHoleNamesIn,
++  scopeSlotNamesIn,
 +  templateAtomNamesIn
 +} from "$representation/data/behavior/templates/scopes";
-+import type { TemplateBody, TemplateHole } from "$representation/data/types/templates/template";
++import type { TemplateBody, TemplateSlot } from "$representation/data/types/templates/template";
 +
 +/**
-+ * The holes a body asks for, found rather than authored.
++ * The slots a body asks for, found rather than authored.
 + *
-+ * A prompt's scope naming one makes it a `scope` hole, answered with a group of
++ * A prompt's scope naming one makes it a `scope` slot, answered with a group of
 + * resources and defaulting to the whole project. A template atom in the prose
 + * makes it a `text` one, answered with words and defaulting to nothing, which is
 + * why placing a template has to ask for it.
 + *
 + * A name used both ways is a scope, because a scope always has an answer and
 + * text never does: taking the other side would leave a template that cannot be
-+ * placed until somebody types into a hole they cannot see.
++ * placed until somebody types into a slot they cannot see.
 + */
 +export const declaredFor = (
 +  body: TemplateBody,
-+  known: readonly TemplateHole[]
-+): TemplateHole[] => {
-+  const declared = new Set(known.map((hole) => hole.name));
-+  const scopes = scopeHoleNamesIn(body);
++  known: readonly TemplateSlot[]
++): TemplateSlot[] => {
++  const declared = new Set(known.map((slot) => slot.name));
++  const scopes = scopeSlotNamesIn(body);
 +  const asScope = new Set(scopes);
 +  const texts = templateAtomNamesIn(body).filter((name) => !asScope.has(name));
 +
@@ -4862,9 +4862,9 @@
 +  ];
 +};
 +
-+/** What a hole is answered with, treating an older one with no kind as a scope. */
-+export const kindOf = (hole: TemplateHole): "scope" | "text" =>
-+  hole.kind === "text" ? "text" : "scope";
++/** What a slot is answered with, treating an older one with no kind as a scope. */
++export const kindOf = (slot: TemplateSlot): "scope" | "text" =>
++  slot.kind === "text" ? "text" : "scope";
 ~~~~
 
 ### changed · `src/lib/capabilities/templates/api/shared/projection.ts` (+32 / −49)
@@ -4883,7 +4883,7 @@
    tagsOf,
    templateIdOf,
 -  variablesOf
-+  holesOf
++  slotsOf
  } from "$capabilities/templates/api/shared/validation";
  import type {
    TemplateDetail,
@@ -4917,7 +4917,7 @@
    const tags = tagsOf(template.tags, subject);
    const body = bodyOf(template.body, subject);
 -  const variables = variablesOf(template.variables, subject);
-+  const holes = holesOf(template.holes, subject);
++  const slots = slotsOf(template.slots, subject);
    const createdBy = actorOf(template.createdBy, subject);
    const { description: _description, ...withoutDescription } = template;
    return {
@@ -4926,7 +4926,7 @@
      tags: [...tags],
      body,
 -    variables: [...variables],
-+    holes: [...holes],
++    slots: [...slots],
      createdBy
    };
  };
@@ -5016,7 +5016,7 @@
 +    availability: "project",
      tags: template.tags,
 -    variableCount: template.variables.length,
-+    holeCount: template.holes.length,
++    slotCount: template.slots.length,
      createdByName: actorName(store, scope, template.createdBy),
      revision: template.revision,
      updatedAt: template.updatedAt,
@@ -5037,18 +5037,18 @@
 -    lastUsedAt
 -  );
 -  return { ...item, body: admitted.body, variables: admitted.variables };
-+  const { holeCount: _holeCount, ...item } = itemOf(store, scope, admitted);
++  const { slotCount: _slotCount, ...item } = itemOf(store, scope, admitted);
 +  return {
 +    ...item,
 +    body: admitted.body,
 +    /**
 +     * A default naming a bound row is read back as the rule it holds, because
-+     * that row is the hole's value rather than a set anyone chose. A named set
++     * that row is the slot's value rather than a set anyone chose. A named set
 +     * stays a named set.
 +     */
-+    holes: admitted.holes.map((hole) => {
-+      const expanded = expandedScope(store, scope.projectId, hole.default);
-+      return expanded === undefined ? hole : { ...hole, default: expanded };
++    slots: admitted.slots.map((slot) => {
++      const expanded = expandedScope(store, scope.projectId, slot.default);
++      return expanded === undefined ? slot : { ...slot, default: expanded };
 +    })
 +  };
  };
@@ -5064,15 +5064,15 @@
 +import { portableBodyOf } from "$representation/data/behavior/templates/portable";
 +import type { Actor } from "$representation/data/types/core/actor";
 +import {
-+  mergedPromptHoles,
-+  promptHolesOf,
-+  textHolesOf,
-+  withMarkedHoles,
++  mergedPromptSlots,
++  promptSlotsOf,
++  textSlotsOf,
++  withMarkedSlots,
 +  withPrompts,
-+  withPromptHoles,
++  withPromptSlots,
 +  withScopes
-+} from "$representation/data/behavior/templates/prompt-holes";
-+import type { TemplateHole } from "$representation/data/types/templates/template";
++} from "$representation/data/behavior/templates/prompt-slots";
++import type { TemplateSlot } from "$representation/data/types/templates/template";
 +
 +import { normalizeScope } from "$capabilities/templates/api/shared/scopes";
 +import { recordsIn } from "$capabilities/templates/api/shared/store";
@@ -5175,66 +5175,66 @@
 +export type TemplatedBody<T> = {
 +  readonly body: T;
 +  readonly dropped: readonly string[];
-+  readonly holes: readonly TemplateHole[];
++  readonly slots: readonly TemplateSlot[];
 +};
 +
 +/**
 + * A live body as a template holds it: portable, and asking rather than telling.
 + *
-+ * The order matters. The holes are read first, so a hole's default is the scope
++ * The order matters. The slots are read first, so a slot's default is the scope
 + * as the prompt actually reads it. The prompt text is copied next, while the
 + * link to the derived output still exists. Only then is the body made portable,
-+ * each templated prompt's scope replaced by the hole that stands for it, and
-+ * each marked run turned into a hole in the prose — on the copy, which is why
++ * each templated prompt's scope replaced by the slot that stands for it, and
++ * each marked run turned into a slot in the prose — on the copy, which is why
 + * marking a run never changes the resource it was marked in.
 + */
 +/**
-+ * A hole's default, once the template it belongs to has an identity.
++ * A slot's default, once the template it belongs to has an identity.
 + *
 + * The default is whatever the prompt read, and what a prompt reads can name
 + * particular resources — which the templated vocabulary has no term for. Those
-+ * are written as a `resourceSets` row owned by the hole and pointed at by a
++ * are written as a `resourceSets` row owned by the slot and pointed at by a
 + * single `set` term, the same way a default built in the scope builder is. It
 + * has to happen after the template row exists, because the row is owned by it.
 + */
-+export const settledHoleDefaults = (
++export const settledSlotDefaults = (
 +  store: StoreModel,
 +  projectId: string,
 +  actor: Actor,
 +  templateId: string,
-+  holes: readonly TemplateHole[],
++  slots: readonly TemplateSlot[],
 +  at: number
-+): readonly TemplateHole[] =>
-+  holes.map((hole) => {
-+    if (hole.default === undefined || !needsRow(hole.default)) return hole;
++): readonly TemplateSlot[] =>
++  slots.map((slot) => {
++    if (slot.default === undefined || !needsRow(slot.default)) return slot;
 +    const written = normalizeScope(
 +      store,
 +      projectId,
 +      actor,
-+      { kind: "hole", templateId: asId<"templates">(templateId), hole: hole.name },
-+      hole.default,
++      { kind: "slot", templateId: asId<"templates">(templateId), slot: slot.name },
++      slot.default,
 +      at
 +    );
-+    return written === undefined ? hole : { ...hole, default: written.term };
++    return written === undefined ? slot : { ...slot, default: written.term };
 +  });
 +
 +export const templatedBodyOf = <T>(
 +  store: StoreModel,
 +  candidate: T,
-+  known: readonly TemplateHole[]
++  known: readonly TemplateSlot[]
 +): TemplatedBody<T> => {
 +  const definition = definedBy(store, candidate);
 +  const scoped = withScopes(candidate, definition.scopes);
-+  const drafts = promptHolesOf(scoped);
++  const drafts = promptSlotsOf(scoped);
 +  const asked = withPrompts(scoped, definition.prompts);
 +  const portable = portableBodyOf(asked);
 +  let minted = 0;
-+  const body = withMarkedHoles(withPromptHoles(portable.body, drafts), () => {
++  const body = withMarkedSlots(withPromptSlots(portable.body, drafts), () => {
 +    minted += 1;
-+    return `hole-${minted}`;
++    return `slot-${minted}`;
 +  });
-+  const fresh = [...drafts.map((draft) => draft.hole), ...textHolesOf(body)];
-+  return { body, dropped: portable.dropped, holes: mergedPromptHoles(known, fresh) };
++  const fresh = [...drafts.map((draft) => draft.slot), ...textSlotsOf(body)];
++  return { body, dropped: portable.dropped, slots: mergedPromptSlots(known, fresh) };
 +};
 ~~~~
 
@@ -5257,14 +5257,14 @@
 +/**
 + * A chosen rule becomes a term, and a row only when it has to.
 + *
-+ * Four surfaces choose a scope: a hole's default from either editor's panel or
++ * Four surfaces choose a scope: a slot's default from either editor's panel or
 + * from the library inspector, and an answer given while placing a template.
 + * All four send the rule they built and none of them writes anything, because
 + * the normalisation is the same every time and a client-side write would put a
 + * second round trip in front of a save that can then half-fail.
 + *
 + * **A rule that excludes anything, or names particular resources, is stored.**
-+ * Resolving a template substitutes a hole term for what fills it, and a hole
++ * Resolving a template substitutes a slot term for what fills it, and a slot
 + * term may sit on either side of a prompt's scope. One term for one term works
 + * on both sides; one term for a difference does not. So the difference lives
 + * inside a row and what points at it is a single `set` term. Everything else is
@@ -5285,21 +5285,21 @@
 +const sameOwner = (held: unknown, owner: ScopeOwner): boolean => {
 +  if (held === null || typeof held !== "object") return false;
 +  const record = held as Record<string, unknown>;
-+  if (owner.kind === "hole") {
++  if (owner.kind === "slot") {
 +    return (
-+      record.kind === "hole" &&
++      record.kind === "slot" &&
 +      record.templateId === owner.templateId &&
-+      record.hole === owner.hole
++      record.slot === owner.slot
 +    );
 +  }
 +  return (
 +    record.kind === "resource" &&
 +    record.resourceId === owner.resourceId &&
-+    record.hole === owner.hole
++    record.slot === owner.slot
 +  );
 +};
 +
-+/** Every row bound to one resource, whichever hole it answered. */
++/** Every row bound to one resource, whichever slot it answered. */
 +export const rowsOfResource = (
 +  store: StoreModel,
 +  projectId: string,
@@ -5421,7 +5421,7 @@
 +/**
 + * A stored default read back as the rule somebody built.
 + *
-+ * A term naming a bound row is expanded, because that row is this hole's value
++ * A term naming a bound row is expanded, because that row is this slot's value
 + * rather than a set anyone chose. A term naming one of the project's own
 + * sets is left alone, because choosing it was the point.
 + */
@@ -5605,7 +5605,7 @@
      tags: fields.tags,
      body: fields.body,
 -    variables: fields.variables,
-+    holes: fields.holes,
++    slots: fields.slots,
      at
    });
  };
@@ -5618,7 +5618,7 @@
    tags: template.tags,
    body: template.body,
 -  variables: template.variables,
-+  holes: template.holes,
++  slots: template.slots,
    createdBy: template.createdBy,
    revision: template.revision,
    updatedAt: template.updatedAt
@@ -5631,7 +5631,7 @@
  import type {
    TemplateBody,
 -  TemplateVariable
-+  TemplateHole
++  TemplateSlot
  } from "$representation/data/types/templates/template";
 +import type { ResourceSet, SetTerm } from "$representation/data/types/core/resource-set";
  import { normalizeSlideDeckBody } from "$representation/data/behavior/slide-decks/normalize";
@@ -5743,7 +5743,7 @@
      if (
        !isRecord(mark) ||
 -      !hasOnlyKeys(mark, ["id", "from", "to", "style", "link", "color", "background"]) ||
-+      !hasOnlyKeys(mark, ["id", "from", "to", "style", "link", "color", "background", "hole"]) ||
++      !hasOnlyKeys(mark, ["id", "from", "to", "style", "link", "color", "background", "slot"]) ||
        !validIdentifier(mark.id) ||
        from === undefined ||
        to === undefined
@@ -5753,7 +5753,7 @@
        (mark.color === undefined || validText(mark.color, 1_000)) &&
 -      (mark.background === undefined || validText(mark.background, 1_000))
 +      (mark.background === undefined || validText(mark.background, 1_000)) &&
-+      (mark.hole === undefined || validPromptHole(mark.hole))
++      (mark.slot === undefined || validPromptSlot(mark.slot))
      );
    });
 
@@ -5764,10 +5764,10 @@
 +  if (value.kind === "template") {
 +    return (
 +      hasOnlyKeys(value, ["id", "kind", "name", "description", "text"]) &&
-+      validCanonicalText(value.name, MAX_HOLE_NAME_LENGTH) &&
++      validCanonicalText(value.name, MAX_SLOT_NAME_LENGTH) &&
 +      (value.description === undefined ||
 +        (isText(value.description) &&
-+          value.description.length <= MAX_HOLE_DESCRIPTION_LENGTH &&
++          value.description.length <= MAX_SLOT_DESCRIPTION_LENGTH &&
 +          value.description === value.description.trim())) &&
 +      (value.text === undefined || validText(value.text, MAX_BLOCK_TEXT_LENGTH, true))
 +    );
@@ -5788,14 +5788,14 @@
 -    .join("");
 +  atoms.map((atom) => atomDisplayOf(atom) ?? "").join("");
 +
-+/** What a prompt says its hole is called, before the hole itself is declared. */
-+const validPromptHole = (value: unknown): boolean =>
++/** What a prompt says its slot is called, before the slot itself is declared. */
++const validPromptSlot = (value: unknown): boolean =>
 +  isRecord(value) &&
 +  hasOnlyKeys(value, ["name", "description"]) &&
-+  validCanonicalText(value.name, MAX_HOLE_NAME_LENGTH) &&
++  validCanonicalText(value.name, MAX_SLOT_NAME_LENGTH) &&
 +  (value.description === undefined ||
 +    (isText(value.description) &&
-+      value.description.length <= MAX_HOLE_DESCRIPTION_LENGTH &&
++      value.description.length <= MAX_SLOT_DESCRIPTION_LENGTH &&
 +      value.description === value.description.trim()));
 
  const validBlock = (value: unknown, depth = 0): boolean => {
@@ -5810,7 +5810,7 @@
          "marks",
          "scope",
 +        "prompt",
-+        "hole",
++        "slot",
          "state",
          "error",
          "refreshedAt",
@@ -5819,7 +5819,7 @@
        (value.derivedOutputId === undefined || validIdentifier(value.derivedOutputId)) &&
 +      (value.style === undefined || validIdentifier(value.style)) &&
 +      (value.prompt === undefined || validText(value.prompt, MAX_BLOCK_TEXT_LENGTH, true)) &&
-+      (value.hole === undefined || validPromptHole(value.hole)) &&
++      (value.slot === undefined || validPromptSlot(value.slot)) &&
        Array.isArray(value.atoms) &&
        value.atoms.length <= MAX_BLOCKS_PER_CONTAINER &&
        value.atoms.every(validAtom) &&
@@ -5901,35 +5901,35 @@
 +
 +export const answersOf = (value: unknown, subject: string): TemplateAnswers => {
 +  if (!isRecord(value)) {
-+    throw new Error(`templates/${subject}: answers map hole names to resource sets`);
++    throw new Error(`templates/${subject}: answers map slot names to resource sets`);
 +  }
 +  const entries = Object.entries(value);
-+  if (entries.length > MAX_TEMPLATE_HOLES) {
-+    throw new Error(`templates/${subject}: at most ${MAX_TEMPLATE_HOLES} holes are answered`);
++  if (entries.length > MAX_TEMPLATE_SLOTS) {
++    throw new Error(`templates/${subject}: at most ${MAX_TEMPLATE_SLOTS} slots are answered`);
 +  }
 +  const answers: Record<string, ResourceSet> = {};
 +  for (const [name, answer] of entries) {
-+    if (!validCanonicalText(name, MAX_HOLE_NAME_LENGTH)) {
-+      throw new Error(`templates/${subject}: every answered hole has a name`);
++    if (!validCanonicalText(name, MAX_SLOT_NAME_LENGTH)) {
++      throw new Error(`templates/${subject}: every answered slot has a name`);
 +    }
 +    answers[name] = resourceSetOf(answer, subject);
 +  }
 +  return answers;
 +};
 +
-+/** The words a caller filled the template's text holes in with. */
++/** The words a caller filled the template's text slots in with. */
 +export const textsOf = (value: unknown, subject: string): Readonly<Record<string, string>> => {
 +  if (!isRecord(value)) {
-+    throw new Error(`templates/${subject}: texts map hole names to words`);
++    throw new Error(`templates/${subject}: texts map slot names to words`);
 +  }
 +  const entries = Object.entries(value);
-+  if (entries.length > MAX_TEMPLATE_HOLES) {
-+    throw new Error(`templates/${subject}: at most ${MAX_TEMPLATE_HOLES} holes are answered`);
++  if (entries.length > MAX_TEMPLATE_SLOTS) {
++    throw new Error(`templates/${subject}: at most ${MAX_TEMPLATE_SLOTS} slots are answered`);
 +  }
 +  const texts: Record<string, string> = {};
 +  for (const [name, words] of entries) {
-+    if (!validCanonicalText(name, MAX_HOLE_NAME_LENGTH)) {
-+      throw new Error(`templates/${subject}: every answered hole has a name`);
++    if (!validCanonicalText(name, MAX_SLOT_NAME_LENGTH)) {
++      throw new Error(`templates/${subject}: every answered slot has a name`);
 +    }
 +    if (!validText(words, MAX_BLOCK_TEXT_LENGTH, true)) {
 +      throw new Error(`templates/${subject}: a text answer is words`);
@@ -5939,15 +5939,15 @@
 +  return texts;
 +};
 +
-+const MAX_TEMPLATE_HOLES = 100;
++const MAX_TEMPLATE_SLOTS = 100;
  const MAX_TEMPLATE_TERMS_PER_SIDE = 100;
  const MAX_TEMPLATE_KINDS_PER_TERM = 100;
 -const MAX_VARIABLE_NAME_LENGTH = 160;
 -const MAX_VARIABLE_LABEL_LENGTH = 500;
 -const MAX_VARIABLE_DESCRIPTION_LENGTH = 4_000;
-+const MAX_HOLE_NAME_LENGTH = 160;
-+const MAX_HOLE_LABEL_LENGTH = 500;
-+const MAX_HOLE_DESCRIPTION_LENGTH = 4_000;
++const MAX_SLOT_NAME_LENGTH = 160;
++const MAX_SLOT_LABEL_LENGTH = 500;
++const MAX_SLOT_DESCRIPTION_LENGTH = 4_000;
  const MAX_RESOURCE_KIND_LENGTH = 160;
 
  const validTerm = (value: unknown): boolean => {
@@ -5956,12 +5956,12 @@
      return hasOnlyKeys(value, ["select"]) && Object.keys(value).length === 1;
    }
 -  if (value.select === "variable") {
-+  if (value.select === "hole") {
++  if (value.select === "slot") {
      return (
        hasOnlyKeys(value, ["select", "name"]) &&
        Object.keys(value).length === 2 &&
 -      validCanonicalText(value.name, MAX_VARIABLE_NAME_LENGTH)
-+      validCanonicalText(value.name, MAX_HOLE_NAME_LENGTH)
++      validCanonicalText(value.name, MAX_SLOT_NAME_LENGTH)
 +    );
 +  }
 +  if (value.select === "set") {
@@ -6001,90 +6001,90 @@
 +  value.exclude.length <= MAX_TEMPLATE_TERMS_PER_SIDE &&
 +  value.exclude.every((term) => validTerm(term) || validSetTerm(term));
 +
-+export const holesOf = (
++export const slotsOf = (
 +  value: unknown,
 +  subject: string,
 +  chosen = false
-+): readonly TemplateHole[] => {
-+  if (!Array.isArray(value)) throw new Error(`templates/${subject}: holes is a list`);
-+  if (value.length > MAX_TEMPLATE_HOLES) {
-+    throw new Error(`templates/${subject}: a template has at most ${MAX_TEMPLATE_HOLES} holes`);
++): readonly TemplateSlot[] => {
++  if (!Array.isArray(value)) throw new Error(`templates/${subject}: slots is a list`);
++  if (value.length > MAX_TEMPLATE_SLOTS) {
++    throw new Error(`templates/${subject}: a template has at most ${MAX_TEMPLATE_SLOTS} slots`);
    }
    const seen = new Set<string>();
    const declared = new Set<string>();
 -  for (const variable of value) {
-+  for (const hole of value) {
++  for (const slot of value) {
      if (
 -      !isRecord(variable) ||
 -      !hasOnlyKeys(variable, ["name", "label", "description", "default"])
-+      !isRecord(hole) ||
-+      !hasOnlyKeys(hole, ["name", "label", "description", "kind", "default", "text"])
++      !isRecord(slot) ||
++      !hasOnlyKeys(slot, ["name", "label", "description", "kind", "default", "text"])
      ) {
 -      throw new Error(`templates/${subject}: a variable has only represented fields`);
-+      throw new Error(`templates/${subject}: a hole has only represented fields`);
++      throw new Error(`templates/${subject}: a slot has only represented fields`);
 +    }
-+    if (hole.kind !== undefined && hole.kind !== "scope" && hole.kind !== "text") {
-+      throw new Error(`templates/${subject}: a hole is answered with a scope or with text`);
++    if (slot.kind !== undefined && slot.kind !== "scope" && slot.kind !== "text") {
++      throw new Error(`templates/${subject}: a slot is answered with a scope or with text`);
 +    }
-+    if (hole.kind === "text" && hole.default !== undefined) {
-+      throw new Error(`templates/${subject}: a text hole has no default scope`);
++    if (slot.kind === "text" && slot.default !== undefined) {
++      throw new Error(`templates/${subject}: a text slot has no default scope`);
 +    }
-+    if (hole.text !== undefined) {
-+      if (hole.kind !== "text") {
-+        throw new Error(`templates/${subject}: only a text hole has default words`);
++    if (slot.text !== undefined) {
++      if (slot.kind !== "text") {
++        throw new Error(`templates/${subject}: only a text slot has default words`);
 +      }
-+      if (!validText(hole.text, MAX_BLOCK_TEXT_LENGTH, true)) {
-+        throw new Error(`templates/${subject}: a hole's default words are text`);
++      if (!validText(slot.text, MAX_BLOCK_TEXT_LENGTH, true)) {
++        throw new Error(`templates/${subject}: a slot's default words are text`);
 +      }
      }
 -    if (!validCanonicalText(variable.name, MAX_VARIABLE_NAME_LENGTH)) {
 -      throw new Error(`templates/${subject}: every variable has a name`);
-+    if (!validCanonicalText(hole.name, MAX_HOLE_NAME_LENGTH)) {
-+      throw new Error(`templates/${subject}: every hole has a name`);
++    if (!validCanonicalText(slot.name, MAX_SLOT_NAME_LENGTH)) {
++      throw new Error(`templates/${subject}: every slot has a name`);
      }
 -    if (!validCanonicalText(variable.label, MAX_VARIABLE_LABEL_LENGTH)) {
 -      throw new Error(`templates/${subject}: every variable has a label`);
-+    if (!validCanonicalText(hole.label, MAX_HOLE_LABEL_LENGTH)) {
-+      throw new Error(`templates/${subject}: every hole has a label`);
++    if (!validCanonicalText(slot.label, MAX_SLOT_LABEL_LENGTH)) {
++      throw new Error(`templates/${subject}: every slot has a label`);
      }
      if (
 -      variable.description !== undefined &&
 -      (!isText(variable.description) ||
 -        variable.description.length > MAX_VARIABLE_DESCRIPTION_LENGTH ||
 -        variable.description !== variable.description.trim())
-+      hole.description !== undefined &&
-+      (!isText(hole.description) ||
-+        hole.description.length > MAX_HOLE_DESCRIPTION_LENGTH ||
-+        hole.description !== hole.description.trim())
++      slot.description !== undefined &&
++      (!isText(slot.description) ||
++        slot.description.length > MAX_SLOT_DESCRIPTION_LENGTH ||
++        slot.description !== slot.description.trim())
      ) {
 -      throw new Error(`templates/${subject}: a variable description is text`);
-+      throw new Error(`templates/${subject}: a hole description is text`);
++      throw new Error(`templates/${subject}: a slot description is text`);
      }
 -    if (variable.default !== undefined && !validTemplatedSet(variable.default)) {
 -      throw new Error(`templates/${subject}: a variable default is a templated resource set`);
 +    if (
-+      hole.default !== undefined &&
-+      !(chosen ? validChosenSet(hole.default) : validTemplatedSet(hole.default))
++      slot.default !== undefined &&
++      !(chosen ? validChosenSet(slot.default) : validTemplatedSet(slot.default))
 +    ) {
-+      throw new Error(`templates/${subject}: a hole default is a templated resource set`);
++      throw new Error(`templates/${subject}: a slot default is a templated resource set`);
      }
 -    const key = variable.name.toLocaleLowerCase();
 -    if (seen.has(key)) throw new Error(`templates/${subject}: variable names are unique`);
-+    const key = hole.name.toLocaleLowerCase();
-+    if (seen.has(key)) throw new Error(`templates/${subject}: hole names are unique`);
++    const key = slot.name.toLocaleLowerCase();
++    if (seen.has(key)) throw new Error(`templates/${subject}: slot names are unique`);
      seen.add(key);
 -    declared.add(variable.name);
-+    declared.add(hole.name);
++    declared.add(slot.name);
    }
 -  for (const variable of value as Fields[]) {
 -    if (!isRecord(variable.default)) continue;
-+  for (const hole of value as Fields[]) {
-+    if (!isRecord(hole.default)) continue;
++  for (const slot of value as Fields[]) {
++    if (!isRecord(slot.default)) continue;
      const terms = [
 -      ...((variable.default.include as unknown[]) ?? []),
 -      ...((variable.default.exclude as unknown[]) ?? [])
-+      ...((hole.default.include as unknown[]) ?? []),
-+      ...((hole.default.exclude as unknown[]) ?? [])
++      ...((slot.default.include as unknown[]) ?? []),
++      ...((slot.default.exclude as unknown[]) ?? [])
      ];
      for (const term of terms) {
 -      if (
@@ -6093,14 +6093,14 @@
 -        !declared.has(term.name as string)
 -      ) {
 -        throw new Error(`templates/${subject}: a variable default names a declared variable`);
-+      if (isRecord(term) && term.select === "hole" && !declared.has(term.name as string)) {
-+        throw new Error(`templates/${subject}: a hole default names a declared hole`);
++      if (isRecord(term) && term.select === "slot" && !declared.has(term.name as string)) {
++        throw new Error(`templates/${subject}: a slot default names a declared slot`);
        }
      }
    }
    assertStoredValue(value, subject);
 -  return value as readonly TemplateVariable[];
-+  return value as readonly TemplateHole[];
++  return value as readonly TemplateSlot[];
  };
 
  export const has = (fields: Fields, field: string): boolean =>
@@ -6113,7 +6113,7 @@
  import { requireScope } from "$runtime/server/scope.server";
  import { serverModel } from "$runtime/server/start.server";
 +import { asId } from "$representation/data/behavior/core/id";
-+import { scopeHoleNamesIn } from "$representation/data/behavior/templates/scopes";
++import { scopeSlotNamesIn } from "$representation/data/behavior/templates/scopes";
 
  import {
    admitStoredTemplate,
@@ -6155,24 +6155,24 @@
 -    if (!variables.some((candidate) => candidate.name === variable.name)) {
 +  const at = Date.now();
 +  const actor = { kind: "user" as const, userId: asId<"users">(scope.userId) };
-+  let holes = [...(asked.patch.holes ?? template.holes)];
-+  if (asked.patch.holes !== undefined) {
-+    const declared = new Set(holes.map((hole) => hole.name));
-+    const orphaned = scopeHoleNamesIn(template.body).filter((name) => !declared.has(name));
++  let slots = [...(asked.patch.slots ?? template.slots)];
++  if (asked.patch.slots !== undefined) {
++    const declared = new Set(slots.map((slot) => slot.name));
++    const orphaned = scopeSlotNamesIn(template.body).filter((name) => !declared.has(name));
 +    if (orphaned.length > 0) {
 +      return {
 +        accepted: false,
 +        templateId: asked.templateId,
-+        reason: "hole-in-use",
++        reason: "slot-in-use",
 +        revision: template.revision,
 +        detail: `the body still names ${orphaned.join(", ")}`
 +      };
 +    }
-+    for (const hole of holes) {
++    for (const slot of slots) {
 +      const missing = unknownSetsIn(
 +        store,
 +        scope.projectId,
-+        hole.default ?? { include: [], exclude: [] }
++        slot.default ?? { include: [], exclude: [] }
 +      );
 +      if (missing.length > 0) {
 +        return {
@@ -6184,43 +6184,43 @@
 +        };
 +      }
 +    }
-+    for (const held of template.holes) {
-+      if (holes.some((hole) => hole.name === held.name)) continue;
++    for (const held of template.slots) {
++      if (slots.some((slot) => slot.name === held.name)) continue;
 +      removeRowsBoundTo(store, scope.projectId, {
-+        kind: "hole",
++        kind: "slot",
 +        templateId: template._id,
-+        hole: held.name
++        slot: held.name
 +      });
 +    }
-+    holes = holes.map((hole) => {
++    slots = slots.map((slot) => {
 +      const written = normalizeScope(
 +        store,
 +        scope.projectId,
 +        actor,
-+        { kind: "hole", templateId: template._id, hole: hole.name },
-+        hole.default,
++        { kind: "slot", templateId: template._id, slot: slot.name },
++        slot.default,
 +        at
 +      );
 +      return {
-+        name: hole.name,
-+        label: hole.label,
-+        ...(hole.description === undefined ? {} : { description: hole.description }),
-+        ...(hole.kind === undefined ? {} : { kind: hole.kind }),
-+        ...(hole.text === undefined ? {} : { text: hole.text }),
++        name: slot.name,
++        label: slot.label,
++        ...(slot.description === undefined ? {} : { description: slot.description }),
++        ...(slot.kind === undefined ? {} : { kind: slot.kind }),
++        ...(slot.text === undefined ? {} : { text: slot.text }),
 +        ...(written === undefined ? {} : { default: written.term })
 +      };
 +    });
 +  }
-+  if (asked.patch.holeDescription !== undefined) {
-+    const asking = asked.patch.holeDescription;
-+    if (!holes.some((candidate) => candidate.name === asking.name)) {
++  if (asked.patch.slotDescription !== undefined) {
++    const asking = asked.patch.slotDescription;
++    if (!slots.some((candidate) => candidate.name === asking.name)) {
        return {
          accepted: false,
          templateId: asked.templateId,
          reason: "unsupported-body",
          revision: template.revision,
 -        detail: `the template no longer declares variable ${variable.name}`
-+        detail: `the template no longer declares hole ${asking.name}`
++        detail: `the template no longer declares slot ${asking.name}`
        };
      }
 -    variables = variables.map((candidate) =>
@@ -6233,7 +6233,7 @@
 -            ...(candidate.default === undefined ? {} : { default: candidate.default })
 -          }
 -    );
-+    holes = holes.map((candidate) => {
++    slots = slots.map((candidate) => {
 +      if (candidate.name !== asking.name) return candidate;
 +      const { description: _description, ...rest } = candidate;
 +      return asking.description === null ? rest : { ...rest, description: asking.description };
@@ -6248,7 +6248,7 @@
      tags: [...(asked.patch.tags ?? template.tags)],
      body: template.body,
 -    variables,
-+    holes,
++    slots,
      createdBy: template.createdBy,
      revision: template.revision + 1,
      updatedAt: at
@@ -6271,7 +6271,7 @@
    only,
    revisionOf,
    tagsOf,
-+  holesOf,
++  slotsOf,
    templateIdOf
  } from "$capabilities/templates/api/shared/validation";
  import type {
@@ -6280,20 +6280,20 @@
    only(fields, ["templateId", "baseRevision", "patch"], "update-template");
    const incoming = fieldsOf(fields.patch, "update-template");
 -  only(incoming, ["name", "description", "tags", "variableDescription"], "update-template");
-+  only(incoming, ["name", "description", "tags", "holeDescription", "holes"], "update-template");
++  only(incoming, ["name", "description", "tags", "slotDescription", "slots"], "update-template");
    if (Object.keys(incoming).length === 0) {
      throw new Error("templates/update-template: patch changes at least one field");
    }
 
 -  const variableDescription = has(incoming, "variableDescription")
 -    ? fieldsOf(incoming.variableDescription, "update-template")
-+  const holeDescription = has(incoming, "holeDescription")
-+    ? fieldsOf(incoming.holeDescription, "update-template")
++  const slotDescription = has(incoming, "slotDescription")
++    ? fieldsOf(incoming.slotDescription, "update-template")
      : undefined;
 -  if (variableDescription !== undefined) {
 -    only(variableDescription, ["name", "description"], "update-template");
-+  if (holeDescription !== undefined) {
-+    only(holeDescription, ["name", "description"], "update-template");
++  if (slotDescription !== undefined) {
++    only(slotDescription, ["name", "description"], "update-template");
    }
 
    const patch: UpdateTemplatePatch = {
@@ -6302,22 +6302,22 @@
        : {}),
      ...(has(incoming, "tags") ? { tags: tagsOf(incoming.tags, "update-template") } : {}),
 -    ...(variableDescription === undefined
-+    ...(has(incoming, "holes")
-+      ? { holes: holesOf(incoming.holes, "update-template", true) }
++    ...(has(incoming, "slots")
++      ? { slots: slotsOf(incoming.slots, "update-template", true) }
 +      : {}),
-+    ...(holeDescription === undefined
++    ...(slotDescription === undefined
        ? {}
        : {
 -          variableDescription: {
 -            name: nameOf(variableDescription.name, "update-template"),
-+          holeDescription: {
-+            name: nameOf(holeDescription.name, "update-template"),
++          slotDescription: {
++            name: nameOf(slotDescription.name, "update-template"),
              description:
 -              variableDescription.description === null
-+              holeDescription.description === null
++              slotDescription.description === null
                  ? null
 -                : descriptionOf(variableDescription.description, "update-template")
-+                : descriptionOf(holeDescription.description, "update-template")
++                : descriptionOf(slotDescription.description, "update-template")
            }
          })
    };
@@ -6491,14 +6491,14 @@
 -in the scoped project whose `templateId` names the template. Later edits to that
 -resource do not make the template appear newly used.
 +| `readTemplateLibrary` | Every valid template in the scoped project, projected as library metadata with creator name, permissions and last use, plus quarantined invalid row notices |
-+| `readTemplate` | The full body and holes for one valid template in the project, `unavailable` for a corrupt row, or `null` |
++| `readTemplate` | The full body and slots for one valid template in the project, `unavailable` for a corrupt row, or `null` |
 +| `readResourceTemplate` | For one document or deck: the stage it is, if any |
 +| `createTemplate` | A template in the scoped project with a server-built valid empty body and revision-one history |
 +| `createTemplateFromResource` | A template from a live document, a live deck, or one slide of a deck as a one-slide deck, its body made portable first; says what could not travel |
-+| `updateTemplate` | A compare-and-swap name, description, tag, hole-help or hole-list update plus an immutable version snapshot |
++| `updateTemplate` | A compare-and-swap name, description, tag, slot-help or slot-list update plus an immutable version snapshot |
 +| `duplicateTemplate` | A template in the project copied into a new one at revision one |
 +| `removeTemplate` | A compare-and-swap delete after the stage and all version rows are removed |
-+| `instantiateTemplate` | A regular document, deck, or spreadsheet with a revision-zero leader snapshot and no reference back to the template, its prompt scopes filled from the caller's answers, else each hole's default |
++| `instantiateTemplate` | A regular document, deck, or spreadsheet with a revision-zero leader snapshot and no reference back to the template, its prompt scopes filled from the caller's answers, else each slot's default |
 +| `openTemplateStage` | The template's stage, made if absent: a scratch document or deck holding the template body, and the row that says so |
 +| `commitTemplateStage` | The stage resource's leader body, made portable and validated, written as the template's next revision |
 +| `discardTemplateStage` | The stage row and its scratch resource removed, with the resource's snapshots, change sets and comments |
@@ -6530,54 +6530,54 @@
 +output ids, links to people and resources, images stored in the project, and
 +scope terms naming project resources are dropped, and each is said back to the
 +caller. A template turns a value into a function, so this holds inside one
-+project as much as across two: a prompt's scope is what the holes fill, and
++project as much as across two: a prompt's scope is what the slots fill, and
 +a formula keeps its expression and loses its instance, its project-neutral
 +form, drawn as unbound in the editor until a formula is made for it again. The
 +body is then admitted exactly as a stored one would be, so a template can never
 +hold what a template may not.
 +
-+## Holes
++## Slots
 +
-+A hole is a place the body leaves for whoever places the template. A scope hole
++A slot is a place the body leaves for whoever places the template. A scope slot
 +exists because the body names it: saving a stage or making a template from a
 +resource declares every name the prompts ask for, so that list is found rather
-+than authored. A text hole is authored, because nothing but the writer knows
++than authored. A text slot is authored, because nothing but the writer knows
 +where in the prose it belongs — the panel declares it and drops its atom at the
 +caret in one act, and the next save finds it like any other.
 +
-+**A body asks in two ways, so a hole is answered in two ways.** A prompt's scope
++**A body asks in two ways, so a slot is answered in two ways.** A prompt's scope
 +naming one makes it a `scope`: a group of resources, which always has an answer
 +because the whole project is the floor. A template atom in the prose makes it a
-+`text`: words, filled from the caller, else the hole's own `text`, else nothing.
++`text`: words, filled from the caller, else the slot's own `text`, else nothing.
 +That last case is the only thing that can hold a placement up, and
 +`instantiateTemplate` refuses it with the names of what is still empty. A name
 +used both ways is a scope, because otherwise the template could never be placed.
 +
-+A hole's `default` is what it selects when the caller says nothing: the whole
-+project, kinds, one of the project's named sets, or another hole. A hole
++A slot's `default` is what it selects when the caller says nothing: the whole
++project, kinds, one of the project's named sets, or another slot. A slot
 +declared without one means the whole project. Instantiation fills every prompt
 +scope from the caller's answers, else the default; an answer is a resource set,
 +and a named set it points at is checked to exist before anything is written. A
-+body naming a hole the template does not declare is refused rather than guessed
++body naming a slot the template does not declare is refused rather than guessed
 +at.
 +
 +**A rule that cannot be said inline is stored, and what points at it is one
 +term.** Both a default and an answer arrive as whatever somebody built, which
 +may exclude things and may name particular resources — neither of which the
 +templated vocabulary holds. `normalizeScope` writes those as a `resourceSets`
-+row bound to the hole that owns them, and the default or answer becomes a single
++row bound to the slot that owns them, and the default or answer becomes a single
 +`set` term naming it. That is not bookkeeping: resolving a template substitutes
-+a hole term for what fills it, on either side of a prompt's scope, and one term
++a slot term for what fills it, on either side of a prompt's scope, and one term
 +for a difference cannot be expressed on the excluding side. A rule that is only
 +the project, kinds or named sets is kept inline and writes nothing. Reading a
 +template back expands a bound default into the rule it holds, so a builder opens
 +on what was built; a named set is left as the named set somebody chose. The rows
-+go when their owner does: a template removed, a hole dropped, a working copy
++go when their owner does: a template removed, a slot dropped, a working copy
 +discarded.
 +
-+`updateTemplate` still takes a whole hole list, because that is how a
-+description, a default or a new text hole is written, and it refuses with
-+`hole-in-use` while the body still names a scope hole the list drops.
++`updateTemplate` still takes a whole slot list, because that is how a
++description, a default or a new text slot is written, and it refuses with
++`slot-in-use` while the body still names a scope slot the list drops.
 +
 +## Stages
 +
@@ -6588,7 +6588,7 @@
 +template are editing one copy through the editor's own collaboration. Saving
 +reads the scratch leader body, makes it portable, validates it, and writes it as
 +the template's next revision; the stage stays open until it is discarded, so
-+saving twice is ordinary. A name, tag or hole edit never touches the body,
++saving twice is ordinary. A name, tag or slot edit never touches the body,
 +so it carries the stage to the new revision. The stage is the only thing that
 +writes a template's body, so a copy and its template cannot drift apart; the
 +compare-and-swap on save refuses only a second session's save that landed
@@ -6628,7 +6628,7 @@
 -There is deliberately no ad-hoc variable-values input. The representation
 -defines portable defaults, so instantiation substitutes those defaults into
 -prompt scopes (including nested defaults) and can open the seeded templates
--without inventing another data shape. An unbound or cyclic variable hole returns
+-without inventing another data shape. An unbound or cyclic variable slot returns
 -`variables-required` and writes nothing. Caller-supplied overrides wait for the
 -representation to define the command payload that records a person's answers.
 -Formula evaluation and derived-output creation are downstream editor/runtime
@@ -6724,7 +6724,7 @@
 +  atoms: [{ id: `${id}-a`, kind: "literal", text: "Sum up" }],
 +  display: "Sum up",
 +  marks: [],
-+  scope: { include: [{ select: "hole", name }], exclude: [] },
++  scope: { include: [{ select: "slot", name }], exclude: [] },
 +  state: "idle"
 +});
 +
@@ -6757,7 +6757,7 @@
 +        name: "Brief",
 +        tags: [],
 +        body,
-+        holes: [{ name: "evidence", label: "Evidence", default: { include: [{ select: "kinds", kinds: ["finding"] }], exclude: [] } }],
++        slots: [{ name: "evidence", label: "Evidence", default: { include: [{ select: "kinds", kinds: ["finding"] }], exclude: [] } }],
 +        createdBy: { kind: "user", userId: "u" },
 +        revision: 1,
 +        updatedAt: 20
@@ -6795,7 +6795,7 @@
 +  });
 +
 +  test("a default may name one of the project's sets", async () => {
-+    model.tables.templates[0].holes = [
++    model.tables.templates[0].slots = [
 +      {
 +        name: "evidence",
 +        label: "Evidence",
@@ -6869,7 +6869,7 @@
 +          ],
 +          sections: []
 +        },
-+        holes: [],
++        slots: [],
 +        createdBy: { kind: "user", userId: "u" },
 +        revision: 1,
 +        updatedAt: 20
@@ -6884,8 +6884,8 @@
 +    assert.equal(outputs[0].prompt, "What shipped this winter?");
 +  });
 +
-+  test("a hole without a default means the whole project", async () => {
-+    model.tables.templates[0].holes = [{ name: "evidence", label: "Evidence" }];
++  test("a slot without a default means the whole project", async () => {
++    model.tables.templates[0].slots = [{ name: "evidence", label: "Evidence" }];
 +    const made = await instantiateTemplate({ templateId: "templates:1" });
 +    assert.ok(made.accepted);
 +    assert.deepEqual(scopeOf(model.tables.documentSnapshots[0]), {
@@ -6894,7 +6894,7 @@
 +    });
 +  });
 +
-+  test("refuses an answer naming a set the project does not hold, and a body naming an undeclared hole", async () => {
++  test("refuses an answer naming a set the project does not hold, and a body naming an undeclared slot", async () => {
 +    const unknownSet = await instantiateTemplate({
 +      templateId: "templates:1",
 +      answers: { evidence: { include: [{ select: "set", setId: "resourceSets:9" }], exclude: [] } }
@@ -6902,14 +6902,14 @@
 +    assert.equal(unknownSet.accepted, false);
 +    assert.match(unknownSet.accepted === false ? unknownSet.detail : "", /resourceSets:9/);
 +
-+    model.tables.templates[0].holes = [];
++    model.tables.templates[0].slots = [];
 +    const undeclared = await instantiateTemplate({ templateId: "templates:1" });
 +    assert.deepEqual(undeclared, {
 +      accepted: false,
 +      templateId: "templates:1",
 +      reason: "unsupported-body",
 +      revision: 1,
-+      detail: "the body names a hole the template does not declare: evidence"
++      detail: "the body names a slot the template does not declare: evidence"
 +    });
 +    assert.deepEqual(model.tables.documents, []);
 +    await assert.rejects(
@@ -6919,13 +6919,13 @@
 +  });
 +});
 +
-+describe("replacing the hole list", () => {
-+  test("keeps a hole the body names and accepts a list that declares it", async () => {
-+    const dropped = await updateTemplate({ templateId: "templates:1", baseRevision: 1, patch: { holes: [] } });
++describe("replacing the slot list", () => {
++  test("keeps a slot the body names and accepts a list that declares it", async () => {
++    const dropped = await updateTemplate({ templateId: "templates:1", baseRevision: 1, patch: { slots: [] } });
 +    assert.deepEqual(dropped, {
 +      accepted: false,
 +      templateId: "templates:1",
-+      reason: "hole-in-use",
++      reason: "slot-in-use",
 +      revision: 1,
 +      detail: "the body still names evidence"
 +    });
@@ -6934,7 +6934,7 @@
 +      templateId: "templates:1",
 +      baseRevision: 1,
 +      patch: {
-+        holes: [
++        slots: [
 +          { name: "evidence", label: "Evidence", description: "What happened" },
 +          { name: "models", label: "Models", default: { include: [{ select: "project" }], exclude: [] } }
 +        ]
@@ -6942,7 +6942,7 @@
 +    });
 +    assert.deepEqual(kept, { accepted: true, templateId: "templates:1", revision: 2 });
 +    assert.deepEqual(
-+      (model.tables.templates[0].holes as { name: string }[]).map((hole) => hole.name),
++      (model.tables.templates[0].slots as { name: string }[]).map((slot) => slot.name),
 +      ["evidence", "models"]
 +    );
 +  });
@@ -7002,7 +7002,7 @@
 +    const held = model.tables.templates[1];
 +    assert.equal(held.name, "Winter brief shell");
 +    assert.deepEqual(held.tags, ["Winter"]);
-+    assert.deepEqual(held.holes, [{ name: "evidence", label: "evidence" }]);
++    assert.deepEqual(held.slots, [{ name: "evidence", label: "evidence" }]);
 +    const kept = (held.body as { rows: { blocks: { marks: { link: unknown }[] }[] }[] }).rows[0]
 +      .blocks[1].marks[0].link;
 +    assert.deepEqual(kept, { kind: "url", url: "https://example.com/plan", note: "Scope" });
@@ -7011,13 +7011,13 @@
 +  });
 +
 +  /**
-+   * Marking a run says where a hole goes. It does not put one there.
++   * Marking a run says where a slot goes. It does not put one there.
 +   *
-+   * The template gets the hole and the resource keeps its words, its
++   * The template gets the slot and the resource keeps its words, its
 +   * formatting and its display exactly as they were, which is the whole reason
-+   * a hole over text is a mark rather than an edit.
++   * a slot over text is a mark rather than an edit.
 +   */
-+  test("turns a marked run into a hole on the template and leaves the document alone", async () => {
++  test("turns a marked run into a slot on the template and leaves the document alone", async () => {
 +    const live = {
 +      rows: [
 +        {
@@ -7035,7 +7035,7 @@
 +                  id: "m1",
 +                  from: { atom: "t1-a", offset: 5 },
 +                  to: { atom: "t1-a", offset: 14 },
-+                  hole: { name: "client", description: "Who it is for" }
++                  slot: { name: "client", description: "Who it is for" }
 +                },
 +                { id: "m2", from: { atom: "t1-a", offset: 22 }, to: { atom: "t1-a", offset: 28 }, style: ["bold"] },
 +                { id: "m3", from: { atom: "t1-a", offset: 0 }, to: { atom: "t1-a", offset: 9 }, style: ["italic"] }
@@ -7066,7 +7066,7 @@
 +    assert.equal(made.accepted, true);
 +
 +    const held = model.tables.templates[1];
-+    assert.deepEqual(held.holes, [
++    assert.deepEqual(held.slots, [
 +      { name: "client", label: "client", kind: "text", description: "Who it is for", text: "Northwind" }
 +    ]);
 +    const block = (held.body as { rows: { blocks: Record<string, unknown>[] }[] }).rows[0].blocks[0];
@@ -7078,13 +7078,13 @@
 +  });
 +
 +  /**
-+   * A hole is made, never found.
++   * A slot is made, never found.
 +   *
 +   * A prompt nobody templateified keeps the scope it reads and produces no
-+   * hole, so placing the template asks nothing about it. That is what keeps
++   * slot, so placing the template asks nothing about it. That is what keeps
 +   * the questions to the ones somebody meant to ask.
 +   */
-+  test("gives no hole to a prompt nobody templateified", async () => {
++  test("gives no slot to a prompt nobody templateified", async () => {
 +    model.tables.documents.push(row("documents", "1", { projectId: "p", title: "Winter brief" }));
 +    model.tables.documentSnapshots.push(
 +      row("documentSnapshots", "1", {
@@ -7121,7 +7121,7 @@
 +    });
 +    assert.ok(made.accepted);
 +    const held = model.tables.templates[1];
-+    assert.deepEqual(held.holes, []);
++    assert.deepEqual(held.slots, []);
 +    assert.deepEqual(scopeOf(held), { include: [{ select: "project" }], exclude: [] });
 +  });
 +
@@ -7161,7 +7161,7 @@
 +                  marks: [],
 +                  derivedOutputId: "derivedOutputs:3",
 +                  scope: { include: [{ select: "kinds", kinds: ["research"] }], exclude: [] },
-+                  hole: { name: "winter" },
++                  slot: { name: "winter" },
 +                  state: "idle"
 +                }
 +              ]
@@ -7178,17 +7178,17 @@
 +    });
 +    assert.ok(made.accepted);
 +    const held = model.tables.templates[1];
-+    assert.deepEqual(held.holes, [
++    assert.deepEqual(held.slots, [
 +      {
 +        name: "winter",
 +        label: "winter",
 +        default: { include: [{ select: "set", setId: "resourceSets:1" }], exclude: [] }
 +      }
 +    ]);
-+    assert.deepEqual(scopeOf(held), { include: [{ select: "hole", name: "winter" }], exclude: [] });
++    assert.deepEqual(scopeOf(held), { include: [{ select: "slot", name: "winter" }], exclude: [] });
 +  });
 +
-+  test("keeps whatever the templateified prompt reads as its hole's default", async () => {
++  test("keeps whatever the templateified prompt reads as its slot's default", async () => {
 +    model.tables.documents.push(row("documents", "1", { projectId: "p", title: "Winter brief" }));
 +    model.tables.documentSnapshots.push(
 +      row("documentSnapshots", "1", {
@@ -7208,7 +7208,7 @@
 +                  atoms: [{ id: "p1-a", kind: "literal", text: "Sum up" }],
 +                  display: "Sum up",
 +                  marks: [],
-+                  hole: { name: "evidence", description: "What happened" },
++                  slot: { name: "evidence", description: "What happened" },
 +                  scope: { include: [{ select: "set", setId: "resourceSets:1" }], exclude: [] },
 +                  state: "idle"
 +                }
@@ -7226,7 +7226,7 @@
 +    });
 +    assert.ok(made.accepted);
 +    const held = model.tables.templates[1];
-+    assert.deepEqual(held.holes, [
++    assert.deepEqual(held.slots, [
 +      {
 +        name: "evidence",
 +        label: "evidence",
@@ -7234,7 +7234,7 @@
 +        default: { include: [{ select: "set", setId: "resourceSets:1" }], exclude: [] }
 +      }
 +    ]);
-+    assert.deepEqual(scopeOf(held), { include: [{ select: "hole", name: "evidence" }], exclude: [] });
++    assert.deepEqual(scopeOf(held), { include: [{ select: "slot", name: "evidence" }], exclude: [] });
 +  });
 +
 +  test("makes a deck template from the whole deck or from one of its slides", async () => {
@@ -7303,24 +7303,24 @@
 +    exclude: [{ select: "kinds", kinds: ["slides"] }]
 +  };
 +
-+  test("a default that excludes something is stored, and the hole holds one term", async () => {
++  test("a default that excludes something is stored, and the slot holds one term", async () => {
 +    const result = await updateTemplate({
 +      templateId: "templates:1",
 +      baseRevision: 1,
-+      patch: { holes: [{ name: "evidence", label: "Evidence", default: excluding }] }
++      patch: { slots: [{ name: "evidence", label: "Evidence", default: excluding }] }
 +    });
 +    assert.ok(result.accepted);
 +
 +    const bound = model.tables.resourceSets.filter((set) => set.boundTo !== undefined);
 +    assert.equal(bound.length, 1);
 +    assert.deepEqual(bound[0].boundTo, {
-+      kind: "hole",
++      kind: "slot",
 +      templateId: "templates:1",
-+      hole: "evidence"
++      slot: "evidence"
 +    });
 +    assert.equal(bound[0].name, undefined);
 +    assert.deepEqual(bound[0].set, excluding);
-+    assert.deepEqual(model.tables.templates[0].holes, [
++    assert.deepEqual(model.tables.templates[0].slots, [
 +      {
 +        name: "evidence",
 +        label: "Evidence",
@@ -7333,13 +7333,13 @@
 +    await updateTemplate({
 +      templateId: "templates:1",
 +      baseRevision: 1,
-+      patch: { holes: [{ name: "evidence", label: "Evidence", default: excluding }] }
++      patch: { slots: [{ name: "evidence", label: "Evidence", default: excluding }] }
 +    });
 +    const result = await updateTemplate({
 +      templateId: "templates:1",
 +      baseRevision: 2,
 +      patch: {
-+        holes: [
++        slots: [
 +          {
 +            name: "evidence",
 +            label: "Evidence",
@@ -7352,18 +7352,18 @@
 +    assert.equal(model.tables.resourceSets.filter((set) => set.boundTo !== undefined).length, 0);
 +  });
 +
-+  test("the same hole rewrites its own row rather than piling them up", async () => {
++  test("the same slot rewrites its own row rather than piling them up", async () => {
 +    await updateTemplate({
 +      templateId: "templates:1",
 +      baseRevision: 1,
-+      patch: { holes: [{ name: "evidence", label: "Evidence", default: excluding }] }
++      patch: { slots: [{ name: "evidence", label: "Evidence", default: excluding }] }
 +    });
 +    const first = model.tables.resourceSets.find((set) => set.boundTo !== undefined);
 +    await updateTemplate({
 +      templateId: "templates:1",
 +      baseRevision: 2,
 +      patch: {
-+        holes: [
++        slots: [
 +          {
 +            name: "evidence",
 +            label: "Evidence",
@@ -7386,7 +7386,7 @@
 +      templateId: "templates:1",
 +      baseRevision: 1,
 +      patch: {
-+        holes: [
++        slots: [
 +          {
 +            name: "evidence",
 +            label: "Evidence",
@@ -7417,7 +7417,7 @@
 +    assert.deepEqual(bound[0].boundTo, {
 +      kind: "resource",
 +      resourceId: placed.resourceId,
-+      hole: "evidence"
++      slot: "evidence"
 +    });
 +    assert.deepEqual(scopeOf(model.tables.documentSnapshots[0]), {
 +      include: [{ select: "set", setId: bound[0]._id }],
@@ -7440,7 +7440,7 @@
 +      templateId: "templates:1",
 +      baseRevision: 1,
 +      patch: {
-+        holes: [
++        slots: [
 +          {
 +            name: "evidence",
 +            label: "Evidence",
@@ -7574,7 +7574,7 @@
 +    name: `Template ${id}`,
 +    tags: [],
 +    body,
-+    holes: [],
++    slots: [],
 +    createdBy: { kind: "user", userId: "u" },
 +    revision: 2,
 +    updatedAt: 20,
@@ -7686,7 +7686,7 @@
 +    assert.equal(model.tables.templates[0].revision, 3);
 +  });
 +
-+  test("a name or hole edit carries every stage of the template to the new revision", async () => {
++  test("a name or slot edit carries every stage of the template to the new revision", async () => {
 +    await openTemplateStage({ templateId: "templates:1" });
 +    const renamed = await updateTemplate({
 +      templateId: "templates:1",
@@ -7771,7 +7771,7 @@
 +              atoms: [{ id: "p1-a", kind: "literal", text: "Sum up" }],
 +              display: "Sum up",
 +              marks: [],
-+              scope: { include: [{ select: "hole", name: "evidence" }], exclude: [] },
++              scope: { include: [{ select: "slot", name: "evidence" }], exclude: [] },
 +              state: "idle"
 +            }
 +          ]
@@ -7790,7 +7790,7 @@
 +    const held = model.tables.templates[0];
 +    assert.equal(held.revision, 3);
 +    assert.deepEqual((held.body as { rows: unknown[] }).rows.length, 1);
-+    assert.deepEqual(held.holes, [{ name: "evidence", label: "evidence" }]);
++    assert.deepEqual(held.slots, [{ name: "evidence", label: "evidence" }]);
 +    assert.equal(model.tables.templateVersions.length, 1);
 +    assert.equal(model.tables.templateStages[0].templateRevision, 3);
 +
@@ -7927,7 +7927,7 @@
    "$capabilities/templates/api/update-template/update-template"
  );
 -const { bodyOf, variablesOf } = await import(
-+const { bodyOf, holesOf } = await import(
++const { bodyOf, slotsOf } = await import(
    "$capabilities/templates/api/shared/validation"
  );
 
@@ -7941,7 +7941,7 @@
      tags: ["Useful"],
      body,
 -    variables: [],
-+    holes: [],
++    slots: [],
      createdBy: { kind: "user", userId: owner },
      revision: 2,
      updatedAt: 20,
@@ -8044,11 +8044,11 @@
    });
 
 -  test("updates variable prose without exposing its stable key or default to editing", async () => {
-+  test("updates hole prose without exposing its stable key or default to editing", async () => {
++  test("updates slot prose without exposing its stable key or default to editing", async () => {
      model.tables.templates.push(
        template("1", "u", documentBody, {
 -        variables: [
-+        holes: [
++        slots: [
            {
              name: "evidence",
              label: "Evidence",
@@ -8057,13 +8057,13 @@
        baseRevision: 2,
        patch: {
 -        variableDescription: { name: "evidence", description: "  Choose the evidence set.  " }
-+        holeDescription: { name: "evidence", description: "  Choose the evidence set.  " }
++        slotDescription: { name: "evidence", description: "  Choose the evidence set.  " }
        }
      });
 
      assert.deepEqual(answer, { accepted: true, templateId: "templates:1", revision: 3 });
 -    assert.deepEqual(model.tables.templates[0].variables, [
-+    assert.deepEqual(model.tables.templates[0].holes, [
++    assert.deepEqual(model.tables.templates[0].slots, [
        {
          name: "evidence",
          label: "Evidence",
@@ -8076,7 +8076,7 @@
      assert.deepEqual(copy?.createdBy, { kind: "user", userId: "u" });
      assert.notEqual(copy?.body, model.tables.templates[0].body);
 -    assert.notEqual(copy?.variables, model.tables.templates[0].variables);
-+    assert.notEqual(copy?.holes, model.tables.templates[0].holes);
++    assert.notEqual(copy?.slots, model.tables.templates[0].slots);
      assert.equal(model.tables.templateVersions.length, 1);
    });
 
@@ -8195,7 +8195,7 @@
    });
 
 -  test("does not invent a variable-answer contract", async () => {
-+  test("does not invent a hole-answer contract", async () => {
++  test("does not invent a slot-answer contract", async () => {
      model.tables.templates.push(
        template(
          "1",
@@ -8204,7 +8204,7 @@
                    marks: [],
                    scope: {
 -                    include: [{ select: "variable", name: "region" }],
-+                    include: [{ select: "hole", name: "region" }],
++                    include: [{ select: "slot", name: "region" }],
                      exclude: []
                    },
                    state: "idle"
@@ -8213,7 +8213,7 @@
            ]
          },
 -        { variables: [{ name: "region", label: "Region" }] }
-+        { holes: [{ name: "region", label: "Region" }] }
++        { slots: [{ name: "region", label: "Region" }] }
        )
      );
 
@@ -8243,7 +8243,7 @@
                    marks: [],
                    scope: {
 -                    include: [{ select: "variable", name: "evidence" }],
-+                    include: [{ select: "hole", name: "evidence" }],
++                    include: [{ select: "slot", name: "evidence" }],
                      exclude: []
                    },
                    state: "idle"
@@ -8252,7 +8252,7 @@
                    marks: [],
                    scope: {
 -                    include: [{ select: "variable", name: "evidence" }],
-+                    include: [{ select: "hole", name: "evidence" }],
++                    include: [{ select: "slot", name: "evidence" }],
                      exclude: []
                    },
                    state: "idle"
@@ -8261,7 +8261,7 @@
          },
          {
 -          variables: [
-+          holes: [
++          slots: [
              {
                name: "evidence",
                label: "Evidence",
@@ -8270,7 +8270,7 @@
 
    test("bounds recursively expanding represented defaults before writing", async () => {
 -    const variables = Array.from({ length: 16 }, (_, index) => ({
-+    const holes = Array.from({ length: 16 }, (_, index) => ({
++    const slots = Array.from({ length: 16 }, (_, index) => ({
        name: `branch-${index}`,
        label: `Branch ${index}`,
        default:
@@ -8280,8 +8280,8 @@
                include: [
 -                { select: "variable" as const, name: `branch-${index + 1}` },
 -                { select: "variable" as const, name: `branch-${index + 1}` }
-+                { select: "hole" as const, name: `branch-${index + 1}` },
-+                { select: "hole" as const, name: `branch-${index + 1}` }
++                { select: "slot" as const, name: `branch-${index + 1}` },
++                { select: "slot" as const, name: `branch-${index + 1}` }
                ],
                exclude: []
              }
@@ -8290,7 +8290,7 @@
                    marks: [],
                    scope: {
 -                    include: [{ select: "variable", name: "branch-0" }],
-+                    include: [{ select: "hole", name: "branch-0" }],
++                    include: [{ select: "slot", name: "branch-0" }],
                      exclude: []
                    },
                    state: "idle"
@@ -8299,7 +8299,7 @@
            ]
          },
 -        { variables }
-+        { holes }
++        { slots }
        )
      );
 
@@ -8308,7 +8308,7 @@
    });
 
 -  test("refuses a variable-set difference rather than broadening its scope", async () => {
-+  test("refuses a hole-set difference rather than broadening its scope", async () => {
++  test("refuses a slot-set difference rather than broadening its scope", async () => {
      model.tables.templates.push(
        template(
          "1",
@@ -8317,7 +8317,7 @@
                    scope: {
                      include: [{ select: "kinds", kinds: ["document"] }],
 -                    exclude: [{ select: "variable", name: "other-material" }]
-+                    exclude: [{ select: "hole", name: "other-material" }]
++                    exclude: [{ select: "slot", name: "other-material" }]
                    },
                    state: "idle"
                  }
@@ -8326,7 +8326,7 @@
          },
          {
 -          variables: [
-+          holes: [
++          slots: [
              {
                name: "other-material",
                label: "Other material",
@@ -8335,7 +8335,7 @@
    });
 
 -  test("accepts only canonical represented variables and bounded templated defaults", () => {
-+  test("accepts only canonical represented holes and bounded templated defaults", () => {
++  test("accepts only canonical represented slots and bounded templated defaults", () => {
      const valid = [
        {
          name: "region",
@@ -8351,7 +8351,7 @@
        }
      ];
 -    assert.equal(variablesOf(valid, "test").length, 1);
-+    assert.equal(holesOf(valid, "test").length, 2);
++    assert.equal(slotsOf(valid, "test").length, 2);
 
      const invalid = [
        [{ ...valid[0], invented: true }],
@@ -8360,7 +8360,7 @@
            ...valid[0],
            default: {
 -            include: [{ select: "variable", name: "Region" }],
-+            include: [{ select: "hole", name: "Region" }],
++            include: [{ select: "slot", name: "Region" }],
 +            exclude: []
 +          }
 +        }
@@ -8379,17 +8379,17 @@
      ];
 -    for (const variables of invalid) {
 -      assert.throws(() => variablesOf(variables, "test"), /templates\/test:/);
-+    for (const holes of invalid) {
-+      assert.throws(() => holesOf(holes, "test"), /templates\/test:/);
++    for (const slots of invalid) {
++      assert.throws(() => slotsOf(slots, "test"), /templates\/test:/);
      }
    });
 
 -  test("requires exact case for one variable default referencing another", () => {
-+  test("requires exact case for one hole default referencing another", () => {
++  test("requires exact case for one slot default referencing another", () => {
      assert.throws(
        () =>
 -        variablesOf(
-+        holesOf(
++        slotsOf(
            [
              { name: "region", label: "Region" },
              {
@@ -8397,7 +8397,7 @@
                label: "Evidence",
                default: {
 -                include: [{ select: "variable", name: "Region" }],
-+                include: [{ select: "hole", name: "Region" }],
++                include: [{ select: "slot", name: "Region" }],
                  exclude: []
                }
              }
@@ -8405,7 +8405,7 @@
            "test"
          ),
 -      /default names a declared variable/
-+      /default names a declared hole/
++      /default names a declared slot/
      );
    });
 
@@ -8414,7 +8414,7 @@
    });
 
 -  test("keeps body variable lookup exact when declarations differ only by case", async () => {
-+  test("keeps body hole lookup exact when declarations differ only by case", async () => {
++  test("keeps body slot lookup exact when declarations differ only by case", async () => {
      model.tables.templates.push(
        template(
          "1",
@@ -8423,7 +8423,7 @@
                    marks: [],
                    scope: {
 -                    include: [{ select: "variable", name: "Region" }],
-+                    include: [{ select: "hole", name: "Region" }],
++                    include: [{ select: "slot", name: "Region" }],
                      exclude: []
                    },
                    state: "idle"
@@ -8432,7 +8432,7 @@
          },
          {
 -          variables: [
-+          holes: [
++          slots: [
              {
                name: "region",
                label: "Region",
@@ -8456,7 +8456,7 @@
  import type {
    TemplateBody,
 -  TemplateVariable
-+  TemplateHole
++  TemplateSlot
  } from "$representation/data/types/templates/template";
 
  export type TemplateTarget = TemplateBody["resource"];
@@ -8480,7 +8480,7 @@
    readonly availability: TemplateAvailability;
    readonly tags: readonly string[];
 -  readonly variableCount: number;
-+  readonly holeCount: number;
++  readonly slotCount: number;
    readonly createdByName: string;
    readonly revision: number;
    readonly updatedAt: number;
@@ -8489,10 +8489,10 @@
  };
 
 -export type TemplateDetail = Omit<TemplateLibraryItem, "variableCount"> & {
-+export type TemplateDetail = Omit<TemplateLibraryItem, "holeCount"> & {
++export type TemplateDetail = Omit<TemplateLibraryItem, "slotCount"> & {
    readonly body: TemplateBody;
 -  readonly variables: readonly TemplateVariable[];
-+  readonly holes: readonly TemplateHole[];
++  readonly slots: readonly TemplateSlot[];
  };
 
  export type TemplateUnavailable = {
@@ -8531,11 +8531,11 @@
    readonly tags?: readonly string[];
 -  /** Changes one variable's prose without making its stable key client-editable. */
 -  readonly variableDescription?: {
-+  readonly holeDescription?: {
++  readonly slotDescription?: {
      readonly name: string;
      readonly description: string | null;
    };
-+  readonly holes?: readonly TemplateHole[];
++  readonly slots?: readonly TemplateSlot[];
  };
 
  export type UpdateTemplateInput = {
@@ -8544,7 +8544,7 @@
        readonly accepted: false;
        readonly templateId: string;
 -      readonly reason: "not-found" | "forbidden" | "stale" | "unsupported-body";
-+      readonly reason: "not-found" | "stale" | "unsupported-body" | "hole-in-use";
++      readonly reason: "not-found" | "stale" | "unsupported-body" | "slot-in-use";
        readonly revision: number | null;
        readonly detail: string;
      };
@@ -8563,7 +8563,7 @@
        readonly detail: string;
      };
 
-+/** What a caller typed into the template's text holes, by name. */
++/** What a caller typed into the template's text slots, by name. */
 +export type TemplateTexts = Readonly<Record<string, string>>;
 +
  export type InstantiateTemplateInput = {
@@ -8834,7 +8834,7 @@
 +  }
 +
 +  const usedByTemplate = recordsIn(store, "templates").find(
-+    (row) => row.projectId === scope.projectId && namesSet(row.holes, stored._id)
++    (row) => row.projectId === scope.projectId && namesSet(row.slots, stored._id)
 +  );
 +  if (usedByTemplate !== undefined) {
 +    return {
@@ -9197,35 +9197,35 @@
 + */
 +export const boundToOf = (value: unknown, subject: string): BoundTo => {
 +  if (!isRecord(value)) throw new Error(`resource-sets/${subject}: boundTo is an object`);
-+  if (value.kind === "hole") {
++  if (value.kind === "slot") {
 +    if (
 +      Object.keys(value).length !== 3 ||
 +      !canonicalText(value.templateId, MAX_IDENTIFIER_LENGTH) ||
-+      !canonicalText(value.hole, MAX_KIND_LENGTH)
++      !canonicalText(value.slot, MAX_KIND_LENGTH)
 +    ) {
-+      throw new Error(`resource-sets/${subject}: a hole owner names a template and a hole`);
++      throw new Error(`resource-sets/${subject}: a slot owner names a template and a slot`);
 +    }
 +    return {
-+      kind: "hole",
++      kind: "slot",
 +      templateId: asId<"templates">(value.templateId as string),
-+      hole: value.hole as string
++      slot: value.slot as string
 +    };
 +  }
 +  if (value.kind === "resource") {
 +    if (
 +      Object.keys(value).length !== 3 ||
 +      !canonicalText(value.resourceId, MAX_IDENTIFIER_LENGTH) ||
-+      !canonicalText(value.hole, MAX_KIND_LENGTH)
++      !canonicalText(value.slot, MAX_KIND_LENGTH)
 +    ) {
-+      throw new Error(`resource-sets/${subject}: a resource owner names one resource and a hole`);
++      throw new Error(`resource-sets/${subject}: a resource owner names one resource and a slot`);
 +    }
 +    return {
 +      kind: "resource",
 +      resourceId: value.resourceId as string,
-+      hole: value.hole as string
++      slot: value.slot as string
 +    };
 +  }
-+  throw new Error(`resource-sets/${subject}: an owner is a hole or a resource`);
++  throw new Error(`resource-sets/${subject}: an owner is a slot or a resource`);
 +};
 +
 +export const descriptionOf = (value: unknown, subject: string): string => {
@@ -9484,7 +9484,7 @@
 +| `readResourceSets` | Every valid **named** set in the scoped project, with its creator's name and how many resources it selects now, plus quarantined invalid rows |
 +| `createResourceSet` | A set from a name, an optional description, and an include and exclude list |
 +| `updateResourceSet` | A compare-and-swap change to name, description, or the set itself |
-+| `removeResourceSet` | A compare-and-swap delete, refused while another set or a template hole's default in this project still names it |
++| `removeResourceSet` | A compare-and-swap delete, refused while another set or a template slot's default in this project still names it |
 +
 +A set is `include` minus `exclude`. A term selects the whole project, a list of
 +resource kinds matched by segment, named resources, or another set by id. The
@@ -9711,7 +9711,7 @@
 +      row("templates", "1", {
 +        projectId: "p",
 +        name: "Brief",
-+        holes: [
++        slots: [
 +          {
 +            name: "evidence",
 +            label: "Evidence",
@@ -10099,7 +10099,7 @@
 -    Name, description, variable help text, and tags autosave in the Inspector today. Body authoring
 -    still needs a collaborative edit-session identity, Template blocks for variable-bearing Prompt
 -    positions, and deterministic scratch cleanup after the editor flushes.
-+    Spreadsheet templates wait for the spreadsheet editor; their name, description, holes and
++    Spreadsheet templates wait for the spreadsheet editor; their name, description, slots and
 +    tags still change in the Inspector.
    </ScreenNote>
  </ScreenSurface>
@@ -10130,7 +10130,7 @@
      { value: "name", label: "Name" },
      { value: "makes", label: "Makes" },
 -    { value: "variables", label: "Variables" }
-+    { value: "holes", label: "Holes" }
++    { value: "slots", label: "Slots" }
    ] as const;
 
    const TARGETS: readonly TemplateTarget[] = ["Document", "Slide deck", "Spreadsheet"];
@@ -10156,8 +10156,8 @@
      if (sortBy === "makes") return a.makes.localeCompare(b.makes) || a.name.localeCompare(b.name);
 -    if (sortBy === "variables") {
 -      return a.variableCount - b.variableCount || a.name.localeCompare(b.name);
-+    if (sortBy === "holes") {
-+      return a.holeCount - b.holeCount || a.name.localeCompare(b.name);
++    if (sortBy === "slots") {
++      return a.slotCount - b.slotCount || a.name.localeCompare(b.name);
      }
      return b.updatedAt - a.updatedAt || a.name.localeCompare(b.name);
    };
@@ -10166,13 +10166,13 @@
      name: { asc: "A to Z", desc: "Z to A" },
      makes: { asc: "A to Z", desc: "Z to A" },
 -    variables: { asc: "Fewest variables first", desc: "Most variables first" }
-+    holes: { asc: "Fewest holes first", desc: "Most holes first" }
++    slots: { asc: "Fewest slots first", desc: "Most slots first" }
    };
 
 -  const variableCount = (row: LibraryTemplate): string =>
 -    `${row.variableCount} ${row.variableCount === 1 ? "variable" : "variables"}`;
-+  const holeCount = (row: LibraryTemplate): string =>
-+    `${row.holeCount} ${row.holeCount === 1 ? "hole" : "holes"}`;
++  const slotCount = (row: LibraryTemplate): string =>
++    `${row.slotCount} ${row.slotCount === 1 ? "slot" : "slots"}`;
 
    const clear = () => {
      search = "";
@@ -10216,13 +10216,13 @@
              ratio={TARGET_RATIO[row.makes]}
              lines={4}
 -            variables={Math.min(row.variableCount, 4)}
-+            variables={Math.min(row.holeCount, 4)}
++            variables={Math.min(row.slotCount, 4)}
            />
          </span>
        {/snippet}
        <span class="text-caption text-ink-muted truncate">
 -        Used {row.lastUsed} · {variableCount(row)}
-+        Used {row.lastUsed} · {holeCount(row)}
++        Used {row.lastUsed} · {slotCount(row)}
        </span>
      </ScreenCard>
    </div>
@@ -10249,7 +10249,7 @@
              </ScreenEmpty>
            {:else}
 -            <ScreenTable columns={["Name", "Makes", "Scope", "Variables", "Tags", "Updated"]}>
-+            <ScreenTable columns={["Name", "Makes", "Scope", "Holes", "Tags", "Updated"]}>
++            <ScreenTable columns={["Name", "Makes", "Scope", "Slots", "Tags", "Updated"]}>
                {#each ordered as row (row.id)}
                  {@const Icon = TARGET_ICON[row.makes]}
                  <ScreenRow
@@ -10258,7 +10258,7 @@
                    <ScreenCell>{row.makes}</ScreenCell>
                    <ScreenCell>{row.scope}</ScreenCell>
 -                  <ScreenCell num>{row.variableCount}</ScreenCell>
-+                  <ScreenCell num>{row.holeCount}</ScreenCell>
++                  <ScreenCell num>{row.slotCount}</ScreenCell>
                    <ScreenCell>{row.tags.join(", ") || "—"}</ScreenCell>
                    <ScreenCell num>{row.updated}</ScreenCell>
                  </ScreenRow>
@@ -10332,8 +10332,8 @@
      updateTemplateName,
      updateTemplateTags,
 -    updateTemplateVariableDescription,
-+    updateTemplateHoleDefault,
-+    updateTemplateHoleDescription,
++    updateTemplateSlotDefault,
++    updateTemplateSlotDescription,
 +    withTerm,
 +    withWholeProject,
 +    withoutTerm,
@@ -10343,7 +10343,7 @@
 +    type ScopeDraft,
 +    type ScopeSide,
 +    type TemplateAnswers,
-+    type TemplateHole
++    type TemplateSlot
    } from "$app-views/categories/templates/procedures/library.svelte";
    import { workspaceState } from "$model/client/workspace-state";
 
@@ -10364,16 +10364,16 @@
    });
    const template = $derived(detailIn(detailAnswer, now));
    const unavailable = $derived(unavailableTemplateIn(detailAnswer));
-+  let defaultFor = $state<TemplateHole | undefined>(undefined);
++  let defaultFor = $state<TemplateSlot | undefined>(undefined);
 +  let defaultOpen = $state(false);
 +  let draft = $state<ScopeDraft>(draftOf(undefined));
 +  let useOpen = $state(false);
 +  let answerOpen = $state(false);
 +  let useChoices = $state<Record<string, ScopeDraft | undefined>>({});
 +  let useTexts = $state<Record<string, string | undefined>>({});
-+  let answering = $state<TemplateHole | undefined>(undefined);
++  let answering = $state<TemplateSlot | undefined>(undefined);
 +
-+  const askRows = $derived(answerRowsOf(template?.holes ?? [], useChoices, useTexts, setNames));
++  const askRows = $derived(answerRowsOf(template?.slots ?? [], useChoices, useTexts, setNames));
 +  const askBlocked = $derived(
 +    missingIn(askRows).length === 0 ? undefined : `${missingIn(askRows).join(", ")} still needs words.`
 +  );
@@ -10411,16 +10411,16 @@
 -  let variableDescriptionDraft = $state("");
 -  let variableBase = $state<LibraryTemplateDetail>();
 -  let variableEditor = $state<HTMLTextAreaElement | null>(null);
-+  let editingHole = $state<string>();
-+  let holeDescriptionDraft = $state("");
-+  let holeBase = $state<LibraryTemplateDetail>();
-+  let holeEditor = $state<HTMLTextAreaElement | null>(null);
++  let editingSlot = $state<string>();
++  let slotDescriptionDraft = $state("");
++  let slotBase = $state<LibraryTemplateDetail>();
++  let slotEditor = $state<HTMLTextAreaElement | null>(null);
    let tagEditor = $state<HTMLInputElement | null>(null);
    let tagDraft = $state("");
    let activeTemplateId = $state<string>();
    let pending = $state<
 -    "name" | "description" | "variable" | "tag" | "duplicate" | "delete" | "use"
-+    "name" | "description" | "hole" | "tag" | "duplicate" | "delete" | "use" | "edit" | "default"
++    "name" | "description" | "slot" | "tag" | "duplicate" | "delete" | "use" | "edit" | "default"
    >();
    let actionError = $state<string>();
    let live = true;
@@ -10431,9 +10431,9 @@
 -    editingVariable = undefined;
 -    variableDescriptionDraft = "";
 -    variableBase = undefined;
-+    editingHole = undefined;
-+    holeDescriptionDraft = "";
-+    holeBase = undefined;
++    editingSlot = undefined;
++    slotDescriptionDraft = "";
++    slotBase = undefined;
      actionError = undefined;
    });
 
@@ -10443,8 +10443,8 @@
      nameBase = undefined;
 -    editingVariable = undefined;
 -    variableBase = undefined;
-+    editingHole = undefined;
-+    holeBase = undefined;
++    editingSlot = undefined;
++    slotBase = undefined;
      descriptionBase = template;
      descriptionDraft = template.description;
      editingDescription = true;
@@ -10454,8 +10454,8 @@
      descriptionBase = undefined;
 -    editingVariable = undefined;
 -    variableBase = undefined;
-+    editingHole = undefined;
-+    holeBase = undefined;
++    editingSlot = undefined;
++    slotBase = undefined;
      nameBase = template;
      nameDraft = template.name;
      editingName = true;
@@ -10464,7 +10464,7 @@
    };
 
 -  const startVariableDescription = async (variable: TemplateVariable) => {
-+  const startHoleDescription = async (hole: TemplateHole) => {
++  const startSlotDescription = async (slot: TemplateSlot) => {
      if (template === undefined || !template.canEdit || pending !== undefined) return;
      editingName = false;
      nameBase = undefined;
@@ -10473,36 +10473,36 @@
 -    variableBase = template;
 -    editingVariable = variable.name;
 -    variableDescriptionDraft = variable.description ?? "";
-+    holeBase = template;
-+    editingHole = hole.name;
-+    holeDescriptionDraft = hole.description ?? "";
++    slotBase = template;
++    editingSlot = slot.name;
++    slotDescriptionDraft = slot.description ?? "";
      await tick();
 -    variableEditor?.focus();
 -    variableEditor?.select();
-+    holeEditor?.focus();
-+    holeEditor?.select();
++    slotEditor?.focus();
++    slotEditor?.select();
    };
 
 -  const cancelVariableDescription = () => {
 -    editingVariable = undefined;
 -    variableDescriptionDraft = "";
 -    variableBase = undefined;
-+  const cancelHoleDescription = () => {
-+    editingHole = undefined;
-+    holeDescriptionDraft = "";
-+    holeBase = undefined;
++  const cancelSlotDescription = () => {
++    editingSlot = undefined;
++    slotDescriptionDraft = "";
++    slotBase = undefined;
    };
 
 -  const commitVariableDescription = async (variable: TemplateVariable) => {
 -    const subject = variableBase;
-+  const commitHoleDescription = async (hole: TemplateHole) => {
-+    const subject = holeBase;
++  const commitSlotDescription = async (slot: TemplateSlot) => {
++    const subject = slotBase;
      const originTabId = view.activeId;
      if (
        subject === undefined ||
        template?.id !== subject.id ||
 -      editingVariable !== variable.name ||
-+      editingHole !== hole.name ||
++      editingSlot !== slot.name ||
        !subject.canEdit ||
        pending !== undefined
      ) {
@@ -10510,28 +10510,28 @@
      }
 -    if (variableDescriptionDraft.trim() === (variable.description ?? "").trim()) {
 -      cancelVariableDescription();
-+    if (holeDescriptionDraft.trim() === (hole.description ?? "").trim()) {
-+      cancelHoleDescription();
++    if (slotDescriptionDraft.trim() === (slot.description ?? "").trim()) {
++      cancelSlotDescription();
        return;
      }
 
 -    pending = "variable";
-+    pending = "hole";
++    pending = "slot";
      actionError = undefined;
      try {
 -      const result = await updateTemplateVariableDescription(
-+      const result = await updateTemplateHoleDescription(
++      const result = await updateTemplateSlotDescription(
          view,
          subject,
 -        variable.name,
 -        variableDescriptionDraft
-+        hole.name,
-+        holeDescriptionDraft
++        slot.name,
++        slotDescriptionDraft
        );
        if (!stillInspecting(originTabId, subject.id)) return;
        if (!result.accepted) actionError = result.detail;
 -      else cancelVariableDescription();
-+      else cancelHoleDescription();
++      else cancelSlotDescription();
      } catch (error) {
        fail(error, originTabId, subject.id);
      } finally {
@@ -10540,11 +10540,11 @@
    };
 
 -  const variableKeydown = (event: KeyboardEvent) => {
-+  const holeKeydown = (event: KeyboardEvent) => {
++  const slotKeydown = (event: KeyboardEvent) => {
      if (event.key !== "Escape") return;
      event.preventDefault();
 -    cancelVariableDescription();
-+    cancelHoleDescription();
++    cancelSlotDescription();
    };
 
    const addTag = async () => {
@@ -10563,7 +10563,7 @@
        actionError = SPREADSHEET_HANDOFF;
        return;
      }
-+    if (template.holes.length === 0) {
++    if (template.slots.length === 0) {
 +      void instantiate({});
 +      return;
 +    }
@@ -10581,10 +10581,10 @@
 +   * footer under the pointer, and the press lands on a button that has gone.
 +   */
 +  const openAnswer = (name: string) => {
-+    const hole = template?.holes.find((candidate) => candidate.name === name);
-+    if (hole === undefined) return;
-+    answering = hole;
-+    draft = draftOf(useChoices[name] ?? hole.default);
++    const slot = template?.slots.find((candidate) => candidate.name === name);
++    if (slot === undefined) return;
++    answering = slot;
++    draft = draftOf(useChoices[name] ?? slot.default);
 +    useOpen = false;
 +    answerOpen = true;
 +  };
@@ -10681,16 +10681,16 @@
 -  /** Placeholder for the variable settings modal; defaults stay unchanged until that contract exists. */
 -  const showVariableSettings = (variable: TemplateVariable) => {
 -    alert(`Variable settings for “${variable.label}” will open here.`);
-+  const openDefault = (hole: TemplateHole) => {
++  const openDefault = (slot: TemplateSlot) => {
 +    if (template === undefined || !template.canEdit || pending !== undefined) return;
-+    defaultFor = hole;
-+    draft = draftOf(hole.default);
++    defaultFor = slot;
++    draft = draftOf(slot.default);
 +    defaultOpen = true;
 +  };
 +
 +  const setDefault = async () => {
-+    const hole = defaultFor;
-+    if (template === undefined || hole === undefined || pending !== undefined) return;
++    const slot = defaultFor;
++    if (template === undefined || slot === undefined || pending !== undefined) return;
 +    const subject = template;
 +    const originTabId = view.activeId;
 +    const rule = draft;
@@ -10698,7 +10698,7 @@
 +    pending = "default";
 +    actionError = undefined;
 +    try {
-+      const result = await updateTemplateHoleDefault(view, subject, hole.name, rule);
++      const result = await updateTemplateSlotDefault(view, subject, slot.name, rule);
 +      if (!stillInspecting(originTabId, subject.id)) return;
 +      if (!result.accepted) actionError = result.detail;
 +    } catch (error) {
@@ -10732,7 +10732,7 @@
 
        {#if !template.canEdit}
 -        <p class="permission-note">Duplicate this template to edit its name, description, variables, or tags.</p>
-+        <p class="permission-note">Duplicate this template to edit its name, description, holes, or tags.</p>
++        <p class="permission-note">Duplicate this template to edit its name, description, slots, or tags.</p>
        {/if}
        {#if template.makes === "Spreadsheet"}
          <p class="permission-note">{SPREADSHEET_HANDOFF}</p>
@@ -10743,22 +10743,22 @@
 -      <section aria-labelledby="variables-heading">
 -        <h3 id="variables-heading" class="section-heading">
 -          Variables <span>{template.variables.length}</span>
-+      <section aria-labelledby="holes-heading">
-+        <h3 id="holes-heading" class="section-heading">
-+          Holes <span>{template.holes.length}</span>
++      <section aria-labelledby="slots-heading">
++        <h3 id="slots-heading" class="section-heading">
++          Slots <span>{template.slots.length}</span>
          </h3>
 
 -        {#if template.variables.length === 0}
 -          <PanelEmpty title="This template asks for no variables." flush />
-+        {#if template.holes.length === 0}
-+          <PanelEmpty title="This template asks for no holes." flush />
++        {#if template.slots.length === 0}
++          <PanelEmpty title="This template asks for no slots." flush />
          {:else}
 -          <div class="variable-list">
 -            {#each template.variables as variable (variable.id)}
 -              <details class="variable">
-+          <div class="hole-list">
-+            {#each template.holes as hole (hole.id)}
-+              <details class="hole">
++          <div class="slot-list">
++            {#each template.slots as slot (slot.id)}
++              <details class="slot">
                  <summary>
 -                  <button
 -                    type="button"
@@ -10771,66 +10771,66 @@
 -                      showVariableSettings(variable);
 -                    }}
 -                  >
-+                  <span class="hole-name">
++                  <span class="slot-name">
                      <Braces size={13} aria-hidden="true" />
 -                    {variable.label}
 -                  </button>
-+                    {hole.label}
++                    {slot.label}
 +                  </span>
                    <ChevronDown class="disclosure-icon" size={13} aria-hidden="true" />
                  </summary>
 -                <div class="variable-body">
 -                  {#if editingVariable === variable.name}
-+                <div class="hole-body">
-+                  {#if editingHole === hole.name}
++                <div class="slot-body">
++                  {#if editingSlot === slot.name}
                      <Textarea
 -                      bind:ref={variableEditor}
 -                      class="variable-description-editor"
 -                      bind:value={variableDescriptionDraft}
 -                      aria-label={`Description for ${variable.label}`}
-+                      bind:ref={holeEditor}
-+                      class="hole-description-editor"
-+                      bind:value={holeDescriptionDraft}
-+                      aria-label={`Description for ${hole.label}`}
++                      bind:ref={slotEditor}
++                      class="slot-description-editor"
++                      bind:value={slotDescriptionDraft}
++                      aria-label={`Description for ${slot.label}`}
                        rows={3}
 -                      onkeydown={variableKeydown}
 -                      onblur={() => commitVariableDescription(variable)}
-+                      onkeydown={holeKeydown}
-+                      onblur={() => commitHoleDescription(hole)}
++                      onkeydown={slotKeydown}
++                      onblur={() => commitSlotDescription(slot)}
                      />
                    {:else if template.canEdit}
                      <button
                        type="button"
 -                      class="variable-description"
-+                      class="hole-description"
++                      class="slot-description"
                        title="Double-click to edit this description"
 -                      aria-label={`Edit description for ${variable.label}`}
 -                      ondblclick={() => startVariableDescription(variable)}
-+                      aria-label={`Edit description for ${hole.label}`}
-+                      ondblclick={() => startHoleDescription(hole)}
++                      aria-label={`Edit description for ${slot.label}`}
++                      ondblclick={() => startSlotDescription(slot)}
                        onkeydown={(event) => {
                          if (event.key === "Enter" || event.key === " ") {
 -                          startVariableDescription(variable);
-+                          startHoleDescription(hole);
++                          startSlotDescription(slot);
                          }
                        }}
 -                    >{variable.description ?? "Add a description"}</button>
-+                    >{hole.description ?? "Add a description"}</button>
++                    >{slot.description ?? "Add a description"}</button>
                    {:else}
 -                    <p>{variable.description ?? "No description supplied."}</p>
-+                    <p>{hole.description ?? "No description supplied."}</p>
++                    <p>{slot.description ?? "No description supplied."}</p>
                    {/if}
-+                  <div class="hole-default">
++                  <div class="slot-default">
 +                    {#if template.canEdit}
 +                      <Button
 +                        variant="outline"
 +                        size="xs"
-+                        title={`${ruleOf(hole.default, setNames)} — change what ${hole.label} selects by default`}
++                        title={`${ruleOf(slot.default, setNames)} — change what ${slot.label} selects by default`}
 +                        disabled={pending !== undefined}
-+                        onclick={() => openDefault(hole)}
++                        onclick={() => openDefault(slot)}
 +                      >Default scope</Button>
 +                    {:else}
-+                      <span>{ruleOf(hole.default, setNames)}</span>
++                      <span>{ruleOf(slot.default, setNames)}</span>
 +                    {/if}
 +                  </div>
                  </div>
@@ -10843,7 +10843,7 @@
 +<OverlayModal
 +  bind:open={useOpen}
 +  title={`Use “${template?.name ?? "the template"}”`}
-+  description="One hole at a time. The tabs say which still need words."
++  description="One slot at a time. The tabs say which still need words."
 +  confirm="Create"
 +  width="wide"
 +  blocked={askBlocked}
@@ -10902,7 +10902,7 @@
    .byline,
    .description,
 -  .variable-body {
-+  .hole-body {
++  .slot-body {
      font-size: var(--token-text-caption);
      line-height: var(--token-text-caption-leading);
    }
@@ -10920,19 +10920,19 @@
    }
 
 -  .variable-list {
-+  .hole-list {
++  .slot-list {
      overflow: hidden;
      border: 1px solid var(--token-border-subtle);
      border-radius: var(--token-radius-panel);
    }
 
 -  .variable + .variable {
-+  .hole + .hole {
++  .slot + .slot {
      border-top: 1px solid var(--token-border-subtle);
    }
 
 -  .variable summary {
-+  .hole summary {
++  .slot summary {
      display: flex;
      min-height: calc(var(--token-spacing-unit) * 8);
      align-items: center;
@@ -10941,29 +10941,29 @@
    }
 
 -  .variable summary::-webkit-details-marker {
-+  .hole summary::-webkit-details-marker {
++  .slot summary::-webkit-details-marker {
      display: none;
    }
 
 -  .variable summary:hover {
-+  .hole summary:hover {
++  .slot summary:hover {
      background: var(--token-surface-panel-hover);
    }
 
 -  .variable[open] > summary {
-+  .hole[open] > summary {
++  .slot[open] > summary {
      background: var(--token-surface-panel-hover);
      color: var(--token-ink-primary);
    }
 
 -  .variable summary:focus-visible {
-+  .hole summary:focus-visible {
++  .slot summary:focus-visible {
      outline: 2px solid var(--token-color-interactive-border);
      outline-offset: -2px;
    }
 
 -  .variable-name {
-+  .hole-name {
++  .slot-name {
      display: flex;
      min-width: 0;
      align-items: center;
@@ -10990,12 +10990,12 @@
 -  }
 -
 -  .variable-name :global(svg) {
-+  .hole-name :global(svg) {
++  .slot-name :global(svg) {
      flex: none;
      color: var(--token-ink-muted);
    }
 
-+  .hole-default {
++  .slot-default {
 +    display: flex;
 +    align-items: center;
 +    margin-top: calc(var(--token-spacing-unit) * 1.5);
@@ -11009,23 +11009,23 @@
    }
 
 -  .variable[open] :global(.disclosure-icon) {
-+  .hole[open] :global(.disclosure-icon) {
++  .slot[open] :global(.disclosure-icon) {
      transform: rotate(180deg);
    }
 
 -  .variable-body {
-+  .hole-body {
++  .slot-body {
      padding: 0 calc(var(--token-spacing-unit) * 2) calc(var(--token-spacing-unit) * 2.5);
      color: var(--token-ink-muted);
    }
 
 -  .variable-body p {
-+  .hole-body p {
++  .slot-body p {
      margin: 0;
    }
 
 -  .variable-description {
-+  .hole-description {
++  .slot-description {
      display: block;
      width: 100%;
      margin: 0;
@@ -11034,18 +11034,18 @@
    }
 
 -  .variable-description:hover {
-+  .hole-description:hover {
++  .slot-description:hover {
      color: var(--token-ink-secondary);
    }
 
 -  .variable-description:focus-visible {
-+  .hole-description:focus-visible {
++  .slot-description:focus-visible {
      outline: 2px solid var(--token-color-interactive-surface);
      outline-offset: 2px;
    }
 
 -  :global(.variable-description-editor) {
-+  :global(.hole-description-editor) {
++  :global(.slot-description-editor) {
      height: calc(var(--token-spacing-unit) * 18);
      min-height: calc(var(--token-spacing-unit) * 18);
      max-height: calc(var(--token-spacing-unit) * 18);
@@ -11089,7 +11089,7 @@
 +  type ScopeNames,
 +  type ScopeOffering
 +} from "$representation/data/behavior/core/scope-draft";
-+import { promptWordsIn } from "$representation/data/behavior/templates/prompt-holes";
++import { promptWordsIn } from "$representation/data/behavior/templates/prompt-slots";
 +import type { Category, WorkspaceStateModel } from "$model/client/workspace-state";
 +
 +export type { ResourceSetItem } from "$capabilities/resource-sets/index.remote";
@@ -11101,7 +11101,7 @@
 
 -export type TemplateVariable = TemplateDetail["variables"][number] & {
 -  /** Stable inside one template; represented variables are named rather than identified. */
-+export type TemplateHole = TemplateDetail["holes"][number] & {
++export type TemplateSlot = TemplateDetail["slots"][number] & {
    readonly id: string;
  };
 
@@ -11117,7 +11117,7 @@
    readonly scope: TemplateScope;
    readonly tags: readonly string[];
 -  readonly variableCount: number;
-+  readonly holeCount: number;
++  readonly slotCount: number;
    readonly createdBy: string;
    readonly revision: number;
    readonly updatedAt: number;
@@ -11126,8 +11126,8 @@
 
  export type LibraryTemplateDetail = LibraryTemplate & {
 -  readonly variables: readonly TemplateVariable[];
-+  readonly holes: readonly TemplateHole[];
-+  /** What the prompt behind each hole asks, so placing it can show the question. */
++  readonly slots: readonly TemplateSlot[];
++  /** What the prompt behind each slot asks, so placing it can show the question. */
 +  readonly prompts: Readonly<Record<string, string>>;
  };
 
@@ -11162,7 +11162,7 @@
    scope: SCOPE_LABEL[row.availability],
    tags: row.tags,
 -  variableCount: row.variableCount,
-+  holeCount: row.holeCount,
++  slotCount: row.slotCount,
    createdBy: row.createdByName,
    revision: row.revision,
    updatedAt: row.updatedAt,
@@ -11202,16 +11202,16 @@
    if (answer === null || answer === undefined || "unavailable" in answer) return undefined;
 
 -  const row = project({ ...answer, variableCount: answer.variables.length }, now);
-+  const row = project({ ...answer, holeCount: answer.holes.length }, now);
++  const row = project({ ...answer, slotCount: answer.slots.length }, now);
    return {
      ...row,
 -    variables: answer.variables.map((variable) => ({
 -      ...variable,
 -      id: `${answer.id}:${variable.name}`
 +    prompts: promptWordsIn(answer.body),
-+    holes: answer.holes.map((hole) => ({
-+      ...hole,
-+      id: `${answer.id}:${hole.name}`
++    slots: answer.slots.map((slot) => ({
++      ...slot,
++      id: `${answer.id}:${slot.name}`
      }))
    };
  };
@@ -11292,7 +11292,7 @@
 +  resources: new Map(resources.map((resource) => [resource.id, resource.name]))
 +});
 +
-+/** What the builder is handed for a hole's default, or for an answer. */
++/** What the builder is handed for a slot's default, or for an answer. */
 +export const offeringOf = (
 +  sets: readonly ResourceSetItem[],
 +  resources: readonly { readonly id: string; readonly kind: string; readonly name: string }[]
@@ -11304,7 +11304,7 @@
 +/**
 + * The answers a caller chose, as rules.
 + *
-+ * A hole nobody touched is absent, which is what makes the template's own
++ * A slot nobody touched is absent, which is what makes the template's own
 + * default apply. Everything present is sent as built; the server decides
 + * whether it needs a row.
 + */
@@ -11360,11 +11360,11 @@
 
 -/** Update variable help text while preserving its stable key, label, and default selection. */
 -export const updateTemplateVariableDescription = (
-+export const updateTemplateHoleDescription = (
++export const updateTemplateSlotDescription = (
    view: WorkspaceStateModel,
    row: LibraryTemplateDetail,
 -  variableName: string,
-+  holeName: string,
++  slotName: string,
    description: string
  ) => {
    const storedDescription = description.trim() || null;
@@ -11374,8 +11374,8 @@
        row.revision,
 -      "variable-description",
 -      variableName,
-+      "hole-description",
-+      holeName,
++      "slot-description",
++      slotName,
        storedDescription
      ],
      () =>
@@ -11384,7 +11384,7 @@
          baseRevision: row.revision,
          patch: {
 -          variableDescription: { name: variableName, description: storedDescription }
-+          holeDescription: { name: holeName, description: storedDescription }
++          slotDescription: { name: slotName, description: storedDescription }
          }
        }).updates(readTemplateLibrary, readTemplate({ templateId: row.id }))
    );
@@ -11399,22 +11399,22 @@
    );
 
 -/** Copy any visible template into the current viewer's ownership. */
-+export const updateTemplateHoleDefault = (
++export const updateTemplateSlotDefault = (
 +  view: WorkspaceStateModel,
 +  row: LibraryTemplateDetail,
-+  holeName: string,
++  slotName: string,
 +  rule: ScopeDraft
 +) => {
-+  const holes = row.holes.map(({ id: _id, ...hole }) =>
-+    hole.name === holeName ? { ...hole, default: rule } : hole
++  const slots = row.slots.map(({ id: _id, ...slot }) =>
++    slot.name === slotName ? { ...slot, default: rule } : slot
 +  );
 +  return view.singleFlight(
-+    ["template", view.project, row.id, "update", row.revision, "hole-default", holeName, JSON.stringify(rule)],
++    ["template", view.project, row.id, "update", row.revision, "slot-default", slotName, JSON.stringify(rule)],
 +    () =>
 +      updateTemplateRemote({
 +        templateId: row.id,
 +        baseRevision: row.revision,
-+        patch: { holes }
++        patch: { slots }
 +      }).updates(readTemplateLibrary, readTemplate({ templateId: row.id }))
 +  );
 +};
@@ -11541,7 +11541,7 @@
 +and the ordinary editor opens on that copy in its own tab. The editor's Templates
 +panel is where the copy is saved back or discarded. `Use` is the separate gesture
 +that instantiates an independent project resource and opens its ordinary editor
-+for documents and decks, after asking, in one modal, what fills each hole, its
++for documents and decks, after asking, in one modal, what fills each slot, its
 +default offered first; the resource it makes carries no reference
 +back to the template. Spreadsheet materialization exists at the capability
 +boundary, but neither Use nor Edit reaches it until the spreadsheet editor
@@ -11589,7 +11589,7 @@
 -type or requiredness fields that representation does not carry.
 -Instantiation resolves represented defaults, including nested defaults. It does
 -not invent caller-supplied answers before representation defines that payload.
-+shows target, availability, update time, creator, description, holes, and
++shows target, availability, update time, creator, description, slots, and
 +tags. Name and fixed-height description fields autosave on blur. Four actions
 +sit in one row: Use, Edit, Duplicate, Delete. Edit opens the template's copy in
 +its editor, making the copy if the project has none yet. Duplicate always
@@ -11597,9 +11597,9 @@
 +removes the template with its version rows and its working copy; resources made
 +from it are untouched, because none refers back.
 +
-+Each hole opens into its description, then one button reading its default scope
++Each slot opens into its description, then one button reading its default scope
 +as a sentence, which opens a modal to change it — everything in the project,
-+particular kinds, or one of the project's named sets. Which scope holes exist is
++particular kinds, or one of the project's named sets. Which scope slots exist is
 +not editable here: they are the names the body's prompt scopes use, found when
 +the template is saved.
 
@@ -11714,7 +11714,7 @@
 +    blockId,
 +    derivedOutputId,
 +    disabled = false,
-+    description = "The sources it is answered from. If it is a hole, this is also what the hole selects until whoever places the template says otherwise.",
++    description = "The sources it is answered from. If it is a slot, this is also what the slot selects until whoever places the template says otherwise.",
 +    onconfirm
 +  }: {
 +    blockId: string;
@@ -11955,12 +11955,12 @@
 +  import { PromptTemplate } from "$authored-components/prompt-template";
 +  import { blockIn } from "$app-views/categories/document-editor/procedures/blocks";
 +  import {
-+    promptHoleOps,
++    promptSlotOps,
 +    type Id
 +  } from "$app-views/categories/document-editor/procedures/prompt-blocks";
 +  import {
 +    defaultScopeOf,
-+    nextHoleName,
++    nextSlotName,
 +    projectResources,
 +    resourceSets,
 +    resourcesIn,
@@ -11972,9 +11972,9 @@
 +  import { workspaceState, type DocumentRuntime } from "$model/client/workspace-state";
 +
 +  /**
-+   * Turning a prompt into a hole, and saying what the hole is.
++   * Turning a prompt into a slot, and saying what the slot is.
 +   *
-+   * What the hole would default to is the scope the prompt reads, and once the
++   * What the slot would default to is the scope the prompt reads, and once the
 +   * prompt is linked that lives on the derived output. This reads it from the
 +   * same place the agent does, so the default shown here is the default a
 +   * template would actually carry.
@@ -12018,8 +12018,8 @@
 +    )
 +  );
 +
-+  const offered = $derived(body === undefined ? "Hole 1" : nextHoleName(body));
-+  const named = $derived(block?.hole);
++  const offered = $derived(body === undefined ? "Slot 1" : nextSlotName(body));
++  const named = $derived(block?.slot);
 +  const reads = $derived(
 +    ruleOf(defaultScopeOf(derivedOutputId === undefined ? block?.scope : linked?.scope), setNames)
 +  );
@@ -12031,17 +12031,17 @@
 +
 +  const make = () => {
 +    if (block === undefined) return;
-+    write(promptHoleOps(block, { name: offered }));
++    write(promptSlotOps(block, { name: offered }));
 +  };
 +
 +  const rename = (name: string) => {
 +    if (block === undefined) return;
-+    write(promptHoleOps(block, { name, description: named?.description }));
++    write(promptSlotOps(block, { name, description: named?.description }));
 +  };
 +
 +  const describe = (description: string) => {
 +    if (block === undefined) return;
-+    write(promptHoleOps(block, { name: named?.name ?? offered, description }));
++    write(promptSlotOps(block, { name: named?.name ?? offered, description }));
 +  };
 +</script>
 +
@@ -12069,7 +12069,7 @@
 +    outline-offset: 1px;
 +  }
 +
-+  /* A template's own hole, waiting for whoever places the template to fill it. */
++  /* A template's own slot, waiting for whoever places the template to fill it. */
 +  .editor :global(.document-template-atom) {
 +    padding: 0 0.15em;
 +    border-radius: var(--token-radius-control);
@@ -12122,7 +12122,7 @@
 +    draftOf,
 +    insertionOf,
 +    promptWordsIn,
-+    mergedHoles,
++    mergedSlots,
 +    offeringOf,
 +    openStage,
 +    projectResources,
@@ -12137,18 +12137,18 @@
 +    templateDetail,
 +    templateLibrary,
 +    termFor,
-+    updateHoles,
-+    withHoleField,
++    updateSlots,
++    withSlotField,
 +    withTerm,
 +    withWholeProject,
 +    withoutTerm,
-+    type ChosenHole,
++    type ChosenSlot,
 +    type OfferSource,
 +    type ScopeDraft,
 +    type ScopeSide,
 +    type TemplateAnswers,
 +    type TemplateDetail,
-+    type TemplateHole,
++    type TemplateSlot,
 +    type TemplateLibraryItem
 +  } from "$app-views/categories/document-editor/procedures/templating";
 +  import { workspaceState } from "$model/client/workspace-state";
@@ -12191,7 +12191,7 @@
 +  let pending = $state<string | undefined>(undefined);
 +  let actionError = $state<string | undefined>(undefined);
 +  let notice = $state<readonly string[]>([]);
-+  let defaultFor = $state<TemplateHole | undefined>(undefined);
++  let defaultFor = $state<TemplateSlot | undefined>(undefined);
 +  let defaultOpen = $state(false);
 +  let draft = $state<ScopeDraft>(draftOf(undefined));
 +  let insertFor = $state<TemplateDetail | undefined>(undefined);
@@ -12199,9 +12199,9 @@
 +  let answerOpen = $state(false);
 +  let choices = $state<Record<string, ScopeDraft | undefined>>({});
 +  let texts = $state<Record<string, string | undefined>>({});
-+  let answering = $state<TemplateHole | undefined>(undefined);
++  let answering = $state<TemplateSlot | undefined>(undefined);
 +
-+  const askRows = $derived(answerRowsOf(insertFor?.holes ?? [], choices, texts, setNames));
++  const askRows = $derived(answerRowsOf(insertFor?.slots ?? [], choices, texts, setNames));
 +  const askBlocked = $derived(
 +    missingIn(askRows).length === 0 ? undefined : `${missingIn(askRows).join(", ")} still needs words.`
 +  );
@@ -12332,9 +12332,9 @@
 +    runtime.apply(insertion.ops);
 +    if (insertion.firstBlockId !== undefined) runtime.scrollTo = insertion.firstBlockId;
 +    if (stage !== undefined && template !== undefined) {
-+      const merged = mergedHoles(template.holes, detail.holes);
-+      if (merged.length !== template.holes.length) {
-+        const result = await updateHoles(view, template, merged, documentId);
++      const merged = mergedSlots(template.slots, detail.slots);
++      if (merged.length !== template.slots.length) {
++        const result = await updateSlots(view, template, merged, documentId);
 +        if (live && !result.accepted) actionError = result.detail;
 +      }
 +    }
@@ -12349,7 +12349,7 @@
 +        actionError = "That template could not be read.";
 +        return;
 +      }
-+      if (stage === undefined && detail.holes.length > 0) {
++      if (stage === undefined && detail.slots.length > 0) {
 +        insertFor = detail;
 +        choices = {};
 +        texts = {};
@@ -12366,22 +12366,22 @@
 +    void run(`place:${detail.id}`, () => place(detail, answersFrom(choices), wordsFrom(texts)));
 +  };
 +
-+  const changeHoles = (next: readonly ChosenHole[]) =>
-+    run("holes", async () => {
++  const changeSlots = (next: readonly ChosenSlot[]) =>
++    run("slots", async () => {
 +      if (template === undefined) return;
-+      const result = await updateHoles(view, template, next, documentId);
++      const result = await updateSlots(view, template, next, documentId);
 +      if (live && !result.accepted) actionError = result.detail;
 +    });
 +
-+  const openDefault = (hole: TemplateHole) => {
-+    defaultFor = hole;
-+    draft = draftOf(hole.default);
++  const openDefault = (slot: TemplateSlot) => {
++    defaultFor = slot;
++    draft = draftOf(slot.default);
 +    defaultOpen = true;
 +  };
 +
 +  const confirmDefault = () => {
 +    if (template === undefined || defaultFor === undefined) return;
-+    void changeHoles(withHoleField(template.holes, defaultFor.name, { default: draft }));
++    void changeSlots(withSlotField(template.slots, defaultFor.name, { default: draft }));
 +  };
 +
 +  /**
@@ -12390,10 +12390,10 @@
 +   * footer under the pointer, and the press lands on a button that has gone.
 +   */
 +  const openAnswer = (name: string) => {
-+    const hole = insertFor?.holes.find((candidate) => candidate.name === name);
-+    if (hole === undefined) return;
-+    answering = hole;
-+    draft = draftOf(choices[name] ?? hole.default);
++    const slot = insertFor?.slots.find((candidate) => candidate.name === name);
++    if (slot === undefined) return;
++    answering = slot;
++    draft = draftOf(choices[name] ?? slot.default);
 +    insertOpen = false;
 +    answerOpen = true;
 +  };
@@ -12482,45 +12482,45 @@
 +      <PanelNote>Reading this document…</PanelNote>
 +    {:else if stage !== undefined}
 +      <div class="after-verbs">
-+        <PanelSection title="Holes" count={template?.holes.length} chevron="end">
++        <PanelSection title="Slots" count={template?.slots.length} chevron="end">
 +          {#if template === undefined}
 +            <PanelNote>Reading the template…</PanelNote>
-+          {:else if template.holes.length === 0}
++          {:else if template.slots.length === 0}
 +            <PanelNote>
-+              Nothing here is a hole yet. Select some text, or open a prompt, and press Templateify
++              Nothing here is a slot yet. Select some text, or open a prompt, and press Templateify
 +              in its Template section.
 +            </PanelNote>
 +          {:else}
-+            {#each template.holes as hole (hole.name)}
-+              <article class="hole">
++            {#each template.slots as slot (slot.name)}
++              <article class="slot">
 +                <header>
-+                  <PanelChip tone="accent-1">{hole.name}</PanelChip>
-+                  <span class="hole-label">{hole.label}</span>
++                  <PanelChip tone="accent-1">{slot.name}</PanelChip>
++                  <span class="slot-label">{slot.label}</span>
 +                </header>
 +                <PanelEditableText
-+                  value={hole.description ?? ""}
-+                  label={`Description for ${hole.label}`}
-+                  placeholder="What this hole stands for"
++                  value={slot.description ?? ""}
++                  label={`Description for ${slot.label}`}
++                  placeholder="What this slot stands for"
 +                  multiline
 +                  disabled={busy}
-+                  onchange={(next) => changeHoles(withHoleField(template.holes, hole.name, { description: next }))}
++                  onchange={(next) => changeSlots(withSlotField(template.slots, slot.name, { description: next }))}
 +                />
-+                {#if hole.kind === "text"}
++                {#if slot.kind === "text"}
 +                  <PanelEditableText
-+                    value={hole.text ?? ""}
-+                    label={`Default words for ${hole.label}`}
++                    value={slot.text ?? ""}
++                    label={`Default words for ${slot.label}`}
 +                    placeholder="What it says when nobody says otherwise"
 +                    multiline
 +                    disabled={busy}
-+                    onchange={(next) => changeHoles(withHoleField(template.holes, hole.name, { text: next }))}
++                    onchange={(next) => changeSlots(withSlotField(template.slots, slot.name, { text: next }))}
 +                  />
 +                {:else}
 +                  <div class="scope">
 +                    <PanelButton
 +                      label="Default scope"
 +                      disabled={busy}
-+                      title={`${ruleOf(hole.default, setNames)} — change what ${hole.label} selects by default`}
-+                      onclick={() => openDefault(hole)}
++                      title={`${ruleOf(slot.default, setNames)} — change what ${slot.label} selects by default`}
++                      onclick={() => openDefault(slot)}
 +                    />
 +                  </div>
 +                {/if}
@@ -12536,7 +12536,7 @@
 +      </div>
 +    {/if}
 +
-+    <div class="after-holes">
++    <div class="after-slots">
 +    <PanelSection title="List" chevron="end" flush>
 +      {#if library.error}
 +        <PanelBanner title="Templates unavailable" tone="danger">
@@ -12552,7 +12552,7 @@
 +            <div class="item">
 +              <PanelRow title={item.name}>
 +                <span class="item-title">{item.name}</span>
-+                <span class="item-sub">{item.holeCount} {item.holeCount === 1 ? "hole" : "holes"} · revision {item.revision}</span>
++                <span class="item-sub">{item.slotCount} {item.slotCount === 1 ? "slot" : "slots"} · revision {item.revision}</span>
 +                <span class="item-actions">
 +                  <PanelButton label="Insert" tone="ghost" disabled={busy} title={`Insert “${item.name}” after the current row`} onclick={() => insert(item)} />
 +                  <PanelButton label="Edit" tone="ghost" disabled={busy} title={`Edit “${item.name}” in the editor`} onclick={() => edit(item)} />
@@ -12570,7 +12570,7 @@
 +<OverlayModal
 +  bind:open={insertOpen}
 +  title={`Insert “${insertFor?.name ?? "the template"}”`}
-+  description="One hole at a time. The tabs say which still need words."
++  description="One slot at a time. The tabs say which still need words."
 +  confirm="Insert"
 +  width="wide"
 +  blocked={askBlocked}
@@ -12588,7 +12588,7 @@
 +
 +<OverlayModal
 +  bind:open={answerOpen}
-+  title={`What ${answering?.label ?? "the hole"} selects here`}
++  title={`What ${answering?.label ?? "the slot"} selects here`}
 +  description="For this copy only. Nothing here changes the template."
 +  confirm="Use this"
 +  width="wide"
@@ -12609,7 +12609,7 @@
 +
 +<OverlayModal
 +  bind:open={defaultOpen}
-+  title={`Default scope for ${defaultFor?.label ?? "the hole"}`}
++  title={`Default scope for ${defaultFor?.label ?? "the slot"}`}
 +  description="What it selects until whoever places the template says otherwise."
 +  confirm="Set the default scope"
 +  width="wide"
@@ -12643,13 +12643,13 @@
 +    border-top: 1px solid var(--token-border-subtle);
 +  }
 +
-+  .after-holes {
++  .after-slots {
 +    margin-top: calc(var(--token-spacing-unit) * 2);
 +    padding-top: calc(var(--token-spacing-unit) * 1);
 +    border-top: 1px solid var(--token-border-subtle);
 +  }
 +
-+  .hole {
++  .slot {
 +    display: flex;
 +    flex-direction: column;
 +    gap: calc(var(--token-spacing-unit) * 1.5);
@@ -12659,18 +12659,18 @@
 +    background: var(--token-surface-elevated);
 +  }
 +
-+  .hole + .hole {
++  .slot + .slot {
 +    margin-top: calc(var(--token-spacing-unit) * 1.5);
 +  }
 +
-+  .hole header {
++  .slot header {
 +    display: flex;
 +    flex-wrap: wrap;
 +    align-items: center;
 +    gap: calc(var(--token-spacing-unit) * 1.5);
 +  }
 +
-+  .hole-label {
++  .slot-label {
 +    color: var(--token-ink-primary);
 +    font-size: var(--token-text-body-sm);
 +    font-weight: 600;
@@ -12838,9 +12838,9 @@
    } from "$app-views/categories/document-editor/procedures/blocks";
    import { FILLS, INKS, orClear, orNone } from "$app-views/categories/document-editor/procedures/colours";
 +  import {
-+    markHoleOps,
-+    markedHoleAt,
-+    nextHoleName,
++    markSlotOps,
++    markedSlotAt,
++    nextSlotName,
 +    selectedWords
 +  } from "$app-views/categories/document-editor/procedures/templating";
    import {
@@ -12852,22 +12852,22 @@
    const openPerson = (id: string) => view.inspect("general.person", { kind: "person", id });
 +
 +  /**
-+   * A run of text marked as a hole.
++   * A run of text marked as a slot.
 +   *
-+   * Nothing about the document changes. The words are what the hole says by
++   * Nothing about the document changes. The words are what the slot says by
 +   * default, so a template placed without changing anything reads exactly like
 +   * the document it came from.
 +   */
-+  const holeBody = $derived(runtime?.body);
-+  const holeOffer = $derived(holeBody === undefined ? "Hole 1" : nextHoleName(holeBody));
-+  const holeWords = $derived(
-+    holeBody === undefined ? "" : selectedWords(holeBody, view.selection)
++  const slotBody = $derived(runtime?.body);
++  const slotOffer = $derived(slotBody === undefined ? "Slot 1" : nextSlotName(slotBody));
++  const slotWords = $derived(
++    slotBody === undefined ? "" : selectedWords(slotBody, view.selection)
 +  );
-+  const holeHere = $derived(holeBody === undefined ? undefined : markedHoleAt(holeBody, view.selection));
++  const slotHere = $derived(slotBody === undefined ? undefined : markedSlotAt(slotBody, view.selection));
 +
 +  const templateify = () => {
-+    if (runtime === undefined || holeBody === undefined) return;
-+    const ops = markHoleOps(holeBody, view.selection, holeOffer);
++    if (runtime === undefined || slotBody === undefined) return;
++    const ops = markSlotOps(slotBody, view.selection, slotOffer);
 +    if (ops.length > 0) runtime.apply(ops);
 +  };
  </script>
@@ -12877,23 +12877,23 @@
        onchange={setSpacing}
      />
 
-+    {#if holeWords !== ""}
++    {#if slotWords !== ""}
 +      <PanelSection title="Template" chevron="end">
 +        <div class="flex flex-col items-start gap-2">
-+          {#if holeHere === undefined}
++          {#if slotHere === undefined}
 +            <PanelNote tone="muted">
-+              Mark this as a hole and a template built from this document will ask what fills it,
++              Mark this as a slot and a template built from this document will ask what fills it,
 +              starting from what it says now. The document itself does not change.
 +            </PanelNote>
 +            <PanelButton
 +              label="Templateify"
 +              tone="primary"
-+              title={`Mark the selection as a hole called ${holeOffer}`}
++              title={`Mark the selection as a slot called ${slotOffer}`}
 +              onclick={templateify}
 +            />
 +          {:else}
 +            <PanelNote tone="muted">
-+              These words are the hole <b>{holeHere}</b>. They stay exactly as they are here; the
++              These words are the slot <b>{slotHere}</b>. They stay exactly as they are here; the
 +              template made from this document asks what goes in their place.
 +            </PanelNote>
 +          {/if}
@@ -13020,16 +13020,16 @@
      : { op: "set", target: "block", path: `${block.id}/${field}`, value: value ?? null, was: was ?? null };
 
 -export const linkPromptBlockOps = (
-+/** What this prompt's hole is called, and what it stands for. */
-+export const promptHoleOps = (
++/** What this prompt's slot is called, and what it stands for. */
++export const promptSlotOps = (
    block: PromptBlock,
 -  derivedOutputId: Id<"derivedOutputs">
-+  hole: { name: string; description?: string }
++  slot: { name: string; description?: string }
  ): DocumentOp[] => {
 -  const op = setField(block, "derivedOutputId", derivedOutputId, block.derivedOutputId);
-+  const description = hole.description?.trim() ?? "";
-+  const next = { name: hole.name.trim(), ...(description === "" ? {} : { description }) };
-+  const op = setField(block, "hole", next, block.hole);
++  const description = slot.description?.trim() ?? "";
++  const next = { name: slot.name.trim(), ...(description === "" ? {} : { description }) };
++  const op = setField(block, "slot", next, block.slot);
 +  return op === undefined ? [] : [op];
 +};
 +
@@ -13086,7 +13086,7 @@
      text: { group: "inline" },
 
 +    /**
-+     * A template's own hole, drawn as its name in braces.
++     * A template's own slot, drawn as its name in braces.
 +     *
 +     * It is an atom like a formula is: one indivisible thing the caret steps
 +     * over, because half a parameter name is not a thing anyone means to type.
@@ -13178,13 +13178,13 @@
 +import type { ResourceSet, TemplatedResourceSet } from "$representation/data/types/core/resource-set";
 +import type { DocumentBody, DocumentRow } from "$representation/data/types/documents/body";
 +import type { DocumentOp } from "$representation/data/types/documents/op";
-+import type { TemplateHole } from "$representation/data/types/templates/template";
++import type { TemplateSlot } from "$representation/data/types/templates/template";
 +import { linearOf } from "$representation/data/behavior/content/positions";
 +import {
 +  defaultScopeOf as defaultScope,
-+  holeMarkOver,
-+  holeNameOver
-+} from "$representation/data/behavior/templates/prompt-holes";
++  slotMarkOver,
++  slotNameOver
++} from "$representation/data/behavior/templates/prompt-slots";
 +import { rowHolding } from "$app-views/categories/document-editor/procedures/blocks";
 +import { mint, type IdKind } from "$app-views/categories/document-editor/procedures/ids";
 +import { addressOf } from "$app-views/categories/document-editor/procedures/inspecting";
@@ -13198,7 +13198,7 @@
 +  TemplateLibraryItem
 +} from "$capabilities/templates/index.remote";
 +export type { TemplatedResourceSet } from "$representation/data/types/core/resource-set";
-+export type { TemplateHole } from "$representation/data/types/templates/template";
++export type { TemplateSlot } from "$representation/data/types/templates/template";
 +
 +export {
 +  answerRowsOf,
@@ -13208,13 +13208,13 @@
 +
 +export {
 +  defaultScopeOf,
-+  holeMarkOver,
-+  holeNameOver,
-+  holeNamesIn,
-+  nextHoleName,
-+  offeredHoleName,
++  slotMarkOver,
++  slotNameOver,
++  slotNamesIn,
++  nextSlotName,
++  offeredSlotName,
 +  promptWordsIn
-+} from "$representation/data/behavior/templates/prompt-holes";
++} from "$representation/data/behavior/templates/prompt-slots";
 +
 +export {
 +  PROJECT_KINDS as KINDS,
@@ -13255,7 +13255,7 @@
 +  resources: new Map(resources.map((resource) => [resource.id, resource.name]))
 +});
 +
-+/** What the builder is handed for a hole's default, or for an answer. */
++/** What the builder is handed for a slot's default, or for an answer. */
 +export const offeringOf = (
 +  sets: readonly ResourceSetItem[],
 +  resources: readonly { readonly id: string; readonly kind: string; readonly name: string }[]
@@ -13267,11 +13267,11 @@
 +/**
 + * The answers a caller chose, as rules.
 + *
-+ * A hole nobody touched is absent, which is what makes the template's own
++ * A slot nobody touched is absent, which is what makes the template's own
 + * default apply. Everything present is sent as built; the server decides
 + * whether it needs a row.
 + */
-+/** The words typed for each text hole, with the untouched ones left out. */
++/** The words typed for each text slot, with the untouched ones left out. */
 +export const wordsFrom = (
 +  texts: Readonly<Record<string, string | undefined>>
 +): Readonly<Record<string, string>> =>
@@ -13356,7 +13356,7 @@
 +
 +  let source = template.body;
 +  if (mode === "resolve") {
-+    const resolved = resolveTemplateScopes(template.body, template.holes, answers);
++    const resolved = resolveTemplateScopes(template.body, template.slots, answers);
 +    if (!resolved.accepted || resolved.body.resource !== "document") {
 +      return { ops: [], firstBlockId: undefined };
 +    }
@@ -13386,36 +13386,36 @@
 +};
 +
 +/**
-+ * A hole as the client sends it, which is wider than one as it is stored: a
++ * A slot as the client sends it, which is wider than one as it is stored: a
 + * chosen rule may exclude things and may name particular resources, and the
 + * server turns either into a row before it lands.
 + */
-+export type ChosenHole = Omit<TemplateHole, "default"> & { default?: ScopeDraft };
++export type ChosenSlot = Omit<TemplateSlot, "default"> & { default?: ScopeDraft };
 +
-+export const withHoleField = (
-+  holes: readonly ChosenHole[],
++export const withSlotField = (
++  slots: readonly ChosenSlot[],
 +  name: string,
 +  change: { label?: string; description?: string; default?: ScopeDraft; text?: string }
-+): readonly ChosenHole[] =>
-+  holes.map((hole) => {
-+    if (hole.name !== name) return hole;
-+    const next: ChosenHole = { name: hole.name, label: change.label ?? hole.label };
-+    const description = "description" in change ? change.description : hole.description;
-+    const fallback = "default" in change ? change.default : hole.default;
-+    const words = "text" in change ? change.text : hole.text;
-+    if (hole.kind !== undefined) next.kind = hole.kind;
++): readonly ChosenSlot[] =>
++  slots.map((slot) => {
++    if (slot.name !== name) return slot;
++    const next: ChosenSlot = { name: slot.name, label: change.label ?? slot.label };
++    const description = "description" in change ? change.description : slot.description;
++    const fallback = "default" in change ? change.default : slot.default;
++    const words = "text" in change ? change.text : slot.text;
++    if (slot.kind !== undefined) next.kind = slot.kind;
 +    if (description !== undefined && description.trim().length > 0) next.description = description.trim();
 +    if (fallback !== undefined) next.default = fallback;
 +    if (words !== undefined && words.trim().length > 0) next.text = words;
 +    return next;
 +  });
 +
-+export const mergedHoles = (
-+  held: readonly ChosenHole[],
-+  inserted: readonly ChosenHole[]
-+): readonly ChosenHole[] => {
-+  const names = new Set(held.map((hole) => hole.name));
-+  return [...held, ...inserted.filter((hole) => !names.has(hole.name))];
++export const mergedSlots = (
++  held: readonly ChosenSlot[],
++  inserted: readonly ChosenSlot[]
++): readonly ChosenSlot[] => {
++  const names = new Set(held.map((slot) => slot.name));
++  return [...held, ...inserted.filter((slot) => !names.has(slot.name))];
 +};
 +
 +const blockWithAtoms = (body: DocumentBody, blockId: string) => {
@@ -13434,14 +13434,14 @@
 + *
 + * The block is what the person set, so the output must be told the same thing
 + * or the agent reads the whole project while the panel says otherwise. A body
-+ * open as a template is the one exception: its scope may still name a hole,
++ * open as a template is the one exception: its scope may still name a slot,
 + * which selects nothing until the template is placed and cannot be sent.
 + */
 +export const readableScope = (scope: unknown): ResourceSet | undefined => {
 +  const held = defaultScope(scope);
 +  if (held === undefined) return undefined;
-+  const include = held.include.filter((term) => term.select !== "hole");
-+  const exclude = held.exclude.filter((term) => term.select !== "hole");
++  const include = held.include.filter((term) => term.select !== "slot");
++  const exclude = held.exclude.filter((term) => term.select !== "slot");
 +  return include.length === held.include.length && exclude.length === held.exclude.length
 +    ? { include, exclude }
 +    : undefined;
@@ -13463,32 +13463,32 @@
 +  return from === to ? undefined : { blockId: block.id, from: Math.min(from, to), to: Math.max(from, to) };
 +};
 +
-+/** The words a selection covers, which become what its hole says by default. */
++/** The words a selection covers, which become what its slot says by default. */
 +export const selectedWords = (body: DocumentBody, selection: Selection | undefined): string => {
 +  const range = selectedRange(body, selection);
 +  if (range === undefined) return "";
 +  return blockWithAtoms(body, range.blockId)?.display.slice(range.from, range.to) ?? "";
 +};
 +
-+/** Whether this run is already marked as a hole, and under what name. */
-+export const markedHoleAt = (
++/** Whether this run is already marked as a slot, and under what name. */
++export const markedSlotAt = (
 +  body: DocumentBody,
 +  selection: Selection | undefined
 +): string | undefined => {
 +  const range = selectedRange(body, selection);
 +  if (range === undefined) return undefined;
 +  const block = blockWithAtoms(body, range.blockId);
-+  return block === undefined ? undefined : holeNameOver(block.atoms, block.marks, range.from, range.to);
++  return block === undefined ? undefined : slotNameOver(block.atoms, block.marks, range.from, range.to);
 +};
 +
 +/**
-+ * A run of text marked as a hole.
++ * A run of text marked as a slot.
 + *
 + * Nothing about the document changes: the words stay, every other mark over
 + * them stays, and the paragraph reads exactly as it did. The mark says where a
-+ * template's hole goes, and only the template — a copy — ever has one.
++ * template's slot goes, and only the template — a copy — ever has one.
 + */
-+export const markHoleOps = (
++export const markSlotOps = (
 +  body: DocumentBody,
 +  selection: Selection | undefined,
 +  name: string
@@ -13497,7 +13497,7 @@
 +  if (range === undefined) return [];
 +  const block = blockWithAtoms(body, range.blockId);
 +  if (block === undefined) return [];
-+  const mark = holeMarkOver(block.atoms, range.from, range.to, name.trim(), () => mint("mark"));
++  const mark = slotMarkOver(block.atoms, range.from, range.to, name.trim(), () => mint("mark"));
 +  if (mark === undefined) return [];
 +  return [
 +    {
@@ -13554,19 +13554,19 @@
 +    )
 +  );
 +
-+export const updateHoles = (
++export const updateSlots = (
 +  view: WorkspaceStateModel,
 +  template: { readonly id: string; readonly revision: number },
-+  holes: readonly ChosenHole[],
++  slots: readonly ChosenSlot[],
 +  resourceId?: string
 +) =>
 +  view.singleFlight(
-+    ["template", view.project, template.id, "holes", template.revision, JSON.stringify(holes)],
++    ["template", view.project, template.id, "slots", template.revision, JSON.stringify(slots)],
 +    () =>
 +      updateTemplateRemote({
 +        templateId: template.id,
 +        baseRevision: template.revision,
-+        patch: { holes }
++        patch: { slots }
 +      }).updates(
 +        readTemplateLibrary,
 +        readTemplate({ templateId: template.id }),
@@ -13620,9 +13620,9 @@
 +  draftOf,
 +  insertionOf,
 +  isWholeProject,
-+  mergedHoles,
++  mergedSlots,
 +  ruleOf,
-+  withHoleField
++  withSlotField
 +} from "$app-views/categories/document-editor/procedures/templating";
 +
 +const text = (id: string, display: string, style?: string) => ({
@@ -13669,14 +13669,14 @@
 +            atoms: [{ id: "tp1-a", kind: "literal", text: "Sum up" }],
 +            display: "Sum up",
 +            marks: [],
-+            scope: { include: [{ select: "hole", name: "evidence" }], exclude: [] },
++            scope: { include: [{ select: "slot", name: "evidence" }], exclude: [] },
 +            state: "idle"
 +          }
 +        ]
 +      }
 +    ]
 +  },
-+  holes: [{ name: "evidence", label: "Evidence", default: { include: [{ select: "kinds", kinds: ["finding"] }], exclude: [] } }]
++  slots: [{ name: "evidence", label: "Evidence", default: { include: [{ select: "kinds", kinds: ["finding"] }], exclude: [] } }]
 +};
 +
 +test("an insertion lands after the row holding the caret, or at the end", () => {
@@ -13701,34 +13701,34 @@
 +  assert.deepEqual(applyOps(after, invertAll(insertion.ops)), body);
 +});
 +
-+test("inserting into a stage keeps hole terms", () => {
++test("inserting into a stage keeps slot terms", () => {
 +  const kept = insertionOf(held, template, null, "keep");
 +  const after = applyOps(held, kept.ops);
 +  const first = after.rows[1];
 +  if (first.kind !== "blocks" || first.blocks[0].type !== "prompt") throw new Error("prompt expected");
-+  assert.deepEqual(first.blocks[0].scope, { include: [{ select: "hole", name: "evidence" }], exclude: [] });
++  assert.deepEqual(first.blocks[0].scope, { include: [{ select: "slot", name: "evidence" }], exclude: [] });
 +});
 +
-+test("a hole without a default resolves to the whole project on insert", () => {
-+  const insertion = insertionOf(held, { ...template, holes: [{ name: "evidence", label: "Evidence" }] }, "r2", "resolve");
++test("a slot without a default resolves to the whole project on insert", () => {
++  const insertion = insertionOf(held, { ...template, slots: [{ name: "evidence", label: "Evidence" }] }, "r2", "resolve");
 +  const after = applyOps(held, insertion.ops);
 +  const row = after.rows[3];
 +  if (row.kind !== "blocks" || row.blocks[0].type !== "prompt") throw new Error("prompt expected");
 +  assert.deepEqual(row.blocks[0].scope, { include: [{ select: "project" }], exclude: [] });
 +});
 +
-+test("holes are edited by name and merged without repeats", () => {
++test("slots are edited by name and merged without repeats", () => {
 +  const declared = [{ name: "incident_evidence", label: "Incident evidence" }];
 +
-+  const described = withHoleField(declared, "incident_evidence", { description: "  What happened  " });
++  const described = withSlotField(declared, "incident_evidence", { description: "  What happened  " });
 +  assert.equal(described[0].description, "What happened");
-+  const cleared = withHoleField(described, "incident_evidence", { description: "" });
++  const cleared = withSlotField(described, "incident_evidence", { description: "" });
 +  assert.equal("description" in cleared[0], false);
-+  const ruled = withHoleField(declared, "incident_evidence", { default: { include: [{ select: "project" }], exclude: [] } });
++  const ruled = withSlotField(declared, "incident_evidence", { default: { include: [{ select: "project" }], exclude: [] } });
 +  assert.deepEqual(ruled[0].default, { include: [{ select: "project" }], exclude: [] });
 +
-+  const merged = mergedHoles(declared, [{ name: "incident_evidence", label: "Other" }, { name: "models", label: "Models" }]);
-+  assert.deepEqual(merged.map((hole) => hole.name), ["incident_evidence", "models"]);
++  const merged = mergedSlots(declared, [{ name: "incident_evidence", label: "Other" }, { name: "models", label: "Models" }]);
++  assert.deepEqual(merged.map((slot) => slot.name), ["incident_evidence", "models"]);
 +  assert.deepEqual(merged[0], declared[0]);
 +});
 +
@@ -13748,7 +13748,7 @@
 +  assert.equal(ruleOf(named), "A chosen group");
 +});
 +
-+test("an answer is a rule the caller built, and a hole nobody touched is absent", () => {
++test("an answer is a rule the caller built, and a slot nobody touched is absent", () => {
 +  assert.deepEqual(answersFrom({ evidence: undefined }), {});
 +
 +  const answers = answersFrom({
@@ -13827,7 +13827,7 @@
 +    blockId,
 +    derivedOutputId,
 +    disabled = false,
-+    description = "The sources it is answered from. If it is a hole, this is also what the hole selects until whoever places the template says otherwise.",
++    description = "The sources it is answered from. If it is a slot, this is also what the slot selects until whoever places the template says otherwise.",
 +    onconfirm
 +  }: {
 +    blockId: string;
@@ -14064,12 +14064,12 @@
 +  import { PromptTemplate } from "$authored-components/prompt-template";
 +  import {
 +    promptBlockIn,
-+    promptHoleOps,
++    promptSlotOps,
 +    type Id
 +  } from "$app-views/categories/slide-deck-editor/procedures/prompt-blocks";
 +  import {
 +    defaultScopeOf,
-+    nextHoleName,
++    nextSlotName,
 +    projectResources,
 +    resourceSets,
 +    resourcesIn,
@@ -14081,9 +14081,9 @@
 +  import { workspaceState, type SlideDeckRuntime } from "$model/client/workspace-state";
 +
 +  /**
-+   * Turning a prompt into a hole, and saying what the hole is.
++   * Turning a prompt into a slot, and saying what the slot is.
 +   *
-+   * What the hole would default to is the scope the prompt reads, and once the
++   * What the slot would default to is the scope the prompt reads, and once the
 +   * prompt is linked that lives on the derived output. This reads it from the
 +   * same place the agent does, so the default shown here is the default a
 +   * template would actually carry.
@@ -14126,8 +14126,8 @@
 +    )
 +  );
 +
-+  const offered = $derived(body === undefined ? "Hole 1" : nextHoleName(body));
-+  const named = $derived(block?.hole);
++  const offered = $derived(body === undefined ? "Slot 1" : nextSlotName(body));
++  const named = $derived(block?.slot);
 +  const reads = $derived(
 +    ruleOf(defaultScopeOf(derivedOutputId === undefined ? block?.scope : linked?.scope), setNames)
 +  );
@@ -14139,17 +14139,17 @@
 +
 +  const make = () => {
 +    if (block === undefined) return;
-+    write(promptHoleOps(block, { name: offered }));
++    write(promptSlotOps(block, { name: offered }));
 +  };
 +
 +  const rename = (name: string) => {
 +    if (block === undefined) return;
-+    write(promptHoleOps(block, { name, description: named?.description }));
++    write(promptSlotOps(block, { name, description: named?.description }));
 +  };
 +
 +  const describe = (description: string) => {
 +    if (block === undefined) return;
-+    write(promptHoleOps(block, { name: named?.name ?? offered, description }));
++    write(promptSlotOps(block, { name: named?.name ?? offered, description }));
 +  };
 +</script>
 +
@@ -14235,7 +14235,7 @@
 +    discardStage,
 +    draftOf,
 +    insertionOf,
-+    mergedHoles,
++    mergedSlots,
 +    offeringOf,
 +    promptWordsIn,
 +    openStage,
@@ -14251,18 +14251,18 @@
 +    templateDetail,
 +    templateLibrary,
 +    termFor,
-+    updateHoles,
-+    withHoleField,
++    updateSlots,
++    withSlotField,
 +    withTerm,
 +    withWholeProject,
 +    withoutTerm,
-+    type ChosenHole,
++    type ChosenSlot,
 +    type OfferSource,
 +    type ScopeDraft,
 +    type ScopeSide,
 +    type TemplateAnswers,
 +    type TemplateDetail,
-+    type TemplateHole,
++    type TemplateSlot,
 +    type TemplateLibraryItem
 +  } from "$app-views/categories/slide-deck-editor/procedures/templating";
 +  import { readStore, workspaceState, type SlideDeckRuntime } from "$model/client/workspace-state";
@@ -14310,7 +14310,7 @@
 +  let pending = $state<string | undefined>(undefined);
 +  let actionError = $state<string | undefined>(undefined);
 +  let notice = $state<readonly string[]>([]);
-+  let defaultFor = $state<TemplateHole | undefined>(undefined);
++  let defaultFor = $state<TemplateSlot | undefined>(undefined);
 +  let defaultOpen = $state(false);
 +  let draft = $state<ScopeDraft>(draftOf(undefined));
 +  let insertFor = $state<TemplateDetail | undefined>(undefined);
@@ -14318,9 +14318,9 @@
 +  let answerOpen = $state(false);
 +  let choices = $state<Record<string, ScopeDraft | undefined>>({});
 +  let texts = $state<Record<string, string | undefined>>({});
-+  let answering = $state<TemplateHole | undefined>(undefined);
++  let answering = $state<TemplateSlot | undefined>(undefined);
 +
-+  const askRows = $derived(answerRowsOf(insertFor?.holes ?? [], choices, texts, setNames));
++  const askRows = $derived(answerRowsOf(insertFor?.slots ?? [], choices, texts, setNames));
 +  const askBlocked = $derived(
 +    missingIn(askRows).length === 0 ? undefined : `${missingIn(askRows).join(", ")} still needs words.`
 +  );
@@ -14457,9 +14457,9 @@
 +    runtime.apply(insertion.ops);
 +    if (insertion.firstSlideId !== undefined) show(insertion.firstSlideId);
 +    if (stage !== undefined && template !== undefined) {
-+      const merged = mergedHoles(template.holes, detail.holes);
-+      if (merged.length !== template.holes.length) {
-+        const result = await updateHoles(view, template, merged, deckId);
++      const merged = mergedSlots(template.slots, detail.slots);
++      if (merged.length !== template.slots.length) {
++        const result = await updateSlots(view, template, merged, deckId);
 +        if (live && !result.accepted) actionError = result.detail;
 +      }
 +    }
@@ -14474,7 +14474,7 @@
 +        actionError = "That template could not be read.";
 +        return;
 +      }
-+      if (stage === undefined && detail.holes.length > 0) {
++      if (stage === undefined && detail.slots.length > 0) {
 +        insertFor = detail;
 +        choices = {};
 +        texts = {};
@@ -14491,22 +14491,22 @@
 +    void run(`place:${detail.id}`, () => place(detail, answersFrom(choices), wordsFrom(texts)));
 +  };
 +
-+  const changeHoles = (next: readonly ChosenHole[]) =>
-+    run("holes", async () => {
++  const changeSlots = (next: readonly ChosenSlot[]) =>
++    run("slots", async () => {
 +      if (template === undefined) return;
-+      const result = await updateHoles(view, template, next, deckId);
++      const result = await updateSlots(view, template, next, deckId);
 +      if (live && !result.accepted) actionError = result.detail;
 +    });
 +
-+  const openDefault = (hole: TemplateHole) => {
-+    defaultFor = hole;
-+    draft = draftOf(hole.default);
++  const openDefault = (slot: TemplateSlot) => {
++    defaultFor = slot;
++    draft = draftOf(slot.default);
 +    defaultOpen = true;
 +  };
 +
 +  const confirmDefault = () => {
 +    if (template === undefined || defaultFor === undefined) return;
-+    void changeHoles(withHoleField(template.holes, defaultFor.name, { default: draft }));
++    void changeSlots(withSlotField(template.slots, defaultFor.name, { default: draft }));
 +  };
 +
 +
@@ -14516,10 +14516,10 @@
 +   * footer under the pointer, and the press lands on a button that has gone.
 +   */
 +  const openAnswer = (name: string) => {
-+    const hole = insertFor?.holes.find((candidate) => candidate.name === name);
-+    if (hole === undefined) return;
-+    answering = hole;
-+    draft = draftOf(choices[name] ?? hole.default);
++    const slot = insertFor?.slots.find((candidate) => candidate.name === name);
++    if (slot === undefined) return;
++    answering = slot;
++    draft = draftOf(choices[name] ?? slot.default);
 +    insertOpen = false;
 +    answerOpen = true;
 +  };
@@ -14612,44 +14612,44 @@
 +      <PanelNote>Reading this deck…</PanelNote>
 +    {:else if stage !== undefined}
 +      <div class="after-verbs">
-+        <PanelSection title="Holes" count={template?.holes.length} chevron="end">
++        <PanelSection title="Slots" count={template?.slots.length} chevron="end">
 +          {#if template === undefined}
 +            <PanelNote>Reading the template…</PanelNote>
-+          {:else if template.holes.length === 0}
++          {:else if template.slots.length === 0}
 +            <PanelNote>
-+              Nothing here is a hole yet. Open a prompt and press Templateify in its Template section.
++              Nothing here is a slot yet. Open a prompt and press Templateify in its Template section.
 +            </PanelNote>
 +          {:else}
-+            {#each template.holes as hole (hole.name)}
-+              <article class="hole">
++            {#each template.slots as slot (slot.name)}
++              <article class="slot">
 +                <header>
-+                  <PanelChip tone="accent-1">{hole.name}</PanelChip>
-+                  <span class="hole-label">{hole.label}</span>
++                  <PanelChip tone="accent-1">{slot.name}</PanelChip>
++                  <span class="slot-label">{slot.label}</span>
 +                </header>
 +                <PanelEditableText
-+                  value={hole.description ?? ""}
-+                  label={`Description for ${hole.label}`}
-+                  placeholder="What this hole stands for"
++                  value={slot.description ?? ""}
++                  label={`Description for ${slot.label}`}
++                  placeholder="What this slot stands for"
 +                  multiline
 +                  disabled={busy}
-+                  onchange={(next) => changeHoles(withHoleField(template.holes, hole.name, { description: next }))}
++                  onchange={(next) => changeSlots(withSlotField(template.slots, slot.name, { description: next }))}
 +                />
-+                {#if hole.kind === "text"}
++                {#if slot.kind === "text"}
 +                  <PanelEditableText
-+                    value={hole.text ?? ""}
-+                    label={`Default words for ${hole.label}`}
++                    value={slot.text ?? ""}
++                    label={`Default words for ${slot.label}`}
 +                    placeholder="What it says when nobody says otherwise"
 +                    multiline
 +                    disabled={busy}
-+                    onchange={(next) => changeHoles(withHoleField(template.holes, hole.name, { text: next }))}
++                    onchange={(next) => changeSlots(withSlotField(template.slots, slot.name, { text: next }))}
 +                  />
 +                {:else}
 +                  <div class="scope">
 +                    <PanelButton
 +                      label="Default scope"
 +                      disabled={busy}
-+                      title={`${ruleOf(hole.default, setNames)} — change what ${hole.label} selects by default`}
-+                      onclick={() => openDefault(hole)}
++                      title={`${ruleOf(slot.default, setNames)} — change what ${slot.label} selects by default`}
++                      onclick={() => openDefault(slot)}
 +                    />
 +                  </div>
 +                {/if}
@@ -14668,7 +14668,7 @@
 +      </div>
 +    {/if}
 +
-+    <div class="after-holes">
++    <div class="after-slots">
 +    <PanelSection title="List" chevron="end" flush>
 +      {#if library.error}
 +        <PanelBanner title="Templates unavailable" tone="danger">
@@ -14684,7 +14684,7 @@
 +            <div class="item">
 +              <PanelRow title={item.name}>
 +                <span class="item-title">{item.name}</span>
-+                <span class="item-sub">{item.holeCount} {item.holeCount === 1 ? "hole" : "holes"} · revision {item.revision}</span>
++                <span class="item-sub">{item.slotCount} {item.slotCount === 1 ? "slot" : "slots"} · revision {item.revision}</span>
 +                <span class="item-actions">
 +                  <PanelButton label="Insert" tone="ghost" disabled={busy} title={`Insert “${item.name}” after slide ${position}`} onclick={() => insert(item)} />
 +                  <PanelButton label="Edit" tone="ghost" disabled={busy} title={`Edit “${item.name}” in the editor`} onclick={() => edit(item)} />
@@ -14702,7 +14702,7 @@
 +<OverlayModal
 +  bind:open={insertOpen}
 +  title={`Insert “${insertFor?.name ?? "the template"}”`}
-+  description="One hole at a time. The tabs say which still need words."
++  description="One slot at a time. The tabs say which still need words."
 +  confirm="Insert"
 +  width="wide"
 +  blocked={askBlocked}
@@ -14720,7 +14720,7 @@
 +
 +<OverlayModal
 +  bind:open={answerOpen}
-+  title={`What ${answering?.label ?? "the hole"} selects here`}
++  title={`What ${answering?.label ?? "the slot"} selects here`}
 +  description="For this copy only. Nothing here changes the template."
 +  confirm="Use this"
 +  width="wide"
@@ -14741,7 +14741,7 @@
 +
 +<OverlayModal
 +  bind:open={defaultOpen}
-+  title={`Default scope for ${defaultFor?.label ?? "the hole"}`}
++  title={`Default scope for ${defaultFor?.label ?? "the slot"}`}
 +  description="What it selects until whoever places the template says otherwise."
 +  confirm="Set the default scope"
 +  width="wide"
@@ -14781,13 +14781,13 @@
 +    border-top: 1px solid var(--token-border-subtle);
 +  }
 +
-+  .after-holes {
++  .after-slots {
 +    margin-top: calc(var(--token-spacing-unit) * 2);
 +    padding-top: calc(var(--token-spacing-unit) * 1);
 +    border-top: 1px solid var(--token-border-subtle);
 +  }
 +
-+  .hole {
++  .slot {
 +    display: flex;
 +    flex-direction: column;
 +    gap: calc(var(--token-spacing-unit) * 1.5);
@@ -14797,18 +14797,18 @@
 +    background: var(--token-surface-elevated);
 +  }
 +
-+  .hole + .hole {
++  .slot + .slot {
 +    margin-top: calc(var(--token-spacing-unit) * 1.5);
 +  }
 +
-+  .hole header {
++  .slot header {
 +    display: flex;
 +    flex-wrap: wrap;
 +    align-items: center;
 +    gap: calc(var(--token-spacing-unit) * 1.5);
 +  }
 +
-+  .hole-label {
++  .slot-label {
 +    color: var(--token-ink-primary);
 +    font-size: var(--token-text-body-sm);
 +    font-weight: 600;
@@ -14874,7 +14874,7 @@
      linkPromptBlockOps,
      promptBlockIn,
      promptElementIn,
-+    promptHoleOps,
++    promptSlotOps,
 +    promptScopeOps,
      syncPromptBlockOps,
      type Id,
@@ -14990,9 +14990,9 @@
 +    PanelSection
 +  } from "$authored-components/panel";
 +  import {
-+    markHoleOps,
-+    markedHoleAt,
-+    nextHoleName,
++    markSlotOps,
++    markedSlotAt,
++    nextSlotName,
 +    selectedWords
 +  } from "$app-views/categories/slide-deck-editor/procedures/templating";
    import TextSpacing from "$app-views/categories/slide-deck-editor/components/text-spacing.svelte";
@@ -15004,16 +15004,16 @@
    const position = $derived(body === undefined ? 0 : slideIndexOf(body, view.active.focus ?? undefined) + 1);
 +
 +  /**
-+   * A run of a slide's text marked as a hole. Nothing about the deck changes —
-+   * the words stay, and only a template made from it holds a hole here.
++   * A run of a slide's text marked as a slot. Nothing about the deck changes —
++   * the words stay, and only a template made from it holds a slot here.
 +   */
-+  const offered = $derived(body === undefined ? "Hole 1" : nextHoleName(body));
++  const offered = $derived(body === undefined ? "Slot 1" : nextSlotName(body));
 +  const words = $derived(body === undefined ? "" : selectedWords(body, range));
-+  const here = $derived(body === undefined ? undefined : markedHoleAt(body, range));
++  const here = $derived(body === undefined ? undefined : markedSlotAt(body, range));
 +
 +  const templateify = () => {
 +    if (runtime === undefined || body === undefined) return;
-+    const ops = markHoleOps(body, range, offered);
++    const ops = markSlotOps(body, range, offered);
 +    if (ops.length > 0) runtime.apply(ops);
 +  };
  </script>
@@ -15029,18 +15029,18 @@
 +        <div class="template">
 +          {#if here === undefined}
 +            <PanelNote tone="muted">
-+              Mark this as a hole and a template built from this deck will ask what fills it, starting
++              Mark this as a slot and a template built from this deck will ask what fills it, starting
 +              from what it says now. The deck itself does not change.
 +            </PanelNote>
 +            <PanelButton
 +              label="Templateify"
 +              tone="primary"
-+              title={`Mark the selection as a hole called ${offered}`}
++              title={`Mark the selection as a slot called ${offered}`}
 +              onclick={templateify}
 +            />
 +          {:else}
 +            <PanelNote tone="muted">
-+              These words are the hole <b>{here}</b>. They stay exactly as they are here; the template
++              These words are the slot <b>{here}</b>. They stay exactly as they are here; the template
 +              made from this deck asks what goes in their place.
 +            </PanelNote>
 +          {/if}
@@ -15128,16 +15128,16 @@
        };
 
 -export const linkPromptBlockOps = (
-+/** What this prompt's hole is called, and what it stands for. */
-+export const promptHoleOps = (
++/** What this prompt's slot is called, and what it stands for. */
++export const promptSlotOps = (
    block: PromptBlock,
 -  derivedOutputId: Id<"derivedOutputs">
-+  hole: { name: string; description?: string }
++  slot: { name: string; description?: string }
  ): SlideDeckOp[] => {
 -  const op = setField(block, "derivedOutputId", derivedOutputId, block.derivedOutputId);
-+  const description = hole.description?.trim() ?? "";
-+  const next = { name: hole.name.trim(), ...(description === "" ? {} : { description }) };
-+  const op = setField(block, "hole", next, block.hole);
++  const description = slot.description?.trim() ?? "";
++  const next = { name: slot.name.trim(), ...(description === "" ? {} : { description }) };
++  const op = setField(block, "slot", next, block.slot);
 +  return op === undefined ? [] : [op];
 +};
 +
@@ -15232,9 +15232,9 @@
 +import { applyOps } from "$representation/data/behavior/slide-decks/apply-ops";
 +import {
 +  defaultScopeOf as defaultScope,
-+  holeMarkOver,
-+  holeNameOver
-+} from "$representation/data/behavior/templates/prompt-holes";
++  slotMarkOver,
++  slotNameOver
++} from "$representation/data/behavior/templates/prompt-slots";
 +import { withFreshIds, type IdHint } from "$representation/data/behavior/templates/fresh-ids";
 +import {
 +  fillTemplateAtoms,
@@ -15243,7 +15243,7 @@
 +import type { ResourceSet, TemplatedResourceSet } from "$representation/data/types/core/resource-set";
 +import type { SlideDeckBody, SlideLayout } from "$representation/data/types/slide-decks/body";
 +import type { SlideDeckOp } from "$representation/data/types/slide-decks/op";
-+import type { TemplateHole } from "$representation/data/types/templates/template";
++import type { TemplateSlot } from "$representation/data/types/templates/template";
 +import { mint, type IdKind } from "$app-views/categories/slide-deck-editor/procedures/ids";
 +import type { WorkspaceStateModel } from "$model/client/workspace-state";
 +
@@ -15255,17 +15255,17 @@
 +  TemplateLibraryItem
 +} from "$capabilities/templates/index.remote";
 +export type { TemplatedResourceSet } from "$representation/data/types/core/resource-set";
-+export type { TemplateHole } from "$representation/data/types/templates/template";
++export type { TemplateSlot } from "$representation/data/types/templates/template";
 +
 +export {
 +  defaultScopeOf,
-+  holeMarkOver,
-+  holeNameOver,
-+  holeNamesIn,
-+  nextHoleName,
-+  offeredHoleName,
++  slotMarkOver,
++  slotNameOver,
++  slotNamesIn,
++  nextSlotName,
++  offeredSlotName,
 +  promptWordsIn
-+} from "$representation/data/behavior/templates/prompt-holes";
++} from "$representation/data/behavior/templates/prompt-slots";
 +
 +export {
 +  answerRowsOf,
@@ -15312,7 +15312,7 @@
 +  resources: new Map(resources.map((resource) => [resource.id, resource.name]))
 +});
 +
-+/** What the builder is handed for a hole's default, or for an answer. */
++/** What the builder is handed for a slot's default, or for an answer. */
 +export const offeringOf = (
 +  sets: readonly ResourceSetItem[],
 +  resources: readonly { readonly id: string; readonly kind: string; readonly name: string }[]
@@ -15324,7 +15324,7 @@
 +/**
 + * The answers a caller chose, as rules.
 + *
-+ * A hole nobody touched is absent, which is what makes the template's own
++ * A slot nobody touched is absent, which is what makes the template's own
 + * default apply. Everything present is sent as built; the server decides
 + * whether it needs a row.
 + */
@@ -15400,7 +15400,7 @@
 +
 +  let source: SlideDeckBody = template.body;
 +  if (mode === "resolve") {
-+    const resolved = resolveTemplateScopes(template.body, template.holes, answers);
++    const resolved = resolveTemplateScopes(template.body, template.slots, answers);
 +    if (!resolved.accepted || resolved.body.resource !== "slides") return none(body);
 +    const filled = fillTemplateAtoms(resolved.body, texts);
 +    if (filled.resource !== "slides") return none(body);
@@ -15443,36 +15443,36 @@
 +};
 +
 +/**
-+ * A hole as the client sends it, which is wider than one as it is stored: a
++ * A slot as the client sends it, which is wider than one as it is stored: a
 + * chosen rule may exclude things and may name particular resources, and the
 + * server turns either into a row before it lands.
 + */
-+export type ChosenHole = Omit<TemplateHole, "default"> & { default?: ScopeDraft };
++export type ChosenSlot = Omit<TemplateSlot, "default"> & { default?: ScopeDraft };
 +
-+export const withHoleField = (
-+  holes: readonly ChosenHole[],
++export const withSlotField = (
++  slots: readonly ChosenSlot[],
 +  name: string,
 +  change: { label?: string; description?: string; default?: ScopeDraft; text?: string }
-+): readonly ChosenHole[] =>
-+  holes.map((hole) => {
-+    if (hole.name !== name) return hole;
-+    const next: ChosenHole = { name: hole.name, label: change.label ?? hole.label };
-+    const description = "description" in change ? change.description : hole.description;
-+    const fallback = "default" in change ? change.default : hole.default;
-+    const words = "text" in change ? change.text : hole.text;
-+    if (hole.kind !== undefined) next.kind = hole.kind;
++): readonly ChosenSlot[] =>
++  slots.map((slot) => {
++    if (slot.name !== name) return slot;
++    const next: ChosenSlot = { name: slot.name, label: change.label ?? slot.label };
++    const description = "description" in change ? change.description : slot.description;
++    const fallback = "default" in change ? change.default : slot.default;
++    const words = "text" in change ? change.text : slot.text;
++    if (slot.kind !== undefined) next.kind = slot.kind;
 +    if (description !== undefined && description.trim().length > 0) next.description = description.trim();
 +    if (fallback !== undefined) next.default = fallback;
 +    if (words !== undefined && words.trim().length > 0) next.text = words;
 +    return next;
 +  });
 +
-+export const mergedHoles = (
-+  held: readonly ChosenHole[],
-+  inserted: readonly ChosenHole[]
-+): readonly ChosenHole[] => {
-+  const names = new Set(held.map((hole) => hole.name));
-+  return [...held, ...inserted.filter((hole) => !names.has(hole.name))];
++export const mergedSlots = (
++  held: readonly ChosenSlot[],
++  inserted: readonly ChosenSlot[]
++): readonly ChosenSlot[] => {
++  const names = new Set(held.map((slot) => slot.name));
++  return [...held, ...inserted.filter((slot) => !names.has(slot.name))];
 +};
 +
 +const blockAt = (body: SlideDeckBody, blockId: string) => {
@@ -15491,20 +15491,20 @@
 + *
 + * The block is what the person set, so the output must be told the same thing
 + * or the agent reads the whole project while the panel says otherwise. A deck
-+ * open as a template is the one exception: its scope may still name a hole,
++ * open as a template is the one exception: its scope may still name a slot,
 + * which selects nothing until the template is placed and cannot be sent.
 + */
 +export const readableScope = (scope: unknown): ResourceSet | undefined => {
 +  const held = defaultScope(scope);
 +  if (held === undefined) return undefined;
-+  const include = held.include.filter((term) => term.select !== "hole");
-+  const exclude = held.exclude.filter((term) => term.select !== "hole");
++  const include = held.include.filter((term) => term.select !== "slot");
++  const exclude = held.exclude.filter((term) => term.select !== "slot");
 +  return include.length === held.include.length && exclude.length === held.exclude.length
 +    ? { include, exclude }
 +    : undefined;
 +};
 +
-+/** The words a selection covers, which become what its hole says by default. */
++/** The words a selection covers, which become what its slot says by default. */
 +export const selectedWords = (
 +  body: SlideDeckBody,
 +  range: { readonly blockId: string; readonly from: number; readonly to: number } | undefined
@@ -15515,23 +15515,23 @@
 +  return block.display.slice(Math.min(range.from, range.to), Math.max(range.from, range.to));
 +};
 +
-+/** Whether this run is already marked as a hole, and under what name. */
-+export const markedHoleAt = (
++/** Whether this run is already marked as a slot, and under what name. */
++export const markedSlotAt = (
 +  body: SlideDeckBody,
 +  range: { readonly blockId: string; readonly from: number; readonly to: number } | undefined
 +): string | undefined => {
 +  if (range === undefined) return undefined;
 +  const block = blockAt(body, range.blockId);
-+  return block === undefined ? undefined : holeNameOver(block.atoms, block.marks, range.from, range.to);
++  return block === undefined ? undefined : slotNameOver(block.atoms, block.marks, range.from, range.to);
 +};
 +
 +/**
-+ * A run of a slide's text marked as a hole.
++ * A run of a slide's text marked as a slot.
 + *
 + * Nothing about the deck changes: the words stay, every other mark over them
-+ * stays, and only the template made from it holds a hole where they were.
++ * stays, and only the template made from it holds a slot where they were.
 + */
-+export const markHoleOps = (
++export const markSlotOps = (
 +  body: SlideDeckBody,
 +  range: { readonly blockId: string; readonly from: number; readonly to: number } | undefined,
 +  name: string
@@ -15539,7 +15539,7 @@
 +  if (range === undefined) return [];
 +  const block = blockAt(body, range.blockId);
 +  if (block === undefined) return [];
-+  const mark = holeMarkOver(block.atoms, range.from, range.to, name.trim(), () => mint("mark"));
++  const mark = slotMarkOver(block.atoms, range.from, range.to, name.trim(), () => mint("mark"));
 +  if (mark === undefined) return [];
 +  return [
 +    {
@@ -15606,19 +15606,19 @@
 +    )
 +  );
 +
-+export const updateHoles = (
++export const updateSlots = (
 +  view: WorkspaceStateModel,
 +  template: { readonly id: string; readonly revision: number },
-+  holes: readonly ChosenHole[],
++  slots: readonly ChosenSlot[],
 +  resourceId?: string
 +) =>
 +  view.singleFlight(
-+    ["template", view.project, template.id, "holes", template.revision, JSON.stringify(holes)],
++    ["template", view.project, template.id, "slots", template.revision, JSON.stringify(slots)],
 +    () =>
 +      updateTemplateRemote({
 +        templateId: template.id,
 +        baseRevision: template.revision,
-+        patch: { holes }
++        patch: { slots }
 +      }).updates(
 +        readTemplateLibrary,
 +        readTemplate({ templateId: template.id }),
@@ -15749,7 +15749,7 @@
 +                atoms: [{ id: "tp1-a", kind: "literal", text: "Sum up" }],
 +                display: "Sum up",
 +                marks: [],
-+                scope: { include: [{ select: "hole", name: "evidence" }], exclude: [] },
++                scope: { include: [{ select: "slot", name: "evidence" }], exclude: [] },
 +                state: "idle"
 +              }
 +            }
@@ -15761,7 +15761,7 @@
 +    ],
 +    sections: []
 +  },
-+  holes: [{ name: "evidence", label: "Evidence", default: { include: [{ select: "project" }], exclude: [] } }]
++  slots: [{ name: "evidence", label: "Evidence", default: { include: [{ select: "project" }], exclude: [] } }]
 +});
 +
 +describe("inserting a template into a deck", () => {
@@ -15785,13 +15785,13 @@
 +    expect(after.slides[1].notes[0].id.startsWith("blk-")).toBe(true);
 +  });
 +
-+  it("puts a one-slide template in, keeping hole terms for a stage", () => {
++  it("puts a one-slide template in, keeping slot terms for a stage", () => {
 +    const insertion = insertionOf(deck, template(1), "s2", "keep");
 +    expect(insertion.body.slides.length).toBe(3);
 +    expect(insertion.body.slides[2].id).toBe(insertion.firstSlideId);
 +    const element = insertion.body.slides[2].elements[0];
 +    if (element.content.type !== "prompt") throw new Error("prompt expected");
-+    expect(element.content.block.scope).toEqual({ include: [{ select: "hole", name: "evidence" }], exclude: [] });
++    expect(element.content.block.scope).toEqual({ include: [{ select: "slot", name: "evidence" }], exclude: [] });
 +  });
 +
 +  it("falls back to the end when the anchor is not in the deck, and does nothing for a document", () => {
@@ -15804,8 +15804,8 @@
 +  it("lists only deck templates", () => {
 +    const library = {
 +      templates: [
-+        { ...template(2), id: "a", holeCount: 1 },
-+        { ...template(1), id: "b", target: "document" as const, holeCount: 1 }
++        { ...template(2), id: "a", slotCount: 1 },
++        { ...template(1), id: "b", target: "document" as const, slotCount: 1 }
 +      ],
 +      unavailable: []
 +    };
@@ -15860,9 +15860,9 @@
 +template holding one slide, and nothing marks it afterwards.
 +
 +A working copy shows Save and Discard in the panel's header instead of the name
-+field, because the tab title already says which template is open. Its Holes band
-+lists every hole: a scope hole is found from the slides' prompt scopes and
-+cannot be added by hand; a text hole is made by Create hole, which names it and
++field, because the tab title already says which template is open. Its Slots band
++lists every slot: a scope slot is found from the slides' prompt scopes and
++cannot be added by hand; a text slot is made by Create slot, which names it and
 +drops its atom into the selected text. Each is a card carrying that name, its
 +label, its description, and either default words or a button that opens the
 +default-scope modal.
@@ -15870,9 +15870,9 @@
 +A divider separates the band from a collapsible List section holding every deck
 +template, searchable, each row inserting after the current slide or opening the
 +template for editing. Inserting brings fresh identifiers and any layouts and
-+named styles the deck lacks. A template with holes first asks, in one modal,
-+what fills each; inserting into a working copy asks nothing, keeps the hole
-+terms, and merges the two hole lists.
++named styles the deck lacks. A template with slots first asks, in one modal,
++what fills each; inserting into a working copy asks nothing, keeps the slot
++terms, and merges the two slot lists.
 +
  ## Inspectors
 
@@ -16419,7 +16419,7 @@
  What is available here, grouped by what comes out of it: Documents, Slide decks,
  Spreadsheets. Grouped that way because the first question about a template is
 -what it makes. Each row carries its scope and its variable count as one line,
-+what it makes. Each row carries its scope and its hole count as one line,
++what it makes. Each row carries its scope and its slot count as one line,
  because they are one decision — together they say whether the template can be
  used at all.
 
@@ -16427,7 +16427,7 @@
 -one. There is no Use control, because nothing in a body carries a variable key
 -yet; a Use that ran today would hand back a document with the keys still sitting
 -in it, which is worse than no Use.
-+one. There is no Use control, because nothing in a body carries a hole key yet;
++one. There is no Use control, because nothing in a body carries a slot key yet;
 +a Use that ran today would hand back a document with the keys still sitting in
 +it, which is worse than no Use.
 
@@ -16487,9 +16487,9 @@
 +    "_creationTime": 1787000000000,
 +    "projectId": "default",
 +    "boundTo": {
-+      "kind": "hole",
++      "kind": "slot",
 +      "templateId": "templates:1",
-+      "hole": "incident_evidence"
++      "slot": "incident_evidence"
 +    },
 +    "set": {
 +      "include": [{ "select": "kinds", "kinds": ["finding", "document", "spreadsheet"] }],
@@ -16667,7 +16667,7 @@
 +              "scope": {
 +                "include": [
 +                  {
-+                    "select": "hole",
++                    "select": "slot",
 +                    "name": "incident_evidence"
 +                  }
 +                ],
@@ -16724,7 +16724,7 @@
        ]
      },
 -    "variables": [
-+    "holes": [
++    "slots": [
        {
          "name": "incident_evidence",
          "label": "Incident evidence",
@@ -16856,7 +16856,7 @@
 +              "scope": {
 +                "include": [
 +                  {
-+                    "select": "hole",
++                    "select": "slot",
 +                    "name": "readiness_record"
 +                  }
 +                ],
@@ -16905,7 +16905,7 @@
 +              "scope": {
 +                "include": [
 +                  {
-+                    "select": "hole",
++                    "select": "slot",
 +                    "name": "supporting_findings"
 +                  }
 +                ],
@@ -16923,7 +16923,7 @@
        ]
      },
 -    "variables": [
-+    "holes": [
++    "slots": [
        {
          "name": "readiness_record",
          "label": "Readiness record",
@@ -17119,7 +17119,7 @@
 +              "scope": {
 +                "include": [
 +                  {
-+                    "select": "hole",
++                    "select": "slot",
 +                    "name": "source_material"
 +                  }
 +                ],
@@ -17132,7 +17132,7 @@
        ]
      },
 -    "variables": [
-+    "holes": [
++    "slots": [
        {
          "name": "source_material",
          "label": "Source material",
@@ -17279,7 +17279,7 @@
 +              "scope": {
 +                "include": [
 +                  {
-+                    "select": "hole",
++                    "select": "slot",
 +                    "name": "decision_evidence"
 +                  }
 +                ],
@@ -17328,7 +17328,7 @@
 +              "scope": {
 +                "include": [
 +                  {
-+                    "select": "hole",
++                    "select": "slot",
 +                    "name": "cost_models"
 +                  }
 +                ],
@@ -17377,7 +17377,7 @@
        ]
      },
 -    "variables": [
-+    "holes": [
++    "slots": [
        {
          "name": "decision_evidence",
          "label": "Decision evidence",
@@ -17589,7 +17589,7 @@
 +                  "scope": {
 +                    "include": [
 +                      {
-+                        "select": "hole",
++                        "select": "slot",
 +                        "name": "board_evidence"
 +                      }
 +                    ],
@@ -17643,7 +17643,7 @@
 +      ]
      },
 -    "variables": [
-+    "holes": [
++    "slots": [
        {
          "name": "board_evidence",
          "label": "Board evidence",
@@ -17832,7 +17832,7 @@
 +                  "scope": {
 +                    "include": [
 +                      {
-+                        "select": "hole",
++                        "select": "slot",
 +                        "name": "field_record"
 +                      }
 +                    ],
@@ -17866,7 +17866,7 @@
 +      ]
      },
 -    "variables": [
-+    "holes": [
++    "slots": [
        {
          "name": "field_record",
          "label": "Field work record",
@@ -18053,7 +18053,7 @@
 +                  "scope": {
 +                    "include": [
 +                      {
-+                        "select": "hole",
++                        "select": "slot",
 +                        "name": "portfolio_record"
 +                      }
 +                    ],
@@ -18091,7 +18091,7 @@
 +      ]
      },
 -    "variables": [
-+    "holes": [
++    "slots": [
        {
          "name": "portfolio_record",
          "label": "Portfolio record",
@@ -18280,7 +18280,7 @@
 +                  "scope": {
 +                    "include": [
 +                      {
-+                        "select": "hole",
++                        "select": "slot",
 +                        "name": "option_evidence"
 +                      }
 +                    ],
@@ -18321,7 +18321,7 @@
 +                  "scope": {
 +                    "include": [
 +                      {
-+                        "select": "hole",
++                        "select": "slot",
 +                        "name": "option_models"
 +                      }
 +                    ],
@@ -18359,7 +18359,7 @@
 +      ]
      },
 -    "variables": [
-+    "holes": [
++    "slots": [
        {
          "name": "option_evidence",
          "label": "Option evidence",
@@ -18591,7 +18591,7 @@
 +      ],
 +      "sections": []
 +    },
-+    "holes": [],
++    "slots": [],
 +    "createdBy": {
 +      "kind": "user",
 +      "userId": "default-user"
@@ -18699,7 +18699,7 @@
 +              "scope": {
 +                "include": [
 +                  {
-+                    "select": "hole",
++                    "select": "slot",
 +                    "name": "status_evidence"
 +                  }
 +                ],
@@ -18711,7 +18711,7 @@
 +        }
 +      ]
 +    },
-+    "holes": [
++    "slots": [
 +      {
 +        "name": "client_name",
 +        "label": "Client name",
@@ -18855,7 +18855,7 @@
 +              "scope": {
 +                "include": [
 +                  {
-+                    "select": "hole",
++                    "select": "slot",
 +                    "name": "incident_record"
 +                  }
 +                ],
@@ -18906,7 +18906,7 @@
 +              "scope": {
 +                "include": [
 +                  {
-+                    "select": "hole",
++                    "select": "slot",
 +                    "name": "cost_models"
 +                  }
 +                ],
@@ -18918,7 +18918,7 @@
 +        }
 +      ]
 +    },
-+    "holes": [
++    "slots": [
 +      {
 +        "name": "incident_title",
 +        "label": "Incident title",
@@ -19006,7 +19006,7 @@
                  "include": [
                    {
 -                    "select": "variable",
-+                    "select": "hole",
++                    "select": "slot",
                      "name": "incident_evidence"
                    }
                  ],
@@ -19015,7 +19015,7 @@
        ]
      },
 -    "variables": [
-+    "holes": [
++    "slots": [
        {
          "name": "incident_evidence",
          "label": "Incident evidence",
@@ -19024,7 +19024,7 @@
                  "include": [
                    {
 -                    "select": "variable",
-+                    "select": "hole",
++                    "select": "slot",
                      "name": "readiness_record"
                    }
                  ],
@@ -19033,7 +19033,7 @@
                  "include": [
                    {
 -                    "select": "variable",
-+                    "select": "hole",
++                    "select": "slot",
                      "name": "supporting_findings"
                    }
                  ],
@@ -19042,7 +19042,7 @@
        ]
      },
 -    "variables": [
-+    "holes": [
++    "slots": [
        {
          "name": "readiness_record",
          "label": "Readiness record",
@@ -19072,7 +19072,7 @@
                  "include": [
                    {
 -                    "select": "variable",
-+                    "select": "hole",
++                    "select": "slot",
                      "name": "source_material"
                    }
                  ],
@@ -19081,7 +19081,7 @@
        ]
      },
 -    "variables": [
-+    "holes": [
++    "slots": [
        {
          "name": "source_material",
          "label": "Source material",
@@ -19103,7 +19103,7 @@
                  "include": [
                    {
 -                    "select": "variable",
-+                    "select": "hole",
++                    "select": "slot",
                      "name": "decision_evidence"
                    }
                  ],
@@ -19112,7 +19112,7 @@
                  "include": [
                    {
 -                    "select": "variable",
-+                    "select": "hole",
++                    "select": "slot",
                      "name": "cost_models"
                    }
                  ],
@@ -19121,7 +19121,7 @@
        ]
      },
 -    "variables": [
-+    "holes": [
++    "slots": [
        {
          "name": "decision_evidence",
          "label": "Decision evidence",
@@ -19130,7 +19130,7 @@
                      "include": [
                        {
 -                        "select": "variable",
-+                        "select": "hole",
++                        "select": "slot",
                          "name": "board_evidence"
                        }
                      ],
@@ -19139,7 +19139,7 @@
        ]
      },
 -    "variables": [
-+    "holes": [
++    "slots": [
        {
          "name": "board_evidence",
          "label": "Board evidence",
@@ -19148,7 +19148,7 @@
                      "include": [
                        {
 -                        "select": "variable",
-+                        "select": "hole",
++                        "select": "slot",
                          "name": "field_record"
                        }
                      ],
@@ -19157,7 +19157,7 @@
        ]
      },
 -    "variables": [
-+    "holes": [
++    "slots": [
        {
          "name": "field_record",
          "label": "Field work record",
@@ -19166,7 +19166,7 @@
                      "include": [
                        {
 -                        "select": "variable",
-+                        "select": "hole",
++                        "select": "slot",
                          "name": "portfolio_record"
                        }
                      ],
@@ -19175,7 +19175,7 @@
        ]
      },
 -    "variables": [
-+    "holes": [
++    "slots": [
        {
          "name": "portfolio_record",
          "label": "Portfolio record",
@@ -19184,7 +19184,7 @@
                      "include": [
                        {
 -                        "select": "variable",
-+                        "select": "hole",
++                        "select": "slot",
                          "name": "option_evidence"
                        }
                      ],
@@ -19193,7 +19193,7 @@
                      "include": [
                        {
 -                        "select": "variable",
-+                        "select": "hole",
++                        "select": "slot",
                          "name": "option_models"
                        }
                      ],
@@ -19202,7 +19202,7 @@
        ]
      },
 -    "variables": [
-+    "holes": [
++    "slots": [
        {
          "name": "option_evidence",
          "label": "Option evidence",
@@ -19211,7 +19211,7 @@
        }
      },
 -    "variables": [],
-+    "holes": [],
++    "slots": [],
      "at": 1784385000000
    },
    {
@@ -19220,7 +19220,7 @@
        }
      },
 -    "variables": [],
-+    "holes": [],
++    "slots": [],
      "at": 1782306000000
 +  },
 +  {
@@ -19367,7 +19367,7 @@
 +      ],
 +      "sections": []
 +    },
-+    "holes": [],
++    "slots": [],
 +    "at": 1788000000000
 +  },
 +  {
@@ -19470,7 +19470,7 @@
 +              "scope": {
 +                "include": [
 +                  {
-+                    "select": "hole",
++                    "select": "slot",
 +                    "name": "status_evidence"
 +                  }
 +                ],
@@ -19482,7 +19482,7 @@
 +        }
 +      ]
 +    },
-+    "holes": [
++    "slots": [
 +      {
 +        "name": "client_name",
 +        "label": "Client name",
@@ -19592,7 +19592,7 @@
 +              "scope": {
 +                "include": [
 +                  {
-+                    "select": "hole",
++                    "select": "slot",
 +                    "name": "incident_record"
 +                  }
 +                ],
@@ -19643,7 +19643,7 @@
 +              "scope": {
 +                "include": [
 +                  {
-+                    "select": "hole",
++                    "select": "slot",
 +                    "name": "cost_models"
 +                  }
 +                ],
@@ -19655,7 +19655,7 @@
 +        }
 +      ]
 +    },
-+    "holes": [
++    "slots": [
 +      {
 +        "name": "incident_title",
 +        "label": "Incident title",
@@ -19846,7 +19846,7 @@
 +  expect(unexpected, `unexpected browser diagnostics in ${testInfo.title}`).toEqual([]);
 +});
 +
-+test("inserting a template into a document asks for each hole, shows its default, and takes an answer", async ({ page }) => {
++test("inserting a template into a document asks for each slot, shows its default, and takes an answer", async ({ page }) => {
 +  await openDocumentFixture(page);
 +  const editor = page.locator(".ProseMirror");
 +  const before = await editor.innerText();
@@ -19857,11 +19857,11 @@
 +  const modal = page.getByRole("dialog", { name: "Insert “Technical glossary”" });
 +  await expect(modal).toBeVisible();
 +
-+  // Every hole is a tab, and the red ones are the only thing holding Insert up.
++  // Every slot is a tab, and the red ones are the only thing holding Insert up.
 +  await expect(modal.locator(".tab")).toHaveCount(2);
 +  await expect(modal.locator(".tab.missing")).toHaveCount(1);
 +
-+  // One hole at a time, opening on the first.
++  // One slot at a time, opening on the first.
 +  await expect(modal.locator(".answer h3")).toHaveText("Source material");
 +  await expect(modal.locator(".scope .rule")).toContainText("Documents, Findings");
 +
@@ -19900,7 +19900,7 @@
 +  await expect(page.locator(".title-bar")).toContainText("Saved", { timeout: 10_000 });
 +});
 +
-+test("a document is saved as a template, takes its hole from an inserted prompt, and is saved back", async ({ page }) => {
++test("a document is saved as a template, takes its slot from an inserted prompt, and is saved back", async ({ page }) => {
 +  const name = `Browser template ${Date.now()}`;
 +  await openDocumentFixture(page);
 +
@@ -19912,14 +19912,14 @@
 +
 +  await expect(context.getByRole("button", { name: "Save", exact: true })).toBeVisible();
 +  await expect(context.getByRole("textbox", { name: "New variable" })).toHaveCount(0);
-+  await expect(context.getByText("Nothing here is a hole yet.")).toBeVisible();
-+  await expect(context.locator(".hole")).toHaveCount(0);
++  await expect(context.getByText("Nothing here is a slot yet.")).toBeVisible();
++  await expect(context.locator(".slot")).toHaveCount(0);
 +
 +  await context.getByTitle("Insert “Technical glossary” after the current row").click();
 +  await expect(context.getByText("Inserted “Technical glossary”.", { exact: true })).toBeVisible();
 +  await expect(page.locator(".ProseMirror")).toContainText("Technical glossary");
 +
-+  const card = context.locator(".hole").filter({ hasText: "Source material" });
++  const card = context.locator(".slot").filter({ hasText: "Source material" });
 +  const scope = card.getByRole("button", { name: "Default scope", exact: true });
 +  await expect(scope).toBeVisible();
 +  await scope.click();
@@ -19942,9 +19942,9 @@
 +
 +/**
 + * The whole chain, from a prompt somebody writes to a copy that reads what
-+ * somebody else chose. One gesture makes the hole; everything after it follows.
++ * somebody else chose. One gesture makes the slot; everything after it follows.
 + */
-+test("a templateified prompt becomes a hole the template asks about", async ({ page }) => {
++test("a templateified prompt becomes a slot the template asks about", async ({ page }) => {
 +  const name = `Browser prompt ${Date.now()}`;
 +
 +  await page.goto("/app/dev-project", { waitUntil: "networkidle" });
@@ -19967,21 +19967,21 @@
 +  // The Scope control is real: it reads the whole project and opens the builder.
 +  await expect(inspector.getByRole("button", { name: "Everything in the project" })).toBeVisible();
 +
-+  // Until Templateify is pressed this is not a hole.
++  // Until Templateify is pressed this is not a slot.
 +  await expect(inspector.getByRole("button", { name: "Templateify", exact: true })).toBeVisible();
 +  await inspector.getByRole("button", { name: "Templateify", exact: true }).click();
-+  await expect(inspector.getByRole("button", { name: "Hole 1", exact: true })).toBeVisible();
++  await expect(inspector.getByRole("button", { name: "Slot 1", exact: true })).toBeVisible();
 +
-+  await inspector.getByRole("button", { name: "Hole 1", exact: true }).click();
-+  const holeName = inspector.getByRole("textbox", { name: "What this hole is called" });
-+  await holeName.fill("winter_sources");
-+  await holeName.press("Enter");
++  await inspector.getByRole("button", { name: "Slot 1", exact: true }).click();
++  const slotName = inspector.getByRole("textbox", { name: "What this slot is called" });
++  await slotName.fill("winter_sources");
++  await slotName.press("Enter");
 +  await expect(inspector.getByRole("button", { name: "winter_sources", exact: true })).toBeVisible();
 +
 +  await inspector.getByRole("button", { name: "What whoever places this is choosing" }).click();
-+  const holeMeans = inspector.getByRole("textbox", { name: "What this hole stands for" });
-+  await holeMeans.fill("Which filings the summary reads");
-+  await holeMeans.blur();
++  const slotMeans = inspector.getByRole("textbox", { name: "What this slot stands for" });
++  await slotMeans.fill("Which filings the summary reads");
++  await slotMeans.blur();
 +  await expect(
 +    inspector.getByRole("button", { name: "Which filings the summary reads", exact: true })
 +  ).toBeVisible();
@@ -19993,8 +19993,8 @@
 +  await context.getByRole("button", { name: "Save", exact: true }).click();
 +  await expect(page.locator(".title-bar h1")).toContainText(`Template · ${name}`, { timeout: 15_000 });
 +
-+  // The prompt is a hole, named and described, defaulting to what it read.
-+  const card = context.locator(".hole").filter({ hasText: "winter_sources" });
++  // The prompt is a slot, named and described, defaulting to what it read.
++  const card = context.locator(".slot").filter({ hasText: "winter_sources" });
 +  await expect(card).toBeVisible();
 +  await expect(card).toContainText("Which filings the summary reads");
 +  await expect(card.getByRole("button", { name: "Default scope", exact: true })).toHaveAttribute(
@@ -20041,13 +20041,13 @@
 +
 +/**
 + * Marking a run is not an edit. The document reads exactly as it did before and
-+ * after; only the template made from it holds a hole where the words were.
++ * after; only the template made from it holds a slot where the words were.
 + */
-+test("Templateify marks a run without changing the document, and the template gets the hole", async ({ page }) => {
-+  const name = `Browser holes ${Date.now()}`;
++test("Templateify marks a run without changing the document, and the template gets the slot", async ({ page }) => {
++  const name = `Browser slots ${Date.now()}`;
 +  await openDocumentFixture(page);
 +
-+  // Select a word in the prose, and the selection inspector offers to make it a hole.
++  // Select a word in the prose, and the selection inspector offers to make it a slot.
 +  const editor = page.locator(".ProseMirror");
 +  const paragraph = editor.getByRole("paragraph").first();
 +  await expect(paragraph).toBeVisible();
@@ -20063,25 +20063,25 @@
 +
 +  await selection.getByRole("button", { name: "Templateify", exact: true }).click();
 +
-+  // The document is untouched: same words, no hole drawn into the prose.
-+  await expect(selection.getByText("These words are the hole")).toBeVisible();
++  // The document is untouched: same words, no slot drawn into the prose.
++  await expect(selection.getByText("These words are the slot")).toBeVisible();
 +  await expect(editor.locator(".document-template-atom")).toHaveCount(0);
 +  expect(await editor.innerText()).toEqual(before);
 +  await expect(page.locator(".title-bar")).toContainText("Saved", { timeout: 15_000 });
 +
-+  // The words are not thrown away — they become what the hole says by default.
++  // The words are not thrown away — they become what the slot says by default.
 +  const context = await templatesPanel(page);
 +  await context.getByRole("textbox", { name: "Template name" }).fill(name);
 +  await context.getByRole("button", { name: "Save", exact: true }).click();
 +  await expect(page.locator(".title-bar h1")).toContainText(`Template · ${name}`, { timeout: 15_000 });
 +
-+  const card = context.locator(".hole").filter({ hasText: "Hole 1" });
++  const card = context.locator(".slot").filter({ hasText: "Slot 1" });
 +  await expect(card).toBeVisible();
 +  await expect(card.getByRole("button", { name: "Default scope", exact: true })).toHaveCount(0);
 +  await expect(card).toContainText(words);
 +
-+  // The copy the template opened holds the hole; the original still holds the words.
-+  await expect(page.locator(".ProseMirror").locator(".document-template-atom")).toContainText("Hole 1");
++  // The copy the template opened holds the slot; the original still holds the words.
++  await expect(page.locator(".ProseMirror").locator(".document-template-atom")).toContainText("Slot 1");
 +
 +  page.once("dialog", (dialog) => void dialog.accept());
 +  await context.getByRole("button", { name: "Discard", exact: true }).click();
@@ -20115,14 +20115,14 @@
 +  await deleteTemplateFromLibrary(page, name);
 +});
 +
-+test("a slide templateifies its words and its prompt, and the deck template holds both holes", async ({ page }) => {
-+  const name = `Browser deck holes ${Date.now()}`;
++test("a slide templateifies its words and its prompt, and the deck template holds both slots", async ({ page }) => {
++  const name = `Browser deck slots ${Date.now()}`;
 +  await openDeckFixture(page);
 +  const context = page.locator('aside[aria-label="Context"]');
 +  const inspector = page.locator('aside[aria-label="Inspector"]');
 +  const surface = page.locator(".area-canvas").getByRole("application", { name: "Slide" });
 +
-+  // A slide's Prompt Block becomes a hole, and its Scope control reads what it reads.
++  // A slide's Prompt Block becomes a slot, and its Scope control reads what it reads.
 +  const rail = context.getByRole("navigation", { name: "Context views" });
 +  await rail.getByRole("button", { name: "Insert", exact: true }).click();
 +  await context.getByRole("button", { name: "Text box", exact: true }).click();
@@ -20135,9 +20135,9 @@
 +  await prompt.getByLabel("Prompt", { exact: true }).fill("Summarize the winter exposure.");
 +  await expect(prompt.getByRole("button", { name: "Everything in the project" })).toBeVisible();
 +  await prompt.getByRole("button", { name: "Templateify", exact: true }).click();
-+  await expect(prompt.getByRole("button", { name: "Hole 1", exact: true })).toBeVisible();
++  await expect(prompt.getByRole("button", { name: "Slot 1", exact: true })).toBeVisible();
 +
-+  // A run of a slide's words becomes the next hole, and the slide itself does not change.
++  // A run of a slide's words becomes the next slot, and the slide itself does not change.
 +  await rail.getByRole("button", { name: "Insert", exact: true }).click();
 +  await context.getByRole("button", { name: "Text box", exact: true }).click();
 +  const words = surface.locator("[data-item]").last();
@@ -20151,18 +20151,18 @@
 +  );
 +  await expect(selection).toBeVisible();
 +  await selection.getByRole("button", { name: "Templateify", exact: true }).click();
-+  await expect(selection.getByText("These words are the hole")).toBeVisible();
-+  await expect(selection.getByText("Hole 2")).toBeVisible();
++  await expect(selection.getByText("These words are the slot")).toBeVisible();
++  await expect(selection.getByText("Slot 2")).toBeVisible();
 +  await expect(words).toContainText("Text");
-+  await expect(words).not.toContainText("{Hole");
++  await expect(words).not.toContainText("{Slot");
 +
-+  // Saved as a template, the deck carries both holes.
++  // Saved as a template, the deck carries both slots.
 +  const templates = await templatesPanel(page);
 +  await templates.getByRole("textbox", { name: "Template name" }).fill(name);
 +  await templates.getByRole("button", { name: "Save deck", exact: true }).click();
 +  await expect(page.locator(".area-title")).toContainText(`Template · ${name}`, { timeout: 15_000 });
-+  await expect(templates.locator(".hole").filter({ hasText: "Hole 1" })).toBeVisible();
-+  await expect(templates.locator(".hole").filter({ hasText: "Hole 2" })).toBeVisible();
++  await expect(templates.locator(".slot").filter({ hasText: "Slot 1" })).toBeVisible();
++  await expect(templates.locator(".slot").filter({ hasText: "Slot 2" })).toBeVisible();
 +
 +  page.once("dialog", (dialog) => void dialog.accept());
 +  await templates.getByRole("button", { name: "Discard", exact: true }).click();
@@ -20205,7 +20205,7 @@
 +  await expect(context.getByRole("button", { name: new RegExp(`^${name}`) })).toHaveCount(0);
 +});
 +
-+test("a hole's default is built with an exclusion, stored, and read back as the rule", async ({ page }) => {
++test("a slot's default is built with an exclusion, stored, and read back as the rule", async ({ page }) => {
 +  await page.goto("/app/dev-project", { waitUntil: "networkidle" });
 +  await tabs(page).getByRole("button", { name: "Templates", exact: true }).click();
 +  await page.getByRole("button", { name: /^Incident write-up/ }).first().click();
@@ -20269,7 +20269,7 @@
 +const routes = [
 +  ["system", "/app/dev-project/reference/templates", "How templates work"],
 +  ["changes", "/app/dev-project/reference/templates/changes", "What changed"],
-+  ["scope", "/app/dev-project/reference/templates/scope", "What a hole selects"],
++  ["scope", "/app/dev-project/reference/templates/scope", "What a slot selects"],
 +  ["integration", "/app/dev-project/reference/templates/integration", "End to end with prompts"],
 +  ["rebase", "/app/dev-project/reference/templates/rebase", "Where it meets the base"],
 +  ["walkthrough", "/app/dev-project/reference/templates/walkthrough", "Walk it yourself"]
@@ -20371,7 +20371,7 @@
 +  await expect(page.getByRole("heading", { level: 2, name: "The builder" })).toBeVisible();
 +  await expect(page.getByText("Insert “Client status note”").first()).toBeVisible();
 +  await expect(page.getByText("From", { exact: true }).first()).toBeVisible();
-+  await expect(page.getByRole("heading", { level: 2, name: "Two kinds of hole" })).toBeVisible();
++  await expect(page.getByRole("heading", { level: 2, name: "Two kinds of slot" })).toBeVisible();
 +
 +  await expect(page.getByRole("heading", { level: 2, name: "Every file it touched" })).toBeVisible();
 +  await expect(page.locator("#work tbody tr").first()).toBeVisible();
@@ -20397,8 +20397,8 @@
 +  await expect(page.locator(".tref-badge.clean")).toHaveCount(8);
 +  await expect(page.locator(".tref-badge.known")).toHaveCount(0);
 +
-+  // A hole's default is whatever the thing already is, so nothing arrives empty.
-+  await expect(page.getByRole("heading", { level: 2, name: "What a hole defaults to" })).toBeVisible();
++  // A slot's default is whatever the thing already is, so nothing arrives empty.
++  await expect(page.getByRole("heading", { level: 2, name: "What a slot defaults to" })).toBeVisible();
 +  await expect(page.getByRole("cell", { name: "A run of selected text", exact: true })).toBeVisible();
 +
 +  await page.getByRole("link", { name: "Walk it yourself", exact: false }).first().click();
@@ -20409,19 +20409,19 @@
 +  await page.setViewportSize({ width: 1500, height: 1000 });
 +  await page.goto("/app/dev-project/reference/templates/walkthrough", { waitUntil: "networkidle" });
 +
-+  // Three prompts, one templateified, so one hole and one question when it is placed.
-+  const holes = page.locator("#made tbody tr");
-+  await expect(holes).toHaveCount(1);
-+  await expect(holes.nth(0).locator("code")).toHaveText("open_decisions");
++  // Three prompts, one templateified, so one slot and one question when it is placed.
++  const slots = page.locator("#made tbody tr");
++  await expect(slots).toHaveCount(1);
++  await expect(slots.nth(0).locator("code")).toHaveText("open_decisions");
 +  await expect(page.locator(".tab")).toHaveCount(1);
 +
-+  // Templateifying another prompt adds its hole, everywhere at once.
++  // Templateifying another prompt adds its slot, everywhere at once.
 +  const first = page.locator(".prompt").first();
 +  await first.getByRole("button", { name: "Templateify", exact: true }).click();
-+  await expect(holes).toHaveCount(2);
-+  await expect(page.getByRole("tab", { name: "Hole 1" })).toBeVisible();
++  await expect(slots).toHaveCount(2);
++  await expect(page.getByRole("tab", { name: "Slot 1" })).toBeVisible();
 +
-+  // Nothing is ever red, because a hole's default is whatever the thing already is.
++  // Nothing is ever red, because a slot's default is whatever the thing already is.
 +  await expect(page.locator(".tab.missing")).toHaveCount(0);
 +  await expect(page.getByRole("button", { name: "Accept all defaults" })).toBeEnabled();
 +});
@@ -20850,14 +20850,14 @@
 +  import { traceNode } from "$development-components/trace.svelte";
 +
 +  /**
-+   * Turning this thing into a hole, and saying what the hole is.
++   * Turning this thing into a slot, and saying what the slot is.
 +   *
-+   * A hole is made, never found: until somebody presses the button there is
++   * A slot is made, never found: until somebody presses the button there is
 +   * none, and a template made from this body will not ask about it. That is
 +   * what makes placing a template short — the questions are the ones somebody
 +   * meant to ask.
 +   *
-+   * There is no default control. A hole's default is simply whatever the thing
++   * There is no default control. A slot's default is simply whatever the thing
 +   * already is: the scope this prompt reads, or the words that were selected.
 +   * Changing the default means changing the thing, which is done where the
 +   * thing is.
@@ -20872,7 +20872,7 @@
 +    onname,
 +    ondescription
 +  }: {
-+    /** The hole's name, or undefined while this is not a hole. */
++    /** The slot's name, or undefined while this is not a slot. */
 +    name?: string;
 +    description?: string;
 +    /** The name the button will give it. */
@@ -20898,7 +20898,7 @@
 +  <div class="template" {...trace}>
 +    {#if name === undefined}
 +      <PanelNote tone="muted">
-+        Not a hole. Make it one and a template built from this will ask what fills it, starting from
++        Not a slot. Make it one and a template built from this will ask what fills it, starting from
 +        what it is now — {standing}.
 +      </PanelNote>
 +      <div class="act">
@@ -20906,16 +20906,16 @@
 +          label="Templateify"
 +          tone="primary"
 +          {disabled}
-+          title={`Make this a hole called ${offered}`}
++          title={`Make this a slot called ${offered}`}
 +          onclick={onmake}
 +        />
 +      </div>
 +    {:else}
 +      <div class="field">
-+        <span class="label">Hole name</span>
++        <span class="label">Slot name</span>
 +        <PanelEditableText
 +          value={name}
-+          label="What this hole is called"
++          label="What this slot is called"
 +          placeholder={offered}
 +          {disabled}
 +          onchange={rename}
@@ -20926,7 +20926,7 @@
 +        <span class="label">Description <em>optional</em></span>
 +        <PanelEditableText
 +          value={description}
-+          label="What this hole stands for"
++          label="What this slot stands for"
 +          placeholder="What whoever places this is choosing"
 +          multiline
 +          {disabled}
@@ -21483,11 +21483,11 @@
 +  import { traceNode } from "$development-components/trace.svelte";
 +
 +  /**
-+   * Every hole a template asks for, one at a time.
++   * Every slot a template asks for, one at a time.
 +   *
-+   * **One question on screen, and all of them in view.** A hole is a question,
++   * **One question on screen, and all of them in view.** A slot is a question,
 +   * and a page of twelve questions is read as a form rather than answered as
-+   * one. So the body holds a single hole — its name, what it stands for, the
++   * one. So the body holds a single slot — its name, what it stands for, the
 +   * prompt it fills if it fills one, and the control — while the tabs above
 +   * keep the whole shape visible and say which still need an answer.
 +   *
@@ -21501,7 +21501,7 @@
 +   */
 +
 +  export type AnswerRow = {
-+    /** The hole's name, and this component's key for it. */
++    /** The slot's name, and this component's key for it. */
 +    readonly key: string;
 +    readonly label: string;
 +    readonly description?: string;
@@ -21510,7 +21510,7 @@
 +    readonly value: string;
 +    /** Whether the caller has said anything, as against taking what was suggested. */
 +    readonly answered: boolean;
-+    /** Whether it has no answer at all, which only a text hole can be. */
++    /** Whether it has no answer at all, which only a text slot can be. */
 +    readonly missing: boolean;
 +  };
 +
@@ -21524,14 +21524,14 @@
 +    onaccept
 +  }: {
 +    rows: readonly AnswerRow[];
-+    /** The prompt behind a hole, by hole name, when a prompt is behind it. */
++    /** The prompt behind a slot, by slot name, when a prompt is behind it. */
 +    prompts?: Readonly<Record<string, string>>;
 +    disabled?: boolean;
-+    /** Open the builder for one scope hole. */
++    /** Open the builder for one scope slot. */
 +    onscope: (key: string) => void;
-+    /** The words typed for one text hole. */
++    /** The words typed for one text slot. */
 +    ontext: (key: string, words: string) => void;
-+    /** Put one hole back to what the template suggests. */
++    /** Put one slot back to what the template suggests. */
 +    onreset: (key: string) => void;
 +    /** Take everything as it stands and place the template. */
 +    onaccept?: () => void;
@@ -21539,7 +21539,7 @@
 +
 +  let at = $state(0);
 +
-+  /** A hole answered and then removed must not leave the walk past its end. */
++  /** A slot answered and then removed must not leave the walk past its end. */
 +  const index = $derived(Math.min(at, Math.max(rows.length - 1, 0)));
 +  const shown = $derived(rows[index]);
 +  const asked = $derived(shown === undefined ? undefined : prompts[shown.key]);
@@ -21548,7 +21548,7 @@
 +
 +  const trace = traceNode("TemplateAnswers", () => ({ rows: rows.length, missing, at: index }));
 +
-+  /** Next lands on the first hole that still needs words, if any are left after this one. */
++  /** Next lands on the first slot that still needs words, if any are left after this one. */
 +  const step = (by: number) => {
 +    at = Math.min(Math.max(index + by, 0), Math.max(rows.length - 1, 0));
 +  };
@@ -21558,7 +21558,7 @@
 +  {#if rows.length === 0}
 +    <p class="none">This template asks for nothing. Place it as it is.</p>
 +  {:else}
-+    <div class="tabs" role="tablist" aria-label="Holes to fill">
++    <div class="tabs" role="tablist" aria-label="Slots to fill">
 +      {#each rows as row, position (row.key)}
 +        <button
 +          type="button"
@@ -22105,7 +22105,7 @@
 +        <p>
 +          Seven commits on <code>work/template-features</code>, sitting on
 +          <code>work/derived-output-architecture</code> rather than on main — because that is where
-+          prompt blocks are, and a prompt's scope is what a scope hole fills. Everything on this page
++          prompt blocks are, and a prompt's scope is what a scope slot fills. Everything on this page
 +          is measured from there, so the numbers say what this branch adds and nothing else.
 +        </p>
 +      </div>
@@ -22178,7 +22178,7 @@
 +
 +  const bound = [
 +    { field: "name", value: "absent" },
-+    { field: "boundTo", value: "{ hole, templateId, name }" },
++    { field: "boundTo", value: "{ slot, templateId, name }" },
 +    { field: "set", value: "{ include, exclude }" }
 +  ];
 +</script>
@@ -22194,7 +22194,7 @@
 +    </dl>
 +    <ul>
 +      <li>Appears in <code>readResourceSets</code></li>
-+      <li>Refuses removal while a set or a hole names it</li>
++      <li>Refuses removal while a set or a slot names it</li>
 +      <li>Survives everything that points at it</li>
 +    </ul>
 +  </section>
@@ -22210,20 +22210,20 @@
 +    <ul>
 +      <li>Read only through the id that points at it</li>
 +      <li>Removed with its owner</li>
-+      <li>Two holes that build the same rule get two rows, and that is correct</li>
++      <li>Two slots that build the same rule get two rows, and that is correct</li>
 +    </ul>
 +  </section>
 +</div>
 +
 +<div class="pointers">
 +  <div class="from">
-+    <code>templates.holes[i].default</code>
++    <code>templates.slots[i].default</code>
 +    <small>a template's project-local metadata</small>
 +  </div>
 +  <div class="arrow" aria-hidden="true">→</div>
 +  <div class="term"><code>{"{ select: \"set\", setId }"}</code><small>one term, so it substitutes on either side</small></div>
 +  <div class="arrow" aria-hidden="true">→</div>
-+  <div class="to bound-to"><b>A bound row</b><small>owner: that hole</small></div>
++  <div class="to bound-to"><b>A bound row</b><small>owner: that slot</small></div>
 +
 +  <div class="from">
 +    <code>documents.body … prompt.scope</code>
@@ -22358,7 +22358,7 @@
 +    <div class="modal">
 +      <header>
 +        <b>Insert “Client status note”</b>
-+        <p>Every hole this template asks for.</p>
++        <p>Every slot this template asks for.</p>
 +      </header>
 +      <div class="body">
 +        <div class="row needs">
@@ -22421,7 +22421,7 @@
 +
 +<ul class="notes">
 +  <li>
-+    <b>Every hole, always, and nothing folded away.</b> Each row reads top to bottom: the name,
++    <b>Every slot, always, and nothing folded away.</b> Each row reads top to bottom: the name,
 +    the sentence whoever made the template wrote, and the value. A row with nothing in it carries a
 +    rule down its left edge, and the confirm says which one is holding it up.
 +  </li>
@@ -22431,7 +22431,7 @@
 +    nothing opens a third lid.
 +  </li>
 +  <li>
-+    <b>The list scrolls; the modal does not grow.</b> A template with twelve holes and one with
++    <b>The list scrolls; the modal does not grow.</b> A template with twelve slots and one with
 +    two open the same size, and both panes of the builder are one fixed height, so nothing jumps as
 +    somebody clicks between Kinds, Sets and Resources.
 +  </li>
@@ -22440,7 +22440,7 @@
 +    because what you can take out should be what you put in.
 +  </li>
 +  <li>
-+    <b>The floor is a button.</b> Whole project is the common answer, Default puts a hole back to
++    <b>The floor is a button.</b> Whole project is the common answer, Default puts a slot back to
 +    what the template suggested, and Clear empties both sides to start again.
 +  </li>
 +</ul>
@@ -22769,8 +22769,8 @@
 +      <div class="hint">The name is required; Save opens the new template's working copy in a new tab.</div>
 +      <div class="section">List <em>⌄</em></div>
 +      <div class="search">Search templates…</div>
-+      <div class="row"><b>Decision memo</b><small>2 holes · revision 4</small><span><span class="button">Insert</span><span class="button">Edit</span></span></div>
-+      <div class="row"><b>Technical glossary</b><small>1 hole · revision 3</small><span><span class="button">Insert</span><span class="button">Edit</span></span></div>
++      <div class="row"><b>Decision memo</b><small>2 slots · revision 4</small><span><span class="button">Insert</span><span class="button">Edit</span></span></div>
++      <div class="row"><b>Technical glossary</b><small>1 slot · revision 3</small><span><span class="button">Insert</span><span class="button">Edit</span></span></div>
 +    </div>
 +  </figure>
 +
@@ -22778,8 +22778,8 @@
 +    <figcaption>The same panel on a working copy</figcaption>
 +    <div class="panel">
 +      <header><b>Templates</b><span class="actions"><span class="button primary">Save</span><span class="button danger">Discard</span></span></header>
-+      <div class="section">Holes <em>1 ⌄</em></div>
-+      <div class="hole">
++      <div class="section">Slots <em>1 ⌄</em></div>
++      <div class="slot">
 +        <span class="chip">source_material</span>
 +        <b>Source material</b>
 +        <span class="description">Documents and findings whose terminology should be normalized.</span>
@@ -22787,16 +22787,16 @@
 +      </div>
 +      <div class="section">List <em>⌄</em></div>
 +      <div class="search">Search templates…</div>
-+      <div class="row"><b>Decision memo</b><small>2 holes · revision 4</small><span><span class="button">Insert</span><span class="button">Edit</span></span></div>
++      <div class="row"><b>Decision memo</b><small>2 slots · revision 4</small><span><span class="button">Insert</span><span class="button">Edit</span></span></div>
 +    </div>
 +  </figure>
 +</div>
 +
 +<ul class="notes">
 +  <li><b>No name field</b> on a working copy — the tab already says <code>Template · name</code>, and Save and Discard sit where it was, above a rule.</li>
-+  <li><b>Create hole</b> sits at the top of Holes and makes a text hole: it takes a name, a description and default words, then drops the atom at the caret. A scope hole cannot be made here — that list is what the body's prompts ask for.</li>
++  <li><b>Create slot</b> sits at the top of Slots and makes a text slot: it takes a name, a description and default words, then drops the atom at the caret. A scope slot cannot be made here — that list is what the body's prompts ask for.</li>
 +  <li><b>Default scope</b> opens the modal; what it currently selects is on the button's title rather than in its label.</li>
-+  <li><b>List</b> is a collapsible section of its own behind a rule, so inserting a template into a template is plainly a different thing from the holes above it.</li>
++  <li><b>List</b> is a collapsible section of its own behind a rule, so inserting a template into a template is plainly a different thing from the slots above it.</li>
 +</ul>
 +
 +<style>
@@ -22868,7 +22868,7 @@
 +  .row small { color: var(--token-ink-muted); font-size: 10px; }
 +  .row span { display: flex; gap: .3rem; margin-top: .2rem; }
 +
-+  .hole { display: grid; justify-items: start; gap: .35rem; padding: .5rem; border: 1px solid var(--token-border-subtle); border-radius: 6px; background: var(--token-surface-elevated); }
++  .slot { display: grid; justify-items: start; gap: .35rem; padding: .5rem; border: 1px solid var(--token-border-subtle); border-radius: 6px; background: var(--token-surface-elevated); }
 +  .description { color: var(--token-ink-secondary); }
 +
 +  .chip {
@@ -22898,7 +22898,7 @@
 +  <section class="group template">
 +    <h4>What the template is</h4>
 +    <ul>
-+      <li><code>templates</code><span>projectId, name, tags, body, holes, revision, lastUsedAt</span></li>
++      <li><code>templates</code><span>projectId, name, tags, body, slots, revision, lastUsedAt</span></li>
 +      <li><code>templateVersions</code><span>one row per revision, never read back yet</span></li>
 +    </ul>
 +    <p class="writer">Written by <code>createTemplate</code>, <code>createTemplateFromResource</code>, <code>updateTemplate</code>, <code>commitTemplateStage</code>, <code>duplicateTemplate</code>, <code>removeTemplate</code></p>
@@ -23057,22 +23057,22 @@
 +    <li class="fallback">
 +      <span class="rank">2</span>
 +      <div>
-+        <b>Else the hole's default scope</b>
-+        <p>Everything in the project, particular kinds, one of the project's named sets — or another hole, expanded the same way.</p>
++        <b>Else the slot's default scope</b>
++        <p>Everything in the project, particular kinds, one of the project's named sets — or another slot, expanded the same way.</p>
 +      </div>
-+      <code>hole.default</code>
++      <code>slot.default</code>
 +    </li>
 +    <li class="floor">
 +      <span class="rank">3</span>
 +      <div>
 +        <b>Else everything in the project</b>
-+        <p>A hole with no default, or one that reaches itself. There is always an answer, so a template always resolves.</p>
++        <p>A slot with no default, or one that reaches itself. There is always an answer, so a template always resolves.</p>
 +      </div>
 +      <code>{"{ select: \"project\" }"}</code>
 +    </li>
 +  </ol>
 +  <p class="undeclared">
-+    A prompt naming a hole the template does not declare is the one thing that refuses:
++    A prompt naming a slot the template does not declare is the one thing that refuses:
 +    <code>unsupported-body</code>, with the names, rather than a guess.
 +  </p>
 +</div>
@@ -23156,7 +23156,7 @@
 +  <g class="box template">
 +    <rect x="430" y="40" width="240" height="104" rx="10" />
 +    <text x="450" y="72" class="title">The template</text>
-+    <text x="450" y="94" class="sub">A portable body, its holes,</text>
++    <text x="450" y="94" class="sub">A portable body, its slots,</text>
 +    <text x="450" y="112" class="sub">and a revision that only moves</text>
 +    <text x="450" y="130" class="sub">when the working copy is saved</text>
 +  </g>
@@ -23182,7 +23182,7 @@
 +
 +  <path class="line" d="M 672 96 C 760 100 790 166 838 170" marker-end="url(#tref-arrow)" />
 +  <text x="690" y="104" class="label">Use · Insert</text>
-+  <text x="690" y="120" class="hint">asks what each hole selects</text>
++  <text x="690" y="120" class="hint">asks what each slot selects</text>
 +
 +  <path class="line" d="M 500 146 L 500 226" marker-end="url(#tref-arrow)" />
 +  <text x="486" y="180" class="label right">Edit</text>
@@ -23403,9 +23403,9 @@
 +        <span class="tref-kicker">04 · Integration</span>
 +        <h1>End to end with prompts</h1>
 +        <p class="tref-lede">
-+          A template is a function and a hole is where it takes an argument. One gesture makes one —
++          A template is a function and a slot is where it takes an argument. One gesture makes one —
 +          Templateify, on a prompt or on a run of selected text — and everything after it follows:
-+          the template keeps exactly those holes, placing it asks about exactly those, and the copy
++          the template keeps exactly those slots, placing it asks about exactly those, and the copy
 +          reads what was chosen. All {working} links carry, and a template you never templateify
 +          anything in is simply a copy, which is also correct.
 +        </p>
@@ -23413,9 +23413,9 @@
 +      <div class="tref-facts">
 +        <dl>
 +          <div><dt>Links in the chain</dt><dd>{CHAIN.length} of {CHAIN.length}</dd></div>
-+          <div><dt>Holes are</dt><dd>Made, never found</dd></div>
++          <div><dt>Slots are</dt><dd>Made, never found</dd></div>
 +          <div><dt>What can become one</dt><dd>A prompt · a selection</dd></div>
-+          <div><dt>Offered name</dt><dd>Hole 1, Hole 2, …</dd></div>
++          <div><dt>Offered name</dt><dd>Slot 1, Slot 2, …</dd></div>
 +          <div><dt>Its default</dt><dd>Whatever it already is</dd></div>
 +        </dl>
 +      </div>
@@ -23463,10 +23463,10 @@
 +        <h4>One gesture, and the rest is consequence</h4>
 +        <p>
 +          Link 02 is the only one anybody performs on purpose. Everything before it is ordinary
-+          authoring, and everything after it happens because a hole exists: the template keeps it,
++          authoring, and everything after it happens because a slot exists: the template keeps it,
 +          placing asks about it, resolution fills it, and the copy generates over what was chosen.
 +          That is what makes placing short — the questions are the ones somebody meant to ask, and a
-+          document with nine prompts and one hole asks once.
++          document with nine prompts and one slot asks once.
 +        </p>
 +      </div>
 +    </section>
@@ -23475,9 +23475,9 @@
 +      <div class="tref-section-head">
 +        <div><span class="tref-kicker">The shape of it</span><h2>Where each piece runs</h2></div>
 +        <p>
-+          Three groups, and the ordering inside the middle one is the whole of the design: the holes
++          Three groups, and the ordering inside the middle one is the whole of the design: the slots
 +          are read before the body is made portable, because whether a prompt's scope survives is
-+          exactly what decides whether its hole gets a default.
++          exactly what decides whether its slot gets a default.
 +        </p>
 +      </div>
 +
@@ -23493,16 +23493,16 @@
 +
 +    <section class="tref-section" id="defaults">
 +      <div class="tref-section-head">
-+        <div><span class="tref-kicker">The rule</span><h2>What a hole defaults to</h2></div>
++        <div><span class="tref-kicker">The rule</span><h2>What a slot defaults to</h2></div>
 +        <p>
-+          Whatever the thing already is. Nothing is judged portable or not, because a hole that arrives
++          Whatever the thing already is. Nothing is judged portable or not, because a slot that arrives
 +          empty is a toll and this design does not charge one.
 +        </p>
 +      </div>
 +
 +      <div class="tref-scroll">
 +        <table class="tref-table">
-+          <thead><tr><th>What was templateified</th><th>The hole defaults to</th><th>Because</th></tr></thead>
++          <thead><tr><th>What was templateified</th><th>The slot defaults to</th><th>Because</th></tr></thead>
 +          <tbody>
 +            {#each DEFAULT_RULE as row (row.scope)}
 +              <tr>
@@ -23518,11 +23518,11 @@
 +      <div class="tref-note">
 +        <h4>Nothing is ever red</h4>
 +        <p>
-+          A hole always has an answer, because its answer is what the thing already said. Placing a
++          A slot always has an answer, because its answer is what the thing already said. Placing a
 +          template is therefore always one press away from done, and the walk exists for the times you
-+          want a copy to read something else — which is the only reason you made the hole. The Scope
++          want a copy to read something else — which is the only reason you made the slot. The Scope
 +          control on a prompt is a real control now: it opens the same builder the ask modal does, and
-+          what it writes is what the hole will offer.
++          what it writes is what the slot will offer.
 +        </p>
 +      </div>
 +    </section>
@@ -23556,7 +23556,7 @@
 +      <div class="tref-section-head">
 +        <div><span class="tref-kicker">Links 05 and 06</span><h2>What happens when a template is placed</h2></div>
 +        <p>
-+          One hole at a time, and the person walking it never has to hold the whole shape in their
++          One slot at a time, and the person walking it never has to hold the whole shape in their
 +          head — the tabs do that.
 +          <a href={hrefOf(project, "walkthrough")}>Walk it yourself</a> to see the same modal working.
 +        </p>
@@ -23599,7 +23599,7 @@
 +      <span>Every link carries</span>
 +    </div>
 +    <div>
-+      <a href={hrefOf(project, "scope")}>← What a hole selects</a>
++      <a href={hrefOf(project, "scope")}>← What a slot selects</a>
 +      <a href={hrefOf(project, "walkthrough")}>Walk it yourself →</a>
 +    </div>
 +  </footer>
@@ -23651,7 +23651,7 @@
 +        <h1>Where it meets the base</h1>
 +        <p class="tref-lede">
 +          This branch no longer sits on main. It sits on <code>{MEETING.base}</code>, because that is
-+          where prompt blocks are and a prompt's scope is what a hole fills. Getting there took
++          where prompt blocks are and a prompt's scope is what a slot fills. Getting there took
 +          {MEETING.rebases} replays in all; {MEETING.conflicted} files have ever needed a decision, over
 +          {MEETING.events} conflict events, and {ontoBase} of those decisions belong to the move onto
 +          this base. Every one is written out below with what each side had wanted, what was kept, and
@@ -23700,7 +23700,7 @@
 +      <div class="tref-note">
 +        <h4>Why not main</h4>
 +        <p>
-+          On main, a scope hole could only ever come from a template that already had one, because
++          On main, a scope slot could only ever come from a template that already had one, because
 +          nothing wrote prompts. On this base, prompts exist and generate. That does not finish the
 +          chain on its own — see
 +          <a href={hrefOf(project, "integration")}>end to end with prompts</a> — but it is the
@@ -23747,7 +23747,7 @@
 +      <div class="tref-section-head">
 +        <div><span class="tref-kicker">Actually broken</span><h2>Two defects the move turned up</h2></div>
 +        <p>
-+          Neither was caused by the rebase. One had been latent since text holes were added; the other
++          Neither was caused by the rebase. One had been latent since text slots were added; the other
 +          was waiting for a project that had ever converted a text box into a Prompt Block, which is
 +          exactly what the base makes ordinary.
 +        </p>
@@ -24449,9 +24449,9 @@
 +    <header class="tref-mast">
 +      <div>
 +        <span class="tref-kicker">03 · Scope</span>
-+        <h1>What a hole selects</h1>
++        <h1>What a slot selects</h1>
 +        <p class="tref-lede">
-+          A scope hole is an empty place a prompt punched. What fills it is a group of resources, and until this work that group
++          A scope slot is an empty place a prompt punched. What fills it is a group of resources, and until this work that group
 +          could only be said in the crudest terms: everything, or some kinds, or one of the project's
 +          named sets. It can now be built term by term, excluded from, and pointed at particular
 +          resources. This page is how it works and every file it touched.
@@ -24469,7 +24469,7 @@
 +    </header>
 +
 +    <nav class="tref-jumps" aria-label="On this page">
-+      <a href="#holes">Two kinds of hole</a>
++      <a href="#slots">Two kinds of slot</a>
 +      <a href="#why">Why a row at all</a>
 +      <a href="#terms">Every term</a>
 +      <a href="#difference">A set is a difference</a>
@@ -24483,13 +24483,13 @@
 +      <a href="#missing">What is still missing</a>
 +    </nav>
 +
-+    <section class="tref-section" id="holes">
++    <section class="tref-section" id="slots">
 +      <div class="tref-section-head">
-+        <div><span class="tref-kicker">What a template asks for</span><h2>Two kinds of hole</h2></div>
++        <div><span class="tref-kicker">What a template asks for</span><h2>Two kinds of slot</h2></div>
 +        <p>
 +          A template is a function and these are the places it leaves empty. Both are declared in one
 +          list and both carry a name, a label and a description written by whoever made the template.
-+          A scope hole is found from the body; a text hole is placed by hand, because only the writer
++          A scope slot is found from the body; a text slot is placed by hand, because only the writer
 +          knows where in the prose it belongs.
 +        </p>
 +      </div>
@@ -24514,11 +24514,11 @@
 +      </div>
 +
 +      <div class="tref-note attention">
-+        <h4>A hole is not a variable</h4>
++        <h4>A slot is not a variable</h4>
 +        <p>
 +          A variable in this application is a named value a formula reads, and it has nothing to do
 +          with templates. That is why none of this is called one: a template's empty places are
-+          holes, the atom that marks a text hole in the prose is a <code>template</code> atom, and it
++          slots, the atom that marks a text slot in the prose is a <code>template</code> atom, and it
 +          appears nowhere outside a template body and the copy that template is edited through. The
 +          word is worth guarding: two unrelated ideas sharing it is how a vocabulary stops being one.
 +        </p>
@@ -24529,24 +24529,24 @@
 +      <div class="tref-section-head">
 +        <div><span class="tref-kicker">The load-bearing fact</span><h2>Why a row, and not a bigger rule</h2></div>
 +        <p>
-+          The obvious move is to let a hole's default hold a richer rule inline. It does not work, and
++          The obvious move is to let a slot's default hold a richer rule inline. It does not work, and
 +          the reason is already in the code rather than in anyone's opinion.
 +        </p>
 +      </div>
 +
 +      <p class="tref-prose">
-+        Resolving a template substitutes each hole term for what fills it. A hole term can appear
++        Resolving a template substitutes each slot term for what fills it. A slot term can appear
 +        on either side of a prompt's scope: a prompt may say <em>these, and not those</em>. Substituting
 +        one term for one term works on both sides. Substituting one term for
 +        <em>a difference</em> does not, because a difference on the exclude side is not expressible as a
 +        flat difference. So the resolver refuses it, in as many words:
-+        <code>a hole answered with exclusions cannot be flattened without changing scope</code>.
++        <code>a slot answered with exclusions cannot be flattened without changing scope</code>.
 +      </p>
 +
 +      <div class="tref-note">
 +        <h4>Which meant, before this, no exclusions anywhere</h4>
 +        <p>
-+          Neither a hole's default nor an answer given at Insert could exclude anything. A builder
++          Neither a slot's default nor an answer given at Insert could exclude anything. A builder
 +          mostly about excluding things would have refused on its first use.
 +        </p>
 +        <p>
@@ -24582,7 +24582,7 @@
 +              <th>Reads as</th>
 +              <th>Picks</th>
 +              <th>In a template body</th>
-+              <th>In a hole's default</th>
++              <th>In a slot's default</th>
 +              <th>In a live resource</th>
 +            </tr>
 +          </thead>
@@ -24624,7 +24624,7 @@
 +      <div class="tref-section-head">
 +        <div><span class="tref-kicker">The change of stance</span><h2>Named, or bound</h2></div>
 +        <p>
-+          A set stopped being a thing people curate and became a value a hole holds. Both still exist,
++          A set stopped being a thing people curate and became a value a slot holds. Both still exist,
 +          and the only difference between them is whether a person gave it a name.
 +        </p>
 +      </div>
@@ -24651,7 +24651,7 @@
 +      <div class="tref-section-head">
 +        <div><span class="tref-kicker">The thing itself</span><h2>The builder</h2></div>
 +        <p>
-+          One modal. It edits a rule and knows nothing about templates, holes, or which of its four
++          One modal. It edits a rule and knows nothing about templates, slots, or which of its four
 +          callers opened it. The mock below is what shipped, drawn rather than screenshotted so it stays
 +          readable at any width.
 +        </p>
@@ -24660,7 +24660,7 @@
 +      <figure class="tref-figure">
 +        <DiagramBuilder />
 +        <figcaption>
-+          <b>Two modals, and never a third.</b> The ask lists every hole and holds Insert while any
++          <b>Two modals, and never a third.</b> The ask lists every slot and holds Insert while any
 +          words are missing; a value opens the builder, which is two tabs and, inside one, two panes.
 +        </figcaption>
 +      </figure>
@@ -24834,11 +24834,11 @@
 +      <div class="tref-note attention">
 +        <h4>One thing the sequence assumes that is not obviously true</h4>
 +        <p>
-+          Holes are found from prompt scopes. Until prompt blocks exist, the only way a hole comes
++          Slots are found from prompt scopes. Until prompt blocks exist, the only way a slot comes
 +          into being is by inserting a template that already has one, which means a template made on main
-+          from a fresh document will have no holes and the builder will have nothing to open on. The
++          from a fresh document will have no slots and the builder will have nothing to open on. The
 +          order still works, but this piece has to land <b>with</b> prompt blocks rather than after them,
-+          or the first thing anyone sees is an empty Holes band.
++          or the first thing anyone sees is an empty Slots band.
 +        </p>
 +      </div>
 +    </section>
@@ -24923,7 +24923,7 @@
 +          <div><dt>Belongs to</dt><dd>One project</dd></div>
 +          <div><dt>Edited through</dt><dd>One shared working copy</dd></div>
 +          <div><dt>Placed by</dt><dd>Insert · Use</dd></div>
-+          <div><dt>Holes come from</dt><dd>Prompt scopes in the body</dd></div>
++          <div><dt>Slots come from</dt><dd>Prompt scopes in the body</dd></div>
 +          <div><dt>Links back</dt><dd>None, in either direction</dd></div>
 +        </dl>
 +      </div>
@@ -24935,7 +24935,7 @@
 +      <a href="#nouns">Every word</a>
 +      <a href="#rows">Where it lives</a>
 +      <a href="#lifecycle">Step by step</a>
-+      <a href="#holes">Holes and scope</a>
++      <a href="#slots">Slots and scope</a>
 +      <a href="#portable">What a template may not carry</a>
 +      <a href="#panels">The panels</a>
 +      <a href="#rules">Rules and refusals</a>
@@ -24946,7 +24946,7 @@
 +        <div><span class="tref-kicker">The shape of it</span><h2>Three verbs, and nothing else</h2></div>
 +        <p>
 +          Templates were real before this work; what was missing was a way to edit one, a way to say what a
-+          hole selects, and a way to pull one into something already open. All three are the same act
++          slot selects, and a way to pull one into something already open. All three are the same act
 +          seen from different sides: making a copy.
 +        </p>
 +      </div>
@@ -25057,12 +25057,12 @@
 +      </div>
 +    </section>
 +
-+    <section class="tref-section" id="holes">
++    <section class="tref-section" id="slots">
 +      <div class="tref-section-head">
-+        <div><span class="tref-kicker">Holes and what fills them</span><h2>Holes and scope</h2></div>
++        <div><span class="tref-kicker">Slots and what fills them</span><h2>Slots and scope</h2></div>
 +        <p>
-+          A scope hole is an empty place a prompt punched. Saving a template declares exactly the names the body's
-+          prompt scopes use — which is why the panels let you describe a hole and set its scope, and
++          A scope slot is an empty place a prompt punched. Saving a template declares exactly the names the body's
++          prompt scopes use — which is why the panels let you describe a slot and set its scope, and
 +          never let you add or remove one.
 +        </p>
 +      </div>
@@ -25078,23 +25078,23 @@
 +      <div class="tref-note">
 +        <h4>Where the names come from today, and where they will come from</h4>
 +        <p>
-+          A body carries a hole when a prompt's scope holds <code>{"{ select: \"hole\", name }"}</code>.
++          A body carries a slot when a prompt's scope holds <code>{"{ select: \"slot\", name }"}</code>.
 +          Prompt blocks are not built yet, so today that happens when a template that already has one is
-+          inserted into a working copy: the terms are kept as holes and the inserted template's holes
++          inserted into a working copy: the terms are kept as slots and the inserted template's slots
 +          join this one's.
 +        </p>
 +        <p>
 +          The agreed shape for when prompt blocks land is pull-based: making a template walks the prompts
 +          it found and asks what each one's scope should be, and two prompts may point at the same
-+          hole. Nothing about the model here changes when that arrives — it only starts declaring
-+          holes on its own.
++          slot. Nothing about the model here changes when that arrives — it only starts declaring
++          slots on its own.
 +        </p>
 +      </div>
 +
 +      <p class="tref-prose">
 +        A <b>resource set</b> — “Winter filings”, “Field evidence” — is a named selection of the project's
 +        things, made in Project Overview's Contexts panel. Those are the names in the Insert modal's
-+        dropdown, offered beside “everything in the project” and the five kinds. A set that a hole's
++        dropdown, offered beside “everything in the project” and the five kinds. A set that a slot's
 +        default names cannot be deleted while it does.
 +      </p>
 +    </section>
@@ -25151,7 +25151,7 @@
 +      <p class="tref-prose">
 +        Project Overview carries the third panel, <b>Contexts</b>, where resource sets are made and
 +        counted; the templates library carries the fourth surface, the inspector, where a template's name,
-+        description, tags and holes are read and Use, Edit, Duplicate and Delete sit in one row.
++        description, tags and slots are read and Use, Edit, Duplicate and Delete sit in one row.
 +      </p>
 +    </section>
 +
@@ -25187,7 +25187,7 @@
 +      <div class="tref-note attention">
 +        <h4>Not built yet</h4>
 +        <p>
-+          Prompt blocks that pick a hole; images stored with a template so they travel; making a new
++          Prompt blocks that pick a slot; images stored with a template so they travel; making a new
 +          formula instance for a project-neutral atom; and opening a spreadsheet template for editing,
 +          which waits on the spreadsheet editor. Each is listed with a recommendation on
 +          <a href={hrefOf(project, "changes")}>What changed</a>.
@@ -25224,7 +25224,7 @@
 +  import {
 +    STAGES,
 +    answerRowsFrom,
-+    holesFrom,
++    slotsFrom,
 +    scopeWords,
 +    type WalkPrompt
 +  } from "$development-views/template-reference/procedures/walkthrough";
@@ -25245,7 +25245,7 @@
 +   * The whole system, driven rather than described.
 +   *
 +   * Every control below is the component the application ships, with this
-+   * page's own state behind it. Change a name here and the template's hole list
++   * page's own state behind it. Change a name here and the template's slot list
 +   * changes, and so does what placing it asks — because the same pure functions
 +   * that run in the capability run here.
 +   */
@@ -25276,9 +25276,9 @@
 +  let chosen = $state<Record<string, string>>({});
 +  let stage = $state(0);
 +
-+  const holes = $derived(holesFrom(prompts));
-+  const rows = $derived(answerRowsFrom(holes, chosen));
-+  const questions = $derived(Object.fromEntries(holes.map((hole) => [hole.name, hole.prompt])));
++  const slots = $derived(slotsFrom(prompts));
++  const rows = $derived(answerRowsFrom(slots, chosen));
++  const questions = $derived(Object.fromEntries(slots.map((slot) => [slot.name, slot.prompt])));
 +
 +  const rename = (id: string, name: string) => {
 +    prompts = prompts.map((prompt) => (prompt.id === id ? { ...prompt, name } : prompt));
@@ -25319,7 +25319,7 @@
 +        <p class="tref-lede">
 +          Three prompts, written the way anybody writes them. Templateify the ones worth asking about,
 +          change what they read, and watch the template that comes out — then place it. Every control
-+          here is the component the application ships, and the hole list beneath them is computed by
++          here is the component the application ships, and the slot list beneath them is computed by
 +          the same pure functions the capability runs, so the consequences are real even though
 +          nothing is saved.
 +        </p>
@@ -25327,8 +25327,8 @@
 +      <div class="tref-facts">
 +        <dl>
 +          <div><dt>Prompts</dt><dd>{prompts.length}</dd></div>
-+          <div><dt>Templateified</dt><dd>{holes.length}</dd></div>
-+          <div><dt>Asked when placed</dt><dd>{holes.length}</dd></div>
++          <div><dt>Templateified</dt><dd>{slots.length}</dd></div>
++          <div><dt>Asked when placed</dt><dd>{slots.length}</dd></div>
 +          <div><dt>Saved anywhere</dt><dd>Nothing</dd></div>
 +        </dl>
 +      </div>
@@ -25366,9 +25366,9 @@
 +            <PromptTemplate
 +              name={prompt.name === "" ? undefined : prompt.name}
 +              description={prompt.description}
-+              offered={`Hole ${index + 1}`}
++              offered={`Slot ${index + 1}`}
 +              standing={scopeWords(prompt.scope)}
-+              onmake={() => rename(prompt.id, `Hole ${index + 1}`)}
++              onmake={() => rename(prompt.id, `Slot ${index + 1}`)}
 +              onname={(next) => rename(prompt.id, next)}
 +              ondescription={(next) => describe(prompt.id, next)}
 +            />
@@ -25381,7 +25381,7 @@
 +      <div class="tref-section-head">
 +        <div><span class="tref-kicker">Step two</span><h2>Make the template</h2></div>
 +        <p>
-+          Only what was templateified becomes a hole, and its default is whatever the thing already
++          Only what was templateified becomes a slot, and its default is whatever the thing already
 +          is. The prompt's question is copied onto the block as its link to the derived output is left
 +          behind, so a placed copy is a working prompt rather than words about one.
 +        </p>
@@ -25390,18 +25390,18 @@
 +      <div class="tref-scroll">
 +        <table class="tref-table">
 +          <thead>
-+            <tr><th>Hole</th><th>Stands for</th><th>Its prompt</th><th>Default</th></tr>
++            <tr><th>Slot</th><th>Stands for</th><th>Its prompt</th><th>Default</th></tr>
 +          </thead>
 +          <tbody>
-+            {#each holes as hole (hole.name)}
++            {#each slots as slot (slot.name)}
 +              <tr>
-+                <td><code>{hole.name}</code></td>
-+                <td class="muted">{hole.description === "" ? "—" : hole.description}</td>
-+                <td class="muted">{hole.prompt}</td>
-+                <td>{hole.fallback}</td>
++                <td><code>{slot.name}</code></td>
++                <td class="muted">{slot.description === "" ? "—" : slot.description}</td>
++                <td class="muted">{slot.prompt}</td>
++                <td>{slot.fallback}</td>
 +              </tr>
 +            {/each}
-+            {#if holes.length === 0}
++            {#if slots.length === 0}
 +              <tr><td class="none" colspan="4">Nothing was templateified, so this template asks nothing.</td></tr>
 +            {/if}
 +          </tbody>
@@ -25409,11 +25409,11 @@
 +      </div>
 +
 +      <div class="tref-note success">
-+        <h4>Every hole here carries a default</h4>
++        <h4>Every slot here carries a default</h4>
 +        <p>
-+          A hole's default is simply what the thing already is, so a template always places with one
++          A slot's default is simply what the thing already is, so a template always places with one
 +          press. Answering is for when this copy should read something else — which is the whole point
-+          of having made the hole, and never a toll on the way past.
++          of having made the slot, and never a toll on the way past.
 +        </p>
 +      </div>
 +    </section>
@@ -25431,7 +25431,7 @@
 +      <div class="modal">
 +        <header>
 +          <b>Insert “Incident one-pager”</b>
-+          <p>One hole at a time. The tabs say which still need words.</p>
++          <p>One slot at a time. The tabs say which still need words.</p>
 +        </header>
 +        <div class="modal-body">
 +          <TemplateAnswers
@@ -25621,18 +25621,18 @@
 +  },
 +  {
 +    index: "04",
-+    title: "Holes are found, described and scoped",
-+    before: "A hole was fixed at seed time with a portable default and no way to change it.",
-+    now: "Saving or committing declares every hole name the body's prompt scopes use. The panels show them read-only, with a description and a default scope set through a modal — everything in the project, kinds, or one of the project's sets.",
-+    why: "A hole exists because a prompt asks for one. Typing a name that no prompt uses would be a hole nothing fills.",
++    title: "Slots are found, described and scoped",
++    before: "A slot was fixed at seed time with a portable default and no way to change it.",
++    now: "Saving or committing declares every slot name the body's prompt scopes use. The panels show them read-only, with a description and a default scope set through a modal — everything in the project, kinds, or one of the project's sets.",
++    why: "A slot exists because a prompt asks for one. Typing a name that no prompt uses would be a slot nothing fills.",
 +    area: "templates"
 +  },
 +  {
 +    index: "05",
-+    title: "Placing a template asks what its holes select",
++    title: "Placing a template asks what its slots select",
 +    before: "Instantiate resolved from the stored defaults and had no way to be told anything.",
-+    now: "Insert and Use open one modal listing every hole, its description, and a choice whose first option is the default. The answers win for that copy and are stored nowhere.",
-+    why: "Instantiating on its own and instantiating inside something else are the same act. Inserting into a template being edited is the exception: it keeps the holes and merges the holes.",
++    now: "Insert and Use open one modal listing every slot, its description, and a choice whose first option is the default. The answers win for that copy and are stored nowhere.",
++    why: "Instantiating on its own and instantiating inside something else are the same act. Inserting into a template being edited is the exception: it keeps the slots and merges the slots.",
 +    area: "editors"
 +  },
 +  {
@@ -25640,7 +25640,7 @@
 +    title: "Resource sets became a subject",
 +    before: "The resourceSets table existed, was seeded with two rows, and no capability read or wrote it.",
 +    now: "A resource-sets capability of four procedures, and a Contexts panel in Project Overview that makes, renames, changes and deletes sets and counts what each one selects right now.",
-+    why: "A prompt's scope, a hole's default and an answer can all name a set. Nothing could say what a set meant.",
++    why: "A prompt's scope, a slot's default and an answer can all name a set. Nothing could say what a set meant.",
 +    area: "sets"
 +  },
 +  {
@@ -25687,8 +25687,8 @@
 +    index: "12",
 +    title: "A scope is built rather than picked",
 +    before:
-+      "A hole's default and an answer were a short list of toggles: everything, some kinds, or one of the project's named sets. Nothing could exclude anything, and nothing could name a particular resource.",
-+    now: "One builder, opened from four places, with two term lists and a live count. A rule that excludes something or names resources is stored as a resourceSets row with no name, bound to the hole that owns it, and what points at it is a single set term.",
++      "A slot's default and an answer were a short list of toggles: everything, some kinds, or one of the project's named sets. Nothing could exclude anything, and nothing could name a particular resource.",
++    now: "One builder, opened from four places, with two term lists and a live count. A rule that excludes something or names resources is stored as a resourceSets row with no name, bound to the slot that owns it, and what points at it is a single set term.",
 +    why: "Resolving a template substitutes one term for what fills it, on either side of a prompt's scope, and a difference cannot be substituted on the excluding side. The row is what makes exclusions expressible at all.",
 +    area: "sets"
 +  },
@@ -25697,43 +25697,43 @@
 +    title: "A template asks for words as well as for resources",
 +    before:
 +      "A template's only empty place was a prompt's scope. Prose was fixed: a template that wanted a subject line, a client name or a date had to be edited after it was placed.",
-+    now: "A template atom is a hole in the prose, declared beside the scope holes and found from the body once it is placed. Placing a template lists every hole as a key and what answers it, opens each one to its description, and refuses while any words are missing.",
++    now: "A template atom is a slot in the prose, declared beside the scope slots and found from the body once it is placed. Placing a template lists every slot as a key and what answers it, opens each one to its description, and refuses while any words are missing.",
 +    why: "A template is a function and its empty places are its arguments. Whether they select resources or say words, one list is what the person placing it has to fill.",
 +    area: "vocabulary"
 +  },
 +  {
 +    index: "14",
-+    title: "A hole is a hole, never a variable",
++    title: "A slot is a slot, never a variable",
 +    before:
 +      "The empty places a template leaves were called variables, in the types, the tables, the capability, the panels and the seed — the same word this application already uses for a named value a formula reads.",
-+    now: "TemplateHole, templates.holes, holeCount, holeDescription, hole-in-use, { select: \"hole\" } and a boundTo of kind hole. The Holes band sits above a rule, with Create hole at its top; the formula Variables panel keeps the word it had first.",
-+    why: "Two unrelated ideas sharing a word is how a vocabulary stops being one. A template's holes have nothing to do with formula variables, so they no longer read as though they do.",
++    now: "TemplateSlot, templates.slots, slotCount, slotDescription, slot-in-use, { select: \"slot\" } and a boundTo of kind slot. The Slots band sits above a rule, with Create slot at its top; the formula Variables panel keeps the word it had first.",
++    why: "Two unrelated ideas sharing a word is how a vocabulary stops being one. A template's slots have nothing to do with formula variables, so they no longer read as though they do.",
 +    area: "vocabulary"
 +  },
 +  {
 +    index: "15",
-+    title: "A text hole is made where it goes",
++    title: "A text slot is made where it goes",
 +    before:
-+      "Every hole was found from the body, so a text hole could only appear by inserting a template that already had one. Nothing in the panel could make a place for words.",
-+    now: "Create hole, at the top of the Holes band, takes a name, a description and default words, declares the hole and drops its atom at the caret in one act. A scope hole is still found, because a prompt is what asks for one.",
-+    why: "Only the writer knows where in the prose a hole belongs, so the panel cannot find it. Declaring without placing would leave a hole nothing fills, which is why the two happen together or not at all.",
++      "Every slot was found from the body, so a text slot could only appear by inserting a template that already had one. Nothing in the panel could make a place for words.",
++    now: "Create slot, at the top of the Slots band, takes a name, a description and default words, declares the slot and drops its atom at the caret in one act. A scope slot is still found, because a prompt is what asks for one.",
++    why: "Only the writer knows where in the prose a slot belongs, so the panel cannot find it. Declaring without placing would leave a slot nothing fills, which is why the two happen together or not at all.",
 +    area: "editors"
 +  },
 +  {
 +    index: "16",
-+    title: "A hole is made, never found",
++    title: "A slot is made, never found",
 +    before:
-+      "A scope hole could only come from a body that already carried a hole term. A prompt somebody wrote kept its own sources, so a template made from it asked nothing and every copy read what the author read.",
-+    now: "Templateify, in the Template section of a prompt block or of a text selection, makes one hole named Hole 1, Hole 2 with an optional description. Making a template keeps exactly those. A prompt nobody templateified keeps its scope and is never asked about.",
-+    why: "Turning every prompt into a hole asks about things nobody meant to be asked about. One deliberate gesture at the thing itself keeps placing a template to the questions somebody wrote down.",
++      "A scope slot could only come from a body that already carried a slot term. A prompt somebody wrote kept its own sources, so a template made from it asked nothing and every copy read what the author read.",
++    now: "Templateify, in the Template section of a prompt block or of a text selection, makes one slot named Slot 1, Slot 2 with an optional description. Making a template keeps exactly those. A prompt nobody templateified keeps its scope and is never asked about.",
++    why: "Turning every prompt into a slot asks about things nobody meant to be asked about. One deliberate gesture at the thing itself keeps placing a template to the questions somebody wrote down.",
 +    area: "editors"
 +  },
 +  {
 +    index: "18",
-+    title: "A hole's default is whatever the thing already is",
++    title: "A slot's default is whatever the thing already is",
 +    before:
 +      "A default was a rule somebody set through a separate control, and portability judged which scopes were allowed to travel — sets and particular resources were stripped out of a prompt's scope on the way into a template.",
-+    now: "A prompt's hole defaults to the scope it reads, whatever that scope is; a text hole defaults to the words that were selected. Nothing is stripped and nothing carries a Set default button. A scope naming a set the next project lacks selects nothing there, which is what it means for it not to exist.",
++    now: "A prompt's slot defaults to the scope it reads, whatever that scope is; a text slot defaults to the words that were selected. Nothing is stripped and nothing carries a Set default button. A scope naming a set the next project lacks selects nothing there, which is what it means for it not to exist.",
 +    why: "A default that has to be filled in is a toll on placing a template. Making the default what the thing already says means every template places with one press, and answering is for when a copy should read something else.",
 +    area: "vocabulary"
 +  },
@@ -25750,18 +25750,18 @@
 +    index: "20",
 +    title: "Templateifying marks a run, and never edits it",
 +    before:
-+      "Templateifying a selection spliced the words out of the paragraph and put a template atom in their place. The document now read {Hole 1} where the prose had been, marks reaching into the run were lost, and taking it back meant typing the words again.",
-+    now: "A hole over text is an ordinary mark, addressed the way a comment or a link is. The resource is untouched — same words, same formatting, and the Template section reads back which hole those words are. Only the copy the template is built from turns each marked run into its atom. Measuring a mark now counts a hole as the width of what it displays, which the validator could not do before and which refused every template holding both a hole and a formatted run.",
-+    why: "A resource is not a template and must not be damaged to make one. Marking says these words are where a hole goes; it does not say the words are gone.",
++      "Templateifying a selection spliced the words out of the paragraph and put a template atom in their place. The document now read {Slot 1} where the prose had been, marks reaching into the run were lost, and taking it back meant typing the words again.",
++    now: "A slot over text is an ordinary mark, addressed the way a comment or a link is. The resource is untouched — same words, same formatting, and the Template section reads back which slot those words are. Only the copy the template is built from turns each marked run into its atom. Measuring a mark now counts a slot as the width of what it displays, which the validator could not do before and which refused every template holding both a slot and a formatted run.",
++    why: "A resource is not a template and must not be damaged to make one. Marking says these words are where a slot goes; it does not say the words are gone.",
 +    area: "editors"
 +  },
 +  {
 +    index: "21",
 +    title: "A deck templateifies its words too",
 +    before:
-+      "A deck's holes could only come from its prompts. Selecting words on a slide offered nothing, so a deck template could not ask for a client name.",
++      "A deck's slots could only come from its prompts. Selecting words on a slide offered nothing, so a deck template could not ask for a client name.",
 +    now: "The deck's text-selection inspector carries the same Template section as the document's, over the same marks and the same functions. What differs is only how a selection is addressed.",
-+    why: "Both editors hold blocks of atoms with marks over them. A hole that works in one and not the other is an accident of which inspector was built first.",
++    why: "Both editors hold blocks of atoms with marks over them. A slot that works in one and not the other is an accident of which inspector was built first.",
 +    area: "editors"
 +  },
 +  {
@@ -25802,11 +25802,11 @@
 +  },
 +  {
 +    index: "17",
-+    title: "Placing a template walks its holes",
++    title: "Placing a template walks its slots",
 +    before:
-+      "Every hole was on screen at once, which read as a form. A template with a dozen was a wall, and the prompt each scope hole filled was nowhere to be seen.",
-+    now: "One hole at a time: its name, what it stands for, the prompt it fills, then the control. Tabs across the top carry the shape and mark in red the holes that still need words, and Accept all defaults lights the moment none do.",
-+    why: "A hole is a question, and questions are answered one at a time. The tabs keep the whole shape visible without making it the thing you read first.",
++      "Every slot was on screen at once, which read as a form. A template with a dozen was a wall, and the prompt each scope slot filled was nowhere to be seen.",
++    now: "One slot at a time: its name, what it stands for, the prompt it fills, then the control. Tabs across the top carry the shape and mark in red the slots that still need words, and Accept all defaults lights the moment none do.",
++    why: "A slot is a question, and questions are answered one at a time. The tabs keep the whole shape visible without making it the thing you read first.",
 +    area: "cross-cutting"
 +  }
 +];
@@ -25820,9 +25820,9 @@
 +  },
 +  {
 +    round: "First review",
-+    question: "Where does a hole's meaning live?",
++    question: "Where does a slot's meaning live?",
 +    answer: "In a default that always exists — everything in the project unless the template says otherwise. There is no binding.",
-+    became: "TemplateHole.default, the modal that sets it, and the removal of the per-project binding table and its procedure."
++    became: "TemplateSlot.default, the modal that sets it, and the removal of the per-project binding table and its procedure."
 +  },
 +  {
 +    round: "First review",
@@ -25850,14 +25850,14 @@
 +  },
 +  {
 +    round: "Third review",
-+    question: "Should Use ask for holes the way Insert does?",
++    question: "Should Use ask for slots the way Insert does?",
 +    answer: "Yes — instantiating on its own or inside something else is still instantiating.",
 +    became: "The library inspector's Use opens the same modal and sends the answers to instantiateTemplate."
 +  },
 +  {
 +    round: "Third review",
-+    question: "Can a person add or remove a hole?",
-+    answer: "No. Holes come from prompt blocks; adding one by hand asks the author to keep a list in step with a body.",
++    question: "Can a person add or remove a slot?",
++    answer: "No. Slots come from prompt blocks; adding one by hand asks the author to keep a list in step with a body.",
 +    became: "The Add field and the Remove button are gone from both panels, and the helpers that minted names were deleted with them."
 +  },
 +  {
@@ -25889,9 +25889,9 @@
 +
 +export const OPEN: OpenItem[] = [
 +  {
-+    title: "Two prompts sharing one hole",
++    title: "Two prompts sharing one slot",
 +    detail:
-+      "Nothing stops it and nothing offers it: typing the same name on two prompts makes them one question, because a name is the whole of a hole's identity. There is no picker of existing names, so it happens only on purpose.",
++      "Nothing stops it and nothing offers it: typing the same name on two prompts makes them one question, because a name is the whole of a slot's identity. There is no picker of existing names, so it happens only on purpose.",
 +    recommendation: "Leave it until somebody wants it. The offered name would become a list the moment it is worth choosing from."
 +  },
 +  {
@@ -25980,16 +25980,16 @@
 +    { name: "templateStages", note: "projectId, templateId, templateRevision, target, resourceId, createdBy, updatedAt" },
 +    { name: "templates.projectId", note: "required — the project a template belongs to" },
 +    { name: "templates.lastUsedAt", note: "optional — when it was last instantiated, which is what recency reads" },
-+    { name: "TemplatedTerm { select: \"set\" }", note: "a hole default may name one of the project's sets" },
++    { name: "TemplatedTerm { select: \"set\" }", note: "a slot default may name one of the project's sets" },
 +    { name: "Target.context", note: "a tab can be opened straight onto a named context view" },
-+    { name: "Mark.hole", note: "{ name, description? } — a run of words somebody templateified, addressed like any other mark" },
-+    { name: "PromptBlock.hole", note: "{ name, description? } — set by Templateify, absent until then" },
++    { name: "Mark.slot", note: "{ name, description? } — a run of words somebody templateified, addressed like any other mark" },
++    { name: "PromptBlock.slot", note: "{ name, description? } — set by Templateify, absent until then" },
 +    { name: "PromptBlock.prompt", note: "the block's own prompt, copied on the way into a template" },
 +    {
 +      name: "PromptBlock.scope",
 +      note: "narrowed in meaning: a block holds one only while nothing else can — before it links, and inside a template. The derived output holds it after."
 +    },
-+    { name: "TemplateAtom", note: "kind \"template\" — a hole standing in the prose of a template's body" }
++    { name: "TemplateAtom", note: "kind \"template\" — a slot standing in the prose of a template's body" }
 +  ],
 +  removed: [
 +    { name: "documents.templateId", note: "a copy knows nothing of where it came from" },
@@ -25998,7 +25998,7 @@
 +  ],
 +  unchanged: [
 +    { name: "TemplateBody", note: "document | slides | spreadsheet, exactly as before" },
-+    { name: "TemplateHole", note: "main's name, label, description?, default?, widened with kind and text for a hole that asks for words" },
++    { name: "TemplateSlot", note: "main's name, label, description?, default?, widened with kind and text for a slot that asks for words" },
 +    { name: "resourceSets", note: "the table was already there; only the capability over it is new" }
 +  ]
 +};
@@ -26011,11 +26011,11 @@
 +import type { ChainLink, Decision, ScopeGap } from "$development-views/template-reference/types";
 +
 +/**
-+ * The chain from making a hole to reading a filled copy.
++ * The chain from making a slot to reading a filled copy.
 + *
-+ * A hole is made, never found. Two things can become one — a prompt, and a run
-+ * of selected text — and both are turned into holes by the same gesture at the
-+ * thing itself. Until somebody makes it there is no hole, which is what keeps
++ * A slot is made, never found. Two things can become one — a prompt, and a run
++ * of selected text — and both are turned into slots by the same gesture at the
++ * thing itself. Until somebody makes it there is no slot, which is what keeps
 + * placing a template to the questions somebody meant to ask.
 + */
 +export const CHAIN: ChainLink[] = [
@@ -26031,41 +26031,41 @@
 +    index: "02",
 +    step: "Something is templateified, and nothing about the resource changes",
 +    gesture: "Templateify, in the Template section of a prompt or of a text selection",
-+    runs: "promptHoleOps writes a record on the block; markHoleOps writes a mark over the run",
++    runs: "promptSlotOps writes a record on the block; markSlotOps writes a mark over the run",
 +    state: "works",
 +    evidence: "template-features.spec.ts — Templateify marks a run without changing the document"
 +  },
 +  {
 +    index: "03",
-+    step: "The hole is named and, if it helps, described",
++    step: "The slot is named and, if it helps, described",
 +    gesture: "Two fields. Blank the name and the offered one comes back",
-+    runs: "Hole 1, Hole 2 by what the body already holds",
++    runs: "Slot 1, Slot 2 by what the body already holds",
 +    state: "works",
-+    evidence: "prompt-holes.test.ts — a hole is made, never found"
++    evidence: "prompt-slots.test.ts — a slot is made, never found"
 +  },
 +  {
 +    index: "04",
-+    step: "Making a template keeps exactly those holes",
++    step: "Making a template keeps exactly those slots",
 +    gesture: "None — it is what saving means",
-+    runs: "promptHolesOf · withPrompts · portableBodyOf · withPromptHoles · withMarkedHoles · textHolesOf",
++    runs: "promptSlotsOf · withPrompts · portableBodyOf · withPromptSlots · withMarkedSlots · textSlotsOf",
 +    state: "works",
-+    evidence: "answers.test.ts — gives no hole to a prompt nobody templateified"
++    evidence: "answers.test.ts — gives no slot to a prompt nobody templateified"
 +  },
 +  {
 +    index: "05",
-+    step: "Placing it asks about each hole, one at a time",
++    step: "Placing it asks about each slot, one at a time",
 +    gesture: "Insert or Use · tabs, Previous and Next, Accept all defaults",
 +    runs: "answerRowsOf · promptWordsIn · the scope builder · normalizeScope",
 +    state: "works",
-+    evidence: "template-features.spec.ts — inserting a template asks for each hole"
++    evidence: "template-features.spec.ts — inserting a template asks for each slot"
 +  },
 +  {
 +    index: "06",
 +    step: "The copy reads what was chosen",
 +    gesture: "None — it is already true of the resource that lands",
-+    runs: "resolveTemplateScopes substitutes each hole term; fillTemplateAtoms fills each text hole",
++    runs: "resolveTemplateScopes substitutes each slot term; fillTemplateAtoms fills each text slot",
 +    state: "works",
-+    evidence: "template-features.spec.ts — a hole's default is built with an exclusion and read back"
++    evidence: "template-features.spec.ts — a slot's default is built with an exclusion and read back"
 +  },
 +  {
 +    index: "07",
@@ -26096,14 +26096,14 @@
 +  end
 +  subgraph making["04 · Making a template"]
 +    direction TB
-+    D["promptHolesOf · textHolesOf<br/>only what was templateified"]
++    D["promptSlotsOf · textSlotsOf<br/>only what was templateified"]
 +    E["withPrompts<br/>copies the prompt onto the block"]
-+    F["withPromptHoles<br/>those scopes become hole terms"]
++    F["withPromptSlots<br/>those scopes become slot terms"]
 +    D --> E --> F
 +  end
 +  subgraph placing["05–07 · Placing it"]
 +    direction TB
-+    G["One hole at a time"]
++    G["One slot at a time"]
 +    H["resolveTemplateScopes<br/>answer, else the default"]
 +    I["withFreshOutputs<br/>a derived output per prompt"]
 +    N["enqueueSemanticSync<br/>the copy is material now"]
@@ -26124,13 +26124,13 @@
 +  participant R as resolveTemplateScopes
 +  participant D as The new copy
 +  P->>M: Insert "Incident one-pager"
-+  M-->>P: A tab per hole — only what somebody templateified
++  M-->>P: A tab per slot — only what somebody templateified
 +  M-->>P: winter_sources — its description, its prompt, its default
 +  P->>M: winter_sources → Findings, minus one document
 +  M->>S: answers { winter_sources }
 +  S->>S: normalizeScope — the difference cannot be said inline,<br/>so it is stored as a bound resourceSets row
-+  S->>R: body, holes, answers
-+  R-->>S: every hole term settled: the answer, else the default
++  S->>R: body, slots, answers
++  R-->>S: every slot term settled: the answer, else the default
 +  S->>S: withFreshOutputs — one derived output per prompt,<br/>from the question the template carried
 +  S->>D: one document, revision 0, no reference back
 +  S->>S: enqueueSemanticSync — the copy is the project's material now
@@ -26155,7 +26155,7 @@
 +  },
 +  {
 +    scope: "A prompt reading particular resources, or excluding something",
-+    carries: "The same rule, stored as a row the hole owns",
++    carries: "The same rule, stored as a row the slot owns",
 +    because:
 +      "The templated vocabulary has no term for particular resources, so the rule lives in a resourceSets row and a single set term points at it."
 +  },
@@ -26169,10 +26169,10 @@
 +export const SETTLED: Decision[] = [
 +  {
 +    round: "This round",
-+    question: "Is a hole found or made?",
++    question: "Is a slot found or made?",
 +    answer: "Made. Templateify, on the thing itself.",
 +    became:
-+      "A prompt keeps its scope and produces no hole until somebody presses the button. Placing a template asks only about what somebody meant to be asked about."
++      "A prompt keeps its scope and produces no slot until somebody presses the button. Placing a template asks only about what somebody meant to be asked about."
 +  },
 +  {
 +    round: "This round",
@@ -26184,22 +26184,22 @@
 +  {
 +    round: "This round",
 +    question: "What does templateifying do to the resource?",
-+    answer: "Nothing. It marks where a hole goes; it does not put one there.",
++    answer: "Nothing. It marks where a slot goes; it does not put one there.",
 +    became:
-+      "A text hole is an ordinary mark, addressed like a comment or a link. The words, the formatting and the display are exactly what they were, and withMarkedHoles turns each marked run into its atom only on the copy the template is built from."
++      "A text slot is an ordinary mark, addressed like a comment or a link. The words, the formatting and the display are exactly what they were, and withMarkedSlots turns each marked run into its atom only on the copy the template is built from."
 +  },
 +  {
 +    round: "This round",
 +    question: "What is it called?",
-+    answer: "Hole 1, Hole 2 — offered, typed over when it matters.",
-+    became: "nextHoleName counts across every hole the body already holds, whichever kind it is."
++    answer: "Slot 1, Slot 2 — offered, typed over when it matters.",
++    became: "nextSlotName counts across every slot the body already holds, whichever kind it is."
 +  },
 +  {
 +    round: "This round",
 +    question: "What is its default?",
 +    answer: "Whatever the thing already is. There is no default control.",
 +    became:
-+      "A prompt's hole defaults to the scope it reads; a text hole defaults to the words that were selected. Changing a default means changing the thing, where the thing is."
++      "A prompt's slot defaults to the scope it reads; a text slot defaults to the words that were selected. Changing a default means changing the thing, where the thing is."
 +  },
 +  {
 +    round: "This round",
@@ -26210,18 +26210,18 @@
 +  },
 +  {
 +    round: "This round",
-+    question: "May two prompts share one hole?",
++    question: "May two prompts share one slot?",
 +    answer: "Yes, by carrying the same name. Nothing enforces it either way.",
 +    became:
-+      "A name is the whole of a hole's identity, and resolveTemplateScopes memoises by name. In practice each templateified thing gets its own."
++      "A name is the whole of a slot's identity, and resolveTemplateScopes memoises by name. In practice each templateified thing gets its own."
 +  }
 +];
 +
 +export const LIMITS: ScopeGap[] = [
 +  {
-+    title: "A mark that reaches into a hole is dropped — on the copy",
++    title: "A mark that reaches into a slot is dropped — on the copy",
 +    detail:
-+      "In the template, a bold run that crossed a hole's edge is gone: those words are a question now, and formatting a question means nothing. Every other mark keeps exactly the words it covered, mapped by position. The resource itself keeps all of them.",
++      "In the template, a bold run that crossed a slot's edge is gone: those words are a question now, and formatting a question means nothing. Every other mark keeps exactly the words it covered, mapped by position. The resource itself keeps all of them.",
 +    order: "Settled. This is the only thing templating drops, and it drops it where it is harmless."
 +  },
 +  {
@@ -26231,10 +26231,10 @@
 +    order: "Correct as long as a template is a copy, which is the whole model. Nothing to do."
 +  },
 +  {
-+    title: "A hole cannot span two blocks",
++    title: "A slot cannot span two blocks",
 +    detail:
 +      "A mark lives inside one block, so a selection running across a paragraph break marks nothing. Selecting within a paragraph, or a whole one, is what is offered.",
-+    order: "Worth revisiting only if somebody wants a hole that swallows structure."
++    order: "Worth revisiting only if somebody wants a slot that swallows structure."
 +  }
 +];
 ~~~~
@@ -26338,7 +26338,7 @@
 +  {"path":"app/src/lib/capabilities/templates/api/read-resource-template/validate-read-resource-template.ts","status":"A","area":"templates","kind":"production","current":8,"base":0,"added":8,"deleted":0},
 +  {"path":"app/src/lib/capabilities/templates/api/remove-template/remove-template.ts","status":"M","area":"templates","kind":"production","current":106,"base":164,"added":10,"deleted":68},
 +  {"path":"app/src/lib/capabilities/templates/api/shared/bodies.ts","status":"M","area":"templates","kind":"production","current":308,"base":462,"added":17,"deleted":171},
-+  {"path":"app/src/lib/capabilities/templates/api/shared/holes.ts","status":"A","area":"templates","kind":"production","current":39,"base":0,"added":39,"deleted":0},
++  {"path":"app/src/lib/capabilities/templates/api/shared/slots.ts","status":"A","area":"templates","kind":"production","current":39,"base":0,"added":39,"deleted":0},
 +  {"path":"app/src/lib/capabilities/templates/api/shared/projection.ts","status":"M","area":"templates","kind":"production","current":266,"base":283,"added":32,"deleted":49},
 +  {"path":"app/src/lib/capabilities/templates/api/shared/prompts.ts","status":"A","area":"templates","kind":"production","current":178,"base":0,"added":178,"deleted":0},
 +  {"path":"app/src/lib/capabilities/templates/api/shared/scopes.ts","status":"A","area":"templates","kind":"production","current":204,"base":0,"added":204,"deleted":0},
@@ -26402,15 +26402,15 @@
 +  {"path":"app/src/lib/representation/data/behavior/templates/deck-of-slide.ts","status":"A","area":"vocabulary","kind":"production","current":18,"base":0,"added":18,"deleted":0},
 +  {"path":"app/src/lib/representation/data/behavior/templates/fresh-ids.ts","status":"A","area":"vocabulary","kind":"production","current":71,"base":0,"added":71,"deleted":0},
 +  {"path":"app/src/lib/representation/data/behavior/templates/portable.ts","status":"A","area":"vocabulary","kind":"production","current":87,"base":0,"added":87,"deleted":0},
-+  {"path":"app/src/lib/representation/data/behavior/templates/prompt-holes.ts","status":"A","area":"vocabulary","kind":"production","current":425,"base":0,"added":425,"deleted":0},
++  {"path":"app/src/lib/representation/data/behavior/templates/prompt-slots.ts","status":"A","area":"vocabulary","kind":"production","current":425,"base":0,"added":425,"deleted":0},
 +  {"path":"app/src/lib/representation/data/behavior/templates/scopes.ts","status":"A","area":"vocabulary","kind":"production","current":216,"base":0,"added":216,"deleted":0},
 +  {"path":"app/src/lib/representation/data/behavior/templates/test/unit/answers.test.ts","status":"A","area":"vocabulary","kind":"test","current":104,"base":0,"added":104,"deleted":0},
 +  {"path":"app/src/lib/representation/data/behavior/templates/test/unit/at-scale.test.ts","status":"A","area":"vocabulary","kind":"test","current":299,"base":0,"added":299,"deleted":0},
 +  {"path":"app/src/lib/representation/data/behavior/templates/test/unit/deck-of-slide.test.ts","status":"A","area":"vocabulary","kind":"test","current":36,"base":0,"added":36,"deleted":0},
 +  {"path":"app/src/lib/representation/data/behavior/templates/test/unit/fresh-ids.test.ts","status":"A","area":"vocabulary","kind":"test","current":81,"base":0,"added":81,"deleted":0},
-+  {"path":"app/src/lib/representation/data/behavior/templates/test/unit/marked-holes.test.ts","status":"A","area":"vocabulary","kind":"test","current":239,"base":0,"added":239,"deleted":0},
++  {"path":"app/src/lib/representation/data/behavior/templates/test/unit/marked-slots.test.ts","status":"A","area":"vocabulary","kind":"test","current":239,"base":0,"added":239,"deleted":0},
 +  {"path":"app/src/lib/representation/data/behavior/templates/test/unit/portable.test.ts","status":"A","area":"vocabulary","kind":"test","current":105,"base":0,"added":105,"deleted":0},
-+  {"path":"app/src/lib/representation/data/behavior/templates/test/unit/prompt-holes.test.ts","status":"A","area":"vocabulary","kind":"test","current":153,"base":0,"added":153,"deleted":0},
++  {"path":"app/src/lib/representation/data/behavior/templates/test/unit/prompt-slots.test.ts","status":"A","area":"vocabulary","kind":"test","current":153,"base":0,"added":153,"deleted":0},
 +  {"path":"app/src/lib/representation/data/behavior/templates/test/unit/scopes.test.ts","status":"A","area":"vocabulary","kind":"test","current":109,"base":0,"added":109,"deleted":0},
 +  {"path":"app/src/lib/representation/data/behavior/workspace/opening.ts","status":"M","area":"vocabulary","kind":"production","current":168,"base":164,"added":5,"deleted":1},
 +  {"path":"app/src/lib/representation/data/types/content/content-block.ts","status":"M","area":"vocabulary","kind":"production","current":184,"base":130,"added":55,"deleted":1},
@@ -26445,7 +26445,7 @@
 +export const PAGES: ReferencePage[] = [
 +  { slug: "system", index: "01", label: "How templates work", sub: "The model, the verbs, the panels" },
 +  { slug: "changes", index: "02", label: "What changed", sub: "Every file, decision and check" },
-+  { slug: "scope", index: "03", label: "What a hole selects", sub: "The scope builder, and what it cost" },
++  { slug: "scope", index: "03", label: "What a slot selects", sub: "The scope builder, and what it cost" },
 +  { slug: "integration", index: "04", label: "End to end with prompts", sub: "Every link, and the rule behind it" },
 +  { slug: "rebase", index: "05", label: "Where it meets the base", sub: "Every conflict, every defect" },
 +  { slug: "walkthrough", index: "06", label: "Walk it yourself", sub: "The whole design, driven" }
@@ -26496,9 +26496,9 @@
 +  checkout work/template-features
 +  commit id: "the template system"
 +  commit id: "the scope builder"
-+  commit id: "one list of holes"
++  commit id: "one list of slots"
 +  commit id: "one row per term"
-+  commit id: "holes, and Create hole"`;
++  commit id: "slots, and Create slot"`;
 +
 +export const RECONCILED: Reconciliation[] = [
 +  {
@@ -26506,7 +26506,7 @@
 +    path: "capabilities/templates/api/instantiate-template/instantiate-template.ts",
 +    when: "Onto main, before the move",
 +    base: "Normalized a document's styles and readied a deck before the leader snapshot was written, both inside the same block this branch had rewritten.",
-+    branch: "Resolved every prompt scope through the caller's answers and the holes' defaults, then wrote the snapshot.",
++    branch: "Resolved every prompt scope through the caller's answers and the slots' defaults, then wrote the snapshot.",
 +    kept: "Both. The style normalisation and the deck readying run where the base put them, the scope resolution runs before them, and the deck branch took the base's destructuring rather than keeping two spellings of the same read.",
 +    why: "Neither side was making a claim about the other. One prepares a body to be stored; the other decides what the body says. Ordering them was the whole decision."
 +  },
@@ -26524,7 +26524,7 @@
 +    path: "app-views/categories/slide-deck-editor/slide-deck-editor.md",
 +    when: "Twice — onto main, then onto the base",
 +    base: "First cut the document from 714 lines to 221 and listed Templates as a deferred placeholder; later added a Prompts section describing the Prompt Block and how a text box converts into one.",
-+    branch: "Described the Templates panel — the working copy, the Holes band, the List — in the same place, directly after Comments.",
++    branch: "Described the Templates panel — the working copy, the Slots band, the List — in the same place, directly after Comments.",
 +    kept: "The base's rewrite whole, both times, with the Templates section written again beside Prompts in the base's terse register.",
 +    why: "A document is prose, so a three-way merge has nothing structural to work with and both sides had rewritten the same neighbourhood. Taking one side whole and re-adding the other by hand is the only way to end with a document that reads."
 +  },
@@ -26551,14 +26551,14 @@
 +export const DEFECTS: Defect[] = [
 +  {
 +    index: "01",
-+    title: "A text hole's kind and default words were thrown away on every write",
++    title: "A text slot's kind and default words were thrown away on every write",
 +    symptom:
-+      "Typing default words into a text hole looked like it worked — the panel showed them — and they were gone on the next read. A text hole could also come back as a scope hole, with a Default scope button where its words had been.",
++      "Typing default words into a text slot looked like it worked — the panel showed them — and they were gone on the next read. A text slot could also come back as a scope slot, with a Default scope button where its words had been.",
 +    cause:
-+      "updateTemplate rebuilds each hole after normalising its scope, and the rebuild listed name, label, description and default. It was written before text holes existed and nobody widened it when they arrived, so kind and text fell off the object on the way to the store.",
++      "updateTemplate rebuilds each slot after normalising its scope, and the rebuild listed name, label, description and default. It was written before text slots existed and nobody widened it when they arrived, so kind and text fell off the object on the way to the store.",
 +    fix: "The rebuild carries kind and text through, both still omitted rather than written as undefined when they are absent.",
 +    proof:
-+      "The browser case that makes a hole with default words now reads both the words and the description back off the card after the round trip, which fails against the old rebuild."
++      "The browser case that makes a slot with default words now reads both the words and the description back off the card after the round trip, which fails against the old rebuild."
 +  },
 +  {
 +    index: "02",
@@ -26578,15 +26578,15 @@
 +    layer: "Vocabulary",
 +    base: "The semantic overlay: derived outputs, evidence spans, material profiles, embeddings, and a PromptBlock that carries a derived output id and a generation state.",
 +    branch:
-+      "templateStages; templates gains projectId, lastUsedAt and holes; resourceSets gains name and boundTo; TemplatedTerm gains a hole term; Atom gains TemplateAtom; Target gains context.",
++      "templateStages; templates gains projectId, lastUsedAt and slots; resourceSets gains name and boundTo; TemplatedTerm gains a slot term; Atom gains TemplateAtom; Target gains context.",
 +    meets:
-+      "PromptBlock.scope. The base writes prompt blocks; this branch reads their scopes to find holes and substitutes answers back into them."
++      "PromptBlock.scope. The base writes prompt blocks; this branch reads their scopes to find slots and substitutes answers back into them."
 +  },
 +  {
 +    layer: "Capabilities",
 +    base: "derived-output, with grounded synthesis, agent tool rounds, citation and refresh coalescing.",
 +    branch:
-+      "templates rewritten as a project subject with working copies, holes and scope normalisation; a new resource-sets capability; startThread refusing a working copy.",
++      "templates rewritten as a project subject with working copies, slots and scope normalisation; a new resource-sets capability; startThread refusing a working copy.",
 +    meets:
 +      "Nothing calls across. A template is made from a body that already holds prompt blocks, and the generated answer is dropped on the way in."
 +  },
@@ -26594,7 +26594,7 @@
 +    layer: "Editors",
 +    base: "Live Prompt Blocks in both editors: a text box converts in place, a prompt inspector generates and refreshes, a Prompts context panel indexes them.",
 +    branch:
-+      "A Templates context panel in both editors: save, open a working copy, the Holes band with Create hole, and the template List.",
++      "A Templates context panel in both editors: save, open a working copy, the Slots band with Create slot, and the template List.",
 +    meets:
 +      "The document and deck bodies, and one shared measurement of an atom's width in `positions.ts`."
 +  },
@@ -26676,11 +26676,11 @@
 +    inALiveResource: "Yes"
 +  },
 +  {
-+    select: "hole",
++    select: "slot",
 +    reads: "Whatever source_material holds",
-+    picks: "The answer given for that hole, else its default, else the whole project.",
++    picks: "The answer given for that slot, else its default, else the whole project.",
 +    inABody: "Yes",
-+    inADefault: "Yes, one hole may defer to another",
++    inADefault: "Yes, one slot may defer to another",
 +    inALiveResource: "No"
 +  }
 +];
@@ -26697,28 +26697,28 @@
 +    where: "A template atom in the prose names it",
 +    opens: "text",
 +    title: "Words",
-+    confirms: "What the caller typed, else the hole's own default words, else nothing — which is the only thing that holds a placement up",
++    confirms: "What the caller typed, else the slot's own default words, else nothing — which is the only thing that holds a placement up",
 +    writes: "The atom becomes a literal, and the block's display follows"
 +  }
 +];
 +
 +export const DOORS: ScopeDoor[] = [
 +  {
-+    where: "Templates panel · a hole card on a working copy",
++    where: "Templates panel · a slot card on a working copy",
 +    opens: "Default scope",
 +    title: "Default scope for Source material",
 +    confirms: "Set the default scope",
 +    writes: "updateTemplate with a rule; the server stores a row if the rule needs one"
 +  },
 +  {
-+    where: "Templates library · the inspector's hole list",
++    where: "Templates library · the inspector's slot list",
 +    opens: "Default scope",
 +    title: "Default scope for Source material",
 +    confirms: "Set the default scope",
 +    writes: "The same procedure, from the other door"
 +  },
 +  {
-+    where: "Insert · one row per hole in the ask modal",
++    where: "Insert · one row per slot in the ask modal",
 +    opens: "Change",
 +    title: "What Source material selects here",
 +    confirms: "Use this",
@@ -26744,7 +26744,7 @@
 +  {
 +    index: "1",
 +    title: "Open",
-+    person: "Presses Default scope on a hole, or Change beside a hole in the ask modal",
++    person: "Presses Default scope on a slot, or Change beside a slot in the ask modal",
 +    client: "The builder opens on the rule that is there now, which is the whole project when nothing was chosen",
 +    server: "Nothing. It reads the project's resource index and the project's named sets, both already loaded",
 +    rows: "None"
@@ -26777,16 +26777,16 @@
 +    index: "5",
 +    title: "Confirm an answer",
 +    person: "Presses Use this, then Insert or Use",
-+    client: "Holds the rule beside the hole's name until the placing call",
++    client: "Holds the rule beside the slot's name until the placing call",
 +    server: "instantiateTemplate does the same normalisation, owning each row it writes to the resource it makes",
 +    rows: "The new resource, plus one row per answer that needs one"
 +  },
 +  {
 +    index: "6",
 +    title: "Forget",
-+    person: "Deletes the template, or the prompt that asked for the hole",
++    person: "Deletes the template, or the prompt that asked for the slot",
 +    client: "Nothing",
-+    server: "removeTemplate deletes the rows its holes own, the way it already discards the stage",
++    server: "removeTemplate deletes the rows its slots own, the way it already discards the stage",
 +    rows: "resourceSets −1 per bound row"
 +  }
 +];
@@ -26800,12 +26800,12 @@
 +  {
 +    rule: "A row with a name is a project subject. A row without one is bound to whatever points at it.",
 +    because:
-+      "Naming is the whole difference. A named set is something people curate and reuse. A bound set is a value a hole happens to hold, and asking someone to name it is asking them to file something they never wanted to keep."
++      "Naming is the whole difference. A named set is something people curate and reuse. A bound set is a value a slot happens to hold, and asking someone to name it is asking them to file something they never wanted to keep."
 +  },
 +  {
 +    rule: "A bound row has exactly one owner and dies with it.",
 +    because:
-+      "It exists to give one rule an id. Deleting the template, the hole or the resource that points at it leaves nothing that could read it again."
++      "It exists to give one rule an id. Deleting the template, the slot or the resource that points at it leaves nothing that could read it again."
 +  },
 +  {
 +    rule: "The caller sends a rule. The server decides whether it needs a row.",
@@ -26823,12 +26823,12 @@
 +      "They are the common case, they are already expressible inline, and writing rows for them would fill the table with rows that say nothing."
 +  },
 +  {
-+    rule: "A template's body never names a set or a resource. It names a hole.",
++    rule: "A template's body never names a set or a resource. It names a slot.",
 +    because:
 +      "That is what makes a template a function rather than a value. Portability already strips both, and this work does not change it."
 +  },
 +  {
-+    rule: "A hole's default may name a set, because a template belongs to a project.",
++    rule: "A slot's default may name a set, because a template belongs to a project.",
 +    because:
 +      "The default is project-local metadata rather than body. When a template is later taken out of its project, the default is one more thing the strip removes."
 +  }
@@ -26841,9 +26841,9 @@
 +    where: "The shared draft, before the write; updateResourceSet already refuses it as corrupt"
 +  },
 +  {
-+    when: "A named set is deleted while a set or a template hole names it",
++    when: "A named set is deleted while a set or a template slot names it",
 +    answer: "in-use, naming what holds it",
-+    where: "removeResourceSet, which already walks templates.holes"
++    where: "removeResourceSet, which already walks templates.slots"
 +  },
 +  {
 +    when: "A rule names a set from another project",
@@ -26861,12 +26861,12 @@
 +    where: "validateInstantiateTemplate"
 +  },
 +  {
-+    when: "A prompt names a hole the template does not declare",
++    when: "A prompt names a slot the template does not declare",
 +    answer: "unsupported-body, with the names",
 +    where: "Unchanged"
 +  },
 +  {
-+    when: "A hole is answered with a raw difference that reached resolution",
++    when: "A slot is answered with a raw difference that reached resolution",
 +    answer: "unsupported-body, as today",
 +    where: "resolveTemplateScopes, which should now be unreachable from either door"
 +  }
@@ -26883,7 +26883,7 @@
 +    path: "representation/data/types/core/resource-set.ts",
 +    status: "changed",
 +    area: "vocabulary",
-+    work: "One added union, BoundTo: a template's hole, or a placed resource's. Neither term union moved."
++    work: "One added union, BoundTo: a template's slot, or a placed resource's. Neither term union moved."
 +  },
 +  {
 +    path: "representation/data/behavior/core/scope-draft.ts",
@@ -26925,7 +26925,7 @@
 +    path: "capabilities/templates/api/shared/projection.ts",
 +    status: "changed",
 +    area: "templates",
-+    work: "A hole's default naming a bound row is expanded into that row's rule, so the builder opens on what somebody built. A named set is left alone."
++    work: "A slot's default naming a bound row is expanded into that row's rule, so the builder opens on what somebody built. A named set is left alone."
 +  },
 +  {
 +    path: "capabilities/templates/api/shared/stages.ts",
@@ -26937,7 +26937,7 @@
 +    path: "capabilities/templates/api/update-template/",
 +    status: "changed",
 +    area: "templates",
-+    work: "Each default is normalised against its own hole, a set from another project is refused, and a hole that disappears takes its row with it."
++    work: "Each default is normalised against its own slot, a set from another project is refused, and a slot that disappears takes its row with it."
 +  },
 +  {
 +    path: "capabilities/templates/api/instantiate-template/",
@@ -26949,7 +26949,7 @@
 +    path: "capabilities/templates/api/remove-template/",
 +    status: "changed",
 +    area: "templates",
-+    work: "Deleting a template deletes the rows its holes own."
++    work: "Deleting a template deletes the rows its slots own."
 +  },
 +  {
 +    path: "capabilities/templates/test/unit/answers.test.ts",
@@ -26973,7 +26973,7 @@
 +    path: "app-views/categories/document-editor/context/templates.svelte",
 +    status: "changed",
 +    area: "editors",
-+    work: "The toggle modal is the builder; the ask modal lists each hole's rule with Change and Use the default beside it, and the builder opens as a modal of its own."
++    work: "The toggle modal is the builder; the ask modal lists each slot's rule with Change and Use the default beside it, and the builder opens as a modal of its own."
 +  },
 +  {
 +    path: "app-views/categories/slide-deck-editor/procedures/templating.ts",
@@ -27021,7 +27021,7 @@
 +    path: "seed/resourceSets.json · seed/templates.json",
 +    status: "changed",
 +    area: "evidence",
-+    work: "A bound row owned by a seeded template's hole, holding an exclusion, so every panel has one to draw before anyone builds one."
++    work: "A bound row owned by a seeded template's slot, holding an exclusion, so every panel has one to draw before anyone builds one."
 +  },
 +  {
 +    path: "test/browser/template-features.spec.ts",
@@ -27055,9 +27055,9 @@
 +    index: "3",
 +    question: "How does a bound row know what owns it?",
 +    recommended:
-+      "An explicit boundTo, and it names the hole on both sides: a template's hole, or a placed resource's.",
++      "An explicit boundTo, and it names the slot on both sides: a template's slot, or a placed resource's.",
 +    because:
-+      "One resource may answer several holes, so the owner has to be the pair rather than the resource. Ownership is a fact worth storing; a sweep has to be written, scheduled and trusted.",
++      "One resource may answer several slots, so the owner has to be the pair rather than the resource. Ownership is a fact worth storing; a sweep has to be written, scheduled and trusted.",
 +    alternative: "No owner, and a collector that removes rows nothing reaches.",
 +    cost: "One column, and three procedures that already delete things delete these too."
 +  },
@@ -27117,15 +27117,15 @@
 +    order: "Lands with derived outputs, before any of this is useful end to end"
 +  },
 +  {
-+    title: "A prompt block is what declares a hole",
++    title: "A prompt block is what declares a slot",
 +    detail:
-+      "Today a hole appears only because a body already carries a hole scope, which happens when a template with one is inserted into a working copy. The agreed shape is pull-based: making a template walks the prompts it found and asks what each one's scope should be, and two prompts may share a hole.",
++      "Today a slot appears only because a body already carries a slot scope, which happens when a template with one is inserted into a working copy. The agreed shape is pull-based: making a template walks the prompts it found and asks what each one's scope should be, and two prompts may share a slot.",
 +    order: "Lands with prompt blocks. The builder is the modal that step opens"
 +  },
 +  {
 +    title: "A prompt block that loads a template",
 +    detail:
-+      "The last integration: a prompt naming a template pulls it in and fills its holes with nobody opening a modal.",
++      "The last integration: a prompt naming a template pulls it in and fills its slots with nobody opening a modal.",
 +    order: "After both, and it needs nothing this plan does not already build"
 +  },
 +  {
@@ -27163,8 +27163,8 @@
 +export const NOUNS: Noun[] = [
 +  {
 +    term: "Template",
-+    says: "A saved original that belongs to one project: a name, tags, a body, and a list of holes. Every write makes a new revision and keeps the last one as a version.",
-+    onDisk: "templates (projectId, userId, name, tags, body, holes, revision, lastUsedAt) · templateVersions",
++    says: "A saved original that belongs to one project: a name, tags, a body, and a list of slots. Every write makes a new revision and keeps the last one as a version.",
++    onDisk: "templates (projectId, userId, name, tags, body, slots, revision, lastUsedAt) · templateVersions",
 +    not: "a resource — it cannot be opened in an editor; its working copy can"
 +  },
 +  {
@@ -27181,20 +27181,20 @@
 +    not: "lossless — the save says what it dropped, in words"
 +  },
 +  {
-+    term: "Hole",
-+    says: "A hole in the body that a prompt's scope names. It carries the name the scope uses, a label, a description, and a default scope. It exists because the body names it.",
-+    onDisk: "TemplateHole { name, label, description?, default? }",
++    term: "Slot",
++    says: "A slot in the body that a prompt's scope names. It carries the name the scope uses, a label, a description, and a default scope. It exists because the body names it.",
++    onDisk: "TemplateSlot { name, label, description?, default? }",
 +    not: "something you type in by hand — nothing in the panels adds or removes one"
 +  },
 +  {
 +    term: "Default scope",
-+    says: "What a hole selects when nobody says otherwise: everything in the project, particular kinds, or one of the project's named sets. A hole with none means everything in the project.",
-+    onDisk: "TemplatedResourceSet on the hole",
++    says: "What a slot selects when nobody says otherwise: everything in the project, particular kinds, or one of the project's named sets. A slot with none means everything in the project.",
++    onDisk: "TemplatedResourceSet on the slot",
 +    not: "an answer — it is what the template suggests, not what one use decided"
 +  },
 +  {
 +    term: "Answer",
-+    says: "What one person picks for one hole at the moment they insert or use the template. It wins over the default for that copy only.",
++    says: "What one person picks for one slot at the moment they insert or use the template. It wins over the default for that copy only.",
 +    onDisk: "nothing — answers are passed to instantiate and never stored",
 +    not: "a binding — no row remembers it"
 +  },
@@ -27251,7 +27251,7 @@
 +  {
 +    name: "Insert",
 +    gesture: "Insert on a row of the Templates panel",
-+    does: "Asks what each hole should select, then copies the template's saved body into the open resource after the current row or slide, with fresh ids",
++    does: "Asks what each slot should select, then copies the template's saved body into the open resource after the current row or slide, with fresh ids",
 +    leaves: "An ordinary edit — undo removes it, and later changes to the template never reach it",
 +    procedure: "insertionOf + runtime.apply"
 +  },
@@ -27277,14 +27277,14 @@
 +    title: "Make",
 +    person: "Names the open document, deck or current slide and presses Save",
 +    client: "Sends the resource id and the name, then opens a new tab straight onto the copy's Templates panel",
-+    server: "Reads the leader snapshot, makes the body portable, stamps the project, declares the holes the body names, says what it dropped",
++    server: "Reads the leader snapshot, makes the body portable, stamps the project, declares the slots the body names, says what it dropped",
 +    rows: "templates at 1 · templateVersions 1 · templateStages staged at 1 · a scratch row titled Template · name"
 +  },
 +  {
 +    index: "02",
 +    title: "Open",
 +    person: "Presses Edit on a template",
-+    client: "The ordinary editor opens on the scratch resource; the panel shows Save and Discard in its header, then the holes",
++    client: "The ordinary editor opens on the scratch resource; the panel shows Save and Discard in its header, then the slots",
 +    server: "Returns the template's working copy, or writes the body at revision N into a new scratch row and records the stage",
 +    rows: "Nothing new on a resume; otherwise a stage row and a scratch row at N"
 +  },
@@ -27299,8 +27299,8 @@
 +  {
 +    index: "04",
 +    title: "Describe",
-+    person: "Opens a hole, writes what it stands for, sets its default scope",
-+    client: "Writes the whole hole list at the revision the panel read; the body is untouched",
++    person: "Opens a slot, writes what it stands for, sets its default scope",
++    client: "Writes the whole slot list at the revision the panel read; the body is untouched",
 +    server: "updateTemplate makes revision N+1 and carries the working copy to N+1, so this never makes the next save stale",
 +    rows: "templates at N+1 · templateVersions N+1 · templateStages staged at N+1"
 +  },
@@ -27315,7 +27315,7 @@
 +  {
 +    index: "06",
 +    title: "Insert or Use",
-+    person: "Answers each hole in one modal, or leaves every default",
++    person: "Answers each slot in one modal, or leaves every default",
 +    client: "Insert builds ops from the template's saved body with fresh ids and the scopes filled in; Use sends the answers to the server",
 +    server: "instantiateTemplate resolves the scopes, writes the new resource, and records the template's last use",
 +    rows: "Ops on the open resource, or a new resource with no reference back"
@@ -27345,11 +27345,11 @@
 +  },
 +  {
 +    rule: "A template is portable, inside its project too",
-+    because: "It turns a value into a function: what pointed at one particular thing is stripped and the holes fill the scopes."
++    because: "It turns a value into a function: what pointed at one particular thing is stripped and the slots fill the scopes."
 +  },
 +  {
-+    rule: "A scope hole is found, a text hole is placed",
-+    because: "A scope hole exists because a prompt's scope names it, so nothing in the panels adds or removes one. A text hole is a place in the prose, and only the writer knows where it goes: Create hole names it and drops its atom at the caret in one act."
++    rule: "A scope slot is found, a text slot is placed",
++    because: "A scope slot exists because a prompt's scope names it, so nothing in the panels adds or removes one. A text slot is a place in the prose, and only the writer knows where it goes: Create slot names it and drops its atom at the caret in one act."
 +  },
 +  {
 +    rule: "A working copy takes no comments",
@@ -27365,9 +27365,9 @@
 +  { when: "A template in another project", answer: "not-found", where: "read, update, remove, instantiate, open" },
 +  { when: "A save whose base revision is behind", answer: "stale", where: "commitTemplateStage, updateTemplate, removeTemplate" },
 +  { when: "A spreadsheet template asked to open for editing", answer: "unsupported-body", where: "openTemplateStage" },
-+  { when: "A body naming a hole the template does not declare", answer: "unsupported-body, with the names", where: "instantiateTemplate" },
++  { when: "A body naming a slot the template does not declare", answer: "unsupported-body, with the names", where: "instantiateTemplate" },
 +  { when: "An answer naming a set this project does not hold", answer: "unsupported-body, with the ids", where: "instantiateTemplate" },
-+  { when: "A hole list that drops a name the body still uses", answer: "hole-in-use, with the names", where: "updateTemplate" },
++  { when: "A slot list that drops a name the body still uses", answer: "slot-in-use, with the names", where: "updateTemplate" },
 +  { when: "A resource set another set or a template default still names", answer: "in-use, naming which", where: "removeResourceSet" },
 +  { when: "A comment thread on a working copy", answer: "refused before anything is written", where: "startThread" },
 +  { when: "A save while the editor still holds unflushed work", answer: "refused in the panel, before the request", where: "the Templates panel" }
@@ -27378,7 +27378,7 @@
 +  { item: "A prompt's generated output id", keeps: "the prompt, its text and its scope" },
 +  { item: "Links to people, personas and resources", keeps: "the marked text, and a link to a URL with its note" },
 +  { item: "Images stored in the project", keeps: "the image block, and an image at a URL" },
-+  { item: "Scope terms naming a set or particular resources", keeps: "the whole-project and kind terms, and the holes" },
++  { item: "Scope terms naming a set or particular resources", keeps: "the whole-project and kind terms, and the slots" },
 +  { item: "Ranges into another spreadsheet, and values that reference a resource", keeps: "the cell, emptied" }
 +];
 ~~~~
@@ -27387,7 +27387,7 @@
 
 ~~~~diff
 @@ -0,0 +1,108 @@
-+import { defaultScopeOf } from "$representation/data/behavior/templates/prompt-holes";
++import { defaultScopeOf } from "$representation/data/behavior/templates/prompt-slots";
 +import type { AnswerRow } from "$representation/data/behavior/templates/answers";
 +
 +/**
@@ -27424,15 +27424,15 @@
 +export const scopeWords = (scope: WalkScope): string =>
 +  defaultScopeOf(SCOPES[scope]) === undefined ? WORDS.project : WORDS[scope];
 +
-+export type WalkHole = {
++export type WalkSlot = {
 +  readonly name: string;
 +  readonly description: string;
 +  readonly prompt: string;
 +  readonly fallback: string;
 +};
 +
-+/** Only the prompts somebody templated become holes. */
-+export const holesFrom = (prompts: readonly WalkPrompt[]): readonly WalkHole[] =>
++/** Only the prompts somebody templated become slots. */
++export const slotsFrom = (prompts: readonly WalkPrompt[]): readonly WalkSlot[] =>
 +  prompts.flatMap((prompt) =>
 +    prompt.name.trim() === ""
 +      ? []
@@ -27447,17 +27447,17 @@
 +  );
 +
 +export const answerRowsFrom = (
-+  holes: readonly WalkHole[],
++  slots: readonly WalkSlot[],
 +  chosen: Readonly<Record<string, string>>
 +): readonly AnswerRow[] =>
-+  holes.map((hole) => {
-+    const answered = chosen[hole.name] === "chosen";
++  slots.map((slot) => {
++    const answered = chosen[slot.name] === "chosen";
 +    return {
-+      key: hole.name,
-+      label: hole.name,
-+      ...(hole.description === "" ? {} : { description: hole.description }),
++      key: slot.name,
++      label: slot.name,
++      ...(slot.description === "" ? {} : { description: slot.description }),
 +      kind: "scope" as const,
-+      value: answered ? "Findings, minus one document" : hole.fallback,
++      value: answered ? "Findings, minus one document" : slot.fallback,
 +      answered,
 +      missing: false
 +    };
@@ -27473,24 +27473,24 @@
 +  {
 +    title: "Something is templateified",
 +    what: "A prompt, or a run of selected text. Nothing about the resource changes: the block gains a record, the words gain a mark. Until this, a template built from the document asks nothing at all.",
-+    runs: "promptHoleOps writes a hole record; markHoleOps writes a mark over the run",
-+    leaves: "A hole named Hole 1, whose default is what the thing already is, and prose that reads exactly as it did"
++    runs: "promptSlotOps writes a slot record; markSlotOps writes a mark over the run",
++    leaves: "A slot named Slot 1, whose default is what the thing already is, and prose that reads exactly as it did"
 +  },
 +  {
 +    title: "The resource is saved as a template",
-+    what: "On the copy — and only there — each marked run becomes the hole it was marked as. The prompt's question is copied onto the block as its link is left behind.",
-+    runs: "promptHolesOf · withPrompts · portableBodyOf · withPromptHoles · withMarkedHoles · textHolesOf",
-+    leaves: "templates.holes, a body whose templated prompt scopes are hole terms, and an untouched original"
++    what: "On the copy — and only there — each marked run becomes the slot it was marked as. The prompt's question is copied onto the block as its link is left behind.",
++    runs: "promptSlotsOf · withPrompts · portableBodyOf · withPromptSlots · withMarkedSlots · textSlotsOf",
++    leaves: "templates.slots, a body whose templated prompt scopes are slot terms, and an untouched original"
 +  },
 +  {
 +    title: "Somebody places it",
-+    what: "One hole at a time: its name, what it stands for, the prompt it fills, and the control.",
++    what: "One slot at a time: its name, what it stands for, the prompt it fills, and the control.",
 +    runs: "answerRowsOf · promptWordsIn · the scope builder · normalizeScope",
-+    leaves: "Answers keyed by hole name, and a bound resourceSets row for anything that excludes"
++    leaves: "Answers keyed by slot name, and a bound resourceSets row for anything that excludes"
 +  },
 +  {
 +    title: "The copy reads what was chosen",
-+    what: "Every hole term is settled, and each prompt is given a derived output of its own from the question the template carried.",
++    what: "Every slot term is settled, and each prompt is given a derived output of its own from the question the template carried.",
 +    runs: "resolveTemplateScopes · fillTemplateAtoms · withFreshOutputs",
 +    leaves: "An ordinary document whose prompts are linked and ready to generate"
 +  }

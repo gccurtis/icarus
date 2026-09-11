@@ -360,7 +360,7 @@ describe("semantic material query", () => {
         boundTo: {
           kind: "resource",
           ref: { kind: "presentation", id: "presentations:launch" },
-          hole: "evidence"
+          slot: "evidence"
         },
         set: {
           include: [

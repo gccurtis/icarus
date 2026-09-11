@@ -96,7 +96,7 @@ describe("the project library", () => {
   test("refuses to read or duplicate a private default owned by another subject", async () => {
     model.tables.templates.push(
       template("1", "users:u", documentBody, {
-        holes: [
+        slots: [
           {
             name: "evidence",
             label: "Evidence",
@@ -115,7 +115,7 @@ describe("the project library", () => {
         boundTo: {
           kind: "resource",
           ref: { kind: "document", id: "documents:9" },
-          hole: "evidence"
+          slot: "evidence"
         },
         set: {
           include: [{ select: "resources", refs: [{ kind: "document", id: "documents:9" }] }],

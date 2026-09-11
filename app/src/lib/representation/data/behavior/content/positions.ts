@@ -5,7 +5,7 @@ import type {
 } from "$representation/data/types/content/content-block";
 
 /**
- * A template atom shows its parameter's name in braces, so a hole reads as one
+ * A template atom shows its parameter's name in braces, so a slot reads as one
  * wherever prose is measured or drawn, and so its width is stable.
  */
 export const displayOfAtom = (atom: Atom): string =>

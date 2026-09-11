@@ -1148,7 +1148,7 @@ describe("a scoped persona", () => {
     assert.equal(first.accepted, true);
     const privateRow: Row = {
       ...model.tables.resourceSets[0],
-      boundTo: { kind: "hole", templateId: "templates:one", hole: "sources" }
+      boundTo: { kind: "slot", templateId: "templates:one", slot: "sources" }
     };
     delete privateRow.name;
     model.tables.resourceSets[0] = privateRow;

@@ -97,7 +97,7 @@ describe("admittedReusableResourceSets", () => {
       boundTo: {
         kind: "resource",
         ref: { kind: "document", id: "documents:one" },
-        hole: "evidence"
+        slot: "evidence"
       }
     };
     const admitted = admitResourceSetRow(privateRow);
@@ -106,18 +106,18 @@ describe("admittedReusableResourceSets", () => {
     expect(admitted.boundTo).toEqual({
       kind: "resource",
       ref: { kind: "document", id: "documents:one" },
-      hole: "evidence"
+      slot: "evidence"
     });
     expect(() => admitResourceSetRow({
       ...base,
-      boundTo: { kind: "resource", resourceId: "documents:one", hole: "evidence" }
-    })).toThrow(/names exactly one hole or resource/);
+      boundTo: { kind: "resource", resourceId: "documents:one", slot: "evidence" }
+    })).toThrow(/names exactly one slot or resource/);
     expect(() => admitResourceSetRow({
       ...base,
       boundTo: {
         kind: "resource",
         ref: { kind: "presentation", id: "documents:one" },
-        hole: "evidence"
+        slot: "evidence"
       }
     })).toThrow(/matching row id/);
     expect(() => admitReusableResourceSetRow(privateRow)).toThrow(/private storage/);

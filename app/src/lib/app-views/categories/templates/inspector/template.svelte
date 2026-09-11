@@ -97,7 +97,7 @@
   let tagDraft = $state("");
   let activeTemplateId = $state<string>();
   let pending = $state<
-    "name" | "description" | "hole" | "tag" | "duplicate" | "delete" | "use" | "edit" | "default"
+    "name" | "description" | "slot" | "tag" | "duplicate" | "delete" | "use" | "edit" | "default"
   >();
   let actionError = $state<string>();
   let live = true;
@@ -118,7 +118,7 @@
     descriptionBase = undefined;
     tagDraft = "";
     editingDescription = false;
-    promptState.cancelHoleDescription();
+    promptState.cancelSlotDescription();
     actionError = undefined;
   });
 
@@ -135,7 +135,7 @@
     setPending: (value) => (pending = value),
     setError: (value) => (actionError = value),
     stillInspecting,
-    prepareHoleEditing: () => {
+    prepareSlotEditing: () => {
       editingName = false;
       nameBase = undefined;
       editingDescription = false;
@@ -144,7 +144,7 @@
   });
 
   const askRows = $derived(
-    answerRowsOf(template?.holes ?? [], promptState.useChoices, promptState.useTexts, setNames)
+    answerRowsOf(template?.slots ?? [], promptState.useChoices, promptState.useTexts, setNames)
   );
   const askBlocked = $derived(
     missingIn(askRows).length === 0 ? undefined : `${missingIn(askRows).join(", ")} still needs words.`
@@ -166,7 +166,7 @@
     if (template === undefined || !template.canEdit || pending !== undefined) return;
     editingName = false;
     nameBase = undefined;
-    promptState.cancelHoleDescription();
+    promptState.cancelSlotDescription();
     descriptionBase = template;
     descriptionDraft = template.description;
     editingDescription = true;
@@ -177,7 +177,7 @@
     if (template === undefined || !template.canEdit || pending !== undefined) return;
     editingDescription = false;
     descriptionBase = undefined;
-    promptState.cancelHoleDescription();
+    promptState.cancelSlotDescription();
     nameBase = template;
     nameDraft = template.name;
     editingName = true;
@@ -566,7 +566,7 @@
       </div>
 
       {#if !template.canEdit}
-        <p class="permission-note">Duplicate this template to edit its name, description, holes, or tags.</p>
+        <p class="permission-note">Duplicate this template to edit its name, description, slots, or tags.</p>
       {/if}
       {#if template.makes === "Spreadsheet"}
         <p class="permission-note">{SPREADSHEET_HANDOFF}</p>
@@ -574,62 +574,62 @@
 
       <div class="divider" aria-hidden="true"></div>
 
-      <section aria-labelledby="holes-heading">
-        <h3 id="holes-heading" class="section-heading">
-          Holes <span>{template.holes.length}</span>
+      <section aria-labelledby="slots-heading">
+        <h3 id="slots-heading" class="section-heading">
+          Slots <span>{template.slots.length}</span>
         </h3>
 
-        {#if template.holes.length === 0}
-          <PanelEmpty title="This template asks for no holes." flush />
+        {#if template.slots.length === 0}
+          <PanelEmpty title="This template asks for no slots." flush />
         {:else}
-          <div class="hole-list">
-            {#each template.holes as hole (hole.id)}
-              <details class="hole">
+          <div class="slot-list">
+            {#each template.slots as slot (slot.id)}
+              <details class="slot">
                 <summary>
-                  <span class="hole-name">
+                  <span class="slot-name">
                     <Braces size={13} aria-hidden="true" />
-                    {hole.label}
+                    {slot.label}
                   </span>
                   <ChevronDown class="disclosure-icon" size={13} aria-hidden="true" />
                 </summary>
-                <div class="hole-body">
-                  {#if promptState.editingHole === hole.name}
+                <div class="slot-body">
+                  {#if promptState.editingSlot === slot.name}
                     <Textarea
-                      bind:ref={promptState.holeEditor}
-                      class="hole-description-editor"
-                      bind:value={promptState.holeDescriptionDraft}
-                      aria-label={`Description for ${hole.label}`}
+                      bind:ref={promptState.slotEditor}
+                      class="slot-description-editor"
+                      bind:value={promptState.slotDescriptionDraft}
+                      aria-label={`Description for ${slot.label}`}
                       rows={3}
-                      onkeydown={(event) => promptState.holeKeydown(event)}
-                      onblur={() => promptState.commitHoleDescription(hole)}
+                      onkeydown={(event) => promptState.slotKeydown(event)}
+                      onblur={() => promptState.commitSlotDescription(slot)}
                     />
                   {:else if template.canEdit}
                     <button
                       type="button"
-                      class="hole-description"
+                      class="slot-description"
                       title="Double-click to edit this description"
-                      aria-label={`Edit description for ${hole.label}`}
-                      ondblclick={() => promptState.startHoleDescription(hole)}
+                      aria-label={`Edit description for ${slot.label}`}
+                      ondblclick={() => promptState.startSlotDescription(slot)}
                       onkeydown={(event) => {
                         if (event.key === "Enter" || event.key === " ") {
-                          promptState.startHoleDescription(hole);
+                          promptState.startSlotDescription(slot);
                         }
                       }}
-                    >{hole.description ?? "Add a description"}</button>
+                    >{slot.description ?? "Add a description"}</button>
                   {:else}
-                    <p>{hole.description ?? "No description supplied."}</p>
+                    <p>{slot.description ?? "No description supplied."}</p>
                   {/if}
-                  <div class="hole-default">
+                  <div class="slot-default">
                     {#if template.canEdit}
                       <Button
                         variant="outline"
                         size="xs"
-                        title={`${ruleOf(hole.default, setNames)} — change what ${hole.label} selects by default`}
+                        title={`${ruleOf(slot.default, setNames)} — change what ${slot.label} selects by default`}
                         disabled={pending !== undefined}
-                        onclick={() => promptState.openDefault(hole)}
+                        onclick={() => promptState.openDefault(slot)}
                       >Default scope</Button>
                     {:else}
-                      <span>{ruleOf(hole.default, setNames)}</span>
+                      <span>{ruleOf(slot.default, setNames)}</span>
                     {/if}
                   </div>
                 </div>
@@ -710,7 +710,7 @@
 <OverlayModal
   bind:open={promptState.useOpen}
   title={`Use “${template?.name ?? "the template"}”`}
-  description="One hole at a time. The tabs say which still need words."
+  description="One slot at a time. The tabs say which still need words."
   confirm="Create"
   width="wide"
   blocked={askBlocked}
@@ -783,7 +783,7 @@
   .meta-line,
   .byline,
   .description,
-  .hole-body {
+  .slot-body {
     font-size: var(--token-text-caption);
     line-height: var(--token-text-caption-leading);
   }
@@ -994,17 +994,17 @@
     font-weight: 500;
   }
 
-  .hole-list {
+  .slot-list {
     overflow: hidden;
     border: 1px solid var(--token-border-subtle);
     border-radius: var(--token-radius-panel);
   }
 
-  .hole + .hole {
+  .slot + .slot {
     border-top: 1px solid var(--token-border-subtle);
   }
 
-  .hole summary {
+  .slot summary {
     display: flex;
     min-height: calc(var(--token-spacing-unit) * 8);
     align-items: center;
@@ -1018,25 +1018,25 @@
     list-style: none;
   }
 
-  .hole summary::-webkit-details-marker {
+  .slot summary::-webkit-details-marker {
     display: none;
   }
 
-  .hole summary:hover {
+  .slot summary:hover {
     background: var(--token-surface-panel-hover);
   }
 
-  .hole[open] > summary {
+  .slot[open] > summary {
     background: var(--token-surface-panel-hover);
     color: var(--token-ink-primary);
   }
 
-  .hole summary:focus-visible {
+  .slot summary:focus-visible {
     outline: 2px solid var(--token-color-interactive-border);
     outline-offset: -2px;
   }
 
-  .hole-name {
+  .slot-name {
     display: flex;
     min-width: 0;
     align-items: center;
@@ -1047,12 +1047,12 @@
     text-align: left;
   }
 
-  .hole-name :global(svg) {
+  .slot-name :global(svg) {
     flex: none;
     color: var(--token-ink-muted);
   }
 
-  .hole-default {
+  .slot-default {
     display: flex;
     align-items: center;
     margin-top: calc(var(--token-spacing-unit) * 1.5);
@@ -1065,20 +1065,20 @@
     transition: transform var(--token-motion-small) var(--token-ease-standard);
   }
 
-  .hole[open] :global(.disclosure-icon) {
+  .slot[open] :global(.disclosure-icon) {
     transform: rotate(180deg);
   }
 
-  .hole-body {
+  .slot-body {
     padding: 0 calc(var(--token-spacing-unit) * 2) calc(var(--token-spacing-unit) * 2.5);
     color: var(--token-ink-muted);
   }
 
-  .hole-body p {
+  .slot-body p {
     margin: 0;
   }
 
-  .hole-description {
+  .slot-description {
     display: block;
     width: 100%;
     margin: 0;
@@ -1092,16 +1092,16 @@
     text-align: left;
   }
 
-  .hole-description:hover {
+  .slot-description:hover {
     color: var(--token-ink-secondary);
   }
 
-  .hole-description:focus-visible {
+  .slot-description:focus-visible {
     outline: 2px solid var(--token-color-interactive-surface);
     outline-offset: 2px;
   }
 
-  :global(.hole-description-editor) {
+  :global(.slot-description-editor) {
     height: calc(var(--token-spacing-unit) * 18);
     min-height: calc(var(--token-spacing-unit) * 18);
     max-height: calc(var(--token-spacing-unit) * 18);

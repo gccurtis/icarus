@@ -19,7 +19,7 @@ export const currentResourceSet = (value: unknown): boolean => {
   const scope = recordOf(value);
   if (scope === undefined) return false;
   const terms = [...scope.include as unknown[], ...scope.exclude as unknown[]];
-  return terms.every((term) => recordOf(term)?.select !== "hole");
+  return terms.every((term) => recordOf(term)?.select !== "slot");
 };
 
 export const storedTools = (value: unknown): boolean => {

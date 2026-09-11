@@ -546,7 +546,7 @@
     outline-offset: 1px;
   }
 
-  /* A template's own hole, waiting for whoever places the template to fill it. */
+  /* A template's own slot, waiting for whoever places the template to fill it. */
   .editor :global(.document-template-atom) {
     padding: 0 0.15em;
     border-radius: var(--token-radius-control);

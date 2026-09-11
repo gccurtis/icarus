@@ -20,7 +20,7 @@ describe("the committed template fixtures", () => {
     const seededDefault = rowIn(runtime.store, "resourceSets", "resourceSets:4");
     expect(seededTemplate).toMatchObject({
       name: "Technical glossary",
-      holes: [
+      slots: [
         {
           name: "source_material",
           kind: "scope",
@@ -33,7 +33,7 @@ describe("the committed template fixtures", () => {
       ]
     });
     expect(seededDefault).toMatchObject({
-      boundTo: { kind: "hole", templateId: "templates:3", hole: "source_material" },
+      boundTo: { kind: "slot", templateId: "templates:3", slot: "source_material" },
       set: {
         include: [
           {
@@ -95,7 +95,7 @@ describe("the committed template fixtures", () => {
       boundTo: {
         kind: "resource",
         ref: { kind: "document", id: placed.resourceId },
-        hole: "source_material"
+        slot: "source_material"
       },
       set: {
         include: [

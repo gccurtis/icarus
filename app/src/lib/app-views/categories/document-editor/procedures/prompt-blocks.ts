@@ -31,14 +31,14 @@ const setField = (
     ? undefined
     : { op: "set", target: "block", path: `${block.id}/${field}`, value: value ?? null, was: was ?? null };
 
-/** What this prompt's hole is called, and what it stands for. */
-export const promptHoleOps = (
+/** What this prompt's slot is called, and what it stands for. */
+export const promptSlotOps = (
   block: PromptBlock,
-  hole: { name: string; description?: string }
+  slot: { name: string; description?: string }
 ): DocumentOp[] => {
-  const description = hole.description?.trim() ?? "";
-  const next = { name: hole.name.trim(), ...(description === "" ? {} : { description }) };
-  const op = setField(block, "hole", next, block.hole);
+  const description = slot.description?.trim() ?? "";
+  const next = { name: slot.name.trim(), ...(description === "" ? {} : { description }) };
+  const op = setField(block, "slot", next, block.slot);
   return op === undefined ? [] : [op];
 };
 

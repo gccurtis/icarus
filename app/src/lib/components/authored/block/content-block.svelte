@@ -21,7 +21,7 @@
    * - `flow` — the width is the measure and the height follows the text. What a
    *   document is made of: a paragraph cannot choose its own width without
    *   breaking the column, and cannot have a fixed height without either
-   *   clipping or leaving a hole.
+   *   clipping or leaving a slot.
    * - `grow` — the width follows the text up to a maximum, and the height is
    *   set by dragging. A slide's text object: a title that is four words wide
    *   should be four words wide, because on a slide the box is a composition

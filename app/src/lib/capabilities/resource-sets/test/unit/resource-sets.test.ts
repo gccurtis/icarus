@@ -174,7 +174,7 @@ describe("reading the project's sets", () => {
         boundTo: {
           kind: "resource",
           ref: { kind: "document", id: "documents:1" },
-          hole: "evidence"
+          slot: "evidence"
         },
         set: { include: [{ select: "project" }], exclude: [] },
         createdBy: { kind: "user", userId: "users:u" },
@@ -266,38 +266,38 @@ describe("changing sets", () => {
 
   test("requires exact nominal current identities for private owners", () => {
     assert.deepEqual(
-      boundToOf({ kind: "hole", templateId: "templates:1", hole: "evidence" }, "test"),
-      { kind: "hole", templateId: "templates:1", hole: "evidence" }
+      boundToOf({ kind: "slot", templateId: "templates:1", slot: "evidence" }, "test"),
+      { kind: "slot", templateId: "templates:1", slot: "evidence" }
     );
     assert.throws(
-      () => boundToOf({ kind: "hole", templateId: "documents:1", hole: "evidence" }, "test"),
+      () => boundToOf({ kind: "slot", templateId: "documents:1", slot: "evidence" }, "test"),
       /names a template/
     );
     assert.deepEqual(
       boundToOf({
         kind: "resource",
         ref: { kind: "document", id: "documents:1" },
-        hole: "evidence"
+        slot: "evidence"
       }, "test"),
       {
         kind: "resource",
         ref: { kind: "document", id: "documents:1" },
-        hole: "evidence"
+        slot: "evidence"
       }
     );
     assert.throws(
       () => boundToOf({
         kind: "resource",
         resourceId: "documents:1",
-        hole: "evidence"
+        slot: "evidence"
       }, "test"),
-      /one resource and a hole/
+      /one resource and a slot/
     );
     assert.throws(
       () => boundToOf({
         kind: "resource",
         ref: { kind: "presentation", id: "documents:1" },
-        hole: "evidence"
+        slot: "evidence"
       }, "test"),
       /matching row id/
     );
@@ -383,7 +383,7 @@ describe("changing sets", () => {
         boundTo: {
           kind: "resource",
           ref: { kind: "document", id: "documents:1" },
-          hole: "evidence"
+          slot: "evidence"
         },
         set: { include: [{ select: "project" }], exclude: [] },
         createdBy: { kind: "user", userId: "users:u" },
@@ -457,7 +457,7 @@ describe("changing sets", () => {
         name: "Brief",
         tags: [],
         body: { resource: "document", rows: [] },
-        holes: [
+        slots: [
           {
             name: "evidence",
             label: "Evidence",
@@ -570,7 +570,7 @@ describe("changing sets", () => {
       boundTo: {
         kind: "resource",
         ref: { kind: "document", id: "documents:1" },
-        hole: "evidence"
+        slot: "evidence"
       },
       set: { include: [{ select: "resources", refs: [{ kind: "document", id: "documents:1" }] }], exclude: [] },
       createdBy: { kind: "user", userId: "users:u" },

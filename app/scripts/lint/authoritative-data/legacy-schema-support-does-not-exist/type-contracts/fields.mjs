@@ -13,7 +13,7 @@ const REQUIRED_TYPE_MEMBERS = new Map([
     path: "/representation/data/types/agents/message.ts",
     members: new Set(["author"])
   }],
-  ["TemplateHole", {
+  ["TemplateSlot", {
     path: "/representation/data/types/templates/template.ts",
     members: new Set(["kind"])
   }],

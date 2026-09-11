@@ -12,10 +12,10 @@ export const uploadEvidence = async (page: Page) => {
   await expect(page.getByText("2 uploaded · 0 already present · 0 rejected.")).toBeVisible();
 };
 
-/** Use the real library dialog, hole binding, resource picker and creation path. */
+/** Use the real library dialog, slot binding, resource picker and creation path. */
 export const createScopedTemplate = async (page: Page, kind: "document" | "presentation", yard: "north" | "south") => {
   const name = kind === "document" ? "Technical glossary" : "Executive update";
-  const hole = kind === "document" ? "Source material" : "Portfolio record";
+  const slot = kind === "document" ? "Source material" : "Portfolio record";
   await tabs(page).getByRole("button", { name: "Templates", exact: true }).click();
   await page.getByRole("main").getByRole("button", { name, exact: true }).first().click();
   const inspector = page.locator('aside[aria-label="Inspector"][data-inspected="templates.template"]');
@@ -25,9 +25,9 @@ export const createScopedTemplate = async (page: Page, kind: "document" | "prese
     await use.getByRole("tab", { name: /Subject line/ }).click();
     await use.getByRole("textbox", { name: "What Subject line says here" }).fill(`${yard} portfolio`);
   }
-  await use.getByRole("tab", { name: new RegExp(hole) }).click();
+  await use.getByRole("tab", { name: new RegExp(slot) }).click();
   await use.locator(".scope").click();
-  const builder = page.getByRole("dialog", { name: `What ${hole} selects here` });
+  const builder = page.getByRole("dialog", { name: `What ${slot} selects here` });
   await builder.getByRole("button", { name: "Clear", exact: true }).click();
   await builder.getByRole("button", { name: "Resources", exact: true }).click();
   await builder.locator(".offer").filter({ hasText: `${yard}-portfolio.md` }).getByRole("button", { name: "Add", exact: true }).click();

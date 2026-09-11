@@ -90,7 +90,7 @@ test.afterEach(async ({}, testInfo: TestInfo) => {
   expect(unexpected, `unexpected browser diagnostics in ${testInfo.title}`).toEqual([]);
 });
 
-test("inserting a template into a document asks for each hole, shows its default, and takes an answer", async ({ page }) => {
+test("inserting a template into a document asks for each slot, shows its default, and takes an answer", async ({ page }) => {
   await openDocumentFixture(page);
   const editor = page.locator(".ProseMirror");
   const before = await editor.innerText();
@@ -101,11 +101,11 @@ test("inserting a template into a document asks for each hole, shows its default
   const modal = page.getByRole("dialog", { name: "Insert “Technical glossary”" });
   await expect(modal).toBeVisible();
 
-  // Every hole is a tab, and the red ones are the only thing holding Insert up.
+  // Every slot is a tab, and the red ones are the only thing holding Insert up.
   await expect(modal.locator(".tab")).toHaveCount(2);
   await expect(modal.locator(".tab.missing")).toHaveCount(1);
 
-  // One hole at a time, opening on the first.
+  // One slot at a time, opening on the first.
   await expect(modal.locator(".answer h3")).toHaveText("Source material");
   await expect(modal.locator(".scope .rule")).toContainText("Interconnect glossary");
 
@@ -144,7 +144,7 @@ test("inserting a template into a document asks for each hole, shows its default
   await expect(page.locator(".title-bar")).toContainText("Saved", { timeout: 10_000 });
 });
 
-test("a document is saved as a template, takes its hole from an inserted prompt, and is saved back", async ({ page }) => {
+test("a document is saved as a template, takes its slot from an inserted prompt, and is saved back", async ({ page }) => {
   const name = `Browser template ${Date.now()}`;
   await openDocumentFixture(page);
 
@@ -157,14 +157,14 @@ test("a document is saved as a template, takes its hole from an inserted prompt,
 
   await expect(context.getByRole("button", { name: "Save", exact: true })).toBeVisible();
   await expect(context.getByRole("textbox", { name: "New variable" })).toHaveCount(0);
-  await expect(context.getByText("Nothing here is a hole yet.")).toBeVisible();
-  await expect(context.locator(".hole")).toHaveCount(0);
+  await expect(context.getByText("Nothing here is a slot yet.")).toBeVisible();
+  await expect(context.locator(".slot")).toHaveCount(0);
 
   await context.getByTitle("Insert “Technical glossary” after the current row").click();
   await expect(context.getByText("Inserted “Technical glossary”.", { exact: true })).toBeVisible();
   await expect(page.locator(".ProseMirror")).toContainText("Technical glossary");
 
-  const card = context.locator(".hole").filter({ hasText: "Source material" });
+  const card = context.locator(".slot").filter({ hasText: "Source material" });
   const scope = card.getByRole("button", { name: "Default scope", exact: true });
   await expect(scope).toBeVisible();
   await scope.click();
@@ -187,9 +187,9 @@ test("a document is saved as a template, takes its hole from an inserted prompt,
 
 /**
  * The whole chain, from a prompt somebody writes to a copy that reads what
- * somebody else chose. One gesture makes the hole; everything after it follows.
+ * somebody else chose. One gesture makes the slot; everything after it follows.
  */
-test("a templateified prompt becomes a hole the template asks about", async ({ page }) => {
+test("a templateified prompt becomes a slot the template asks about", async ({ page }) => {
   const name = `Browser prompt ${Date.now()}`;
 
   await page.goto("/app/dev-project", { waitUntil: "networkidle" });
@@ -212,21 +212,21 @@ test("a templateified prompt becomes a hole the template asks about", async ({ p
   // The Scope control is real: it reads the whole project and opens the builder.
   await expect(inspector.getByRole("button", { name: "Everything in the project" })).toBeVisible();
 
-  // Until Templateify is pressed this is not a hole.
+  // Until Templateify is pressed this is not a slot.
   await expect(inspector.getByRole("button", { name: "Templateify", exact: true })).toBeVisible();
   await inspector.getByRole("button", { name: "Templateify", exact: true }).click();
-  await expect(inspector.getByRole("button", { name: "Hole 1", exact: true })).toBeVisible();
+  await expect(inspector.getByRole("button", { name: "Slot 1", exact: true })).toBeVisible();
 
-  await inspector.getByRole("button", { name: "Hole 1", exact: true }).click();
-  const holeName = inspector.getByRole("textbox", { name: "What this hole is called" });
-  await holeName.fill("winter_sources");
-  await holeName.press("Enter");
+  await inspector.getByRole("button", { name: "Slot 1", exact: true }).click();
+  const slotName = inspector.getByRole("textbox", { name: "What this slot is called" });
+  await slotName.fill("winter_sources");
+  await slotName.press("Enter");
   await expect(inspector.getByRole("button", { name: "winter_sources", exact: true })).toBeVisible();
 
   await inspector.getByRole("button", { name: "What whoever places this is choosing" }).click();
-  const holeMeans = inspector.getByRole("textbox", { name: "What this hole stands for" });
-  await holeMeans.fill("Which filings the summary reads");
-  await holeMeans.blur();
+  const slotMeans = inspector.getByRole("textbox", { name: "What this slot stands for" });
+  await slotMeans.fill("Which filings the summary reads");
+  await slotMeans.blur();
   await expect(
     inspector.getByRole("button", { name: "Which filings the summary reads", exact: true })
   ).toBeVisible();
@@ -238,8 +238,8 @@ test("a templateified prompt becomes a hole the template asks about", async ({ p
   await context.getByRole("button", { name: "Save", exact: true }).click();
   await expect(page.locator(".title-bar h1")).toContainText(`Template · ${name}`, { timeout: 15_000 });
 
-  // The prompt is a hole, named and described, defaulting to what it read.
-  const card = context.locator(".hole").filter({ hasText: "winter_sources" });
+  // The prompt is a slot, named and described, defaulting to what it read.
+  const card = context.locator(".slot").filter({ hasText: "winter_sources" });
   await expect(card).toBeVisible();
   await expect(card).toContainText("Which filings the summary reads");
   await expect(card.getByRole("button", { name: "Default scope", exact: true })).toHaveAttribute(
@@ -286,13 +286,13 @@ test("a templateified prompt becomes a hole the template asks about", async ({ p
 
 /**
  * Marking a run is not an edit. The document reads exactly as it did before and
- * after; only the template made from it holds a hole where the words were.
+ * after; only the template made from it holds a slot where the words were.
  */
-test("Templateify marks a run without changing the document, and the template gets the hole", async ({ page }) => {
-  const name = `Browser holes ${Date.now()}`;
+test("Templateify marks a run without changing the document, and the template gets the slot", async ({ page }) => {
+  const name = `Browser slots ${Date.now()}`;
   await openDocumentFixture(page);
 
-  // Select a word in the prose, and the selection inspector offers to make it a hole.
+  // Select a word in the prose, and the selection inspector offers to make it a slot.
   const editor = page.locator(".ProseMirror");
   const paragraph = editor.getByRole("paragraph").first();
   await expect(paragraph).toBeVisible();
@@ -308,25 +308,25 @@ test("Templateify marks a run without changing the document, and the template ge
 
   await selection.getByRole("button", { name: "Templateify", exact: true }).click();
 
-  // The document is untouched: same words, no hole drawn into the prose.
-  await expect(selection.getByText("These words are the hole")).toBeVisible();
+  // The document is untouched: same words, no slot drawn into the prose.
+  await expect(selection.getByText("These words are the slot")).toBeVisible();
   await expect(editor.locator(".document-template-atom")).toHaveCount(0);
   expect(await editor.innerText()).toEqual(before);
   await expect(page.locator(".title-bar")).toContainText("Saved", { timeout: 15_000 });
 
-  // The words are not thrown away — they become what the hole says by default.
+  // The words are not thrown away — they become what the slot says by default.
   const context = await templatesPanel(page);
   await context.getByRole("textbox", { name: "Template name" }).fill(name);
   await context.getByRole("button", { name: "Save", exact: true }).click();
   await expect(page.locator(".title-bar h1")).toContainText(`Template · ${name}`, { timeout: 15_000 });
 
-  const card = context.locator(".hole").filter({ hasText: "Hole 1" });
+  const card = context.locator(".slot").filter({ hasText: "Slot 1" });
   await expect(card).toBeVisible();
   await expect(card.getByRole("button", { name: "Default scope", exact: true })).toHaveCount(0);
   await expect(card).toContainText(words);
 
-  // The copy the template opened holds the hole; the original still holds the words.
-  await expect(page.locator(".ProseMirror").locator(".document-template-atom")).toContainText("Hole 1");
+  // The copy the template opened holds the slot; the original still holds the words.
+  await expect(page.locator(".ProseMirror").locator(".document-template-atom")).toContainText("Slot 1");
 
   page.once("dialog", (dialog) => void dialog.accept());
   await context.getByRole("button", { name: "Discard", exact: true }).click();
@@ -361,14 +361,14 @@ test("one slide is saved as a presentation template, and a presentation template
   await deleteTemplateFromLibrary(page, name);
 });
 
-test("a slide templateifies its words and its prompt, and the presentation template holds both holes", async ({ page }) => {
-  const name = `Browser presentation holes ${Date.now()}`;
+test("a slide templateifies its words and its prompt, and the presentation template holds both slots", async ({ page }) => {
+  const name = `Browser presentation slots ${Date.now()}`;
   await openPresentationFixture(page);
   const context = page.locator('aside[aria-label="Context"]');
   const inspector = page.locator('aside[aria-label="Inspector"]');
   const surface = page.locator(".area-canvas").getByRole("application", { name: "Slide" });
 
-  // A slide's Prompt Block becomes a hole, and its Scope control reads what it reads.
+  // A slide's Prompt Block becomes a slot, and its Scope control reads what it reads.
   const rail = context.getByRole("navigation", { name: "Context views" });
   await rail.getByRole("button", { name: "Insert", exact: true }).click();
   await context.getByRole("button", { name: "Text box", exact: true }).click();
@@ -381,9 +381,9 @@ test("a slide templateifies its words and its prompt, and the presentation templ
   await prompt.getByLabel("Prompt", { exact: true }).fill("Summarize the winter exposure.");
   await expect(prompt.getByRole("button", { name: "Everything in the project" })).toBeVisible();
   await prompt.getByRole("button", { name: "Templateify", exact: true }).click();
-  await expect(prompt.getByRole("button", { name: "Hole 1", exact: true })).toBeVisible();
+  await expect(prompt.getByRole("button", { name: "Slot 1", exact: true })).toBeVisible();
 
-  // A run of a slide's words becomes the next hole, and the slide itself does not change.
+  // A run of a slide's words becomes the next slot, and the slide itself does not change.
   await rail.getByRole("button", { name: "Insert", exact: true }).click();
   await context.getByRole("button", { name: "Text box", exact: true }).click();
   const words = surface.locator("[data-item]").last();
@@ -397,18 +397,18 @@ test("a slide templateifies its words and its prompt, and the presentation templ
   );
   await expect(selection).toBeVisible();
   await selection.getByRole("button", { name: "Templateify", exact: true }).click();
-  await expect(selection.getByText("These words are the hole")).toBeVisible();
-  await expect(selection.getByText("Hole 2")).toBeVisible();
+  await expect(selection.getByText("These words are the slot")).toBeVisible();
+  await expect(selection.getByText("Slot 2")).toBeVisible();
   await expect(words).toContainText("Text");
-  await expect(words).not.toContainText("{Hole");
+  await expect(words).not.toContainText("{Slot");
 
-  // Saved as a template, the presentation carries both holes.
+  // Saved as a template, the presentation carries both slots.
   const templates = await templatesPanel(page);
   await templates.getByRole("textbox", { name: "Template name" }).fill(name);
   await templates.getByRole("button", { name: "Save presentation", exact: true }).click();
   await expect(page.locator(".area-title")).toContainText(`Template · ${name}`, { timeout: 15_000 });
-  await expect(templates.locator(".hole").filter({ hasText: "Hole 1" })).toBeVisible();
-  await expect(templates.locator(".hole").filter({ hasText: "Hole 2" })).toBeVisible();
+  await expect(templates.locator(".slot").filter({ hasText: "Slot 1" })).toBeVisible();
+  await expect(templates.locator(".slot").filter({ hasText: "Slot 2" })).toBeVisible();
 
   page.once("dialog", (dialog) => void dialog.accept());
   await templates.getByRole("button", { name: "Discard", exact: true }).click();
@@ -664,7 +664,7 @@ test("a template scope can choose an uploaded External file and ground its Promp
   );
 });
 
-test("a hole's default is built with an exclusion, stored, and read back as the rule", async ({ page }) => {
+test("a slot's default is built with an exclusion, stored, and read back as the rule", async ({ page }) => {
   await page.goto("/app/dev-project", { waitUntil: "networkidle" });
   await tabs(page).getByRole("button", { name: "Templates", exact: true }).click();
   await page.getByRole("button", { name: /^Incident write-up/ }).first().click();

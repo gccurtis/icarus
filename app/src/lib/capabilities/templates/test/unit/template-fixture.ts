@@ -136,8 +136,8 @@ export const { fieldsOf, tagsOf } = await import(
 export const { bodyOf } = await import(
   "$capabilities/templates/api/shared/body-validation/body-validation"
 );
-export const { answersOf, holesOf } = await import(
-  "$capabilities/templates/api/shared/hole-validation"
+export const { answersOf, slotsOf } = await import(
+  "$capabilities/templates/api/shared/slot-validation"
 );
 export const { validateCreateTemplate } = await import(
   "$capabilities/templates/api/create-template/validate-create-template"
@@ -203,7 +203,7 @@ export const template = (
     name: `Template ${id}`,
     tags: ["Useful"],
     body,
-    holes: [],
+    slots: [],
     createdBy: { kind: "user", userId: owner },
     revision: 2,
     updatedAt: 20,
@@ -221,7 +221,7 @@ export const templateVersion = (
   name: `Template revision ${revision}`,
   tags: [],
   body: documentBody,
-  holes: [],
+  slots: [],
   at: 1,
   ...extra
 });

@@ -9,7 +9,7 @@
   import {
     STAGES,
     answerRowsFrom,
-    holesFrom,
+    slotsFrom,
     scopeWords,
     type WalkPrompt
   } from "$development-views/template-reference/procedures/walkthrough";
@@ -30,7 +30,7 @@
    * The whole system, driven rather than described.
    *
    * Every control below is the component the application ships, with this
-   * page's own state behind it. Change a name here and the template's hole list
+   * page's own state behind it. Change a name here and the template's slot list
    * changes, and so does what placing it asks — because the same pure functions
    * that run in the capability run here.
    */
@@ -61,9 +61,9 @@
   let chosen = $state<Record<string, string>>({});
   let stage = $state(0);
 
-  const holes = $derived(holesFrom(prompts));
-  const rows = $derived(answerRowsFrom(holes, chosen));
-  const questions = $derived(Object.fromEntries(holes.map((hole) => [hole.name, hole.prompt])));
+  const slots = $derived(slotsFrom(prompts));
+  const rows = $derived(answerRowsFrom(slots, chosen));
+  const questions = $derived(Object.fromEntries(slots.map((slot) => [slot.name, slot.prompt])));
 
   const rename = (id: string, name: string) => {
     prompts = prompts.map((prompt) => (prompt.id === id ? { ...prompt, name } : prompt));
@@ -104,7 +104,7 @@
         <p class="tref-lede">
           Three prompts, written the way anybody writes them. Templateify the ones worth asking about,
           change what they read, and watch the template that comes out — then place it. Every control
-          here is the component the application ships, and the hole list beneath them is computed by
+          here is the component the application ships, and the slot list beneath them is computed by
           the same pure functions the capability runs, so the consequences are real even though
           nothing is saved.
         </p>
@@ -112,8 +112,8 @@
       <div class="tref-facts">
         <dl>
           <div><dt>Prompts</dt><dd>{prompts.length}</dd></div>
-          <div><dt>Templateified</dt><dd>{holes.length}</dd></div>
-          <div><dt>Asked when placed</dt><dd>{holes.length}</dd></div>
+          <div><dt>Templateified</dt><dd>{slots.length}</dd></div>
+          <div><dt>Asked when placed</dt><dd>{slots.length}</dd></div>
           <div><dt>Saved anywhere</dt><dd>Nothing</dd></div>
         </dl>
       </div>
@@ -151,9 +151,9 @@
             <PromptTemplate
               name={prompt.name === "" ? undefined : prompt.name}
               description={prompt.description}
-              offered={`Hole ${index + 1}`}
+              offered={`Slot ${index + 1}`}
               standing={scopeWords(prompt.scope)}
-              onmake={() => rename(prompt.id, `Hole ${index + 1}`)}
+              onmake={() => rename(prompt.id, `Slot ${index + 1}`)}
               onname={(next) => rename(prompt.id, next)}
               ondescription={(next) => describe(prompt.id, next)}
             />
@@ -166,7 +166,7 @@
       <div class="tref-section-head">
         <div><span class="tref-kicker">Step two</span><h2>Make the template</h2></div>
         <p>
-          Only what was templateified becomes a hole, and its default is whatever the thing already
+          Only what was templateified becomes a slot, and its default is whatever the thing already
           is. The prompt's question is copied onto the block as its link to the derived output is left
           behind, so a placed copy is a working prompt rather than words about one.
         </p>
@@ -175,18 +175,18 @@
       <div class="tref-scroll">
         <table class="tref-table">
           <thead>
-            <tr><th>Hole</th><th>Stands for</th><th>Its prompt</th><th>Default</th></tr>
+            <tr><th>Slot</th><th>Stands for</th><th>Its prompt</th><th>Default</th></tr>
           </thead>
           <tbody>
-            {#each holes as hole (hole.name)}
+            {#each slots as slot (slot.name)}
               <tr>
-                <td><code>{hole.name}</code></td>
-                <td class="muted">{hole.description === "" ? "—" : hole.description}</td>
-                <td class="muted">{hole.prompt}</td>
-                <td>{hole.fallback}</td>
+                <td><code>{slot.name}</code></td>
+                <td class="muted">{slot.description === "" ? "—" : slot.description}</td>
+                <td class="muted">{slot.prompt}</td>
+                <td>{slot.fallback}</td>
               </tr>
             {/each}
-            {#if holes.length === 0}
+            {#if slots.length === 0}
               <tr><td class="none" colspan="4">Nothing was templateified, so this template asks nothing.</td></tr>
             {/if}
           </tbody>
@@ -194,11 +194,11 @@
       </div>
 
       <div class="tref-note success">
-        <h4>Every hole here carries a default</h4>
+        <h4>Every slot here carries a default</h4>
         <p>
-          A hole's default is simply what the thing already is, so a template always places with one
+          A slot's default is simply what the thing already is, so a template always places with one
           press. Answering is for when this copy should read something else — which is the whole point
-          of having made the hole, and never a toll on the way past.
+          of having made the slot, and never a toll on the way past.
         </p>
       </div>
     </section>
@@ -216,7 +216,7 @@
       <div class="modal">
         <header>
           <b>Insert “Incident one-pager”</b>
-          <p>One hole at a time. The tabs say which still need words.</p>
+          <p>One slot at a time. The tabs say which still need words.</p>
         </header>
         <div class="modal-body">
           <TemplateAnswers

@@ -6,8 +6,8 @@ export const TEMPLATES_MUTATIONS = [
     changes: [{
       path: "src/lib/representation/data/types/templates/template.ts",
       edit: (before) => before.replace(
-        "kind: TemplateHoleKind;",
-        "kind?: TemplateHoleKind;"
+        "kind: TemplateSlotKind;",
+        "kind?: TemplateSlotKind;"
       )
     }]
   },

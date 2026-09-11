@@ -243,12 +243,12 @@ Personas doing this work are managed.
 
 What is available here, grouped by what comes out of it: Documents, Presentations,
 Spreadsheets. Grouped that way because the first question about a template is
-what it makes. Each row carries its scope and its hole count as one line,
+what it makes. Each row carries its scope and its slot count as one line,
 because they are one decision — together they say whether the template can be
 used at all.
 
 What it deliberately does not do: a row opens a template and cannot instantiate
-one. There is no Use control, because nothing in a body carries a hole key yet;
+one. There is no Use control, because nothing in a body carries a slot key yet;
 a Use that ran today would hand back a document with the keys still sitting in
 it, which is worse than no Use.
 

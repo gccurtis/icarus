@@ -69,10 +69,10 @@ describe("template mutations — create, update, and duplicate", () => {
     assert.equal(model.tables.templateVersions[0].revision, 3);
   });
 
-  test("updates hole prose without exposing its stable key or default to editing", async () => {
+  test("updates slot prose without exposing its stable key or default to editing", async () => {
     model.tables.templates.push(
       template("1", "users:u", documentBody, {
-        holes: [
+        slots: [
           {
             name: "evidence",
             label: "Evidence",
@@ -88,12 +88,12 @@ describe("template mutations — create, update, and duplicate", () => {
       templateId: "templates:1",
       baseRevision: 2,
       patch: {
-        holeDescription: { name: "evidence", description: "  Choose the evidence set.  " }
+        slotDescription: { name: "evidence", description: "  Choose the evidence set.  " }
       }
     });
 
     assert.deepEqual(answer, { accepted: true, templateId: "templates:1", revision: 3 });
-    assert.deepEqual(model.tables.templates[0].holes, [
+    assert.deepEqual(model.tables.templates[0].slots, [
       {
         name: "evidence",
         label: "Evidence",
@@ -117,7 +117,7 @@ describe("template mutations — create, update, and duplicate", () => {
     assert.equal(copy?.name, "My copy");
     assert.deepEqual(copy?.createdBy, { kind: "user", userId: "users:u" });
     assert.notEqual(copy?.body, model.tables.templates[0].body);
-    assert.notEqual(copy?.holes, model.tables.templates[0].holes);
+    assert.notEqual(copy?.slots, model.tables.templates[0].slots);
     assert.equal(model.tables.templateVersions.length, 1);
   });
 
@@ -130,7 +130,7 @@ describe("template mutations — create, update, and duplicate", () => {
     };
     model.tables.templates.push(
       template("1", "users:u", documentBody, {
-        holes: [
+        slots: [
           {
             name: "evidence",
             label: "Evidence",
@@ -143,7 +143,7 @@ describe("template mutations — create, update, and duplicate", () => {
     model.tables.resourceSets.push(
       row("resourceSets", "1", {
         projectId: "projects:p",
-        boundTo: { kind: "hole", templateId: "templates:1", hole: "evidence" },
+        boundTo: { kind: "slot", templateId: "templates:1", slot: "evidence" },
         set: chosen,
         createdBy: { kind: "user", userId: "users:u" },
         revision: 1,
@@ -158,7 +158,7 @@ describe("template mutations — create, update, and duplicate", () => {
       (candidate) =>
         (candidate.boundTo as { templateId?: string } | undefined)?.templateId === answer.templateId
     );
-    assert.deepEqual(copy?.holes, [
+    assert.deepEqual(copy?.slots, [
       {
         name: "evidence",
         label: "Evidence",
@@ -167,7 +167,7 @@ describe("template mutations — create, update, and duplicate", () => {
       }
     ]);
     assert.deepEqual(copySet?.set, chosen);
-    assert.deepEqual(model.tables.templateVersions[0].holes, [
+    assert.deepEqual(model.tables.templateVersions[0].slots, [
       { name: "evidence", label: "Evidence", kind: "scope", default: chosen }
     ]);
   });
@@ -197,7 +197,7 @@ describe("template mutations — create, update, and duplicate", () => {
   test("fails closed on a private scope row that omits its required revision", () => {
     const malformed = row("resourceSets", "1", {
       projectId: "projects:p",
-      boundTo: { kind: "hole", templateId: "templates:1", hole: "evidence" },
+      boundTo: { kind: "slot", templateId: "templates:1", slot: "evidence" },
       set: { include: [{ select: "project" }], exclude: [] },
       createdBy: { kind: "user", userId: "users:u" },
       updatedAt: 20
@@ -209,7 +209,7 @@ describe("template mutations — create, update, and duplicate", () => {
         model.store as unknown as StoreUnitOfWork,
         "projects:p",
         { kind: "user", userId: "users:u" as never },
-        { kind: "hole", templateId: "templates:1" as never, hole: "evidence" },
+        { kind: "slot", templateId: "templates:1" as never, slot: "evidence" },
         {
           include: [{
             select: "resources",

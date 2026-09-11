@@ -138,8 +138,8 @@ export const CONTENT_ADMISSION_MUTATIONS = [
     changes: [{
       path: "src/lib/representation/data/behavior/content/admission.ts",
       edit: (before) => before.replace(
-        'const presentation = ["style", "hole", "format"];',
-        'const presentation = ["style", "prompt", "hole", "format"];'
+        'const presentation = ["style", "slot", "format"];',
+        'const presentation = ["style", "prompt", "slot", "format"];'
       )
     }]
   },

@@ -13,7 +13,7 @@ export type SetTerm =
   | { select: "resources"; refs: ResourceRef[] }
   | NamedSetTerm;
 
-export type TemplatedTerm = ProjectTerm | KindsTerm | NamedSetTerm | { select: "hole"; name: string };
+export type TemplatedTerm = ProjectTerm | KindsTerm | NamedSetTerm | { select: "slot"; name: string };
 
 export type ResourceSet = { include: SetTerm[]; exclude: SetTerm[] };
 
@@ -28,5 +28,5 @@ export type TemplatedResourceSet = { include: TemplatedTerm[]; exclude: Template
  * its owner goes.
  */
 export type BoundTo =
-  | { kind: "hole"; templateId: Id<"templates">; hole: string }
-  | { kind: "resource"; ref: ResourceRef; hole: string };
+  | { kind: "slot"; templateId: Id<"templates">; slot: string }
+  | { kind: "resource"; ref: ResourceRef; slot: string };

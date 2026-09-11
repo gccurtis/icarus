@@ -4,7 +4,7 @@ import type { Category } from "$model/client/workspace-state";
 export type TemplateTarget = "Document" | "Presentation" | "Spreadsheet";
 export type TemplateScope = "Project" | "Personal";
 
-export type TemplateHole = TemplateDetail["holes"][number] & { readonly id: string };
+export type TemplateSlot = TemplateDetail["slots"][number] & { readonly id: string };
 
 export type LibraryTemplate = {
   readonly id: string;
@@ -13,7 +13,7 @@ export type LibraryTemplate = {
   readonly makes: TemplateTarget;
   readonly scope: TemplateScope;
   readonly tags: readonly string[];
-  readonly holeCount: number;
+  readonly slotCount: number;
   readonly createdBy: string;
   readonly revision: number;
   readonly updatedAt: number;
@@ -25,7 +25,7 @@ export type LibraryTemplate = {
 };
 
 export type LibraryTemplateDetail = LibraryTemplate & {
-  readonly holes: readonly TemplateHole[];
+  readonly slots: readonly TemplateSlot[];
   readonly prompts: Readonly<Record<string, string>>;
 };
 

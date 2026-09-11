@@ -47,7 +47,7 @@ export const scopeNamesOf = (
   )
 });
 
-/** What the builder is handed for a hole's default, or for an answer. */
+/** What the builder is handed for a slot's default, or for an answer. */
 export const offeringOf = (
   sets: readonly ResourceSetItem[],
   resources: readonly NamedResourceRef[]
@@ -56,7 +56,7 @@ export const offeringOf = (
   resources
 });
 
-/** The words typed for each text hole, with the untouched ones left out. */
+/** The words typed for each text slot, with the untouched ones left out. */
 export const wordsFrom = (
   texts: Readonly<Record<string, string | undefined>>
 ): Readonly<Record<string, string>> =>

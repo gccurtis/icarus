@@ -7,7 +7,7 @@ its project, which settled most of what was open.
 
 ## Why saving that slide only asked for a name
 
-A variable is not something you invent when you save. It is a hole a prompt has already punched. A
+A variable is not something you invent when you save. It is a slot a prompt has already punched. A
 variable exists in a body as a scope term that reads `{ select: "variable", name }`, sitting inside a
 prompt block. When you save a slide as a template, the capability walks the saved body and declares
 exactly the variable names it finds. Your slide was drawn by hand and has no prompt blocks, so it names

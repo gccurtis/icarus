@@ -50,12 +50,12 @@ cannot disagree with the label.
 
 ## Slots
 
-A slot is a named hole. In the body it appears as ordinary content carrying the
+A slot is a named slot. In the body it appears as ordinary content carrying the
 slot's key, so a template renders sensibly even before anything is filled in —
 placeholder text reads as placeholder text, and a template with no values
 supplied is still a usable starting document.
 
-`kind` says what fills the hole. `text` and `image` are supplied by a person.
+`kind` says what fills the slot. `text` and `image` are supplied by a person.
 `data` is bound to a source. `derived` carries a `prompt` and becomes a [prompt
 block](../content/content-block.md#prompt-blocks) in the created resource,
 generated on first open — which is how a template can say "summarize the

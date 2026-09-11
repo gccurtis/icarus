@@ -12,20 +12,20 @@ import type { PageSetup } from "$representation/data/types/spreadsheets/page-set
 import type { StyleSet } from "$representation/data/types/spreadsheets/style-set";
 
 /**
- * What a hole is answered with.
+ * What a slot is answered with.
  *
  * `scope` is a group of resources, and it always has an answer: what the caller
  * said, else the default, else the whole project. `text` is words, and it has
  * none until somebody types them, which is why placing a template asks.
  */
-export type TemplateHoleKind = "scope" | "text";
+export type TemplateSlotKind = "scope" | "text";
 
-export type TemplateHole = {
+export type TemplateSlot = {
   name: string;
   label: string;
   description?: string;
-  /** The represented answer type. Every stored and in-memory hole declares it. */
-  kind: TemplateHoleKind;
+  /** The represented answer type. Every stored and in-memory slot declares it. */
+  kind: TemplateSlotKind;
   /** What a `scope` selects when the caller says nothing. */
   default?: TemplatedResourceSet;
   /** What a `text` says when the caller says nothing. Absent means it must be filled in. */
@@ -33,22 +33,22 @@ export type TemplateHole = {
 };
 
 /**
- * A hole as it was when one immutable template version was written.
+ * A slot as it was when one immutable template version was written.
  *
  * A live template normalises a rule that names particular resources into a
  * private `resourceSets` row. History cannot retain that private pointer: the
- * row belongs to the live hole and is rewritten by its next edit. A version
+ * row belongs to the live slot and is rewritten by its next edit. A version
  * therefore admits the concrete resource term as well as the terms a live
  * template can store inline.
  */
-export type TemplateVersionTerm = SetTerm | { select: "hole"; name: string };
+export type TemplateVersionTerm = SetTerm | { select: "slot"; name: string };
 
 export type TemplateVersionScope = {
   include: TemplateVersionTerm[];
   exclude: TemplateVersionTerm[];
 };
 
-export type TemplateVersionHole = Omit<TemplateHole, "default"> & {
+export type TemplateVersionSlot = Omit<TemplateSlot, "default"> & {
   default?: TemplateVersionScope;
 };
 
