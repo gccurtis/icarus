@@ -1,5 +1,5 @@
 import { isStoredDocumentBody } from "$representation/data/behavior/documents/stored-body";
-import { isStoredSlideDeckBody } from "$representation/data/behavior/slide-decks/stored-body";
+import { isStoredPresentationBody } from "$representation/data/behavior/presentations/stored-body";
 import { isStoredSpreadsheetTemplate } from "$representation/data/behavior/templates/stored-spreadsheet-body";
 import { storedFields } from "$representation/data/behavior/core/stored";
 import type { TemplateBody } from "$representation/data/types/templates/template";
@@ -31,6 +31,6 @@ export const isStoredTemplateBody = (value: unknown): value is TemplateBody => {
   if (body === undefined || !portable(body)) return false;
   const { resource, ...content } = body;
   if (resource === "document") return isStoredDocumentBody(content);
-  if (resource === "slides") return isStoredSlideDeckBody(content);
+  if (resource === "presentation") return isStoredPresentationBody(content);
   return resource === "spreadsheet" && isStoredSpreadsheetTemplate(content);
 };

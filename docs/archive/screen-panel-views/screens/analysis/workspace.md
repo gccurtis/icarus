@@ -17,7 +17,7 @@ state and Duplicate belong to
 [the Overview panel](../../context/overview/analysis.md), not to a second header
 on the plane.
 
-**The chart is the analytic component the document, deck and spreadsheet editors
+**The chart is the analytic component the document, presentation and spreadsheet editors
 also embed.** What Analysis adds is not a different picture but a better place to
 build one: the twelve kinds and the customisation panel exist here and nowhere
 else.
@@ -109,7 +109,7 @@ scrolling.
 
 **The spec is what the chart *is*, separately from how it is drawn** — the same
 object an inspector preview or a slide would render at another size. Its colours
-are the definition's tokens, so a chart pasted into a deck is the deck's palette.
+are the definition's tokens, so a chart pasted into a presentation is the presentation's palette.
 
 ### Behavior
 

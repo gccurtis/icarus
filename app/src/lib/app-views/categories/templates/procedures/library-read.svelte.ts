@@ -18,7 +18,7 @@ import type {
 
 const TARGET_LABEL: Record<StoredTemplateTarget, TemplateTarget> = {
   document: "Document",
-  slides: "Slide deck",
+  presentation: "Presentation",
   spreadsheet: "Spreadsheet"
 };
 

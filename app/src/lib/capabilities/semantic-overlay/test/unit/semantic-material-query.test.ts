@@ -71,13 +71,13 @@ beforeEach(() => {
     resourceId: "documents:sales", revision: 3, role: "leader", part: 0,
     body: { rows: [] }, at: 1
   }]);
-  set("slideDecks", [{
-    _id: "slideDecks:launch", _creationTime: 1, projectId: "projects:materials",
+  set("presentations", [{
+    _id: "presentations:launch", _creationTime: 1, projectId: "projects:materials",
     title: "Launch", createdBy: { kind: "system" }, updatedBy: { kind: "system" }, updatedAt: 1
   }]);
-  set("slideDeckSnapshots", [{
-    _id: "slideDeckSnapshots:launch", _creationTime: 1, projectId: "projects:materials",
-    resourceId: "slideDecks:launch", revision: 2, role: "leader", part: 0,
+  set("presentationSnapshots", [{
+    _id: "presentationSnapshots:launch", _creationTime: 1, projectId: "projects:materials",
+    resourceId: "presentations:launch", revision: 2, role: "leader", part: 0,
     body: {
       aspectRatio: "16:9",
       theme: { colors: { text: "#111", accent: "#08f" } },
@@ -181,7 +181,7 @@ beforeEach(() => {
       _creationTime: 2,
       projectId: "projects:materials",
       semanticMaterialId: "semanticMaterials:logo",
-      ref: { kind: "slides", id: "slideDecks:launch" },
+      ref: { kind: "presentation", id: "presentations:launch" },
       revision: 2,
       locator: { kind: "slideElement", slideId: "slide-1", elementPath: ["image"] },
       context: { nearbyText: ["Launch system"], notes: [] },
@@ -193,9 +193,9 @@ beforeEach(() => {
     _id: "resourceSets:launch-only",
     _creationTime: 1,
     projectId: "projects:materials",
-    name: "Launch deck only",
+    name: "Launch presentation only",
     set: {
-      include: [{ select: "resources", refs: [{ kind: "slides", id: "slideDecks:launch" }] }],
+      include: [{ select: "resources", refs: [{ kind: "presentation", id: "presentations:launch" }] }],
       exclude: []
     },
     createdBy: { kind: "system" },
@@ -258,7 +258,7 @@ beforeEach(() => {
       inputHash: "logo-authored",
       scopeRefs: [
         { kind: "document", id: "documents:sales" },
-        { kind: "slides", id: "slideDecks:launch" }
+        { kind: "presentation", id: "presentations:launch" }
       ],
       vector: [0.97, 0.03]
     },
@@ -342,7 +342,7 @@ describe("semantic material query", () => {
     });
 
     assert.deepEqual(result.hits.map((hit) => hit.material.materialId), ["semanticMaterials:logo"]);
-    assert.deepEqual(result.hits[0].material.placement?.ref, { kind: "slides", id: "slideDecks:launch" });
+    assert.deepEqual(result.hits[0].material.placement?.ref, { kind: "presentation", id: "presentations:launch" });
     assert.equal(result.hits[0].matchedFacets.includes("authored"), false);
     assert.equal(
       result.hits[0].matched.some((match) => match.text?.includes("Secret campaign") === true),
@@ -359,12 +359,12 @@ describe("semantic material query", () => {
         projectId: "projects:materials",
         boundTo: {
           kind: "resource",
-          ref: { kind: "slides", id: "slideDecks:launch" },
+          ref: { kind: "presentation", id: "presentations:launch" },
           hole: "evidence"
         },
         set: {
           include: [
-            { select: "resources", refs: [{ kind: "slides", id: "slideDecks:launch" }] }
+            { select: "resources", refs: [{ kind: "presentation", id: "presentations:launch" }] }
           ],
           exclude: []
         },
@@ -425,7 +425,7 @@ describe("semantic material query", () => {
           select: "resources",
           refs: [
             { kind: "document", id: "documents:sales" },
-            { kind: "slides", id: "slideDecks:launch" }
+            { kind: "presentation", id: "presentations:launch" }
           ]
         }],
         exclude: []

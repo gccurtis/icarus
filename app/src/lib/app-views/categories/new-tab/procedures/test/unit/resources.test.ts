@@ -26,10 +26,10 @@ const index: ProjectResourceIndex = {
       updatedByName: "Ana"
     },
     {
-      id: "slideDecks:newer",
-      ref: { kind: "slides", id: asId<"slideDecks">("slideDecks:newer") },
-      kind: "slides",
-      name: "Newest deck",
+      id: "presentations:newer",
+      ref: { kind: "presentation", id: asId<"presentations">("presentations:newer") },
+      kind: "presentation",
+      name: "Newest presentation",
       relativePath: null,
       updatedAt: NOW - MINUTE,
       updatedByName: "Mira"
@@ -59,9 +59,9 @@ describe("New tab represented resources", () => {
         updatedBy: "Ana"
       },
       {
-        id: "slideDecks:newer",
-        kind: "slides",
-        name: "Newest deck",
+        id: "presentations:newer",
+        kind: "presentation",
+        name: "Newest presentation",
         updatedAt: NOW - MINUTE,
         updated: "1 minute ago",
         updatedBy: "Mira"
@@ -82,7 +82,7 @@ describe("New tab represented resources", () => {
     const recent = recentsOf(index, NOW, 2);
 
     expect(recent.map((row) => row.id)).toEqual([
-      "slideDecks:newer",
+      "presentations:newer",
       "documents:middle"
     ]);
     expect(recent[0]).toMatchObject({
@@ -91,7 +91,7 @@ describe("New tab represented resources", () => {
     });
     expect(index.resources.map((row) => row.id)).toEqual([
       "documents:older",
-      "slideDecks:newer",
+      "presentations:newer",
       "documents:middle"
     ]);
   });

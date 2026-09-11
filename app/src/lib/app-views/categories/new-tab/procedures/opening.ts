@@ -14,7 +14,7 @@ import type { ResourceKind } from "$app-views/categories/new-tab/procedures/cast
  */
 const EDITOR: Partial<Record<ResourceKind, Target["category"]>> = {
   document: "document-editor",
-  slides: "slide-deck-editor",
+  presentation: "presentation-editor",
   spreadsheet: "spreadsheet-editor"
 };
 

@@ -98,9 +98,9 @@ What it deliberately does not do: resolving is local. The chip and the button
 change, and the change lasts as long as the panel does, because nothing stores the
 state yet.
 
-Routes to `spreadsheet-editor.cell`, `slide-deck-editor.slide` or `document-editor.text-selection` for an
+Routes to `spreadsheet-editor.cell`, `presentation-editor.slide` or `document-editor.text-selection` for an
 anchored position, or the whole-resource lens for its kind —
-`document-editor.document`, `slide-deck-editor.deck`, `spreadsheet-editor.spreadsheet` — when there is no
+`document-editor.document`, `presentation-editor.presentation`, `spreadsheet-editor.spreadsheet` — when there is no
 position; and to `general.person` from every name in the panel, the author's
 and each replier's alike.
 
@@ -174,7 +174,7 @@ absent rather than disabled: retry semantics are not modelled, and a button that
 might re-run a partly-completed task is worse than no button.
 
 Deliberately not doing: a task result is not a resource — nothing in the project
-can retrieve it until it is promoted into a finding, a document, a deck or a
+can retrieve it until it is promoted into a finding, a document, a presentation or a
 spreadsheet — and there is no promotion here to press, because a task records
 what it produced and nothing records how to promote it.
 

@@ -84,7 +84,7 @@
           <tbody>
             <tr><td><code>readTemplateLibrary</code></td><td>Every template in the project as library metadata</td><td>Scoped by project rather than owner. The first pass added an "is staged" mark; it is gone, because who is editing is not tracked.</td></tr>
             <tr><td><code>readTemplate</code></td><td>One template's body, variables, and metadata</td><td>Scoped by project</td></tr>
-            <tr><td><code>readResourceTemplate</code></td><td>For a document or deck id: the stage it is, if any</td><td>New. The stage carries the template's name, the revision staged from, and the current revision; nothing says what a resource was made from, because nothing records it</td></tr>
+            <tr><td><code>readResourceTemplate</code></td><td>For a document or presentation id: the stage it is, if any</td><td>New. The stage carries the template's name, the revision staged from, and the current revision; nothing says what a resource was made from, because nothing records it</td></tr>
           </tbody>
         </table>
       </div>
@@ -95,7 +95,7 @@
       <h3><code>openTemplateStage({ templateId })</code></h3>
       <p>
         Finds the template's stage and returns it with <code>reused: true</code>;
-        otherwise creates a scratch <code>documents</code> or <code>slideDecks</code> row titled
+        otherwise creates a scratch <code>documents</code> or <code>presentations</code> row titled
         <code>Template · &lt;name&gt;</code>, a revision-zero leader snapshot holding the template body with
         its <code>resource</code> tag removed, and the stage row. Refuses <code>not-found</code> for an
         invisible template and <code>unsupported-body</code> for a corrupt one or a spreadsheet.
@@ -130,7 +130,7 @@
       <p>
         A thread cannot be started on a stage resource. <code>startThread</code> in the comments
         capability reads the stage table, as a subject capability reads a table it does not own, and
-        refuses with "a template's working copy takes no comments"; the deck's comment panels replace
+        refuses with "a template's working copy takes no comments"; the presentation's comment panels replace
         their composer with the same sentence.
       </p>
     </section>
@@ -139,11 +139,11 @@
       <div class="head"><span class="n">5</span><h2><code>templates</code>: making and using</h2></div>
       <h3><code>createTemplateFromResource({ target, resourceId, name, description?, tags?, slideId? })</code></h3>
       <p>
-        Reads the resource's leader body in this project; with a <code>slideId</code>, takes the deck of
-        that one slide with <code>deckOfSlide</code>; makes it portable; admits it; declares the variable
+        Reads the resource's leader body in this project; with a <code>slideId</code>, takes the presentation of
+        that one slide with <code>presentationOfSlide</code>; makes it portable; admits it; declares the variable
         names the body uses; writes the template at revision one with a version row. The source resource
         is not touched and never learns a template was made from it. The validator refuses a document
-        id for a deck target and vice versa, and a <code>slideId</code> on a document.
+        id for a presentation target and vice versa, and a <code>slideId</code> on a document.
       </p>
       <h3><code>updateTemplate</code> with <code>patch.variables</code></h3>
       <p>
@@ -179,7 +179,7 @@
         </table>
       </div>
       <p>
-        The catalogue a count is resolved over is documents, decks, spreadsheets, findings and research
+        The catalogue a count is resolved over is documents, presentations, spreadsheets, findings and research
         threads in the project, minus any resource a stage occupies. Kinds are the same five words Project
         Overview draws. A set's own validation mirrors the templates capability's term rules with the
         two project-bound terms added, and shares nothing with it, because a capability is entered at its
@@ -210,16 +210,16 @@
       <div class="head"><span class="n">9</span><h2>Tests on this page</h2></div>
       <p>
         <code>stages.test.ts</code>: a stage is made once and reused, is the project's rather than the
-        viewer's and another member saves into it, a deck template stages as a deck, a spreadsheet is
+        viewer's and another member saves into it, a presentation template stages as a presentation, a spreadsheet is
         refused, a resource's stage and provenance are read back, an edit carries the stage to the new
         revision, a save writes the next revision with portability applied and a variable declared, a
-        stale save is refused, a deck stage saves back however many slides it holds, a stage is out of
+        stale save is refused, a presentation stage saves back however many slides it holds, a stage is out of
         reach from another project, a discard removes the resource's comments and change sets, and
         deletion cascades the stage. <code>answers.test.ts</code>: resolution through the caller's answer
         then the default, a default naming one of the project's sets, a variable without a default
         meaning the whole project, refusing an unknown set and an undeclared name, replacing the variable
         list with and without a name in use, a template from a document with a dropped output id and a
-        kept link note, and a deck template from a whole deck and from one slide.
+        kept link note, and a presentation template from a whole presentation and from one slide.
         <code>resource-sets.test.ts</code>: scoped listing with live counts, quarantine, creation, stale
         and self-including updates, removal refused for a set and for a template default and then
         accepted, and project isolation. The existing template tests pass with their visibility cases

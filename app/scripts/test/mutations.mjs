@@ -347,7 +347,7 @@ export const MUTATIONS = [
             "    tabViews,\n" +
             "    settings,\n" +
             "    documentRuntimes,\n" +
-            "    slideDeckRuntimes,\n" +
+            "    presentationRuntimes,\n" +
             "    spreadsheetRuntimes\n" +
             "  );";
           const again = call.replace("const workspaceState", "const probe");

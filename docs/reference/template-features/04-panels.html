@@ -33,7 +33,7 @@
     </p>
     <div class="meta">
       <span>Document <b>document-editor/context/templates.svelte</b> · <b>procedures/templating.ts</b></span>
-      <span>Deck <b>slide-deck-editor/context/templates.svelte</b> · <b>procedures/templating.ts</b></span>
+      <span>Presentation <b>presentation-editor/context/templates.svelte</b> · <b>procedures/templating.ts</b></span>
       <span>Overview <b>project-overview/context/contexts.svelte</b> · <b>procedures/contexts.ts</b></span>
     </div>
 
@@ -97,21 +97,21 @@ const template = $derived(detailIn(templateDetail(stage?.templateId)?.current));
         the stage's template, because a template inserted into a template should bring its holes with it.
       </p>
       <p>
-        The deck's <code>insertionOf</code> does the same for slides: layouts whose key the deck lacks are
-        inserted, styles the deck lacks are set, and the slides are inserted after the current one, with
-        the deck's own version of a shared layout key winning (fork 2). The first inserted row or slide is
+        The presentation's <code>insertionOf</code> does the same for slides: layouts whose key the presentation lacks are
+        inserted, styles the presentation lacks are set, and the slides are inserted after the current one, with
+        the presentation's own version of a shared layout key winning (fork 2). The first inserted row or slide is
         shown. What lands is a copy: later changes to the template do not reach it, and it can be undone
         like any edit.
       </p>
     </section>
 
-    <section id="deck">
-      <div class="head"><span class="n">4</span><h2>The slide-deck editor's Templates panel</h2></div>
+    <section id="presentation">
+      <div class="head"><span class="n">4</span><h2>The presentation editor's Templates panel</h2></div>
       <p>
-        The same panel with one difference: under the name field sit Save deck and Save slide. Save deck
-        copies the whole deck; Save slide copies the current slide, the one the tab is focused on, into a
-        deck template holding that slide alone. Both open the new template for editing in a new tab. The
-        list holds every deck template, one-slide ones included, because there is no second kind.
+        The same panel with one difference: under the name field sit Save presentation and Save slide. Save presentation
+        copies the whole presentation; Save slide copies the current slide, the one the tab is focused on, into a
+        presentation template holding that slide alone. Both open the new template for editing in a new tab. The
+        list holds every presentation template, one-slide ones included, because there is no second kind.
       </p>
     </section>
 
@@ -134,7 +134,7 @@ const template = $derived(detailIn(templateDetail(stage?.templateId)?.current));
       <p>
         Discard closes the tab only after the capability has removed the resource, so a runtime sync that
         lands afterwards reads nothing and draws an empty body rather than resurrecting the row. Comments
-        cannot be made on the copy: the deck's comment panels say so where the composer would be, and
+        cannot be made on the copy: the presentation's comment panels say so where the composer would be, and
         the capability refuses one that arrives anyway.
       </p>
     </section>
@@ -180,9 +180,9 @@ const template = $derived(detailIn(templateDetail(stage?.templateId)?.current));
       <div class="head"><span class="n">8</span><h2>Rules the panels keep</h2></div>
       <ul>
         <li><strong>No panel imports another view or a surface.</strong> Each reaches its own category's procedures, the two capability indexes, the panel and overlay vocabularies, and workspace state. The modals are the overlay vocabulary's <code>OverlayModal</code>, repeated in the views that need them, because a view may not be shared across categories.</li>
-        <li><strong>No panel attaches a runtime.</strong> <code>view.documentRuntime(id)</code> and <code>view.slideDeckRuntime(id)</code> are the one attachment, so the panel and the canvas share one edit buffer.</li>
+        <li><strong>No panel attaches a runtime.</strong> <code>view.documentRuntime(id)</code> and <code>view.presentationRuntime(id)</code> are the one attachment, so the panel and the canvas share one edit buffer.</li>
         <li><strong>Every disabled control says why</strong> in its title; every write that can be refused draws the refusal.</li>
-        <li><strong>The two editor panels are copies</strong>, not a shared component, which is the rule for a view two categories both need. Their procedure modules differ where the editors differ: the document inserts rows after the caret's row; the deck inserts slides after the focused slide and merges layouts.</li>
+        <li><strong>The two editor panels are copies</strong>, not a shared component, which is the rule for a view two categories both need. Their procedure modules differ where the editors differ: the document inserts rows after the caret's row; the presentation inserts slides after the focused slide and merges layouts.</li>
       </ul>
     </section>
 
@@ -193,9 +193,9 @@ const template = $derived(detailIn(templateDetail(stage?.templateId)?.current));
         style merging and inverse ops, insertion into a stage keeping terms, a variable without a default
         resolving to the whole project, variable declaration and merging, the default rule read as prose
         with named sets and built from the modal's choices, and the Insert modal's options, default first,
-        turned into answers and resolved on insert; the deck's insertion of a deck template after a slide
+        turned into answers and resolved on insert; the presentation's insertion of a presentation template after a slide
         with layouts and styles brought across, a one-slide template into a stage, the anchor fallback,
-        and the list holding only deck templates; the overview's rule sentences, toggle round trips and
+        and the list holding only presentation templates; the overview's rule sentences, toggle round trips and
         naming. One workspace-state test covers opening a tab onto a named context view. Browser evidence
         is on <a href="05-changes.html#verified">page 05</a>.
       </p>

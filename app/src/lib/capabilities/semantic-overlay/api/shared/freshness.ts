@@ -28,12 +28,12 @@ export const currentResourceRevisionFor = (
         )?.revision
       : undefined;
   }
-  if (ref.kind === "slides") {
-    const exists = rowsOf(store, "slideDecks").some(
+  if (ref.kind === "presentation") {
+    const exists = rowsOf(store, "presentations").some(
       (row) => row.projectId === projectId && row._id === ref.id
     );
     return exists
-      ? rowsOf(store, "slideDeckSnapshots").find(
+      ? rowsOf(store, "presentationSnapshots").find(
           (row) => row.projectId === projectId && row.resourceId === ref.id && row.role === "leader"
         )?.revision
       : undefined;
@@ -65,7 +65,7 @@ export const semanticSourceIsCurrent = (
   projectId: Id<"projects">,
   source: Pick<SemanticSourceSnapshot, "ref" | "revision" | "contentHash">
 ): boolean => {
-  if (source.ref.kind === "document" || source.ref.kind === "slides") {
+  if (source.ref.kind === "document" || source.ref.kind === "presentation") {
     return currentResourceRevisionFor(store, projectId, source.ref) === source.revision;
   }
   if (source.ref.kind === "externalFile::text") {

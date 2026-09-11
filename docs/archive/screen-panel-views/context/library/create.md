@@ -18,7 +18,7 @@ came here by keyboard.
 
 ## Editors
 
-**Shows** — *Document*, *Slide deck*, *Spreadsheet*
+**Shows** — *Document*, *Presentation*, *Spreadsheet*
 
 Selecting one changes the inspector to that thing's creation lens. Nothing is
 created until the inspector's Create button.

@@ -2,7 +2,7 @@
 
 No tables of its own. This is what [`resourceSnapshots`](revisions.md) and
 [`changeSets`](revisions.md) hold for a spreadsheet, which is not what they hold
-for a document or a deck.
+for a document or a presentation.
 
 **A spreadsheet's content is rows, so there is nothing to replay.** The cells in
 `sheetCells` *are* the current state — a mutation writes one and it is
@@ -14,7 +14,7 @@ problem.
 
 ## What each table holds
 
-| | a document or a deck | a spreadsheet |
+| | a document or a presentation | a spreadsheet |
 | --- | --- | --- |
 | `resourceSnapshots` | the whole body, in `base` and `leader` | only the grid body — rows, columns, format rules, print, styles |
 | `role` | `base`, `leader`, `checkpoint` | `leader`, always |

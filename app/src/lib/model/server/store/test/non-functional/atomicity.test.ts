@@ -33,7 +33,7 @@ const coveredIntents = [
   "semantic-overlay/api/process-semantic-sync-queue/process-semantic-sync-queue.ts",
   "semantic-overlay/api/rebuild-semantic-index/rebuild-semantic-index.ts",
   "semantic-overlay/api/sync-semantic-resource/sync-semantic-resource.ts",
-  "slide-deck/api/submit-slide-deck-changes/submit-slide-deck-changes.ts",
+  "presentation/api/submit-presentation-changes/submit-presentation-changes.ts",
   "templates/api/commit-template-stage/commit-template-stage.ts",
   "templates/api/create-template-from-resource/create-template-from-resource.ts",
   "templates/api/create-template/create-template.ts",

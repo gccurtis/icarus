@@ -27,8 +27,8 @@
     <p class="eyebrow">Icarus · templates · work/template-features</p>
     <h1>Template Features — Reference</h1>
     <p class="lede">
-      A template belongs to its project. It can be edited in the ordinary document and slide-deck
-      editors through a copy, made from a live document, a live deck, or one slide of a deck, and
+      A template belongs to its project. It can be edited in the ordinary document and presentation
+      editors through a copy, made from a live document, a live presentation, or one slide of a presentation, and
       inserted into whatever is open, which asks what each of its variables should select. Resource
       sets exist as a subject, and a variable's default can name one. This suite says what was built,
       how it fits the tree, and every difference from main, file by file.
@@ -67,7 +67,7 @@
           <tbody>
             <tr>
               <td>Open a template and edit it in the resource's own editor through a temporary copy</td>
-              <td>A <em>stage</em>: a scratch document or deck holding the template body plus a row naming the template, one per template and shared by everyone in the project. The library's double-click, its Edit action, and the old <code>templates.editor</code> door all open it. Save writes the copy back as the next revision; Discard removes it.</td>
+              <td>A <em>stage</em>: a scratch document or presentation holding the template body plus a row naming the template, one per template and shared by everyone in the project. The library's double-click, its Edit action, and the old <code>templates.editor</code> door all open it. Save writes the copy back as the next revision; Discard removes it.</td>
               <td><a href="03-capabilities.html#stages">03 § stages</a>, <a href="04-panels.html#lifecycle">04 § lifecycle</a></td>
             </tr>
             <tr>
@@ -86,8 +86,8 @@
               <td><a href="04-panels.html#insert">04 § insert</a></td>
             </tr>
             <tr>
-              <td>A template of one slide, not the whole deck</td>
-              <td>Save slide copies the current slide into a deck template holding that slide alone. No fourth kind: it is a deck template afterwards, inserted, staged and listed like any other.</td>
+              <td>A template of one slide, not the whole presentation</td>
+              <td>Save slide copies the current slide into a presentation template holding that slide alone. No fourth kind: it is a presentation template afterwards, inserted, staged and listed like any other.</td>
               <td><a href="02-model.html#slide">02 § slide</a></td>
             </tr>
             <tr>
@@ -97,7 +97,7 @@
             </tr>
             <tr>
               <td>A copy that knows nothing of its original</td>
-              <td>Main's <code>templateId</code> on documents, decks and spreadsheets is gone. Making a template from a resource and making a resource from a template are both copies; the template records its own last use, and a working copy takes no comments.</td>
+              <td>Main's <code>templateId</code> on documents, presentations and spreadsheets is gone. Making a template from a resource and making a resource from a template are both copies; the template records its own last use, and a working copy takes no comments.</td>
               <td><a href="03-capabilities.html#stages">03 § stages</a></td>
             </tr>
             <tr>
@@ -124,7 +124,7 @@
             <tr><td><code>representation/data/types/core/resource-set.ts</code></td><td>A <code>set</code> term on <code>TemplatedTerm</code></td><td>A default may name one of the project's sets, because a template now belongs to a project</td></tr>
             <tr><td><code>representation/store/tables.ts</code></td><td><code>templates.projectId</code> · <code>templateStages</code></td><td>A template belongs to a project; what a stage is on disk</td></tr>
             <tr><td><code>representation/data/types/workspace/tab.ts</code></td><td><code>Target.context</code></td><td>A tab can be opened straight onto a named context view</td></tr>
-            <tr><td><code>representation/data/behavior/templates</code></td><td><code>scopes</code>, <code>portable</code>, <code>fresh-ids</code>, <code>deck-of-slide</code></td><td>Pure functions both processes need: the capability resolves and validates with them, the editors insert with them</td></tr>
+            <tr><td><code>representation/data/behavior/templates</code></td><td><code>scopes</code>, <code>portable</code>, <code>fresh-ids</code>, <code>presentation-of-slide</code></td><td>Pure functions both processes need: the capability resolves and validates with them, the editors insert with them</td></tr>
             <tr><td><code>representation/data/behavior/core</code></td><td><code>resource-set</code></td><td>Resolving a set is a fact about the vocabulary, not about a process</td></tr>
             <tr><td><code>capabilities/templates</code></td><td>Five procedures, three shared steps, project scoping</td><td>The subject is a template; a stage is a fact about one</td></tr>
             <tr><td><code>capabilities/resource-sets</code></td><td>New capability, four procedures</td><td>A set is its own subject with its own invariants</td></tr>
@@ -148,10 +148,10 @@
       <p>
         A template is the project's copy of something: a portable body and a list of variables, each
         with a default that means the whole project unless the template says otherwise. To edit a
-        template you open it: the capability writes its body into a scratch document or deck and records
+        template you open it: the capability writes its body into a scratch document or presentation and records
         the stage; the ordinary editor opens on the copy; the editor's Templates panel saves the copy back
         or discards it, and the copy is the only thing that ever writes the template's body. To make a
-        template you name and save the open document, deck, or current slide, and it opens for editing
+        template you name and save the open document, presentation, or current slide, and it opens for editing
         at once. To use one, on its own or inside what you have open, you use or insert it: a modal asks
         what each variable should select, offering its default, and the copy lands with its prompts'
         scopes already filled. A resource made from a template is its own afterwards and carries no

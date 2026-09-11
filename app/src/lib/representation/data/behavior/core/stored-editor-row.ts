@@ -8,8 +8,8 @@ import {
   storedFields
 } from "$representation/data/behavior/core/stored";
 
-type ResourceTable = "documents" | "slideDecks" | "spreadsheets";
-type SnapshotTable = "documentSnapshots" | "slideDeckSnapshots" | "spreadsheetSnapshots";
+type ResourceTable = "documents" | "presentations" | "spreadsheets";
+type SnapshotTable = "documentSnapshots" | "presentationSnapshots" | "spreadsheetSnapshots";
 
 /** Exact current common row shared by the three authored editors. */
 export const isStoredEditableRow = (value: unknown, table: ResourceTable): boolean => {

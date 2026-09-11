@@ -57,7 +57,7 @@ has nothing to write to.
 | --- | --- | --- |
 | `procedures/translate.ts` | Diffs two bodies and emits text splices, block and row insert/remove/move, and a set on row proportions. | Emits mark, block-field, atom and document ops. Or, for panel edits, is not involved at all — a panel states its ops directly. |
 | `capabilities/document/…/apply-ops.ts` | Accepts exactly the shapes translate emits. `set` handles one path and refuses the rest. | One applier in `representation/data/behavior/documents/` handling every target, wrapped by the capability and called by the runtime. |
-| `model/client/document-runtimes/methods/apply.ts` | `buffer()` appends ops. The body waits for the store. | The body moves first — exactly what `slide-deck-runtimes/methods/apply.ts` already does. |
+| `model/client/document-runtimes/methods/apply.ts` | `buffer()` appends ops. The body waits for the store. | The body moves first — exactly what `presentation-runtimes/methods/apply.ts` already does. |
 | `representation/data/types/documents/op.ts` | Targets `row · block · atom · mark`. Nothing above the rows is addressable. | A `document` target with plain field paths: page setup, furniture settings, the style set. |
 
 > **All changes start at the runtime. Typing is the one exception.** The path

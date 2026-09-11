@@ -1,6 +1,6 @@
 ## What this is
 
-Icarus is a workspace: one browser tab holds a project, and inside it a row of tabs opens documents, slide decks, spreadsheets, analyses, research threads, agents and templates. The application is a SvelteKit app under `app/`. Everything definitional lives under `app/src/lib`, sorted into nine trees, and a tiny `routes/` mounts them.
+Icarus is a workspace: one browser tab holds a project, and inside it a row of tabs opens documents, presentations, spreadsheets, analyses, research threads, agents and templates. The application is a SvelteKit app under `app/`. Everything definitional lives under `app/src/lib`, sorted into nine trees, and a tiny `routes/` mounts them.
 
 This wiki is about the code as it is. Every file under `app/src` has a page here, every one of the 63 lint checks is quoted in its own words, and every table, token, capability and view key is read off the tree by [[file:wiki/extract/extract.mjs|an extractor]] rather than typed in. Where a sentence could not be checked against the code it says so.
 

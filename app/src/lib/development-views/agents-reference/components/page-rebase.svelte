@@ -16,8 +16,8 @@
   const history = [
     ["d1e8bab", "feat(agents): build the category end to end", "Mine. One commit, replayed unchanged.", "work/agents"],
     ["1166f8e", "docs(semantic-overlay): map ingestion and agent tools", "The new base, and the head of the branch I was sent to.", "work/derived-output-architecture"],
-    ["205686e", "feat(slide-deck-editor): add prompt blocks", "The commit before it. Twenty-one of these sit between main and the base.", "work/derived-output-architecture"],
-    ["306e308", "refactor(slide-deck-editor): flatten slide inspector", "The head of main, and an ancestor of both sides.", "main"]
+    ["205686e", "feat(presentation-editor): add prompt blocks", "The commit before it. Twenty-one of these sit between main and the base.", "work/derived-output-architecture"],
+    ["306e308", "refactor(presentation-editor): flatten slide inspector", "The head of main, and an ancestor of both sides.", "main"]
   ];
 
   const headline = [
@@ -47,9 +47,9 @@
     ],
     [
       "representation/data/types/workspace/views.ts",
-      "One inspector key added: slide-deck-editor.prompt-block.",
+      "One inspector key added: presentation-editor.prompt-block.",
       "Ten agents keys retired and agents.activity added.",
-      "One sorted union, two different letters. The agents block and the slide-deck-editor block never touch."
+      "One sorted union, two different letters. The agents block and the presentation-editor block never touch."
     ],
     [
       "representation/data/behavior/workspace/views.ts",

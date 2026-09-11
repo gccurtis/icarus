@@ -28,7 +28,7 @@
    * distinctions they are here to draw.
    */
 
-  /** A deck theme's palette. Tokens rather than hexes, so it follows the theme. */
+  /** A presentation theme's palette. Tokens rather than hexes, so it follows the theme. */
   const PALETTE = [
     { name: "Paper", color: "var(--token-surface-canvas)" },
     { name: "Ink", color: "var(--token-ink-primary)" },
@@ -223,7 +223,7 @@
 
   <Entry
     name="PanelSwatches"
-    use="The colours a thing has, listed: a deck theme's four named colours, a chart's series assignment, the key to a status map. layout follows the names — wrap where they are “Paper” and “Accent 1”, column where they are “Peak demand (winter)” or where each carries its value."
+    use="The colours a thing has, listed: a presentation theme's four named colours, a chart's series assignment, the key to a status map. layout follows the names — wrap where they are “Paper” and “Accent 1”, column where they are “Peak demand (winter)” or where each carries its value."
     instead="a hand-rolled row of divs. Three panels want this shape — the theme inspector, the theme context and the chart inspector — and without a word for it each writes its own local style block at its own size, which is the tell that a word is missing."
     code={CODE.swatches}
   >
@@ -333,7 +333,7 @@
       </PanelSentence>
       <PanelSentence tone="inactive" lead="When" join="ask">
         {#snippet when()}a filing is approved{/snippet}
-        {#snippet then()}Board Reporter to refresh the October deck{/snippet}
+        {#snippet then()}Board Reporter to refresh the October presentation{/snippet}
       </PanelSentence>
       <PanelNote>
         The second is a library row: the row opens the rule, so its clauses are

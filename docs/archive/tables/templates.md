@@ -5,7 +5,7 @@ Two tables: a starting point for a resource, and the undo stack for editing one.
 `templates` · `templateVersions`
 
 **A template belongs to a person, not a project.** It is made out of a resource —
-you are looking at a deck and you save it as one — and then carried into whatever
+you are looking at a presentation and you save it as one — and then carried into whatever
 project you want another like it. That is why `templates` sits outside project
 scope alongside [`users`, `projects`, and `memberships`](access.md), and why a
 template's fill-in-the-blanks are expressed in terms that mean something in any
@@ -38,7 +38,7 @@ import { templateVariableValidator } from "$templates/types/variable";
  * an agent can produce a template, and the two answer different questions: who
  * it belongs to, and what put it there.
  *
- * One index serving two reads. `[userId, kind]` is "my deck templates", and its
+ * One index serving two reads. `[userId, kind]` is "my presentation templates", and its
  * `userId` prefix is "everything of mine" — a second index would hold the same
  * rows in the same order.
  */
@@ -67,18 +67,18 @@ import { v, type Infer } from "convex/values";
 /**
  * What the author made, which is not the same as which body it holds.
  *
- * **`deck` and `slide` both carry a slides body.** A single-slide template is a
- * deck body holding one slide, because that is what carries the theme and the
+ * **`presentation` and `slide` both carry a slides body.** A single-slide template is a
+ * presentation body holding one slide, because that is what carries the theme and the
  * layouts it has to be previewed against. Counting slides would be the wrong
- * test — a one-slide deck template is a perfectly ordinary thing.
+ * test — a one-presentation template is a perfectly ordinary thing.
  *
  * So the pair cannot be derived in either direction and both are stored: a
- * picker lists slides separately from decks without opening a body, and a body
+ * picker lists slides separately from presentations without opening a body, and a body
  * still says which of the three it is.
  */
 export const templateKindValidator = v.union(
   v.literal("document"),
-  v.literal("deck"),
+  v.literal("presentation"),
   v.literal("slide"),
   v.literal("spreadsheet")
 );
@@ -134,12 +134,12 @@ export type TemplateVariable = Infer<typeof templateVariableValidator>;
 ```ts
 import { v, type Infer } from "convex/values";
 import { documentBodyValidator } from "$documents/types/body";
-import { slideDeckBodyValidator } from "$slide-decks/types/body";
+import { presentationBodyValidator } from "$presentations/types/body";
 import { spreadsheetTemplateValidator } from "$templates/types/spreadsheet";
 
 /**
  * A template's body is a real resource body with a label on it — for a document
- * and a deck, their own validators spread beside a `resource` literal.
+ * and a presentation, their own validators spread beside a `resource` literal.
  *
  * **Spread rather than nested**, because the body *is* the thing it makes: a
  * template is authored in the ordinary editor, and a generic representation
@@ -150,9 +150,9 @@ import { spreadsheetTemplateValidator } from "$templates/types/spreadsheet";
  * what the author made. This one answers which of the three shapes is here, and
  * two names keep the two questions apart.
  *
- * `aspectRatio` rides on the slides member because a deck's shape lives on its
+ * `aspectRatio` rides on the slides member because a presentation's shape lives on its
  * row rather than in its body, so a slides template that did not carry one could
- * not say what shape of deck it makes.
+ * not say what shape of presentation it makes.
  *
  * **A spreadsheet is the exception, and it has to be.** Its content is not in
  * its body — cells are rows in `sheetCells`, keyed by ids that exist only inside
@@ -162,9 +162,9 @@ import { spreadsheetTemplateValidator } from "$templates/types/spreadsheet";
 export const templateBodyValidator = v.union(
   v.object({ resource: v.literal("document"), ...documentBodyValidator.fields }),
   v.object({
-    resource: v.literal("slides"),
+    resource: v.literal("presentation"),
     aspectRatio: v.union(v.literal("16:9"), v.literal("4:3")),
-    ...slideDeckBodyValidator.fields
+    ...presentationBodyValidator.fields
   }),
   v.object({
     resource: v.literal("spreadsheet"),
@@ -221,7 +221,7 @@ export type TemplateCell = Infer<typeof templateCellValidator>;
  * reads — `"B7"`, `"A"`, `"3"` — and there is nothing in it that can dangle.
  *
  * **Which makes this the one template body that is a projection rather than a
- * copy.** A document template and a deck template are their resource's body
+ * copy.** A document template and a presentation template are their resource's body
  * verbatim; this one is built from a grid and rebuilt into one.
  */
 export const spreadsheetTemplateValidator = v.object({
@@ -309,7 +309,7 @@ that commits first invalidates the other's read set and makes it re-run.
 it out of a list, so an unnamed one is a row nobody can choose again.
 
 **`kind` and `body.resource` agree.** `document` and `spreadsheet` map to
-themselves; `deck` and `slide` both mean a slides body.
+themselves; `presentation` and `slide` both mean a slides body.
 
 **A variable's keys are distinct, and its `blocks` name prompt blocks that exist
 in the body.** A repeated key would make two questions claim one answer, and a

@@ -1,8 +1,8 @@
 # New Slide
 
-## Role in the deck editor
+## Role in the presentation editor
 
-New Slide is a focused chooser owned by a slide-deck tab. It is not a persistent screen kind and should not create a second tab. It may appear as a large anchored dialog, command-palette result, or temporary center overlay; all entry points use the same content.
+New Slide is a focused chooser owned by a presentation tab. It is not a persistent screen kind and should not create a second tab. It may appear as a large anchored dialog, command-palette result, or temporary center overlay; all entry points use the same content.
 
 ## Center surface
 
@@ -11,7 +11,7 @@ New Slide is a focused chooser owned by a slide-deck tab. It is not a persistent
 - Insert after current slide by default.
 - Insert before current slide.
 - Insert at end of current section, or the unsectioned leading region when the current slide has no section.
-- Insert at end of deck.
+- Insert at end of presentation.
 - Destination section, including an explicit Unsectioned option, if different from the current section.
 
 ### Layout gallery
@@ -23,7 +23,7 @@ Layouts appear as visual cards derived from their actual definition:
 - Placeholder-role summary.
 - Theme/background inheritance.
 
-The first card is the current slide's layout when invoked as Duplicate layout. A Blank card is always available and uses the deck theme without placeholders.
+The first card is the current slide's layout when invoked as Duplicate layout. A Blank card is always available and uses the presentation theme without placeholders.
 
 ### Optional starting content
 
@@ -35,14 +35,14 @@ The first implementation does not need AI-generated layout choices here; that be
 
 ## Context panel behavior
 
-The underlying deck panel remains visible but inert while the chooser has modal focus. If New Slide is implemented as a non-modal temporary surface, it uses:
+The underlying presentation panel remains visible but inert while the chooser has modal focus. If New Slide is implemented as a non-modal temporary surface, it uses:
 
 | Key | Label | Contents |
 | --- | --- | --- |
 | `layouts` | Layouts | Default. Searchable layout gallery. |
 | `sections` | Sections | Destination section and insertion point. |
 
-No separate inspector vocabulary is necessary for a modal implementation; selection details can occupy the deck inspector.
+No separate inspector vocabulary is necessary for a modal implementation; selection details can occupy the presentation inspector.
 
 ## Inspector targets
 
@@ -76,7 +76,7 @@ When a layout is chosen:
 
 After creation, close the chooser, select the new slide in the slide strip, focus the first suitable materialized element, and preserve one undoable user action.
 
-Duplicate mints a new ID for the slide and every identified descendant—elements, blocks, atoms, marks, table rows/cells, captions, and nested blocks. IDs may be reused only when copying the entire deck into a different resource-local ID space, never for two objects inside one deck.
+Duplicate mints a new ID for the slide and every identified descendant—elements, blocks, atoms, marks, table rows/cells, captions, and nested blocks. IDs may be reused only when copying the entire presentation into a different resource-local ID space, never for two objects inside one presentation.
 
 ## Keyboard and accessibility
 
@@ -87,8 +87,8 @@ Duplicate mints a new ID for the slide and every identified descendant—element
 
 ## Retained chooser state
 
-New Slide is not a tab. Its insertion index, layout query, and selected layout key live in the owning slide tab's `newSlide` state. They survive an incidental tab switch while the chooser remains open, but Cancel clears them and reload may close the chooser without affecting the deck.
+New Slide is not a tab. Its insertion index, layout query, and selected layout key live in the owning slide tab's `newSlide` state. They survive an incidental tab switch while the chooser remains open, but Cancel clears them and reload may close the chooser without affecting the presentation.
 
 ## Model coverage
 
-- [Slide decks, layouts, placeholders, and sections](../data-models/general-resources/slides.md)
+- [Presentations, layouts, placeholders, and sections](../data-models/general-resources/slides.md)

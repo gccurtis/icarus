@@ -129,7 +129,7 @@ nothing else. It is a routing decision, not a claim about the contents —
 ## Extraction
 
 `extraction` is what we managed to read out of the file. Text from a PDF,
-dimensions from an image, page count from a deck. It is optional and it is
+dimensions from an image, page count from a presentation. It is optional and it is
 allowed to fail: `unsupported` and `error` are ordinary outcomes, and a file
 with neither is still a perfectly good file.
 

@@ -75,7 +75,7 @@
       label: "NATIVE TABLE",
       name: "Quarterly readiness",
       icon: Table2,
-      origin: "slides:deck-04 · slide-07 · table-02",
+      origin: "slides:presentation-04 · slide-07 · table-02",
       profile: ["5 rows × 4 columns", "Q1 → Q4", "percent values", "header row preserved"],
       context: ["slide title: Quarterly readiness", "speaker notes mention retrofit", "adjacent text span 418–502"],
       summary:
@@ -115,7 +115,7 @@
       label: "NATIVE CHART",
       name: "Quarterly readiness",
       icon: ChartNoAxesColumn,
-      origin: "slides:deck-04 · slide-07 · chart-02",
+      origin: "slides:presentation-04 · slide-07 · chart-02",
       profile: ["bar chart", "Revenue + Cost series", "native JSON spec", "60k read ceiling"],
       context: ["slide title and narrative", "speaker notes", "shape and slide placement"],
       summary:
@@ -347,7 +347,7 @@
 ├── projection/
 │   ├── project-resource.ts
 │   ├── writer.ts
-│   └── resources/{document,slide-deck}.ts
+│   └── resources/{document,presentation}.ts
 └── materials/
     ├── profile.ts  csv.ts  code.ts
     ├── external-file.ts
@@ -717,7 +717,7 @@ capabilities/semantic-overlay/api/
       <header class="section-heading">
         <div><span>07 / STORAGE + API CONTRACT</span><h2>Make every future type<br />a narrow adapter.</h2></div>
         <p>
-          The core contract does not care whether a material originated in a document, deck,
+          The core contract does not care whether a material originated in a document, presentation,
           spreadsheet, upload, or connector. Origin-specific adapters only inventory and read it.
         </p>
       </header>

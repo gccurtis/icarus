@@ -47,14 +47,14 @@ export const populateLiveExternalReferences = (store: StoreModel) => {
     at: 1
   });
 
-  const deckId = store.create("slideDecks", {
+  const presentationId = store.create("presentations", {
     projectId: referenceScope.projectId,
-    title: "Linked deck",
+    title: "Linked presentation",
     ...editable
   });
-  store.create("slideDeckSnapshots", {
+  store.create("presentationSnapshots", {
     projectId: referenceScope.projectId,
-    resourceId: deckId,
+    resourceId: presentationId,
     revision: 1,
     role: "leader",
     part: 0,

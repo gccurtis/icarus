@@ -81,7 +81,7 @@ test("New Tab Recent and search open represented resources instead of dead tabs"
   await expect(tabs.getByText("Disconnected", { exact: true })).toHaveCount(0);
 });
 
-test("Project Overview creates durable document, deck, and spreadsheet resources", async ({ page }) => {
+test("Project Overview creates durable document, presentation, and spreadsheet resources", async ({ page }) => {
   let create = await openOverview(page);
   await create.getByRole("button", { name: "Document", exact: true }).click();
 
@@ -149,42 +149,42 @@ test("Project Overview creates durable document, deck, and spreadsheet resources
     .getByRole("button", { name: "Overview", exact: true })
     .click();
   create = page.locator(".area-create");
-  await create.getByRole("button", { name: "Slide deck", exact: true }).click();
+  await create.getByRole("button", { name: "Presentation", exact: true }).click();
 
   await expect(page.locator(".area-canvas").getByRole("application", { name: "Slide" })).toBeVisible();
-  await expect(page.locator(".area-title h1")).toHaveText(/^Untitled deck \d+$/);
-  const deckTitle = (await page.locator(".area-title h1").textContent())?.trim();
-  expect(deckTitle).toMatch(/^Untitled deck \d+$/);
+  await expect(page.locator(".area-title h1")).toHaveText(/^Untitled presentation \d+$/);
+  const presentationTitle = (await page.locator(".area-title h1").textContent())?.trim();
+  expect(presentationTitle).toMatch(/^Untitled presentation \d+$/);
   await expect(
     page.locator('aside[aria-label="Context"]').getByRole("button", { name: "Slide 1", exact: true })
   ).toHaveCount(1);
-  const deckSurface = page.locator(".area-canvas").getByRole("application", { name: "Slide" });
-  const deckContext = page.locator('aside[aria-label="Context"]');
-  await deckContext.getByRole("button", { name: "Insert", exact: true }).click();
-  await deckContext.getByRole("button", { name: "Text box", exact: true }).click();
-  const durableDeckItem = deckSurface.locator("[data-item]").last();
-  await durableDeckItem.dblclick({ position: { x: 24, y: 18 } });
+  const presentationSurface = page.locator(".area-canvas").getByRole("application", { name: "Slide" });
+  const presentationContext = page.locator('aside[aria-label="Context"]');
+  await presentationContext.getByRole("button", { name: "Insert", exact: true }).click();
+  await presentationContext.getByRole("button", { name: "Text box", exact: true }).click();
+  const durablePresentationItem = presentationSurface.locator("[data-item]").last();
+  await durablePresentationItem.dblclick({ position: { x: 24, y: 18 } });
   await page.keyboard.press("End");
-  await page.keyboard.type(" durable deck proof");
-  await expect(durableDeckItem).toContainText("Text durable deck proof");
+  await page.keyboard.type(" durable presentation proof");
+  await expect(durablePresentationItem).toContainText("Text durable presentation proof");
   await expect(page.locator(".area-strip")).toContainText("Saving");
   await expect(page.locator(".area-strip")).toContainText("Saved", { timeout: 10_000 });
 
   await page.reload({ waitUntil: "networkidle" });
-  await expect(page.locator(".area-title h1")).toHaveText(deckTitle!);
+  await expect(page.locator(".area-title h1")).toHaveText(presentationTitle!);
   await expect(page.locator(".area-canvas").getByRole("application", { name: "Slide" })
-    .locator("[data-item]").last()).toContainText("Text durable deck proof");
+    .locator("[data-item]").last()).toContainText("Text durable presentation proof");
   await page
     .getByRole("toolbar", { name: "Open tabs" })
     .getByRole("button", { name: "Overview", exact: true })
     .click();
-  await page.locator(".area-resources").getByPlaceholder("Search this project").fill(deckTitle!);
+  await page.locator(".area-resources").getByPlaceholder("Search this project").fill(presentationTitle!);
   await page.locator(".area-resources").getByRole("button", {
-    name: deckTitle!,
+    name: presentationTitle!,
     exact: true
   }).dblclick();
   await expect(page.locator(".area-canvas").getByRole("application", { name: "Slide" })
-    .locator("[data-item]").last()).toContainText("Text durable deck proof");
+    .locator("[data-item]").last()).toContainText("Text durable presentation proof");
 
   await page
     .getByRole("toolbar", { name: "Open tabs" })
@@ -239,7 +239,7 @@ test("Project Overview creates durable document, deck, and spreadsheet resources
     .first()).toHaveText("Durable sheet proof");
 });
 
-test("New Tab creates represented documents, decks, and spreadsheets instead of title-shaped IDs", async ({ page }) => {
+test("New Tab creates represented documents, presentations, and spreadsheets instead of title-shaped IDs", async ({ page }) => {
   await page.goto("/app/dev-project", { waitUntil: "networkidle" });
   const tabs = page.getByRole("toolbar", { name: "Open tabs" });
 
@@ -251,8 +251,8 @@ test("New Tab creates represented documents, decks, and spreadsheets instead of 
 
   await tabs.locator('button.tab.icon[aria-label="New tab"]').click();
   launchers = page.locator(".area-editors");
-  await launchers.getByRole("button", { name: "Slide deck", exact: true }).click();
-  await expect(page.locator(".area-title h1")).toHaveText(/^Untitled deck \d+$/);
+  await launchers.getByRole("button", { name: "Presentation", exact: true }).click();
+  await expect(page.locator(".area-title h1")).toHaveText(/^Untitled presentation \d+$/);
   await expect(page.locator(".area-canvas").getByRole("application", { name: "Slide" })).toBeVisible();
 
   await tabs.locator('button.tab.icon[aria-label="New tab"]').click();

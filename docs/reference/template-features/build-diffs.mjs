@@ -25,7 +25,7 @@ const GROUPS = [
   },
   { key: "library", title: "The template library, editor door, and inspector", match: (p) => p.startsWith("app/src/lib/app-views/categories/templates/") },
   { key: "document", title: "The document editor's Templates panel", match: (p) => p.startsWith("app/src/lib/app-views/categories/document-editor/") },
-  { key: "deck", title: "The slide-deck editor's Templates panel", match: (p) => p.startsWith("app/src/lib/app-views/categories/slide-deck-editor/") },
+  { key: "presentation", title: "The presentation editor's Templates panel", match: (p) => p.startsWith("app/src/lib/app-views/categories/presentation-editor/") },
   { key: "contexts", title: "Project Overview's Contexts panel", match: (p) => p.startsWith("app/src/lib/app-views/categories/project-overview/") },
   { key: "seed", title: "The seeded one-slide template", match: (p) => p.startsWith("app/seed/") },
   { key: "browser", title: "Browser evidence", match: (p) => p.startsWith("app/test/browser/") },

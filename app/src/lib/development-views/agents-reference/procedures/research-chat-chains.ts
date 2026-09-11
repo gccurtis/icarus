@@ -207,7 +207,7 @@ export const RESEARCH_CHAINS: readonly Chain[] = [
     ],
     output: [{ name: "indexed", type: "number", note: "How many resources were enqueued this time." }],
     steps: [
-      { does: "List every document and deck in the project.", calls: "rowsIn(store, \"documents\") · rowsIn(store, \"slideDecks\")" },
+      { does: "List every document and presentation in the project.", calls: "rowsIn(store, \"documents\") · rowsIn(store, \"presentations\")" },
       { does: "Skip anything already indexed at its current revision.", calls: "semanticSourceIsCurrent(store, projectId, source)" },
       { does: "Enqueue the rest for the overlay.", calls: "enqueueSemanticSync({ ref })", writes: "semanticSyncJobs" },
       { does: "Drain the queue in batches of twenty-five, at most twenty batches.", calls: "processSemanticSyncQueueFor(model, projectId, 25)", writes: "semanticSources · semanticObjects · semanticIndexes · semanticMaterials" },

@@ -21,7 +21,7 @@ import type {
 
 const RESOURCE_TABLES = [
   "documents",
-  "slideDecks",
+  "presentations",
   "spreadsheets",
   "researchThreads",
   "findings"

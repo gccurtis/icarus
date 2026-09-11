@@ -39,11 +39,11 @@ describe("current Store row admission", () => {
   });
 
   it("rejects finite but out-of-range nested editor state", () => {
-    const slide = structuredClone(rowsAt("seed", "slideDeckSnapshots")[0]) as {
+    const slide = structuredClone(rowsAt("seed", "presentationSnapshots")[0]) as {
       body: { slides: Array<{ elements: Array<{ frame: { width: number } }> }> };
     };
     slide.body.slides[0].elements[0].frame.width = 0;
-    expect(() => admitCurrentRow("slideDeckSnapshots", slide)).toThrow(/non-current/);
+    expect(() => admitCurrentRow("presentationSnapshots", slide)).toThrow(/non-current/);
 
     const documentSnapshot = structuredClone(rowsAt("seed", "documentSnapshots")[0]) as {
       body: { styles: { styles: Record<string, { fontSize?: number }> } };

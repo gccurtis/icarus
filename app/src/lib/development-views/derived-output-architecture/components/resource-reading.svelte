@@ -198,8 +198,8 @@
       ]
     },
     {
-      id: "list-deck-slides",
-      name: "list_deck_slides",
+      id: "list-presentation-slides",
+      name: "list_presentation_slides",
       group: "traverse",
       authority: "navigation",
       status: "live",
@@ -341,7 +341,7 @@
 }`,
       rules: [
         "View means orient: the schematic rendering deliberately returns no evidenceId and never enters the evidence registry.",
-        "The live view composes nested groups, rotation, and the normalized deck aspect ratio.",
+        "The live view composes nested groups, rotation, and the normalized presentation aspect ratio.",
         "A claim still cites the underlying text, table, chart, or original image.",
         "This is not the production slide renderer; that adapter remains explicit follow-up work."
       ]
@@ -534,7 +534,7 @@
       id: "chart",
       kicker: "CHART / NATIVE FIRST",
       title: "Explain the change in readiness.",
-      question: "What caused the Q4 readiness increase shown in the deck?",
+      question: "What caused the Q4 readiness increase shown in the presentation?",
       steps: [
         { tool: "retrieve", authority: "evidence", note: "find the nearby claim" },
         { tool: "inspect_slide", authority: "context", note: "discover chart-02" },
@@ -560,17 +560,17 @@
     },
     {
       id: "neighbors",
-      kicker: "DECK / ADJACENT CONTEXT",
+      kicker: "PRESENTATION / ADJACENT CONTEXT",
       title: "Follow the argument across slides.",
       question: "How does the previous slide qualify this recommendation?",
       steps: [
         { tool: "retrieve", authority: "evidence", note: "locate recommendation" },
-        { tool: "list_deck_slides", authority: "navigation", note: "obtain previous handle" },
+        { tool: "list_presentation_slides", authority: "navigation", note: "obtain previous handle" },
         { tool: "inspect_slide", authority: "context", note: "map its content" },
         { tool: "read_text", authority: "evidence", note: "read exact qualifier" }
       ],
       evidence: ["text · recommendation", "text · previous-slide qualifier"],
-      context: ["deck order", "previous slide manifest"]
+      context: ["presentation order", "previous slide manifest"]
     },
     {
       id: "document",
@@ -631,7 +631,7 @@
 ├── shared.ts                   authored labels + ordering
 ├── resources/
 │   ├── document.ts             document traversal only
-│   └── slide-deck.ts           slide + shape traversal only
+│   └── presentation.ts           slide + shape traversal only
 
 representation/data/behavior/semantic/materials/
 ├── profile.ts                  table/chart/image
@@ -954,7 +954,7 @@ representation/data/behavior/semantic/materials/
       <header class="section-heading">
         <div><span>06 / PROJECTION SEAM</span><h2>Resources traverse.<br />Content projects.</h2></div>
         <p>
-          Documents and decks decide order and location. Shared adapters produce two outputs: one
+          Documents and presentations decide order and location. Shared adapters produce two outputs: one
           exact-text projection and one first-class material inventory. The material pipeline is
           independent so generated descriptions never enter ordinary text retrieval.
         </p>
@@ -972,7 +972,7 @@ representation/data/behavior/semantic/materials/
       <div class="projection-map">
         <div class="resource-roots">
           <article><FileText size={21} aria-hidden="true" /><span>RESOURCE TRAVERSAL</span><strong>document.ts</strong><small>header → body → footer<br />row → block order</small></article>
-          <article><Presentation size={21} aria-hidden="true" /><span>RESOURCE TRAVERSAL</span><strong>slide-deck.ts</strong><small>slide order → visual element order<br />speaker notes</small></article>
+          <article><Presentation size={21} aria-hidden="true" /><span>RESOURCE TRAVERSAL</span><strong>presentation.ts</strong><small>slide order → visual element order<br />speaker notes</small></article>
         </div>
         <div class="projection-arrow"><span></span><ArrowRight size={19} aria-hidden="true" /><span></span></div>
         <div class="content-core">
@@ -1005,7 +1005,7 @@ representation/data/behavior/semantic/materials/
 
       <div class="boundary-rule">
         <span class="slide-chip">SLIDE A TEXT</span><i aria-hidden="true"></i><strong>HARD BOUNDARY · NOT A TOKEN</strong><i aria-hidden="true"></i><span class="slide-chip">SLIDE B TEXT</span>
-        <p>One deck-wide coordinate space; independent embedding spans. Segmentation and citation consolidation may not bridge this boundary.</p>
+        <p>One presentation-wide coordinate space; independent embedding spans. Segmentation and citation consolidation may not bridge this boundary.</p>
       </div>
     </section>
 

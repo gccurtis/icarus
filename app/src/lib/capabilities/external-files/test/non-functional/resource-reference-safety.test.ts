@@ -27,7 +27,7 @@ describe("complete External resource-reference deletion policy", () => {
     const usage = externalFileUsage(store, referenceScope, externalFileId);
     expect(new Set(usage.items.map((item) => item.kind))).toEqual(new Set([
       "document",
-      "slide-deck",
+      "presentation",
       "spreadsheet",
       "resource-set",
       "finding",

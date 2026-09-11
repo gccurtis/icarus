@@ -15,7 +15,7 @@ import {
 export const materialInspectionTools = (
   context: ResourceReadingContext
 ): IntelligenceTool[] => {
-  const { input, allowed, materialFor, rememberMaterial, exactProjection, slideDeck } = context;
+  const { input, allowed, materialFor, rememberMaterial, exactProjection, presentation } = context;
   return [
     {
       ...describedAgentTool("inspect_dataset"),
@@ -95,12 +95,12 @@ export const materialInspectionTools = (
       execute: async (value) => {
         const held = record(value, "inspect_slide input must be an object");
         const ref = admitResourceRef(
-          { kind: "slides", id: text(held.resourceId, "resourceId") },
-          "slide-deck resource"
+          { kind: "presentation", id: text(held.resourceId, "resourceId") },
+          "presentation resource"
         );
         if (!allowed(ref)) throw new Error("slide is outside the Derived Output Resource Set");
         const slideId = text(held.slideId, "slideId");
-        const { leader, body } = slideDeck(ref);
+        const { leader, body } = presentation(ref);
         const slide = body.slides.find((candidate) => candidate.id === slideId);
         if (slide === undefined) throw new Error("slide does not exist");
         const projection = await exactProjection(ref);
@@ -113,7 +113,7 @@ export const materialInspectionTools = (
         );
         const slidePlacements = projectPlacements.filter(
           (placement) =>
-            placement.ref.kind === "slides" &&
+            placement.ref.kind === "presentation" &&
             placement.ref.id === ref.id &&
             placement.revision === leader.revision &&
             (placement.locator.kind === "slideElement" ||

@@ -7,7 +7,7 @@
    * A column of previews inside a panel, one or two across.
    *
    * The decision this holds is how wide a preview is in a flank. Without
-   * it a deck inspector reaches for the *workspace* thumbnail and hand-writes
+   * it a presentation inspector reaches for the *workspace* thumbnail and hand-writes
    * its own padding and `max-width: 12rem` to make it survive — panel width
    * re-decided in a view file, which is exactly what the vocabulary exists to
    * prevent.

@@ -1,7 +1,7 @@
 import { requireScope } from "$runtime/server/scope.server";
 import { serverModel } from "$runtime/server/start.server";
 import { asId } from "$representation/data/behavior/core/id";
-import { deckOfSlide } from "$representation/data/behavior/templates/deck-of-slide";
+import { presentationOfSlide } from "$representation/data/behavior/templates/presentation-of-slide";
 import { settledHoleDefaults, templatedBodyOf } from "$capabilities/templates/api/shared/prompts";
 import type { TemplateBody } from "$representation/data/types/templates/template";
 
@@ -46,18 +46,18 @@ export const createTemplateFromResource = async (
   if (leader.target === "document") {
     candidate = { resource: "document", ...leader.body };
   } else if (asked.slideId === undefined) {
-    candidate = { resource: "slides", ...leader.body };
+    candidate = { resource: "presentation", ...leader.body };
   } else {
-    const slide = deckOfSlide(leader.body, asked.slideId);
+    const slide = presentationOfSlide(leader.body, asked.slideId);
     if (slide === undefined) {
       return {
         accepted: false,
         resourceId: asked.resourceId,
         reason: "not-found",
-        detail: "the deck has no such slide"
+        detail: "the presentation has no such slide"
       };
     }
-    candidate = { resource: "slides", ...slide };
+    candidate = { resource: "presentation", ...slide };
   }
 
   const portable = templatedBodyOf(store, candidate, []);

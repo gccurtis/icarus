@@ -2,7 +2,7 @@
 
 | View | What it is for | Sections |
 | --- | --- | --- |
-| Templates | Starting from something rather than from nothing | Document · Slide deck · Spreadsheet |
+| Templates | Starting from something rather than from nothing | Document · Presentation · Spreadsheet |
 
 Grouped by what the template makes, matching the three pills in the centre. Scope
 and variable count sit on each row.
@@ -14,7 +14,7 @@ and variable count sit on each row.
 | search |
 | document |
 | document |
-| slide deck |
+| presentation |
 | spreadsheet |
 | footer |
 
@@ -25,9 +25,9 @@ Global; *Storm brief* — Project · 3 variables
 
 **Needs** — `Template` records with target kind, scope and variable count.
 
-## Slide deck
+## Presentation
 
-**Shows** — *Board update* — Project · 2 variables; *Weekly ops deck* — Project
+**Shows** — *Board update* — Project · 2 variables; *Weekly ops presentation* — Project
 
 **Needs** — as above.
 

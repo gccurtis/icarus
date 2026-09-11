@@ -38,7 +38,7 @@ first; it is not filtered along with the table.
 ## Header
 
 `ScreenHeader` shows **Templates** at the left and one compact explanation at the
-right: reusable starting points for documents, slide decks and spreadsheets.
+right: reusable starting points for documents, presentations and spreadsheets.
 There is no subtitle beneath the title or second Templates subheader above the
 table.
 
@@ -63,7 +63,7 @@ ordinary panel-hover surface, so the two states remain visibly distinct.
 
 - Search by template or tag.
 - Scope: All scopes, Project, Shared or Personal.
-- Kind: All kinds, Document, Slide deck or Spreadsheet.
+- Kind: All kinds, Document, Presentation or Spreadsheet.
 - Tags: a checkbox menu containing All, then the sorted union of tags on every
   template. The panel has a fixed maximum height and scrolls internally.
 - Sort: Updated, Name, Makes or Variables.
@@ -94,7 +94,7 @@ genuinely empty library says that templates will appear after one is created.
 
 The Templates context rail offers only `templates.overview-library` for now. It
 has three session-local creation choices, then one compact inventory containing
-the total plus Project/Shared/Personal and Document/Slide deck/Spreadsheet
+the total plus Project/Shared/Personal and Document/Presentation/Spreadsheet
 breakdowns. It repeats neither recent use nor the current selection, since those
 already belong to the shelf and inspector. Nothing in this panel collapses.
 

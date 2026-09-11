@@ -123,7 +123,7 @@ Consumers own:
   workspace snapshots persist only navigation and view state
 - **Runtime lifetime.** A live resource runtime belongs to the register for its
   kind — [documents](../document-runtimes/document-runtimes.md),
-  [slide decks](../slide-deck-runtimes/slide-deck-runtimes.md) or
+  [presentations](../presentation-runtimes/presentation-runtimes.md) or
   [spreadsheets](../spreadsheet-runtimes/spreadsheet-runtimes.md). This object
   routes to a register and never owns one; releasing is still the register's
 
@@ -214,7 +214,7 @@ supporting flow. Every one is still a file.
 | `singleFlight` | file | coordinator | Share one pending durable command by its exact intent key across every mounted view in this workspace |
 | `pendingFlight` | file | observer | Read one matching pending command without changing its ownership or lifetime |
 | `documentRuntime` | file | accessor | The runtime a document already has. Attaching is the register's, so two tabs on one document share a buffer |
-| `slideDeckRuntime` | file | accessor | The same for a deck |
+| `presentationRuntime` | file | accessor | The same for a presentation |
 | `spreadsheetRuntime` | file | accessor | The same for a spreadsheet |
 | `draft` / `keepDraft` | files | accessor / mutator | Hold an unsent composition draft for this workspace lifetime |
 | `undo` | file | mutator | Apply the inverse of the last op, and keep it for `redo` |
@@ -288,7 +288,7 @@ instance-owned counter past every restored `t<number>` before another is minted.
 | `views` | BORROWED | One `TabView` per tab id |
 | `configuration` | BORROWED | Two thresholds read at construction; not held afterwards |
 | `documents` | BORROWED | Which runtime a document already has, for `documentRuntime` |
-| `decks` | BORROWED | The same for a deck, for `slideDeckRuntime` |
+| `presentations` | BORROWED | The same for a presentation, for `presentationRuntime` |
 | `sheets` | BORROWED | The same for a spreadsheet, for `spreadsheetRuntime` |
 
 All are constructed by [`buildClientModel`](../../../runtime/client/start.ts)

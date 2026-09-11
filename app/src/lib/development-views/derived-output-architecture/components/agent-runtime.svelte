@@ -215,7 +215,7 @@ type TemplatedDerivedDecision = {
       name: "Resource text projection + locator map",
       status: "built",
       icon: ListTree,
-      gap: "Document/deck traversal, hard boundaries, nested material inventory, and external hash-pinned text are implemented.",
+      gap: "Document/presentation traversal, hard boundaries, nested material inventory, and external hash-pinned text are implemented.",
       unlocks: "ingestion, direct read, selected text, citations, and later highlights"
     },
     {
@@ -437,7 +437,7 @@ type TemplatedDerivedDecision = {
 
       <a class="reading-expansion" href="/demo/semantic-overlay/resource-reading">
         <Layers3 size={23} aria-hidden="true" />
-        <div><span>RESOURCE-READING CONTRACT</span><strong>Find and view orient. Retrieve and read cite.</strong><small>Inspect sixteen exact tool contracts, four task routes, slide anatomy, evidence kinds, and the document/deck projection seam.</small></div>
+        <div><span>RESOURCE-READING CONTRACT</span><strong>Find and view orient. Retrieve and read cite.</strong><small>Inspect sixteen exact tool contracts, four task routes, slide anatomy, evidence kinds, and the document/presentation projection seam.</small></div>
         <ArrowRight size={19} aria-hidden="true" />
       </a>
     </section>

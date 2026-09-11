@@ -34,7 +34,7 @@ const rowsIn = (store: StoreReads, table: TableName): readonly Record<string, un
 
 const RESOURCE_TABLES = [
   { table: "documents", kind: "document" },
-  { table: "slideDecks", kind: "slides" },
+  { table: "presentations", kind: "presentation" },
   { table: "spreadsheets", kind: "spreadsheet" },
   { table: "researchThreads", kind: "research" },
   { table: "externalFiles", kind: "file" },
@@ -65,8 +65,8 @@ const representedRef = (stored: StoredProjectResource): ResourceRef => {
   switch (stored.table) {
     case "documents":
       return { kind: "document", id: stored.row._id };
-    case "slideDecks":
-      return { kind: "slides", id: stored.row._id };
+    case "presentations":
+      return { kind: "presentation", id: stored.row._id };
     case "spreadsheets":
       return { kind: "spreadsheet", id: stored.row._id };
     case "researchThreads":

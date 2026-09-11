@@ -16,7 +16,7 @@ Context is a project-level library screen. It can deep-link to a selected Resour
 - Human-readable expression summary.
 - Current resolved count and resolution time.
 
-Delete remains gated until a complete reverse-dependency query/index can find dependent Resource Sets, Personas, Derived Outputs, and Prompt Blocks embedded in current document/deck/workbook bodies and template bodies. Once that exists, deletion blocks while dependents remain and lists/opens every one; it never silently creates broken scopes.
+Delete remains gated until a complete reverse-dependency query/index can find dependent Resource Sets, Personas, Derived Outputs, and Prompt Blocks embedded in current document/presentation/workbook bodies and template bodies. Once that exists, deletion blocks while dependents remain and lists/opens every one; it never silently creates broken scopes.
 
 ### Expression builder
 
@@ -116,7 +116,7 @@ The knowledge model describes singular `parentId` tree structure while the clust
 
 Derived Outputs have no standalone tab in the first screen set. They are reached from their Prompt Block, the Knowledge view here, Project Health, and an Automation action picker. Finding the owning Prompt Block is a reverse-query requirement because `DerivedOutput` itself stores no owner pointer.
 
-Delete remains gated until one reverse dependency query covers Resource Sets, Personas, Derived Outputs, and Prompt Blocks embedded in current document/deck/workbook and template bodies. Without that complete query, the UI cannot keep its promise that deletion will not create silent broken scopes.
+Delete remains gated until one reverse dependency query covers Resource Sets, Personas, Derived Outputs, and Prompt Blocks embedded in current document/presentation/workbook and template bodies. Without that complete query, the UI cannot keep its promise that deletion will not create silent broken scopes.
 
 ## Retained tab view state
 

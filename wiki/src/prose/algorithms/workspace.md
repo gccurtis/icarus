@@ -8,7 +8,7 @@ Workspace state is a log of `WorkspaceOp`s, each invertible, over two collaborat
 
 ## Collaborators
 
-`tab-list` holds the ordered `TabRecord`s and the active id; `tab-views` holds one `TabView` per tab — its landing (content and focus), context, inspected key and selection, frame and zoom. Neither reacts to the other; workspace state composes a `Tab` from the two on read. Resource runtimes are reached through the workspace too: `documentRuntime(id)` and `slideDeckRuntime(id)` attach through the runtimes objects the workspace was constructed with, which is how [[check:runtime-through-workspace-state]] keeps one edit buffer per resource.
+`tab-list` holds the ordered `TabRecord`s and the active id; `tab-views` holds one `TabView` per tab — its landing (content and focus), context, inspected key and selection, frame and zoom. Neither reacts to the other; workspace state composes a `Tab` from the two on read. Resource runtimes are reached through the workspace too: `documentRuntime(id)` and `presentationRuntime(id)` attach through the runtimes objects the workspace was constructed with, which is how [[check:runtime-through-workspace-state]] keeps one edit buffer per resource.
 
 ## Persistence
 

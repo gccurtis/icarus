@@ -25,7 +25,7 @@ import {
 const resources = [
   { ...admitResourceRef({ id: "documents:1", kind: "document" }), name: "Winter readiness brief", relativePath: null },
   { ...admitResourceRef({ id: "documents:2", kind: "document" }), name: "Decision memo", relativePath: null },
-  { ...admitResourceRef({ id: "slideDecks:1", kind: "slides" }), name: "Board review", relativePath: null },
+  { ...admitResourceRef({ id: "presentations:1", kind: "presentation" }), name: "Board review", relativePath: null },
   { ...admitResourceRef({ id: "findings:1", kind: "finding" }), name: "Pump housing", relativePath: null }
 ];
 
@@ -52,9 +52,9 @@ describe("a draft", () => {
   });
 
   it("drops the whole project when something narrower is added beside it", () => {
-    const narrowed = withTerm(withWholeProject(), "include", { select: "kinds", kinds: ["slides"] });
+    const narrowed = withTerm(withWholeProject(), "include", { select: "kinds", kinds: ["presentation"] });
     expect(narrowed.include).toHaveLength(1);
-    expect(ruleWords(narrowed)).toBe("Slide decks");
+    expect(ruleWords(narrowed)).toBe("Presentations");
   });
 
   it("never holds the same term twice, and removes by key", () => {
@@ -97,7 +97,7 @@ describe("whether a rule needs a row", () => {
     expect(
       needsRow({
         include: [{ select: "project" }],
-        exclude: [{ select: "kinds", kinds: ["slides"] }]
+        exclude: [{ select: "kinds", kinds: ["presentation"] }]
       })
     ).toBe(true);
   });
@@ -147,7 +147,7 @@ describe("what a draft selects", () => {
   it("counts the difference against the catalogue", () => {
     const draft: ScopeDraft = {
       include: [{ select: "project" }],
-      exclude: [{ select: "kinds", kinds: ["slides"] }]
+      exclude: [{ select: "kinds", kinds: ["presentation"] }]
     };
     expect(selectedBy(draft, catalogue, named).map((ref) => ref.id)).toEqual([
       "documents:1",
@@ -181,7 +181,7 @@ describe("the builder's view", () => {
     const draft: ScopeDraft = { include: [{ select: "kinds", kinds: ["document"] }], exclude: [] };
     const kinds = builderView(draft, { resources }).sources[0];
     expect(kinds.offers.find((offer) => offer.key === "document")?.held).toBe("include");
-    expect(kinds.offers.find((offer) => offer.key === "slides")?.held).toBeUndefined();
+    expect(kinds.offers.find((offer) => offer.key === "presentation")?.held).toBeUndefined();
   });
 
   it("keeps duplicate External names distinct with their exact relative paths", () => {

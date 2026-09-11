@@ -355,7 +355,7 @@ The typed traversal understands references in:
 
 - leader document bodies, headers, footers, marks, atoms, nested tables, prompts,
   formulas, and image blocks;
-- leader deck themes/layouts/backgrounds, grouped/nested elements, notes, and
+- leader presentation themes/layouts/backgrounds, grouped/nested elements, notes, and
   content blocks;
 - spreadsheet cell values and marks;
 - current templates and resource sets;

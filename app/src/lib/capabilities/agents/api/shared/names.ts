@@ -18,9 +18,9 @@ export type Names = {
   readonly resource: (ref: ResourceRef) => string | null;
 };
 
-const RESOURCE_TABLE: Record<string, "documents" | "slideDecks" | "spreadsheets" | "findings"> = {
+const RESOURCE_TABLE: Record<string, "documents" | "presentations" | "spreadsheets" | "findings"> = {
   document: "documents",
-  slides: "slideDecks",
+  presentation: "presentations",
   spreadsheet: "spreadsheets",
   finding: "findings"
 };

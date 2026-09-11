@@ -27,7 +27,7 @@
   import { projectActivity } from "$app-views/categories/project-overview/procedures/read-activity";
   import { shortSince } from "$app-views/categories/project-overview/procedures/rows";
 
-  const RESOURCE_KINDS = ["document", "slides", "spreadsheet", "research", "finding"];
+  const RESOURCE_KINDS = ["document", "presentation", "spreadsheet", "research", "finding"];
   const view = workspaceState();
   const clock = ticksTheClock();
   const activityId = $derived(
@@ -97,8 +97,8 @@
     if (event === undefined || event === null) return;
     if (event.target.kind === "document") {
       view.open({ category: "document-editor", resourceId: event.target.id });
-    } else if (event.target.kind === "slides") {
-      view.open({ category: "slide-deck-editor", resourceId: event.target.id });
+    } else if (event.target.kind === "presentation") {
+      view.open({ category: "presentation-editor", resourceId: event.target.id });
     }
   };
 </script>
@@ -115,7 +115,7 @@
   {/snippet}
 
   {#snippet actions()}
-    {#if event !== null && event !== undefined && (event.target.kind === "document" || event.target.kind === "slides")}
+    {#if event !== null && event !== undefined && (event.target.kind === "document" || event.target.kind === "presentation")}
       <PanelButton label="Open resource" icon={ExternalLink} tone="ghost" onclick={openTarget} />
     {/if}
   {/snippet}

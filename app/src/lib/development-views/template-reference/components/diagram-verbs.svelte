@@ -8,11 +8,11 @@
     </marker>
   </defs>
 
-  <text x="20" y="26" class="note">The template is never edited directly — the editors open documents and decks, so a template is edited through one.</text>
+  <text x="20" y="26" class="note">The template is never edited directly — the editors open documents and presentations, so a template is edited through one.</text>
 
   <g class="box source">
     <rect x="20" y="140" width="200" height="86" rx="10" />
-    <text x="38" y="174" class="title">A document or deck</text>
+    <text x="38" y="174" class="title">A document or presentation</text>
     <text x="38" y="196" class="sub">Something you already have</text>
     <text x="38" y="214" class="sub">in this project</text>
   </g>
@@ -28,7 +28,7 @@
   <g class="box copy">
     <rect x="430" y="230" width="240" height="96" rx="10" />
     <text x="450" y="262" class="title">The working copy</text>
-    <text x="450" y="284" class="sub">An ordinary document or deck,</text>
+    <text x="450" y="284" class="sub">An ordinary document or presentation,</text>
     <text x="450" y="302" class="sub">one per template, shared,</text>
     <text x="450" y="320" class="sub">autosaved like anything else</text>
   </g>

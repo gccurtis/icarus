@@ -34,7 +34,7 @@
 
   const ICON = {
     document: FileText,
-    slides: Presentation,
+    presentation: Presentation,
     spreadsheet: Table
   } as const;
 

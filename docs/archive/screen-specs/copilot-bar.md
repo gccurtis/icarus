@@ -150,7 +150,7 @@ State-specific primary actions are:
 | Failed | Lead with error and retained trace; Retry is unavailable until retry semantics are modeled |
 | Cancelled | Readable trace and any result the runtime actually persisted; no active composer unless branching into a new task |
 
-Task results are not resources and cannot enter a Resource Set directly. Promote/copy useful results into a finding, document, slide deck, or spreadsheet when they must become retrievable project knowledge.
+Task results are not resources and cannot enter a Resource Set directly. Promote/copy useful results into a finding, document, presentation, or spreadsheet when they must become retrievable project knowledge.
 
 ## Persona selection and inspection
 

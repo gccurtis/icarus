@@ -11,7 +11,7 @@ export type TextStyle = {
   strikethrough?: boolean;
   color?: string;
   background?: string;
-  /** Absolute CSS pixels. Slide-deck styles use a unitless ratio instead. */
+  /** Absolute CSS pixels. Slide-presentation styles use a unitless ratio instead. */
   lineHeight?: number;
   spaceBefore?: number;
   spaceAfter?: number;

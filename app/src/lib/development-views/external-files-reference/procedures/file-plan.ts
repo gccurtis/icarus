@@ -22,7 +22,7 @@ export const IMPLEMENTATION_FILES: readonly ImplementationFile[] = [
     "app/configuration/external-files.yaml"
   ], "created", "configuration", "External capability", "Define the one native repository and upload, batch, path, and response limits."),
   ...files([
-    "app/seed/slideDeckSnapshots.json"
+    "app/seed/presentationSnapshots.json"
   ], "modified", "representation", "Current development fixtures", "Replace the remaining pre-current slide element records with the one current content-based schema so typed reference traversal needs no compatibility reader."),
   ...files([
     "app/scripts/browser-server.mjs"

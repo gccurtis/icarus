@@ -71,7 +71,7 @@
     ["project", Globe],
     ["set", FolderTree],
     ["document", FileText],
-    ["slides", Presentation],
+    ["presentation", Presentation],
     ["spreadsheet", Sheet],
     ["finding", Target],
     ["externalFile::text", FileText],

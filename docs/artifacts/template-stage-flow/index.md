@@ -8,12 +8,12 @@ back. This page draws all three, says what each one reads and writes, and record
 settled.
 
 - Original: `templates` · `templateVersions` · one project
-- Copy under edit: `templateStages` + one `documents` / `slideDecks` row
+- Copy under edit: `templateStages` + one `documents` / `presentations` row
 - One stage per template, shared
 
 ## 1 · Three verbs, and nothing else
 
-**Keep a copy of this — make a template.** Name the open document, deck, or current slide and press
+**Keep a copy of this — make a template.** Name the open document, presentation, or current slide and press
 Save. The body is copied, made portable, and stored as a template of this project at revision 1. The
 new template opens for editing at once. The document you saved from is untouched and never learns a
 template was made from it. (`createTemplateFromResource`, `createTemplate` → `templates` +
@@ -27,7 +27,7 @@ template and your answers. (`insertionOf`, `instantiateTemplate` → the open re
 resource row.)
 
 **This is the copy; let me change it — edit through a stage.** Open makes, once, a scratch document
-or deck holding the template's body. The ordinary editor works on it. Save to template writes that body
+or presentation holding the template's body. The ordinary editor works on it. Save to template writes that body
 back as the next revision; Discard throws the scratch away. The stage is the only thing that writes a
 template's body. (`openTemplateStage`, `commitTemplateStage`, `discardTemplateStage` →
 `templateStages` + the scratch row.)
@@ -36,7 +36,7 @@ template's body. (`openTemplateStage`, `commitTemplateStage`, `discardTemplateSt
 
 | Step | Person | Editor and panel | Capability | Rows afterwards |
 | --- | --- | --- | --- | --- |
-| 1 Make | Names the open document, deck or current slide and presses Save | Sends the resource id and name; on acceptance opens a new tab straight onto the copy's Templates panel | `createTemplateFromResource` reads the leader snapshot, makes the body portable, stamps the project, declares nothing, says what it dropped; then `openTemplateStage` | templates at 1 · templateVersions 1 · templateStages staged at 1 · a scratch row titled *Template · name* |
+| 1 Make | Names the open document, presentation or current slide and presses Save | Sends the resource id and name; on acceptance opens a new tab straight onto the copy's Templates panel | `createTemplateFromResource` reads the leader snapshot, makes the body portable, stamps the project, declares nothing, says what it dropped; then `openTemplateStage` | templates at 1 · templateVersions 1 · templateStages staged at 1 · a scratch row titled *Template · name* |
 | 2 Open | Double-clicks a template in the library, presses Edit in the inspector or on a panel row | The editor tab opens on the scratch resource; the panel shows *Editing template*, the variables, Save to template and Discard | `openTemplateStage`: if the template already has a stage, returns it; otherwise writes the body at revision N into a new scratch row and records the stage | Unchanged when resumed; otherwise a stage row and a scratch row at N |
 | 3 Edit | Types, moves blocks, changes layouts, in one or several sessions at once | Runtime ops against the scratch resource, flushed and rebased by the editor as for any document; every session on the stage sees the others' edits through that same sync | Nothing template-shaped; the resource capabilities as usual | Snapshots and change sets on the scratch row move; the template does not |
 | 4 Declare | Adds a variable by label, writes its description, sets its default through the modal: everything, kinds, or a named set | Writes the whole variable list at the revision the panel read; the body is untouched | `updateTemplate` makes revision N+1 with the new variables and carries the stage to N+1, so a variable declared here never makes the next save stale | templates at N+1 · templateVersions N+1 · templateStages staged at N+1 |
@@ -65,7 +65,7 @@ which are copies.
 ## 4 · Several people, one copy
 
 The stage is keyed by template, not by person, so everyone who opens the template lands on the same
-scratch resource, and the document and deck editors already reconcile concurrent sessions on one
+scratch resource, and the document and presentation editors already reconcile concurrent sessions on one
 resource: a leader snapshot, pending ops per session, rebase on conflict. Nothing about a template's
 copy is tracked per person, and nothing needs to be. Two people pressing Save to template at the same
 moment is the one race: the second save is refused as stale, its panel re-reads the revision, and the
@@ -85,7 +85,7 @@ to template first. That is the whole of the sync: there is no second channel.
   with the reason for it.
 - **Comments never travel with a template, and none can be made on its copy.** Making a template copies
   a body, not the comments on the resource; a copy made from a template starts without any; the
-  comments capability refuses a thread on a working copy and the deck's comment panels say so; anything
+  comments capability refuses a thread on a working copy and the presentation's comment panels say so; anything
   that reaches one goes with the stage.
 - **A template is portable, inside its project too.** A template turns a value into a function: the id
   a formula was bound to, a prompt's generated output, links to people and resources, stored images and
@@ -114,25 +114,25 @@ made. Nothing here is still open.
    with it and the variables join. *Became:* as built.
 5. **Are comments allowed on a working copy?** No: if the rest is stripped, comments are stripped too,
    and a comment that mentions someone on a copy would be a problem. *Became:* the comments capability
-   refuses to start a thread on a stage resource, and the deck's comment panels replace their composer
+   refuses to start a thread on a stage resource, and the presentation's comment panels replace their composer
    with the sentence that says so.
 6. **Does a resource keep a reference to a template?** No. Saving a resource as a template is a copy,
    and a resource made from a template is a copy; neither side should know about the other. *Became:*
-   main's `templateId` on documents, decks and spreadsheets is gone, along with the delete rule that
+   main's `templateId` on documents, presentations and spreadsheets is gone, along with the delete rule that
    read it; the template records its own `lastUsedAt` so the library's recency still works.
 
 ## 7 · Where each step lives
 
 | Step | Client | Server |
 | --- | --- | --- |
-| Make | `document-editor/context/templates.svelte` · `slide-deck-editor/context/templates.svelte` · `procedures/templating.ts` in each | `capabilities/templates/api/create-template-from-resource/` |
+| Make | `document-editor/context/templates.svelte` · `presentation-editor/context/templates.svelte` · `procedures/templating.ts` in each | `capabilities/templates/api/create-template-from-resource/` |
 | Open | `templates/procedures/library.svelte.ts` (editTemplate) · `model/client/workspace-state/methods/open.ts` (Target.context) | `capabilities/templates/api/open-template-stage/` · `api/shared/stages.ts` |
 | Edit | The editors, unchanged | The resource capabilities, unchanged |
 | Declare | The two panels' variable bands · `templates/inspector/template.svelte` (Default modal) | `capabilities/templates/api/update-template/` |
 | Save | The two panels (flush, then commit) | `capabilities/templates/api/commit-template-stage/` · `representation/data/behavior/templates/portable.ts` |
 | Insert, Use | The Insert modal in both panels, the Use modal in the inspector · `procedures/templating.ts` and `procedures/library.svelte.ts` (answerOptions, answersFrom, insertionOf) · `representation/data/behavior/templates/fresh-ids.ts`, `scopes.ts` | `capabilities/templates/api/instantiate-template/` |
 | Discard | The two panels | `capabilities/templates/api/discard-template-stage/` |
-| No comments on a copy | `slide-deck-editor/context/comments.svelte` · `inspector/threads.svelte` | `capabilities/comments/api/start-thread/` |
+| No comments on a copy | `presentation-editor/context/comments.svelte` · `inspector/threads.svelte` | `capabilities/comments/api/start-thread/` |
 | Keep stages out of lists | | `capabilities/project-resources/api/read-project-resource-index/` |
 
 Companions: *Template Dictionary* for the words, *Stages, Sets and Variables* for what changed,

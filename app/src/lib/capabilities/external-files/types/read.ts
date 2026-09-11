@@ -75,7 +75,7 @@ export type ReadExternalFileHistoryResult = {
 
 export type ExternalFileUsageKind =
   | "document"
-  | "slide-deck"
+  | "presentation"
   | "spreadsheet"
   | "template"
   | "resource-set"

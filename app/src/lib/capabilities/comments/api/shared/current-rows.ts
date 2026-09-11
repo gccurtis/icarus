@@ -75,13 +75,13 @@ const anchorOf = (value: unknown, targetKind: string): AnchorWithin | undefined 
     return valid ? anchor as AnchorWithin : undefined;
   }
   if (
-    targetKind === "slides" &&
+    targetKind === "presentation" &&
     anchor.kind === "slide" &&
     exact(anchor, ["kind", "slideId"]) &&
     identifier(anchor.slideId)
   ) return anchor as AnchorWithin;
   if (
-    targetKind === "slides" &&
+    targetKind === "presentation" &&
     anchor.kind === "element" &&
     exact(anchor, ["kind", "elementId"]) &&
     identifier(anchor.elementId)
@@ -96,11 +96,11 @@ const anchorOf = (value: unknown, targetKind: string): AnchorWithin | undefined 
   return undefined;
 };
 
-const tableFor = (kind: string): "documents" | "slideDecks" | "spreadsheets" | undefined =>
+const tableFor = (kind: string): "documents" | "presentations" | "spreadsheets" | undefined =>
   kind === "document"
     ? "documents"
-    : kind === "slides"
-      ? "slideDecks"
+    : kind === "presentation"
+      ? "presentations"
       : kind === "spreadsheet"
         ? "spreadsheets"
         : undefined;
@@ -125,7 +125,7 @@ const targetOf = (value: unknown): CommentTarget | undefined => {
 
 export const resourceRowIsCurrent = (
   value: unknown,
-  table: "documents" | "slideDecks" | "spreadsheets",
+  table: "documents" | "presentations" | "spreadsheets",
   projectId: string,
   resourceId: string
 ): boolean => {
@@ -166,12 +166,12 @@ export const currentStageResource = (value: unknown, projectId: string): string 
     !identifier(row.templateId) ||
     !Number.isInteger(row.templateRevision) ||
     Number(row.templateRevision) < 1 ||
-    (row.target !== "document" && row.target !== "slides") ||
+    (row.target !== "document" && row.target !== "presentation") ||
     !identifier(row.resourceId) ||
     !actorIsCurrent(row.createdBy) ||
     !time(row.updatedAt)
   ) return undefined;
-  const table = row.target === "document" ? "documents" : "slideDecks";
+  const table = row.target === "document" ? "documents" : "presentations";
   return row.resourceId.startsWith(`${table}:`) ? row.resourceId : undefined;
 };
 

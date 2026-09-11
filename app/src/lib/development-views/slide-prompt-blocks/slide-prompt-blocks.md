@@ -1,14 +1,14 @@
 # Slide Prompt Blocks
 
 This is the implementation and design record for the first editable Derived
-Output surface in the slide-deck editor. Its served companion is
+Output surface in the presentation editor. Its served companion is
 `/demo/semantic-overlay/slide-prompt-blocks`.
 
 The load-bearing rule is:
 
 > The slide stays a slide; ordinary text gains one Derived Output relationship.
 
-A Prompt Block is not a special presentation object. The deck continues to own
+A Prompt Block is not a special presentation object. The presentation continues to own
 the element's frame, paint, stacking order, editable text, styles, and mark
 ranges. A separate server-owned Derived Output owns its prompt, scope, canonical
 response, evidence, freshness, and refresh operation. The only durable bridge is
@@ -84,18 +84,18 @@ replaces only `SlideElement.content`:
 
 Text-only semantic fields that do not belong to `PromptBlock` (`variant`,
 `level`, `listStyle`, `checked`, `language`, and `resolvedAt`) are removed. The
-conversion is one represented deck `set` operation, so the normal runtime,
+conversion is one represented presentation `set` operation, so the normal runtime,
 collaboration, undo, persistence, and revision machinery see the change.
 
 ## Exact creation and refresh procedure
 
 ### Convert and configure
 
-1. `PromptAction` obtains the active `SlideDeckRuntime` and selected element.
-2. `withPromptElement(body, elementId)` returns the converted body and its deck
+1. `PromptAction` obtains the active `PresentationRuntime` and selected element.
+2. `withPromptElement(body, elementId)` returns the converted body and its presentation
    operation.
 3. `runtime.apply(ops)` updates the local collaborative projection.
-4. `view.inspect("slide-deck-editor.prompt-block", selection)` opens the
+4. `view.inspect("presentation-editor.prompt-block", selection)` opens the
    dedicated inspector.
 5. `runtime.flush()` persists the conversion. A rejected flush is represented by
    runtime sync state rather than becoming an unhandled browser error.
@@ -104,7 +104,7 @@ collaboration, undo, persistence, and revision machinery see the change.
 
 ### Create, link, and generate
 
-1. `createDerivedOutput({ prompt, origin: { kind: "slides", id: deckId } })`
+1. `createDerivedOutput({ prompt, origin: { kind: "presentation", id: presentationId } })`
    creates the durable definition.
 2. If the text box already contains text,
    `updateDerivedOutput({ lastResponse })` records it as ungrounded previous
@@ -113,8 +113,8 @@ collaboration, undo, persistence, and revision machinery see the change.
    definition with the Derived Output ID; `prompt` and `scope` leave the block
    in the same operation batch.
 4. `syncPromptBlockOps(block, seededOutput)` mirrors value state and any seeded
-   response through deck operations.
-5. The deck runtime flushes that link before generation begins.
+   response through presentation operations.
+5. The presentation runtime flushes that link before generation begins.
 6. `refreshDerivedOutput({ derivedOutputId })` signals the server-owned refresh
    system.
 7. The server drains pending Semantic Overlay work, retrieves or directly reads
@@ -123,14 +123,14 @@ collaboration, undo, persistence, and revision machinery see the change.
    the response and citations.
 8. `syncPromptBlockOps(currentBlock, refreshed.output)` copies only the response
    text and small value-state mirror back into the slide.
-9. The deck runtime flushes the publication operations.
+9. The presentation runtime flushes the publication operations.
 
 ### Refresh an existing Prompt Block
 
 `PromptSettings.generate` first compares the inspector draft and current slide
 text with the stored Derived Output. If either is different,
 `updateDerivedOutput` advances the definition and/or previous response. It then
-signals `refreshDerivedOutput`, publishes the returned text through deck ops,
+signals `refreshDerivedOutput`, publishes the returned text through presentation ops,
 flushes, and broadcasts a small same-browser notification so other mounted
 inspectors immediately re-read.
 
@@ -150,11 +150,11 @@ compare-and-set and clean up an orphaned output if the slide revision loses a
 race. Refresh after the link is already server-coalesced.
 
 Canonical generation has a single server writer, but the final presentation
-mirror is still submitted by each mounted editor through the ordinary deck
+mirror is still submitted by each mounted editor through the ordinary presentation
 operation stream. Those callers all receive the same canonical response, yet
 simultaneous viewers can currently submit duplicate equivalent atom/mark edits.
 A server-owned, idempotent presentation publisher (or one elected client
-publisher) is the remaining collaboration seam; it must preserve the same deck
+publisher) is the remaining collaboration seam; it must preserve the same presentation
 operations and revision checks rather than write around them.
 
 ## Response publication and marks
@@ -173,7 +173,7 @@ marks or presentation.
    error requires `error` and may retain a prior `refreshedAt`.
 
 Using native `remove` and `insert` operations matters. Slide list fields carry
-identified values, so the deck operation applier rejects a generic `set` of
+identified values, so the presentation operation applier rejects a generic `set` of
 `atoms` or `marks`. Native operations also retain the collaboration, revision,
 and undo semantics used by normal slide text editing.
 
@@ -204,7 +204,7 @@ its prompt settings: Text style, Geometry, Paint, Order, Spacing, Effects, and
 Comment. Entering text mode still routes to Next Letter or Text Selection, and
 the star provides the stable route back to Prompt settings.
 
-The `slide-deck-editor.prompts` context panel lists existing Prompt Blocks by
+The `presentation-editor.prompts` context panel lists existing Prompt Blocks by
 slide number and current text. It navigates to the correct slide and opens the
 inspector; it never creates a new Prompt Block.
 
@@ -229,7 +229,7 @@ IDs, offsets, revisions, generations, and placement data remain stored but are
 not routine inspector chrome.
 
 Opening an evidence source uses its `ResourceRef`: documents open the document
-editor, slides open the slide-deck editor, and spreadsheets open the spreadsheet
+editor, slides open the presentation editor, and spreadsheets open the spreadsheet
 editor. The evidence ID continues to refer to the authoritative source record,
 not to the editable copy in the Prompt Block.
 
@@ -238,17 +238,17 @@ not to the editable copy in the Prompt Block.
 | Concern | File |
 | --- | --- |
 | Prompt content contract | `src/lib/representation/data/types/content/content-block.ts` |
-| Prompt element union | `src/lib/representation/data/types/slide-decks/body.ts` |
-| Conversion, linking, publication, and listing | `src/lib/app-views/categories/slide-deck-editor/procedures/prompt-blocks.ts` |
-| Prompt entry action | `src/lib/app-views/categories/slide-deck-editor/components/prompt-action.svelte` |
-| Unlinked setup and normal element controls | `src/lib/app-views/categories/slide-deck-editor/inspector/prompt-block.svelte` |
-| Linked refresh, shared state, and evidence | `src/lib/app-views/categories/slide-deck-editor/components/prompt-settings.svelte` |
-| Text editing and formatting support | `src/lib/app-views/categories/slide-deck-editor/procedures/typing.ts`, `src/lib/app-views/categories/slide-deck-editor/procedures/deck-elements.ts`, `src/lib/app-views/categories/slide-deck-editor/procedures/deck-values.ts`, and `src/lib/app-views/categories/slide-deck-editor/procedures/styles.ts` |
-| Operation application | `src/lib/representation/data/behavior/slide-decks/apply-ops.ts` |
+| Prompt element union | `src/lib/representation/data/types/presentations/body.ts` |
+| Conversion, linking, publication, and listing | `src/lib/app-views/categories/presentation-editor/procedures/prompt-blocks.ts` |
+| Prompt entry action | `src/lib/app-views/categories/presentation-editor/components/prompt-action.svelte` |
+| Unlinked setup and normal element controls | `src/lib/app-views/categories/presentation-editor/inspector/prompt-block.svelte` |
+| Linked refresh, shared state, and evidence | `src/lib/app-views/categories/presentation-editor/components/prompt-settings.svelte` |
+| Text editing and formatting support | `src/lib/app-views/categories/presentation-editor/procedures/typing.ts`, `src/lib/app-views/categories/presentation-editor/procedures/presentation-elements.ts`, `src/lib/app-views/categories/presentation-editor/procedures/presentation-values.ts`, and `src/lib/app-views/categories/presentation-editor/procedures/styles.ts` |
+| Operation application | `src/lib/representation/data/behavior/presentations/apply-ops.ts` |
 | Editor-only marker | `src/lib/components/authored/slide-surface/slide-surface.svelte` |
-| Inspector routing | `src/lib/app-views/categories/slide-deck-editor/procedures/selecting.ts` and `src/lib/representation/data/types/workspace/views.ts` |
-| Prompt navigation | `src/lib/app-views/categories/slide-deck-editor/context/prompts.svelte` |
-| Semantic exclusion | `src/lib/representation/data/behavior/semantic/projection/resources/slide-deck.ts` |
+| Inspector routing | `src/lib/app-views/categories/presentation-editor/procedures/selecting.ts` and `src/lib/representation/data/types/workspace/views.ts` |
+| Prompt navigation | `src/lib/app-views/categories/presentation-editor/context/prompts.svelte` |
+| Semantic exclusion | `src/lib/representation/data/behavior/semantic/projection/resources/presentation.ts` |
 | Shared evidence presentation | `src/lib/app-views/shared/prompt-block/evidence.ts` |
 | Same-browser output notification | `src/lib/app-views/shared/prompt-block/output-events.ts` |
 | Served visual reference | `src/lib/development-views/slide-prompt-blocks/slide-prompt-blocks.svelte` |
@@ -257,7 +257,7 @@ not to the editable copy in the Prompt Block.
 
 Procedure tests prove that conversion preserves the element shell, block IDs,
 text, marks, style, and format; response publication succeeds through the real
-deck operation applier; and normal text operations continue to edit a Prompt
+presentation operation applier; and normal text operations continue to edit a Prompt
 Block. Semantic projection tests prove generated slide responses are absent from
 the source text.
 

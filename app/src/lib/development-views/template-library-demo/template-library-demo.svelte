@@ -34,7 +34,7 @@
     {
       number: "03",
       title: "Use the ordinary editor",
-      detail: "Document and slide-deck behavior stay in their owners. Spreadsheet template staging remains unavailable.",
+      detail: "Document and presentation behavior stay in their owners. Spreadsheet template staging remains unavailable.",
       icon: Layers3
     },
     {
@@ -79,7 +79,7 @@
     {
       label: "Editor strategy",
       value: "proposed · deferred",
-      detail: "Document and deck reuse need a durable authoring session; spreadsheet template staging remains unavailable.",
+      detail: "Document and presentation reuse need a durable authoring session; spreadsheet template staging remains unavailable.",
       state: "deferred"
     },
     {
@@ -122,7 +122,7 @@
     {
       title: "Remaining Use inputs and hand-offs",
       priority: "Before every template can be used from UI · medium",
-      today: "Document and deck Use persist independent resources using represented defaults. Spreadsheet materialization is implemented and tested, but its button stays disabled because the spreadsheet editor does not consume the created resource id. Missing or cyclic variable defaults refuse before any write.",
+      today: "Document and presentation Use persist independent resources using represented defaults. Spreadsheet materialization is implemented and tested, but its button stays disabled because the spreadsheet editor does not consume the created resource id. Missing or cyclic variable defaults refuse before any write.",
       worst: "Enabling these paths prematurely would either open a mock disconnected from the resource just written or force callers to invent variable-answer data that representation cannot record.",
       next: "Define the variable-answer command shape and connect the spreadsheet runtime to represented resource ids. Neither changes the current Personal library's create, edit, duplicate, or delete persistence."
     }
@@ -210,7 +210,7 @@
           <strong>Persisted now, not mocked:</strong> create, rename, description,
           variable-description, tag, duplicate, and delete mutations write through the Templates
           capability into the representation store. Refreshing the page or restarting the server
-          keeps accepted changes. Document and deck Use also persist the independent resource they create.
+          keeps accepted changes. Document and presentation Use also persist the independent resource they create.
         </p>
       </div>
       <div class="live-warning">
@@ -313,7 +313,7 @@
           <article>
             <header><ArrowRight size={16} aria-hidden="true" /><span>INDEPENDENT COPY</span></header>
             <h3>Created resource</h3>
-            <p>A document, deck or workbook carries no template id; later template edits never rewrite it.</p>
+            <p>A document, presentation or workbook carries no template id; later template edits never rewrite it.</p>
           </article>
         </div>
       </div>

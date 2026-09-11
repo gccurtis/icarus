@@ -159,7 +159,7 @@ export const PANEL_REFERENCES = [
         label: "Resource navigation",
         read: "workspaceState.open() + workspaceState.inspect()",
         owner: "workspace state",
-        provides: "Locate in document or deck, resource detail, and author inspection.",
+        provides: "Locate in document or presentation, resource detail, and author inspection.",
         readiness: "available",
         note: "The scoped projection supplies bounded anchor identifiers; the workspace owns the actual navigation."
       }

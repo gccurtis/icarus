@@ -21,7 +21,7 @@ import { Views } from "./pages/Views";
 import { Configuration } from "./pages/Configuration";
 import { DocumentEditor } from "./pages/algorithms/DocumentEditor";
 import { SemanticOverlay } from "./pages/algorithms/SemanticOverlay";
-import { SlideDeck } from "./pages/algorithms/SlideDeck";
+import { Presentation } from "./pages/algorithms/Presentation";
 import { Charts } from "./pages/algorithms/Charts";
 import { Workspace } from "./pages/algorithms/Workspace";
 import { Revisions } from "./pages/algorithms/Revisions";
@@ -96,7 +96,7 @@ export const App = () => {
           <Route path="/configuration" element={<Configuration />} />
           <Route path="/algorithms/document-editor" element={<DocumentEditor />} />
           <Route path="/algorithms/semantic-overlay" element={<SemanticOverlay />} />
-          <Route path="/algorithms/slide-deck" element={<SlideDeck />} />
+          <Route path="/algorithms/presentation" element={<Presentation />} />
           <Route path="/algorithms/charts" element={<Charts />} />
           <Route path="/algorithms/workspace" element={<Workspace />} />
           <Route path="/algorithms/revisions" element={<Revisions />} />

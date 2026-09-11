@@ -26,12 +26,12 @@ export const EDITORS_MUTATIONS = [
   {
     check: "legacy-schema-support-does-not-exist",
     says: "a slide set operation cannot make its target discriminator optional",
-    names: "representation/data/types/slide-decks/op.ts",
+    names: "representation/data/types/presentations/op.ts",
     changes: [{
-      path: "src/lib/representation/data/types/slide-decks/op.ts",
+      path: "src/lib/representation/data/types/presentations/op.ts",
       edit: (before) => before.replace(
-        '{ op: "set"; target: SlideDeckSetTarget;',
-        '{ op: "set"; target?: SlideDeckSetTarget;'
+        '{ op: "set"; target: PresentationSetTarget;',
+        '{ op: "set"; target?: PresentationSetTarget;'
       )
     }]
   },
@@ -107,11 +107,11 @@ export const EDITORS_MUTATIONS = [
   {
     check: "legacy-schema-support-does-not-exist",
     says: "slide read admission cannot accept another resource namespace",
-    names: "capabilities/slide-deck/api/read-slide-deck-body/validate-read-slide-deck-body.ts",
+    names: "capabilities/presentation/api/read-presentation-body/validate-read-presentation-body.ts",
     changes: [{
-      path: "src/lib/capabilities/slide-deck/api/read-slide-deck-body/validate-read-slide-deck-body.ts",
+      path: "src/lib/capabilities/presentation/api/read-presentation-body/validate-read-presentation-body.ts",
       edit: (before) => before.replace(
-        'if (!isStoredRowId(fields.resourceId, "slideDecks")) {',
+        'if (!isStoredRowId(fields.resourceId, "presentations")) {',
         'if (typeof fields.resourceId !== "string") {'
       )
     }]
@@ -119,9 +119,9 @@ export const EDITORS_MUTATIONS = [
   {
     check: "legacy-schema-support-does-not-exist",
     says: "slide submit admission cannot project an open envelope",
-    names: "capabilities/slide-deck/api/submit-slide-deck-changes/validate-submit-slide-deck-changes.ts",
+    names: "capabilities/presentation/api/submit-presentation-changes/validate-submit-presentation-changes.ts",
     changes: [{
-      path: "src/lib/capabilities/slide-deck/api/submit-slide-deck-changes/validate-submit-slide-deck-changes.ts",
+      path: "src/lib/capabilities/presentation/api/submit-presentation-changes/validate-submit-presentation-changes.ts",
       edit: (before) => before.replace(
         'hasExactFields(envelope, ["changeSet"])',
         'Object.hasOwn(envelope, "changeSet")'
@@ -131,9 +131,9 @@ export const EDITORS_MUTATIONS = [
   {
     check: "legacy-schema-support-does-not-exist",
     says: "slide submit admission cannot trust an incoherent touched projection",
-    names: "capabilities/slide-deck/api/submit-slide-deck-changes/validate-submit-slide-deck-changes.ts",
+    names: "capabilities/presentation/api/submit-presentation-changes/validate-submit-presentation-changes.ts",
     changes: [{
-      path: "src/lib/capabilities/slide-deck/api/submit-slide-deck-changes/validate-submit-slide-deck-changes.ts",
+      path: "src/lib/capabilities/presentation/api/submit-presentation-changes/validate-submit-presentation-changes.ts",
       edit: (before) => before.replace(
         "!matchingTouched(changeSet.ops, changeSet.touched)",
         "!changeSet.touched.every((path) => typeof path === \"string\")"
@@ -143,18 +143,18 @@ export const EDITORS_MUTATIONS = [
   {
     check: "legacy-schema-support-does-not-exist",
     says: "slide operation admission cannot project away non-durable own fields",
-    names: "representation/data/behavior/slide-decks/stored-rows.ts",
+    names: "representation/data/behavior/presentations/stored-rows.ts",
     changes: [{
-      path: "src/lib/representation/data/behavior/slide-decks/stored-rows.ts",
+      path: "src/lib/representation/data/behavior/presentations/stored-rows.ts",
       edit: (before) => before.replace("  isStoredJson(value) &&\n", "")
     }]
   },
   {
     check: "legacy-schema-support-does-not-exist",
     says: "slide operation admission cannot accept mismatched list payload cardinality",
-    names: "representation/data/behavior/slide-decks/stored-rows.ts",
+    names: "representation/data/behavior/presentations/stored-rows.ts",
     changes: [{
-      path: "src/lib/representation/data/behavior/slide-decks/stored-rows.ts",
+      path: "src/lib/representation/data/behavior/presentations/stored-rows.ts",
       edit: (before) => before.replace(
         "value.values.length === value.ids.length",
         "value.values.length >= 0"
@@ -164,9 +164,9 @@ export const EDITORS_MUTATIONS = [
   {
     check: "legacy-schema-support-does-not-exist",
     says: "slide command admission cannot lose its executable exactness contract",
-    names: "capabilities/slide-deck/test/unit/command-admission.test.ts",
+    names: "capabilities/presentation/test/unit/command-admission.test.ts",
     changes: [{
-      path: "src/lib/capabilities/slide-deck/test/unit/command-admission.test.ts",
+      path: "src/lib/capabilities/presentation/test/unit/command-admission.test.ts",
       edit: (before) => before.replace(
         'it("admits one exact envelope, change set, and operation union arm"',
         'it("checks a command"'

@@ -78,7 +78,7 @@ name of its own. A model change in `model/client`, not the representation.
 **4 · The rail: order, landing, and what leaves it.** Today: Overview, Variables,
 Named ranges, Find, Dependencies, Objects, Insert, Styles, Print, Comments, Context,
 landing on Overview. The document since dropped Overview, Insert and Context and
-added Templates and Prompts; the deck's rail is Slides, Insert, Layers, Style, Find,
+added Templates and Prompts; the presentation's rail is Slides, Insert, Layers, Style, Find,
 Comments, Templates, Variables, Prompts. *Recommendation: Grid · Find · Dependencies
 · Styles · Print · Objects · Comments · Variables · Templates · Prompts, landing on
 Grid.* Grid is new: the sheet's shape, and the home frozen panes never had.
@@ -172,7 +172,7 @@ silently wrong, which is worse than a handle that says no.
 
 **16 · Merging over cells that have content.** The anchor keeps its value; the
 others would be cleared. *Recommendation: ask first, saying how many cells will be
-cleared and which one stays,* the same staged confirmation the deck uses for a
+cleared and which one stays,* the same staged confirmation the presentation uses for a
 change of aspect ratio and the range lens uses for Clear.
 
 **17 · Formatting an empty range.** The record left this open: formatting is stored
@@ -252,8 +252,8 @@ take it from here.
 | Cells are addressed by row and column ids; A1 is a label derived from order. | `representation/data/types/content/formula-value.ts` · `store/tables.ts` · `collaboration/anchor.ts` |
 | Formatting is regional: rules over corners in the body; a cell carries only its own override; a style is typography. | `spreadsheets/body.ts` · `style-set.ts` · `store/tables.ts` `SheetCellFields` |
 | A merge is `mergedTo` on the anchor; a spill is `spillTo` on the origin; both are far corners. | `store/tables.ts` |
-| The editor surface is an authored component taking a scene and emitting intents; the view translates. | work/slide-deck-editor · `components/authored/slide-surface` · `deck.svelte` (Konva gone) |
-| The rail carries Templates and Prompts as placeholders; Overview and Context leave it; the same job is one icon across editors. | work/document-editor `opening.ts` · work/slide-deck-editor `rail-entries.ts` |
+| The editor surface is an authored component taking a scene and emitting intents; the view translates. | work/presentation-editor · `components/authored/slide-surface` · `presentation.svelte` (Konva gone) |
+| The rail carries Templates and Prompts as placeholders; Overview and Context leave it; the same job is one icon across editors. | work/document-editor `opening.ts` · work/presentation-editor `rail-entries.ts` |
 | Undo is the runtime's op stack, inverted; one gesture is one group; coalescing never touches history. | `spreadsheet-runtimes/methods/history` · `flush/coalesce.ts` |
 
 ## Defaults: routine calls made along the way

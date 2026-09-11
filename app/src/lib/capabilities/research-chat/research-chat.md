@@ -36,7 +36,7 @@ shape before a turn opens. If its definition, tools, revision, or other required
 state is malformed, `ask` reports the persona unavailable and writes no prompt
 or turn; it does not silently grant an empty or default tool set.
 
-Before the agent starts, current documents, decks and spreadsheets are pulled
+Before the agent starts, current documents, presentations and spreadsheets are pulled
 through the semantic queues to a stable boundary. A resource that exhausts its
 own indexing retries is isolated and logged for project-wide questions, so it
 does not prevent questions from running against every healthy resource. When a

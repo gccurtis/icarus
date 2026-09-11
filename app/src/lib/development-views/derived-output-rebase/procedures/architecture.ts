@@ -6,10 +6,10 @@ export const TRANSACTION_ENTRIES = [
     proof: "document Store fault + restart recovery"
   },
   {
-    entry: "Slide-deck save",
+    entry: "Slide-presentation save",
     authored: "revision · snapshot · metadata",
     semantic: "exact-text + material outbox",
-    proof: "slide-deck Store fault + restart recovery"
+    proof: "presentation Store fault + restart recovery"
   },
   {
     entry: "Spreadsheet save",

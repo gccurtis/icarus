@@ -29,7 +29,7 @@ export const projectRowId = <T extends TableName>(
 
 const RESOURCE_TABLES = [
   "documents",
-  "slideDecks",
+  "presentations",
   "spreadsheets",
   "researchThreads",
   "findings"

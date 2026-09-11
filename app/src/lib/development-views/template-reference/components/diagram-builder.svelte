@@ -3,7 +3,7 @@
     { label: "Winter readiness brief", note: "document" },
     { label: "Substation 14 incident write-up", note: "document" },
     { label: "Interconnect glossary", note: "document" },
-    { label: "Board review — Q1 exposure", note: "slides" }
+    { label: "Board review — Q1 exposure", note: "presentation" }
   ];
 </script>
 

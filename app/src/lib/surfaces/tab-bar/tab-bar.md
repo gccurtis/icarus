@@ -133,7 +133,7 @@ describes what is actually implemented.
 - **The category map is total.** `Record<Category, CategoryEntry>` means a new
   category fails to compile until it has a label and an icon.
 - **A template working copy is named by stage membership.** Its scratch document
-  or deck is intentionally absent from the listable project-resource index, so
+  or presentation is intentionally absent from the listable project-resource index, so
   the bar consumes the separate exact stage identity projection once and never
   treats a missing resource name as evidence that something is a stage.
 

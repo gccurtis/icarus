@@ -16,7 +16,7 @@ const targetKindFor = (
   resource: RepresentedProjectResource
 ): StoredCommentTarget["kind"] | undefined => {
   if (resource.spec.kind === "document") return "document";
-  if (resource.spec.kind === "slides") return "slides";
+  if (resource.spec.kind === "presentation") return "presentation";
   if (resource.spec.kind === "spreadsheet") return "spreadsheet";
   return undefined;
 };

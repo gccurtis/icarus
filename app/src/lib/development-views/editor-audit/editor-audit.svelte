@@ -24,12 +24,12 @@
 </script>
 
 <svelte:head>
-  <title>Document + slide deck editor audit · Icarus</title>
+  <title>Document + presentation editor audit · Icarus</title>
 </svelte:head>
 
 <main class="audit-page">
   <header class="audit-hero">
-    <div class="audit-kicker"><ClipboardCheck size={15} aria-hidden="true" /> Document + slide deck editors</div>
+    <div class="audit-kicker"><ClipboardCheck size={15} aria-hidden="true" /> Document + presentation editors</div>
     <h1>Editor audit</h1>
     <p class="audit-lede">
       A source-traced review of the reported failures, adjacent correctness risks, and the visual
@@ -97,14 +97,14 @@
       <p>The opaque ID was only one part of the failure; the corrected path makes every boundary explicit.</p>
     </div>
     <div class="flow" aria-label="Corrected resource creation flow">
-      <div><small>1</small><strong>Create</strong><span>Document or deck</span></div><ArrowRight aria-hidden="true" />
+      <div><small>1</small><strong>Create</strong><span>Document or presentation</span></div><ArrowRight aria-hidden="true" />
       <div><small>2</small><strong>Server mint</strong><span>Row + leader snapshot</span></div><ArrowRight aria-hidden="true" />
       <div><small>3</small><strong>Refresh</strong><span>Index + exact title table</span></div><ArrowRight aria-hidden="true" />
       <div><small>4</small><strong>Open ID</strong><span>Saving → durable Saved</span></div>
     </div>
     <div class="creation-notes">
       <p><strong>Document invariant:</strong> revision zero contains one addressable empty paragraph, not a projection-only caret target.</p>
-      <p><strong>Deck invariant:</strong> revision zero contains one empty slide, so the first render has a canvas and thumbnail.</p>
+      <p><strong>Presentation invariant:</strong> revision zero contains one empty slide, so the first render has a canvas and thumbnail.</p>
       <p><strong>Unsupported actions:</strong> spreadsheet, research chat, and analysis graph remain explicit alerts on Project Overview.</p>
     </div>
   </section>
@@ -162,7 +162,7 @@
     </div>
     <div class="table-wrap">
       <table class="matrix-table">
-        <thead><tr><th>Concern</th><th>Document</th><th>Slide deck</th><th>Rule</th></tr></thead>
+        <thead><tr><th>Concern</th><th>Document</th><th>Presentation</th><th>Rule</th></tr></thead>
         <tbody>
           {#each CONSISTENCY_MATRIX as row (row[0])}
             <tr><th>{row[0]}</th><td>{row[1]}</td><td>{row[2]}</td><td>{row[3]}</td></tr>
@@ -241,7 +241,7 @@
       <article><strong>819 / 819</strong><span>Unit tests</span></article>
       <article><strong>32 / 32 × 2</strong><span>Full Chromium scenarios across clean-seed runs</span></article>
       <article><strong>Firefox</strong><span>Control-drag regression verified in its native engine</span></article>
-      <article><strong>1 + 1</strong><span>Created deck canvas + thumbnail</span></article>
+      <article><strong>1 + 1</strong><span>Created presentation canvas + thumbnail</span></article>
       <article><strong>0</strong><span>Unexpected console, page, or HTTP diagnostics</span></article>
     </div>
     <p class="limit-note">

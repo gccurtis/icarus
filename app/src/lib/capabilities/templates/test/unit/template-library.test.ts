@@ -89,7 +89,7 @@ describe("the project library", () => {
 
     const answer = await readTemplate({ templateId: "templates:1" });
     assert.ok(answer !== null && !("unavailable" in answer));
-    assert.equal(answer.body.resource, "slides");
+    assert.equal(answer.body.resource, "presentation");
     assert.equal(await readTemplate({ templateId: "templates:2" }), null);
   });
 

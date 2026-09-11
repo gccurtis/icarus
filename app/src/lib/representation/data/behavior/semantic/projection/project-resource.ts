@@ -1,6 +1,6 @@
 import type { ProjectResourceInput, ProjectSemanticProjection } from "$representation/data/behavior/semantic/projection/contract";
 import { projectDocument } from "$representation/data/behavior/semantic/projection/resources/document";
-import { projectSlideDeck } from "$representation/data/behavior/semantic/projection/resources/slide-deck";
+import { projectPresentation } from "$representation/data/behavior/semantic/projection/resources/presentation";
 import { projectionWriter } from "$representation/data/behavior/semantic/projection/writer";
 
 /** One authoritative walk emits exact text and out-of-band material seeds. */
@@ -23,7 +23,7 @@ export const projectResource = (input: ProjectResourceInput): ProjectSemanticPro
   };
   const materials = input.kind === "document"
     ? projectDocument(input.body, shared)
-    : projectSlideDeck(input.body, shared);
+    : projectPresentation(input.body, shared);
   return {
     exact: {
       ref: { ...input.ref },

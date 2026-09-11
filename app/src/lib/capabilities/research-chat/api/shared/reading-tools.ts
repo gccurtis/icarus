@@ -2,7 +2,7 @@ import type { IntelligenceTool } from "$model/server/intelligence/index.server";
 import { sliceByCoordinates } from "$representation/data/behavior/semantic/encoding";
 import { tableMatrix } from "$representation/data/behavior/semantic/materials/profile";
 import type { ContentBlock } from "$representation/data/types/content/content-block";
-import type { SlideElement } from "$representation/data/types/slide-decks/body";
+import type { SlideElement } from "$representation/data/types/presentations/body";
 import type { MaterialLocator } from "$representation/data/types/semantic/material";
 import type { ResourceRef } from "$representation/data/types/core/resource";
 import { admitResourceRef } from "$representation/data/behavior/core/resource";
@@ -132,10 +132,10 @@ export const readingTools = (context: ToolContext): readonly IntelligenceTool[] 
       return block;
     }
     if (locator.kind !== "slideElement") throw new Error("that material is not a readable block");
-    const leader = rowsIn(context.input.model.store, "slideDeckSnapshots").find(
+    const leader = rowsIn(context.input.model.store, "presentationSnapshots").find(
       (row) => row.projectId === context.input.projectId && row.resourceId === ref.id && row.role === "leader"
     );
-    if (leader === undefined) throw new Error("that slide deck is unavailable");
+    if (leader === undefined) throw new Error("that presentation is unavailable");
     const body = leader.body;
     const slide = body.slides.find((candidate) => candidate.id === locator.slideId);
     const element = slide === undefined ? undefined : findElement(slide.elements, locator.elementPath);

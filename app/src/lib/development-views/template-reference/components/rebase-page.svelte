@@ -187,7 +187,7 @@
         <h4>One shared function, and it is the one that conflicted</h4>
         <p>
           <code>displayOfAtom</code> in <code>behavior/content/positions.ts</code> is the whole of the
-          shared surface between the two changes: it says how wide an atom draws, so the deck's typing
+          shared surface between the two changes: it says how wide an atom draws, so the presentation's typing
           can place a caret. The base needed it to understand a Prompt Block's atoms; this branch needed
           it to understand a template atom. Both editors now measure through it, and nothing else in
           either change calls into the other.

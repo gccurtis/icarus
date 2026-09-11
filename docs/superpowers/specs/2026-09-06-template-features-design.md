@@ -8,18 +8,18 @@ per-project binding, and a template's editing copy is shared.
 ## What is asked
 
 1. Opening a template stages a temporary copy of the resource it makes and edits it in the
-   ordinary document or slide-deck editor; saving writes the copy back.
+   ordinary document or presentation editor; saving writes the copy back.
 2. Resource sets exist as a subject: a capability over the `resourceSets` table, and a place to
    make and change them.
 3. Both editors get a working Templates context panel: save the open resource, or one slide of
-   a deck, as a template; declare variables on a template and give each a default resource set;
+   a presentation, as a template; declare variables on a template and give each a default resource set;
    see every template of the editor's kind and pull one into what is open.
 4. Reference pages record everything built and the whole difference from main.
 
 ## Vocabulary
 
 - **Template** — a `templates` row in one project: a portable body, its variables, tags. A
-  template made from one slide is a deck template holding one slide; nothing marks it afterwards.
+  template made from one slide is a presentation template holding one slide; nothing marks it afterwards.
 - **Variable** — a hole a prompt scope can name. Its `default` is what it selects when nobody
   says otherwise: the whole project, kinds, one of the project's named sets, or another
   variable. A variable declared without a default means the whole project.
@@ -44,16 +44,16 @@ says what owns a row that has no name.
 
 `store/tables.ts` — `resourceSets.name` becomes optional and `boundTo` is added, so a row is
 either a project subject or a value one variable holds; `templates` gains `projectId` and
-`lastUsedAt`; `documents`, `slideDecks` and
+`lastUsedAt`; `documents`, `presentations` and
 `spreadsheets` lose `templateId`, because a resource made from a template is a copy that knows
 nothing of where it came from; and one new table, `templateStages`: `projectId, templateId,
 templateRevision, target, resourceId, createdBy, updatedAt`. The stage resource is an ordinary `documents` or
-`slideDecks` row with a leader snapshot, so the editors, runtimes, comments and change sets work
+`presentations` row with a leader snapshot, so the editors, runtimes, comments and change sets work
 on it unchanged. It carries no `templateId` provenance: a stage is not made *from* a template,
 it *is* the template while it is open.
 
 `data/behavior/templates/` (new domain directory; the graph already lets templates reach content,
-core, documents, slide-decks, spreadsheets)
+core, documents, presentations, spreadsheets)
 
 - `scopes.ts` — `resolveTemplateScopes(body, variables, answers)`: every prompt scope's variable
   term becomes the caller's answer for that name, else the variable's default, else the whole
@@ -66,7 +66,7 @@ core, documents, slide-decks, spreadsheets)
 - `fresh-ids.ts` — `withFreshIds(fragment, mint, hint?)`: remaps every id in a body fragment,
   including mark ends and section anchors, through a caller-supplied minting function keyed by
   what the id names (row, block, atom, mark, slide, element, layout, section, cell).
-- `deck-of-slide.ts` — `deckOfSlide(deck, slideId)`: the deck body holding one slide of a deck,
+- `presentation-of-slide.ts` — `presentationOfSlide(presentation, slideId)`: the presentation body holding one slide of a presentation,
   its layout, theme and styles, and no sections.
 
 `data/behavior/core/resource-set.ts` — `resolveResourceSet(set, catalogue, setsById)`: which of a
@@ -80,7 +80,7 @@ project's resource references a set selects, following `set` terms with a cycle 
 | --- | --- |
 | `readTemplateLibrary` | as before |
 | `readTemplate` | as before |
-| `createTemplateFromResource` | a template from a live document, a live deck, or one slide of a deck (`slideId`), body made portable; reports what was dropped |
+| `createTemplateFromResource` | a template from a live document, a live presentation, or one slide of a presentation (`slideId`), body made portable; reports what was dropped |
 | `updateTemplate` | patch may now replace `variables`; refuses `variable-in-use` when the body still names a removed variable; carries the template's stage to the new revision, since an update never touches the body |
 | `instantiateTemplate` | as before, plus optional `answers`, a resource set per variable name; the default fills the rest; a body naming an undeclared variable refuses |
 | `openTemplateStage` | the project's stage for a template, made if absent: a scratch resource titled `Template · <name>` |
@@ -134,11 +134,11 @@ working copy it asks nothing, keeps the variable terms, and merges the inserted 
 variables. Save flushes the runtime first and refuses while anything is still pending or failed.
 Discard flushes, discards, then closes the tab.
 
-### slide-deck-editor / `context/templates.svelte` with `procedures/templating.ts`
+### presentation-editor / `context/templates.svelte` with `procedures/templating.ts`
 
-The same panel with Save deck and Save slide under the name field, and one list of deck
+The same panel with Save presentation and Save slide under the name field, and one list of presentation
 templates. Inserting appends the template's slides after the current slide, bringing along
-layouts and styles the deck does not have.
+layouts and styles the presentation does not have.
 
 ### project-overview / `context/contexts.svelte` with `procedures/contexts.ts`
 
@@ -168,7 +168,7 @@ and loses its instance; a prompt's scope is what the variables fill; stored imag
 for now and may later be stored with the template); Use asks for the variables the way Insert
 does, in one modal; inserting into a template being edited asks nothing and brings the holes;
 comments are stripped too, so a thread cannot be started on a working copy; and no resource
-refers back to a template, so `templateId` is gone from documents, decks and spreadsheets and the
+refers back to a template, so `templateId` is gone from documents, presentations and spreadsheets and the
 template records its own `lastUsedAt`.
 
 Settled with them: a variable is never added or removed by hand. It exists because a prompt's
@@ -181,7 +181,7 @@ Still open, each built the recommended way:
 
 1. **Where resource sets are managed.** Recommended: Project Overview's Contexts panel, which the
    rail already names. Alternative: a category of its own.
-2. **Inserting a deck template.** Recommended: bring missing layouts and styles across.
+2. **Inserting a presentation template.** Recommended: bring missing layouts and styles across.
    Alternative: slides only.
 
 ## Parameters
@@ -225,13 +225,13 @@ The whole of it, its mock, how each of the eight decisions landed and every file
 
 ## Testing
 
-- Unit: representation behavior (scopes, portable, fresh ids, deck of one slide, set resolution);
+- Unit: representation behavior (scopes, portable, fresh ids, presentation of one slide, set resolution);
   both capabilities procedure by procedure; the three panels' procedures, including the Insert
   modal's choices.
 - Browser: a Playwright spec that inserts a template into a document through the modal, answers
   one variable with a named set, and undoes it; saves a document as a template into a new tab,
   declares a variable and sets its default through the modal, inserts another template, saves and
-  discards; saves one slide as a deck template and inserts a deck template into it; makes and
+  discards; saves one slide as a presentation template and inserts a presentation template into it; makes and
   removes a resource set. The existing document spec asserts the panel's new shape.
 
 ## Reference pages

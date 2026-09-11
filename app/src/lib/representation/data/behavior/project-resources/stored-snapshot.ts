@@ -1,5 +1,5 @@
 import { isStoredDocumentBody } from "$representation/data/behavior/documents/stored-body";
-import { isStoredSlideDeckBody } from "$representation/data/behavior/slide-decks/stored-body";
+import { isStoredPresentationBody } from "$representation/data/behavior/presentations/stored-body";
 import { isStoredSpreadsheetBody } from "$representation/data/behavior/spreadsheets/stored-body";
 import {
   hasExactFields,
@@ -12,17 +12,17 @@ import type { TableName, TableRow } from "$representation/store/tables";
 
 export type SnapshotTable =
   | "documentSnapshots"
-  | "slideDeckSnapshots"
+  | "presentationSnapshots"
   | "spreadsheetSnapshots";
 
 export type StoredSnapshot =
   | TableRow<"documentSnapshots">
-  | TableRow<"slideDeckSnapshots">
+  | TableRow<"presentationSnapshots">
   | TableRow<"spreadsheetSnapshots">;
 
 const TARGETS: Record<SnapshotTable, string> = {
   documentSnapshots: "documents",
-  slideDeckSnapshots: "slideDecks",
+  presentationSnapshots: "presentations",
   spreadsheetSnapshots: "spreadsheets"
 };
 
@@ -43,18 +43,18 @@ export const isStoredSnapshot = (
     !isStoredRowId(row._id, table) ||
     !isStoredTime(row._creationTime) ||
     !isStoredRowId(row.projectId, "projects") ||
-    !isStoredRowId(row.resourceId, TARGETS[table] as "documents" | "slideDecks" | "spreadsheets") ||
+    !isStoredRowId(row.resourceId, TARGETS[table] as "documents" | "presentations" | "spreadsheets") ||
     !isStoredNatural(row.revision) ||
     !currentRole(row.role) ||
     !isStoredNatural(row.part) ||
     !isStoredTime(row.at)
   ) return false;
   if (table === "documentSnapshots") return isStoredDocumentBody(row.body);
-  if (table === "slideDeckSnapshots") return isStoredSlideDeckBody(row.body);
+  if (table === "presentationSnapshots") return isStoredPresentationBody(row.body);
   return isStoredSpreadsheetBody(row.body);
 };
 
 export const snapshotTable = (value: TableName | undefined): SnapshotTable | undefined =>
-  value === "documentSnapshots" || value === "slideDeckSnapshots" || value === "spreadsheetSnapshots"
+  value === "documentSnapshots" || value === "presentationSnapshots" || value === "spreadsheetSnapshots"
     ? value
     : undefined;

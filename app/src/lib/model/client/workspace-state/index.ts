@@ -2,7 +2,7 @@ import { getContext, hasContext, setContext } from "svelte";
 
 import { createConfiguration } from "$model/client/configuration";
 import { createDocumentRuntimes } from "$model/client/document-runtimes";
-import { createSlideDeckRuntimes } from "$model/client/slide-deck-runtimes";
+import { createPresentationRuntimes } from "$model/client/presentation-runtimes";
 import { createSpreadsheetRuntimes } from "$model/client/spreadsheet-runtimes";
 import { createTabList } from "$model/client/tab-list";
 import { createTabViews } from "$model/client/tab-views";
@@ -12,7 +12,7 @@ import type { WorkspaceStateModel } from "$model/client/workspace-state/types";
 export { createWorkspaceState } from "$model/client/workspace-state/constructor";
 
 export type { DocumentRuntime, PendingMarks, SyncState } from "$model/client/document-runtimes";
-export type { SlideDeckRuntime } from "$model/client/slide-deck-runtimes";
+export type { PresentationRuntime } from "$model/client/presentation-runtimes";
 export type { SpreadsheetRuntime } from "$model/client/spreadsheet-runtimes";
 
 export type { Category, ContentView } from "$representation/data/types/workspace/categories";
@@ -65,7 +65,7 @@ const KEY = Symbol.for("icarus.workspace-state");
 const UNPERSISTED = {
   workspace: { changeSets: { flushAfterOps: 0, flushAfterMs: 0 } },
   revisions: { changeSets: { flushAfterOps: 50, flushAfterMs: 2000 }, sync: { everyMs: 0 } },
-  slideDeck: {
+  presentation: {
     stage: { unitsHigh: 720, widthRem: 52, averageGlyphWidthEm: 0.52 },
     zoom: { minimum: 50, maximum: 200, step: 5 },
     gutter: { minimumRem: 0.75, maximumRem: 2.5 }
@@ -86,7 +86,7 @@ const forDevelopment = (): WorkspaceStateModel => {
     createTabViews(),
     configuration,
     createDocumentRuntimes(configuration),
-    createSlideDeckRuntimes(configuration),
+    createPresentationRuntimes(configuration),
     createSpreadsheetRuntimes(configuration)
   );
 };

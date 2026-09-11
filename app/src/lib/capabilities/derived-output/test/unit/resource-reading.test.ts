@@ -112,13 +112,13 @@ describe("Derived Output resource-reading session", () => {
       body: { rows: [{ id: "row", kind: "blocks", blocks: [textBlock("fact", "Selected fact")] }] },
       at: 1
     }]);
-    put("slideDecks", [{
-      _id: "slideDecks:deck", _creationTime: 1, projectId, title: "Deck",
+    put("presentations", [{
+      _id: "presentations:presentation", _creationTime: 1, projectId, title: "Presentation",
       createdBy: { kind: "system" }, updatedBy: { kind: "system" }, updatedAt: 1
     }]);
-    put("slideDeckSnapshots", [{
-      _id: "slideDeckSnapshots:deck", _creationTime: 1, projectId,
-      resourceId: "slideDecks:deck", revision: 3, role: "leader", part: 0,
+    put("presentationSnapshots", [{
+      _id: "presentationSnapshots:presentation", _creationTime: 1, projectId,
+      resourceId: "presentations:presentation", revision: 3, role: "leader", part: 0,
       body: {
         aspectRatio: "16:9",
         theme: { colors: { text: "#111", accent: "#08f" } },
@@ -224,14 +224,14 @@ describe("Derived Output resource-reading session", () => {
       {
         _id: "semanticMaterials:chart", _creationTime: 4, projectId, identityKey: "chart",
         kind: "chart", name: "Launch chart",
-        source: { kind: "resourceContent", ref: { kind: "slides", id: "slideDecks:deck" }, revision: 3, locator: { kind: "slideElement", slideId: "slide-one", elementPath: ["chart"] } },
+        source: { kind: "resourceContent", ref: { kind: "presentation", id: "presentations:presentation" }, revision: 3, locator: { kind: "slideElement", slideId: "slide-one", elementPath: ["chart"] } },
         profile: { kind: "chart", chartType: "bar", axes: [], series: ["Revenue", "Cost"], measures: ["Revenue", "Cost"], points: 0, sourceHandles: [], warnings: [] },
-        profileHash: "chart-profile", contextHash: "chart-context", revisionKey: "revision:slides:slideDecks:deck:3", state: "ready", updatedAt: 1
+        profileHash: "chart-profile", contextHash: "chart-context", revisionKey: "revision:presentation:presentations:presentation:3", state: "ready", updatedAt: 1
       }
     ]);
     put("semanticMaterialPlacements", [{
       _id: "semanticMaterialPlacements:chart", _creationTime: 1, projectId,
-      semanticMaterialId: "semanticMaterials:chart", ref: { kind: "slides", id: "slideDecks:deck" }, revision: 3,
+      semanticMaterialId: "semanticMaterials:chart", ref: { kind: "presentation", id: "presentations:presentation" }, revision: 3,
       locator: { kind: "slideElement", slideId: "slide-one", elementPath: ["chart"] },
       context: { nearbyText: ["Launch mix"], notes: [] }, contextHash: "chart-context", updatedAt: 1
     }]);
@@ -258,7 +258,7 @@ describe("Derived Output resource-reading session", () => {
   it("exposes narrow tools and keeps orientation calls outside the evidence registry", async () => {
     const held = session();
     assert.deepEqual(held.tools.map((tool) => tool.name), [
-      "read_selection", "find_resources", "list_document_blocks", "list_deck_slides", "read_text",
+      "read_selection", "find_resources", "list_document_blocks", "list_presentation_slides", "read_text",
       "inspect_dataset", "inspect_code", "inspect_slide", "view_slide", "read_table", "read_chart",
       "read_csv", "read_code", "read_image"
     ]);
@@ -275,7 +275,7 @@ describe("Derived Output resource-reading session", () => {
       (issued.get(selected.evidenceId) as { evidenceKind: string }).evidenceKind,
       "text"
     );
-    const inspected = await tool("inspect_slide").execute({ resourceId: "slideDecks:deck", slideId: "slide-one" }) as {
+    const inspected = await tool("inspect_slide").execute({ resourceId: "presentations:presentation", slideId: "slide-one" }) as {
       items: Array<{ id: string; frame: { x: number; y: number; width: number; height: number }; ranges: unknown[]; materialHandle: string | null }>;
     };
     assert.equal(inspected.items.find((item) => item.id === "headline")?.ranges.length, 1);
@@ -288,7 +288,7 @@ describe("Derived Output resource-reading session", () => {
     assert.ok(chartHandle !== null && chartHandle !== undefined);
     assert.equal(issued.size, 1);
 
-    const viewed = await tool("view_slide").execute({ resourceId: "slideDecks:deck", slideId: "slide-one" }) as {
+    const viewed = await tool("view_slide").execute({ resourceId: "presentations:presentation", slideId: "slide-one" }) as {
       kind: string;
       value: { slideId: string; viewKind: string; supportingContext: boolean };
       images: Array<{ base64: string }>;
@@ -387,8 +387,8 @@ describe("Derived Output resource-reading session", () => {
   });
 
   it("preserves multiple slide materials and background placement identity", async () => {
-    const deck = (tables.get("slideDeckSnapshots") ?? [])[0];
-    const slide = (deck.body as { slides: Array<Record<string, unknown>> }).slides[0];
+    const presentation = (tables.get("presentationSnapshots") ?? [])[0];
+    const slide = (presentation.body as { slides: Array<Record<string, unknown>> }).slides[0];
     slide.background = { kind: "image", fileId: "externalFiles:image", fit: "cover" };
     (slide.elements as unknown[]).push({
       id: "table",
@@ -424,30 +424,30 @@ describe("Derived Output resource-reading session", () => {
       _id: "semanticMaterials:table", _creationTime: 5, projectId,
       identityKey: "table", kind: "table", name: "Artifact",
       source: {
-        kind: "resourceContent", ref: { kind: "slides", id: "slideDecks:deck" }, revision: 3,
+        kind: "resourceContent", ref: { kind: "presentation", id: "presentations:presentation" }, revision: 3,
         locator: { kind: "slideElement", slideId: "slide-one", elementPath: ["table"], blockPath: ["table-block"] }
       },
       profile: { kind: "table", rows: 2, columns: 1, headerRows: 1, headers: ["Artifact"], columnsProfile: [], mergedRegions: 0, sample: [], warnings: [] },
       profileHash: "table-profile", contextHash: "table-context",
-      revisionKey: "revision:slides:slideDecks:deck:3", state: "ready", updatedAt: 1
+      revisionKey: "revision:presentation:presentations:presentation:3", state: "ready", updatedAt: 1
     });
     const placements = tables.get("semanticMaterialPlacements") ?? [];
     placements.push(
       {
         _id: "semanticMaterialPlacements:table", _creationTime: 2, projectId,
-        semanticMaterialId: "semanticMaterials:table", ref: { kind: "slides", id: "slideDecks:deck" }, revision: 3,
+        semanticMaterialId: "semanticMaterials:table", ref: { kind: "presentation", id: "presentations:presentation" }, revision: 3,
         locator: { kind: "slideElement", slideId: "slide-one", elementPath: ["table"], blockPath: ["table-block"] },
         context: { nearbyText: [], notes: [] }, contextHash: "table-context", updatedAt: 1
       },
       {
         _id: "semanticMaterialPlacements:nested-image", _creationTime: 3, projectId,
-        semanticMaterialId: "semanticMaterials:image", ref: { kind: "slides", id: "slideDecks:deck" }, revision: 3,
+        semanticMaterialId: "semanticMaterials:image", ref: { kind: "presentation", id: "presentations:presentation" }, revision: 3,
         locator: { kind: "slideElement", slideId: "slide-one", elementPath: ["table"], blockPath: ["table-block", "data", "image-cell", "nested-image"] },
         context: { nearbyText: [], notes: [] }, contextHash: "nested-context", updatedAt: 1
       },
       {
         _id: "semanticMaterialPlacements:background", _creationTime: 4, projectId,
-        semanticMaterialId: "semanticMaterials:image", ref: { kind: "slides", id: "slideDecks:deck" }, revision: 3,
+        semanticMaterialId: "semanticMaterials:image", ref: { kind: "presentation", id: "presentations:presentation" }, revision: 3,
         locator: { kind: "slideBackground", slideId: "slide-one" },
         context: { nearbyText: [], notes: [] }, contextHash: "background-context", updatedAt: 1
       }
@@ -455,7 +455,7 @@ describe("Derived Output resource-reading session", () => {
 
     const held = session();
     const inspect = held.tools.find((candidate) => candidate.name === "inspect_slide")!;
-    const result = await inspect.execute({ resourceId: "slideDecks:deck", slideId: "slide-one" }) as {
+    const result = await inspect.execute({ resourceId: "presentations:presentation", slideId: "slide-one" }) as {
       items: Array<{ id: string; materials: Array<{ materialHandle: string; locator: { kind: string } }> }>;
       backgroundMaterials: Array<{ materialHandle: string; locator: { kind: string } }>;
     };
@@ -467,8 +467,8 @@ describe("Derived Output resource-reading session", () => {
   });
 
   it("resolves a nested slide table by its complete block path", async () => {
-    const deck = (tables.get("slideDeckSnapshots") ?? [])[0];
-    const slide = (deck.body as { slides: Array<{ elements: unknown[] }> }).slides[0];
+    const presentation = (tables.get("presentationSnapshots") ?? [])[0];
+    const slide = (presentation.body as { slides: Array<{ elements: unknown[] }> }).slides[0];
     const nestedTable = {
       id: "nested-table",
       type: "table" as const,
@@ -504,7 +504,7 @@ describe("Derived Output resource-reading session", () => {
       _id: "semanticMaterials:nested-table", _creationTime: 6, projectId,
       identityKey: "nested-table", kind: "table", name: "Year",
       source: {
-        kind: "resourceContent", ref: { kind: "slides", id: "slideDecks:deck" },
+        kind: "resourceContent", ref: { kind: "presentation", id: "presentations:presentation" },
         revision: 3, locator
       },
       profile: {
@@ -513,18 +513,18 @@ describe("Derived Output resource-reading session", () => {
         sample: [["Year"], ["2026"]], warnings: []
       },
       profileHash: "nested-table-profile", contextHash: "nested-table-context",
-      revisionKey: "revision:slides:slideDecks:deck:3", state: "ready", updatedAt: 1
+      revisionKey: "revision:presentation:presentations:presentation:3", state: "ready", updatedAt: 1
     });
     (tables.get("semanticMaterialPlacements") ?? []).push({
       _id: "semanticMaterialPlacements:nested-table", _creationTime: 6, projectId,
       semanticMaterialId: "semanticMaterials:nested-table",
-      ref: { kind: "slides", id: "slideDecks:deck" }, revision: 3, locator,
+      ref: { kind: "presentation", id: "presentations:presentation" }, revision: 3, locator,
       context: { nearbyText: [], notes: [] }, contextHash: "nested-table-context", updatedAt: 1
     });
 
     const held = session();
     const handle = held.rememberMaterial(snapshot("semanticMaterials:nested-table", {
-      ref: { kind: "slides", id: asId<"slideDecks">("slideDecks:deck") }, revision: 3, locator
+      ref: { kind: "presentation", id: asId<"presentations">("presentations:presentation") }, revision: 3, locator
     }));
     const read = held.tools.find((candidate) => candidate.name === "read_table")!;
     const result = await read.execute({ materialHandle: handle }) as { rows: string[][] };
@@ -692,11 +692,11 @@ describe("Derived Output resource-reading session", () => {
   it("rejects a material handle as soon as its native resource revision advances", async () => {
     const held = session();
     const handle = held.rememberMaterial(snapshot("semanticMaterials:chart", {
-      ref: { kind: "slides", id: asId<"slideDecks">("slideDecks:deck") },
+      ref: { kind: "presentation", id: asId<"presentations">("presentations:presentation") },
       revision: 3,
       locator: { kind: "slideElement", slideId: "slide-one", elementPath: ["chart"] }
     }));
-    (tables.get("slideDeckSnapshots") ?? [])[0].revision = 4;
+    (tables.get("presentationSnapshots") ?? [])[0].revision = 4;
     const read = held.tools.find((tool) => tool.name === "read_chart")!;
     await assert.rejects(
       () => read.execute({ materialHandle: handle, series: ["Revenue"] }),

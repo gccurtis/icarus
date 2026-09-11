@@ -1,7 +1,7 @@
 # General resources in Convex
 
 A [document](../data-models/general-resources/document.md) is not a row. Neither
-is a deck or a workbook. Each is spread across three tables, and this is what
+is a presentation or a workbook. Each is spread across three tables, and this is what
 each one holds and how they are read and written together.
 
 The same shape serves all three, discriminated by `resourceType`.
@@ -9,7 +9,7 @@ The same shape serves all three, discriminated by `resourceType`.
 ## Why one snapshot table, not one per resource type
 
 `resourceSnapshots` and `changeSets` are each **one table** covering documents,
-decks, and workbooks, keyed by `(resourceType, resourceId)`.
+presentations, and workbooks, keyed by `(resourceType, resourceId)`.
 
 Three of each is the obvious layout, and the reason not to is that the machinery
 operating on them is **entirely generic**. An op says "set `sheets/0/cells/B7`"
@@ -20,7 +20,7 @@ three copies diverge.
 
 **Type safety survives the sharing.** The usual objection is that a per-type
 table validates its own body shape, and Convex validates a discriminated union
-just as well: `body` is `v.union(documentBody, deckBody, sheetBody)` keyed on
+just as well: `body` is `v.union(documentBody, presentationBody, sheetBody)` keyed on
 `resourceType`. Per-type validation and one implementation, rather than a choice
 between them.
 
@@ -56,7 +56,7 @@ replaying a year of edits on every open.
 
 ## The three tables
 
-**`documents` / `slideDecks` / `spreadsheets`** — metadata only. Title, template
+**`documents` / `presentations` / `spreadsheets`** — metadata only. Title, template
 origin, creator, timestamps. Small, rarely written, and readable without touching
 content. This is what a document list, a tab, a breadcrumb, and a search result
 render from.
@@ -129,7 +129,7 @@ other change set.
 | Per-resource-type tables | identical to head + change sets | identical |
 
 The first row is the one worth beating and the reason for all of this: a Convex
-patch rewrites the entire document, so a 400 KB deck costs 400 KB of write per
+patch rewrites the entire document, so a 400 KB presentation costs 400 KB of write per
 keystroke batch.
 
 The third row is what "interleaved" would actually cost without a compound index

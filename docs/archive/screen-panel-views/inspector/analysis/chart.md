@@ -55,7 +55,7 @@ Starts collapsed.
 
 **Shows** — four swatches from the theme.
 
-**Needs** — a colour set, ideally the same one the deck theme uses so a chart
+**Needs** — a colour set, ideally the same one the presentation theme uses so a chart
 pasted into a slide is not a different palette.
 
 ## Not yet modeled

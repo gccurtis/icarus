@@ -8,7 +8,7 @@ import { EDITOR_CATEGORY, type LibraryTemplate } from "$app-views/categories/tem
 
 const EDITOR_TEMPLATES_PANEL = {
   document: "document-editor.templates",
-  slides: "slide-deck-editor.templates"
+  presentation: "presentation-editor.templates"
 } as const;
 
 export const editTemplate = async (view: WorkspaceStateModel, row: LibraryTemplate) => {

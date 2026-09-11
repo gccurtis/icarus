@@ -1,6 +1,6 @@
 # Resource runtimes
 
-The client object that keeps documents, slide decks and spreadsheets in sync while
+The client object that keeps documents, presentations and spreadsheets in sync while
 somebody edits them. Companion to
 [the workbench model](workbench.md), which owns what is *open*
 while this owns what is being *changed*.
@@ -35,7 +35,7 @@ type ResourceKey = `${GeneralResourceType}:${string}`;   // "document:k57ab…"
 
 type BodyFor<T extends GeneralResourceType> =
   T extends "document" ? DocumentBody :
-  T extends "slides" ? SlideDeckBody :
+  T extends "presentation" ? PresentationBody :
   SpreadsheetBody;
 
 type ResourceRuntimesModel = {
@@ -113,7 +113,7 @@ row and is changed with `documents.rename`. That split is the storage design's:
 metadata is what a tab, a breadcrumb and a search result render, and it is readable
 without touching content.
 
-Same for the other two: a `SlideDeckBody` carries the slides and the deck theme; a
+Same for the other two: a `PresentationBody` carries the slides and the presentation theme; a
 `SpreadsheetBody` carries the sheets, their cells and their merges.
 
 ### One class, generic over the body
@@ -121,7 +121,7 @@ Same for the other two: a `SlideDeckBody` carries the slides and the deck theme;
 Buffering, flush thresholds, base-revision tracking and the refusal ladder are
 identical across the three; only `Body` differs. The server proved the same claim
 first — `changeSets` and `resourceSnapshots` are one table each, generic over
-`resourceType`, and the code applying an op never inspects a body. Decks and
+`resourceType`, and the code applying an op never inspects a body. Presentations and
 workbooks came along nearly free in pass 2 because of it.
 
 ## Three editors, three libraries, one runtime

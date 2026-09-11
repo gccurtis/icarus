@@ -1946,5 +1946,5 @@ nix develop ./infra/devshell --command node app/scripts/lint.mjs
 ```
 
 - **test:** all stack-builder tests pass. No baseline to regress — this is the first tested development-view.
-- **typecheck:** no error naming a stack-builder path. `stage.ts`, `overlay/index.ts` and `projection.test.ts` have pre-existing errors from in-flight slide-deck work; leave them alone.
+- **typecheck:** no error naming a stack-builder path. `stage.ts`, `overlay/index.ts` and `projection.test.ts` have pre-existing errors from in-flight presentation work; leave them alone.
 - **lint:** the baseline is **32 findings across 6 checks, exit 1**. The criterion is that no finding names a stack-builder path — not a clean run, which is not available.

@@ -2,7 +2,7 @@
 
 | Selecting | What it is | Sections |
 | --- | --- | --- |
-| Any resource row — a document, deck, spreadsheet, finding, Context or template | The thing itself: what it is, who is in it, where it came from, what it touches | Identity · Editing now · Provenance · Relationships · Actions |
+| Any resource row — a document, presentation, spreadsheet, finding, Context or template | The thing itself: what it is, who is in it, where it came from, what it touches | Identity · Editing now · Provenance · Relationships · Actions |
 
 The general lens for a first-class thing in the project. Kind-specific detail
 belongs to the screen that owns the kind; this one is about identity and

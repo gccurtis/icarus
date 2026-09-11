@@ -145,8 +145,8 @@ test("a default is read as prose, in the words every surface uses", () => {
   assert.equal(isWholeProject(draftOf(undefined)), true);
   assert.equal(ruleOf({ include: [{ select: "kinds", kinds: ["finding", "document"] }], exclude: [] }), "Findings, Documents");
   assert.equal(
-    ruleOf({ include: [{ select: "project" }], exclude: [{ select: "kinds", kinds: ["slides"] }] }),
-    "Everything in the project, minus Slide decks"
+    ruleOf({ include: [{ select: "project" }], exclude: [{ select: "kinds", kinds: ["presentation"] }] }),
+    "Everything in the project, minus Presentations"
   );
   assert.equal(ruleOf({ include: [], exclude: [] }), "Nothing");
 

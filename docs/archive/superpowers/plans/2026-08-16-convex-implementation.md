@@ -547,7 +547,7 @@ target label.
 
 ## Pass 2 — Editing
 
-Tables: `resourceSnapshots`, `changeSets`, `slideDecks`, `spreadsheets`,
+Tables: `resourceSnapshots`, `changeSets`, `presentations`, `spreadsheets`,
 `nameVariables`. Plus formula evaluation, which has no table.
 
 **This is the pass that proves the design.** Read
@@ -761,7 +761,7 @@ directory the door never names fails lint.
 - [ ] **Step 2–4:** implement and verify.
 - [ ] **Step 5: Commit** — `feat(revisions): read, submit, and consolidate`
 
-### Task 11: `slideDecks` and `spreadsheets`
+### Task 11: `presentations` and `spreadsheets`
 
 **Files:** create both capabilities following the recipe; tighten
 `resourceSnapshots.body` to a union on `resourceType`.
@@ -770,7 +770,7 @@ They come along nearly free — the snapshot and change-set machinery is generic
 over `resourceType`. **Building them here is what proves that.** If either needs
 a special case, better to find out now than after three passes depend on it.
 
-- [ ] Steps 1–5 per the recipe. Test that a deck body and a sheet body both round
+- [ ] Steps 1–5 per the recipe. Test that a presentation body and a sheet body both round
   trip through `applyOps` with no resource-specific code path.
 - [ ] **Commit** — `feat(slides,spreadsheets): add the remaining general resources`
 
@@ -1007,7 +1007,7 @@ named with reasons.
 every other check rejects when in doubt, and a bug there produces silently wrong
 text. It is tested first and separately for that reason.
 
-**Where the design is proven.** Task 11 is the load-bearing one: if decks and
+**Where the design is proven.** Task 11 is the load-bearing one: if presentations and
 workbooks need a special case in the change-set machinery, the claim that it is
 generic over `resourceType` was wrong, and better to learn that in pass 2 than
 pass 6.

@@ -6,8 +6,8 @@ the first section if you only want to know what a stage is.
 ## 1 · What a stage is, in one story
 
 A template is a saved original that people make copies from. You cannot type into the original
-directly, because the editors work on documents and decks, not on templates. So when you press Edit on
-a template, the app makes you a **working copy**: a real document or deck that holds the template's
+directly, because the editors work on documents and presentations, not on templates. So when you press Edit on
+a template, the app makes you a **working copy**: a real document or presentation that holds the template's
 content, opens in the ordinary editor, and is called a **stage** in the code. The stage is the only
 thing that can change the original.
 
@@ -22,7 +22,7 @@ thing that can change the original.
 4. **You press Discard.** The working copy is deleted, together with anything that accumulated on it.
    The original keeps its last saved revision.
 
-That is all a stage is: the one document or deck through which a template is edited. Nobody owns it,
+That is all a stage is: the one document or presentation through which a template is edited. Nobody owns it,
 nothing else ever writes the template's content, and it never shows up in the project's list of
 documents.
 
@@ -34,9 +34,9 @@ version. On disk: one `templates` row with `projectId`, and a `templateVersions`
 resource: it cannot be opened in an editor; its working copy can.
 
 **Body** (document · slides · spreadsheet) — The template's content, in the same shape a document,
-deck, or spreadsheet has, made portable. A template of one slide is a deck body holding one slide.
-Example: Save slide on slide 3 of a deck makes a deck template whose body holds slide 3, its layout,
-and the deck's theme and styles.
+presentation, or spreadsheet has, made portable. A template of one slide is a presentation body holding one slide.
+Example: Save slide on slide 3 of a presentation makes a presentation template whose body holds slide 3, its layout,
+and the presentation's theme and styles.
 
 **Portable** (project-neutral) — What a body must be to live in a template: nothing in it points at a
 particular thing in the project. A template turns a value into a function, so the pointers go and the
@@ -63,10 +63,10 @@ use a template. It wins over the default for that copy and is stored nowhere. Ex
 lists each variable with *Default · Findings* first, then everything in the project, each kind, and
 each named set. Leaving every default takes one press.
 
-**Stage** (working copy · `templateStages`) — The document or deck through which a template is edited:
+**Stage** (working copy · `templateStages`) — The document or presentation through which a template is edited:
 a real resource holding the template's body, plus a row saying which template it stands for and which
 revision it was taken from. One per template, shared by everyone in the project. On disk: a
-`templateStages` row and an ordinary `documents` or `slideDecks` row titled *Template · name*, with its
+`templateStages` row and an ordinary `documents` or `presentations` row titled *Template · name*, with its
 own snapshots and change sets; left out of the project's resource lists. Not a use of the template, and
 not a copy anyone keeps: it exists so the original can be edited, and it takes no comments.
 
@@ -85,7 +85,7 @@ cannot silently overwrite each other.
 
 ## 3 · Verbs
 
-**Save** (as a template) — Copy the open document, deck, or current slide into a new template of this
+**Save** (as a template) — Copy the open document, presentation, or current slide into a new template of this
 project, made portable, and open its working copy in a new tab. The thing you saved from is untouched
 and never learns a template was made from it.
 
@@ -99,11 +99,11 @@ next revision, made portable again, and say what was dropped. The copy stays ope
 last saved revision.
 
 **Insert** (into what is open) — Ask what each variable should select, then copy the template's saved
-body into the open document or deck after the current row or slide, with fresh ids and missing styles
+body into the open document or presentation after the current row or slide, with fresh ids and missing styles
 and layouts brought along. Undo removes it like any edit. Not a link: later changes to the template
 never reach what was inserted.
 
-**Use** (instantiate) — Ask what each variable should select, then make a whole new document, deck, or
+**Use** (instantiate) — Ask what each variable should select, then make a whole new document, presentation, or
 spreadsheet from the template and open it. The new resource carries no reference to the template; the
 template records that it was used.
 
@@ -132,7 +132,7 @@ panel; then describe it and set its default. Removing one is refused while the b
 | Everything in the project | The sentence a default reads as when it selects the whole project; the first switch in the Default modal. |
 | Default · Documents, Findings | The first choice in the Insert and Use modals: keep what the template suggests. |
 | Dropped a formula's project binding. | A save made the body portable and says what went: here, a formula lost its instance and kept its expression. |
-| A template's working copy takes no comments | What the deck's comment panels say in place of the composer on a stage. |
+| A template's working copy takes no comments | What the presentation's comment panels say in place of the composer on a stage. |
 | Used 3 days ago | The template's own record of its last use; no resource is consulted. |
 
 Companions: *Template Stage Flow* for the sequence, *Stages, Sets and Variables* for what changed, and

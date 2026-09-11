@@ -9,9 +9,9 @@ import {
 } from "$capabilities/templates/test/unit/template-fixture";
 
 describe("stored template validation — slide bodies", () => {
-  test("validates current slide layouts, content, references, frames, and deck ids", () => {
+  test("validates current slide layouts, content, references, frames, and presentation ids", () => {
     const body = {
-      resource: "slides",
+      resource: "presentation",
       aspectRatio: "16:9",
       theme: { colors: { text: "ink", accent: "blue", muted: "muted" } },
       styles: { defaultKey: "body", styles: { body: { name: "Body" } } },
@@ -68,8 +68,8 @@ describe("stored template validation — slide bodies", () => {
       sections: [{ id: "section-1", name: "Opening", firstSlideId: "slide-1" }]
     };
     const current = bodyOf(body, "test");
-    assert.equal(current.resource, "slides");
-    if (current.resource !== "slides") throw new Error("expected a slide template");
+    assert.equal(current.resource, "presentation");
+    if (current.resource !== "presentation") throw new Error("expected a slide template");
     assert.equal(current.layouts[0].id, "layout-title");
     assert.equal(current.slides[0].elements[0].content.type, "text");
     assert.doesNotThrow(() => bodyOf(current, "current"));
@@ -125,7 +125,7 @@ describe("stored template validation — slide bodies", () => {
       }),
       "compound"
     );
-    if (compound.resource !== "slides") throw new Error("expected a slide template");
+    if (compound.resource !== "presentation") throw new Error("expected a slide template");
     const compoundContent = compound.slides[0].elements[0].content;
     assert.equal(compoundContent.type, "group");
     if (compoundContent.type !== "group") throw new Error("expected grouped content");
@@ -143,7 +143,7 @@ describe("stored template validation — slide bodies", () => {
         }),
         "test"
       ).resource,
-      "slides"
+      "presentation"
     );
 
     const malformed = [
@@ -197,7 +197,7 @@ describe("stored template validation — slide bodies", () => {
     for (const candidate of malformed) {
       assert.throws(
         () => bodyOf(candidate, "test"),
-        /body is not a valid slides|exact current JSON data/
+        /body is not a valid presentation|exact current JSON data/
       );
     }
   });

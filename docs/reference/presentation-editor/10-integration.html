@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>10 · Integration into main</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="reference.css">
+</head>
+<body>
+<div class="shell">
+  <aside class="rail">
+    <p class="rail-mark">Reference</p>
+    <nav>
+      <a href="index.html"><b>00</b><span>Start here</span></a>
+      <a href="01-system.html"><b>01</b><span>How the system works</span></a>
+      <a href="02-model.html"><b>02</b><span>The presentation model and the applier</span></a>
+      <a href="03-editing-loop.html"><b>03</b><span>From a gesture to the store</span></a>
+      <a href="04-changes.html"><b>04</b><span>What changed, and why</span></a>
+      <a href="05-context-panels.html"><b>05</b><span>The context panels</span></a>
+      <a href="06-inspector.html"><b>06</b><span>The inspector</span></a>
+      <a href="07-content-surface.html"><b>07</b><span>The content surface</span></a>
+      <a href="08-runtime.html"><b>08</b><span>The runtime</span></a>
+      <a href="09-backend.html"><b>09</b><span>The back end</span></a>
+      <a href="10-integration.html" class="is-here"><b>10</b><span>Integration into main</span></a>
+    </nav>
+  </aside>
+
+  <main>
+    <p class="eyebrow">10 · merge record and handoff</p>
+    <h1>Integration into main</h1>
+    <p class="lede">
+      The feature branch was rolled forward to the document-editor version of <code>main</code>. Rebase
+      stopped on both feature commits; eight distinct paths required a human resolution, and five more
+      contract mismatches only appeared after compilation and browser verification. The reconciled branch
+      is a strict two-commit fast-forward from main.
+    </p>
+    <div class="meta">
+      <span>Original base <b>ad1900f</b></span>
+      <span>Merge baseline <b>main 4ceb07a</b></span>
+      <span>Rebased feature <b>ded90bb</b> + reconciliation</span>
+      <span>Merge-gate topology <b>main…branch = 0 / 2</b></span>
+    </div>
+
+    <section id="state">
+      <div class="head"><span class="n">1</span><h2>What has already happened</h2></div>
+      <div class="flow">
+        <div class="step"><b>Preserve</b><span class="m">dirty work → 54ba815</span>The complete editor worktree was captured in one feature commit before history moved.</div>
+        <div class="step"><b>Roll forward</b><span class="m">rebase onto 4ceb07a</span>Twenty-three commits made on main since the branch point were replayed underneath the feature.</div>
+        <div class="step"><b>Resolve</b><span class="m">feature → ded90bb</span>The editor commit was rewritten on top of main with eight conflicted paths resolved as one combined application.</div>
+        <div class="step"><b>Reconcile</b><span class="m">shared contracts</span>The second commit joins the document and slide text, comment, query, selection, template, and runtime contracts.</div>
+        <div class="step"><b>Prove</b><span class="m">Nix checks + Chromium</span>Static, unit, script, build, seed-corpus, and combined browser paths pass before the fast-forward.</div>
+      </div>
+      <div class="callout">
+        <h4>The document editor remains the shared baseline</h4>
+        <p>No document-editor implementation was replaced with the older slide-branch version. Where both editors touched a shared component or representation type, the resolution starts with current main and adds only the capability the slide editor needs.</p>
+      </div>
+    </section>
+
+    <section id="text-conflicts">
+      <div class="head"><span class="n">2</span><h2>Two rebase stops; eight conflicted paths</h2></div>
+      <p>
+        The first feature commit stopped on all eight paths below. The later reconciliation commit stopped
+        once more on the general comment lens because main had replaced the same provisional code. That
+        second conflict kept the already-combined lens and discarded the obsolete slide-only kind map.
+      </p>
+      <div class="scroll">
+        <table>
+          <thead><tr><th>File</th><th>Resolution</th><th>Why</th></tr></thead>
+          <tbody>
+            <tr><td><code>seed/commentThreads.json</code></td><td>Combined</td><td>Keep all seven document review fixtures and add the slide thread with the current actor shape and an <code>el-5</code> element anchor.</td></tr>
+            <tr><td><code>presentation-editor/content/presentation.svelte</code></td><td>Combined</td><td>Keep the authored DOM presentation editor and move shared-table reads under the workspace-owned query lifetime.</td></tr>
+            <tr><td><code>general/comment/comment.svelte</code></td><td>Combined twice</td><td>Keep main's operational document comment lens, actor schema, and mutations; add “Show in presentation” and nested slide-element location.</td></tr>
+            <tr><td><code>panel-choice.svelte</code></td><td>Combined</td><td>Keep main's controlled layout and styling, add icon/short-label support, and migrate slide callers from <code>stretch</code> to <code>fill</code>.</td></tr>
+            <tr><td><code>panel-marks.svelte</code></td><td>Main + slide callers</td><td>Keep the document editor's controlled mark behavior; remove the slide branch's superseded sizing prop.</td></tr>
+            <tr><td><code>panel-number.svelte</code></td><td>Combined</td><td>Keep main's InputGroup and validation treatment, plus Arrow stepping and Shift ×10; preserve a genuinely empty draft while editing.</td></tr>
+            <tr><td><code>content/block-format.ts</code></td><td>Union</td><td>Retain document indentation and spacing while adding the slide editor's font and colour fields.</td></tr>
+            <tr><td><code>workspace/tab.ts</code></td><td>Union</td><td>A selection can carry document <code>ranges</code>, slide <code>ids</code>, or neither. Neither editor's payload is narrowed away.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="semantic-conflict">
+      <div class="head"><span class="n">3</span><h2>The conflicts Git could not see</h2></div>
+      <p>Line-level conflict resolution was necessary but insufficient. Main had changed the rich-text and collaboration representations while the slide branch had changed the slide body and selection representations. Each side compiled against its own assumptions; the combined application had to make those boundaries explicit.</p>
+      <div class="scroll">
+        <table>
+          <thead><tr><th>Boundary</th><th>Reconciliation</th></tr></thead>
+          <tbody>
+            <tr><td>Stored slide bodies</td><td>Main's templates still admitted the earlier <code>blocks[]</code>/<code>format</code> element shape while the editor requires explicit <code>content</code>/<code>paint</code> variants. <code>presentation/api/shared/leader.ts</code> normalizes before reads or submissions consume a body.</td></tr>
+            <tr><td>Rich-text marks</td><td>Main changed mark endpoints from numeric display offsets to <code>{ atom, offset }</code>. Slide typing, scene rendering, op application, tests, legacy normalization, and template validation now share atom-aware position helpers from <code>representation/data/behavior/content/positions.ts</code>.</td></tr>
+            <tr><td>Comment anchors</td><td>The start-thread boundary accepts main's canonical multi-block text anchor, <code>{ kind: "text", spans: [...] }</code>, and rejects the former numeric input. Slide element/slide anchors remain explicit variants.</td></tr>
+            <tr><td>Reactive reads</td><td>Transient slide views no longer create direct store reads. Comment queries come from the workspace-owned registry, matching the lifetime rule introduced by the document editor and avoiding destroyed-view resources.</td></tr>
+            <tr><td>Workspace selections</td><td>The inspection canonicalizer copies both optional <code>ranges</code> and <code>ids</code>. Shift-click, Control-click, multi-cell selection, submitted ops, undo, and restoration retain the complete selection rather than only its primary id.</td></tr>
+            <tr><td>Templates</td><td><code>templates/api/shared/validation.ts</code> normalizes first, then validates the actual content union, atom endpoints, paint/background, indentation, nested groups, layout ids, references, dangling atoms, and globally addressable ids.</td></tr>
+            <tr><td>Multiple old blocks</td><td>The pure normalizer creates a group with deterministic child ids and relative frames. Background and border become a locked backing shape; padding becomes geometry; every text, image, table, formula, or prompt block survives.</td></tr>
+            <tr><td>Fresh seeds</td><td>The seed corpus remains useful legacy evidence. All four snapshots, four current slide templates, and four slide template versions were run through the same normalizer and canonical validator successfully.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="finding">
+        <h4>Why the adapter lives in representation behavior</h4>
+        <p>It is a pure function over represented data: no store, request, clock, filesystem, or UI. Read boundaries and template admission call one deterministic rule instead of carrying separate migrations.</p>
+      </div>
+    </section>
+
+    <section id="outside-editor">
+      <div class="head"><span class="n">4</span><h2>What changes outside the editor directory</h2></div>
+      <p>The feature is mostly isolated under <code>app-views/categories/presentation-editor</code>. These are the changes worth reviewing because another part of the application can observe them.</p>
+      <div class="scroll">
+        <table>
+          <thead><tr><th>Area</th><th>Change</th><th>Integration effect</th></tr></thead>
+          <tbody>
+            <tr><td>Content representation</td><td>Atom-aware positions plus typed slide content, paint, groups, layout ids, richer styles and ops</td><td>The document text contract is preserved and the slide editor now consumes it directly; legacy slide shapes are guarded by normalization.</td></tr>
+            <tr><td>Template capability</td><td>Canonical slide validation and legacy admission</td><td>Template-created presentations now open in the same editor model as seeded and existing presentations.</td></tr>
+            <tr><td>Shared panel vocabulary</td><td>Choice, color, marks, number, and select controls</td><td>Small API/style changes. Current main consumers typecheck; final visual unification can happen component by component.</td></tr>
+            <tr><td>Workspace state</td><td>Slide runtime registration, context/inspector keys, rail routing, persistent store queries, and selection canonicalization</td><td>Both document <code>ranges</code> and slide <code>ids</code> survive the same shared boundary.</td></tr>
+            <tr><td>Comments</td><td>Slide start/reply/resolve capability and extension of main's general comment lens</td><td>Additive use of existing comment tables and actor schema; document comment behavior remains intact.</td></tr>
+            <tr><td>Renderer dependency</td><td>Konva removed; authored DOM slide surface added</td><td><code>package.json</code> loses one dependency; rendering is now ordinary Svelte/SVG/HTML.</td></tr>
+            <tr><td>Runtime</td><td>Slide runtime/workspace selection integration</td><td>Uses the existing optimistic op and revision protocol; no new server lifetime.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="verification">
+      <div class="head"><span class="n">5</span><h2>Verification gate</h2></div>
+      <p>Run from the repository root. Every project command enters the repository's Nix shell.</p>
+      <pre><code>nix develop ./infra/devshell --command bash -lc 'cd app &amp;&amp; pnpm test'
+nix develop ./infra/devshell --command bash -lc 'cd app &amp;&amp; pnpm test:scripts'
+nix develop ./infra/devshell --command bash -lc 'cd app &amp;&amp; pnpm lint'
+nix develop ./infra/devshell --command bash -lc 'cd app &amp;&amp; pnpm build'
+
+# Run against a clean disposable copy, not ignored app/data:
+ICARUS_CHROMIUM_EXECUTABLE=/etc/profiles/per-user/jakul/bin/chromium pnpm test:browser</code></pre>
+      <p>
+        Final results: 799 Vitest tests, 99 script/generator tests, all 56 lint checks, zero
+        Svelte/TypeScript build diagnostics, and all 19 Chromium tests pass.
+      </p>
+      <div class="callout">
+        <h4>Chromium result: pass</h4>
+        <p>The complete document-editor suite and the new slide suite run together from a clean disposable seed. The canonical presentation renders; Shift-click adds a second object; Control-click removes one; selection ids, inspector state, and outlines remain synchronized; and an anchored slide comment round-trips through the shared comment lens. No application console, page, request, or HTTP error remains.</p>
+      </div>
+    </section>
+
+    <section id="merge">
+      <div class="head"><span class="n">6</span><h2>The final fast-forward</h2></div>
+      <p>The verified branch is handed to main without a merge commit:</p>
+      <pre><code>cd /home/jakul/cyberia/icarus
+git status --short --branch
+git rev-list --left-right --count main...work/presentation-editor  # 0  2
+git merge --ff-only work/presentation-editor
+
+nix develop ./infra/devshell --command bash -lc \
+  'cd app &amp;&amp; pnpm dev --host 127.0.0.1 --port 3111 --strictPort'</code></pre>
+      <p>
+        <code>--ff-only</code> is deliberate: <code>4ceb07a</code> is an ancestor of the reconciled branch.
+        A refusal means main moved after this audit; rebase onto that newer main and repeat the gate instead
+        of hiding a new conflict inside an unreviewed merge commit.
+      </p>
+    </section>
+
+    <footer>Integration record prepared 2026-09-06. Back to <a href="index.html">the start</a>.</footer>
+  </main>
+</div>
+</body>
+</html>

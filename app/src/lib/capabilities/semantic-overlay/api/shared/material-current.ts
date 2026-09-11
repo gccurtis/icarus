@@ -117,7 +117,7 @@ export const materialProjectionIsCurrentFor = async (
   signal?: AbortSignal
 ): Promise<boolean> => {
   signal?.throwIfAborted();
-  if (ref.kind !== "document" && ref.kind !== "slides" && ref.kind !== "spreadsheet") {
+  if (ref.kind !== "document" && ref.kind !== "presentation" && ref.kind !== "spreadsheet") {
     return false;
   }
   try {

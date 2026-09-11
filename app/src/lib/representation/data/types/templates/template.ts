@@ -5,7 +5,7 @@ import type {
   TemplatedResourceSet
 } from "$representation/data/types/core/resource-set";
 import type { DocumentBody } from "$representation/data/types/documents/body";
-import type { SlideDeckBody } from "$representation/data/types/slide-decks/body";
+import type { PresentationBody } from "$representation/data/types/presentations/body";
 import type { PrintScale } from "$representation/data/types/spreadsheets/body";
 import type { CellFormat } from "$representation/data/types/spreadsheets/cell-format";
 import type { PageSetup } from "$representation/data/types/spreadsheets/page-setup";
@@ -91,5 +91,5 @@ export type SpreadsheetTemplate = {
 
 export type TemplateBody =
   | ({ resource: "document" } & DocumentBody)
-  | ({ resource: "slides" } & SlideDeckBody)
+  | ({ resource: "presentation" } & PresentationBody)
   | ({ resource: "spreadsheet" } & SpreadsheetTemplate);

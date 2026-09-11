@@ -130,7 +130,7 @@
   <PanelSection title="Documents" count={3} flush>
     <PanelRow ... />
   </PanelSection>
-  <PanelSection title="Slide decks" count={2} flush>…</PanelSection>
+  <PanelSection title="Presentations" count={2} flush>…</PanelSection>
 </PanelSearch>`,
     progress: `<PanelProgress label="Google Drive — Filings"
   detail="148 of 212 files" value={70} />
@@ -177,14 +177,14 @@
   label="What these comments are on"
   value={scope}
   options={[
-    { value: "deck", label: "Deck" },
+    { value: "presentation", label: "Presentation" },
     { value: "slide", label: "Slide 4" },
     { value: "element", label: "Element" }
   ]}
   onchange={(next) => (scope = next)}
 />`,
     thumb: `<PanelThumbs across={2}>
-  {#each deck.slides as slide (slide.id)}
+  {#each presentation.slides as slide (slide.id)}
     <PanelThumb
       caption={String(slide.index)}
       hidden={slide.hidden}
@@ -507,7 +507,7 @@
         label="What these comments are on"
         value={scope}
         options={[
-          { value: "deck", label: "Deck" },
+          { value: "presentation", label: "Presentation" },
           { value: "slide", label: "Slide 4" },
           { value: "element", label: "Element" }
         ]}

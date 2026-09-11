@@ -77,7 +77,7 @@
     {
       n: 4,
       title: "The first question in a project pays for the overlay",
-      body: "Nothing indexes a project until something asks. The first turn embeds every document and deck and drains the queue; later turns skip whatever is already current. In the seeded project that is eight resources and about twenty seconds."
+      body: "Nothing indexes a project until something asks. The first turn embeds every document and presentation and drains the queue; later turns skip whatever is already current. In the seeded project that is eight resources and about twenty seconds."
     }
   ];
 

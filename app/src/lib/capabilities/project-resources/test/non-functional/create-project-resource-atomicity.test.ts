@@ -37,7 +37,7 @@ afterEach(() => {
 
 const subjects = [
   { target: "document", resources: "documents", snapshots: "documentSnapshots", exact: true },
-  { target: "slides", resources: "slideDecks", snapshots: "slideDeckSnapshots", exact: true },
+  { target: "presentation", resources: "presentations", snapshots: "presentationSnapshots", exact: true },
   { target: "spreadsheet", resources: "spreadsheets", snapshots: "spreadsheetSnapshots", exact: false }
 ] as const satisfies readonly {
   target: ProjectResourceTarget;

@@ -1,0 +1,14 @@
+import { startThread } from "$capabilities/comments/index.remote";
+import type { CommentAnchor } from "$capabilities/comments/index.remote";
+
+export type SlideCommentInput = {
+  readonly presentationId: string;
+  readonly within?: Extract<CommentAnchor, { kind: "slide" | "element" }>;
+  readonly text: string;
+};
+
+export const startSlideComment = (input: SlideCommentInput) => startThread({
+  target: { kind: "presentation", id: input.presentationId },
+  ...(input.within === undefined ? {} : { within: input.within }),
+  text: input.text
+});

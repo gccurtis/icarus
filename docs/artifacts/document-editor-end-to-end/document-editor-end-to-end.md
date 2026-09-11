@@ -145,7 +145,7 @@ mounted `editor` while the surface is on screen.
 **Apply: the body moves first.** `apply(ops)` runs the applier over the live body,
 then records for undo and buffers. Refusal applies nothing and buffers nothing.
 The applier is one function in `representation/data/behavior/documents/`, run by
-the client runtime and by `submit-document-changes` alike — the slide deck already
+the client runtime and by `submit-document-changes` alike — the presentation already
 works this way.
 
 **Flush: a change set at a time.** Buffer → `{ baseRevision, ops: coalesce(buffer),

@@ -9,7 +9,7 @@ import type {
   TextBlock
 } from "$representation/data/types/content/content-block";
 import type { Id } from "$representation/data/types/core/id";
-import type { SlideDeckBody } from "$representation/data/types/slide-decks/body";
+import type { PresentationBody } from "$representation/data/types/presentations/body";
 
 const text = (id: string, display: string): TextBlock => ({
   id,
@@ -54,7 +54,7 @@ const table = (): TableBlock => ({
   ]
 });
 
-const deckWith = (block: TableBlock): SlideDeckBody => ({
+const presentationWith = (block: TableBlock): PresentationBody => ({
   aspectRatio: "16:9",
   theme: { colors: { text: "#111", accent: "#08f" } },
   styles: { defaultKey: "body", styles: { body: { name: "Body" } } },
@@ -153,11 +153,11 @@ describe("semantic material projection", () => {
       body: { rows: [{ id: "row", kind: "blocks", blocks: [native] }] }
     });
     const slides = projectResource({
-      kind: "slides",
-      ref: { kind: "slides", id: asId<"slideDecks">("slideDecks:deck") },
+      kind: "presentation",
+      ref: { kind: "presentation", id: asId<"presentations">("presentations:presentation") },
       revision: 1,
-      title: "Deck",
-      body: deckWith(native)
+      title: "Presentation",
+      body: presentationWith(native)
     });
 
     expect(slides.materials[0].profile).toEqual(documentProjection.materials[0].profile);
@@ -258,17 +258,17 @@ describe("semantic material projection", () => {
     ]);
 
     const slideProjection = projectResource({
-      kind: "slides",
+      kind: "presentation",
       ref: {
-        kind: "slides",
-        id: asId<"slideDecks">("slideDecks:nested-deck")
+        kind: "presentation",
+        id: asId<"presentations">("presentations:nested-presentation")
       },
       revision: 1,
-      title: "Nested deck",
+      title: "Nested presentation",
       body: {
-        ...deckWith(outer),
+        ...presentationWith(outer),
         slides: [{
-          ...deckWith(outer).slides[0],
+          ...presentationWith(outer).slides[0],
           notes: [prompt("generated-note", "MODEL SECRET"), outer]
         }]
       }

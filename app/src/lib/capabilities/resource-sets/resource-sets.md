@@ -11,7 +11,7 @@ The project's resource sets: the scopes a prompt looks things up in.
 
 A set is `include` minus `exclude`. A term selects the whole project, a list of
 resource kinds matched by segment, named resources, or another set by id. The
-count each set reports is resolved when it is read, over the documents, decks,
+count each set reports is resolved when it is read, over the documents, presentations,
 spreadsheets, findings and research threads the project holds — never stored,
 so it cannot go stale. A template's staged copy is left out of that catalogue.
 

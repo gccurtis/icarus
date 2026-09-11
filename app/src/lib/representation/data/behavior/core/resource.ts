@@ -27,7 +27,7 @@ export const kindMatches = (pattern: ResourceSelectorKind, kind: ResourceKind): 
 
 export const RESOURCE_KINDS = [
   "document",
-  "slides",
+  "presentation",
   "spreadsheet",
   "research",
   "finding",
@@ -53,7 +53,7 @@ export const EXTERNAL_FILE_SUBKINDS = [
 
 export const RESOURCE_SELECTOR_KINDS = [
   "document",
-  "slides",
+  "presentation",
   "spreadsheet",
   "research",
   "finding",
@@ -70,7 +70,7 @@ export const RESOURCE_SELECTOR_KINDS = [
 
 const RESOURCE_TABLES = {
   "document": "documents",
-  slides: "slideDecks",
+  presentation: "presentations",
   spreadsheet: "spreadsheets",
   research: "researchThreads",
   finding: "findings",

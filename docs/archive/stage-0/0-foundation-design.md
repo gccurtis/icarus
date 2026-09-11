@@ -164,7 +164,7 @@ What a project holds and works over.
 
 ```ts
 /** Open, not a closed union. Base kinds today: */
-type ResourceKind = string;   // "document" | "slides" | "spreadsheet"
+type ResourceKind = string;   // "document" | "presentation" | "spreadsheet"
                               // "externalFile" | "finding"
                               // "connector" | "template" | …
 
@@ -350,7 +350,7 @@ growing beside it. There is one, and the more expressive one wins:
 **Decisions baked in**
 
 - **Separate from `PageSetup` because the two have different owners.** A slide
-  deck's handout and a spreadsheet's print setup need a paper size and margins
+  presentation's handout and a spreadsheet's print setup need a paper size and margins
   and have no headers at all. Merging them would put four fields on every
   resource that only one uses.
 - **Page numbering is a field, not a block.** The number is not authored — it is
@@ -802,7 +802,7 @@ Five ops over a path. These ship with their tables, but they are foundation:
 everything that edits a body is written in them.
 
 ```ts
-type ResourceType = "document" | "slides" | "spreadsheet";
+type ResourceType = "document" | "presentation" | "spreadsheet";
 type ResourceKey  = { resourceType: ResourceType; resourceId: string };
 
 type OpTarget =

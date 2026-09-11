@@ -21,7 +21,7 @@
         <span class="kicker">Wired</span>
         <p>
           The reference kinds are in the representation and the evaluator walks them. A variable and
-          a sheet resolve; a document, a deck and a file are the wiring still to do.
+          a sheet resolve; a document, a presentation and a file are the wiring still to do.
         </p>
       </aside>
     </header>

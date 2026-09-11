@@ -126,7 +126,7 @@ export const runtimeReference: AreaReference = {
       trigger: "The client workspace closes.",
       steps: [
         { actor: "Client runtime", action: "Flushes pending workspace/store work.", artifact: "workspace.flush" },
-        { actor: "Runtime registries", action: "Release all document, deck, and sheet runtimes.", artifact: "releaseAll" },
+        { actor: "Runtime registries", action: "Release all document, presentation, and sheet runtimes.", artifact: "releaseAll" },
         { actor: "Document runtime", action: "Enters settling and flushes remaining document operations.", artifact: "release" },
         { actor: "Query registry", action: "Releases persistent remote table/resource queries.", artifact: "query release" }
       ],

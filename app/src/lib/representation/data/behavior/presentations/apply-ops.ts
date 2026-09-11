@@ -1,0 +1,324 @@
+import type {
+  Atom,
+  MarkEnd,
+  PromptBlock,
+  TextBlock
+} from "$representation/data/types/content/content-block";
+import { displayOfAtom } from "$representation/data/behavior/content/positions";
+import type { PresentationBody } from "$representation/data/types/presentations/body";
+import type { PresentationOp } from "$representation/data/types/presentations/op";
+
+type Identified = { id: string };
+type Tree = Record<string, unknown>;
+type EditableTextBlock = TextBlock | PromptBlock;
+
+const ROOT_FIELDS = new Set(["aspectRatio", "theme", "styles", "slides", "sections", "layouts"]);
+
+const refuse = (op: PresentationOp, why: string): never => {
+  throw new Error(`cannot apply ${op.op} at ${op.path}: ${why}`);
+};
+
+const isTree = (value: unknown): value is Tree =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const isReference = (value: Tree): boolean => {
+  const keys = Object.keys(value);
+  return keys.length === 2 && keys.includes("kind") && keys.includes("id");
+};
+
+const carries = (value: unknown, id: string): value is Identified & Tree =>
+  isTree(value) && value.id === id && !isReference(value);
+
+type Search = { hit: boolean };
+
+const replaceIn = <T>(value: T, id: string, change: (node: Tree) => Tree, search: Search): T => {
+  if (search.hit) return value;
+
+  if (Array.isArray(value)) {
+    let changed = false;
+    const next = value.map((item) => {
+      const replaced = replaceIn(item, id, change, search);
+      if (replaced !== item) changed = true;
+      return replaced;
+    });
+    return (changed ? next : value) as T;
+  }
+
+  if (!isTree(value)) return value;
+
+  if (carries(value, id)) {
+    search.hit = true;
+    return change(value) as T;
+  }
+
+  let changed = false;
+  const next: Tree = {};
+  for (const [key, held] of Object.entries(value)) {
+    const replaced = replaceIn(held, id, change, search);
+    if (replaced !== held) changed = true;
+    next[key] = replaced;
+  }
+  return (changed ? next : value) as T;
+};
+
+const mapNode = (body: PresentationBody, id: string, change: (node: Tree) => Tree): PresentationBody => {
+  const search: Search = { hit: false };
+  const next = replaceIn(body, id, change, search);
+  if (!search.hit) throw new Error(`Nothing in the presentation has the id ${id}.`);
+  return next;
+};
+
+const findNode = (value: unknown, id: string): Tree | undefined => {
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const hit = findNode(item, id);
+      if (hit) return hit;
+    }
+    return undefined;
+  }
+  if (!isTree(value)) return undefined;
+  if (carries(value, id)) return value;
+  for (const held of Object.values(value)) {
+    const hit = findNode(held, id);
+    if (hit) return hit;
+  }
+  return undefined;
+};
+
+const setDeep = (node: Tree, segments: readonly string[], value: unknown, op: PresentationOp): Tree => {
+  const [head, ...rest] = segments;
+  if (head === undefined) return refuse(op, "a set names a field");
+
+  if (rest.length === 0) {
+    const held = node[head];
+    if (Array.isArray(held) && held.some((item) => isTree(item) && typeof item.id === "string")) {
+      return refuse(op, `${head} is a list — insert, remove or move into it`);
+    }
+    if (value === null) {
+      const { [head]: gone, ...without } = node;
+      void gone;
+      return without;
+    }
+    return { ...node, [head]: value };
+  }
+
+  const inner = node[head];
+  if (inner === undefined) return { ...node, [head]: setDeep({}, rest, value, op) };
+  if (!isTree(inner)) return refuse(op, `${head} holds no fields to reach ${rest.join("/")} in`);
+  return { ...node, [head]: setDeep(inner, rest, value, op) };
+};
+
+const applySet = (body: PresentationBody, op: Extract<PresentationOp, { op: "set" }>): PresentationBody => {
+  const [head, ...rest] = op.path.split("/");
+
+  if (ROOT_FIELDS.has(head)) {
+    return setDeep(body as unknown as Tree, [head, ...rest], op.value, op) as unknown as PresentationBody;
+  }
+
+  if (rest.length === 0) return refuse(op, "an id alone names nothing to set");
+  return mapNode(body, head, (node) => setDeep(node, rest, op.value, op));
+};
+
+const insertAfter = <T extends Identified>(
+  items: readonly T[],
+  after: string | null,
+  values: readonly T[]
+): T[] => {
+  if (after === null) return [...values, ...items];
+
+  const at = items.findIndex((item) => item.id === after);
+  if (at === -1) throw new Error(`Nothing with id ${after} to insert after.`);
+
+  return [...items.slice(0, at + 1), ...values, ...items.slice(at + 1)];
+};
+
+const withoutIds = <T extends Identified>(items: readonly T[], ids: readonly string[]): T[] => {
+  const going = new Set(ids);
+  const kept = items.filter((item) => !going.has(item.id));
+  if (kept.length + going.size !== items.length) {
+    throw new Error(`Not every id of ${[...going].join(", ")} is there to remove.`);
+  }
+
+  return kept;
+};
+
+const mapListDeep = (
+  node: Tree,
+  fields: readonly string[],
+  op: PresentationOp,
+  change: (list: Identified[]) => Identified[]
+): Tree => {
+  const [field, ...rest] = fields;
+  if (field === undefined) return refuse(op, "a list is named by its holder and a field");
+  const held = node[field];
+  if (rest.length === 0) {
+    if (!Array.isArray(held)) return refuse(op, `${field} is not a list here`);
+    return { ...node, [field]: change(held as Identified[]) };
+  }
+  if (!isTree(held)) return refuse(op, `${field} holds no ${rest.join("/")}`);
+  return { ...node, [field]: mapListDeep(held, rest, op, change) };
+};
+
+const mapList = (
+  body: PresentationBody,
+  op: PresentationOp,
+  change: (list: Identified[]) => Identified[]
+): PresentationBody => {
+  const [head, ...fields] = op.path.split("/");
+
+  if (fields.length === 0) {
+    if (!ROOT_FIELDS.has(head)) return refuse(op, `${head} is not a list the presentation holds`);
+    const held = (body as unknown as Tree)[head];
+    if (!Array.isArray(held)) return refuse(op, `${head} is not a list`);
+    return { ...body, [head]: change(held as Identified[]) };
+  }
+
+  return mapNode(body, head, (node) => mapListDeep(node, fields, op, change));
+};
+
+const applyInsert = (body: PresentationBody, op: Extract<PresentationOp, { op: "insert" }>) => {
+  const [id, field] = op.path.split("/");
+  if (op.target === "atom" && field === "atoms") {
+    return mapNode(body, id, (node) => {
+      const block = node as unknown as EditableTextBlock;
+      if ((block.type !== "text" && block.type !== "prompt") || !Array.isArray(block.atoms)) {
+        throw new Error(`Block ${id} holds no atoms.`);
+      }
+      const atoms = insertAfter(block.atoms, op.after, op.values as Atom[]);
+      return { ...block, atoms, display: displayOf(atoms) } as unknown as Tree;
+    });
+  }
+
+  return mapList(body, op, (list) => insertAfter(list, op.after, op.values as Identified[]));
+};
+
+const applyRemove = (body: PresentationBody, op: Extract<PresentationOp, { op: "remove" }>) => {
+  const [id, field] = op.path.split("/");
+  if (op.target === "atom" && field === "atoms") {
+    return mapNode(body, id, (node) => {
+      const block = node as unknown as EditableTextBlock;
+      if ((block.type !== "text" && block.type !== "prompt") || !Array.isArray(block.atoms)) {
+        throw new Error(`Block ${id} holds no atoms.`);
+      }
+      const atoms = withoutIds(block.atoms, op.ids);
+      const going = new Set(op.ids);
+      const marks = block.marks.filter(
+        (mark) => !going.has(mark.from.atom) && !going.has(mark.to.atom)
+      );
+      return { ...block, atoms, display: displayOf(atoms), marks } as unknown as Tree;
+    });
+  }
+
+  return mapList(body, op, (list) => withoutIds(list, op.ids));
+};
+
+const applyMove = (body: PresentationBody, op: Extract<PresentationOp, { op: "move" }>) =>
+  mapList(body, op, (list) => {
+    const moving = list.find((item) => item.id === op.id);
+    if (moving === undefined) throw new Error(`No ${op.target} ${op.id} to move.`);
+    return insertAfter(withoutIds(list, [op.id]), op.after, [moving]);
+  });
+
+const displayOf = (atoms: readonly Atom[]): string => atoms.map(displayOfAtom).join("");
+
+const spliced = (op: Extract<PresentationOp, { op: "text" }>, atom: Atom): Atom => {
+  if (atom.kind !== "literal") throw new Error(`Atom ${atom.id} is not a literal.`);
+
+  const removed = atom.text.slice(op.at, op.at + op.remove.length);
+  if (removed !== op.remove) {
+    throw new Error(
+      `Atom ${atom.id} holds "${removed}" at ${op.at}, not "${op.remove}" — authored against text that has moved.`
+    );
+  }
+
+  return {
+    ...atom,
+    text: atom.text.slice(0, op.at) + op.insert + atom.text.slice(op.at + op.remove.length)
+  };
+};
+
+const shiftedFrom = (
+  end: MarkEnd,
+  atom: string,
+  at: number,
+  removed: number,
+  inserted: number
+): MarkEnd => {
+  if (end.atom !== atom || end.offset < at) return end;
+  if (end.offset >= at + removed) return { ...end, offset: end.offset + inserted - removed };
+  return { ...end, offset: at + inserted };
+};
+
+const shiftedTo = (
+  end: MarkEnd,
+  atom: string,
+  at: number,
+  removed: number,
+  inserted: number
+): MarkEnd => {
+  if (end.atom !== atom || end.offset <= at) return end;
+  if (end.offset >= at + removed) return { ...end, offset: end.offset + inserted - removed };
+  return { ...end, offset: at };
+};
+
+const emptyMark = (mark: EditableTextBlock["marks"][number]): boolean =>
+  mark.from.atom === mark.to.atom && mark.from.offset >= mark.to.offset;
+
+const shiftedMarks = (
+  block: EditableTextBlock,
+  atom: string,
+  at: number,
+  removed: number,
+  inserted: number
+) =>
+  block.marks
+    .map((mark) => ({
+      ...mark,
+      from: shiftedFrom(mark.from, atom, at, removed, inserted),
+      to: shiftedTo(mark.to, atom, at, removed, inserted)
+    }))
+    .filter((mark) => !emptyMark(mark));
+
+const applyText = (body: PresentationBody, op: Extract<PresentationOp, { op: "text" }>): PresentationBody => {
+  const [blockId, field, atomId] = op.path.split("/");
+  if (field !== "atoms" || atomId === undefined) return refuse(op, "a text op names <block>/atoms/<atom>");
+
+  return mapNode(body, blockId, (node) => {
+    const block = node as unknown as EditableTextBlock;
+    if ((block.type !== "text" && block.type !== "prompt") || !Array.isArray(block.atoms)) {
+      throw new Error(`Block ${blockId} holds no atoms a text op can reach.`);
+    }
+    const atomIndex = block.atoms.findIndex((atom) => atom.id === atomId);
+    if (atomIndex === -1) throw new Error(`No atom ${atomId} in block ${blockId}.`);
+
+    const atoms = block.atoms.map((atom) => (atom.id === atomId ? spliced(op, atom) : atom));
+    return {
+      ...block,
+      atoms,
+      display: displayOf(atoms),
+      marks: shiftedMarks(block, atomId, op.at, op.remove.length, op.insert.length)
+    } as unknown as Tree;
+  });
+};
+
+const applyOp = (body: PresentationBody, op: PresentationOp): PresentationBody => {
+  switch (op.op) {
+    case "set":
+      return applySet(body, op);
+    case "insert":
+      return applyInsert(body, op);
+    case "remove":
+      return applyRemove(body, op);
+    case "move":
+      return applyMove(body, op);
+    case "text":
+      return applyText(body, op);
+    default:
+      return refuse(op, "not an op");
+  }
+};
+
+export const applyOps = (body: PresentationBody, ops: readonly PresentationOp[]): PresentationBody =>
+  ops.reduce(applyOp, body);
+
+export const nodeIn = (body: PresentationBody, id: string): Tree | undefined => findNode(body, id);

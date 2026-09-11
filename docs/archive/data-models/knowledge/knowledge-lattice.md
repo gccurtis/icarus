@@ -35,7 +35,7 @@ interface LatticeWindow {
 
 type LatticeSource =
   | { kind: "document"; id: Id<"documents"> }
-  | { kind: "slides"; id: Id<"slideDecks"> }
+  | { kind: "presentation"; id: Id<"presentations"> }
   | { kind: "spreadsheet"; id: Id<"spreadsheets"> }
   | { kind: "externalFile"; id: Id<"externalFiles"> }
   | { kind: "finding"; id: Id<"findings"> };

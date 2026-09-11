@@ -5,7 +5,7 @@ Published at https://claude.ai/code/artifact/e23e685f-0fce-4e52-9816-6600d8fb8ae
 The map: where am I in this sheet, and what else is here. Ten entries, in the order
 a person reaches for them, landing on the grid's own shape. Six are built this
 round and every control on them is an op on the live sheet; four stay placeholders
-with their reasons on the row, as the document and the deck already do.
+with their reasons on the row, as the document and the presentation already do.
 
 | Readout | |
 | --- | --- |
@@ -16,7 +16,7 @@ with their reasons on the row, as the document and the deck already do.
 
 ## 01 · Ten entries, landing on Grid
 
-The document lands on Sections and the deck on Slides because each has a structure
+The document lands on Sections and the presentation on Slides because each has a structure
 the centre cannot show at once. A sheet shows itself, so its first entry is the
 grid's own shape: what is used, what is frozen, what is named, what is broken. The
 rest follows the conventions the other two editors settled: Find, then the sheet's
@@ -31,7 +31,7 @@ own vocabularies, then Comments, then the three shared placeholders at the end.
 | 5 | Print | Paper, orientation, margins, area, repeats, scale, gridlines and headings. A grid has no natural page. |
 | 6 | Objects | Charts and overlays over the grid. A placeholder until objects have a field in the body. |
 | 7 | Comments | Open threads leading with the address they anchor to; Resolved as a second band, shut. |
-| 8 | Variables | The project's name manager, as in the document and the deck. Placeholder, as agreed there. |
+| 8 | Variables | The project's name manager, as in the document and the presentation. Placeholder, as agreed there. |
 | 9 | Templates (new key) | Placeholder, matching the other two editors' rails. |
 | 10 | Prompts (new key) | Placeholder, matching the other two editors' rails. |
 
@@ -209,7 +209,7 @@ for. That is how an unbuilt view is reached, and each of these carries its reaso
 - **Variables.** The project's name manager: every named table, value and function,
   and the only place they are created. A placeholder in all three editors, as
   agreed for the document.
-- **Templates.** Placeholder, as on the document's and the deck's rails. A
+- **Templates.** Placeholder, as on the document's and the presentation's rails. A
   spreadsheet template is addressed by A1 and instantiated into ids; that
   translation is a later round.
 - **Prompts.** Placeholder, as on the other two rails. A grid has no prompt blocks;

@@ -9,12 +9,12 @@
   /**
    * A small set of alternatives with exactly one on.
    *
-   * The scope a list is narrowed to — `Deck` · `Slide 4` · `Element` — the
+   * The scope a list is narrowed to — `Presentation` · `Slide 4` · `Element` — the
    * region a panel is switched to, or a value short enough to show rather than
    * hide. Five categories draw these as a region of their layout grid, above the
    * thing they narrow.
    *
-   * **It exists because the application was faking it.** A deck inspector wrote
+   * **It exists because the application was faking it.** A presentation inspector wrote
    * `<PanelActions><PanelChip tone="active">16:9</PanelChip><PanelChip>4:3</PanelChip></PanelActions>`
    * — a chosen value drawn from two inert `span`s. It looked exactly right, could
    * not be reached by keyboard, could not be changed, and announced nothing at

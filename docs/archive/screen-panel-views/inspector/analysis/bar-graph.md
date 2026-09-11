@@ -115,7 +115,7 @@ The measures, one row each, in the result's order.
 
 ### Props
 
-**Colours are role tokens.** A chart pasted into a deck comes out in the deck's
+**Colours are role tokens.** A chart pasted into a presentation comes out in the presentation's
 palette instead of carrying four literal colours from another document, which is
 why the swatches show token names.
 

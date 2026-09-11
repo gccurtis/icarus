@@ -6,7 +6,7 @@ The domains mirror what the system stores, and each is one subject: `core`
 underneath the rest, `content` for what is authored, `investigation` and
 `knowledge` for what is worked out.
 
-`documents`, `slide-decks` and `spreadsheets` are one domain each, holding that
+`documents`, `presentations` and `spreadsheets` are one domain each, holding that
 resource's body, its ops and its snapshot vocabulary. Nothing is shared between
 the three.
 

@@ -24,7 +24,7 @@
   const triggers = [
     ["Manual", "Someone presses Run", "none", "Run here, or in the Manual panel"],
     ["On a schedule", "The clock reaches a time", "at · repeats · weekday · timezone", "daily, weekdays, or one weekday"],
-    ["When a resource is edited", "Something of these kinds changes", "kinds · one exact resource", "any of the kinds, or one document, deck or sheet"],
+    ["When a resource is edited", "Something of these kinds changes", "kinds · one exact resource", "any of the kinds, or one document, presentation or sheet"],
     ["When a resource is created", "Something of these kinds is made", "kinds", "any of the kinds"]
   ];
 

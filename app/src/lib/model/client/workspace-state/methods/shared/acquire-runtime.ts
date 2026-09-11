@@ -11,9 +11,9 @@ export const acquireForTarget = (state: WorkspaceStateData, target: Target): voi
       documentRuntimes?.attach(target.resourceId);
       return;
     }
-    case "slide-deck-editor": {
-      const slideDeckRuntimes = state.decks;
-      slideDeckRuntimes?.attach(target.resourceId);
+    case "presentation-editor": {
+      const presentationRuntimes = state.presentations;
+      presentationRuntimes?.attach(target.resourceId);
       return;
     }
     case "spreadsheet-editor": {

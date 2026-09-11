@@ -28,7 +28,7 @@ The companion pages: [The Sheet Surface](../spreadsheet-sheet-surface/spreadshee
 
 ## 01 · Three copies of one sheet, in two tables
 
-The document and the deck each keep their whole body in one leader snapshot. The
+The document and the presentation each keep their whole body in one leader snapshot. The
 spreadsheet is the one resource whose content is not in its body: the body holds
 the *shape* of the grid (which rows and columns exist, in what order, how wide,
 what is formatted where, how it prints) and every populated cell is a row of its
@@ -64,7 +64,7 @@ store never sends ops; it sends a body and cells at a revision.
 
 The slide editor no longer imports Konva. The canvas became
 `components/authored/slide-surface/`: a component that takes a `SurfaceScene`
-projected from the live deck and emits moves, edits and selections back. The deck
+projected from the live presentation and emits moves, edits and selections back. The presentation
 view translates those into ops. That is the shape the spreadsheet takes too:
 `sheet-surface` takes a `SheetScene` and emits intents, and it is what makes the
 grid library a decision that can be revisited without touching a lens, a panel, a
@@ -187,7 +187,7 @@ Rows marked *asked* are proposed on *Questions and decisions*, not settled.
 
 ## 05 · The live sheet
 
-`model/client/spreadsheet-runtimes/` exists already, copied from the deck: a
+`model/client/spreadsheet-runtimes/` exists already, copied from the presentation: a
 register keyed by sheet, a runtime with a buffer, an undo stack, a coalescer and a
 flush that takes the accepted branch locally because nothing serves a sheet yet.
 Two things change. The runtime's live copy becomes `sheet: { body, cells }` rather
@@ -323,7 +323,7 @@ app-views/categories/spreadsheet-editor/
     ├── cells.ts          set · clear · paste · fill as ops
     ├── structure.ts      insert · remove · move rows and columns, cells carried
     ├── merging.ts  spills.ts  fill.ts  clipboard.ts
-    ├── selecting.ts      a selection → which lens, as the deck's does
+    ├── selecting.ts      a selection → which lens, as the presentation's does
     ├── references.ts     A1 refs and names scanned out of expression text; reads and feeds
     ├── find.ts  printing.ts  styles.ts  ids.ts
     └── test/unit/*.test.ts
@@ -395,4 +395,4 @@ depend on C and on nothing else.
 ---
 
 Read against main at 98d9cd0, work/document-editor at 55a7b22, and the
-uncommitted work/slide-deck-editor worktree. Svelte 5, SvelteKit.
+uncommitted work/presentation-editor worktree. Svelte 5, SvelteKit.

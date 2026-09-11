@@ -19,7 +19,7 @@ or claim persistence.
 ## New template
 
 Three full-width `PanelButton`s create an empty Project template: Document,
-Slide deck and Spreadsheet. The new row appears immediately in the table and is
+Presentation and Spreadsheet. The new row appears immediately in the table and is
 selected in the inspector. It has no usage event, so it does not enter the
 recent shelf.
 
@@ -27,6 +27,6 @@ recent shelf.
 
 One compact record reports the total number of templates. Under it, Availability
 breaks that total into Project, Shared and Personal; Kind breaks it into
-Documents, Slide decks and Spreadsheets. Labels and values share the caption
+Documents, Presentations and Spreadsheets. Labels and values share the caption
 type step, with weight and colour—not size—carrying their distinction. There are
 no oversized stat tiles.

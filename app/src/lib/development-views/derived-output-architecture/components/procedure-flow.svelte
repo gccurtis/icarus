@@ -39,7 +39,7 @@
   const INGESTION: FunctionStep[] = [
     {
       order: "01",
-      name: "submitDocumentChanges / submitSlideDeckChanges",
+      name: "submitDocumentChanges / submitPresentationChanges",
       owner: "resource capability",
       status: "extend",
       input: "authoritative change set",
@@ -62,7 +62,7 @@
       status: "new",
       input: "{ force?, limit? }",
       output: "discovery + bounded batch report",
-      note: "Enumerates document, deck, and spreadsheet leaders plus external files, coalesces both lanes, then runs one bounded batch through the same worker path."
+      note: "Enumerates document, presentation, and spreadsheet leaders plus external files, coalesces both lanes, then runs one bounded batch through the same worker path."
     },
     {
       order: "04",
@@ -217,7 +217,7 @@
       owner: "resource editor adapter",
       status: "new",
       input: "PromptBlock + derivedOutputId",
-      output: "document/deck op + accepted revision",
+      output: "document/presentation op + accepted revision",
       note: "Links the surface block before provider work. Optional existing text is stored as ungrounded continuity, never evidence."
     },
     {
@@ -329,7 +329,7 @@
       status: "new",
       input: "{ derivedOutputId }",
       output: "render-safe response projection",
-      note: "A narrow API keeps storage layout out of documents, decks, exports, and automation consumers."
+      note: "A narrow API keeps storage layout out of documents, presentations, exports, and automation consumers."
     },
     {
       order: "02",
@@ -387,7 +387,7 @@
   const INGEST_DIAGRAM = `flowchart TB
     subgraph ENTRY["TWO ENTRY POINTS"]
       direction LR
-      edit["accepted document / deck revision"]:::surface --> enqueue["enqueueSemanticSync<br/>exact + material jobs"]:::new
+      edit["accepted document / presentation revision"]:::surface --> enqueue["enqueueSemanticSync<br/>exact + material jobs"]:::new
       edit -. "respond now" .-> ui["UI is free"]:::quiet
       seed["seed / migration"]:::surface --> backfill["backfillSemanticOverlay"]:::new
       backfill --> enqueue
@@ -425,7 +425,7 @@
   const DERIVED_SEQUENCE = `sequenceDiagram
     autonumber
     participant UI as Resource editor + Prompt inspector
-    participant DR as Document / deck runtime
+    participant DR as Document / presentation runtime
     participant DO as Derived Output capability
     participant SO as Semantic Overlay
     participant A as Agent runtime
@@ -545,7 +545,7 @@ readDerivedOutput({ derivedOutputId })
       never: "model-authored provenance or generation-local object IDs"
     },
     {
-      table: "document / deck snapshot",
+      table: "document / presentation snapshot",
       key: "resourceId + leader revision",
       owns: "PromptBlock placement, editable text and marks, state mirror, and derivedOutputId",
       never: "the canonical generated definition or evidence record"
@@ -556,7 +556,7 @@ readDerivedOutput({ derivedOutputId })
     {
       count: "06",
       label: "Resource entry + write triggers",
-      path: "new-tab · project-resources · document · slide-deck",
+      path: "new-tab · project-resources · document · presentation",
       change: "Creation persists an editable first block; accepted leader revisions enqueue coalesced semantic work."
     },
     {
@@ -709,7 +709,7 @@ readDerivedOutput({ derivedOutputId })
             <div><small>KICKED OFF BY</small><strong>an accepted resource revision</strong></div>
           </div>
           <ol>
-            <li><span>1</span><code>submitDocumentChanges</code> or <code>submitSlideDeckChanges</code></li>
+            <li><span>1</span><code>submitDocumentChanges</code> or <code>submitPresentationChanges</code></li>
             <li><span>2</span>persist leader revision <strong>N</strong></li>
             <li><span>3</span><code>enqueueSemanticSync(ref)</code> creates the applicable exact/material jobs</li>
             <li><span>4</span>return success to the editor immediately</li>
@@ -932,7 +932,7 @@ readDerivedOutput({ derivedOutputId })
       <header class="section-heading">
         <div><span class="section-number">07</span><h2>The ID is the API boundary.</h2></div>
         <p>
-          Documents, decks, exports and automations should not read the storage row directly. They
+          Documents, presentations, exports and automations should not read the storage row directly. They
           ask for one render-safe value and receive effective freshness with the current response.
         </p>
       </header>

@@ -192,8 +192,8 @@ export const library = (store: StoreModel, scope: Scope): ReadAgentsLibraryResul
   const resources: ResourceOption[] = [
     ...rowsIn(store, "documents").filter((row) => row.projectId === scope.projectId)
       .map((row) => ({ ref: { kind: "document" as const, id: row._id }, name: row.title, relativePath: null })),
-    ...rowsIn(store, "slideDecks").filter((row) => row.projectId === scope.projectId)
-      .map((row) => ({ ref: { kind: "slides" as const, id: row._id }, name: row.title, relativePath: null })),
+    ...rowsIn(store, "presentations").filter((row) => row.projectId === scope.projectId)
+      .map((row) => ({ ref: { kind: "presentation" as const, id: row._id }, name: row.title, relativePath: null })),
     ...rowsIn(store, "spreadsheets").filter((row) => row.projectId === scope.projectId)
       .map((row) => ({ ref: { kind: "spreadsheet" as const, id: row._id }, name: row.title, relativePath: null })),
     ...externalResourceOptionsIn(store, scope.projectId)

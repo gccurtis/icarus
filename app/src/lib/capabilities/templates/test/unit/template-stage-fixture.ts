@@ -104,8 +104,8 @@ export const documentBody = {
   rows: [{ id: "r1", kind: "blocks", blocks: [text("b1", "Incident write-up")] }]
 };
 
-export const deckBody = {
-  resource: "slides",
+export const presentationBody = {
+  resource: "presentation",
   aspectRatio: "16:9",
   theme: { colors: { text: "ink", accent: "blue" } },
   styles: { defaultKey: "body", styles: { body: { name: "Body" } } },
@@ -115,13 +115,13 @@ export const deckBody = {
 };
 
 export const row = (table: string, id: string, fields: Record<string, unknown>): Row => {
-  const defaults = table === "documents" || table === "slideDecks" || table === "spreadsheets"
+  const defaults = table === "documents" || table === "presentations" || table === "spreadsheets"
     ? {
         createdBy: { kind: "system" },
         updatedBy: { kind: "system" },
         updatedAt: 1
       }
-    : table === "documentSnapshots" || table === "slideDeckSnapshots" || table === "spreadsheetSnapshots"
+    : table === "documentSnapshots" || table === "presentationSnapshots" || table === "spreadsheetSnapshots"
       ? { part: 0, at: 1 }
       : table === "derivedOutputs"
         ? {
@@ -174,16 +174,16 @@ beforeEach(() => {
       token: "u",
       role: "owner"
     })],
-    templates: [template("1"), template("2", deckBody)],
+    templates: [template("1"), template("2", presentationBody)],
     templateVersions: [],
     templateStages: [],
     resourceSets: [],
     documents: [],
     documentSnapshots: [],
     documentChangeSets: [],
-    slideDecks: [],
-    slideDeckSnapshots: [],
-    slideDeckChangeSets: [],
+    presentations: [],
+    presentationSnapshots: [],
+    presentationChangeSets: [],
     spreadsheets: [],
     commentThreads: [],
     comments: []

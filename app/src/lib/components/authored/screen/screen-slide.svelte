@@ -30,7 +30,7 @@
   };
 
   /**
-   * One stage, at the deck's aspect ratio, with its objects placed on it.
+   * One stage, at the presentation's aspect ratio, with its objects placed on it.
    *
    * **Not `ScreenPage`.** A page is a flow of content running down a sheet
    * between four margins, and what lands where is computed. A slide is a fixed
@@ -38,7 +38,7 @@
    * somebody put it there, and moving one moves nothing else. The two look
    * alike floating on a canvas and share not one rule about position.
    *
-   * **Frames are fractions of the stage, never pixels.** A deck changes aspect
+   * **Frames are fractions of the stage, never pixels.** A presentation changes aspect
    * ratio — 16:9 to 4:3 is a supported setting, not an accident — and a stage
    * that took pixel geometry would scatter every object on it the first time
    * anyone used that setting. The conversion to percentages happens here, once,
@@ -61,7 +61,7 @@
     object,
     caption
   }: {
-    /** Per deck. 4:3 decks exist and this is the whole reason it is a prop. */
+    /** Per presentation. 4:3 presentations exist and this is the whole reason it is a prop. */
     ratio?: "16:9" | "4:3";
     objects?: readonly SlideObject[];
     /** The id of the object the editor is on. */

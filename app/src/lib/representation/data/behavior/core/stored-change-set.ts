@@ -10,8 +10,8 @@ import {
   isStoredTime,
   storedFields
 } from "$representation/data/behavior/core/stored";
-type ChangeSetTable = "documentChangeSets" | "slideDeckChangeSets" | "spreadsheetChangeSets";
-type ResourceTable = "documents" | "slideDecks" | "spreadsheets";
+type ChangeSetTable = "documentChangeSets" | "presentationChangeSets" | "spreadsheetChangeSets";
+type ResourceTable = "documents" | "presentations" | "spreadsheets";
 
 export type StoredChangeSetContract = {
   readonly table: ChangeSetTable;

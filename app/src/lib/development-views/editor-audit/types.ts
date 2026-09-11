@@ -43,7 +43,7 @@ export type FindingStatus =
 export type AuditArea =
   | "Creation and runtime"
   | "Document editor"
-  | "Slide deck editor"
+  | "Presentation editor"
   | "Across both editors"
   | "Quality system";
 

@@ -13,7 +13,7 @@ describe("derived output resource identity input", () => {
     { select: "kinds", kinds: ["analysis"] },
     { select: "kinds", kinds: ["externalFile::pdf"] },
     { select: "resources", refs: [{ kind: "externalFile", id: "externalFiles:one" }] },
-    { select: "resources", refs: [{ kind: "document", id: "slideDecks:one" }] },
+    { select: "resources", refs: [{ kind: "document", id: "presentations:one" }] },
     {
       select: "resources",
       refs: [{ kind: "document", id: "documents:one", retired: true }]

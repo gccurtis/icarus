@@ -63,8 +63,8 @@ const rejected = (
 const placedResourceRef = (target: TemplateBody["resource"], resourceId: string): ResourceRef =>
   target === "document"
     ? { kind: "document", id: asId<"documents">(resourceId) }
-    : target === "slides"
-      ? { kind: "slides", id: asId<"slideDecks">(resourceId) }
+    : target === "presentation"
+      ? { kind: "presentation", id: asId<"presentations">(resourceId) }
       : { kind: "spreadsheet", id: asId<"spreadsheets">(resourceId) };
 
 /** Resolves holes and commits one complete new resource revision atomically. */
@@ -86,8 +86,8 @@ export const placeTemplate = ({
   const at = Date.now();
   const table = body.resource === "document"
     ? "documents"
-    : body.resource === "slides"
-      ? "slideDecks"
+    : body.resource === "presentation"
+      ? "presentations"
       : "spreadsheets";
 
   try {

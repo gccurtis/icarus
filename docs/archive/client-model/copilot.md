@@ -106,7 +106,7 @@ something inside it.
 | Resource | Whole, as `resource` | Parts, as `part` |
 | --- | --- | --- |
 | document | the document | a selection — a range across display text |
-| slides | the deck | a slide · an element |
+| slides | the presentation | a slide · an element |
 | spreadsheet | the spreadsheet | a cell · a range |
 
 **A scope path is not an operation path.** They overlap in shape where both address

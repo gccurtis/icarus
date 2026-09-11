@@ -2,11 +2,11 @@
 
 Objects with a lifetime. A model object is something the application holds exactly one of — the workspace state of this browser tab, the open document runtimes, the server's store — built once by the runtime and reached everywhere else through its index ([[check:object-is-entered-at-its-index]], [[check:constructor-is-called-by-the-runtime]]). Importing a model module never builds anything ([[check:nothing-builds-at-module-load]]); holding an instance is the runtime's job.
 
-Nine client objects and three server objects exist. The client ones that react — `commands`, `document-runtimes`, `slide-deck-runtimes`, `spreadsheet-runtimes`, `tab-list`, `workspace-state` — define themselves in `definition.svelte.ts` so their `$state` compiles ([[check:runes-match-the-extension]]); the rest are plain.
+Nine client objects and three server objects exist. The client ones that react — `commands`, `document-runtimes`, `presentation-runtimes`, `spreadsheet-runtimes`, `tab-list`, `workspace-state` — define themselves in `definition.svelte.ts` so their `$state` compiles ([[check:runes-match-the-extension]]); the rest are plain.
 
 ## What it owns
 
-- **Client:** `workspace-state` (the ledger of tabs, views, frames; [[page:/algorithms/workspace|explained]]), its two collaborators `tab-list` and `tab-views`, the three resource runtime families `document-runtimes`, `slide-deck-runtimes` and `spreadsheet-runtimes` ([[page:/algorithms/revisions|explained]]), `commands` (ids, chords, bindings), `configuration` (the published slice of the YAML) and `storage` (what survives a reload, in localStorage).
+- **Client:** `workspace-state` (the ledger of tabs, views, frames; [[page:/algorithms/workspace|explained]]), its two collaborators `tab-list` and `tab-views`, the three resource runtime families `document-runtimes`, `presentation-runtimes` and `spreadsheet-runtimes` ([[page:/algorithms/revisions|explained]]), `commands` (ids, chords, bindings), `configuration` (the published slice of the YAML) and `storage` (what survives a reload, in localStorage).
 - **Server:** `configuration` (the merged YAML), `observability` (a pino logger) and `store` (the JSON-file store over the 42 tables).
 
 An object exposes keys, never components ([[check:object-exposes-no-component]]): what a key renders as is a view's decision.

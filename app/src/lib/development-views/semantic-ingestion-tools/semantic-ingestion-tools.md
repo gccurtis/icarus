@@ -23,8 +23,8 @@ all call `enqueueSemanticSync` after the authoritative write has succeeded.
 | --- | --- | --- | --- |
 | document creation | `createProjectResource` | the `documents` row and revision-0 leader snapshot have been created | `{ kind: "document", id }` |
 | document save | `submitDocumentChanges` | operations have been accepted, a change set has been written, the leader advanced, and resource metadata updated | `{ kind: "document", id }` |
-| slide-deck creation | `createProjectResource` | the `slideDecks` row and revision-0 leader snapshot have been created | `{ kind: "slides", id }` |
-| slide-deck save | `submitSlideDeckChanges` | operations have been accepted, a change set has been written, the leader advanced, and resource metadata updated | `{ kind: "slides", id }` |
+| presentation creation | `createProjectResource` | the `presentations` row and revision-0 leader snapshot have been created | `{ kind: "presentation", id }` |
+| presentation save | `submitPresentationChanges` | operations have been accepted, a change set has been written, the leader advanced, and resource metadata updated | `{ kind: "presentation", id }` |
 
 Creation is a real signal even when the new resource is blank. In that case the
 projector can legitimately publish no exact spans and no materials for revision
@@ -32,7 +32,7 @@ zero. The signal still names the authoritative source revision.
 
 Embedded content does not need separate editor hooks. A document table or image
 travels through the document save. A slide table, chart, image, or image
-background travels through the slide-deck save.
+background travels through the presentation save.
 
 ## What `enqueueSemanticSync` does
 
@@ -60,7 +60,7 @@ signals work. A processor settles it.
 | Source | Exact lane | Material lane | Current positive conditions |
 | --- | --- | --- | --- |
 | document | yes | tables and images | automatic creation; every accepted save; explicit enqueue; backfill |
-| slide deck | yes | tables, charts, images, image backgrounds | automatic creation; every accepted save; explicit enqueue; backfill |
+| presentation | yes | tables, charts, images, image backgrounds | automatic creation; every accepted save; explicit enqueue; backfill |
 | external UTF-8 text | yes | inventory bookkeeping | explicit enqueue; backfill |
 | spreadsheet | no | one table material | explicit enqueue; backfill |
 | external CSV | no | profile, descriptors, native CSV authority | explicit enqueue; backfill |
@@ -73,7 +73,7 @@ not a claim that those authoring surfaces already signal every mutation.
 
 ## What exact projection contains
 
-Documents and decks share one UTF-16 coordinate contract but own traversal.
+Documents and presentations share one UTF-16 coordinate contract but own traversal.
 The writer inserts real projected text and blank-line joins; it does not insert
 synthetic labels such as `Slide 1`.
 
@@ -102,7 +102,7 @@ Queued work becomes searchable through four implemented paths:
   settles fails refresh.
 - `processSemanticSyncQueue` is the scoped worker command. It processes one
   bounded exact batch and then one bounded material batch.
-- `backfillSemanticOverlay` enumerates current document, deck, and spreadsheet
+- `backfillSemanticOverlay` enumerates current document, presentation, and spreadsheet
   leaders plus external files, coalesces the appropriate jobs, and immediately
   processes bounded work. It is the development maintenance entry.
 - `syncSemanticResource` directly projects, embeds, and guardedly publishes one
@@ -132,7 +132,7 @@ seven provide orientation only. The application forces the first tool call:
 | `retrieve` | semantically matching, consolidated authored spans with source/revision, locators, score, and overlay generation | exact text |
 | `retrieve_materials` | material kind/name/handle, semantic profile, description, matching facets, placement/source, and score | descriptor; appropriate only for broad relevance/inventory claims |
 | `read_selection` | the authoritative text range selected when the run began, with source hash/revision and locators | exact text |
-| `read_text` | up to 20,000 UTF-16 units from an authoritative document, slide deck, or external-text projection | exact text |
+| `read_text` | up to 20,000 UTF-16 units from an authoritative document, presentation, or external-text projection | exact text |
 | `read_table` | at most 100 rows by 50 columns from a document/slide table or spreadsheet | structured |
 | `read_csv` | at most 100 selected rows by 50 selected columns decoded from original content-addressed CSV bytes | structured |
 | `read_chart` | current native slide-chart specification, optionally narrowed to at most 50 named series | structured |
@@ -147,15 +147,15 @@ code, or pixels. Exact claims must continue to the appropriate native reader.
 
 | Tool | What the agent can receive | Deliberate limit |
 | --- | --- | --- |
-| `find_resources` | paged names and references for in-scope documents, decks, spreadsheets, and files | no content and no evidence ID |
+| `find_resources` | paged names and references for in-scope documents, presentations, spreadsheets, and files | no content and no evidence ID |
 | `list_document_blocks` | areas, block IDs/types, nested paths, and projected ranges in reading order | no factual block text |
-| `list_deck_slides` | visible slide IDs and one-based positions in deck order | no slide anatomy or evidence ID |
+| `list_presentation_slides` | visible slide IDs and one-based positions in presentation order | no slide anatomy or evidence ID |
 | `inspect_slide` | element IDs/paths/types, frames, rotations, text ranges, notes, background, and material handles | supporting structure only |
 | `view_slide` | a generated SVG schematic of boxes, rotations, type labels, and abbreviated authored text | not a production render and never citable |
 | `inspect_dataset` | dimensions, headers, inferred types, nulls, sampling coverage, warnings, and native reader name | no native values as evidence |
 | `inspect_code` | name, language, line count, and symbol inventory | no source content and no evidence ID |
 
-`list_deck_slides` only supplies the visible-slide inventory. The element and
+`list_presentation_slides` only supplies the visible-slide inventory. The element and
 range anatomy belongs to `inspect_slide`; this separation prevents a broad
 navigation call from returning a generic, oversized payload.
 
@@ -179,7 +179,7 @@ Common routes are therefore:
 prose fact       retrieve → exact evidence
 selected text    read_selection → exact evidence
 table/CSV value  retrieve_materials → inspect_dataset → read_table/read_csv
-slide context    find_resources → list_deck_slides → inspect_slide → view/read
+slide context    find_resources → list_presentation_slides → inspect_slide → view/read
 image meaning    retrieve_materials or inspect_slide → read_image
 ```
 
@@ -234,14 +234,14 @@ or provider code into the development page.
 
 | Concern | Source |
 | --- | --- |
-| document/deck create hooks | `capabilities/project-resources/api/create-project-resource/create-project-resource.ts` |
+| document/presentation create hooks | `capabilities/project-resources/api/create-project-resource/create-project-resource.ts` |
 | accepted document save hook | `capabilities/document/api/submit-document-changes/submit-document-changes.ts` |
-| accepted deck save hook | `capabilities/slide-deck/api/submit-slide-deck-changes/submit-slide-deck-changes.ts` |
+| accepted presentation save hook | `capabilities/presentation/api/submit-presentation-changes/submit-presentation-changes.ts` |
 | revision resolution and enqueue | `capabilities/semantic-overlay/api/enqueue-semantic-sync/` |
 | exact queue coalescing | `capabilities/semantic-overlay/api/shared/sync-queue.ts` |
 | material queue coalescing | `capabilities/semantic-overlay/api/shared/material-queue.ts` |
 | bounded worker | `capabilities/semantic-overlay/api/shared/queue-processor.ts` |
-| document/deck traversal | `representation/data/behavior/semantic/projection/resources/` |
+| document/presentation traversal | `representation/data/behavior/semantic/projection/resources/` |
 | refresh pull boundary | `capabilities/derived-output/api/refresh-derived-output/refresh-derived-output.ts` |
 | shared live tool catalogue | `capabilities/derived-output/api/shared/tool-catalog.ts` |
 | exact/material discovery tools | `capabilities/derived-output/api/shared/synthesis.ts` |

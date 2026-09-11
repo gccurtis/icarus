@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { describe, test } from "vitest";
 import {
   commitTemplateStage,
-  deckBody,
+  presentationBody,
   model,
   openTemplateStage,
   row,
@@ -116,16 +116,16 @@ describe("saving a stage", () => {
     assert.deepEqual(model.tables.templateVersions, []);
   });
 
-  test("saves a deck stage back however many slides it holds now", async () => {
+  test("saves a presentation stage back however many slides it holds now", async () => {
     await openTemplateStage({ templateId: "templates:2" });
-    model.tables.slideDeckSnapshots[0].body = {
-      ...deckBody,
+    model.tables.presentationSnapshots[0].body = {
+      ...presentationBody,
       slides: [
         { id: "s1", elements: [], notes: [] },
         { id: "s2", elements: [], notes: [] }
       ]
     };
-    delete (model.tables.slideDeckSnapshots[0].body as Record<string, unknown>).resource;
+    delete (model.tables.presentationSnapshots[0].body as Record<string, unknown>).resource;
 
     const saved = await commitTemplateStage({ stageId: "templateStages:1", baseRevision: 2 });
     assert.ok(saved.accepted);

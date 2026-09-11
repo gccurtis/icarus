@@ -33,7 +33,7 @@ first is a mode change in a tab whose whole job is one question.
 
 ## Editors
 
-Three pills, centred: Document, Slide deck, Spreadsheet. Nothing else.
+Three pills, centred: Document, Presentation, Spreadsheet. Nothing else.
 
 Overview, Templates and Agents are permanent tabs, and offering to create one
 would imply they can be absent. A research thread and an analysis are each a tab

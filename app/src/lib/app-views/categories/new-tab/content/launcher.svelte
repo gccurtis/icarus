@@ -96,14 +96,14 @@
 
   const EDITOR_ICON: Record<EditorKind["name"], typeof FileText> = {
     Document: FileText,
-    "Slide deck": Presentation,
+    "Presentation": Presentation,
     Spreadsheet: TableIcon
   };
 
   /** The same icon a kind wears in the Recent panel, so one thing looks like itself. */
   const KIND_ICON: Record<ResourceKind, typeof FileText> = {
     document: FileText,
-    slides: Presentation,
+    presentation: Presentation,
     spreadsheet: TableIcon,
     research: MessageCircleQuestionMark,
     analysis: ChartColumn,
@@ -117,7 +117,7 @@
   /** A thumbnail stands for the shape of the thing, so the ratio has to be its own. */
   const KIND_RATIO: Record<ResourceKind, string> = {
     document: "4 / 3",
-    slides: "16 / 9",
+    presentation: "16 / 9",
     spreadsheet: "1 / 1",
     research: "4 / 3",
     analysis: "4 / 3",
@@ -130,14 +130,14 @@
 
   const MAKES_RATIO: Record<LibraryTemplate["makes"], string> = {
     Document: "4 / 3",
-    "Slide deck": "16 / 9",
+    "Presentation": "16 / 9",
     Slide: "16 / 9",
     Spreadsheet: "1 / 1"
   };
 
   const MAKES_ICON: Record<LibraryTemplate["makes"], typeof FileText> = {
     Document: FileText,
-    "Slide deck": Presentation,
+    "Presentation": Presentation,
     Slide: Presentation,
     Spreadsheet: TableIcon
   };
@@ -157,7 +157,7 @@
 
   const blocked = $derived(startable.filter((row) => row.variables > 0).length);
 
-  let creating = $state<"Document" | "Slide deck" | "Spreadsheet">();
+  let creating = $state<"Document" | "Presentation" | "Spreadsheet">();
   let creationError = $state<string>();
 
   /** Create the represented row and leader snapshot before the editor consumes its id. */
@@ -236,7 +236,7 @@
       -->
       {#if needle !== "" && results.length === 0}
         <ScreenEmpty kind="no-matches" title="Nothing in the project matches" onclear={() => (query = "")}>
-          Search includes documents, decks, spreadsheets, research threads, and findings.
+          Search includes documents, presentations, spreadsheets, research threads, and findings.
         </ScreenEmpty>
       {:else if needle !== ""}
         <div class="border-border-subtle rounded-panel flex flex-col overflow-hidden border">

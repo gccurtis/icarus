@@ -202,7 +202,7 @@ over all of them so a name is looked for without first having to decide which of
 the five it is. A row shows the name, the date it last changed, and — when
 something is wrong — what is wrong on the second line, drawn as attention.
 
-The bands, in order: Documents, Slide decks, Spreadsheets, Findings, then Files
+The bands, in order: Documents, Presentations, Spreadsheets, Findings, then Files
 and connectors. Findings arrive shut. They are resources like any other,
 retrievable anywhere in the project exactly as a document is, but they are read
 through whatever cites them far more often than they are browsed, so the group
@@ -241,7 +241,7 @@ Personas doing this work are managed.
 
 ### templates
 
-What is available here, grouped by what comes out of it: Documents, Slide decks,
+What is available here, grouped by what comes out of it: Documents, Presentations,
 Spreadsheets. Grouped that way because the first question about a template is
 what it makes. Each row carries its scope and its hole count as one line,
 because they are one decision — together they say whether the template can be
@@ -544,7 +544,7 @@ already exists.
 
 **Nothing writes.** Ten panels, twelve editable values between them, and every
 one is held where it was typed. The two controls that do anything at all are Run
-again, which evaluates and stores nothing, and the deck's re-frame, which is
+again, which evaluates and stores nothing, and the presentation's re-frame, which is
 staged, confirmed, and then held like everything else.
 
 **Attribution is thin, and thin differently on each panel.** The project records

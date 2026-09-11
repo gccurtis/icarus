@@ -58,7 +58,7 @@ rather than a rewrite of every block referencing it.
 ## Embedded per resource
 
 A style set lives inside the resource that uses it, like a
-[deck's theme](slides.md#themes-and-layouts). A document should not change
+[presentation's theme](slides.md#themes-and-layouts). A document should not change
 appearance because something outside it was edited, and a shared style set would
 mean exactly that.
 

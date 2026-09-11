@@ -23,8 +23,8 @@ export const startThread = async (input: unknown): Promise<StartThreadResult> =>
   return store.transaction((unit) => {
     const table = asked.target.kind === "document"
       ? "documents"
-      : asked.target.kind === "slides"
-        ? "slideDecks"
+      : asked.target.kind === "presentation"
+        ? "presentations"
         : "spreadsheets";
     const claimedResources = readCurrentRows(unit, table)
       .filter((row) => row._id === asked.target.id);

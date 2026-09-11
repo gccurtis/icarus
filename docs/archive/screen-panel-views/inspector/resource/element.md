@@ -5,7 +5,7 @@
 | One element on the slide | The spatial object: what is in it, where it sits, how it stacks, how the box is drawn | Content · Position and size · Arrange · Overflow · Box format · Placeholder origin |
 
 An element is a box on the canvas. What is *inside* it is a block, which has its
-own [lens](text-block-deck.md) — the two are separate because frame, rotation and
+own [lens](text-block-presentation.md) — the two are separate because frame, rotation and
 overflow must never leak into content.
 
 ## Layout
@@ -31,7 +31,7 @@ editor.
 
 ## Position and size
 
-The frame. Values are fractions of the slide in the model, so a deck survives a
+The frame. Values are fractions of the slide in the model, so a presentation survives a
 change of aspect ratio; they are pixels under the pointer.
 
 **Shows** — `X · 0.070`, `Y · 0.110`, `Width · 0.640`, `Height · 0.160`, `Rotation · 0°`

@@ -28,7 +28,7 @@
     <h1>The model</h1>
     <p class="lede">
       One new table, one new field, one new term and five pure functions. No new type, no new body kind:
-      a slide saved on its own is a deck template that happens to hold one slide, and a variable carries
+      a slide saved on its own is a presentation template that happens to hold one slide, and a variable carries
       one default and nothing else. Everything here compiles to a declaration or runs the same on either
       side of the boundary, which is the whole standard for this tree.
     </p>
@@ -40,18 +40,18 @@
     </div>
 
     <section id="slide">
-      <div class="head"><span class="n">1</span><h2>A slide is a deck template</h2></div>
+      <div class="head"><span class="n">1</span><h2>A slide is a presentation template</h2></div>
       <pre><code>export type TemplateBody =
   | ({ resource: "document" } &amp; DocumentBody)
-  | ({ resource: "slides" } &amp; SlideDeckBody)
+  | ({ resource: "presentation" } &amp; PresentationBody)
   | ({ resource: "spreadsheet" } &amp; SpreadsheetTemplate);</code></pre>
       <p>
-        Exactly as on main. Saving one slide asks the capability for a deck template with a
-        <code>slideId</code>; <code>deckOfSlide(deck, slideId)</code> is the one function that makes the
+        Exactly as on main. Saving one slide asks the capability for a presentation template with a
+        <code>slideId</code>; <code>presentationOfSlide(presentation, slideId)</code> is the one function that makes the
         body: the named slide, the layout its <code>layoutKey</code> names, the theme and the styles, and
-        no sections, because a section is a place in a deck and a lone slide is not in one. After that
-        nothing distinguishes it from a deck template someone built with one slide, which is the point:
-        everything that draws, validates, stages and inserts a deck already works on it, and a template
+        no sections, because a section is a place in a presentation and a lone slide is not in one. After that
+        nothing distinguishes it from a presentation template someone built with one slide, which is the point:
+        everything that draws, validates, stages and inserts a presentation already works on it, and a template
         of three slides needs nothing new either.
       </p>
     </section>
@@ -107,10 +107,10 @@ export type TemplateStageFields = {
         <code>projectId</code> and <code>lastUsedAt</code> are the two fields this work adds to a table
         main already had: a template belongs to the project it was made in, records its own last use,
         and <code>userId</code> stays as a record of who made it, granting nothing. One field it removes:
-        main's <code>templateId</code> on documents, decks and spreadsheets, because a resource made from
+        main's <code>templateId</code> on documents, presentations and spreadsheets, because a resource made from
         a template is a copy and knows nothing of where it came from. <code>templateStages</code> is the
         one table it adds. The scratch resource is an
-        ordinary <code>documents</code> or <code>slideDecks</code> row with a revision-zero leader
+        ordinary <code>documents</code> or <code>presentations</code> row with a revision-zero leader
         snapshot; the stage row is what makes it a stage. There is one per template and it belongs to
         nobody in particular: two people editing a template edit the same copy through the editor's own
         collaboration, so no row says who is editing. <code>templateRevision</code> is the revision the copy
@@ -172,7 +172,7 @@ export type TemplateStageFields = {
         <code>children</code>, <code>layouts</code>, <code>sections</code>, <code>cells</code>, a
         <code>caption</code> or a <code>block</code>. The caller supplies the minting function, keyed by
         that hint, because each editor spells its ids its own way (<code>#b…</code> in a document,
-        <code>el-…</code> in a deck) and behavior may not read randomness. Mark ends and section anchors
+        <code>el-…</code> in a presentation) and behavior may not read randomness. Mark ends and section anchors
         follow the ids they name; a reference to an id the fragment does not carry is left alone.
       </p>
     </section>
@@ -195,7 +195,7 @@ export type TemplateStageFields = {
         <code>behavior/core/test/unit</code>: resolution through a default, a caller's answer, a
         variable without a default, a name the template does not declare, refusal of a difference, and a
         self-reaching variable; name listing; stripping every bound field from a document and an image
-        background from a deck theme; renaming a document fragment and a deck body; the deck of one
+        background from a presentation theme; renaming a document fragment and a presentation body; the presentation of one
         slide; resolving a set with kinds, resources, a followed set and a cycle. The lint rule that
         behavior reads no clock and no randomness caught two things during the work and both were moved
         to the caller.

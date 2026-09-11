@@ -965,8 +965,8 @@
               "id": "documents:1"
             },
             {
-              "kind": "slides",
-              "id": "slideDecks:4"
+              "kind": "presentation",
+              "id": "presentations:4"
             }
           ]
         }

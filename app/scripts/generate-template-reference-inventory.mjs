@@ -59,7 +59,7 @@ const areaOf = (path) => {
   ) return "neighbours";
   if (path.includes("/categories/templates/")) return "library";
   if (path.includes("/categories/project-overview/")) return "contexts";
-  if (path.includes("/categories/document-editor/") || path.includes("/categories/slide-deck-editor/")) return "editors";
+  if (path.includes("/categories/document-editor/") || path.includes("/categories/presentation-editor/")) return "editors";
   return "cross-cutting";
 };
 

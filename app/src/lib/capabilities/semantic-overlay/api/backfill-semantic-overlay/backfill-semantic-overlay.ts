@@ -27,10 +27,10 @@ export const backfillSemanticOverlay = async (
         ref: { kind: "document", id: row.resourceId } as const,
         revision: row.revision
       })),
-    ...rowsOf(model.store, "slideDeckSnapshots")
+    ...rowsOf(model.store, "presentationSnapshots")
       .filter((row) => row.projectId === projectId && row.role === "leader")
       .map((row) => ({
-        ref: { kind: "slides", id: row.resourceId } as const,
+        ref: { kind: "presentation", id: row.resourceId } as const,
         revision: row.revision
       })),
     ...rowsOf(model.store, "spreadsheetSnapshots")
@@ -56,14 +56,14 @@ export const backfillSemanticOverlay = async (
       if (isStagedResource(unit, projectId, resource.ref)) continue;
       if (
         resource.ref.kind === "document" ||
-        resource.ref.kind === "slides" ||
+        resource.ref.kind === "presentation" ||
         resource.ref.kind === "externalFile::text"
       ) {
         enqueueSemanticSyncFor(atomic, projectId, resource.ref, resource.revision, asked.force);
       }
       if (
         resource.ref.kind === "document" ||
-        resource.ref.kind === "slides" ||
+        resource.ref.kind === "presentation" ||
         resource.ref.kind === "spreadsheet" ||
         resource.ref.kind === "externalFile::code" ||
         resource.ref.kind === "externalFile::data" ||

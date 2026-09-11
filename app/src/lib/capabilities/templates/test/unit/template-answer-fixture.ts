@@ -93,13 +93,13 @@ export const body = {
 };
 
 export const row = (table: string, id: string, fields: Record<string, unknown>): Row => {
-  const defaults = table === "documents" || table === "slideDecks" || table === "spreadsheets"
+  const defaults = table === "documents" || table === "presentations" || table === "spreadsheets"
     ? {
         createdBy: { kind: "system" },
         updatedBy: { kind: "system" },
         updatedAt: 1
       }
-    : table === "documentSnapshots" || table === "slideDeckSnapshots" || table === "spreadsheetSnapshots"
+    : table === "documentSnapshots" || table === "presentationSnapshots" || table === "spreadsheetSnapshots"
       ? { part: 0, at: 1 }
       : table === "derivedOutputs"
         ? {
@@ -162,8 +162,8 @@ beforeEach(() => {
     resourceSets: [row("resourceSets", "1", { projectId: "projects:1", name: "Field evidence", set: { include: [{ select: "project" }], exclude: [] }, createdBy: { kind: "user", userId: "users:1" }, revision: 1, updatedAt: 1 })],
     documents: [],
     documentSnapshots: [],
-    slideDecks: [],
-    slideDeckSnapshots: [],
+    presentations: [],
+    presentationSnapshots: [],
     spreadsheets: []
   };
 });

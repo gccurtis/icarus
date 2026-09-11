@@ -28,7 +28,7 @@ flight. The job—not the value row—owns `queued`, `running`, and `failed`
 operation state. An identical signal changes nothing and simply awaits that
 flight. Only a different definition revision or selection advances the request
 version and causes one follow-up pass. The worker first discovers every current,
-non-staged document, deck, and spreadsheet in the output's effective scope and
+non-staged document, presentation, and spreadsheet in the output's effective scope and
 idempotently enqueues its current authoritative revision. It then drains pending
 exact-text and material semantic jobs before it asks the freshness gate whether
 provider work is necessary. A terminally failed semantic job is quarantined and

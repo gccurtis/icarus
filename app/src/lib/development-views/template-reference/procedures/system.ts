@@ -9,9 +9,9 @@ export const NOUNS: Noun[] = [
   },
   {
     term: "Body",
-    says: "The template's content, in the same shape a document, deck or spreadsheet has. A template of one slide is a deck body holding that slide, its layout, and the theme and styles it is drawn with.",
+    says: "The template's content, in the same shape a document, presentation or spreadsheet has. A template of one slide is a presentation body holding that slide, its layout, and the theme and styles it is drawn with.",
     onDisk: "TemplateBody: document | slides | spreadsheet",
-    not: "a fourth kind — a one-slide template is a deck template afterwards"
+    not: "a fourth kind — a one-slide template is a presentation template afterwards"
   },
   {
     term: "Portable",
@@ -41,8 +41,8 @@ export const NOUNS: Noun[] = [
   {
     term: "Working copy",
     aka: "stage",
-    says: "The document or deck through which a template is edited: a real resource holding the template's body, plus a row saying which template it stands for and which revision it came from. One per template, shared by everyone in the project.",
-    onDisk: "templateStages + an ordinary documents / slideDecks row titled Template · name",
+    says: "The document or presentation through which a template is edited: a real resource holding the template's body, plus a row saying which template it stands for and which revision it came from. One per template, shared by everyone in the project.",
+    onDisk: "templateStages + an ordinary documents / presentations row titled Template · name",
     not: "a use of the template, and not something the project's lists show"
   },
   {
@@ -62,7 +62,7 @@ export const NOUNS: Noun[] = [
 export const VERBS: Verb[] = [
   {
     name: "Save as a template",
-    gesture: "Name the open document, deck or current slide in the Templates panel, press Save",
+    gesture: "Name the open document, presentation or current slide in the Templates panel, press Save",
     does: "Copies the body, makes it portable, stores it as a template of this project at revision 1, and opens its working copy in a new tab",
     leaves: "The thing you saved from, untouched — it never learns a template was made from it",
     procedure: "createTemplateFromResource"
@@ -98,7 +98,7 @@ export const VERBS: Verb[] = [
   {
     name: "Use",
     gesture: "Use in the library's inspector",
-    does: "Asks the same way Insert does, then makes a whole new document, deck or spreadsheet from the template and opens it",
+    does: "Asks the same way Insert does, then makes a whole new document, presentation or spreadsheet from the template and opens it",
     leaves: "A resource with no reference back to the template; the template records that it was used",
     procedure: "instantiateTemplate"
   },
@@ -115,7 +115,7 @@ export const LIFECYCLE: LifecycleStep[] = [
   {
     index: "01",
     title: "Make",
-    person: "Names the open document, deck or current slide and presses Save",
+    person: "Names the open document, presentation or current slide and presses Save",
     client: "Sends the resource id and the name, then opens a new tab straight onto the copy's Templates panel",
     server: "Reads the leader snapshot, makes the body portable, stamps the project, declares the holes the body names, says what it dropped",
     rows: "templates at 1 · templateVersions 1 · templateStages staged at 1 · a scratch row titled Template · name"
@@ -133,7 +133,7 @@ export const LIFECYCLE: LifecycleStep[] = [
     title: "Edit",
     person: "Types, moves blocks, changes layouts — alone or beside someone else",
     client: "Runtime ops against the scratch resource, flushed and rebased exactly as for any document",
-    server: "Nothing template-shaped: the document and deck capabilities, as usual",
+    server: "Nothing template-shaped: the document and presentation capabilities, as usual",
     rows: "The scratch resource's snapshots and change sets move. The template does not."
   },
   {

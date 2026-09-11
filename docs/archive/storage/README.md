@@ -109,7 +109,7 @@ special case for conversations.
 | Table | Holds | Key indexes |
 | --- | --- | --- |
 | `documents` | Title and template origin. **No body, no revision.** | `by_project` |
-| `slideDecks` | Title and aspect ratio. No body. | `by_project` |
+| `presentations` | Title and aspect ratio. No body. | `by_project` |
 | `spreadsheets` | Title only. No body. | `by_project` |
 | `resourceSnapshots` | Materialized bodies at a revision, roled `base` / `leader` / `checkpoint`. | `by_resource_role` |
 | `changeSets` | One accepted mutation each: ops, revision, baseRevision, tier. | `by_resource_revision` **unique**, `by_resource_tier` |

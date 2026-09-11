@@ -34,7 +34,7 @@ category that a person can open fails to compile until it has a label and an ico
 Every document tab would otherwise read "Document", which is the one thing a tab
 strip exists to prevent. So `label` takes the tab: New Tab ignores it, and the
 five categories keyed by a resource — an analysis, a research thread, a document, a
-deck, a spreadsheet — answer with what they hold.
+presentation, a spreadsheet — answer with what they hold.
 
 What that resource is *called* is a question about data rather than about copy.
 The component owns the scoped capability reads for its lifetime and hands their

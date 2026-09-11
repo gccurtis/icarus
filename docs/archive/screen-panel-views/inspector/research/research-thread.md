@@ -5,7 +5,7 @@
 | A Research row in the Resources table | A line of enquiry, and the way into its tab | Identity · Provenance · Note |
 
 A Research thread is not a resource, but it is work, so it has a row in the
-project's Resources table alongside the documents and decks. This lens is what
+project's Resources table alongside the documents and presentations. This lens is what
 that row opens: enough of the thread to recognise it, and the way in.
 
 **The row and the thread are two ids.** The table keys its row by the project's

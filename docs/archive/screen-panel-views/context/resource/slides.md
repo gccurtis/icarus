@@ -2,7 +2,7 @@
 
 | View | What it is for | Sections |
 | --- | --- | --- |
-| Slides | The deck, as an ordered list, and everything you do to a slide | One section per section of the deck |
+| Slides | The presentation, as an ordered list, and everything you do to a slide | One section per section of the presentation |
 
 The first rail entry and the default. Reordering, sectioning and the four slide
 actions all happen here.
@@ -12,15 +12,15 @@ actions all happen here.
 | 300px |
 | --- |
 | actions |
-| sections of the deck |
-| sections of the deck |
-| sections of the deck |
-| sections of the deck |
-| sections of the deck |
+| sections of the presentation |
+| sections of the presentation |
+| sections of the presentation |
+| sections of the presentation |
+| sections of the presentation |
 
-## Sections of the deck
+## Sections of the presentation
 
-Each section of the deck is a section of this panel, holding the slides in it as
+Each section of the presentation is a section of this panel, holding the slides in it as
 thumbnails.
 
 **Shows**
@@ -29,7 +29,7 @@ thumbnails.
 - **The case** · 4 — slides 3–6, with slide 4 current
 - **Close** · 2 — slides 7–8, one hidden
 
-**Needs** — the deck's slide order, its sections, per-slide hidden state, and a
+**Needs** — the presentation's slide order, its sections, per-slide hidden state, and a
 thumbnail render per slide.
 
 **Open** — slides have thumbnails, not persisted names, so a section list cannot

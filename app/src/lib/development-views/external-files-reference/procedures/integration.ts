@@ -1,7 +1,7 @@
 /** The integration record distinguishes executable coverage from completed certification. */
 export const integrationChecks = [
   ["Checker and generator contracts", "Passed", "328 tests, including schema-regression mutations and fail-fast provider-fixture contracts."],
-  ["Live provider workflows", "Passed", "All five configured Jina/OpenRouter Chromium tests passed: direct generation, named variables, document and deck Prompt Blocks, and Research across a tab switch and reload. These runs use user-approved fictional seeded data."],
+  ["Live provider workflows", "Passed", "All five configured Jina/OpenRouter Chromium tests passed: direct generation, named variables, document and presentation Prompt Blocks, and Research across a tab switch and reload. These runs use user-approved fictional seeded data."],
   ["Application contracts", "Passed", "2,024 application tests passed; two opt-in live-provider tests were not counted as passes. Typecheck reported zero errors and warnings; production build passed."],
   ["Reload during generation", "Passed", "Both exact External document grounding and delayed publication across reload passed in Chromium; the persisted result and citation were verified."],
   ["Local Chromium workflows", "Passed", "114 tests passed; the five opt-in provider tests were skipped here and passed separately against the live services. Disposable Store/native-file directories keep these contracts separate from the manual demo."],
@@ -33,8 +33,8 @@ export const integrationWorkflows = [
     proof: "Upload fictional evidence → select it in a persona → inherit the exact scope in a task → verify grounded output and citation → reload → refuse deletion while referenced. Same-named files in different folders show their paths while retaining exact resource identity."
   },
   {
-    title: "Author document and deck Prompt Blocks",
-    path: "test/browser/document-external-prompt.spec.ts · test/browser/document-delayed-prompt.spec.ts · test/browser/slide-deck-editor.spec.ts",
+    title: "Author document and presentation Prompt Blocks",
+    path: "test/browser/document-external-prompt.spec.ts · test/browser/document-delayed-prompt.spec.ts · test/browser/presentation-editor.spec.ts",
     proof: "Direct authoring, exact uploaded-file scope, generation, editable output, citation navigation, and persistence. A delayed-provider contract reloads the page before generation finishes, then checks that the document adopts and saves the completed publication."
   },
   {
@@ -54,7 +54,7 @@ export const integrationBoundaries = [
   ["Owned state", "Component state has an instance and lifetime. Effects and commands live in named procedures. Workspace owns tab runtimes; ServerModel owns active operations and their release."],
   ["Atomic changes", "One Store unit of work publishes a coherent intent. Durable journal recovery and failpoint tests cover rows, revisions, back references, History, and semantic queue work. Native file claims reconcile only after Store recovery."],
   ["Reviewable modules", "Table vocabulary is grouped by domain. Template admission is split by body kind; file storage by operation; upload by admission/publication/settlement; editors by projection, interaction, and lifecycle. Checker mutation fixtures are grouped by the boundary they exercise."],
-  ["Independent editors", "Document, deck and spreadsheet keep their own state and procedure owners. Similar inspector design does not introduce a shared editor runtime or shared mutable state."],
+  ["Independent editors", "Document, presentation and spreadsheet keep their own state and procedure owners. Similar inspector design does not introduce a shared editor runtime or shared mutable state."],
   ["Honest verification", "Deterministic provider contracts verify application workflows; separate configured-provider runs verify actual service integration. A skipped test is not a pass. Existing architecture baseline debt is reported separately from new findings."]
 ] as const;
 

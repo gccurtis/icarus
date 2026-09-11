@@ -10,7 +10,7 @@ import {
   scopeOf
 } from "$capabilities/templates/test/unit/template-answer-fixture";
 
-describe("a template from a live resource — scopes and decks", () => {
+describe("a template from a live resource — scopes and presentations", () => {
   test("re-owns a linked prompt's private scope instead of retaining the source resource row", async () => {
     model.tables.documents.push(row("documents", "1", { projectId: "projects:1", title: "Winter brief" }));
     model.tables.resourceSets.push(
@@ -165,12 +165,12 @@ describe("a template from a live resource — scopes and decks", () => {
     assert.deepEqual(scopeOf(held), { include: [{ select: "hole", name: "evidence" }], exclude: [] });
   });
 
-  test("makes a deck template from the whole deck or from one of its slides", async () => {
-    model.tables.slideDecks.push(row("slideDecks", "1", { projectId: "projects:1", title: "Board" }));
-    model.tables.slideDeckSnapshots.push(
-      row("slideDeckSnapshots", "1", {
+  test("makes a presentation template from the whole presentation or from one of its slides", async () => {
+    model.tables.presentations.push(row("presentations", "1", { projectId: "projects:1", title: "Board" }));
+    model.tables.presentationSnapshots.push(
+      row("presentationSnapshots", "1", {
         projectId: "projects:1",
-        resourceId: "slideDecks:1",
+        resourceId: "presentations:1",
         role: "leader",
         revision: 1,
         body: {
@@ -187,40 +187,40 @@ describe("a template from a live resource — scopes and decks", () => {
       })
     );
 
-    const whole = await createTemplateFromResource({ target: "slides", resourceId: "slideDecks:1", name: "Board" });
+    const whole = await createTemplateFromResource({ target: "presentation", resourceId: "presentations:1", name: "Board" });
     assert.ok(whole.accepted);
     const wholeBody = model.tables.templates[1].body as { resource: string; slides: unknown[]; sections: unknown[] };
-    assert.equal(wholeBody.resource, "slides");
+    assert.equal(wholeBody.resource, "presentation");
     assert.equal(wholeBody.slides.length, 2);
     assert.equal(wholeBody.sections.length, 1);
 
     const one = await createTemplateFromResource({
-      target: "slides",
-      resourceId: "slideDecks:1",
+      target: "presentation",
+      resourceId: "presentations:1",
       name: "Section divider",
       slideId: "s2"
     });
     assert.ok(one.accepted);
     const held = model.tables.templates[2].body as { resource: string; slides: { id: string }[]; layouts: unknown[]; sections: unknown[] };
-    assert.equal(held.resource, "slides");
+    assert.equal(held.resource, "presentation");
     assert.deepEqual(held.slides.map((slide) => slide.id), ["s2"]);
     assert.equal(held.layouts.length, 1);
     assert.deepEqual(held.sections, []);
 
     const missing = await createTemplateFromResource({
-      target: "slides",
-      resourceId: "slideDecks:1",
+      target: "presentation",
+      resourceId: "presentations:1",
       name: "Nothing",
       slideId: "s9"
     });
     assert.equal(missing.accepted === false && missing.reason, "not-found");
     await assert.rejects(
-      () => createTemplateFromResource({ target: "document", resourceId: "slideDecks:1", name: "x" }),
+      () => createTemplateFromResource({ target: "document", resourceId: "presentations:1", name: "x" }),
       /comes from a document/
     );
     await assert.rejects(
       () => createTemplateFromResource({ target: "document", resourceId: "documents:1", name: "x", slideId: "s1" }),
-      /only a deck template names a slide/
+      /only a presentation template names a slide/
     );
   });
 });

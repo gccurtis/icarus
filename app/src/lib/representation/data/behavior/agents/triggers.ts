@@ -54,7 +54,7 @@ export const isRecurring = (trigger: AutomationTrigger): boolean => trigger.kind
 
 export const TRIGGER_RESOURCE_KINDS = [
   { id: "document", label: "Documents" },
-  { id: "slides", label: "Slide decks" },
+  { id: "presentation", label: "Presentations" },
   { id: "spreadsheet", label: "Spreadsheets" },
   { id: "research", label: "Research threads" },
   { id: "finding", label: "Findings" },
@@ -64,7 +64,7 @@ export const TRIGGER_RESOURCE_KINDS = [
 
 const KIND_WORD: Record<string, string> = {
   "document": "a document",
-  "slides": "a slide deck",
+  "presentation": "a presentation",
   "spreadsheet": "a spreadsheet",
   "research": "a research thread",
   "finding": "a finding",
@@ -74,7 +74,7 @@ const KIND_WORD: Record<string, string> = {
 
 const KIND_PLURAL: Record<string, string> = {
   "document": "documents",
-  "slides": "slide decks",
+  "presentation": "presentations",
   "spreadsheet": "spreadsheets",
   "research": "research threads",
   "finding": "findings",

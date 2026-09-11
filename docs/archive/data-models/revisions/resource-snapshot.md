@@ -6,7 +6,7 @@ anchors that [change sets](change-set.md) are applied on top of.
 ```ts
 interface ResourceSnapshot {
   projectId: Id<"projects">;
-  resourceType: "document" | "slides" | "spreadsheet";
+  resourceType: "document" | "presentation" | "spreadsheet";
   resourceId: string;
   revision: number;
   role: "base" | "leader" | "checkpoint";
@@ -16,7 +16,7 @@ interface ResourceSnapshot {
 
 type ResourceBody =
   | ({ resourceType: "document" } & DocumentBody)
-  | ({ resourceType: "slides" } & SlideDeckBody)
+  | ({ resourceType: "presentation" } & PresentationBody)
   | ({ resourceType: "spreadsheet" } & SpreadsheetBody);
 ```
 
@@ -43,7 +43,7 @@ revision. What differs is which range of change sets runs from it.
 
 Putting the current body on the resource row and keeping it current would mean
 every accepted change rewrites the whole body. Convex patches rewrite the entire
-document, so a large deck or a long document would be rewritten on every
+document, so a large presentation or a long document would be rewritten on every
 keystroke batch — hundreds of kilobytes of write amplification per edit.
 
 With a leader snapshot, an edit appends one small change set row and touches

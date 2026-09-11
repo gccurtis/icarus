@@ -70,8 +70,8 @@
         "border-interactive-border bg-interactive-surface text-interactive-text hover:border-interactive-fill hover:bg-interactive-surface-hover"
     },
     {
-      value: "Slide deck",
-      label: "Slide deck",
+      value: "Presentation",
+      label: "Presentation",
       icon: Presentation,
       tint:
         "border-slide-border bg-slide-surface text-slide-text hover:border-slide-fill hover:bg-slide-surface-hover"
@@ -163,8 +163,8 @@
         <dl class="count-list">
           <dt>Documents</dt>
           <dd>{summary.documents}</dd>
-          <dt>Slide decks</dt>
-          <dd>{summary.slideDecks}</dd>
+          <dt>Presentations</dt>
+          <dd>{summary.presentations}</dd>
           <dt>Spreadsheets</dt>
           <dd>{summary.spreadsheets}</dd>
         </dl>

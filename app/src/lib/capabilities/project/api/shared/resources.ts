@@ -16,7 +16,7 @@ export type ProjectResourceSpec = {
 
 export const PROJECT_RESOURCE_SPECS: readonly ProjectResourceSpec[] = [
   { table: "documents", kind: "document", snapshot: "documentSnapshots", hasUpdatedBy: true },
-  { table: "slideDecks", kind: "slides", snapshot: "slideDeckSnapshots", hasUpdatedBy: true },
+  { table: "presentations", kind: "presentation", snapshot: "presentationSnapshots", hasUpdatedBy: true },
   { table: "spreadsheets", kind: "spreadsheet", snapshot: "spreadsheetSnapshots", hasUpdatedBy: true },
   { table: "researchThreads", kind: "research", hasUpdatedBy: false },
   { table: "findings", kind: "finding", hasUpdatedBy: true }

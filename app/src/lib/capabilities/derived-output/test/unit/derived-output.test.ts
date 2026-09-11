@@ -844,8 +844,8 @@ describe("Derived Output lifecycle", () => {
       title: "Launch brief",
       ...editableResourceFields
     });
-    seed("slideDecks", {
-      _id: "slideDecks:board",
+    seed("presentations", {
+      _id: "presentations:board",
       _creationTime: 1,
       projectId: "projects:1",
       title: "Board update",
@@ -916,7 +916,7 @@ describe("Derived Output lifecycle", () => {
     assert.equal(result?.outcome, "published");
     assert.deepEqual(state.controls.enqueuedRefs, [
       { kind: "document", id: "documents:launch" },
-      { kind: "slides", id: "slideDecks:board" },
+      { kind: "presentation", id: "presentations:board" },
       { kind: "spreadsheet", id: "spreadsheets:forecast" },
       { kind: "externalFile::text", id: "externalFiles:brief" },
       { kind: "externalFile::code", id: "externalFiles:source" },
@@ -925,7 +925,7 @@ describe("Derived Output lifecycle", () => {
     ]);
     assert.deepEqual(state.controls.preparationEvents, [
       "enqueue:document:documents:launch",
-      "enqueue:slides:slideDecks:board",
+      "enqueue:presentation:presentations:board",
       "enqueue:spreadsheet:spreadsheets:forecast",
       "enqueue:externalFile::text:externalFiles:brief",
       "enqueue:externalFile::code:externalFiles:source",

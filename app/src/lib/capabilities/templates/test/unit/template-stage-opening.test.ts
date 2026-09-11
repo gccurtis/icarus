@@ -111,12 +111,12 @@ describe("opening a stage", () => {
     assert.equal(read.stage?.currentRevision, 3);
   });
 
-  test("stages a deck template as a deck and refuses a spreadsheet", async () => {
+  test("stages a presentation template as a presentation and refuses a spreadsheet", async () => {
     const opened = await openTemplateStage({ templateId: "templates:2" });
     assert.ok(opened.accepted);
-    assert.equal(opened.target, "slides");
-    assert.equal(model.tables.slideDecks[0].title, "Template · Template 2");
-    assert.equal((model.tables.slideDeckSnapshots[0].body as { slides: unknown[] }).slides.length, 1);
+    assert.equal(opened.target, "presentation");
+    assert.equal(model.tables.presentations[0].title, "Template · Template 2");
+    assert.equal((model.tables.presentationSnapshots[0].body as { slides: unknown[] }).slides.length, 1);
 
     model.tables.templates.push(
       template("3", {

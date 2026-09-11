@@ -73,19 +73,19 @@ export const OPENING: Record<Category, Opening> = {
     rail: ["new-tab.create", "new-tab.recent", "new-tab.templates", "new-tab.bring-in"]
   },
 
-  "slide-deck-editor": {
-    content: "slide-deck-editor.deck",
-    context: "slide-deck-editor.slides",
+  "presentation-editor": {
+    content: "presentation-editor.presentation",
+    context: "presentation-editor.slides",
     rail: [
-      "slide-deck-editor.slides",
-      "slide-deck-editor.insert",
-      "slide-deck-editor.layers",
-      "slide-deck-editor.theme",
-      "slide-deck-editor.find",
-      "slide-deck-editor.comments",
-      "slide-deck-editor.templates",
-      "slide-deck-editor.variables",
-      "slide-deck-editor.prompts"
+      "presentation-editor.slides",
+      "presentation-editor.insert",
+      "presentation-editor.layers",
+      "presentation-editor.theme",
+      "presentation-editor.find",
+      "presentation-editor.comments",
+      "presentation-editor.templates",
+      "presentation-editor.variables",
+      "presentation-editor.prompts"
     ]
   },
 

@@ -184,7 +184,7 @@ const proseFor = {
   "/configuration": "prose/configuration.md",
   "/algorithms/document-editor": "prose/algorithms/document-editor.md",
   "/algorithms/semantic-overlay": "prose/algorithms/semantic-overlay.md",
-  "/algorithms/slide-deck": "prose/algorithms/slide-deck.md",
+  "/algorithms/presentation": "prose/algorithms/presentation.md",
   "/algorithms/charts": "prose/algorithms/charts.md",
   "/algorithms/workspace": "prose/algorithms/workspace.md",
   "/algorithms/revisions": "prose/algorithms/revisions.md",

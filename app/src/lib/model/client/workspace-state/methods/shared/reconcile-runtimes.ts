@@ -29,11 +29,11 @@ export const reconcileRuntimes = (state: WorkspaceStateData): void => {
       (id) => runtimes.release(id)
     );
   }
-  if (state.decks !== undefined) {
-    const runtimes = state.decks;
+  if (state.presentations !== undefined) {
+    const runtimes = state.presentations;
     reconcile(
       runtimes.open,
-      desired(state, "slide-deck-editor"),
+      desired(state, "presentation-editor"),
       (id) => runtimes.attach(id),
       (id) => runtimes.release(id)
     );

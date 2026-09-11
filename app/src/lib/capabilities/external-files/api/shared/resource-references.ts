@@ -13,9 +13,9 @@ import type {
 import type { DocumentBody, DocumentRow } from "$representation/data/types/documents/body";
 import type {
   SlideBackground,
-  SlideDeckBody,
+  PresentationBody,
   SlideElement
-} from "$representation/data/types/slide-decks/body";
+} from "$representation/data/types/presentations/body";
 import type { SheetCell } from "$representation/data/types/spreadsheets/cell";
 
 export const refNamesExternalFile = (ref: ResourceRef, externalFileId: string): boolean =>
@@ -147,8 +147,8 @@ const slideElementNamesExternalFile = (
   }
 };
 
-export const slideDeckBodyNamesExternalFile = (
-  body: SlideDeckBody,
+export const presentationBodyNamesExternalFile = (
+  body: PresentationBody,
   externalFileId: string
 ): boolean => backgroundNamesExternalFile(body.theme.background, externalFileId) ||
   body.layouts.some((layout) =>

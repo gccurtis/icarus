@@ -83,7 +83,7 @@ export const HISTORY: readonly (readonly string[])[] = [
   ],
   [
     "306e308",
-    "refactor(slide-deck-editor): flatten slide inspector",
+    "refactor(presentation-editor): flatten slide inspector",
     "The old head of main, and the fork point both sides still share.",
     "main"
   ],

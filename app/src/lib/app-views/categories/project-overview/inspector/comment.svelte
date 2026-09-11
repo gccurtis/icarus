@@ -40,7 +40,7 @@
 
   const KIND_LABEL: Record<ProjectResourceKind, string> = {
     document: "Document",
-    slides: "Slide deck",
+    presentation: "Presentation",
     spreadsheet: "Spreadsheet",
     research: "Research",
     finding: "Finding"
@@ -48,7 +48,7 @@
 
   const KIND_TONE: Record<ProjectResourceKind, "interactive" | "accent-1" | "accent-2" | "intelligence" | "active"> = {
     document: "interactive",
-    slides: "accent-1",
+    presentation: "accent-1",
     spreadsheet: "accent-2",
     research: "intelligence",
     finding: "active"
@@ -100,7 +100,7 @@
       thread !== undefined &&
       thread.anchor !== null &&
       ((thread.target.kind === "document" && thread.anchor.kind === "document-text") ||
-        (thread.target.kind === "slides" &&
+        (thread.target.kind === "presentation" &&
           (thread.anchor.kind === "slide" || thread.anchor.kind === "element")))
   );
 
@@ -115,11 +115,11 @@
       view.documentRuntime(held.target.id).scrollTo = held.anchor.blockId;
       return;
     }
-    if (held.target.kind !== "slides") return;
+    if (held.target.kind !== "presentation") return;
 
     if (held.anchor.kind === "slide") {
       view.open({
-        category: "slide-deck-editor",
+        category: "presentation-editor",
         resourceId: held.target.id,
         focus: held.anchor.slideId
       });
@@ -128,16 +128,16 @@
     const anchor = held.anchor;
     if (anchor.kind !== "element") return;
     const slide = view
-      .slideDeckRuntime(held.target.id)
+      .presentationRuntime(held.target.id)
       .body?.slides.find((candidate) =>
         elementIn(candidate.elements as unknown as readonly ElementNode[], anchor.elementId)
       );
     view.open({
-      category: "slide-deck-editor",
+      category: "presentation-editor",
       resourceId: held.target.id,
       ...(slide === undefined ? {} : { focus: slide.id })
     });
-    view.inspect("slide-deck-editor.threads", { kind: "threads", id: anchor.elementId });
+    view.inspect("presentation-editor.threads", { kind: "threads", id: anchor.elementId });
   };
 
 </script>
@@ -156,7 +156,7 @@
   {#snippet actions()}
     {#if canLocate}
       <PanelButton
-        label={thread?.target.kind === "slides" ? "Show in deck" : "Show in document"}
+        label={thread?.target.kind === "presentation" ? "Show in presentation" : "Show in document"}
         icon={Locate}
         tone="ghost"
         onclick={locate}

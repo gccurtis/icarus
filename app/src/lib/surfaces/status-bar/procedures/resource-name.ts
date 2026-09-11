@@ -19,7 +19,7 @@ export type ResourceNames = {
 
 const RESOURCE_KIND = {
   document: "Document",
-  slides: "Deck",
+  presentation: "Presentation",
   spreadsheet: "Spreadsheet",
   research: "Research",
   file: "File",
@@ -62,7 +62,7 @@ export const kindOf = (
 ): string | undefined => {
   if (id.startsWith("templates:")) return "Template";
   const stage = stages?.stages.find((candidate) => candidate.resourceId === id);
-  if (stage !== undefined) return stage.target === "document" ? "Document" : "Deck";
+  if (stage !== undefined) return stage.target === "document" ? "Document" : "Presentation";
   const resource = resources?.resources.find((candidate) => candidate.id === id);
   if (resource !== undefined) return RESOURCE_KIND[resource.kind];
   if (id.startsWith("personas:")) return "Persona";

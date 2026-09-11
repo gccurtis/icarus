@@ -8,7 +8,7 @@ const requiredId = (value: unknown, subject: string, field: string): string => {
 };
 
 export const stageTargetOf = (value: unknown, subject: string): TemplateStageTarget => {
-  if (value !== "document" && value !== "slides") {
+  if (value !== "document" && value !== "presentation") {
     throw new Error(`templates/${subject}: target is document or slides`);
   }
   return value;
@@ -32,9 +32,9 @@ export const stageIdOf = (value: unknown, subject: string): string =>
 
 export const resourceIdOf = (value: unknown, subject: string): string => {
   const id = requiredId(value, subject, "resourceId");
-  if (!/^(documents|slideDecks):[^.:\s]+$/.test(id)) {
+  if (!/^(documents|presentations):[^.:\s]+$/.test(id)) {
     throw new Error(
-      `templates/${subject}: resourceId is one canonical documents or slideDecks row id`
+      `templates/${subject}: resourceId is one canonical documents or presentations row id`
     );
   }
   return id;

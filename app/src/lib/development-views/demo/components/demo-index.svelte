@@ -20,7 +20,7 @@
     {
       href: "/demo/editor-audit",
       title: "Editor audit",
-      sub: "Document + slide deck findings, causes, and fixes",
+      sub: "Document + presentation findings, causes, and fixes",
       icon: ClipboardCheck,
       about:
         "The complete reported-issue ledger, source-traced root causes, target inspector layouts, creation repairs, priorities, acceptance tests, and evidence limits."
@@ -71,7 +71,7 @@
       sub: "Several narrow tools; one explicit authority grammar",
       icon: ScanEye,
       about:
-        "The proposed traversal, contextual slide view, specialized evidence readers, evidence kinds, and shared document/deck projection seam."
+        "The proposed traversal, contextual slide view, specialized evidence readers, evidence kinds, and shared document/presentation projection seam."
     },
     {
       href: "/demo/semantic-overlay/material-layer",

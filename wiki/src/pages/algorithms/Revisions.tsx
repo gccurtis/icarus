@@ -34,7 +34,7 @@ export const Revisions = () => (
           <Table
             head={["key", "value", "read by"]}
             rows={[
-              [<code key="k">revisions.changeSets.flushAfterOps</code>, "50", "document, slide deck and spreadsheet runtime constructors"],
+              [<code key="k">revisions.changeSets.flushAfterOps</code>, "50", "document, presentation and spreadsheet runtime constructors"],
               [<code key="k">revisions.changeSets.flushAfterMs</code>, "2000", "the same"],
               [<code key="k">revisions.sync.everyMs</code>, "5000", "attach(): the re-read interval while attached"],
               [<code key="k">workspace.changeSets.flushAfterOps</code>, "8", "workspace state"],

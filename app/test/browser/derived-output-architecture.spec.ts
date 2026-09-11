@@ -191,7 +191,7 @@ test("the semantic control room exposes every live intake signal and agent tool"
 
   await page.getByRole("tab", { name: /Orientation 7/ }).click();
   await expect(page.locator(".tool-list button")).toHaveCount(7);
-  await page.getByRole("button", { name: /list_deck_slides.*context only/ }).click();
+  await page.getByRole("button", { name: /list_presentation_slides.*context only/ }).click();
   await expect(page.locator(".observation-window")).toContainText("visible slide IDs");
   await expect(page.locator(".observation-window")).toContainText("cannot support a final claim");
 

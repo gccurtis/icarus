@@ -23,7 +23,7 @@
     type DerivedAgentToolName
   } from "$capabilities/derived-output";
 
-  type TriggerId = "document-create" | "document-save" | "deck-create" | "deck-save";
+  type TriggerId = "document-create" | "document-save" | "presentation-create" | "presentation-save";
   type Filter = "all" | DerivedAgentToolMode;
 
   const TRIGGERS = [
@@ -48,30 +48,30 @@
       materials: "Every represented table and sourced image is inventoried with authored nearby context."
     },
     {
-      id: "deck-create" as const,
+      id: "presentation-create" as const,
       index: "A3",
-      label: "Slide deck created",
+      label: "Presentation created",
       owner: "createProjectResource",
-      condition: "The server successfully creates the deck row and revision-0 leader snapshot.",
+      condition: "The server successfully creates the presentation row and revision-0 leader snapshot.",
       revision: "slides · leader revision 0",
       exact: "The empty first slide contributes no spans, but its authoritative revision is queued.",
-      materials: "The initial blank deck contributes no material records."
+      materials: "The initial blank presentation contributes no material records."
     },
     {
-      id: "deck-save" as const,
+      id: "presentation-save" as const,
       index: "A4",
       label: "Slide save accepted",
-      owner: "submitSlideDeckChanges",
-      condition: "The server accepts the deck operations, advances the leader, and only then emits the semantic signal.",
+      owner: "submitPresentationChanges",
+      condition: "The server accepts the presentation operations, advances the leader, and only then emits the semantic signal.",
       revision: "slides · newest accepted leader revision",
-      exact: "Visible slides are traversed in deck/frame order; authored text, formulas, shape text, notes, and image text enter the exact lane.",
+      exact: "Visible slides are traversed in presentation/frame order; authored text, formulas, shape text, notes, and image text enter the exact lane.",
       materials: "Tables, charts, sourced images, and image backgrounds become semantic-material inventory."
     }
   ] as const;
 
   const SOURCE_ROWS = [
     ["Document", "Exact text + table/image materials", "Create · each accepted save", "Automatic"],
-    ["Slide deck", "Exact text + table/chart/image materials", "Create · each accepted save", "Automatic"],
+    ["Presentation", "Exact text + table/chart/image materials", "Create · each accepted save", "Automatic"],
     ["External UTF-8 text", "Exact text", "Explicit enqueue · backfill", "Explicit today"],
     ["Spreadsheet", "One native table material", "Explicit enqueue · backfill", "Explicit today"],
     ["External CSV", "CSV profile/material + native bytes", "Explicit enqueue · backfill", "Explicit today"],
@@ -124,7 +124,7 @@
     },
     {
       question: "What a particular slide contains",
-      route: ["find_resources", "list_deck_slides", "inspect_slide", "view_slide + typed readers"],
+      route: ["find_resources", "list_presentation_slides", "inspect_slide", "view_slide + typed readers"],
       note: "The schematic explains layout; factual claims still resolve through evidence tools."
     },
     {
@@ -137,15 +137,15 @@
   const FILES = [
     ["project-resources/.../create-project-resource.ts", "Two automatic creation hooks"],
     ["document/.../submit-document-changes.ts", "Accepted document-save hook"],
-    ["slide-deck/.../submit-slide-deck-changes.ts", "Accepted deck-save hook"],
+    ["presentation/.../submit-presentation-changes.ts", "Accepted presentation-save hook"],
     ["semantic-overlay/api/enqueue-semantic-sync", "Revision capture + two-lane coalescing"],
     ["semantic-overlay/api/shared/queue-processor.ts", "Exact and material worker boundary"],
-    ["semantic/projection/resources/{document,slide-deck}.ts", "Authoritative traversal"],
+    ["semantic/projection/resources/{document,presentation}.ts", "Authoritative traversal"],
     ["derived-output/api/shared/tool-catalog.ts", "All 16 live agent tool contracts"],
     ["derived-output/api/shared/{synthesis,resource-reading}.ts", "Executable tool implementations"]
   ] as const;
 
-  let triggerId = $state<TriggerId>("deck-save");
+  let triggerId = $state<TriggerId>("presentation-save");
   const trigger = $derived(TRIGGERS.find((entry) => entry.id === triggerId) ?? TRIGGERS[3]);
 
   let filter = $state<Filter>("all");

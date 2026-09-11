@@ -1,5 +1,5 @@
 import type { DocumentRuntime } from "$model/client/document-runtimes";
-import type { SlideDeckRuntime } from "$model/client/slide-deck-runtimes";
+import type { PresentationRuntime } from "$model/client/presentation-runtimes";
 import type { SpreadsheetRuntime } from "$model/client/spreadsheet-runtimes";
 import type { ContextView } from "$representation/data/types/workspace/views";
 import type { Category, ContentView } from "$representation/data/types/workspace/categories";
@@ -76,7 +76,7 @@ export interface WorkspaceStateModel {
   ): Promise<Result> | undefined;
 
   documentRuntime(resourceId: string): DocumentRuntime;
-  slideDeckRuntime(resourceId: string): SlideDeckRuntime;
+  presentationRuntime(resourceId: string): PresentationRuntime;
   spreadsheetRuntime(resourceId: string): SpreadsheetRuntime;
 
   /**

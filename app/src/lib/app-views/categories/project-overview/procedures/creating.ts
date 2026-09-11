@@ -3,7 +3,7 @@ import type { WorkspaceStateModel } from "$model/client/workspace-state";
 
 export type Creation = {
   readonly view: WorkspaceStateModel;
-  readonly target: "document" | "slides" | "spreadsheet";
+  readonly target: "document" | "presentation" | "spreadsheet";
   readonly live: () => boolean;
   readonly refused: (message: string | undefined) => void;
   readonly ended: () => void;
@@ -35,8 +35,8 @@ export const createsResource = async (asked: Creation): Promise<void> => {
         category:
           target === "document"
             ? "document-editor"
-            : target === "slides"
-              ? "slide-deck-editor"
+            : target === "presentation"
+              ? "presentation-editor"
               : "spreadsheet-editor",
         resourceId
       });

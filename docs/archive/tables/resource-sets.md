@@ -183,7 +183,7 @@ const setTerm = v.object({
  * picks out, and borrowing the word would read as one of the five change ops
  * every time it appeared.
  *
- * `kinds` takes a list, so "documents and decks" is one term rather than two
+ * `kinds` takes a list, so "documents and presentations" is one term rather than two
  * wrapped in a third. Each entry is prefix-matched, so one entry can name a
  * whole family — `externalFile` reaches every subkind beneath it.
  */

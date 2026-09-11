@@ -7,7 +7,7 @@
   /**
    * What a workspace shows where a framework surface will go.
    *
-   * The three editors — document, slide deck, spreadsheet — are one region each,
+   * The three editors — document, presentation, spreadsheet — are one region each,
    * and that region is ProseMirror, Fabric and Univer respectively. None is
    * installed. A placeholder that named the framework and said what it will do is
    * more honest than a drawn imitation nobody can tell from the real thing, and

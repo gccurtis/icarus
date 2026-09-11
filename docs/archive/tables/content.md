@@ -460,7 +460,7 @@ export type ContentBlock =
 | | holds | accepts |
 | --- | --- | --- |
 | [document row](resources.md#documentbody) | `blocks: ContentBlock[]` | every variant |
-| [slide element](resources.md#slidedeckbody) | `blocks: ContentBlock[]` | every variant |
+| [slide element](resources.md#slidepresentationbody) | `blocks: ContentBlock[]` | every variant |
 | [message](threads.md#message) | `blocks: ContentBlock[]` | every variant |
 | [comment](collaboration.md#comments) | `blocks: ContentBlock[]` | text and image |
 | [derived output](knowledge.md#derivedoutputs) | `response: ContentBlock` | one |

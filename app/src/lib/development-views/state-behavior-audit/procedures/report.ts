@@ -56,7 +56,7 @@ export const METRICS: readonly AuditMetric[] = [
   {
     value: "45",
     label: "View-triggered runtime attachments",
-    detail: "16 document and 28 slide-deck view files call an accessor that mutates runtime lifetime.",
+    detail: "16 document and 28 presentation view files call an accessor that mutates runtime lifetime.",
     tone: "danger"
   }
 ];
@@ -95,7 +95,7 @@ export const SCORECARD: readonly ScorecardRow[] = [
   {
     concern: "Resource edit state",
     grade: "Partial",
-    assessment: "Document and deck runtimes own buffers and history, but their lifetime is render-driven; the spreadsheet runtime is disconnected.",
+    assessment: "Document and presentation runtimes own buffers and history, but their lifetime is render-driven; the spreadsheet runtime is disconnected.",
     evidence: "Runtime attach is idempotent but never balanced on tab close; SpreadsheetRuntimes has no production consumer."
   },
   {
@@ -152,8 +152,8 @@ export const STRENGTHS: readonly Strength[] = [
   {
     title: "Resource buffers have a real owner",
     description:
-      "Document and slide-deck runtimes correctly own optimistic bodies, unsent operations, revision state, history, coalescing, and synchronization.",
-    evidence: "model/client/{document,slide-deck}-runtimes"
+      "Document and presentation runtimes correctly own optimistic bodies, unsent operations, revision state, history, coalescing, and synchronization.",
+    evidence: "model/client/{document,presentation}-runtimes"
   },
   {
     title: "Authored components are context-free",
@@ -189,7 +189,7 @@ export const STATE_OWNERS: readonly StateOwnerRow[] = [
     grade: "Strong"
   },
   {
-    state: "Document and slide-deck body, revision, buffer, history",
+    state: "Document and presentation body, revision, buffer, history",
     intendedOwner: "One resource runtime per resource",
     asBuilt: "Correct data owner; incorrect acquire/release owner and too many render-time access sites.",
     grade: "Partial"
@@ -250,7 +250,7 @@ const FINDINGS: readonly AuditFinding[] = [
       "model/server/store/store.md",
       "project-resources/api/create-project-resource.ts:102",
       "document/api/submit-document-changes.ts:133",
-      "slide-deck/api/submit-slide-deck-changes.ts:57"
+      "presentation/api/submit-presentation-changes.ts:57"
     ]
   },
   {
@@ -259,7 +259,7 @@ const FINDINGS: readonly AuditFinding[] = [
     area: "Client state ownership",
     title: "Resource runtime lifetime is driven by rendering, not by workspace tabs",
     finding:
-      "WorkspaceState.documentRuntime() and slideDeckRuntime() are named as accessors but call attach(). Forty-four view files invoke them, usually from effects. Closing a tab records a workspace operation but never releases its runtime; only ClientModel.close() releases all runtimes.",
+      "WorkspaceState.documentRuntime() and presentationRuntime() are named as accessors but call attach(). Forty-four view files invoke them, usually from effects. Closing a tab records a workspace operation but never releases its runtime; only ClientModel.close() releases all runtimes.",
     consequence:
       "Closed resources remain subscribed and retained for the whole browser session. Mounting inspectors and context views also becomes a hidden lifecycle operation and can trigger redundant synchronization reads.",
     recommendation:
@@ -268,7 +268,7 @@ const FINDINGS: readonly AuditFinding[] = [
       "Runtime open ids exactly follow referenced tabs, closing the last tab releases the subscription and flushes once, and mounting any view performs no attach or sync side effect.",
     evidence: [
       "workspace-state/methods/document-runtime.ts:4",
-      "workspace-state/methods/slide-deck-runtime.ts:4",
+      "workspace-state/methods/presentation-runtime.ts:4",
       "workspace-state/methods/close.ts:6",
       "document-runtimes/methods/attach.ts:4",
       "app-views: 44 runtime accessor call sites"
@@ -280,7 +280,7 @@ const FINDINGS: readonly AuditFinding[] = [
     area: "Client state ownership",
     title: "SpreadsheetRuntime exists in the graph but has no route to the spreadsheet editor",
     finding:
-      "ClientModel constructs and returns SpreadsheetRuntimes, but WorkspaceState receives only the document and slide-deck registers. No production view consumes SpreadsheetRuntime. sheet.svelte instead owns a canned sheet, local selection, and local zoom.",
+      "ClientModel constructs and returns SpreadsheetRuntimes, but WorkspaceState receives only the document and presentation registers. No production view consumes SpreadsheetRuntime. sheet.svelte instead owns a canned sheet, local selection, and local zoom.",
     consequence:
       "The declared state owner is dead while the component is the effective owner. Resource ids do not determine rendered content, edits cannot persist, and tab-correlated state resets on remount.",
     recommendation:
@@ -301,7 +301,7 @@ const FINDINGS: readonly AuditFinding[] = [
     area: "Views and procedures",
     title: "The largest components are still controllers",
     finding:
-      "Procedure extraction is substantial, but document.svelte, deck.svelte, slide-surface.svelte, chart.svelte, sheet.svelte, research/thread.svelte, and templates/inspector/template.svelte each retain more than 400 script lines. They coordinate state, lifecycle, DOM/library adapters, validation, async commands, and event interpretation beside markup.",
+      "Procedure extraction is substantial, but document.svelte, presentation.svelte, slide-surface.svelte, chart.svelte, sheet.svelte, research/thread.svelte, and templates/inspector/template.svelte each retain more than 400 script lines. They coordinate state, lifecycle, DOM/library adapters, validation, async commands, and event interpretation beside markup.",
     consequence:
       "A reviewer cannot inspect rendering without also understanding the full behavior graph. Effects are anonymous, state transitions are difficult to unit test, and a small visual change enters a high-conflict file.",
     recommendation:
@@ -310,7 +310,7 @@ const FINDINGS: readonly AuditFinding[] = [
       "Every long component has a short declarative script, each effect has a named module and focused test, and no component owns a multi-step capability or persistence command.",
     evidence: [
       "document-editor/content/document.svelte: 472 script lines / 11 effects",
-      "slide-deck-editor/content/deck.svelte: 519 script lines",
+      "presentation-editor/content/presentation.svelte: 519 script lines",
       "components/authored/slide-surface/slide-surface.svelte: 470 script lines",
       "templates/inspector/template.svelte: 493 script lines",
       "research/content/thread.svelte: 865 script lines"
@@ -366,7 +366,7 @@ const FINDINGS: readonly AuditFinding[] = [
     finding:
       "Most remote calls are already behind view procedures, but eight .svelte files import a capability index directly. The direct callers mix loading resources, command state, error handling, refresh ordering, and presentation state in the component.",
     consequence:
-      "The visible component is no longer a declarative call site, and the same remote behavior is harder to reuse or test without rendering. Comment commands are duplicated across document, deck, and general inspectors.",
+      "The visible component is no longer a declarative call site, and the same remote behavior is harder to reuse or test without rendering. Comment commands are duplicated across document, presentation, and general inspectors.",
     recommendation:
       "Make direct capability imports illegal in production .svelte files. Put query construction and command chains in the component's procedure tree; keep editor-specific presentation independent while giving each copy the same typed subject-capability contract.",
     acceptance:
@@ -376,9 +376,9 @@ const FINDINGS: readonly AuditFinding[] = [
       "document-editor/inspector/text-selection.svelte",
       "new-tab/content/launcher.svelte",
       "project-overview/content/overview.svelte",
-      "slide-deck-editor/context/comments.svelte",
-      "slide-deck-editor/inspector/comment.svelte",
-      "slide-deck-editor/inspector/threads.svelte",
+      "presentation-editor/context/comments.svelte",
+      "presentation-editor/inspector/comment.svelte",
+      "presentation-editor/inspector/threads.svelte",
       "app-views/general/comment/comment.svelte"
     ]
   },
@@ -397,7 +397,7 @@ const FINDINGS: readonly AuditFinding[] = [
       "An AST rule can identify every nontrivial model method body as a delegation, and all timers, remote calls, persistence calls, and multi-step branches live under methods/.",
     evidence: [
       "document-runtimes/definition.svelte.ts:61",
-      "slide-deck-runtimes/definition.svelte.ts:58",
+      "presentation-runtimes/definition.svelte.ts:58",
       "spreadsheet-runtimes/definition.svelte.ts:54"
     ]
   },
@@ -446,7 +446,7 @@ const FINDINGS: readonly AuditFinding[] = [
     area: "Reviewability and enforcement",
     title: "Architecture documentation describes an older system",
     finding:
-      "The root capability document says three subjects answer although eight exist. The server document omits Store. WorkspaceState says nothing is persisted although restore/flush and workspace capabilities exist. Slide-deck runtime documentation says writes and editor buffering are unbuilt although both are implemented.",
+      "The root capability document says three subjects answer although eight exist. The server document omits Store. WorkspaceState says nothing is persisted although restore/flush and workspace capabilities exist. Slide-presentation runtime documentation says writes and editor buffering are unbuilt although both are implemented.",
     consequence:
       "The tree is highly documented, but a reviewer cannot know whether prose or source is authoritative. This undermines the reviewability the documentation was created to provide.",
     recommendation:
@@ -457,7 +457,7 @@ const FINDINGS: readonly AuditFinding[] = [
       "capabilities/capabilities.md",
       "runtime/server/server.md",
       "workspace-state/workspace-state.md",
-      "slide-deck-runtimes/slide-deck-runtimes.md"
+      "presentation-runtimes/presentation-runtimes.md"
     ]
   },
   {

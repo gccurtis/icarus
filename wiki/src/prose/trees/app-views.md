@@ -4,10 +4,10 @@ What a tab shows. A category is a directory under `categories/`; a view is a `.s
 
 ## What it owns
 
-- **Content views** (13 keys, all built): `document-editor.document`, `slide-deck-editor.deck`, `spreadsheet-editor.sheet`, `analysis.chart`, `research.thread`, `project-overview.overview`, `new-tab.launcher`, `agents.{library,persona,task,automation}`, `templates.{library,editor}`.
-- **Context views** (86 keys, 4 built): `document-editor.layout`, `slide-deck-editor.{slides,stage}`, `templates.overview-library`. The other 82 are named in the vocabulary and drawn as a placeholder by the context surface.
+- **Content views** (13 keys, all built): `document-editor.document`, `presentation-editor.presentation`, `spreadsheet-editor.sheet`, `analysis.chart`, `research.thread`, `project-overview.overview`, `new-tab.launcher`, `agents.{library,persona,task,automation}`, `templates.{library,editor}`.
+- **Context views** (86 keys, 4 built): `document-editor.layout`, `presentation-editor.{slides,stage}`, `templates.overview-library`. The other 82 are named in the vocabulary and drawn as a placeholder by the context surface.
 - **Inspector lenses** (109 keys, 2 built): `document-editor.text-selection` and `templates.template`. The eight `general.*` keys in the vocabulary have no file; the one general view on disk, `general/function-builder`, has no key.
-- **Procedures** per category — the document editor's nine ([[page:/algorithms/document-editor|explained]]), the slide deck editor's four ([[page:/algorithms/slide-deck|explained]]), project-overview's ten, new-tab's six — with tests under `procedures/test/`.
+- **Procedures** per category — the document editor's nine ([[page:/algorithms/document-editor|explained]]), the presentation editor's four ([[page:/algorithms/presentation|explained]]), project-overview's ten, new-tab's six — with tests under `procedures/test/`.
 - **Documents** — each category except `document-editor` has a `<category>.md` describing what its views are meant to become. The counts above come from the code, not from those documents.
 
 ## What it may and may not import

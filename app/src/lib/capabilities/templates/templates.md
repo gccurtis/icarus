@@ -8,15 +8,15 @@ opened in an ordinary editor and saved into.
 | --- | --- |
 | `readTemplateLibrary` | Every valid template in the scoped project, projected as library metadata with creator name, permissions and last use, plus quarantined invalid row notices |
 | `readTemplate` | The full body and holes for one valid template in the project, `unavailable` for a corrupt row, or `null` |
-| `readResourceTemplate` | For one document or deck: the stage it is, if any |
+| `readResourceTemplate` | For one document or presentation: the stage it is, if any |
 | `readTemplateStageIndex` | Every exact current template working-copy identity in the scoped project, for chrome that must name editor subjects without making them listable project material |
 | `createTemplate` | A template in the scoped project with a server-built valid empty body and revision-one history |
-| `createTemplateFromResource` | A template from a live document, a live deck, or one slide of a deck as a one-slide deck, its body made portable first; says what could not travel |
+| `createTemplateFromResource` | A template from a live document, a live presentation, or one slide of a presentation as a one-presentation, its body made portable first; says what could not travel |
 | `updateTemplate` | A compare-and-swap name, description, tag, hole-help or hole-list update plus an immutable version snapshot |
 | `duplicateTemplate` | A template in the project copied into a new one at revision one |
 | `removeTemplate` | A compare-and-swap delete after the stage and all version rows are removed |
-| `instantiateTemplate` | A regular document, deck, or spreadsheet with a revision-zero leader snapshot and no reference back to the template, its prompt scopes filled from the caller's answers, else each hole's default |
-| `openTemplateStage` | The template's stage, made if absent: a scratch document or deck holding the template body, and the row that says so |
+| `instantiateTemplate` | A regular document, presentation, or spreadsheet with a revision-zero leader snapshot and no reference back to the template, its prompt scopes filled from the caller's answers, else each hole's default |
+| `openTemplateStage` | The template's stage, made if absent: a scratch document or presentation holding the template body, and the row that says so |
 | `commitTemplateStage` | The stage resource's leader body, made portable and validated, written as the template's next revision |
 | `discardTemplateStage` | The stage row and its scratch resource removed, with the resource's snapshots, change sets and comments |
 
@@ -39,8 +39,8 @@ library's recency reads. Opening a template to edit it is not a use.
 ## Bodies
 
 A body is `document`, `slides`, or `spreadsheet`. A template made from one slide
-is a deck body holding that slide, the layout it uses, and the theme and styles
-it is drawn with, and no sections; nothing distinguishes it from any other deck
+is a presentation body holding that slide, the layout it uses, and the theme and styles
+it is drawn with, and no sections; nothing distinguishes it from any other presentation
 template afterwards.
 
 A body made from a live resource is made portable first: formula ids, generated
@@ -55,7 +55,7 @@ hold what a template may not.
 
 Admission follows the represented body shape instead of passing through one
 catch-all validator. Shared primitives and format rules sit under
-`api/shared/body-validation/`; document rows, slide elements and decks, and
+`api/shared/body-validation/`; document rows, slide elements and presentations, and
 spreadsheet cells each have their own exact current-schema predicate. The
 directory's `body-validation.ts` is the one small dispatch boundary: it verifies
 stored JSON, rejects every
@@ -111,7 +111,7 @@ description, a default or a new text hole is written, and it refuses with
 
 ## Stages
 
-A stage is how a template is edited: a scratch document or deck the ordinary
+A stage is how a template is edited: a scratch document or presentation the ordinary
 editor and runtime work on unchanged, and a row naming the template, the
 revision it was taken from, and the resource. One per template, shared by
 everyone in the project; opening again reuses it, so several people editing a
@@ -148,7 +148,7 @@ therefore cannot crash the rest of the library or be copied into new history.
 ## Instantiation boundary
 
 Instantiation writes normal resource rows, not a private template-editor data
-model. Documents and decks receive their represented body as a leader snapshot.
+model. Documents and presentations receive their represented body as a leader snapshot.
 Spreadsheet templates are
 materialized from addresses into stable row/column ids, sheet-cell rows, print
 ranges, dimensions, and a leader snapshot. All materialized cells are admitted

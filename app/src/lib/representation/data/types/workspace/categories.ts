@@ -12,9 +12,9 @@ export type Category =
   | "document-editor"
   | "external"
   | "new-tab"
+  | "presentation-editor"
   | "project-overview"
   | "research"
-  | "slide-deck-editor"
   | "spreadsheet-editor"
   | "templates";
 
@@ -28,9 +28,9 @@ export type ContentView =
   | "document-editor.document"
   | "external.library"
   | "new-tab.launcher"
+  | "presentation-editor.presentation"
   | "project-overview.overview"
   | "research.thread"
-  | "slide-deck-editor.deck"
   | "spreadsheet-editor.sheet"
   | "templates.editor"
   | "templates.library";

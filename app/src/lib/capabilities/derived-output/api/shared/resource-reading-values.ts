@@ -1,5 +1,5 @@
 import type { ContentBlock } from "$representation/data/types/content/content-block";
-import type { Frame, SlideElement } from "$representation/data/types/slide-decks/body";
+import type { Frame, SlideElement } from "$representation/data/types/presentations/body";
 
 export const record = (value: unknown, message: string): Record<string, unknown> => {
   if (value === null || typeof value !== "object" || Array.isArray(value)) throw new Error(message);

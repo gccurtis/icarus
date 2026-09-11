@@ -45,6 +45,6 @@ export const IMPORT_BLOCKED_SUITES = [
   "src/lib/app-views/categories/document-editor/procedures/test/unit/comments.test.ts",
   "src/lib/app-views/categories/document-editor/procedures/test/unit/templating.test.ts",
   "src/lib/app-views/categories/project-overview/procedures/test/unit/contexts.test.ts",
-  "src/lib/app-views/categories/slide-deck-editor/procedures/test/unit/templating.test.ts",
+  "src/lib/app-views/categories/presentation-editor/procedures/test/unit/templating.test.ts",
   "src/lib/app-views/categories/templates/procedures/test/unit/library.test.ts"
 ] as const;

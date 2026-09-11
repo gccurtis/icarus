@@ -2,7 +2,7 @@
 
 | View | What it is for | Sections |
 | --- | --- | --- |
-| Notes | Speaker notes, for this slide and across the deck | Slide *n* · Deck |
+| Notes | Speaker notes, for this slide and across the presentation | Slide *n* · Presentation |
 
 Notes left the canvas. A tray under a 16:9 slide costs the height that zooming
 needs, and notes are read while presenting rather than while designing.
@@ -13,8 +13,8 @@ needs, and notes are read while presenting rather than while designing.
 | --- |
 | slide n |
 | slide n |
-| deck |
-| deck |
+| presentation |
+| presentation |
 
 ## Slide *n*
 
@@ -26,7 +26,7 @@ precedent, the docket number is in the appendix."
 **Needs** — the slide's notes content. Notes use the same block editor as
 everything else and never appear on the canvas.
 
-## Deck
+## Presentation
 
 Every slide with a summary of whether it has notes, so gaps are visible before a
 rehearsal rather than during one.

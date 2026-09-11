@@ -56,7 +56,7 @@ const { validateStartThread } = await import("$capabilities/comments/api/start-t
 const { validateReply } = await import("$capabilities/comments/api/reply/validate-reply");
 const { validateResolveThread } = await import("$capabilities/comments/api/resolve-thread/validate-resolve-thread");
 
-const currentResource = (table: "documents" | "slideDecks" | "spreadsheets", id: string, title: string): Row => ({
+const currentResource = (table: "documents" | "presentations" | "spreadsheets", id: string, title: string): Row => ({
   _id: `${table}:${id}`,
   _creationTime: 1,
   projectId: "projects:p",
@@ -101,7 +101,7 @@ const currentThread = (
   _id: `commentThreads:${id}`,
   _creationTime: 1,
   projectId,
-  target: { kind: "slides", id: projectId === "projects:p" ? "slideDecks:1" : "slideDecks:2" },
+  target: { kind: "presentation", id: projectId === "projects:p" ? "presentations:1" : "presentations:2" },
   createdBy: { kind: "system" },
   updatedAt: 1,
   ...extra
@@ -113,7 +113,7 @@ beforeEach(() => {
   model.removals = [];
   model.transactions = 0;
   model.failCreateTable = undefined;
-  model.tables.set("slideDecks", [currentResource("slideDecks", "1", "Deck")]);
+  model.tables.set("presentations", [currentResource("presentations", "1", "Presentation")]);
   model.tables.set("documents", [currentResource("documents", "1", "Document")]);
   model.tables.set("spreadsheets", [currentResource("spreadsheets", "1", "Sheet")]);
   model.tables.set("memberships", [currentMembership()]);
@@ -129,15 +129,15 @@ describe("startThread", () => {
         projectId: "projects:p",
         templateId: "templates:1",
         templateRevision: 1,
-        target: "slides",
-        resourceId: "slideDecks:1",
+        target: "presentation",
+        resourceId: "presentations:1",
         createdBy: { kind: "system" },
         updatedAt: 1
       }
     ]);
 
     await assert.rejects(
-      () => startThread({ target: { kind: "slides", id: "slideDecks:1" }, text: "Not here" }),
+      () => startThread({ target: { kind: "presentation", id: "presentations:1" }, text: "Not here" }),
       /working copy takes no comments/
     );
     assert.equal(model.tables.get("commentThreads"), undefined);
@@ -145,7 +145,7 @@ describe("startThread", () => {
 
   it("files a thread and its first comment under the asking user and project", async () => {
     const made = await startThread({
-      target: { kind: "slides", id: "slideDecks:1" },
+      target: { kind: "presentation", id: "presentations:1" },
       within: { kind: "element", elementId: "el-5" },
       text: "  Is this the right feeder?  "
     });
@@ -165,49 +165,49 @@ describe("startThread", () => {
   it("rolls back the thread when its opening comment cannot be written", async () => {
     model.failCreateTable = "comments";
     await assert.rejects(
-      startThread({ target: { kind: "slides", id: "slideDecks:1" }, text: "Atomic" }),
+      startThread({ target: { kind: "presentation", id: "presentations:1" }, text: "Atomic" }),
       /failed creating comments/
     );
     assert.equal(model.tables.get("commentThreads"), undefined);
   });
 
   it("refuses a target that belongs to another project", async () => {
-    model.tables.set("slideDecks", [{
-      ...currentResource("slideDecks", "2", "Other"),
+    model.tables.set("presentations", [{
+      ...currentResource("presentations", "2", "Other"),
       projectId: "projects:other"
     }]);
     await assert.rejects(
-      startThread({ target: { kind: "slides", id: "slideDecks:2" }, text: "No" }),
-      /no slides/
+      startThread({ target: { kind: "presentation", id: "presentations:2" }, text: "No" }),
+      /no presentation/
     );
   });
 
   it("fails closed on partial or duplicate target rows", async () => {
-    model.tables.set("slideDecks", [{
-      _id: "slideDecks:1",
+    model.tables.set("presentations", [{
+      _id: "presentations:1",
       _creationTime: 1,
       projectId: "projects:p",
       title: "Partial"
     }]);
     await assert.rejects(
-      startThread({ target: { kind: "slides", id: "slideDecks:1" }, text: "No" }),
+      startThread({ target: { kind: "presentation", id: "presentations:1" }, text: "No" }),
       /missing required fields/
     );
 
-    model.tables.set("slideDecks", [
-      currentResource("slideDecks", "1", "Deck"),
-      currentResource("slideDecks", "1", "Duplicate")
+    model.tables.set("presentations", [
+      currentResource("presentations", "1", "Presentation"),
+      currentResource("presentations", "1", "Duplicate")
     ]);
     await assert.rejects(
-      startThread({ target: { kind: "slides", id: "slideDecks:1" }, text: "Still no" }),
+      startThread({ target: { kind: "presentation", id: "presentations:1" }, text: "Still no" }),
       /repeats row id/
     );
     assert.equal(model.tables.get("commentThreads"), undefined);
   });
 
   it("refuses an empty remark and an unknown anchor", () => {
-    assert.throws(() => validateStartThread({ target: { kind: "slides", id: "slideDecks:1" }, text: "  " }));
-    assert.throws(() => validateStartThread({ target: { kind: "slides", id: "slideDecks:1" }, within: { kind: "page" }, text: "x" }));
+    assert.throws(() => validateStartThread({ target: { kind: "presentation", id: "presentations:1" }, text: "  " }));
+    assert.throws(() => validateStartThread({ target: { kind: "presentation", id: "presentations:1" }, within: { kind: "page" }, text: "x" }));
     assert.throws(() => validateStartThread({ target: { kind: "photo", id: "x" }, text: "x" }));
   });
 
@@ -243,7 +243,7 @@ describe("startThread", () => {
 
   it("rejects non-data command and anchor objects without invoking accessors", () => {
     const command = {
-      target: { kind: "slides", id: "slideDecks:1" },
+      target: { kind: "presentation", id: "presentations:1" },
       text: "Review"
     };
     const hidden = { ...command };
@@ -334,7 +334,7 @@ describe("reply and resolve", () => {
     model.tables.set("commentThreads", [{
       _id: "commentThreads:1",
       projectId: "projects:p",
-      target: { kind: "slides", id: "slideDecks:1" }
+      target: { kind: "presentation", id: "presentations:1" }
     }]);
 
     await assert.rejects(reply({ threadId: "commentThreads:1", text: "No" }));

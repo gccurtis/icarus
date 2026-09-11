@@ -92,8 +92,8 @@ an accident. A category with no content view names none, and `mintView` refuses
 to mint a tab that has nothing to paint.
 
 An overview leads every rail but two, and each of the two says something about its
-category. A deck opens on its list of slides, because the slide you are on is the
-orientation a deck has instead of a summary. The launcher has no overview view at
+category. A presentation opens on its list of slides, because the slide you are on is the
+orientation a presentation has instead of a summary. The launcher has no overview view at
 all, since a blank tab has nothing to be an overview of.
 
 A research thread's rail leads with its own overview for the same reason a

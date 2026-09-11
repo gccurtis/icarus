@@ -26,13 +26,13 @@ export const PROCEDURAL_TRANSPARENCY: ArchitecturePillar = {
   → runs eleven inline lifecycle effects
   → renders the document`,
     observed:
-      "The component has 472 script lines before its markup. Similar controller concentration exists in deck.svelte, slide-surface.svelte, spreadsheet sheet.svelte, analysis chart.svelte, research thread.svelte, and the template inspector.",
+      "The component has 472 script lines before its markup. Similar controller concentration exists in presentation.svelte, slide-surface.svelte, spreadsheet sheet.svelte, analysis chart.svelte, research thread.svelte, and the template inspector.",
     antagonism:
       "The file name promises presentation but the file owns the behavior graph. Effects have no durable names, event chains cannot be tested without mounting, and a visual change conflicts with synchronization and command code.",
     repair:
       "Create a component-instance state module, move each effect to procedures/effects/<purpose>.svelte.ts, move each user command to a named procedure entry, and leave the .svelte script as wiring and derived presentation.",
     nuance:
-      "Do not force document and deck behavior into shared code merely because the panels look alike. Give each editor the same procedure shape and contracts while retaining independent implementations."
+      "Do not force document and presentation behavior into shared code merely because the panels look alike. Give each editor the same procedure shape and contracts while retaining independent implementations."
   },
   equivalence: {
     rule: "A declaration or presentation file also performs a multi-step state transition, remote command, lifecycle synchronization, or adapter protocol.",

@@ -174,18 +174,18 @@ describe("instantiating with answers — resolution", () => {
 
   /**
    * A copy's prompts point back at the copy, in the vocabulary everything else
-   * speaks. A deck is `slides` — the name the editors, the overlay and every
+   * speaks. A presentation is `slides` — the name the editors, the overlay and every
    * scope term already use.
    */
-  test("gives a placed deck's prompts a derived output with a slides origin", async () => {
+  test("gives a placed presentation's prompts a derived output with a slides origin", async () => {
     model.tables.templates.push(
       row("templates", "2", {
         projectId: "projects:1",
         userId: "users:1",
-        name: "Deck",
+        name: "Presentation",
         tags: [],
         body: {
-          resource: "slides",
+          resource: "presentation",
           aspectRatio: "16:9",
           theme: { colors: { text: "ink", accent: "blue", muted: "gray" } },
           styles: { defaultKey: "body", styles: { body: { name: "Body" } } },
@@ -201,9 +201,9 @@ describe("instantiating with answers — resolution", () => {
                   content: {
                     type: "prompt",
                     block: {
-                      id: "deck-prompt",
+                      id: "presentation-prompt",
                       type: "prompt",
-                      atoms: [{ id: "deck-prompt-a", kind: "literal", text: "" }],
+                      atoms: [{ id: "presentation-prompt-a", kind: "literal", text: "" }],
                       display: "",
                       marks: [],
                       state: "idle",
@@ -228,7 +228,7 @@ describe("instantiating with answers — resolution", () => {
     assert.ok(made.accepted);
     const outputs = model.tables.derivedOutputs ?? [];
     assert.equal(outputs.length, 1);
-    assert.deepEqual(outputs[0].origin, { kind: "slides", id: made.resourceId });
+    assert.deepEqual(outputs[0].origin, { kind: "presentation", id: made.resourceId });
     assert.equal(outputs[0].prompt, "What shipped this winter?");
   });
 

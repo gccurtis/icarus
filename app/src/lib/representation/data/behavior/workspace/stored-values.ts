@@ -25,7 +25,7 @@ import type {
 
 const resourceTable = (category: Category) => {
   if (category === "document-editor") return "documents";
-  if (category === "slide-deck-editor") return "slideDecks";
+  if (category === "presentation-editor") return "presentations";
   if (category === "spreadsheet-editor") return "spreadsheets";
   if (category === "research") return "researchThreads";
   return undefined;

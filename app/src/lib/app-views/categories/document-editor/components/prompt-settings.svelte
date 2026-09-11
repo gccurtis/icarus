@@ -160,7 +160,7 @@
 
   const openSource = (kind: ResourceRef["kind"], id: string) => {
     if (kind === "document") view.open({ category: "document-editor", resourceId: id });
-    else if (kind === "slides") view.open({ category: "slide-deck-editor", resourceId: id });
+    else if (kind === "presentation") view.open({ category: "presentation-editor", resourceId: id });
     else if (kind === "spreadsheet") view.open({ category: "spreadsheet-editor", resourceId: id });
     else if (isExternalFileResourceKind(kind)) inspectExternalFile(view, id);
   };

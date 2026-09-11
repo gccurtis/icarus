@@ -168,7 +168,7 @@
     "projectId": "default",
     "name": "Assemble the board review pack",
     "personaId": "personas:filing-editor",
-    "instruction": "Assemble the weekly board pack from the Q1 exposure deck and the latest outage totals.",
+    "instruction": "Assemble the weekly board pack from the Q1 exposure presentation and the latest outage totals.",
     "trigger": {
       "kind": "schedule",
       "at": "07:00",

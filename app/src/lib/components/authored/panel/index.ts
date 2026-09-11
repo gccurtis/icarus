@@ -38,7 +38,7 @@ export { default as PanelCode } from "$authored-components/panel/panel-code.svel
  *
  * An actor is identified by a face, and a slide by its picture — neither has a
  * title to put in a row. Without a word for either, a persona screen hand-rolls
- * an initials circle and a deck inspector pulls the *workspace* thumbnail into a
+ * an initials circle and a presentation inspector pulls the *workspace* thumbnail into a
  * flank, re-declaring the panel's width in a view file.
  */
 export { default as PanelActor } from "$authored-components/panel/panel-actor.svelte";
@@ -81,7 +81,7 @@ export { default as PanelPair } from "$authored-components/panel/panel-pair.svel
  *
  * `PanelColor` is a choice whose options are swatches. Not a picker: a fill comes
  * from a theme or a style set, so the set is small and named, and a free picker
- * would let an author put a colour in a deck its theme has never heard of.
+ * would let an author put a colour in a presentation its theme has never heard of.
  */
 export { default as PanelInput } from "$authored-components/panel/panel-input.svelte";
 export { default as PanelMarks } from "$authored-components/panel/panel-marks.svelte";
@@ -127,7 +127,7 @@ export { default as PanelSentence } from "$authored-components/panel/panel-sente
 /**
  * A colour, shown rather than chosen.
  *
- * A deck theme lists its palette; a chart lists which colour is which series.
+ * A presentation theme lists its palette; a chart lists which colour is which series.
  * Without a word for it, three panels draw the same shape with a local `<style>`
  * block and a `.chip` div — at three sizes, in three layouts.
  *

@@ -253,12 +253,12 @@ Alignment Start · Centre · **End**; FG and BG swatches. *Usage* (10 cells), sh
 
 Key is shown and not edited: a rule names a style by key, so renaming is safe and
 re-keying is not. Whether a key is authored or derived from the name is the same
-open point the deck's named style records.
+open point the presentation's named style records.
 
 ## 10 · Text selection, inside a cell
 
 A cell's text can carry marks: a bold word, a link, a colour. Selecting characters
-inside the in-cell editor opens the same lens the document and the deck have for a
+inside the in-cell editor opens the same lens the document and the presentation have for a
 text range, cut down to what a cell's text can hold. Cell-wide formatting is the
 cell lens's and is not repeated here.
 

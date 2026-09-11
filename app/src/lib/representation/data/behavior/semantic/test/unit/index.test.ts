@@ -408,7 +408,7 @@ test("touching objects coalesce before topK without splitting a word", () => {
 
 test("touching objects in different hard partitions never coalesce", () => {
   const source: SemanticSourceSnapshot = {
-    ref: { kind: "slides", id: asId<"slideDecks">("slideDecks:partitioned") },
+    ref: { kind: "presentation", id: asId<"presentations">("presentations:partitioned") },
     revision: 2,
     encoding: "utf-16" as const
   };

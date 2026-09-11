@@ -5,7 +5,7 @@ export const KINDS: Grid = {
   mono: [2],
   rows: [
     ["Another variable, by name", "whatever that variable holds, however many hops away", "{ kind: \"reference\", target: { to: \"variable\", name } }", "Resolved; the walk follows it"],
-    ["A resource: a sheet, a document, a deck, a file", "a table, because every resource is representable as one", "{ kind: \"reference\", target: { to: \"resource\", ref } }", "A sheet resolves; a document, a deck and a file do not yet"],
+    ["A resource: a sheet, a document, a presentation, a file", "a table, because every resource is representable as one", "{ kind: \"reference\", target: { to: \"resource\", ref } }", "A sheet resolves; a document, a presentation and a file do not yet"],
     ["A cell, a row or a column, by id", "the value, the record or the list that id names", "the ids a stored formula carries", "Proposed; a reference target is a variable or a resource"],
     ["Another reference", "the walk continues until something is not a reference", "a reference whose target is a reference", "Resolved; a ring answers #CYCLE!"]
   ]
@@ -36,7 +36,7 @@ export const WHY: readonly Card[] = [
   {
     title: "Every resource is a table",
     detail:
-      "A sheet, a document, a deck and a file all have a table shape they can be read as. That is why one reference kind covers all of them and why resolving a resource reference answers with a table rather than with something new.",
+      "A sheet, a document, a presentation and a file all have a table shape they can be read as. That is why one reference kind covers all of them and why resolving a resource reference answers with a table rather than with something new.",
     tag: "ruled",
     tone: "ruled"
   },
@@ -98,7 +98,7 @@ export const RULED: readonly Card[] = [
   {
     title: "A resource reference resolves to a table",
     detail:
-      "A sheet resolves to one today, read as the rectangle anything was written into. When a document or a deck lands it answers with a table too, which is a shape the language already slices.",
+      "A sheet resolves to one today, read as the rectangle anything was written into. When a document or a presentation lands it answers with a table too, which is a shape the language already slices.",
     tag: "ruled",
     tone: "ruled"
   },

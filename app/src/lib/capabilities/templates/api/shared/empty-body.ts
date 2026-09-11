@@ -14,7 +14,7 @@ const defaultStyles = {
   }
 };
 
-const emptyDeck = () => ({
+const emptyPresentation = () => ({
   aspectRatio: "16:9" as const,
   theme: {
     colors: {
@@ -31,7 +31,7 @@ const emptyDeck = () => ({
 
 export const emptyTemplateBody = (target: TemplateTarget): TemplateBody => {
   if (target === "document") return { resource: "document", rows: [] };
-  if (target === "slides") return { resource: "slides", ...emptyDeck(), slides: [] };
+  if (target === "presentation") return { resource: "presentation", ...emptyPresentation(), slides: [] };
   return {
     resource: "spreadsheet",
     cells: {},

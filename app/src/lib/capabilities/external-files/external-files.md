@@ -142,7 +142,7 @@ revision.
 `EXTERNAL_REFERENCE_POLICY` is an exhaustive `Record<TableName, ...>`. Adding a
 representation table is a compile error until its deletion semantics are
 classified. The traversal explicitly understands current identity locations in
-document/deck leaders, spreadsheet cells, templates, resource sets, findings,
+document/presentation leaders, spreadsheet cells, templates, resource sets, findings,
 questions, hypotheses, comments, research, conversation attachments,
 persona/agent/automation scopes, Derived Output state/jobs, variables, and
 formulas. It does not recursively search arbitrary strings.

@@ -18,7 +18,7 @@ window later — and it owns one client model for its whole life.
 | [`workspace-state`](workspace-state/workspace-state.md) | The composition of those two, and every write to either | yes |
 | [`commands`](commands/commands.md) | Every argument-free action, the chords bound to them, and whether the bar is showing | yes |
 | [`document-runtimes`](document-runtimes/document-runtimes.md) | One runtime per open document: the unsent buffer, the submit protocol, the undo stack | yes |
-| [`slide-deck-runtimes`](slide-deck-runtimes/slide-deck-runtimes.md) | The same, for one deck | yes |
+| [`presentation-runtimes`](presentation-runtimes/presentation-runtimes.md) | The same, for one presentation | yes |
 | [`spreadsheet-runtimes`](spreadsheet-runtimes/spreadsheet-runtimes.md) | The same, for one sheet | yes |
 
 In construction order, which is dependency order: configuration depends on

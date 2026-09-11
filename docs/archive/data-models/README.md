@@ -63,7 +63,7 @@ None of it survives here:
   carries the table
 - **`schemaVersion`** — nothing upcasts a serialized shape at read time; a
   schema change is a migration
-- **`revision` on general resources** — documents, decks, and workbooks carry no
+- **`revision` on general resources** — documents, presentations, and workbooks carry no
   revision field. Their number lives on their [change
   sets](revisions/change-set.md) instead, so an edit never rewrites the body just
   to bump a counter. Other objects do carry one, for a different purpose —
@@ -115,7 +115,7 @@ append-only for the same reason and are not a table at all — a thread holds
 ## Document size
 
 A Convex document caps at 1 MiB. A resource that embeds its whole body — a
-document, a deck, a sheet — is subject to that. Ordinary content is nowhere
+document, a presentation, a sheet — is subject to that. Ordinary content is nowhere
 near it, so nothing is split preemptively. If a resource type starts to
 approach the cap in practice, its body moves to a child table keyed by the
 resource, and the resource keeps the metadata.

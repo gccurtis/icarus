@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { beforeEach, test, vi } from "vitest";
 import type { DocumentRuntimesModel } from "$model/client/document-runtimes";
-import type { SlideDeckRuntimesModel } from "$model/client/slide-deck-runtimes";
+import type { PresentationRuntimesModel } from "$model/client/presentation-runtimes";
 import type { SpreadsheetRuntimesModel } from "$model/client/spreadsheet-runtimes";
 import { openingView } from "$representation/data/behavior/workspace/opening";
 import type { Category } from "$representation/data/types/workspace/categories";
@@ -64,7 +64,7 @@ const setup = (persists = false) => {
     }
   });
   const documents = new Register<object>();
-  const decks = new Register<object>();
+  const presentations = new Register<object>();
   const spreadsheets = new Register<object>();
   const workspace = createWorkspaceState(
     "p1",
@@ -72,10 +72,10 @@ const setup = (persists = false) => {
     createTabViews(),
     configuration,
     documents as unknown as DocumentRuntimesModel,
-    decks as unknown as SlideDeckRuntimesModel,
+    presentations as unknown as PresentationRuntimesModel,
     spreadsheets as unknown as SpreadsheetRuntimesModel
   );
-  return { workspace, documents, decks, spreadsheets };
+  return { workspace, documents, presentations, spreadsheets };
 };
 
 const subjects = [
@@ -86,10 +86,10 @@ const subjects = [
     runtime: (held: ReturnType<typeof setup>, id: string) => held.workspace.documentRuntime(id)
   },
   {
-    name: "slide-deck",
-    category: "slide-deck-editor" as const,
-    register: (held: ReturnType<typeof setup>) => held.decks,
-    runtime: (held: ReturnType<typeof setup>, id: string) => held.workspace.slideDeckRuntime(id)
+    name: "presentation",
+    category: "presentation-editor" as const,
+    register: (held: ReturnType<typeof setup>) => held.presentations,
+    runtime: (held: ReturnType<typeof setup>, id: string) => held.workspace.presentationRuntime(id)
   },
   {
     name: "spreadsheet",
@@ -133,10 +133,10 @@ for (const subject of subjects) {
   });
 }
 
-test("restore reconciles document, slide-deck and spreadsheet runtimes to the adopted tabs", async () => {
+test("restore reconciles document, presentation and spreadsheet runtimes to the adopted tabs", async () => {
   const held = setup(true);
   held.documents.attach("orphan-document");
-  held.decks.attach("orphan-deck");
+  held.presentations.attach("orphan-presentation");
   held.spreadsheets.attach("orphan-spreadsheet");
 
   const starting = startingWorkspace();
@@ -145,14 +145,14 @@ test("restore reconciles document, slide-deck and spreadsheet runtimes to the ad
     tabs: [
       ...starting.tabs,
       { id: "document-tab", category: "document-editor", resourceId: "documents:1" },
-      { id: "deck-tab", category: "slide-deck-editor", resourceId: "slideDecks:1" },
+      { id: "presentation-tab", category: "presentation-editor", resourceId: "presentations:1" },
       { id: "sheet-tab", category: "spreadsheet-editor", resourceId: "spreadsheets:1" }
     ],
     activeId: "sheet-tab",
     views: {
       ...starting.views,
       "document-tab": openingView("document-editor"),
-      "deck-tab": openingView("slide-deck-editor"),
+      "presentation-tab": openingView("presentation-editor"),
       "sheet-tab": openingView("spreadsheet-editor")
     }
   };
@@ -160,9 +160,9 @@ test("restore reconciles document, slide-deck and spreadsheet runtimes to the ad
   await held.workspace.restore();
 
   assert.deepEqual(held.documents.open, ["documents:1"]);
-  assert.deepEqual(held.decks.open, ["slideDecks:1"]);
+  assert.deepEqual(held.presentations.open, ["presentations:1"]);
   assert.deepEqual(held.spreadsheets.open, ["spreadsheets:1"]);
   assert.deepEqual(held.documents.released, ["orphan-document"]);
-  assert.deepEqual(held.decks.released, ["orphan-deck"]);
+  assert.deepEqual(held.presentations.released, ["orphan-presentation"]);
   assert.deepEqual(held.spreadsheets.released, ["orphan-spreadsheet"]);
 });

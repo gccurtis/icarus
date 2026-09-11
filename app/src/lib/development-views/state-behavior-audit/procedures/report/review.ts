@@ -10,7 +10,7 @@ export const HOTSPOTS: readonly Hotspot[] = [
     path: "capabilities/templates/api/shared/validation.ts",
     lines: "1,687",
     concern: "Three editor schemas, primitive validation, bounds, and template variables in one validator.",
-    split: "document, slide-deck, spreadsheet, variables, shared primitives"
+    split: "document, presentation, spreadsheet, variables, shared primitives"
   },
   {
     path: "app-views/categories/agents/procedures/agents.ts",
@@ -61,10 +61,10 @@ export const HOTSPOTS: readonly Hotspot[] = [
     split: "gesture state factory, pointer procedures, geometry, hit testing, surface markup"
   },
   {
-    path: "app-views/categories/slide-deck-editor/content/deck.svelte",
+    path: "app-views/categories/presentation-editor/content/presentation.svelte",
     lines: "719 / 519 script",
     concern: "Runtime binding, selection, edit commands, insertion, menus, sizing, and surface adaptation.",
-    split: "deck controller state, selection bridge, edit commands, viewport effects, stage"
+    split: "presentation controller state, selection bridge, edit commands, viewport effects, stage"
   },
   {
     path: "representation/store/tables.ts",
@@ -81,7 +81,7 @@ export const MODEL_GRANULARITY = [
     reason: "It has a clear client lifetime and owns correlated tab state, but generic queries should leave."
   },
   {
-    subject: "Document / slide-deck / spreadsheet runtimes",
+    subject: "Document / presentation / spreadsheet runtimes",
     decision: "Keep separate",
     reason: "Each owns independent resource identity, buffering, history, and subject semantics. Structural parity is better than a forced shared superclass."
   },
@@ -176,7 +176,7 @@ export const REMEDIATION: readonly RemediationPhase[] = [
     phase: "01 — Close the unsafe write door",
     objective: "Restore subject authority before reorganizing code.",
     changes: [
-      "Move document, deck, and general comment writes to Comments capability.",
+      "Move document, presentation, and general comment writes to Comments capability.",
       "Add any missing typed comment reads and refresh behavior.",
       "Delete generic create/update/remove and their legacy types/tests.",
       "Add cross-project refusal tests and the generic-mutation guardrail."
@@ -215,7 +215,7 @@ export const REMEDIATION: readonly RemediationPhase[] = [
     phase: "05 — Extract component controllers",
     objective: "Make a component readable as presentation and its behavior readable as named chains.",
     changes: [
-      "Start with document, deck, slide-surface, template inspector, and spreadsheet.",
+      "Start with document, presentation, slide-surface, template inspector, and spreadsheet.",
       "Create component-instance state modules and named effects.",
       "Move direct capability calls and async command state behind procedures.",
       "Split category-scale procedure repositories by entry and responsibility."

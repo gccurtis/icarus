@@ -21,7 +21,7 @@ The header remains compact. Full membership and project configuration belong in 
 The primary, always-visible actions are:
 
 - New document.
-- New slide deck.
+- New presentation.
 - New spreadsheet.
 - Upload file.
 - More: research thread, analysis, connector, context, template, Persona, or Automation.

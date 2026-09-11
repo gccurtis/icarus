@@ -111,7 +111,7 @@ export const DELTA_GROUPS: readonly DeltaGroup[] = [
       { status: "Modified", path: "app/seed/documents.json" },
       { status: "Modified", path: "app/seed/findings.json" },
       { status: "Modified", path: "app/seed/researchThreads.json" },
-      { status: "Modified", path: "app/seed/slideDecks.json" },
+      { status: "Modified", path: "app/seed/presentations.json" },
       { status: "Modified", path: "app/seed/spreadsheets.json" },
       { status: "Modified", path: "app/src/lib/model/client/workspace-state/test/unit/workspace-state.test.ts" },
       { status: "Modified", path: "app/src/lib/representation/data/behavior/workspace/categories.ts" },

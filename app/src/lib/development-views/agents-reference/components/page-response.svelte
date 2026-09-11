@@ -22,7 +22,7 @@
     ["formula", "Yes", "No", "Nothing yet", "A resolved value belongs to a document, not to an answer."],
     ["prompt", "Yes", "No", "Never", "A prompt block is a document's live text. An answer is already the output of one."],
     ["chart", "No", "No", "A make_chart call, when charts exist", "The kind comes from the data's shape, not from the model's opinion."],
-    ["slide", "No", "No", "A make_slide call, when the deck capability offers one", "Drawn at its own aspect, never stretched to the column."]
+    ["slide", "No", "No", "A make_slide call, when the presentation capability offers one", "Drawn at its own aspect, never stretched to the column."]
   ];
 
   const made = [
@@ -85,7 +85,7 @@
   ];
 
   const actions = [
-    ["Add", "A plus, and the word", "Puts the block somewhere in the project: a slide in a deck, a table in a document, a chart as its own resource.", "An alert. The picker and the writes are not built."],
+    ["Add", "A plus, and the word", "Puts the block somewhere in the project: a slide in a presentation, a table in a document, a chart as its own resource.", "An alert. The picker and the writes are not built."],
     ["Open", "A pop-out arrow", "Opens the block in Analysis, where a chart is edited and re-run rather than looked at.", "An alert. Analysis does not take a block yet."]
   ];
 

@@ -48,13 +48,13 @@ export const readSemanticResourceRevisionFor = (
           (row) => row.projectId === projectId && row.resourceId === resource._id && row.role === "leader"
         )?.revision;
   }
-  if (ref.kind === "slides") {
-    const resource = rowsOf(store, "slideDecks").find(
+  if (ref.kind === "presentation") {
+    const resource = rowsOf(store, "presentations").find(
       (row) => row.projectId === projectId && row._id === ref.id
     );
     return resource === undefined
       ? undefined
-      : rowsOf(store, "slideDeckSnapshots").find(
+      : rowsOf(store, "presentationSnapshots").find(
           (row) => row.projectId === projectId && row.resourceId === resource._id && row.role === "leader"
         )?.revision;
   }
@@ -113,17 +113,17 @@ export const readProjectSemanticProjectionFor = (
     });
   }
 
-  if (ref.kind === "slides") {
-    const resource = rowsOf(store, "slideDecks").find(
+  if (ref.kind === "presentation") {
+    const resource = rowsOf(store, "presentations").find(
       (row) => row.projectId === projectId && row._id === ref.id
     );
     if (resource === undefined) return undefined;
-    const leader = rowsOf(store, "slideDeckSnapshots").find(
+    const leader = rowsOf(store, "presentationSnapshots").find(
       (row) => row.projectId === projectId && row.resourceId === resource._id && row.role === "leader"
     );
-    if (leader === undefined) throw new Error(`Slide deck '${ref.id}' has no leader snapshot`);
+    if (leader === undefined) throw new Error(`Presentation '${ref.id}' has no leader snapshot`);
     return projectResource({
-      kind: "slides",
+      kind: "presentation",
       ref,
       revision: leader.revision,
       title: resource.title,
@@ -150,7 +150,7 @@ export const readSemanticResourceForModel = async (
   signal?: AbortSignal
 ): Promise<SemanticResourceProjection | undefined> => {
   signal?.throwIfAborted();
-  if (ref.kind === "document" || ref.kind === "slides") {
+  if (ref.kind === "document" || ref.kind === "presentation") {
     return readSemanticResourceFor(model.store, projectId, ref);
   }
   if (ref.kind !== "externalFile::text") return undefined;

@@ -4,16 +4,16 @@ import { describe, expect, test } from "vitest";
 
 import { asId } from "$representation/data/behavior/core/id";
 import { projectResource } from "$representation/data/behavior/semantic/projection/project-resource";
-import type { SlideDeckBody, SlideElement } from "$representation/data/types/slide-decks/body";
+import type { PresentationBody, SlideElement } from "$representation/data/types/presentations/body";
 import { validSlideTemplateBody } from "$capabilities/templates/api/shared/body-validation/slides";
 
-type SeedDeck = { readonly _id: string; readonly projectId: string; readonly title: string };
+type SeedPresentation = { readonly _id: string; readonly projectId: string; readonly title: string };
 type SeedSnapshot = {
   readonly projectId: string;
   readonly resourceId: string;
   readonly revision: number;
   readonly role: string;
-  readonly body: SlideDeckBody;
+  readonly body: PresentationBody;
 };
 
 const fixture = <Value>(name: string): Value =>
@@ -43,43 +43,43 @@ const authoredTextIn = (element: SlideElement): readonly string[] => {
 };
 
 describe("research-chat ingestion of the committed project", () => {
-  test("every seeded deck uses the current schema and can enter both semantic lanes", () => {
-    const decks = fixture<SeedDeck[]>("slideDecks.json");
-    const titles = new Map(decks.map((deck) => [deck._id, deck.title]));
-    const allSnapshots = fixture<SeedSnapshot[]>("slideDeckSnapshots.json");
+  test("every seeded presentation uses the current schema and can enter both semantic lanes", () => {
+    const presentations = fixture<SeedPresentation[]>("presentations.json");
+    const titles = new Map(presentations.map((presentation) => [presentation._id, presentation.title]));
+    const allSnapshots = fixture<SeedSnapshot[]>("presentationSnapshots.json");
     const snapshots = allSnapshots.filter(
       (snapshot) => snapshot.role === "leader"
     );
 
-    expect(snapshots).toHaveLength(decks.length);
-    for (const deck of decks) {
+    expect(snapshots).toHaveLength(presentations.length);
+    for (const presentation of presentations) {
       expect(
         snapshots.filter(
           (snapshot) =>
-            snapshot.resourceId === deck._id && snapshot.projectId === deck.projectId
+            snapshot.resourceId === presentation._id && snapshot.projectId === presentation.projectId
         ),
-        `${deck._id} must have exactly one same-project leader`
+        `${presentation._id} must have exactly one same-project leader`
       ).toHaveLength(1);
     }
     let materialCount = 0;
     for (const snapshot of snapshots) {
       expect(titles.has(snapshot.resourceId), `${snapshot.resourceId} has no resource row`).toBe(true);
       expect(
-        validSlideTemplateBody({ resource: "slides", ...snapshot.body }),
+        validSlideTemplateBody({ resource: "presentation", ...snapshot.body }),
         `${snapshot.resourceId} fails exhaustive current slide-body admission`
       ).toBe(true);
 
       const projection = projectResource({
-        kind: "slides",
+        kind: "presentation",
         ref: {
-          kind: "slides",
-          id: asId<"slideDecks">(snapshot.resourceId)
+          kind: "presentation",
+          id: asId<"presentations">(snapshot.resourceId)
         },
         revision: snapshot.revision,
         title: titles.get(snapshot.resourceId)!,
         body: snapshot.body
       });
-      expect(projection.exact.ref).toEqual({ kind: "slides", id: snapshot.resourceId });
+      expect(projection.exact.ref).toEqual({ kind: "presentation", id: snapshot.resourceId });
       const authored = [
         ...snapshot.body.layouts.flatMap((layout) => layout.locked),
         ...snapshot.body.slides.flatMap((slide) => slide.elements)
@@ -99,13 +99,13 @@ describe("research-chat ingestion of the committed project", () => {
   });
 
   test("the production slide-body predicate rejects an unknown element content type", () => {
-    const snapshot = fixture<SeedSnapshot[]>("slideDeckSnapshots.json").find(
+    const snapshot = fixture<SeedSnapshot[]>("presentationSnapshots.json").find(
       (candidate) => candidate.role === "leader" && candidate.body.slides[0]?.elements[0] !== undefined
     );
     expect(snapshot).toBeDefined();
-    const corrupted = structuredClone(snapshot!.body) as SlideDeckBody;
+    const corrupted = structuredClone(snapshot!.body) as PresentationBody;
     corrupted.slides[0].elements[0].content = { type: "retired-blocks" } as never;
 
-    expect(validSlideTemplateBody({ resource: "slides", ...corrupted })).toBe(false);
+    expect(validSlideTemplateBody({ resource: "presentation", ...corrupted })).toBe(false);
   });
 });

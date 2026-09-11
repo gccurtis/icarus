@@ -45,13 +45,13 @@ export const readMaterialRevisionFor = (
           (row) => row.projectId === projectId && row.resourceId === resource._id && row.role === "leader"
         )?.revision;
   }
-  if (ref.kind === "slides") {
-    const resource = rowsOf(model.store, "slideDecks").find(
+  if (ref.kind === "presentation") {
+    const resource = rowsOf(model.store, "presentations").find(
       (row) => row.projectId === projectId && row._id === ref.id
     );
     return resource === undefined
       ? undefined
-      : rowsOf(model.store, "slideDeckSnapshots").find(
+      : rowsOf(model.store, "presentationSnapshots").find(
           (row) => row.projectId === projectId && row.resourceId === resource._id && row.role === "leader"
         )?.revision;
   }
@@ -162,7 +162,7 @@ export const readMaterialInventoryFor = async (
   signal?: AbortSignal
 ): Promise<MaterialInventory | undefined> => {
   signal?.throwIfAborted();
-  if (ref.kind === "document" || ref.kind === "slides") {
+  if (ref.kind === "document" || ref.kind === "presentation") {
     const projected = readProjectSemanticProjectionFor(model.store, projectId, ref);
     return projected === undefined
       ? undefined

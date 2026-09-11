@@ -17,7 +17,7 @@ import type { WorkspaceStateModel } from "$model/client/workspace-state";
  */
 export const RESOURCE_KINDS = [
   "document",
-  "slides",
+  "presentation",
   "spreadsheet",
   "research",
   "analysis",

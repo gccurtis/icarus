@@ -81,7 +81,7 @@ describe("the committed template fixtures", () => {
       ).toBe(true);
     }
 
-    for (const table of ["documents", "slideDecks", "spreadsheets"] as const) {
+    for (const table of ["documents", "presentations", "spreadsheets"] as const) {
       for (const resource of rowsIn(runtime.store, table)) {
         expect(resource, `${table}.${resource._id} unexpectedly stores a template pointer`)
           .not.toHaveProperty("templateId");
@@ -112,14 +112,14 @@ describe("the committed template fixtures", () => {
       const resourceTable =
         placed.target === "document"
           ? "documents"
-          : placed.target === "slides"
-            ? "slideDecks"
+          : placed.target === "presentation"
+            ? "presentations"
             : "spreadsheets";
       const snapshotTable =
         placed.target === "document"
           ? "documentSnapshots"
-          : placed.target === "slides"
-            ? "slideDeckSnapshots"
+          : placed.target === "presentation"
+            ? "presentationSnapshots"
             : "spreadsheetSnapshots";
       expect(rowIn(runtime.store, resourceTable, placed.resourceId)).toMatchObject({
         projectId: "default",

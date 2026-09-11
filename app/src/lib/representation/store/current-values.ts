@@ -59,10 +59,10 @@ import {
   isStoredSemanticSyncJob
 } from "$representation/data/behavior/semantic/stored-state";
 import {
-  isStoredSlideDeck,
-  isStoredSlideDeckChangeSet,
-  isStoredSlideDeckSnapshot
-} from "$representation/data/behavior/slide-decks/stored-rows";
+  isStoredPresentation,
+  isStoredPresentationChangeSet,
+  isStoredPresentationSnapshot
+} from "$representation/data/behavior/presentations/stored-rows";
 import { isStoredSheetCell } from "$representation/data/behavior/spreadsheets/stored-cell";
 import {
   isStoredDataBackReference,
@@ -123,9 +123,9 @@ export const CURRENT_ROW_VALUE_VALIDATORS = {
   semanticSources: isStoredSemanticSource,
   semanticSyncJobs: isStoredSemanticSyncJob,
   sheetCells: isStoredSheetCell,
-  slideDeckChangeSets: isStoredSlideDeckChangeSet,
-  slideDecks: isStoredSlideDeck,
-  slideDeckSnapshots: isStoredSlideDeckSnapshot,
+  presentationChangeSets: isStoredPresentationChangeSet,
+  presentations: isStoredPresentation,
+  presentationSnapshots: isStoredPresentationSnapshot,
   spreadsheetChangeSets: isStoredSpreadsheetChangeSet,
   spreadsheets: isStoredSpreadsheet,
   spreadsheetSnapshots: isStoredSpreadsheetSnapshotRow,

@@ -1,7 +1,7 @@
 import type { ConfigurationModel } from "$model/client/configuration";
 import { requiredNumber } from "$model/client/configuration";
 import type { DocumentRuntimesModel } from "$model/client/document-runtimes";
-import type { SlideDeckRuntimesModel } from "$model/client/slide-deck-runtimes";
+import type { PresentationRuntimesModel } from "$model/client/presentation-runtimes";
 import type { SpreadsheetRuntimesModel } from "$model/client/spreadsheet-runtimes";
 import type { TabListModel } from "$model/client/tab-list";
 import type { TabViewsModel } from "$model/client/tab-views";
@@ -17,7 +17,7 @@ export const createWorkspaceState = (
   views: TabViewsModel,
   configuration: ConfigurationModel,
   documents?: DocumentRuntimesModel,
-  decks?: SlideDeckRuntimesModel,
+  presentations?: PresentationRuntimesModel,
   sheets?: SpreadsheetRuntimesModel
 ): WorkspaceStateModel =>
   new WorkspaceState(
@@ -29,6 +29,6 @@ export const createWorkspaceState = (
       afterMs: requiredNumber(configuration, FLUSH_AFTER_MS)
     },
     documents,
-    decks,
+    presentations,
     sheets
   );

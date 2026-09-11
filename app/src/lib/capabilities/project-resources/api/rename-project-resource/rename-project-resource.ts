@@ -7,9 +7,9 @@ import { isStoredEditableResource } from "$representation/data/behavior/project-
 import { validateRenameProjectResource } from "$capabilities/project-resources/api/rename-project-resource/validate-rename-project-resource";
 import type { RenameProjectResourceResult } from "$capabilities/project-resources/types/project-resources";
 
-const tableOf = (id: string): "documents" | "slideDecks" | "spreadsheets" | undefined => {
+const tableOf = (id: string): "documents" | "presentations" | "spreadsheets" | undefined => {
   const prefix = id.slice(0, id.indexOf(":"));
-  return prefix === "documents" || prefix === "slideDecks" || prefix === "spreadsheets"
+  return prefix === "documents" || prefix === "presentations" || prefix === "spreadsheets"
     ? prefix
     : undefined;
 };

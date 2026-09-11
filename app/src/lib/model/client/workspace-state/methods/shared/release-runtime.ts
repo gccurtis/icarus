@@ -11,9 +11,9 @@ export const releaseForTarget = (state: WorkspaceStateData, target: Target): voi
       documentRuntimes?.release(target.resourceId);
       return;
     }
-    case "slide-deck-editor": {
-      const slideDeckRuntimes = state.decks;
-      slideDeckRuntimes?.release(target.resourceId);
+    case "presentation-editor": {
+      const presentationRuntimes = state.presentations;
+      presentationRuntimes?.release(target.resourceId);
       return;
     }
     case "spreadsheet-editor": {

@@ -12,7 +12,7 @@ const read = <T>(current: T, id?: string): Read<T> => {
 
 type ResourceKind =
   | "document"
-  | "slides"
+  | "presentation"
   | "spreadsheet"
   | "research"
   | "analysis"
@@ -54,14 +54,14 @@ const RESOURCES: readonly Resource[] = [
   {
     id: "r-board",
     name: "Board Update — October",
-    kind: "slides",
+    kind: "presentation",
     updated: "2 days ago",
     updatedBy: "Tomas Kaur"
   },
   {
     id: "r-options",
     name: "Storm Hardening Options",
-    kind: "slides",
+    kind: "presentation",
     updated: "1 week ago",
     updatedBy: "Mira Jain"
   },
@@ -251,7 +251,7 @@ export type ChartKind = {
   readonly needs: string;
 };
 
-/** A role token, never a literal colour, so a chart pasted into a slide is the deck's palette. */
+/** A role token, never a literal colour, so a chart pasted into a slide is the presentation's palette. */
 export type ChartColour = {
   readonly id: string;
   readonly name: string;

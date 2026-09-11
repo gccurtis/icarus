@@ -24,7 +24,7 @@ const watchDiagnostics = (page: Page) => {
 
 const tabs = (page: Page) => page.getByRole("toolbar", { name: "Open tabs" });
 
-const expectStageChrome = async (page: Page, name: string, kind: "Document" | "Deck") => {
+const expectStageChrome = async (page: Page, name: string, kind: "Document" | "Presentation") => {
   const title = `Template · ${name}`;
   await expect(tabs(page).getByRole("button", { name: title, exact: true })).toBeVisible({
     timeout: 15_000
@@ -47,7 +47,7 @@ const openDocumentFixture = async (page: Page) => {
   await expect(page.locator(".title-bar h1")).toContainText("Winter readiness brief");
 };
 
-const openDeckFixture = async (page: Page) => {
+const openPresentationFixture = async (page: Page) => {
   const title = "Board review — Q1 exposure";
   await page.goto("/app/dev-project", { waitUntil: "networkidle" });
   const tab = tabs(page).getByRole("button", { name: title, exact: true });
@@ -339,16 +339,16 @@ test("Templateify marks a run without changing the document, and the template ge
   await deleteTemplateFromLibrary(page, name);
 });
 
-test("one slide is saved as a deck template, and a deck template is inserted into an open copy", async ({ page }) => {
+test("one slide is saved as a presentation template, and a presentation template is inserted into an open copy", async ({ page }) => {
   const name = `Browser slide ${Date.now()}`;
-  await openDeckFixture(page);
+  await openPresentationFixture(page);
 
   const context = await templatesPanel(page);
   await expect(context.getByRole("button", { name: "Save slide", exact: true })).toBeDisabled();
   await context.getByRole("textbox", { name: "Template name" }).fill(name);
   await context.getByRole("button", { name: "Save slide", exact: true }).click();
   await expect(page.locator(".area-title")).toContainText(`Template · ${name}`, { timeout: 15_000 });
-  await expectStageChrome(page, name, "Deck");
+  await expectStageChrome(page, name, "Presentation");
   await expect(context.getByRole("button", { name: "Save", exact: true })).toBeVisible();
 
   await context.getByTitle(new RegExp("^Insert “Board review” after slide")).click();
@@ -361,9 +361,9 @@ test("one slide is saved as a deck template, and a deck template is inserted int
   await deleteTemplateFromLibrary(page, name);
 });
 
-test("a slide templateifies its words and its prompt, and the deck template holds both holes", async ({ page }) => {
-  const name = `Browser deck holes ${Date.now()}`;
-  await openDeckFixture(page);
+test("a slide templateifies its words and its prompt, and the presentation template holds both holes", async ({ page }) => {
+  const name = `Browser presentation holes ${Date.now()}`;
+  await openPresentationFixture(page);
   const context = page.locator('aside[aria-label="Context"]');
   const inspector = page.locator('aside[aria-label="Inspector"]');
   const surface = page.locator(".area-canvas").getByRole("application", { name: "Slide" });
@@ -372,10 +372,10 @@ test("a slide templateifies its words and its prompt, and the deck template hold
   const rail = context.getByRole("navigation", { name: "Context views" });
   await rail.getByRole("button", { name: "Insert", exact: true }).click();
   await context.getByRole("button", { name: "Text box", exact: true }).click();
-  await expect(inspector).toHaveAttribute("data-inspected", "slide-deck-editor.text-box");
+  await expect(inspector).toHaveAttribute("data-inspected", "presentation-editor.text-box");
   await inspector.getByRole("button", { name: "Prompt", exact: true }).click();
   const prompt = page.locator(
-    'aside[aria-label="Inspector"][data-inspected="slide-deck-editor.prompt-block"]'
+    'aside[aria-label="Inspector"][data-inspected="presentation-editor.prompt-block"]'
   );
   await expect(prompt).toBeVisible();
   await prompt.getByLabel("Prompt", { exact: true }).fill("Summarize the winter exposure.");
@@ -393,7 +393,7 @@ test("a slide templateifies its words and its prompt, and the deck template hold
   await page.keyboard.press("Shift+End");
 
   const selection = page.locator(
-    'aside[aria-label="Inspector"][data-inspected="slide-deck-editor.text-selection"]'
+    'aside[aria-label="Inspector"][data-inspected="presentation-editor.text-selection"]'
   );
   await expect(selection).toBeVisible();
   await selection.getByRole("button", { name: "Templateify", exact: true }).click();
@@ -402,10 +402,10 @@ test("a slide templateifies its words and its prompt, and the deck template hold
   await expect(words).toContainText("Text");
   await expect(words).not.toContainText("{Hole");
 
-  // Saved as a template, the deck carries both holes.
+  // Saved as a template, the presentation carries both holes.
   const templates = await templatesPanel(page);
   await templates.getByRole("textbox", { name: "Template name" }).fill(name);
-  await templates.getByRole("button", { name: "Save deck", exact: true }).click();
+  await templates.getByRole("button", { name: "Save presentation", exact: true }).click();
   await expect(page.locator(".area-title")).toContainText(`Template · ${name}`, { timeout: 15_000 });
   await expect(templates.locator(".hole").filter({ hasText: "Hole 1" })).toBeVisible();
   await expect(templates.locator(".hole").filter({ hasText: "Hole 2" })).toBeVisible();

@@ -186,7 +186,7 @@ describe("current Agent automation storage", () => {
   it("requires unique catalogue-ordered selectors and exact optional references", () => {
     expect(isStoredAutomation({
       ...automation(),
-      trigger: { kind: "resource-created", kinds: ["slides", "document"] }
+      trigger: { kind: "resource-created", kinds: ["presentation", "document"] }
     })).toBe(false);
     expect(isStoredAutomation({
       ...automation(),

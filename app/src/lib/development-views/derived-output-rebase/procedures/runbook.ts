@@ -82,7 +82,7 @@ export const RUNBOOK: readonly RunbookPhase[] = [
     title: "Adapt to the current representation",
     intent: "Finish the intentional one-schema cutover rather than restoring compatibility debt.",
     actions: [
-      "Replace slide normalizer imports with ensureSlideDeckReady from slide-decks/readiness.",
+      "Replace slide normalizer imports with ensurePresentationReady from presentations/readiness.",
       "Remove document typography normalization from template instantiation.",
       "Port TemplateCell and format rules to CellFormat, per-side borders and stable IDs.",
       "Type the project-resource transaction result so accepted remains the literal true."

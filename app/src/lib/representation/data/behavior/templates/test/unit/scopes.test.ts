@@ -87,7 +87,7 @@ describe("resolveTemplateScopes", () => {
 
   it("refuses a default that excludes, because a difference does not flatten", () => {
     const resolved = resolveTemplateScopes(body([prompt("p", [{ select: "hole", name: "evidence" }])]), [
-      { ...evidence, default: { include: [{ select: "project" }], exclude: [{ select: "kinds", kinds: ["slides"] }] } }
+      { ...evidence, default: { include: [{ select: "project" }], exclude: [{ select: "kinds", kinds: ["presentation"] }] } }
     ]);
     expect(resolved).toMatchObject({ accepted: false, reason: "unsupported-body" });
   });

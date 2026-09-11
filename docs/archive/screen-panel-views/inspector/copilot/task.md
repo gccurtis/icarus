@@ -78,7 +78,7 @@ What it called and how long each took. Starts collapsed.
 ## Produced
 
 What came out. A task result is not a resource: it has to be promoted into a
-finding, a document, a deck or a spreadsheet before anything in the project can
+finding, a document, a presentation or a spreadsheet before anything in the project can
 retrieve it. Starts collapsed.
 
 **Shows** — before promotion, the sentence above and nothing else.

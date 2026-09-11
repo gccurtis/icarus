@@ -3,7 +3,7 @@
 Two tables, almost the same row twice. Everything that differs between them is in
 the body, which lives in [`resourceSnapshots`](revisions.md) rather than here.
 
-`documents` · `slideDecks`
+`documents` · `presentations`
 
 **The third general resource is [spreadsheets](spreadsheets.md)**, and it has its
 own document because its content is not in its body — a grid is rows in a table,
@@ -42,19 +42,19 @@ export const documentsTables = {
 };
 ```
 
-`app/src/lib/capabilities/slide-decks/schema.ts`
+`app/src/lib/capabilities/presentations/schema.ts`
 
 ```ts
 /**
- * The same row, plus the one field a deck needs before its body is opened.
+ * The same row, plus the one field a presentation needs before its body is opened.
  *
  * **`aspectRatio` is the only difference between the two rows.** A thumbnail
  * needs it before anything opens the body, and no operation changes it — frames
  * are fractions of the slide, so they only mean the same thing across slides if
  * the slides are the same shape.
  */
-export const slideDecksTables = {
-  slideDecks: defineTable({
+export const presentationsTables = {
+  presentations: defineTable({
     projectId: v.id("projects"),
     title: v.string(),
     aspectRatio: v.union(v.literal("16:9"), v.literal("4:3")),
@@ -75,7 +75,7 @@ the rows would make one table whose meaning depends on a column.
 ## The bodies
 
 Not tables. `resourceSnapshots.body` is a three-way union, which is why each body
-lives with its own resource — a deck body belongs to `slide-decks`, and declaring
+lives with its own resource — a presentation body belongs to `presentations`, and declaring
 it inside `revisions` would be that capability knowing what a slide is. The third
 member is defined in [spreadsheets](spreadsheets.md).
 
@@ -144,9 +144,9 @@ export const documentBodyValidator = v.object({
 });
 ```
 
-### `SlideDeckBody`
+### `PresentationBody`
 
-`app/src/lib/capabilities/slide-decks/types/body.ts`
+`app/src/lib/capabilities/presentations/types/body.ts`
 
 ```ts
 /** A rectangle as fractions of the slide, which is why aspect ratio is fixed. */
@@ -154,7 +154,7 @@ export const frameValidator = v.object({
   x: v.number(), y: v.number(), width: v.number(), height: v.number()
 });
 
-/** A flat colour or an uploaded file — never inline bytes, so a deck body stays small. */
+/** A flat colour or an uploaded file — never inline bytes, so a presentation body stays small. */
 const slideBackgroundValidator = v.union(
   v.object({ kind: v.literal("color"), color: v.string() }),
   v.object({
@@ -214,16 +214,16 @@ const slideLayoutValidator = v.object({
  * A section defined by a start and an end breaks the moment a slide is inserted
  * or moved. One defined by a single anchor absorbs inserts, and reordering
  * slides reorders sections with them. Slides before the first section belong to
- * none, which is the ordinary state of a deck nobody has organized.
+ * none, which is the ordinary state of a presentation nobody has organized.
  */
-const deckSectionValidator = v.object({
+const presentationSectionValidator = v.object({
   id: v.string(),
   name: v.string(),
   firstSlideId: v.string()
 });
 
-/** What is true for the whole deck: background, palette, typeface. */
-const deckThemeValidator = v.object({
+/** What is true for the whole presentation: background, palette, typeface. */
+const presentationThemeValidator = v.object({
   background: v.optional(slideBackgroundValidator),
   colors: v.object({
     text: v.string(),
@@ -235,17 +235,17 @@ const deckThemeValidator = v.object({
 
 /**
  * **Nothing here describes print.** A slide is a ratio and the body holds no
- * paper, no margins and no page setup: printing a deck is placing some number of
+ * paper, no margins and no page setup: printing a presentation is placing some number of
  * slides on a sheet and scaling them to it, which is a shape a page setup cannot
  * hold — it has nowhere to put the count or the arrangement. Until that is
- * modelled, a deck carries no print geometry at all.
+ * modelled, a presentation carries no print geometry at all.
  */
-export const slideDeckBodyValidator = v.object({
-  theme: deckThemeValidator,
+export const presentationBodyValidator = v.object({
+  theme: presentationThemeValidator,
   styles: styleSetValidator,
   layouts: v.array(slideLayoutValidator),
   slides: v.array(slideValidator),
-  sections: v.array(deckSectionValidator)
+  sections: v.array(presentationSectionValidator)
 });
 ```
 
@@ -260,7 +260,7 @@ export const slideDeckBodyValidator = v.object({
 | [spreadsheet](spreadsheets.md) | the body's row and column arrays | `print.page` | — |
 
 Three homes for page geometry because they are three different things: a slide is
-not a page, and a grid is not paginated until it is printed. A deck has no print
+not a page, and a grid is not paginated until it is printed. A presentation has no print
 geometry yet — it is the one of the three whose printed form is an arrangement of
 its screen form rather than a shape of its own.
 
@@ -273,9 +273,9 @@ app/src/lib/capabilities/documents/
 ├── schema.ts
 └── types/body.ts                  DocumentRow, PageFurniture, DocumentBody
 
-app/src/lib/capabilities/slide-decks/
+app/src/lib/capabilities/presentations/
 ├── schema.ts
-└── types/body.ts                  Frame, SlideElement, Slide, SlideDeckBody
+└── types/body.ts                  Frame, SlideElement, Slide, PresentationBody
 ```
 
 One table each, so `schema.ts` is a file rather than a directory.

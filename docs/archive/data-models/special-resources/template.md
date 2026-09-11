@@ -9,7 +9,7 @@ interface Template {
   name: string;
   description?: string;
   tags: string[];               // flat labels; an empty list means untagged
-  target: "document" | "slides" | "spreadsheet";
+  target: "document" | "presentation" | "spreadsheet";
   body: TemplateBody;
   slots: TemplateSlot[];
   createdBy: Actor;
@@ -19,7 +19,7 @@ interface Template {
 
 type TemplateBody =
   | ({ target: "document" } & DocumentBody)
-  | ({ target: "slides" } & SlideDeckBody & { aspectRatio: "16:9" | "4:3" })
+  | ({ target: "presentation" } & PresentationBody & { aspectRatio: "16:9" | "4:3" })
   | ({ target: "spreadsheet" } & SpreadsheetBody);
 
 interface TemplateSlot {

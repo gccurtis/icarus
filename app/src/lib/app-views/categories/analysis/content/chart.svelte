@@ -335,7 +335,7 @@
       {
         key: drawn?.key ?? "",
         label: labelFor(drawn?.key ?? ""),
-        // The definition's own colour, as a token: a chart pasted into a deck is the deck's palette.
+        // The definition's own colour, as a token: a chart pasted into a presentation is the presentation's palette.
         color: `var(${display.colours[0].token})`
       }
     ],

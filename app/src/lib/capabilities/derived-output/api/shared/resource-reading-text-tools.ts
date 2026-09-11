@@ -18,7 +18,7 @@ import {
 } from "$capabilities/derived-output/api/shared/resource-reading-values";
 
 export const textReadingTools = (context: ResourceReadingContext): IntelligenceTool[] => {
-  const { input, allowed, directText, exactProjection, slideDeck } = context;
+  const { input, allowed, directText, exactProjection, presentation } = context;
   return [
     {
       ...describedAgentTool("read_selection"),
@@ -62,8 +62,8 @@ export const textReadingTools = (context: ResourceReadingContext): IntelligenceT
             name: row.title,
             projectId: row.projectId
           })),
-          ...rowsOf(input.model.store, "slideDecks").map((row) => ({
-            ref: { kind: "slides" as const, id: row._id },
+          ...rowsOf(input.model.store, "presentations").map((row) => ({
+            ref: { kind: "presentation" as const, id: row._id },
             name: row.title,
             projectId: row.projectId
           })),
@@ -173,7 +173,7 @@ export const textReadingTools = (context: ResourceReadingContext): IntelligenceT
       }
     },
     {
-      ...describedAgentTool("list_deck_slides"),
+      ...describedAgentTool("list_presentation_slides"),
       inputSchema: {
         type: "object",
         properties: {
@@ -185,13 +185,13 @@ export const textReadingTools = (context: ResourceReadingContext): IntelligenceT
         additionalProperties: false
       },
       execute: async (value) => {
-        const held = record(value, "list_deck_slides input must be an object");
+        const held = record(value, "list_presentation_slides input must be an object");
         const ref = admitResourceRef(
-          { kind: "slides", id: text(held.resourceId, "resourceId") },
-          "slide-deck resource"
+          { kind: "presentation", id: text(held.resourceId, "resourceId") },
+          "presentation resource"
         );
-        if (!allowed(ref)) throw new Error("deck is outside the Derived Output Resource Set");
-        const { body } = slideDeck(ref);
+        if (!allowed(ref)) throw new Error("presentation is outside the Derived Output Resource Set");
+        const { body } = presentation(ref);
         const paging = page(value);
         const visible = body.slides.filter((slide) => slide.hidden !== true);
         const items = visible

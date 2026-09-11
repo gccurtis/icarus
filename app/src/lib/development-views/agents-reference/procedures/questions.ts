@@ -337,7 +337,7 @@ export const QUESTIONS: readonly Question[] = [
     page: "explore",
     title: "The first question in a project pays to index it",
     matters:
-      "Nothing embeds a project until something asks. The first turn indexes every document and deck, which is about twenty seconds and a Jina bill; every later turn skips what is current.",
+      "Nothing embeds a project until something asks. The first turn indexes every document and presentation, which is about twenty seconds and a Jina bill; every later turn skips what is current.",
     options: [
       "Index on the first question, as built.",
       "Index when a resource is saved, so the first question is as fast as the second.",
@@ -445,14 +445,14 @@ export const QUESTIONS: readonly Question[] = [
     page: "second-rebase",
     title: "The base branch still holds two hundred and eighty-five exceptions",
     matters:
-      "Both categories are clean against all ninety checks now, and neither holds a baseline entry. The rest of the tree does: ninety-four entries for inline handlers and effects alone, spread across the document editor, the slide deck editor, templates and the shell. The mechanisms this branch built — one runner, colocated state owners, named effects modules — are the same ones those surfaces would need.",
+      "Both categories are clean against all ninety checks now, and neither holds a baseline entry. The rest of the tree does: ninety-four entries for inline handlers and effects alone, spread across the document editor, the presentation editor, templates and the shell. The mechanisms this branch built — one runner, colocated state owners, named effects modules — are the same ones those surfaces would need.",
     options: [
       "Work the older surfaces off the baseline the same way, one category at a time.",
       "Work each off whenever it is next opened for another reason.",
       "Leave them; the two new categories are the standard and the rest catch up when they change."
     ],
     recommendation:
-      "One category at a time, and the slide deck editor first, because it holds the most entries and its state owners would be the largest saving. The runner and the effects modules are per-category by design, so nothing has to be shared before it is wanted twice."
+      "One category at a time, and the presentation editor first, because it holds the most entries and its state owners would be the largest saving. The runner and the effects modules are per-category by design, so nothing has to be shared before it is wanted twice."
   },
   {
     n: 38,

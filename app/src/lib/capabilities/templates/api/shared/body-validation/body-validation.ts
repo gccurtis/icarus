@@ -15,7 +15,7 @@ export const bodyOf = (value: unknown, subject: string): TemplateBody => {
   const valid =
     target === "document"
       ? validDocument(body)
-      : target === "slides"
+      : target === "presentation"
         ? validSlides(body)
         : validSpreadsheet(body);
   if (!valid) {

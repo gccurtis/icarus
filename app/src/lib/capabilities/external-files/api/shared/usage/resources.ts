@@ -5,7 +5,7 @@ import {
   documentBodyNamesExternalFile,
   resourceSetNamesExternalFile,
   sheetCellNamesExternalFile,
-  slideDeckBodyNamesExternalFile
+  presentationBodyNamesExternalFile
 } from "$capabilities/external-files/api/shared/resource-references";
 import { rowsOf } from "$capabilities/external-files/api/shared/rows";
 import { representedName, usageItem } from "$capabilities/external-files/api/shared/usage/shared";
@@ -32,15 +32,15 @@ export const resourceUsage = (
     ));
   }
 
-  const decks = new Map(rowsOf(store, "slideDecks").filter(inProject)
+  const presentations = new Map(rowsOf(store, "presentations").filter(inProject)
     .map((row) => [row._id, row.title]));
-  for (const snapshot of rowsOf(store, "slideDeckSnapshots")) {
+  for (const snapshot of rowsOf(store, "presentationSnapshots")) {
     if (!inProject(snapshot) || snapshot.role !== "leader" ||
-      !slideDeckBodyNamesExternalFile(snapshot.body, externalFileId)) continue;
+      !presentationBodyNamesExternalFile(snapshot.body, externalFileId)) continue;
     items.push(usageItem(
-      "slide-deck",
+      "presentation",
       snapshot.resourceId,
-      representedName(decks, snapshot.resourceId, "slide-deck snapshot")
+      representedName(presentations, snapshot.resourceId, "presentation snapshot")
     ));
   }
 

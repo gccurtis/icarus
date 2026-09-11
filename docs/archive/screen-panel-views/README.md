@@ -6,7 +6,7 @@ can select, one per state the centre of a screen can be in.
 
 This exists because the two questions are different. *How is it arranged, and
 what is disclosed when* is a visual question, and [the screen
-deck](../screen-deck/) is where that gets answered. *What should be on the page
+presentation](../screen-presentation/) is where that gets answered. *What should be on the page
 at all* is not visual, and reading it off a drawing is slow and lossy. These
 files answer the second question only.
 
@@ -29,12 +29,12 @@ _reference/          the two files every file above is written against
 **A screen owns only what nothing else could.** Its index and its centre. Every
 panel lives in one of the two global trees, because a panel is a function of
 models and capability calls rather than of the screen that happens to be showing
-it — the Variables view is the same view on a document, a deck and Project
+it — the Variables view is the same view on a document, a presentation and Project
 Overview, and writing it three times is how three copies drift.
 
 A screen's `overview.md` is therefore a list of what it reaches, not a container
 for it. Nine screens: `agents`, `analysis`, `document-editor`, `new-tab`,
-`project-overview`, `research`, `slide-deck-editor`, `spreadsheet-editor`,
+`project-overview`, `research`, `presentation-editor`, `spreadsheet-editor`,
 `templates` — three of them permanent tabs, and the other six minted by opening
 something.
 
@@ -53,7 +53,7 @@ it appears:
 | --- | --- |
 | `overview/` | the orientation view each screen opens on — the one group that is one file per screen |
 | `project/` | the project as a whole: its people, activity, health, resources, variables |
-| `resource/` | a document, deck or spreadsheet being edited, and everything inside one |
+| `resource/` | a document, presentation or spreadsheet being edited, and everything inside one |
 | `library/` | collections and launchers: every-X lists, recents, templates, what you can make |
 | `scope/` | Contexts — what a question is allowed to look at |
 | `analysis/` | fields, charts, and what an analysis is made of |
@@ -63,10 +63,10 @@ it appears:
 | `copilot/` | the surface that belongs to no tab *(inspector only)* |
 
 A file whose name repeats across subjects is qualified by its surface —
-`find-document`, `find-deck`, `find-sheet` — until someone reads the three and
+`find-document`, `find-presentation`, `find-sheet` — until someone reads the three and
 decides whether they are one view. Where they are, they become one file:
 [the comment lens](inspector/collaboration/comment.md) is one such, answering for
-a thread on a document, a deck and a spreadsheet alike.
+a thread on a document, a presentation and a spreadsheet alike.
 
 ## The shape of a file
 
@@ -169,7 +169,7 @@ region it belongs to, with the reasoning that settled it. Nothing is parked in
 the document for someone to find later.
 
 A section marked *starts collapsed* is closed on arrival. That is a disclosure
-decision and it belongs to the deck, but it is recorded here because it is part
+decision and it belongs to the presentation, but it is recorded here because it is part
 of what a panel promises.
 
 ## Workspaces
@@ -188,7 +188,7 @@ because that library has folders and holds templates from outside the project �
 it is a place rather than a list.
 
 **Three screens are the exception, and only three.** The document editor, the
-slide deck editor and the spreadsheet editor each get one workspace file whose
+presentation editor and the spreadsheet editor each get one workspace file whose
 grid is a single region — `editor` — because the centre is a framework surface
 and drawing it as regions would describe the framework's job rather than ours.
 Those files say something different instead: which framework, what we take from
@@ -203,10 +203,10 @@ because none of them is a framework surface.
 
 **Density, order and disclosure.** The grid says what regions exist and how they
 are arranged. How tightly each is packed, what is collapsed on arrival, and how
-it reads at 1280px is the deck's subject. Where the two disagree, the deck is a
+it reads at 1280px is the presentation's subject. Where the two disagree, the presentation is a
 drawing of a proposal and this is the proposal.
 
 ## Related
 
-[screen specifications](../screen-specs/) · [screen deck](../screen-deck/) ·
+[screen specifications](../screen-specs/) · [screen presentation](../screen-presentation/) ·
 [client model](../client-model/) · [data models](../data-models/)

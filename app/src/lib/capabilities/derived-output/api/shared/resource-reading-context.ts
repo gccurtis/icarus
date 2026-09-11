@@ -131,12 +131,12 @@ export const createResourceReadingContext = (input: ResourceReadingSessionInput)
     return projection;
   };
 
-  const slideDeck = (ref: ResourceRef) => {
-    const leader = rowsOf(input.model.store, "slideDeckSnapshots").find(
+  const presentation = (ref: ResourceRef) => {
+    const leader = rowsOf(input.model.store, "presentationSnapshots").find(
       (row) =>
         row.projectId === input.projectId && row.resourceId === ref.id && row.role === "leader"
     );
-    if (leader === undefined) throw new Error("slide deck does not exist");
+    if (leader === undefined) throw new Error("presentation does not exist");
     return { leader, body: leader.body };
   };
 
@@ -225,8 +225,8 @@ export const createResourceReadingContext = (input: ResourceReadingSessionInput)
     if (locator.kind !== "slideElement") {
       throw new Error("material does not resolve to a content block");
     }
-    const deck = slideDeck(ref);
-    const slide = deck.body.slides.find((candidate) => candidate.id === locator.slideId);
+    const snapshot = presentation(ref);
+    const slide = snapshot.body.slides.find((candidate) => candidate.id === locator.slideId);
     const element =
       slide === undefined ? undefined : findElement(slide.elements, locator.elementPath);
     if (element === undefined) throw new Error("slide material element is unavailable");
@@ -284,7 +284,7 @@ export const createResourceReadingContext = (input: ResourceReadingSessionInput)
     rememberMaterial,
     materialFor,
     exactProjection,
-    slideDeck,
+    presentation,
     directText,
     materialBlock,
     nativeCitation,

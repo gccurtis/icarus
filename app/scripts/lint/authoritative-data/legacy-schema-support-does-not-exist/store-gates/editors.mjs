@@ -24,25 +24,25 @@ export const EDITORS_GATES = [
     message: "document commands lack an executable exact-own-key, nominal-id, operation, and path contract"
   },
   {
-    path: ["capabilities", "slide-deck", "api", "read-slide-deck-body", "validate-read-slide-deck-body.ts"],
+    path: ["capabilities", "presentation", "api", "read-presentation-body", "validate-read-presentation-body.ts"],
     name: "slide-read-command-exactness",
-    required: /storedFields\(input\)[\s\S]*?hasExactFields\(fields, \["resourceId"\]\)[\s\S]*?isStoredRowId\(fields\.resourceId, "slideDecks"\)/,
-    message: "slide read admission does not require one exact plain command and nominal deck id"
+    required: /storedFields\(input\)[\s\S]*?hasExactFields\(fields, \["resourceId"\]\)[\s\S]*?isStoredRowId\(fields\.resourceId, "presentations"\)/,
+    message: "slide read admission does not require one exact plain command and nominal presentation id"
   },
   {
-    path: ["capabilities", "slide-deck", "api", "submit-slide-deck-changes", "validate-submit-slide-deck-changes.ts"],
+    path: ["capabilities", "presentation", "api", "submit-presentation-changes", "validate-submit-presentation-changes.ts"],
     name: "slide-submit-command-exactness",
-    required: /storedFields\(input\)[\s\S]*?hasExactFields\(envelope, \["changeSet"\]\)[\s\S]*?storedFields\(envelope\.changeSet\)[\s\S]*?hasExactFields\(changeSet, \["resourceId", "baseRevision", "ops", "touched"\]\)[\s\S]*?isStoredRowId\(changeSet\.resourceId, "slideDecks"\)[\s\S]*?isStoredNatural\(changeSet\.baseRevision\)[\s\S]*?isStoredJson\(changeSet\.ops\)[\s\S]*?every\(isStoredSlideDeckOp\)[\s\S]*?isStoredJson\(changeSet\.touched\)[\s\S]*?matchingTouched\(changeSet\.ops, changeSet\.touched\)/,
+    required: /storedFields\(input\)[\s\S]*?hasExactFields\(envelope, \["changeSet"\]\)[\s\S]*?storedFields\(envelope\.changeSet\)[\s\S]*?hasExactFields\(changeSet, \["resourceId", "baseRevision", "ops", "touched"\]\)[\s\S]*?isStoredRowId\(changeSet\.resourceId, "presentations"\)[\s\S]*?isStoredNatural\(changeSet\.baseRevision\)[\s\S]*?isStoredJson\(changeSet\.ops\)[\s\S]*?every\(isStoredPresentationOp\)[\s\S]*?isStoredJson\(changeSet\.touched\)[\s\S]*?matchingTouched\(changeSet\.ops, changeSet\.touched\)/,
     message: "slide submit admission does not require its exact current envelope, operations, paths, and nominal id"
   },
   {
-    path: ["representation", "data", "behavior", "slide-decks", "stored-rows.ts"],
+    path: ["representation", "data", "behavior", "presentations", "stored-rows.ts"],
     name: "slide-operation-exactness",
-    required: /export const isStoredSlideDeckOp[\s\S]*?isStoredJson\(value\)[\s\S]*?isStoredChangeSetOperation\(value, CHANGE_SET_CONTRACT\)[\s\S]*?value\.ids\.length > 0[\s\S]*?value\.values\.length === value\.ids\.length/,
+    required: /export const isStoredPresentationOp[\s\S]*?isStoredJson\(value\)[\s\S]*?isStoredChangeSetOperation\(value, CHANGE_SET_CONTRACT\)[\s\S]*?value\.ids\.length > 0[\s\S]*?value\.values\.length === value\.ids\.length/,
     message: "slide operation admission can accept a lossy or cardinality-incoherent current arm"
   },
   {
-    path: ["capabilities", "slide-deck", "test", "unit", "command-admission.test.ts"],
+    path: ["capabilities", "presentation", "test", "unit", "command-admission.test.ts"],
     name: "slide-command-exactness-contract",
     required: /admits only the nominal current read command[\s\S]*?does not execute an accessor while refusing it[\s\S]*?admits one exact envelope, change set, and operation union arm[\s\S]*?requires list payload cardinality and exact touched first-use order/,
     message: "slide commands lack an executable exact-own-key, nominal-id, operation, and path contract"

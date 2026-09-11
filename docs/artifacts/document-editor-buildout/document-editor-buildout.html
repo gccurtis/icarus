@@ -238,7 +238,7 @@ text content = display
         <tbody>
           <tr><td class="p">procedures/translate.ts</td><td>Diffs two bodies and emits text splices, block and row insert/remove/move, and a set on row proportions. Nothing else.</td><td>Emits mark, block-field, atom and document ops. Or, for panel edits, is not involved at all — a panel states its ops directly.</td></tr>
           <tr><td class="p">capabilities/document/…/apply-ops.ts</td><td>Accepts exactly the shapes translate emits. <code>set</code> handles one path and refuses the rest.</td><td>One applier in <code>representation/data/behavior/documents/</code> handling every target, wrapped by the capability and called by the runtime.</td></tr>
-          <tr><td class="p">model/client/document-runtimes/methods/apply.ts</td><td><code>buffer()</code> appends ops. The body waits for the store.</td><td>The body moves first — exactly what <code>slide-deck-runtimes/methods/apply.ts</code> already does.</td></tr>
+          <tr><td class="p">model/client/document-runtimes/methods/apply.ts</td><td><code>buffer()</code> appends ops. The body waits for the store.</td><td>The body moves first — exactly what <code>presentation-runtimes/methods/apply.ts</code> already does.</td></tr>
           <tr><td class="p">representation/data/types/documents/op.ts</td><td>Targets <code>row · block · atom · mark</code>. Nothing above the rows is addressable.</td><td>A <code>document</code> target with plain field paths: page setup, furniture settings, the style set.</td></tr>
         </tbody>
       </table>

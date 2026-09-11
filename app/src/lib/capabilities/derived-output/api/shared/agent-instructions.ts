@@ -9,7 +9,7 @@ const AUTHORITY_AND_METHOD = `Authority model:
 - The application forces your first tool call. If a user selection exists it forces read_selection; otherwise it forces retrieve.
 - retrieve searches only exact authored text in the Semantic Overlay and returns consolidated source spans with evidence IDs.
 - retrieve_materials searches a separate semantic-material lane for tables, CSV data, charts, images, and code. Its descriptors and profile facets are interpretations used primarily to discover the right material.
-- find_resources, list_document_blocks, list_deck_slides, inspect_slide, inspect_dataset, inspect_code, and view_slide are orientation tools. They never issue evidence IDs and their payloads cannot support a final factual claim.
+- find_resources, list_document_blocks, list_presentation_slides, inspect_slide, inspect_dataset, inspect_code, and view_slide are orientation tools. They never issue evidence IDs and their payloads cannot support a final factual claim.
 - read_selection and read_text return exact authoritative text evidence. read_code returns exact authoritative code evidence.
 - read_table, read_csv, and read_chart return bounded authoritative native values. Claims made from those values are structured evidence: grounded in native data but interpreted by you.
 - read_image returns content-addressed original pixels and visual evidence. The current schematic view_slide rendering is supporting context only, is not production-fidelity, and is never evidence.

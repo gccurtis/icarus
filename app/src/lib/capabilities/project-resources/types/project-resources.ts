@@ -2,7 +2,7 @@ import type { ResourceRef } from "$representation/data/types/core/resource";
 
 export type ProjectResourceKind =
   | "document"
-  | "slides"
+  | "presentation"
   | "spreadsheet"
   | "research"
   | "file"
@@ -35,7 +35,7 @@ export type ProjectResourceIndex = {
   readonly unavailable: readonly ProjectResourceUnavailable[];
 };
 
-export type ProjectResourceTarget = "document" | "slides" | "spreadsheet";
+export type ProjectResourceTarget = "document" | "presentation" | "spreadsheet";
 
 export type CreateProjectResourceInput = {
   readonly target: ProjectResourceTarget;

@@ -1,12 +1,12 @@
 import ts from "typescript";
 import { memberName, exactTypeUnion, normalizedType, normalizedContractType, literalProperty, unwrappedType, literalFields, unionArms, exactFields, armNamed, intersectionLiteralWith } from "./shared.mjs";
 
-export const slideDeckOpContractIn = (node, path, found) => {
+export const presentationOpContractIn = (node, path, found) => {
   if (
-    !path.replaceAll("\\", "/").endsWith("/representation/data/types/slide-decks/op.ts") ||
+    !path.replaceAll("\\", "/").endsWith("/representation/data/types/presentations/op.ts") ||
     !ts.isTypeAliasDeclaration(node)
   ) return;
-  if (node.name.text === "DeckTarget" && !exactTypeUnion(node.type, [
+  if (node.name.text === "PresentationTarget" && !exactTypeUnion(node.type, [
     "literal:slide",
     "literal:element",
     "literal:section",
@@ -14,12 +14,12 @@ export const slideDeckOpContractIn = (node, path, found) => {
     "literal:block",
     "literal:atom",
     "literal:mark"
-  ])) found.add("DeckTarget.contract");
-  if (node.name.text === "SlideDeckSetTarget" && !exactTypeUnion(node.type, [
-    "literal:deck",
-    "reference:DeckTarget"
-  ])) found.add("SlideDeckSetTarget.contract");
-  if (node.name.text !== "SlideDeckOp") return;
+  ])) found.add("PresentationTarget.contract");
+  if (node.name.text === "PresentationSetTarget" && !exactTypeUnion(node.type, [
+    "literal:presentation",
+    "reference:PresentationTarget"
+  ])) found.add("PresentationSetTarget.contract");
+  if (node.name.text !== "PresentationOp") return;
   const arms = ts.isUnionTypeNode(node.type) ? node.type.types : [node.type];
   const set = arms.find((arm) => literalProperty(arm, "op", "set") !== undefined);
   const target = ts.isTypeLiteralNode(set)
@@ -31,8 +31,8 @@ export const slideDeckOpContractIn = (node, path, found) => {
     !ts.isPropertySignature(target) ||
     target.questionToken !== undefined ||
     target.type === undefined ||
-    normalizedType(target.type) !== "SlideDeckSetTarget"
-  ) found.add("SlideDeckOp.set.target.contract");
+    normalizedType(target.type) !== "PresentationSetTarget"
+  ) found.add("PresentationOp.set.target.contract");
 };
 
 export const formulaContractIn = (node, path, found) => {

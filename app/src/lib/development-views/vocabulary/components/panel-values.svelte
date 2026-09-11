@@ -369,7 +369,7 @@
   <Entry
     name="PanelColor"
     use="A colour chosen from the ones this project actually has — a fill, a stroke or a text colour, out of a theme or a style set. Each swatch carries its name on hover and as its accessible name, and the chosen one takes a ring rather than only a border, so a control that is otherwise nothing but colour survives being read without colour."
-    instead="a colour picker. A free one lets an author put a colour in a deck its theme has never heard of, and then the theme is not a theme. A listing of colours that sets nothing is PanelSwatches, drawn square — these are radio targets and are shaped like targets."
+    instead="a colour picker. A free one lets an author put a colour in a presentation its theme has never heard of, and then the theme is not a theme. A listing of colours that sets nothing is PanelSwatches, drawn square — these are radio targets and are shaped like targets."
     code={CODE.color}
   >
     <div class="flex flex-col gap-2 py-3">

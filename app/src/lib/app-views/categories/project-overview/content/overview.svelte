@@ -121,7 +121,7 @@
    */
   const KIND_LABEL: Record<ResourceKind, string> = {
     document: "Document",
-    slides: "Slide deck",
+    presentation: "Presentation",
     spreadsheet: "Spreadsheet",
     research: "Research",
     analysis: "Analysis",
@@ -131,7 +131,7 @@
 
   const KIND_PLURAL: Record<ResourceKind, string> = {
     document: "Documents",
-    slides: "Slide decks",
+    presentation: "Presentations",
     spreadsheet: "Spreadsheets",
     research: "Research",
     analysis: "Analyses",
@@ -150,8 +150,8 @@
         "border-interactive-border bg-interactive-surface text-interactive-text hover:border-interactive-fill hover:bg-interactive-surface-hover"
     },
     {
-      key: "slides",
-      label: "Slide deck",
+      key: "presentation",
+      label: "Presentation",
       icon: Presentation,
       tint:
         "border-accent-1-border bg-accent-1-surface text-accent-1-text hover:border-accent-1-fill hover:bg-accent-1-surface-hover"
@@ -187,7 +187,7 @@
   const make = (key: (typeof CREATE)[number]["key"]) => {
     if (
       key === "document" ||
-      key === "slides" ||
+      key === "presentation" ||
       key === "spreadsheet" ||
       key === "research"
     ) {
@@ -343,7 +343,7 @@
             <button
               type="button"
               disabled={(pill.key === "document" ||
-                pill.key === "slides" ||
+                pill.key === "presentation" ||
                 pill.key === "spreadsheet" ||
                 pill.key === "research") &&
                 board.creation.making !== undefined}
@@ -527,7 +527,7 @@
           </ScreenEmpty>
         {:else if listed.length === 0}
           <ScreenEmpty kind="no-matches" title="Nothing in this project matches" onclear={clear}>
-            Search covers represented documents, decks, spreadsheets, research, and findings.
+            Search covers represented documents, presentations, spreadsheets, research, and findings.
           </ScreenEmpty>
         {:else}
           <ScreenTable scroll columns={["Name", "Kind", "Updated", "Updated by"]}>

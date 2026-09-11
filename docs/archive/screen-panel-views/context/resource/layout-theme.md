@@ -2,9 +2,9 @@
 
 | View | What it is for | Sections |
 | --- | --- | --- |
-| Theme | What this layout takes from the deck theme, and what it overrides | Background |
+| Theme | What this layout takes from the presentation theme, and what it overrides | Background |
 
-A layout inherits the deck theme unless it overrides it. This view is where an
+A layout inherits the presentation theme unless it overrides it. This view is where an
 override is made, and where inheritance is visible when there is none.
 
 ## Layout

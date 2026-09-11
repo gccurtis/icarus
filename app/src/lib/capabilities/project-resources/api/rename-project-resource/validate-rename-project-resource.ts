@@ -17,7 +17,7 @@ export const validateRenameProjectResource = (input: unknown): RenameProjectReso
   const { resourceId, title } = fields;
   if (
     !isStoredRowId(resourceId, "documents") &&
-    !isStoredRowId(resourceId, "slideDecks") &&
+    !isStoredRowId(resourceId, "presentations") &&
     !isStoredRowId(resourceId, "spreadsheets")
   ) return fail("resourceId is one current editable resource id");
   if (typeof title !== "string" || title.trim().length === 0 || title.trim().length > 500) {

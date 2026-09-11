@@ -13,7 +13,7 @@
    * the role vocabulary — success, attention, intelligence — a closed set where
    * every entry means something. A theme colour called "Paper" belongs to no
    * such set. Rendering it as a chip either drops the actual colour or invents a
-   * role for it, and both are lies about a value the deck owns.
+   * role for it, and both are lies about a value the presentation owns.
    *
    * **The name is the swatch and the colour is beside it.** A row of coloured
    * squares says nothing at all to a reader who cannot see them, and to everyone

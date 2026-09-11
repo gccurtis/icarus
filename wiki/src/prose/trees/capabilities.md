@@ -2,7 +2,7 @@
 
 What the server can be asked to do. A capability is a directory holding an index, its types, its constants and its procedures ([[check:capability-layout]]), and its index is the only thing the rest of the repository may name ([[check:nothing-reaches-inside-a-capability]]). When the index is `index.remote.ts`, its exports are SvelteKit remote functions — `query(...)` and `command(...)` — and that file is the one client→server crossing in the repository ([[check:one-crossing]]).
 
-Five capabilities exist today: `development` (who am I, from `dev.yaml`), `document` and `slide-deck` (read a leader body, submit a change set), `store` (create, read, update, remove by path) and `workspace` (read and submit the workspace ledger).
+Five capabilities exist today: `development` (who am I, from `dev.yaml`), `document` and `presentation` (read a leader body, submit a change set), `store` (create, read, update, remove by path) and `workspace` (read and submit the workspace ledger).
 
 ## What it owns
 
@@ -47,6 +47,6 @@ Eleven checks govern this tree: the ten under `scripts/lint/capabilities/` and `
 4. [[file:app/src/lib/runtime/server/scope.server.ts]] — where `requireScope()` comes from and why the lookup is the authorization.
 5. [[file:app/src/lib/capabilities/store/index.remote.ts]] — the generic path store the views read titles and rows through.
 
-[[file:app/src/lib/capabilities/slide-deck/slide-deck.md]] says nothing here writes; the code has `submitSlideDeckChanges`. [[file:app/src/lib/capabilities/workspace/workspace.md]] is a placeholder. Both are recorded under [[page:/gaps|Gaps]].
+[[file:app/src/lib/capabilities/presentation/presentation.md]] says nothing here writes; the code has `submitPresentationChanges`. [[file:app/src/lib/capabilities/workspace/workspace.md]] is a placeholder. Both are recorded under [[page:/gaps|Gaps]].
 
 ## Units

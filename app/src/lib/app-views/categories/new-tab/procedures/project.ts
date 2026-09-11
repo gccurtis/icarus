@@ -58,7 +58,7 @@ export type SavedContext = {
 export type TemplateRow = {
   readonly id: string;
   readonly name: string;
-  readonly makes: "Document" | "Slide deck" | "Slide" | "Spreadsheet";
+  readonly makes: "Document" | "Presentation" | "Slide" | "Spreadsheet";
   readonly scope: "Project" | "Global";
   readonly variables: number;
 };
@@ -208,7 +208,7 @@ export const savedContexts = (): Read<readonly SavedContext[]> =>
     {
       id: "sc-1",
       name: "Filing evidence",
-      rule: "Everything in this project, minus slide decks",
+      rule: "Everything in this project, minus presentations",
       resolves: 24
     },
     {
@@ -229,7 +229,7 @@ export const templates = (): Read<readonly TemplateRow[]> =>
       scope: "Project",
       variables: 4
     },
-    { id: "tp-2", name: "Board update", makes: "Slide deck", scope: "Project", variables: 2 },
+    { id: "tp-2", name: "Board update", makes: "Presentation", scope: "Project", variables: 2 },
     { id: "tp-3", name: "Cost model", makes: "Spreadsheet", scope: "Global", variables: 0 },
     { id: "tp-4", name: "Section divider", makes: "Slide", scope: "Global", variables: 1 }
   ], "project.templates");

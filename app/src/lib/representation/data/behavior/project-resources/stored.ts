@@ -19,7 +19,7 @@ import type { TableName, TableRow } from "$representation/store/tables";
 
 export type StoredProjectResource =
   | { readonly table: "documents"; readonly row: TableRow<"documents"> }
-  | { readonly table: "slideDecks"; readonly row: TableRow<"slideDecks"> }
+  | { readonly table: "presentations"; readonly row: TableRow<"presentations"> }
   | { readonly table: "spreadsheets"; readonly row: TableRow<"spreadsheets"> }
   | { readonly table: "researchThreads"; readonly row: TableRow<"researchThreads"> }
   | { readonly table: "externalFiles"; readonly row: TableRow<"externalFiles"> }
@@ -37,7 +37,7 @@ const common = (row: StoredFields): boolean =>
 
 export const isStoredEditableResource = (
   value: unknown,
-  table: "documents" | "slideDecks" | "spreadsheets"
+  table: "documents" | "presentations" | "spreadsheets"
 ): value is TableRow<typeof table> => {
   const row = storedFields(value);
   return row !== undefined &&
@@ -114,7 +114,7 @@ export const storedProjectResource = (
   table: TableName
 ): StoredProjectResource | undefined => {
   if (
-    (table === "documents" || table === "slideDecks" || table === "spreadsheets") &&
+    (table === "documents" || table === "presentations" || table === "spreadsheets") &&
     isStoredEditableResource(value, table)
   ) return { table, row: value } as StoredProjectResource;
   if (table === "researchThreads" && isStoredResearchThread(value)) {

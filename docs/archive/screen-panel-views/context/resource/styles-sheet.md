@@ -4,7 +4,7 @@
 | --- | --- | --- |
 | Styles | The named cell styles this spreadsheet uses | Named styles |
 
-The same principle as the document and the deck: format lives on a named style,
+The same principle as the document and the presentation: format lives on a named style,
 not as a per-cell override, so a change reaches every cell that shares it.
 
 ## Layout

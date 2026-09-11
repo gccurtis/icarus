@@ -24,7 +24,7 @@ paper, no aspect ratio, and no sheets to name.
 
 One button. This tab becomes the spreadsheet.
 
-**Open** — the deck currently still shows a *Workbook* section here, asking for a
+**Open** — the presentation currently still shows a *Workbook* section here, asking for a
 first sheet name, and calls the button *Create workbook*. That is left over from
 before a spreadsheet became one grid rather than a workbook of sheets. The
 section should not exist and the wording should be *spreadsheet* throughout.

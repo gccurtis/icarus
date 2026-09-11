@@ -60,7 +60,7 @@ export const isStoredCellFormat = (value: unknown): boolean => {
     (format.border === undefined || currentCellBorder(format.border));
 };
 
-type StyleKind = "document" | "slides" | "spreadsheet";
+type StyleKind = "document" | "presentation" | "spreadsheet";
 
 const currentTextStyle = (value: unknown, kind: StyleKind): boolean => {
   const style = storedFields(value);
@@ -105,7 +105,7 @@ export const isStoredDocumentStyles = (value: unknown): boolean =>
   currentStyleSet(value, "document");
 
 export const isStoredSlideStyles = (value: unknown): boolean =>
-  currentStyleSet(value, "slides");
+  currentStyleSet(value, "presentation");
 
 export const isStoredSpreadsheetStyles = (value: unknown): boolean =>
   currentStyleSet(value, "spreadsheet");

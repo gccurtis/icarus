@@ -882,7 +882,7 @@
       "Project standard"
     ],
     "body": {
-      "resource": "slides",
+      "resource": "presentation",
       "aspectRatio": "16:9",
       "theme": {
         "background": {
@@ -1150,7 +1150,7 @@
       "Briefing"
     ],
     "body": {
-      "resource": "slides",
+      "resource": "presentation",
       "aspectRatio": "16:9",
       "theme": {
         "background": {
@@ -1387,7 +1387,7 @@
       "Briefing"
     ],
     "body": {
-      "resource": "slides",
+      "resource": "presentation",
       "aspectRatio": "16:9",
       "theme": {
         "background": {
@@ -1633,7 +1633,7 @@
       "Review"
     ],
     "body": {
-      "resource": "slides",
+      "resource": "presentation",
       "aspectRatio": "16:9",
       "theme": {
         "background": {
@@ -1983,7 +1983,7 @@
       "Brand"
     ],
     "body": {
-      "resource": "slides",
+      "resource": "presentation",
       "aspectRatio": "16:9",
       "theme": {
         "background": {

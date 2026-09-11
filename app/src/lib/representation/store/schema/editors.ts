@@ -19,9 +19,9 @@ export const EDITOR_ROW_POLICIES = {
   documentChangeSets: CHANGE_SET,
   documents: RESOURCE,
   documentSnapshots: SNAPSHOT,
-  slideDeckChangeSets: CHANGE_SET,
-  slideDecks: RESOURCE,
-  slideDeckSnapshots: SNAPSHOT,
+  presentationChangeSets: CHANGE_SET,
+  presentations: RESOURCE,
+  presentationSnapshots: SNAPSHOT,
   spreadsheetChangeSets: CHANGE_SET,
   spreadsheets: RESOURCE,
   spreadsheetSnapshots: SNAPSHOT,
@@ -55,9 +55,9 @@ export const EDITOR_ROW_POLICIES = {
   | "documentChangeSets"
   | "documents"
   | "documentSnapshots"
-  | "slideDeckChangeSets"
-  | "slideDecks"
-  | "slideDeckSnapshots"
+  | "presentationChangeSets"
+  | "presentations"
+  | "presentationSnapshots"
   | "spreadsheetChangeSets"
   | "spreadsheets"
   | "spreadsheetSnapshots"

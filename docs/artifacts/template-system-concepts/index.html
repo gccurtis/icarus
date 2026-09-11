@@ -370,7 +370,7 @@
         <div class="noun">
           <span class="chip new">new</span>
           <b>Stage</b>
-          <span>A scratch document or deck holding a template's body, plus a row saying which template it
+          <span>A scratch document or presentation holding a template's body, plus a row saying which template it
           is and which revision it came from. The editor cannot tell it from a real resource, which is
           the whole point. One per template, shared by everyone in the project; nobody is marked as
           editing, and the stage is the only thing that ever writes the template's body.</span>
@@ -424,10 +424,10 @@
         <div class="noun">
           <span class="chip new">new</span>
           <b>A template of one slide</b>
-          <span>Save slide copies the current slide into a deck template holding that slide, its layout,
+          <span>Save slide copies the current slide into a presentation template holding that slide, its layout,
           and the theme and styles it is drawn with, and no sections. It is not a fourth kind: afterwards
-          it is a deck template like any other, listed, inserted and edited the same way.</span>
-          <span class="where">deckOfSlide</span>
+          it is a presentation template like any other, listed, inserted and edited the same way.</span>
+          <span class="where">presentationOfSlide</span>
         </div>
       </div>
     </section>
@@ -446,7 +446,7 @@
             <tr>
               <td>Template body</td>
               <td><span class="chip same">unchanged</span></td>
-              <td>Document, deck, or spreadsheet, as before. A template of one slide is a deck body with one slide in it.</td>
+              <td>Document, presentation, or spreadsheet, as before. A template of one slide is a presentation body with one slide in it.</td>
             </tr>
             <tr>
               <td>Who a template belongs to</td>
@@ -481,12 +481,12 @@
             <tr>
               <td>Provenance on resources</td>
               <td><span class="chip changed">removed</span></td>
-              <td>Main's <code>templateId</code> on documents, decks and spreadsheets is gone: a resource made from a template is a copy and knows nothing of where it came from.</td>
+              <td>Main's <code>templateId</code> on documents, presentations and spreadsheets is gone: a resource made from a template is a copy and knows nothing of where it came from.</td>
             </tr>
             <tr>
               <td>Comments</td>
               <td><span class="chip changed">changed</span></td>
-              <td>A thread cannot be started on a template's working copy; the comments capability refuses it and the deck's comment panels say so. Comments never travel with a template.</td>
+              <td>A thread cannot be started on a template's working copy; the comments capability refuses it and the presentation's comment panels say so. Comments never travel with a template.</td>
             </tr>
             <tr>
               <td>Project resource list</td>
@@ -587,7 +587,7 @@
         </div>
         <div>
           <b>Findings</b>
-          <p>One of the five resource kinds a set or a default can select, alongside documents, decks,
+          <p>One of the five resource kinds a set or a default can select, alongside documents, presentations,
           spreadsheets and research threads. An existing kind, not a new one.</p>
         </div>
         <div>
@@ -605,7 +605,7 @@
         stripping that stays inside one project, comments refused on a working copy, and the end of
         provenance on resources; the <em>Template Stage Flow</em> artifact records each answer and what
         it became, and the <em>Template Dictionary</em> defines every word. Two small forks remain, both
-        built the recommended way: where resource sets are managed, and whether a deck insert brings
+        built the recommended way: where resource sets are managed, and whether a presentation insert brings
         layouts.
       </p>
       <p style="margin-top: calc(var(--u) * 3)">Deliberately not built:</p>

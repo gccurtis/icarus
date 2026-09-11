@@ -12,7 +12,7 @@ The source of truth for persisted objects remains [`docs/data-models`](../data-m
 | Project Overview | [Project Overview](project-overview.md) | Create actions, resource table, and activity |
 | New Tab | [New Tab](new-tab.md) | Create, open, import, or start from a template |
 | Document | [Document editor](document-editor.md) | Paginated rich-block document |
-| Slide deck | [Slide deck editor](slide-deck-editor.md) | Current slide canvas with ordered deck navigation |
+| Presentation | [Presentation editor](presentation-editor.md) | Current slide canvas with ordered presentation navigation |
 | New Slide | [New Slide](new-slide.md) | Layout and insertion-point chooser |
 | Spreadsheet | [Spreadsheet editor](spreadsheet-editor.md) | Sparse workbook grid and floating charts |
 | Research | [Research](research.md) | Mode-anchored research conversation and editorial promotion |
@@ -30,7 +30,7 @@ The source of truth for persisted objects remains [`docs/data-models`](../data-m
 | Project Overview | Resources | Activity, Tasks, Health, Context, Templates |
 | New Tab | Create | Recent, Templates, Import |
 | Document | Navigator | Find, Insert, Styles, Page, Comments, Context |
-| Slide deck | Slides | Layers, Find, Layouts, Insert, Theme & styles, Notes, Comments, Context |
+| Presentation | Slides | Layers, Find, Layouts, Insert, Theme & styles, Notes, Comments, Context |
 | Spreadsheet | Sheets | Data & names, Find, Dependencies, Objects, Insert, Styles, Print, Comments, Context |
 | Research | Inquiry | Findings, Sources, Tool trace, Threads, Context |
 | Analysis | Data | Inputs & joins, Chart, Filters & sorts, Names |
@@ -51,7 +51,7 @@ type ScreenKind =
   | "project-overview"
   | "new-tab"
   | "document"
-  | "slides"
+  | "presentation"
   | "spreadsheet"
   | "research"
   | "analysis"
@@ -61,7 +61,7 @@ type ScreenKind =
   | "automations";
 ```
 
-`new-slide` is not a tab kind. It is a modal or temporary in-editor surface owned by a slide-deck tab. “Context” is the user-facing label for the persisted `ResourceSet` model.
+`new-slide` is not a tab kind. It is a modal or temporary in-editor surface owned by a presentation tab. “Context” is the user-facing label for the persisted `ResourceSet` model.
 
 ## Reading rule
 

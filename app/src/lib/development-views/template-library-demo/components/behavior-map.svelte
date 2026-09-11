@@ -33,7 +33,7 @@
       number: "04",
       title: "Create",
       icon: FilePlus2,
-      gesture: "Optionally name it, then press the Document, Slide deck or Spreadsheet icon",
+      gesture: "Optionally name it, then press the Document, Presentation or Spreadsheet icon",
       result: "Each icon is the create action; kind is fixed immediately and the new owned template becomes the inspected subject."
     },
     {
@@ -55,7 +55,7 @@
       title: "Use",
       icon: ExternalLink,
       gesture: "Press the explicit Use action",
-      result: "Documents and decks prevalidate defaults, materialize one independent resource per pending workspace intent, and open their ordinary editor. Spreadsheet materialization is implemented and tested, but the UI handoff is deliberately disabled until its editor consumes resource ids. Cross-client retries still need durable request ids."
+      result: "Documents and presentations prevalidate defaults, materialize one independent resource per pending workspace intent, and open their ordinary editor. Spreadsheet materialization is implemented and tested, but the UI handoff is deliberately disabled until its editor consumes resource ids. Cross-client retries still need durable request ids."
     }
   ];
 </script>

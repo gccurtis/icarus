@@ -151,7 +151,7 @@ export const { withFreshOutputs } = await import(
 
 export const documentBody = { resource: "document", rows: [] } as const;
 export const slidesBody = {
-  resource: "slides",
+  resource: "presentation",
   aspectRatio: "16:9",
   theme: { colors: { text: "ink", accent: "blue" } },
   styles: { defaultKey: "body", styles: { body: { name: "Body" } } },
@@ -246,8 +246,8 @@ beforeEach(() => {
     resourceSets: [],
     documents: [],
     documentSnapshots: [],
-    slideDecks: [],
-    slideDeckSnapshots: [],
+    presentations: [],
+    presentationSnapshots: [],
     spreadsheets: [],
     spreadsheetSnapshots: [],
     sheetCells: [],

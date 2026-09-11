@@ -23,7 +23,7 @@ export const ATOMIC_INVARIANTS: ArchitecturePillar = {
 commentId = store.create("comments", openingComment)
 return { threadId, commentId }`,
     observed:
-      "Each Store create atomically rewrites its own table file. A failure after the thread write but before the comment write leaves a thread with no opening comment. Resource creation and document/deck revision submission contain analogous multi-table sequences.",
+      "Each Store create atomically rewrites its own table file. A failure after the thread write but before the comment write leaves a thread with no opening comment. Resource creation and document/presentation revision submission contain analogous multi-table sequences.",
     antagonism:
       "The capability's single intent is stronger than the model operation it can call. The server behavior looks coherent in one procedure while the durable state can expose an impossible intermediate outcome.",
     repair:
@@ -112,7 +112,7 @@ return { threadId, commentId }`,
       detects: "Orphan snapshots/change sets, leader pointers to absent bodies, duplicate revision acceptance, and acknowledged but invisible edits.",
       implementation:
         "Identify resource-revision submissions by their submit-*-changes entry, then define a reusable revision invariant assertion and run it before/after success, conflict, injected persistence failure, and restart for every editor subject.",
-      current: "Enforced; document and slide-deck revision atomicity contracts are baselined as missing.",
+      current: "Enforced; document and presentation revision atomicity contracts are baselined as missing.",
       limit: "This domain check complements rather than replaces generic transaction fault testing; incidental maintenance of snapshots or change sets outside a submit-*-changes entry does not make a capability a revision subject."
     }
   ],
@@ -120,7 +120,7 @@ return { threadId, commentId }`,
     "Use the implemented Store unit-of-work and durable JSON journal as the boundary for each multi-write capability.",
     "Convert comment thread creation as the smallest atomic capability slice and register its fault contract.",
     "Move each of the eleven baselined multi-write intents inside one transaction callback and contract case.",
-    "Complete revision atomicity for documents and decks, removing baseline records as each invariant passes."
+    "Complete revision atomicity for documents and presentations, removing baseline records as each invariant passes."
   ],
   relatedFindings: ["ARCH-02"]
 };

@@ -149,7 +149,7 @@ export const DECISIONS: readonly DecisionBrief[] = [
     id: "DEC-04",
     kind: "Product decision",
     question: "What should Distribute do when selected objects overlap or do not fit between the outer objects?",
-    stakes: "The current math permits a negative gap and can reorder mixed-size objects, which is why repeated clicks keep changing the deck. Any fix must define the intended geometry, not just suppress the second click.",
+    stakes: "The current math permits a negative gap and can reorder mixed-size objects, which is why repeated clicks keep changing the presentation. Any fix must define the intended geometry, not just suppress the second click.",
     context: [
       "For ordinary non-overlapping objects, equal gaps and equal center intervals can look similar. They diverge with mixed sizes and overlap. Keeping the outer bounds fixed while demanding non-negative equal gaps can be mathematically impossible.",
       "The invariant I consider non-negotiable is idempotence: once distributed, pressing the same command again must emit no operation. Stable ordering, epsilon comparison, and coordinate canonicalization belong in every option."

@@ -83,7 +83,7 @@ export type ReadProjectActivityResult = ProjectActivityEntry | null;
 
 export type ProjectResourceKind =
   | "document"
-  | "slides"
+  | "presentation"
   | "spreadsheet"
   | "research"
   | "finding";

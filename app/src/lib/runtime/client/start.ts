@@ -2,7 +2,7 @@ import { browser } from "$app/environment";
 import { createCommands } from "$model/client/commands";
 import { createConfiguration } from "$model/client/configuration";
 import { createDocumentRuntimes } from "$model/client/document-runtimes";
-import { createSlideDeckRuntimes } from "$model/client/slide-deck-runtimes";
+import { createPresentationRuntimes } from "$model/client/presentation-runtimes";
 import { createSpreadsheetRuntimes } from "$model/client/spreadsheet-runtimes";
 import { createTabList } from "$model/client/tab-list";
 import { createTabViews } from "$model/client/tab-views";
@@ -25,7 +25,7 @@ const buildClientModel = ({ project, configuration }: ClientModelInput): ClientM
   const settings = createConfiguration(configuration);
 
   const documentRuntimes = createDocumentRuntimes(settings);
-  const slideDeckRuntimes = createSlideDeckRuntimes(settings);
+  const presentationRuntimes = createPresentationRuntimes(settings);
   const spreadsheetRuntimes = createSpreadsheetRuntimes(settings);
 
   const tabList = createTabList();
@@ -36,7 +36,7 @@ const buildClientModel = ({ project, configuration }: ClientModelInput): ClientM
     tabViews,
     settings,
     documentRuntimes,
-    slideDeckRuntimes,
+    presentationRuntimes,
     spreadsheetRuntimes
   );
 
@@ -45,14 +45,14 @@ const buildClientModel = ({ project, configuration }: ClientModelInput): ClientM
     workspaceState,
     configuration: settings,
     documentRuntimes,
-    slideDeckRuntimes,
+    presentationRuntimes,
     spreadsheetRuntimes,
     commands: createCommands(workspaceState),
 
     close: () => {
       void workspaceState.flush().catch(() => undefined);
       documentRuntimes.releaseAll();
-      slideDeckRuntimes.releaseAll();
+      presentationRuntimes.releaseAll();
       spreadsheetRuntimes.releaseAll();
       workspaceState.release();
     }

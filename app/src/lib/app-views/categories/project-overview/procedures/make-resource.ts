@@ -5,7 +5,7 @@ import type { WorkspaceStateModel } from "$model/client/workspace-state";
 /** What the board holds while one of its Create buttons is working. */
 export type Creating = {
   mounted: boolean;
-  making: "document" | "slides" | "spreadsheet" | "research" | undefined;
+  making: "document" | "presentation" | "spreadsheet" | "research" | undefined;
   failure: string | undefined;
 };
 
@@ -22,7 +22,7 @@ const messageOf = (error: unknown): string =>
 export const makeResource = async (
   view: WorkspaceStateModel,
   state: Creating,
-  key: "document" | "slides" | "spreadsheet" | "research"
+  key: "document" | "presentation" | "spreadsheet" | "research"
 ): Promise<void> => {
   if (state.making !== undefined) return;
   const originTabId = view.activeId;
@@ -47,8 +47,8 @@ export const makeResource = async (
         category:
           key === "document"
             ? "document-editor"
-            : key === "slides"
-              ? "slide-deck-editor"
+            : key === "presentation"
+              ? "presentation-editor"
               : "spreadsheet-editor",
         resourceId
       });

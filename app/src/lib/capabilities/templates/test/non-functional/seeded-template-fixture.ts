@@ -44,7 +44,7 @@ export type SeedTemplate = {
   readonly description?: string;
   readonly tags: readonly string[];
   readonly revision: number;
-  readonly body: { readonly resource: "document" | "slides" | "spreadsheet" };
+  readonly body: { readonly resource: "document" | "presentation" | "spreadsheet" };
   readonly holes: readonly TemplateHole[];
 };
 export type SeedTemplateVersion = {
@@ -54,7 +54,7 @@ export type SeedTemplateVersion = {
   readonly name: string;
   readonly description?: string;
   readonly tags: readonly string[];
-  readonly body: { readonly resource: "document" | "slides" | "spreadsheet" };
+  readonly body: { readonly resource: "document" | "presentation" | "spreadsheet" };
   readonly holes: readonly TemplateHole[];
 };
 

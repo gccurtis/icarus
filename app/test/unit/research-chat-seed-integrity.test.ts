@@ -32,7 +32,7 @@ type SeedThreadPart = {
 
 type SeedSource = {
   readonly id: string;
-  readonly ref: { readonly kind: "document" | "slides" | "spreadsheet"; readonly id: string };
+  readonly ref: { readonly kind: "document" | "presentation" | "spreadsheet"; readonly id: string };
   readonly title: string;
   readonly excerpt: string;
   readonly uses: readonly string[];
@@ -186,7 +186,7 @@ describe("committed research-chat records", () => {
   test("every citation resolves to exact committed evidence and every finding cites its own turn", () => {
     const resources = [
       ...fixture<SeedResource[]>("documents.json").map((row) => ({ ...row, kind: "document" as const })),
-      ...fixture<SeedResource[]>("slideDecks.json").map((row) => ({ ...row, kind: "slides" as const })),
+      ...fixture<SeedResource[]>("presentations.json").map((row) => ({ ...row, kind: "presentation" as const })),
       ...fixture<SeedResource[]>("spreadsheets.json").map((row) => ({ ...row, kind: "spreadsheet" as const }))
     ];
     const resourceByKey = new Map(resources.map((row) => [`${row.kind}:${row._id}`, row]));
@@ -194,7 +194,7 @@ describe("committed research-chat records", () => {
 
     for (const [kind, name] of [
       ["document", "documentSnapshots.json"],
-      ["slides", "slideDeckSnapshots.json"]
+      ["presentation", "presentationSnapshots.json"]
     ] as const) {
       for (const snapshot of fixture<SeedSnapshot[]>(name).filter((row) => row.role === "leader")) {
         evidenceByKey.set(`${kind}:${snapshot.resourceId}`, displayedEvidence(snapshot.body));

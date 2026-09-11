@@ -15,12 +15,12 @@ The first focus target searches openable project objects by title and kind. Resu
 Large primary cards:
 
 - Blank document.
-- Blank slide deck.
+- Blank presentation.
 - Blank spreadsheet.
 - Research thread.
 - Analysis.
 
-The first click on a card selects it and opens its setup in the Inspector; the card's explicit Create action or Enter confirms. A clearly labeled quick-create subaction may bypass setup. Document, deck, and spreadsheet cards expose a secondary “Choose template” action. Until a project/user preference exists, blank decks explicitly ask for 16:9 or 4:3 and preselect 16:9 rather than referring to an unmodeled default.
+The first click on a card selects it and opens its setup in the Inspector; the card's explicit Create action or Enter confirms. A clearly labeled quick-create subaction may bypass setup. Document, presentation, and spreadsheet cards expose a secondary “Choose template” action. Until a project/user preference exists, blank presentations explicitly ask for 16:9 or 4:3 and preselect 16:9 rather than referring to an unmodeled default.
 
 The global Copilot replaces Taurus Alpha's separate AI Create card. Starting work with AI uses Plan or Action and creates a tracked Agent Task rather than a second creation protocol.
 
@@ -78,7 +78,7 @@ The center gives a welcoming overview; the panel gives denser navigation within 
 - **Page** — paper, orientation, margins.
 - **Action** — Create blank or Choose template.
 
-### Blank deck
+### Blank presentation
 
 - **Identity** — provisional title.
 - **Format** — 16:9 or 4:3.

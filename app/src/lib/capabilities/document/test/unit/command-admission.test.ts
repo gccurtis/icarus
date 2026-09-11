@@ -37,7 +37,7 @@ describe("document command admission", () => {
       resourceId: "documents:current"
     });
     for (const refused of [
-      { resourceId: "slideDecks:current" },
+      { resourceId: "presentations:current" },
       { resourceId: "documents:current", extra: true },
       { resourceId: undefined },
       withHidden({ resourceId: "documents:current" }),
@@ -69,7 +69,7 @@ describe("document command admission", () => {
       withSymbol(command()),
       Object.assign(Object.create({}), command()),
       { changeSet: { ...command().changeSet, retired: true } },
-      { changeSet: { ...command().changeSet, resourceId: "slideDecks:current" } },
+      { changeSet: { ...command().changeSet, resourceId: "presentations:current" } },
       { changeSet: { ...command().changeSet, baseRevision: -1 } },
       { changeSet: { ...command().changeSet, ops: [{ ...setOp(), ids: ["#old"] }] } },
       { changeSet: { ...command().changeSet, ops: [{ ...setOp(), value: undefined }] } },

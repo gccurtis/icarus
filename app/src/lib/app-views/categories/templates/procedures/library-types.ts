@@ -1,7 +1,7 @@
 import type { TemplateDetail, TemplateTarget as StoredTemplateTarget } from "$capabilities/templates/index.remote";
 import type { Category } from "$model/client/workspace-state";
 
-export type TemplateTarget = "Document" | "Slide deck" | "Spreadsheet";
+export type TemplateTarget = "Document" | "Presentation" | "Spreadsheet";
 export type TemplateScope = "Project" | "Personal";
 
 export type TemplateHole = TemplateDetail["holes"][number] & { readonly id: string };
@@ -34,11 +34,11 @@ export type TemplateLibrarySummary = {
   readonly project: number;
   readonly personal: number;
   readonly documents: number;
-  readonly slideDecks: number;
+  readonly presentations: number;
   readonly spreadsheets: number;
 };
 
 export const EDITOR_CATEGORY: Record<Exclude<StoredTemplateTarget, "spreadsheet">, Category> = {
   document: "document-editor",
-  slides: "slide-deck-editor"
+  presentation: "presentation-editor"
 };

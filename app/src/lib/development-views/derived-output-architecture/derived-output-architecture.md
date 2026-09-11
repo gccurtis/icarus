@@ -8,7 +8,7 @@ Seven purpose-built pages communicate and exercise the system from different ang
   registry, selected-text treatment, safety boundaries, and scaling seams.
 - `components/resource-reading.svelte` refines direct reading into a specialized tool
   grammar, separates evidence-producing reads from contextual traversal, and maps the
-  shared document/deck projection seam.
+  shared document/presentation projection seam.
 - `components/material-layer.svelte` defines how tables, CSV data, charts, images, and
   code acquire deterministic profiles, interpreted descriptors, separate semantic
   facets, native read paths, and a material-only retrieval lane.
@@ -31,14 +31,14 @@ the Derived Output, and the generated response becomes ordinary editable block
 text with a settings star in the same pasteboard gutter as comment pins. The
 Prompts rail only indexes blocks in the current document.
 
-The slide-deck editor now provides the same relationship without making a new
+The presentation editor now provides the same relationship without making a new
 visual object. Select a standalone text box and choose Prompt beside Comment;
 the existing `SlideElement` retains its frame, paint, order, block ID, text,
 marks, style, and format while its inner content becomes a `PromptBlock`. The
 slide Prompt inspector creates and links the Derived Output, submits the same
 server-coalesced refresh signal, renders evidence, and publishes response text
-through native deck atom/mark operations. Its editor-only star reopens settings,
-and the deck Prompts rail navigates existing blocks. Generated responses are
+through native presentation atom/mark operations. Its editor-only star reopens settings,
+and the presentation Prompts rail navigates existing blocks. Generated responses are
 excluded from semantic projection.
 
 The procedure page is now an implementation map: green marks inherited code,

@@ -63,7 +63,7 @@ export const DERIVED_AGENT_TOOL_CATALOG = [
     mode: "orientation",
     family: "navigate",
     description: "Find project resource handles by title and kind. Navigation only; no evidence IDs.",
-    sees: "Names and refs for documents, decks, spreadsheets, and external files.",
+    sees: "Names and refs for documents, presentations, spreadsheets, and external files.",
     input: "query? · kinds? · cursor? · limit ≤ 100",
     returns: "Paged resource refs and names.",
     gate: "Project and Resource Set filters are applied server-side."
@@ -79,14 +79,14 @@ export const DERIVED_AGENT_TOOL_CATALOG = [
     gate: "The document must be in scope."
   },
   {
-    name: "list_deck_slides",
+    name: "list_presentation_slides",
     mode: "orientation",
     family: "navigate",
-    description: "List slide IDs in deck order. Navigation only; no evidence IDs.",
+    description: "List slide IDs in presentation order. Navigation only; no evidence IDs.",
     sees: "The ordered inventory of visible slide IDs.",
     input: "resourceId · cursor? · limit ≤ 100",
     returns: "Paged slide IDs and one-based positions.",
-    gate: "Hidden slides are omitted and the deck must be in scope."
+    gate: "Hidden slides are omitted and the presentation must be in scope."
   },
   {
     name: "inspect_slide",
@@ -96,7 +96,7 @@ export const DERIVED_AGENT_TOOL_CATALOG = [
     sees: "Element IDs, paths, types, frames, rotations, text ranges, notes, background, and material handles.",
     input: "resourceId · slideId",
     returns: "Current slide anatomy and links to the tools that can read its native material.",
-    gate: "The slide must exist in an in-scope deck."
+    gate: "The slide must exist in an in-scope presentation."
   },
   {
     name: "view_slide",
@@ -170,7 +170,7 @@ export const DERIVED_AGENT_TOOL_CATALOG = [
     input: "materialHandle · series? ≤ 50",
     returns: "Selected series and a bounded native chart spec plus evidenceId.",
     evidence: "structured",
-    gate: "Currently resolves native charts placed in slide decks."
+    gate: "Currently resolves native charts placed in presentations."
   },
   {
     name: "read_code",

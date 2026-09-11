@@ -18,7 +18,7 @@ import {
 const catalogue: ResourceRef[] = [
   admitResourceRef({ kind: "document", id: "documents:1" }),
   admitResourceRef({ kind: "document", id: "documents:2" }),
-  admitResourceRef({ kind: "slides", id: "slideDecks:1" }),
+  admitResourceRef({ kind: "presentation", id: "presentations:1" }),
   admitResourceRef({ kind: "finding", id: "findings:1" }),
   admitResourceRef({ kind: "externalFile::data", id: "externalFiles:1" })
 ];
@@ -27,7 +27,7 @@ const ids = (refs: readonly ResourceRef[]) => refs.map((ref) => ref.id);
 
 describe("resolveResourceSet", () => {
   it("selects the whole project, minus what is excluded", () => {
-    const set: ResourceSet = { include: [{ select: "project" }], exclude: [{ select: "kinds", kinds: ["slides"] }] };
+    const set: ResourceSet = { include: [{ select: "project" }], exclude: [{ select: "kinds", kinds: ["presentation"] }] };
     expect(ids(resolveResourceSet(set, catalogue))).toEqual(["documents:1", "documents:2", "findings:1", "externalFiles:1"]);
   });
 
@@ -48,10 +48,10 @@ describe("resolveResourceSet", () => {
   it("follows a named set and stops at a cycle", () => {
     const sets = new Map<string, ResourceSet>([
       ["resourceSets:1", { include: [{ select: "kinds", kinds: ["finding"] }, { select: "set", setId: "resourceSets:2" as never }], exclude: [] }],
-      ["resourceSets:2", { include: [{ select: "set", setId: "resourceSets:1" as never }, { select: "kinds", kinds: ["slides"] }], exclude: [] }]
+      ["resourceSets:2", { include: [{ select: "set", setId: "resourceSets:1" as never }, { select: "kinds", kinds: ["presentation"] }], exclude: [] }]
     ]);
     const set: ResourceSet = { include: [{ select: "set", setId: "resourceSets:1" as never }], exclude: [] };
-    expect(ids(resolveResourceSet(set, catalogue, sets))).toEqual(["findings:1", "slideDecks:1"]);
+    expect(ids(resolveResourceSet(set, catalogue, sets))).toEqual(["findings:1", "presentations:1"]);
   });
 
   it("selects nothing from an empty include", () => {
@@ -116,7 +116,7 @@ describe("admittedReusableResourceSets", () => {
       ...base,
       boundTo: {
         kind: "resource",
-        ref: { kind: "slides", id: "documents:one" },
+        ref: { kind: "presentation", id: "documents:one" },
         hole: "evidence"
       }
     })).toThrow(/matching row id/);

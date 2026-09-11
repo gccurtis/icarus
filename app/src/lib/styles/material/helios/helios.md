@@ -25,7 +25,7 @@ Helios uses `ramps.css` unchanged and overrides nothing.
 | `white` | `#FFFFFF` | `#FFFEFA` | `#F7F4EC` | `#EEEAE0` | `#E4DFD2` | `#D8D3C4` | `#B9B3A1` |
 | `grey` | `#F2F4F5` | `#D8DDE2` | `#93A0B4` | `#6B7280` | `#3A424D` | `#1D2329` | `#05070A` |
 
-`yellow` is claimed by no role. `orange` carries slide-deck identity.
+`yellow` is claimed by no role. `orange` carries presentation identity.
 
 ## Pearl, not white
 

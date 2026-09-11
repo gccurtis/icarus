@@ -787,7 +787,7 @@
     "group": "Data",
     "file": "pages/Configuration.tsx",
     "summary": "The seven YAML files under app/configuration, what reads them, and the keys published to the browser.",
-    "keywords": "yaml revisions workspace slide-deck semantic-overlay observability dev representation published keys",
+    "keywords": "yaml revisions workspace presentation semantic-overlay observability dev representation published keys",
     "headings": [
       {
         "id": "the-files",
@@ -864,20 +864,20 @@
     ]
   },
   {
-    "route": "/algorithms/slide-deck",
-    "title": "Slide deck editor",
+    "route": "/algorithms/presentation",
+    "title": "Presentation editor",
     "group": "Algorithms",
-    "file": "pages/algorithms/SlideDeck.tsx",
-    "summary": "Konva as a projection: stage metrics in rem, procedures that return the next deck, and the runtime that buffers ops.",
-    "keywords": "konva stage slide element frame zoom gutter deck procedures",
+    "file": "pages/algorithms/Presentation.tsx",
+    "summary": "Konva as a projection: stage metrics in rem, procedures that return the next presentation, and the runtime that buffers ops.",
+    "keywords": "konva stage slide element frame zoom gutter presentation procedures",
     "headings": [
       {
         "id": "the-stage",
         "text": "The stage"
       },
       {
-        "id": "procedures-over-a-deck",
-        "text": "Procedures over a deck"
+        "id": "procedures-over-a-presentation",
+        "text": "Procedures over a presentation"
       },
       {
         "id": "from-procedure-to-op",

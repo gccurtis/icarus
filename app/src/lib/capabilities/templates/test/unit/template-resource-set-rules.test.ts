@@ -12,7 +12,7 @@ import {
 describe("a rule that cannot be said inline becomes a row", () => {
   const excluding = {
     include: [{ select: "project" }],
-    exclude: [{ select: "kinds", kinds: ["slides"] }]
+    exclude: [{ select: "kinds", kinds: ["presentation"] }]
   };
 
   test("a default that excludes something is stored, and the hole holds one term", async () => {

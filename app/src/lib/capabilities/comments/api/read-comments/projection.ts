@@ -16,11 +16,11 @@ import { rowsIn } from "$capabilities/comments/api/read-comments/store";
 
 const tableFor = (
   target: CommentTarget
-): "documents" | "slideDecks" | "spreadsheets" =>
+): "documents" | "presentations" | "spreadsheets" =>
   target.kind === "document"
     ? "documents"
-    : target.kind === "slides"
-      ? "slideDecks"
+    : target.kind === "presentation"
+      ? "presentations"
       : "spreadsheets";
 
 const ownsTarget = (

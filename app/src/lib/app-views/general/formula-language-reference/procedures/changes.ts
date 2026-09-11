@@ -148,7 +148,7 @@ export const GROUPS: readonly Group[] = [
       mono: [0],
       rows: [
         ["data/types/content/block-format.ts", "+4", "changed", "A cell's border is one line per side rather than one box, which is what picking a side to edit needs"],
-        ["data/behavior/content/borders.ts", "14", "new", "The four sides, the box a deck table still wants, and whether anything is drawn at all"],
+        ["data/behavior/content/borders.ts", "14", "new", "The four sides, the box a presentation table still wants, and whether anything is drawn at all"],
         ["sheet-surface-glide.ts", "+35", "changed", "Strokes each side as its own line, set inside the grid's own hairline so a border of one pixel is not covered by it"],
         ["components/format-band.svelte", "+70", "changed", "Nothing is selected until you pick a side; the colour, width and dash then write to the sides you picked and leave the rest as they are"],
         ["components/color-pair.svelte", "50", "changed", "Text and Fill, spelled out, on the same control the border uses"],
@@ -157,7 +157,7 @@ export const GROUPS: readonly Group[] = [
         ["panel/panel-fields.svelte", "+10", "changed", "Fields can set their values against the right edge, so a range stops being cut off"],
         ["panel/panel.svelte", "+1", "changed", "Sections stand apart from each other in every panel, not only this one"],
         ["sheet-surface.svelte", "+30", "changed", "Zoom keeps the selection centred rather than the pixel you were looking at"],
-        ["slide-deck-editor/", "+30", "changed", "The deck's table cells write all four sides at once, which is the border they had"]
+        ["presentation-editor/", "+30", "changed", "The presentation's table cells write all four sides at once, which is the border they had"]
       ]
     }
   },
@@ -184,7 +184,7 @@ export const GROUPS: readonly Group[] = [
       columns,
       mono: [0],
       rows: [
-        ["types/spreadsheets/cell-format.ts", "42", "new", "The sheet's own cell format and its per-side border, so a sheet change no longer reaches the deck"],
+        ["types/spreadsheets/cell-format.ts", "42", "new", "The sheet's own cell format and its per-side border, so a sheet change no longer reaches the presentation"],
         ["types/spreadsheets/style-set.ts", "30", "changed", "TextStyle becomes CellStyle and carries borders and a number format"],
         ["behavior/spreadsheets/history.ts", "132", "new", "What a set replaced, what a remove carried away and where a track sat, worked out on the server"],
         ["submit-spreadsheet-changes/validate-*.ts", "125", "changed", "Every variant checked, every list and string bounded, and the client's history dropped"],
@@ -234,7 +234,7 @@ export const SHAPE: readonly Card[] = [
   {
     title: "A border is four borders",
     detail:
-      "Choosing which side to modify only means something if each side can hold its own colour, width and dash, so the format's one border became a line per side. The deck's table cells write all four alike and read the first, which is the box they had. The second change to the representation made ahead of a ruling.",
+      "Choosing which side to modify only means something if each side can hold its own colour, width and dash, so the format's one border became a line per side. The presentation's table cells write all four alike and read the first, which is the box they had. The second change to the representation made ahead of a ruling.",
     tag: "flagged",
     tone: "gap"
   }

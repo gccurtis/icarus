@@ -225,7 +225,7 @@ describe("Project current-schema admission", () => {
     await expect(readProjectComment({ threadId: "commentThreads:one" })).rejects.toThrow();
 
     model.tables.set("commentThreads", [thread({
-      target: { kind: "slides", id: "documents:one" },
+      target: { kind: "presentation", id: "documents:one" },
       within: undefined
     })]);
     await expect(readProjectComment({ threadId: "commentThreads:one" })).rejects.toThrow();

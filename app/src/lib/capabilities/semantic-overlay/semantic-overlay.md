@@ -3,7 +3,7 @@
 The project-scoped bridge from authoritative resources to two explicit search
 lanes: exact text and interpreted semantic material.
 
-- Accepted document and slide-deck mutations, material spreadsheet mutations,
+- Accepted document and presentation mutations, material spreadsheet mutations,
   project-resource creation and template instantiation stage their authored rows
   and `enqueueSemanticOutboxFor` in the same Store transaction. The outbox
   coalesces exact work in `semanticSyncJobs` and material work in
@@ -28,7 +28,7 @@ lanes: exact text and interpreted semantic material.
 - `syncSemanticMaterialsFor` profiles, optionally describes, separately embeds,
   revision/hash-checks, and publishes tables, CSV, charts, images, code, and
   spreadsheets. Native image vectors use Jina v4's shared vector space.
-- `backfillSemanticOverlay` enumerates document/deck/spreadsheet leaders and
+- `backfillSemanticOverlay` enumerates document/presentation/spreadsheet leaders and
   external files and joins the same queue/worker paths used by normal authoring.
 - A Derived Output refresh is itself a server pull boundary: its coalesced
   worker drains these queues before checking whether the current answer can be

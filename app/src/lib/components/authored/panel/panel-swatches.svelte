@@ -7,7 +7,7 @@
   /**
    * The colours a thing has, listed.
    *
-   * A deck theme's four named colours, a chart's series assignment, the key to a
+   * A presentation theme's four named colours, a chart's series assignment, the key to a
    * status map. Without a word for it the shape is written by hand three times
    * over — the theme inspector, the theme context and the chart inspector each
    * carrying a `<style>` block with `.swatches`, `.swatch` and `.chip` in it, at
@@ -17,7 +17,7 @@
    * them is checked, and pressing one sets a fill. This is a listing. Most of
    * these are not selectable at all, and the ones that are open the lens for
    * that colour rather than choosing it — a theme's palette is a fact about the
-   * deck, not a control over it, and drawing it as a picker offers an edit that
+   * presentation, not a control over it, and drawing it as a picker offers an edit that
    * does not exist.
    *
    * **The layout is the caller's, because it follows the names.** "Accent 1"

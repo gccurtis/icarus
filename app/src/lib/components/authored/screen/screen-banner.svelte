@@ -10,7 +10,7 @@
    * A statement across the width of a screen, about the whole of what is under
    * it.
    *
-   * Two uses, and they are the same shape for a reason. Editing a deck layout
+   * Two uses, and they are the same shape for a reason. Editing a presentation layout
    * changes every slide using it; charting two unrelated variables produces a
    * number that is quietly wrong. Both are things the surface has to say *before*
    * the work rather than after, and both would be dismissed and forgotten as a

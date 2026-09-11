@@ -14,7 +14,7 @@ export const templateLibrarySummaryIn = (
     project: count((row) => row.scope === "Project"),
     personal: count((row) => row.scope === "Personal"),
     documents: count((row) => row.makes === "Document"),
-    slideDecks: count((row) => row.makes === "Slide deck"),
+    presentations: count((row) => row.makes === "Presentation"),
     spreadsheets: count((row) => row.makes === "Spreadsheet")
   };
 };
@@ -22,7 +22,7 @@ export const templateLibrarySummaryIn = (
 const defaultName = (target: TemplateTarget): string =>
   ({
     Document: "Untitled document template",
-    "Slide deck": "Untitled slide deck template",
+    "Presentation": "Untitled presentation template",
     Spreadsheet: "Untitled spreadsheet template"
   })[target];
 

@@ -145,7 +145,7 @@
         <div><span class="tref-kicker">On disk</span><h2>Where a template lives</h2></div>
         <p>
           Three groups of rows, and the working copy is the only one that needed a new table. The scratch
-          resource is an ordinary document or deck, which is why the editors, the runtime and the change
+          resource is an ordinary document or presentation, which is why the editors, the runtime and the change
           ledger work on it without knowing what it is.
         </p>
       </div>

@@ -1,6 +1,6 @@
 # Templates
 
-The singleton library for reusable document, slide-deck, and spreadsheet bodies,
+The singleton library for reusable document, presentation, and spreadsheet bodies,
 and the door into editing any of them.
 
 | Content | Shows |
@@ -14,11 +14,11 @@ The centre has one vertical stack: header, recently used shelf, then the complet
 table. Search reaches names, descriptions, and tags. Availability, target, and a
 bounded multi-select tag menu compose, and every sort has an explicit direction.
 A click selects the template for inspection. A double-click **edits** it: the
-capability stages a copy of the template's body as a scratch document or deck,
+capability stages a copy of the template's body as a scratch document or presentation,
 and the ordinary editor opens on that copy in its own tab. The editor's Templates
 panel is where the copy is saved back or discarded. `Use` is the separate gesture
 that instantiates an independent project resource and opens its ordinary editor
-for documents and decks, after asking, in one modal, what fills each hole, its
+for documents and presentations, after asking, in one modal, what fills each hole, its
 default offered first; the resource it makes carries no reference
 back to the template. Spreadsheet materialization exists at the capability
 boundary, but neither Use nor Edit reaches it until the spreadsheet editor
@@ -33,7 +33,7 @@ and editing a template's working copy is never a use.
 
 The Overview context panel creates a represented empty template of any supported
 target. An optional name sits above three colored icon actions for Document,
-Slide deck, and Spreadsheet. Pressing an icon creates that kind
+Presentation, and Spreadsheet. Pressing an icon creates that kind
 immediately; the view supplies a unique working name only when the field is
 blank, then moves inspection to the returned id. A compact Total section breaks
 the library down by scope and target.

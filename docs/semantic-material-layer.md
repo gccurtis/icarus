@@ -21,8 +21,8 @@ depicted details.
 
 - one resource walk emits an exact UTF-16 projection and first-class material
   seeds;
-- document and slide-deck writes enqueue exact and material work;
-- backfill covers documents, decks, spreadsheets, and external files;
+- document and presentation writes enqueue exact and material work;
+- backfill covers documents, presentations, spreadsheets, and external files;
 - material kinds are `table`, `csv`, `chart`, `image`, and `code`;
 - deterministic profiles, structured generated descriptors, authored facets,
   and Jina v4 native-image vectors are implemented;
@@ -63,7 +63,7 @@ current project resource and mint evidence from that authority.
 ### Normal product entry
 
 ```text
-submitDocumentChanges / submitSlideDeckChanges
+submitDocumentChanges / submitPresentationChanges
   → persist accepted leader revision
   → enqueueSemanticSync
       → readSemanticSyncTargetFor
@@ -80,7 +80,7 @@ native bytes, walk a resource body, embed content, or call intelligence.
 
 ```text
 backfillSemanticOverlay
-  → enumerate document/deck/spreadsheet leaders and external files
+  → enumerate document/presentation/spreadsheet leaders and external files
   → enqueue the same exact/material job shapes
   → processSemanticSyncQueueFor(limit)
 ```
@@ -128,7 +128,7 @@ into history.
 
 ## One projection seam
 
-`projectResource` is the common document/deck dispatcher. It returns:
+`projectResource` is the common document/presentation dispatcher. It returns:
 
 ```ts
 type ProjectSemanticProjection = {
@@ -159,7 +159,7 @@ cannot recursively become evidence for a later generated answer.
 | Source | Exact lane | Material lane |
 | --- | --- | --- |
 | document | text/formula blocks; image alt/caption; authored table header rows | every table and sourced image, including nested table/image blocks |
-| slide deck | visible text/formula/shape text; image alt/caption; authored table header rows; notes | visible slide tables, charts, images, nested materials, and direct image backgrounds |
+| presentation | visible text/formula/shape text; image alt/caption; authored table header rows; notes | visible slide tables, charts, images, nested materials, and direct image backgrounds |
 | spreadsheet | none yet | one native sheet/table material over ordered row/column IDs and `sheetCells` |
 | external plain UTF-8 text/Markdown | complete text, up to 5 MB, hash pinned | no material unless a recognized specialist applies |
 | external code | complete UTF-8 text, up to 5 MB, hash pinned | code structural profile and optional descriptor |
@@ -355,7 +355,7 @@ The agent receives sixteen tools in one bounded run:
 ```text
 evidence:   retrieve · retrieve_materials · read_selection
             read_text · read_table · read_chart · read_csv · read_code · read_image
-orientation: find_resources · list_document_blocks · list_deck_slides
+orientation: find_resources · list_document_blocks · list_presentation_slides
              inspect_dataset · inspect_code · inspect_slide · view_slide
 ```
 
@@ -387,8 +387,8 @@ durable evidence. They must be imported into content-addressed storage before
 await the upload/object-store adapter.
 
 `view_slide` currently produces a deterministic schematic SVG from the
-normalized deck body. It composes nested group coordinates into absolute
-frames, applies element rotation, and scales normalized frames into the deck's
+normalized presentation body. It composes nested group coordinates into absolute
+frames, applies element rotation, and scales normalized frames into the presentation's
 aspect-ratio canvas. It is explicitly supporting context, not a
 production-fidelity slide render and never evidence. A production renderer can
 later replace that view adapter without changing `inspect_slide` or native
@@ -477,7 +477,7 @@ representation/data/behavior/semantic/
 │   ├── contract.ts
 │   ├── project-resource.ts
 │   ├── writer.ts
-│   └── resources/{document,slide-deck}.ts
+│   └── resources/{document,presentation}.ts
 └── materials/{profile,csv,code,external-file,spreadsheet}.ts
 
 capabilities/semantic-overlay/api/
@@ -509,7 +509,7 @@ model/server/
 
 Tests must continue to prove:
 
-- document/deck traversal, hard boundaries, locators, and Prompt exclusion;
+- document/presentation traversal, hard boundaries, locators, and Prompt exclusion;
 - table bodies stay out of exact retrieval while nested materials remain
   inventoried;
 - exact external text is UTF-8 validated, size bounded, and content-hash pinned;

@@ -38,7 +38,7 @@
 
   const grants = [
     ["retrieve", "scope", "retrieve · retrieve_materials", "Both discovery lanes: exact authored text, and interpreted facets for tables, charts, images and code.", "Exists"],
-    ["resource.read", "project", "find_resources · list_document_blocks · list_deck_slides · inspect_slide · view_slide · inspect_dataset · inspect_code · read_text · read_table · read_csv · read_chart · read_code · read_image · read_selection", "The navigate, inspect and read families. Fourteen tools, all registered against the store already.", "Exists"],
+    ["resource.read", "project", "find_resources · list_document_blocks · list_presentation_slides · inspect_slide · view_slide · inspect_dataset · inspect_code · read_text · read_table · read_csv · read_chart · read_code · read_image · read_selection", "The navigate, inspect and read families. Fourteen tools, all registered against the store already.", "Exists"],
     ["resource.write", "project", "—", "Nothing in the catalogue writes. A chat that edits a document is a later capability, and it is the one grant that needs a confirmation before it fires.", "To build"],
     ["finding.create", "project", "—", "One tool that writes a finding with the evidence identifiers it rests on, so a person accepts a claim that is already sourced.", "To build"],
     ["analysis.evaluate", "project", "—", "Runs a saved analysis and reads the result. Needs the analysis capability to expose a read-only evaluate.", "To build"],

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { asId } from "$representation/data/behavior/core/id";
 import { projectResource } from "$representation/data/behavior/semantic/projection/project-resource";
 import type { TextBlock } from "$representation/data/types/content/content-block";
-import type { SlideDeckBody } from "$representation/data/types/slide-decks/body";
+import type { PresentationBody } from "$representation/data/types/presentations/body";
 
 const text = (id: string, display: string): TextBlock => ({
   id,
@@ -58,7 +58,7 @@ describe("semantic resource text projection", () => {
   });
 
   it("uses visual order for visible slide elements and includes speaker notes", () => {
-    const body: SlideDeckBody = {
+    const body: PresentationBody = {
       aspectRatio: "16:9",
       theme: { colors: { text: "#111", accent: "#09f" } },
       styles: { defaultKey: "body", styles: { body: { name: "Body" } } },
@@ -112,8 +112,8 @@ describe("semantic resource text projection", () => {
     };
 
     const projection = projectResource({
-      kind: "slides",
-      ref: { kind: "slides", id: asId<"slideDecks">("slideDecks:brief") },
+      kind: "presentation",
+      ref: { kind: "presentation", id: asId<"presentations">("presentations:brief") },
       revision: 2,
       title: "Brief",
       body

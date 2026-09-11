@@ -28,7 +28,7 @@ describe("current resource identity", () => {
 
   it.each([
     ["document", "documents:one"],
-    ["slides", "slideDecks:one"],
+    ["presentation", "presentations:one"],
     ["spreadsheet", "spreadsheets:one"],
     ["research", "researchThreads:one"],
     ["finding", "findings:one"],
@@ -48,7 +48,7 @@ describe("current resource identity", () => {
     { kind: "analysis", id: "analyses:one" },
     { kind: "externalFile", id: "externalFiles:one" },
     { kind: "externalFile::pdf", id: "externalFiles:one" },
-    { kind: "document", id: "slideDecks:one" },
+    { kind: "document", id: "presentations:one" },
     { kind: "connection", id: "connections:one" },
     { kind: "document", id: "documents:one", retired: true }
   ])("rejects a non-current or incoherent ref %#", (ref) => {

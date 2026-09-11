@@ -23,7 +23,7 @@ export type CellBorder = Partial<Record<BorderSide, BorderLine>>;
  *
  * A cell is not a paragraph: it has no line height, no space before or after,
  * and no indent, and it does have a border and a number format. Sharing the
- * document's block format made every sheet change reach into the deck and the
+ * document's block format made every sheet change reach into the presentation and the
  * document, so the sheet owns this one.
  */
 export type CellFormat = {

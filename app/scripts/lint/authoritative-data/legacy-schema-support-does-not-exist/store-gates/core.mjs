@@ -15,7 +15,7 @@ export const CORE_GATES = [
   {
     path: ["representation", "data", "behavior", "core", "test", "unit", "resource-set.test.ts"],
     name: "resource-set-owner-exactness-contract",
-    required: /admits exact private ownership only through the private row boundary[\s\S]*?resourceId: "documents:one"[\s\S]*?kind: "slides", id: "documents:one"/,
+    required: /admits exact private ownership only through the private row boundary[\s\S]*?resourceId: "documents:one"[\s\S]*?kind: "presentation", id: "documents:one"/,
     message: "private Resource Set ownership lacks executable retired-shape and nominal-kind rejection proofs"
   },
   {

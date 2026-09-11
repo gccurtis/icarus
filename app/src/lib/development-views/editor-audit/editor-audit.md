@@ -3,7 +3,7 @@
 Lives at `src/lib/development-views/editor-audit/` and is reached at
 `/demo/editor-audit`.
 
-This is the durable review surface for the 2026-09-06 document and slide-deck
+This is the durable review surface for the 2026-09-06 document and presentation
 editor audit. It records each reported symptom, its source-level cause, the
 recommended repair, acceptance criteria, cross-editor presentation guidance,
 and the evidence boundary. All confirmed implementation findings in this pass

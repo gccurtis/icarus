@@ -18,7 +18,7 @@ const refKey = (ref: ResourceRef): string => `resource:${ref.kind}:${ref.id}`;
 
 const KIND_WORD: Record<string, string> = {
   document: "Document",
-  slides: "Slide deck",
+  presentation: "Presentation",
   spreadsheet: "Spreadsheet",
   finding: "Finding",
   "externalFile::text": "External text file",

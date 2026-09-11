@@ -13,8 +13,8 @@ export const SYSTEMATIC: SystematicChange[] = [
     index: "02",
     title: "A template is edited through a working copy",
     before: "The templates category had an editor door that printed the session record it was waiting for. A template's body could not be changed at all.",
-    now: "openTemplateStage writes the body into a scratch document or deck and records a templateStages row; the ordinary editor opens on it; the panel's Save writes it back as the next revision; Discard removes it.",
-    why: "The editors work on documents and decks, not on templates. A copy that is an ordinary resource needs no new editor, no new runtime and no new surface.",
+    now: "openTemplateStage writes the body into a scratch document or presentation and records a templateStages row; the ordinary editor opens on it; the panel's Save writes it back as the next revision; Discard removes it.",
+    why: "The editors work on documents and presentations, not on templates. A copy that is an ordinary resource needs no new editor, no new runtime and no new surface.",
     area: "templates"
   },
   {
@@ -52,15 +52,15 @@ export const SYSTEMATIC: SystematicChange[] = [
   {
     index: "07",
     title: "A template of one slide",
-    before: "A deck template was the whole deck.",
-    now: "Save slide copies the current slide, its layout, and the deck's theme and styles into a deck template holding that slide alone.",
-    why: "A slide-sized template needed no fourth body kind: everything that draws, validates, stages and inserts a deck already works on it.",
+    before: "A presentation template was the whole presentation.",
+    now: "Save slide copies the current slide, its layout, and the presentation's theme and styles into a presentation template holding that slide alone.",
+    why: "A slide-sized template needed no fourth body kind: everything that draws, validates, stages and inserts a presentation already works on it.",
     area: "templates"
   },
   {
     index: "08",
     title: "Nothing points back at a template",
-    before: "documents, slideDecks and spreadsheets carried a templateId, deletion detached it, and the library derived recency by joining through it.",
+    before: "documents, presentations and spreadsheets carried a templateId, deletion detached it, and the library derived recency by joining through it.",
     now: "The field is gone. A resource made from a template is a copy that knows nothing of where it came from; the template records its own lastUsedAt, which is what recency reads.",
     why: "Saving a resource as a template is a copy, and making a resource from a template is a copy. Neither side should know about the other.",
     area: "templates"
@@ -69,7 +69,7 @@ export const SYSTEMATIC: SystematicChange[] = [
     index: "09",
     title: "Comments do not travel, and cannot be started on a copy",
     before: "A working copy was an ordinary resource, so it took comment threads like any other.",
-    now: "startThread reads the stage table and refuses a target one of its rows names; both deck comment panels replace their composer with the reason.",
+    now: "startThread reads the stage table and refuses a target one of its rows names; both presentation comment panels replace their composer with the reason.",
     why: "If links, images and formula bindings are stripped, a comment — which can mention a person — is one more thing that must not ride along.",
     area: "neighbours"
   },
@@ -77,7 +77,7 @@ export const SYSTEMATIC: SystematicChange[] = [
     index: "10",
     title: "The vocabulary gained one table, one field, one term",
     before: "No representation of a working copy; a templated scope could not name a set; a tab could not be opened onto a named context view.",
-    now: "templateStages; a set term on TemplatedTerm; Target.context; and four pure functions under behavior/templates (resolve scopes, make portable, mint fresh ids, take one slide as a deck) plus resource-set resolution.",
+    now: "templateStages; a set term on TemplatedTerm; Target.context; and four pure functions under behavior/templates (resolve scopes, make portable, mint fresh ids, take one slide as a presentation) plus resource-set resolution.",
     why: "Both processes need the same functions — the capability validates with them, the editors insert with them — and behavior is where a lint rule keeps them free of clocks, randomness and stores.",
     area: "vocabulary"
   },
@@ -163,10 +163,10 @@ export const SYSTEMATIC: SystematicChange[] = [
   },
   {
     index: "21",
-    title: "A deck templateifies its words too",
+    title: "A presentation templateifies its words too",
     before:
-      "A deck's holes could only come from its prompts. Selecting words on a slide offered nothing, so a deck template could not ask for a client name.",
-    now: "The deck's text-selection inspector carries the same Template section as the document's, over the same marks and the same functions. What differs is only how a selection is addressed.",
+      "A presentation's holes could only come from its prompts. Selecting words on a slide offered nothing, so a presentation template could not ask for a client name.",
+    now: "The presentation's text-selection inspector carries the same Template section as the document's, over the same marks and the same functions. What differs is only how a selection is addressed.",
     why: "Both editors hold blocks of atoms with marks over them. A hole that works in one and not the other is an accident of which inspector was built first.",
     area: "editors"
   },
@@ -183,7 +183,7 @@ export const SYSTEMATIC: SystematicChange[] = [
     index: "23",
     title: "A template's working copy is never indexed",
     before:
-      "A working copy is an ordinary document or deck, so saving it enqueued semantic ingestion like anything else and a backfill swept it up. Unfinished template prose became retrievable, and discarding the stage left its jobs, sources, materials and vectors behind.",
+      "A working copy is an ordinary document or presentation, so saving it enqueued semantic ingestion like anything else and a backfill swept it up. Unfinished template prose became retrievable, and discarding the stage left its jobs, sources, materials and vectors behind.",
     now: "Every path into the overlay asks whether the resource is a stage and refuses if it is. Discarding takes back anything already learned — jobs, sources, materials, placements, history and the vectors over them — while leaving the project's index rows, which belong to no one resource.",
     why: "A draft of a template is not the project's material, and a discarded draft is material somebody deliberately abandoned. Neither should be able to reach an agent.",
     area: "neighbours"
@@ -192,8 +192,8 @@ export const SYSTEMATIC: SystematicChange[] = [
     index: "24",
     title: "A placed copy is the project's material from the moment it lands",
     before:
-      "Instantiating wrote the snapshot and stopped. The new document or deck was invisible to retrieval until somebody happened to edit it or a backfill was run by hand. Its prompts also carried an origin kind of slideDeck, which nothing else in the vocabulary says.",
-    now: "Placing a template enqueues semantic ingestion for the resource it made, whichever of the three kinds it is, and a deck's prompts point back at it as slides.",
+      "Instantiating wrote the snapshot and stopped. The new document or presentation was invisible to retrieval until somebody happened to edit it or a backfill was run by hand. Its prompts also carried an origin kind of presentation, which nothing else in the vocabulary says.",
+    now: "Placing a template enqueues semantic ingestion for the resource it made, whichever of the three kinds it is, and a presentation's prompts point back at it as slides.",
     why: "A copy that nothing can find is a copy that half exists. The kind is the same word the editors, the overlay and every scope term already use.",
     area: "templates"
   },
@@ -221,8 +221,8 @@ export const DECISIONS: Decision[] = [
   {
     round: "First review",
     question: "Should a slide template be its own kind?",
-    answer: "No. A slide or a set of slides just becomes a slide deck.",
-    became: "deckOfSlide() makes a deck body with one slide; the slide body kind, its validation and its panel toggles were deleted."
+    answer: "No. A slide or a set of slides just becomes a presentation.",
+    became: "presentationOfSlide() makes a presentation body with one slide; the slide body kind, its validation and its panel toggles were deleted."
   },
   {
     round: "First review",
@@ -270,13 +270,13 @@ export const DECISIONS: Decision[] = [
     round: "Third review",
     question: "Should a resource point at the template it came from?",
     answer: "No. Making a template and using one are both copies; neither side should know about the other.",
-    became: "templateId removed from documents, slideDecks and spreadsheets and from the seed; templates.lastUsedAt records use instead."
+    became: "templateId removed from documents, presentations and spreadsheets and from the seed; templates.lastUsedAt records use instead."
   },
   {
     round: "Third review",
     question: "Are comments allowed on a working copy?",
     answer: "No — if the rest is stripped, comments are stripped too.",
-    became: "startThread refuses a stage target; the deck's two comment panels say so where the composer would be."
+    became: "startThread refuses a stage target; the presentation's two comment panels say so where the composer would be."
   }
 ];
 
@@ -311,8 +311,8 @@ export const OPEN: OpenItem[] = [
     recommendation: "Belongs to the formula system, which the base does not have yet."
   },
   {
-    title: "Inserting a deck template brings layouts",
-    detail: "A deck insert brings any layout and style key the deck lacks, with the deck's own version winning where both have one.",
+    title: "Inserting a presentation template brings layouts",
+    detail: "A presentation insert brings any layout and style key the presentation lacks, with the presentation's own version winning where both have one.",
     recommendation: "Keep it — a slide without its layout draws wrong."
   },
   {
@@ -332,12 +332,12 @@ export const MERGE = {
     "app/src/lib/app-views/categories/document-editor/content/document.svelte",
     "app/src/lib/app-views/categories/document-editor/procedures/projection.ts",
     "app/src/lib/app-views/categories/document-editor/procedures/schema.ts",
-    "app/src/lib/app-views/categories/slide-deck-editor/context/comments.svelte",
-    "app/src/lib/app-views/categories/slide-deck-editor/context/templates.svelte",
-    "app/src/lib/app-views/categories/slide-deck-editor/inspector/threads.svelte",
-    "app/src/lib/app-views/categories/slide-deck-editor/procedures/scene.ts",
-    "app/src/lib/app-views/categories/slide-deck-editor/procedures/typing.ts",
-    "app/src/lib/app-views/categories/slide-deck-editor/slide-deck-editor.md",
+    "app/src/lib/app-views/categories/presentation-editor/context/comments.svelte",
+    "app/src/lib/app-views/categories/presentation-editor/context/templates.svelte",
+    "app/src/lib/app-views/categories/presentation-editor/inspector/threads.svelte",
+    "app/src/lib/app-views/categories/presentation-editor/procedures/scene.ts",
+    "app/src/lib/app-views/categories/presentation-editor/procedures/typing.ts",
+    "app/src/lib/app-views/categories/presentation-editor/presentation-editor.md",
     "app/src/lib/capabilities/comments/api/start-thread/start-thread.ts",
     "app/src/lib/capabilities/comments/comments.md",
     "app/src/lib/capabilities/comments/test/unit/comments.test.ts",
@@ -347,7 +347,7 @@ export const MERGE = {
     "app/src/lib/development-views/demo/components/demo-index.svelte",
     "app/src/lib/model/client/workspace-state/test/unit/workspace-state.test.ts",
     "app/src/lib/representation/data/behavior/content/positions.ts",
-    "app/src/lib/representation/data/behavior/slide-decks/apply-ops.ts",
+    "app/src/lib/representation/data/behavior/presentations/apply-ops.ts",
     "app/src/lib/representation/data/behavior/workspace/opening.ts",
     "app/src/lib/representation/data/types/workspace/tab.ts",
     "app/test/browser/document-editor.spec.ts"
@@ -355,14 +355,14 @@ export const MERGE = {
   conflicts: [
     {
       path: "instantiate-template.ts",
-      note: "The base normalizes a document's styles and readies a deck before the leader snapshot is written. Both calls were kept, alongside this branch's scope resolution, and the deck branch took the base's destructuring."
+      note: "The base normalizes a document's styles and readies a presentation before the leader snapshot is written. Both calls were kept, alongside this branch's scope resolution, and the presentation branch took the base's destructuring."
     },
     {
       path: "templates.test.ts",
-      note: "The base asserts the readied deck; this branch asserts lastUsedAt and that no copy carries a template id. Both assertions now stand in the same test."
+      note: "The base asserts the readied presentation; this branch asserts lastUsedAt and that no copy carries a template id. Both assertions now stand in the same test."
     },
     {
-      path: "slide-deck-editor.md",
+      path: "presentation-editor.md",
       note: "The base cut the document from 714 lines to 221 and later added a Prompts section. Its rewrite was taken whole each time, and the Templates panel was described again beside it in the same terse register."
     },
     {
@@ -371,7 +371,7 @@ export const MERGE = {
     },
     {
       path: "typing.ts",
-      note: "The base taught the deck's typing to edit a Prompt Block; this branch measured atoms through displayOfAtom so a template atom counts. The editable-block type is the base's and the measurement is this branch's."
+      note: "The base taught the presentation's typing to edit a Prompt Block; this branch measured atoms through displayOfAtom so a template atom counts. The editable-block type is the base's and the measurement is this branch's."
     }
   ]
 };
@@ -394,7 +394,7 @@ export const MODEL_DELTA = {
   ],
   removed: [
     { name: "documents.templateId", note: "a copy knows nothing of where it came from" },
-    { name: "slideDecks.templateId", note: "the same" },
+    { name: "presentations.templateId", note: "the same" },
     { name: "spreadsheets.templateId", note: "the same" }
   ],
   unchanged: [

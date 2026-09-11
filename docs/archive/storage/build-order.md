@@ -17,7 +17,7 @@ demonstrably do something comes first.
 | Pass | Tables | Delivers |
 | --- | --- | --- |
 | 1 | `projects` `users` `activity` `documents` | A project with members; documents you can create and list |
-| 2 | `resourceSnapshots` `changeSets` `slideDecks` `spreadsheets` `nameVariables` | Editing that merges and undoes |
+| 2 | `resourceSnapshots` `changeSets` `presentations` `spreadsheets` `nameVariables` | Editing that merges and undoes |
 | 3 | `externalFiles` `templates` `commentThreads` `comments` | Uploads, starting points, discussion |
 | 4 | `questions` `hypotheses` `findings` `researchLinks` | The research graph |
 | 5 | `researchThreads` `personas` `personaThreads` | Conversation |
@@ -80,7 +80,7 @@ embedded in nearly every table after this. Project membership roles.
 
 ## Pass 2 — Editing
 
-**Tables:** `resourceSnapshots` · `changeSets` · `slideDecks` · `spreadsheets` ·
+**Tables:** `resourceSnapshots` · `changeSets` · `presentations` · `spreadsheets` ·
 `nameVariables` · `formulas`
 
 **Also needs:** formula evaluation — still stateless and still storing no
@@ -106,7 +106,7 @@ concurrency coming from [Convex's
 serializable mutations](README.md#there-are-no-unique-indexes) rather than a
 version field.
 
-Decks and workbooks come along nearly free: the snapshot and change-set machinery
+Presentations and workbooks come along nearly free: the snapshot and change-set machinery
 is generic over `resourceType`, so once documents work, the other two are their
 body types and nothing else. Building them here rather than later is what
 *proves* the machinery is generic — if they need special cases, better to find
@@ -179,7 +179,7 @@ should be settable before resource sets exist in pass 6.
 work is not in them.
 
 `resourceSets` leads because scoping is defined over resource kinds, and by now
-every kind that can be a lattice source exists: documents, decks, workbooks,
+every kind that can be a lattice source exists: documents, presentations, workbooks,
 files, findings. Building it earlier would have meant scoping over kinds with no
 rows.
 

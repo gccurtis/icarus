@@ -68,7 +68,7 @@
 
   /** Two stages on a canvas, so the gutters between them can be seen. */
   const COVER = [
-    { id: "title", frame: { x: 0.1, y: 0.34, w: 0.8, h: 0.16 }, label: "Deck title", outline: "dashed" },
+    { id: "title", frame: { x: 0.1, y: 0.34, w: 0.8, h: 0.16 }, label: "Presentation title", outline: "dashed" },
     { id: "sub", frame: { x: 0.1, y: 0.52, w: 0.55, h: 0.1 }, label: "Subtitle", outline: "dashed" },
     { id: "mark", frame: { x: 0.78, y: 0.82, w: 0.14, h: 0.08 }, label: "Mark — from the layout", outline: "solid" }
   ] as const;
@@ -206,11 +206,11 @@
     canvas: `<!-- the surface owns the zoom; the canvas only reads it -->
 <div class="flex min-h-0 flex-1 flex-col" style="--canvas-zoom: {zoom}">
   <ScreenCanvas label="Board update" onwheel={pinched}>
-    {#each deck.slides as slide (slide.id)}
+    {#each presentation.slides as slide (slide.id)}
       <ScreenSlide
-        ratio={deck.ratio}
+        ratio={presentation.ratio}
         objects={slide.objects}
-        caption={\`Slide \${slide.index} of \${deck.count}\`}
+        caption={\`Slide \${slide.index} of \${presentation.count}\`}
       />
     {/each}
   </ScreenCanvas>
@@ -505,7 +505,7 @@
 
   <Entry
     name="ScreenCanvas"
-    use="The ground a document, a deck or a template sits on — a darker fill, the only scroll in the region, a centred column, and gutters on all four sides and between one sheet and the next."
+    use="The ground a document, a presentation or a template sits on — a darker fill, the only scroll in the region, a centred column, and gutters on all four sides and between one sheet and the next."
     instead="ScreenSurface, which is a workspace's own padding, measure and scroll for ordinary content and whose job is to get out of the way. A canvas is the opposite: it exists to be seen, so the thing on it reads as an object with edges. And it does not own zoom — it reads a --canvas-zoom it never sets, because whether a surface zooms at all is that surface's decision, and a zoom prop here would have made it for all three."
     code={CODE.canvas}
     width="screen"
@@ -574,7 +574,7 @@
 
   <Entry
     name="ScreenSlide"
-    use="One stage at the deck's aspect ratio, with its objects placed on it as fractions of the stage. A solid outline is content the layout owns and a slide cannot touch; a dashed one is a placeholder the slide fills with its own copy — two behaviours told apart by a shape, because a reader has to know which they are about to try to edit before they try."
+    use="One stage at the presentation's aspect ratio, with its objects placed on it as fractions of the stage. A solid outline is content the layout owns and a slide cannot touch; a dashed one is a placeholder the slide fills with its own copy — two behaviours told apart by a shape, because a reader has to know which they are about to try to edit before they try."
     instead="ScreenPage. A page is a flow running down a sheet between four margins and what lands where is computed; a slide is a fixed stage where every object is somewhere because somebody put it there, and moving one moves nothing else. Speaker notes are not on it either — they left for the inspector, because a tray under a 16:9 stage costs exactly the height zooming needs."
     code={CODE.slide}
     width="screen"
@@ -590,7 +590,7 @@
       <ScreenNote meta={`On: ${onObject}`}>
         Press an object, or tab into the stage and press another. No object
         snippet is passed here, so each one draws its own label — which is an
-        honest stage rather than a drawing of a deck nobody has made.
+        honest stage rather than a drawing of a presentation nobody has made.
       </ScreenNote>
     </div>
   </Entry>

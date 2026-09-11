@@ -73,7 +73,7 @@ const namedSet = (id: string, fields: Record<string, unknown> = {}): Row =>
   });
 
 const authoredResource = (
-  table: "documents" | "slideDecks" | "spreadsheets",
+  table: "documents" | "presentations" | "spreadsheets",
   id: string,
   projectId = "projects:p"
 ): Row => row(table, id, {
@@ -110,7 +110,7 @@ beforeEach(() => {
       { ...authoredResource("documents", "2"), title: "Staged" },
       { ...authoredResource("documents", "3", "projects:other"), title: "Elsewhere" }
     ],
-    slideDecks: [{ ...authoredResource("slideDecks", "1"), title: "Deck" }],
+    presentations: [{ ...authoredResource("presentations", "1"), title: "Presentation" }],
     spreadsheets: [],
     findings: [row("findings", "1", {
       projectId: "projects:p",
@@ -132,7 +132,7 @@ beforeEach(() => {
 describe("reading the project's sets", () => {
   test("projects only this project's sets, sorted by name, with a live count", async () => {
     model.tables.resourceSets.push(
-      namedSet("2", { name: "Zulu", set: { include: [{ select: "project" }], exclude: [{ select: "kinds", kinds: ["slides"] }] } }),
+      namedSet("2", { name: "Zulu", set: { include: [{ select: "project" }], exclude: [{ select: "kinds", kinds: ["presentation"] }] } }),
       namedSet("1", { name: "Alpha" }),
       namedSet("3", { name: "Foreign", projectId: "projects:other" })
     );
@@ -296,7 +296,7 @@ describe("changing sets", () => {
     assert.throws(
       () => boundToOf({
         kind: "resource",
-        ref: { kind: "slides", id: "documents:1" },
+        ref: { kind: "presentation", id: "documents:1" },
         hole: "evidence"
       }, "test"),
       /matching row id/
@@ -323,7 +323,7 @@ describe("changing sets", () => {
       {
         include: [{
           select: "resources",
-          refs: [{ kind: "document", id: "slideDecks:1" }]
+          refs: [{ kind: "document", id: "presentations:1" }]
         }],
         exclude: []
       },

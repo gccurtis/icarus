@@ -336,13 +336,13 @@ export const WORK: ScopeWork[] = [
     work: "The toggle modal is the builder; the ask modal lists each hole's rule with Change and Use the default beside it, and the builder opens as a modal of its own."
   },
   {
-    path: "app-views/categories/slide-deck-editor/procedures/templating.ts",
+    path: "app-views/categories/presentation-editor/procedures/templating.ts",
     status: "changed",
     area: "editors",
     work: "The same removal, so the twin is no longer a second copy of the vocabulary."
   },
   {
-    path: "app-views/categories/slide-deck-editor/context/templates.svelte",
+    path: "app-views/categories/presentation-editor/context/templates.svelte",
     status: "changed",
     area: "editors",
     work: "The same two replacements."
@@ -479,7 +479,7 @@ export const GAPS: ScopeGap[] = [
   {
     title: "The scope vocabulary has four copies",
     detail:
-      "ruleOf, ruleFrom, termWords, the kind list and the answer options had separate copies in the document editor, the deck editor, the library, and the retired Contexts panel.",
+      "ruleOf, ruleFrom, termWords, the kind list and the answer options had separate copies in the document editor, the presentation editor, the library, and the retired Contexts panel.",
     order: "Done. Current scope surfaces read one module, and the retired panel's drifted copy is gone"
   },
   {

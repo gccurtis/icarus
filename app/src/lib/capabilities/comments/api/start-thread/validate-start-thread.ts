@@ -13,7 +13,7 @@ import {
   type StoredFields
 } from "$representation/data/behavior/core/stored";
 
-const TARGETS: readonly string[] = ["document", "slides", "spreadsheet"];
+const TARGETS: readonly string[] = ["document", "presentation", "spreadsheet"];
 
 const refuse = (reason: string): never => {
   throw new Error(`comments/start-thread: ${reason}`);
@@ -37,7 +37,7 @@ const asTarget = (value: unknown): CommentTarget => {
   const { kind, id } = value;
   if (typeof kind !== "string" || !TARGETS.includes(kind)) return refuse("target.kind is not a resource kind");
   if (!identifier(id)) return refuse("target.id is required");
-  const table = kind === "document" ? "documents" : kind === "slides" ? "slideDecks" : "spreadsheets";
+  const table = kind === "document" ? "documents" : kind === "presentation" ? "presentations" : "spreadsheets";
   if (!isStoredRowId(id, table)) {
     return refuse("target.kind and target.id must name the same current resource table");
   }
@@ -105,7 +105,7 @@ export const validateStartThread = (input: unknown): StartThreadInput => {
     admittedWithin !== undefined &&
     !(
       (admittedTarget.kind === "document" && admittedWithin.kind === "text") ||
-      (admittedTarget.kind === "slides" && (admittedWithin.kind === "slide" || admittedWithin.kind === "element")) ||
+      (admittedTarget.kind === "presentation" && (admittedWithin.kind === "slide" || admittedWithin.kind === "element")) ||
       (admittedTarget.kind === "spreadsheet" && admittedWithin.kind === "cell")
     )
   ) return refuse("within.kind does not belong to target.kind");

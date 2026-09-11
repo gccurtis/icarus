@@ -110,8 +110,8 @@
       <div class="head"><span class="n">1</span><h2>What a stage is, in one story</h2></div>
       <p>
         A template is a saved original that people make copies from. You cannot type into the original
-        directly, because the editors work on documents and decks, not on templates. So when you press
-        Edit on a template, the app makes you a <strong>working copy</strong>: a real document or deck
+        directly, because the editors work on documents and presentations, not on templates. So when you press
+        Edit on a template, the app makes you a <strong>working copy</strong>: a real document or presentation
         that holds the template's content, opens in the ordinary editor, and is called a
         <strong>stage</strong> in the code. The stage is the only thing that can change the original.
       </p>
@@ -122,7 +122,7 @@
         <div class="beat"><b>You press Discard</b>The working copy is deleted, together with anything that accumulated on it. The original keeps its last saved revision.</div>
       </div>
       <p>
-        That is all a stage is: the one document or deck through which a template is edited. Nobody owns
+        That is all a stage is: the one document or presentation through which a template is edited. Nobody owns
         it, nothing else ever writes the template's content, and it never shows up in the project's list
         of documents.
       </p>
@@ -142,8 +142,8 @@
         <div class="term">
           <dt>Body<small>document · slides · spreadsheet</small></dt>
           <dd>
-            <p>The template's content, in the same shape a document, deck, or spreadsheet has, made portable. A template of one slide is a deck body holding one slide.</p>
-            <p class="eg">Save slide on slide 3 of a deck makes a deck template whose body holds slide 3, its layout, and the deck's theme and styles.</p>
+            <p>The template's content, in the same shape a document, presentation, or spreadsheet has, made portable. A template of one slide is a presentation body holding one slide.</p>
+            <p class="eg">Save slide on slide 3 of a presentation makes a presentation template whose body holds slide 3, its layout, and the presentation's theme and styles.</p>
           </dd>
         </div>
         <div class="term">
@@ -179,8 +179,8 @@
         <div class="term">
           <dt>Stage<small>working copy · templateStages</small></dt>
           <dd>
-            <p>The document or deck through which a template is edited: a real resource holding the template's body, plus a row saying which template it stands for and which revision it was taken from. One per template, shared by everyone in the project.</p>
-            <p class="on">On disk: a <code>templateStages</code> row and an ordinary <code>documents</code> or <code>slideDecks</code> row titled <em>Template · name</em>, with its own snapshots and change sets. Left out of the project's resource lists.</p>
+            <p>The document or presentation through which a template is edited: a real resource holding the template's body, plus a row saying which template it stands for and which revision it was taken from. One per template, shared by everyone in the project.</p>
+            <p class="on">On disk: a <code>templateStages</code> row and an ordinary <code>documents</code> or <code>presentations</code> row titled <em>Template · name</em>, with its own snapshots and change sets. Left out of the project's resource lists.</p>
             <p class="no">a use of the template, and not a copy anyone keeps: it exists so the original can be edited, and it takes no comments.</p>
           </dd>
         </div>
@@ -212,7 +212,7 @@
         <div class="term">
           <dt>Save<small>as a template</small></dt>
           <dd>
-            <p>Copy the open document, deck, or current slide into a new template of this project, made portable, and open its working copy in a new tab. The thing you saved from is untouched and never learns a template was made from it.</p>
+            <p>Copy the open document, presentation, or current slide into a new template of this project, made portable, and open its working copy in a new tab. The thing you saved from is untouched and never learns a template was made from it.</p>
           </dd>
         </div>
         <div class="term">
@@ -236,14 +236,14 @@
         <div class="term">
           <dt>Insert<small>into what is open</small></dt>
           <dd>
-            <p>Ask what each variable should select, then copy the template's saved body into the open document or deck after the current row or slide, with fresh ids and missing styles and layouts brought along. Undo removes it like any edit.</p>
+            <p>Ask what each variable should select, then copy the template's saved body into the open document or presentation after the current row or slide, with fresh ids and missing styles and layouts brought along. Undo removes it like any edit.</p>
             <p class="no">a link. Later changes to the template never reach what was inserted.</p>
           </dd>
         </div>
         <div class="term">
           <dt>Use<small>instantiate</small></dt>
           <dd>
-            <p>Ask what each variable should select, then make a whole new document, deck, or spreadsheet from the template and open it. The new resource carries no reference to the template; the template records that it was used.</p>
+            <p>Ask what each variable should select, then make a whole new document, presentation, or spreadsheet from the template and open it. The new resource carries no reference to the template; the template records that it was used.</p>
           </dd>
         </div>
         <div class="term">
@@ -285,7 +285,7 @@
             <tr><td>Everything in the project</td><td>The sentence a default reads as when it selects the whole project; the first switch in the Default modal.</td></tr>
             <tr><td>Default · Documents, Findings</td><td>The first choice in the Insert and Use modals: keep what the template suggests.</td></tr>
             <tr><td>Dropped a formula's project binding.</td><td>A save made the body portable and says what went: here, a formula lost its instance and kept its expression.</td></tr>
-            <tr><td>A template's working copy takes no comments</td><td>What the deck's comment panels say in place of the composer on a stage.</td></tr>
+            <tr><td>A template's working copy takes no comments</td><td>What the presentation's comment panels say in place of the composer on a stage.</td></tr>
             <tr><td>Used 3 days ago</td><td>The template's own record of its last use; no resource is consulted.</td></tr>
           </tbody>
         </table>

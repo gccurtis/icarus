@@ -15,7 +15,7 @@ interface CommentThread {
 }
 
 interface CommentAnchor {
-  targetType: "document" | "slides" | "spreadsheet" | "externalFile"
+  targetType: "document" | "presentation" | "spreadsheet" | "externalFile"
             | "question" | "hypothesis" | "finding";
   targetId: string;
   within?: AnchorWithin;       // absent = the whole thing
@@ -83,7 +83,7 @@ on the target:
 | question, hypothesis, finding | `text`, or absent |
 
 A slide can be commented on as a slide, which is the case that matters — "this
-one needs rework" is about the slide, not about anything on it. A deck-level
+one needs rework" is about the slide, not about anything on it. A presentation-level
 comment and a slide-level comment are different remarks and the model has to keep
 them apart.
 

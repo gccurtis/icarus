@@ -305,7 +305,7 @@ beforeEach(() => {
       updatedBy: user("users:u"),
       updatedAt: 1
     }],
-    slideDecks: [],
+    presentations: [],
     spreadsheets: [],
     externalFiles: [],
     findings: [],

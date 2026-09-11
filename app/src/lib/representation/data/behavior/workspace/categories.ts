@@ -13,9 +13,9 @@ export const CATEGORIES = [
   "document-editor",
   "external",
   "new-tab",
+  "presentation-editor",
   "project-overview",
   "research",
-  "slide-deck-editor",
   "spreadsheet-editor",
   "templates"
 ] as const satisfies readonly Category[];
@@ -30,9 +30,9 @@ export const CONTENT_VIEWS = [
   "document-editor.document",
   "external.library",
   "new-tab.launcher",
+  "presentation-editor.presentation",
   "project-overview.overview",
   "research.thread",
-  "slide-deck-editor.deck",
   "spreadsheet-editor.sheet",
   "templates.editor",
   "templates.library"

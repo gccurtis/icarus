@@ -38,7 +38,7 @@ const readingResources = (
 ): string | undefined => {
   for (const [snapshots, resources] of [
     ["documentSnapshots", "documents"],
-    ["slideDeckSnapshots", "slideDecks"]
+    ["presentationSnapshots", "presentations"]
   ] as const) {
     const found = recordsIn(store, snapshots).find(
       (row) => row.projectId === projectId && row.role === "leader" && namesSet(row.body, setId)

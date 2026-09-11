@@ -38,8 +38,8 @@ beats a hue held in reserve.
 | File | Was | Now |
 | --- | --- | --- |
 | `styles/tokens/tokens.md` | "`orange` and `yellow` are declared by the material and reserved" | only `yellow` is reserved; `slide \| orange` added to the role table |
-| `styles/material/helios/helios.md` | "`orange` and `yellow` are claimed by no role" | yellow alone; orange carries slide-deck identity |
-| `development-views/demo/components/roles.svelte` | the rail note under the Roles table, on the demo page itself: "`orange` and `yellow` are declared and claimed by no role…" | yellow alone; orange carries slide-deck identity. Found by looking at the rendered page — the search that produced the two rows above covered only `.md` files |
+| `styles/material/helios/helios.md` | "`orange` and `yellow` are claimed by no role" | yellow alone; orange carries presentation identity |
+| `development-views/demo/components/roles.svelte` | the rail note under the Roles table, on the demo page itself: "`orange` and `yellow` are declared and claimed by no role…" | yellow alone; orange carries presentation identity. Found by looking at the rendered page — the search that produced the two rows above covered only `.md` files |
 
 Orange measured as a role, in both materials:
 

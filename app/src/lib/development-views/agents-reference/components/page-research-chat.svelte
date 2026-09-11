@@ -84,7 +84,7 @@
     ["retrieve_materials", "query · kinds? · topK ≤ 20", "querySemanticMaterials", "Descriptions of tables, charts, images and code. Interpretation, not exact contents.", "Free"],
     ["read_text", "kind · id · from · to", "readSemanticResourceForModel · sliceByCoordinates", "A stretch of one resource exactly as written, at most twelve thousand characters.", "resource.read grant; refuses a resource outside the turn's scope"],
     ["read_table", "materialHandle · rowFrom? · rowTo?", "the authored block behind the material", "A table's actual cells, up to two hundred rows. The only way to get the numbers in one.", "resource.read grant; the handle must have been issued this turn"],
-    ["list_resources", "—", "rowsIn over documents, decks and spreadsheets", "What the project holds, by name and kind.", "resource.read grant"],
+    ["list_resources", "—", "rowsIn over documents, presentations and spreadsheets", "What the project holds, by name and kind.", "resource.read grant"],
     ["submit_answer", "the whole decision", "records it in the closure", "An acknowledgement. The turn's answer arrives here.", "Named as the port's finalTool, so calling it ends the run"]
   ];
 
@@ -107,7 +107,7 @@
     {
       n: 4,
       title: "Nothing reaches the project until a person puts it there",
-      body: "A block lives on its turn. Add, on a made block, is what writes it into a deck or a document. A chat that produced six drafts leaves six turns and no resources."
+      body: "A block lives on its turn. Add, on a made block, is what writes it into a presentation or a document. A chat that produced six drafts leaves six turns and no resources."
     }
   ];
 

@@ -10,7 +10,7 @@ export const validateCreateProjectResource = (input: unknown): CreateProjectReso
     throw new Error("project-resources/create: only target and title are accepted");
   }
   const { target, title } = fields;
-  if (target !== "document" && target !== "slides" && target !== "spreadsheet") {
+  if (target !== "document" && target !== "presentation" && target !== "spreadsheet") {
     throw new Error("project-resources/create: target is document, slides, or spreadsheet");
   }
   if (!Object.hasOwn(fields, "title")) {

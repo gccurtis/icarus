@@ -25,10 +25,10 @@ export const researchResources = (
       name: row.title,
       relativePath: null
     })),
-  ...rowsIn(model.store, "slideDecks")
+  ...rowsIn(model.store, "presentations")
     .filter((row) => row.projectId === projectId)
     .map((row) => ({
-      ref: { kind: "slides" as const, id: row._id },
+      ref: { kind: "presentation" as const, id: row._id },
       name: row.title,
       relativePath: null
     })),

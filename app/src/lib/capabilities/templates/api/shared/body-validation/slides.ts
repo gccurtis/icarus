@@ -168,4 +168,4 @@ export const validSlides = (body: Fields): boolean => {
 
 /** The exhaustive slide-body predicate used by template admission. */
 export const validSlideTemplateBody = (value: unknown): boolean =>
-  isRecord(value) && value.resource === "slides" && validSlides(value);
+  isRecord(value) && value.resource === "presentation" && validSlides(value);

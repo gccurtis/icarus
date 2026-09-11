@@ -39,7 +39,7 @@ declare none and have no `schema.ts`.
 | `access` | `$access` | `accessTables` | `users` `projects` `memberships` |
 | `revisions` | `$revisions` | `revisionsTables` | `resourceSnapshots` `changeSets` |
 | `documents` | `$documents` | `documentsTables` | `documents` |
-| `slide-decks` | `$slide-decks` | `slideDecksTables` | `slideDecks` |
+| `presentations` | `$presentations` | `presentationsTables` | `presentations` |
 | `spreadsheets` | `$spreadsheets` | `spreadsheetsTables` | `spreadsheets` `sheetCells` |
 | `knowledge` | `$knowledge` | `knowledgeTables` | `latticeNodes` `latticeEdges` `latticeSources` `latticeChanges` |
 | `derived-outputs` | `$derived-outputs` | `derivedOutputsTables` | `derivedOutputs` |
@@ -176,7 +176,7 @@ maps, and add the fragment to **both** places in `src/convex/schema.ts`.
 
 | Stage | Capabilities |
 | --- | --- |
-| 5 | `revisions` `documents` `slide-decks` `spreadsheets` |
+| 5 | `revisions` `documents` `presentations` `spreadsheets` |
 | 6 | `knowledge` `derived-outputs` |
 | 7 | `threads` `personas` `persona-threads` `agent-tasks` |
 | 8 | `external-files` `connections` |
@@ -249,7 +249,7 @@ Carried, not resolved. Each is raised at the stage that reaches it.
 | --- | --- |
 | [data.md](../../tables/data.md) | `VariableValue` names `Id<"formulas">` with no `Id` import |
 | [revisions.md](../../tables/revisions.md) | `insert` has no `ids`; the doc claims every op is closed under inversion, but inverting an insert then requires reading an id out of an opaque `v.any()` value |
-| [resources.md](../../tables/resources.md) | the `slideDecks` snippet omits its import block |
+| [resources.md](../../tables/resources.md) | the `presentations` snippet omits its import block |
 | [capability-directory.md](../../../app/docs/capability-directory/capability-directory.md) | "cross-capability imports use the bare alias only" — every snippet in `docs/tables/` uses subpaths (`$shared/types/actor`), as does the code on `main`. The rule is not machine-checked; the practice contradicts the text |
 | [investigation.md](../../tables/investigation.md) · [knowledge.md](../../tables/knowledge.md) | two different `evidenceValidator`s, in `$hypotheses` and `$derived-outputs`. Legal, and worth confirming it is deliberate |
 | Several | `Files` sections omit `overview.md`, which lint requires of every capability |

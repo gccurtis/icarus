@@ -81,7 +81,7 @@ export const DELIVERY_AREAS: readonly DeliveryArea[] = [
     details: [
       "Titles, links, quoted text, timelines, and editable summaries can be clamped without losing full hover or expanded access.",
       "Field layouts can opt into hierarchy, proportional columns, and persistent editable affordances.",
-      "All additions are opt-in, preserving existing document and deck panel behavior."
+      "All additions are opt-in, preserving existing document and presentation panel behavior."
     ]
   },
   {
@@ -105,7 +105,7 @@ export const DELIVERY_AREAS: readonly DeliveryArea[] = [
     deletions: 21,
     outcome: "Resource summaries and the new view keys are represented explicitly, with no compatibility reader for retired shapes.",
     details: [
-      "Documents, decks, spreadsheets, findings, and research threads now allow an authored executive summary.",
+      "Documents, presentations, spreadsheets, findings, and research threads now allow an authored executive summary.",
       "Fifteen seeded resources carry summaries; comment timestamps were aligned for coherent project history.",
       "Context Editor now has a visible unavailable screen, allowing its obsolete architecture baseline exception to be deleted."
     ]
@@ -129,12 +129,12 @@ export const REPRESENTATION_FACTS: readonly DeliveryFact[] = [
   {
     label: "New field",
     value: "summary?: string",
-    detail: "Added to document, slide deck, spreadsheet, finding, and research-thread records."
+    detail: "Added to document, presentation, spreadsheet, finding, and research-thread records."
   },
   {
     label: "Seed coverage",
     value: "15 resources",
-    detail: "4 documents · 4 decks · 2 spreadsheets · 2 findings · 3 research threads."
+    detail: "4 documents · 4 presentations · 2 spreadsheets · 2 findings · 3 research threads."
   },
   {
     label: "Project rail",

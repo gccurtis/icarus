@@ -1,7 +1,7 @@
   PHASE 0 — ISOLATE
 
   Create a worktree and work in it. Main has uncommitted work
-  (docs/artifacts/slide-deck-editor-buildout/*,
+  (docs/artifacts/presentation-editor-buildout/*,
   docs/document-editor-handoff.md)
   that must not be disturbed. Run no git command beyond creating the
   worktree.

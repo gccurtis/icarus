@@ -26,7 +26,7 @@ and explicit access list.
 The live stage is not backed by component-local mock values. Accepted create,
 rename, description, variable-description, tag, duplicate, and delete commands
 write through the Templates capability into the representation store. Refresh
-and server restart preserve them. Document and slide-deck `Use` also persists an
+and server restart preserve them. Document and presentation `Use` also persists an
 independent project resource without a continuing link to its template. Spreadsheet
 materialization exists at the capability boundary, but its UI hand-off remains
 disabled until the spreadsheet editor consumes represented resource ids.
@@ -73,7 +73,7 @@ It does not own:
 - template values, which come through the Template views' ordinary procedures;
 - capability scope or mutation behavior;
 - any Template product markup;
-- document, slide-deck or spreadsheet editing;
+- document, presentation or spreadsheet editing;
 - the representation contracts it explains.
 
 ## Public Contract
@@ -166,7 +166,7 @@ component being reviewed.
 - Matching pending commands share one promise per Workspace State instance, so
   sibling panes and keyed remounts cannot duplicate a write. This is not a
   durable cross-client request-id ledger, and the reference does not claim it is.
-- Blank document and deck suffixes are chosen inside Project Resources from
+- Blank document and presentation suffixes are chosen inside Project Resources from
   current project rows immediately before creation, never from a cached view.
 - The authoring-session lane is labeled as a proposal: it requires a durable
   lease and expiry owner, and never claims that a generic tab close can safely

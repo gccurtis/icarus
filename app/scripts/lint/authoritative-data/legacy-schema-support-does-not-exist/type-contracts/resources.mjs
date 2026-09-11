@@ -38,7 +38,7 @@ export const resourceContractIn = (node, path, found) => {
   ])) found.add("ExternalFileSubkind.contract");
   if (node.name.text === "ResourceKind" && !exactTypeUnion(node.type, [
     "literal:document",
-    "literal:slides",
+    "literal:presentation",
     "literal:spreadsheet",
     "literal:research",
     "literal:finding",
@@ -59,7 +59,7 @@ export const resourceContractIn = (node, path, found) => {
     .sort();
   const expected = [
     "literal:document->documents",
-    "literal:slides->slideDecks",
+    "literal:presentation->presentations",
     "literal:spreadsheet->spreadsheets",
     "literal:research->researchThreads",
     "literal:finding->findings",

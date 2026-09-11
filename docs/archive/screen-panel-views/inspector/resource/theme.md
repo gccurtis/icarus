@@ -2,9 +2,9 @@
 
 | Selecting | What it is | Sections |
 | --- | --- | --- |
-| The theme, from the Theme view | Deck-wide colour and type | Background · Colors · Font · Usage |
+| The theme, from the Theme view | Presentation-wide colour and type | Background · Colors · Font · Usage |
 
-One theme per deck. Everything that does not override it inherits it, which makes
+One theme per presentation. Everything that does not override it inherits it, which makes
 Usage the section that says how much an edit here costs.
 
 ## Layout

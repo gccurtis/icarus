@@ -6,7 +6,7 @@ import { productionSources } from "../shared/production.mjs";
 const FAKE_READ = /type\s+Read\s*<[^>]+>[\s\S]{0,400}loading\s*:\s*false[\s\S]{0,600}refresh\s*:\s*(?:async|\(.*?\)\s*=>)/;
 const NOOP_REFRESH = /refresh\s*:\s*async\s*\([^)]*\)\s*=>\s*\{\s*\}/;
 const INVENTED_IDS = /\bid\s*:\s*["'](?:r|th|mock|fixture)-[a-z0-9-]+["']/g;
-const REPOSITORY_NAME = /^(?:agents|analyses|cells|comments|decks|documents|records|resources|rows|spreadsheets|styles|templates|threads)$/i;
+const REPOSITORY_NAME = /^(?:agents|analyses|cells|comments|presentations|documents|records|resources|rows|spreadsheets|styles|templates|threads)$/i;
 
 const unwrap = (node) => {
   let value = node;

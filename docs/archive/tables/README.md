@@ -17,7 +17,7 @@ id is held as a string to break a cycle.
 | --- | --- | --- |
 | [access](access.md) | `users` `projects` `memberships` | ✅ |
 | [revisions](revisions.md) | `resourceSnapshots` `changeSets` | ✅ |
-| [resources](resources.md) | `documents` `slideDecks` | ✅ |
+| [resources](resources.md) | `documents` `presentations` | ✅ |
 | [spreadsheets](spreadsheets.md) | `spreadsheets` `sheetCells` | ✅ |
 | [knowledge](knowledge.md) | `latticeNodes` `latticeEdges` `latticeSources` `latticeChanges` `derivedOutputs` | ✅ |
 | [threads](threads.md) | `threads` `threadParts` | ✅ |

@@ -21,9 +21,9 @@ import type {
   DocumentFields,
   DocumentSnapshotFields,
   SheetCellFields,
-  SlideDeckChangeSetFields,
-  SlideDeckFields,
-  SlideDeckSnapshotFields,
+  PresentationChangeSetFields,
+  PresentationFields,
+  PresentationSnapshotFields,
   SpreadsheetChangeSetFields,
   SpreadsheetFields,
   SpreadsheetSnapshotFields
@@ -105,9 +105,9 @@ export type TableFields = {
   semanticSources: SemanticSourceFields;
   semanticSyncJobs: SemanticSyncJobFields;
   sheetCells: SheetCellFields;
-  slideDeckChangeSets: SlideDeckChangeSetFields;
-  slideDecks: SlideDeckFields;
-  slideDeckSnapshots: SlideDeckSnapshotFields;
+  presentationChangeSets: PresentationChangeSetFields;
+  presentations: PresentationFields;
+  presentationSnapshots: PresentationSnapshotFields;
   spreadsheetChangeSets: SpreadsheetChangeSetFields;
   spreadsheets: SpreadsheetFields;
   spreadsheetSnapshots: SpreadsheetSnapshotFields;

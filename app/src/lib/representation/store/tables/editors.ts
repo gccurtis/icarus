@@ -6,12 +6,12 @@ import type {
   DocumentChangeTier,
   DocumentSnapshotRole
 } from "$representation/data/types/documents/snapshot";
-import type { SlideDeckBody } from "$representation/data/types/slide-decks/body";
-import type { SlideDeckOp } from "$representation/data/types/slide-decks/op";
+import type { PresentationBody } from "$representation/data/types/presentations/body";
+import type { PresentationOp } from "$representation/data/types/presentations/op";
 import type {
-  SlideDeckChangeTier,
-  SlideDeckSnapshotRole
-} from "$representation/data/types/slide-decks/snapshot";
+  PresentationChangeTier,
+  PresentationSnapshotRole
+} from "$representation/data/types/presentations/snapshot";
 import type { SpreadsheetBody } from "$representation/data/types/spreadsheets/body";
 import type { SheetCell as SheetCellData } from "$representation/data/types/spreadsheets/cell";
 import type { SpreadsheetOp } from "$representation/data/types/spreadsheets/op";
@@ -44,29 +44,29 @@ export type DocumentChangeSetFields = {
 };
 export type DocumentChangeSet = Row<"documentChangeSets"> & DocumentChangeSetFields;
 
-export type SlideDeckSnapshotFields = {
+export type PresentationSnapshotFields = {
   projectId: Id<"projects">;
-  resourceId: Id<"slideDecks">;
+  resourceId: Id<"presentations">;
   revision: number;
-  role: SlideDeckSnapshotRole;
+  role: PresentationSnapshotRole;
   part: number;
-  body: SlideDeckBody;
+  body: PresentationBody;
   at: number;
 };
-export type SlideDeckSnapshot = Row<"slideDeckSnapshots"> & SlideDeckSnapshotFields;
+export type PresentationSnapshot = Row<"presentationSnapshots"> & PresentationSnapshotFields;
 
-export type SlideDeckChangeSetFields = {
+export type PresentationChangeSetFields = {
   projectId: Id<"projects">;
-  resourceId: Id<"slideDecks">;
+  resourceId: Id<"presentations">;
   revision: number;
   baseRevision: number;
-  tier: SlideDeckChangeTier;
-  ops: SlideDeckOp[];
+  tier: PresentationChangeTier;
+  ops: PresentationOp[];
   touched: string[];
   actor: Actor;
   at: number;
 };
-export type SlideDeckChangeSet = Row<"slideDeckChangeSets"> & SlideDeckChangeSetFields;
+export type PresentationChangeSet = Row<"presentationChangeSets"> & PresentationChangeSetFields;
 
 export type SpreadsheetSnapshotFields = {
   projectId: Id<"projects">;
@@ -102,7 +102,7 @@ export type DocumentFields = {
 };
 export type Document = Row<"documents"> & DocumentFields;
 
-export type SlideDeckFields = {
+export type PresentationFields = {
   projectId: Id<"projects">;
   title: string;
   summary?: string;
@@ -110,7 +110,7 @@ export type SlideDeckFields = {
   updatedBy: Actor;
   updatedAt: number;
 };
-export type SlideDeck = Row<"slideDecks"> & SlideDeckFields;
+export type Presentation = Row<"presentations"> & PresentationFields;
 
 export type SpreadsheetFields = {
   projectId: Id<"projects">;

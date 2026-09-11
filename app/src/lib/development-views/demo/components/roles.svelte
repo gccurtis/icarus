@@ -15,7 +15,7 @@
     { kind: "Brand", role: "secondary", hue: "cyan", means: "The quieter alternative" },
     { kind: "Brand", role: "accent-1", hue: "pink", means: "Categorical work" },
     { kind: "Brand", role: "accent-2", hue: "teal", means: "Categorical work" },
-    { kind: "Brand", role: "slide", hue: "orange", means: "Slide-deck identity" }
+    { kind: "Brand", role: "slide", hue: "orange", means: "Slide-presentation identity" }
   ];
 </script>
 
@@ -66,7 +66,7 @@
       Meaning roles are fixed. Identity and brand roles may share a hue with one another but never
       with a meaning hue — someone who learnt that red means danger learnt it everywhere.
       <code class="text-micro font-mono">yellow</code> is declared and claimed by no role.
-      <code class="text-micro font-mono">orange</code> carries slide-deck identity.
+      <code class="text-micro font-mono">orange</code> carries presentation identity.
     </p>
   </div>
 </section>

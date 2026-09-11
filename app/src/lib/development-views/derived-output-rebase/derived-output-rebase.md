@@ -33,7 +33,7 @@ the browser proof.
 ## Architecture delivered after replay
 
 Authored state and semantic intent now commit together. Document saves,
-slide-deck saves, material spreadsheet changes, project resource creation and
+presentation saves, material spreadsheet changes, project resource creation and
 template instantiation stage the relevant revision/snapshot/metadata rows and
 semantic outbox rows in one Store transaction. No embedding or intelligence
 provider runs inside that transaction.

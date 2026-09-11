@@ -169,7 +169,7 @@
     </p>
     <div class="meta">
       <span>Original <b>templates</b> · <b>templateVersions</b> · one project</span>
-      <span>Copy under edit <b>templateStages</b> + one <b>documents</b> / <b>slideDecks</b> row</span>
+      <span>Copy under edit <b>templateStages</b> + one <b>documents</b> / <b>presentations</b> row</span>
       <span>One stage per template, shared</span>
     </div>
 
@@ -179,7 +179,7 @@
         <div class="verb make">
           <span class="k">Keep a copy of this</span>
           <h3>Make a template</h3>
-          <p>Name the open document, deck, or current slide and press Save. The body is copied, made portable, and stored as a template of this project at revision 1. The new template opens for editing at once.</p>
+          <p>Name the open document, presentation, or current slide and press Save. The body is copied, made portable, and stored as a template of this project at revision 1. The new template opens for editing at once.</p>
           <p>The document you saved from is untouched and never learns a template was made from it.</p>
           <div class="rows"><div class="row">createTemplateFromResource · createTemplate</div><div class="row">templates + templateVersions</div></div>
         </div>
@@ -193,7 +193,7 @@
         <div class="verb edit">
           <span class="k">This is the copy; let me change it</span>
           <h3>Edit through a stage</h3>
-          <p>Open makes, once, a scratch document or deck holding the template's body. The ordinary editor works on it. Save to template writes that body back as the next revision; Discard throws the scratch away.</p>
+          <p>Open makes, once, a scratch document or presentation holding the template's body. The ordinary editor works on it. Save to template writes that body back as the next revision; Discard throws the scratch away.</p>
           <p>The stage is the only thing that writes a template's body.</p>
           <div class="rows"><div class="row">openTemplateStage · commitTemplateStage · discardTemplateStage</div><div class="row">templateStages + the scratch row</div></div>
         </div>
@@ -216,7 +216,7 @@
         <div class="lane">Rows afterwards</div>
 
         <div class="step">1<b>Make</b></div>
-        <div>Names the open document, deck or current slide and presses Save</div>
+        <div>Names the open document, presentation or current slide and presses Save</div>
         <div class="s-cell">Sends the resource id and name; on acceptance opens a new tab straight onto the copy's Templates panel</div>
         <div class="t-cell"><code>createTemplateFromResource</code> reads the leader snapshot, makes the body portable, stamps the project, declares nothing, says what it dropped; then <code>openTemplateStage</code></div>
         <div>templates at 1 · templateVersions 1 · templateStages staged at 1 · a scratch row titled <em>Template · name</em></div>
@@ -291,7 +291,7 @@
         <h4>Why editing a template together is the editor's problem, not the template's</h4>
         <p>
           The stage is keyed by template, not by person, so everyone who opens the template lands on the
-          same scratch resource, and the document and deck editors already reconcile concurrent sessions
+          same scratch resource, and the document and presentation editors already reconcile concurrent sessions
           on one resource: a leader snapshot, pending ops per session, rebase on conflict. Nothing about a
           template's copy is tracked per person, and nothing needs to be. Two people pressing Save to
           template at the same moment is the one race: the second save is refused as stale, its panel
@@ -310,7 +310,7 @@
       <ul>
         <li><strong>A resource made from a template does not change when the template does.</strong> Inserting and Use are copies; no resource carries a reference to a template, and the template records its own last use so the library can say "used 3 days ago".</li>
         <li><strong>A template's body is never written except from its own stage.</strong> There is no other path, so there is nothing to pull back into the copy and no drift to reconcile. The note that a template "moved" is gone with the reason for it.</li>
-        <li><strong>Comments never travel with a template, and none can be made on its copy.</strong> Making a template copies a body, not the comments on the resource; a copy made from a template starts without any; the comments capability refuses a thread on a working copy and the deck's comment panels say so; anything that reaches one goes with the stage.</li>
+        <li><strong>Comments never travel with a template, and none can be made on its copy.</strong> Making a template copies a body, not the comments on the resource; a copy made from a template starts without any; the comments capability refuses a thread on a working copy and the presentation's comment panels say so; anything that reaches one goes with the stage.</li>
         <li><strong>A template is portable, inside its project too.</strong> A template turns a value into a function: the id a formula was bound to, a prompt's generated output, links to people and resources, stored images and scope terms naming a set or a resource are stripped when a body becomes a template, and each is said back. A formula keeps its expression and is drawn as unbound until a formula is made for it again.</li>
         <li><strong>Nothing crosses projects.</strong> A template is its project's; another project's library, stages and inserts cannot reach it.</li>
       </ul>
@@ -355,14 +355,14 @@
           <div>
             <b>Are comments allowed on a working copy?</b>
             <p>No: if the rest is stripped, comments are stripped too, and a comment that mentions someone on a copy would be a problem.</p>
-            <p class="rec">Built. The comments capability refuses to start a thread on a stage resource, and the deck's comment panels replace their composer with the sentence that says so.</p>
+            <p class="rec">Built. The comments capability refuses to start a thread on a stage resource, and the presentation's comment panels replace their composer with the sentence that says so.</p>
           </div>
         </li>
         <li>
           <div>
             <b>Does a resource keep a reference to a template?</b>
             <p>No. Saving a resource as a template is a copy, and a resource made from a template is a copy; neither side should know about the other.</p>
-            <p class="rec">Built. Main's <code>templateId</code> on documents, decks and spreadsheets is gone, along with the delete rule that read it; the template records its own <code>lastUsedAt</code> so the library's recency still works.</p>
+            <p class="rec">Built. Main's <code>templateId</code> on documents, presentations and spreadsheets is gone, along with the delete rule that read it; the template records its own <code>lastUsedAt</code> so the library's recency still works.</p>
           </div>
         </li>
       </ol>
@@ -374,14 +374,14 @@
         <table>
           <thead><tr><th>Step</th><th>Client</th><th>Server</th></tr></thead>
           <tbody>
-            <tr><td>Make</td><td><code>document-editor/context/templates.svelte</code> · <code>slide-deck-editor/context/templates.svelte</code> · <code>procedures/templating.ts</code> in each</td><td><code>capabilities/templates/api/create-template-from-resource/</code></td></tr>
+            <tr><td>Make</td><td><code>document-editor/context/templates.svelte</code> · <code>presentation-editor/context/templates.svelte</code> · <code>procedures/templating.ts</code> in each</td><td><code>capabilities/templates/api/create-template-from-resource/</code></td></tr>
             <tr><td>Open</td><td><code>templates/procedures/library.svelte.ts</code> (editTemplate) · <code>model/client/workspace-state/methods/open.ts</code> (Target.context)</td><td><code>capabilities/templates/api/open-template-stage/</code> · <code>api/shared/stages.ts</code></td></tr>
             <tr><td>Edit</td><td>The editors, unchanged</td><td>The resource capabilities, unchanged</td></tr>
             <tr><td>Declare</td><td>The two panels' variable bands · <code>templates/inspector/template.svelte</code> (Default modal)</td><td><code>capabilities/templates/api/update-template/</code></td></tr>
             <tr><td>Save</td><td>The two panels (flush, then commit)</td><td><code>capabilities/templates/api/commit-template-stage/</code> · <code>representation/data/behavior/templates/portable.ts</code></td></tr>
             <tr><td>Insert, Use</td><td>The Insert modal in both panels, the Use modal in the inspector · <code>procedures/templating.ts</code> and <code>procedures/library.svelte.ts</code> (answerOptions, answersFrom, insertionOf) · <code>representation/data/behavior/templates/fresh-ids.ts</code>, <code>scopes.ts</code></td><td><code>capabilities/templates/api/instantiate-template/</code></td></tr>
             <tr><td>Discard</td><td>The two panels</td><td><code>capabilities/templates/api/discard-template-stage/</code></td></tr>
-            <tr><td>No comments on a copy</td><td><code>slide-deck-editor/context/comments.svelte</code> · <code>inspector/threads.svelte</code></td><td><code>capabilities/comments/api/start-thread/</code></td></tr>
+            <tr><td>No comments on a copy</td><td><code>presentation-editor/context/comments.svelte</code> · <code>inspector/threads.svelte</code></td><td><code>capabilities/comments/api/start-thread/</code></td></tr>
             <tr><td>Keep stages out of lists</td><td></td><td><code>capabilities/project-resources/api/read-project-resource-index/</code></td></tr>
           </tbody>
         </table>

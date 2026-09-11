@@ -28,17 +28,17 @@ const stage = (projectId: string, resourceId: string) => ({
   projectId,
   templateId: "templates:fixture",
   templateRevision: 1,
-  target: resourceId.startsWith("documents:") ? "document" : "slides",
+  target: resourceId.startsWith("documents:") ? "document" : "presentation",
   resourceId,
   createdBy: { kind: "system" },
   updatedAt: 1
 });
 
 describe("what the overlay refuses", () => {
-  it("refuses a document and a deck that a template is being edited in", () => {
-    const store = storeOf([stage(project, "documents:1"), stage(project, "slideDecks:2")]);
+  it("refuses a document and a presentation that a template is being edited in", () => {
+    const store = storeOf([stage(project, "documents:1"), stage(project, "presentations:2")]);
     expect(isStagedResource(store, project, { kind: "document", id: asId<"documents">("documents:1") })).toBe(true);
-    expect(isStagedResource(store, project, { kind: "slides", id: asId<"slideDecks">("slideDecks:2") })).toBe(true);
+    expect(isStagedResource(store, project, { kind: "presentation", id: asId<"presentations">("presentations:2") })).toBe(true);
   });
 
   it("takes an ordinary resource, and one staged in another project", () => {

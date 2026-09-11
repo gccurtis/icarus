@@ -83,17 +83,17 @@
         (element.content.type === "group" && elementIn(element.content.children ?? [], id))
     );
 
-  const deckAnchorOf = (
+  const presentationAnchorOf = (
     held: CommentThread
   ): { slideId?: string; elementId?: string } => {
-    if (held.target.kind !== "slides") return {};
+    if (held.target.kind !== "presentation") return {};
 
     const within = held.within;
     if (within?.kind === "slide") return { slideId: within.slideId };
     if (within?.kind !== "element") return {};
 
     const slide = view
-      .slideDeckRuntime(held.target.id)
+      .presentationRuntime(held.target.id)
       .body?.slides.find((candidate) =>
         elementIn(candidate.elements as unknown as readonly ElementNode[], within.elementId)
       );
@@ -103,13 +103,13 @@
   const canLocate = $derived(
     thread !== undefined &&
       (blockIdOf(thread) !== undefined ||
-        (thread.target.kind === "slides" &&
+        (thread.target.kind === "presentation" &&
           (thread.within?.kind === "slide" || thread.within?.kind === "element")) ||
         (thread.target.kind === "spreadsheet" && thread.within?.kind === "cell"))
   );
 
   const locateLabel = $derived(
-    thread?.target.kind === "slides" ? "Show in deck" : thread?.target.kind === "spreadsheet" ? "Show in sheet" : "Show in document"
+    thread?.target.kind === "presentation" ? "Show in presentation" : thread?.target.kind === "spreadsheet" ? "Show in sheet" : "Show in document"
   );
 
   const locate = () => {
@@ -134,16 +134,16 @@
       return;
     }
 
-    if (held.target.kind !== "slides") return;
-    const anchor = deckAnchorOf(held);
+    if (held.target.kind !== "presentation") return;
+    const anchor = presentationAnchorOf(held);
     view.open({
-      category: "slide-deck-editor",
+      category: "presentation-editor",
       resourceId: held.target.id,
       ...(anchor.slideId === undefined ? {} : { focus: anchor.slideId })
     });
 
     const id = anchor.elementId ?? anchor.slideId;
-    if (id !== undefined) view.inspect("slide-deck-editor.threads", { kind: "threads", id });
+    if (id !== undefined) view.inspect("presentation-editor.threads", { kind: "threads", id });
   };
 
   const navigate = (key: string) => {
@@ -157,8 +157,8 @@
 
 <Panel title="Comment">
   {#snippet crumbs()}
-    {#if thread?.target.kind === "slides"}
-      <PanelCrumbs trail={[{ label: "Deck" }, { label: "Comment" }]} onnavigate={navigate} />
+    {#if thread?.target.kind === "presentation"}
+      <PanelCrumbs trail={[{ label: "Presentation" }, { label: "Comment" }]} onnavigate={navigate} />
     {:else if thread?.target.kind === "spreadsheet"}
       <PanelCrumbs
         trail={[{ label: "Spreadsheet", key: "spreadsheet-editor.spreadsheet" }, { label: "Comment" }]}

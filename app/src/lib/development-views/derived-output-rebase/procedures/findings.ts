@@ -12,9 +12,9 @@ export const TYPE_FINDINGS: readonly FindingGroup[] = [
       "research-chat/api/shared/reading-tools.ts"
     ],
     cause:
-      "Five imports still target the deleted slide-decks/normalize module. Losing its return type then produces nine implicit-any diagnostics in readers.",
+      "Five imports still target the deleted presentations/normalize module. Losing its return type then produces nine implicit-any diagnostics in readers.",
     repair:
-      "Import ensureSlideDeckReady from slide-decks/readiness. Let its SlideDeckBody return type repair the nine cascades; do not annotate callbacks with any.",
+      "Import ensurePresentationReady from presentations/readiness. Let its PresentationBody return type repair the nine cascades; do not annotate callbacks with any.",
     verification:
       "Slide readiness tests plus semantic, template, derived-output and research reader suites all load and pass."
   },
@@ -52,7 +52,7 @@ export const TYPE_FINDINGS: readonly FindingGroup[] = [
 ] as const;
 
 export const BASELINE_RETIREMENTS = [
-  ["accessors-are-observational", 2, "documentRuntime and slideDeckRuntime attach accessors"],
+  ["accessors-are-observational", 2, "documentRuntime and presentationRuntime attach accessors"],
   ["async-command-state-lives-with-command", 1, "New Tab inline async creation handler"],
   ["constructed-client-object-has-a-consumer", 1, "spreadsheet runtimes"],
   ["constructed-subject-runtime-is-reachable", 1, "spreadsheet runtimes"],
@@ -114,5 +114,5 @@ export const CHECK_RESULTS = [
 
 export const DELETED_SCHEMA_READERS = [
   "src/lib/representation/data/behavior/documents/typography.ts",
-  "src/lib/representation/data/behavior/slide-decks/normalize.ts"
+  "src/lib/representation/data/behavior/presentations/normalize.ts"
 ] as const;

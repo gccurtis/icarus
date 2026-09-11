@@ -12,7 +12,7 @@ import {
 } from "$representation/data/behavior/project-resources/stored-snapshot";
 import { isStoredSheetCell } from "$representation/data/behavior/spreadsheets/stored-cell";
 import type { DocumentBody } from "$representation/data/types/documents/body";
-import type { SlideDeckBody } from "$representation/data/types/slide-decks/body";
+import type { PresentationBody } from "$representation/data/types/presentations/body";
 import type { SpreadsheetBody } from "$representation/data/types/spreadsheets/body";
 
 import { projectActor } from "$capabilities/project/api/shared/actors";
@@ -31,7 +31,7 @@ import type {
 
 type ResourceBody =
   | { readonly kind: "document"; readonly body: DocumentBody }
-  | { readonly kind: "slides"; readonly body: SlideDeckBody }
+  | { readonly kind: "presentation"; readonly body: PresentationBody }
   | { readonly kind: "spreadsheet"; readonly body: SpreadsheetBody };
 
 const leaderBody = (
@@ -55,8 +55,8 @@ const leaderBody = (
   if (table === "documentSnapshots" && resource.spec.kind === "document") {
     return { kind: "document", body: claimed[0].body as DocumentBody };
   }
-  if (table === "slideDeckSnapshots" && resource.spec.kind === "slides") {
-    return { kind: "slides", body: claimed[0].body as SlideDeckBody };
+  if (table === "presentationSnapshots" && resource.spec.kind === "presentation") {
+    return { kind: "presentation", body: claimed[0].body as PresentationBody };
   }
   if (table === "spreadsheetSnapshots" && resource.spec.kind === "spreadsheet") {
     return { kind: "spreadsheet", body: claimed[0].body as SpreadsheetBody };
@@ -112,8 +112,8 @@ const factsFor = (
     if (body?.kind !== "document") return undefined;
     return [{ label: "Words", value: count(documentWords(body.body)) }, commentFact];
   }
-  if (resource.spec.kind === "slides") {
-    if (body?.kind !== "slides") return undefined;
+  if (resource.spec.kind === "presentation") {
+    if (body?.kind !== "presentation") return undefined;
     return [{ label: "Slides", value: count(body.body.slides.length) }, commentFact];
   }
   if (resource.spec.kind === "spreadsheet") {
@@ -171,6 +171,6 @@ export const readProjectResource = async (input: unknown): Promise<ReadProjectRe
     recentActivity: activityIn(store, scope)
       .filter((entry) => entry.target.id === asked.resourceId)
       .slice(0, 5),
-    openable: resource.spec.kind === "document" || resource.spec.kind === "slides"
+    openable: resource.spec.kind === "document" || resource.spec.kind === "presentation"
   };
 };

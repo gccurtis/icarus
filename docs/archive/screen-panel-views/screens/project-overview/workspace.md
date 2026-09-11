@@ -124,7 +124,7 @@ panel's Overview reaches, where there is room for the things a menu cannot hold.
 
 Five pills, stacked, each in its own hue, under a *Create* label.
 
-**Example** — **Create**, then `Document` · `Slide deck` · `Spreadsheet` ·
+**Example** — **Create**, then `Document` · `Presentation` · `Spreadsheet` ·
 `Research chat` · `Analysis graph`
 
 ### Structure
@@ -246,7 +246,7 @@ Everything the project contains, as one table, under the controls that narrow it
 
 ### Props
 
-Every kind is here — documents, decks, spreadsheets, Research threads,
+Every kind is here — documents, presentations, spreadsheets, Research threads,
 analyses, external files and findings — because "what is in this project" is one
 question.
 
@@ -292,7 +292,7 @@ look at anything without leaving the board you came to.
 
 | A row of | Selecting opens | Double-clicking opens |
 | --- | --- | --- |
-| Document, deck, spreadsheet | [the resource](../../inspector/project/resource.md) | its editor, in a tab of its own |
+| Document, presentation, spreadsheet | [the resource](../../inspector/project/resource.md) | its editor, in a tab of its own |
 | Research | [the thread](../../inspector/research/research-thread.md) | the thread's Research tab |
 | Analysis | [the resource](../../inspector/project/resource.md) | the permanent tab, moved onto it |
 | External | [the file](../../inspector/project/file.md) | the same lens — no screen holds a file |

@@ -33,7 +33,7 @@ export const evidenceTitles = (query: ResourceIndexQuery): ReadonlyMap<string, s
     (query.current?.resources ?? [])
       .filter((resource) =>
         resource.ref.kind === "document" ||
-        resource.ref.kind === "slides" ||
+        resource.ref.kind === "presentation" ||
         resource.ref.kind === "spreadsheet" ||
         isExternalFileResourceKind(resource.ref.kind)
       )

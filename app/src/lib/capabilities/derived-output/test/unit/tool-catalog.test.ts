@@ -30,7 +30,7 @@ describe("Derived Output agent tool catalogue", () => {
       [
         "find_resources",
         "list_document_blocks",
-        "list_deck_slides",
+        "list_presentation_slides",
         "inspect_slide",
         "view_slide",
         "inspect_dataset",
@@ -49,7 +49,7 @@ describe("Derived Output agent tool catalogue", () => {
     assert.equal(materials.evidence, "descriptor");
 
     const slides = DERIVED_AGENT_TOOL_CATALOG.find(
-      (tool) => tool.name === "list_deck_slides"
+      (tool) => tool.name === "list_presentation_slides"
     );
     assert.equal(slides?.mode, "orientation");
     assert.match(slides?.sees ?? "", /slide IDs/i);

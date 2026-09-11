@@ -11,7 +11,7 @@ import type { Id } from "$representation/data/types/core/id";
 
 export type StoredTemplateStage = TableRow<"templateStages"> & (
   | { readonly target: "document"; readonly resourceId: Id<"documents"> }
-  | { readonly target: "slides"; readonly resourceId: Id<"slideDecks"> }
+  | { readonly target: "presentation"; readonly resourceId: Id<"presentations"> }
 );
 
 /** Exact current template-stage row and target/resource pairing. */
@@ -36,5 +36,5 @@ export const isStoredTemplateStage = (value: unknown): value is StoredTemplateSt
   ) return false;
   return row.target === "document"
     ? isStoredRowId(row.resourceId, "documents")
-    : row.target === "slides" && isStoredRowId(row.resourceId, "slideDecks");
+    : row.target === "presentation" && isStoredRowId(row.resourceId, "presentations");
 };

@@ -183,7 +183,7 @@ test("inspection ops persist every member of a multi-selection", async () => {
     ids: ["element-1", "element-2"]
   };
 
-  model.inspect("slide-deck-editor.multi-selection", multiple);
+  model.inspect("presentation-editor.multi-selection", multiple);
   await model.flush();
 
   const inspection = wire.sent[0].ops.find(

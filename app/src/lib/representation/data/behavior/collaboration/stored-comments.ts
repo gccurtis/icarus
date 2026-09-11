@@ -25,12 +25,12 @@ export const storedCommentTarget = (value: unknown): StoredCommentTarget | undef
     target === undefined ||
     !hasExactFields(target, ["kind", "id"]) ||
     !isStoredIdentifier(target.id) ||
-    (target.kind !== "document" && target.kind !== "slides" && target.kind !== "spreadsheet")
+    (target.kind !== "document" && target.kind !== "presentation" && target.kind !== "spreadsheet")
   ) return undefined;
   const table = target.kind === "document"
     ? "documents"
-    : target.kind === "slides"
-      ? "slideDecks"
+    : target.kind === "presentation"
+      ? "presentations"
       : "spreadsheets";
   return isStoredRowId(target.id, table)
     ? { kind: target.kind, id: target.id }
@@ -64,10 +64,10 @@ export const isStoredAnchorFor = (
           isStoredEnd(span.to);
       });
   }
-  if (target === "slides" && anchor.kind === "slide") {
+  if (target === "presentation" && anchor.kind === "slide") {
     return hasExactFields(anchor, ["kind", "slideId"]) && isStoredIdentifier(anchor.slideId);
   }
-  if (target === "slides" && anchor.kind === "element") {
+  if (target === "presentation" && anchor.kind === "element") {
     return hasExactFields(anchor, ["kind", "elementId"]) && isStoredIdentifier(anchor.elementId);
   }
   return target === "spreadsheet" &&

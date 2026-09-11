@@ -57,17 +57,17 @@
     { value: "holes", label: "Holes" }
   ] as const;
 
-  const TARGETS: readonly TemplateTarget[] = ["Document", "Slide deck", "Spreadsheet"];
+  const TARGETS: readonly TemplateTarget[] = ["Document", "Presentation", "Spreadsheet"];
 
   const TARGET_ICON = {
     Document: FileText,
-    "Slide deck": Presentation,
+    "Presentation": Presentation,
     Spreadsheet: Sheet
   } as const;
 
   const TARGET_RATIO: Record<TemplateTarget, string> = {
     Document: "4 / 3",
-    "Slide deck": "16 / 9",
+    "Presentation": "16 / 9",
     Spreadsheet: "1 / 1"
   };
 
@@ -230,7 +230,7 @@
     <ScreenHeader title="Templates">
       {#snippet actions()}
         <p class="text-caption text-ink-muted m-0 max-w-xs text-end">
-          Reusable starting points for documents, slide decks, and spreadsheets.
+          Reusable starting points for documents, presentations, and spreadsheets.
           Double-click one to edit it in its editor.
         </p>
       {/snippet}

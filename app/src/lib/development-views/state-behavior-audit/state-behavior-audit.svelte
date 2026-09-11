@@ -217,7 +217,7 @@
         <div><span>{String(index + 1).padStart(2, "0")}</span><code>{line}</code></div>
       {/each}
     </div>
-    <p class="shape-note">Component state modules are local controllers, not new global models. Document, slide-deck, and spreadsheet runtimes should remain independent implementations with the same visible shape; consistency does not require a shared superclass.</p>
+    <p class="shape-note">Component state modules are local controllers, not new global models. Document, presentation, and spreadsheet runtimes should remain independent implementations with the same visible shape; consistency does not require a shared superclass.</p>
   </section>
 
   <section class="architecture-section">

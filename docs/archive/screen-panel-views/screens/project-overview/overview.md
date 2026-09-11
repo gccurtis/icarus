@@ -38,7 +38,7 @@ because the question is asked in one breath: *what have I missed*.
 | --- | --- | --- |
 | A comment, or a mention row | One thread: what was said, what it is attached to, and the replies | [comment.md](../../inspector/collaboration/comment.md) |
 | An activity row | One recorded event | [activity.md](../../inspector/project/activity.md) |
-| A document, deck, spreadsheet, analysis or template row | Any first-class thing in the project | [resource.md](../../inspector/project/resource.md) |
+| A document, presentation, spreadsheet, analysis or template row | Any first-class thing in the project | [resource.md](../../inspector/project/resource.md) |
 | Nothing, or the project header | The project itself | [project.md](../../inspector/project/project.md) |
 | A Research row | A thread, and the way into the Research tab | [research-thread.md](../../inspector/research/research-thread.md) |
 | An external file row | A synced file and whether anything can be read out of it | [file.md](../../inspector/project/file.md) |

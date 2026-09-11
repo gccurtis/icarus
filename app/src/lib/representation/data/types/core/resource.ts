@@ -16,7 +16,7 @@ export type ExternalFileResourceKind = `externalFile::${ExternalFileSubkind}`;
 /** The closed vocabulary that can identify one specific current resource. */
 export type ResourceKind =
   | "document"
-  | "slides"
+  | "presentation"
   | "spreadsheet"
   | "research"
   | "finding"
@@ -37,7 +37,7 @@ export type ExternalFileResourceRef = {
 /** A specific current resource, with its discriminator tied to its row namespace. */
 export type ResourceRef =
   | { kind: "document"; id: Id<"documents"> }
-  | { kind: "slides"; id: Id<"slideDecks"> }
+  | { kind: "presentation"; id: Id<"presentations"> }
   | { kind: "spreadsheet"; id: Id<"spreadsheets"> }
   | { kind: "research"; id: Id<"researchThreads"> }
   | { kind: "finding"; id: Id<"findings"> }

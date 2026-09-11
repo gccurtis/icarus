@@ -59,7 +59,7 @@ Tab identity is broader than `ResourceKind`. The proposed contract is:
 ```ts
 type TabTarget =
   | { kind: "system"; screen: "project-overview" | "new-tab" | "context" | "templates" | "personas" | "automations" }
-  | { kind: "general-resource"; resourceType: "document" | "slides" | "spreadsheet"; resourceId: string }
+  | { kind: "general-resource"; resourceType: "document" | "presentation" | "spreadsheet"; resourceId: string }
   | { kind: "work"; screen: "research" | "analysis"; id: string };
 ```
 
@@ -78,7 +78,7 @@ interface TabFrameState {
 
 type LauncherDraft =
   | { kind: "document"; title: string; templateId?: string; paper?: string; orientation?: string }
-  | { kind: "slides"; title: string; templateId?: string; aspectRatio: "16:9" | "4:3" }
+  | { kind: "presentation"; title: string; templateId?: string; aspectRatio: "16:9" | "4:3" }
   | { kind: "spreadsheet"; title: string; templateId?: string; firstSheetName: string }
   | { kind: "research"; title: string; mode: "discover" | "question" | "hypothesis"; anchorId?: string }
   | { kind: "analysis"; title: string; description?: string; initialName?: string }
@@ -89,12 +89,12 @@ type WorkbenchTabState =
   | { kind: "project-overview"; frame: TabFrameState; selection?: { kind: "resource" | "activity" | "task" | "health"; id: string }; resourceQuery: string; resourceKinds: string[]; centerScrollY: number }
   | { kind: "new-tab"; frame: TabFrameState; query: string; selected?: { kind: string; id?: string }; draft?: LauncherDraft; recentKinds: string[]; centerScrollY: number }
   | { kind: "document"; frame: TabFrameState; zoom: number; scrollAnchor?: { blockId: string; offsetPx: number }; selection?: { root: "body" | "header" | "first-header" | "footer" | "first-footer"; blockId?: string; offset?: number }; findQuery: string }
-  | { kind: "slides"; frame: TabFrameState; currentSlideId: string; mode: "slide" | "layout"; selectedObjectIds: string[]; zoom: number; viewport: { x: number; y: number }; notesExpanded: boolean; notesHeight: number; newSlide?: { insertionIndex: number; selectedLayoutKey?: string; query: string } }
+  | { kind: "presentation"; frame: TabFrameState; currentSlideId: string; mode: "slide" | "layout"; selectedObjectIds: string[]; zoom: number; viewport: { x: number; y: number }; notesExpanded: boolean; notesHeight: number; newSlide?: { insertionIndex: number; selectedLayoutKey?: string; query: string } }
   | { kind: "spreadsheet"; frame: TabFrameState; currentSheetId: string; selection: { range: string }; scroll: { row: number; column: number; dx: number; dy: number }; zoom: number; formulaBarExpanded: boolean; findQuery: string }
   | { kind: "research"; frame: TabFrameState; selected?: { kind: "message" | "finding" | "source" | "tool-call" | "thread"; id: string }; paneWidths: [number, number, number]; transcriptAnchor?: string; sourceQuery: string }
   | { kind: "analysis"; frame: TabFrameState; selected?: { kind: "input" | "encoding" | "filter" | "sort" | "result-cell"; key: string }; centerScroll: { x: number; y: number }; resultZoom: number }
   | { kind: "context"; frame: TabFrameState; resourceSetId?: string; resourceQuery: string; resourceKinds: string[]; expressionFocusPath?: number[]; resolvedScrollY: number }
-  | { kind: "templates"; frame: TabFrameState; templateId?: string; mode: "library" | "author"; targetFilter?: "document" | "slides" | "spreadsheet"; scopeFilter?: "global" | "project"; query: string; previewScrollY: number }
+  | { kind: "templates"; frame: TabFrameState; templateId?: string; mode: "library" | "author"; targetFilter?: "document" | "presentation" | "spreadsheet"; scopeFilter?: "global" | "project"; query: string; previewScrollY: number }
   | { kind: "personas"; frame: TabFrameState; personaId?: string; mode: "library" | "author"; scopeFilter?: "global" | "project"; query: string; draftSessionId?: string }
   | { kind: "automations"; frame: TabFrameState; automationId?: string; mode: "library" | "author"; statusFilter?: "all" | "enabled" | "disabled" | "failed"; query: string; draftSessionId?: string };
 ```
@@ -181,7 +181,7 @@ Lower-priority segments collapse into an accessible overflow menu on narrow wind
 
 ## Shared synchronization states
 
-Document, slide-deck, and spreadsheet bodies are read from a leader snapshot plus recent change sets. Their editors show:
+Document, presentation, and spreadsheet bodies are read from a leader snapshot plus recent change sets. Their editors show:
 
 - **Saved** — no local changes pending.
 - **Saving** — local coalesced changes are in flight.

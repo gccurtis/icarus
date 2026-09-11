@@ -27,7 +27,7 @@ close(tabId)
   → records the close operation
   → never releases the document runtime`,
     observed:
-      "Forty-four document/deck view files call workspace runtime accessors, commonly from effects. Mounting another view can resynchronize the same runtime, while closing the last resource tab leaves it retained until the entire client model closes.",
+      "Forty-four document/presentation view files call workspace runtime accessors, commonly from effects. Mounting another view can resynchronize the same runtime, while closing the last resource tab leaves it retained until the entire client model closes.",
     antagonism:
       "The public name reads as observation, but its behavior changes process lifetime. Views decide when synchronization starts, and the workspace—the actual owner of open tabs—cannot state which runtimes should exist.",
     repair:
@@ -90,7 +90,7 @@ close(tabId)
       detects: "get/read/find/lookup/of/for/runtime bodies calling attach, acquire, createRuntime, release, releaseAll, schedule, subscribe, sync, or their direct nested equivalents.",
       implementation:
         "Inspect accessor-shaped function and method bodies for a deliberately small, named lifecycle mutator set; prefer explicit acquire names wherever mutation is intended.",
-      current: "Enforced; document, slide-deck, and spreadsheet runtime accessors are observational and the current tree is clean.",
+      current: "Enforced; document, presentation, and spreadsheet runtime accessors are observational and the current tree is clean.",
       limit: "Naming is a design convention. Explicit annotations can replace heuristics if the type system gains effect metadata later."
     },
     {
@@ -103,7 +103,7 @@ close(tabId)
       detects: "Missing workspace reachability, open/restore acquisition, close release, or subject coverage in the lifecycle test.",
       implementation:
         "Check the workspace graph and open/restore/close procedure sources, then require an executable runtime-lifecycle test naming each subject. The test suite owns the behavioral assertions.",
-      current: "Enforced through workspace wiring and an executable document, slide-deck, and spreadsheet lifecycle contract; the current tree is clean.",
+      current: "Enforced through workspace wiring and an executable document, presentation, and spreadsheet lifecycle contract; the current tree is clean.",
       limit: "Use fake clocks and adapters so the contract is deterministic rather than browser-timing dependent."
     },
     {

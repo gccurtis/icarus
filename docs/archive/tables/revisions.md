@@ -4,10 +4,10 @@ Two tables holding all content of every general resource.
 
 `resourceSnapshots` · `changeSets`
 
-For a document and a deck, current content is the `leader` snapshot with the
+For a document and a presentation, current content is the `leader` snapshot with the
 `recent` change sets applied over it. **A resource row carries no body and no
 revision number**: a Convex patch rewrites the whole document, so either would
-mean rewriting the entire deck on every keystroke batch.
+mean rewriting the entire presentation on every keystroke batch.
 
 **A spreadsheet uses the same two tables differently**, because its cells are
 rows and there is nothing to replay — see
@@ -36,7 +36,7 @@ import { generalResourceTypeValidator } from "$revisions/types/change";
  *
  * **`resourceId` is a string, not a `v.id` union.** A union would make the
  * change-set machinery branch on resource type, which is the one thing that must
- * not happen — being generic over bodies is what lets a deck and a spreadsheet
+ * not happen — being generic over bodies is what lets a presentation and a spreadsheet
  * use the same machinery.
  *
  * **`part` splits a body across rows.** A document caps at 1 MiB and nothing
@@ -137,7 +137,7 @@ import { v } from "convex/values";
 
 export const generalResourceTypeValidator = v.union(
   v.literal("document"),
-  v.literal("slides"),
+  v.literal("presentation"),
   v.literal("spreadsheet")
 );
 
@@ -251,7 +251,7 @@ There is no `chart` target: charts arrive with a rendering surface.
 ```ts
 import { v } from "convex/values";
 import { documentBodyValidator, type DocumentBody } from "$documents/types/body";
-import { slideDeckBodyValidator, type SlideDeckBody } from "$slide-decks/types/body";
+import { presentationBodyValidator, type PresentationBody } from "$presentations/types/body";
 import { spreadsheetBodyValidator, type SpreadsheetBody } from "$spreadsheets/types/body";
 
 /**
@@ -259,8 +259,8 @@ import { spreadsheetBodyValidator, type SpreadsheetBody } from "$spreadsheets/ty
  * told apart by the row's own `generalResourceType`.
  *
  * **This is the only place all three are named together, and it imports them
- * rather than declaring them.** A body's shape is its resource's model — a deck
- * body belongs to `slide-decks` — and stating them here would be this capability
+ * rather than declaring them.** A body's shape is its resource's model — a presentation
+ * body belongs to `presentations` — and stating them here would be this capability
  * knowing what a slide is, which is the one thing that would stop the machinery
  * being generic.
  *
@@ -269,7 +269,7 @@ import { spreadsheetBodyValidator, type SpreadsheetBody } from "$spreadsheets/ty
  * schema does, at the door, which is where a malformed body should be refused.
  *
  * Convex objects reject unknown fields, and each of the three requires something
- * the others lack — `slides` and `theme` for a deck, `columns` and `print` for a
+ * the others lack — `slides` and `theme` for a presentation, `columns` and `print` for a
  * grid — so membership is unambiguous without a discriminant inside the body.
  * The discriminant is the column beside it.
  *
@@ -279,11 +279,11 @@ import { spreadsheetBodyValidator, type SpreadsheetBody } from "$spreadsheets/ty
  */
 export const resourceBodyValidator = v.union(
   documentBodyValidator,
-  slideDeckBodyValidator,
+  presentationBodyValidator,
   spreadsheetBodyValidator
 );
 
-export type ResourceBody = DocumentBody | SlideDeckBody | SpreadsheetBody;
+export type ResourceBody = DocumentBody | PresentationBody | SpreadsheetBody;
 ```
 
 ---

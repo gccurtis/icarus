@@ -23,7 +23,7 @@ index 76c292c..7396607 100644
 +++ b/app/seed/activity.json
 @@ -4,7 +4,7 @@
    { "_id": "activity:3", "_creationTime": 1788297000000, "projectId": "default", "actor": { "kind": "user", "userId": "users:1" }, "actorLabel": "Mira Okonkwo", "verb": "asked", "target": { "kind": "research", "id": "researchThreads:1", "label": "What drives customer-minutes lost?" } },
-   { "_id": "activity:4", "_creationTime": 1788296400000, "projectId": "default", "actor": { "kind": "user", "userId": "users:2" }, "actorLabel": "Tomás Lindqvist", "verb": "edited", "target": { "kind": "slides", "id": "slideDecks:1", "label": "Board review — Q1 exposure" } },
+   { "_id": "activity:4", "_creationTime": 1788296400000, "projectId": "default", "actor": { "kind": "user", "userId": "users:2" }, "actorLabel": "Tomás Lindqvist", "verb": "edited", "target": { "kind": "presentation", "id": "presentations:1", "label": "Board review — Q1 exposure" } },
    { "_id": "activity:5", "_creationTime": 1788295200000, "projectId": "default", "actor": { "kind": "user", "userId": "users:1" }, "actorLabel": "Mira Okonkwo", "verb": "accepted a finding on", "target": { "kind": "research", "id": "researchThreads:1", "label": "What drives customer-minutes lost?" } },
 -  { "_id": "activity:6", "_creationTime": 1788294600000, "projectId": "default", "actor": { "kind": "user", "userId": "users:3" }, "actorLabel": "Priya Raghunathan", "verb": "uploaded", "target": { "kind": "externalFile", "id": "externalFiles:1", "label": "NERC-winter-advisory-2027.pdf" } },
 +  { "_id": "activity:6", "_creationTime": 1788294600000, "projectId": "default", "actor": { "kind": "user", "userId": "users:3" }, "actorLabel": "Priya Raghunathan", "verb": "connected", "target": { "kind": "connector", "id": "connectors:1", "label": "Google Drive — SCADA outage log" } },
@@ -806,20 +806,20 @@ index 0000000..ee60e69
 +    }
 +  }
 +]
-diff --git a/app/seed/slideDeckSnapshots.json b/app/seed/slideDeckSnapshots.json
+diff --git a/app/seed/presentationSnapshots.json b/app/seed/presentationSnapshots.json
 index 8c2c6a4..04b3786 100644
---- a/app/seed/slideDeckSnapshots.json
-+++ b/app/seed/slideDeckSnapshots.json
+--- a/app/seed/presentationSnapshots.json
++++ b/app/seed/presentationSnapshots.json
 @@ -274,5 +274,166 @@
          }
        ]
      }
 +  },
 +  {
-+    "_id": "slideDeckSnapshots:3",
++    "_id": "presentationSnapshots:3",
 +    "_creationTime": 1788448800000,
 +    "projectId": "default",
-+    "resourceId": "slideDecks:3",
++    "resourceId": "presentations:3",
 +    "revision": 1,
 +    "role": "leader",
 +    "part": 0,
@@ -897,10 +897,10 @@ index 8c2c6a4..04b3786 100644
 +    }
 +  },
 +  {
-+    "_id": "slideDeckSnapshots:4",
++    "_id": "presentationSnapshots:4",
 +    "_creationTime": 1787244300000,
 +    "projectId": "default",
-+    "resourceId": "slideDecks:4",
++    "resourceId": "presentations:4",
 +    "revision": 1,
 +    "role": "leader",
 +    "part": 0,
@@ -977,10 +977,10 @@ index 8c2c6a4..04b3786 100644
 +    }
    }
  ]
-diff --git a/app/seed/slideDecks.json b/app/seed/slideDecks.json
+diff --git a/app/seed/presentations.json b/app/seed/presentations.json
 index e6fefc1..1da16ae 100644
---- a/app/seed/slideDecks.json
-+++ b/app/seed/slideDecks.json
+--- a/app/seed/presentations.json
++++ b/app/seed/presentations.json
 @@ -4,6 +4,7 @@
      "_creationTime": 1786435200000,
      "projectId": "default",
@@ -999,7 +999,7 @@ index e6fefc1..1da16ae 100644
      "updatedAt": 1787436000000
 +  },
 +  {
-+    "_id": "slideDecks:3",
++    "_id": "presentations:3",
 +    "_creationTime": 1788448800000,
 +    "projectId": "default",
 +    "title": "Executive update — September",
@@ -1009,7 +1009,7 @@ index e6fefc1..1da16ae 100644
 +    "updatedAt": 1788528000000
 +  },
 +  {
-+    "_id": "slideDecks:4",
++    "_id": "presentations:4",
 +    "_creationTime": 1787244300000,
 +    "projectId": "default",
 +    "title": "Storm hardening options",
@@ -2048,7 +2048,7 @@ index 0000000..36b51e3
 +      "Project standard"
 +    ],
 +    "body": {
-+      "resource": "slides",
++      "resource": "presentation",
 +      "aspectRatio": "16:9",
 +      "theme": {
 +        "background": {
@@ -2281,7 +2281,7 @@ index 0000000..36b51e3
 +      "Briefing"
 +    ],
 +    "body": {
-+      "resource": "slides",
++      "resource": "presentation",
 +      "aspectRatio": "16:9",
 +      "theme": {
 +        "background": {
@@ -2486,7 +2486,7 @@ index 0000000..36b51e3
 +      "Briefing"
 +    ],
 +    "body": {
-+      "resource": "slides",
++      "resource": "presentation",
 +      "aspectRatio": "16:9",
 +      "theme": {
 +        "background": {
@@ -2697,7 +2697,7 @@ index 0000000..36b51e3
 +      "Review"
 +    ],
 +    "body": {
-+      "resource": "slides",
++      "resource": "presentation",
 +      "aspectRatio": "16:9",
 +      "theme": {
 +        "background": {
@@ -3878,13 +3878,13 @@ index 6c630f2..68287ef 100644
 +    "userId": "default-user",
      "name": "Board review",
 -    "tags": ["Leadership", "Project standard"],
--    "body": { "resource": "slides", "slides": [], "layouts": [], "theme": {} },
+-    "body": { "resource": "presentation", "slides": [], "layouts": [], "theme": {} },
 -    "variables": [],
 -    "createdBy": { "kind": "user", "userId": "users:2" },
 +    "description": "A disciplined board narrative for performance, risk, decisions, and the next horizon.",
 +    "tags": ["Leadership", "Board", "Project standard"],
 +    "body": {
-+      "resource": "slides",
++      "resource": "presentation",
 +      "aspectRatio": "16:9",
 +      "theme": {
 +        "background": { "kind": "color", "color": "--token-surface-primary" },
@@ -4000,7 +4000,7 @@ index 6c630f2..68287ef 100644
 +    "description": "A shift-ready briefing for objectives, hazards, controls, and handoffs.",
 +    "tags": ["Operations", "Safety", "Briefing"],
 +    "body": {
-+      "resource": "slides",
++      "resource": "presentation",
 +      "aspectRatio": "16:9",
 +      "theme": {
 +        "background": { "kind": "color", "color": "--token-surface-primary" },
@@ -4106,7 +4106,7 @@ index 6c630f2..68287ef 100644
 +    "description": "A concise portfolio update that leads with trajectory, exceptions, and asks.",
 +    "tags": ["Leadership", "Executive", "Briefing"],
 +    "body": {
-+      "resource": "slides",
++      "resource": "presentation",
 +      "aspectRatio": "16:9",
 +      "theme": {
 +        "background": { "kind": "color", "color": "--token-surface-primary" },
@@ -4213,7 +4213,7 @@ index 6c630f2..68287ef 100644
 +    "description": "A decision-oriented comparison of viable paths, economics, tradeoffs, and reversibility.",
 +    "tags": ["Planning", "Options", "Review"],
 +    "body": {
-+      "resource": "slides",
++      "resource": "presentation",
 +      "aspectRatio": "16:9",
 +      "theme": {
 +        "background": { "kind": "color", "color": "--token-surface-primary" },
@@ -4533,7 +4533,7 @@ index 93ba306..7370105 100644
  
 -  /** Which editor an unavailable action would open, and what the alert calls it. */
 -  const BLANK = {
--    slides: { category: "slide-deck-editor", noun: "deck" },
+-    slides: { category: "presentation-editor", noun: "presentation" },
 -    spreadsheet: { category: "spreadsheet-editor", noun: "spreadsheet" }
 -  } as const satisfies Record<string, { category: Category; noun: string }>;
 -
@@ -4553,7 +4553,7 @@ index 93ba306..7370105 100644
 -  };
 -
 -  let creatingDocument = $state(false);
--  let creatingDeck = $state(false);
+-  let creatingPresentation = $state(false);
 -
 -  /**
 -   * A thread and a chart are each a tab keyed by the thing, and nothing here
@@ -4570,7 +4570,7 @@ index 93ba306..7370105 100644
 -    const landing = rows.find((row) => !held.has(row.id)) ?? rows[0];
 -    if (landing) view.open({ category, resourceId: landing.id });
 -  };
-+  let creating = $state<"document" | "slides">();
++  let creating = $state<"document" | "presentation">();
 +  let creationError = $state<string>();
  
    const make = async (key: (typeof CREATE)[number]["key"]) => {
@@ -4597,20 +4597,20 @@ index 93ba306..7370105 100644
 -      return;
 -    }
 -
--    if (key === "slides") {
--      if (creatingDeck) return;
-+    if (key === "document" || key === "slides") {
+-    if (key === "presentation") {
+-      if (creatingPresentation) return;
++    if (key === "document" || key === "presentation") {
 +      if (creating !== undefined) return;
  
--      creatingDeck = true;
+-      creatingPresentation = true;
 +      const originTabId = view.activeId;
 +      const originSelection = view.selection;
 +      creating = key;
 +      creationError = undefined;
        try {
--        const title = untitled("slides");
+-        const title = untitled("presentation");
 -        const { id: resourceId } = await create({
--          table: "slideDecks",
+-          table: "presentations",
 -          fields: {
 -            projectId: id,
 -            title,
@@ -4619,7 +4619,7 @@ index 93ba306..7370105 100644
 -            updatedAt: Date.now()
 -          }
 -        });
--        view.open({ category: "slide-deck-editor", resourceId });
+-        view.open({ category: "presentation-editor", resourceId });
 +        const { resourceId } = await createProjectResource(view, { target: key });
 +        const selectionUnchanged =
 +          view.selection?.kind === originSelection?.kind &&
@@ -4627,14 +4627,14 @@ index 93ba306..7370105 100644
 +          view.selection?.at === originSelection?.at;
 +        if (live && view.activeId === originTabId && selectionUnchanged) {
 +          view.open({
-+            category: key === "document" ? "document-editor" : "slide-deck-editor",
++            category: key === "document" ? "document-editor" : "presentation-editor",
 +            resourceId
 +          });
 +        }
 +      } catch (error) {
 +        creationError = error instanceof Error ? error.message : String(error);
        } finally {
--        creatingDeck = false;
+-        creatingPresentation = false;
 +        creating = undefined;
        }
        return;
@@ -4674,14 +4674,14 @@ index 93ba306..7370105 100644
 -   * finding have no category at all — they are things you look at rather than
 -   * places you go — so opening one means opening its lens, which is the same
 -   * thing a single click already did.
-+   * Documents and decks have ordinary editors that consume represented ids.
++   * Documents and presentations have ordinary editors that consume represented ids.
 +   * Other represented kinds remain inspectable here until their current
 +   * surfaces accept those ids; opening a mock-backed surface would imply data
 +   * loaded when it did not.
     */
    const launch = (row: Resource) => {
      const target = openingFor(row);
--    if ((row.kind === "document" || row.kind === "slides") && target) {
+-    if ((row.kind === "document" || row.kind === "presentation") && target) {
 +    if (target) {
        view.open(target);
        return;
@@ -4713,7 +4713,7 @@ index 93ba306..7370105 100644
              <button
                type="button"
 -              disabled={pill.key === "document" && creatingDocument}
-+              disabled={(pill.key === "document" || pill.key === "slides") &&
++              disabled={(pill.key === "document" || pill.key === "presentation") &&
 +                creating !== undefined}
                onclick={() => make(pill.key)}
                class="rounded-control text-body-sm flex w-full cursor-pointer items-center gap-2 border px-3 text-start {pill.tint}"
@@ -4746,8 +4746,8 @@ index 93ba306..7370105 100644
 +          </ScreenEmpty>
 +        {:else if listed.length === 0}
            <ScreenEmpty kind="no-matches" title="Nothing in this project matches" onclear={clear}>
--            The search reaches every kind — documents, decks, grids, threads and external files alike.
-+            Search covers represented documents, decks, spreadsheets, research, and findings.
+-            The search reaches every kind — documents, presentations, grids, threads and external files alike.
++            Search covers represented documents, presentations, spreadsheets, research, and findings.
            </ScreenEmpty>
          {:else}
            <ScreenTable scroll columns={["Name", "Kind", "Updated", "Updated by"]}>
@@ -4773,11 +4773,11 @@ index c1835ec..8d69194 100644
  
  const CATEGORY: Partial<Record<ResourceKind, Category>> = {
    document: "document-editor",
--  slides: "slide-deck-editor",
+-  slides: "presentation-editor",
 -  spreadsheet: "spreadsheet-editor",
 -  research: "research",
 -  analysis: "analysis"
-+  slides: "slide-deck-editor"
++  slides: "presentation-editor"
  };
  
  export const openingFor = ({ kind, id }: Resource): Target | undefined => {
@@ -4847,8 +4847,8 @@ index fb10878..3f18fcc 100644
 -    ...mine(rowsIn("documents")).map((row) =>
 -      made(row._id, "document", row.title, row.updatedAt, row.updatedBy)
 -    ),
--    ...mine(rowsIn("slideDecks")).map((row) =>
--      made(row._id, "slides", row.title, row.updatedAt, row.updatedBy)
+-    ...mine(rowsIn("presentations")).map((row) =>
+-      made(row._id, "presentation", row.title, row.updatedAt, row.updatedBy)
 -    ),
 -    ...mine(rowsIn("spreadsheets")).map((row) =>
 -      made(row._id, "spreadsheet", row.title, row.updatedAt, row.updatedBy)
@@ -4915,7 +4915,7 @@ index c4be2df..cad34e2 100644
 -
 -  const view = workspaceState();
 -
--  type TemplateTarget = "Document" | "Slide deck" | "Slide" | "Spreadsheet";
+-  type TemplateTarget = "Document" | "Presentation" | "Slide" | "Spreadsheet";
 -
 -  type TemplateScope = "Project" | "Personal" | "Shared";
 -
@@ -5003,7 +5003,7 @@ index c4be2df..cad34e2 100644
 -    {
 -      id: "tp-board",
 -      name: "Board update",
--      makes: "Slide deck",
+-      makes: "Presentation",
 -      scope: "Project",
 -      variables: 2,
 -      updated: "3 weeks ago",
@@ -5013,8 +5013,8 @@ index c4be2df..cad34e2 100644
 -    },
 -    {
 -      id: "tp-ops",
--      name: "Weekly ops deck",
--      makes: "Slide deck",
+-      name: "Weekly ops presentation",
+-      makes: "Presentation",
 -      scope: "Project",
 -      variables: 0,
 -      updated: "8 weeks ago",
@@ -5143,10 +5143,10 @@ index c4be2df..cad34e2 100644
 -      required: false
 -    },
 -    {
--      id: "tv-deck-title",
+-      id: "tv-presentation-title",
 -      templateId: "tp-title",
--      key: "deckTitle",
--      label: "Deck title",
+-      key: "presentationTitle",
+-      label: "Presentation title",
 -      type: "Text",
 -      required: true
 -    },
@@ -5217,7 +5217,7 @@ index c4be2df..cad34e2 100644
 -   *
 -   * **The surface is the resource's, not a template editor's.** Authoring a
 -   * template is authoring the thing it makes, so a Document gets a page on a
--   * canvas, a deck or a slide gets a stage, and a Spreadsheet gets a grid. The
+-   * canvas, a presentation or a slide gets a stage, and a Spreadsheet gets a grid. The
 -   * three real editors are still mockups, so what is drawn here is those three
 -   * shapes filled from the preview door — which the note under the bar says out
 -   * loud rather than letting the surface imply otherwise.
@@ -5386,7 +5386,7 @@ index c4be2df..cad34e2 100644
 +   * Compatibility landing for workspace snapshots that still name `templates.editor`.
 +   *
 +   * Template authoring is not a fourth editor. The intended implementation stages a
-+   * represented body into the ordinary document/deck editor, flushes that runtime,
++   * represented body into the ordinary document/presentation editor, flushes that runtime,
 +   * commits the resulting body with a template-revision check, then removes the stage.
 +   * That lifecycle needs a durable session record before it is safe across reload,
 +   * workspace undo, and reopened tabs, so this route states the boundary instead of
@@ -5506,7 +5506,7 @@ index c4be2df..cad34e2 100644
 -
 -  <div class="px-4 pt-3">
 -    <ScreenNote tone="gap">
--      The document, deck and spreadsheet editors are not wired in yet, so this is the shape of the
+-      The document, presentation and spreadsheet editors are not wired in yet, so this is the shape of the
 -      one this template makes, filled from the body door. Lines can be typed; nothing else on the
 -      surface acts, and nothing is written back.
 -    </ScreenNote>
@@ -5585,7 +5585,7 @@ index c4be2df..cad34e2 100644
 -      <!--
 -        No `onselect`: an object on a stage nobody is editing renders as a div,
 -        and that is the only arm that may hold a control. Selecting an object is
--        the deck editor's job, and it does not exist yet.
+-        the presentation editor's job, and it does not exist yet.
 -      -->
 -      <ScreenSlide ratio="16:9" {objects} caption="{makes} template">
 -        {#snippet object(item)}
@@ -5611,7 +5611,7 @@ index c4be2df..cad34e2 100644
 +
 +  <ScreenEmpty title="The editor shell is intentionally deferred" icon={FilePenLine}>
 +    This remains inside the Template category. A later pass can mount the ordinary document or
-+    slide-deck runtime beneath this quiet return bar without creating another workspace tab.
++    presentation runtime beneath this quiet return bar without creating another workspace tab.
 +  </ScreenEmpty>
 +
 +  <ScreenNote tone="gap">
@@ -6060,8 +6060,8 @@ index 1d84053..a3b07f3 100644
 +        "border-interactive-border bg-interactive-surface text-interactive-text hover:border-interactive-fill hover:bg-interactive-surface-hover"
 +    },
 +    {
-+      value: "Slide deck",
-+      label: "Slide deck",
++      value: "Presentation",
++      label: "Presentation",
 +      icon: Presentation,
 +      tint:
 +        "border-slide-border bg-slide-surface text-slide-text hover:border-slide-fill hover:bg-slide-surface-hover"
@@ -6088,9 +6088,9 @@ index 1d84053..a3b07f3 100644
 -      <div class="create-actions">
 -        <PanelButton label="Document" icon={FileText} onclick={() => create("Document")} />
 -        <PanelButton
--          label="Slide deck"
+-          label="Presentation"
 -          icon={Presentation}
--          onclick={() => create("Slide deck")}
+-          onclick={() => create("Presentation")}
 -        />
 -        <PanelButton
 -          label="Spreadsheet"
@@ -6153,8 +6153,8 @@ index 1d84053..a3b07f3 100644
 -      <dl class="count-list">
 -        <dt>Documents</dt>
 -        <dd>{summary.documents}</dd>
--        <dt>Slide decks</dt>
--        <dd>{summary.slideDecks}</dd>
+-        <dt>Presentations</dt>
+-        <dd>{summary.presentations}</dd>
 -        <dt>Spreadsheets</dt>
 -        <dd>{summary.spreadsheets}</dd>
 -      </dl>
@@ -6202,8 +6202,8 @@ index 1d84053..a3b07f3 100644
 +        <dl class="count-list">
 +          <dt>Documents</dt>
 +          <dd>{summary.documents}</dd>
-+          <dt>Slide decks</dt>
-+          <dd>{summary.slideDecks}</dd>
++          <dt>Presentations</dt>
++          <dd>{summary.presentations}</dd>
 +          <dt>Spreadsheets</dt>
 +          <dd>{summary.spreadsheets}</dd>
 +        </dl>
@@ -6819,7 +6819,7 @@ index c5afcbc..350712d 100644
 +
 +      const category = {
 +        document: "document-editor",
-+        slides: "slide-deck-editor"
++        slides: "presentation-editor"
 +      } as const;
 +      if (result.target === "spreadsheet") {
 +        actionError = SPREADSHEET_HANDOFF;
@@ -7529,7 +7529,7 @@ index 93be46f..a43751b 100644
 +import type { WorkspaceStateModel } from "$model/client/workspace-state";
  
 +/** The target and availability words used by the library UI. */
- export type TemplateTarget = "Document" | "Slide deck" | "Spreadsheet";
+ export type TemplateTarget = "Document" | "Presentation" | "Spreadsheet";
 -export type TemplateScope = "Project" | "Shared" | "Personal";
 +export type TemplateScope = "Project" | "Personal";
  
@@ -7579,7 +7579,7 @@ index 93be46f..a43751b 100644
 -  readonly shared: number;
    readonly personal: number;
    readonly documents: number;
-   readonly slideDecks: number;
+   readonly presentations: number;
    readonly spreadsheets: number;
  };
  
@@ -7600,7 +7600,7 @@ index 93be46f..a43751b 100644
 -});
 +const TARGET_LABEL: Record<StoredTemplateTarget, TemplateTarget> = {
 +  document: "Document",
-+  slides: "Slide deck",
++  slides: "Presentation",
 +  spreadsheet: "Spreadsheet"
 +};
  
@@ -7662,7 +7662,7 @@ index 93be46f..a43751b 100644
 -    id: "tp-board",
 -    name: "Board update",
 -    description: "A board-ready narrative with a headline and one supporting chart.",
--    makes: "Slide deck",
+-    makes: "Presentation",
 -    scope: "Project",
 -    tags: ["Leadership", "Briefing"],
 -    variables: [
@@ -7685,9 +7685,9 @@ index 93be46f..a43751b 100644
 -  },
 -  {
 -    id: "tp-ops",
--    name: "Weekly ops deck",
--    description: "The recurring project deck for operational status and decisions.",
--    makes: "Slide deck",
+-    name: "Weekly ops presentation",
+-    description: "The recurring project presentation for operational status and decisions.",
+-    makes: "Presentation",
 -    scope: "Project",
 -    tags: ["Operations", "Leadership"],
 -    variables: [],
@@ -7699,13 +7699,13 @@ index 93be46f..a43751b 100644
 -    lastUsedAge: 1_440
 -  },
 -  {
--    id: "tp-executive-deck",
--    name: "Executive update deck",
--    description: "A concise branded deck for a project-level executive update.",
--    makes: "Slide deck",
+-    id: "tp-executive-presentation",
+-    name: "Executive update presentation",
+-    description: "A concise branded presentation for a project-level executive update.",
+-    makes: "Presentation",
 -    scope: "Personal",
 -    tags: ["Presentation", "Brand"],
--    variables: [variable("tp-executive-deck", "deckTitle", "Deck title", "Text", true)],
+-    variables: [variable("tp-executive-presentation", "presentationTitle", "Presentation title", "Text", true)],
 -    createdBy: "Priya Raghunathan",
 -    revision: 2,
 -    updated: "6 weeks ago",
@@ -7744,13 +7744,13 @@ index 93be46f..a43751b 100644
 -    lastUsedAge: 219_000
 -  },
 -  {
--    id: "tp-review-deck",
--    name: "Sectioned review deck",
--    description: "A personal review deck with branded section breaks.",
--    makes: "Slide deck",
+-    id: "tp-review-presentation",
+-    name: "Sectioned review presentation",
+-    description: "A personal review presentation with branded section breaks.",
+-    makes: "Presentation",
 -    scope: "Personal",
 -    tags: ["Presentation", "Review"],
--    variables: [variable("tp-review-deck", "sectionName", "Section name", "Text", true)],
+-    variables: [variable("tp-review-presentation", "sectionName", "Section name", "Text", true)],
 -    createdBy: "Ana Duarte",
 -    revision: 1,
 -    updated: "7 months ago",
@@ -7805,7 +7805,7 @@ index 93be46f..a43751b 100644
 -];
 +const TARGET_VALUE: Record<TemplateTarget, StoredTemplateTarget> = {
 +  Document: "document",
-+  "Slide deck": "slides",
++  "Presentation": "presentation",
 +  Spreadsheet: "spreadsheet"
 +};
  
@@ -7952,12 +7952,12 @@ index 93be46f..a43751b 100644
 -    shared: count((template) => template.scope === "Shared"),
 -    personal: count((template) => template.scope === "Personal"),
 -    documents: count((template) => template.makes === "Document"),
--    slideDecks: count((template) => template.makes === "Slide deck"),
+-    presentations: count((template) => template.makes === "Presentation"),
 -    spreadsheets: count((template) => template.makes === "Spreadsheet")
 +    project: count((row) => row.scope === "Project"),
 +    personal: count((row) => row.scope === "Personal"),
 +    documents: count((row) => row.makes === "Document"),
-+    slideDecks: count((row) => row.makes === "Slide deck"),
++    presentations: count((row) => row.makes === "Presentation"),
 +    spreadsheets: count((row) => row.makes === "Spreadsheet")
    };
  };
@@ -7982,7 +7982,7 @@ index 93be46f..a43751b 100644
 +const defaultName = (target: TemplateTarget): string =>
 +  ({
 +    Document: "Untitled document template",
-+    "Slide deck": "Untitled slide deck template",
++    "Presentation": "Untitled presentation template",
 +    Spreadsheet: "Untitled spreadsheet template"
 +  })[target];
  
@@ -8107,7 +8107,7 @@ index 93be46f..a43751b 100644
 -  const id = nextMockId("new");
 -  const name = {
 -    Document: "Untitled document template",
--    "Slide deck": "Untitled slide deck template",
+-    "Presentation": "Untitled presentation template",
 -    Spreadsheet: "Untitled spreadsheet template"
 -  }[makes];
 -  const template: LibraryTemplate = {
@@ -8204,7 +8204,7 @@ index 5e58006..04f1a20 100644
 -Lives at `src/lib/app-views/categories/templates/templates.md`.
 -
 -The templates a project can start from, and the authoring of them. A singleton.
-+The singleton library for reusable document, slide-deck, and spreadsheet bodies.
++The singleton library for reusable document, presentation, and spreadsheet bodies.
  
  | Content | Shows |
  | --- | --- |
@@ -8309,11 +8309,11 @@ index 5e58006..04f1a20 100644
 -### overview-library
 -
 -The compact map of the template library. New template offers Document, Slide
--deck and Spreadsheet; each creates a session-local Project row and routes to
+-presentation and Spreadsheet; each creates a session-local Project row and routes to
 -`templates.template` without claiming persistence.
 -
 -Library reports the total, then Project, Shared and Personal availability counts
--and Document, Slide deck and Spreadsheet kind counts in one record. It repeats
+-and Document, Presentation and Spreadsheet kind counts in one record. It repeats
 -neither recent use nor the selected template because the centre shelf and the
 -inspector already own those. Neither section collapses.
 -
@@ -8551,7 +8551,7 @@ index 5e58006..04f1a20 100644
 +A click selects the template for inspection; a double-click moves the singleton
 +Template category into its authoring shell without creating a resource or a
 +second workspace tab. `Use` is the only gesture that instantiates an independent
-+project resource and opens its ordinary editor for documents and slide decks.
++project resource and opens its ordinary editor for documents and presentations.
 +Spreadsheet materialization exists at the capability boundary, but its library
 +handoff is visibly disabled until the mock-backed spreadsheet editor consumes
 +the created resource id. Represented variable
@@ -8560,7 +8560,7 @@ index 5e58006..04f1a20 100644
 +
 +The shelf is a horizontal scrollport with a quiet bottom scrollbar. Its rows are
 +not a second seed: recency is derived by joining represented documents,
-+slide-decks, and spreadsheets back through their `templateId` provenance and
++presentations, and spreadsheets back through their `templateId` provenance and
 +taking the newest resource creation time per template. Later resource edits do
 +not make an old template use look recent again.
 +
@@ -8568,7 +8568,7 @@ index 5e58006..04f1a20 100644
 +
 +The Overview context panel creates a represented empty template of any supported
 +target. An optional name sits above three colored icon actions for Document,
-+Slide deck, and Spreadsheet. Pressing an icon creates that kind immediately;
++Presentation, and Spreadsheet. Pressing an icon creates that kind immediately;
 +the view supplies a unique working name only when the field is blank, then moves
 +inspection to the returned id. A compact Total section breaks the library down
 +by scope and target.
@@ -8631,7 +8631,7 @@ index 5e58006..04f1a20 100644
 +There is no separate template editor implementation in this future state. The
 +singleton Template category owns a quiet, left-aligned Library return bar. The
 +intended authoring body stages the template under a real
-+resource id and borrows the ordinary document or slide-deck runtime below that
++resource id and borrows the ordinary document or presentation runtime below that
 +header. Variable-bearing Prompt positions render as Template blocks while
 +authoring; Done flushes the runtime, compare-and-sets the body back into the
 +template, and then cleans up the stage.
@@ -8653,12 +8653,12 @@ index 0000000..f92b7a3
 +import { serverModel } from "$runtime/server/start.server";
 +import type { StoreModel } from "$model/server/store/index.server";
 +import { asId } from "$representation/data/behavior/core/id";
-+import type { SlideDeckBody } from "$representation/data/types/slide-decks/body";
++import type { PresentationBody } from "$representation/data/types/presentations/body";
 +
 +import { validateCreateProjectResource } from "$capabilities/project-resources/api/create-project-resource/validate-create-project-resource";
 +import type { CreateProjectResourceResult } from "$capabilities/project-resources/types/project-resources";
 +
-+const EMPTY_DECK: SlideDeckBody = {
++const EMPTY_DECK: PresentationBody = {
 +  aspectRatio: "16:9",
 +  theme: {
 +    colors: {
@@ -8679,7 +8679,7 @@ index 0000000..f92b7a3
 +
 +const representedRows = (
 +  store: StoreModel,
-+  table: "documents" | "slideDecks"
++  table: "documents" | "presentations"
 +): readonly unknown[] => {
 +  const found = store.read(table);
 +  return found?.kind === "table" && found.table === table && Array.isArray(found.rows)
@@ -8696,10 +8696,10 @@ index 0000000..f92b7a3
 +const defaultTitle = (
 +  store: StoreModel,
 +  projectId: string,
-+  target: "document" | "slides"
++  target: "document" | "presentation"
 +): string => {
-+  const table = target === "document" ? "documents" : "slideDecks";
-+  const noun = target === "document" ? "document" : "deck";
++  const table = target === "document" ? "documents" : "presentations";
++  const noun = target === "document" ? "document" : "presentation";
 +  const prefix = `Untitled ${noun} `;
 +  const taken = new Set(
 +    representedRows(store, table)
@@ -8747,14 +8747,14 @@ index 0000000..f92b7a3
 +    return { accepted: true, target: asked.target, resourceId, title, revision: 0 };
 +  }
 +
-+  const resourceId = store.create("slideDecks", {
++  const resourceId = store.create("presentations", {
 +    projectId,
 +    title,
 +    createdBy: actor,
 +    updatedBy: { ...actor },
 +    updatedAt: at
 +  });
-+  store.create("slideDeckSnapshots", {
++  store.create("presentationSnapshots", {
 +    projectId,
 +    resourceId,
 +    revision: 0,
@@ -8782,7 +8782,7 @@ index 0000000..3c125eb
 +    throw new Error("project-resources/create: only target and title are accepted");
 +  }
 +  const { target, title } = input as { target?: unknown; title?: unknown };
-+  if (target !== "document" && target !== "slides") {
++  if (target !== "document" && target !== "presentation") {
 +    throw new Error("project-resources/create: target is document or slides");
 +  }
 +  if (!Object.prototype.hasOwnProperty.call(input, "title")) {
@@ -8988,7 +8988,7 @@ index 0000000..a05466e
 +  };
 +
 +  collect("documents", "document", "title", "updatedBy");
-+  collect("slideDecks", "slides", "title", "updatedBy");
++  collect("presentations", "presentation", "title", "updatedBy");
 +  collect("spreadsheets", "spreadsheet", "title", "updatedBy");
 +  collect("researchThreads", "research", "title", "createdBy");
 +  collect("findings", "finding", "title", "updatedBy");
@@ -9032,7 +9032,7 @@ index 0000000..12e31af
 +# project resources
 +
 +A scoped, metadata-only index for the resources Project Overview can list:
-+documents, slide decks, spreadsheets, research threads, and findings. External
++documents, presentations, spreadsheets, research threads, and findings. External
 +files and the retired connection resource are intentionally absent; connected
 +sources are represented as connectors.
 +
@@ -9053,12 +9053,12 @@ index 0000000..12e31af
 +when the other claimant belongs to another project, because Store mutation paths
 +would otherwise be ambiguous.
 +
-+`createProjectResource` creates an editor-ready blank document or slide deck and
++`createProjectResource` creates an editor-ready blank document or presentation and
 +its revision-zero leader snapshot. It accepts only `target` and an optional
 +explicit `title`; project and actor come from request scope, and provenance
 +cannot be supplied. When `title` is omitted, the capability reads represented
 +titles in that project and allocates the first free `Untitled document N` or
-+`Untitled deck N` suffix immediately before creating the row. New Tab and
++`Untitled presentation N` suffix immediately before creating the row. New Tab and
 +Project Overview therefore do not choose names from potentially stale cached
 +indexes. The result carries that chosen title with the opaque resource id and
 +revision. This replaces Project Overview's former client-shaped generic Store
@@ -9150,18 +9150,18 @@ index 0000000..9bff928
 +    });
 +  });
 +
-+  it("creates an editor-ready empty deck", async () => {
-+    await createProjectResource({ target: "slides", title: "Briefing" });
++  it("creates an editor-ready empty presentation", async () => {
++    await createProjectResource({ target: "presentation", title: "Briefing" });
 +
 +    expect(model.writes[0]).toMatchObject({
-+      table: "slideDecks",
++      table: "presentations",
 +      fields: {
 +        projectId: "projects:mine",
 +        createdBy: { kind: "user", userId: "users:me" }
 +      }
 +    });
 +    expect(model.writes[1]).toMatchObject({
-+      table: "slideDeckSnapshots",
++      table: "presentationSnapshots",
 +      fields: { body: { aspectRatio: "16:9", slides: [], sections: [] } }
 +    });
 +  });
@@ -9183,15 +9183,15 @@ index 0000000..9bff928
 +    });
 +
 +    model.writes.length = 0;
-+    model.tables.set("slideDecks", [
-+      { projectId: "projects:mine", title: "Untitled deck 1" },
-+      { projectId: "projects:mine", title: "Untitled deck 3" }
++    model.tables.set("presentations", [
++      { projectId: "projects:mine", title: "Untitled presentation 1" },
++      { projectId: "projects:mine", title: "Untitled presentation 3" }
 +    ]);
-+    const deck = await createProjectResource({ target: "slides" });
-+    expect(deck.title).toBe("Untitled deck 2");
++    const presentation = await createProjectResource({ target: "presentation" });
++    expect(presentation.title).toBe("Untitled presentation 2");
 +    expect(model.writes[0]).toMatchObject({
-+      table: "slideDecks",
-+      fields: { projectId: "projects:mine", title: "Untitled deck 2" }
++      table: "presentations",
++      fields: { projectId: "projects:mine", title: "Untitled presentation 2" }
 +    });
 +  });
 +
@@ -9414,9 +9414,9 @@ index 0000000..9bff928
 +        updatedBy: { kind: "user", userId: "users:odd" }
 +      }
 +    ]);
-+    model.tables.set("slideDecks", [
++    model.tables.set("presentations", [
 +      {
-+        _id: "slideDecks:connector",
++        _id: "presentations:connector",
 +        projectId: "projects:mine",
 +        title: "Connector work",
 +        updatedAt: 11,
@@ -9468,7 +9468,7 @@ index 0000000..3ef352e
 @@ -0,0 +1,44 @@
 +export type ProjectResourceKind =
 +  | "document"
-+  | "slides"
++  | "presentation"
 +  | "spreadsheet"
 +  | "research"
 +  | "finding";
@@ -9495,7 +9495,7 @@ index 0000000..3ef352e
 +  readonly unavailable: readonly ProjectResourceUnavailable[];
 +};
 +
-+export type ProjectResourceTarget = "document" | "slides";
++export type ProjectResourceTarget = "document" | "presentation";
 +
 +export type CreateProjectResourceInput = {
 +  readonly target: ProjectResourceTarget;
@@ -9709,7 +9709,7 @@ index 0000000..6f4e074
 +  questions: ["projectId", "text"],
 +  researchThreads: ["projectId", "title"],
 +  resourceSets: ["projectId", "name"],
-+  slideDecks: ["projectId", "title"],
++  presentations: ["projectId", "title"],
 +  spreadsheets: ["projectId", "title"],
 +  users: ["displayName"],
 +  variables: ["projectId", "name", "value"]
@@ -9734,7 +9734,7 @@ index 0000000..6f4e074
 +  questions: ["projectId", "text"],
 +  researchThreads: ["projectId", "title"],
 +  resourceSets: ["projectId", "name"],
-+  slideDecks: ["projectId", "title"],
++  presentations: ["projectId", "title"],
 +  spreadsheets: ["projectId", "title"],
 +  users: ["displayName"],
 +  variables: ["projectId", "name", "value"]
@@ -9967,7 +9967,7 @@ index d894219..c4fad5c 100644
 +## Read policy
 +
 +The reader uses an explicit table-and-field allowlist for current UI consumers:
-+Project Overview, resource names, document and deck titles, and the project
++Project Overview, resource names, document and presentation titles, and the project
 +variable list. It never returns a complete representation row merely because
 +that row belongs to the active project.
 +
@@ -9987,7 +9987,7 @@ index d894219..c4fad5c 100644
 +- Template tables, snapshot/change-set tables, and every other table or field
 +  outside the allowlist fail closed and must be read through a subject
 +  capability. Template provenance (`templateId`) is deliberately not part of
-+  the document/deck/spreadsheet projection.
++  the document/presentation/spreadsheet projection.
 +- Loaded members must first be records with bounded path-safe ids and finite
 +  creation times. Ambiguous duplicate ids and rows with missing or malformed
 +  required projected fields are omitted. Composite values are copied through a
@@ -10106,9 +10106,9 @@ index 5a772e6..15940dd 100644
 +        title: "Hidden"
 +      }
 +    ],
-+    slideDecks: [
-+      { _id: "slideDecks:1", _creationTime: 1, projectId: "p", title: "Visible deck" },
-+      { _id: "slideDecks:2", _creationTime: 1, projectId: "other", title: "Hidden deck" }
++    presentations: [
++      { _id: "presentations:1", _creationTime: 1, projectId: "p", title: "Visible presentation" },
++      { _id: "presentations:2", _creationTime: 1, projectId: "other", title: "Hidden presentation" }
 +    ],
 +    variables: [
 +      {
@@ -10550,7 +10550,7 @@ index beb3173..1f1d19a 100644
 +  questions: Projection<"questions", "projectId" | "text">;
 +  researchThreads: Projection<"researchThreads", "projectId" | "title">;
 +  resourceSets: Projection<"resourceSets", "projectId" | "name">;
-+  slideDecks: Projection<"slideDecks", "projectId" | "title">;
++  presentations: Projection<"presentations", "projectId" | "title">;
 +  spreadsheets: Projection<"spreadsheets", "projectId" | "title">;
 +  users: Projection<"users", "displayName">;
 +  variables: Projection<"variables", "projectId" | "name" | "value">;
@@ -10862,9 +10862,9 @@ index 0000000..096bf57
 +    };
 +  }
 +
-+  if (body.resource === "slides") {
-+    const { resource: _resource, ...slideDeckBody } = body;
-+    const resourceId = store.create("slideDecks", {
++  if (body.resource === "presentation") {
++    const { resource: _resource, ...presentationBody } = body;
++    const resourceId = store.create("presentations", {
 +      projectId,
 +      title,
 +      templateId: template._id,
@@ -10872,13 +10872,13 @@ index 0000000..096bf57
 +      updatedBy: { ...actor },
 +      updatedAt: at
 +    });
-+    store.create("slideDeckSnapshots", {
++    store.create("presentationSnapshots", {
 +      projectId,
 +      resourceId,
 +      revision: 0,
 +      role: "leader",
 +      part: 0,
-+      body: slideDeckBody,
++      body: presentationBody,
 +      at
 +    });
 +    return {
@@ -11089,7 +11089,7 @@ index 0000000..66839c8
 +  // Resolve and validate every affected id before the first write. A corrupt
 +  // version or provenance row must not be discovered after resources have
 +  // already been detached from the template.
-+  const resourceTables = ["documents", "slideDecks", "spreadsheets"] as const;
++  const resourceTables = ["documents", "presentations", "spreadsheets"] as const;
 +  const detach = new Map<(typeof resourceTables)[number], readonly string[]>();
 +  for (const table of resourceTables) {
 +    const resources = recordsIn(store, table);
@@ -11245,9 +11245,9 @@ index 0000000..d05ec88
 +
 +export const emptyTemplateBody = (target: TemplateTarget): TemplateBody => {
 +  if (target === "document") return { resource: "document", rows: [] };
-+  if (target === "slides") {
++  if (target === "presentation") {
 +    return {
-+      resource: "slides",
++      resource: "presentation",
 +      aspectRatio: "16:9",
 +      theme: {
 +        colors: {
@@ -11871,7 +11871,7 @@ index 0000000..f684e43
 +  };
 +
 +  collect(recordsIn(store, "documents"));
-+  collect(recordsIn(store, "slideDecks"));
++  collect(recordsIn(store, "presentations"));
 +  collect(recordsIn(store, "spreadsheets"));
 +  return uses;
 +};
@@ -12116,7 +12116,7 @@ index 0000000..615dacf
 +};
 +
 +export const targetOf = (value: unknown, subject: string): TemplateTarget => {
-+  if (value !== "document" && value !== "slides" && value !== "spreadsheet") {
++  if (value !== "document" && value !== "presentation" && value !== "spreadsheet") {
 +    throw new Error(`templates/${subject}: target is document, slides, or spreadsheet`);
 +  }
 +  return value;
@@ -13389,7 +13389,7 @@ index 0000000..615dacf
 +  const valid =
 +    target === "document"
 +      ? validDocument(body)
-+      : target === "slides"
++      : target === "presentation"
 +        ? validSlides(body)
 +        : validSpreadsheet(body);
 +  if (!valid) throw new Error(`templates/${subject}: body is not a valid ${target} template body`);
@@ -13794,7 +13794,7 @@ index 0000000..6bc884f
 +| `updateTemplate` | An owner-only, compare-and-swap name, description, tag, or variable-help update plus an immutable version snapshot |
 +| `duplicateTemplate` | A visible template copied into the viewer's ownership at revision one |
 +| `removeTemplate` | An owner-only, compare-and-swap delete after current-project provenance and all version rows are removed; cross-project references refuse deletion |
-+| `instantiateTemplate` | A regular document, deck, or spreadsheet with template provenance and a revision-zero leader snapshot |
++| `instantiateTemplate` | A regular document, presentation, or spreadsheet with template provenance and a revision-zero leader snapshot |
 +
 +## Visibility and availability
 +
@@ -13822,7 +13822,7 @@ index 0000000..6bc884f
 +the scoped command never creates a dangling foreign-project `templateId` and
 +never mutates a project it was not authorized to enter.
 +
-+`lastUsedAt` is the newest `_creationTime` of a document, deck, or spreadsheet
++`lastUsedAt` is the newest `_creationTime` of a document, presentation, or spreadsheet
 +in the scoped project whose `templateId` names the template. Later edits to that
 +resource do not make the template appear newly used.
 +
@@ -13844,7 +13844,7 @@ index 0000000..6bc884f
 +## Instantiation boundary
 +
 +Instantiation writes normal resource rows, not a private template-editor data
-+model. Documents and decks receive their represented body as a leader snapshot.
++model. Documents and presentations receive their represented body as a leader snapshot.
 +Spreadsheet templates are materialized from addresses into stable row/column
 +ids, sheet-cell rows, print ranges, dimensions, and a leader snapshot. All
 +materialized cells are admitted and persisted as one table batch rather than
@@ -14004,7 +14004,7 @@ index 0000000..ed4f318
 +
 +const documentBody = { resource: "document", rows: [] } as const;
 +const slidesBody = {
-+  resource: "slides",
++  resource: "presentation",
 +  aspectRatio: "16:9",
 +  theme: { colors: { text: "ink", accent: "blue" } },
 +  styles: { defaultKey: "body", styles: { body: { name: "Body" } } },
@@ -14078,8 +14078,8 @@ index 0000000..ed4f318
 +    templateVersions: [],
 +    documents: [],
 +    documentSnapshots: [],
-+    slideDecks: [],
-+    slideDeckSnapshots: [],
++    presentations: [],
++    presentationSnapshots: [],
 +    spreadsheets: [],
 +    spreadsheetSnapshots: [],
 +    sheetCells: [],
@@ -14162,8 +14162,8 @@ index 0000000..ed4f318
 +        _creationTime: 999
 +      })
 +    );
-+    model.tables.slideDecks.push(
-+      row("slideDecks", "1", {
++    model.tables.presentations.push(
++      row("presentations", "1", {
 +        projectId: "p",
 +        templateId: "templates:2",
 +        updatedAt: 900,
@@ -14189,7 +14189,7 @@ index 0000000..ed4f318
 +
 +    const answer = await readTemplate({ templateId: "templates:1" });
 +    assert.ok(answer !== null && !("unavailable" in answer));
-+    assert.equal(answer.body.resource, "slides");
++    assert.equal(answer.body.resource, "presentation");
 +    assert.equal(await readTemplate({ templateId: "templates:2" }), null);
 +  });
 +
@@ -14238,7 +14238,7 @@ index 0000000..ed4f318
 +
 +describe("template mutations", () => {
 +  test("creates every target from a server-owned valid empty body and records revision one", async () => {
-+    for (const target of ["document", "slides", "spreadsheet"] as const) {
++    for (const target of ["document", "presentation", "spreadsheet"] as const) {
 +      const answer = await createTemplate({ target, name: `New ${target}`, tags: [" New ", "new"] });
 +      assert.equal(answer.accepted, true);
 +      const created = model.tables.templates.find((candidate) => candidate._id === answer.templateId);
@@ -14518,20 +14518,20 @@ index 0000000..ed4f318
 +    assert.equal(model.tables.documentSnapshots.length, 0);
 +  });
 +
-+  test("creates ordinary document and slide-deck rows with leader snapshots and provenance", async () => {
++  test("creates ordinary document and presentation rows with leader snapshots and provenance", async () => {
 +    model.tables.templates.push(template("1", "u"), template("2", "u", slidesBody));
 +
 +    const document = await instantiateTemplate({ templateId: "templates:1", name: "Brief" });
 +    const slides = await instantiateTemplate({ templateId: "templates:2" });
 +
 +    assert.equal(document.accepted && document.target, "document");
-+    assert.equal(slides.accepted && slides.target, "slides");
++    assert.equal(slides.accepted && slides.target, "presentation");
 +    assert.equal(model.tables.documents[0].templateId, "templates:1");
 +    assert.equal(model.tables.documentSnapshots[0].role, "leader");
-+    assert.equal(model.tables.slideDecks[0].templateId, "templates:2");
-+    assert.equal(model.tables.slideDeckSnapshots[0].revision, 0);
++    assert.equal(model.tables.presentations[0].templateId, "templates:2");
++    assert.equal(model.tables.presentationSnapshots[0].revision, 0);
 +    assert.notEqual(model.tables.documents[0].createdBy, model.tables.documents[0].updatedBy);
-+    assert.notEqual(model.tables.slideDecks[0].createdBy, model.tables.slideDecks[0].updatedBy);
++    assert.notEqual(model.tables.presentations[0].createdBy, model.tables.presentations[0].updatedBy);
 +  });
 +
 +  test("materializes addressed spreadsheet cells into stable row and column ids", async () => {
@@ -15050,9 +15050,9 @@ index 0000000..ed4f318
 +    }
 +  });
 +
-+  test("validates slide layouts, placeholders, overflow, references, frames, and deck ids", () => {
++  test("validates slide layouts, placeholders, overflow, references, frames, and presentation ids", () => {
 +    const body = {
-+      resource: "slides",
++      resource: "presentation",
 +      aspectRatio: "16:9",
 +      theme: { colors: { text: "ink", accent: "blue", muted: "muted" } },
 +      styles: { defaultKey: "body", styles: { body: { name: "Body" } } },
@@ -15106,7 +15106,7 @@ index 0000000..ed4f318
 +      ],
 +      sections: [{ id: "section-1", name: "Opening", firstSlideId: "slide-1" }]
 +    };
-+    assert.equal(bodyOf(body, "test").resource, "slides");
++    assert.equal(bodyOf(body, "test").resource, "presentation");
 +    assert.equal(
 +      bodyOf(
 +        changed(body, (draft) => {
@@ -15117,7 +15117,7 @@ index 0000000..ed4f318
 +        }),
 +        "test"
 +      ).resource,
-+      "slides"
++      "presentation"
 +    );
 +
 +    const malformed = [
@@ -15660,7 +15660,7 @@ index d7be630..ce8715e 100644
      { role: "secondary", hue: "cyan", means: "Shares the active hue" },
      { role: "accent-1", hue: "pink", means: "Categorical work" },
      { role: "accent-2", hue: "teal", means: "Categorical work" },
-+    { role: "slide", hue: "orange", means: "Slide-deck identity" },
++    { role: "slide", hue: "orange", means: "Slide-presentation identity" },
    ];
  </script>
  
@@ -15705,7 +15705,7 @@ index 0000000..f5a97ae
 +      number: "04",
 +      title: "Create",
 +      icon: FilePlus2,
-+      gesture: "Optionally name it, then press the Document, Slide deck or Spreadsheet icon",
++      gesture: "Optionally name it, then press the Document, Presentation or Spreadsheet icon",
 +      result: "Each icon is the create action; kind is fixed immediately and the new owned template becomes the inspected subject."
 +    },
 +    {
@@ -15727,7 +15727,7 @@ index 0000000..f5a97ae
 +      title: "Use",
 +      icon: ExternalLink,
 +      gesture: "Press the explicit Use action",
-+      result: "Documents and decks prevalidate defaults, materialize one independent resource per pending workspace intent, and open their ordinary editor. Spreadsheet materialization is implemented and tested, but the UI handoff is deliberately disabled until its editor consumes resource ids. Cross-client retries still need durable request ids."
++      result: "Documents and presentations prevalidate defaults, materialize one independent resource per pending workspace intent, and open their ordinary editor. Spreadsheet materialization is implemented and tested, but the UI handoff is deliberately disabled until its editor consumes resource ids. Cross-client retries still need durable request ids."
 +    }
 +  ];
 +</script>
@@ -15896,7 +15896,7 @@ index 0000000..159611f
 +    projectIntegration: {
 +      label: "Project integration",
 +      reason:
-+        "Does not put templates in Project Overview. It makes a document, deck, or spreadsheet created by Template Use appear in the existing resource table immediately, through the same typed project-resource cache key. This area is required for end-to-end Use, not for library browsing, and can be separated if Use integration is deferred."
++        "Does not put templates in Project Overview. It makes a document, presentation, or spreadsheet created by Template Use appear in the existing resource table immediately, through the same typed project-resource cache key. This area is required for end-to-end Use, not for library browsing, and can be separated if Use integration is deferred."
 +    },
 +    compatibilityStore: {
 +      label: "Compatibility Store",
@@ -15958,10 +15958,10 @@ index 0000000..159611f
 +      "Replaced the remaining external-file reference with an existing finding because external files are no longer a resource kind.",
 +    "app/seed/sheetCells.json":
 +      "Added represented values, formatting, merges, and stable row and column identities for the seeded spreadsheet resources.",
-+    "app/seed/slideDeckSnapshots.json":
-+      "Added leader snapshots for the additional seeded slide decks used by the library recency examples.",
-+    "app/seed/slideDecks.json":
-+      "Added templateId provenance to existing decks and two more represented deck uses for recent-template ordering.",
++    "app/seed/presentationSnapshots.json":
++      "Added leader snapshots for the additional seeded presentations used by the library recency examples.",
++    "app/seed/presentations.json":
++      "Added templateId provenance to existing presentations and two more represented presentation uses for recent-template ordering.",
 +    "app/seed/spreadsheetSnapshots.json":
 +      "Added represented spreadsheet geometry, formatting, print settings, and leader-snapshot metadata.",
 +    "app/seed/spreadsheets.json":
@@ -15973,7 +15973,7 @@ index 0000000..159611f
 +    "app/src/lib/app-views/categories/project-overview/content/overview.svelte":
 +      "Replaced browser aggregation and generic Store creation with scoped Project Resources reads and writes; added loading, quarantine, and failure states so resources made by Template Use appear after refresh. It does not display Templates.",
 +    "app/src/lib/app-views/categories/project-overview/procedures/opening.ts":
-+      "Limited editor routing to documents and slide decks because the spreadsheet, research, and analysis surfaces do not consume represented ids yet.",
++      "Limited editor routing to documents and presentations because the spreadsheet, research, and analysis surfaces do not consume represented ids yet.",
 +    "app/src/lib/app-views/categories/project-overview/procedures/resources.ts":
 +      "Replaced direct represented-row assembly with typed Project Resources projection and a single-flight wrapper for blank creation.",
 +    "app/src/lib/app-views/categories/project-overview/procedures/rows.ts":
@@ -15983,7 +15983,7 @@ index 0000000..159611f
 +    "app/src/lib/app-views/categories/templates/content/library.svelte":
 +      "Built the ten-item recent shelf, search, scope, kind, and tag filters, sorting, table selection, inspector selection, and singleton editor navigation.",
 +    "app/src/lib/app-views/categories/templates/context/overview-library.svelte":
-+      "Built represented totals and optional-name creation, then joined the colored Document, Slide deck, and Spreadsheet actions into one segmented control.",
++      "Built represented totals and optional-name creation, then joined the colored Document, Presentation, and Spreadsheet actions into one segmented control.",
 +    "app/src/lib/app-views/categories/templates/inspector/template.svelte":
 +      "Built inline autosave, variable-description and tag controls, and joined Use, Duplicate, and Delete actions with permission and conflict states.",
 +    "app/src/lib/app-views/categories/templates/procedures/library.svelte.ts":
@@ -15991,11 +15991,11 @@ index 0000000..159611f
 +    "app/src/lib/app-views/categories/templates/templates.md":
 +      "Rewrote the surface contract for the implemented library, Overview, Inspector, Personal visibility, Use behavior, and deferred authoring session.",
 +    "app/src/lib/capabilities/project-resources/api/create-project-resource/create-project-resource.ts":
-+      "Added scoped collision-free blank naming and creation of an editor-ready document or deck plus revision-zero leader snapshot.",
++      "Added scoped collision-free blank naming and creation of an editor-ready document or presentation plus revision-zero leader snapshot.",
 +    "app/src/lib/capabilities/project-resources/api/create-project-resource/validate-create-project-resource.ts":
 +      "Added strict admission for the blank-resource target and optional bounded title.",
 +    "app/src/lib/capabilities/project-resources/api/read-project-resource-index/read-project-resource-index.ts":
-+      "Added a project-scoped closed metadata projection for documents, decks, spreadsheets, research threads, and findings with malformed-row reporting.",
++      "Added a project-scoped closed metadata projection for documents, presentations, spreadsheets, research threads, and findings with malformed-row reporting.",
 +    "app/src/lib/capabilities/project-resources/index.remote.ts":
 +      "Registered the Project Resources read and create doors and their shared cache key.",
 +    "app/src/lib/capabilities/project-resources/project-resources.md":
@@ -16594,7 +16594,7 @@ index 0000000..c2184b2
 +    { label: "Template", detail: "body + variables", icon: Files },
 +    { label: "Authoring session", detail: "proposed durable lease", icon: Braces },
 +    { label: "Scratch resource", detail: "proposed editor identity", icon: Database },
-+    { label: "Existing editor", detail: "document · deck · sheet later", icon: PanelsTopLeft },
++    { label: "Existing editor", detail: "document · presentation · sheet later", icon: PanelsTopLeft },
 +    { label: "Done or Cancel", detail: "resolve, then clean up", icon: ServerCog }
 +  ];
 +</script>
@@ -16813,7 +16813,7 @@ index 0000000..3831c54
 +    createTabViews(),
 +    unpersisted,
 +    app.documentRuntimes,
-+    app.slideDeckRuntimes
++    app.presentationRuntimes
 +  );
 +
 +  view.activate("templates");
@@ -17091,7 +17091,7 @@ index 0000000..4de9d47
 +The live stage is not backed by component-local mock values. Accepted create,
 +rename, description, variable-description, tag, duplicate, and delete commands
 +write through the Templates capability into the representation store. Refresh
-+and server restart preserve them. Document and slide-deck `Use` also persists an
++and server restart preserve them. Document and presentation `Use` also persists an
 +independent project resource with template provenance. Spreadsheet
 +materialization exists at the capability boundary, but its UI hand-off remains
 +disabled until the spreadsheet editor consumes represented resource ids.
@@ -17138,7 +17138,7 @@ index 0000000..4de9d47
 +- template values, which come through the Template views' ordinary procedures;
 +- capability scope or mutation behavior;
 +- any Template product markup;
-+- document, slide-deck or spreadsheet editing;
++- document, presentation or spreadsheet editing;
 +- the representation contracts it explains.
 +
 +## Public Contract
@@ -17231,7 +17231,7 @@ index 0000000..4de9d47
 +- Matching pending commands share one promise per Workspace State instance, so
 +  sibling panes and keyed remounts cannot duplicate a write. This is not a
 +  durable cross-client request-id ledger, and the reference does not claim it is.
-+- Blank document and deck suffixes are chosen inside Project Resources from
++- Blank document and presentation suffixes are chosen inside Project Resources from
 +  current project rows immediately before creation, never from a cached view.
 +- The authoring-session lane is labeled as a proposal: it requires a durable
 +  lease and expiry owner, and never claims that a generic tab close can safely
@@ -17278,7 +17278,7 @@ index 0000000..6c93a37
 +    {
 +      number: "03",
 +      title: "Use the ordinary editor",
-+      detail: "Document and slide-deck behavior stay in their owners. The spreadsheet editor is still mock-backed.",
++      detail: "Document and presentation behavior stay in their owners. The spreadsheet editor is still mock-backed.",
 +      icon: Layers3
 +    },
 +    {
@@ -17323,7 +17323,7 @@ index 0000000..6c93a37
 +    {
 +      label: "Editor strategy",
 +      value: "proposed · deferred",
-+      detail: "Document and deck reuse need a durable authoring session; the spreadsheet editor itself remains mock-backed.",
++      detail: "Document and presentation reuse need a durable authoring session; the spreadsheet editor itself remains mock-backed.",
 +      state: "deferred"
 +    },
 +    {
@@ -17373,7 +17373,7 @@ index 0000000..6c93a37
 +    {
 +      title: "Remaining Use inputs and hand-offs",
 +      priority: "Before every template can be used from UI · medium",
-+      today: "Document and deck Use persist independent resources using represented defaults. Spreadsheet materialization is implemented and tested, but its button stays disabled because the spreadsheet editor does not consume the created resource id. Missing or cyclic variable defaults refuse before any write.",
++      today: "Document and presentation Use persist independent resources using represented defaults. Spreadsheet materialization is implemented and tested, but its button stays disabled because the spreadsheet editor does not consume the created resource id. Missing or cyclic variable defaults refuse before any write.",
 +      worst: "Enabling these paths prematurely would either open a mock disconnected from the resource just written or force callers to invent variable-answer data that representation cannot record.",
 +      next: "Define the variable-answer command shape and connect the spreadsheet runtime to represented resource ids. Neither changes the current Personal library's create, edit, duplicate, or delete persistence."
 +    }
@@ -17461,7 +17461,7 @@ index 0000000..6c93a37
 +          <strong>Persisted now, not mocked:</strong> create, rename, description,
 +          variable-description, tag, duplicate, and delete mutations write through the Templates
 +          capability into the representation store. Refreshing the page or restarting the server
-+          keeps accepted changes. Document and deck Use also persist the independent resource they create.
++          keeps accepted changes. Document and presentation Use also persist the independent resource they create.
 +        </p>
 +      </div>
 +      <div class="live-warning">
@@ -17564,7 +17564,7 @@ index 0000000..6c93a37
 +          <article>
 +            <header><ArrowRight size={16} aria-hidden="true" /><span>PROVENANCE</span></header>
 +            <h3>Created resource</h3>
-+            <p>An independent document, deck or workbook retains templateId; later template edits never rewrite it.</p>
++            <p>An independent document, presentation or workbook retains templateId; later template edits never rewrite it.</p>
 +          </article>
 +        </div>
 +      </div>
@@ -18552,7 +18552,7 @@ index 51e0836..79b37f3 100644
  | `resize` | file | [`resize.ts`](resize.ts) | mutator | Replace the active tab's frame with a patched copy |
  | `showing` | file | [`showing.ts`](showing.ts) | accessor | Whether the active tab is on a given centre right now |
 +| `singleFlight` | file | [`single-flight.ts`](single-flight.ts) | coordinator | Share one pending durable command across remounts and sibling surfaces |
- | `slideDeckRuntime` | file | [`slide-deck-runtime.ts`](slide-deck-runtime.ts) | accessor | The runtime a deck already has, from the register this object borrows |
+ | `presentationRuntime` | file | [`presentation-runtime.ts`](presentation-runtime.ts) | accessor | The runtime a presentation already has, from the register this object borrows |
  | `undo` | file | [`undo.ts`](undo.ts) | mutator | Apply the inverse of the last op, and remember it for `redo` |
  | `redo` | file | [`redo.ts`](redo.ts) | mutator | Apply the last undone op again |
 @@ -77,7 +78,7 @@ long enough to split.
@@ -18857,7 +18857,7 @@ index faa74d8..ed9f4b3 100644
 +  ): Promise<Result>;
 +
    documentRuntime(resourceId: string): DocumentRuntime;
-   slideDeckRuntime(resourceId: string): SlideDeckRuntime;
+   presentationRuntime(resourceId: string): PresentationRuntime;
  
 diff --git a/app/src/lib/model/client/workspace-state/workspace-state.md b/app/src/lib/model/client/workspace-state/workspace-state.md
 index c21b4b0..bc55bbd 100644
@@ -18869,7 +18869,7 @@ index c21b4b0..bc55bbd 100644
  | `showing` | file | accessor | Whether the active tab is on a given centre right now |
 +| `singleFlight` | file | coordinator | Share one pending durable command by its exact intent key across every mounted view in this workspace |
  | `documentRuntime` | file | accessor | The runtime a document already has. Attaching is the register's, so two tabs on one document share a buffer |
- | `slideDeckRuntime` | file | accessor | The same for a deck |
+ | `presentationRuntime` | file | accessor | The same for a presentation |
  | `undo` | file | mutator | Apply the inverse of the last op, and keep it for `redo` |
 @@ -217,9 +218,9 @@ supporting flow. Every one is still a file.
  A simple method has no document of its own.
@@ -19314,7 +19314,7 @@ index 735dce5..ff886f2 100644
    --token-color-accent-2-text: var(--chromatic-teal-text);
    --token-color-accent-2-on-fill: var(--chromatic-teal-on-fill);
 +
-+  /* slide — slide-deck identity wherever a resource kind needs a hue */
++  /* slide — presentation identity wherever a resource kind needs a hue */
 +  --token-color-slide-surface: var(--chromatic-orange-surface);
 +  --token-color-slide-surface-hover: var(--chromatic-orange-surface-hover);
 +  --token-color-slide-border: var(--chromatic-orange-border);
@@ -19339,7 +19339,7 @@ index 00e8500..ee47a35 100644
 -another but never with a meaning hue. `orange` and `yellow` are declared by the
 -chromatic stage and reserved.
 +another but never with a meaning hue. `yellow` is declared by the chromatic
-+stage and reserved; orange gives slide-deck identity a stable public role.
++stage and reserved; orange gives presentation identity a stable public role.
  
  ## Shadow color
  

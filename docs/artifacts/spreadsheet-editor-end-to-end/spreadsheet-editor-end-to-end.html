@@ -626,7 +626,7 @@
           <p class="eyebrow">01 &middot; Copies</p>
           <h2>Three copies of one sheet, in two tables</h2>
           <p>
-            The document and the deck each keep their whole body in one leader
+            The document and the presentation each keep their whole body in one leader
             snapshot. The spreadsheet is the one resource whose content is not in its
             body: the body holds the <em>shape</em> of the grid &mdash; which rows and
             columns exist, in what order, how wide, what is formatted where, how it
@@ -725,8 +725,8 @@
           <p>
             The slide editor no longer imports Konva. The canvas became
             <code>components/authored/slide-surface/</code>: a component that takes a
-            <code>SurfaceScene</code> projected from the live deck and emits moves, edits
-            and selections back. The deck view translates those into ops. That is the
+            <code>SurfaceScene</code> projected from the live presentation and emits moves, edits
+            and selections back. The presentation view translates those into ops. That is the
             shape the spreadsheet takes too &mdash; <code>sheet-surface</code> takes a
             <code>SheetScene</code> and emits intents &mdash; and it is what makes the
             grid library a decision that can be revisited without touching a lens, a
@@ -846,7 +846,7 @@
             <text x="596" y="150" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="10.5" fill="currentColor">allowed</text>
           </svg>
           <figcaption>
-            The same four lines the deck and the document obey. Every representation type
+            The same four lines the presentation and the document obey. Every representation type
             the view needs is re-exported through <code>procedures/</code>; the runtime is
             reached only as <code>view.spreadsheetRuntime(id)</code>, an accessor workspace
             state does not have yet. <code>runtime-through-workspace-state</code> refuses the
@@ -979,7 +979,7 @@ variables         project names a formula can read                 <span class="
           <h2>The live sheet</h2>
           <p>
             <code>model/client/spreadsheet-runtimes/</code> exists already, copied from the
-            deck: a register keyed by sheet, a runtime with a buffer, an undo stack, a
+            presentation: a register keyed by sheet, a runtime with a buffer, an undo stack, a
             coalescer and a flush that takes the accepted branch locally because nothing
             serves a sheet yet. Two things change. The runtime's live copy becomes
             <code>sheet: { body, cells }</code> rather than a body alone, and
@@ -1239,7 +1239,7 @@ variables         project names a formula can read                 <span class="
     ├── <span class="new">cells.ts</span>          <span class="note">set · clear · paste · fill as ops</span>
     ├── <span class="new">structure.ts</span>      <span class="note">insert · remove · move rows and columns, cells carried</span>
     ├── <span class="new">merging.ts</span>  <span class="new">spills.ts</span>  <span class="new">fill.ts</span>  <span class="new">clipboard.ts</span>
-    ├── <span class="new">selecting.ts</span>      <span class="note">a selection → which lens, as the deck's does</span>
+    ├── <span class="new">selecting.ts</span>      <span class="note">a selection → which lens, as the presentation's does</span>
     ├── <span class="new">references.ts</span>     <span class="note">A1 refs and names scanned out of expression text; reads and feeds</span>
     ├── <span class="new">find.ts</span>  <span class="new">printing.ts</span>  <span class="new">styles.ts</span>  <span class="new">ids.ts</span>
     └── test/unit/*.test.ts
@@ -1325,7 +1325,7 @@ variables         project names a formula can read                 <span class="
   </section>
 
   <div class="meta">
-    <span>read against main at 98d9cd0 · work/document-editor at 55a7b22 · work/slide-deck-editor uncommitted</span>
+    <span>read against main at 98d9cd0 · work/document-editor at 55a7b22 · work/presentation-editor uncommitted</span>
     <span>svelte 5 · sveltekit</span>
     <span>the other pages: the grid · context panels · inspector lenses · questions and decisions</span>
   </div>

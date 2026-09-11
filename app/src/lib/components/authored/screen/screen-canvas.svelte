@@ -4,7 +4,7 @@
   import { traceNode } from "$development-components/trace.svelte";
 
   /**
-   * The ground a document, a deck or a template sits on. Not the thing itself:
+   * The ground a document, a presentation or a template sits on. Not the thing itself:
    * the surround.
    *
    * Three workspaces need the same four rules — a darker fill, the only scroll

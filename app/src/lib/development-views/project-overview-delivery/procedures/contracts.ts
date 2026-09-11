@@ -52,7 +52,7 @@ export const DELIVERED_PANELS: readonly DeliveredPanel[] = [
     key: "project-overview.resource",
     reads: "readProjectResource({ resourceId })",
     presents: "Editable summary, resource-specific counts, provenance, creator, creation date, and five recent events.",
-    behavior: "Documents and decks can open in their native editor. Other kinds remain inspectable without pretending an editor route exists."
+    behavior: "Documents and presentations can open in their native editor. Other kinds remain inspectable without pretending an editor route exists."
   }
 ];
 
@@ -134,7 +134,7 @@ export const INTENTIONAL_BOUNDARIES: readonly DeliveryFact[] = [
   },
   {
     label: "Native opening",
-    value: "Documents + decks",
+    value: "Documents + presentations",
     detail: "Resource inspection supports every represented kind; only editors with a real workspace path expose Open."
   },
   {
@@ -145,7 +145,7 @@ export const INTENTIONAL_BOUNDARIES: readonly DeliveryFact[] = [
   {
     label: "Authored bodies",
     value: "Never returned",
-    detail: "Project Overview receives useful counts, summaries, and frozen labels—not document, deck, sheet, or research bodies."
+    detail: "Project Overview receives useful counts, summaries, and frozen labels—not document, presentation, sheet, or research bodies."
   },
   {
     label: "Legacy shapes",

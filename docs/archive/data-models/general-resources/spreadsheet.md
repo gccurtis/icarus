@@ -185,7 +185,7 @@ new sheet print nothing.
 ## Styles
 
 `styles` is the workbook's [style set](style-set.md), shared with documents and
-decks. A sheet with named styles for headers, totals, and input cells is
+presentations. A sheet with named styles for headers, totals, and input cells is
 restyled once rather than cell by cell.
 
 ## The body is not on this row

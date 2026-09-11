@@ -33,7 +33,7 @@ the exact-text contract that Derived Output depends on.
 
 ## Source projection
 
-`projectResource` performs one authoritative document/deck walk and returns:
+`projectResource` performs one authoritative document/presentation walk and returns:
 
 ```ts
 type ProjectSemanticProjection = {
@@ -53,7 +53,7 @@ type SemanticResourceProjection = {
 ```
 
 Documents traverse header, first-page header, body, footer, and first-page
-footer in deterministic block order. Slide decks traverse visible slides,
+footer in deterministic block order. Presentations traverse visible slides,
 frame-ordered elements/groups, and notes. A slide boundary is recorded as an
 out-of-band coordinate and is never embedded as `Slide 1` text.
 
@@ -77,10 +77,10 @@ this exact lane; CSV/image/data files also remain outside exact retrieval.
 
 ## Entry points
 
-The normal path begins only after a document/deck leader write is accepted:
+The normal path begins only after a document/presentation leader write is accepted:
 
 ```text
-submitDocumentChanges / submitSlideDeckChanges / createProjectResource
+submitDocumentChanges / submitPresentationChanges / createProjectResource
   → enqueueSemanticSync({ ref })
       → enqueueSemanticSyncFor(ref, revision)       exact when supported
       → enqueueMaterialSyncFor(ref, revision)       material inventory
@@ -91,7 +91,7 @@ current stored External subkind. Enqueueing is revision-only: it does not walk t
 read native bytes, or call a provider.
 
 `backfillSemanticOverlay` is the development/maintenance path. It enumerates all
-document, deck, and spreadsheet leaders plus external files, enqueues the same
+document, presentation, and spreadsheet leaders plus external files, enqueues the same
 job shapes, and drains one bounded batch. It is safe to call repeatedly because
 jobs coalesce and synchronization is idempotent unless `force` is requested.
 

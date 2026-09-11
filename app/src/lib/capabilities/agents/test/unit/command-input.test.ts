@@ -135,7 +135,7 @@ describe("Agent command variants", () => {
   it("requires unique catalogue-ordered trigger kinds and omitted absent references", () => {
     expect(() => validateUpdateAutomation(updateAutomation({
       kind: "resource-created",
-      kinds: ["slides", "document"]
+      kinds: ["presentation", "document"]
     }))).toThrow(/catalogue order/);
     expect(() => validateUpdateAutomation(updateAutomation({
       kind: "resource-created",

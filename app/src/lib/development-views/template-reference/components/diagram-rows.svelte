@@ -22,11 +22,11 @@
   <section class="group resource">
     <h4>What the editor actually opens</h4>
     <ul>
-      <li><code>documents · slideDecks</code><span>an ordinary row, titled Template · name</span></li>
-      <li><code>documentSnapshots · slideDeckSnapshots</code><span>the leader body the editor edits</span></li>
-      <li><code>documentChangeSets · slideDeckChangeSets</code><span>the ledger, as for any resource</span></li>
+      <li><code>documents · presentations</code><span>an ordinary row, titled Template · name</span></li>
+      <li><code>documentSnapshots · presentationSnapshots</code><span>the leader body the editor edits</span></li>
+      <li><code>documentChangeSets · presentationChangeSets</code><span>the ledger, as for any resource</span></li>
     </ul>
-    <p class="writer">Written by the document and deck capabilities, which know nothing about templates</p>
+    <p class="writer">Written by the document and presentation capabilities, which know nothing about templates</p>
   </section>
 </div>
 

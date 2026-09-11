@@ -80,7 +80,7 @@ const paragraph = (display: string, suffix = "1") => ({
 
 const currentThread = (
   id: string,
-  target: { kind: "document" | "slides" | "spreadsheet"; id: string },
+  target: { kind: "document" | "presentation" | "spreadsheet"; id: string },
   extra: Record<string, unknown> = {}
 ) => ({
   _id: id,

@@ -55,7 +55,7 @@
       action: "Server refresh completes",
       inspector: "Prompt block · evidence",
       display: "Readiness improved to 92% across all regions.",
-      detail: "The response arrives through deck ops. It remains editable and keeps its mark ranges."
+      detail: "The response arrives through presentation ops. It remains editable and keeps its mark ranges."
     }
   ];
 
@@ -65,7 +65,7 @@
   const SEQUENCE = `sequenceDiagram
     autonumber
     participant U as Editor action
-    participant D as SlideDeckRuntime
+    participant D as PresentationRuntime
     participant O as Derived Output server
     participant S as Semantic Overlay
     participant R as Representation store
@@ -76,7 +76,7 @@
     U->>O: createDerivedOutput(prompt, origin: slides)
     O-->>U: derivedOutputId
     U->>D: linkPromptBlockOps(block, id)
-    D->>R: flush accepted deck revision
+    D->>R: flush accepted presentation revision
     U->>O: refreshDerivedOutput(id)
     O->>R: coalesce one refresh job by Derived Output ID
     O->>S: drain semantic work + retrieve evidence
@@ -95,18 +95,18 @@
     ["querySemanticOverlay", "semantic capability", "Retrieves consolidated exact-text evidence"],
     ["syncPromptBlockOps", "slide adapter", "Publishes text through collaborative atom/mark ops"],
     ["sceneOf → SlideSurface", "presentation", "Renders PromptBlock exactly like a text box"],
-    ["promptBlocksIn", "navigation", "Drives stars and the deck-wide Prompts index"]
+    ["promptBlocksIn", "navigation", "Drives stars and the presentation-wide Prompts index"]
   ] as const;
 
   const FILES = [
     ["representation/data/types/content/content-block.ts", "PromptBlock contract"],
-    ["representation/data/types/slide-decks/body.ts", "Prompt element inside SlideElement"],
-    ["slide-deck-editor/procedures/prompt-blocks.ts", "Conversion, linking, publication, listing"],
-    ["slide-deck-editor/components/prompt-action.svelte", "Text-box entry action"],
-    ["slide-deck-editor/inspector/prompt-block.svelte", "Setup plus normal text/element controls"],
-    ["slide-deck-editor/components/prompt-settings.svelte", "Refresh state and evidence"],
+    ["representation/data/types/presentations/body.ts", "Prompt element inside SlideElement"],
+    ["presentation-editor/procedures/prompt-blocks.ts", "Conversion, linking, publication, listing"],
+    ["presentation-editor/components/prompt-action.svelte", "Text-box entry action"],
+    ["presentation-editor/inspector/prompt-block.svelte", "Setup plus normal text/element controls"],
+    ["presentation-editor/components/prompt-settings.svelte", "Refresh state and evidence"],
     ["components/authored/slide-surface/slide-surface.svelte", "Editor-only star marker"],
-    ["semantic/projection/resources/slide-deck.ts", "Excludes generated response from ingestion"]
+    ["semantic/projection/resources/presentation.ts", "Excludes generated response from ingestion"]
   ] as const;
 </script>
 
@@ -114,7 +114,7 @@
   <title>Slide Prompt Blocks — Icarus</title>
   <meta
     name="description"
-    content="The implemented interaction and exact procedure for editable, derived text in slide decks."
+    content="The implemented interaction and exact procedure for editable, derived text in presentations."
   />
 </svelte:head>
 
@@ -145,7 +145,7 @@
         <h1>The slide stays a slide.<br /><em>The text gains a source.</em></h1>
         <p class="lede">
           A slide Prompt Block is not a special-looking card. It is an ordinary text box whose
-          content carries one Derived Output ID. The deck still owns placement and formatting;
+          content carries one Derived Output ID. The presentation still owns placement and formatting;
           the server owns refresh work, grounding, and the canonical response.
         </p>
         <div class="hero-actions">
@@ -203,7 +203,7 @@
         </div>
 
         <aside class="mini-inspector">
-          <div class="crumb">DECK / SLIDE 4</div>
+          <div class="crumb">PRESENTATION / SLIDE 4</div>
           <div class="inspector-title">
             <strong>{current.inspector}</strong>
             <div>
@@ -283,7 +283,7 @@
           <header><Server size={17} /><span>DERIVED OUTPUT / SERVER OWNED</span></header>
           <pre><code>{`{
   prompt,
-  origin: { kind: "slides", id: deckId },
+  origin: { kind: "presentation", id: presentationId },
   scope,
   evidence,
   lastResponse,
@@ -305,7 +305,7 @@
       <header class="section-heading">
         <div><span>03</span><h2>The exact call chain,<br />including publication.</h2></div>
         <p>
-          Conversion and response publication travel through the deck runtime’s collaborative op
+          Conversion and response publication travel through the presentation runtime’s collaborative op
           stream. Provider work and refresh coordination remain entirely server-side.
         </p>
       </header>
@@ -392,7 +392,7 @@
             tables, notes, or groups. Scope is Whole project. Automatic interval refresh, first-link
             compare-and-set, a server-owned single-writer presentation mirror, saved Resource Sets,
             and export-time freeze policy remain explicit next work. Today the canonical refresh is
-            coalesced on the server; each mounted editor mirrors that same result through normal deck ops.
+            coalesced on the server; each mounted editor mirrors that same result through normal presentation ops.
           </p>
         </div>
       </aside>

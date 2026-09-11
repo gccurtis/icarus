@@ -463,7 +463,7 @@ tries to use the result.
 
 **Nothing writes.** Ten panels, twelve editable values between them, and every
 one is held where it was typed. The two controls that do anything at all are Run
-again, which evaluates and stores nothing, and the deck's re-frame, which is
+again, which evaluates and stores nothing, and the presentation's re-frame, which is
 staged, confirmed, and then held like everything else.
 
 **Nothing is deleted.** Only the Context overview draws a Delete at all, disabled

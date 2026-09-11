@@ -31,10 +31,10 @@ export const enqueueSemanticOutboxFor = (
 
   const atomic = semanticUnitModel(model, unit);
   const exactText =
-    ref.kind === "document" || ref.kind === "slides" || ref.kind === "externalFile::text";
+    ref.kind === "document" || ref.kind === "presentation" || ref.kind === "externalFile::text";
   const material =
     ref.kind === "document" ||
-    ref.kind === "slides" ||
+    ref.kind === "presentation" ||
     ref.kind === "spreadsheet" ||
     ref.kind === "externalFile::code" ||
     ref.kind === "externalFile::data" ||

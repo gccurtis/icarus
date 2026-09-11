@@ -38,7 +38,7 @@ export const CONFLICTS: readonly ConflictCluster[] = [
     resolution:
       "Keep main's extracted procedure and its three-kind creation path. Do not restore the inline async handler; the branch behavior is already downstream of project-resource creation.",
     proof:
-      "New Tab creates and opens documents, slide decks and spreadsheets; architecture lint reports no inline async-command-state finding.",
+      "New Tab creates and opens documents, presentations and spreadsheets; architecture lint reports no inline async-command-state finding.",
     risk: "medium"
   },
   {
@@ -47,7 +47,7 @@ export const CONFLICTS: readonly ConflictCluster[] = [
     subject: "Build the template system end to end",
     files: [
       "app/seed/documents.json",
-      "app/seed/slideDecks.json",
+      "app/seed/presentations.json",
       "app/seed/spreadsheets.json",
       "app/src/lib/capabilities/templates/api/instantiate-template/instantiate-template.ts",
       "app/src/lib/capabilities/templates/api/shared/bodies.ts",

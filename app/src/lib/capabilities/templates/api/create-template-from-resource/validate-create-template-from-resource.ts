@@ -24,13 +24,13 @@ export const validateCreateTemplateFromResource = (
   );
   const target = stageTargetOf(fields.target, "create-template-from-resource");
   const resourceId = resourceIdOf(fields.resourceId, "create-template-from-resource");
-  if (resourceId.startsWith(target === "document" ? "slideDecks:" : "documents:")) {
+  if (resourceId.startsWith(target === "document" ? "presentations:" : "documents:")) {
     throw new Error(
-      `templates/create-template-from-resource: a ${target} template comes from a ${target === "document" ? "document" : "deck"}`
+      `templates/create-template-from-resource: a ${target} template comes from a ${target === "document" ? "document" : "presentation"}`
     );
   }
-  if (has(fields, "slideId") && target !== "slides") {
-    throw new Error("templates/create-template-from-resource: only a deck template names a slide");
+  if (has(fields, "slideId") && target !== "presentation") {
+    throw new Error("templates/create-template-from-resource: only a presentation template names a slide");
   }
   const description = has(fields, "description")
     ? descriptionOf(fields.description, "create-template-from-resource")

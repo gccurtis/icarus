@@ -83,7 +83,7 @@ describe("current workspace storage", () => {
     expect(isStoredWorkspaceSnapshot({
       ...snapshot(),
       tabs: snapshot().tabs.map((tab) => tab.id === "tab-1"
-        ? { ...tab, resourceId: "slideDecks:1" }
+        ? { ...tab, resourceId: "presentations:1" }
         : tab)
     })).toBe(false);
     expect(isStoredWorkspaceSnapshot({

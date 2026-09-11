@@ -4,7 +4,7 @@
 | --- | --- | --- |
 | Context | What prompt blocks in this spreadsheet can look up | Saved Contexts |
 
-The same view as the document and deck editors carry.
+The same view as the document and presentation editors carry.
 
 ## Layout
 

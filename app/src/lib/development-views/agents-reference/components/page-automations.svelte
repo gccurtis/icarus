@@ -35,7 +35,7 @@
     ["manual", "none", "someone presses Run", "Runs when pressed"],
     ["schedule", "at as HH:MM · repeats · weekday when weekly · timezone", "the clock reaches 09:00 in Berlin, every weekday", "09:00 weekdays"],
     ["resource-edited", "kinds, at least one · ref for one exact resource", "a document is edited, or the board pack is edited", "Edits to documents"],
-    ["resource-created", "kinds, at least one", "a slide deck is created", "New slide decks"]
+    ["resource-created", "kinds, at least one", "a presentation is created", "New presentations"]
   ];
 
   const truths = [
@@ -68,7 +68,7 @@
 
   const missing = [
     ["A clock", "Nothing reads at, repeats, weekday or timezone for dispatch.", "A scheduled job walking enabled schedule rules, resolving the zone against lastFiredAt. timezone is a free string today, so it would need real zone resolution."],
-    ["An event source", "Nothing reads kinds or ref for dispatch.", "A hook on the document, deck, spreadsheet and finding write paths, matching the changed resource against each enabled rule."],
+    ["An event source", "Nothing reads kinds or ref for dispatch.", "A hook on the document, presentation, spreadsheet and finding write paths, matching the changed resource against each enabled rule."],
     ["A non-interactive run path", "runAutomation calls requireScope, so it needs a person's session.", "A run that takes a system actor, writes the real trigger kind into the task's origin, and puts the triggering resource in the ref field the type already reserves."],
     ["Anything that reads enabled", "Only the update guard and the surfaces group by it.", "The dispatchers above would be the first readers."]
   ];

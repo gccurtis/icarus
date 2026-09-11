@@ -5,7 +5,7 @@
 | Entered by double-clicking a card | The template's body, authored on the surface it will become | Bar · Note · Canvas · Body |
 
 **The surface is the resource's, not a template editor's.** Authoring a template
-is authoring the thing it makes, so a Document gets a page on a canvas, a deck or
+is authoring the thing it makes, so a Document gets a page on a canvas, a presentation or
 a slide gets a stage, and a Spreadsheet gets a grid.
 
 **The context panel is different, and that is the point.** The surface is the
@@ -79,7 +79,7 @@ all, because the doors are reads.
 
 What is real on this surface and what is not.
 
-**Example** — "The document, deck and spreadsheet editors are not wired in yet,
+**Example** — "The document, presentation and spreadsheet editors are not wired in yet,
 so this is the shape of the one this template makes, filled from the body door.
 Lines can be typed; nothing else on the surface acts, and nothing is written
 back."
@@ -106,7 +106,7 @@ The surround, and the surface floating on it.
   - `ScreenPage` — for a Document: paper, orientation, a `header` and a `footer`
     snippet
   - `ScreenGrid` — for a Spreadsheet: four columns, ten rows, with a cursor
-  - `ScreenSlide` — for a deck or a slide: 16:9, with positioned objects
+  - `ScreenSlide` — for a presentation or a slide: 16:9, with positioned objects
 
 ### Props
 
@@ -124,7 +124,7 @@ with the body above it.
 ### Behavior
 
 A slide template's objects render as plain elements rather than as selectable
-ones. Selecting an object is the deck editor's job and it does not exist yet, so
+ones. Selecting an object is the presentation editor's job and it does not exist yet, so
 nothing here offers a control that would do nothing.
 
 ## Body

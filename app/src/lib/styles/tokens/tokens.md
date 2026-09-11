@@ -37,12 +37,12 @@ table is the only place a hue is chosen.
 | Brand | `secondary` | cyan | the quieter alternative |
 | Brand | `accent-1` | pink | categorical work |
 | Brand | `accent-2` | teal | categorical work |
-| Brand | `slide` | orange | slide-deck identity, wherever a resource kind needs a hue |
+| Brand | `slide` | orange | presentation identity, wherever a resource kind needs a hue |
 
 Meaning roles are fixed — a person who learnt that red means danger learnt it
 everywhere. Identity and brand roles may share a hue with one another but never
 with a meaning hue. `yellow` is declared by the material and reserved; `orange`
-gives slide-deck identity a stable public role.
+gives presentation identity a stable public role.
 
 **The material owns what its green *is*. It does not own what green *means*.**
 

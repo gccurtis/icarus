@@ -78,14 +78,14 @@ export const openTemplateStage = async (input: unknown): Promise<OpenTemplateSta
           updatedBy: { ...actor },
           updatedAt: at
         })
-        : unit.create("slideDecks", {
+        : unit.create("presentations", {
           projectId,
           title,
           createdBy: actor,
           updatedBy: { ...actor },
           updatedAt: at
         });
-    unit.create(target === "document" ? "documentSnapshots" : "slideDeckSnapshots", {
+    unit.create(target === "document" ? "documentSnapshots" : "presentationSnapshots", {
       projectId,
       resourceId,
       revision: 0,

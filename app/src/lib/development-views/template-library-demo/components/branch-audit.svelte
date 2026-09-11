@@ -25,7 +25,7 @@
     projectIntegration: {
       label: "Project integration",
       reason:
-        "Does not put templates in Project Overview. It makes a document, deck, or spreadsheet created by Template Use appear in the existing resource table immediately, through the same typed project-resource cache key. This area is required for end-to-end Use, not for library browsing, and can be separated if Use integration is deferred."
+        "Does not put templates in Project Overview. It makes a document, presentation, or spreadsheet created by Template Use appear in the existing resource table immediately, through the same typed project-resource cache key. This area is required for end-to-end Use, not for library browsing, and can be separated if Use integration is deferred."
     },
     serverStore: {
       label: "Server Store model",
@@ -82,10 +82,10 @@
       "Replaced the remaining external-file reference with an existing finding because external files are no longer a resource kind.",
     "app/seed/sheetCells.json":
       "Added represented values, formatting, merges, and stable row and column identities for the seeded spreadsheet resources.",
-    "app/seed/slideDeckSnapshots.json":
-      "Added leader snapshots for the additional seeded slide decks used by the library recency examples.",
-    "app/seed/slideDecks.json":
-      "Kept seeded decks independent from templates; template recency is represented on the template itself.",
+    "app/seed/presentationSnapshots.json":
+      "Added leader snapshots for the additional seeded presentations used by the library recency examples.",
+    "app/seed/presentations.json":
+      "Kept seeded presentations independent from templates; template recency is represented on the template itself.",
     "app/seed/spreadsheetSnapshots.json":
       "Added represented spreadsheet geometry, formatting, print settings, and leader-snapshot metadata.",
     "app/seed/spreadsheets.json":
@@ -97,7 +97,7 @@
     "app/src/lib/app-views/categories/project-overview/content/overview.svelte":
       "Replaced browser aggregation and generic Store creation with scoped Project Resources reads and writes; added loading, quarantine, and failure states so resources made by Template Use appear after refresh. It does not display Templates.",
     "app/src/lib/app-views/categories/project-overview/procedures/opening.ts":
-      "Limited editor routing to documents and slide decks because the spreadsheet, research, and analysis surfaces do not consume represented ids yet.",
+      "Limited editor routing to documents and presentations because the spreadsheet, research, and analysis surfaces do not consume represented ids yet.",
     "app/src/lib/app-views/categories/project-overview/procedures/resources.ts":
       "Replaced direct represented-row assembly with typed Project Resources projection and a single-flight wrapper for blank creation.",
     "app/src/lib/app-views/categories/project-overview/procedures/rows.ts":
@@ -107,7 +107,7 @@
     "app/src/lib/app-views/categories/templates/content/library.svelte":
       "Built the ten-item recent shelf, search, scope, kind, and tag filters, sorting, table selection, inspector selection, and singleton editor navigation.",
     "app/src/lib/app-views/categories/templates/context/overview-library.svelte":
-      "Built represented totals and optional-name creation, then joined the colored Document, Slide deck, and Spreadsheet actions into one segmented control.",
+      "Built represented totals and optional-name creation, then joined the colored Document, Presentation, and Spreadsheet actions into one segmented control.",
     "app/src/lib/app-views/categories/templates/inspector/template.svelte":
       "Built inline autosave, variable-description and tag controls, and joined Use, Duplicate, and Delete actions with permission and conflict states.",
     "app/src/lib/app-views/categories/templates/procedures/library.svelte.ts":
@@ -115,11 +115,11 @@
     "app/src/lib/app-views/categories/templates/templates.md":
       "Rewrote the surface contract for the implemented library, Overview, Inspector, Personal visibility, Use behavior, and deferred authoring session.",
     "app/src/lib/capabilities/project-resources/api/create-project-resource/create-project-resource.ts":
-      "Added scoped collision-free blank naming and creation of an editor-ready document or deck plus revision-zero leader snapshot.",
+      "Added scoped collision-free blank naming and creation of an editor-ready document or presentation plus revision-zero leader snapshot.",
     "app/src/lib/capabilities/project-resources/api/create-project-resource/validate-create-project-resource.ts":
       "Added strict admission for the blank-resource target and optional bounded title.",
     "app/src/lib/capabilities/project-resources/api/read-project-resource-index/read-project-resource-index.ts":
-      "Added a project-scoped closed metadata projection for documents, decks, spreadsheets, research threads, and findings with malformed-row reporting.",
+      "Added a project-scoped closed metadata projection for documents, presentations, spreadsheets, research threads, and findings with malformed-row reporting.",
     "app/src/lib/capabilities/project-resources/index.remote.ts":
       "Registered the Project Resources read and create doors and their shared cache key.",
     "app/src/lib/capabilities/project-resources/project-resources.md":

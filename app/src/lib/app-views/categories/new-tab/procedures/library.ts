@@ -111,7 +111,7 @@ export const contexts = (): Read<readonly ContextRow[]> =>
     {
       id: "cx-evidence",
       name: "Filing evidence",
-      rule: "Everything in this project, minus slide decks",
+      rule: "Everything in this project, minus presentations",
       resolves: 24
     },
     { id: "cx-accepted", name: "Accepted findings", rule: "Findings, accepted", resolves: 18 }
@@ -267,7 +267,7 @@ export const threads = (): Read<readonly ThreadRow[]> =>
 /* ------------------------------------------------------------------ */
 
 /** Fixed at creation: what a template makes cannot be changed afterwards. */
-export type TemplateTarget = "Document" | "Slide deck" | "Slide" | "Spreadsheet";
+export type TemplateTarget = "Document" | "Presentation" | "Slide" | "Spreadsheet";
 
 /**
  * Who owns a template, and therefore who may edit it.
@@ -355,7 +355,7 @@ const TEMPLATES: readonly LibraryTemplate[] = [
   {
     id: "tp-board",
     name: "Board update",
-    makes: "Slide deck",
+    makes: "Presentation",
     scope: "Project",
     tags: ["Leadership", "Briefing"],
     variables: 2,
@@ -366,8 +366,8 @@ const TEMPLATES: readonly LibraryTemplate[] = [
   },
   {
     id: "tp-ops",
-    name: "Weekly ops deck",
-    makes: "Slide deck",
+    name: "Weekly ops presentation",
+    makes: "Presentation",
     scope: "Project",
     tags: ["Operations", "Leadership"],
     variables: 0,
@@ -501,10 +501,10 @@ const TEMPLATE_VARIABLES: readonly TemplateVariable[] = [
     required: false
   },
   {
-    id: "tv-deck-title",
+    id: "tv-presentation-title",
     templateId: "tp-title",
-    key: "deckTitle",
-    label: "Deck title",
+    key: "presentationTitle",
+    label: "Presentation title",
     type: "Text",
     required: true
   },
@@ -534,12 +534,12 @@ export const templateKinds = (): Read<readonly TemplateKind[]> =>
       makes: "Document",
       blurb: "A paginated body with variables left open."
     },
-    { id: "tk-deck", makes: "Slide deck", blurb: "A whole deck: layouts, theme, sections." },
+    { id: "tk-presentation", makes: "Presentation", blurb: "A whole presentation: layouts, theme, sections." },
     {
       id: "tk-slide",
       makes: "Slide",
-      // A slide template is inserted into an existing deck, never opened as one.
-      blurb: "One slide, reusable on its own. Inserted into any deck."
+      // A slide template is inserted into an existing presentation, never opened as one.
+      blurb: "One slide, reusable on its own. Inserted into any presentation."
     },
     {
       id: "tk-sheet",
@@ -920,7 +920,7 @@ export const ingestion = (): Read<Ingestion> =>
 
 export type EditorKind = {
   readonly id: string;
-  readonly name: "Document" | "Slide deck" | "Spreadsheet";
+  readonly name: "Document" | "Presentation" | "Spreadsheet";
   readonly detail: string;
 };
 
@@ -937,7 +937,7 @@ export type DocumentDraft = {
   readonly margins: string;
 };
 
-export type DeckDraft = {
+export type PresentationDraft = {
   readonly title: string;
   readonly aspect: "16:9" | "4:3";
   readonly aspects: readonly string[];
@@ -963,7 +963,7 @@ export type RecentItem = {
 export const editorKinds = (): Read<readonly EditorKind[]> =>
   read([
     { id: "ek-document", name: "Document", detail: "A paginated body" },
-    { id: "ek-deck", name: "Slide deck", detail: "Slides on a fixed canvas" },
+    { id: "ek-presentation", name: "Presentation", detail: "Slides on a fixed canvas" },
     { id: "ek-sheet", name: "Spreadsheet", detail: "One grid of cells and formulas" }
   ], "library.editorKinds");
 
@@ -977,13 +977,13 @@ export const documentDraft = (): Read<DocumentDraft> =>
     margins: "1 in all round"
   }, "library.documentDraft");
 
-export const deckDraft = (): Read<DeckDraft> =>
+export const presentationDraft = (): Read<PresentationDraft> =>
   read({
-    title: "Untitled deck",
+    title: "Untitled presentation",
     aspect: "16:9",
     aspects: ["16:9", "4:3"],
     firstSlide: { layout: "title-and-body", caption: "Title and body" }
-  }, "library.deckDraft");
+  }, "library.presentationDraft");
 
 export const spreadsheetDraft = (): Read<SpreadsheetDraft> =>
   read({ title: "Untitled spreadsheet" }, "library.spreadsheetDraft");
@@ -992,7 +992,7 @@ export const spreadsheetDraft = (): Read<SpreadsheetDraft> =>
 export const kindLabel = (kind: ResourceKind): string =>
   ({
     document: "Document",
-    slides: "Slide deck",
+    presentation: "Presentation",
     spreadsheet: "Spreadsheet",
     research: "Research thread",
     analysis: "Analysis",

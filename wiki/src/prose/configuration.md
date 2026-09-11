@@ -7,9 +7,9 @@ Top-level YAML files under `app/configuration/` are read once at startup by the 
 - `intelligence.yaml` — OpenRouter, grounded synthesis, provider limits, and Research execution policy.
 - `observability.yaml` — the logger, in `model/server/observability`.
 - `representation.yaml` — `representation.store.directory` is read by [[file:app/src/lib/model/server/store/constructor.ts]]; `representation.domains` is read by [[check:domain-graph-is-declared]].
-- `revisions.yaml` — document, deck, and spreadsheet submission and synchronization thresholds, through the published keys.
+- `revisions.yaml` — document, presentation, and spreadsheet submission and synchronization thresholds, through the published keys.
 - `workspace.yaml` — workspace ledger submission thresholds.
-- `slide-deck.yaml` — stage geometry, zoom bounds, and gutters.
+- `presentation.yaml` — stage geometry, zoom bounds, and gutters.
 - `semantic-overlay.yaml` — embedding construction, semantic translation/indexing, material description, and bounded native-image preparation ([[page:/algorithms/semantic-overlay|explained]]).
 
 `category-readiness.yaml` is an executable architecture manifest, not a runtime feature setting. The JSON checker configuration and baseline are not merged by the YAML loader. Files in `overlays/` remain inert unless a process selects one explicitly.

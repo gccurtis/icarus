@@ -2,7 +2,7 @@
 
 | View | What it is for | Sections |
 | --- | --- | --- |
-| Layouts | Every layout in the deck, and which one you are editing | In this deck |
+| Layouts | Every layout in the presentation, and which one you are editing | In this presentation |
 
 The first rail entry of the layout subscreen. It replaces the slide list, because
 in this state layouts are what you are moving between.
@@ -12,12 +12,12 @@ in this state layouts are what you are moving between.
 | 300px |
 | --- |
 | actions |
-| in this deck |
-| in this deck |
-| in this deck |
-| in this deck |
+| in this presentation |
+| in this presentation |
+| in this presentation |
+| in this presentation |
 
-## In this deck
+## In this presentation
 
 Each layout with what it is made of and how much depends on it. The "used by"
 count is the important number: it is how many slides an edit here will change.
@@ -30,7 +30,7 @@ count is the important number: it is how many slides an edit here will change.
 - *Full-bleed chart* — 1 placeholder · used by 1
 - *Blank* — no placeholders
 
-**Needs** — the deck's layouts with per-layout placeholder and locked counts, and
+**Needs** — the presentation's layouts with per-layout placeholder and locked counts, and
 a count of slides referencing each.
 
 ## Panel furniture

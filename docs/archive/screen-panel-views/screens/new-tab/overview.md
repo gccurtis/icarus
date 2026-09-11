@@ -15,7 +15,7 @@ One subscreen.
 | --- | --- | --- |
 | [Create](../../context/library/create.md) | The three editors, as a list | Editors |
 | [Recent](../../context/library/recent-newtab.md) | What you had open, and what changed | Today · Yesterday · Earlier |
-| [Templates](../../context/library/templates-newtab.md) | Starting from something rather than nothing | Document · Slide deck · Spreadsheet |
+| [Templates](../../context/library/templates-newtab.md) | Starting from something rather than nothing | Document · Presentation · Spreadsheet |
 | [Bring in](../../context/library/bring-in.md) | Getting outside material into the project | Upload · Your connectors · Add a connector |
 
 Bringing content in lives in the panel rather than the centre because it does not
@@ -26,7 +26,7 @@ open an editor, which is the only question this tab asks.
 | Selecting | What it is | File |
 | --- | --- | --- |
 | Document | What a new document will be, before it exists | [new-document.md](../../inspector/library/new-document.md) |
-| Slide deck | What a new deck will be | [new-deck.md](../../inspector/library/new-deck.md) |
+| Presentation | What a new presentation will be | [new-presentation.md](../../inspector/library/new-presentation.md) |
 | Spreadsheet | What a new spreadsheet will be | [new-spreadsheet.md](../../inspector/library/new-spreadsheet.md) |
 | A recent card or row | Something that already exists, and opening it | [recent-item.md](../../inspector/library/recent-item.md) |
 | A template card or row | A template, what it asks for, and using it | [start-from-template.md](../../inspector/library/start-from-template.md) |

@@ -8,7 +8,7 @@ import type { TemplateTarget } from "$app-views/categories/templates/procedures/
 
 const TARGET_VALUE: Record<TemplateTarget, StoredTemplateTarget> = {
   Document: "document",
-  "Slide deck": "slides",
+  "Presentation": "presentation",
   Spreadsheet: "spreadsheet"
 };
 

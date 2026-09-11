@@ -42,7 +42,7 @@
     </ScreenEmpty>
   {:else}
     <ScreenEmpty title="Opening the template in its editor" icon={FilePenLine}>
-      A template is edited as a staged copy in the ordinary document or slide-deck editor. The
+      A template is edited as a staged copy in the ordinary document or presentation editor. The
       editor's Templates panel saves the copy back or discards it.
     </ScreenEmpty>
   {/if}

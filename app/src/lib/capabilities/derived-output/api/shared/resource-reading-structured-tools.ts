@@ -19,7 +19,7 @@ export const structuredReadingTools = (
     materialFor,
     materialBlock,
     tableRead,
-    slideDeck,
+    presentation,
     externalFile,
     nativeCitation,
     currentGeneration
@@ -146,8 +146,8 @@ export const structuredReadingTools = (
         }
         const ref = snapshot.placement?.ref ?? material.source.ref;
         const locator = material.source.locator;
-        const deck = slideDeck(ref);
-        const slide = deck.body.slides.find((candidate) => candidate.id === locator.slideId);
+        const source = presentation(ref);
+        const slide = source.body.slides.find((candidate) => candidate.id === locator.slideId);
         const element =
           slide === undefined ? undefined : findElement(slide.elements, locator.elementPath);
         if (element?.content.type !== "chart") throw new Error("chart source is unavailable");

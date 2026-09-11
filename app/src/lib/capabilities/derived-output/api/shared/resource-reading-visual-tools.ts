@@ -30,14 +30,14 @@ export const visualReadingTools = (
     execute: async (value) => {
       const held = record(value, "view_slide input must be an object");
       const ref = admitResourceRef(
-        { kind: "slides", id: text(held.resourceId, "resourceId") },
-        "slide-deck resource"
+        { kind: "presentation", id: text(held.resourceId, "resourceId") },
+        "presentation resource"
       );
       if (!context.allowed(ref)) {
         throw new Error("slide is outside the Derived Output Resource Set");
       }
       const slideId = text(held.slideId, "slideId");
-      const { body } = context.slideDeck(ref);
+      const { body } = context.presentation(ref);
       const slide = body.slides.find((candidate) => candidate.id === slideId);
       if (slide === undefined) throw new Error("slide does not exist");
       const { width, height } = canvasSize(body.aspectRatio);

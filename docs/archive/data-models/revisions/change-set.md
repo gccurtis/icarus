@@ -9,7 +9,7 @@ accepted, what becomes a revision, and what gets undone.
 ```ts
 interface ChangeSet {
   projectId: Id<"projects">;
-  resourceType: "document" | "slides" | "spreadsheet";
+  resourceType: "document" | "presentation" | "spreadsheet";
   resourceId: string;
   revision: number;            // this set's index; unique per resource
   baseRevision: number;        // the revision it was authored against
@@ -247,10 +247,10 @@ trees, and none of the operations knows or cares which:
 | Resize a column | `set` at `sheets/#sh1/columnWidths/B` |
 | Merge cells | `insert` at `sheets/#sh1/merges` |
 | Restyle every heading | `set` at `styles/heading1/fontSize` |
-| Change the deck accent colour | `set` at `theme/colors/accent` |
+| Change the presentation accent colour | `set` at `theme/colors/accent` |
 
 The last two matter as much as the content edits. Restyling a document and
-recolouring a deck are edits people expect to undo, and they work here for free
+recolouring a presentation are edits people expect to undo, and they work here for free
 because the style set and theme are [inside the
 body](resource-snapshot.md#body-is-a-union-on-resource-type) rather than on the
 resource row.

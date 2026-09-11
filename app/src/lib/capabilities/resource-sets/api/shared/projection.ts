@@ -81,8 +81,8 @@ export const catalogueOf = (store: StoreModel, projectId: string): readonly Reso
   const candidates = [
     ...recordsIn(store, "documents").filter((row) => row.projectId === projectId)
       .map((row) => ({ kind: "document", id: row._id })),
-    ...recordsIn(store, "slideDecks").filter((row) => row.projectId === projectId)
-      .map((row) => ({ kind: "slides", id: row._id })),
+    ...recordsIn(store, "presentations").filter((row) => row.projectId === projectId)
+      .map((row) => ({ kind: "presentation", id: row._id })),
     ...recordsIn(store, "spreadsheets").filter((row) => row.projectId === projectId)
       .map((row) => ({ kind: "spreadsheet", id: row._id })),
     ...recordsIn(store, "findings").filter((row) => row.projectId === projectId)

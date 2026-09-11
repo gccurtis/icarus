@@ -1,0 +1,70 @@
+<script lang="ts">
+  import { Panel, PanelCrumbs, PanelEditableText, PanelEmpty, PanelField, PanelFields, PanelInput, PanelNote, PanelSection } from "$authored-components/panel";
+  import CommentAction from "$app-views/categories/presentation-editor/components/comment-action.svelte";
+  import ElementEffects from "$app-views/categories/presentation-editor/components/element-effects.svelte";
+  import ElementGeometry from "$app-views/categories/presentation-editor/components/element-geometry.svelte";
+  import ElementOrder from "$app-views/categories/presentation-editor/components/element-order.svelte";
+  import { slideHolding } from "$app-views/categories/presentation-editor/procedures/presentation-slide-holding";
+  import { elementIn } from "$app-views/categories/presentation-editor/procedures/presentation-reading";
+  import { slideIndexOf } from "$app-views/categories/presentation-editor/procedures/presentation-slides";
+  import { withSet } from "$app-views/categories/presentation-editor/procedures/presentation-values";
+  import { selectedIds, slideSignal } from "$app-views/categories/presentation-editor/procedures/selecting";
+  import { workspaceState, type PresentationRuntime } from "$model/client/workspace-state";
+
+  const view = workspaceState();
+  const presentationId = view.active.resourceId;
+  let runtime = $state<PresentationRuntime | undefined>(undefined);
+
+  $effect(() => {
+    runtime = presentationId === undefined ? undefined : view.presentationRuntime(presentationId);
+  });
+
+  const body = $derived(runtime?.body);
+  const id = $derived(selectedIds(view.selection)[0]);
+  const element = $derived(body === undefined || id === undefined ? undefined : elementIn(body, id));
+  const slide = $derived(body === undefined || id === undefined ? undefined : slideHolding(body, id));
+  const position = $derived(body === undefined || slide === undefined ? 0 : slideIndexOf(body, slide.id) + 1);
+  const image = $derived(element?.content.type === "image" ? element.content.block : undefined);
+
+  let url = $state("");
+  $effect(() => {
+    url = image?.source?.kind === "url" ? image.source.url : "";
+  });
+
+  const set = (path: string, value: unknown) => {
+    if (body === undefined) return;
+    runtime?.apply(withSet(body, "block", path, value).ops);
+  };
+</script>
+
+<Panel title="Image">
+  {#snippet crumbs()}
+    <PanelCrumbs
+      trail={[{ label: "Presentation" }, { label: `Slide ${position}`, key: "presentation-editor.slide" }, { label: "Image" }]}
+      onnavigate={() => { if (slide) view.inspect("presentation-editor.slide", slideSignal(slide.id).selection); }}
+    />
+  {/snippet}
+  {#snippet actions()}
+    {#if element}
+      <CommentAction elementId={element.id} />
+    {/if}
+  {/snippet}
+
+  {#if element && image}
+    <PanelSection title="Source">
+      <PanelFields>
+        <PanelField label="Kind">{image.source?.kind ?? "none yet"}</PanelField>
+        <PanelField label="Alt text" stacked>
+          <PanelEditableText value={image.alt} label="Alt text" placeholder="Describe the picture" multiline onchange={(value) => set(`${element.id}/content/block/alt`, value)} />
+        </PanelField>
+      </PanelFields>
+      <PanelInput label="Image URL" placeholder="https://" bind:value={url} onenter={(value) => set(`${element.id}/content/block/source`, value.trim() === "" ? null : { kind: "url", url: value.trim() })} />
+      <PanelNote>Enter sets the picture from a URL. Files from the project arrive with the file picker.</PanelNote>
+    </PanelSection>
+    <ElementGeometry elementId={element.id} />
+    <ElementOrder elementId={element.id} />
+    <ElementEffects elementId={element.id} />
+  {:else}
+    <PanelEmpty title="Pick a picture on the slide" />
+  {/if}
+</Panel>

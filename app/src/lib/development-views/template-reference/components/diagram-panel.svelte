@@ -3,7 +3,7 @@
 
 <div class="panels">
   <figure class="mock">
-    <figcaption>An ordinary document or deck</figcaption>
+    <figcaption>An ordinary document or presentation</figcaption>
     <div class="panel">
       <header><b>Templates</b></header>
       <div class="field"><span class="input">Winter readiness brief</span><span class="button primary">Save</span></div>

@@ -8,7 +8,7 @@
  * a bug that does not exist.
  *
  * The project is a winter-storm hardening case for a utility's rate filing. It
- * was chosen because it needs all of it: documents, a deck, a spreadsheet with
+ * was chosen because it needs all of it: documents, a presentation, a spreadsheet with
  * real arithmetic in it, research with sources, agents doing work, and a
  * connector that is broken.
  */
@@ -36,7 +36,7 @@ export type Agent = {
 
 export type ResourceKind =
   | "document"
-  | "slides"
+  | "presentation"
   | "spreadsheet"
   | "research"
   | "analysis"
@@ -154,14 +154,14 @@ export const RESOURCES: readonly Resource[] = [
   {
     id: "r-board",
     name: "Board Update — October",
-    kind: "slides",
+    kind: "presentation",
     updated: "2 days ago",
     updatedBy: "Tomas Kaur"
   },
   {
     id: "r-options",
     name: "Storm Hardening Options",
-    kind: "slides",
+    kind: "presentation",
     updated: "1 week ago",
     updatedBy: "Mira Jain"
   },

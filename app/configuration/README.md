@@ -16,9 +16,9 @@ This file records only what is in the directory and which of it is live.
 | `intelligence.yaml` | The OpenRouter model, provider limits, grounded synthesis, and research-chat execution policy |
 | `observability.yaml` | The logger: `logging.enabled`, `logging.level`, `logging.destination.*` |
 | `representation.yaml` | Store construction reads `representation.store.directory`; the architecture checker reads the declared representation-domain graph |
-| `revisions.yaml` | Document, deck, and spreadsheet runtimes read the published submit and synchronization thresholds |
+| `revisions.yaml` | Document, presentation, and spreadsheet runtimes read the published submit and synchronization thresholds |
 | `semantic-overlay.yaml` | Embedding construction, semantic translation/indexing, material description, and bounded native-image preparation |
-| `slide-deck.yaml` | The slide runtime's stage geometry, zoom bounds, and gutters |
+| `presentation.yaml` | The slide runtime's stage geometry, zoom bounds, and gutters |
 | `workspace.yaml` | The workspace runtime's durable-change submission thresholds |
 
 `category-readiness.yaml` is an executable architecture manifest rather than a

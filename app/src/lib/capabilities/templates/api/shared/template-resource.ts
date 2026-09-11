@@ -1,7 +1,7 @@
 import type { StoreUnitOfWork } from "$model/server/store/index.server";
 import type { ServerModel } from "$runtime/server/start.server";
 import { asId } from "$representation/data/behavior/core/id";
-import { ensureSlideDeckReady } from "$representation/data/behavior/slide-decks/readiness";
+import { ensurePresentationReady } from "$representation/data/behavior/presentations/readiness";
 import type { TemplateBody } from "$representation/data/types/templates/template";
 import type { Id } from "$representation/data/types/core/id";
 
@@ -61,22 +61,22 @@ export const writeTemplateResource = ({
     };
   }
 
-  if (body.resource === "slides") {
-    const { resource: _resource, ...slideDeckBody } = body;
-    unit.create("slideDeckSnapshots", {
+  if (body.resource === "presentation") {
+    const { resource: _resource, ...presentationBody } = body;
+    unit.create("presentationSnapshots", {
       projectId,
       resourceId,
       revision: 0,
       role: "leader",
       part: 0,
-      body: ensureSlideDeckReady(slideDeckBody),
+      body: ensurePresentationReady(presentationBody),
       at
     });
     enqueueSemanticOutboxFor(
       model,
       unit,
       projectId,
-      { kind: "slides", id: asId<"slideDecks">(resourceId) },
+      { kind: "presentation", id: asId<"presentations">(resourceId) },
       0
     );
     return {

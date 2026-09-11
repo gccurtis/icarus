@@ -4,7 +4,7 @@ import { memberName, typeMember } from "./shared.mjs";
 const RETIRED_TYPE_MEMBERS = new Map([
   ["DocumentFields", new Set(["templateId"])],
   ["DerivedVariableDefinition", new Set(["origin"])],
-  ["SlideDeckFields", new Set(["templateId"])],
+  ["PresentationFields", new Set(["templateId"])],
   ["SpreadsheetFields", new Set(["templateId"])]
 ]);
 

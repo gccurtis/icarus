@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { DocumentBody } from "$representation/data/types/documents/body";
-import type { SlideDeckBody } from "$representation/data/types/slide-decks/body";
+import type { PresentationBody } from "$representation/data/types/presentations/body";
 import { asId } from "$representation/data/behavior/core/id";
 import { portableBodyOf } from "$representation/data/behavior/templates/portable";
 
@@ -76,8 +76,8 @@ describe("portableBodyOf", () => {
     ]);
   });
 
-  it("drops an image background from a deck theme and leaves colours alone", () => {
-    const deck: SlideDeckBody = {
+  it("drops an image background from a presentation theme and leaves colours alone", () => {
+    const presentation: PresentationBody = {
       aspectRatio: "16:9",
       theme: { background: { kind: "image", fileId: "externalFiles:2" as never, fit: "cover" }, colors: { text: "ink", accent: "blue" } },
       styles: { defaultKey: "body", styles: { body: { name: "Body" } } },
@@ -85,7 +85,7 @@ describe("portableBodyOf", () => {
       slides: [{ id: "s1", elements: [], notes: [], background: { kind: "color", color: "white" } }],
       sections: []
     };
-    const { body, dropped } = portableBodyOf(deck);
+    const { body, dropped } = portableBodyOf(presentation);
     expect("background" in body.theme).toBe(false);
     expect(body.slides[0].background).toEqual({ kind: "color", color: "white" });
     expect(dropped).toEqual(["Dropped an image background."]);

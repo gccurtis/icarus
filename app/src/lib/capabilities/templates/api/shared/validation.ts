@@ -39,7 +39,7 @@ export const revisionOf = (value: unknown, subject: string): number => {
 };
 
 export const targetOf = (value: unknown, subject: string): TemplateTarget => {
-  if (value !== "document" && value !== "slides" && value !== "spreadsheet") {
+  if (value !== "document" && value !== "presentation" && value !== "spreadsheet") {
     throw new Error(`templates/${subject}: target is document, slides, or spreadsheet`);
   }
   return value;

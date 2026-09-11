@@ -80,7 +80,7 @@ export type PaperSize = Infer<typeof paperSizeValidator>;
 
 /**
  * Physical page dimensions, shared by all three general resources: a document's
- * page, a deck's handout, a sheet's print setup.
+ * page, a presentation's handout, a sheet's print setup.
  *
  * **Every dimension is in points — 1/72 inch — never pixels.** A pixel has no
  * physical size, and these numbers describe something that will exist on paper.

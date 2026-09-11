@@ -14,7 +14,7 @@ belongs in the map, so the library of analyses is a rail view rather than a
 centre of its own. A screen whose whole subject is one chart should not spend
 half its states not showing one.
 
-The chart on this screen is the analytic component the document, deck and
+The chart on this screen is the analytic component the document, presentation and
 spreadsheet editors also embed. What Analysis adds is the interface for building
 and customising it.
 
@@ -32,7 +32,7 @@ they are in the panel that holds the rest of those facts and not in the screen's
 header.
 
 **Variables is the project's own Name Manager, not a second copy of it.** The
-same view answers here as on a document, a deck and Project Overview, because a
+same view answers here as on a document, a presentation and Project Overview, because a
 variable is a project-wide name and writing the panel twice is how two copies
 drift.
 

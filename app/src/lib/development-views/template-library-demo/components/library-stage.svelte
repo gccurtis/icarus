@@ -40,7 +40,7 @@
     createTabViews(),
     unpersisted,
     app.documentRuntimes,
-    app.slideDeckRuntimes
+    app.presentationRuntimes
   );
 
   view.activate("templates");

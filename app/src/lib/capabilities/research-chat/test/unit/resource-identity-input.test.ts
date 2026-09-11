@@ -12,7 +12,7 @@ describe("research resource identity input", () => {
   it.each([
     { kind: "resource", ref: { kind: "externalFile", id: "externalFiles:one" } },
     { kind: "resource", ref: { kind: "externalFile::pdf", id: "externalFiles:one" } },
-    { kind: "resource", ref: { kind: "document", id: "slideDecks:one" } },
+    { kind: "resource", ref: { kind: "document", id: "presentations:one" } },
     {
       kind: "resource",
       ref: { kind: "document", id: "documents:one", retired: true }

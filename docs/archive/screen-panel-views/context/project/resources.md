@@ -2,7 +2,7 @@
 
 | View | What it is for | Sections |
 | --- | --- | --- |
-| Resources | Everything that exists in the project, grouped by what it is | Documents · Slide decks · Spreadsheets · Findings · Files and connectors |
+| Resources | Everything that exists in the project, grouped by what it is | Documents · Presentations · Spreadsheets · Findings · Files and connectors |
 
 A browsable index of the project's contents. Each group carries a count; each row
 opens the thing in the inspector rather than navigating away, so you can look
@@ -16,7 +16,7 @@ Filtered by one search field across all groups.
 | --- |
 | search |
 | documents |
-| slide decks |
+| presentations |
 | spreadsheets |
 | findings |
 | files and connectors |
@@ -28,11 +28,11 @@ Filtered by one search field across all groups.
 
 **Needs** — a project-scoped query for documents.
 
-## Slide decks
+## Presentations
 
 **Shows** — *Board Update — October*, *Storm Hardening Options* · 2
 
-**Needs** — a project-scoped query for decks.
+**Needs** — a project-scoped query for presentations.
 
 ## Spreadsheets
 

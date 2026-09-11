@@ -50,7 +50,7 @@ const { renameProjectResource } = await import(
 );
 
 const titledResource = (
-  table: "documents" | "slideDecks" | "spreadsheets",
+  table: "documents" | "presentations" | "spreadsheets",
   suffix: string,
   projectId: string,
   title: string
@@ -122,18 +122,18 @@ describe("createProjectResource", () => {
     ]);
   });
 
-  it("creates an editor-ready empty deck", async () => {
-    await createProjectResource({ target: "slides", title: "Briefing" });
+  it("creates an editor-ready empty presentation", async () => {
+    await createProjectResource({ target: "presentation", title: "Briefing" });
 
     expect(model.writes[0]).toMatchObject({
-      table: "slideDecks",
+      table: "presentations",
       fields: {
         projectId: "projects:mine",
         createdBy: { kind: "user", userId: "users:me" }
       }
     });
     expect(model.writes[1]).toMatchObject({
-      table: "slideDeckSnapshots",
+      table: "presentationSnapshots",
       fields: {
         body: {
           aspectRatio: "16:9",
@@ -203,15 +203,15 @@ describe("createProjectResource", () => {
     });
 
     model.writes.length = 0;
-    model.tables.set("slideDecks", [
-      titledResource("slideDecks", "1", "projects:mine", "Untitled deck 1"),
-      titledResource("slideDecks", "3", "projects:mine", "Untitled deck 3")
+    model.tables.set("presentations", [
+      titledResource("presentations", "1", "projects:mine", "Untitled presentation 1"),
+      titledResource("presentations", "3", "projects:mine", "Untitled presentation 3")
     ]);
-    const deck = await createProjectResource({ target: "slides" });
-    expect(deck.title).toBe("Untitled deck 2");
+    const presentation = await createProjectResource({ target: "presentation" });
+    expect(presentation.title).toBe("Untitled presentation 2");
     expect(model.writes[0]).toMatchObject({
-      table: "slideDecks",
-      fields: { projectId: "projects:mine", title: "Untitled deck 2" }
+      table: "presentations",
+      fields: { projectId: "projects:mine", title: "Untitled presentation 2" }
     });
 
     model.writes.length = 0;
@@ -278,7 +278,7 @@ describe("createProjectResource", () => {
 describe("readProjectResourceIndex", () => {
   const system = { kind: "system" as const };
   const editable = (
-    table: "documents" | "slideDecks" | "spreadsheets",
+    table: "documents" | "presentations" | "spreadsheets",
     suffix: string,
     extra: Record<string, unknown> = {}
   ) => ({
@@ -453,8 +453,8 @@ describe("readProjectResourceIndex", () => {
         updatedBy: { kind: "user", userId: "users:former" }
       })
     ]);
-    model.tables.set("slideDecks", [
-      editable("slideDecks", "connector", {
+    model.tables.set("presentations", [
+      editable("presentations", "connector", {
         title: "Connector work",
         updatedAt: 11,
         updatedBy: { kind: "connector", connectorId: "connectors:exact" }

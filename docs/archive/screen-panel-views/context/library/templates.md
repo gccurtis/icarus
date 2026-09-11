@@ -23,7 +23,7 @@ one and kind is already on the row.
 **Shows**
 
 - *Regulatory filing shell* — Document · 4 variables
-- *Board update* — Slide deck · 2 variables
+- *Board update* — Presentation · 2 variables
 - *Title slide* — Slide · 1 variable
 - *Cost model skeleton* — Spreadsheet
 

@@ -45,7 +45,7 @@ export type KindOption = { readonly kind: ResourceSelectorKind; readonly label: 
  */
 export const PROJECT_KINDS: readonly KindOption[] = [
   { kind: "document", label: "Documents" },
-  { kind: "slides", label: "Slide decks" },
+  { kind: "presentation", label: "Presentations" },
   { kind: "spreadsheet", label: "Spreadsheets" },
   { kind: "finding", label: "Findings" },
   { kind: "research", label: "Research threads" },
@@ -439,7 +439,7 @@ export const selectedBy = (
   catalogue: readonly ResourceRef[],
   sets: ReadonlyMap<string, ResourceSet>
 ): readonly ResourceRef[] => {
-  const keyOf = (ref: ResourceRef) => `${ref.kind} ${ref.id}`;
+  const keyOf = (ref: ResourceRef) => `${ref.kind}\0${ref.id}`;
   const known = new Map(catalogue.map((ref) => [keyOf(ref), ref]));
 
   const ofTerm = (term: AnyTerm, seen: ReadonlySet<string>): readonly ResourceRef[] => {

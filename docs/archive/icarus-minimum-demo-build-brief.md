@@ -10,31 +10,31 @@ The goal is a short demonstration that makes one product capability obvious:
 
 > Icarus can resolve Prompt Content Blocks from external source material, refresh those blocks when their source context changes, and carry the same behavior into newly instantiated or inserted template content.
 
-The artifact itself is not regenerated. Documents, decks, slides, static content blocks, layout, styles, ordering, and direct edits remain native authored content. The semantic behavior is confined to Prompt Content Blocks.
+The artifact itself is not regenerated. Documents, presentations, slides, static content blocks, layout, styles, ordering, and direct edits remain native authored content. The semantic behavior is confined to Prompt Content Blocks.
 
-The slide deck is the primary demonstration. A document is the companion proof that the same content-block and semantic systems work across both editors.
+The presentation is the primary demonstration. A document is the companion proof that the same content-block and semantic systems work across both editors.
 
 ## 2. Demo sequence
 
 ### Cold open — credible finished work
 
-Open a professional, already-resolved deck. Establish that Icarus is an editor for real work before showing how the content was produced.
+Open a professional, already-resolved presentation. Establish that Icarus is an editor for real work before showing how the content was produced.
 
 ### Step 1 — change the source context
 
-1. Open or instantiate a deck template containing Prompt Content Blocks.
-2. Target Source Set A and show the resolved deck.
-3. Change the template or deck's source target to Source Set B.
-4. Allow the Prompt Content Blocks throughout the deck to resolve against Source Set B.
+1. Open or instantiate a presentation template containing Prompt Content Blocks.
+2. Target Source Set A and show the resolved presentation.
+3. Change the template or presentation's source target to Source Set B.
+4. Allow the Prompt Content Blocks throughout the presentation to resolve against Source Set B.
 5. Show that static blocks, direct edits, structure, layout, and styling did not change.
 
-“The whole deck updates” means that Prompt Content Blocks distributed across the deck update. It does not mean that the deck body or every content block is replaced.
+“The whole presentation updates” means that Prompt Content Blocks distributed across the presentation update. It does not mean that the presentation body or every content block is replaced.
 
 ### Step 2 — revise one external source
 
 1. Open the External Library.
-2. Replace or re-upload one source used by the deck.
-3. Return to the deck.
+2. Replace or re-upload one source used by the presentation.
+3. Return to the presentation.
 4. Show that the Prompt Content Blocks affected by that source are refreshed.
 5. Inspect one changed Prompt Content Block to show its source context and resolution state.
 
@@ -47,7 +47,7 @@ For the rehearsed fixture, the revised source should be designed so that only on
 3. Insert it into the current artifact.
 4. Preserve its Prompt Content Blocks and resolve them using the destination artifact's current source context.
 
-This does not require a separate “document-section template” system. A Document can be inserted into a Document by composing or concatenating compatible document content. The equivalent Deck/Slide composition should use the same general template mechanism; whether Deck and Slide remain separate canonical types is still an open representation decision.
+This does not require a separate “document-section template” system. A Document can be inserted into a Document by composing or concatenating compatible document content. The equivalent Presentation/Slide composition should use the same general template mechanism; whether Presentation and Slide remain separate canonical types is still an open representation decision.
 
 ### Document companion
 
@@ -61,7 +61,7 @@ Repeat the same three actions in a report:
 
 ### Minimum demo
 
-- Professional Document and Slide Deck editors.
+- Professional Document and Presentation editors.
 - External file upload, list, selection, inspection, download, and re-upload or replacement.
 - Named source context that can target a different set of external files.
 - Text and prose consumption through the new Semantic Overlay.
@@ -98,7 +98,7 @@ Repeat the same three actions in a report:
 
 | Constraint | Consequence for the plan |
 | --- | --- |
-| Only Prompt Content Blocks are semantically replaced | No workstream should describe document, deck, slide, or arbitrary block regeneration |
+| Only Prompt Content Blocks are semantically replaced | No workstream should describe document, presentation, slide, or arbitrary block regeneration |
 | Template variables are already intentionally narrow | Do not create a separate variable-scope project; only integrate the existing model |
 | The Knowledge Lattice will be substantially reconsidered | Semantic Overlay work begins with the intended new model, not with a presumption that current lattice internals should survive |
 | Template content should compose through one system | Do not add a special document-section template type |
@@ -112,7 +112,7 @@ Repeat the same three actions in a report:
 | Relationship among External File, Connector, Connection, and connected remote item | 1 — External model |
 | Whether re-upload is a revision of one stable file or a replacement identity | 1 — External model |
 | Exact new Semantic Overlay representation and old-lattice deletion/migration path | 3 — Semantic Overlay |
-| Whether Deck and Slide remain separate canonical types | 4 and 6 — Templates and Slides |
+| Whether Presentation and Slide remain separate canonical types | 4 and 6 — Templates and Slides |
 | Whether template authoring is needed for the demo or fixtures are sufficient | 4 — Template Library |
 | Which external prose formats are supported in the first demo | 1 and 3 — External and Semantic Overlay |
 | Whether image and table support are minimum-editor work or stretch work | 5 and 6 — Editors |
@@ -128,8 +128,8 @@ Repeat the same three actions in a report:
 | 3 | Semantic Overlay | Foundational representation and runtime | Text and prose can resolve Prompt Content Blocks and refresh them after relevant changes |
 | 4 | Template Library | Category and surface implementation | Templates can be found, inspected, and instantiated; editors can invoke a compatible-content picker |
 | 5 | Document editor | Editor and surface implementation | The Document editor is professionally credible and owns Document-template insertion |
-| 6 | Slide Deck editor | Editor and surface implementation | The Slide editor is professionally credible and owns slide/deck-template insertion |
-| 7 | Demo assembly | Integration, content, and QA | The exact three-step deck and document demonstrations run repeatably |
+| 6 | Presentation editor | Editor and surface implementation | The Slide editor is professionally credible and owns slide/presentation-template insertion |
+| 7 | Demo assembly | Integration, content, and QA | The exact three-step presentation and document demonstrations run repeatably |
 
 ### Dependency path
 
@@ -176,7 +176,7 @@ At the inspected commit:
 ### Completion gate
 
 - The main build passes the checks retained by the project.
-- Overview, External, Templates, Document, and Slide Deck routes open without missing modules.
+- Overview, External, Templates, Document, and Presentation routes open without missing modules.
 - No rehearsed route points to a placeholder panel.
 - Deferred categories have an intentional hidden or unavailable state.
 
@@ -340,7 +340,7 @@ Use one template system:
 
 The Template Library owns discovery, preview, selection, and standalone instantiation. The Document and Slide editors own the insertion transaction.
 
-No separate document-section template kind is required. Do not add another Deck/Slide distinction until the representation decision about those types is settled.
+No separate document-section template kind is required. Do not add another Presentation/Slide distinction until the representation decision about those types is settled.
 
 ### Content surfaces
 
@@ -369,7 +369,7 @@ No separate document-section template kind is required. Do not add another Deck/
 
 ### Build path
 
-1. Resolve Document/Deck/Slide template representation questions.
+1. Resolve Document/Presentation/Slide template representation questions.
 2. Make library reads and previews real rather than local mock state.
 3. Implement standalone instantiation.
 4. Expose a compatible-template picker contract to both editors.
@@ -378,7 +378,7 @@ No separate document-section template kind is required. Do not add another Deck/
 
 ### Completion gate
 
-A user can find and inspect a template, instantiate a standalone Document or Deck, and open the same library as a compatible-content picker from either destination editor.
+A user can find and inspect a template, instantiate a standalone Document or Presentation, and open the same library as a compatible-content picker from either destination editor.
 
 ## 11. Workstream 5 — Finish the Document editor
 
@@ -438,11 +438,11 @@ Only expose a view when its primary interactions work.
 
 The report can be edited like a credible professional document and can perform source-target refresh, one-file refresh, and Document-template insertion without leaving the editor.
 
-## 12. Workstream 6 — Finish the Slide Deck editor
+## 12. Workstream 6 — Finish the Presentation editor
 
 **Type:** editor and surface implementation
 
-**Outcome:** a professional Slide Deck editor that supports the primary demo.
+**Outcome:** a professional Presentation editor that supports the primary demo.
 
 ### Content surface
 
@@ -456,10 +456,10 @@ The report can be edited like a credible professional document and can perform s
 | Styling | Fill, stroke, opacity, corner treatment, text alignment, theme, and layout |
 | Notes | Editable speaker notes using the shared text system |
 | Prompt Content Blocks | Resolved content and refresh states inside slide elements without regenerating the slide |
-| Template composition | Insert compatible slide/deck content at a chosen position through the editor's template picker |
+| Template composition | Insert compatible slide/presentation content at a chosen position through the editor's template picker |
 | Persistence | Selection-independent state, object edits, insertion, prompt resolution, and reload remain stable |
 
-Image support should be included if it is needed to make the opening deck credible. Table and Chart Content Blocks can remain in the stretch lane unless the final demo content requires them earlier.
+Image support should be included if it is needed to make the opening presentation credible. Table and Chart Content Blocks can remain in the stretch lane unless the final demo content requires them earlier.
 
 ### Context panel views
 
@@ -467,10 +467,10 @@ Image support should be included if it is needed to make the opening deck credib
 | --- | --- |
 | Slides | Thumbnail navigation and slide actions; recommended default |
 | Insert | Text, shapes, image, and only the Content Block types that are actually implemented |
-| Templates | Compatible slide/deck templates and insertion action |
+| Templates | Compatible slide/presentation templates and insertion action |
 | Layers | Object order, visibility, lock state, and groups when grouping exists |
 | Layouts | Apply a slide layout |
-| Theme | Deck palette and typography |
+| Theme | Presentation palette and typography |
 | Notes | Current slide's notes |
 | Sources | Current source context and Prompt Content Blocks using it |
 
@@ -478,7 +478,7 @@ Image support should be included if it is needed to make the opening deck credib
 
 | Selection state | Controls and information |
 | --- | --- |
-| Deck or no selection | Deck metadata, theme, size, and defaults |
+| Presentation or no selection | Presentation metadata, theme, size, and defaults |
 | Slide | Layout, background, transition placeholder only if transitions are real |
 | Shape | Frame, rotation, fill, stroke, opacity, corner treatment, and order |
 | Image | Frame, crop/fit, opacity, replacement, and order |
@@ -494,22 +494,22 @@ Image support should be included if it is needed to make the opening deck credib
 1. Connect canvas selection to Workspace Inspector state.
 2. Complete direct text editing and shared text formatting.
 3. Enable and persist resize, rotation, multi-selection, alignment, distribution, and z-order.
-4. Add real image rendering if required by the opening deck.
+4. Add real image rendering if required by the opening presentation.
 5. Implement the eight Context views, hiding unsupported controls.
 6. Render and inspect Prompt Content Blocks through the shared Semantic Overlay.
 7. Implement editor-owned insertion through the template picker.
-8. Resolve Deck/Slide consolidation before adding more type-specific template behavior.
+8. Resolve Presentation/Slide consolidation before adding more type-specific template behavior.
 9. Add transform, selection, insertion, refresh, and reload tests.
 
 ### Completion gate
 
-The deck looks and behaves like a real presentation editor and completes the full three-step demo without relying on mock controls.
+The presentation looks and behaves like a real presentation editor and completes the full three-step demo without relying on mock controls.
 
 ## 13. Workstream 7 — Assemble and rehearse the demo
 
 **Type:** integration, demo content, visual QA, and reliability
 
-**Outcome:** one repeatable deck demonstration and one shorter document demonstration.
+**Outcome:** one repeatable presentation demonstration and one shorter document demonstration.
 
 ### Demo content package
 
@@ -518,10 +518,10 @@ The deck looks and behaves like a real presentation editor and completes the ful
 | Source Set A | First credible source context |
 | Source Set B | Clearly different context for the same template |
 | Revised source | Engineered to change one planned Prompt Content Block result |
-| Deck template | Primary finished-work and source-target demonstration |
+| Presentation template | Primary finished-work and source-target demonstration |
 | Document template | Companion proof using the same semantic contract |
 | Insertable Document content | Exercises Document-into-Document composition |
-| Insertable slide/deck content | Exercises editor-owned slide/deck composition |
+| Insertable slide/presentation content | Exercises editor-owned slide/presentation composition |
 | Recovery snapshots | Known-good state at the cold open and after each step |
 
 ### Integration path
@@ -545,7 +545,7 @@ The deck looks and behaves like a real presentation editor and completes the ful
 
 ### Completion gate
 
-The deck sequence runs three consecutive times with the intended visible changes, the document companion uses the same implementation contracts, and no step depends on a live connector, agent, or Office conversion.
+The presentation sequence runs three consecutive times with the intended visible changes, the document companion uses the same implementation contracts, and no step depends on a live connector, agent, or Office conversion.
 
 ## 14. Stretch lane — Structured Data, Formula, Analysis, Tables, and Charts
 

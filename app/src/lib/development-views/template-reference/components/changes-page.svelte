@@ -118,7 +118,7 @@
       <p class="tref-prose">
         Alongside them, five pure functions were added under <code>representation/data/behavior</code>:
         resolve a template's prompt scopes through answers then defaults, make a live body portable, mint
-        fresh ids into a fragment, take one slide out of a deck as a deck, and resolve a resource set
+        fresh ids into a fragment, take one slide out of a presentation as a presentation, and resolve a resource set
         against a catalogue. They live there because both sides need them — the capability validates with
         them, the editors insert with them — and because the tree's lint keeps them free of clocks,
         randomness and stores.

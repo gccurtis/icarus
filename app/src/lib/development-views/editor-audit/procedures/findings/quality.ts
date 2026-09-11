@@ -35,31 +35,31 @@ export const QUALITY_FINDINGS: readonly Finding[] = [
     cause: "Coverage concentrated on Chromium happy paths and one-pass geometry.",
     fix: "Add unit cases at pure boundaries, diagnostic-aware Chromium scenarios for every reported integrated behavior, and an engine-specific Firefox modifier-drag regression.",
     acceptance: "Each confirmed regression has a failing-before/passing-after proof and every browser test rejects console/page/HTTP errors.",
-    evidence: ["document-editor.spec.ts", "slide-deck-editor.spec.ts", "resource-creation.spec.ts"]
+    evidence: ["document-editor.spec.ts", "presentation-editor.spec.ts", "resource-creation.spec.ts"]
   },
   {
     id: "QA-04",
     area: "Quality system",
     severity: "P3",
     status: "Fixed in this audit",
-    title: "Slide-deck documentation no longer matched implementation",
+    title: "Slide-presentation documentation no longer matched implementation",
     symptom: "The reference called implemented behavior inert and described lenses that had moved or never existed.",
     cause: "The editor evolved without updating its local source-of-truth markdown alongside view vocabulary and tests.",
     fix: "Replace stale aspirational prose with a concise inventory of current context panels, lenses, behavior contracts, and deferred boundaries.",
     acceptance: "Every documented key resolves to a registered view or is explicitly marked deferred.",
-    evidence: ["slide-deck-editor/slide-deck-editor.md", "representation/data/types/workspace/views.ts"]
+    evidence: ["presentation-editor/presentation-editor.md", "representation/data/types/workspace/views.ts"]
   },
   {
     id: "QA-05",
     area: "Quality system",
     severity: "P2",
     status: "Fixed in this audit",
-    title: "An empty deck template could recreate the zero-slide defect",
-    symptom: "Instantiating an intentionally blank deck template could yield a project deck with no canvas.",
+    title: "An empty presentation template could recreate the zero-slide defect",
+    symptom: "Instantiating an intentionally blank presentation template could yield a project presentation with no canvas.",
     cause: "The template empty-body factory independently used slides: [], allowing creation paths to drift.",
-    fix: "Fulfil the current editor-readiness invariant by adding one freshly identified slide at project-deck instantiation.",
-    acceptance: "Every path producing a project deck opens one canvas, including blank template instantiation.",
-    evidence: ["templates/api/instantiate-template/instantiate-template.ts", "slide-decks/readiness.ts"]
+    fix: "Fulfil the current editor-readiness invariant by adding one freshly identified slide at project-presentation instantiation.",
+    acceptance: "Every path producing a project presentation opens one canvas, including blank template instantiation.",
+    evidence: ["templates/api/instantiate-template/instantiate-template.ts", "presentations/readiness.ts"]
   },
   {
     id: "QA-06",

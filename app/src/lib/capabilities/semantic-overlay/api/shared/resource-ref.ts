@@ -28,9 +28,9 @@ export const semanticResourceRef = (value: unknown): ResourceRef =>
     value,
     (ref) =>
       ref.kind === "document" ||
-      ref.kind === "slides" ||
+      ref.kind === "presentation" ||
       ref.kind === "externalFile::text",
-    "'document', 'slides', or 'externalFile::text'"
+    "'document', 'presentation', or 'externalFile::text'"
   );
 
 /** Resource kinds whose save/upload event can enqueue either semantic lane. */
@@ -39,10 +39,10 @@ export const semanticIngestibleResourceRef = (value: unknown): ResourceRef =>
     value,
     (ref) =>
       ref.kind === "document" ||
-      ref.kind === "slides" ||
+      ref.kind === "presentation" ||
       ref.kind === "spreadsheet" ||
       isExternalFileResourceKind(ref.kind),
-    "'document', 'slides', 'spreadsheet', or an 'externalFile' subkind"
+    "'document', 'presentation', 'spreadsheet', or an 'externalFile' subkind"
   );
 
 export { sameResourceRef };

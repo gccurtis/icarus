@@ -96,7 +96,7 @@ describe("the Derived Output scope read projection", () => {
       ...another,
       boundTo: {
         kind: "resource" as const,
-        ref: { kind: "slides" as const, id: "slideDecks:made" as never },
+        ref: { kind: "presentation" as const, id: "presentations:made" as never },
         hole: "source_material"
       }
     };

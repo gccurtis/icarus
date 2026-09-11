@@ -446,7 +446,7 @@ that does not start at zero is a claim about the shape of the bars, not a
 formatting preference.
 
 Colours are shown as role tokens rather than values, so a chart pasted into a
-slide comes out in the deck's palette instead of carrying four colours from
+slide comes out in the presentation's palette instead of carrying four colours from
 another document.
 
 The closing gap: colour, size, detail, label and tooltip are not persisted
@@ -877,7 +877,7 @@ survives a reload, and a compiled expression that can be read but never edited.
 
 **Nothing writes.** Ten panels, twelve editable values between them, and every
 one is held where it was typed. The two controls that do anything at all are Run
-again, which evaluates and stores nothing, and the deck's re-frame, which is
+again, which evaluates and stores nothing, and the presentation's re-frame, which is
 staged, confirmed, and then held like everything else.
 
 **Attribution is thin, and thin differently on each panel.** The project records

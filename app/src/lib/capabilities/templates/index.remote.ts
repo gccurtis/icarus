@@ -2,7 +2,7 @@ import { command, query } from "$app/server";
 
 import { readDocumentBody } from "$capabilities/document/index.remote";
 import { readProjectResourceIndex } from "$capabilities/project-resources/index.remote";
-import { readSlideDeckBody } from "$capabilities/slide-deck/index.remote";
+import { readPresentationBody } from "$capabilities/presentation/index.remote";
 import { commitTemplateStage as commitTemplateStageProcedure } from "$capabilities/templates/api/commit-template-stage/commit-template-stage";
 import { createTemplate as createTemplateProcedure } from "$capabilities/templates/api/create-template/create-template";
 import { createTemplateFromResource as createTemplateFromResourceProcedure } from "$capabilities/templates/api/create-template-from-resource/create-template-from-resource";
@@ -74,7 +74,7 @@ export const openTemplateStage = command("unchecked", async (input) => {
     if (result.target === "document") {
       await readDocumentBody({ resourceId: result.resourceId }).refresh();
     } else {
-      await readSlideDeckBody({ resourceId: result.resourceId }).refresh();
+      await readPresentationBody({ resourceId: result.resourceId }).refresh();
     }
   }
   return result;
@@ -98,7 +98,7 @@ export const discardTemplateStage = command("unchecked", async (input) => {
     if (result.target === "document") {
       await readDocumentBody({ resourceId: result.resourceId }).refresh();
     } else {
-      await readSlideDeckBody({ resourceId: result.resourceId }).refresh();
+      await readPresentationBody({ resourceId: result.resourceId }).refresh();
     }
   }
   return result;

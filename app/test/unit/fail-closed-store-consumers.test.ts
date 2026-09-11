@@ -13,7 +13,7 @@ import {
 import { rowsIn as researchRows } from "$capabilities/research-chat/api/shared/store";
 import { recordsIn as resourceSetRows } from "$capabilities/resource-sets/api/shared/projection";
 import { rowsOf as semanticRows } from "$capabilities/semantic-overlay/api/shared/rows";
-import { leaderOf as slideLeader } from "$capabilities/slide-deck/api/shared/leader";
+import { leaderOf as slideLeader } from "$capabilities/presentation/api/shared/leader";
 import { surroundingsOf } from "$capabilities/spreadsheet/api/shared/answering";
 import { cellRowsOf } from "$capabilities/spreadsheet/api/shared/cells";
 import { leaderOf as spreadsheetLeader } from "$capabilities/spreadsheet/api/shared/leader";
@@ -50,8 +50,8 @@ const boundaryReaders: readonly [string, TableName, Reader][] = [
   ["Document leader", "documentSnapshots", (store) => [
     documentLeader(store, "projects:p" as never, "documents:d" as never)
   ]],
-  ["Slide leader", "slideDeckSnapshots", (store) => [
-    slideLeader(store, "projects:p" as never, "slideDecks:d" as never)
+  ["Slide leader", "presentationSnapshots", (store) => [
+    slideLeader(store, "projects:p" as never, "presentations:d" as never)
   ]],
   ["Spreadsheet leader", "spreadsheetSnapshots", (store) => [
     spreadsheetLeader(store, "projects:p" as never, "spreadsheets:s" as never)

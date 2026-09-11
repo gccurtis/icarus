@@ -63,7 +63,7 @@ export const BASELINE_DIAGRAM = `flowchart LR
 `;
 
 export const DURABILITY_DIAGRAM = `flowchart LR
-  UI["document · deck · spreadsheet<br/>project create · template place"]
+  UI["document · presentation · spreadsheet<br/>project create · template place"]
   TX["one Store transaction"]
   DATA["revision · snapshot<br/>metadata · representation"]
   OUTBOX["semantic job row<br/>exact and/or material"]

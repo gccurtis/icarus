@@ -124,9 +124,9 @@ const currentProjectResources = (
   ...rowsOf(model.store, "documents")
     .filter((row) => row.projectId === projectId)
     .map((row) => ({ kind: "document" as const, id: row._id })),
-  ...rowsOf(model.store, "slideDecks")
+  ...rowsOf(model.store, "presentations")
     .filter((row) => row.projectId === projectId)
-    .map((row) => ({ kind: "slides" as const, id: row._id })),
+    .map((row) => ({ kind: "presentation" as const, id: row._id })),
   ...rowsOf(model.store, "spreadsheets")
     .filter((row) => row.projectId === projectId)
     .map((row) => ({ kind: "spreadsheet" as const, id: row._id })),

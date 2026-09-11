@@ -9,7 +9,7 @@ import type {
   Target
 } from "$representation/data/types/workspace/tab";
 import type { DocumentRuntime, DocumentRuntimesModel } from "$model/client/document-runtimes";
-import type { SlideDeckRuntime, SlideDeckRuntimesModel } from "$model/client/slide-deck-runtimes";
+import type { PresentationRuntime, PresentationRuntimesModel } from "$model/client/presentation-runtimes";
 import type { SpreadsheetRuntime, SpreadsheetRuntimesModel } from "$model/client/spreadsheet-runtimes";
 import type { TabListModel } from "$model/client/tab-list";
 import type { TabViewsModel } from "$model/client/tab-views";
@@ -19,7 +19,7 @@ import { close } from "$model/client/workspace-state/methods/close";
 import { documentRuntime } from "$model/client/workspace-state/methods/document-runtime";
 import { draft } from "$model/client/workspace-state/methods/draft";
 import { keepDraft } from "$model/client/workspace-state/methods/keep-draft";
-import { slideDeckRuntime } from "$model/client/workspace-state/methods/slide-deck-runtime";
+import { presentationRuntime } from "$model/client/workspace-state/methods/presentation-runtime";
 import { spreadsheetRuntime } from "$model/client/workspace-state/methods/spreadsheet-runtime";
 import { flush } from "$model/client/workspace-state/methods/flush";
 import { inspect } from "$model/client/workspace-state/methods/inspect";
@@ -66,7 +66,7 @@ export class WorkspaceStateData {
     readonly views: TabViewsModel,
     readonly thresholds: Thresholds,
     readonly documents: DocumentRuntimesModel | undefined,
-    readonly decks: SlideDeckRuntimesModel | undefined,
+    readonly presentations: PresentationRuntimesModel | undefined,
     readonly sheets: SpreadsheetRuntimesModel | undefined
   ) {
     const starting = startingWorkspace();
@@ -114,10 +114,10 @@ export class WorkspaceState implements WorkspaceStateModel {
     views: TabViewsModel,
     thresholds: Thresholds,
     documents?: DocumentRuntimesModel,
-    decks?: SlideDeckRuntimesModel,
+    presentations?: PresentationRuntimesModel,
     sheets?: SpreadsheetRuntimesModel
   ) {
-    this.#state = new WorkspaceStateData(project, tabs, views, thresholds, documents, decks, sheets);
+    this.#state = new WorkspaceStateData(project, tabs, views, thresholds, documents, presentations, sheets);
   }
 
   get project(): string {
@@ -239,8 +239,8 @@ export class WorkspaceState implements WorkspaceStateModel {
     return documentRuntime(this.#state, resourceId);
   }
 
-  slideDeckRuntime(resourceId: string): SlideDeckRuntime {
-    return slideDeckRuntime(this.#state, resourceId);
+  presentationRuntime(resourceId: string): PresentationRuntime {
+    return presentationRuntime(this.#state, resourceId);
   }
 
   spreadsheetRuntime(resourceId: string): SpreadsheetRuntime {

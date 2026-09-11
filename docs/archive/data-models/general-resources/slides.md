@@ -1,11 +1,11 @@
 # Slides
 
-A deck. Three levels, each owning what belongs to it: the deck sets what is true
+A presentation. Three levels, each owning what belongs to it: the presentation sets what is true
 everywhere, a layout sets what is true for slides using it, a slide places
 elements, and an element holds content blocks.
 
 ```ts
-interface SlideDeck {
+interface Presentation {
   projectId: Id<"projects">;
   title: string;
   aspectRatio: "16:9" | "4:3";
@@ -16,21 +16,21 @@ interface SlideDeck {
 }
 
 // the body, stored as a leader snapshot plus change sets
-interface SlideDeckBody {
-  theme: DeckTheme;
+interface PresentationBody {
+  theme: PresentationTheme;
   styles: StyleSet;
   layouts: SlideLayout[];
   slides: Slide[];
-  sections: DeckSection[];
+  sections: PresentationSection[];
 }
 
-interface DeckSection {
+interface PresentationSection {
   id: string;
   name: string;
   firstSlideId: string;
 }
 
-interface DeckTheme {
+interface PresentationTheme {
   background?: SlideBackground;
   colors: { text: string; accent: string; muted?: string };
   fontFamily?: string;
@@ -80,7 +80,7 @@ type SlideBackground =
 ## Sections, and why slides have no names
 
 Slides carry an `id` and no name. A slide is identified by what is on it, and a
-deck of forty slides each needing a title nobody reads is a naming burden with no
+presentation of forty slides each needing a title nobody reads is a naming burden with no
 payoff — the thumbnail is the label.
 
 Structure comes from `sections` instead. A section names a **contiguous run** of
@@ -92,13 +92,13 @@ and end index breaks the moment a slide is inserted or moved; one defined by a
 single anchor absorbs inserts automatically, and reordering slides reorders
 sections with them.
 
-Sections partition the deck. Slides before the first section belong to none,
-which is the ordinary state of a deck nobody has organized.
+Sections partition the presentation. Slides before the first section belong to none,
+which is the ordinary state of a presentation nobody has organized.
 
 ## Ids
 
 Slides, elements, and the blocks inside them draw from [one id space per
-deck](../content/content-block.md#one-id-space-per-resource) — flat, so an
+presentation](../content/content-block.md#one-id-space-per-resource) — flat, so an
 element moved between slides keeps its identity, and reordering slides never
 touches the path to anything on them.
 
@@ -116,17 +116,17 @@ table block, and no slide-specific table concept is needed.
 
 ## Frames are fractions
 
-`Frame` coordinates run 0–1, relative to the slide. A deck rendered at
+`Frame` coordinates run 0–1, relative to the slide. A presentation rendered at
 1920 × 1080, on a phone, and in a PDF export must place elements identically, and
 only relative coordinates do that without a canonical pixel size everything else
 divides by.
 
-This is also why `aspectRatio` is on the deck rather than per slide. Fractions
+This is also why `aspectRatio` is on the presentation rather than per slide. Fractions
 only mean the same thing across slides if the slides are the same shape.
 
 ## Themes and layouts
 
-`theme` is what is true for the whole deck — background, palette, typeface.
+`theme` is what is true for the whole presentation — background, palette, typeface.
 
 A `SlideLayout` is the master concept, and it does the job in two fields:
 
@@ -149,7 +149,7 @@ constraining the element.
 ## Overflow
 
 `overflow` is on the element because it is a property of the box, not the text.
-When content exceeds its frame the deck must do something, and the three options
+When content exceeds its frame the presentation must do something, and the three options
 are different intentions: `clip` for a fixed design, `shrink` for a title that
 must fit, `grow` for notes-style content where the frame was a starting point.
 
@@ -161,19 +161,19 @@ position on it.
 
 ## Nothing here describes print
 
-A deck carries no paper, no margins and no page setup. Printing is a separate
+A presentation carries no paper, no margins and no page setup. Printing is a separate
 arrangement — some number of slides placed on a sheet and scaled to it — and
 that is a shape this body cannot hold, because the count and the placement have
 nowhere to live in a page setup.
 
 Keeping it out is what leaves a slide free of print constraints. A slide is a
 ratio; the shape of the paper it might be printed on is unrelated, and letting
-one imply the other is how decks end up with margins on three sides.
+one imply the other is how presentations end up with margins on three sides.
 
 ## Styles
 
-`styles` is the deck's [style set](style-set.md), shared with documents. Slide
-text uses named styles for the same reason document text does: restyling a deck
+`styles` is the presentation's [style set](style-set.md), shared with documents. Slide
+text uses named styles for the same reason document text does: restyling a presentation
 should be one edit, not a pass over every element.
 
 ## The body is not on this row
@@ -182,8 +182,8 @@ should be one edit, not a pass over every element.
 snapshot](../revisions/resource-snapshot.md), with the current body being that
 snapshot plus the [change sets](../revisions/change-set.md) after it — the same
 arrangement as a [document](document.md#the-body-is-not-on-this-row), for the
-same write-amplification reason. Decks are where it matters most: embedded images
-and per-element layout make a deck body far larger than a document's.
+same write-amplification reason. Presentations are where it matters most: embedded images
+and per-element layout make a presentation body far larger than a document's.
 
 `aspectRatio` stays on the row because a thumbnail needs it and no edit operation
 changes it.

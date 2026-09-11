@@ -21,7 +21,7 @@ import {
 
 describe("template mutations — create, update, and duplicate", () => {
   test("creates every target from a server-owned valid empty body and records revision one", async () => {
-    for (const target of ["document", "slides", "spreadsheet"] as const) {
+    for (const target of ["document", "presentation", "spreadsheet"] as const) {
       const answer = await createTemplate({ target, name: `New ${target}`, tags: [" New ", "new"] });
       assert.equal(answer.accepted, true);
       const created = model.tables.templates.find((candidate) => candidate._id === answer.templateId);

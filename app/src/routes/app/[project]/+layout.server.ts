@@ -20,14 +20,14 @@ const PUBLISHED_KEYS = [
   "revisions.sync.everyMs",
   "workspace.changeSets.flushAfterOps",
   "workspace.changeSets.flushAfterMs",
-  "slideDeck.stage.unitsHigh",
-  "slideDeck.stage.widthRem",
-  "slideDeck.stage.averageGlyphWidthEm",
-  "slideDeck.zoom.minimum",
-  "slideDeck.zoom.maximum",
-  "slideDeck.zoom.step",
-  "slideDeck.gutter.minimumRem",
-  "slideDeck.gutter.maximumRem"
+  "presentation.stage.unitsHigh",
+  "presentation.stage.widthRem",
+  "presentation.stage.averageGlyphWidthEm",
+  "presentation.zoom.minimum",
+  "presentation.zoom.maximum",
+  "presentation.zoom.step",
+  "presentation.gutter.minimumRem",
+  "presentation.gutter.maximumRem"
 ] as const;
 
 /**

@@ -37,10 +37,10 @@
   /** The workspace family: the shapes the centre of a screen is built from. */
   const SHELF = [
     { title: "Regulatory filing shell", sub: "Document · 4 variables", icon: FileText, lines: 5, variables: 2 },
-    { title: "Board update", sub: "Slide deck · 2 variables", icon: Presentation, lines: 4, variables: 1 },
+    { title: "Board update", sub: "Presentation · 2 variables", icon: Presentation, lines: 4, variables: 1 },
     { title: "Storm cost model", sub: "Spreadsheet · 6 variables", icon: ChartColumn, lines: 6, variables: 3 },
     { title: "Outage brief", sub: "Document · 1 variable", icon: FileText, lines: 4, variables: 1 },
-    { title: "Rate case exhibit", sub: "Slide deck · 3 variables", icon: Presentation, lines: 5, variables: 2 },
+    { title: "Rate case exhibit", sub: "Presentation · 3 variables", icon: Presentation, lines: 5, variables: 2 },
     { title: "Events by month", sub: "Analysis · 24 rows", icon: ChartColumn, lines: 4, variables: 0 }
   ];
 
@@ -53,9 +53,9 @@
    */
   const WORK = [
     { name: "Q3 Resilience Memo", kind: "Document", changed: "4 minutes ago", order: 0, icon: FileText },
-    { name: "Board Update — October", kind: "Slide deck", changed: "2 hours ago", order: 1, icon: Presentation },
+    { name: "Board Update — October", kind: "Presentation", changed: "2 hours ago", order: 1, icon: Presentation },
     { name: "Regulatory Filing Draft", kind: "Document", changed: "1 day ago", order: 2, icon: FileText },
-    { name: "Storm Hardening Options", kind: "Slide deck", changed: "3 days ago", order: 3, icon: Presentation },
+    { name: "Storm Hardening Options", kind: "Presentation", changed: "3 days ago", order: 3, icon: Presentation },
     { name: "Outage Cost Model", kind: "Spreadsheet", changed: "4 days ago", order: 4, icon: ChartColumn }
   ];
   let query = $state("");
@@ -268,7 +268,7 @@
           options={[
             { value: "all", label: "All kinds" },
             { value: "Document", label: "Documents" },
-            { value: "Slide deck", label: "Decks" }
+            { value: "Presentation", label: "Presentations" }
           ]}
           onchange={(next) => (kind = next)}
         />
@@ -340,7 +340,7 @@
         </ScreenRow>
         <ScreenRow>
           <ScreenCell name="Board Update — October" icon={Presentation} onselect={() => {}} />
-          <ScreenCell>Slide deck</ScreenCell>
+          <ScreenCell>Presentation</ScreenCell>
           <ScreenCell num>2 hours ago</ScreenCell>
           <ScreenCell>
             <button type="button" class="text-interactive-text text-body-sm border-none bg-transparent p-0 hover:underline">
@@ -364,7 +364,7 @@
         <ScreenCard title="Regulatory filing shell" sub="Document · 4 variables" icon={FileText} onselect={() => {}}>
           {#snippet thumb()}<ScreenThumb ratio="4 / 3" lines={5} variables={2} />{/snippet}
         </ScreenCard>
-        <ScreenCard title="Board update" sub="Slide deck · 2 variables" icon={Presentation} onselect={() => {}}>
+        <ScreenCard title="Board update" sub="Presentation · 2 variables" icon={Presentation} onselect={() => {}}>
           {#snippet thumb()}<ScreenThumb ratio="4 / 3" lines={4} variables={1} />{/snippet}
         </ScreenCard>
         <ScreenCard title="Events by month" sub="Line · 24 rows" icon={ChartColumn}>

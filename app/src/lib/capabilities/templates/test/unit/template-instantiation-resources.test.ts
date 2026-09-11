@@ -29,25 +29,25 @@ describe("instantiation — resource creation", () => {
     assert.equal(model.tables.documentSnapshots.length, 0);
   });
 
-  test("creates ordinary document and slide-deck rows with leader snapshots and no provenance", async () => {
+  test("creates ordinary document and presentation rows with leader snapshots and no provenance", async () => {
     model.tables.templates.push(template("1", "users:u"), template("2", "users:u", slidesBody));
 
     const document = await instantiateTemplate({ templateId: "templates:1", name: "Brief" });
     const slides = await instantiateTemplate({ templateId: "templates:2" });
 
     assert.equal(document.accepted && document.target, "document");
-    assert.equal(slides.accepted && slides.target, "slides");
+    assert.equal(slides.accepted && slides.target, "presentation");
     assert.equal("templateId" in model.tables.documents[0], false);
     assert.equal(model.tables.documentSnapshots[0].role, "leader");
-    assert.equal("templateId" in model.tables.slideDecks[0], false);
-    assert.equal(model.tables.slideDeckSnapshots[0].revision, 0);
-    const readyDeck = model.tables.slideDeckSnapshots[0].body as { slides: { id: string }[] };
-    assert.equal(readyDeck.slides.length, 1);
-    assert.match(readyDeck.slides[0].id, /^slide-/);
+    assert.equal("templateId" in model.tables.presentations[0], false);
+    assert.equal(model.tables.presentationSnapshots[0].revision, 0);
+    const readyPresentation = model.tables.presentationSnapshots[0].body as { slides: { id: string }[] };
+    assert.equal(readyPresentation.slides.length, 1);
+    assert.match(readyPresentation.slides[0].id, /^slide-/);
     assert.equal(model.tables.templates[0].lastUsedAt, 500);
     assert.equal(model.tables.templates[0].revision, 2);
     assert.notEqual(model.tables.documents[0].createdBy, model.tables.documents[0].updatedBy);
-    assert.notEqual(model.tables.slideDecks[0].createdBy, model.tables.slideDecks[0].updatedBy);
+    assert.notEqual(model.tables.presentations[0].createdBy, model.tables.presentations[0].updatedBy);
   });
 
   test("preserves current document pixel leading without schema inference", async () => {

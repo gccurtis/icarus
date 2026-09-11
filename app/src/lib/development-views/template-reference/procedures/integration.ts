@@ -63,13 +63,13 @@ export const CHAIN: ChainLink[] = [
     gesture: "Press Generate",
     runs: "withFreshOutputs makes a derived output per prompt from the question the template carried",
     state: "works",
-    evidence: "answers.test.ts — a placed deck's prompts get a derived output with a slides origin"
+    evidence: "answers.test.ts — a placed presentation's prompts get a derived output with a slides origin"
   },
   {
     index: "08",
     step: "The copy is material the project can find",
     gesture: "None — it is true of the resource that lands",
-    runs: "enqueueSemanticSync on the new document, deck or spreadsheet",
+    runs: "enqueueSemanticSync on the new document, presentation or spreadsheet",
     state: "works",
     evidence: "answers.test.ts — enqueues the copy for retrieval"
   }

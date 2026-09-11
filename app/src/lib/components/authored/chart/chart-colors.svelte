@@ -14,7 +14,7 @@
    * theme swap, prints legibly, and agrees with the eleven other things on the
    * screen; a chart picked from a colour wheel does none of that. But a chart is
    * also the one surface where a person legitimately has a colour they must
-   * match — a client's brand, a regulator's convention, the palette of the deck
+   * match — a client's brand, a regulator's convention, the palette of the presentation
    * this is going into — and refusing that outright means they leave and rebuild
    * the chart in a tool that will let them.
    *

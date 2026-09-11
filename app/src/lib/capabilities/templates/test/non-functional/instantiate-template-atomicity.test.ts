@@ -43,12 +43,12 @@ const subjects = [
     body: { resource: "document", rows: [] }
   },
   {
-    target: "slides",
-    resources: "slideDecks",
-    snapshots: "slideDeckSnapshots",
+    target: "presentation",
+    resources: "presentations",
+    snapshots: "presentationSnapshots",
     exact: true,
     body: {
-      resource: "slides",
+      resource: "presentation",
       aspectRatio: "16:9",
       theme: { colors: { text: "ink", accent: "blue", muted: "gray" } },
       styles: { defaultKey: "body", styles: { body: { name: "Body" } } },

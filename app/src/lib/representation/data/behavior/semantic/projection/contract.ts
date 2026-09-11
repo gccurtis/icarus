@@ -2,7 +2,7 @@ import type { DocumentBody } from "$representation/data/types/documents/body";
 import type { Id } from "$representation/data/types/core/id";
 import type { ResourceRef } from "$representation/data/types/core/resource";
 import type { FileSubkind } from "$representation/data/types/external/file";
-import type { SlideDeckBody } from "$representation/data/types/slide-decks/body";
+import type { PresentationBody } from "$representation/data/types/presentations/body";
 import type { MaterialSeed } from "$representation/data/types/semantic/material";
 import type { NativeImageInput } from "$representation/data/types/semantic/material";
 import type { SemanticResourceProjection } from "$representation/data/types/semantic/source";
@@ -26,7 +26,7 @@ export type ProjectResourceInput = {
   externalFile?: ExternalFileLookup;
 } & (
   | { kind: "document"; body: DocumentBody }
-  | { kind: "slides"; body: SlideDeckBody }
+  | { kind: "presentation"; body: PresentationBody }
 );
 
 export type ProjectSemanticProjection = {

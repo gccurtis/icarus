@@ -304,11 +304,11 @@ test("a target may say which context view the tab opens on, if its rail offers i
   assert.equal(model.context, "document-editor.templates");
 
   const other = model.open({
-    category: "slide-deck-editor",
+    category: "presentation-editor",
     resourceId: "d1",
     context: "document-editor.templates"
   });
-  assert.equal(other.contextId, defaultContext("slide-deck-editor"));
+  assert.equal(other.contextId, defaultContext("presentation-editor"));
 });
 
 test("a target with a focus and no centre says what the tab is about without moving it", () => {
@@ -740,7 +740,7 @@ test("an inspection preserves every member of a multi-selection", () => {
     ids: ["element-1", "element-2"]
   };
 
-  model.inspect("slide-deck-editor.multi-selection", multiple);
+  model.inspect("presentation-editor.multi-selection", multiple);
 
   assert.deepEqual(model.selection, multiple);
 });

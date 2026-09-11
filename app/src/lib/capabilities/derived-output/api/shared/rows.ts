@@ -129,14 +129,14 @@ export const activeSources = (
     const ref = { kind: "document" as const, id: snapshot.resourceId };
     active.set(`${ref.kind}\u0000${ref.id}`, { ref, revision: snapshot.revision, encoding: "utf-16" });
   }
-  const decks = new Set(
-    rowsOf(store, "slideDecks")
+  const presentations = new Set(
+    rowsOf(store, "presentations")
       .filter((row) => row.projectId === projectId)
       .map((row) => row._id)
   );
-  for (const snapshot of rowsOf(store, "slideDeckSnapshots")) {
-    if (snapshot.projectId !== projectId || snapshot.role !== "leader" || !decks.has(snapshot.resourceId)) continue;
-    const ref = { kind: "slides" as const, id: snapshot.resourceId };
+  for (const snapshot of rowsOf(store, "presentationSnapshots")) {
+    if (snapshot.projectId !== projectId || snapshot.role !== "leader" || !presentations.has(snapshot.resourceId)) continue;
+    const ref = { kind: "presentation" as const, id: snapshot.resourceId };
     active.set(`${ref.kind}\u0000${ref.id}`, { ref, revision: snapshot.revision, encoding: "utf-16" });
   }
   for (const file of rowsOf(store, "externalFiles")) {

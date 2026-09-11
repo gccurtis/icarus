@@ -26,7 +26,7 @@ The current subject inventory is:
 - `research-chat` owns research threads, the turns that answer them, and the run in flight;
 - `resource-sets` owns named reusable resource scopes;
 - `semantic-overlay` owns semantic translation, material profiles, indexes, and synchronization;
-- `slide-deck` owns slide-deck resources and revisions;
+- `presentation` owns presentation resources and revisions;
 - `spreadsheet` owns spreadsheet resources, cells, formatting, formulas, and revisions;
 - `store` exposes scoped reads of represented data;
 - `templates` owns templates, stages, holes, and instantiation;

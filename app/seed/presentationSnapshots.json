@@ -1,0 +1,1028 @@
+[
+  {
+    "_id": "presentationSnapshots:1",
+    "_creationTime": 1786435200000,
+    "projectId": "default",
+    "resourceId": "presentations:1",
+    "revision": 1,
+    "role": "leader",
+    "part": 0,
+    "at": 1788296400000,
+    "body": {
+      "aspectRatio": "16:9",
+      "theme": {
+        "background": {
+          "kind": "color",
+          "color": "--token-surface-elevated"
+        },
+        "colors": {
+          "text": "--token-ink-primary",
+          "accent": "--token-color-accent-1-fill",
+          "muted": "--token-ink-muted"
+        },
+        "fontFamily": "IBM Plex Sans"
+      },
+      "styles": {
+        "defaultKey": "body",
+        "styles": {
+          "title": {
+            "name": "Title",
+            "fontSize": 44,
+            "bold": true,
+            "color": "--token-ink-primary"
+          },
+          "body": {
+            "name": "Body",
+            "fontSize": 20,
+            "color": "--token-ink-secondary"
+          },
+          "caption": {
+            "name": "Caption",
+            "fontSize": 14,
+            "italic": true,
+            "color": "--token-ink-muted"
+          }
+        }
+      },
+      "layouts": [
+        {
+          "key": "title-and-body",
+          "name": "Title and body",
+          "locked": [],
+          "placeholders": [
+            {
+              "role": "title",
+              "frame": {
+                "x": 0.08,
+                "y": 0.1,
+                "width": 0.84,
+                "height": 0.18
+              },
+              "styleKey": "title"
+            },
+            {
+              "role": "body",
+              "frame": {
+                "x": 0.08,
+                "y": 0.34,
+                "width": 0.84,
+                "height": 0.5
+              },
+              "styleKey": "body"
+            }
+          ],
+          "id": "layout-title-and-body"
+        },
+        {
+          "id": "layout-title-only",
+          "key": "title-only",
+          "name": "Title only",
+          "locked": [],
+          "placeholders": [
+            {
+              "role": "title",
+              "frame": {
+                "x": 0.08,
+                "y": 0.38,
+                "width": 0.84,
+                "height": 0.24
+              },
+              "styleKey": "title"
+            }
+          ]
+        },
+        {
+          "id": "layout-blank",
+          "key": "blank",
+          "name": "Blank",
+          "locked": [],
+          "placeholders": []
+        }
+      ],
+      "sections": [
+        {
+          "id": "sec-1",
+          "name": "Exposure",
+          "firstSlideId": "slide-1"
+        }
+      ],
+      "slides": [
+        {
+          "id": "slide-1",
+          "layoutKey": "title-and-body",
+          "notes": [],
+          "elements": [
+            {
+              "id": "el-1",
+              "frame": {
+                "x": 0.08,
+                "y": 0.1,
+                "width": 0.84,
+                "height": 0.18
+              },
+              "overflow": "grow",
+              "content": {
+                "type": "text",
+                "block": {
+                  "id": "el-1-b",
+                  "type": "text",
+                  "variant": "heading",
+                  "style": "title",
+                  "atoms": [
+                    {
+                      "id": "el-1-a",
+                      "kind": "literal",
+                      "text": "Q1 exposure"
+                    }
+                  ],
+                  "display": "Q1 exposure",
+                  "marks": []
+                }
+              }
+            },
+            {
+              "id": "el-2",
+              "frame": {
+                "x": 0.08,
+                "y": 0.34,
+                "width": 0.5,
+                "height": 0.4
+              },
+              "overflow": "grow",
+              "content": {
+                "type": "text",
+                "block": {
+                  "id": "el-2-b",
+                  "type": "text",
+                  "variant": "paragraph",
+                  "style": "body",
+                  "atoms": [
+                    {
+                      "id": "el-2-a",
+                      "kind": "literal",
+                      "text": "Three substations carry the winter peak. Two of them have no second feed."
+                    }
+                  ],
+                  "display": "Three substations carry the winter peak. Two of them have no second feed.",
+                  "marks": []
+                }
+              }
+            },
+            {
+              "id": "el-3",
+              "frame": {
+                "x": 0.64,
+                "y": 0.34,
+                "width": 0.28,
+                "height": 0.4
+              },
+              "overflow": "clip",
+              "paint": {
+                "fill": "--token-color-accent-1-surface",
+                "stroke": {
+                  "color": "--token-color-accent-1-border",
+                  "width": 2,
+                  "dash": "solid"
+                }
+              },
+              "content": {
+                "type": "shape",
+                "shape": "rectangle"
+              }
+            }
+          ]
+        },
+        {
+          "id": "slide-2",
+          "layoutKey": "title-and-body",
+          "notes": [
+            {
+              "id": "el-notes-2",
+              "type": "text",
+              "variant": "paragraph",
+              "atoms": [
+                {
+                  "id": "el-notes-2-a",
+                  "kind": "literal",
+                  "text": "Open on the three feeders. Say which one is derated before the chart, or the chart gets read as the point.\nPeak is 1,284 MW \u2014 the board saw 1,190 last quarter."
+                }
+              ],
+              "display": "Open on the three feeders. Say which one is derated before the chart, or the chart gets read as the point.\nPeak is 1,284 MW \u2014 the board saw 1,190 last quarter.",
+              "marks": []
+            }
+          ],
+          "elements": [
+            {
+              "id": "el-4",
+              "frame": {
+                "x": 0.08,
+                "y": 0.1,
+                "width": 0.84,
+                "height": 0.18
+              },
+              "overflow": "grow",
+              "content": {
+                "type": "text",
+                "block": {
+                  "id": "el-4-b",
+                  "type": "text",
+                  "variant": "heading",
+                  "style": "title",
+                  "atoms": [
+                    {
+                      "id": "el-4-a",
+                      "kind": "literal",
+                      "text": "Where the load sits"
+                    }
+                  ],
+                  "display": "Where the load sits",
+                  "marks": []
+                }
+              }
+            },
+            {
+              "id": "el-5",
+              "frame": {
+                "x": 0.08,
+                "y": 0.38,
+                "width": 0.24,
+                "height": 0.44
+              },
+              "overflow": "clip",
+              "paint": {
+                "fill": "--token-color-accent-1-fill"
+              },
+              "content": {
+                "type": "shape",
+                "shape": "rectangle"
+              }
+            },
+            {
+              "id": "el-6",
+              "frame": {
+                "x": 0.38,
+                "y": 0.5,
+                "width": 0.24,
+                "height": 0.32
+              },
+              "overflow": "clip",
+              "paint": {
+                "fill": "--token-color-accent-2-fill"
+              },
+              "content": {
+                "type": "shape",
+                "shape": "rectangle"
+              }
+            },
+            {
+              "id": "el-7",
+              "frame": {
+                "x": 0.68,
+                "y": 0.58,
+                "width": 0.24,
+                "height": 0.24
+              },
+              "overflow": "clip",
+              "paint": {
+                "fill": "--token-color-inactive-fill"
+              },
+              "content": {
+                "type": "shape",
+                "shape": "rectangle"
+              }
+            },
+            {
+              "id": "el-8",
+              "frame": {
+                "x": 0.08,
+                "y": 0.86,
+                "width": 0.84,
+                "height": 0.08
+              },
+              "overflow": "grow",
+              "content": {
+                "type": "text",
+                "block": {
+                  "id": "el-8-b",
+                  "type": "text",
+                  "variant": "paragraph",
+                  "style": "caption",
+                  "atoms": [
+                    {
+                      "id": "el-8-a",
+                      "kind": "literal",
+                      "text": "Feeders A, B and C"
+                    }
+                  ],
+                  "display": "Feeders A, B and C",
+                  "marks": []
+                }
+              }
+            },
+            {
+              "id": "el-line-1",
+              "frame": {
+                "x": 0.3,
+                "y": 0.44,
+                "width": 0.1,
+                "height": 0.1
+              },
+              "paint": {
+                "stroke": {
+                  "color": "--token-ink-secondary",
+                  "width": 3,
+                  "dash": "solid"
+                }
+              },
+              "content": {
+                "type": "line",
+                "from": {
+                  "x": 0.32,
+                  "y": 0.6
+                },
+                "to": {
+                  "x": 0.38,
+                  "y": 0.52
+                },
+                "ends": {
+                  "end": "arrow"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "id": "slide-3",
+          "layoutKey": "title-and-body",
+          "notes": [],
+          "elements": [
+            {
+              "id": "el-9",
+              "frame": {
+                "x": 0.08,
+                "y": 0.1,
+                "width": 0.84,
+                "height": 0.18
+              },
+              "overflow": "grow",
+              "content": {
+                "type": "text",
+                "block": {
+                  "id": "el-9-b",
+                  "type": "text",
+                  "variant": "heading",
+                  "style": "title",
+                  "atoms": [
+                    {
+                      "id": "el-9-a",
+                      "kind": "literal",
+                      "text": "What we are asking for"
+                    }
+                  ],
+                  "display": "What we are asking for",
+                  "marks": []
+                }
+              }
+            },
+            {
+              "id": "el-10",
+              "frame": {
+                "x": 0.08,
+                "y": 0.36,
+                "width": 0.84,
+                "height": 0.3
+              },
+              "overflow": "grow",
+              "content": {
+                "type": "text",
+                "block": {
+                  "id": "el-10-b",
+                  "type": "text",
+                  "variant": "paragraph",
+                  "style": "body",
+                  "atoms": [
+                    {
+                      "id": "el-10-a",
+                      "kind": "literal",
+                      "text": "A second feed at Substation 14 before November, and a standing crew through the peak."
+                    }
+                  ],
+                  "display": "A second feed at Substation 14 before November, and a standing crew through the peak.",
+                  "marks": []
+                }
+              }
+            }
+          ]
+        },
+        {
+          "id": "slide-4",
+          "layoutKey": "title-and-body",
+          "elements": [
+            {
+              "id": "el-11",
+              "frame": {
+                "x": 0.08,
+                "y": 0.1,
+                "width": 0.84,
+                "height": 0.18
+              },
+              "overflow": "grow",
+              "content": {
+                "type": "text",
+                "block": {
+                  "id": "el-11-b",
+                  "type": "text",
+                  "variant": "heading",
+                  "style": "title",
+                  "atoms": [
+                    {
+                      "id": "el-11-a",
+                      "kind": "literal",
+                      "text": "Feeders at the peak"
+                    }
+                  ],
+                  "display": "Feeders at the peak",
+                  "marks": []
+                }
+              }
+            },
+            {
+              "id": "el-tbl-1",
+              "frame": {
+                "x": 0.08,
+                "y": 0.34,
+                "width": 0.6,
+                "height": 0.4
+              },
+              "paint": {
+                "stroke": {
+                  "color": "--token-border-strong",
+                  "width": 1,
+                  "dash": "solid"
+                }
+              },
+              "content": {
+                "type": "table",
+                "block": {
+                  "id": "el-tbl-1-b",
+                  "type": "table",
+                  "headerRows": 1,
+                  "rows": [
+                    {
+                      "id": "el-tbl-r0",
+                      "cells": [
+                        {
+                          "id": "el-tbl-r0c0",
+                          "blocks": [
+                            {
+                              "id": "el-tbl-r0c0-b",
+                              "type": "text",
+                              "variant": "paragraph",
+                              "style": "caption",
+                              "atoms": [
+                                {
+                                  "id": "el-tbl-r0c0-a",
+                                  "kind": "literal",
+                                  "text": "Feeder"
+                                }
+                              ],
+                              "display": "Feeder",
+                              "marks": []
+                            }
+                          ]
+                        },
+                        {
+                          "id": "el-tbl-r0c1",
+                          "blocks": [
+                            {
+                              "id": "el-tbl-r0c1-b",
+                              "type": "text",
+                              "variant": "paragraph",
+                              "style": "caption",
+                              "atoms": [
+                                {
+                                  "id": "el-tbl-r0c1-a",
+                                  "kind": "literal",
+                                  "text": "Load"
+                                }
+                              ],
+                              "display": "Load",
+                              "marks": []
+                            }
+                          ]
+                        },
+                        {
+                          "id": "el-tbl-r0c2",
+                          "blocks": [
+                            {
+                              "id": "el-tbl-r0c2-b",
+                              "type": "text",
+                              "variant": "paragraph",
+                              "style": "caption",
+                              "atoms": [
+                                {
+                                  "id": "el-tbl-r0c2-a",
+                                  "kind": "literal",
+                                  "text": "Second feed"
+                                }
+                              ],
+                              "display": "Second feed",
+                              "marks": []
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "id": "el-tbl-r1",
+                      "cells": [
+                        {
+                          "id": "el-tbl-r1c0",
+                          "blocks": [
+                            {
+                              "id": "el-tbl-r1c0-b",
+                              "type": "text",
+                              "variant": "paragraph",
+                              "style": "caption",
+                              "atoms": [
+                                {
+                                  "id": "el-tbl-r1c0-a",
+                                  "kind": "literal",
+                                  "text": "A"
+                                }
+                              ],
+                              "display": "A",
+                              "marks": []
+                            }
+                          ]
+                        },
+                        {
+                          "id": "el-tbl-r1c1",
+                          "blocks": [
+                            {
+                              "id": "el-tbl-r1c1-b",
+                              "type": "text",
+                              "variant": "paragraph",
+                              "style": "caption",
+                              "atoms": [
+                                {
+                                  "id": "el-tbl-r1c1-a",
+                                  "kind": "literal",
+                                  "text": "412 MW"
+                                }
+                              ],
+                              "display": "412 MW",
+                              "marks": []
+                            }
+                          ]
+                        },
+                        {
+                          "id": "el-tbl-r1c2",
+                          "blocks": [
+                            {
+                              "id": "el-tbl-r1c2-b",
+                              "type": "text",
+                              "variant": "paragraph",
+                              "style": "caption",
+                              "atoms": [
+                                {
+                                  "id": "el-tbl-r1c2-a",
+                                  "kind": "literal",
+                                  "text": "No"
+                                }
+                              ],
+                              "display": "No",
+                              "marks": []
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "id": "el-tbl-r2",
+                      "cells": [
+                        {
+                          "id": "el-tbl-r2c0",
+                          "blocks": [
+                            {
+                              "id": "el-tbl-r2c0-b",
+                              "type": "text",
+                              "variant": "paragraph",
+                              "style": "caption",
+                              "atoms": [
+                                {
+                                  "id": "el-tbl-r2c0-a",
+                                  "kind": "literal",
+                                  "text": "B"
+                                }
+                              ],
+                              "display": "B",
+                              "marks": []
+                            }
+                          ]
+                        },
+                        {
+                          "id": "el-tbl-r2c1",
+                          "blocks": [
+                            {
+                              "id": "el-tbl-r2c1-b",
+                              "type": "text",
+                              "variant": "paragraph",
+                              "style": "caption",
+                              "atoms": [
+                                {
+                                  "id": "el-tbl-r2c1-a",
+                                  "kind": "literal",
+                                  "text": "388 MW"
+                                }
+                              ],
+                              "display": "388 MW",
+                              "marks": []
+                            }
+                          ]
+                        },
+                        {
+                          "id": "el-tbl-r2c2",
+                          "blocks": [
+                            {
+                              "id": "el-tbl-r2c2-b",
+                              "type": "text",
+                              "variant": "paragraph",
+                              "style": "caption",
+                              "atoms": [
+                                {
+                                  "id": "el-tbl-r2c2-a",
+                                  "kind": "literal",
+                                  "text": "Yes"
+                                }
+                              ],
+                              "display": "Yes",
+                              "marks": []
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "id": "el-tbl-r3",
+                      "cells": [
+                        {
+                          "id": "el-tbl-r3c0",
+                          "blocks": [
+                            {
+                              "id": "el-tbl-r3c0-b",
+                              "type": "text",
+                              "variant": "paragraph",
+                              "style": "caption",
+                              "atoms": [
+                                {
+                                  "id": "el-tbl-r3c0-a",
+                                  "kind": "literal",
+                                  "text": "C"
+                                }
+                              ],
+                              "display": "C",
+                              "marks": []
+                            }
+                          ]
+                        },
+                        {
+                          "id": "el-tbl-r3c1",
+                          "blocks": [
+                            {
+                              "id": "el-tbl-r3c1-b",
+                              "type": "text",
+                              "variant": "paragraph",
+                              "style": "caption",
+                              "atoms": [
+                                {
+                                  "id": "el-tbl-r3c1-a",
+                                  "kind": "literal",
+                                  "text": "484 MW"
+                                }
+                              ],
+                              "display": "484 MW",
+                              "marks": []
+                            }
+                          ]
+                        },
+                        {
+                          "id": "el-tbl-r3c2",
+                          "blocks": [
+                            {
+                              "id": "el-tbl-r3c2-b",
+                              "type": "text",
+                              "variant": "paragraph",
+                              "style": "caption",
+                              "atoms": [
+                                {
+                                  "id": "el-tbl-r3c2-a",
+                                  "kind": "literal",
+                                  "text": "No"
+                                }
+                              ],
+                              "display": "No",
+                              "marks": []
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          ],
+          "notes": []
+        }
+      ]
+    }
+  },
+  {
+    "_id": "presentationSnapshots:2",
+    "_creationTime": 1782892800000,
+    "projectId": "default",
+    "resourceId": "presentations:2",
+    "revision": 1,
+    "role": "leader",
+    "part": 0,
+    "at": 1787436000000,
+    "body": {
+      "aspectRatio": "16:9",
+      "theme": {
+        "background": {
+          "kind": "color",
+          "color": "--token-surface-elevated"
+        },
+        "colors": {
+          "text": "--token-ink-primary",
+          "accent": "--token-color-accent-2-fill",
+          "muted": "--token-ink-muted"
+        },
+        "fontFamily": "IBM Plex Sans"
+      },
+      "styles": {
+        "defaultKey": "body",
+        "styles": {
+          "title": {
+            "name": "Title",
+            "fontSize": 40,
+            "bold": true,
+            "color": "--token-ink-primary"
+          },
+          "body": {
+            "name": "Body",
+            "fontSize": 20,
+            "color": "--token-ink-secondary"
+          }
+        }
+      },
+      "layouts": [
+        {
+          "key": "title-only",
+          "name": "Title only",
+          "locked": [],
+          "placeholders": [
+            {
+              "role": "title",
+              "frame": {
+                "x": 0.08,
+                "y": 0.12,
+                "width": 0.84,
+                "height": 0.2
+              },
+              "styleKey": "title"
+            }
+          ],
+          "id": "layout-title-only"
+        }
+      ],
+      "sections": [],
+      "slides": [
+        {
+          "id": "slide-1",
+          "layoutKey": "title-only",
+          "notes": [],
+          "elements": [
+            {
+              "id": "el-1",
+              "frame": {
+                "x": 0.08,
+                "y": 0.12,
+                "width": 0.84,
+                "height": 0.2
+              },
+              "overflow": "grow",
+              "content": {
+                "type": "text",
+                "block": {
+                  "id": "el-1-b",
+                  "type": "text",
+                  "variant": "heading",
+                  "style": "title",
+                  "atoms": [
+                    {
+                      "id": "el-1-a",
+                      "kind": "literal",
+                      "text": "Field team briefing"
+                    }
+                  ],
+                  "display": "Field team briefing",
+                  "marks": []
+                }
+              }
+            },
+            {
+              "id": "el-2",
+              "frame": {
+                "x": 0.08,
+                "y": 0.42,
+                "width": 0.4,
+                "height": 0.36
+              },
+              "overflow": "clip",
+              "paint": {
+                "fill": "--token-color-accent-2-surface"
+              },
+              "content": {
+                "type": "shape",
+                "shape": "rectangle"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "_id": "presentationSnapshots:3",
+    "_creationTime": 1788448800000,
+    "projectId": "default",
+    "resourceId": "presentations:3",
+    "revision": 1,
+    "role": "leader",
+    "part": 0,
+    "at": 1788528000000,
+    "body": {
+      "aspectRatio": "16:9",
+      "theme": {
+        "background": { "kind": "color", "color": "--token-surface-elevated" },
+        "colors": { "text": "--token-ink-primary", "accent": "--token-color-intelligence-fill", "muted": "--token-ink-muted" },
+        "fontFamily": "IBM Plex Sans"
+      },
+      "styles": {
+        "defaultKey": "body",
+        "styles": {
+          "title": { "name": "Title", "fontSize": 42, "fontWeight": 650, "color": "--token-ink-primary" },
+          "body": { "name": "Body", "fontSize": 20, "color": "--token-ink-secondary", "lineHeight": 1.35 },
+          "label": { "name": "Label", "fontSize": 13, "fontWeight": 650, "color": "--token-color-intelligence-fill" }
+        }
+      },
+      "layouts": [
+        {
+          "id": "layout-executive-summary",
+          "key": "executive-summary",
+          "name": "Executive summary",
+          "locked": [],
+          "placeholders": [
+            { "role": "title", "frame": { "x": 0.08, "y": 0.1, "width": 0.84, "height": 0.18 }, "styleKey": "title" },
+            { "role": "body", "frame": { "x": 0.08, "y": 0.36, "width": 0.84, "height": 0.48 }, "styleKey": "body" }
+          ]
+        }
+      ],
+      "slides": [
+        {
+          "id": "exec-slide-1",
+          "layoutKey": "executive-summary",
+          "elements": [
+            {
+              "id": "exec-title-element",
+              "frame": { "x": 0.08, "y": 0.1, "width": 0.84, "height": 0.18 },
+              "overflow": "shrink",
+              "content": {
+                "type": "text",
+                "block": {
+                  "id": "exec-title-block",
+                  "type": "text",
+                  "variant": "heading",
+                  "level": 1,
+                  "style": "title",
+                  "atoms": [{ "id": "exec-title-atom", "kind": "literal", "text": "September portfolio update" }],
+                  "display": "September portfolio update",
+                  "marks": []
+                }
+              }
+            },
+            {
+              "id": "exec-body-element",
+              "frame": { "x": 0.08, "y": 0.36, "width": 0.84, "height": 0.48 },
+              "overflow": "shrink",
+              "paint": { "fill": "--token-color-intelligence-surface" },
+              "content": {
+                "type": "text",
+                "block": {
+                  "id": "exec-body-block",
+                  "type": "text",
+                  "variant": "paragraph",
+                  "style": "body",
+                  "format": { "padding": { "x": 18, "y": 16 } },
+                  "atoms": [{ "id": "exec-body-atom", "kind": "literal", "text": "Reliability work remains on plan. Transformer procurement is the only material schedule exception; approval of the accelerated replacement window is requested this week." }],
+                  "display": "Reliability work remains on plan. Transformer procurement is the only material schedule exception; approval of the accelerated replacement window is requested this week.",
+                  "marks": [],
+                  "format": { "background": "--token-color-intelligence-surface", "padding": { "x": 18, "y": 16 } }
+                }
+              }
+            }
+          ],
+          "notes": []
+        }
+      ],
+      "sections": [{ "id": "exec-section", "name": "Executive summary", "firstSlideId": "exec-slide-1" }]
+    }
+  },
+  {
+    "_id": "presentationSnapshots:4",
+    "_creationTime": 1787244300000,
+    "projectId": "default",
+    "resourceId": "presentations:4",
+    "revision": 1,
+    "role": "leader",
+    "part": 0,
+    "at": 1788001200000,
+    "body": {
+      "aspectRatio": "16:9",
+      "theme": {
+        "background": { "kind": "color", "color": "--token-surface-elevated" },
+        "colors": { "text": "--token-ink-primary", "accent": "--token-color-accent-2-fill", "muted": "--token-ink-muted" },
+        "fontFamily": "IBM Plex Sans"
+      },
+      "styles": {
+        "defaultKey": "body",
+        "styles": {
+          "title": { "name": "Title", "fontSize": 40, "fontWeight": 650, "color": "--token-ink-primary" },
+          "body": { "name": "Body", "fontSize": 18, "color": "--token-ink-secondary", "lineHeight": 1.35 }
+        }
+      },
+      "layouts": [
+        {
+          "id": "layout-options",
+          "key": "options",
+          "name": "Options",
+          "locked": [],
+          "placeholders": [
+            { "role": "title", "frame": { "x": 0.07, "y": 0.08, "width": 0.86, "height": 0.18 }, "styleKey": "title" },
+            { "role": "body", "frame": { "x": 0.07, "y": 0.33, "width": 0.86, "height": 0.56 }, "styleKey": "body" }
+          ]
+        }
+      ],
+      "slides": [
+        {
+          "id": "options-slide-1",
+          "layoutKey": "options",
+          "elements": [
+            {
+              "id": "options-title-element",
+              "frame": { "x": 0.07, "y": 0.08, "width": 0.86, "height": 0.18 },
+              "overflow": "shrink",
+              "content": {
+                "type": "text",
+                "block": {
+                  "id": "options-title-block",
+                  "type": "text",
+                  "variant": "heading",
+                  "level": 1,
+                  "style": "title",
+                  "atoms": [{ "id": "options-title-atom", "kind": "literal", "text": "Storm hardening options" }],
+                  "display": "Storm hardening options",
+                  "marks": []
+                }
+              }
+            },
+            {
+              "id": "options-body-element",
+              "frame": { "x": 0.07, "y": 0.33, "width": 0.86, "height": 0.56 },
+              "overflow": "shrink",
+              "paint": { "stroke": { "color": "--token-color-active-border", "width": 1, "dash": "solid" } },
+              "content": {
+                "type": "text",
+                "block": {
+                  "id": "options-body-block",
+                  "type": "text",
+                  "variant": "paragraph",
+                  "style": "body",
+                  "format": { "padding": { "x": 18, "y": 16 } },
+                  "atoms": [{ "id": "options-body-atom", "kind": "literal", "text": "Covered conductor provides the strongest near-term risk reduction per dollar. Targeted undergrounding is reserved for the four highest-consequence segments." }],
+                  "display": "Covered conductor provides the strongest near-term risk reduction per dollar. Targeted undergrounding is reserved for the four highest-consequence segments.",
+                  "marks": [],
+                  "format": { "border": { "color": "--token-color-active-border", "width": 1, "style": "solid" }, "padding": { "x": 18, "y": 16 } }
+                }
+              }
+            }
+          ],
+          "notes": []
+        }
+      ],
+      "sections": [{ "id": "options-section", "name": "Assessment", "firstSlideId": "options-slide-1" }]
+    }
+  }
+]

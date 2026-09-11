@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>07 · The content surface</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="reference.css">
+</head>
+<body>
+<div class="shell">
+  <aside class="rail">
+    <p class="rail-mark">Reference</p>
+    <nav>
+      <a href="index.html"><b>00</b><span>Start here</span></a>
+      <a href="01-system.html"><b>01</b><span>How the system works</span></a>
+      <a href="02-model.html"><b>02</b><span>The presentation model and the applier</span></a>
+      <a href="03-editing-loop.html"><b>03</b><span>From a gesture to the store</span></a>
+      <a href="04-changes.html"><b>04</b><span>What changed, and why</span></a>
+      <a href="05-context-panels.html"><b>05</b><span>The context panels</span></a>
+      <a href="06-inspector.html"><b>06</b><span>The inspector</span></a>
+      <a href="07-content-surface.html" class="is-here"><b>07</b><span>The content surface</span></a>
+      <a href="08-runtime.html"><b>08</b><span>The runtime</span></a>
+      <a href="09-backend.html"><b>09</b><span>The back end</span></a>
+      <a href="10-integration.html"><b>10</b><span>Integration into main</span></a>
+    </nav>
+  </aside>
+
+  <main>
+    <p class="eyebrow">07 · the centre</p>
+    <h1>The content surface</h1>
+    <p class="lede">
+      Two layers. <code>content/presentation.svelte</code> is the editor's view: it owns the frame, the zoom, the
+      keyboard, the context menu and every decision about what an intent means for the body.
+      <code>components/authored/slide-surface</code> is the renderer: it draws a scene and turns pointer
+      and key events into typed callbacks, and it never sees a body or an op.
+    </p>
+    <div class="meta">
+      <span>View <b>app-views/categories/presentation-editor/content/presentation.svelte</b></span>
+      <span>Renderer <b>components/authored/slide-surface/{slide-surface,slide-surface-item,slide-surface-text}.svelte</b></span>
+      <span>Scene <b>procedures/scene.ts</b></span>
+    </div>
+
+    <section id="frame">
+      <div class="head"><span class="n">1</span><h2>The frame</h2></div>
+      <p>
+        A three-row grid: a title bar with the presentation's title (read from
+        <code>presentations.&lt;id&gt;.title</code>), the canvas, and a strip. The canvas is a scrolling area whose
+        content is a <em>pasteboard</em> — a flex box at least as large as the viewport, with a 24px gutter
+        of padding, centring the slide. The strip holds Previous / Next, a Notes button that opens the
+        speaker-notes lens, the placing hint when a kind is armed, zoom out / percentage / zoom in, and the
+        runtime's sync state (Loading, Saved, Saving, Rebasing, Needs review, Offline, Not saved).
+      </p>
+      <h3>Fit and zoom</h3>
+      <p>
+        <code>fitted(available, ratio, GUTTER)</code> is the largest slide that fits the canvas less the
+        gutter on every side; <code>drawn(fit, zoom)</code> scales it by the zoom per cent. Zoom
+        <code>null</code> or 100 is fit, and the percentage button says “Back to fit”. ⌘-wheel or a pinch
+        changes the zoom by two per cent per wheel notch; the ± buttons step by the configured
+        <code>zoomStep</code>; every change is clamped to the configured bounds. <code>zoomTo</code> keeps
+        a focus point still: the centre of the selection when there is one, otherwise whatever is at the
+        centre of the viewport — after the next tick it scrolls so that point is back under the centre.
+      </p>
+      <h3>Units</h3>
+      <p>
+        The slide is 720 units high (<code>stage.unitsHigh</code>) and <code>720 × ratio</code> wide; the
+        renderer lays the stage out at that size and applies one <code>transform: scale()</code> to reach
+        the drawn pixels. Handles, outlines and badges divide by the scale so they stay the same size on
+        screen at every zoom.
+      </p>
+    </section>
+
+    <section id="scene">
+      <div class="head"><span class="n">2</span><h2>The scene</h2></div>
+      <p>
+        <code>sceneOf(body, slide, units)</code> in <code>procedures/scene.ts</code> is the only place a
+        body becomes something drawable. It walks <code>placedOn(slide)</code> so every element has an
+        absolute frame, a depth and its parents; a layout's locked elements are prepended as
+        <code>fixed</code> items (never hovered, selected or moved); the background is the slide's, else
+        the layout's, else the theme's. For each element it resolves paint into CSS strings
+        (<code>colorOf</code> turns a <code>--token</code> into <code>var(--token)</code>), a shadow into a
+        <code>drop-shadow</code> value, text into a flat <code>TextScene</code> (block format → named style →
+        theme → default, runs cut at every mark and formula boundary), and a table into a grid of
+        <code>CellScene</code>s with row, column, spans, fill, border and header flag from
+        <code>gridOf</code>. The Slides and Style panels call the same function for their previews.
+      </p>
+    </section>
+
+    <section id="callbacks">
+      <div class="head"><span class="n">3</span><h2>What the renderer takes and what it says</h2></div>
+      <div class="scroll">
+        <table>
+          <thead><tr><th>Prop</th><th>Meaning</th></tr></thead>
+          <tbody>
+            <tr><td><code>scene, width, height</code></td><td>What to draw, and the drawn size in pixels.</td></tr>
+            <tr><td><code>selected</code></td><td>Ids to outline. The view derives it from <code>view.selection</code>, filtered to this slide, and keeps the edited holder in it while typing.</td></tr>
+            <tr><td><code>cells</code></td><td>Cell ids to highlight, from a <code>cells</code> selection.</td></tr>
+            <tr><td><code>editing</code></td><td>The block id whose text engine is live.</td></tr>
+            <tr><td><code>badges</code></td><td><code>{ id, count }</code> per commented object; <code>id: ""</code> is the slide itself.</td></tr>
+            <tr><td><code>placing</code></td><td>Crosshair, and the next click is a placement.</td></tr>
+            <tr><td><code>board</code></td><td>The pasteboard element, so a marquee can start in the gutter.</td></tr>
+            <tr><td><code>interactive</code></td><td><code>false</code> for thumbnails: no gestures, no overlay.</td></tr>
+            <tr><td><code>snap</code></td><td>A callback the move gesture asks for a snapped frame and guides.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="scroll">
+        <table>
+          <thead><tr><th>Callback</th><th>Fired when</th><th>The view does</th></tr></thead>
+          <tbody>
+            <tr><td><code>onselect(ids, additive)</code></td><td>Pointer down on an object, marquee end, double-click into a group</td><td><code>elementsSignal</code> → <code>view.inspect</code>; clears <code>editing</code>.</td></tr>
+            <tr><td><code>onselectcells(tableId, ids)</code></td><td>Click or drag over cells of the selected table</td><td><code>cellsSignal</code> → the cell lens.</td></tr>
+            <tr><td><code>onclear()</code></td><td>Click on empty slide or gutter, empty marquee</td><td>Inspect the slide lens.</td></tr>
+            <tr><td><code>onplace(at)</code></td><td>Click while placing</td><td>Disarm, <code>put(kind, at)</code>.</td></tr>
+            <tr><td><code>onframes(moves)</code></td><td>Move or resize ends</td><td><code>withElementFrame</code> per object, one apply.</td></tr>
+            <tr><td><code>onrotate(id, degrees)</code></td><td>Rotate ends</td><td><code>set &lt;el&gt;/rotation</code> (0 → removed).</td></tr>
+            <tr><td><code>online(id, from, to)</code></td><td>An endpoint drag ends</td><td>Sets <code>content/from</code>, <code>content/to</code> and the bounding <code>frame</code> together.</td></tr>
+            <tr><td><code>ongrow(id, height)</code></td><td>A growing text box needs a new height</td><td>Sets the frame height if it moved more than half a thousandth.</td></tr>
+            <tr><td><code>onenter(id, blockId)</code></td><td>Double-click on text, a table cell, or Enter</td><td>Select the holder, set <code>editing</code>, inspect the caret at the end.</td></tr>
+            <tr><td><code>onexit()</code></td><td>Escape in the engine, pointer down outside the edited block</td><td>Clear <code>editing</code>, re-select the holder.</td></tr>
+            <tr><td><code>onedit({ blockId, from, to, insert })</code></td><td>Every keystroke while editing</td><td><code>replaced(block, from, to, insert)</code>.</td></tr>
+            <tr><td><code>oncaret(blockId, from, to)</code></td><td>Every selection change while editing</td><td>Keep the workspace selection as next-letter or text-selection, without re-inspecting when unchanged.</td></tr>
+            <tr><td><code>onbadge(id)</code></td><td>A comment badge is clicked</td><td>Select the object and inspect its threads lens.</td></tr>
+            <tr><td><code>oncontext(at, id)</code></td><td>Right-click</td><td>Remember the point for the menu's “Add here”. Nothing is selected.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="gestures">
+      <div class="head"><span class="n">4</span><h2>Gestures</h2></div>
+      <p>
+        One <code>gesture</code> state in the renderer; pointer capture on the stage; drafts held locally
+        until pointer up, so nothing is written during a drag. Right button does nothing here.
+      </p>
+      <div class="scroll">
+        <table>
+          <thead><tr><th>Gesture</th><th>Starts</th><th>While moving</th><th>Ends with</th></tr></thead>
+          <tbody>
+            <tr><td><strong>press → move</strong></td><td>Pointer down on an object (the top-level object unless a grouped child is already selected). Shift / ⌘ adds or removes from the selection. A second click on a selected object starts a press without changing the selection.</td><td>After three units of travel, every selected object is dragged by the same delta; the primary object is offered to <code>snap</code> unless Alt is held; guides are drawn.</td><td><code>onframes</code> for every moved object.</td></tr>
+            <tr><td><strong>resize</strong></td><td>Pointer down on one of eight handles of a single selection (each handle carries its resize cursor).</td><td>The frame follows the handle; Shift keeps the ratio; Alt resizes about the centre; never under 0.01.</td><td><code>onframes</code>.</td></tr>
+            <tr><td><strong>rotate</strong></td><td>The rotate knob above the outline (grab cursor).</td><td>Angle from the centre; Shift snaps to 15°; normalised to 0–359.</td><td><code>onrotate</code>.</td></tr>
+            <tr><td><strong>endpoint</strong></td><td>Either end of a selected line.</td><td>The end follows the pointer, clamped to the slide.</td><td><code>online</code>.</td></tr>
+            <tr><td><strong>marquee</strong></td><td>Pointer down on empty slide, or anywhere in the pasteboard gutter.</td><td>A dashed box.</td><td>Objects whose frames are <em>contained</em> in the box, top-level and unlocked → <code>onselect</code>; a box smaller than three units, or an empty one → <code>onclear</code>.</td></tr>
+            <tr><td><strong>cells</strong></td><td>Pointer down on a cell when the table alone is selected and a cell selection already exists.</td><td>The rectangle between the first cell and the cell under the pointer is highlighted live.</td><td><code>onselectcells</code> with the first-picked cell first.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        <strong>Selecting a cell the first time</strong> is a press on the selected table that does not
+        move: pointer up reports that one cell. From then on a drag ranges. Escape leaves the cells and
+        goes back to the table; a click elsewhere selects as usual.
+      </p>
+      <p>
+        <strong>Double-click</strong> enters text: on a text box or a shape it opens the block; on a table
+        cell it opens that cell's block; on a grouped child it selects the child instead, so the next
+        double-click reaches its text. Double-click while placing does nothing.
+      </p>
+      <p>
+        <strong>Hover</strong> draws a light outline on the object under the pointer when nothing is being
+        dragged, edited or placed. Locked and fixed items take no pointer events at all.
+      </p>
+    </section>
+
+    <section id="keyboard">
+      <div class="head"><span class="n">5</span><h2>The keyboard</h2></div>
+      <p>
+        A window <code>keydown</code> listener in the view. It ignores an event a popover has already
+        handled (<code>defaultPrevented</code>), and while nothing is being edited it ignores keys aimed at
+        an input, textarea, select or contenteditable.
+      </p>
+      <div class="scroll">
+        <table>
+          <thead><tr><th>Key</th><th>When</th><th>Does</th></tr></thead>
+          <tbody>
+            <tr><td>⌘B / ⌘I / ⌘U</td><td>Editing, with a range</td><td><code>toggledMark</code> on the range. The engine prevents the browser's own bold.</td></tr>
+            <tr><td>Escape</td><td>—</td><td>Disarms placing; else leaves a cell selection for the table; else clears to the slide lens. (Escape while editing is handled by the engine and exits editing.)</td></tr>
+            <tr><td>Delete / Backspace</td><td>Something selected</td><td><code>withoutElements</code>, then clear.</td></tr>
+            <tr><td>Arrows</td><td>Something selected</td><td>Nudge by one unit (Shift: ten) in the frame's fraction space.</td></tr>
+            <tr><td>⌘G / ⇧⌘G</td><td>Something selected</td><td>Group (the new group is computed from the edit before it is applied, then selected) / ungroup the first selected.</td></tr>
+            <tr><td>⌘D</td><td>Something selected</td><td>Duplicate, offset by 0.02, select the copies.</td></tr>
+            <tr><td>Enter</td><td>One text box or shape selected</td><td>Enter its text; a shape with no text gets an empty block first.</td></tr>
+            <tr><td>Any printable key</td><td>One text box or shape selected, no modifier</td><td>Start typing: the key is appended to the text (or becomes the first character of a new block) and editing begins with the caret after it.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="text">
+      <div class="head"><span class="n">6</span><h2>The text engine</h2></div>
+      <p>
+        <code>slide-surface-text.svelte</code> renders a block's runs as spans inside a
+        <code>contenteditable</code> that is editable only while <code>editing</code>. The DOM is a
+        projection: every input event is intercepted before the browser applies it, turned into a splice
+        against the block's <code>display</code>, and sent up as <code>onedit</code>; the body changes, the
+        runs re-render, and the caret is placed at the remembered offset on the next tick.
+      </p>
+      <div class="scroll">
+        <table>
+          <thead><tr><th><code>beforeinput</code> type</th><th>Becomes</th></tr></thead>
+          <tbody>
+            <tr><td><code>insertText</code>, <code>insertReplacementText</code></td><td>Replace the selection with the data.</td></tr>
+            <tr><td><code>insertParagraph</code>, <code>insertLineBreak</code></td><td>Insert <code>\n</code>. A line break stays inside the one block; a text box does not split.</td></tr>
+            <tr><td><code>insertFromPaste</code>, <code>insertFromDrop</code></td><td>Insert the plain text.</td></tr>
+            <tr><td><code>deleteContentBackward</code> / <code>Forward</code></td><td>Delete the selection, or one character.</td></tr>
+            <tr><td><code>deleteWordBackward</code></td><td>Delete back to the previous word start.</td></tr>
+            <tr><td><code>deleteByCut</code></td><td>Copy the selection to the clipboard and delete it.</td></tr>
+            <tr><td>anything else</td><td>Allowed through; an <code>input</code> handler then diffs the DOM text against the block and emits the smallest edit, so an IME or an unhandled command still lands as an op.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <ul>
+        <li><strong>Offsets</strong> are counted through the run spans; a formula chip carries <code>data-length</code> and is skipped as one unit.</li>
+        <li><strong>Entering</strong> focuses the host and, if the pointer landed inside the text in the last 600 ms, places the caret at the pointer with <code>caretRangeFromPoint</code>; otherwise at the end. A pointer down on the block is remembered for that purpose.</li>
+        <li><strong>Reporting.</strong> <code>selectionchange</code> and mouse up report <code>oncaret(from, to)</code>, which the view mirrors into the workspace selection so the caret's lens follows.</li>
+        <li><strong>Shrink.</strong> With <code>fit</code> (the <code>shrink</code> overflow) the engine reduces the font by 8% steps, up to twelve times, until the text fits its box.</li>
+        <li><strong>Escape</strong> exits; ⌘B/I/U are prevented so the browser never bolds the DOM itself.</li>
+      </ul>
+      <h3>Growing</h3>
+      <p>
+        A text box with <code>overflow: "grow"</code> (the default for a new one) is watched by a
+        <code>ResizeObserver</code> in the item renderer. When the prose's needed height differs from the
+        frame's by more than 0.75px, it asks for the new height on the next animation frame — the deferral
+        is what stops the observer's own loop errors. The observer is off while a gesture is busy, so a
+        resize drag is never fought.
+      </p>
+    </section>
+
+    <section id="insert">
+      <div class="head"><span class="n">7</span><h2>Putting things on the slide</h2></div>
+      <ul>
+        <li><strong>Click-to-place</strong> from the Insert panel: <code>placing.kind</code> is set, the stage shows a crosshair, the strip says “Click on the slide to place the … · Esc cancels”, and the next pointer down anywhere on the slide calls <code>onplace(at)</code>. The view disarms and calls <code>put</code>.</li>
+        <li><strong>Right-click menu</strong>: the same catalogue as the Insert panel, shapes in a submenu, labelled “Add to slide n, here” when the click was on the slide. The pointer's fraction is remembered by <code>oncontext</code>; the menu's item inserts centred on it. A right-click never changes the selection.</li>
+        <li><code>put</code> builds the element with <code>makeElement(kind, body, frameFor(kind, at))</code> — a text box saying “Text” in the default style that grows, a shape filled with the theme accent, a line corner to corner with an arrowhead, an empty picture, a three-by-three table — inserts it last with <code>withInsertedElements</code>, and selects it so its lens opens.</li>
+      </ul>
+    </section>
+
+    <section id="badges">
+      <div class="head"><span class="n">8</span><h2>Comment badges</h2></div>
+      <p>
+        The view holds <code>read({ path: "commentThreads" })</code> for its whole life and derives, per
+        slide, a count of open threads per element (and per slide). The renderer draws an amber badge at
+        the object's top-right corner, unscaled, and a dashed amber ring around the object with a small
+        gap; the slide's own badge sits at the frame's corner. Clicking a badge selects the object and
+        opens its threads lens. Because the query is held rather than re-created, a refresh from any lens
+        that posts a comment reaches this view too.
+      </p>
+    </section>
+
+    <section id="snapping">
+      <div class="head"><span class="n">9</span><h2>Snapping and guides</h2></div>
+      <p>
+        <code>targetsOf</code> collects the slide's edges and centre and every top-level, unselected sibling's
+        edges and centres; <code>snapped</code> finds the nearest target to any of the moving frame's own
+        left / centre / right and top / middle / bottom within a threshold of 0.006 of the slide, shifts the
+        frame by that delta, and names the guide (“left edge”, “slide centre”, “middle”). Alt disables it. The
+        view passes this as the <code>snap</code> callback so the renderer knows nothing about siblings.
+      </p>
+    </section>
+
+    <section id="files">
+      <div class="head"><span class="n">→</span><h2>Files on this page, and their diffs</h2></div>
+      <!-- files:begin content,renderer -->
+<div class="scroll"><table class="files"><thead><tr><th></th><th>File</th><th>+</th><th>−</th><th>Systematic change</th></tr></thead><tbody>
+<tr><td><span class="badge changed">changed</span></td><td><a href="04-changes.html#file-app-package-json"><code>package.json</code></a></td><td class="num">+0</td><td class="num">−1</td><td><a href="04-changes.html#group-renderer">The renderer: from Konva to a DOM surface</a></td></tr>
+<tr><td><span class="badge changed">changed</span></td><td><a href="04-changes.html#file-app-src-lib-app-views-categories-presentation-editor-content-presentation-svelte"><code>src/lib/app-views/categories/presentation-editor/content/presentation.svelte</code></a></td><td class="num">+569</td><td class="num">−251</td><td><a href="04-changes.html#group-content">The content surface</a></td></tr>
+<tr><td><span class="badge deleted">deleted</span></td><td><a href="04-changes.html#file-app-src-lib-app-views-categories-presentation-editor-procedures-tokens-ts"><code>src/lib/app-views/categories/presentation-editor/procedures/tokens.ts</code></a></td><td class="num">+0</td><td class="num">−46</td><td><a href="04-changes.html#group-renderer">The renderer: from Konva to a DOM surface</a></td></tr>
+<tr><td><span class="badge new">new</span></td><td><a href="04-changes.html#file-app-src-lib-components-authored-slide-surface-index-ts"><code>src/lib/components/authored/slide-surface/index.ts</code></a></td><td class="num">+15</td><td class="num">−0</td><td><a href="04-changes.html#group-renderer">The renderer: from Konva to a DOM surface</a></td></tr>
+<tr><td><span class="badge new">new</span></td><td><a href="04-changes.html#file-app-src-lib-components-authored-slide-surface-slide-surface-item-svelte"><code>src/lib/components/authored/slide-surface/slide-surface-item.svelte</code></a></td><td class="num">+393</td><td class="num">−0</td><td><a href="04-changes.html#group-renderer">The renderer: from Konva to a DOM surface</a></td></tr>
+<tr><td><span class="badge new">new</span></td><td><a href="04-changes.html#file-app-src-lib-components-authored-slide-surface-slide-surface-text-svelte"><code>src/lib/components/authored/slide-surface/slide-surface-text.svelte</code></a></td><td class="num">+349</td><td class="num">−0</td><td><a href="04-changes.html#group-renderer">The renderer: from Konva to a DOM surface</a></td></tr>
+<tr><td><span class="badge new">new</span></td><td><a href="04-changes.html#file-app-src-lib-components-authored-slide-surface-slide-surface-types-ts"><code>src/lib/components/authored/slide-surface/slide-surface-types.ts</code></a></td><td class="num">+96</td><td class="num">−0</td><td><a href="04-changes.html#group-renderer">The renderer: from Konva to a DOM surface</a></td></tr>
+<tr><td><span class="badge new">new</span></td><td><a href="04-changes.html#file-app-src-lib-components-authored-slide-surface-slide-surface-svelte"><code>src/lib/components/authored/slide-surface/slide-surface.svelte</code></a></td><td class="num">+755</td><td class="num">−0</td><td><a href="04-changes.html#group-renderer">The renderer: from Konva to a DOM surface</a></td></tr>
+<tr><td><span class="badge new">new</span></td><td><a href="04-changes.html#file-app-test-browser-presentation-editor-spec-ts"><code>test/browser/presentation-editor.spec.ts</code></a></td><td class="num">+114</td><td class="num">−0</td><td><a href="04-changes.html#group-content">The content surface</a></td></tr>
+</tbody></table></div>
+<!-- files:end -->
+      <p>The scene, snapping, typing and inserting procedures are under <a href="04-changes.html#group-procedures">04 § 6</a>.</p>
+    </section>
+
+    <footer>Next: <a href="08-runtime.html">08 · The runtime</a>.</footer>
+  </main>
+</div>
+</body>
+</html>

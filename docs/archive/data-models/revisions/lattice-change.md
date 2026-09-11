@@ -14,7 +14,7 @@ interface LatticeChange {
 }
 
 type LatticeCause =
-  | { kind: "resource"; resourceType: "document" | "slides" | "spreadsheet"; resourceId: string; revision: number }
+  | { kind: "resource"; resourceType: "document" | "presentation" | "spreadsheet"; resourceId: string; revision: number }
   | { kind: "file"; fileId: Id<"externalFiles"> }
   | { kind: "connector_sync"; connectorId: Id<"connectors"> }
   | { kind: "finding"; findingId: Id<"findings"> }

@@ -101,7 +101,7 @@ describe("current template storage", () => {
         }]
       }
     })).toBe(false);
-    expect(isStoredTemplateStage({ ...stage(), resourceId: "slideDecks:1" })).toBe(false);
+    expect(isStoredTemplateStage({ ...stage(), resourceId: "presentations:1" })).toBe(false);
     expect(isStoredTemplate({ ...template(), body: { ...body(), resource: { toString: () => "document" } } })).toBe(false);
   });
 

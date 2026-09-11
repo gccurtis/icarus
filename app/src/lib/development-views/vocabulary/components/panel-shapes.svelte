@@ -112,8 +112,8 @@
     },
     {
       id: "post",
-      label: "Post the summary to the board deck",
-      detail: "No deck was chosen",
+      label: "Post the summary to the board presentation",
+      detail: "No presentation was chosen",
       state: "skipped"
     }
   ] as const;
@@ -407,8 +407,8 @@
           <PanelButton label="Reconnect" tone="primary" onclick={() => {}} />
         {/snippet}
       </PanelBanner>
-      <PanelBanner title="This deck is 4:3">
-        Every other deck in the project is 16:9. Slides copied in will be
+      <PanelBanner title="This presentation is 4:3">
+        Every other presentation in the project is 16:9. Slides copied in will be
         letterboxed.
       </PanelBanner>
       <PanelBanner title="Two figures disagree" tone="intelligence">
@@ -483,7 +483,7 @@
         label="What these comments are on"
         value={scope}
         options={[
-          { value: "deck", label: "Deck" },
+          { value: "presentation", label: "Presentation" },
           { value: "slide", label: "Slide 4" },
           { value: "element", label: "Element" }
         ]}

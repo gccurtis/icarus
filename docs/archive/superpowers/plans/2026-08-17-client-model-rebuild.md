@@ -321,7 +321,7 @@ dependencies there; it now takes `configuration`, because that is where the
 thresholds come from. Consistent with `createWorkbench(storage, runtimes)`.
 
 **`BodyFor<T>` is the one genuine forward declaration.** The three body types
-belong to `documents`, `slideDecks` and `spreadsheets`, none of which exist. The
+belong to `documents`, `presentations` and `spreadsheets`, none of which exist. The
 runtime never reads a body, so `BodyFor<T>` resolves to `unknown` today behind a
 comment naming the three capabilities that will supply it.
 

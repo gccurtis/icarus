@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { DocumentRow } from "$representation/data/types/documents/body";
-import type { SlideDeckBody } from "$representation/data/types/slide-decks/body";
+import type { PresentationBody } from "$representation/data/types/presentations/body";
 import { withFreshIds, type IdHint } from "$representation/data/behavior/templates/fresh-ids";
 
 const mint = (hint: IdHint, previous: string) => `${hint}:${previous}`;
@@ -48,7 +48,7 @@ describe("withFreshIds", () => {
   });
 
   it("renames slides, elements, groups, layouts and section anchors", () => {
-    const deck: SlideDeckBody = {
+    const presentation: PresentationBody = {
       aspectRatio: "16:9",
       theme: { colors: { text: "ink", accent: "blue" } },
       styles: { defaultKey: "body", styles: { body: { name: "Body" } } },
@@ -65,7 +65,7 @@ describe("withFreshIds", () => {
       ],
       sections: [{ id: "sec1", name: "Opening", firstSlideId: "s1" }]
     };
-    const fresh = withFreshIds(deck, mint);
+    const fresh = withFreshIds(presentation, mint);
     expect(fresh.layouts[0].id).toBe("layout:l1");
     expect(fresh.layouts[0].key).toBe("title");
     expect(fresh.layouts[0].locked[0].id).toBe("element:e0");

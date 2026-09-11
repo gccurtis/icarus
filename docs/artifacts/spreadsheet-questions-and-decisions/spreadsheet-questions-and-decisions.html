@@ -644,7 +644,7 @@
           </div></li>
           <li><div class="q-body">
             <h3>The rail: order, landing, and what leaves it</h3>
-            <p>Today: Overview, Variables, Named ranges, Find, Dependencies, Objects, Insert, Styles, Print, Comments, Context, landing on Overview. The document since dropped Overview, Insert and Context and added Templates and Prompts; the deck's rail is Slides, Insert, Layers, Style, Find, Comments, Templates, Variables, Prompts.</p>
+            <p>Today: Overview, Variables, Named ranges, Find, Dependencies, Objects, Insert, Styles, Print, Comments, Context, landing on Overview. The document since dropped Overview, Insert and Context and added Templates and Prompts; the presentation's rail is Slides, Insert, Layers, Style, Find, Comments, Templates, Variables, Prompts.</p>
             <div class="rec"><strong>Recommendation: Grid · Find · Dependencies · Styles · Print · Objects · Comments · Variables · Templates · Prompts, landing on Grid.</strong> Grid is new: the sheet's shape, and the home frozen panes never had. Overview's facts move to the title bar, the spreadsheet lens and Grid; Insert's jobs move to the lenses and the context menu; Context was called premature by the record itself; Named ranges become a band of Grid once the body has names. The four keys stay in the vocabulary, off the rail, as the document's do.</div>
           </div></li>
           <li><div class="q-body">
@@ -734,7 +734,7 @@
           <li><div class="q-body">
             <h3>Merging over cells that have content</h3>
             <p>The anchor keeps its value; the others would be cleared.</p>
-            <div class="rec"><strong>Recommendation: ask first, saying how many cells will be cleared and which one stays,</strong> the same staged confirmation the deck uses for a change of aspect ratio and the range lens uses for Clear.</div>
+            <div class="rec"><strong>Recommendation: ask first, saying how many cells will be cleared and which one stays,</strong> the same staged confirmation the presentation uses for a change of aspect ratio and the range lens uses for Clear.</div>
           </div></li>
           <li><div class="q-body">
             <h3>Formatting an empty range</h3>
@@ -824,8 +824,8 @@
               <tr><td>Cells are addressed by row and column ids; A1 is a label derived from order.</td><td class="pw">representation/data/types/content/formula-value.ts · store/tables.ts · collaboration/anchor.ts</td></tr>
               <tr><td>Formatting is regional: rules over corners in the body; a cell carries only its own override; a style is typography.</td><td class="pw">spreadsheets/body.ts · style-set.ts · store/tables.ts SheetCellFields</td></tr>
               <tr><td>A merge is <code>mergedTo</code> on the anchor; a spill is <code>spillTo</code> on the origin; both are far corners.</td><td class="pw">store/tables.ts</td></tr>
-              <tr><td>The editor surface is an authored component taking a scene and emitting intents; the view translates.</td><td class="pw">work/slide-deck-editor · components/authored/slide-surface · deck.svelte (Konva gone)</td></tr>
-              <tr><td>The rail carries Templates and Prompts as placeholders; Overview and Context leave it; the same job is one icon across editors.</td><td class="pw">work/document-editor opening.ts · work/slide-deck-editor rail-entries.ts</td></tr>
+              <tr><td>The editor surface is an authored component taking a scene and emitting intents; the view translates.</td><td class="pw">work/presentation-editor · components/authored/slide-surface · presentation.svelte (Konva gone)</td></tr>
+              <tr><td>The rail carries Templates and Prompts as placeholders; Overview and Context leave it; the same job is one icon across editors.</td><td class="pw">work/document-editor opening.ts · work/presentation-editor rail-entries.ts</td></tr>
               <tr><td>Undo is the runtime's op stack, inverted; one gesture is one group; coalescing never touches history.</td><td class="pw">spreadsheet-runtimes/methods/history · flush/coalesce.ts</td></tr>
             </tbody>
           </table>

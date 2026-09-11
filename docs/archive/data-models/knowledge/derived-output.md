@@ -28,7 +28,7 @@ type InputRevision =
 
 type DerivedInput =
   | { kind: "file"; fileId: Id<"externalFiles"> }
-  | { kind: "resource"; resourceType: "document" | "slides" | "spreadsheet"; resourceId: string }
+  | { kind: "resource"; resourceType: "document" | "presentation" | "spreadsheet"; resourceId: string }
   | { kind: "question"; questionId: Id<"questions">; includeFindings?: boolean }
   | { kind: "finding"; findingId: Id<"findings"> }
   | { kind: "lattice"; query: string; limit?: number };

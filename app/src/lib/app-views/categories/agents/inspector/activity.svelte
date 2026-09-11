@@ -38,7 +38,7 @@
     ["automation", "Automation"],
     ["chat", "Chat"],
     ["document", "Document"],
-    ["slides", "Slide deck"],
+    ["presentation", "Presentation"],
     ["spreadsheet", "Spreadsheet"],
     ["finding", "Finding"]
   ]);

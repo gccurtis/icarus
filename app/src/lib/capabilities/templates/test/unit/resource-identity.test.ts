@@ -10,7 +10,7 @@ describe("template resource identity admission", () => {
     { select: "kinds", kinds: ["externalFile::pdf"] },
     { select: "resources", refs: [{ kind: "externalFile", id: "externalFiles:one" }] },
     { select: "resources", refs: [{ kind: "externalFile::pdf", id: "externalFiles:one" }] },
-    { select: "resources", refs: [{ kind: "document", id: "slideDecks:one" }] },
+    { select: "resources", refs: [{ kind: "document", id: "presentations:one" }] },
     {
       select: "resources",
       refs: [{ kind: "document", id: "documents:one", retired: true }]

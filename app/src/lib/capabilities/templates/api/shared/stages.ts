@@ -7,7 +7,7 @@ import {
 import type { Id } from "$representation/data/types/core/id";
 import type { ResourceRef } from "$representation/data/types/core/resource";
 import type { DocumentBody } from "$representation/data/types/documents/body";
-import type { SlideDeckBody } from "$representation/data/types/slide-decks/body";
+import type { PresentationBody } from "$representation/data/types/presentations/body";
 
 import { forgetSemanticResourceFor } from "$capabilities/semantic-overlay/index";
 import { rowsOfResource } from "$capabilities/templates/api/shared/scope-rows";
@@ -16,26 +16,26 @@ import type { TemplateStageTarget } from "$capabilities/templates/types/template
 
 export type Stage = StoredTemplateStage;
 
-export type ResourceTable = "documents" | "slideDecks";
+export type ResourceTable = "documents" | "presentations";
 
 export const stageTitleOf = (name: string): string => `Template · ${name}`.slice(0, 160);
 
 export const resourceTableOf = (target: TemplateStageTarget): ResourceTable =>
-  target === "document" ? "documents" : "slideDecks";
+  target === "document" ? "documents" : "presentations";
 
 export const stageResourceRef = (
   target: TemplateStageTarget,
   resourceId: string
-): Extract<ResourceRef, { kind: "document" | "slides" }> =>
+): Extract<ResourceRef, { kind: "document" | "presentation" }> =>
   target === "document"
     ? { kind: "document", id: asId<"documents">(resourceId) }
-    : { kind: "slides", id: asId<"slideDecks">(resourceId) };
+    : { kind: "presentation", id: asId<"presentations">(resourceId) };
 
 export const resourceTableOfId = (resourceId: string): ResourceTable | undefined =>
   resourceId.startsWith("documents:")
     ? "documents"
-    : resourceId.startsWith("slideDecks:")
-      ? "slideDecks"
+    : resourceId.startsWith("presentations:")
+      ? "presentations"
       : undefined;
 
 export const stagesIn = (store: StoreUnitOfWork): readonly Stage[] =>
@@ -67,7 +67,7 @@ export const stagedResourceIdsIn = (store: StoreUnitOfWork, projectId: string): 
 
 export type StageLeader =
   | { readonly target: "document"; readonly revision: number; readonly body: DocumentBody }
-  | { readonly target: "slides"; readonly revision: number; readonly body: SlideDeckBody };
+  | { readonly target: "presentation"; readonly revision: number; readonly body: PresentationBody };
 
 export const leaderBodyOf = (
   store: StoreUnitOfWork,
@@ -75,14 +75,14 @@ export const leaderBodyOf = (
   target: TemplateStageTarget,
   resourceId: string
 ): StageLeader | undefined => {
-  const table = target === "document" ? "documentSnapshots" : "slideDeckSnapshots";
+  const table = target === "document" ? "documentSnapshots" : "presentationSnapshots";
   const found = recordsIn(store, table).find(
     (row) => row.projectId === projectId && row.resourceId === resourceId && row.role === "leader"
   );
   if (found === undefined || typeof found.revision !== "number" || found.body === null) return undefined;
   return target === "document"
     ? { target, revision: found.revision, body: found.body as DocumentBody }
-    : { target, revision: found.revision, body: found.body as SlideDeckBody };
+    : { target, revision: found.revision, body: found.body as PresentationBody };
 };
 
 const idsOf = <T extends TableName>(rows: readonly Record<string, unknown>[], table: T): Id<T>[] =>
@@ -93,9 +93,9 @@ const idsOf = <T extends TableName>(rows: readonly Record<string, unknown>[], ta
 
 export const removeStage = (store: StoreUnitOfWork, stage: Stage): void => {
   const table = resourceTableOf(stage.target);
-  const snapshots = stage.target === "document" ? "documentSnapshots" : "slideDeckSnapshots";
-  const changeSets = stage.target === "document" ? "documentChangeSets" : "slideDeckChangeSets";
-  const kind = stage.target === "document" ? "document" : "slides";
+  const snapshots = stage.target === "document" ? "documentSnapshots" : "presentationSnapshots";
+  const changeSets = stage.target === "document" ? "documentChangeSets" : "presentationChangeSets";
+  const kind = stage.target === "document" ? "document" : "presentation";
   const ref = stageResourceRef(stage.target, stage.resourceId);
 
   const threads = recordsIn(store, "commentThreads").filter((row) => {

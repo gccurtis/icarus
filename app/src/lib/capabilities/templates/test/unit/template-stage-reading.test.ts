@@ -47,8 +47,8 @@ describe("reading what a resource is", () => {
           stageId: "templateStages:2",
           templateId: "templates:2",
           templateName: "Template 2",
-          target: "slides",
-          resourceId: "slideDecks:1"
+          target: "presentation",
+          resourceId: "presentations:1"
         }
       ],
       unavailable: []

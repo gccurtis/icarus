@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>05 · The context panels</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="reference.css">
+</head>
+<body>
+<div class="shell">
+  <aside class="rail">
+    <p class="rail-mark">Reference</p>
+    <nav>
+      <a href="index.html"><b>00</b><span>Start here</span></a>
+      <a href="01-system.html"><b>01</b><span>How the system works</span></a>
+      <a href="02-model.html"><b>02</b><span>The presentation model and the applier</span></a>
+      <a href="03-editing-loop.html"><b>03</b><span>From a gesture to the store</span></a>
+      <a href="04-changes.html"><b>04</b><span>What changed, and why</span></a>
+      <a href="05-context-panels.html" class="is-here"><b>05</b><span>The context panels</span></a>
+      <a href="06-inspector.html"><b>06</b><span>The inspector</span></a>
+      <a href="07-content-surface.html"><b>07</b><span>The content surface</span></a>
+      <a href="08-runtime.html"><b>08</b><span>The runtime</span></a>
+      <a href="09-backend.html"><b>09</b><span>The back end</span></a>
+      <a href="10-integration.html"><b>10</b><span>Integration into main</span></a>
+    </nav>
+  </aside>
+
+  <main>
+    <p class="eyebrow">05 · the left flank</p>
+    <h1>The context panels</h1>
+    <p class="lede">
+      Nine entries on the rail. Six are built, three are placeholders. Each is one file under
+      <code>context/</code>, named for its key, and each reads the same runtime the canvas reads.
+    </p>
+    <div class="meta">
+      <span>Files <b>app-views/categories/presentation-editor/context/*.svelte</b></span>
+      <span>Rail <b>representation/data/behavior/workspace/opening.ts</b></span>
+      <span>Labels <b>surfaces/context/procedures/rail-entries.ts</b></span>
+    </div>
+
+    <section id="wiring">
+      <div class="head"><span class="n">1</span><h2>How a panel is wired</h2></div>
+      <p>
+        The context surface holds <code>import.meta.glob("$lib/app-views/categories/*/context/*.svelte")</code>
+        and loads the file whose path is the active context key with the dot replaced by
+        <code>/context/</code>. A key with no file shows “Not built yet”. Vite indexes the glob when the
+        dev server starts, so a new panel file needs a restart to appear.
+      </p>
+      <p>Every built panel opens the same way, and a reader auditing them should expect these lines at the top of each:</p>
+      <pre><code>const view = workspaceState();
+const presentationId = $derived(view.active.resourceId);
+let runtime = $state&lt;PresentationRuntime | undefined&gt;(undefined);
+$effect(() => { runtime = presentationId === undefined ? undefined : view.presentationRuntime(presentationId); });
+const body = $derived(runtime?.body);
+const slide = $derived(body?.slides[slideIndexOf(body, view.active.focus)]);</code></pre>
+      <p>
+        The runtime is attached in an effect, not a derived, because attaching is a write to the register.
+        The current slide is <code>view.active.focus</code> resolved through <code>slideIndexOf</code>, which
+        falls back to the first slide when the focus names nothing. A panel writes by building ops with a
+        procedure and calling <code>runtime.apply</code>; a panel navigates by <code>view.open({ focus })</code>
+        and <code>view.inspect(key, selection)</code>. No panel imports another panel, the content view or the
+        inspector.
+      </p>
+      <div class="scroll">
+        <table>
+          <thead><tr><th>Rail</th><th>Key</th><th>File</th><th>State</th></tr></thead>
+          <tbody>
+            <tr><td>Slides</td><td><code>presentation-editor.slides</code></td><td><code>slides.svelte</code></td><td>Built · the tab opens on it</td></tr>
+            <tr><td>Insert</td><td><code>presentation-editor.insert</code></td><td><code>insert.svelte</code></td><td>Built</td></tr>
+            <tr><td>Layers</td><td><code>presentation-editor.layers</code></td><td><code>layers.svelte</code></td><td>Built</td></tr>
+            <tr><td>Style</td><td><code>presentation-editor.theme</code></td><td><code>theme.svelte</code></td><td>Built · the file keeps the key's name</td></tr>
+            <tr><td>Find</td><td><code>presentation-editor.find</code></td><td><code>find.svelte</code></td><td>Built</td></tr>
+            <tr><td>Comments</td><td><code>presentation-editor.comments</code></td><td><code>comments.svelte</code></td><td>Built</td></tr>
+            <tr><td>Templates</td><td><code>presentation-editor.templates</code></td><td><code>templates.svelte</code></td><td>Placeholder</td></tr>
+            <tr><td>Variables</td><td><code>presentation-editor.variables</code></td><td><code>variables.svelte</code></td><td>Placeholder</td></tr>
+            <tr><td>Prompts</td><td><code>presentation-editor.prompts</code></td><td><code>prompts.svelte</code></td><td>Placeholder</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="presentation">
+      <div class="head"><span class="n">2</span><h2>Slides</h2></div>
+      <p>
+        <strong>Shows</strong> every slide as its number above a full-width preview, drawn by the same
+        <code>SlideSurface</code> the canvas uses with <code>interactive={false}</code> and the scene from
+        <code>sceneOf(body, slide, units)</code>. The chosen slide's preview carries the active outline, a
+        hovered one the interactive outline; the number is the only other thing on the row. A hidden slide
+        is veiled and says “hidden” beside its number.
+      </p>
+      <p>
+        <strong>Sizing.</strong> The reel's usable width is measured with a <code>ResizeObserver</code> and
+        the panel's own horizontal padding subtracted from <code>clientWidth</code>; the thumbnail is that
+        width minus two pixels for the outline, and its height follows the presentation's ratio. Previews therefore
+        shrink with the flank instead of clipping.
+      </p>
+      <p><strong>Verbs</strong>, in the panel's actions row:</p>
+      <ul>
+        <li><em>New</em> inserts a slide after the current one, taking the current slide's layout key; <em>New ▾</em> lists the presentation's layouts and makes a slide from one (<code>withNewSlide(body, current, layoutKey)</code>). The new slide is found by diffing ids before and after and is shown at once.</li>
+        <li><em>Duplicate</em> copies the slide with fresh ids for every element, block, atom and mark (<code>withDuplicatedSlide</code>).</li>
+        <li><em>Delete</em> removes the slide and shows its neighbour; it is disabled on the last slide because a presentation keeps at least one. Removing the first slide of a section re-anchors the section.</li>
+        <li>The three buttons share the row (<code>flex-1</code>); a container query shows the words “Duplicate” and “Delete” once the flank is at least 15rem wide.</li>
+      </ul>
+      <p>
+        <strong>Reordering.</strong> Rows are draggable with a private MIME type; an insertion bar shows
+        above or below the row under the pointer by its midpoint; dropping calls
+        <code>withMovedSlide(body, dragged, after)</code>. ⌥↑ / ⌥↓ step the current slide
+        (<code>stepped</code>); the keydown listener is attached in an effect to satisfy the a11y check on
+        a non-interactive element.
+      </p>
+      <p><strong>Selecting</strong> a slide opens the tab on it and inspects the slide lens.</p>
+    </section>
+
+    <section id="insert">
+      <div class="head"><span class="n">3</span><h2>Insert</h2></div>
+      <p>
+        <strong>Shows</strong> a search field over a two-column grid of tiles — Text box, Rectangle, Ellipse,
+        Triangle, Diamond, Arrow, Callout, Line, Picture, Table, Chart — from
+        <code>INSERT_ENTRIES</code>. Chart is disabled with its note as a title. No sections, no descriptions.
+      </p>
+      <p>
+        <strong>Does.</strong> Pressing a tile arms that kind in <code>placing.svelte.ts</code>, the one
+        module-level <code>$state</code> the editor shares; pressing it again disarms. The note under the grid
+        says “Click on slide n to place the …. Esc cancels”. The canvas sees <code>placing.kind</code>,
+        shows a crosshair, and on the next click calls <code>put(kind, at)</code> which builds the element
+        with <code>makeElement</code> at <code>frameFor(kind, at)</code>, inserts it last on the slide and
+        selects it. Leaving the panel disarms (a cleanup effect), and so does the canvas being unmounted.
+      </p>
+      <p>The same catalogue feeds the canvas's right-click menu, which inserts at the pointer without arming anything.</p>
+    </section>
+
+    <section id="layers">
+      <div class="head"><span class="n">4</span><h2>Layers</h2></div>
+      <p>
+        <strong>Shows</strong> two bands. <em>Actions</em>: four icon buttons — bring to front, bring forward,
+        send backward, send to back — that act on the current selection through
+        <code>withRestackedSet</code>, which keeps the selected objects' relative order and moves them as a
+        block. <em>Layers · n objects</em>: every element on the slide from <code>placedOn(slide)</code>,
+        reversed so the topmost is first, indented by depth for grouped children, with a type icon and
+        <code>labelOf</code> (a text box's first line, “Shape — words” for a shape with text, “Group (n)”).
+      </p>
+      <p>
+        <strong>Does.</strong> A row selects through <code>elementsSignal</code>, exactly as a click on the
+        canvas does, so the same lens opens and the canvas outline follows. The lock button appears on
+        hover (and stays when locked); it writes <code>&lt;el&gt;/locked</code>, and a locked element cannot be
+        hovered, picked or marquee-selected on the canvas. Rows drag to reorder with an insertion line, but
+        only among siblings: a drop that would move an element into or out of a group is ignored.
+      </p>
+    </section>
+
+    <section id="style">
+      <div class="head"><span class="n">5</span><h2>Style</h2></div>
+      <p>The panel that absorbed Slide size, Layouts and Theme. Three sections; the last two start collapsed.</p>
+      <h3>Slide</h3>
+      <ul>
+        <li><em>Aspect</em> as two numbers, <code>[w] : [h]</code>, each a <code>PanelNumber</code> 1–64, writing <code>aspectRatio</code> through <code>asAspectRatio</code>. Every frame is a fraction, so the objects keep their places.</li>
+        <li><em>Background</em>: a picker writing <code>theme/background</code> as <code>{ kind: "color", color }</code>.</li>
+      </ul>
+      <h3>Layouts</h3>
+      <ul>
+        <li>A name field and <em>Save slide n as layout</em>. <code>withSavedLayout</code> mints a layout whose <code>locked</code> is a fresh-id copy of every element on the slide, with the slide's background and no placeholders; an empty name becomes “Layout n”. Enter in the field saves too.</li>
+        <li>A two-column shelf of previews, each drawn by <code>SlideSurface</code> from a scene of the layout's locked elements; the card width is measured from the shelf. A remove button appears on hover (<code>withoutLayout</code>).</li>
+        <li>Layouts are per presentation. Import and export between presentations, and any relation to templates, are out of scope for this panel.</li>
+      </ul>
+      <h3>Named styles</h3>
+      <ul>
+        <li>A select of the presentation's styles plus <em>New</em> (mints <code>style-n</code> named “Style n” at 20px and picks it).</li>
+        <li>Name (inline editable), Font + Size, Font colour (clearable), horizontal alignment and vertical alignment as icon rows, and Spacing (line height, before, after). Every control writes <code>styles/styles/&lt;key&gt;/&lt;field&gt;</code>, so it changes every block wearing that style; a single block's overrides are on its lens.</li>
+      </ul>
+    </section>
+
+    <section id="find">
+      <div class="head"><span class="n">6</span><h2>Find</h2></div>
+      <p>
+        <strong>Shows</strong> a Find / Replace mode chip in the actions, a search field, a scope chip
+        (All / Slides / Notes), and one row per hit — “Slide n · Text | Shape | Table | Notes” with a snippet
+        around the match. Hits are computed from every text block the scope allows: text boxes, shape text,
+        every table cell, the notes block. The count reads “matched of total blocks”.
+      </p>
+      <p>
+        <strong>Does.</strong> Opening a hit shows its slide, selects the holding object (or the notes lens
+        for notes), then inspects a text selection over the match so the canvas highlights it. In Replace
+        mode, <em>Replace</em> rewrites the highlighted hit and <em>Replace all</em> rewrites every hit,
+        per block from the end backwards so earlier offsets stay valid, all through <code>replaced</code>
+        — which means marks shift correctly and every replacement is undoable as one gesture.
+      </p>
+    </section>
+
+    <section id="comments">
+      <div class="head"><span class="n">7</span><h2>Comments</h2></div>
+      <p>
+        <strong>Shows</strong> a scope chip — Presentation, Slide n, and the selected object when there is one — a
+        composer, and the presentation's threads split into <em>Open (n of m)</em> and a collapsed <em>Resolved</em>.
+        Each thread is a <code>PanelQuote</code> with the author's name (from the users table), the anchor
+        (“Slide n · Shape”) and a relative time; clicking it inspects <code>general.comment</code>.
+      </p>
+      <p>
+        <strong>Reads</strong> three queries — <code>commentThreads</code>, <code>comments</code>,
+        <code>users</code> — held for the panel's whole life as <code>const … = read({ path })</code> at the
+        top of the script. They are never created inside a derived; page <a href="08-runtime.html#queries">08</a>
+        explains why that matters.
+      </p>
+      <p>
+        <strong>Writes</strong> through <code>startThread</code> with <code>within</code> set to the element
+        or the slide according to the chip, then refreshes the thread and comment queries so the canvas
+        badge, the threads lens and this list all move at once. ⌘↩ posts.
+      </p>
+    </section>
+
+    <section id="placeholders">
+      <div class="head"><span class="n">8</span><h2>Templates, Variables, Prompts</h2></div>
+      <p>
+        Each is eight lines: a <code>Panel</code>, a <code>PanelEmpty</code> saying what it will be, and a
+        <code>PanelNote</code> with its key. They exist so the rail has the reviewed shape and so the key
+        resolves to a file rather than to the surface's generic “Not built yet”. The reviews were explicit
+        that these stay unbuilt for now.
+      </p>
+    </section>
+
+    <section id="files">
+      <div class="head"><span class="n">→</span><h2>Files on this page, and their diffs</h2></div>
+      <!-- files:begin context -->
+<div class="scroll"><table class="files"><thead><tr><th></th><th>File</th><th>+</th><th>−</th><th>Systematic change</th></tr></thead><tbody>
+<tr><td><span class="badge new">new</span></td><td><a href="04-changes.html#file-app-src-lib-app-views-categories-presentation-editor-context-comments-svelte"><code>src/lib/app-views/categories/presentation-editor/context/comments.svelte</code></a></td><td class="num">+169</td><td class="num">−0</td><td><a href="04-changes.html#group-context">The context panels</a></td></tr>
+<tr><td><span class="badge new">new</span></td><td><a href="04-changes.html#file-app-src-lib-app-views-categories-presentation-editor-context-find-svelte"><code>src/lib/app-views/categories/presentation-editor/context/find.svelte</code></a></td><td class="num">+161</td><td class="num">−0</td><td><a href="04-changes.html#group-context">The context panels</a></td></tr>
+<tr><td><span class="badge new">new</span></td><td><a href="04-changes.html#file-app-src-lib-app-views-categories-presentation-editor-context-insert-svelte"><code>src/lib/app-views/categories/presentation-editor/context/insert.svelte</code></a></td><td class="num">+97</td><td class="num">−0</td><td><a href="04-changes.html#group-context">The context panels</a></td></tr>
+<tr><td><span class="badge new">new</span></td><td><a href="04-changes.html#file-app-src-lib-app-views-categories-presentation-editor-context-layers-svelte"><code>src/lib/app-views/categories/presentation-editor/context/layers.svelte</code></a></td><td class="num">+253</td><td class="num">−0</td><td><a href="04-changes.html#group-context">The context panels</a></td></tr>
+<tr><td><span class="badge new">new</span></td><td><a href="04-changes.html#file-app-src-lib-app-views-categories-presentation-editor-context-prompts-svelte"><code>src/lib/app-views/categories/presentation-editor/context/prompts.svelte</code></a></td><td class="num">+8</td><td class="num">−0</td><td><a href="04-changes.html#group-context">The context panels</a></td></tr>
+<tr><td><span class="badge changed">changed</span></td><td><a href="04-changes.html#file-app-src-lib-app-views-categories-presentation-editor-context-slides-svelte"><code>src/lib/app-views/categories/presentation-editor/context/slides.svelte</code></a></td><td class="num">+168</td><td class="num">−245</td><td><a href="04-changes.html#group-context">The context panels</a></td></tr>
+<tr><td><span class="badge deleted">deleted</span></td><td><a href="04-changes.html#file-app-src-lib-app-views-categories-presentation-editor-context-stage-svelte"><code>src/lib/app-views/categories/presentation-editor/context/stage.svelte</code></a></td><td class="num">+0</td><td class="num">−52</td><td><a href="04-changes.html#group-context">The context panels</a></td></tr>
+<tr><td><span class="badge new">new</span></td><td><a href="04-changes.html#file-app-src-lib-app-views-categories-presentation-editor-context-templates-svelte"><code>src/lib/app-views/categories/presentation-editor/context/templates.svelte</code></a></td><td class="num">+8</td><td class="num">−0</td><td><a href="04-changes.html#group-context">The context panels</a></td></tr>
+<tr><td><span class="badge new">new</span></td><td><a href="04-changes.html#file-app-src-lib-app-views-categories-presentation-editor-context-theme-svelte"><code>src/lib/app-views/categories/presentation-editor/context/theme.svelte</code></a></td><td class="num">+214</td><td class="num">−0</td><td><a href="04-changes.html#group-context">The context panels</a></td></tr>
+<tr><td><span class="badge new">new</span></td><td><a href="04-changes.html#file-app-src-lib-app-views-categories-presentation-editor-context-variables-svelte"><code>src/lib/app-views/categories/presentation-editor/context/variables.svelte</code></a></td><td class="num">+8</td><td class="num">−0</td><td><a href="04-changes.html#group-context">The context panels</a></td></tr>
+</tbody></table></div>
+<!-- files:end -->
+      <p>The shared placing state and the catalogue the Insert panel reads are under the procedures change: <a href="04-changes.html#group-procedures">04 § 6</a>.</p>
+    </section>
+
+    <footer>Next: <a href="06-inspector.html">06 · The inspector</a>.</footer>
+  </main>
+</div>
+</body>
+</html>

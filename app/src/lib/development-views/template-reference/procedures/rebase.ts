@@ -35,23 +35,23 @@ export const RECONCILED: Reconciliation[] = [
     index: "01",
     path: "capabilities/templates/api/instantiate-template/instantiate-template.ts",
     when: "Onto main, before the move",
-    base: "Normalized a document's styles and readied a deck before the leader snapshot was written, both inside the same block this branch had rewritten.",
+    base: "Normalized a document's styles and readied a presentation before the leader snapshot was written, both inside the same block this branch had rewritten.",
     branch: "Resolved every prompt scope through the caller's answers and the holes' defaults, then wrote the snapshot.",
-    kept: "Both. The style normalisation and the deck readying run where the base put them, the scope resolution runs before them, and the deck branch took the base's destructuring rather than keeping two spellings of the same read.",
+    kept: "Both. The style normalisation and the presentation readying run where the base put them, the scope resolution runs before them, and the presentation branch took the base's destructuring rather than keeping two spellings of the same read.",
     why: "Neither side was making a claim about the other. One prepares a body to be stored; the other decides what the body says. Ordering them was the whole decision."
   },
   {
     index: "02",
     path: "capabilities/templates/test/unit/templates.test.ts",
     when: "Onto main, before the move",
-    base: "Asserted that instantiating readies the deck it makes.",
+    base: "Asserted that instantiating readies the presentation it makes.",
     branch: "Asserted that instantiating stamps lastUsedAt and that the copy carries no template id.",
     kept: "One test with both sets of assertions, in the order the code performs them.",
     why: "Two tests over one call, written against the same fixture, is the same test twice. Merging them keeps the fixture honest and makes a later break point at one place."
   },
   {
     index: "03",
-    path: "app-views/categories/slide-deck-editor/slide-deck-editor.md",
+    path: "app-views/categories/presentation-editor/presentation-editor.md",
     when: "Twice — onto main, then onto the base",
     base: "First cut the document from 714 lines to 221 and listed Templates as a deferred placeholder; later added a Prompts section describing the Prompt Block and how a text box converts into one.",
     branch: "Described the Templates panel — the working copy, the Holes band, the List — in the same place, directly after Comments.",
@@ -69,7 +69,7 @@ export const RECONCILED: Reconciliation[] = [
   },
   {
     index: "05",
-    path: "app-views/categories/slide-deck-editor/procedures/typing.ts",
+    path: "app-views/categories/presentation-editor/procedures/typing.ts",
     when: "Onto the base",
     base: "Widened the block a person can type into from TextBlock to TextBlock | PromptBlock, and measured an atom as atom.kind === \"literal\" ? atom.text.length : atom.lastResolvedDisplay.length.",
     branch: "Replaced that same measurement with displayOfAtom(atom).length, the shared helper, so a template atom counts as the {name} it draws.",
@@ -94,12 +94,12 @@ export const DEFECTS: Defect[] = [
     index: "02",
     title: "The template validator refused a Prompt Block that carried a named style",
     symptom:
-      "After the move onto the base, Save deck and Save slide failed outright with “body is not a valid slides template body” — but only in a project where some text box had been converted into a Prompt Block.",
+      "After the move onto the base, Save presentation and Save slide failed outright with “body is not a valid slides template body” — but only in a project where some text box had been converted into a Prompt Block.",
     cause:
       "Converting a text box into a Prompt Block keeps the element's id, frame, paint, order, text, marks, style and format; only the content kind changes. The templates validator lists every key a block may carry and rejects the rest, and its prompt branch had never listed style — the text branch always had.",
     fix: "style joins the prompt branch's key list and is validated as an identifier, exactly as the text branch validates it.",
     proof:
-      "The browser case that saves one slide as a deck template. It failed twice in a row before the fix — which is how it was told apart from the known load flake — and passes after it."
+      "The browser case that saves one slide as a presentation template. It failed twice in a row before the fix — which is how it was told apart from the known load flake — and passes after it."
   }
 ];
 
@@ -126,7 +126,7 @@ export const DIVERGENCE: Divergence[] = [
     branch:
       "A Templates context panel in both editors: save, open a working copy, the Holes band with Create hole, and the template List.",
     meets:
-      "The document and deck bodies, and one shared measurement of an atom's width in `positions.ts`."
+      "The document and presentation bodies, and one shared measurement of an atom's width in `positions.ts`."
   },
   {
     layer: "Components",

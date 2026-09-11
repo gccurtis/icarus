@@ -1,7 +1,7 @@
 # project resources
 
 A scoped, metadata-only index for the resources Project Overview can list:
-documents, slide decks, spreadsheets, research threads, external files, and
+documents, presentations, spreadsheets, research threads, external files, and
 findings. The retired connection resource is intentionally absent; connected
 sources are represented as connectors.
 
@@ -25,19 +25,19 @@ projection. Every scoped claimant of a duplicate id is quarantined, including
 when the other claimant belongs to another project, because Store mutation paths
 would otherwise be ambiguous.
 
-`createProjectResource` creates an editor-ready blank document or slide deck and
+`createProjectResource` creates an editor-ready blank document or presentation and
 its revision-zero leader snapshot. Editor-ready is a represented invariant: a
-document contains one empty paragraph and a deck contains one empty slide, so
+document contains one empty paragraph and a presentation contains one empty slide, so
 the first edit never targets a client-only projection. It accepts only `target` and an optional
 explicit `title`; project and actor come from request scope, and provenance
 cannot be supplied. When `title` is omitted, the capability reads represented
 titles in that project and allocates the first free `Untitled document N` or
-`Untitled deck N` suffix immediately before creating the row. New Tab and
+`Untitled presentation N` suffix immediately before creating the row. New Tab and
 Project Overview therefore do not choose names from potentially stale cached
 indexes. The result carries that chosen title with the opaque resource id and
 revision. This replaces Project Overview's former client-shaped generic Store
 mutation. Both launchers refresh the merged resource index and the exact
-`documents`, `slideDecks`, or `spreadsheets` query before opening, because tab
+`documents`, `presentations`, or `spreadsheets` query before opening, because tab
 and editor titles consume the latter.
 
 `renameProjectResource` first exact-admits one unique project-owned editor

@@ -244,7 +244,7 @@
     "threadId": "threads:chat-undergrounding",
     "promptMessageId": "m-chat-undergrounding-0",
     "messageId": "m-chat-undergrounding-1",
-    "prompt": "What does the storm-hardening deck say about undergrounding?",
+    "prompt": "What does the storm-hardening presentation say about undergrounding?",
     "mode": { "kind": "explore" },
     "scope": { "kind": "project" },
     "tools": [],
@@ -269,7 +269,7 @@
     "sources": [
       {
         "id": "s1",
-        "ref": { "kind": "slides", "id": "slideDecks:4" },
+        "ref": { "kind": "presentation", "id": "presentations:4" },
         "title": "Storm hardening options",
         "locator": "Options summary",
         "excerpt": "Targeted undergrounding is reserved for the four highest-consequence segments.",

@@ -2,7 +2,7 @@
 
 | View | What it is for | Sections |
 | --- | --- | --- |
-| Layouts | Which layout this slide uses, and what else it could use | Current · Deck layouts |
+| Layouts | Which layout this slide uses, and what else it could use | Current · Presentation layouts |
 
 Applying a layout, from the slide's side. Editing one is the other subscreen.
 
@@ -13,9 +13,9 @@ Applying a layout, from the slide's side. Editing one is the other subscreen.
 | actions |
 | current |
 | current |
-| deck layouts |
-| deck layouts |
-| deck layouts |
+| presentation layouts |
+| presentation layouts |
+| presentation layouts |
 
 ## Current
 
@@ -26,7 +26,7 @@ The layout this slide is on, with what it contributes.
 **Needs** — the slide's layout reference, and that layout's placeholder and locked
 counts.
 
-## Deck layouts
+## Presentation layouts
 
 Everything else available, as cards, because a layout is a shape and a shape
 should be seen.
@@ -34,7 +34,7 @@ should be seen.
 **Shows** — *Title slide*, *Section break*, *Full-bleed chart*, *Blank*, each with
 its placeholder and locked counts.
 
-**Needs** — the deck's layout list with a preview render per layout.
+**Needs** — the presentation's layout list with a preview render per layout.
 
 ## Panel furniture
 

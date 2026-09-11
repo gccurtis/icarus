@@ -2,7 +2,7 @@
 
 A template is an ordinary body with some of it left open. The open parts are
 variables you fill when you use it, and authoring one is authoring a document, a
-deck, a slide or a spreadsheet.
+presentation, a slide or a spreadsheet.
 
 The current centre is the **library**. Ten recently used templates sit as raised
 cards on a horizontally scrollable shelf; the complete collection is a table
@@ -47,7 +47,7 @@ entry, rather than exposed on the library rail in advance.
 | A person, or any "who" link | Their profile in this project | [person.md](../../inspector/collaboration/person.md) |
 
 The editor's lenses are the ones the resource type already has. A template being
-edited is a document, a deck, a slide or a spreadsheet being edited, and a second
+edited is a document, a presentation, a slide or a spreadsheet being edited, and a second
 set of lenses for the same objects would be the same panels written twice.
 
 ## Workspace

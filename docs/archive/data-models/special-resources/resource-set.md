@@ -35,7 +35,7 @@ interface ResourceRef {
 }
 
 /** Open, not a closed union. Base kinds today: */
-type ResourceKind = string;   // "document" | "slides" | "spreadsheet"
+type ResourceKind = string;   // "document" | "presentation" | "spreadsheet"
                               // "externalFile" | "finding"
                               // "connector" | "template" | …
 ```

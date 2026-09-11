@@ -116,7 +116,7 @@ describe("variable command admission", () => {
       { kind: "function", parameters: ["rate"], formulaId: "variables:discount" },
       {
         kind: "reference",
-        target: { to: "resource", ref: { kind: "document", id: "slideDecks:source" } }
+        target: { to: "resource", ref: { kind: "document", id: "presentations:source" } }
       }
     ]) assert.throws(() => validateSaveVariable({ name: "value", value, type: "any" }));
   });

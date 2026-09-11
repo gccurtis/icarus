@@ -41,7 +41,7 @@ export const CATEGORY_ENTRIES: Record<OpenedCategory, CategoryEntry> = {
   analysis: { label: subject, icon: ChartNoAxesColumn },
   research: { label: subject, icon: FlaskConical },
   "document-editor": { label: subject, icon: FileText },
-  "slide-deck-editor": { label: subject, icon: Presentation },
+  "presentation-editor": { label: subject, icon: Presentation },
   "spreadsheet-editor": { label: subject, icon: Sheet },
   "context-editor": { label: subject, icon: Target },
 

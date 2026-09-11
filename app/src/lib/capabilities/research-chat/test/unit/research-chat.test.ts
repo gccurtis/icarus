@@ -299,7 +299,7 @@ beforeEach(async () => {
     researchTurns: [],
     resourceSets: [],
     documents: [],
-    slideDecks: [],
+    presentations: [],
     spreadsheets: [],
     externalFiles: [],
     semanticSources: [],
@@ -800,11 +800,11 @@ describe("asking", () => {
   });
 
   test("a resource that cannot be indexed does not prevent an unrelated question from finishing", async () => {
-    model.tables.slideDecks.push({
-      _id: "slideDecks:broken",
+    model.tables.presentations.push({
+      _id: "presentations:broken",
       _creationTime: 1,
       projectId: "projects:p",
-      title: "Broken deck",
+      title: "Broken presentation",
       createdBy: { kind: "system" },
       updatedBy: { kind: "system" },
       updatedAt: 1
@@ -816,8 +816,8 @@ describe("asking", () => {
         failed: [
           {
             jobId: "semanticSyncJobs:broken",
-            ref: { kind: "slides", id: "slideDecks:broken" },
-            error: "The deck cannot be projected"
+            ref: { kind: "presentation", id: "presentations:broken" },
+            error: "The presentation cannot be projected"
           }
         ],
         materials: {
@@ -826,8 +826,8 @@ describe("asking", () => {
           failed: [
             {
               jobId: "semanticMaterialJobs:broken",
-              ref: { kind: "slides", id: "slideDecks:broken" },
-              error: "The deck cannot be projected"
+              ref: { kind: "presentation", id: "presentations:broken" },
+              error: "The presentation cannot be projected"
             }
           ]
         }
@@ -852,24 +852,24 @@ describe("asking", () => {
       failures: [
         {
           lane: "text",
-          ref: { kind: "slides", id: "slideDecks:broken" },
-          error: "The deck cannot be projected"
+          ref: { kind: "presentation", id: "presentations:broken" },
+          error: "The presentation cannot be projected"
         },
         {
           lane: "material",
-          ref: { kind: "slides", id: "slideDecks:broken" },
-          error: "The deck cannot be projected"
+          ref: { kind: "presentation", id: "presentations:broken" },
+          error: "The presentation cannot be projected"
         }
       ]
     });
   });
 
   test("a resource-scoped question fails when its selected resource cannot be indexed", async () => {
-    model.tables.slideDecks.push({
-      _id: "slideDecks:broken",
+    model.tables.presentations.push({
+      _id: "presentations:broken",
       _creationTime: 1,
       projectId: "projects:p",
-      title: "Broken deck",
+      title: "Broken presentation",
       createdBy: { kind: "system" },
       updatedBy: { kind: "system" },
       updatedAt: 1
@@ -881,8 +881,8 @@ describe("asking", () => {
         failed: [
           {
             jobId: "semanticSyncJobs:broken",
-            ref: { kind: "slides", id: "slideDecks:broken" },
-            error: "The deck cannot be projected"
+            ref: { kind: "presentation", id: "presentations:broken" },
+            error: "The presentation cannot be projected"
           }
         ],
         materials: { processed: [], remaining: 0, failed: [] }
@@ -890,10 +890,10 @@ describe("asking", () => {
 
     const result = await ask({
       threadId: "researchThreads:one",
-      text: "What does this deck say?",
+      text: "What does this presentation say?",
       scope: {
         kind: "resource",
-        ref: { kind: "slides", id: "slideDecks:broken" }
+        ref: { kind: "presentation", id: "presentations:broken" }
       }
     });
 
@@ -901,19 +901,19 @@ describe("asking", () => {
     assert.equal(model.tables.researchTurns[0].state, "failed");
     assert.match(
       String(model.tables.researchTurns[0].error),
-      /selected resource could not be prepared.*deck cannot be projected/i
+      /selected resource could not be prepared.*presentation cannot be projected/i
     );
     assert.deepEqual(semantic.requested, [
-      { kind: "slides", id: "slideDecks:broken" }
+      { kind: "presentation", id: "presentations:broken" }
     ]);
   });
 
   test("a historical failed job cannot reject a resource whose lanes are already current", async () => {
-    model.tables.slideDecks.push({
-      _id: "slideDecks:current",
+    model.tables.presentations.push({
+      _id: "presentations:current",
       _creationTime: 1,
       projectId: "projects:p",
-      title: "Current deck",
+      title: "Current presentation",
       createdBy: { kind: "system" },
       updatedBy: { kind: "system" },
       updatedAt: 1
@@ -926,7 +926,7 @@ describe("asking", () => {
         failed: [
           {
             jobId: "semanticSyncJobs:historical",
-            ref: { kind: "slides", id: "slideDecks:current" },
+            ref: { kind: "presentation", id: "presentations:current" },
             error: "An obsolete job failed"
           }
         ],
@@ -936,7 +936,7 @@ describe("asking", () => {
           failed: [
             {
               jobId: "semanticMaterialJobs:historical",
-              ref: { kind: "slides", id: "slideDecks:current" },
+              ref: { kind: "presentation", id: "presentations:current" },
               error: "An obsolete material job failed"
             }
           ]
@@ -946,10 +946,10 @@ describe("asking", () => {
 
     const result = await ask({
       threadId: "researchThreads:one",
-      text: "What does this current deck say?",
+      text: "What does this current presentation say?",
       scope: {
         kind: "resource",
-        ref: { kind: "slides", id: "slideDecks:current" }
+        ref: { kind: "presentation", id: "presentations:current" }
       }
     });
 
@@ -962,11 +962,11 @@ describe("asking", () => {
   });
 
   test("a failure from an earlier batch does not survive a settled successful revision", async () => {
-    model.tables.slideDecks.push({
-      _id: "slideDecks:recovered",
+    model.tables.presentations.push({
+      _id: "presentations:recovered",
       _creationTime: 1,
       projectId: "projects:p",
-      title: "Recovered deck",
+      title: "Recovered presentation",
       createdBy: { kind: "system" },
       updatedBy: { kind: "system" },
       updatedAt: 1
@@ -982,7 +982,7 @@ describe("asking", () => {
               failed: [
                 {
                   jobId: "semanticSyncJobs:recovered",
-                  ref: { kind: "slides", id: "slideDecks:recovered" },
+                  ref: { kind: "presentation", id: "presentations:recovered" },
                   error: "An older revision failed"
                 }
               ],
@@ -1000,10 +1000,10 @@ describe("asking", () => {
 
     const result = await ask({
       threadId: "researchThreads:one",
-      text: "What does the recovered deck say?",
+      text: "What does the recovered presentation say?",
       scope: {
         kind: "resource",
-        ref: { kind: "slides", id: "slideDecks:recovered" }
+        ref: { kind: "presentation", id: "presentations:recovered" }
       }
     });
 

@@ -19,7 +19,7 @@
     { label: "Template", detail: "body + variables", icon: Files },
     { label: "Authoring session", detail: "proposed durable lease", icon: Braces },
     { label: "Scratch resource", detail: "proposed editor identity", icon: Database },
-    { label: "Existing editor", detail: "document · deck · sheet later", icon: PanelsTopLeft },
+    { label: "Existing editor", detail: "document · presentation · sheet later", icon: PanelsTopLeft },
     { label: "Done or Cancel", detail: "resolve, then clean up", icon: ServerCog }
   ];
 </script>

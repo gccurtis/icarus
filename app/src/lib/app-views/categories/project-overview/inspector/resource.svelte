@@ -34,7 +34,7 @@
 
   const KIND_LABEL: Record<ProjectResourceKind, string> = {
     document: "Document",
-    slides: "Slide deck",
+    presentation: "Presentation",
     spreadsheet: "Spreadsheet",
     research: "Research",
     finding: "Finding"
@@ -42,7 +42,7 @@
 
   const KIND_TONE: Record<ProjectResourceKind, "interactive" | "accent-1" | "accent-2" | "intelligence" | "active"> = {
     document: "interactive",
-    slides: "accent-1",
+    presentation: "accent-1",
     spreadsheet: "accent-2",
     research: "intelligence",
     finding: "active"
@@ -85,8 +85,8 @@
     if (resource === null || resource === undefined) return;
     if (resource.kind === "document") {
       view.open({ category: "document-editor", resourceId: resource.id });
-    } else if (resource.kind === "slides") {
-      view.open({ category: "slide-deck-editor", resourceId: resource.id });
+    } else if (resource.kind === "presentation") {
+      view.open({ category: "presentation-editor", resourceId: resource.id });
     }
   };
 

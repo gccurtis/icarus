@@ -198,7 +198,7 @@
     {
       stage: "Fixture admission",
       assumption: "Every development leader already used the represented current schema declared by its TypeScript type.",
-      observed: "Two seeded slide-deck leaders still placed blocks directly on elements and omitted layout ids, which a typed reference walk exposed at runtime.",
+      observed: "Two seeded presentation leaders still placed blocks directly on elements and omitted layout ids, which a typed reference walk exposed at runtime.",
       change: "The fixtures were reset to content-based slide elements and explicit layout ids; no fallback shape was added to External's traversal.",
       effect: "Browser data and production types now agree, and complete reference safety stays typed without preserving a legacy reader."
     }

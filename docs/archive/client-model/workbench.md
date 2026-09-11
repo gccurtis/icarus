@@ -40,7 +40,7 @@ bodies `revisions` edits. **Launchers** have no identity at all.
 
 Research and analysis are singletons rather than id-bearing tabs, and that is the
 correction worth stating plainly: each has its own internal selection — an
-investigation, an analysis — exactly as a deck selects a slide. That belongs in
+investigation, an analysis — exactly as a presentation selects a slide. That belongs in
 view state. A tab per investigation would make the strip the navigation for a
 screen that already has its own.
 

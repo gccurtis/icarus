@@ -13,7 +13,7 @@ five, which is what a launcher is for.
 The one category with no overview view, because a blank tab has nothing to be
 an overview of.
 
-The centre's Document and Slide deck shortcuts create represented project rows
+The centre's Document and Presentation shortcuts create represented project rows
 and revision-zero leader snapshots through Project Resources, refresh both the
 resource index and the editor title query, and only then open the returned opaque
 id. A title is display data, not identity, so repeated `Untitled document 1`
@@ -44,7 +44,7 @@ and a provider row.
 
 ### create
 
-Headed *Create*. The three editors as rows: document, slide deck, spreadsheet.
+Headed *Create*. The three editors as rows: document, presentation, spreadsheet.
 
 The same three choices the centre offers as pills, duplicated deliberately: the
 centre is where you look, this is where you land if you came by keyboard.
@@ -57,7 +57,7 @@ open, so there is nothing here to create, and offering to create one would imply
 they can be absent. A research thread is a tab like a document, but nothing
 starts one, so an offer to make one would be an offer nothing can keep.
 
-Routes to `new-tab.new-document`, `new-tab.new-deck` and
+Routes to `new-tab.new-document`, `new-tab.new-presentation` and
 `new-tab.new-spreadsheet`.
 
 ### recent
@@ -68,7 +68,7 @@ history is not represented yet, so this view does not claim that a resource was
 opened merely because it was edited.
 
 The search field uses the same Project Resources index rather than only the
-eight cards. Documents, slide decks, spreadsheets, research threads and
+eight cards. Documents, presentations, spreadsheets, research threads and
 findings therefore retain their canonical store ids from result to destination;
 a displayed title is never used as tab identity.
 
@@ -79,7 +79,7 @@ the project.
 
 Headed *Templates*: starting from something rather than from nothing.
 
-Grouped by what the template makes — document, slide deck, spreadsheet — in the
+Grouped by what the template makes — document, presentation, spreadsheet — in the
 same order as the pills in the centre. Scope and variable count ride on the row,
 because both change what pressing one will do.
 
@@ -119,7 +119,7 @@ leaves the application, and there is nothing to leave through or come back to.
 What it deliberately does not do: a sign-in callback that lands on a tab which
 has since been closed needs a defined outcome, and there is none yet.
 
-### new-document, new-deck and new-spreadsheet
+### new-document, new-presentation and new-spreadsheet
 
 These three draft panels remain a proposed inspector flow rather than the live
 centre shortcut described above. They are siblings on purpose. Each has the
@@ -150,7 +150,7 @@ What it deliberately does not do: there is no project or user default to
 pre-select from, so the default shown is hard-coded, and whether it should be a
 project setting is unsettled.
 
-#### new-deck
+#### new-presentation
 
 Title, then a format band with the aspect ratio, then a first-slide band, then
 create. Aspect is asked explicitly for two reasons: there is nothing to fall
@@ -162,7 +162,7 @@ instead of repeating the words above it — a thumbnail rather than a layout nam
 so the choice is visible and not merely labelled.
 
 What it deliberately does not do: it does not offer a choice of first-slide
-layout, and whether it should is unsettled. Offering it makes this a small deck
+layout, and whether it should is unsettled. Offering it makes this a small presentation
 editor; not offering it means the first thing you do after creating is change
 it.
 

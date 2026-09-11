@@ -9,7 +9,7 @@ refer to. A variable is stored as a *value*, not as an expression: what this vie
 shows is exactly what a formula will get when it runs. That is why nothing here
 is ever stale, and why no section carries a refresh.
 
-Present on Project Overview, the document, deck and spreadsheet editors, and both
+Present on Project Overview, the document, presentation and spreadsheet editors, and both
 Analysis subscreens. Analysis shows the same variables with their fields expanded
 underneath, because there you are dropping a field rather than referring to a
 name — see [analysis/context/variables.md](../analysis/variables.md).

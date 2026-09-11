@@ -10,7 +10,7 @@ Things that draw. A component takes props and emits events; it imports none of `
 
 ## What it may and may not import
 
-Other vocabularies at their index, vendored parts, `$development-components`, and third-party packages (bits-ui, layerchart, konva is not here — it is in the deck view). Never a model, a capability, the runtime or the representation. A view that needs data hands it down as props or ids.
+Other vocabularies at their index, vendored parts, `$development-components`, and third-party packages (bits-ui, layerchart, konva is not here — it is in the presentation view). Never a model, a capability, the runtime or the representation. A view that needs data hands it down as props or ids.
 
 ## Shape on disk
 

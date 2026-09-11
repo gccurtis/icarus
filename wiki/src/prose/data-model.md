@@ -4,11 +4,11 @@ The data model is code, not documents. Row shapes are declared in [[file:app/src
 
 ## The domain graph
 
-Thirteen domains under `data/types/`, and which may import which is declared in [[file:app/configuration/representation.yaml]] — `templates: [content, core, documents, slide-decks, spreadsheets]` and so on. [[check:domain-graph-is-declared]] reads the real imports against the declaration and refuses a cycle. The diagram is drawn from the declaration.
+Thirteen domains under `data/types/`, and which may import which is declared in [[file:app/configuration/representation.yaml]] — `templates: [content, core, documents, presentations, spreadsheets]` and so on. [[check:domain-graph-is-declared]] reads the real imports against the declaration and refuses a cycle. The diagram is drawn from the declaration.
 
 ## The tables
 
-Every table, with every field and its declared type, read from `tables.ts`. Optional fields are marked. Five of them are the resource tables the editors read and write — `documents`, `slideDecks`, `spreadsheets` and their `*Snapshots` and `*ChangeSets` — and `workspaceSnapshots` and `workspaceRevisions` hold the workspace ledger.
+Every table, with every field and its declared type, read from `tables.ts`. Optional fields are marked. Five of them are the resource tables the editors read and write — `documents`, `presentations`, `spreadsheets` and their `*Snapshots` and `*ChangeSets` — and `workspaceSnapshots` and `workspaceRevisions` hold the workspace ledger.
 
 ## The store
 

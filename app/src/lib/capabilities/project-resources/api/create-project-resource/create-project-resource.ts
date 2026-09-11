@@ -7,14 +7,14 @@ import {
 import { asId } from "$representation/data/behavior/core/id";
 import { emptyBody as emptySpreadsheet } from "$representation/data/behavior/spreadsheets/empty-sheet";
 import type { DocumentBody } from "$representation/data/types/documents/body";
-import type { SlideDeckBody } from "$representation/data/types/slide-decks/body";
+import type { PresentationBody } from "$representation/data/types/presentations/body";
 
 import { validateCreateProjectResource } from "$capabilities/project-resources/api/create-project-resource/validate-create-project-resource";
 import type { CreateProjectResourceResult } from "$capabilities/project-resources/types/project-resources";
 import { enqueueSemanticOutboxFor } from "$capabilities/semantic-overlay/index";
 
-/** A represented blank deck still needs somewhere to edit. */
-const emptyDeck = (): SlideDeckBody => ({
+/** A represented blank presentation still needs somewhere to edit. */
+const emptyPresentation = (): PresentationBody => ({
   aspectRatio: "16:9",
   theme: {
     colors: {
@@ -55,7 +55,7 @@ const emptyDocument = (): DocumentBody => ({
 
 const representedRows = (
   store: Pick<StoreUnitOfWork, "read">,
-  table: "documents" | "slideDecks" | "spreadsheets"
+  table: "documents" | "presentations" | "spreadsheets"
 ): readonly unknown[] => {
   return readCurrentRows(store, table);
 };
@@ -69,11 +69,11 @@ const recordOf = (value: unknown): Record<string, unknown> | undefined =>
 const defaultTitle = (
   store: Pick<StoreUnitOfWork, "read">,
   projectId: string,
-  target: "document" | "slides" | "spreadsheet"
+  target: "document" | "presentation" | "spreadsheet"
 ): string => {
   const table =
-    target === "document" ? "documents" : target === "slides" ? "slideDecks" : "spreadsheets";
-  const noun = target === "document" ? "document" : target === "slides" ? "deck" : "spreadsheet";
+    target === "document" ? "documents" : target === "presentation" ? "presentations" : "spreadsheets";
+  const noun = target === "document" ? "document" : target === "presentation" ? "presentation" : "spreadsheet";
   const prefix = `Untitled ${noun} `;
   const taken = new Set(
     representedRows(store, table)
@@ -132,22 +132,22 @@ export const createProjectResource = async (input: unknown): Promise<CreateProje
       return { accepted: true as const, target: asked.target, resourceId, title, revision: 0 as const };
     }
 
-    if (asked.target === "slides") {
-      const resourceId = unit.create("slideDecks", fields);
-      unit.create("slideDeckSnapshots", {
+    if (asked.target === "presentation") {
+      const resourceId = unit.create("presentations", fields);
+      unit.create("presentationSnapshots", {
         projectId,
         resourceId,
         revision: 0,
         role: "leader",
         part: 0,
-        body: emptyDeck(),
+        body: emptyPresentation(),
         at
       });
       enqueueSemanticOutboxFor(
         model,
         unit,
         projectId,
-        { kind: "slides", id: resourceId },
+        { kind: "presentation", id: resourceId },
         0
       );
       return { accepted: true as const, target: asked.target, resourceId, title, revision: 0 as const };

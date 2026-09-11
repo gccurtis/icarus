@@ -28,7 +28,7 @@
     <h1>How templates work now</h1>
     <p class="lede">
       One vocabulary, two capabilities, and four places a person touches templates: the library, the
-      document editor, the deck editor, and Project Overview. This page follows a template through its
+      document editor, the presentation editor, and Project Overview. This page follows a template through its
       life and names the file responsible at each step.
     </p>
     <div class="meta">
@@ -50,10 +50,10 @@
         the variables fill.
       </p>
       <p>
-        A body is a document, a deck, or a spreadsheet, exactly as before. A template saved from one
-        slide is a deck template holding that slide, the layout it uses, and the theme and styles it is
-        drawn with, and no sections, because a section is a place in a deck and a lone slide is not in
-        one. Nothing marks it afterwards; it is a deck like any other.
+        A body is a document, a presentation, or a spreadsheet, exactly as before. A template saved from one
+        slide is a presentation template holding that slide, the layout it uses, and the theme and styles it is
+        drawn with, and no sections, because a section is a place in a presentation and a lone slide is not in
+        one. Nothing marks it afterwards; it is a presentation like any other.
       </p>
       <p>
         A variable is a hole a prompt's scope can name: <code>{ select: "variable", name }</code>. It
@@ -68,9 +68,9 @@
     <section id="life">
       <div class="head"><span class="n">2</span><h2>A template's life</h2></div>
       <div class="flow">
-        <div class="step"><b>Made</b><span class="m">createTemplate · createTemplateFromResource</span>Empty of a kind, or from a live document, a live deck, or one slide, body made portable, in the project the person is in</div>
+        <div class="step"><b>Made</b><span class="m">createTemplate · createTemplateFromResource</span>Empty of a kind, or from a live document, a live presentation, or one slide, body made portable, in the project the person is in</div>
         <div class="step"><b>Opened</b><span class="m">openTemplateStage</span>A scratch resource holds the body; a stage row names the template and the revision it was taken from; the editor tab opens on its Templates panel</div>
-        <div class="step"><b>Edited</b><span class="m">document-editor · slide-deck-editor</span>The ordinary editor, runtime and change sets work on the scratch resource unchanged; variables and their defaults are set in the panel</div>
+        <div class="step"><b>Edited</b><span class="m">document-editor · presentation-editor</span>The ordinary editor, runtime and change sets work on the scratch resource unchanged; variables and their defaults are set in the panel</div>
         <div class="step"><b>Saved</b><span class="m">commitTemplateStage</span>The scratch leader body, made portable and validated, becomes the template's next revision</div>
         <div class="step"><b>Used</b><span class="m">instantiateTemplate · insert</span>A new resource, or rows and slides inserted into an open one, each variable answered in a modal or left to its default</div>
         <div class="step"><b>Discarded</b><span class="m">discardTemplateStage</span>The stage row and scratch resource go, with the resource's snapshots, change sets and comments</div>
@@ -111,10 +111,10 @@
     <section id="editor">
       <div class="head"><span class="n">4</span><h2>How the editors take part without changing</h2></div>
       <p>
-        The content surfaces, <code>document.svelte</code> and <code>deck.svelte</code>, are untouched.
+        The content surfaces, <code>document.svelte</code> and <code>presentation.svelte</code>, are untouched.
         They read <code>view.active.resourceId</code>, attach the runtime for it through workspace state,
         and draw whatever body the runtime holds. A stage resource is an ordinary <code>documents</code> or
-        <code>slideDecks</code> row with an ordinary leader snapshot, so the editor cannot tell the
+        <code>presentations</code> row with an ordinary leader snapshot, so the editor cannot tell the
         difference and does not need to. The tab is named from the row's title, which the stage sets to
         <code>Template · &lt;name&gt;</code>, so the strip says what is open.
       </p>
@@ -133,7 +133,7 @@
       </p>
       <p>
         A working copy takes no comments. The comments capability refuses to start a thread on a stage
-        resource, and the deck's comment panels say so in place of the composer, because a comment is
+        resource, and the presentation's comment panels say so in place of the composer, because a comment is
         one more thing that does not travel with a template.
       </p>
       <p>
@@ -149,7 +149,7 @@
         A set is <code>include</code> minus <code>exclude</code>, each a list of terms: the whole project, a
         list of kinds matched by segment, named resources, or another set by id. The
         <code>resourceSets</code> table existed and was seeded; the capability over it is new. Reading the
-        project's sets resolves each one against the documents, decks, spreadsheets, findings and research
+        project's sets resolves each one against the documents, presentations, spreadsheets, findings and research
         threads the project holds and reports the count, never stored, so the number beside a set's name
         cannot go stale. A stage resource is left out of that catalogue.
       </p>

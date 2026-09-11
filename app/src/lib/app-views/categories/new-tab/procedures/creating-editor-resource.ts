@@ -16,8 +16,8 @@ export type EditorCreation = {
 const targetOf = (kind: EditorKind): ProjectResourceTarget =>
   kind.name === "Document"
     ? "document"
-    : kind.name === "Slide deck"
-      ? "slides"
+    : kind.name === "Presentation"
+      ? "presentation"
       : "spreadsheet";
 
 /** Create a represented blank and open its editor if the person is still here. */
